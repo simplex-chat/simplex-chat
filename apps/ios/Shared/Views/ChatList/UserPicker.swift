@@ -229,7 +229,6 @@ struct UserPicker: View {
                 }
             }
         })
-        .buttonStyle(PressedButtonStyle(defaultColor: theme.colors.surface, pressedColor: Color(uiColor: .secondarySystemFill)))
     }
 
 
