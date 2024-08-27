@@ -39,7 +39,6 @@ struct UserPicker: View {
                 HStack(spacing: 19) {
                     ProfileImage(imageStr: currentUser.image, size: 44)
                         .onTapGesture {
-                            showSettings = false
                             activeSheet = .currentProfile
                             userPickerVisible.toggle()
                         }
@@ -54,9 +53,8 @@ struct UserPicker: View {
                         .font(.system(size: 32, weight: .thin))
                         .frame(width: 32, height: 32)
                         .onTapGesture {
-                            showSettings = false
                             activeSheet = .chatProfiles
-                            
+                            userPickerVisible.toggle()
                         }
                 }
                 .padding(.horizontal, 16)
@@ -211,7 +209,7 @@ struct UserPicker: View {
                     try await changeActiveUserAsync_(user.userId, viewPwd: nil)
                     await MainActor.run {
                         withAnimation {
-                            userPickerVisible = false
+                            userPickerVisible.toggle()
                         }
                     }
                 } catch {
