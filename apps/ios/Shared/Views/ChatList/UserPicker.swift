@@ -11,6 +11,7 @@ enum UserPickerSheet: Identifiable {
     case chatPreferences
     case migrateDevice
     case chatProfiles
+    case currentProfile
 
     var id: Self { self }
 }
@@ -40,6 +41,10 @@ struct UserPicker: View {
                 if let currentUser = m.currentUser {
                     HStack(spacing: 19) {
                         ProfileImage(imageStr: currentUser.image, size: 44)
+                            .onTapGesture {
+                                showSettings = false
+                                activeSheet = .currentProfile
+                            }
                         Spacer()
                         ForEach(users) { u in
                             userView(u)
@@ -138,6 +143,12 @@ struct UserPicker: View {
                 switch sheet {
                 case .chatProfiles:
                     UserProfilesView(showSettings: $showSettings)
+                case .currentProfile:
+                    if m.currentUser != nil {
+                        UserProfile()
+                            .navigationTitle("Your current profile")
+                            .modifier(ThemedBackground())
+                    }
                 case .address:
                     if let user = m.currentUser {
                         UserAddressView(shareViaProfile: user.addressShared)
