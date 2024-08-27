@@ -15,17 +15,17 @@ import SimpleXChat
 /// by retaining pill shape, even when ``ChatItem``'s height is less that twice its corner radius
 struct ChatItemClipped: ViewModifier {
     @AppStorage(DEFAULT_CHAT_ITEM_ROUNDNESS) private var roundness = defaultChatItemRoundness
-    @AppStorage(DEFAULT_CHAT_ITEM_TAIL) private var isTailEnabled = true
+    @AppStorage(DEFAULT_CHAT_ITEM_TAIL) private var tailEnabled = true
     private let shapeStyle: (Double, Bool) -> ChatItemShape.Style
 
     init() {
-        shapeStyle = { roundness, isTailEnabled in
+        shapeStyle = { roundness, _tailEnabled in
             .roundRect(radius: msgRectMaxRadius)
         }
     }
 
-    init(_ ci: ChatItem, isTailVisible: Bool) {
-        shapeStyle = { roundness, isTailEnabled in
+    init(_ ci: ChatItem, tailVisible: Bool) {
+        shapeStyle = { roundness, tailEnabled in
             switch ci.content {
             case
                 .sndMsgContent,
@@ -39,19 +39,19 @@ struct ChatItemClipped: ViewModifier {
                 .sndModerated,
                 .rcvModerated,
                 .rcvBlocked,
-                .invalidJSON: isTailEnabled
-                ? .bubble(
-                    padding: ci.chatDir.sent ? .trailing : .leading,
-                    isTailVisible: {
-                        if let mc = ci.content.msgContent, mc.isImageOrVideo, mc.text.isEmpty {
-                            false
-                        } else {
-                            isTailVisible
-                        }
-                    }()
-                )
-                : .roundRect(radius: msgRectMaxRadius)
-            default: .roundRect(radius: 8)
+                .invalidJSON:
+                    let tail = if let mc = ci.content.msgContent, mc.isImageOrVideo && mc.text.isEmpty {
+                        false
+                    } else {
+                        tailVisible
+                    }
+                    return tailEnabled
+                    ? .bubble(
+                        padding: ci.chatDir.sent ? .trailing : .leading,
+                        tailVisible: tail
+                    )
+                    : .roundRect(radius: msgRectMaxRadius)
+            default: return .roundRect(radius: 8)
             }
         }
     }
@@ -59,7 +59,7 @@ struct ChatItemClipped: ViewModifier {
     func body(content: Content) -> some View {
         let clipShape = ChatItemShape(
             roundness: roundness,
-            style: shapeStyle(roundness, isTailEnabled)
+            style: shapeStyle(roundness, tailEnabled)
         )
         content
             .contentShape(.dragPreview, clipShape)
@@ -83,7 +83,7 @@ private let msgTailHeight: Double = msgTailWidth * msgTailSlope
 
 struct ChatItemShape: Shape {
     fileprivate enum Style {
-        case bubble(padding: HorizontalEdge, isTailVisible: Bool)
+        case bubble(padding: HorizontalEdge, tailVisible: Bool)
         case roundRect(radius: Double)
     }
 
@@ -92,7 +92,7 @@ struct ChatItemShape: Shape {
 
     func path(in rect: CGRect) -> Path {
         switch style {
-        case let .bubble(padding, isTailVisible):
+        case let .bubble(padding, tailVisible):
             let w = rect.width
             let h = rect.height
             let rxMax = min(msgBubbleMaxRadius, w / 2)
@@ -117,23 +117,30 @@ struct ChatItemShape: Shape {
                 path.addQuadCurve(to: CGPoint(x: w - rx, y: h), control: CGPoint(x: w, y: h))
             }
             // bottom side
-//            path.addLine(to: CGPoint(x: rh, y: h)) // no tail
-//            path.addQuadCurve(to: CGPoint(x: 0, y: h - rv), control: CGPoint(x: 0 , y: h)) // no tail
-            path.addLine(to: CGPoint(x: -msgTailWidth, y: h))
-            if roundness > 0 {
-                // bottom-left tail
-                // distance of control point from touch point, calculated via ratios
-                let d = tailHeight - msgTailWidth * msgTailWidth / tailHeight
-                // tail control point
-                let tc = CGPoint(x: 0, y: h - tailHeight + d * roundness * roundness)
-                // bottom-left tail curve
-                path.addQuadCurve(to: CGPoint(x: 0, y: h - tailHeight), control: tc)
+            if tailVisible {
+                path.addLine(to: CGPoint(x: -msgTailWidth, y: h))
+                if roundness > 0 {
+                    // bottom-left tail
+                    // distance of control point from touch point, calculated via ratios
+                    let d = tailHeight - msgTailWidth * msgTailWidth / tailHeight
+                    // tail control point
+                    let tc = CGPoint(x: 0, y: h - tailHeight + d * roundness * roundness)
+                    // bottom-left tail curve
+                    path.addQuadCurve(to: CGPoint(x: 0, y: h - tailHeight), control: tc)
+                } else {
+                    path.addLine(to: CGPoint(x: 0, y: h - tailHeight))
+                }
+                if rect.height > ry + tailHeight {
+                    // left side
+                    path.addLine(to: CGPoint(x: 0, y: ry))
+                }
             } else {
-                path.addLine(to: CGPoint(x: 0, y: h - tailHeight))
-            }
-            if rect.height > 2 * ry {
-                // left side
-                path.addLine(to: CGPoint(x: 0, y: ry))
+                path.addLine(to: CGPoint(x: rx, y: h))
+                path.addQuadCurve(to: CGPoint(x: 0, y: h - ry), control: CGPoint(x: 0 , y: h))
+                if rect.height > 2 * ry {
+                    // left side
+                    path.addLine(to: CGPoint(x: 0, y: ry))
+                }
             }
             if roundness > 0 {
                 // top-left corner

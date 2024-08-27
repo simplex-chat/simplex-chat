@@ -368,13 +368,13 @@ struct ChatThemePreview: View {
                 let bob = ChatItem.getSample(2, CIDirection.directSnd, Date.now, NSLocalizedString("Good morning!", comment: "message preview"), quotedItem: CIQuote.getSample(alice.id, alice.meta.itemTs, alice.content.text, chatDir: alice.chatDir))
                 HStack {
                     ChatItemView(chat: Chat.sampleData, chatItem: alice, revealed: Binding.constant(false))
-                        .modifier(ChatItemClipped(alice, isTailVisible: true))
+                        .modifier(ChatItemClipped(alice, tailVisible: true))
                     Spacer()
                 }
                 HStack {
                     Spacer()
                     ChatItemView(chat: Chat.sampleData, chatItem: bob, revealed: Binding.constant(false))
-                        .modifier(ChatItemClipped(bob, isTailVisible: true))
+                        .modifier(ChatItemClipped(bob, tailVisible: true))
                         .frame(alignment: .trailing)
                 }
             } else {
