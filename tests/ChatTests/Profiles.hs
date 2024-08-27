@@ -1,6 +1,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
+{-# LANGUAGE TypeApplications #-}
 
 module ChatTests.Profiles where
 
@@ -18,6 +19,8 @@ import Simplex.Chat.Types (ConnStatus (..), Profile (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
+import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
+import Simplex.Messaging.Transport
 import Simplex.Messaging.Util (encodeJSON)
 import System.Directory (copyFile, createDirectoryIfMissing)
 import Test.Hspec hiding (it)
@@ -1653,34 +1656,42 @@ testChangePCCUserAndThenIncognito = testChat2 aliceProfile bobProfile $
       ]
 
 testChangePCCUserDiffSrv :: HasCallStack => FilePath -> IO ()
-testChangePCCUserDiffSrv = testChat2 aliceProfile bobProfile $
-  \alice bob -> do
-    -- Create a new invite
-    alice ##> "/connect"
-    _ <- getInvitation alice
-    alice ##> "/_set incognito :1 on"
-    alice <## "connection 1 changed to incognito"
-    -- Create new user with different servers
-    alice ##> "/create user alisa"
-    showActiveUser alice "alisa"
-    alice #$> ("/smp smp://2345-w==@smp2.example.im smp://3456-w==@smp3.example.im:5224", id, "ok")
-    alice ##> "/user alice"
-    showActiveUser alice "alice (Alice)"
-    -- Change connection to newly created user and use the newly created connection
-    alice ##> "/_set conn user :1 2"
-    alice <## "connection 1 changed from user alice to user alisa, new link:"
-    alice <## ""
-    inv <- getTermLine alice
-    alice <## ""
-    alice `hasContactProfiles` ["alice"]
-    alice ##> "/user alisa"
-    showActiveUser alice "alisa"
-    -- Connect
-    bob ##> ("/connect " <> inv)
-    bob <## "confirmation sent!"
-    concurrently_
-      (alice <## "bob (Bob): contact is connected")
-      (bob <## "alisa: contact is connected")
+testChangePCCUserDiffSrv tmp = do
+  withSmpServer' serverCfg' $ do
+    withNewTestChatCfgOpts tmp testCfg testOpts "alice" aliceProfile $ \alice -> do
+      withNewTestChatCfgOpts tmp testCfg testOpts "bob" bobProfile $ \bob -> do
+        -- Create a new invite
+        alice ##> "/connect"
+        _ <- getInvitation alice
+        alice ##> "/_set incognito :1 on"
+        alice <## "connection 1 changed to incognito"
+        -- Create new user with different servers
+        alice ##> "/create user alisa"
+        showActiveUser alice "alisa"
+        alice #$> ("/smp smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003", id, "ok")
+        alice ##> "/user alice"
+        showActiveUser alice "alice (Alice)"
+        -- Change connection to newly created user and use the newly created connection
+        alice ##> "/_set conn user :1 2"
+        alice <## "connection 1 changed from user alice to user alisa, new link:"
+        alice <## ""
+        inv <- getTermLine alice
+        alice <## ""
+        alice `hasContactProfiles` ["alice"]
+        alice ##> "/user alisa"
+        showActiveUser alice "alisa"
+        -- Connect
+        bob ##> ("/connect " <> inv)
+        bob <## "confirmation sent!"
+        concurrently_
+          (alice <## "bob (Bob): contact is connected")
+          (bob <## "alisa: contact is connected")
+  where
+    serverCfg' =
+      smpServerCfg
+        { transports = [("7003", transport @TLS), ("7002", transport @TLS)],
+          msgQueueQuota = 2
+        }
 
 testSetConnectionAlias :: HasCallStack => FilePath -> IO ()
 testSetConnectionAlias = testChat2 aliceProfile bobProfile $
