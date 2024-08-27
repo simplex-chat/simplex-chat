@@ -108,19 +108,23 @@ struct UserPicker: View {
                     .padding(.horizontal, 16)
                 }
                 .buttonStyle(PressedButtonStyle(defaultColor: theme.colors.surface, pressedColor: Color(uiColor: .secondarySystemFill)))
-                Button {
+                VStack {
+                    Image(systemName: colorScheme == .light ? "sun.max" : "moon.stars")
+                        .symbolRenderingMode(.monochrome)
+                        .foregroundColor(theme.colors.secondary)
+                        .frame(maxWidth: 20, maxHeight: 20)
+                }
+                .padding(.vertical, verticalSpaceDefault)
+                .padding(.horizontal, 16)
+                .onTapGesture {
                     if (colorScheme == .light) {
                         ThemeManager.applyTheme(systemDarkThemeDefault.get())
                     } else {
                         ThemeManager.applyTheme(DefaultTheme.LIGHT.themeName)
                     }
-                } label: {
-                    Image(systemName: colorScheme == .light ? "sun.max" : "moon.stars")
-                        .symbolRenderingMode(.monochrome)
-                        .foregroundColor(theme.colors.secondary)
-                        .frame(maxWidth: 20, maxHeight: 20)
-                        .padding(.vertical, verticalSpaceDefault)
-                        .padding(.horizontal, 16)
+                }
+                .onLongPressGesture {
+                    ThemeManager.applyTheme(DefaultTheme.SYSTEM_THEME_NAME)
                 }
             }
             .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
