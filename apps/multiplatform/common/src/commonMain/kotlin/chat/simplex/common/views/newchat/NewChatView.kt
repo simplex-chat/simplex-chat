@@ -311,7 +311,7 @@ private fun ActiveProfilePicker(
   }
 
   @Composable
-  fun profilePickerUserOption(user: User) {
+  fun ProfilePickerUserOption(user: User) {
     val selected = selectedProfile?.userId == user.userId && !incognito
 
     ProfilePickerOption(
@@ -358,7 +358,7 @@ private fun ActiveProfilePicker(
   }
 
   @Composable
-  fun incognitoUserOption() {
+  fun IncognitoUserOption() {
     ProfilePickerOption(
       disabled = switchingProfile.value,
       title = stringResource(MR.strings.incognito),
@@ -416,29 +416,29 @@ private fun ActiveProfilePicker(
 
           if (incognito) {
             item {
-              incognitoUserOption()
+              IncognitoUserOption()
             }
             item {
-              profilePickerUserOption(activeProfile)
+              ProfilePickerUserOption(activeProfile)
             }
           } else {
             item {
-              profilePickerUserOption(activeProfile)
+              ProfilePickerUserOption(activeProfile)
             }
             item {
-              incognitoUserOption()
+              IncognitoUserOption()
             }
           }
 
           itemsIndexed(otherProfiles) { _, p ->
-            profilePickerUserOption(p)
+            ProfilePickerUserOption(p)
           }
         } else {
           item {
-            incognitoUserOption()
+            IncognitoUserOption()
           }
           itemsIndexed(filteredProfiles) { _, p ->
-            profilePickerUserOption(p)
+            ProfilePickerUserOption(p)
           }
         }
       }
