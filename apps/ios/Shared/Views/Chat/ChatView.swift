@@ -723,11 +723,11 @@ struct ChatView: View {
             let im = ItemsModel.shared
             if let i, i > 0 && im.reversedChatItems.count >= i {
                 let nextItem = im.reversedChatItems[i - 1]
-                let largeGap = !nextItem.chatDir.sameDirection(chatItem.chatDir) || nextItem.meta.createdAt.timeIntervalSince(chatItem.meta.createdAt) > 60
+                let largeGap = !nextItem.chatDir.sameDirection(chatItem.chatDir) || nextItem.meta.itemTs.timeIntervalSince(chatItem.meta.itemTs) > 60
                 return (
-                    timestamp: largeGap || formatTimestampText(chatItem.meta.createdAt) != formatTimestampText(nextItem.meta.createdAt),
+                    timestamp: largeGap || formatTimestampText(chatItem.meta.itemTs) != formatTimestampText(nextItem.meta.itemTs),
                     largeGap: largeGap,
-                    date: Calendar.current.isDate(chatItem.meta.createdAt, inSameDayAs: nextItem.meta.createdAt) ? nil : nextItem.meta.createdAt
+                    date: Calendar.current.isDate(chatItem.meta.itemTs, inSameDayAs: nextItem.meta.itemTs) ? nil : nextItem.meta.itemTs
                 )
             } else {
                 return (timestamp: true, largeGap: true, date: nil)
