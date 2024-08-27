@@ -49,16 +49,16 @@ struct UserPicker: View {
                         ForEach(users) { u in
                             userView(u)
                         }
-                            Image(systemName: "list.bullet.circle")
-                                .resizable()
-                                .foregroundColor(theme.colors.secondary)
-                                .accentColor(theme.colors.secondary)
-                                .font(.system(size: 32, weight: .thin))
-                                .frame(width: 32, height: 32)
-                                .onTapGesture {
-                                    showSettings = false
-                                    activeSheet = .chatProfiles
-                                }
+                        Image(systemName: "list.bullet.circle")
+                            .resizable()
+                            .foregroundColor(theme.colors.secondary)
+                            .accentColor(theme.colors.secondary)
+                            .font(.system(size: 32, weight: .thin))
+                            .frame(width: 32, height: 32)
+                            .onTapGesture {
+                                showSettings = false
+                                activeSheet = .chatProfiles
+                            }
                     }
                     .padding(.horizontal, 16)
                     .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
@@ -91,21 +91,42 @@ struct UserPicker: View {
                     .padding(.vertical, verticalSpaceDefault)
                     .padding(.horizontal, 16)
                 
-                menuButton("Settings", icon: "gearshape") {
-                    showSettings = true
-                    userPickerVisible.toggle()
-                }                
-                menuButton(nil, icon: colorScheme == .light ? "sun.max" : "moon.stars") {
-                    if (colorScheme == .light) {
-                        ThemeManager.applyTheme(systemDarkThemeDefault.get())
-                    } else {
-                        ThemeManager.applyTheme(DefaultTheme.LIGHT.themeName)
-                    }
-                    withAnimation {
+                
+                HStack {
+                    Button {
+                        showSettings = true
                         userPickerVisible.toggle()
+                    } label: {
+                        HStack(spacing: verticalSpaceDefault) {
+                            Image(systemName: "gearshape")
+                                .symbolRenderingMode(.monochrome)
+                                .foregroundColor(theme.colors.secondary)
+                                .frame(maxWidth: 20, maxHeight: 20)
+                            Text("Settings")
+                            Spacer()
+                        }
+                        .padding(.vertical, verticalSpaceDefault)
+                        .padding(.horizontal, 16)
                     }
-                }.padding(.bottom, 7)
+                    .buttonStyle(PressedButtonStyle(defaultColor: theme.colors.surface, pressedColor: Color(uiColor: .secondarySystemFill)))
+                    Button {
+                        if (colorScheme == .light) {
+                            ThemeManager.applyTheme(systemDarkThemeDefault.get())
+                        } else {
+                            ThemeManager.applyTheme(DefaultTheme.LIGHT.themeName)
+                        }
+                    } label: {
+                        Image(systemName: colorScheme == .light ? "sun.max" : "moon.stars")
+                            .symbolRenderingMode(.monochrome)
+                            .foregroundColor(theme.colors.secondary)
+                            .frame(maxWidth: 20, maxHeight: 20)
+                            .padding(.vertical, verticalSpaceDefault)
+                            .padding(.horizontal, 16)
+                    }
+                }
+                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
             }
+            .padding(.bottom, 7)
         }
         .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
         .background(
