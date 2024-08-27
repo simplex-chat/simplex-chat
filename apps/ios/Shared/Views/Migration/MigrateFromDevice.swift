@@ -106,9 +106,6 @@ struct MigrateFromDevice: View {
                 finishedView(chatDeletion)
             }
         }
-        .modifier(BackButton(label: "Back", disabled: $backDisabled) {
-            dismiss()
-        })
         .onChange(of: migrationState) { state in
             backDisabled = switch migrationState {
             case .chatStopInProgress, .archiving, .linkShown, .finished: true
