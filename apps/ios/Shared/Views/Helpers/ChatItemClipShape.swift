@@ -16,50 +16,57 @@ import SimpleXChat
 struct ChatItemClipped: ViewModifier {
     @AppStorage(DEFAULT_CHAT_ITEM_ROUNDNESS) private var roundness = defaultChatItemRoundness
     @AppStorage(DEFAULT_CHAT_ITEM_TAIL) private var tailEnabled = true
-    private let shapeStyle: (Double, Bool) -> ChatItemShape.Style
+    private let chatItem: ChatItem?
+    private let tailVisible: Bool
 
     init() {
-        shapeStyle = { roundness, _tailEnabled in
-            .roundRect(radius: msgRectMaxRadius)
-        }
+        self.chatItem = nil
+        self.tailVisible = false
     }
 
     init(_ ci: ChatItem, tailVisible: Bool) {
-        shapeStyle = { roundness, tailEnabled in
+        self.chatItem = ci
+        self.tailVisible = tailVisible
+    }
+    
+    private func shapeStyle() -> ChatItemShape.Style {
+        if let ci = chatItem {
             switch ci.content {
             case
-                .sndMsgContent,
-                .rcvMsgContent,
-                .rcvDecryptionError,
-                .rcvGroupInvitation,
-                .sndGroupInvitation,
-                .sndDeleted,
-                .rcvDeleted,
-                .rcvIntegrityError,
-                .sndModerated,
-                .rcvModerated,
-                .rcvBlocked,
-                .invalidJSON:
-                    let tail = if let mc = ci.content.msgContent, mc.isImageOrVideo && mc.text.isEmpty {
-                        false
-                    } else {
-                        tailVisible
-                    }
-                    return tailEnabled
-                    ? .bubble(
-                        padding: ci.chatDir.sent ? .trailing : .leading,
-                        tailVisible: tail
-                    )
-                    : .roundRect(radius: msgRectMaxRadius)
+                    .sndMsgContent,
+                    .rcvMsgContent,
+                    .rcvDecryptionError,
+                    .rcvGroupInvitation,
+                    .sndGroupInvitation,
+                    .sndDeleted,
+                    .rcvDeleted,
+                    .rcvIntegrityError,
+                    .sndModerated,
+                    .rcvModerated,
+                    .rcvBlocked,
+                    .invalidJSON:
+                let tail = if let mc = ci.content.msgContent, mc.isImageOrVideo && mc.text.isEmpty {
+                    false
+                } else {
+                    tailVisible
+                }
+                return tailEnabled
+                ? .bubble(
+                    padding: ci.chatDir.sent ? .trailing : .leading,
+                    tailVisible: tail
+                )
+                : .roundRect(radius: msgRectMaxRadius)
             default: return .roundRect(radius: 8)
             }
+        } else {
+            return.roundRect(radius: msgRectMaxRadius)
         }
     }
 
     func body(content: Content) -> some View {
         let clipShape = ChatItemShape(
             roundness: roundness,
-            style: shapeStyle(roundness, tailEnabled)
+            style: shapeStyle()
         )
         content
             .contentShape(.dragPreview, clipShape)
