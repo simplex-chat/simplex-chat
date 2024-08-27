@@ -212,7 +212,6 @@ struct UserPicker: View {
                     .frame(maxWidth: 20, maxHeight: 20)
                 if let txt = title {
                     Text(txt)
-                        .overlay(DetermineWidth())
                 }
                 Spacer()
             }
