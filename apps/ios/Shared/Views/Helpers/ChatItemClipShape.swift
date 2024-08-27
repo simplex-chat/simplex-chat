@@ -20,7 +20,7 @@ struct ChatItemClipped: ViewModifier {
 
     init() {
         shapeStyle = { roundness, isTailEnabled in
-            .roundRect(maxRadius: ChatItemShape.maxRadius)
+            .roundRect(radius: msgRectMaxRadius)
         }
     }
 
@@ -50,8 +50,8 @@ struct ChatItemClipped: ViewModifier {
                         }
                     }()
                 )
-                : .roundRect(maxRadius: ChatItemShape.maxRadius)
-            default: .roundRect(maxRadius: 8)
+                : .roundRect(radius: msgRectMaxRadius)
+            default: .roundRect(radius: 8)
             }
         }
     }
@@ -70,54 +70,67 @@ struct ChatItemClipped: ViewModifier {
 
 struct ChatTailPadding: ViewModifier {
     func body(content: Content) -> some View {
-        content.padding(.horizontal, -ChatItemShape.tailSize)
+        content.padding(.horizontal, -msgTailWidth)
     }
 }
+
+private let msgRectMaxRadius: Double = 18
+private let msgBubbleMaxRadius: Double = msgRectMaxRadius * 1.2
+private let msgTailWidth: Double = 9
+private let msgTailSlope: Double = 1.732 // tangent(60deg)
+private let msgTailHeight: Double = msgTailWidth * msgTailSlope
+//private let msgTailBase: Double = sqrt(msgTailWidth * msgTailWidth + msgTailHeight * msgTailHeight)
 
 struct ChatItemShape: Shape {
     fileprivate enum Style {
         case bubble(padding: HorizontalEdge, isTailVisible: Bool)
-        case roundRect(maxRadius: Double)
+        case roundRect(radius: Double)
     }
 
-    static let tailSize: Double = 8
-    static let maxRadius: Double = 18
-    private static let bubbleMaxRadius = ChatItemShape.maxRadius * 1.2
     fileprivate let roundness: Double
     fileprivate let style: Style
 
     func path(in rect: CGRect) -> Path {
         switch style {
-        case .bubble(let padding, let isTailVisible):
-            let rhMax = min(Self.bubbleMaxRadius, rect.width / 2)
-            let rvMax = min(Self.bubbleMaxRadius, rect.height / 2)
+        case let .bubble(padding, isTailVisible):
+            let w = rect.width
+            let h = rect.height
+            let rhMax = min(msgBubbleMaxRadius, w / 2)
+            let rvMax = min(msgBubbleMaxRadius, h / 2)
             let rh = roundness * rhMax
             let rv = roundness * rvMax
-//            let tailHeight = rect.height - (Self.tailSize + (rMax - Self.tailSize) * roundness)
+            let tailHeight = min(msgTailHeight, h / 2)
+//            let tailHeight = h - (Self.tailSize + (rMax - Self.tailSize) * roundness)
             var path = Path()
             // top side
             path.move(to: CGPoint(x: rh, y: 0))
-            path.addLine(to: CGPoint(x: rect.width - rh, y: 0))
+            path.addLine(to: CGPoint(x: w - rh, y: 0))
             if roundness > 0 {
                 // top-right corner
-                path.addQuadCurve(to: CGPoint(x: rect.width, y: rv), control: CGPoint(x: rect.width, y: 0))
+                path.addQuadCurve(to: CGPoint(x: w, y: rv), control: CGPoint(x: w, y: 0))
             }
             if rect.height > 2 * rv {
                 // right side
-                path.addLine(to: CGPoint(x: rect.width, y: rect.height - rv))
+                path.addLine(to: CGPoint(x: w, y: h - rv))
             }
             if roundness > 0 {
                 // bottom-right corner
-                path.addQuadCurve(to: CGPoint(x: rect.width - rh, y: rect.height), control: CGPoint(x: rect.width, y: rect.height))
+                path.addQuadCurve(to: CGPoint(x: w - rh, y: h), control: CGPoint(x: w, y: h))
             }
             // bottom side
-//            path.addLine(to: CGPoint(x: rh, y: rect.height)) // no tail
-            path.addLine(to: CGPoint(x: -Self.tailSize, y: rect.height))
+//            path.addLine(to: CGPoint(x: rh, y: h)) // no tail
+//            path.addQuadCurve(to: CGPoint(x: 0, y: h - rv), control: CGPoint(x: 0 , y: h)) // no tail
+            path.addLine(to: CGPoint(x: -msgTailWidth, y: h))
             if roundness > 0 {
                 // bottom-left tail
-                path.addQuadCurve(to: CGPoint(x: 0, y: rect.height - Self.tailSize), control: CGPoint(x: 0, y: rect.height))
+                // distance of control point from touch point, calculated via ratios
+                let d = tailHeight - msgTailWidth * msgTailWidth / tailHeight
+                // tail control point
+                let tc = CGPoint(x: 0, y: h - tailHeight + d * roundness)
+                // bottom-left tail curve
+                path.addQuadCurve(to: CGPoint(x: 0, y: h - tailHeight), control: tc)
             } else {
-                path.addLine(to: CGPoint(x: 0, y: Self.tailSize))
+                path.addLine(to: CGPoint(x: 0, y: h - tailHeight))
             }
             if rect.height > 2 * rv {
                 // left side
@@ -128,46 +141,6 @@ struct ChatItemShape: Shape {
                 path.addQuadCurve(to: CGPoint(x: rh, y: 0), control: CGPoint(x: 0, y: 0))
             }
             path.closeSubpath()
-                    
-            
-//            path.addArc(
-//                center: CGPoint(x: r, y: r),
-//                radius: r,
-//                startAngle: .degrees(270),
-//                endAngle: .degrees(180),
-//                clockwise: true
-//            )
-//            if isTailVisible {
-//                path.addLine(
-//                    to: CGPoint(x: 0, y: tailHeight)
-//                )
-//                path.addQuadCurve(
-//                    to: CGPoint(x: -Self.tailSize, y: rect.height),
-//                    control: CGPoint(x: 0, y: tailHeight + r * 0.64)
-//                )
-//            } else {
-//                path.addArc(
-//                    center: CGPoint(x: r, y: rect.height - r),
-//                    radius: r,
-//                    startAngle: .degrees(180),
-//                    endAngle: .degrees(90),
-//                    clockwise: true
-//                )
-//            }
-//            path.addArc(
-//                center: CGPoint(x: rect.width - r, y: rect.height - r),
-//                radius: r,
-//                startAngle: .degrees(90),
-//                endAngle: .degrees(0),
-//                clockwise: true
-//            )
-//            path.addArc(
-//                center: CGPoint(x: rect.width - r, y: r),
-//                radius: r,
-//                startAngle: .degrees(0),
-//                endAngle: .degrees(270),
-//                clockwise: true
-//            )
             return switch padding {
             case .leading: path
             case .trailing: path
@@ -184,8 +157,8 @@ struct ChatItemShape: Shape {
         case let .bubble(padding, isTailVisible):
             if isTailVisible {
                 switch padding {
-                case .leading: -Self.tailSize
-                case .trailing: Self.tailSize
+                case .leading: -msgTailWidth
+                case .trailing: msgTailWidth
                 }
             } else { 0 }
         case .roundRect: 0
