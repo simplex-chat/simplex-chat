@@ -135,6 +135,10 @@
         <target>%@ se chce připojit!</target>
         <note>notification title</note>
       </trans-unit>
+      <trans-unit id="%@, %@" xml:space="preserve">
+        <source>%1$@, %2$@</source>
+        <note>format for date separator in chat</note>
+      </trans-unit>
       <trans-unit id="%@, %@ and %lld members" xml:space="preserve">
         <source>%@, %@ and %lld members</source>
         <note>No comment provided by engineer.</note>
@@ -1623,6 +1627,10 @@ This is your own one-time link!</source>
         <target>Verze jádra: v%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Corner" xml:space="preserve">
+        <source>Corner</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Correct name to %@?" xml:space="preserve">
         <source>Correct name to %@?</source>
         <note>No comment provided by engineer.</note>
@@ -2552,6 +2560,10 @@ This is your own one-time link!</source>
         <target>Chuba změny adresy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error changing connection profile" xml:space="preserve">
+        <source>Error changing connection profile</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error changing role" xml:space="preserve">
         <source>Error changing role</source>
         <target>Chyba při změně role</target>
@@ -2560,6 +2572,10 @@ This is your own one-time link!</source>
       <trans-unit id="Error changing setting" xml:space="preserve">
         <source>Error changing setting</source>
         <target>Chyba změny nastavení</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error changing to incognito!" xml:space="preserve">
+        <source>Error changing to incognito!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error connecting to forwarding server %@. Please try later." xml:space="preserve">
@@ -2770,6 +2786,10 @@ This is your own one-time link!</source>
       <trans-unit id="Error stopping chat" xml:space="preserve">
         <source>Error stopping chat</source>
         <target>Chyba při zastavení chatu</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error switching profile" xml:space="preserve">
+        <source>Error switching profile</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error switching profile!" xml:space="preserve">
@@ -3926,6 +3946,10 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Message servers" xml:space="preserve">
         <source>Message servers</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Message shape" xml:space="preserve">
+        <source>Message shape</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message source remains private." xml:space="preserve">
@@ -5363,6 +5387,10 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Vybrat</target>
         <note>chat item action</note>
       </trans-unit>
+      <trans-unit id="Select chat profile" xml:space="preserve">
+        <source>Select chat profile</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Selected %lld" xml:space="preserve">
         <source>Selected %lld</source>
         <note>No comment provided by engineer.</note>
@@ -5708,6 +5736,10 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Sdílet odkaz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Share profile" xml:space="preserve">
+        <source>Share profile</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Share this 1-time invite link" xml:space="preserve">
         <source>Share this 1-time invite link</source>
         <note>No comment provided by engineer.</note>
@@ -6022,6 +6054,10 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="TCP_KEEPINTVL" xml:space="preserve">
         <source>TCP_KEEPINTVL</source>
         <target>TCP_KEEPINTVL</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Tail" xml:space="preserve">
+        <source>Tail</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Take picture" xml:space="preserve">
@@ -7207,6 +7243,10 @@ Repeat connection request?</source>
       <trans-unit id="Your chat profiles" xml:space="preserve">
         <source>Your chat profiles</source>
         <target>Vaše chat profily</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile." xml:space="preserve">
+        <source>Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">

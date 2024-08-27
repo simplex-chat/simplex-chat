@@ -22,7 +22,7 @@ struct MarkedDeletedItemView: View {
         .foregroundColor(theme.colors.secondary)
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        .background(chatItemFrameColor(chatItem, theme))
+        .background { chatItemFrameColor(chatItem, theme).modifier(ChatTailPadding()) }
         .textSelection(.disabled)
     }
 
