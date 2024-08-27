@@ -137,10 +137,12 @@ struct UserPicker: View {
                 case .chatProfiles:
                     UserProfilesView(showSettings: $showSettings)
                 case .address:
-                    UserAddressView(shareViaProfile: true)
-                        .navigationTitle("SimpleX address")
-                        .navigationBarTitleDisplayMode(.large)
-                        .modifier(ThemedBackground(grouped: true))
+                    if let user = m.currentUser {
+                        UserAddressView(shareViaProfile: user.addressShared)
+                            .navigationTitle("SimpleX address")
+                            .navigationBarTitleDisplayMode(.large)
+                            .modifier(ThemedBackground(grouped: true))
+                    }
                 case .chatPreferences:
                     if let user = m.currentUser {
                         PreferencesView(profile: user.profile, preferences: user.fullPreferences, currentPreferences: user.fullPreferences)
