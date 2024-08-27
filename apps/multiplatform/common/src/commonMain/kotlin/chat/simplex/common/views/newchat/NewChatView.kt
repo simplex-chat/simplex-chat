@@ -290,7 +290,7 @@ private fun ActiveProfilePicker(
   val incognito = remember {
     chatModel.showingInvitation.value?.conn?.incognito ?: controller.appPrefs.incognito.get()
   }
-  val selectedProfile by remember { derivedStateOf { chatModel.currentUser.value } }
+  val selectedProfile by remember { chatModel.currentUser }
   val searchTextOrPassword = rememberSaveable { search }
   val profiles = remember {
     chatModel.users.map { it.user }.sortedBy { !it.activeUser }
