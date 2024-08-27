@@ -220,41 +220,42 @@ private fun ProfilePickerOption(
     Modifier
       .fillMaxWidth()
       .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 8.dp)
-      .then(if (disabled) Modifier else Modifier.clickable(onClick = onSelected))
+      .clickable(enabled = !disabled, onClick = onSelected)
       .padding(horizontal = DEFAULT_PADDING, vertical = 4.dp),
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      image()
-      TextIconSpaced(false)
-      Text(title, modifier = Modifier.align(Alignment.CenterVertically))
-      if (onInfo != null) {
-        Spacer(Modifier.padding(6.dp))
-        Column(Modifier
-          .size(48.dp)
-          .clip(CircleShape)
-          .clickable(
-            enabled = !disabled,
-            onClick = { ModalManager.start.showModal { IncognitoView() } }
-          ),
-          horizontalAlignment = Alignment.CenterHorizontally,
-          verticalArrangement = Arrangement.Center
-        ) {
-          Icon(
-            painterResource(MR.images.ic_info),
-            stringResource(MR.strings.incognito),
-            tint = MaterialTheme.colors.primary
-          )
-        }
+    image()
+    TextIconSpaced(false)
+    Text(title, modifier = Modifier.align(Alignment.CenterVertically))
+    if (onInfo != null) {
+      Spacer(Modifier.padding(6.dp))
+      Column(Modifier
+        .size(48.dp)
+        .clip(CircleShape)
+        .clickable(
+          enabled = !disabled,
+          onClick = { ModalManager.start.showModal { IncognitoView() } }
+        ),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+      ) {
+        Icon(
+          painterResource(MR.images.ic_info),
+          stringResource(MR.strings.incognito),
+          tint = MaterialTheme.colors.primary
+        )
       }
     }
+    Spacer(Modifier.weight(1f))
     if (selected) {
-      Icon(painterResource(
-        MR.images.ic_check),
+      Icon(
+        painterResource(
+          MR.images.ic_check
+        ),
         title,
         Modifier.size(20.dp),
-        tint =  MaterialTheme.colors.primary,
+        tint = MaterialTheme.colors.primary,
       )
     }
   }
@@ -399,15 +400,7 @@ private fun ActiveProfilePicker(
     Column(
       Modifier
         .fillMaxSize()
-        .then(
-          if (progressByTimeout) {
-            Modifier
-              .alpha(0.6f)
-          } else {
-            Modifier
-          }
-        )
-
+        .alpha(if (progressByTimeout) 0.6f else 1f)
     ) {
       LazyColumnWithScrollBar(userScrollEnabled = !switchingProfile.value) {
         item {
@@ -472,11 +465,9 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
     }
   }
 
-  val currentUser by remember(chatModel.currentUser.value) {
-    derivedStateOf { chatModel.currentUser.value }
-  }
+  val currentUser by remember { chatModel.currentUser }
 
-  currentUser?.let {
+  currentUser?.let { user ->
     SectionView(stringResource(MR.strings.new_chat_share_profile).uppercase(), headerBottomPadding = 5.dp) {
       SectionItemView(
         padding = PaddingValues(
@@ -514,11 +505,11 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
           )
           Spacer(Modifier.width(2.dp))
         } else {
-          ProfileImage(size = 42.dp, image = it.image)
+          ProfileImage(size = 42.dp, image = user.image)
         }
         TextIconSpaced(false)
         Text(
-          text = if (incognito) stringResource(MR.strings.incognito) else it.chatViewName,
+          text = if (incognito) stringResource(MR.strings.incognito) else user.chatViewName,
           color = MaterialTheme.colors.onBackground
         )
         Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
