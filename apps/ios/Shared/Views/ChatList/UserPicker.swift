@@ -47,6 +47,7 @@ struct UserPicker: View {
                                 .resizable()
                                 .foregroundColor(theme.colors.secondary)
                                 .accentColor(theme.colors.secondary)
+                                .font(.system(size: 32, weight: .thin))
                                 .frame(width: 32, height: 32)
                                 .onTapGesture {
                                     showSettings = false
