@@ -5,9 +5,7 @@ import SectionSpacer
 import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -66,7 +64,7 @@ fun DatabaseErrorView(
       Modifier.padding(start = DEFAULT_PADDING, top = DEFAULT_PADDING, bottom = DEFAULT_PADDING),
       style = MaterialTheme.typography.h1
     )
-    SectionView(null, padding = PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF), content)
+    SectionView(null, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF), content = content)
   }
 
   @Composable

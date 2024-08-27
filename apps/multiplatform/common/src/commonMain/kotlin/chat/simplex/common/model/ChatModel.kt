@@ -784,7 +784,8 @@ object ChatModel {
 data class ShowingInvitation(
   val connId: String,
   val connReq: String,
-  val connChatUsed: Boolean
+  val connChatUsed: Boolean,
+  val conn: PendingContactConnection
 )
 
 enum class ChatType(val type: String) {
@@ -985,6 +986,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val fullName get() = contact.fullName
     override val image get() = contact.image
     override val localAlias: String get() = contact.localAlias
+    override fun anyNameContains(searchAnyCase: String): Boolean = contact.anyNameContains(searchAnyCase)
 
     companion object {
       val sampleData = Direct(Contact.sampleData)
@@ -1218,6 +1220,12 @@ data class Contact(
   val contactLink: String? = profile.contactLink
   override val localAlias get() = profile.localAlias
   val verified get() = activeConn?.connectionCode != null
+
+  override fun anyNameContains(searchAnyCase: String): Boolean {
+    val s = searchAnyCase.trim().lowercase()
+    return profile.chatViewName.lowercase().contains(s) || profile.displayName.lowercase().contains(s) || profile.fullName.lowercase().contains(s)
+  }
+
 
   val directOrUsed: Boolean get() =
     if (activeConn != null) {

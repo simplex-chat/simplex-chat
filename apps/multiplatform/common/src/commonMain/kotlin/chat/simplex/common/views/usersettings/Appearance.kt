@@ -53,7 +53,7 @@ expect fun AppearanceView(m: ChatModel)
 object AppearanceScope {
   @Composable
   fun ProfileImageSection() {
-    SectionView(stringResource(MR.strings.settings_section_title_profile_images).uppercase(), padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+    SectionView(stringResource(MR.strings.settings_section_title_profile_images).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
       val image = remember { chatModel.currentUser }.value?.image
       Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
         val size = 60
@@ -86,7 +86,7 @@ object AppearanceScope {
   @Composable
   fun FontScaleSection() {
     val localFontScale = remember { mutableStateOf(appPrefs.fontScale.get()) }
-    SectionView(stringResource(MR.strings.appearance_font_size).uppercase(), padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+    SectionView(stringResource(MR.strings.appearance_font_size).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
       Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(60.dp)
           .background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22))

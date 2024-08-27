@@ -717,8 +717,8 @@ struct ChatView: View {
 
         var revealed: Bool { chatItem == revealedChatItem }
 
-        typealias ItemSeparation = (timestamp: Bool, largeGap: Bool)
-        
+        typealias ItemSeparation = (timestamp: Bool, largeGap: Bool, date: Date?)
+
         func getItemSeparation(_ chatItem: ChatItem, at i: Int?) -> ItemSeparation {
             let im = ItemsModel.shared
             if let i, i > 0 && im.reversedChatItems.count >= i {
@@ -726,10 +726,11 @@ struct ChatView: View {
                 let largeGap = !nextItem.chatDir.sameDirection(chatItem.chatDir) || nextItem.meta.createdAt.timeIntervalSince(chatItem.meta.createdAt) > 60
                 return (
                     timestamp: largeGap || formatTimestampText(chatItem.meta.createdAt) != formatTimestampText(nextItem.meta.createdAt),
-                    largeGap: largeGap
+                    largeGap: largeGap,
+                    date: Calendar.current.isDate(chatItem.meta.createdAt, inSameDayAs: nextItem.meta.createdAt) ? nil : nextItem.meta.createdAt
                 )
             } else {
-                return (timestamp: true, largeGap: true)
+                return (timestamp: true, largeGap: true, date: nil)
             }
         }
 
@@ -760,7 +761,20 @@ struct ChatView: View {
                         }
                     }
                 } else {
-                    chatItemView(chatItem, range, prevItem, timeSeparation)
+                    VStack(spacing: 0) {
+                        chatItemView(chatItem, range, prevItem, timeSeparation)
+                        if let date = timeSeparation.date {
+                            Text(String.localizedStringWithFormat(
+                                NSLocalizedString("%@, %@", comment: "format for date separator in chat"),
+                                date.formatted(.dateTime.weekday(.abbreviated)),
+                                date.formatted(.dateTime.day().month(.abbreviated))
+                            ))
+                            .font(.callout)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.secondary)
+                            .padding(8)
+                        }
+                    }
                     .overlay {
                         if let selected = selectedChatItems, chatItem.canBeDeletedForSelf {
                             Color.clear
@@ -834,14 +848,14 @@ struct ChatView: View {
                                 .foregroundStyle(.secondary)
                                 .lineLimit(2)
                                 .padding(.leading, memberImageSize + 14 + (selectedChatItems != nil && ci.canBeDeletedForSelf ? 12 + 24 : 0))
-                                .padding(.top, 7)
+                                .padding(.top, 3) // this is in addition to message sequence gap
                         }
                         HStack(alignment: .center, spacing: 0) {
                             if selectedChatItems != nil && ci.canBeDeletedForSelf {
                                 SelectedChatItem(ciId: ci.id, selectedChatItems: $selectedChatItems)
                                     .padding(.trailing, 12)
                             }
-                            HStack(alignment: .top, spacing: 8) {
+                            HStack(alignment: .top, spacing: 10) {
                                 MemberProfileImage(member, size: memberImageSize, backgroundColor: theme.colors.background)
                                     .onTapGesture {
                                         if let member =  m.getGroupMember(member.groupMemberId) {
@@ -869,7 +883,7 @@ struct ChatView: View {
                         }
                         chatItemWithMenu(ci, range, maxWidth, itemSeparation)
                             .padding(.trailing)
-                            .padding(.leading, memberImageSize + 8 + 12)
+                            .padding(.leading, 10 + memberImageSize + 12)
                     }
                     .padding(.bottom, bottomPadding)
                 }
@@ -913,7 +927,7 @@ struct ChatView: View {
                     allowMenu: $allowMenu
                 )
                 .environment(\.showTimestamp, itemSeparation.timestamp)
-                .modifier(ChatItemClipped(ci))
+                .modifier(ChatItemClipped(ci, tailVisible: itemSeparation.largeGap))
                 .contextMenu { menu(ci, range, live: composeState.liveMessage != nil) }
                 .accessibilityLabel("")
                 if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {
