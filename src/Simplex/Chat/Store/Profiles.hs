@@ -577,8 +577,8 @@ getCalls db =
         ORDER BY call_ts ASC
       |]
   where
-    toCall :: (ContactId, CallId, String, ChatItemId, CallState, UTCTime) -> Call
-    toCall (contactId, callId, callUUID, chatItemId, callState, callTs) = Call {callUUID, contactId, callId, chatItemId, callState, callTs}
+    toCall :: (ContactId, CallId, Text, ChatItemId, CallState, UTCTime) -> Call
+    toCall (contactId, callId, callUUID, chatItemId, callState, callTs) = Call {contactId, callId, callUUID, chatItemId, callState, callTs}
 
 createCommand :: DB.Connection -> User -> Maybe Int64 -> CommandFunction -> IO CommandId
 createCommand db User {userId} connId commandFunction = do

@@ -29,7 +29,7 @@ import Simplex.Messaging.Util (decodeJSON, encodeJSON)
 data Call = Call
   { contactId :: ContactId,
     callId :: CallId,
-    callUUID :: String,
+    callUUID :: Text,
     chatItemId :: Int64,
     callState :: CallState,
     callTs :: UTCTime
@@ -108,11 +108,11 @@ instance FromField CallId where fromField f = CallId <$> fromField f
 instance ToField CallId where toField (CallId m) = toField m
 
 data RcvCallInvitation = RcvCallInvitation
-  { callUUID :: String,
-    user :: User,
+  { user :: User,
     contact :: Contact,
     callType :: CallType,
     sharedKey :: Maybe C.Key,
+    callUUID :: Text,
     callTs :: UTCTime
   }
   deriving (Show)

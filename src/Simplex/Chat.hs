@@ -1265,7 +1265,7 @@ processChatCommand' vr = \case
         withContactLock "sendCallInvitation" contactId $ do
           g <- asks random
           callId <- atomically $ CallId <$> C.randomBytes 16 g
-          callUUID <- UUID.toString <$> liftIO V4.nextRandom
+          callUUID <- UUID.toText <$> liftIO V4.nextRandom
           dhKeyPair <- atomically $ if encryptedCall callType then Just <$> C.generateKeyPair g else pure Nothing
           let invitation = CallInvitation {callType, callDhPubKey = fst <$> dhKeyPair}
               callState = CallInvitationSent {localCallType = callType, localDhPrivKey = snd <$> dhKeyPair}
@@ -1342,12 +1342,12 @@ processChatCommand' vr = \case
     pure $ CRCallInvitations rcvCallInvitations
     where
       callInvitation Call {contactId, callUUID, callState, callTs} = case callState of
-        CallInvitationReceived {peerCallType, sharedKey} -> Just (callUUID, contactId, callTs, peerCallType, sharedKey)
+        CallInvitationReceived {peerCallType, sharedKey} -> Just (contactId, callUUID, callTs, peerCallType, sharedKey)
         _ -> Nothing
-      rcvCallInvitation (callUUID, contactId, callTs, peerCallType, sharedKey) = runExceptT . withFastStore $ \db -> do
+      rcvCallInvitation (contactId, callUUID, callTs, peerCallType, sharedKey) = runExceptT . withFastStore $ \db -> do
         user <- getUserByContactId db contactId
         contact <- getContact db vr user contactId
-        pure RcvCallInvitation {callUUID, user, contact, callType = peerCallType, sharedKey, callTs}
+        pure RcvCallInvitation {user, contact, callType = peerCallType, sharedKey, callUUID, callTs}
   APIGetNetworkStatuses -> withUser $ \_ ->
     CRNetworkStatuses Nothing . map (uncurry ConnNetworkStatus) . M.toList <$> chatReadVar connNetworkStatuses
   APICallStatus contactId receivedStatus ->
@@ -5958,7 +5958,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           g <- asks random
           dhKeyPair <- atomically $ if encryptedCall callType then Just <$> C.generateKeyPair g else pure Nothing
           ci <- saveCallItem CISCallPending
-          callUUID <- UUID.toString <$> liftIO V4.nextRandom
+          callUUID <- UUID.toText <$> liftIO V4.nextRandom
           let sharedKey = C.Key . C.dhBytes' <$> (C.dh' <$> callDhPubKey <*> (snd <$> dhKeyPair))
               callState = CallInvitationReceived {peerCallType = callType, localDhPubKey = fst <$> dhKeyPair, sharedKey}
               call' = Call {contactId, callId, callUUID, chatItemId = chatItemId' ci, callState, callTs = chatItemTs' ci}
@@ -5969,7 +5969,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           withStore' $ \db -> createCall db user call' $ chatItemTs' ci
           call_ <- atomically (TM.lookupInsert contactId call' calls)
           forM_ call_ $ \call -> updateCallItemStatus user ct call WCSDisconnected Nothing
-          toView $ CRCallInvitation RcvCallInvitation {callUUID, user, contact = ct, callType, sharedKey, callTs = chatItemTs' ci}
+          toView $ CRCallInvitation RcvCallInvitation {user, contact = ct, callType, sharedKey, callUUID, callTs = chatItemTs' ci}
           toView $ CRNewChatItem user $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
         else featureRejected CFCalls
       where
