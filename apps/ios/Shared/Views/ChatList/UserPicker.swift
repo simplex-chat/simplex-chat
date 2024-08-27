@@ -82,7 +82,9 @@ struct UserPicker: View {
                     userPickerVisible.toggle()
                 }
                 
-                Divider().padding(.vertical, verticalSpaceDefault)
+                Divider()
+                    .padding(.vertical, verticalSpaceDefault)
+                    .padding(.horizontal, 16)
                 
                 menuButton("Settings", icon: "gearshape") {
                     showSettings = true
