@@ -95,27 +95,27 @@ struct ChatItemShape: Shape {
         case let .bubble(padding, isTailVisible):
             let w = rect.width
             let h = rect.height
-            let rhMax = min(msgBubbleMaxRadius, w / 2)
-            let rvMax = min(msgBubbleMaxRadius, h / 2)
-            let rh = roundness * rhMax
-            let rv = roundness * rvMax
+            let rxMax = min(msgBubbleMaxRadius, w / 2)
+            let ryMax = min(msgBubbleMaxRadius, h / 2)
+            let rx = roundness * rxMax
+            let ry = roundness * ryMax
             let tailHeight = min(msgTailHeight, h / 2)
 //            let tailHeight = h - (Self.tailSize + (rMax - Self.tailSize) * roundness)
             var path = Path()
             // top side
-            path.move(to: CGPoint(x: rh, y: 0))
-            path.addLine(to: CGPoint(x: w - rh, y: 0))
+            path.move(to: CGPoint(x: rx, y: 0))
+            path.addLine(to: CGPoint(x: w - rx, y: 0))
             if roundness > 0 {
                 // top-right corner
-                path.addQuadCurve(to: CGPoint(x: w, y: rv), control: CGPoint(x: w, y: 0))
+                path.addQuadCurve(to: CGPoint(x: w, y: ry), control: CGPoint(x: w, y: 0))
             }
-            if rect.height > 2 * rv {
+            if rect.height > 2 * ry {
                 // right side
-                path.addLine(to: CGPoint(x: w, y: h - rv))
+                path.addLine(to: CGPoint(x: w, y: h - ry))
             }
             if roundness > 0 {
                 // bottom-right corner
-                path.addQuadCurve(to: CGPoint(x: w - rh, y: h), control: CGPoint(x: w, y: h))
+                path.addQuadCurve(to: CGPoint(x: w - rx, y: h), control: CGPoint(x: w, y: h))
             }
             // bottom side
 //            path.addLine(to: CGPoint(x: rh, y: h)) // no tail
@@ -132,13 +132,13 @@ struct ChatItemShape: Shape {
             } else {
                 path.addLine(to: CGPoint(x: 0, y: h - tailHeight))
             }
-            if rect.height > 2 * rv {
+            if rect.height > 2 * ry {
                 // left side
-                path.addLine(to: CGPoint(x: 0, y: rv))
+                path.addLine(to: CGPoint(x: 0, y: ry))
             }
             if roundness > 0 {
                 // top-left corner
-                path.addQuadCurve(to: CGPoint(x: rh, y: 0), control: CGPoint(x: 0, y: 0))
+                path.addQuadCurve(to: CGPoint(x: rx, y: 0), control: CGPoint(x: 0, y: 0))
             }
             path.closeSubpath()
             return switch padding {
