@@ -181,10 +181,10 @@ struct AppearanceSettings: View {
                     }
                 }
 
-                Section(header: Text("Messages").foregroundColor(theme.colors.secondary)) {
+                Section(header: Text("Message shape").foregroundColor(theme.colors.secondary)) {
                     HStack {
-                        Text("Roundness")
-                        Slider(value: $chatItemRoundness, in: 0...1, step: 0.1)
+                        Text("Corner radius")
+                        Slider(value: $chatItemRoundness, in: 0...1, step: 0.125)
                     }
                     Toggle("Tail", isOn: $chatItemTail)
                 }

@@ -16,7 +16,7 @@ import SimpleXChat
 struct ChatItemClipped: ViewModifier {
     @AppStorage(DEFAULT_CHAT_ITEM_ROUNDNESS) private var roundness = defaultChatItemRoundness
     @AppStorage(DEFAULT_CHAT_ITEM_TAIL) private var tailEnabled = true
-    private let chatItem: ChatItem?
+    private let chatItem: (content: CIContent, chatDir: CIDirection)?
     private let tailVisible: Bool
 
     init() {
@@ -25,7 +25,7 @@ struct ChatItemClipped: ViewModifier {
     }
 
     init(_ ci: ChatItem, tailVisible: Bool) {
-        self.chatItem = ci
+        self.chatItem = (ci.content, ci.chatDir)
         self.tailVisible = tailVisible
     }
     
@@ -131,7 +131,7 @@ struct ChatItemShape: Shape {
                     // distance of control point from touch point, calculated via ratios
                     let d = tailHeight - msgTailWidth * msgTailWidth / tailHeight
                     // tail control point
-                    let tc = CGPoint(x: 0, y: h - tailHeight + d * roundness * roundness)
+                    let tc = CGPoint(x: 0, y: h - tailHeight + d * sqrt(roundness))
                     // bottom-left tail curve
                     path.addQuadCurve(to: CGPoint(x: 0, y: h - tailHeight), control: tc)
                 } else {
