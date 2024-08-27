@@ -19,6 +19,7 @@ struct UserPicker: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.scenePhase) var scenePhase
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.colorScheme) var colorScheme
     @Binding var showSettings: Bool
     @Binding var showConnectDesktop: Bool
     @Binding var userPickerVisible: Bool
@@ -82,6 +83,23 @@ struct UserPicker: View {
                 
                 menuButton("Settings", icon: "gearshape") {
                     showSettings = true
+                    userPickerVisible.toggle()
+                }
+                
+                menuButton("Help", icon: "questionmark.circle") {
+                    userPickerVisible.toggle()
+                }
+                
+                menuButton("Support", icon: "info.bubble") {
+                    userPickerVisible.toggle()
+                }
+                
+                menuButton(nil, icon: colorScheme == .light ? "sun.max" : "moon.stars") {
+                    if (colorScheme == .light) {
+                        ThemeManager.applyTheme(systemDarkThemeDefault.get())
+                    } else {
+                        ThemeManager.applyTheme(DefaultTheme.LIGHT.themeName)
+                    }
                     userPickerVisible.toggle()
                 }
             }
@@ -170,15 +188,17 @@ struct UserPicker: View {
     }
 
 
-    private func menuButton(_ title: LocalizedStringKey, icon: String, action: @escaping () -> Void) -> some View {
+    private func menuButton(_ title: LocalizedStringKey?, icon: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: verticalSpaceDefault) {
                 Image(systemName: icon)
                     .symbolRenderingMode(.monochrome)
                     .foregroundColor(theme.colors.secondary)
                     .frame(maxWidth: 20, maxHeight: 20)
-                Text(title)
-                    .overlay(DetermineWidth())
+                if let txt = title {
+                    Text(txt)
+                        .overlay(DetermineWidth())
+                }
                 Spacer()
             }
             .frame(height: 20)
