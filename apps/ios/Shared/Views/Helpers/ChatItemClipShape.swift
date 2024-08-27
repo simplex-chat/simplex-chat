@@ -84,9 +84,8 @@ struct ChatTailPadding: ViewModifier {
 private let msgRectMaxRadius: Double = 18
 private let msgBubbleMaxRadius: Double = msgRectMaxRadius * 1.2
 private let msgTailWidth: Double = 9
-private let msgTailSlope: Double = 1.732 // tangent(60deg)
-private let msgTailHeight: Double = msgTailWidth * msgTailSlope
-//private let msgTailBase: Double = sqrt(msgTailWidth * msgTailWidth + msgTailHeight * msgTailHeight)
+private let msgTailMinHeight: Double = msgTailWidth * 1.254 // ~56deg
+private let msgTailMaxHeight: Double = msgTailWidth * 1.732 // 60deg
 
 struct ChatItemShape: Shape {
     fileprivate enum Style {
@@ -106,7 +105,7 @@ struct ChatItemShape: Shape {
             let ryMax = min(msgBubbleMaxRadius, h / 2)
             let rx = roundness * rxMax
             let ry = roundness * ryMax
-            let tailHeight = min(msgTailHeight, h / 2)
+            let tailHeight = min(msgTailMinHeight + roundness * (msgTailMaxHeight - msgTailMinHeight), h / 2)
             var path = Path()
             // top side
             path.move(to: CGPoint(x: rx, y: 0))

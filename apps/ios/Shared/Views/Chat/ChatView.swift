@@ -764,15 +764,13 @@ struct ChatView: View {
                     VStack(spacing: 0) {
                         chatItemView(chatItem, range, prevItem, timeSeparation)
                         if let date = timeSeparation.date {
-                            Group {
-                                Text(date, format: .dateTime.weekday(.abbreviated))
-                                    .fontWeight(.semibold) +
-                                Text(", ")
-                                    .fontWeight(.semibold) +
-                                Text(date, format: .dateTime.day().month(.abbreviated))
-                                    .fontWeight(.semibold)
-                            }
-                            .font(.caption)
+                            Text(String.localizedStringWithFormat(
+                                NSLocalizedString("%@, %@", comment: "format for date separator in chat"),
+                                date.formatted(.dateTime.weekday(.abbreviated)),
+                                date.formatted(.dateTime.day().month(.abbreviated))
+                            ))
+                            .font(.callout)
+                            .fontWeight(.medium)
                             .foregroundStyle(.secondary)
                             .padding(8)
                         }
@@ -850,14 +848,14 @@ struct ChatView: View {
                                 .foregroundStyle(.secondary)
                                 .lineLimit(2)
                                 .padding(.leading, memberImageSize + 14 + (selectedChatItems != nil && ci.canBeDeletedForSelf ? 12 + 24 : 0))
-                                .padding(.top, 7)
+                                .padding(.top, 3) // this is in addition to message sequence gap
                         }
                         HStack(alignment: .center, spacing: 0) {
                             if selectedChatItems != nil && ci.canBeDeletedForSelf {
                                 SelectedChatItem(ciId: ci.id, selectedChatItems: $selectedChatItems)
                                     .padding(.trailing, 12)
                             }
-                            HStack(alignment: .top, spacing: 12) {
+                            HStack(alignment: .top, spacing: 10) {
                                 MemberProfileImage(member, size: memberImageSize, backgroundColor: theme.colors.background)
                                     .onTapGesture {
                                         if let member =  m.getGroupMember(member.groupMemberId) {
@@ -885,7 +883,7 @@ struct ChatView: View {
                         }
                         chatItemWithMenu(ci, range, maxWidth, itemSeparation)
                             .padding(.trailing)
-                            .padding(.leading, 12 + memberImageSize + 12)
+                            .padding(.leading, 10 + memberImageSize + 12)
                     }
                     .padding(.bottom, bottomPadding)
                 }
