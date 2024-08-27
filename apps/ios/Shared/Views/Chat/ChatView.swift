@@ -22,8 +22,8 @@ struct ChatView: View {
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.scenePhase) var scenePhase
     @State @ObservedObject var chat: Chat
-    @StateObject private var scrollModel = ReverseListScrollModel<ChatItem>()
-    @StateObject private var floatingButtonModel = FloatingButtonModel()
+    @StateObject private var scrollModel = ReverseListScrollModel()
+    @StateObject private var floatingButtonModel: FloatingButtonModel = .shared
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
@@ -464,9 +464,11 @@ struct ChatView: View {
             case chatItemsChanged
         }
 
+        static let shared = FloatingButtonModel()
+
         @Published var unreadChatItemCounts: UnreadChatItemCounts
 
-        private let events = PassthroughSubject<Event, Never>()
+        let visibleItems = PassthroughSubject<[String], Never>()
         private var bag = Set<AnyCancellable>()
 
         init() {
@@ -475,34 +477,41 @@ struct ChatView: View {
                 isReallyNearBottom: true,
                 unreadBelow: 0
             )
-            events
+            visibleItems
                 .receive(on: DispatchQueue.global(qos: .background))
-                .scan(Set<String>()) { itemsInView, event in
-                    var updated = itemsInView
-                    switch event {
-                    case let .appeared(viewId): updated.insert(viewId)
-                    case let .disappeared(viewId): updated.remove(viewId)
-                    case .chatItemsChanged: ()
-                    }
-                    return updated
-                }
-                .map { ChatModel.shared.unreadChatItemCounts(itemsInView: $0) }
+                .map { ChatModel.shared.unreadChatItemCounts(itemsInView: Set($0)) }
                 .removeDuplicates()
                 .throttle(for: .seconds(0.2), scheduler: DispatchQueue.main, latest: true)
                 .assign(to: \.unreadChatItemCounts, on: self)
                 .store(in: &bag)
+//            events
+//                .receive(on: DispatchQueue.global(qos: .background))
+//                .scan(Set<String>()) { itemsInView, event in
+//                    var updated = itemsInView
+//                    switch event {
+//                    case let .appeared(viewId): updated.insert(viewId)
+//                    case let .disappeared(viewId): updated.remove(viewId)
+//                    case .chatItemsChanged: ()
+//                    }
+//                    return updated
+//                }
+//                .map { ChatModel.shared.unreadChatItemCounts(itemsInView: $0) }
+//                .removeDuplicates()
+//                .throttle(for: .seconds(0.2), scheduler: DispatchQueue.main, latest: true)
+//                .assign(to: \.unreadChatItemCounts, on: self)
+//                .store(in: &bag)
         }
 
         func appeared(viewId: String) {
-            events.send(.appeared(viewId))
+//            events.send(.appeared(viewId))
         }
 
         func disappeared(viewId: String) {
-            events.send(.disappeared(viewId))
+//            events.send(.disappeared(viewId))
         }
 
         func chatItemsChanged() {
-            events.send(.chatItemsChanged)
+//            events.send(.chatItemsChanged)
         }
     }
 
