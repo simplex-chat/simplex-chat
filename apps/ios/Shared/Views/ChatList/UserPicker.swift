@@ -106,7 +106,7 @@ struct UserPicker: View {
                         ThemeManager.applyTheme(DefaultTheme.LIGHT.themeName)
                     }
                     userPickerVisible.toggle()
-                }
+                }.padding(.bottom, 7)
             }
         }
         .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
