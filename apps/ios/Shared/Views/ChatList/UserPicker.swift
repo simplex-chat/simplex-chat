@@ -41,6 +41,7 @@ struct UserPicker: View {
                         .onTapGesture {
                             showSettings = false
                             activeSheet = .currentProfile
+                            userPickerVisible.toggle()
                         }
                     Spacer()
                     ForEach(usersToPreview) { u in
@@ -55,6 +56,7 @@ struct UserPicker: View {
                         .onTapGesture {
                             showSettings = false
                             activeSheet = .chatProfiles
+                            
                         }
                 }
                 .padding(.horizontal, 16)
