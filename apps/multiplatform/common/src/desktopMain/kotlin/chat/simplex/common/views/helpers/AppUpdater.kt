@@ -368,13 +368,15 @@ private suspend fun downloadAsset(asset: GitHubAsset) {
   }
 }
 
+private fun isRunningFromAppImage(): Boolean = System.getenv("APPIMAGE") != null
+
 private fun isRunningFromFlatpak(): Boolean = System.getenv("container") == "flatpak"
 
 private fun chooseGitHubReleaseAssets(release: GitHubRelease): List<GitHubAsset> {
   val res = if (isRunningFromFlatpak()) {
     // No need to show download options for Flatpak users
     emptyList()
-  } else if (Runtime.getRuntime().exec("which dpkg").onExit().join().exitValue() == 0) {
+  } else if (!isRunningFromAppImage() && Runtime.getRuntime().exec("which dpkg").onExit().join().exitValue() == 0) {
     // Show all available .deb packages and user will choose the one that works on his system (for Debian derivatives)
     release.assets.filter { it.name.lowercase().endsWith(".deb") }
   } else {
