@@ -9,8 +9,8 @@ import SimpleXChat
 struct UserProfilesView: View {
     @EnvironmentObject private var m: ChatModel
     @EnvironmentObject private var theme: AppTheme
-    @Binding var showSettings: Bool
     @Environment(\.editMode) private var editMode
+    @Environment(\.dismiss) var dismiss: DismissAction
     @AppStorage(DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE) private var showHiddenProfilesNotice = true
     @AppStorage(DEFAULT_SHOW_MUTE_PROFILE_ALERT) private var showMuteProfileAlert = true
     @State private var showDeleteConfirmation = false
@@ -285,7 +285,7 @@ struct UserProfilesView: View {
                     await MainActor.run {
                         onboardingStageDefault.set(.step1_SimpleXInfo)
                         m.onboardingStage = .step1_SimpleXInfo
-                        showSettings = false
+                        dismiss()
                     }
                 }
             } else {
@@ -415,6 +415,6 @@ public func correctPassword(_ user: User, _ pwd: String) -> Bool {
 
 struct UserProfilesView_Previews: PreviewProvider {
     static var previews: some View {
-        UserProfilesView(showSettings: Binding.constant(true))
+        UserProfilesView()
     }
 }

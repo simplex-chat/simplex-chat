@@ -166,7 +166,7 @@ struct UserPicker: View {
                 NavigationView {
                     switch sheet {
                     case .chatProfiles:
-                        UserProfilesView(showSettings: $showSettings)
+                        UserProfilesView()
                     case .currentProfile:
                         UserProfile()
                             .navigationTitle("Your current profile")
