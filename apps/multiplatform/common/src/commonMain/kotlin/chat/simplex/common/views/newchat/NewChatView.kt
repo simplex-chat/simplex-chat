@@ -219,9 +219,9 @@ private fun ProfilePickerOption(
   Row(
     Modifier
       .fillMaxWidth()
-      .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
+      .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 8.dp)
       .then(if (disabled) Modifier else Modifier.clickable(onClick = onSelected))
-      .padding(horizontal = DEFAULT_PADDING),
+      .padding(horizontal = DEFAULT_PADDING, vertical = 4.dp),
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
@@ -261,9 +261,7 @@ private fun ProfilePickerOption(
   Divider(
     Modifier.padding(
       start = DEFAULT_PADDING_HALF,
-      top = 4.dp,
       end = DEFAULT_PADDING_HALF,
-      bottom = 4.dp
     )
   )
 }
