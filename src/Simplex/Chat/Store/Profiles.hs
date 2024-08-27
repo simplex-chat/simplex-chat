@@ -549,7 +549,7 @@ overwriteProtocolServers db User {userId} servers =
     protocol = decodeLatin1 $ strEncode $ protocolTypeI @p
 
 createCall :: DB.Connection -> User -> Call -> UTCTime -> IO ()
-createCall db user@User {userId} Call {contactId, callId, callUuid, chatItemId, callState} callTs = do
+createCall db user@User {userId} Call {contactId, callId, callUUID, chatItemId, callState} callTs = do
   currentTs <- getCurrentTime
   deleteCalls db user contactId
   DB.execute
@@ -559,7 +559,7 @@ createCall db user@User {userId} Call {contactId, callId, callUuid, chatItemId, 
         (contact_id, shared_call_id, call_uuid, chat_item_id, call_state, call_ts, user_id, created_at, updated_at)
       VALUES (?,?,?,?,?,?,?,?,?)
     |]
-    (contactId, callId, callUuid, chatItemId, callState, callTs, userId, currentTs, currentTs)
+    (contactId, callId, callUUID, chatItemId, callState, callTs, userId, currentTs, currentTs)
 
 deleteCalls :: DB.Connection -> User -> ContactId -> IO ()
 deleteCalls db User {userId} contactId = do
@@ -578,7 +578,7 @@ getCalls db =
       |]
   where
     toCall :: (ContactId, CallId, String, ChatItemId, CallState, UTCTime) -> Call
-    toCall (contactId, callId, callUuid, chatItemId, callState, callTs) = Call {callUuid, contactId, callId, chatItemId, callState, callTs}
+    toCall (contactId, callId, callUUID, chatItemId, callState, callTs) = Call {callUUID, contactId, callId, chatItemId, callState, callTs}
 
 createCommand :: DB.Connection -> User -> Maybe Int64 -> CommandFunction -> IO CommandId
 createCommand db User {userId} connId commandFunction = do

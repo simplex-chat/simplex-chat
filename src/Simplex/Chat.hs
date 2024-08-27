@@ -55,8 +55,8 @@ import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDay, nominalDiffTimeToSeconds)
 import Data.Time.Clock.System (systemToUTCTime)
 import Data.Word (Word32)
-import Data.UUID (toString)
-import Data.UUID.V4 (nextRandom)
+import qualified Data.UUID as UUID
+import qualified Data.UUID.V4 as V4
 import qualified Database.SQLite.Simple as SQL
 import Simplex.Chat.Archive
 import Simplex.Chat.Call
@@ -1265,13 +1265,13 @@ processChatCommand' vr = \case
         withContactLock "sendCallInvitation" contactId $ do
           g <- asks random
           callId <- atomically $ CallId <$> C.randomBytes 16 g
-          callUuid <- atomically $ Data.UUID.toString <$> Data.UUID.V4.nextRandom
+          callUUID <- UUID.toString <$> liftIO V4.nextRandom
           dhKeyPair <- atomically $ if encryptedCall callType then Just <$> C.generateKeyPair g else pure Nothing
           let invitation = CallInvitation {callType, callDhPubKey = fst <$> dhKeyPair}
               callState = CallInvitationSent {localCallType = callType, localDhPrivKey = snd <$> dhKeyPair}
           (msg, _) <- sendDirectContactMessage user ct (XCallInv callId invitation)
           ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndCall CISCallPending 0)
-          let call' = Call {contactId, callId, callUuid, chatItemId = chatItemId' ci, callState, callTs = chatItemTs' ci}
+          let call' = Call {contactId, callId, callUUID, chatItemId = chatItemId' ci, callState, callTs = chatItemTs' ci}
           call_ <- atomically $ TM.lookupInsert contactId call' calls
           forM_ call_ $ \call -> updateCallItemStatus user ct call WCSDisconnected Nothing
           toView $ CRNewChatItem user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
@@ -1341,13 +1341,13 @@ processChatCommand' vr = \case
     rcvCallInvitations <- rights <$> mapM rcvCallInvitation invs
     pure $ CRCallInvitations rcvCallInvitations
     where
-      callInvitation Call {contactId, callUuid, callState, callTs} = case callState of
-        CallInvitationReceived {peerCallType, sharedKey} -> Just (id, contactId, callTs, peerCallType, sharedKey)
+      callInvitation Call {contactId, callUUID, callState, callTs} = case callState of
+        CallInvitationReceived {peerCallType, sharedKey} -> Just (callUUID, contactId, callTs, peerCallType, sharedKey)
         _ -> Nothing
-      rcvCallInvitation (callUuid, contactId, callTs, peerCallType, sharedKey) = runExceptT . withFastStore $ \db -> do
+      rcvCallInvitation (callUUID, contactId, callTs, peerCallType, sharedKey) = runExceptT . withFastStore $ \db -> do
         user <- getUserByContactId db contactId
         contact <- getContact db vr user contactId
-        pure RcvCallInvitation {callUuid, user, contact, callType = peerCallType, sharedKey, callTs}
+        pure RcvCallInvitation {callUUID, user, contact, callType = peerCallType, sharedKey, callTs}
   APIGetNetworkStatuses -> withUser $ \_ ->
     CRNetworkStatuses Nothing . map (uncurry ConnNetworkStatus) . M.toList <$> chatReadVar connNetworkStatuses
   APICallStatus contactId receivedStatus ->
@@ -5958,10 +5958,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           g <- asks random
           dhKeyPair <- atomically $ if encryptedCall callType then Just <$> C.generateKeyPair g else pure Nothing
           ci <- saveCallItem CISCallPending
+          callUUID <- UUID.toString <$> liftIO V4.nextRandom
           let sharedKey = C.Key . C.dhBytes' <$> (C.dh' <$> callDhPubKey <*> (snd <$> dhKeyPair))
               callState = CallInvitationReceived {peerCallType = callType, localDhPubKey = fst <$> dhKeyPair, sharedKey}
-              callUuid = Data.UUID.toString <$> Data.UUID.V4.nextRandom
-              call' = Call {contactId, callId, callUuid, chatItemId = chatItemId' ci, callState, callTs = chatItemTs' ci}
+              call' = Call {contactId, callId, callUUID, chatItemId = chatItemId' ci, callState, callTs = chatItemTs' ci}
           calls <- asks currentCalls
           -- theoretically, the new call invitation for the current contact can mark the in-progress call as ended
           -- (and replace it in ChatController)
@@ -5969,7 +5969,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           withStore' $ \db -> createCall db user call' $ chatItemTs' ci
           call_ <- atomically (TM.lookupInsert contactId call' calls)
           forM_ call_ $ \call -> updateCallItemStatus user ct call WCSDisconnected Nothing
-          toView $ CRCallInvitation RcvCallInvitation {callUuid, user, contact = ct, callType, sharedKey, callTs = chatItemTs' ci}
+          toView $ CRCallInvitation RcvCallInvitation {callUUID, user, contact = ct, callType, sharedKey, callTs = chatItemTs' ci}
           toView $ CRNewChatItem user $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
         else featureRejected CFCalls
       where
