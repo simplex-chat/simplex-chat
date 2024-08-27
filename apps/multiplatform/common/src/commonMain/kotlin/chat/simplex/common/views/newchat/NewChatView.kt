@@ -321,35 +321,35 @@ private fun ActiveProfilePicker(
       onSelected = {
         switchingProfile.value = true
         withApi {
-          if (contactConnection != null) {
-            val conn = controller.apiChangeConnectionUser(rhId, contactConnection.pccConnId, user.userId)
-            if (conn != null) {
-              withChats {
-                updateContactConnection(rhId, conn)
-                updateShownConnection(conn)
-              }
-              controller.changeActiveUser_(
-                rhId = user.remoteHostId,
-                toUserId = user.userId,
-                viewPwd = if (user.hidden) searchTextOrPassword.value else null
-              )
-
-              if (chatModel.currentUser.value?.userId != user.userId) {
-                AlertManager.shared.showAlertMsg(generalGetString(
-                  MR.strings.switching_profile_error_title),
-                  String.format(generalGetString(MR.strings.switching_profile_error_message), user.chatViewName)
+          try {
+            if (contactConnection != null) {
+              val conn = controller.apiChangeConnectionUser(rhId, contactConnection.pccConnId, user.userId)
+              if (conn != null) {
+                withChats {
+                  updateContactConnection(rhId, conn)
+                  updateShownConnection(conn)
+                }
+                controller.changeActiveUser_(
+                  rhId = user.remoteHostId,
+                  toUserId = user.userId,
+                  viewPwd = if (user.hidden) searchTextOrPassword.value else null
                 )
-              }
 
-              withChats {
-                updateContactConnection(user.remoteHostId, conn)
+                if (chatModel.currentUser.value?.userId != user.userId) {
+                  AlertManager.shared.showAlertMsg(generalGetString(
+                    MR.strings.switching_profile_error_title),
+                    String.format(generalGetString(MR.strings.switching_profile_error_message), user.chatViewName)
+                  )
+                }
+
+                withChats {
+                  updateContactConnection(user.remoteHostId, conn)
+                }
+                close.invoke()
               }
-              switchingProfile.value = false
-              close.invoke()
             }
-            else {
-              switchingProfile.value = false
-            }
+          } finally {
+            switchingProfile.value = false
           }
         }
       },
@@ -367,17 +367,20 @@ private fun ActiveProfilePicker(
         if (!incognito) {
           switchingProfile.value = true
           withApi {
-            if (contactConnection != null) {
-              val conn = controller.apiSetConnectionIncognito(rhId, contactConnection.pccConnId, true)
-              switchingProfile.value = false
+            try {
+              if (contactConnection != null) {
+                val conn = controller.apiSetConnectionIncognito(rhId, contactConnection.pccConnId, true)
 
-              if (conn != null) {
-                withChats {
-                  updateContactConnection(rhId, conn)
-                  updateShownConnection(conn)
+                if (conn != null) {
+                  withChats {
+                    updateContactConnection(rhId, conn)
+                    updateShownConnection(conn)
+                  }
+                  close.invoke()
                 }
-                close.invoke()
               }
+            } finally {
+              switchingProfile.value = false
             }
           }
         }
