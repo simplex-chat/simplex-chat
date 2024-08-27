@@ -55,11 +55,14 @@ struct UserPicker: View {
                                     activeSheet = .chatProfiles
                                 }
                     }
+                    .padding(.horizontal, 16)
                     .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                    
                     Text(currentUser.displayName)
                         .fontWeight(.bold)
                         .font(.title2)
                         .padding(.vertical, verticalSpaceDefault)
+                        .padding(.horizontal, 16)
                         .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                 }
                 menuButton("Your SimpleX address", icon: "qrcode") {
@@ -103,7 +106,6 @@ struct UserPicker: View {
                     userPickerVisible.toggle()
                 }
             }
-            .padding(16)
         }
         .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
         .background(
@@ -203,6 +205,7 @@ struct UserPicker: View {
             }
             .frame(height: 20)
             .padding(.vertical, verticalSpaceDefault)
+            .padding(.horizontal, 16)
         }
         .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
         .buttonStyle(PressedButtonStyle(defaultColor: theme.colors.surface, pressedColor: Color(uiColor: .secondarySystemFill)))
