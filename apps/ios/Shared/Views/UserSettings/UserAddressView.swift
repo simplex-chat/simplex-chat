@@ -12,6 +12,7 @@ import SimpleXChat
 
 struct UserAddressView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
+    @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject private var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @State var viaCreateLinkView = false
@@ -48,20 +49,18 @@ struct UserAddressView: View {
                 userAddressScrollView()
             } else {
                 userAddressScrollView()
-                    .modifier(BackButton(disabled: Binding.constant(false)) {
-                        if savedAAS == aas {
-                            dismiss()
-                        } else {
-                            keyboardVisible = false
-                            showSaveDialogue = true
+                    .onDisappear {
+                        if (savedAAS != aas) {
+                            AlertManager.shared.showAlert(
+                                Alert(
+                                    title: Text("Save settings?"),
+                                    primaryButton: .default(Text("Save auto-accept settings")) {
+                                        saveAAS()
+                                    },
+                                    secondaryButton: .destructive(Text("Exit without saving"))
+                                )
+                            )
                         }
-                    })
-                    .confirmationDialog("Save settings?", isPresented: $showSaveDialogue) {
-                        Button("Save auto-accept settings") {
-                            saveAAS()
-                            dismiss()
-                        }
-                        Button("Exit without saving") { dismiss() }
                     }
             }
             if progressIndicator {
