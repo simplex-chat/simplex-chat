@@ -710,7 +710,8 @@ struct ChatView: View {
         @State private var showChatItemInfoSheet: Bool = false
         @State private var chatItemInfo: ChatItemInfo?
         @State private var showForwardingSheet: Bool = false
-
+        @State private var msgWidth: CGFloat = 0
+        
         @Binding var selectedChatItems: Set<Int64>?
 
         @State private var allowMenu: Bool = true
@@ -838,15 +839,27 @@ struct ChatView: View {
                 if prevItem == nil || showMemberImage(member, prevItem) || prevMember != nil {
                     VStack(alignment: .leading, spacing: 4) {
                         if ci.content.showMemberName {
-                            let t = if memCount == 1 && member.memberRole > .member {
-                                Text(member.memberRole.text + " ").fontWeight(.semibold) + Text(member.displayName)
-                            } else {
-                                Text(memberNames(member, prevMember, memCount))
+                            Group {
+                                if memCount == 1 && member.memberRole > .member {
+                                    HStack {
+                                        Text(member.chatViewName)
+                                            .lineLimit(1)
+                                            .layoutPriority(1)
+                                        Spacer()
+                                        Text(member.memberRole.text)
+                                            .fontWeight(.semibold)
+                                            .lineLimit(1)
+                                            .padding(.trailing, 8)
+                                            .layoutPriority(1)
+                                    }
+                                    .frame(maxWidth: msgWidth)
+                                } else {
+                                    Text(memberNames(member, prevMember, memCount))
+                                        .lineLimit(2)
+                                }
                             }
-                            t
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
-                                .lineLimit(2)
                                 .padding(.leading, memberImageSize + 14 + (selectedChatItems != nil && ci.canBeDeletedForSelf ? 12 + 24 : 0))
                                 .padding(.top, 3) // this is in addition to message sequence gap
                         }
@@ -869,6 +882,7 @@ struct ChatView: View {
                                         }
                                     }
                                 chatItemWithMenu(ci, range, maxWidth, itemSeparation)
+                                    .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
                             }
                         }
                     }
