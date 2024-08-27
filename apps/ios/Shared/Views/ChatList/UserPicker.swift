@@ -105,7 +105,9 @@ struct UserPicker: View {
                     } else {
                         ThemeManager.applyTheme(DefaultTheme.LIGHT.themeName)
                     }
-                    userPickerVisible.toggle()
+                    withAnimation {
+                        userPickerVisible.toggle()
+                    }
                 }.padding(.bottom, 7)
             }
         }
