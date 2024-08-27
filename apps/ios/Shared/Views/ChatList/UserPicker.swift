@@ -94,16 +94,7 @@ struct UserPicker: View {
                 menuButton("Settings", icon: "gearshape") {
                     showSettings = true
                     userPickerVisible.toggle()
-                }
-                
-                menuButton("Help", icon: "questionmark.circle") {
-                    userPickerVisible.toggle()
-                }
-                
-                menuButton("Support", icon: "info.bubble") {
-                    userPickerVisible.toggle()
-                }
-                
+                }                
                 menuButton(nil, icon: colorScheme == .light ? "sun.max" : "moon.stars") {
                     if (colorScheme == .light) {
                         ThemeManager.applyTheme(systemDarkThemeDefault.get())
