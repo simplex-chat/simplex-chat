@@ -115,6 +115,7 @@ fun PreviewIncomingCallAlertLayout() {
         contact = Contact.sampleData,
         callType = CallType(media = CallMediaType.Audio, capabilities = CallCapabilities(encryption = false)),
         sharedKey = null,
+        callUUID = "",
         callTs = Clock.System.now()
       ),
       chatModel = ChatModel,

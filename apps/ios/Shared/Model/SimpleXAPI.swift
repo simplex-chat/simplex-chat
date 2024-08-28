@@ -2199,7 +2199,7 @@ func activateCall(_ callInvitation: RcvCallInvitation) {
     CallController.shared.reportNewIncomingCall(invitation: callInvitation) { error in
         if let error = error {
             DispatchQueue.main.async {
-                m.callInvitations[callInvitation.contact.id]?.callkitUUID = nil
+                m.callInvitations[callInvitation.contact.id]?.callUUID = nil
             }
             logger.error("reportNewIncomingCall error: \(error.localizedDescription)")
         } else {

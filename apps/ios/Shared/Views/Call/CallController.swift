@@ -51,7 +51,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
 
     func provider(_ provider: CXProvider, perform action: CXStartCallAction) {
         logger.debug("CallController.provider CXStartCallAction")
-        if callManager.startOutgoingCall(callUUID: action.callUUID) {
+        if callManager.startOutgoingCall(callUUID: action.callUUID.uuidString.lowercased()) {
             action.fulfill()
             provider.reportOutgoingCall(with: action.callUUID, startedConnectingAt: nil)
         } else {
@@ -61,7 +61,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
 
     func provider(_ provider: CXProvider, perform action: CXAnswerCallAction) {
         logger.debug("CallController.provider CXAnswerCallAction")
-        if callManager.answerIncomingCall(callUUID: action.callUUID) {
+        if callManager.answerIncomingCall(callUUID: action.callUUID.uuidString.lowercased()) {
             // WebRTC call should be in connected state to fulfill.
             // Otherwise no audio and mic working on lockscreen
             fulfillOnConnect = action
@@ -75,7 +75,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         // Should be nil here if connection was in connected state
         fulfillOnConnect?.fail()
         fulfillOnConnect = nil
-        callManager.endCall(callUUID: action.callUUID) { ok in
+        callManager.endCall(callUUID: action.callUUID.uuidString.lowercased()) { ok in
             if ok {
                 action.fulfill()
             } else {
@@ -86,7 +86,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     }
 
     func provider(_ provider: CXProvider, perform action: CXSetMutedCallAction) {
-        if callManager.enableMedia(media: .audio, enable: !action.isMuted, callUUID:  action.callUUID) {
+        if callManager.enableMedia(media: .audio, enable: !action.isMuted, callUUID:  action.callUUID.uuidString.lowercased()) {
             action.fulfill()
         } else {
             action.fail()
@@ -194,7 +194,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         if let contactId = payload.dictionaryPayload["contactId"] as? String,
            let invitation = m.callInvitations[contactId] {
             let update = self.cxCallUpdate(invitation: invitation)
-            if let uuid = invitation.callkitUUID {
+            if let callUUID = invitation.callUUID, let uuid = UUID(uuidString: callUUID) {
                 logger.debug("CallController: report pushkit call via CallKit")
                 let update = self.cxCallUpdate(invitation: invitation)
                 self.provider.reportNewIncomingCall(with: uuid, update: update) { error in
@@ -239,8 +239,8 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     }
 
     func reportNewIncomingCall(invitation: RcvCallInvitation, completion: @escaping (Error?) -> Void) {
-        logger.debug("CallController.reportNewIncomingCall, UUID=\(String(describing: invitation.callkitUUID))")
-        if CallController.useCallKit(), let uuid = invitation.callkitUUID {
+        logger.debug("CallController.reportNewIncomingCall, UUID=\(String(describing: invitation.callUUID))")
+        if CallController.useCallKit(), let callUUID = invitation.callUUID, let uuid = UUID(uuidString: callUUID) {
             if invitation.callTs.timeIntervalSinceNow >= -180 {
                 let update = cxCallUpdate(invitation: invitation)
                 provider.reportNewIncomingCall(with: uuid, update: update, completion: completion)
@@ -272,14 +272,14 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
 
     func reportOutgoingCall(call: Call, connectedAt dateConnected: Date?) {
         logger.debug("CallController: reporting outgoing call connected")
-        if CallController.useCallKit(), let uuid = call.callkitUUID {
+        if CallController.useCallKit(), let callUUID = call.callUUID, let uuid = UUID(uuidString: callUUID) {
             provider.reportOutgoingCall(with: uuid, connectedAt: dateConnected)
         }
     }
 
     func reportCallRemoteEnded(invitation: RcvCallInvitation) {
         logger.debug("CallController: reporting remote ended")
-        if CallController.useCallKit(), let uuid = invitation.callkitUUID {
+        if CallController.useCallKit(), let callUUID = invitation.callUUID, let uuid = UUID(uuidString: callUUID) {
             provider.reportCall(with: uuid, endedAt: nil, reason: .remoteEnded)
         } else if invitation.contact.id == activeCallInvitation?.contact.id {
             activeCallInvitation = nil
@@ -288,14 +288,17 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
 
     func reportCallRemoteEnded(call: Call) {
         logger.debug("CallController: reporting remote ended")
-        if CallController.useCallKit(), let uuid = call.callkitUUID {
+        if CallController.useCallKit(), let callUUID = call.callUUID, let uuid = UUID(uuidString: callUUID) {
             provider.reportCall(with: uuid, endedAt: nil, reason: .remoteEnded)
         }
     }
 
     func startCall(_ contact: Contact, _ media: CallMediaType) {
         logger.debug("CallController.startCall")
-        let uuid = callManager.newOutgoingCall(contact, media)
+        let callUUID = callManager.newOutgoingCall(contact, media)
+        guard let uuid = UUID(uuidString: callUUID) else {
+            return
+        }
         if CallController.useCallKit() {
             let handle = CXHandle(type: .generic, value: contact.id)
             let action = CXStartCallAction(call: uuid, handle: handle)
@@ -307,8 +310,8 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
                 update.localizedCallerName = contact.displayName
                 self.provider.reportCall(with: uuid, updated: update)
             }
-        } else if callManager.startOutgoingCall(callUUID: uuid) {
-            if callManager.startOutgoingCall(callUUID: uuid) {
+        } else if callManager.startOutgoingCall(callUUID: callUUID) {
+            if callManager.startOutgoingCall(callUUID: callUUID) {
                 logger.debug("CallController.startCall: call started")
             } else {
                 logger.error("CallController.startCall: no active call")
@@ -318,8 +321,8 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
 
     func answerCall(invitation: RcvCallInvitation) {
         logger.debug("CallController: answering a call")
-        if CallController.useCallKit(), let callUUID = invitation.callkitUUID {
-            requestTransaction(with: CXAnswerCallAction(call: callUUID))
+        if CallController.useCallKit(), let callUUID = invitation.callUUID, let uuid = UUID(uuidString: callUUID) {
+            requestTransaction(with: CXAnswerCallAction(call: uuid))
         } else {
             callManager.answerIncomingCall(invitation: invitation)
         }
@@ -328,10 +331,13 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         }
     }
 
-    func endCall(callUUID: UUID) {
-        logger.debug("CallController: ending the call with UUID \(callUUID.uuidString)")
+    func endCall(callUUID: String) {
+        let uuid = UUID(uuidString: callUUID)
+        logger.debug("CallController: ending the call with UUID \(callUUID)")
         if CallController.useCallKit() {
-            requestTransaction(with: CXEndCallAction(call: callUUID))
+            if let uuid {
+                requestTransaction(with: CXEndCallAction(call: uuid))
+            }
         } else {
             callManager.endCall(callUUID: callUUID) { ok in
                 if ok {
