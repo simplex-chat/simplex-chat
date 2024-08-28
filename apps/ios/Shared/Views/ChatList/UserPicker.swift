@@ -240,7 +240,7 @@ struct UserPicker: View {
             ZStack(alignment: .topTrailing) {
                 ProfileImage(imageStr: u.user.image, size: 32)
                 if (u.unreadCount > 0) {
-                    unreadCounter(u.unreadCount, color: user.showNtfs ? theme.colors.primary : theme.colors.secondary).offset(x: 8, y: -4)
+                    unreadCounter()
                 }
             }
         })
@@ -266,16 +266,12 @@ struct UserPicker: View {
         .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
         .buttonStyle(PressedButtonStyle(defaultColor: theme.colors.surface, pressedColor: Color(uiColor: .secondarySystemFill)))
     }
-}
-
-private func unreadCounter(_ unread: Int, color: Color) -> some View {
-    unreadCountText(unread)
-        .font(.caption)
-        .foregroundColor(.white)
-        .padding(.horizontal, 4)
-        .frame(minWidth: 18, minHeight: 18)
-        .background(color)
-        .cornerRadius(10)
+    
+    private func unreadCounter() -> some View {
+        Circle()
+            .frame(width: 12, height: 12)
+            .foregroundColor(theme.colors.primary)
+    }
 }
 
 struct UserPicker_Previews: PreviewProvider {
