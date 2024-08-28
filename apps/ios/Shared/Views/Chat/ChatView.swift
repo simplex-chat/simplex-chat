@@ -568,8 +568,8 @@ struct ChatView: View {
 
     private func endCallButton(_ call: Call) -> some View {
         Button {
-            if let uuid = call.callkitUUID {
-                CallController.shared.endCall(callUUID: uuid)
+            if CallController.useCallKit(), let callUUID = call.callUUID {
+                CallController.shared.endCall(callUUID: callUUID)
             } else {
                 CallController.shared.endCall(call: call) {}
             }

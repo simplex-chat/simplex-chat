@@ -185,7 +185,7 @@ struct ActiveCallView: View {
             case .ended:
                 closeCallView(client)
                 call.callState = .ended
-                if let uuid = call.callkitUUID {
+                if let uuid = call.callUUID {
                     CallController.shared.endCall(callUUID: uuid)
                 }
             case .ok:
@@ -382,7 +382,7 @@ struct ActiveCallOverlay: View {
     private func endCallButton() -> some View {
         let cc = CallController.shared
         return callButton("phone.down.fill", width: 60, height: 60) {
-            if let uuid = call.callkitUUID {
+            if let uuid = call.callUUID {
                 cc.endCall(callUUID: uuid)
             } else {
                 cc.endCall(call: call) {}
@@ -462,9 +462,9 @@ struct ActiveCallOverlay: View {
 struct ActiveCallOverlay_Previews: PreviewProvider {
     static var previews: some View {
         Group{
-            ActiveCallOverlay(call: Call(direction: .incoming, contact: Contact.sampleData, callkitUUID: UUID(), callState: .offerSent, localMedia: .video), client: WebRTCClient(Binding.constant(nil), { _ in }, Binding.constant(nil)))
+            ActiveCallOverlay(call: Call(direction: .incoming, contact: Contact.sampleData, callUUID: UUID().uuidString.lowercased(), callState: .offerSent, localMedia: .video), client: WebRTCClient(Binding.constant(nil), { _ in }, Binding.constant(nil)))
                 .background(.black)
-            ActiveCallOverlay(call: Call(direction: .incoming, contact: Contact.sampleData, callkitUUID: UUID(), callState: .offerSent, localMedia: .audio), client: WebRTCClient(Binding.constant(nil), { _ in }, Binding.constant(nil)))
+            ActiveCallOverlay(call: Call(direction: .incoming, contact: Contact.sampleData, callUUID: UUID().uuidString.lowercased(), callState: .offerSent, localMedia: .audio), client: WebRTCClient(Binding.constant(nil), { _ in }, Binding.constant(nil)))
                 .background(.black)
         }
     }
