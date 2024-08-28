@@ -132,7 +132,7 @@ struct UserPicker: View {
                                 Spacer()
                             }
                             .buttonStyle(PlainButtonStyle())
-                            VStack {
+                            Label {} icon: {
                                 Image(systemName: colorScheme == .light ? "sun.max" : "moon.stars")
                                     .symbolRenderingMode(.monochrome)
                                     .foregroundColor(theme.colors.secondary)
