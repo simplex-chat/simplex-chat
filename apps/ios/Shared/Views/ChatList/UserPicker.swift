@@ -120,6 +120,7 @@ struct UserPicker: View {
                                 Spacer()
                             } icon: {
                                 Image(systemName: "gearshape")
+                                    .resizable()
                                     .symbolRenderingMode(.monochrome)
                                     .foregroundColor(theme.colors.secondary)
                                     .frame(maxWidth: 20, maxHeight: 20)
@@ -135,6 +136,7 @@ struct UserPicker: View {
                             }
                             Label {} icon: {
                                 Image(systemName: colorScheme == .light ? "sun.max" : "moon.stars")
+                                    .resizable()
                                     .symbolRenderingMode(.monochrome)
                                     .foregroundColor(theme.colors.secondary)
                                     .frame(maxWidth: 20, maxHeight: 20)
@@ -150,6 +152,7 @@ struct UserPicker: View {
                                 ThemeManager.applyTheme(DefaultTheme.SYSTEM_THEME_NAME)
                             }
                         }
+                        .padding(.horizontal, -3)
                     }
                 }
             }
@@ -237,6 +240,7 @@ struct UserPicker: View {
             Text(title)
         } icon: {
             Image(systemName: image)
+                .resizable()
                 .symbolRenderingMode(.monochrome)
                 .foregroundColor(theme.colors.secondary)
                 .frame(maxWidth: 20, maxHeight: 20)
@@ -251,7 +255,7 @@ struct UserPicker: View {
                 setActive()
             }
         }
-        .padding(.leading, -16).padding(.vertical, -8).padding(.trailing, -32)
+        .padding(.leading, -19).padding(.vertical, -8).padding(.trailing, -32)
     }
     
     private func unreadCounter() -> some View {
