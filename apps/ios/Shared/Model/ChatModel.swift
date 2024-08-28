@@ -889,11 +889,11 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func unreadChatItemCounts(itemsInView: Set<String>) -> UnreadChatItemCounts {
+    func unreadChatItemCounts(firstVisible: String?) -> UnreadChatItemCounts {
         var i = 0
         var totalBelow = 0
         var unreadBelow = 0
-        while i < im.reversedChatItems.count - 1 && !itemsInView.contains(im.reversedChatItems[i].viewId) {
+        while let firstVisible, firstVisible != im.reversedChatItems[i].viewId, i < im.reversedChatItems.count - 1 {
             totalBelow += 1
             if im.reversedChatItems[i].isRcvNew {
                 unreadBelow += 1

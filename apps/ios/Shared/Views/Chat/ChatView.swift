@@ -464,7 +464,7 @@ struct ChatView: View {
             )
             visibleItems
                 .receive(on: DispatchQueue.global(qos: .background))
-                .map { ChatModel.shared.unreadChatItemCounts(itemsInView: Set($0)) }
+                .map { ChatModel.shared.unreadChatItemCounts(firstVisible: $0.first) }
                 .removeDuplicates()
                 .throttle(for: .seconds(0.2), scheduler: DispatchQueue.main, latest: true)
                 .assign(to: \.unreadChatItemCounts, on: self)
