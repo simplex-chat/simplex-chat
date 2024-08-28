@@ -125,7 +125,8 @@ struct UserPicker: View {
                                     .foregroundColor(theme.colors.secondary)
                                     .frame(maxWidth: 20, maxHeight: 20)
                             }
-                            .frame(maxWidth: 44)
+                            .padding(.leading, 16).padding(.vertical, 8).padding(.trailing, 16)
+                            .contentShape(Rectangle())
                             .onTapGesture {
                                 if (colorScheme == .light) {
                                     ThemeManager.applyTheme(systemDarkThemeDefault.get())
@@ -136,6 +137,7 @@ struct UserPicker: View {
                             .onLongPressGesture {
                                 ThemeManager.applyTheme(DefaultTheme.SYSTEM_THEME_NAME)
                             }
+                            .padding(.leading, -16).padding(.vertical, -8).padding(.trailing, -16)
                         }
                         .padding(.horizontal, -3)
                     }
