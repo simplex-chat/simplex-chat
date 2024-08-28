@@ -415,6 +415,8 @@ CREATE TABLE calls(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+  ,
+  call_uuid TEXT NOT NULL DEFAULT ""
 );
 CREATE TABLE commands(
   command_id INTEGER PRIMARY KEY AUTOINCREMENT, -- used as ACorrId
