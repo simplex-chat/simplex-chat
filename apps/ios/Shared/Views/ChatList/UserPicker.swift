@@ -49,11 +49,12 @@ struct UserPicker: View {
                             UserProfilesView()
                                 .navigationBarTitleDisplayMode(.large)
                         } label: {
-                            Image(systemName: "list.bullet.circle")
+                            let c = Color(uiColor: .tertiarySystemGroupedBackground).asAnotherColorFromSecondaryVariant(theme)
+
+                            Image(systemName: "list.bullet.circle.fill")
                                 .resizable()
-                                .foregroundColor(theme.colors.secondary)
-                                .accentColor(theme.colors.secondary)
-                                .font(.system(size: 32, weight: .thin))
+                                .foregroundColor(c)
+                                .font(.system(size: 32))
                                 .frame(width: 32, height: 32)
                         }
                     }
