@@ -47,13 +47,10 @@ struct ChatListView: View {
             ) { chatListView }
         }
         .sheet(isPresented: $userPickerVisible) {
-            NavigationView {
-                UserPicker(
-                    showSettings: $showSettings,
-                    userPickerVisible: $userPickerVisible
-                )
-                .modifier(ThemedBackground(grouped: true))
-            }
+            UserPicker(
+                showSettings: $showSettings,
+                userPickerVisible: $userPickerVisible
+            )
         }
     }
 
