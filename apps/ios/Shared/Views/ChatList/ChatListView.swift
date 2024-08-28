@@ -19,7 +19,6 @@ struct ChatListView: View {
     @State private var searchShowingSimplexLink = false
     @State private var searchChatFilteredBySimplexLink: String? = nil
     @State private var userPickerVisible = false
-    @State private var showConnectDesktop = false
     @State private var scrollToSearchBar = false
 
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
@@ -46,25 +45,15 @@ struct ChatListView: View {
                 ),
                 destination: chatView
             ) { chatListView }
-            if userPickerVisible {
-                Rectangle()
-                    .fill(.black)
-                    .ignoresSafeArea()
-                    .opacity(0.6)
-                    .onTapGesture {
-                        withAnimation {
-                            userPickerVisible.toggle()
-                        }
-                    }
-            }
-            UserPicker(
-                showSettings: $showSettings,
-                showConnectDesktop: $showConnectDesktop,
-                userPickerVisible: $userPickerVisible
-            )
         }
-        .sheet(isPresented: $showConnectDesktop) {
-            ConnectDesktopView()
+        .sheet(isPresented: $userPickerVisible) {
+            NavigationView {
+                UserPicker(
+                    showSettings: $showSettings,
+                    userPickerVisible: $userPickerVisible
+                )
+                .modifier(ThemedBackground(grouped: true))
+            }
         }
     }
 
