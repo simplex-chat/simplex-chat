@@ -234,27 +234,27 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
             self.reportExpiredCall(payload: payload, completion)
         }
 
-//        DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
-//            if (!ChatModel.shared.chatInitialized) {
-//                logger.debug("CallController: initializing chat")
-//                do {
-//                    try initializeChat(start: true, refreshInvitations: false)
-//                } catch let error {
-//                    logger.error("CallController: initializing chat error: \(error)")
-//                    if let call = ChatModel.shared.activeCall {
-//                        self.endCall(call: call, completed: completion)
-//                    }
-//                    return
-//                }
-//            }
-//            logger.debug("CallController: initialized chat")
-//            startChatForCall()
-//            logger.debug("CallController: started chat")
-//            self.shouldSuspendChat = true
-//            // There are no invitations in the model, as it was processed by NSE
-//            try? justRefreshCallInvitations()
-//            logger.debug("CallController: updated call invitations chat 2")
-//            // logger.debug("CallController justRefreshCallInvitations: \(String(describing: m.callInvitations))")
+        //DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
+        if (!ChatModel.shared.chatInitialized) {
+            logger.debug("CallController: initializing chat")
+            do {
+                try initializeChat(start: true, refreshInvitations: false)
+            } catch let error {
+                logger.error("CallController: initializing chat error: \(error)")
+                if let call = ChatModel.shared.activeCall {
+                    self.endCall(call: call, completed: completion)
+                }
+                return
+            }
+        }
+        logger.debug("CallController: initialized chat")
+        startChatForCall()
+        logger.debug("CallController: started chat")
+        self.shouldSuspendChat = true
+        // There are no invitations in the model, as it was processed by NSE
+//        try? justRefreshCallInvitations()
+//        logger.debug("CallController: updated call invitations chat 2")
+        // logger.debug("CallController justRefreshCallInvitations: \(String(describing: m.callInvitations))")
 //        }
     }
 
