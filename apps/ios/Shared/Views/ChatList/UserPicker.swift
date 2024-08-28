@@ -36,7 +36,7 @@ struct UserPicker: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if let currentUser = activeUser {
-                HStack(spacing: 19) {
+                HStack(spacing: 16) {
                     ProfileImage(imageStr: currentUser.image, size: 44)
                         .onTapGesture {
                             activeSheet = .currentProfile
