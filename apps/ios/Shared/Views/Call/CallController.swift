@@ -248,11 +248,6 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         startChatForCall()
         logger.debug("CallController: started chat")
         self.shouldSuspendChat = true
-        // There are no invitations in the model, as it was processed by NSE
-//        try? justRefreshCallInvitations()
-//        logger.debug("CallController: updated call invitations chat 2")
-        // logger.debug("CallController justRefreshCallInvitations: \(String(describing: m.callInvitations))")
-//        }
     }
 
     // This function fulfils the requirement to always report a call when PushKit notification is received,
