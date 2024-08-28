@@ -92,7 +92,7 @@ struct UserPicker: View {
                             }
                             
                             NavigationLink(isActive: $isUseFromDesktopActive) {
-                                ConnectDesktopView()
+                                ConnectDesktopView(viaSettings: true)
                             } label: {
                                 navigateOnTap(title: "Use from desktop", image: "desktopcomputer") {
                                     isUseFromDesktopActive = true
