@@ -740,4 +740,18 @@
     <string name="failed_to_active_user_title">Lỗi chuyển đổi hồ sơ!</string>
     <string name="error_synchronizing_connection">Lỗi đồng bộ kết nối</string>
     <string name="error_setting_address">Lỗi cài đặt địa chỉ</string>
+    <string name="v5_2_disappear_one_message_descr">Dù đã tắt trong cuộc trò chuyện.</string>
+    <string name="error_setting_network_config">Lỗi cập nhật cấu hình mạng</string>
+    <string name="error_updating_user_privacy">Lỗi cập nhật quyền riêng tư người dùng</string>
+    <string name="icon_descr_expand_role">Mở rộng chọn quyền hạn</string>
+    <string name="settings_section_title_experimenta">THỬ NGHIỆM</string>
+    <string name="expand_verb">Mở rộng</string>
+    <string name="exit_without_saving">Thoát mà không lưu</string>
+    <string name="expired_label">đã hết hạn</string>
+    <string name="migrate_from_device_error_verifying_passphrase">Lỗi xác thực mật khẩu:</string>
+    <string name="possible_slow_function_desc">Quá trình thực hiện chức năng mất quá nhiều thời gian: %1$dgiây: %2$s</string>
+    <string name="settings_experimental_features">Tính năng thử nghiệm</string>
+    <string name="export_database">Xuất cơ sở dữ liệu</string>
+    <string name="migrate_from_device_error_uploading_archive">Lỗi tải lên kho lưu trữ</string>
+    <string name="migrate_from_device_exported_file_doesnt_exist">Tập tin đã xuất không tồn tại</string>
 </resources>
