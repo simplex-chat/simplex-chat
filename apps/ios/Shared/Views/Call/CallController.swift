@@ -61,12 +61,30 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
 
     func provider(_ provider: CXProvider, perform action: CXAnswerCallAction) {
         logger.debug("CallController.provider CXAnswerCallAction")
-        if callManager.answerIncomingCall(callUUID: action.callUUID.uuidString.lowercased()) {
-            // WebRTC call should be in connected state to fulfill.
-            // Otherwise no audio and mic working on lockscreen
-            fulfillOnConnect = action
-        } else {
-            action.fail()
+        Task {
+            let chatIsReady = await waitUntilChatStarted(timeoutMs: 10_000, stepMs: 100)
+            logger.debug("CallController chat started \(chatIsReady) \(ChatModel.shared.chatInitialized) \(ChatModel.shared.chatRunning == true) \(String(describing: AppChatState.shared.value))")
+            if !chatIsReady {
+                action.fail()
+                return
+            }
+            await MainActor.run {
+                if !ChatModel.shared.callInvitations.values.contains(where: { inv in inv.callUUID == action.callUUID.uuidString.lowercased() }) {
+                    try? justRefreshCallInvitations()
+                    logger.debug("CallController: updated call invitations chat")
+                }
+                logger.debug("CallController.provider will answer on call")
+
+                if callManager.answerIncomingCall(callUUID: action.callUUID.uuidString.lowercased()) {
+                    logger.debug("CallController.provider answered on call")
+                    // WebRTC call should be in connected state to fulfill.
+                    // Otherwise no audio and mic working on lockscreen
+                    fulfillOnConnect = action
+                } else {
+                    logger.debug("CallController.provider will fail the call")
+                    action.fail()
+                }
+            }
         }
     }
 
@@ -156,6 +174,22 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         }
     }
 
+    private func waitUntilChatStarted(timeoutMs: UInt64, stepMs: UInt64) async -> Bool {
+        if ChatModel.shared.chatInitialized, ChatModel.shared.chatRunning == true, case .active = AppChatState.shared.value {
+            return true
+        }
+        logger.debug("CallController waiting until chat started")
+        var t: UInt64 = 0
+        repeat {
+            _ = try? await Task.sleep(nanoseconds: stepMs * 1000000)
+            t += stepMs
+            if ChatModel.shared.chatInitialized, ChatModel.shared.chatRunning == true, case .active = AppChatState.shared.value {
+                return true
+            }
+        } while t < timeoutMs
+        return false
+    }
+
     @objc(pushRegistry:didUpdatePushCredentials:forType:)
     func pushRegistry(_ registry: PKPushRegistry, didUpdate pushCredentials: PKPushCredentials, for type: PKPushType) {
         logger.debug("CallController: didUpdate push credentials for type \(type.rawValue)")
@@ -171,32 +205,19 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
             self.reportExpiredCall(payload: payload, completion)
             return
         }
-        if (!ChatModel.shared.chatInitialized) {
-            logger.debug("CallController: initializing chat")
-            do {
-                try initializeChat(start: true, refreshInvitations: false)
-            } catch let error {
-                logger.error("CallController: initializing chat error: \(error)")
-                self.reportExpiredCall(payload: payload, completion)
-                return
-            }
-        }
-        logger.debug("CallController: initialized chat")
-        startChatForCall()
-        logger.debug("CallController: started chat")
-        self.shouldSuspendChat = true
-        // There are no invitations in the model, as it was processed by NSE
-        try? justRefreshCallInvitations()
-        logger.debug("CallController: updated call invitations chat")
-        // logger.debug("CallController justRefreshCallInvitations: \(String(describing: m.callInvitations))")
         // Extract the call information from the push notification payload
         let m = ChatModel.shared
         if let contactId = payload.dictionaryPayload["contactId"] as? String,
-           let invitation = m.callInvitations[contactId] {
-            let update = self.cxCallUpdate(invitation: invitation)
-            if let callUUID = invitation.callUUID, let uuid = UUID(uuidString: callUUID) {
+           let displayName = payload.dictionaryPayload["displayName"] as? String,
+           let callUUID = payload.dictionaryPayload["callUUID"] as? String,
+           let uuid = UUID(uuidString: callUUID),
+           let callTsInterval = payload.dictionaryPayload["callTs"] as? TimeInterval,
+           let mediaStr = payload.dictionaryPayload["media"] as? String,
+           let media = CallMediaType(rawValue: mediaStr) {
+            let update = self.cxCallUpdate(contactId, displayName, media)
+            let callTs = Date(timeIntervalSince1970: callTsInterval)
+            if callTs.timeIntervalSinceNow >= -180 {
                 logger.debug("CallController: report pushkit call via CallKit")
-                let update = self.cxCallUpdate(invitation: invitation)
                 self.provider.reportNewIncomingCall(with: uuid, update: update) { error in
                     if error != nil {
                         m.callInvitations.removeValue(forKey: contactId)
@@ -205,11 +226,36 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
                     completion()
                 }
             } else {
+                logger.debug("CallController will expire call 1")
                 self.reportExpiredCall(update: update, completion)
             }
         } else {
+            logger.debug("CallController will expire call 2")
             self.reportExpiredCall(payload: payload, completion)
         }
+
+//        DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
+//            if (!ChatModel.shared.chatInitialized) {
+//                logger.debug("CallController: initializing chat")
+//                do {
+//                    try initializeChat(start: true, refreshInvitations: false)
+//                } catch let error {
+//                    logger.error("CallController: initializing chat error: \(error)")
+//                    if let call = ChatModel.shared.activeCall {
+//                        self.endCall(call: call, completed: completion)
+//                    }
+//                    return
+//                }
+//            }
+//            logger.debug("CallController: initialized chat")
+//            startChatForCall()
+//            logger.debug("CallController: started chat")
+//            self.shouldSuspendChat = true
+//            // There are no invitations in the model, as it was processed by NSE
+//            try? justRefreshCallInvitations()
+//            logger.debug("CallController: updated call invitations chat 2")
+//            // logger.debug("CallController justRefreshCallInvitations: \(String(describing: m.callInvitations))")
+//        }
     }
 
     // This function fulfils the requirement to always report a call when PushKit notification is received,
@@ -258,6 +304,14 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         update.remoteHandle = CXHandle(type: .generic, value: invitation.contact.id)
         update.hasVideo = invitation.callType.media == .video
         update.localizedCallerName = invitation.contact.displayName
+        return update
+    }
+
+    private func cxCallUpdate(_ contactId: String, _ displayName: String, _ media: CallMediaType) -> CXCallUpdate {
+        let update = CXCallUpdate()
+        update.remoteHandle = CXHandle(type: .generic, value: contactId)
+        update.hasVideo = media == .video
+        update.localizedCallerName = displayName
         return update
     }
 
