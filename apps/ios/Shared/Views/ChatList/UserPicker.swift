@@ -33,38 +33,37 @@ struct UserPicker: View {
         let v = NavigationView {
             VStack(alignment: .leading, spacing: 0) {
                 if let currentUser = activeUser {
-                    HStack(spacing: 16) {
-                        NavigationLink {
-                            UserProfile()
-                                .navigationTitle("Your current profile")
-                                .modifier(ThemedBackground())
-                        } label: {
-                            ProfileImage(imageStr: currentUser.image, size: 44)
+                    VStack(alignment: .leading) {
+                        HStack(spacing: 20) {
+                            NavigationLink {
+                                UserProfile()
+                                    .navigationTitle("Your current profile")
+                                    .modifier(ThemedBackground())
+                            } label: {
+                                ProfileImage(imageStr: currentUser.image, size: 44)
+                            }
+                            Spacer()
+                            ForEach(usersToPreview) { u in
+                                userView(u)
+                            }
+                            NavigationLink {
+                                UserProfilesView()
+                                    .navigationBarTitleDisplayMode(.large)
+                            } label: {
+                                Image(systemName: "ellipsis.circle")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 28, height: 28)
+                                    .frame(width: 32, height: 32)
+                                    .foregroundColor(theme.colors.secondary)
+                            }
                         }
-                        Spacer()
-                        ForEach(usersToPreview) { u in
-                            userView(u)
-                        }
-                        NavigationLink {
-                            UserProfilesView()
-                                .navigationBarTitleDisplayMode(.large)
-                        } label: {
-                            let c = Color(uiColor: .tertiarySystemGroupedBackground).asAnotherColorFromSecondaryVariant(theme)
-
-                            Image(systemName: "list.bullet.circle.fill")
-                                .resizable()
-                                .foregroundColor(c)
-                                .font(.system(size: 32))
-                                .frame(width: 32, height: 32)
-                        }
+                        
+                        Text(currentUser.displayName)
+                            .fontWeight(.bold)
+                            .font(.title2)
                     }
-                    .padding(.horizontal, 16)
-                    
-                    Text(currentUser.displayName)
-                        .fontWeight(.bold)
-                        .font(.title2)
-                        .padding(.top, verticalSpaceDefault)
-                        .padding(.horizontal, 16)
+                    .padding([.top, .horizontal], 32)
                 }
                 
                 List {
@@ -119,7 +118,7 @@ struct UserPicker: View {
                                 showSettings = true
                             }
                             Label {} icon: {
-                                Image(systemName: colorScheme == .light ? "sun.max" : "moon.stars")
+                                Image(systemName: colorScheme == .light ? "sun.max" : "moon.fill")
                                     .resizable()
                                     .symbolRenderingMode(.monochrome)
                                     .foregroundColor(theme.colors.secondary)
@@ -149,7 +148,6 @@ struct UserPicker: View {
                         .navigationBarTitleDisplayMode(.large)
                 } label: {}
             )
-            .padding(.vertical, 19)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .onAppear {
                 // This check prevents the call of listUsers after the app is suspended, and the database is closed.
