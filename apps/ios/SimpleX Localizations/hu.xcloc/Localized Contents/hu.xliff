@@ -1777,7 +1777,7 @@ Ez az ön egyszer használatos hivatkozása!</target>
       </trans-unit>
       <trans-unit id="Create group link" xml:space="preserve" approved="no">
         <source>Create group link</source>
-        <target state="translated">Hivatkozás létrehozása a csoporthoz</target>
+        <target state="translated">Csoporthivatkozás létrehozása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create link" xml:space="preserve">
@@ -2749,9 +2749,9 @@ Ez az ön egyszer használatos hivatkozása!</target>
         <target>Hiba a csoport létrehozásakor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error creating group link" xml:space="preserve">
+      <trans-unit id="Error creating group link" xml:space="preserve" approved="no">
         <source>Error creating group link</source>
-        <target>Hiba a csoport hivatkozásának létrehozásakor</target>
+        <target state="translated">Hiba a csoporthivatkozás létrehozásakor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error creating member contact" xml:space="preserve">
@@ -2966,7 +2966,7 @@ Ez az ön egyszer használatos hivatkozása!</target>
       </trans-unit>
       <trans-unit id="Error updating group link" xml:space="preserve" approved="no">
         <source>Error updating group link</source>
-        <target state="translated">Hiba a csoport hivatkozásának frissítésekor</target>
+        <target state="translated">Hiba a csoporthivatkozás frissítésekor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error updating message" xml:space="preserve">
@@ -3369,14 +3369,14 @@ Hiba: %2$@</target>
         <target>A csoport meghívó már nem érvényes, a küldője törölte.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group link" xml:space="preserve">
+      <trans-unit id="Group link" xml:space="preserve" approved="no">
         <source>Group link</source>
-        <target>Csoport hivatkozás</target>
+        <target state="translated">Csoporthivatkozás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group links" xml:space="preserve">
+      <trans-unit id="Group links" xml:space="preserve" approved="no">
         <source>Group links</source>
-        <target>Csoport hivatkozások</target>
+        <target state="translated">Csoporthivatkozások</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group members can add message reactions." xml:space="preserve">
@@ -6209,9 +6209,9 @@ Engedélyezze a Beállítások / Hálózat és kiszolgálók menüben.</target>
         <target>SimpleX titkosított üzenet vagy kapcsolati esemény</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="SimpleX group link" xml:space="preserve">
+      <trans-unit id="SimpleX group link" xml:space="preserve" approved="no">
         <source>SimpleX group link</source>
-        <target>SimpleX csoport hivatkozás</target>
+        <target state="translated">SimpleX csoporthivatkozás</target>
         <note>simplex link type</note>
       </trans-unit>
       <trans-unit id="SimpleX links" xml:space="preserve">
@@ -7624,9 +7624,9 @@ Kapcsolódási kérés megismétlése?</target>
         <target>Akkor lesz kapcsolódva a csoporthoz, amikor a csoport tulajdonosának eszköze online lesz, várjon, vagy ellenőrizze később!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You will be connected when group link host's device is online, please wait or check later!" xml:space="preserve">
+      <trans-unit id="You will be connected when group link host's device is online, please wait or check later!" xml:space="preserve" approved="no">
         <source>You will be connected when group link host's device is online, please wait or check later!</source>
-        <target>Akkor lesz kapcsolódva, amikor a csoportos hivatkozás tulajdonosának eszköze online lesz, várjon, vagy ellenőrizze később!</target>
+        <target state="translated">Akkor lesz kapcsolódva, amikor a csoporthivatkozás tulajdonosának eszköze online lesz, várjon, vagy ellenőrizze később!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will be connected when your connection request is accepted, please wait or check later!" xml:space="preserve">
@@ -8253,7 +8253,7 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
       </trans-unit>
       <trans-unit id="incognito via group link" xml:space="preserve" approved="no">
         <source>incognito via group link</source>
-        <target state="translated">inkognitó a csoport hivatkozásán keresztül</target>
+        <target state="translated">inkognitó a csoporthivatkozáson keresztül</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="incognito via one-time link" xml:space="preserve" approved="no">
@@ -8306,9 +8306,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>meghívta, hogy csatlakozzon</target>
         <note>chat list item title</note>
       </trans-unit>
-      <trans-unit id="invited via your group link" xml:space="preserve">
+      <trans-unit id="invited via your group link" xml:space="preserve" approved="no">
         <source>invited via your group link</source>
-        <target>meghíva az ön csoport hivatkozásán keresztül</target>
+        <target state="translated">meghíva az ön csoporthivatkozásán keresztül</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="italic" xml:space="preserve">
@@ -8644,7 +8644,7 @@ utoljára fogadott üzenet: %2$@</target>
       </trans-unit>
       <trans-unit id="via group link" xml:space="preserve" approved="no">
         <source>via group link</source>
-        <target state="translated">a csoport hivatkozásán keresztül</target>
+        <target state="translated">a csoporthivatkozáson keresztül</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="via one-time link" xml:space="preserve" approved="no">
