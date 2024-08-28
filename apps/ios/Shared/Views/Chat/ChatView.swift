@@ -500,11 +500,9 @@ struct ChatView: View {
                     if !self.isDateVisible {
                         withAnimation { self.isDateVisible = true }
                     }
-                    return Void()
                 }
                 .debounce(for: 1, scheduler: DispatchQueue.main)
                 .sink {
-                    print("off")
                     if self.isDateVisible {
                         withAnimation { self.isDateVisible = false }
                     }
