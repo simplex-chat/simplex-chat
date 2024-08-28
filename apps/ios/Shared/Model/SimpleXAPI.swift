@@ -2199,9 +2199,11 @@ func refreshCallInvitations() async throws {
     }
 }
 
-func justRefreshCallInvitations() throws {
+func justRefreshCallInvitations() async throws {
     let callInvitations = try apiGetCallInvitationsSync()
-    ChatModel.shared.callInvitations = callsByChat(callInvitations)
+    await MainActor.run {
+        ChatModel.shared.callInvitations = callsByChat(callInvitations)
+    }
 }
 
 private func callsByChat(_ callInvitations: [RcvCallInvitation]) -> [ChatId: RcvCallInvitation] {
@@ -2211,12 +2213,13 @@ private func callsByChat(_ callInvitations: [RcvCallInvitation]) -> [ChatId: Rcv
 }
 
 func activateCall(_ callInvitation: RcvCallInvitation) {
-    if !callInvitation.user.showNotifications { return }
     let m = ChatModel.shared
+    logger.debug("reportNewIncomingCall activeCallUUID \(String(describing: m.activeCall?.callUUID)) invitationUUID \(String(describing: callInvitation.callUUID))")
+    if !callInvitation.user.showNotifications || m.activeCall?.callUUID == callInvitation.callUUID { return }
     CallController.shared.reportNewIncomingCall(invitation: callInvitation) { error in
         if let error = error {
             DispatchQueue.main.async {
-                m.callInvitations[callInvitation.contact.id]?.callkitUUID = nil
+                m.callInvitations[callInvitation.contact.id]?.callUUID = nil
             }
             logger.error("reportNewIncomingCall error: \(error.localizedDescription)")
         } else {
