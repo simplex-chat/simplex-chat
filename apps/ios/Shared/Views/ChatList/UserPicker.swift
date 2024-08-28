@@ -27,6 +27,7 @@ struct UserPicker: View {
     @State private var isChatPreferencesActive = false
     @State private var isUseFromDesktopActive = false
     @State private var isMigrateToAnotherDeviceActice = false
+    @State private var isProfilesActive = false
     @State private var showSettings = false
 
     var body: some View {
@@ -46,7 +47,7 @@ struct UserPicker: View {
                             ForEach(usersToPreview) { u in
                                 userView(u)
                             }
-                            NavigationLink {
+                            NavigationLink(isActive: $isProfilesActive) {
                                 UserProfilesView()
                                     .navigationBarTitleDisplayMode(.large)
                             } label: {
@@ -56,6 +57,14 @@ struct UserPicker: View {
                                     .frame(width: 28, height: 28)
                                     .frame(width: 32, height: 32)
                                     .foregroundColor(theme.colors.secondary)
+                                    .onTapGesture {
+                                        let shouldOpenLarge = m.users.count > 3
+                                        isLargeSheet = shouldOpenLarge
+                                        DispatchQueue.main.async {
+                                            allowSmallSheet = !shouldOpenLarge
+                                            isProfilesActive = true
+                                        }
+                                    }
                             }
                         }
                         
