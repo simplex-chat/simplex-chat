@@ -413,13 +413,6 @@ struct ChatView: View {
                     revealedChatItem: $revealedChatItem,
                     selectedChatItems: $selectedChatItems
                 )
-                .onAppear {
-                    floatingButtonModel.appeared(viewId: ci.viewId)
-                }
-                .onDisappear {
-                    floatingButtonModel.disappeared(viewId: ci.viewId)
-                }
-                .id(ci.id) // Required to trigger `onAppear` on iOS15
             } loadPage: {
                 loadChatItems(cInfo)
             }
@@ -428,9 +421,6 @@ struct ChatView: View {
             .onTapGesture { hideKeyboard() }
             .onChange(of: searchText) { _ in
                 Task { await loadChat(chat: chat, search: searchText) }
-            }
-            .onChange(of: im.reversedChatItems) { _ in
-                floatingButtonModel.chatItemsChanged()
             }
             .onChange(of: im.itemAdded) { added in
                 if added {
@@ -458,12 +448,6 @@ struct ChatView: View {
     }
 
     class FloatingButtonModel: ObservableObject {
-        private enum Event {
-            case appeared(String)
-            case disappeared(String)
-            case chatItemsChanged
-        }
-
         static let shared = FloatingButtonModel()
 
         @Published var unreadChatItemCounts: UnreadChatItemCounts
@@ -484,34 +468,6 @@ struct ChatView: View {
                 .throttle(for: .seconds(0.2), scheduler: DispatchQueue.main, latest: true)
                 .assign(to: \.unreadChatItemCounts, on: self)
                 .store(in: &bag)
-//            events
-//                .receive(on: DispatchQueue.global(qos: .background))
-//                .scan(Set<String>()) { itemsInView, event in
-//                    var updated = itemsInView
-//                    switch event {
-//                    case let .appeared(viewId): updated.insert(viewId)
-//                    case let .disappeared(viewId): updated.remove(viewId)
-//                    case .chatItemsChanged: ()
-//                    }
-//                    return updated
-//                }
-//                .map { ChatModel.shared.unreadChatItemCounts(itemsInView: $0) }
-//                .removeDuplicates()
-//                .throttle(for: .seconds(0.2), scheduler: DispatchQueue.main, latest: true)
-//                .assign(to: \.unreadChatItemCounts, on: self)
-//                .store(in: &bag)
-        }
-
-        func appeared(viewId: String) {
-//            events.send(.appeared(viewId))
-        }
-
-        func disappeared(viewId: String) {
-//            events.send(.disappeared(viewId))
-        }
-
-        func chatItemsChanged() {
-//            events.send(.chatItemsChanged)
         }
     }
 

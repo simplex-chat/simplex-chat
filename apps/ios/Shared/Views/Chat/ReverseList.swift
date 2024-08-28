@@ -190,15 +190,28 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 )
             }
             itemCount = items.count
+            updateVisibleItems()
         }
 
         override func scrollViewDidScroll(_ scrollView: UIScrollView) {
+            updateVisibleItems()
+        }
+
+        private func updateVisibleItems() {
             ChatView.FloatingButtonModel.shared.visibleItems.send(
                 (tableView.indexPathsForVisibleRows ?? [])
                     .compactMap { indexPath -> String? in
-                        if indexPath.item < representer.items.count {
-                            representer.items[indexPath.item].viewId
-                        } else { nil }
+                        let relativeFrame = tableView.superview!.convert(
+                            tableView.rectForRow(at: indexPath),
+                            from: tableView
+                        )
+                        // Checks that the cell is visible accounting for the added insets
+                        let isVisible =
+                            relativeFrame.maxY > InvertedTableView.inset &&
+                            relativeFrame.minY < tableView.frame.height - InvertedTableView.inset
+                        return indexPath.item < representer.items.count && isVisible
+                        ? representer.items[indexPath.item].viewId
+                        : nil
                     }
             )
         }
