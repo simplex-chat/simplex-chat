@@ -413,6 +413,7 @@ struct ChatView: View {
                     revealedChatItem: $revealedChatItem,
                     selectedChatItems: $selectedChatItems
                 )
+                .id(ci.id) // Required to trigger `onAppear` on iOS15
             } loadPage: {
                 loadChatItems(cInfo)
             }
