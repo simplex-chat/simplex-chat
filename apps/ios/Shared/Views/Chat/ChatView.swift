@@ -74,9 +74,12 @@ struct ChatView: View {
                     )
             }
             VStack(spacing: 0) {
-                ZStack(alignment: .bottomTrailing) {
+                ZStack {
                     chatItemsList()
                     floatingButtons(counts: floatingButtonModel.unreadChatItemCounts)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                    floatingDate
+                        .frame(maxHeight: .infinity, alignment: .top)
                 }
                 connectingText()
                 if selectedChatItems == nil {
@@ -452,6 +455,8 @@ struct ChatView: View {
         static let shared = FloatingButtonModel()
 
         @Published var unreadChatItemCounts: UnreadChatItemCounts
+        @Published var date: Date?
+        @Published var isDateVisible: Bool = false
 
         let visibleItems = PassthroughSubject<[String], Never>()
         private var bag = Set<AnyCancellable>()
@@ -462,6 +467,8 @@ struct ChatView: View {
                 isReallyNearBottom: true,
                 unreadBelow: 0
             )
+
+            // Unread item counts
             visibleItems
                 .receive(on: DispatchQueue.global(qos: .background))
                 .map { ChatModel.shared.unreadChatItemCounts(itemsInView: Set($0)) }
@@ -469,6 +476,51 @@ struct ChatView: View {
                 .throttle(for: .seconds(0.2), scheduler: DispatchQueue.main, latest: true)
                 .assign(to: \.unreadChatItemCounts, on: self)
                 .store(in: &bag)
+
+            // Floating date
+            visibleItems
+                .receive(on: DispatchQueue.global(qos: .background))
+                .map { visibleItems -> Date? in
+                    if let viewId = visibleItems.last {
+                        ItemsModel.shared.reversedChatItems
+                            .first { $0.viewId == viewId }
+                            .map { Calendar.current.startOfDay(for: $0.meta.itemTs) }
+                    } else { nil }
+                }
+                .removeDuplicates()
+                .throttle(for: .seconds(0.2), scheduler: DispatchQueue.main, latest: true)
+                .assign(to: \.date, on: self)
+                .store(in: &bag)
+            
+            // Floating date visibility
+            visibleItems
+                .removeDuplicates()
+                .receive(on: DispatchQueue.main)
+                .map { _ in
+                    if !self.isDateVisible {
+                        withAnimation { self.isDateVisible = true }
+                    }
+                    return Void()
+                }
+                .debounce(for: 1, scheduler: DispatchQueue.main)
+                .sink {
+                    print("off")
+                    if self.isDateVisible {
+                        withAnimation { self.isDateVisible = false }
+                    }
+                }
+                .store(in: &bag)
+        }
+    }
+
+    @ViewBuilder
+    var floatingDate: some View {
+        if let date = floatingButtonModel.date {
+            DateSeparator(date: date)
+                .padding(.vertical, 4).padding(.horizontal, 8)
+                .background(ToolbarMaterial.material(toolbarMaterial))
+                .clipShape(Capsule())
+                .opacity(floatingButtonModel.isDateVisible ? 1 : 0)
         }
     }
 
@@ -658,6 +710,21 @@ struct ChatView: View {
         VoiceItemState.chatView = [:]
     }
 
+    private struct DateSeparator: View {
+        let date: Date
+
+        var body: some View {
+            Text(String.localizedStringWithFormat(
+                NSLocalizedString("%@, %@", comment: "format for date separator in chat"),
+                date.formatted(.dateTime.weekday(.abbreviated)),
+                date.formatted(.dateTime.day().month(.abbreviated))
+            ))
+            .font(.callout)
+            .fontWeight(.medium)
+            .foregroundStyle(.secondary)
+        }
+    }
+
     private struct ChatItemWithMenu: View {
         @EnvironmentObject var m: ChatModel
         @EnvironmentObject var theme: AppTheme
@@ -729,17 +796,7 @@ struct ChatView: View {
                 } else {
                     VStack(spacing: 0) {
                         chatItemView(chatItem, range, prevItem, timeSeparation)
-                        if let date = timeSeparation.date {
-                            Text(String.localizedStringWithFormat(
-                                NSLocalizedString("%@, %@", comment: "format for date separator in chat"),
-                                date.formatted(.dateTime.weekday(.abbreviated)),
-                                date.formatted(.dateTime.day().month(.abbreviated))
-                            ))
-                            .font(.callout)
-                            .fontWeight(.medium)
-                            .foregroundStyle(.secondary)
-                            .padding(8)
-                        }
+                        if let date = timeSeparation.date { DateSeparator(date: date).padding(8) }
                     }
                     .overlay {
                         if let selected = selectedChatItems, chatItem.canBeDeletedForSelf {
