@@ -62,7 +62,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     func provider(_ provider: CXProvider, perform action: CXAnswerCallAction) {
         logger.debug("CallController.provider CXAnswerCallAction")
         Task {
-            let chatIsReady = await waitUntilChatStarted(timeoutMs: 10_000, stepMs: 100)
+            let chatIsReady = await waitUntilChatStarted(timeoutMs: 30_000, stepMs: 100)
             logger.debug("CallController chat started \(chatIsReady) \(ChatModel.shared.chatInitialized) \(ChatModel.shared.chatRunning == true) \(String(describing: AppChatState.shared.value))")
             if !chatIsReady {
                 action.fail()
