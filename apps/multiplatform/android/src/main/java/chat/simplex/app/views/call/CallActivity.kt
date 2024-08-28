@@ -424,6 +424,7 @@ fun PreviewIncomingCallLockScreenAlert() {
     ) {
       IncomingCallLockScreenAlertLayout(
         invitation = RcvCallInvitation(
+          callUUID = "",
           remoteHostId = null,
           user = User.sampleData,
           contact = Contact.sampleData,

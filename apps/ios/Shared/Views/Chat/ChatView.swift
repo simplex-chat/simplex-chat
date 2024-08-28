@@ -534,8 +534,8 @@ struct ChatView: View {
 
     private func endCallButton(_ call: Call) -> some View {
         Button {
-            if let uuid = call.callkitUUID {
-                CallController.shared.endCall(callUUID: uuid)
+            if CallController.useCallKit(), let callUUID = call.callUUID {
+                CallController.shared.endCall(callUUID: callUUID)
             } else {
                 CallController.shared.endCall(call: call) {}
             }
@@ -676,7 +676,8 @@ struct ChatView: View {
         @State private var showChatItemInfoSheet: Bool = false
         @State private var chatItemInfo: ChatItemInfo?
         @State private var showForwardingSheet: Bool = false
-
+        @State private var msgWidth: CGFloat = 0
+        
         @Binding var selectedChatItems: Set<Int64>?
 
         @State private var allowMenu: Bool = true
@@ -790,6 +791,51 @@ struct ChatView: View {
                 }
             }
         }
+        
+
+        @available(iOS 16.0, *)
+        struct MemberLayout: Layout {
+            let spacing: Double
+            let msgWidth: Double
+
+            private func sizes(subviews: Subviews, proposal: ProposedViewSize) -> (CGSize, CGSize) {
+                assert(subviews.count == 2, "member layout must contain exactly two subviews")
+                let roleSize = subviews[1].sizeThatFits(proposal)
+                let memberSize = subviews[0].sizeThatFits(
+                    ProposedViewSize(
+                        width: (proposal.width ?? msgWidth) - roleSize.width,
+                        height: proposal.height
+                    )
+                )
+                return (memberSize, roleSize)
+            }
+
+            func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout Void) -> CGSize {
+                let (memberSize, roleSize) = sizes(subviews: subviews, proposal: proposal)
+                return CGSize(
+                    width: min(
+                        proposal.width ?? msgWidth,
+                        max(msgWidth, roleSize.width + spacing + memberSize.width)
+                    ),
+                    height: max(memberSize.height, roleSize.height)
+                )
+            }
+
+            func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout Void) {
+                let (memberSize, roleSize) = sizes(subviews: subviews, proposal: proposal)
+                subviews[0].place(
+                    at: CGPoint(x: bounds.minX, y: bounds.midY - memberSize.height / 2),
+                    proposal: ProposedViewSize(memberSize)
+                )
+                subviews[1].place(
+                    at: CGPoint(
+                        x: bounds.minX + max(memberSize.width + spacing, msgWidth - roleSize.width),
+                        y: bounds.midY - roleSize.height / 2
+                    ),
+                    proposal: ProposedViewSize(roleSize)
+                )
+            }
+        }
 
         @ViewBuilder func chatItemView(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ prevItem: ChatItem?, _ itemSeparation: ItemSeparation) -> some View {
             let bottomPadding: Double = itemSeparation.largeGap ? 10 : 2
@@ -804,15 +850,40 @@ struct ChatView: View {
                 if prevItem == nil || showMemberImage(member, prevItem) || prevMember != nil {
                     VStack(alignment: .leading, spacing: 4) {
                         if ci.content.showMemberName {
-                            let t = if memCount == 1 && member.memberRole > .member {
-                                Text(member.memberRole.text + " ").fontWeight(.semibold) + Text(member.displayName)
-                            } else {
-                                Text(memberNames(member, prevMember, memCount))
+                            Group {
+                                if memCount == 1 && member.memberRole > .member {
+                                    Group {
+                                        if #available(iOS 16.0, *) {
+                                            MemberLayout(spacing: 16, msgWidth: msgWidth) {
+                                                Text(member.chatViewName)
+                                                    .lineLimit(1)
+                                                Text(member.memberRole.text)
+                                                    .fontWeight(.semibold)
+                                                    .lineLimit(1)
+                                                    .padding(.trailing, 8)
+                                            }
+                                        } else {
+                                            HStack(spacing: 16) {
+                                                Text(member.chatViewName)
+                                                    .lineLimit(1)
+                                                Text(member.memberRole.text)
+                                                    .fontWeight(.semibold)
+                                                    .lineLimit(1)
+                                                    .layoutPriority(1)
+                                            }
+                                        }
+                                    }
+                                    .frame(
+                                        maxWidth: maxWidth,
+                                        alignment: chatItem.chatDir.sent ? .trailing : .leading
+                                    )
+                                } else {
+                                    Text(memberNames(member, prevMember, memCount))
+                                        .lineLimit(2)
+                                }
                             }
-                            t
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
-                                .lineLimit(2)
                                 .padding(.leading, memberImageSize + 14 + (selectedChatItems != nil && ci.canBeDeletedForSelf ? 12 + 24 : 0))
                                 .padding(.top, 3) // this is in addition to message sequence gap
                         }
@@ -835,6 +906,7 @@ struct ChatView: View {
                                         }
                                     }
                                 chatItemWithMenu(ci, range, maxWidth, itemSeparation)
+                                    .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
                             }
                         }
                     }
