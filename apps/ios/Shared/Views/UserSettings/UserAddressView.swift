@@ -238,7 +238,7 @@ struct UserAddressView: View {
                 }
             }
         } label: {
-            Label("Create SimpleX address", systemImage: "qrcode")
+            Label("Create public address", systemImage: "qrcode")
         }
     }
 

@@ -26,7 +26,6 @@ struct UserPicker: View {
     @State private var isAddressActive = false
     @State private var isChatPreferencesActive = false
     @State private var isUseFromDesktopActive = false
-    @State private var isMigrateToAnotherDeviceActice = false
     @State private var isProfilesActive = false
     @State private var showSettings = false
 
@@ -35,13 +34,13 @@ struct UserPicker: View {
             VStack(alignment: .leading, spacing: 0) {
                 if let currentUser = activeUser {
                     VStack(alignment: .leading) {
-                        HStack(spacing: 20) {
+                        HStack(alignment: .top, spacing: 20) {
                             NavigationLink {
                                 UserProfile()
                                     .navigationTitle("Your current profile")
                                     .modifier(ThemedBackground())
                             } label: {
-                                ProfileImage(imageStr: currentUser.image, size: 44)
+                                ProfileImage(imageStr: currentUser.image, size: 52)
                             }
                             Spacer()
                             ForEach(usersToPreview) { u in
@@ -54,8 +53,8 @@ struct UserPicker: View {
                                 Image(systemName: "ellipsis.circle")
                                     .resizable()
                                     .scaledToFit()
-                                    .frame(width: 28, height: 28)
-                                    .frame(width: 32, height: 32)
+                                    .frame(width: 31, height: 31)
+                                    .padding(1)
                                     .foregroundColor(theme.colors.secondary)
                                     .onTapGesture {
                                         let shouldOpenLarge = m.users.count > 3
@@ -72,7 +71,8 @@ struct UserPicker: View {
                             .fontWeight(.bold)
                             .font(.title2)
                     }
-                    .padding([.top, .horizontal], 32)
+                    .padding([.horizontal, .top])
+                    .padding([.horizontal, .top])
                 }
                 
                 List {
@@ -80,11 +80,11 @@ struct UserPicker: View {
                         if let currentUser = activeUser {
                             NavigationLink(isActive: $isAddressActive) {
                                 UserAddressView(shareViaProfile: currentUser.addressShared)
-                                    .navigationTitle("SimpleX address")
+                                    .navigationTitle("Public address")
                                     .navigationBarTitleDisplayMode(.large)
                                     .modifier(ThemedBackground(grouped: true))
                             } label: {
-                                navigateOnTap(title: "Your SimpleX address", image: "qrcode") {
+                                navigateOnTap(title: m.userAddress == nil ? "Create public address" : "Your public address", image: "qrcode") {
                                     isAddressActive = true
                                 }
                             }
@@ -106,18 +106,7 @@ struct UserPicker: View {
                                 navigateOnTap(title: "Use from desktop", image: "desktopcomputer") {
                                     isUseFromDesktopActive = true
                                 }
-                            }
-                            
-                            NavigationLink(isActive: $isMigrateToAnotherDeviceActice) {
-                                MigrateFromDevice(showProgressOnSettings: $showProgress)
-                                    .navigationTitle("Migrate device")
-                                    .modifier(ThemedBackground(grouped: true))
-                                    .navigationBarTitleDisplayMode(.large)
-                            } label: {
-                                navigateOnTap(title: "Migrate to another device", image: "tray.and.arrow.up") {
-                                    isMigrateToAnotherDeviceActice = true
-                                }
-                            }
+                            }                            
                         }
                     }
                     
@@ -184,8 +173,8 @@ struct UserPicker: View {
             }
         }
         
-        if #available(iOS 16.0, *), oneHandUI {
-            let sheetHeight: CGFloat = 425
+        if #available(iOS 16.0, *) {
+            let sheetHeight: CGFloat = 400
             v.presentationDetents(
                 allowSmallSheet ? [.height(sheetHeight), .large] : [.large],
                 selection: Binding(

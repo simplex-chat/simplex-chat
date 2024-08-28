@@ -332,10 +332,20 @@ struct SettingsView: View {
                         }
                         .disabled(chatModel.chatRunning != true)
                     }
-                    
-                    chatDatabaseRow()
                 }
 
+                Section(header: Text("Chat database").foregroundColor(theme.colors.secondary)) {
+                    chatDatabaseRow()
+                    NavigationLink {
+                        MigrateFromDevice(showProgressOnSettings: $showProgress)
+                            .navigationTitle("Migrate device")
+                            .modifier(ThemedBackground(grouped: true))
+                            .navigationBarTitleDisplayMode(.large)
+                    } label: {
+                        settingsRow("tray.and.arrow.up", color: theme.colors.secondary) { Text("Migrate to another device") }
+                    }
+                }
+                
                 Section(header: Text("Help").foregroundColor(theme.colors.secondary)) {
                     if let user = user {
                         NavigationLink {

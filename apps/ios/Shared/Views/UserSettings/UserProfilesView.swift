@@ -96,8 +96,7 @@ struct UserProfilesView: View {
                     } label: {
                         Label("Add profile", systemImage: "plus")
                     }
-                    .frame(height: 44)
-                    .padding(.vertical, 4)
+                    .frame(height: 38)
                 }
             } footer: {
                 Text("Tap to activate profile.")
@@ -314,8 +313,7 @@ struct UserProfilesView: View {
             }
         } label: {
             HStack {
-                ProfileImage(imageStr: user.image, size: 44)
-                    .padding(.vertical, 4)
+                ProfileImage(imageStr: user.image, size: 38)
                     .padding(.trailing, 12)
                 Text(user.chatViewName)
                 Spacer()
