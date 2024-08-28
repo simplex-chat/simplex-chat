@@ -259,10 +259,17 @@ struct SettingsView: View {
     @EnvironmentObject var theme: AppTheme
     @Binding var showSettings: Bool
     @State private var showProgress: Bool = false
+    var viaUserPicker = false
 
     var body: some View {
         ZStack {
-            settingsView()
+            if viaUserPicker {
+                settingsView()
+            } else {
+                NavigationView {
+                    settingsView()
+                }
+            }
             if showProgress {
                 progressView()
             }
@@ -274,7 +281,6 @@ struct SettingsView: View {
 
     @ViewBuilder func settingsView() -> some View {
         let user = chatModel.currentUser
-        NavigationView {
             List {
                 Section(header: Text("Settings").foregroundColor(theme.colors.secondary)) {
                     NavigationLink {
@@ -407,11 +413,10 @@ struct SettingsView: View {
             }
             .navigationTitle("Your settings")
             .modifier(ThemedBackground(grouped: true))
-        }
-        .onDisappear {
-            chatModel.showingTerminal = false
-            chatModel.terminalItems = []
-        }
+            .onDisappear {
+                chatModel.showingTerminal = false
+                chatModel.terminalItems = []
+            }
     }
     
     private func chatDatabaseRow() -> some View {

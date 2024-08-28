@@ -48,7 +48,6 @@ struct ChatListView: View {
         }
         .sheet(isPresented: $userPickerVisible) {
             UserPicker(
-                showSettings: $showSettings,
                 userPickerVisible: $userPickerVisible
             )
         }

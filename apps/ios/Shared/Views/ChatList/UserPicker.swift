@@ -11,7 +11,6 @@ struct UserPicker: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.scenePhase) var scenePhase
     @Environment(\.colorScheme) var colorScheme
-    @Binding var showSettings: Bool
     @Binding var userPickerVisible: Bool
     @State var scrollViewContentSize: CGSize = .zero
     @State var disableScrolling: Bool = true
@@ -28,6 +27,7 @@ struct UserPicker: View {
     @State private var isChatPreferencesActive = false
     @State private var isUseFromDesktopActive = false
     @State private var isMigrateToAnotherDeviceActice = false
+    @State private var showSettings = false
 
     var body: some View {
         let v = NavigationView {
@@ -115,24 +115,8 @@ struct UserPicker: View {
                     
                     Section {
                         HStack {
-                            Label {
-                                Text("Settings")
-                                Spacer()
-                            } icon: {
-                                Image(systemName: "gearshape")
-                                    .resizable()
-                                    .symbolRenderingMode(.monochrome)
-                                    .foregroundColor(theme.colors.secondary)
-                                    .frame(maxWidth: 20, maxHeight: 20)
-                            }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                DispatchQueue.main.async {
-                                    dismissAllSheets(animated: false) {
-                                        showSettings = true
-                                    }
-                                }
+                            navigateOnTap(title: "Settings", image: "gearshape") {
+                                showSettings = true
                             }
                             Label {} icon: {
                                 Image(systemName: colorScheme == .light ? "sun.max" : "moon.stars")
@@ -141,6 +125,7 @@ struct UserPicker: View {
                                     .foregroundColor(theme.colors.secondary)
                                     .frame(maxWidth: 20, maxHeight: 20)
                             }
+                            .frame(maxWidth: 44)
                             .onTapGesture {
                                 if (colorScheme == .light) {
                                     ThemeManager.applyTheme(systemDarkThemeDefault.get())
@@ -156,6 +141,12 @@ struct UserPicker: View {
                     }
                 }
             }
+            .background(
+                NavigationLink(isActive: $showSettings) {
+                    SettingsView(showSettings: $showSettings, viaUserPicker: true)
+                        .navigationBarTitleDisplayMode(.large)
+                } label: {}
+            )
             .padding(.vertical, 19)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .onAppear {
@@ -270,7 +261,6 @@ struct UserPicker_Previews: PreviewProvider {
         let m = ChatModel()
         m.users = [UserInfo.sampleData, UserInfo.sampleData]
         return UserPicker(
-            showSettings: Binding.constant(false),
             userPickerVisible: Binding.constant(true)
         )
         .environmentObject(m)
