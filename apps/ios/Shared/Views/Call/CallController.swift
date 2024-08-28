@@ -68,11 +68,11 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
                 action.fail()
                 return
             }
+            if !ChatModel.shared.callInvitations.values.contains(where: { inv in inv.callUUID == action.callUUID.uuidString.lowercased() }) {
+                try? await justRefreshCallInvitations()
+                logger.debug("CallController: updated call invitations chat")
+            }
             await MainActor.run {
-                if !ChatModel.shared.callInvitations.values.contains(where: { inv in inv.callUUID == action.callUUID.uuidString.lowercased() }) {
-                    try? justRefreshCallInvitations()
-                    logger.debug("CallController: updated call invitations chat")
-                }
                 logger.debug("CallController.provider will answer on call")
 
                 if callManager.answerIncomingCall(callUUID: action.callUUID.uuidString.lowercased()) {

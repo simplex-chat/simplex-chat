@@ -2182,9 +2182,11 @@ func refreshCallInvitations() async throws {
     }
 }
 
-func justRefreshCallInvitations() throws {
+func justRefreshCallInvitations() async throws {
     let callInvitations = try apiGetCallInvitationsSync()
-    ChatModel.shared.callInvitations = callsByChat(callInvitations)
+    await MainActor.run {
+        ChatModel.shared.callInvitations = callsByChat(callInvitations)
+    }
 }
 
 private func callsByChat(_ callInvitations: [RcvCallInvitation]) -> [ChatId: RcvCallInvitation] {
