@@ -62,7 +62,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     func provider(_ provider: CXProvider, perform action: CXAnswerCallAction) {
         logger.debug("CallController.provider CXAnswerCallAction")
         Task {
-            let chatIsReady = await waitUntilChatStarted(timeoutMs: 30_000, stepMs: 100)
+            let chatIsReady = await waitUntilChatStarted(timeoutMs: 30_000, stepMs: 500)
             logger.debug("CallController chat started \(chatIsReady) \(ChatModel.shared.chatInitialized) \(ChatModel.shared.chatRunning == true) \(String(describing: AppChatState.shared.value))")
             if !chatIsReady {
                 action.fail()
@@ -175,17 +175,14 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     }
 
     private func waitUntilChatStarted(timeoutMs: UInt64, stepMs: UInt64) async -> Bool {
-        if ChatModel.shared.chatInitialized, ChatModel.shared.chatRunning == true, case .active = AppChatState.shared.value {
-            return true
-        }
         logger.debug("CallController waiting until chat started")
         var t: UInt64 = 0
         repeat {
-            _ = try? await Task.sleep(nanoseconds: stepMs * 1000000)
-            t += stepMs
             if ChatModel.shared.chatInitialized, ChatModel.shared.chatRunning == true, case .active = AppChatState.shared.value {
                 return true
             }
+            _ = try? await Task.sleep(nanoseconds: stepMs * 1000000)
+            t += stepMs
         } while t < timeoutMs
         return false
     }
