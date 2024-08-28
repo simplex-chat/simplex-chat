@@ -40,7 +40,10 @@ struct UserPicker: View {
                     ProfileImage(imageStr: currentUser.image, size: 44)
                         .onTapGesture {
                             activeSheet = .currentProfile
-                            userPickerVisible.toggle()
+                            withAnimation {
+                                userPickerVisible.toggle()
+
+                            }
                         }
                     Spacer()
                     ForEach(usersToPreview) { u in
@@ -54,7 +57,9 @@ struct UserPicker: View {
                         .frame(width: 32, height: 32)
                         .onTapGesture {
                             activeSheet = .chatProfiles
-                            userPickerVisible.toggle()
+                            withAnimation {
+                                userPickerVisible.toggle()
+                            }
                         }
                 }
                 .padding(.horizontal, 16)
@@ -69,19 +74,27 @@ struct UserPicker: View {
             }
             menuButton("Your SimpleX address", icon: "qrcode") {
                 activeSheet = .address
-                userPickerVisible.toggle()
+                withAnimation {
+                    userPickerVisible.toggle()
+                }
             }
             menuButton("Chat preferences", icon: "switch.2") {
                 activeSheet = .chatPreferences
-                userPickerVisible.toggle()
+                withAnimation {
+                    userPickerVisible.toggle()
+                }
             }
             menuButton("Use from desktop", icon: "desktopcomputer") {
                 showConnectDesktop = true
-                userPickerVisible.toggle()
+                withAnimation {
+                    userPickerVisible.toggle()
+                }
             }
             menuButton("Migrate to another device", icon: "tray.and.arrow.up") {
                 activeSheet = .migrateDevice
-                userPickerVisible.toggle()
+                withAnimation {
+                    userPickerVisible.toggle()
+                }
             }
             
             Divider()
@@ -92,7 +105,9 @@ struct UserPicker: View {
             HStack {
                 Button {
                     showSettings = true
-                    userPickerVisible.toggle()
+                    withAnimation {
+                        userPickerVisible.toggle()
+                    }
                 } label: {
                     HStack(spacing: verticalSpaceDefault) {
                         Image(systemName: "gearshape")
