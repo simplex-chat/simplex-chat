@@ -141,27 +141,23 @@ fun UserPicker(
       if (u.user.activeUser) Divider(Modifier.requiredHeight(0.5.dp))
     }
   }
-  val xOffset = with(LocalDensity.current) { 10.dp.roundToPx() }
   val maxWidth = with(LocalDensity.current) { windowWidth() * density }
   Box(Modifier
     .fillMaxSize()
-    .offset { IntOffset(if (newChat.isGone()) -maxWidth.value.roundToInt() else xOffset, 0) }
+    .offset { IntOffset(if (newChat.isGone()) -maxWidth.value.roundToInt() else 0, 0) }
+    .background(color = Color.Gray.copy(alpha = 0.5f))
     .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = { userPickerState.value = AnimatedViewState.HIDING })
-    .padding(bottom = 10.dp, top = 10.dp)
     .graphicsLayer {
       alpha = animatedFloat.value
-      translationY = (if (appPrefs.oneHandUI.state.value) -1 else 1) * (animatedFloat.value - 1) * xOffset
+      translationY = (if (appPrefs.oneHandUI.state.value) -1 else 1) * (animatedFloat.value - 1) * 0
     },
     contentAlignment = contentAlignment
   ) {
     Column(
       Modifier
-        .widthIn(min = 260.dp)
-        .width(IntrinsicSize.Min)
-        .height(IntrinsicSize.Min)
-        .shadow(8.dp, RoundedCornerShape(corner = CornerSize(25.dp)), clip = true)
-        .background(MaterialTheme.colors.surface, RoundedCornerShape(corner = CornerSize(25.dp)))
-        .clip(RoundedCornerShape(corner = CornerSize(25.dp)))
+        .height(404.dp)
+        .then(if (appPlatform.isAndroid) Modifier.fillMaxWidth() else Modifier.width(IntrinsicSize.Min))
+        .background(MaterialTheme.colors.surface)
     ) {
       val currentRemoteHost = remember { chatModel.currentRemoteHost }.value
       Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
