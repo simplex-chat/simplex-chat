@@ -115,24 +115,24 @@ struct UserPicker: View {
                     
                     Section {
                         HStack {
-                            Button {
+                            Label {
+                                Text("Settings")
+                                Spacer()
+                            } icon: {
+                                Image(systemName: "gearshape")
+                                    .symbolRenderingMode(.monochrome)
+                                    .foregroundColor(theme.colors.secondary)
+                                    .frame(maxWidth: 20, maxHeight: 20)
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
                                 DispatchQueue.main.async {
                                     dismissAllSheets(animated: false) {
                                         showSettings = true
                                     }
                                 }
-                            } label: {
-                                Label {
-                                    Text("Settings")
-                                } icon: {
-                                    Image(systemName: "gearshape")
-                                        .symbolRenderingMode(.monochrome)
-                                        .foregroundColor(theme.colors.secondary)
-                                        .frame(maxWidth: 20, maxHeight: 20)
-                                }
-                                Spacer()
                             }
-                            .buttonStyle(PlainButtonStyle())
                             Label {} icon: {
                                 Image(systemName: colorScheme == .light ? "sun.max" : "moon.stars")
                                     .symbolRenderingMode(.monochrome)
