@@ -16,6 +16,7 @@ import Control.Exception (Exception)
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson.TH as J
 import Data.ByteString (ByteString)
+import Data.IORef (IORef)
 import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Word (Word16)
@@ -40,7 +41,7 @@ data RemoteHostClient = RemoteHostClient
   }
 
 data RemoteCrypto = RemoteCrypto
-  { drg :: TVar ChaChaDRG,
+  { drg :: IORef ChaChaDRG,
     counter :: TVar Int64,
     sessionCode :: ByteString,
     hybridKey :: KEMHybridSecret,

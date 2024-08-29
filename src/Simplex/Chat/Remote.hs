@@ -352,7 +352,7 @@ storeRemoteFile rhId encrypted_ localPath = do
       tmpDir <- lift getChatTempDirectory
       createDirectoryIfMissing True tmpDir
       tmpFile <- liftIO $ tmpDir `uniqueCombine` takeFileName localPath
-      cfArgs <- atomically . CF.randomArgs =<< asks random
+      cfArgs <- liftIO . CF.randomArgs =<< asks random
       liftError (ChatError . CEFileWrite tmpFile) $ encryptFile localPath tmpFile cfArgs
       pure $ CryptoFile tmpFile $ Just cfArgs
 

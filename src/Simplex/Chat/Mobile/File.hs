@@ -42,7 +42,7 @@ import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Util (catchAll)
-import UnliftIO (Handle, IOMode (..), atomically, withFile)
+import UnliftIO (Handle, IOMode (..), withFile)
 
 data WriteFileResult
   = WFResult {cryptoArgs :: CryptoFileArgs}
@@ -60,7 +60,7 @@ cChatWriteFile cc cPath ptr len = do
 
 chatWriteFile :: ChatController -> FilePath -> ByteString -> IO WriteFileResult
 chatWriteFile ChatController {random} path s = do
-  cfArgs <- atomically $ CF.randomArgs random
+  cfArgs <- CF.randomArgs random
   let file = CryptoFile path $ Just cfArgs
   either WFError (\_ -> WFResult cfArgs)
     <$> runCatchExceptT (withExceptT show $ CF.writeFile file $ LB.fromStrict s)
@@ -104,7 +104,7 @@ chatEncryptFile ChatController {random} fromPath toPath =
   either WFError WFResult <$> runCatchExceptT encrypt
   where
     encrypt = do
-      cfArgs <- atomically $ CF.randomArgs random
+      cfArgs <- liftIO $ CF.randomArgs random
       encryptFile fromPath toPath cfArgs
       pure cfArgs
 

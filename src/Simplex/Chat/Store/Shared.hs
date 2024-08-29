@@ -20,6 +20,7 @@ import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson.TH as J
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
+import Data.IORef (IORef)
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe, isJust, listToMaybe)
 import Data.Text (Text)
@@ -44,7 +45,6 @@ import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
 import Simplex.Messaging.Util (allFinally)
 import Simplex.Messaging.Version
-import UnliftIO.STM
 
 data ChatLockEntity
   = CLInvitation ByteString
@@ -488,16 +488,16 @@ withLocalDisplayName db userId displayName action = getLdnSuffix >>= (`tryCreate
             |]
             (ldn, displayName, ldnSuffix, userId, ts, ts)
 
-createWithRandomId :: forall a. TVar ChaChaDRG -> (ByteString -> IO a) -> ExceptT StoreError IO a
+createWithRandomId :: forall a. IORef ChaChaDRG -> (ByteString -> IO a) -> ExceptT StoreError IO a
 createWithRandomId = createWithRandomBytes 12
 
-createWithRandomId' :: forall a. TVar ChaChaDRG -> (ByteString -> IO (Either StoreError a)) -> ExceptT StoreError IO a
+createWithRandomId' :: forall a. IORef ChaChaDRG -> (ByteString -> IO (Either StoreError a)) -> ExceptT StoreError IO a
 createWithRandomId' = createWithRandomBytes' 12
 
-createWithRandomBytes :: forall a. Int -> TVar ChaChaDRG -> (ByteString -> IO a) -> ExceptT StoreError IO a
+createWithRandomBytes :: forall a. Int -> IORef ChaChaDRG -> (ByteString -> IO a) -> ExceptT StoreError IO a
 createWithRandomBytes size gVar create = createWithRandomBytes' size gVar (fmap Right . create)
 
-createWithRandomBytes' :: forall a. Int -> TVar ChaChaDRG -> (ByteString -> IO (Either StoreError a)) -> ExceptT StoreError IO a
+createWithRandomBytes' :: forall a. Int -> IORef ChaChaDRG -> (ByteString -> IO (Either StoreError a)) -> ExceptT StoreError IO a
 createWithRandomBytes' size gVar create = tryCreate 3
   where
     tryCreate :: Int -> ExceptT StoreError IO a
@@ -510,8 +510,8 @@ createWithRandomBytes' size gVar create = tryCreate 3
           | SQL.sqlError e == SQL.ErrorConstraint -> tryCreate (n - 1)
           | otherwise -> throwError . SEInternalError $ show e
 
-encodedRandomBytes :: TVar ChaChaDRG -> Int -> IO ByteString
-encodedRandomBytes gVar n = atomically $ B64.encode <$> C.randomBytes n gVar
+encodedRandomBytes :: IORef ChaChaDRG -> Int -> IO ByteString
+encodedRandomBytes gVar n = B64.encode <$> C.randomBytes n gVar
 
 assertNotUser :: DB.Connection -> User -> Contact -> ExceptT StoreError IO ()
 assertNotUser db User {userId} Contact {contactId, localDisplayName} = do
