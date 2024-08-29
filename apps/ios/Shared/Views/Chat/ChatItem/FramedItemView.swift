@@ -66,8 +66,16 @@ struct FramedItemView: View {
 
             if chatItem.content.msgContent != nil {
                 CIMetaView(chat: chat, chatItem: chatItem, metaColor: useWhiteMetaColor ? Color.white : theme.colors.secondary)
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 6)
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 2)
+                    .background {
+                        if let mc = chatItem.content.msgContent, mc.isImageOrVideo && mc.text.isEmpty  {
+                            Color.clear.background(onMediaMaterial)
+                        }
+                    }
+                    .clipShape(Capsule())
+                    .padding(.horizontal, 8)
+                    .padding(.bottom, 4)
                     .overlay(DetermineWidth())
                     .accessibilityLabel("")
             }
@@ -317,6 +325,17 @@ struct FramedItemView: View {
             return imgWidth
         } else {
             return videoWidth
+        }
+    }
+}
+
+struct CircleBackground: ViewModifier {
+    func body(content: Content) -> some View {
+        ZStack {
+            Color.clear.background(onMediaMaterial)
+                .frame(width: 20, height: 20)
+                .clipShape(Circle())
+            content
         }
     }
 }

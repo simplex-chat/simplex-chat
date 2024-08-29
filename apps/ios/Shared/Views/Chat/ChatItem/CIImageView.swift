@@ -167,8 +167,9 @@ struct CIImageView: View {
             .resizable()
             .aspectRatio(contentMode: .fit)
             .frame(width: size, height: size)
-            .foregroundColor(.white)
             .padding(padding)
+            .modifier(CircleBackground())
+
     }
 
     private func progressView() -> some View {

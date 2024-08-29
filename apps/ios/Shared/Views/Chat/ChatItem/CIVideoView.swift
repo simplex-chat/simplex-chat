@@ -11,6 +11,8 @@ import AVKit
 import SimpleXChat
 import Combine
 
+let onMediaMaterial = Material.thin
+
 struct CIVideoView: View {
     @EnvironmentObject var m: ChatModel
     private let chatItem: ChatItem
@@ -270,46 +272,44 @@ struct CIVideoView: View {
     }
 
 
-    private func playPauseIcon(_ image: String, _ color: Color = .white) -> some View {
+    private func playPauseIcon(_ image: String) -> some View {
         Image(systemName: image)
         .resizable()
         .aspectRatio(contentMode: .fit)
         .frame(width: smallView ? 12 * sizeMultiplier * 1.6 : 12, height: smallView ? 12 * sizeMultiplier * 1.6 : 12)
-        .foregroundColor(color)
+        .foregroundColor(.primary)
         .padding(.leading, smallView ? 0 : 4)
         .frame(width: 40 * sizeMultiplier, height: 40 * sizeMultiplier)
-        .background(Color.black.opacity(0.35))
+        .background(onMediaMaterial)
         .clipShape(Circle())
     }
 
-    private func videoDecryptionProgress(_ color: Color = .white) -> some View {
+    private func videoDecryptionProgress() -> some View {
         ProgressView()
             .progressViewStyle(.circular)
             .frame(width: smallView ? 12 * sizeMultiplier : 12, height: smallView ? 12 * sizeMultiplier : 12)
-            .tint(color)
+            .tint(.primary)
             .frame(width: smallView ? 40 * sizeMultiplier * 0.9 : 40, height: smallView ? 40 * sizeMultiplier * 0.9 : 40)
-            .background(Color.black.opacity(0.35))
+            .background(onMediaMaterial)
             .clipShape(Circle())
     }
 
     private func durationProgress() -> some View {
         HStack {
             Text("\(durationText(videoPlaying ? progress : duration))")
-            .foregroundColor(.white)
             .font(.caption)
             .padding(.vertical, 3)
             .padding(.horizontal, 6)
-            .background(Color.black.opacity(0.35))
+            .background(onMediaMaterial)
             .cornerRadius(10)
             .padding([.top, .leading], 6)
 
             if let file = chatItem.file, !videoPlaying {
                 Text("\(ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .binary))")
-                .foregroundColor(.white)
                 .font(.caption)
                 .padding(.vertical, 3)
                 .padding(.horizontal, 6)
-                .background(Color.black.opacity(0.35))
+                .background(onMediaMaterial)
                 .cornerRadius(10)
                 .padding(.top, 6)
             }
@@ -413,8 +413,9 @@ struct CIVideoView: View {
             .resizable()
             .aspectRatio(contentMode: .fit)
             .frame(width: size, height: size)
-            .foregroundColor(.white)
+//            .foregroundColor(.white)
             .padding(smallView ? 0 : padding)
+            .modifier(CircleBackground())
     }
 
     private func progressView() -> some View {
@@ -423,18 +424,17 @@ struct CIVideoView: View {
         .frame(width: 16, height: 16)
         .tint(.white)
         .padding(smallView ? 0 : 11)
+        .modifier(CircleBackground())
     }
 
     private func progressCircle(_ progress: Int64, _ total: Int64) -> some View {
         Circle()
         .trim(from: 0, to: Double(progress) / Double(total))
-        .stroke(
-            Color(uiColor: .white),
-            style: StrokeStyle(lineWidth: 2)
-        )
+        .stroke(style: StrokeStyle(lineWidth: 2))
         .rotationEffect(.degrees(-90))
         .frame(width: 16, height: 16)
         .padding([.trailing, .top], smallView ? 0 : 11)
+        .modifier(CircleBackground())
     }
 
     // TODO encrypt: where file size is checked?
