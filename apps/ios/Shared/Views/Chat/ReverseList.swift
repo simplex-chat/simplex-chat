@@ -198,7 +198,10 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         }
 
         private func updateVisibleItems() {
-            ChatView.FloatingButtonModel.shared.visibleItems.send(
+            let fbm = ChatView.FloatingButtonModel.shared
+            fbm.scrollOffset.send(tableView.contentOffset.y + InvertedTableView.inset)
+            print(fbm.scrollOffset.value)
+            fbm.visibleItems.send(
                 (tableView.indexPathsForVisibleRows ?? [])
                     .compactMap { indexPath -> String? in
                         let relativeFrame = tableView.superview!.convert(

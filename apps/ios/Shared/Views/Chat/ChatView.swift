@@ -76,7 +76,7 @@ struct ChatView: View {
             VStack(spacing: 0) {
                 ZStack(alignment: .bottomTrailing) {
                     chatItemsList()
-                    floatingButtons(counts: floatingButtonModel.unreadChatItemCounts)
+                    floatingButtons(unreadBelow: floatingButtonModel.unreadBelow, isNearBottom: floatingButtonModel.isNearBottom)
                 }
                 connectingText()
                 if selectedChatItems == nil {
@@ -426,7 +426,7 @@ struct ChatView: View {
             .onChange(of: im.itemAdded) { added in
                 if added {
                     im.itemAdded = false
-                    if floatingButtonModel.unreadChatItemCounts.isReallyNearBottom {
+                    if floatingButtonModel.isReallyNearBottom {
                         scrollModel.scrollToBottom()
                     }
                 }
@@ -450,31 +450,42 @@ struct ChatView: View {
 
     class FloatingButtonModel: ObservableObject {
         static let shared = FloatingButtonModel()
-
-        @Published var unreadChatItemCounts: UnreadChatItemCounts
-
+        @Published var unreadBelow: Int = 0
+        @Published var isNearBottom: Bool = true
+        var isReallyNearBottom: Bool { scrollOffset.value > 0 && scrollOffset.value < 500 }
         let visibleItems = PassthroughSubject<[String], Never>()
+        let scrollOffset = CurrentValueSubject<Double, Never>(0)
         private var bag = Set<AnyCancellable>()
 
         init() {
-            unreadChatItemCounts = UnreadChatItemCounts(
-                isNearBottom: true,
-                isReallyNearBottom: true,
-                unreadBelow: 0
-            )
             visibleItems
                 .receive(on: DispatchQueue.global(qos: .background))
-                .map { ChatModel.shared.unreadChatItemCounts(firstVisible: $0.first) }
+                .removeDuplicates()
+                .map { itemIds in
+                    if let viewId = itemIds.first,
+                       let index = ItemsModel.shared.reversedChatItems.firstIndex(where: { $0.viewId == viewId }) {
+                        ItemsModel.shared.reversedChatItems[..<index].reduce(into: 0) { unread, chatItem in
+                            if chatItem.isRcvNew { unread += 1 }
+                        }
+                    } else { 0 }
+                }
                 .removeDuplicates()
                 .throttle(for: .seconds(0.2), scheduler: DispatchQueue.main, latest: true)
-                .assign(to: \.unreadChatItemCounts, on: self)
+                .assign(to: \.unreadBelow, on: self)
+                .store(in: &bag)
+            scrollOffset
+                .map { $0 < 800 }
+                .removeDuplicates()
+                // Delay the state change until scroll to bottom animation is finished
+                .delay(for: 0.35, scheduler: DispatchQueue.main)
+                .assign(to: \.isNearBottom, on: self)
                 .store(in: &bag)
         }
     }
 
-    private func floatingButtons(counts: UnreadChatItemCounts) -> some View {
+    private func floatingButtons(unreadBelow: Int, isNearBottom: Bool) -> some View {
         VStack {
-            let unreadAbove = chat.chatStats.unreadCount - counts.unreadBelow
+            let unreadAbove = chat.chatStats.unreadCount - unreadBelow
             if unreadAbove > 0 {
                 circleButton {
                     unreadCountText(unreadAbove)
@@ -495,16 +506,16 @@ struct ChatView: View {
                 }
             }
             Spacer()
-            if counts.unreadBelow > 0 {
+            if unreadBelow > 0 {
                 circleButton {
-                    unreadCountText(counts.unreadBelow)
+                    unreadCountText(unreadBelow)
                         .font(.callout)
                         .foregroundColor(theme.colors.primary)
                 }
                 .onTapGesture {
                     scrollModel.scrollToBottom()
                 }
-            } else if !counts.isNearBottom {
+            } else if !isNearBottom {
                 circleButton {
                     Image(systemName: "chevron.down")
                         .foregroundColor(theme.colors.primary)
