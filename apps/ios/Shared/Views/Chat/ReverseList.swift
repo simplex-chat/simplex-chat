@@ -209,10 +209,10 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             fbm.visibleItems.send(
                 (tableView.indexPathsForVisibleRows ?? [])
                     .compactMap { indexPath -> String? in
-                        let relativeFrame = tableView.superview!.convert(
+                        guard let relativeFrame = tableView.superview?.convert(
                             tableView.rectForRow(at: indexPath),
                             from: tableView
-                        )
+                        ) else { return nil }
                         // Checks that the cell is visible accounting for the added insets
                         let isVisible =
                             relativeFrame.maxY > InvertedTableView.inset &&
