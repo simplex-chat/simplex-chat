@@ -107,7 +107,7 @@ class ModalManager(private val placement: ModalPlacement? = null) {
   }
 
   fun showPasscodeCustomModal(oneTime: Boolean, modal: @Composable (close: () -> Unit) -> Unit) {
-    Log.d(TAG, "ModalManager.showPasscodeCustomModal")
+    Log.d(TAG, "ModalManager.showPasscodeCustomModal, oneTime: $oneTime")
     if (oneTime) {
       onTimePasscodeView.value = modal
     } else {
