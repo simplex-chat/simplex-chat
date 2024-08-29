@@ -40,6 +40,7 @@ import Data.Either (fromRight, lefts, partitionEithers, rights)
 import Data.Fixed (div')
 import Data.Functor (($>))
 import Data.Functor.Identity
+import Data.IORef (IORef)
 import Data.Int (Int64)
 import Data.List (find, foldl', isSuffixOf, mapAccumL, partition, sortOn)
 import Data.List.NonEmpty (NonEmpty (..), nonEmpty, toList, (<|))
@@ -1057,7 +1058,7 @@ processChatCommand' vr = \case
                             fsNewPath <- liftIO $ filesFolder `uniqueCombine` fileName
                             liftIO $ B.writeFile fsNewPath "" -- create empty file
                             encrypt <- chatReadVar encryptLocalFiles
-                            cfArgs <- if encrypt then Just <$> (atomically . CF.randomArgs =<< asks random) else pure Nothing
+                            cfArgs <- if encrypt then Just <$> (liftIO . CF.randomArgs =<< asks random) else pure Nothing
                             let toCF = CryptoFile fsNewPath cfArgs
                             -- to keep forwarded file in case original is deleted
                             liftIOEither $ runExceptT $ withExceptT (ChatError . CEInternalError . show) $ copyCryptoFile (fromCF {filePath = fsFromPath} :: CryptoFile) toCF
@@ -1264,9 +1265,9 @@ processChatCommand' vr = \case
         calls <- asks currentCalls
         withContactLock "sendCallInvitation" contactId $ do
           g <- asks random
-          callId <- atomically $ CallId <$> C.randomBytes 16 g
+          callId <- liftIO $ CallId <$> C.randomBytes 16 g
           callUUID <- UUID.toText <$> liftIO V4.nextRandom
-          dhKeyPair <- atomically $ if encryptedCall callType then Just <$> C.generateKeyPair g else pure Nothing
+          dhKeyPair <- liftIO $ if encryptedCall callType then Just <$> C.generateKeyPair g else pure Nothing
           let invitation = CallInvitation {callType, callDhPubKey = fst <$> dhKeyPair}
               callState = CallInvitationSent {localCallType = callType, localDhPrivKey = snd <$> dhKeyPair}
           (msg, _) <- sendDirectContactMessage user ct (XCallInv callId invitation)
@@ -2234,7 +2235,7 @@ processChatCommand' vr = \case
   SetFileToReceive fileId userApprovedRelays encrypted_ -> withUser $ \_ -> do
     withFileLock "setFileToReceive" fileId . procCmd $ do
       encrypt <- (`fromMaybe` encrypted_) <$> chatReadVar encryptLocalFiles
-      cfArgs <- if encrypt then Just <$> (atomically . CF.randomArgs =<< asks random) else pure Nothing
+      cfArgs <- if encrypt then Just <$> (liftIO . CF.randomArgs =<< asks random) else pure Nothing
       withStore' $ \db -> setRcvFileToReceive db fileId userApprovedRelays cfArgs
       ok_
   CancelFile fileId -> withUser $ \user@User {userId} ->
@@ -2719,7 +2720,7 @@ processChatCommand' vr = \case
       forM_ (timed_ >>= timedDeleteAt') $
         startProximateTimedItemThread user (ChatRef CTDirect contactId, chatItemId' ci)
     drgRandomBytes :: Int -> CM ByteString
-    drgRandomBytes n = asks random >>= atomically . C.randomBytes n
+    drgRandomBytes n = asks random >>= liftIO . C.randomBytes n
     privateGetUser :: UserId -> CM User
     privateGetUser userId =
       tryChatError (withStore (`getUser` userId)) >>= \case
@@ -3244,7 +3245,7 @@ toFSFilePath f =
 
 setFileToEncrypt :: RcvFileTransfer -> CM RcvFileTransfer
 setFileToEncrypt ft@RcvFileTransfer {fileId} = do
-  cfArgs <- atomically . CF.randomArgs =<< asks random
+  cfArgs <- liftIO . CF.randomArgs =<< asks random
   withStore' $ \db -> setFileCryptoArgs db fileId cfArgs
   pure (ft :: RcvFileTransfer) {cryptoArgs = Just cfArgs}
 
@@ -5956,7 +5957,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       if featureAllowed SCFCalls forContact ct
         then do
           g <- asks random
-          dhKeyPair <- atomically $ if encryptedCall callType then Just <$> C.generateKeyPair g else pure Nothing
+          dhKeyPair <- liftIO $ if encryptedCall callType then Just <$> C.generateKeyPair g else pure Nothing
           ci <- saveCallItem CISCallPending
           callUUID <- UUID.toText <$> liftIO V4.nextRandom
           let sharedKey = C.Key . C.dhBytes' <$> (C.dh' <$> callDhPubKey <*> (snd <$> dhKeyPair))
@@ -6875,7 +6876,7 @@ createSndMessages idsEvents = do
   vr <- chatVersionRange'
   withStoreBatch $ \db -> fmap (createMsg db g vr) idsEvents
   where
-    createMsg :: DB.Connection -> TVar ChaChaDRG -> VersionRangeChat -> (ConnOrGroupId, ChatMsgEvent e) -> IO (Either ChatError SndMessage)
+    createMsg :: DB.Connection -> IORef ChaChaDRG -> VersionRangeChat -> (ConnOrGroupId, ChatMsgEvent e) -> IO (Either ChatError SndMessage)
     createMsg db g vr (connOrGroupId, evnt) = runExceptT $ do
       withExceptT ChatErrorStore $ createNewSndMessage db g connOrGroupId evnt encodeMessage
       where

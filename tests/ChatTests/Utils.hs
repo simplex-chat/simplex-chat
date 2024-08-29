@@ -216,7 +216,7 @@ sndRcvImg pqEnc enabled (cc1, msg, v1) (cc2, v2) = do
   name1 <- userName cc1
   name2 <- userName cc2
   g <- C.newRandom
-  img <- atomically $ B64.encode <$> C.randomBytes lrgLen g
+  img <- B64.encode <$> C.randomBytes lrgLen g
   cc1 `send` ("/_send @2 json {\"msgContent\":{\"type\":\"image\",\"text\":\"" <> msg <> "\",\"image\":\"" <> B.unpack img <> "\"}}")
   cc1 .<## "}}"
   cc1 <### ([ConsoleString (name2 <> ": quantum resistant end-to-end encryption enabled") | enabled] <> [WithTime ("@" <> name2 <> " " <> msg)])
@@ -231,7 +231,7 @@ sndRcvImg pqEnc enabled (cc1, msg, v1) (cc2, v2) = do
 genProfileImg :: IO ByteString
 genProfileImg = do
   g <- C.newRandom
-  atomically $ B64.encode <$> C.randomBytes lrgLen g
+  B64.encode <$> C.randomBytes lrgLen g
   where
     lrgLen = maxEncodedInfoLength * 3 `div` 4 - 420
 
