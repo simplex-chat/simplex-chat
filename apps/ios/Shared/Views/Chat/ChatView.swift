@@ -23,7 +23,6 @@ struct ChatView: View {
     @Environment(\.scenePhase) var scenePhase
     @State @ObservedObject var chat: Chat
     @StateObject private var scrollModel = ReverseListScrollModel()
-    @StateObject private var floatingButtonModel: FloatingButtonModel = .shared
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
@@ -76,8 +75,7 @@ struct ChatView: View {
             VStack(spacing: 0) {
                 ZStack(alignment: .bottomTrailing) {
                     chatItemsList()
-                    // TODO: Extract into a separate view, to reduce the scope of `FloatingButtonModel` updates
-                    floatingButtons(unreadBelow: floatingButtonModel.unreadBelow, isNearBottom: floatingButtonModel.isNearBottom)
+                    FloatingButtons(theme: theme, scrollModel: scrollModel, chat: chat)
                 }
                 connectingText()
                 if selectedChatItems == nil {
@@ -427,7 +425,7 @@ struct ChatView: View {
             .onChange(of: im.itemAdded) { added in
                 if added {
                     im.itemAdded = false
-                    if floatingButtonModel.isReallyNearBottom {
+                    if FloatingButtonModel.shared.isReallyNearBottom {
                         scrollModel.scrollToBottom()
                     }
                 }
@@ -459,6 +457,7 @@ struct ChatView: View {
         private var bag = Set<AnyCancellable>()
 
         init() {
+            // Unread Below
             visibleItems
                 .receive(on: DispatchQueue.global(qos: .background))
                 .map { itemIds in
@@ -473,7 +472,8 @@ struct ChatView: View {
                 .receive(on: DispatchQueue.main)
                 .assign(to: \.unreadBelow, on: self)
                 .store(in: &bag)
-
+            
+            // Is near bottom
             scrollOffset
                 .map { $0 < 800 }
                 .removeDuplicates()
@@ -484,55 +484,62 @@ struct ChatView: View {
         }
     }
 
-    private func floatingButtons(unreadBelow: Int, isNearBottom: Bool) -> some View {
-        VStack {
-            let unreadAbove = chat.chatStats.unreadCount - unreadBelow
-            if unreadAbove > 0 {
-                circleButton {
-                    unreadCountText(unreadAbove)
-                        .font(.callout)
-                        .foregroundColor(theme.colors.primary)
-                }
-                .onTapGesture {
-                    scrollModel.scrollToNextPage()
-                }
-                .contextMenu {
-                    Button {
-                        Task {
-                            await markChatRead(chat)
+    private struct FloatingButtons: View {
+        let theme: AppTheme
+        let scrollModel: ReverseListScrollModel
+        @ObservedObject var model: FloatingButtonModel = .shared
+        @ObservedObject var chat: Chat
+
+        var body: some View {
+            VStack {
+                let unreadAbove = chat.chatStats.unreadCount - model.unreadBelow
+                if unreadAbove > 0 {
+                    circleButton {
+                        unreadCountText(unreadAbove)
+                            .font(.callout)
+                            .foregroundColor(theme.colors.primary)
+                    }
+                    .onTapGesture {
+                        scrollModel.scrollToNextPage()
+                    }
+                    .contextMenu {
+                        Button {
+                            Task {
+                                await markChatRead(chat)
+                            }
+                        } label: {
+                            Label("Mark read", systemImage: "checkmark")
                         }
-                    } label: {
-                        Label("Mark read", systemImage: "checkmark")
                     }
                 }
+                Spacer()
+                if model.unreadBelow > 0 {
+                    circleButton {
+                        unreadCountText(model.unreadBelow)
+                            .font(.callout)
+                            .foregroundColor(theme.colors.primary)
+                    }
+                    .onTapGesture {
+                        scrollModel.scrollToBottom()
+                    }
+                } else if !model.isNearBottom {
+                    circleButton {
+                        Image(systemName: "chevron.down")
+                            .foregroundColor(theme.colors.primary)
+                    }
+                    .onTapGesture { scrollModel.scrollToBottom() }
+                }
             }
-            Spacer()
-            if unreadBelow > 0 {
-                circleButton {
-                    unreadCountText(unreadBelow)
-                        .font(.callout)
-                        .foregroundColor(theme.colors.primary)
-                }
-                .onTapGesture {
-                    scrollModel.scrollToBottom()
-                }
-            } else if !isNearBottom {
-                circleButton {
-                    Image(systemName: "chevron.down")
-                        .foregroundColor(theme.colors.primary)
-                }
-                .onTapGesture { scrollModel.scrollToBottom() }
-            }
+            .padding()
         }
-        .padding()
-    }
 
-    private func circleButton<Content: View>(_ content: @escaping () -> Content) -> some View {
-        ZStack {
-            Circle()
-                .foregroundColor(Color(uiColor: .tertiarySystemGroupedBackground))
-                .frame(width: 44, height: 44)
-            content()
+        private func circleButton<Content: View>(_ content: @escaping () -> Content) -> some View {
+            ZStack {
+                Circle()
+                    .foregroundColor(Color(uiColor: .tertiarySystemGroupedBackground))
+                    .frame(width: 44, height: 44)
+                content()
+            }
         }
     }
 
