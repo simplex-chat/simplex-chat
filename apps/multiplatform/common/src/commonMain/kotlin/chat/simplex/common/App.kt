@@ -403,7 +403,7 @@ fun DesktopScreen(settingsState: SettingsViewState) {
     }
     VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier))
     tryOrShowError("UserPicker", error = {}) {
-      UserPicker(chatModel, userPickerState) {
+      UserPicker(chatModel, userPickerState, scaffoldState.drawerState) {
         scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
         userPickerState.value = AnimatedViewState.GONE
       }

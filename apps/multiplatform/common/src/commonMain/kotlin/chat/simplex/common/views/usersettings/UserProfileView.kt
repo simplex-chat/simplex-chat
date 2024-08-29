@@ -34,6 +34,8 @@ fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
   KeyChangeEffect(u.value?.remoteHostId, u.value?.userId) {
     close()
   }
+
+  Log.d(TAG, "here: ${user?.userId}")
   if (user != null) {
     var profile by remember { mutableStateOf(user.profile.toProfile()) }
     UserProfileLayout(
