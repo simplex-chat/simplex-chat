@@ -754,4 +754,18 @@
     <string name="export_database">Xuất cơ sở dữ liệu</string>
     <string name="migrate_from_device_error_uploading_archive">Lỗi tải lên kho lưu trữ</string>
     <string name="migrate_from_device_exported_file_doesnt_exist">Tập tin đã xuất không tồn tại</string>
+    <string name="settings_section_title_files">TẬP TIN</string>
+    <string name="failed_to_parse_chats_title">Không thể tải tin nhắn</string>
+    <string name="file_error_no_file">Không tìm thấy tập tin - có thể tập tin đã bị xóa và hủy bỏ.</string>
+    <string name="file_error">Lỗi tập tin</string>
+    <string name="export_theme">Xuất chủ đề</string>
+    <string name="failed_to_parse_chat_title">Không thể tải tin nhắn</string>
+    <string name="choose_file">Tập tin</string>
+    <string name="v5_0_large_files_support_descr">Nhanh chóng và không cần phải đợi người gửi hoạt động!</string>
+    <string name="file_not_found">Không tìm thấy tập tin</string>
+    <string name="file_with_path">Tập tin: %s</string>
+    <string name="v5_4_better_groups_descr">Tham gia nhanh chóng hơn và xử lý tin nhắn ổn định hơn.</string>
+    <string name="servers_info_files_tab">Tập tin</string>
+    <string name="favorite_chat">Yêu thích</string>
+    <string name="icon_descr_file">Tập tin</string>
 </resources>
