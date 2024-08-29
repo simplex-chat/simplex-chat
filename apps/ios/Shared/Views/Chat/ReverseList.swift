@@ -109,11 +109,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 )
             updateFloatingButtons
                 .throttle(for: 0.2, scheduler: DispatchQueue.main, latest: true)
-                .sink {
-                    let fbm = ChatView.FloatingButtonModel.shared
-                    fbm.scrollOffset.send(self.tableView.contentOffset.y + InvertedTableView.inset)
-                    fbm.visibleItems.send(self.visibleItems)
-                }
+                .sink { self.updateVisibleItems() }
                 .store(in: &bag)
         }
 
@@ -205,21 +201,25 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
 
         override func scrollViewDidScroll(_ scrollView: UIScrollView) { updateFloatingButtons.send() }
 
-        private var visibleItems: [String] {
-            (tableView.indexPathsForVisibleRows ?? [])
-                .compactMap { indexPath -> String? in
-                    let relativeFrame = tableView.superview?.convert(
-                        tableView.rectForRow(at: indexPath),
-                        from: tableView
-                    ) ?? .zero
-                    // Checks that the cell is visible accounting for the added insets
-                    let isVisible =
-                        relativeFrame.maxY > InvertedTableView.inset &&
-                        relativeFrame.minY < tableView.frame.height - InvertedTableView.inset
-                    return indexPath.item < representer.items.count && isVisible
-                    ? representer.items[indexPath.item].viewId
-                    : nil
-                }
+        private func updateVisibleItems() {
+            let fbm = ChatView.FloatingButtonModel.shared
+            fbm.scrollOffset.send(tableView.contentOffset.y + InvertedTableView.inset)
+            fbm.visibleItems.send(
+                (tableView.indexPathsForVisibleRows ?? [])
+                    .compactMap { indexPath -> String? in
+                        let relativeFrame = tableView.superview!.convert(
+                            tableView.rectForRow(at: indexPath),
+                            from: tableView
+                        )
+                        // Checks that the cell is visible accounting for the added insets
+                        let isVisible =
+                            relativeFrame.maxY > InvertedTableView.inset &&
+                            relativeFrame.minY < tableView.frame.height - InvertedTableView.inset
+                        return indexPath.item < representer.items.count && isVisible
+                        ? representer.items[indexPath.item].viewId
+                        : nil
+                    }
+            )
         }
     }
 
