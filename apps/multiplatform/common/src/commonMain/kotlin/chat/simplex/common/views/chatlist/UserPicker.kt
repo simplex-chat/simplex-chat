@@ -324,7 +324,8 @@ fun UserPicker(
     Column(
       Modifier
         .height(IntrinsicSize.Min)
-        .then(if (appPlatform.isAndroid) Modifier.fillMaxWidth() else Modifier.width(IntrinsicSize.Min))
+        .then(if (appPlatform.isDesktop) Modifier.widthIn(max = 375.dp) else Modifier)
+        .fillMaxWidth()
         .background(MaterialTheme.colors.surface)
     ) {
       val currentRemoteHost = remember { chatModel.currentRemoteHost }.value
@@ -355,9 +356,19 @@ fun UserPicker(
           userPickerState = userPickerState,
           drawerState = drawerState,
           remoteHosts = remoteHosts,
-          showCustomModal = { modalView -> { ModalManager.start.showCustomModal { close -> modalView(chatModel, close) } } },
+          showCustomModal = { modalView ->
+            {
+              if (appPlatform.isDesktop) {
+                userPickerState.value = AnimatedViewState.HIDING
+              }
+              ModalManager.start.showCustomModal { close -> modalView(chatModel, close) }
+            }
+          },
           withAuth = ::doWithAuth,
           showModalWithSearch = { modalView ->
+            if (appPlatform.isDesktop) {
+              userPickerState.value = AnimatedViewState.HIDING
+            }
             ModalManager.start.showCustomModal { close ->
               val search = rememberSaveable { mutableStateOf("") }
               ModalView(
