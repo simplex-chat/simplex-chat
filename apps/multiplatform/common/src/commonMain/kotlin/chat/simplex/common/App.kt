@@ -74,6 +74,7 @@ fun MainScreen() {
   LaunchedEffect(showAdvertiseLAAlert) {
     if (
       !chatModel.controller.appPrefs.laNoticeShown.get()
+      && !appPrefs.performLA.get()
       && showAdvertiseLAAlert
       && chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete
       && chatModel.chats.size > 3

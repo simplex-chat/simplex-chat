@@ -5,6 +5,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.localauth.SetAppPasscodeView
@@ -31,7 +32,7 @@ object AppLock {
 
   fun showLANotice(laNoticeShown: SharedPreference<Boolean>) {
     Log.d(TAG, "showLANotice")
-    if (!laNoticeShown.get()) {
+    if (!laNoticeShown.get() && !appPrefs.performLA.get()) {
       laNoticeShown.set(true)
       AlertManager.shared.showAlertDialog(
         title = generalGetString(MR.strings.la_notice_title_simplex_lock),
@@ -57,6 +58,8 @@ object AppLock {
 
   private fun showChooseLAMode() {
     Log.d(TAG, "showLANotice")
+    if (appPrefs.performLA.get()) return
+
     AlertManager.shared.showAlertDialogStacked(
       title = generalGetString(MR.strings.la_lock_mode),
       text = null,
@@ -106,6 +109,8 @@ object AppLock {
   }
 
   private fun setPasscode() {
+    if (appPrefs.performLA.get()) return
+
     val appPrefs = ChatController.appPrefs
     ModalManager.fullscreen.showCustomModal { close ->
       Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
