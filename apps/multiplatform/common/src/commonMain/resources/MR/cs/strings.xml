@@ -224,7 +224,7 @@
     <string name="how_to_use_your_servers">Jak používat servery</string>
     <string name="your_ICE_servers">Vaše servery ICE</string>
     <string name="configure_ICE_servers">Konfigurace serverů ICE</string>
-    <string name="network_settings_title">Nastavení sítě</string>
+    <string name="network_settings_title">Pokročilé nastavení</string>
     <string name="network_enable_socks">Použít proxy server SOCKS\?</string>
     <string name="network_disable_socks">Použít přímé připojení k internetu\?</string>
     <string name="network_use_onion_hosts_no">Ne</string>
@@ -434,7 +434,7 @@
     <string name="edit_image">Upravit obrázek</string>
     <string name="delete_image">Smazat obrázek</string>
     <string name="callstatus_error">chyba volání</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">Protokol a kód s otevřeným zdrojovým kódem - servery může provozovat kdokoli.</string>
+    <string name="opensource_protocol_and_code_anybody_can_run_servers">Servery může provozovat kdokoli.</string>
     <string name="create_your_profile">Vytvořte si svůj profil</string>
     <string name="make_private_connection">Vytvořte si soukromé připojení</string>
     <string name="encrypted_video_call">Videohovor šifrovaný e2e</string>
@@ -799,7 +799,7 @@
     <string name="rcv_group_event_member_added">pozval %1$s</string>
     <string name="rcv_group_event_member_connected">připojen</string>
     <string name="rcv_group_event_changed_member_role">změnil roli %s na %s</string>
-    <string name="rcv_group_event_changed_your_role">změnil svou roli na %s</string>
+    <string name="rcv_group_event_changed_your_role">změnil vaši roli na %s</string>
     <string name="rcv_group_event_member_deleted">odstraněn %1$s</string>
     <string name="rcv_group_event_user_deleted">odstranil vás</string>
     <string name="rcv_group_event_group_deleted">skupina odstraněna</string>
@@ -1861,4 +1861,5 @@
     <string name="calls_prohibited_alert_title">Volání zakázáno!</string>
     <string name="cant_call_member_alert_title">Nelze zavolat člena skupiny</string>
     <string name="deleted_chats">Archivované kontakty</string>
+    <string name="v6_0_your_contacts_descr">Archivujte kontakty pro pozdější chatování.</string>
 </resources>
