@@ -97,14 +97,8 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
       UserPicker(
         chatModel,
         userPickerState,
-        showSettings = false,
-        showCancel = true,
         contentAlignment = if (oneHandUI.value) Alignment.BottomStart else Alignment.TopStart,
         drawerState = scaffoldState.drawerState,
-        cancelClicked = {
-          chatModel.sharedContent.value = null
-          userPickerState.value = AnimatedViewState.GONE
-        }
       )
     }
   }

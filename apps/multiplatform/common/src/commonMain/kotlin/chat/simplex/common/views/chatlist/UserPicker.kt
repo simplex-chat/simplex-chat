@@ -208,11 +208,7 @@ fun UserPicker(
   chatModel: ChatModel,
   userPickerState: MutableStateFlow<AnimatedViewState>,
   drawerState: DrawerState,
-  showSettings: Boolean = true,
   contentAlignment: Alignment = Alignment.TopStart,
-  showCancel: Boolean = false,
-  cancelClicked: () -> Unit = {},
-  useFromDesktopClicked: () -> Unit = {},
   settingsClicked: () -> Unit = {},
 ) {
   val scope = rememberCoroutineScope()
@@ -292,23 +288,6 @@ fun UserPicker(
       }
     }
   }
-  val UsersView: @Composable ColumnScope.() -> Unit = {
-    users.forEach { u ->
-      UserProfilePickerItem(u.user, u.unreadCount, openSettings = settingsClicked) {
-        userPickerState.value = AnimatedViewState.HIDING
-        if (!u.user.activeUser) {
-          withBGApi {
-            controller.showProgressIfNeeded {
-              ModalManager.closeAllModalsEverywhere()
-              chatModel.controller.changeActiveUser(u.user.remoteHostId, u.user.userId, null)
-            }
-          }
-        }
-      }
-      Divider(Modifier.requiredHeight(1.dp))
-      if (u.user.activeUser) Divider(Modifier.requiredHeight(0.5.dp))
-    }
-  }
   val maxWidth = with(LocalDensity.current) { windowWidth() * density }
   Box(Modifier
     .fillMaxSize()
@@ -344,9 +323,9 @@ fun UserPicker(
                 userPickerState.value = AnimatedViewState.HIDING
                 stopRemoteHostAndReloadHosts(currentRemoteHost, true)
               }) {
-                userPickerState.value = AnimatedViewState.HIDING
-                switchToRemoteHost(currentRemoteHost, connecting)
-              }
+              userPickerState.value = AnimatedViewState.HIDING
+              switchToRemoteHost(currentRemoteHost, connecting)
+            }
             Divider(Modifier.requiredHeight(1.dp))
           }
         }
@@ -395,26 +374,22 @@ fun UserPicker(
               userPickerState.value = AnimatedViewState.HIDING
               stopRemoteHostAndReloadHosts(h, false)
             }) {
-              userPickerState.value = AnimatedViewState.HIDING
-              switchToRemoteHost(h, connecting)
+            userPickerState.value = AnimatedViewState.HIDING
+            switchToRemoteHost(h, connecting)
           }
           Divider(Modifier.requiredHeight(1.dp))
         }
       }
-      if (showSettings) {
-        Divider(Modifier.padding(DEFAULT_PADDING))
 
-        val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
-        SectionItemView(settingsClicked) {
-          Icon(painterResource(MR.images.ic_settings), text, tint = MenuTextColor)
-          TextIconSpaced()
-          Text(text, color = MenuTextColor)
-          Spacer(Modifier.weight(1f))
-          ColorModeSwitcher()
-        }
-      }
-      if (showCancel) {
-        CancelPickerItem(cancelClicked)
+      Divider(Modifier.padding(DEFAULT_PADDING))
+
+      val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
+      SectionItemView(settingsClicked) {
+        Icon(painterResource(MR.images.ic_settings), text, tint = MenuTextColor)
+        TextIconSpaced()
+        Text(text, color = MenuTextColor)
+        Spacer(Modifier.weight(1f))
+        ColorModeSwitcher()
       }
     }
   }
@@ -538,7 +513,7 @@ fun RemoteHostRow(h: RemoteHostInfo) {
 }
 
 @Composable
-fun LocalDevicePickerItem(active: Boolean, onLongClick: () -> Unit = {}, onClick: () -> Unit) {
+fun LocalDevicePickerItem(active: Boolean, onClick: () -> Unit) {
   Row(
     Modifier
       .fillMaxWidth()
@@ -546,11 +521,9 @@ fun LocalDevicePickerItem(active: Boolean, onLongClick: () -> Unit = {}, onClick
       .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
       .combinedClickable(
         onClick = if (active) {{}} else onClick,
-        onLongClick = onLongClick,
         interactionSource = remember { MutableInteractionSource() },
         indication = if (!active) LocalIndication.current else null
       )
-      .onRightClick { onLongClick() }
       .padding(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING),
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
@@ -587,16 +560,6 @@ private fun UseFromDesktopPickerItem(onClick: () -> Unit) {
     text,
     onClick
   )
-}
-
-@Composable
-private fun CancelPickerItem(onClick: () -> Unit) {
-  SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
-    val text = generalGetString(MR.strings.cancel_verb)
-    Icon(painterResource(MR.images.ic_close), text, Modifier.size(20.dp * fontSizeSqrtMultiplier), tint = MaterialTheme.colors.onBackground)
-    Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
-    Text(text, color = MenuTextColor)
-  }
 }
 
 @Composable
