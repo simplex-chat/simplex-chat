@@ -470,7 +470,7 @@ struct ChatView: View {
                     } else { 0 }
                 }
                 .removeDuplicates()
-                .throttle(for: .seconds(0.2), scheduler: DispatchQueue.main, latest: true)
+                .receive(on: DispatchQueue.main)
                 .assign(to: \.unreadBelow, on: self)
                 .store(in: &bag)
             scrollOffset
