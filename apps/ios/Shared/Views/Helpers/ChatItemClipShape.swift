@@ -36,8 +36,6 @@ struct ChatItemClipped: ViewModifier {
                     .sndMsgContent,
                     .rcvMsgContent,
                     .rcvDecryptionError,
-                    .rcvGroupInvitation,
-                    .sndGroupInvitation,
                     .sndDeleted,
                     .rcvDeleted,
                     .rcvIntegrityError,
@@ -56,10 +54,12 @@ struct ChatItemClipped: ViewModifier {
                     tailVisible: tail
                 )
                 : .roundRect(radius: msgRectMaxRadius)
+            case .rcvGroupInvitation, .sndGroupInvitation:
+                return .roundRect(radius: msgRectMaxRadius)
             default: return .roundRect(radius: 8)
             }
         } else {
-            return.roundRect(radius: msgRectMaxRadius)
+            return .roundRect(radius: msgRectMaxRadius)
         }
     }
 
