@@ -199,7 +199,9 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             updateFloatingButtons.send()
         }
 
-        override func scrollViewDidScroll(_ scrollView: UIScrollView) { updateFloatingButtons.send() }
+        override func scrollViewDidScroll(_ scrollView: UIScrollView) {
+            updateFloatingButtons.send()
+        }
 
         private func updateVisibleItems() {
             let fbm = ChatView.FloatingButtonModel.shared

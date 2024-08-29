@@ -473,6 +473,7 @@ struct ChatView: View {
                 .receive(on: DispatchQueue.main)
                 .assign(to: \.unreadBelow, on: self)
                 .store(in: &bag)
+
             scrollOffset
                 .map { $0 < 800 }
                 .removeDuplicates()
