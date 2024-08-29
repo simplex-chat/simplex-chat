@@ -5,12 +5,22 @@ on:
     branches:
       - master
       - stable
-      - users
     tags:
       - "v*"
       - "!*-fdroid"
       - "!*-armv7a"
   pull_request:
+    paths-ignore:
+      - "apps/ios"
+      - "apps/multiplatform"
+      - "blog"
+      - "docs"
+      - "fastlane"
+      - "images"
+      - "packages"
+      - "website"
+      - "README.md"
+      - "PRIVACY.md"
 
 jobs:
   prepare-release:
