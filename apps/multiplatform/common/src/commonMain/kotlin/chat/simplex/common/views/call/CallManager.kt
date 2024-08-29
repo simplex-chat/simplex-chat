@@ -47,6 +47,7 @@ class CallManager(val chatModel: ChatModel) {
         remoteHostId = invitation.remoteHostId,
         userProfile = userProfile,
         contact = invitation.contact,
+        callUUID = invitation.callUUID,
         callState = CallState.InvitationAccepted,
         localMedia = invitation.callType.media,
         sharedKey = invitation.sharedKey,

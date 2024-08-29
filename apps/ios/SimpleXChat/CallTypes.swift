@@ -42,6 +42,7 @@ public struct RcvCallInvitation: Decodable {
     public var contact: Contact
     public var callType: CallType
     public var sharedKey: String?
+    public var callUUID: String?
     public var callTs: Date
     public var callTypeText: LocalizedStringKey {
         get {
@@ -52,10 +53,8 @@ public struct RcvCallInvitation: Decodable {
         }
     }
 
-    public var callkitUUID: UUID? = UUID()
-
     private enum CodingKeys: String, CodingKey {
-        case user, contact, callType, sharedKey, callTs
+        case user, contact, callType, sharedKey, callUUID, callTs
     }
 
     public static let sampleData = RcvCallInvitation(

@@ -18,7 +18,7 @@ class Call: ObservableObject, Equatable {
 
     var direction: CallDirection
     var contact: Contact
-    var callkitUUID: UUID?
+    var callUUID: String?
     var localMedia: CallMediaType
     @Published var callState: CallState
     @Published var localCapabilities: CallCapabilities?
@@ -33,14 +33,14 @@ class Call: ObservableObject, Equatable {
     init(
         direction: CallDirection,
         contact: Contact,
-        callkitUUID: UUID?,
+        callUUID: String?,
         callState: CallState,
         localMedia: CallMediaType,
         sharedKey: String? = nil
     ) {
         self.direction = direction
         self.contact = contact
-        self.callkitUUID = callkitUUID
+        self.callUUID = callUUID
         self.callState = callState
         self.localMedia = localMedia
         self.sharedKey = sharedKey
