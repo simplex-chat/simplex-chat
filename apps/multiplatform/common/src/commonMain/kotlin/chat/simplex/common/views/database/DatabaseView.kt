@@ -423,6 +423,7 @@ fun authStopChat(m: ChatModel, progressIndicator: MutableState<Boolean>? = null,
     authenticate(
       generalGetString(MR.strings.auth_stop_chat),
       generalGetString(MR.strings.auth_log_in_using_credential),
+      oneTime = true,
       completed = { laResult ->
         when (laResult) {
           LAResult.Success, is LAResult.Unavailable -> {

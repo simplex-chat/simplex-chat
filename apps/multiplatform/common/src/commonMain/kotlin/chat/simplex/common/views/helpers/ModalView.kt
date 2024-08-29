@@ -69,6 +69,7 @@ class ModalManager(private val placement: ModalPlacement? = null) {
   // Don't use mutableStateOf() here, because it produces this if showing from SimpleXAPI.startChat():
   // java.lang.IllegalStateException: Reading a state that was created after the snapshot was taken or in a snapshot that has not yet been applied
   private var passcodeView: MutableStateFlow<(@Composable (close: () -> Unit) -> Unit)?> = MutableStateFlow(null)
+  private var onTimePasscodeView: MutableStateFlow<(@Composable (close: () -> Unit) -> Unit)?> = MutableStateFlow(null)
 
   fun showModal(settings: Boolean = false, showClose: Boolean = true, closeOnTop: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
     val data = ModalData()
@@ -105,9 +106,13 @@ class ModalManager(private val placement: ModalPlacement? = null) {
     }
   }
 
-  fun showPasscodeCustomModal(modal: @Composable (close: () -> Unit) -> Unit) {
-    Log.d(TAG, "ModalManager.showPasscodeCustomModal")
-    passcodeView.value = modal
+  fun showPasscodeCustomModal(oneTime: Boolean, modal: @Composable (close: () -> Unit) -> Unit) {
+    Log.d(TAG, "ModalManager.showPasscodeCustomModal, oneTime: $oneTime")
+    if (oneTime) {
+      onTimePasscodeView.value = modal
+    } else {
+      passcodeView.value = modal
+    }
   }
 
   fun hasModalsOpen() = modalCount.value > 0
@@ -177,6 +182,11 @@ class ModalManager(private val placement: ModalPlacement? = null) {
   @Composable
   fun showPasscodeInView() {
     passcodeView.collectAsState().value?.invoke { passcodeView.value = null }
+  }
+
+  @Composable
+  fun showOneTimePasscodeInView() {
+    onTimePasscodeView.collectAsState().value?.invoke { onTimePasscodeView.value = null }
   }
 
   /**
