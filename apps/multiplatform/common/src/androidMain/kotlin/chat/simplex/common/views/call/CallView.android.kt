@@ -770,6 +770,7 @@ fun PreviewActiveCallOverlayVideo() {
         callState = CallState.Negotiated,
         localMedia = CallMediaType.Video,
         peerMedia = CallMediaType.Video,
+        callUUID = "",
         connectionInfo = ConnectionInfo(
           RTCIceCandidate(RTCIceCandidateType.Host, "tcp"),
           RTCIceCandidate(RTCIceCandidateType.Host, "tcp")
@@ -799,6 +800,7 @@ fun PreviewActiveCallOverlayAudio() {
         callState = CallState.Negotiated,
         localMedia = CallMediaType.Audio,
         peerMedia = CallMediaType.Audio,
+        callUUID = "",
         connectionInfo = ConnectionInfo(
           RTCIceCandidate(RTCIceCandidateType.Host, "udp"),
           RTCIceCandidate(RTCIceCandidateType.Host, "udp")
