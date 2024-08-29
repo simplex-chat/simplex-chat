@@ -13,6 +13,7 @@ data class Call(
   val remoteHostId: Long?,
   val userProfile: Profile,
   val contact: Contact,
+  val callUUID: String?,
   val callState: CallState,
   val localMedia: CallMediaType,
   val localCapabilities: CallCapabilities? = null,
@@ -105,6 +106,7 @@ sealed class WCallResponse {
   val contact: Contact,
   val callType: CallType,
   val sharedKey: String? = null,
+  val callUUID: String,
   val callTs: Instant
 ) {
   val callTypeText: String get() = generalGetString(when(callType.media) {
