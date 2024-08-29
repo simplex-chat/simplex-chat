@@ -451,12 +451,37 @@ struct ChatView: View {
         static let shared = FloatingButtonModel()
         @Published var unreadBelow: Int = 0
         @Published var isNearBottom: Bool = true
+        @Published var date: Date?
+        @Published var isDateVisible: Bool = false
         var isReallyNearBottom: Bool { scrollOffset.value > 0 && scrollOffset.value < 500 }
         let visibleItems = PassthroughSubject<[String], Never>()
         let scrollOffset = CurrentValueSubject<Double, Never>(0)
         private var bag = Set<AnyCancellable>()
 
         init() {
+            // Date
+            visibleItems
+                .receive(on: DispatchQueue.global(qos: .background))
+                .map { visibleItems -> Date? in
+                    if let viewId = visibleItems.last {
+                        ItemsModel.shared.reversedChatItems
+                            .first { $0.viewId == viewId }
+                            .map { Calendar.current.startOfDay(for: $0.meta.itemTs) }
+                    } else { nil }
+                }
+                .removeDuplicates()
+                .receive(on: DispatchQueue.main)
+                .assign(to: \.date, on: self)
+                .store(in: &bag)
+
+            // Date visibility
+            visibleItems
+                .map { _ in self.setDate(visibility: true) }
+                // Hide the date after 1 second of no scrolling
+                .debounce(for: 1, scheduler: DispatchQueue.main)
+                .sink { self.setDate(visibility: false) }
+                .store(in: &bag)
+
             // Unread Below
             visibleItems
                 .receive(on: DispatchQueue.global(qos: .background))
@@ -472,7 +497,7 @@ struct ChatView: View {
                 .receive(on: DispatchQueue.main)
                 .assign(to: \.unreadBelow, on: self)
                 .store(in: &bag)
-            
+
             // Is near bottom
             scrollOffset
                 .map { $0 < 800 }
@@ -482,6 +507,24 @@ struct ChatView: View {
                 .assign(to: \.isNearBottom, on: self)
                 .store(in: &bag)
         }
+
+        func resetDate() {
+            date = nil
+            isDateVisible = false
+        }
+
+        private func setDate(visibility isVisible: Bool) {
+            if isVisible {
+                if !isNearBottom,
+                   !isDateVisible,
+                   let date, !Calendar.current.isDateInToday(date) {
+                    withAnimation { isDateVisible = true }
+                }
+            } else if isDateVisible {
+                withAnimation { isDateVisible = false }
+            }
+        }
+
     }
 
     private struct FloatingButtons: View {
@@ -491,46 +534,57 @@ struct ChatView: View {
         @ObservedObject var chat: Chat
 
         var body: some View {
-            VStack {
-                let unreadAbove = chat.chatStats.unreadCount - model.unreadBelow
-                if unreadAbove > 0 {
-                    circleButton {
-                        unreadCountText(unreadAbove)
-                            .font(.callout)
-                            .foregroundColor(theme.colors.primary)
-                    }
-                    .onTapGesture {
-                        scrollModel.scrollToNextPage()
-                    }
-                    .contextMenu {
-                        Button {
-                            Task {
-                                await markChatRead(chat)
+            ZStack(alignment: .top) {
+                if let date = model.date {
+                     DateSeparator(date: date)
+                         .padding(.vertical, 4).padding(.horizontal, 8)
+                         .background(.thinMaterial)
+                         .clipShape(Capsule())
+                         .opacity(model.isDateVisible ? 1 : 0)
+                }
+                VStack {
+                    let unreadAbove = chat.chatStats.unreadCount - model.unreadBelow
+                    if unreadAbove > 0 {
+                        circleButton {
+                            unreadCountText(unreadAbove)
+                                .font(.callout)
+                                .foregroundColor(theme.colors.primary)
+                        }
+                        .onTapGesture {
+                            scrollModel.scrollToNextPage()
+                        }
+                        .contextMenu {
+                            Button {
+                                Task {
+                                    await markChatRead(chat)
+                                }
+                            } label: {
+                                Label("Mark read", systemImage: "checkmark")
                             }
-                        } label: {
-                            Label("Mark read", systemImage: "checkmark")
                         }
                     }
+                    Spacer()
+                    if model.unreadBelow > 0 {
+                        circleButton {
+                            unreadCountText(model.unreadBelow)
+                                .font(.callout)
+                                .foregroundColor(theme.colors.primary)
+                        }
+                        .onTapGesture {
+                            scrollModel.scrollToBottom()
+                        }
+                    } else if !model.isNearBottom {
+                        circleButton {
+                            Image(systemName: "chevron.down")
+                                .foregroundColor(theme.colors.primary)
+                        }
+                        .onTapGesture { scrollModel.scrollToBottom() }
+                    }
                 }
-                Spacer()
-                if model.unreadBelow > 0 {
-                    circleButton {
-                        unreadCountText(model.unreadBelow)
-                            .font(.callout)
-                            .foregroundColor(theme.colors.primary)
-                    }
-                    .onTapGesture {
-                        scrollModel.scrollToBottom()
-                    }
-                } else if !model.isNearBottom {
-                    circleButton {
-                        Image(systemName: "chevron.down")
-                            .foregroundColor(theme.colors.primary)
-                    }
-                    .onTapGesture { scrollModel.scrollToBottom() }
-                }
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .trailing)
             }
-            .padding()
+            .onDisappear(perform: model.resetDate)
         }
 
         private func circleButton<Content: View>(_ content: @escaping () -> Content) -> some View {
@@ -540,6 +594,21 @@ struct ChatView: View {
                     .frame(width: 44, height: 44)
                 content()
             }
+        }
+    }
+
+    private struct DateSeparator: View {
+        let date: Date
+
+        var body: some View {
+            Text(String.localizedStringWithFormat(
+                NSLocalizedString("%@, %@", comment: "format for date separator in chat"),
+                date.formatted(.dateTime.weekday(.abbreviated)),
+                date.formatted(.dateTime.day().month(.abbreviated))
+            ))
+            .font(.callout)
+            .fontWeight(.medium)
+            .foregroundStyle(.secondary)
         }
     }
 
@@ -750,15 +819,7 @@ struct ChatView: View {
                     VStack(spacing: 0) {
                         chatItemView(chatItem, range, prevItem, timeSeparation)
                         if let date = timeSeparation.date {
-                            Text(String.localizedStringWithFormat(
-                                NSLocalizedString("%@, %@", comment: "format for date separator in chat"),
-                                date.formatted(.dateTime.weekday(.abbreviated)),
-                                date.formatted(.dateTime.day().month(.abbreviated))
-                            ))
-                            .font(.callout)
-                            .fontWeight(.medium)
-                            .foregroundStyle(.secondary)
-                            .padding(8)
+                            DateSeparator(date: date).padding(8)
                         }
                     }
                     .overlay {
