@@ -34,6 +34,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.views.CreateProfile
 import chat.simplex.common.views.remote.*
 import chat.simplex.common.views.usersettings.*
+import chat.simplex.common.views.usersettings.AppearanceScope.ColorModeSwitcher
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
@@ -391,11 +392,15 @@ fun UserPicker(
       }
       if (showSettings) {
         Divider(Modifier.padding(DEFAULT_PADDING))
-        UserPickerOptionRow(
-          painterResource(MR.images.ic_settings),
-          generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current),
-          settingsClicked
-        )
+
+        val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
+        SectionItemView(settingsClicked) {
+          Icon(painterResource(MR.images.ic_settings), text, tint = MenuTextColor)
+          TextIconSpaced()
+          Text(text, color = MenuTextColor)
+          Spacer(Modifier.weight(1f))
+          ColorModeSwitcher()
+        }
       }
       if (showCancel) {
         CancelPickerItem(cancelClicked)

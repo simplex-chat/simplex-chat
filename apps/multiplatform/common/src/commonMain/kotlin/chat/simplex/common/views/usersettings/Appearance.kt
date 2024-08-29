@@ -9,6 +9,7 @@ import SectionView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.MaterialTheme.colors
@@ -603,6 +604,36 @@ object AppearanceScope {
         }
       }
       SectionBottomSpacer()
+    }
+  }
+
+  @Composable
+  fun ColorModeSwitcher() {
+    val currentTheme by CurrentColors.collectAsState()
+    var themeMode = currentTheme.base.mode;
+
+    if (appPrefs.currentTheme.get() === DefaultTheme.SYSTEM_THEME_NAME) {
+      themeMode = if (systemInDarkThemeCurrently) DefaultThemeMode.DARK else DefaultThemeMode.LIGHT
+    }
+
+    Column(
+      modifier = Modifier
+        .clip(CircleShape)
+        .combinedClickable(
+          onClick = {
+            ThemeManager.applyTheme(if (themeMode == DefaultThemeMode.LIGHT) appPrefs.systemDarkTheme.get()!! else DefaultTheme.LIGHT.themeName)
+            saveThemeToDatabase(null)
+          },
+          onLongClick = {
+            ThemeManager.applyTheme(DefaultTheme.SYSTEM_THEME_NAME)
+            saveThemeToDatabase(null)
+          }
+        )
+        .size(44.dp * fontSizeSqrtMultiplier),
+      verticalArrangement = Arrangement.Center,
+      horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+      Icon(painterResource(MR.images.ic_light_mode), stringResource(MR.strings.color_mode_light), tint = MenuTextColor)
     }
   }
 
