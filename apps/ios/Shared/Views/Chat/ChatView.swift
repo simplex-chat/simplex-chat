@@ -76,6 +76,7 @@ struct ChatView: View {
             VStack(spacing: 0) {
                 ZStack(alignment: .bottomTrailing) {
                     chatItemsList()
+                    // TODO: Extract into a separate view, to reduce the scope of `FloatingButtonModel` updates
                     floatingButtons(unreadBelow: floatingButtonModel.unreadBelow, isNearBottom: floatingButtonModel.isNearBottom)
                 }
                 connectingText()
