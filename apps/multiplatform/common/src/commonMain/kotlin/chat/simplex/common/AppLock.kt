@@ -80,6 +80,7 @@ object AppLock {
     authenticate(
       generalGetString(MR.strings.auth_enable_simplex_lock),
       generalGetString(MR.strings.auth_confirm_credential),
+      oneTime = true,
       completed = { laResult ->
         when (laResult) {
           LAResult.Success -> {
@@ -149,6 +150,7 @@ object AppLock {
             else
               generalGetString(MR.strings.auth_unlock),
             selfDestruct = true,
+            oneTime = false,
             completed = { laResult ->
               when (laResult) {
                 LAResult.Success ->
@@ -194,6 +196,7 @@ object AppLock {
         generalGetString(MR.strings.auth_confirm_credential)
       else
         "",
+      oneTime = true,
       completed = { laResult ->
         val prefPerformLA = m.controller.appPrefs.performLA
         when (laResult) {
@@ -229,6 +232,7 @@ object AppLock {
         generalGetString(MR.strings.auth_confirm_credential)
       else
         generalGetString(MR.strings.auth_disable_simplex_lock),
+      oneTime = true,
       completed = { laResult ->
         val prefPerformLA = m.controller.appPrefs.performLA
         val selfDestructPref = m.controller.appPrefs.selfDestruct

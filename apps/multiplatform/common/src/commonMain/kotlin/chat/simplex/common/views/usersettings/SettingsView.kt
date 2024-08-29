@@ -506,6 +506,7 @@ private fun runAuth(title: String, desc: String, onFinish: (success: Boolean) ->
   authenticate(
     title,
     desc,
+    oneTime = true,
     completed = { laResult ->
       onFinish(laResult == LAResult.Success || laResult is LAResult.Unavailable)
     }

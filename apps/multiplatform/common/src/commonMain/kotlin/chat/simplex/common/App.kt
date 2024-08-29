@@ -211,9 +211,11 @@ fun MainScreen() {
         } else {
           ActiveCallView()
         }
+        ModalManager.fullscreen.showOneTimePasscodeInView()
       } else {
         // It's needed for privacy settings toggle, so it can be shown even if the app is passcode unlocked
         ModalManager.fullscreen.showPasscodeInView()
+        ModalManager.fullscreen.showOneTimePasscodeInView()
       }
       AlertManager.privacySensitive.showInView()
       if (onboarding == OnboardingStage.OnboardingComplete) {
