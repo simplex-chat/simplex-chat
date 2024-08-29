@@ -12,7 +12,7 @@ import SimpleXChat
 struct FramedItemView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
-    @EnvironmentObject var scrollModel: ReverseListScrollModel<ChatItem>
+    @EnvironmentObject var scrollModel: ReverseListScrollModel
     @ObservedObject var chat: Chat
     var chatItem: ChatItem
     var preview: UIImage?
