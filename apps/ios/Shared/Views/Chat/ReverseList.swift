@@ -28,6 +28,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
     func updateUIViewController(_ controller: Controller, context: Context) {
         controller.representer = self
         if case let .scrollingTo(destination) = scrollState, !items.isEmpty {
+            controller.view.layer.removeAllAnimations()
             switch destination {
             case .nextPage:
                 controller.scrollToNextPage()

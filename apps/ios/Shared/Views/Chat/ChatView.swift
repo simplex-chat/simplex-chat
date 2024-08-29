@@ -460,7 +460,6 @@ struct ChatView: View {
         init() {
             visibleItems
                 .receive(on: DispatchQueue.global(qos: .background))
-                .removeDuplicates()
                 .map { itemIds in
                     if let viewId = itemIds.first,
                        let index = ItemsModel.shared.reversedChatItems.firstIndex(where: { $0.viewId == viewId }) {
