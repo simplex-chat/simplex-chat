@@ -305,10 +305,10 @@ private fun NewChatSheetLayout(
         if (!oneHandUI.value) {
           SectionDividerSpaced()
           SectionView(stringResource(MR.strings.contact_list_header_title).uppercase(), headerBottomPadding = DEFAULT_PADDING_HALF) {}
-        } else if (deletedChats.isEmpty()) {
-          SectionSpacer()
         } else {
-          Spacer(Modifier.height(DEFAULT_PADDING))
+          SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
+          SectionView(stringResource(MR.strings.contact_list_header_title).uppercase(), headerBottomPadding = DEFAULT_PADDING_HALF) {}
+          Spacer(Modifier.height(DEFAULT_PADDING_HALF))
         }
       }
     }
