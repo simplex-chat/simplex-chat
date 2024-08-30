@@ -174,7 +174,7 @@ private fun UserAddressLayout(
   saveAas: (AutoAcceptState, MutableState<AutoAcceptState>) -> Unit,
 ) {
   ColumnWithScrollBar {
-    AppBarTitle(stringResource(MR.strings.simplex_address), hostDevice(user?.remoteHostId))
+    AppBarTitle(stringResource(MR.strings.public_address), hostDevice(user?.remoteHostId))
     Column(
       Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF),
       horizontalAlignment = Alignment.CenterHorizontally,
