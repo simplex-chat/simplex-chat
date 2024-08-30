@@ -619,7 +619,7 @@ private fun DevicePickerRow(
     ) {
       onLocalDeviceClick()
     }
-    remoteHosts.forEach { h ->
+    remoteHosts.filter { h -> h.activeHost }.forEach { h ->
       val connecting = rememberSaveable { mutableStateOf(false) }
 
       DevicePill(
