@@ -242,7 +242,7 @@ private fun UserPickerUserSectionLayout (
   SectionView {
     UserPickerOptionRow(
       painterResource(MR.images.ic_qr_code),
-      stringResource(MR.strings.your_simplex_contact_address),
+      if (chatModel.userAddress.value != null) generalGetString(MR.strings.your_public_contact_address) else generalGetString(MR.strings.create_public_contact_address),
       showCustomModal { it, close -> UserAddressView(it, shareViaProfile = it.currentUser.value!!.addressShared, close = close) }, disabled = stopped
     )
     UserPickerOptionRow(

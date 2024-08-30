@@ -700,6 +700,10 @@
   <string name="is_verified">%s is verified</string>
   <string name="is_not_verified">%s is not verified</string>
 
+  <!-- user picker - UserPicker.kt -->
+  <string name="create_public_contact_address">Create public address</string>
+  <string name="your_public_contact_address">Your public address</string>
+
   <!-- settings - SettingsView.kt -->
   <string name="your_settings">Your settings</string>
   <string name="your_simplex_contact_address">Your SimpleX address</string>
