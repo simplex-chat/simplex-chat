@@ -188,11 +188,20 @@ private fun UsersLayout(
           onClick = onShowAllProfilesClicked,
           enabled = !stopped,
         ) {
-          Icon(
-            painterResource(MR.images.ic_more_horiz),
-            stringResource(MR.strings.your_chat_profiles),
-            tint = mainColor,
-          )
+          Box(
+            modifier = Modifier
+              .border(
+                BorderStroke(1.dp, mainColor), shape = CircleShape
+              )
+              .size(38.dp * fontSizeSqrtMultiplier),
+            contentAlignment = Alignment.Center
+          ) {
+            Icon(
+              painterResource(MR.images.ic_add_group),
+              stringResource(MR.strings.your_chat_profiles),
+              tint = mainColor,
+            )
+          }
         }
       }
     }
