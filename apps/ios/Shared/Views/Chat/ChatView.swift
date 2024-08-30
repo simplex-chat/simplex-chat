@@ -519,14 +519,20 @@ struct ChatView: View {
         }
 
         private func setDate(visibility isVisible: Bool) {
-            if isVisible {
-                if !isNearBottom,
-                   !isDateVisible,
-                   let date, !Calendar.current.isDateInToday(date) {
-                    withAnimation { isDateVisible = true }
+            Task {
+                if isVisible {
+                    if !isNearBottom,
+                       !isDateVisible,
+                       let date, !Calendar.current.isDateInToday(date) {
+                        await MainActor.run {
+                            withAnimation { isDateVisible = true }
+                        }
+                    }
+                } else if isDateVisible {
+                    await MainActor.run {
+                        withAnimation { isDateVisible = false }
+                    }
                 }
-            } else if isDateVisible {
-                withAnimation { isDateVisible = false }
             }
         }
 
