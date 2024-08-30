@@ -31,8 +31,6 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.migration.MigrateFromDeviceView
 import chat.simplex.common.views.onboarding.SimpleXInfo
 import chat.simplex.common.views.onboarding.WhatsNewView
-import chat.simplex.common.views.remote.ConnectDesktopView
-import chat.simplex.common.views.remote.ConnectMobileView
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 
@@ -118,16 +116,8 @@ fun SettingsLayout(
   ) {
     AppBarTitle(stringResource(MR.strings.your_settings))
 
-    SectionView(stringResource(MR.strings.settings_section_title_you)) {
-      val profileHidden = rememberSaveable { mutableStateOf(false) }
-      if (profile != null) {
-        SectionItemView(showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }, 80.dp, padding = PaddingValues(start = 16.dp, end = DEFAULT_PADDING), disabled = stopped) {
-          ProfilePreview(profile, stopped = stopped)
-        }
-        SettingsActionItem(painterResource(MR.images.ic_manage_accounts), stringResource(MR.strings.your_chat_profiles), { withAuth(generalGetString(MR.strings.auth_open_chat_profiles), generalGetString(MR.strings.auth_log_in_using_credential)) { showSettingsModalWithSearch { it, search -> UserProfilesView(it, search, profileHidden, drawerState) } } }, disabled = stopped)
-        SettingsActionItem(painterResource(MR.images.ic_qr_code), stringResource(MR.strings.your_simplex_contact_address), showCustomModal { it, close -> UserAddressView(it, shareViaProfile = it.currentUser.value!!.addressShared, close = close) }, disabled = stopped)
-        ChatPreferencesItem(showCustomModal, stopped = stopped)
-      } else if (chatModel.localUserCreated.value == false) {
+    if (chatModel.localUserCreated.value == false) {
+      SectionView(stringResource(MR.strings.settings_section_title_you)) {
         SettingsActionItem(painterResource(MR.images.ic_manage_accounts), stringResource(MR.strings.create_chat_profile), {
           withAuth(generalGetString(MR.strings.auth_open_chat_profiles), generalGetString(MR.strings.auth_log_in_using_credential)) {
             ModalManager.center.showModalCloseable { close ->
@@ -139,13 +129,8 @@ fun SettingsLayout(
           }
         }, disabled = stopped)
       }
-      if (appPlatform.isDesktop) {
-        SettingsActionItem(painterResource(MR.images.ic_smartphone), stringResource(if (remember { chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles), showModal { ConnectMobileView() }, disabled = stopped)
-      } else {
-        SettingsActionItem(painterResource(MR.images.ic_desktop), stringResource(MR.strings.settings_section_title_use_from_desktop), showCustomModal { it, close -> ConnectDesktopView(close) }, disabled = stopped)
-      }
+      SectionDividerSpaced()
     }
-    SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.settings_section_title_settings)) {
       SettingsActionItem(painterResource(if (notificationsMode.value == NotificationsMode.OFF) MR.images.ic_bolt_off else MR.images.ic_bolt), stringResource(MR.strings.notifications), showSettingsModal { NotificationsSettingsView(it) }, disabled = stopped)
