@@ -768,4 +768,17 @@
     <string name="servers_info_files_tab">Tập tin</string>
     <string name="favorite_chat">Yêu thích</string>
     <string name="icon_descr_file">Tập tin</string>
+    <string name="file_error_relay">Lỗi máy chủ tệp: %1$s</string>
+    <string name="info_row_file_status">Trạng thái tệp</string>
+    <string name="files_and_media_not_allowed">Tệp và phương tiện truyền thông không được cho phép</string>
+    <string name="files_are_prohibited_in_group">Tệp và phương tiện truyền thông bị cấm trong nhóm này.</string>
+    <string name="revoke_file__message">Tệp sẽ bị xóa khỏi máy chủ.</string>
+    <string name="files_and_media_section">Tệp &amp; phương tiện truyền thông</string>
+    <string name="files_and_media_prohibited">Tệp và phương tiện truyền thông bị cấm!</string>
+    <string name="file_will_be_received_when_contact_completes_uploading">Tệp sẽ được nhận khi liên hệ của bạn hoàn tất quá trình tải lên.</string>
+    <string name="files_and_media">Tệp và phương tiện truyền thông</string>
+    <string name="migrate_to_device_file_delete_or_link_invalid">Tệp đã bị xóa hoặc liên kết không hợp lệ</string>
+    <string name="file_saved">Tệp đã được lưu</string>
+    <string name="file_will_be_received_when_contact_is_online">Tệp sẽ được nhận khi liên hệ của bạn hoạt động, vui lòng chờ hoặc kiểm tra lại sau!</string>
+    <string name="share_text_file_status">Trạng thái tệp: %s</string>
 </resources>
