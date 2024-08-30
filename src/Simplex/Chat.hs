@@ -3522,7 +3522,7 @@ agentSubscriber = do
       toView' $ CRChatError Nothing $ ChatErrorAgent (CRITICAL True $ "Message reception stopped: " <> show e) Nothing
       E.throwIO e
   where
-    process :: (ACorrId, EntityId, AEvt) -> CM' ()
+    process :: (ACorrId, AEntityId, AEvt) -> CM' ()
     process (corrId, entId, AEvt e msg) = run $ case e of
       SAENone -> processAgentMessageNoConn msg
       SAEConn -> processAgentMessage corrId entId msg
