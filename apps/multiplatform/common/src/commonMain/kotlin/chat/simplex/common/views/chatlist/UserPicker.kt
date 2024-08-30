@@ -629,7 +629,7 @@ private fun DevicePill(
         BorderStroke(1.dp, MaterialTheme.colors.secondaryVariant),
         shape = RoundedCornerShape(8.dp)
       )
-      .background(if (active) MaterialTheme.colors.background else MaterialTheme.colors.secondaryVariant)
+      .background(if (active) MaterialTheme.colors.surface else MaterialTheme.colors.secondaryVariant)
       .clickable(
         onClick = if (active) {{}} else onClick,
         interactionSource = remember { MutableInteractionSource() },
@@ -644,12 +644,12 @@ private fun DevicePill(
         icon,
         text,
         Modifier.size(16.dp * fontSizeSqrtMultiplier),
-        tint = MaterialTheme.colors.onSecondary
+        tint = MaterialTheme.colors.onSurface
       )
       Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON * fontSizeSqrtMultiplier))
       Text(
         text,
-        color = MaterialTheme.colors.onSecondary,
+        color = MaterialTheme.colors.onSurface,
         fontSize = 12.sp,
       )
       if (onActionButtonClick != null && actionButtonVisible) {
