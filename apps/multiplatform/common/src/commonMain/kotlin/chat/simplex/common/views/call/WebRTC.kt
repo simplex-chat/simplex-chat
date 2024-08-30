@@ -17,7 +17,7 @@ data class Call(
   val callState: CallState,
   val localMedia: CallMediaType,
   val localCapabilities: CallCapabilities? = null,
-  val peerMedia: CallMediaType? = null,
+  val peerMediaSources: CallMediaSources = CallMediaSources(),
   val sharedKey: String? = null,
   val audioEnabled: Boolean = true,
   val videoEnabled: Boolean = localMedia == CallMediaType.Video,
@@ -37,7 +37,7 @@ data class Call(
 
   val hasMedia: Boolean get() = callState == CallState.OfferSent || callState == CallState.Negotiated || callState == CallState.Connected
 
-  fun supportsVideo(): Boolean = peerMedia == CallMediaType.Video || localMedia == CallMediaType.Video
+  fun supportsVideo(): Boolean = peerMediaSources.hasVideo() || localMedia == CallMediaType.Video
 
 }
 
@@ -68,6 +68,14 @@ enum class CallState {
 @Serializable data class WVAPICall(val corrId: Int? = null, val command: WCallCommand)
 @Serializable data class WVAPIMessage(val corrId: Int? = null, val resp: WCallResponse, val command: WCallCommand? = null)
 
+@Serializable data class CallMediaSources(
+  val mic: Boolean = false,
+  val camera: Boolean = false,
+  val screen: Boolean = false
+) {
+  fun hasVideo() = camera || screen
+}
+
 @Serializable
 sealed class WCallCommand {
   @Serializable @SerialName("capabilities") data class Capabilities(val media: CallMediaType): WCallCommand()
@@ -90,6 +98,7 @@ sealed class WCallResponse {
   @Serializable @SerialName("ice") data class Ice(val iceCandidates: String): WCallResponse()
   @Serializable @SerialName("connection") data class Connection(val state: ConnectionState): WCallResponse()
   @Serializable @SerialName("connected") data class Connected(val connectionInfo: ConnectionInfo): WCallResponse()
+  @Serializable @SerialName("peerMedia") data class PeerMedia(val media: CallMediaType, val source: CallMediaSource, val enabled: Boolean): WCallResponse()
   @Serializable @SerialName("end") object End: WCallResponse()
   @Serializable @SerialName("ended") object Ended: WCallResponse()
   @Serializable @SerialName("ok") object Ok: WCallResponse()
@@ -163,6 +172,13 @@ enum class WebRTCCallStatus(val value: String) {
 enum class CallMediaType {
   @SerialName("video") Video,
   @SerialName("audio") Audio
+}
+
+@Serializable
+enum class CallMediaSource {
+  @SerialName("mic") Mic,
+  @SerialName("camera") Camera,
+  @SerialName("screen") Screen
 }
 
 @Serializable

@@ -162,6 +162,16 @@ actual fun ActiveCallView() {
           is WCallResponse.Connected -> {
             updateActiveCall(call) { it.copy(callState = CallState.Connected, connectionInfo = r.connectionInfo) }
           }
+          is WCallResponse.PeerMedia -> {
+            updateActiveCall(call) {
+              val sources = it.peerMediaSources
+              when (r.source) {
+                CallMediaSource.Mic -> it.copy(peerMediaSources = sources.copy(mic = r.enabled))
+                CallMediaSource.Camera -> it.copy(peerMediaSources = sources.copy(camera = r.enabled))
+                CallMediaSource.Screen -> it.copy(peerMediaSources = sources.copy(screen = r.enabled))
+              }
+            }
+          }
           is WCallResponse.End -> {
             withBGApi { chatModel.callManager.endCall(call) }
           }
@@ -175,7 +185,7 @@ actual fun ActiveCallView() {
             is WCallCommand.Media -> {
               updateActiveCall(call) {
                 when (cmd.media) {
-                  CallMediaType.Video -> it.copy(videoEnabled = cmd.enable)
+                  CallMediaType.Video -> it.copy(videoEnabled = cmd.enable, localMedia = if (cmd.enable) CallMediaType.Video else CallMediaType.Audio)
                   CallMediaType.Audio -> it.copy(audioEnabled = cmd.enable)
                 }
               }
@@ -293,9 +303,9 @@ private fun ActiveCallOverlayLayout(
   flipCamera: () -> Unit
 ) {
   Column {
-    val media = call.peerMedia ?: call.localMedia
+    val supportsVideo = call.supportsVideo()
     CloseSheetBar({ chatModel.activeCallViewIsCollapsed.value = true }, true, tintColor = Color(0xFFFFFFD8)) {
-      if (media == CallMediaType.Video) {
+      if (supportsVideo) {
         Text(call.contact.chatViewName, Modifier.fillMaxWidth().padding(end = DEFAULT_PADDING), color = Color(0xFFFFFFD8), style = MaterialTheme.typography.h2, overflow = TextOverflow.Ellipsis, maxLines = 1)
       }
     }
@@ -327,29 +337,12 @@ private fun ActiveCallOverlayLayout(
         }
       }
 
-      when (media) {
-        CallMediaType.Video -> {
+      when (supportsVideo) {
+        true -> {
           VideoCallInfoView(call)
-          Box(Modifier.fillMaxWidth().fillMaxHeight().weight(1f), contentAlignment = Alignment.BottomCenter) {
-            DisabledBackgroundCallsButton()
-          }
-          Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            ToggleAudioButton(call, enabled, toggleAudio)
-            SelectSoundDevice()
-            IconButton(onClick = dismiss, enabled = enabled) {
-              Icon(painterResource(MR.images.ic_call_end_filled), stringResource(MR.strings.icon_descr_hang_up), tint = if (enabled) Color.Red else MaterialTheme.colors.secondary, modifier = Modifier.size(64.dp))
-            }
-            if (call.videoEnabled) {
-              ControlButton(call, painterResource(MR.images.ic_flip_camera_android_filled), MR.strings.icon_descr_flip_camera, enabled, flipCamera)
-              ControlButton(call, painterResource(MR.images.ic_videocam_filled), MR.strings.icon_descr_video_off, enabled, toggleVideo)
-            } else {
-              Spacer(Modifier.size(48.dp))
-              ControlButton(call, painterResource(MR.images.ic_videocam_off), MR.strings.icon_descr_video_on, enabled, toggleVideo)
-            }
-          }
         }
 
-        CallMediaType.Audio -> {
+        false -> {
           Spacer(Modifier.fillMaxHeight().weight(1f))
           Column(
             Modifier.fillMaxWidth(),
@@ -359,24 +352,24 @@ private fun ActiveCallOverlayLayout(
             ProfileImage(size = 192.dp, image = call.contact.profile.image)
             AudioCallInfoView(call)
           }
-          Box(Modifier.fillMaxWidth().fillMaxHeight().weight(1f), contentAlignment = Alignment.BottomCenter) {
-            DisabledBackgroundCallsButton()
-          }
-          Box(Modifier.fillMaxWidth().padding(bottom = DEFAULT_BOTTOM_PADDING), contentAlignment = Alignment.CenterStart) {
-            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-              IconButton(onClick = dismiss, enabled = enabled) {
-                Icon(painterResource(MR.images.ic_call_end_filled), stringResource(MR.strings.icon_descr_hang_up), tint = if (enabled) Color.Red else MaterialTheme.colors.secondary, modifier = Modifier.size(64.dp))
-              }
-            }
-            Box(Modifier.padding(start = 32.dp)) {
-              ToggleAudioButton(call, enabled, toggleAudio)
-            }
-            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-              Box(Modifier.padding(end = 32.dp)) {
-                SelectSoundDevice()
-              }
-            }
-          }
+        }
+      }
+      Box(Modifier.fillMaxWidth().fillMaxHeight().weight(1f), contentAlignment = Alignment.BottomCenter) {
+        DisabledBackgroundCallsButton()
+      }
+
+      Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        ToggleAudioButton(call, enabled, toggleAudio)
+        SelectSoundDevice()
+        IconButton(onClick = dismiss, enabled = enabled) {
+          Icon(painterResource(MR.images.ic_call_end_filled), stringResource(MR.strings.icon_descr_hang_up), tint = if (enabled) Color.Red else MaterialTheme.colors.secondary, modifier = Modifier.size(64.dp))
+        }
+        if (call.videoEnabled) {
+          ControlButton(call, painterResource(MR.images.ic_flip_camera_android_filled), MR.strings.icon_descr_flip_camera, enabled, flipCamera)
+          ControlButton(call, painterResource(MR.images.ic_videocam_filled), MR.strings.icon_descr_video_off, enabled, toggleVideo)
+        } else {
+          Spacer(Modifier.size(48.dp))
+          ControlButton(call, painterResource(MR.images.ic_videocam_off), MR.strings.icon_descr_video_on, enabled, toggleVideo)
         }
       }
     }
@@ -769,7 +762,7 @@ fun PreviewActiveCallOverlayVideo() {
         contact = Contact.sampleData,
         callState = CallState.Negotiated,
         localMedia = CallMediaType.Video,
-        peerMedia = CallMediaType.Video,
+        peerMediaSources = CallMediaSources(),
         callUUID = "",
         connectionInfo = ConnectionInfo(
           RTCIceCandidate(RTCIceCandidateType.Host, "tcp"),
@@ -799,7 +792,7 @@ fun PreviewActiveCallOverlayAudio() {
         contact = Contact.sampleData,
         callState = CallState.Negotiated,
         localMedia = CallMediaType.Audio,
-        peerMedia = CallMediaType.Audio,
+        peerMediaSources = CallMediaSources(),
         callUUID = "",
         connectionInfo = ConnectionInfo(
           RTCIceCandidate(RTCIceCandidateType.Host, "udp"),

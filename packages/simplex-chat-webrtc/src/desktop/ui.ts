@@ -10,6 +10,7 @@ socket.addEventListener("open", (_event) => {
   sendMessageToNative = (msg: WVApiMessage) => {
     console.log("Message to server")
     socket.send(JSON.stringify(msg))
+    reactOnMessageToServer(msg)
   }
 })
 
@@ -50,16 +51,18 @@ function toggleSpeakerManually() {
 
 function toggleVideoManually() {
   if (activeCall?.localMedia) {
-    let res: boolean
     if (activeCall?.screenShareEnabled) {
       activeCall.cameraEnabled = !activeCall.cameraEnabled
-      res = activeCall.cameraEnabled
+      enableVideoIcon(activeCall.cameraEnabled)
+      // } else if (activeCall.localMedia == CallMediaType.Video) {
+      //   enableVideoIcon(toggleMedia(activeCall.localStream, CallMediaType.Video))
     } else {
-      res = toggleMedia(activeCall.localStream, CallMediaType.Video)
+      const apiCall: WVAPICall = {command: {type: "media", media: CallMediaType.Video, enable: activeCall.cameraEnabled != true}}
+      reactOnMessageFromServer(apiCall as any)
+      processCommand(apiCall).then(() => {
+        enableVideoIcon(activeCall?.cameraEnabled == true)
+      })
     }
-    document.getElementById("toggle-video")!!.innerHTML = res
-      ? '<img src="/desktop/images/ic_videocam_filled.svg" />'
-      : '<img src="/desktop/images/ic_videocam_off.svg" />'
   }
 }
 
@@ -73,6 +76,12 @@ async function toggleScreenManually() {
   }
 }
 
+function enableVideoIcon(enabled: boolean) {
+  document.getElementById("toggle-video")!!.innerHTML = enabled
+    ? '<img src="/desktop/images/ic_videocam_filled.svg" />'
+    : '<img src="/desktop/images/ic_videocam_off.svg" />'
+}
+
 function reactOnMessageFromServer(msg: WVApiMessage) {
   switch (msg.command?.type) {
     case "capabilities":
@@ -82,20 +91,40 @@ function reactOnMessageFromServer(msg: WVApiMessage) {
     case "start":
       document.getElementById("toggle-audio")!!.style.display = "inline-block"
       document.getElementById("toggle-speaker")!!.style.display = "inline-block"
-      if (msg.command.media == CallMediaType.Video) {
-        document.getElementById("toggle-video")!!.style.display = "inline-block"
-        document.getElementById("toggle-screen")!!.style.display = "inline-block"
-      }
+      document.getElementById("toggle-video")!!.style.display = "inline-block"
+      document.getElementById("toggle-screen")!!.style.display = "inline-block"
       document.getElementById("info-block")!!.className = msg.command.media
+      break
+    case "media":
+      const className =
+        (msg.command.media == CallMediaType.Video && msg.command.enable) ||
+        activeCall?.peerMediaSources.camera ||
+        activeCall?.peerMediaSources.screen
+          ? "video"
+          : "audio"
+      document.getElementById("info-block")!!.className = className
+      document.getElementById("audio-call-icon")!.style.display = className == CallMediaType.Audio ? "block" : "none"
       break
     case "description":
       updateCallInfoView(msg.command.state, msg.command.description)
       if (activeCall?.connection.connectionState == "connected") {
         document.getElementById("progress")!.style.display = "none"
-        if (document.getElementById("info-block")!!.className == CallMediaType.Audio) {
-          document.getElementById("audio-call-icon")!.style.display = "block"
-        }
+        document.getElementById("audio-call-icon")!.style.display =
+          document.getElementById("info-block")!!.className == CallMediaType.Audio ? "block" : "none"
       }
+      break
+  }
+}
+
+function reactOnMessageToServer(msg: WVApiMessage) {
+  switch (msg.resp?.type) {
+    case "peerMedia":
+      const className =
+        activeCall?.localMedia == CallMediaType.Video || activeCall?.peerMediaSources.camera || activeCall?.peerMediaSources.screen
+          ? "video"
+          : "audio"
+      document.getElementById("info-block")!!.className = className
+      document.getElementById("audio-call-icon")!.style.display = className == CallMediaType.Audio ? "block" : "none"
       break
   }
 }

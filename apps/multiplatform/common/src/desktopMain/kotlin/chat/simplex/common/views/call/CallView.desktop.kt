@@ -65,6 +65,14 @@ actual fun ActiveCallView() {
         is WCallResponse.Connected -> {
           chatModel.activeCall.value = call.copy(callState = CallState.Connected, connectionInfo = r.connectionInfo)
         }
+        is WCallResponse.PeerMedia -> {
+          val sources = call.peerMediaSources
+          chatModel.activeCall.value = when (r.source) {
+            CallMediaSource.Mic -> call.copy(peerMediaSources = sources.copy(mic = r.enabled))
+            CallMediaSource.Camera -> call.copy(peerMediaSources = sources.copy(camera = r.enabled))
+            CallMediaSource.Screen -> call.copy(peerMediaSources = sources.copy(screen = r.enabled))
+          }
+        }
         is WCallResponse.End -> {
           withBGApi { chatModel.callManager.endCall(call) }
         }

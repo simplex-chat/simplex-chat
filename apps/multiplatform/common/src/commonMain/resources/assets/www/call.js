@@ -6,6 +6,13 @@ var CallMediaType;
     CallMediaType["Audio"] = "audio";
     CallMediaType["Video"] = "video";
 })(CallMediaType || (CallMediaType = {}));
+var CallMediaSource;
+(function (CallMediaSource) {
+    CallMediaSource["Mic"] = "mic";
+    CallMediaSource["Camera"] = "camera";
+    CallMediaSource["Screen"] = "screen";
+    CallMediaSource["Unknown"] = "unknown";
+})(CallMediaSource || (CallMediaSource = {}));
 var VideoCamera;
 (function (VideoCamera) {
     VideoCamera["User"] = "user";
@@ -131,6 +138,7 @@ const processCommand = (function () {
                 .filter((elem) => elem.kind == "video")
                 .forEach((elem) => (elem.enabled = false));
         }
+        // Will become video when any video tracks will be added
         const iceCandidates = getIceCandidates(pc, config);
         const call = {
             connection: pc,
@@ -139,9 +147,14 @@ const processCommand = (function () {
             localCamera,
             localStream,
             remoteStream,
+            peerMediaSources: {
+                mic: false,
+                camera: false,
+                screen: false,
+            },
             aesKey,
             screenShareEnabled: false,
-            cameraEnabled: true,
+            cameraEnabled: !isDesktop,
         };
         await setupMediaStreams(call);
         let connectionTimeout = setTimeout(connectionHandler, answerTimeout);
@@ -232,6 +245,13 @@ const processCommand = (function () {
                     const aesKey = encryption ? command.aesKey : undefined;
                     activeCall = await initializeCall(getCallConfig(encryption && !!aesKey, iceServers, relay), media, aesKey);
                     const pc = activeCall.connection;
+                    if (media == CallMediaType.Audio) {
+                        console.log("LALAL ADDING TRANSCEIVER for video");
+                        // For camera. So the first video in the list is for camera
+                        pc.addTransceiver("video", { streams: [activeCall.localStream] });
+                    }
+                    // For screenshare. So the second video in the list is for screenshare
+                    pc.addTransceiver("video", { streams: [activeCall.localStream] });
                     const offer = await pc.createOffer();
                     await pc.setLocalDescription(offer);
                     // for debugging, returning the command for callee to use
@@ -269,7 +289,11 @@ const processCommand = (function () {
                         const pc = activeCall.connection;
                         // console.log("offer remoteIceCandidates", JSON.stringify(remoteIceCandidates))
                         await pc.setRemoteDescription(new RTCSessionDescription(offer));
-                        const answer = await pc.createAnswer();
+                        pc.getTransceivers().forEach((elem) => (elem.direction = "sendrecv"));
+                        console.log("LALAL TRANSCE", pc.getTransceivers());
+                        let answer = await pc.createAnswer();
+                        console.log("LALAL SDP", answer, answer.sdp);
+                        // answer!.sdp = answer.sdp?.replace("a=recvonly", "a=sendrecv")
                         await pc.setLocalDescription(answer);
                         addIceCandidates(pc, remoteIceCandidates);
                         // same as command for caller to use
@@ -295,6 +319,7 @@ const processCommand = (function () {
                         const answer = parse(command.answer);
                         const remoteIceCandidates = parse(command.iceCandidates);
                         // console.log("answer remoteIceCandidates", JSON.stringify(remoteIceCandidates))
+                        console.log("LALAL SDP2", answer, answer.sdp);
                         await pc.setRemoteDescription(new RTCSessionDescription(answer));
                         addIceCandidates(pc, remoteIceCandidates);
                         resp = { type: "ok" };
@@ -314,8 +339,9 @@ const processCommand = (function () {
                     if (!activeCall) {
                         resp = { type: "error", message: "media: call not started" };
                     }
-                    else if (activeCall.localMedia == CallMediaType.Audio && command.media == CallMediaType.Video) {
-                        resp = { type: "error", message: "media: no video" };
+                    else if (activeCall.localMedia == CallMediaType.Audio && command.media == CallMediaType.Video && command.enable) {
+                        await startSendingVideo(activeCall, activeCall.localCamera);
+                        resp = { type: "ok" };
                     }
                     else {
                         enableMedia(activeCall.localStream, command.media, command.enable);
@@ -399,6 +425,12 @@ const processCommand = (function () {
                 call.worker = new Worker(URL.createObjectURL(new Blob([workerCode], { type: "text/javascript" })));
                 call.worker.onerror = ({ error, filename, lineno, message }) => console.log({ error, filename, lineno, message });
                 // call.worker.onmessage = ({data}) => console.log(JSON.stringify({message: data}))
+                call.worker.onmessage = ({ data }) => {
+                    console.log(JSON.stringify({ message: data }));
+                    const transceiverMid = data.transceiverMid;
+                    const mute = data.mute;
+                    onMediaMuteUnmute(transceiverMid, mute);
+                };
             }
         }
     }
@@ -413,8 +445,9 @@ const processCommand = (function () {
         }
         if (call.aesKey && call.key) {
             console.log("set up encryption for sending");
-            for (const sender of pc.getSenders()) {
-                setupPeerTransform(TransformOperation.Encrypt, sender, call.worker, call.aesKey, call.key);
+            for (const transceiver of pc.getTransceivers()) {
+                const sender = transceiver.sender;
+                setupPeerTransform(TransformOperation.Encrypt, sender, call.worker, call.aesKey, call.key, transceiver.sender.track.kind == "video" ? CallMediaType.Video : CallMediaType.Audio, transceiver.mid);
             }
         }
     }
@@ -422,15 +455,48 @@ const processCommand = (function () {
         // Pull tracks from remote stream as they arrive add them to remoteStream video
         const pc = call.connection;
         pc.ontrack = (event) => {
+            console.log("LALAL ON TRACK ", event);
             try {
                 if (call.aesKey && call.key) {
                     console.log("set up decryption for receiving");
-                    setupPeerTransform(TransformOperation.Decrypt, event.receiver, call.worker, call.aesKey, call.key);
+                    setupPeerTransform(TransformOperation.Decrypt, event.receiver, call.worker, call.aesKey, call.key, event.receiver.track.kind == "video" ? CallMediaType.Video : CallMediaType.Audio, event.transceiver.mid);
                 }
-                for (const stream of event.streams) {
-                    for (const track of stream.getTracks()) {
-                        call.remoteStream.addTrack(track);
+                // const source = mediaSourceFromTransceiverMid(event.transceiver.mid)
+                // const sources = call.peerMediaSources
+                // if (source == CallMediaSource.Mic) {
+                //   sources.mic = true
+                // } else if (source == CallMediaSource.Camera) {
+                //   sources.camera = true
+                // } else if (source == CallMediaSource.Screen) {
+                //   sources.screen = true
+                // }
+                // call.peerMediaSources = sources
+                if (event.streams.length > 0) {
+                    for (const stream of event.streams) {
+                        for (const track of stream.getTracks()) {
+                            call.remoteStream.addTrack(track);
+                            // const resp: WRPeerMedia = {
+                            //   type: "peerMedia",
+                            //   media: track.kind == "audio" ? CallMediaType.Audio : CallMediaType.Video,
+                            //   source: source,
+                            //   enabled: track.enabled,
+                            // }
+                            // console.log("LALAL ADDED REMOTE", track, track.kind)
+                            // sendMessageToNative({resp: resp})
+                        }
                     }
+                }
+                else {
+                    const track = event.track;
+                    call.remoteStream.addTrack(track);
+                    // const resp: WRPeerMedia = {
+                    //   type: "peerMedia",
+                    //   media: track.kind == "audio" ? CallMediaType.Audio : CallMediaType.Video,
+                    //   source: source,
+                    //   enabled: track.enabled,
+                    // }
+                    // console.log("LALAL ADDED REMOTE", track, track.kind)
+                    // sendMessageToNative({resp: resp})
                 }
                 console.log(`ontrack success`);
             }
@@ -478,6 +544,42 @@ const processCommand = (function () {
                 }
             }
         }
+    }
+    async function startSendingVideo(call, camera) {
+        console.log("LALAL STARTING SENDING VIDEO");
+        const videos = getVideoElements();
+        if (!videos)
+            throw Error("no video elements");
+        const pc = call.connection;
+        // Taking the first video transceiver and use it for sending video from camera. Following tracks are for other purposes
+        const tc = pc.getTransceivers().find((tc) => tc.receiver.track.kind == "video" && tc.direction == "sendrecv");
+        console.log(pc.getTransceivers().map((elem) => { var _a, _b; return "" + ((_a = elem.sender.track) === null || _a === void 0 ? void 0 : _a.kind) + " " + ((_b = elem.receiver.track) === null || _b === void 0 ? void 0 : _b.kind) + " " + elem.direction; }));
+        let localStream;
+        try {
+            localStream = await getLocalMediaStream(CallMediaType.Video, camera);
+            for (const t of localStream.getVideoTracks()) {
+                console.log("LALAL TC", tc, pc.getTransceivers());
+                call.localStream.addTrack(t);
+                tc === null || tc === void 0 ? void 0 : tc.sender.replaceTrack(t);
+                localStream.removeTrack(t);
+                // when adding track a `sender` will be created on that track automatically
+                //pc.addTrack(t, call.localStream)
+                console.log("LALAL ADDED VIDEO TRACK " + t);
+            }
+            call.localMedia = CallMediaType.Video;
+            call.cameraEnabled = true;
+        }
+        catch (e) {
+            return;
+        }
+        const sender = tc === null || tc === void 0 ? void 0 : tc.sender;
+        console.log("LALAL SENDER " + sender + " " + (sender === null || sender === void 0 ? void 0 : sender.getParameters()));
+        if (call.aesKey && call.key && sender) {
+            setupPeerTransform(TransformOperation.Encrypt, sender, call.worker, call.aesKey, call.key, CallMediaType.Video, tc.mid);
+        }
+        // Without doing it manually Firefox shows black screen but video can be played in Picture-in-Picture
+        videos.local.play();
+        console.log("LALAL SENDING VIDEO");
     }
     async function replaceMedia(call, camera) {
         const videos = getVideoElements();
@@ -535,25 +637,84 @@ const processCommand = (function () {
             for (const t of tracks)
                 sender.replaceTrack(t);
     }
-    function setupPeerTransform(operation, peer, worker, aesKey, key) {
+    function mediaSourceFromTransceiverMid(mid) {
+        switch (mid) {
+            case "0":
+                return CallMediaSource.Mic;
+            case "1":
+                return CallMediaSource.Camera;
+            case "2":
+                return CallMediaSource.Screen;
+            default:
+                return CallMediaSource.Unknown;
+        }
+    }
+    function setupPeerTransform(operation, peer, worker, aesKey, key, media, transceiverMid) {
+        console.log("LALAL MEDIA " + media + " " + transceiverMid);
         if (worker && "RTCRtpScriptTransform" in window) {
             console.log(`${operation} with worker & RTCRtpScriptTransform`);
-            peer.transform = new RTCRtpScriptTransform(worker, { operation, aesKey });
+            peer.transform = new RTCRtpScriptTransform(worker, { operation, aesKey, media, transceiverMid });
         }
         else if ("createEncodedStreams" in peer) {
             const { readable, writable } = peer.createEncodedStreams();
             if (worker) {
                 console.log(`${operation} with worker`);
-                worker.postMessage({ operation, readable, writable, aesKey }, [readable, writable]);
+                worker.postMessage({ operation, readable, writable, aesKey, media, transceiverMid }, [
+                    readable,
+                    writable,
+                ]);
             }
             else {
                 console.log(`${operation} without worker`);
-                const transform = callCrypto.transformFrame[operation](key);
+                const onMediaMuteUnmuteConst = (mute) => {
+                    onMediaMuteUnmute(transceiverMid, mute);
+                };
+                const transform = callCrypto.transformFrame[operation](key, onMediaMuteUnmuteConst);
                 readable.pipeThrough(new TransformStream({ transform })).pipeTo(writable);
             }
         }
         else {
             console.log(`no ${operation}`);
+        }
+    }
+    function onMediaMuteUnmute(transceiverMid, mute) {
+        if (activeCall) {
+            const source = mediaSourceFromTransceiverMid(transceiverMid);
+            console.log("LALAL ON MUTE/UNMUTE", mute, source, transceiverMid);
+            const sources = activeCall.peerMediaSources;
+            if (source == CallMediaSource.Mic && activeCall.peerMediaSources.mic == mute) {
+                const resp = {
+                    type: "peerMedia",
+                    media: CallMediaType.Audio,
+                    source: source,
+                    enabled: !mute,
+                };
+                sources.mic = !mute;
+                activeCall.peerMediaSources = sources;
+                sendMessageToNative({ resp: resp });
+            }
+            else if (source == CallMediaSource.Camera && activeCall.peerMediaSources.camera == mute) {
+                const resp = {
+                    type: "peerMedia",
+                    media: CallMediaType.Video,
+                    source: source,
+                    enabled: !mute,
+                };
+                sources.camera = !mute;
+                activeCall.peerMediaSources = sources;
+                sendMessageToNative({ resp: resp });
+            }
+            else if (source == CallMediaSource.Screen && activeCall.peerMediaSources.screen == mute) {
+                const resp = {
+                    type: "peerMedia",
+                    media: CallMediaType.Video,
+                    source: source,
+                    enabled: !mute,
+                };
+                sources.screen = !mute;
+                activeCall.peerMediaSources = sources;
+                sendMessageToNative({ resp: resp });
+            }
         }
     }
     function getLocalMediaStream(mediaType, facingMode) {
@@ -703,6 +864,7 @@ function callCryptoFunction() {
                     : new Uint8Array(0);
                 frame.data = concatN(initial, ciphertext, iv).buffer;
                 controller.enqueue(frame);
+                // console.log("LALAL ENCRYPT", frame.data.byteLength)
             }
             catch (e) {
                 console.log(`encryption error ${e}`);
@@ -710,7 +872,9 @@ function callCryptoFunction() {
             }
         };
     }
-    function decryptFrame(key) {
+    function decryptFrame(key, onMediaMuteUnmute) {
+        let wasMuted = true;
+        let lastBytes = [];
         return async (frame, controller) => {
             const data = new Uint8Array(frame.data);
             const n = initialPlainTextRequired[frame.type] || 1;
@@ -723,6 +887,23 @@ function callCryptoFunction() {
                     : new Uint8Array(0);
                 frame.data = concatN(initial, plaintext).buffer;
                 controller.enqueue(frame);
+                lastBytes.push(frame.data.byteLength);
+                const sliced = lastBytes.slice(-20, lastBytes.length);
+                const average = sliced.reduce((prev, value) => value + prev, 0) / Math.max(1, sliced.length);
+                if (lastBytes.length > 20) {
+                    console.log("LALAL REPLACED", lastBytes.length, sliced.length);
+                    lastBytes = sliced;
+                }
+                console.log("LALAL DECRYPT", frame.type, frame.data.byteLength, average);
+                // frame.type is undefined for audio stream, but defined for video
+                if (frame.type && wasMuted && average > 200) {
+                    wasMuted = false;
+                    onMediaMuteUnmute(false);
+                }
+                else if (frame.type && !wasMuted && average < 200) {
+                    wasMuted = true;
+                    onMediaMuteUnmute(true);
+                }
             }
             catch (e) {
                 console.log(`decryption error ${e}`);
@@ -828,9 +1009,9 @@ function workerFunction() {
     if ("RTCTransformEvent" in self) {
         self.addEventListener("rtctransform", async ({ transformer }) => {
             try {
-                const { operation, aesKey } = transformer.options;
+                const { operation, aesKey, transceiverMid } = transformer.options;
                 const { readable, writable } = transformer;
-                await setupTransform({ operation, aesKey, readable, writable });
+                await setupTransform({ operation, aesKey, transceiverMid, readable, writable });
                 self.postMessage({ result: "setupTransform success" });
             }
             catch (e) {
@@ -838,9 +1019,12 @@ function workerFunction() {
             }
         });
     }
-    async function setupTransform({ operation, aesKey, readable, writable }) {
+    async function setupTransform({ operation, aesKey, transceiverMid, readable, writable }) {
         const key = await callCrypto.decodeAesKey(aesKey);
-        const transform = callCrypto.transformFrame[operation](key);
+        const onMediaMuteUnmute = (mute) => {
+            self.postMessage({ transceiverMid: transceiverMid, mute: mute });
+        };
+        const transform = callCrypto.transformFrame[operation](key, onMediaMuteUnmute);
         readable.pipeThrough(new TransformStream({ transform })).pipeTo(writable);
     }
 }

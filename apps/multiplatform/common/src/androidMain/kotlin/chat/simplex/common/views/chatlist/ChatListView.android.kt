@@ -54,7 +54,7 @@ actual fun ActiveCallInteractiveArea(call: Call) {
         .align(Alignment.BottomCenter),
       contentAlignment = Alignment.Center
     ) {
-      val media = call.peerMedia ?: call.localMedia
+      val media = call.peerMediaSources ?: call.localMedia
       if (media == CallMediaType.Video) {
         Icon(painterResource(MR.images.ic_videocam_filled), null, Modifier.size(27.dp).offset(x = 2.5.dp, y = 2.dp), tint = Color.White)
       } else {

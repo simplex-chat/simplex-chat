@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 @Composable
 actual fun ActiveCallInteractiveArea(call: Call) {
   val showMenu = remember { mutableStateOf(false) }
-  val media = call.peerMedia ?: call.localMedia
+  val media = call.peerMediaSources ?: call.localMedia
   CompositionLocalProvider(
     LocalIndication provides NoIndication
   ) {

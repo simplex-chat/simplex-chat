@@ -1,0 +1,110 @@
+#
+# A fatal error has been detected by the Java Runtime Environment:
+#
+#  SIGSEGV (0xb) at pc=0x00007bf0edd03035, pid=626666, tid=626706
+#
+# JRE version: OpenJDK Runtime Environment (17.0.12+7) (build 17.0.12+7)
+# Java VM: OpenJDK 64-Bit Server VM (17.0.12+7, mixed mode, sharing, tiered, compressed oops, compressed class ptrs, g1 gc, linux-amd64)
+# Problematic frame:
+# C  [libc.so.6+0x9a035]  __pthread_rwlock_rdlock+0x15
+#
+# Core dump will be written. Default location: Core dumps may be processed with "/usr/lib/systemd/systemd-coredump %P %u %g %s %t %c %h" (or dumping to /mnt/Dev/apps/simplex/apps/multiplatform/desktop/core.626666)
+#
+# If you would like to submit a bug report, please visit:
+#   https://bugreport.java.com/bugreport/crash.jsp
+#
+
+---------------  S U M M A R Y ------------
+
+Command Line: -Dcompose.application.configure.swing.globals=true -Dcompose.application.resources.dir=/mnt/Dev/apps/simplex/apps/multiplatform/desktop/build/compose/tmp/prepareAppResources -Dfile.encoding=UTF-8 -Duser.country=US -Duser.language=en -Duser.variant chat.simplex.desktop.MainKt
+
+Host: 12th Gen Intel(R) Core(TM) i7-12700H, 20 cores, 38G, Manjaro Linux
+Time: Fri Aug 30 22:33:15 2024 KST elapsed time: 110.587221 seconds (0d 0h 1m 50s)
+
+---------------  T H R E A D  ---------------
+
+Current thread is native thread
+
+Stack: [0x00007bf042401000,0x00007bf042c01000],  sp=0x00007bf042bfb820,  free space=8170k
+Native frames: (J=compiled Java code, j=interpreted, Vv=VM code, C=native code)
+C  [libc.so.6+0x9a035]  __pthread_rwlock_rdlock+0x15
+C  [libcrypto.so.3+0x18645e]  CRYPTO_THREAD_read_lock+0xe
+C  [libcrypto.so.3+0x1b36fa]  RAND_get_rand_method+0x3a
+C  [libcrypto.so.3+0x1b4c97]  RAND_bytes_ex+0x27
+
+
+siginfo: si_signo: 11 (SIGSEGV), si_code: 1 (SEGV_MAPERR), si_addr: 0x0000000000000018
+
+Registers:
+RAX=0x0000000000000001, RBX=0x0000000000000000, RCX=0x0000000000000000, RDX=0x0000000000000050
+RSP=0x00007bf042bfb820, RBP=0x00007bf042bfb840, RSI=0x00007bf04c3b0ab0, RDI=0x0000000000000000
+R8 =0x0000000000000fa0, R9 =0x0000000000000000, R10=0x0000000000000001, R11=0x00007bf042bfb880
+R12=0x0000000000000050, R13=0x00007befe40c8898, R14=0x0000000000000000, R15=0x0000000000000000
+RIP=0x00007bf0edd03035, EFLAGS=0x0000000000010202, CSGSFS=0x002b000000000033, ERR=0x0000000000000004
+  TRAPNO=0x000000000000000e
+
+
+Top of Stack: (sp=0x00007bf042bfb820)
+0x00007bf042bfb820:   0000000000000fa0 00007befe40c8898
+0x00007bf042bfb830:   0000000000000050 00007befe40c8898
+0x00007bf042bfb840:   00007bf042bfb850 00007bf04c38645e
+0x00007bf042bfb850:   00007bf042bfb870 00007bf04c3b36fa
+0x00007bf042bfb860:   00007befe40c8898 0000000000000050
+0x00007bf042bfb870:   00007bf042bfb8b0 00007bf04c3b4c97
+0x00007bf042bfb880:   00007befe40c8898 00007befe40c8898
+0x00007bf042bfb890:   0000000000000fb0 00007befe40a5728
+0x00007bf042bfb8a0:   0000000000000fa0 00007befe40c78f8
+0x00007bf042bfb8b0:   0000000000000050 00007bf055d655cd
+0x00007bf042bfb8c0:   0000000000000fb0 0000000000000001
+0x00007bf042bfb8d0:   0000000000000ff0 00007bf055d645de
+0x00007bf042bfb8e0:   00007befe40c8898 00007befe40dd000
+0x00007bf042bfb8f0:   0000000000000fa0 00007befe40c8998
+0x00007bf042bfb900:   0000000100001000 00007befe40c88a8
+0x00007bf042bfb910:   0000000000000000 00007befe40a5728
+0x00007bf042bfb920:   00007befe40c78f8 0000000000000ff0
+0x00007bf042bfb930:   0000000000000001 00007befe40c78e8
+0x00007bf042bfb940:   0000000000000000 00007bf055d650f1
+0x00007bf042bfb950:   00007befe40c78f8 00007bf055d651a6
+0x00007bf042bfb960:   0000000000000000 00007befe40dd000
+0x00007bf042bfb970:   0000000000000010 0000000100000010
+0x00007bf042bfb980:   00007befe40c78a8 3f5d6a2928082800
+0x00007bf042bfb990:   0000000000000000 00007befe40de028
+0x00007bf042bfb9a0:   00007befe40b99d8 0000000000000001
+0x00007bf042bfb9b0:   0000000000000000 00007befe40dcff0
+0x00007bf042bfb9c0:   0000000000000000 00007bf055d892d4
+0x00007bf042bfb9d0:   05000000d763a120 3f5d6a2928082800
+0x00007bf042bfb9e0:   00007befe40b99d8 0000000000000000
+0x00007bf042bfb9f0:   0000000000000000 00007befe40b9cec
+0x00007bf042bfba00:   00007befe409a808 00007bf055d9042f
+0x00007bf042bfba10:   00007bf042bfba20 3f5d6a2928082800 
+
+Instructions: (pc=0x00007bf0edd03035)
+0x00007bf0edd02f35:   f7 0f 84 31 fd ff ff 48 8d 3d ed ba 11 00 e8 68
+0x00007bf0edd02f45:   f5 fe ff 0f 1f 84 00 00 00 00 00 83 c0 16 83 e0
+0x00007bf0edd02f55:   f7 75 e4 e9 3f ff ff ff 45 85 ff 0f 84 07 fd ff
+0x00007bf0edd02f65:   ff 8b 43 04 48 8d 53 04 3d 01 00 00 80 74 30 8d
+0x00007bf0edd02f75:   48 ff f0 0f b1 0a 75 f0 3d 01 00 00 80 0f 85 e5
+0x00007bf0edd02f85:   fc ff ff 8b 13 b8 03 00 00 00 83 ca 02 e9 9b fc
+0x00007bf0edd02f95:   ff ff 83 c0 16 83 e0 f7 75 9d e9 cd fe ff ff 31
+0x00007bf0edd02fa5:   c9 eb cf 85 c0 0f 85 40 ff ff ff 89 4b 0c e9 6d
+0x00007bf0edd02fb5:   fe ff ff 0f 1f 84 00 00 00 00 00 f3 0f 1e fa 90
+0x00007bf0edd02fc5:   31 c0 c3 0f 1f 84 00 00 00 00 00 f3 0f 1e fa 48
+0x00007bf0edd02fd5:   85 f6 48 8d 05 aa 06 12 00 66 0f ef c0 48 c7 47
+0x00007bf0edd02fe5:   30 00 00 00 00 48 0f 44 f0 0f 11 47 10 0f 11 07
+0x00007bf0edd02ff5:   0f 11 47 20 8b 06 8b 56 04 89 47 30 31 c0 85 d2
+0x00007bf0edd03005:   0f 95 c0 89 47 1c 31 c0 c3 66 2e 0f 1f 84 00 00
+0x00007bf0edd03015:   00 00 00 0f 1f 84 00 00 00 00 00 f3 0f 1e fa 55
+0x00007bf0edd03025:   48 89 e5 41 55 41 54 53 48 89 fb 48 83 ec 08 90
+0x00007bf0edd03035:   8b 57 18 64 8b 04 25 d0 02 00 00 39 c2 0f 84 08
+0x00007bf0edd03045:   01 00 00 83 7f 30 02 74 32 b8 08 00 00 00 f0 0f
+0x00007bf0edd03055:   c1 03 83 c0 08 85 c0 0f 88 fe 00 00 00 a8 01 75
+0x00007bf0edd03065:   7a 31 d2 90 48 83 c4 08 89 d0 5b 41 5c 41 5d 5d
+0x00007bf0edd03075:   c3 66 2e 0f 1f 84 00 00 00 00 00 8b 37 89 f0 83
+0x00007bf0edd03085:   e0 03 83 f8 02 75 c2 89 f0 c1 e8 03 74 bb 89 f2
+0x00007bf0edd03095:   89 f0 83 ca 04 f0 0f b1 13 89 c6 74 0b eb de 0f
+0x00007bf0edd030a5:   1f 40 00 83 f8 4b 74 bb 8b 33 40 f6 c6 04 74 cd
+0x00007bf0edd030b5:   44 8b 4b 1c 45 31 c0 48 89 df 45 85 c9 41 0f 95
+0x00007bf0edd030c5:   c0 31 d2 31 c9 41 c1 e0 07 e8 ad 69 ff ff 89 c2
+0x00007bf0edd030d5:   83 f8 6e 75 ce eb 8c 0f 1f 40 00 89 c2 83 e2 03
+0x00007bf0edd030e5:   83 fa 01 0f 85 89 00 00 00 89 c2 83 f2 01 f0 0f
+0x00007bf0edd030f5:   b1 13 75 
