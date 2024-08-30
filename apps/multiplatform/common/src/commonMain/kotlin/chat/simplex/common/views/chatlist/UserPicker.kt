@@ -154,7 +154,7 @@ private fun UsersLayout(
 
     SectionView(contentPadding = PaddingValues(bottom = DEFAULT_PADDING, start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)) {
       Row {
-        Column {
+        Column(modifier = Modifier.widthIn(max = 200.dp)) {
           IconButton(onClick = onCurrentUserClick, enabled = !stopped) {
               ProfileImage(
                 image = currentUser.image,
