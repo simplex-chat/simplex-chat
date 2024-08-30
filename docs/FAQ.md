@@ -108,11 +108,11 @@ You can also revoke the files you send. If the recipients did not yet receive th
 This is different from most other messengers that allow deleting messages from the recipients' devices without any agreement with the recipients.
 
 We believe that allowing deleting information from your device to your contacts is a very wrong design decision for several reasons:
-1) it violates your data sovereignty as the device owner - once your are in possession of any information, you have the rights to retain it, and any deletion should be agreed with you. And security and privacy is not impossible if users don't have sovereignty over their devices.
+1) it violates your data sovereignty as the device owner - once your are in possession of any information, you have the rights to retain it, and any deletion should be agreed with you. And security and privacy is not possible if users don't have sovereignty over their devices.
 2) it may be a business communication, and either your organisation policy or a compliance requirement is that every message you receive must be preserved for some time.
 3) the message can contain a legally binding promise, effectively a contract between you and your contact, in which case you both need to keep it.
 4) the messages may contain threat or abuse and you may want to keep them as a proof.
-5) you may have paid for the the message (e.g., it can be a consulting report), and you don't want it to suddenly disappear before you had a chance to store it outside of the conversation.
+5) you may have paid for the the message (e.g., it can be a design project or consulting report), and you don't want it to suddenly disappear before you had a chance to store it outside of the conversation.
 
 It is also important to remember, that even if your contact enabled "Delete for everyone", you cannot really see it as a strong guarantee that the message will be deleted. Your contact's app can have a very simple modification (a one-line code change), that would prevent this deletion from happening when you request it. So you cannot see it as something that guarantees your security from your contacts.
 
