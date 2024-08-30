@@ -49,7 +49,7 @@ private fun UserPickerOptionRow(icon: Painter, text: String, click: (() -> Unit)
   SectionItemView(click, disabled = disabled) {
     Icon(icon, text, tint = if (disabled) MaterialTheme.colors.secondary else MenuTextColor)
     TextIconSpaced()
-    Text(text, color = if (disabled) MaterialTheme.colors.secondary else MenuTextColor)
+    Text(text = text, color = if (disabled) MaterialTheme.colors.secondary else MenuTextColor, fontSize = 14.sp * fontSizeMultiplier)
   }
 }
 
@@ -152,9 +152,9 @@ private fun UsersLayout(
   if (currentUser != null) {
     val mainColor = if (stopped) MaterialTheme.colors.secondary else MenuTextColor
 
-    SectionView(contentPadding = PaddingValues(bottom = DEFAULT_PADDING, start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)) {
+    SectionView(contentPadding = PaddingValues(bottom = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)) {
       Row {
-        Column(modifier = Modifier.widthIn(max = 200.dp)) {
+        Column(modifier = Modifier.widthIn(max = 200.dp).padding(start = DEFAULT_PADDING - 4.dp)) {
           IconButton(onClick = onCurrentUserClick, enabled = !stopped) {
               ProfileImage(
                 image = currentUser.image,
@@ -168,7 +168,9 @@ private fun UsersLayout(
             fontWeight = FontWeight.Bold,
             color = mainColor,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
+            fontSize = 16.sp * fontSizeMultiplier,
+            modifier = Modifier.padding(top = 12.dp, start = 4.dp)
           )
         }
         Spacer(Modifier.weight(1f))
@@ -457,7 +459,7 @@ fun UserPicker(
         SectionItemView(settingsClicked, padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)) {
           Icon(painterResource(MR.images.ic_settings), text, tint = MenuTextColor)
           TextIconSpaced()
-          Text(text, color = MenuTextColor)
+          Text(text, color = MenuTextColor, fontSize = 14.sp * fontSizeMultiplier)
           Spacer(Modifier.weight(1f))
           ColorModeSwitcher()
         }
@@ -595,7 +597,7 @@ private fun DevicePickerRow(
     Modifier
       .fillMaxWidth()
       .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
-      .padding(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING),
+      .padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING),
     horizontalArrangement = Arrangement.spacedBy(12.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
