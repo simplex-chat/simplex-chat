@@ -658,7 +658,7 @@ private fun DevicePickerRow(
 }
 
 @Composable
-private fun DevicePill(
+fun DevicePill(
   active: Boolean,
   icon: Painter,
   text: String,
