@@ -629,7 +629,7 @@ object AppearanceScope {
             saveThemeToDatabase(null)
           }
         )
-        .requiredSize(44.dp),
+        .size(44.dp),
       verticalArrangement = Arrangement.Center,
       horizontalAlignment = Alignment.CenterHorizontally
     ) {

@@ -152,7 +152,7 @@ private fun UsersLayout(
   if (currentUser != null) {
     val mainColor = if (stopped) MaterialTheme.colors.secondary else MenuTextColor
 
-    SectionView(contentPadding = PaddingValues(DEFAULT_PADDING)) {
+    SectionView(contentPadding = PaddingValues(bottom = DEFAULT_PADDING, start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)) {
       Row {
         Column {
           IconButton(onClick = onCurrentUserClick, enabled = !stopped) {
@@ -392,12 +392,15 @@ fun UserPicker(
     Column(
       Modifier
         .height(IntrinsicSize.Min)
-        .then(if (appPlatform.isDesktop) Modifier.widthIn(max = 375.dp) else Modifier)
+        .then(if (appPlatform.isDesktop) Modifier.widthIn(max = 450.dp) else Modifier)
         .fillMaxWidth()
         .background(MaterialTheme.colors.surface)
     ) {
       val currentRemoteHost = remember { chatModel.currentRemoteHost }.value
-      Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+      Column(
+        Modifier
+          .padding(vertical = DEFAULT_PADDING)
+      ) {
         if (remoteHosts.isNotEmpty()) {
           val localDeviceActive = currentRemoteHost == null && chatModel.localUserCreated.value == true
 
@@ -447,17 +450,17 @@ fun UserPicker(
             }
           },
         )
-      }
 
-      Divider(Modifier.padding(DEFAULT_PADDING))
+        Divider(Modifier.padding(DEFAULT_PADDING))
 
-      val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
-      SectionItemView(settingsClicked, padding = PaddingValues()) {
-        Icon(painterResource(MR.images.ic_settings), text, tint = MenuTextColor)
-        TextIconSpaced()
-        Text(text, color = MenuTextColor)
-        Spacer(Modifier.weight(1f))
-        ColorModeSwitcher()
+        val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
+        SectionItemView(settingsClicked, padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)) {
+          Icon(painterResource(MR.images.ic_settings), text, tint = MenuTextColor)
+          TextIconSpaced()
+          Text(text, color = MenuTextColor)
+          Spacer(Modifier.weight(1f))
+          ColorModeSwitcher()
+        }
       }
     }
   }
