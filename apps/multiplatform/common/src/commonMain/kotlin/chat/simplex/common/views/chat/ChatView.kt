@@ -86,6 +86,7 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
           .collect { chatId ->
             markUnreadChatAsRead(chatId)
             showSearch.value = false
+            searchText.value = ""
             selectedChatItems.value = null
           }
       }
