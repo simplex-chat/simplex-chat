@@ -208,7 +208,7 @@ private fun RetryButton(onClick: () -> Unit) {
 }
 
 @Composable
-private fun ProfilePickerOption(
+fun ProfilePickerOption(
   title: String,
   selected: Boolean,
   disabled: Boolean,
@@ -267,7 +267,7 @@ private fun ProfilePickerOption(
   )
 }
 
-private fun filteredProfiles(users: List<User>, searchTextOrPassword: String): List<User> {
+fun filteredProfiles(users: List<User>, searchTextOrPassword: String): List<User> {
   val s = searchTextOrPassword.trim()
   val lower = s.lowercase()
   return users.filter { u ->

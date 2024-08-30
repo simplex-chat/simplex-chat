@@ -8,11 +8,13 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -32,11 +34,11 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.CreateProfile
+import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.remote.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.views.usersettings.AppearanceScope.ColorModeSwitcher
 import chat.simplex.res.MR
-import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -48,6 +50,84 @@ private fun UserPickerOptionRow(icon: Painter, text: String, click: (() -> Unit)
     Icon(icon, text, tint = if (disabled) MaterialTheme.colors.secondary else MenuTextColor)
     TextIconSpaced()
     Text(text, color = if (disabled) MaterialTheme.colors.secondary else MenuTextColor)
+  }
+}
+
+@Composable
+fun ShareListUserPicker(
+  chatModel: ChatModel,
+  search: MutableState<String>,
+  close: () -> Unit,
+) {
+  val switchingProfile = remember { mutableStateOf(false) }
+  val searchTextOrPassword = rememberSaveable { search }
+  val profiles = remember {
+    chatModel.users.map { it.user }.sortedBy { !it.activeUser }
+  }
+  val filteredProfiles by remember {
+    derivedStateOf { filteredProfiles(profiles, searchTextOrPassword.value) }
+  }
+
+  var progressByTimeout by rememberSaveable { mutableStateOf(false) }
+
+  LaunchedEffect(switchingProfile.value) {
+    progressByTimeout = if (switchingProfile.value) {
+      delay(500)
+      switchingProfile.value
+    } else {
+      false
+    }
+  }
+
+  BoxWithConstraints {
+    Column(
+      Modifier
+        .fillMaxSize()
+        .alpha(if (progressByTimeout) 0.6f else 1f)
+    ) {
+      LazyColumnWithScrollBar(userScrollEnabled = !switchingProfile.value) {
+        item {
+          AppBarTitle(stringResource(MR.strings.select_chat_profile), hostDevice(chatModel.remoteHostId), bottomPadding = DEFAULT_PADDING)
+        }
+
+        itemsIndexed(filteredProfiles) { _, p ->
+          ProfilePickerOption(
+            title = p.chatViewName,
+            disabled = switchingProfile.value || p.activeUser,
+            image = { ProfileImage(size = 42.dp, image = p.image) },
+            selected = p.activeUser,
+            onSelected =  {
+              switchingProfile.value = true
+              withApi {
+                try {
+                  controller.changeActiveUser(
+                    rhId = p.remoteHostId,
+                    toUserId = p.userId,
+                    viewPwd = if (p.hidden) searchTextOrPassword.value else null
+                  )
+
+                  if (chatModel.currentUser.value?.userId != p.userId) {
+                    AlertManager.shared.showAlertMsg(
+                      generalGetString(
+                        MR.strings.switching_profile_error_title
+                      ),
+                      String.format(generalGetString(MR.strings.switching_profile_error_message), p.chatViewName)
+                    )
+                  }
+
+                  close.invoke()
+                } finally {
+                  switchingProfile.value = false
+                }
+              }
+            }
+          )
+        }
+      }
+    }
+    if (progressByTimeout) {
+      DefaultProgressView("")
+    }
   }
 }
 
