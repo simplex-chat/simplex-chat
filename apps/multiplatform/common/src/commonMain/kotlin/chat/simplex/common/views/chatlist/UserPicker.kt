@@ -170,37 +170,39 @@ private fun UsersLayout(
           )
         }
         Spacer(Modifier.weight(1f))
-        users.forEach { u ->
-          IconButton(
-            onClick = { onUserClicked(u.user) },
-            enabled = !stopped
-          ) {
-            Box {
-              ProfileImage(size = 44.dp * fontSizeSqrtMultiplier, image = u.user.image)
+        Row(horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON)) {
+          users.forEach { u ->
+            IconButton(
+              onClick = { onUserClicked(u.user) },
+              enabled = !stopped
+            ) {
+              Box {
+                ProfileImage(size = 44.dp * fontSizeSqrtMultiplier, image = u.user.image)
 
-              if (u.unreadCount > 0) {
-                unreadBadge()
+                if (u.unreadCount > 0) {
+                  unreadBadge()
+                }
               }
             }
           }
-        }
-        IconButton(
-          onClick = onShowAllProfilesClicked,
-          enabled = !stopped,
-        ) {
-          Box(
-            modifier = Modifier
-              .border(
-                BorderStroke(1.dp, mainColor), shape = CircleShape
-              )
-              .size(38.dp * fontSizeSqrtMultiplier),
-            contentAlignment = Alignment.Center
+          IconButton(
+            onClick = onShowAllProfilesClicked,
+            enabled = !stopped,
           ) {
-            Icon(
-              painterResource(MR.images.ic_add_group),
-              stringResource(MR.strings.your_chat_profiles),
-              tint = mainColor,
-            )
+            Box(
+              modifier = Modifier
+                .border(
+                  BorderStroke(1.dp, mainColor), shape = CircleShape
+                )
+                .size(38.dp * fontSizeSqrtMultiplier),
+              contentAlignment = Alignment.Center
+            ) {
+              Icon(
+                painterResource(MR.images.ic_add_group),
+                stringResource(MR.strings.your_chat_profiles),
+                tint = mainColor,
+              )
+            }
           }
         }
       }
