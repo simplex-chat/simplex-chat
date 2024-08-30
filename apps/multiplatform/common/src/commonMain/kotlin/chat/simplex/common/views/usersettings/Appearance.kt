@@ -629,7 +629,7 @@ object AppearanceScope {
             saveThemeToDatabase(null)
           }
         )
-        .size(44.dp * fontSizeSqrtMultiplier),
+        .requiredSize(44.dp),
       verticalArrangement = Arrangement.Center,
       horizontalAlignment = Alignment.CenterHorizontally
     ) {

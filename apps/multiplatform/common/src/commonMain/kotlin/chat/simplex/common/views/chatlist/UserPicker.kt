@@ -452,7 +452,7 @@ fun UserPicker(
       Divider(Modifier.padding(DEFAULT_PADDING))
 
       val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
-      SectionItemView(settingsClicked) {
+      SectionItemView(settingsClicked, padding = PaddingValues()) {
         Icon(painterResource(MR.images.ic_settings), text, tint = MenuTextColor)
         TextIconSpaced()
         Text(text, color = MenuTextColor)

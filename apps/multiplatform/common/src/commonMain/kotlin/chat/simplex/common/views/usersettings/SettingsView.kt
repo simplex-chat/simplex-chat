@@ -116,22 +116,6 @@ fun SettingsLayout(
   ) {
     AppBarTitle(stringResource(MR.strings.your_settings))
 
-    if (chatModel.localUserCreated.value == false) {
-      SectionView(stringResource(MR.strings.settings_section_title_you)) {
-        SettingsActionItem(painterResource(MR.images.ic_manage_accounts), stringResource(MR.strings.create_chat_profile), {
-          withAuth(generalGetString(MR.strings.auth_open_chat_profiles), generalGetString(MR.strings.auth_log_in_using_credential)) {
-            ModalManager.center.showModalCloseable { close ->
-              LaunchedEffect(Unit) {
-                closeSettings()
-              }
-              CreateProfile(chatModel, close)
-            }
-          }
-        }, disabled = stopped)
-      }
-      SectionDividerSpaced()
-    }
-
     SectionView(stringResource(MR.strings.settings_section_title_settings)) {
       SettingsActionItem(painterResource(if (notificationsMode.value == NotificationsMode.OFF) MR.images.ic_bolt_off else MR.images.ic_bolt), stringResource(MR.strings.notifications), showSettingsModal { NotificationsSettingsView(it) }, disabled = stopped)
       SettingsActionItem(painterResource(MR.images.ic_wifi_tethering), stringResource(MR.strings.network_and_servers), showSettingsModal { NetworkAndServersView() }, disabled = stopped)
