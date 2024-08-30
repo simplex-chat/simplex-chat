@@ -304,13 +304,12 @@ private fun NewChatSheetLayout(
       if (filteredContactChats.isNotEmpty() && searchText.value.text.isEmpty()) {
         if (!oneHandUI.value) {
           SectionDividerSpaced()
-          SectionView(stringResource(MR.strings.contact_list_header_title).uppercase()) {}
+          SectionView(stringResource(MR.strings.contact_list_header_title).uppercase(), headerBottomPadding = DEFAULT_PADDING_HALF) {}
         } else if (deletedChats.isEmpty()) {
           SectionSpacer()
         } else {
           Spacer(Modifier.height(DEFAULT_PADDING))
         }
-        SectionDivider()
       }
     }
 
