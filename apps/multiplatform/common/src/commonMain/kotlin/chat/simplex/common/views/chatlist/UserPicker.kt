@@ -616,18 +616,32 @@ private fun DevicePickerRow(
     horizontalArrangement = Arrangement.spacedBy(12.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
+    val activeHost = remoteHosts.firstOrNull { h -> h.activeHost }
 
-    if (localDeviceActive) {
+    if (activeHost != null) {
+      val connecting = rememberSaveable { mutableStateOf(false) }
+
       DevicePill(
         active = true,
-        icon = painterResource(MR.images.ic_desktop),
-        text = stringResource(MR.strings.this_device),
-        actionButtonVisible = false
+        icon = painterResource(MR.images.ic_smartphone_300),
+        text = activeHost.hostDeviceName,
+        actionButtonVisible = activeHost.sessionState is RemoteHostSessionState.Connected,
+        onActionButtonClick = { onRemoteHostActionButtonClick(activeHost) }
       ) {
-        onLocalDeviceClick()
+        onRemoteHostClick(activeHost, connecting)
       }
     }
-    remoteHosts.filter { h -> h.activeHost }.forEach { h ->
+
+    DevicePill(
+      active = localDeviceActive,
+      icon = painterResource(MR.images.ic_desktop),
+      text = stringResource(MR.strings.this_device),
+      actionButtonVisible = false
+    ) {
+      onLocalDeviceClick()
+    }
+
+    remoteHosts.filter { h -> h.sessionState is RemoteHostSessionState.Connected && !h.activeHost }.forEach { h ->
       val connecting = rememberSaveable { mutableStateOf(false) }
 
       DevicePill(
@@ -638,17 +652,6 @@ private fun DevicePickerRow(
         onActionButtonClick = { onRemoteHostActionButtonClick(h) }
       ) {
         onRemoteHostClick(h, connecting)
-      }
-    }
-
-    if (!localDeviceActive) {
-      DevicePill(
-        active = false,
-        icon = painterResource(MR.images.ic_desktop),
-        text = stringResource(MR.strings.this_device),
-        actionButtonVisible = false
-      ) {
-        onLocalDeviceClick()
       }
     }
   }
