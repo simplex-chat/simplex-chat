@@ -166,6 +166,10 @@ private fun NewChatSheetLayout(
   )
 
   val sectionModifier = Modifier.fillMaxWidth()
+  val deletedContactTypes = listOf(ContactType.CHAT_DELETED)
+  val deletedChats by remember(chatModel.chats.value, deletedContactTypes) {
+    derivedStateOf { filterContactTypes(chatModel.chats.value, deletedContactTypes) }
+  }
 
   LazyColumnWithScrollBar(
     Modifier.fillMaxSize(),
@@ -266,37 +270,30 @@ private fun NewChatSheetLayout(
             }
           }
         }
-
-        val deletedContactTypes = listOf(ContactType.CHAT_DELETED)
-        val deletedChats by remember(chatModel.chats.value, deletedContactTypes) {
-          derivedStateOf { filterContactTypes(chatModel.chats.value, deletedContactTypes) }
-        }
         if (deletedChats.isNotEmpty()) {
           SectionDividerSpaced(maxBottomPadding = false)
-          Row(modifier = sectionModifier) {
-            SectionView {
-              SectionItemView(
-                click = {
-                  ModalManager.start.showCustomModal { closeDeletedChats ->
-                    ModalView(
-                      close = closeDeletedChats,
-                      closeOnTop = !oneHandUI.value,
-                    ) {
-                      DeletedContactsView(rh = rh, closeDeletedChats = closeDeletedChats, close = {
-                        ModalManager.start.closeModals()
-                      })
-                    }
+          SectionView {
+            SectionItemView(
+              click = {
+                ModalManager.start.showCustomModal { closeDeletedChats ->
+                  ModalView(
+                    close = closeDeletedChats,
+                    closeOnTop = !oneHandUI.value,
+                  ) {
+                    DeletedContactsView(rh = rh, closeDeletedChats = closeDeletedChats, close = {
+                      ModalManager.start.closeModals()
+                    })
                   }
                 }
-              ) {
-                Icon(
-                  painterResource(MR.images.ic_inventory_2),
-                  contentDescription = stringResource(MR.strings.deleted_chats),
-                  tint = MaterialTheme.colors.secondary,
-                )
-                TextIconSpaced(false)
-                Text(text = stringResource(MR.strings.deleted_chats), color = MaterialTheme.colors.onBackground)
               }
+            ) {
+              Icon(
+                painterResource(MR.images.ic_inventory_2),
+                contentDescription = stringResource(MR.strings.deleted_chats),
+                tint = MaterialTheme.colors.secondary,
+              )
+              TextIconSpaced(false)
+              Text(text = stringResource(MR.strings.deleted_chats), color = MaterialTheme.colors.onBackground)
             }
           }
         }
@@ -305,11 +302,13 @@ private fun NewChatSheetLayout(
 
     item {
       if (filteredContactChats.isNotEmpty() && searchText.value.text.isEmpty()) {
-        if (oneHandUI.value) {
-          SectionSpacer()
-        } else {
+        if (!oneHandUI.value) {
           SectionDividerSpaced()
           SectionView(stringResource(MR.strings.contact_list_header_title).uppercase()) {}
+        } else if (deletedChats.isEmpty()) {
+          SectionSpacer()
+        } else {
+          Spacer(Modifier.height(DEFAULT_PADDING))
         }
         SectionDivider()
       }
