@@ -17,9 +17,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.platform.LocalDensity
 import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
@@ -27,7 +25,6 @@ import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.ui.theme.*
@@ -42,7 +39,6 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlin.math.roundToInt
 
 @Composable
 private fun UserPickerOptionRow(icon: Painter, text: String, click: (() -> Unit)? = null, disabled: Boolean = false) {
@@ -299,10 +295,8 @@ fun UserPicker(
   chatModel: ChatModel,
   userPickerState: MutableStateFlow<AnimatedViewState>,
   drawerState: DrawerState,
-  contentAlignment: Alignment = Alignment.TopStart,
   settingsClicked: () -> Unit = {},
 ) {
-  val scope = rememberCoroutineScope()
   var newChat by remember { mutableStateOf(userPickerState.value) }
   if (newChat.isVisible()) {
     BackHandler {
@@ -381,7 +375,7 @@ fun UserPicker(
   }
 
   Box(
-    modifier = Modifier.then(if (appPlatform.isAndroid) Modifier.background(color = Color.Gray.copy(alpha = 0.6f)) else Modifier)) {
+    modifier = if (appPlatform.isAndroid) Modifier.background(color = Color.Gray.copy(alpha = 0.6f)) else Modifier) {
     AnimatedVisibility(
       visible = newChat.isVisible(),
       enter = if (appPlatform.isAndroid) slideInVertically(
@@ -389,14 +383,14 @@ fun UserPicker(
         animationSpec = tween(durationMillis = 300)
       ) else fadeIn(),
       exit = if (appPlatform.isAndroid) slideOutVertically(
-        targetOffsetY = { if (appPlatform.isAndroid) it else -it },
+        targetOffsetY = {  it },
         animationSpec = tween(durationMillis = 300)
       ) else fadeOut()
     ) {
       Box(Modifier
         .fillMaxSize()
         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = { userPickerState.value = AnimatedViewState.HIDING }),
-        contentAlignment = contentAlignment
+        contentAlignment = if (appPlatform.isAndroid) Alignment.BottomStart else Alignment.TopStart
       ) {
         Column(
           Modifier
