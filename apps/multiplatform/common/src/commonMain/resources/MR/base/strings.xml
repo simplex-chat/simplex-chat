@@ -853,6 +853,7 @@
 
   <!-- Address Items - UserAddressView.kt -->
   <string name="public_address">Public address</string>
+  <string name="create_public_address">Create public address</string>
   <string name="create_address">Create address</string>
   <string name="delete_address__question">Delete address?</string>
   <string name="your_contacts_will_remain_connected">Your contacts will remain connected.</string>

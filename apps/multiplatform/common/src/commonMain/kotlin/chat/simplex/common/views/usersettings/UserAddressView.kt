@@ -230,7 +230,7 @@ private fun UserAddressLayout(
 private fun CreateAddressButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_qr_code),
-    stringResource(MR.strings.create_simplex_address),
+    stringResource(MR.strings.create_public_address),
     onClick,
     iconColor = MaterialTheme.colors.primary,
     textColor = MaterialTheme.colors.primary,
