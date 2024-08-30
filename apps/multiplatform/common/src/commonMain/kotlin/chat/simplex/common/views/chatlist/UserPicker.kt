@@ -386,7 +386,7 @@ fun UserPicker(
   }
 
   Box(
-    modifier = if (appPlatform.isAndroid) Modifier.background(color = Color.Gray.copy(alpha = 0.6f)) else Modifier) {
+    modifier = if (appPlatform.isAndroid && newChat.isVisible()) Modifier.background(color = Color.Gray.copy(alpha = 0.6f)) else Modifier) {
     AnimatedVisibility(
       visible = newChat.isVisible(),
       enter = if (appPlatform.isAndroid) slideInVertically(
