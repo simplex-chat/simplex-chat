@@ -650,7 +650,7 @@ private fun DevicePill(
         BorderStroke(1.dp, MaterialTheme.colors.secondaryVariant),
         shape = RoundedCornerShape(8.dp)
       )
-      .background(if (active) MaterialTheme.colors.surface else MaterialTheme.colors.secondaryVariant)
+      .background(if (active) MaterialTheme.colors.secondaryVariant else MaterialTheme.colors.surface)
       .clickable(
         onClick = if (active) {{}} else onClick,
         interactionSource = remember { MutableInteractionSource() },
@@ -674,7 +674,6 @@ private fun DevicePill(
         fontSize = 12.sp,
       )
       if (onActionButtonClick != null && actionButtonVisible) {
-        // Should also show when phone is online.
         val interactionSource = remember { MutableInteractionSource() }
         val hovered = interactionSource.collectIsHoveredAsState().value
         Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON * fontSizeSqrtMultiplier))
