@@ -942,7 +942,7 @@ func syncConnectionForceAlert(_ syncConnectionForce: @escaping () -> Void) -> Al
     )
 }
 
-func queueInfoText(_ info: (RcvMsgInfo?, QueueInfo)) -> String {
+func queueInfoText(_ info: (RcvMsgInfo?, ServerQueueInfo)) -> String {
     let (rcvMsgInfo, qInfo) = info
     var msgInfo: String
     if let rcvMsgInfo { msgInfo = encodeJSON(rcvMsgInfo) } else { msgInfo = "none" }

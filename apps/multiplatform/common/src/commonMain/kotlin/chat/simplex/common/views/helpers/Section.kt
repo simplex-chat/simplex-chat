@@ -21,15 +21,15 @@ import chat.simplex.common.views.usersettings.SettingsActionItemWithContent
 import chat.simplex.res.MR
 
 @Composable
-fun SectionView(title: String? = null, padding: PaddingValues = PaddingValues(), content: (@Composable ColumnScope.() -> Unit)) {
+fun SectionView(title: String? = null, contentPadding: PaddingValues = PaddingValues(), headerBottomPadding: Dp = DEFAULT_PADDING, content: (@Composable ColumnScope.() -> Unit)) {
   Column {
     if (title != null) {
       Text(
         title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2,
-        modifier = Modifier.padding(start = DEFAULT_PADDING, bottom = DEFAULT_PADDING), fontSize = 12.sp
+        modifier = Modifier.padding(start = DEFAULT_PADDING, bottom = headerBottomPadding), fontSize = 12.sp
       )
     }
-    Column(Modifier.padding(padding).fillMaxWidth()) { content() }
+    Column(Modifier.padding(contentPadding).fillMaxWidth()) { content() }
   }
 }
 

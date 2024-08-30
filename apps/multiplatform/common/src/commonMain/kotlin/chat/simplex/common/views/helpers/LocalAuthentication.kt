@@ -34,6 +34,7 @@ expect fun authenticate(
   promptSubtitle: String,
   selfDestruct: Boolean = false,
   usingLAMode: LAMode = ChatModel.controller.appPrefs.laMode.get(),
+  oneTime: Boolean,
   completed: (LAResult) -> Unit
 )
 
@@ -41,10 +42,11 @@ fun authenticateWithPasscode(
   promptTitle: String,
   promptSubtitle: String,
   selfDestruct: Boolean,
+  oneTime: Boolean,
   completed: (LAResult) -> Unit
 ) {
   val password = DatabaseUtils.ksAppPassword.get() ?: return completed(LAResult.Unavailable(generalGetString(MR.strings.la_no_app_password)))
-  ModalManager.fullscreen.showPasscodeCustomModal { close ->
+  ModalManager.fullscreen.showPasscodeCustomModal(oneTime) { close ->
     BackHandler {
       close()
       completed(LAResult.Error(generalGetString(MR.strings.authentication_cancelled)))

@@ -582,13 +582,13 @@ func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) throws -> (Gro
     throw r
 }
 
-func apiContactQueueInfo(_ contactId: Int64) async throws -> (RcvMsgInfo?, QueueInfo) {
+func apiContactQueueInfo(_ contactId: Int64) async throws -> (RcvMsgInfo?, ServerQueueInfo) {
     let r = await chatSendCmd(.apiContactQueueInfo(contactId: contactId))
     if case let .queueInfo(_, rcvMsgInfo, queueInfo) = r { return (rcvMsgInfo, queueInfo) }
     throw r
 }
 
-func apiGroupMemberQueueInfo(_ groupId: Int64, _ groupMemberId: Int64) async throws -> (RcvMsgInfo?, QueueInfo) {
+func apiGroupMemberQueueInfo(_ groupId: Int64, _ groupMemberId: Int64) async throws -> (RcvMsgInfo?, ServerQueueInfo) {
     let r = await chatSendCmd(.apiGroupMemberQueueInfo(groupId: groupId, groupMemberId: groupMemberId))
     if case let .queueInfo(_, rcvMsgInfo, queueInfo) = r { return (rcvMsgInfo, queueInfo) }
     throw r
@@ -2182,9 +2182,11 @@ func refreshCallInvitations() async throws {
     }
 }
 
-func justRefreshCallInvitations() throws {
+func justRefreshCallInvitations() async throws {
     let callInvitations = try apiGetCallInvitationsSync()
-    ChatModel.shared.callInvitations = callsByChat(callInvitations)
+    await MainActor.run {
+        ChatModel.shared.callInvitations = callsByChat(callInvitations)
+    }
 }
 
 private func callsByChat(_ callInvitations: [RcvCallInvitation]) -> [ChatId: RcvCallInvitation] {
@@ -2194,12 +2196,13 @@ private func callsByChat(_ callInvitations: [RcvCallInvitation]) -> [ChatId: Rcv
 }
 
 func activateCall(_ callInvitation: RcvCallInvitation) {
-    if !callInvitation.user.showNotifications { return }
     let m = ChatModel.shared
+    logger.debug("reportNewIncomingCall activeCallUUID \(String(describing: m.activeCall?.callUUID)) invitationUUID \(String(describing: callInvitation.callUUID))")
+    if !callInvitation.user.showNotifications || m.activeCall?.callUUID == callInvitation.callUUID { return }
     CallController.shared.reportNewIncomingCall(invitation: callInvitation) { error in
         if let error = error {
             DispatchQueue.main.async {
-                m.callInvitations[callInvitation.contact.id]?.callkitUUID = nil
+                m.callInvitations[callInvitation.contact.id]?.callUUID = nil
             }
             logger.error("reportNewIncomingCall error: \(error.localizedDescription)")
         } else {

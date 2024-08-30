@@ -86,6 +86,7 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
           .collect { chatId ->
             markUnreadChatAsRead(chatId)
             showSearch.value = false
+            searchText.value = ""
             selectedChatItems.value = null
           }
       }
@@ -544,7 +545,7 @@ fun startChatCall(remoteHostId: Long?, chatInfo: ChatInfo, media: CallMediaType)
     if (chatInfo is ChatInfo.Direct) {
       val contactInfo = chatModel.controller.apiContactInfo(remoteHostId, chatInfo.contact.contactId)
       val profile = contactInfo?.second ?: chatModel.currentUser.value?.profile?.toProfile() ?: return@withBGApi
-      chatModel.activeCall.value = Call(remoteHostId = remoteHostId, contact = chatInfo.contact, callState = CallState.WaitCapabilities, localMedia = media, userProfile = profile)
+      chatModel.activeCall.value = Call(remoteHostId = remoteHostId, contact = chatInfo.contact, callUUID = null, callState = CallState.WaitCapabilities, localMedia = media, userProfile = profile)
       chatModel.showCallView.value = true
       chatModel.callCommand.add(WCallCommand.Capabilities(media))
     }

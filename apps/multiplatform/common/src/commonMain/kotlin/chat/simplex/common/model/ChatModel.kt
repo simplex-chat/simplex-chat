@@ -20,7 +20,6 @@ import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.flow.internal.ChannelFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.*
@@ -98,7 +97,7 @@ object ChatModel {
       }
     )
   }
-  val performLA by lazy { mutableStateOf(ChatController.appPrefs.performLA.get()) }
+  val showAuthScreen by lazy { mutableStateOf(ChatController.appPrefs.performLA.get()) }
   val showAdvertiseLAUnavailableAlert = mutableStateOf(false)
   val showChatPreviews by lazy { mutableStateOf(ChatController.appPrefs.privacyShowChatPreviews.get()) }
 
@@ -985,6 +984,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val fullName get() = contact.fullName
     override val image get() = contact.image
     override val localAlias: String get() = contact.localAlias
+    override fun anyNameContains(searchAnyCase: String): Boolean = contact.anyNameContains(searchAnyCase)
 
     companion object {
       val sampleData = Direct(Contact.sampleData)
@@ -1218,6 +1218,12 @@ data class Contact(
   val contactLink: String? = profile.contactLink
   override val localAlias get() = profile.localAlias
   val verified get() = activeConn?.connectionCode != null
+
+  override fun anyNameContains(searchAnyCase: String): Boolean {
+    val s = searchAnyCase.trim().lowercase()
+    return profile.chatViewName.lowercase().contains(s) || profile.displayName.lowercase().contains(s) || profile.fullName.lowercase().contains(s)
+  }
+
 
   val directOrUsed: Boolean get() =
     if (activeConn != null) {

@@ -7,10 +7,11 @@ actual fun authenticate(
   promptSubtitle: String,
   selfDestruct: Boolean,
   usingLAMode: LAMode,
+  oneTime: Boolean,
   completed: (LAResult) -> Unit
 ) {
   when (usingLAMode) {
-    LAMode.PASSCODE -> authenticateWithPasscode(promptTitle, promptSubtitle, selfDestruct, completed)
+    LAMode.PASSCODE -> authenticateWithPasscode(promptTitle, promptSubtitle, selfDestruct, oneTime, completed)
     else -> {}
   }
 }
