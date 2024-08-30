@@ -1149,6 +1149,7 @@
   <!-- Settings sections -->
   <string name="settings_section_title_you">YOU</string>
   <string name="settings_section_title_settings">SETTINGS</string>
+  <string name="settings_section_title_chat_database">CHAT DATABASE</string>
   <string name="settings_section_title_help">HELP</string>
   <string name="settings_section_title_support">SUPPORT SIMPLEX CHAT</string>
   <string name="settings_section_title_app">APP</string>
