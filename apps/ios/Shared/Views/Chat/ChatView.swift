@@ -454,48 +454,53 @@ struct ChatView: View {
         @Published var date: Date?
         @Published var isDateVisible: Bool = false
         var isReallyNearBottom: Bool { scrollOffset.value > 0 && scrollOffset.value < 500 }
-        let visibleItems = PassthroughSubject<[String], Never>()
+        let listState = PassthroughSubject<ListState, Never>()
         let scrollOffset = CurrentValueSubject<Double, Never>(0)
+
         private var bag = Set<AnyCancellable>()
+
+        typealias ListState = (
+            topItemDate: Date?,
+            bottomItemId: ChatItem.ID?
+        )
+
+        private struct ViewUpdate: Equatable {
+            let unreadBelow: Int
+            let date: Date?
+        }
 
         init() {
             // Date
-            visibleItems
+            listState
                 .receive(on: DispatchQueue.global(qos: .background))
-                .map { visibleItems -> Date? in
-                    if let viewId = visibleItems.last {
-                        ItemsModel.shared.reversedChatItems
-                            .first { $0.viewId == viewId }
-                            .map { Calendar.current.startOfDay(for: $0.meta.itemTs) }
-                    } else { nil }
+                .map { listState -> ViewUpdate in
+                    let im = ItemsModel.shared
+                    return ViewUpdate(
+                        unreadBelow: {
+                            if let id = listState.bottomItemId,
+                               let index = im.reversedChatItems.firstIndex(where: { $0.id == id }) {
+                                im.reversedChatItems[..<index].reduce(into: 0) { unread, chatItem in
+                                    if chatItem.isRcvNew { unread += 1 }
+                                }
+                            } else { 0 }
+                        }(),
+                        date: listState.topItemDate.map { Calendar.current.startOfDay(for: $0) }
+                    )
                 }
                 .removeDuplicates()
                 .receive(on: DispatchQueue.main)
-                .assign(to: \.date, on: self)
+                .sink {
+                    self.unreadBelow = $0.unreadBelow
+                    self.date = $0.date
+                }
                 .store(in: &bag)
 
             // Date visibility
-            visibleItems
+            listState
                 .map { _ in self.setDate(visibility: true) }
                 // Hide the date after 1 second of no scrolling
                 .debounce(for: 1, scheduler: DispatchQueue.main)
                 .sink { self.setDate(visibility: false) }
-                .store(in: &bag)
-
-            // Unread Below
-            visibleItems
-                .receive(on: DispatchQueue.global(qos: .background))
-                .map { itemIds in
-                    if let viewId = itemIds.first,
-                       let index = ItemsModel.shared.reversedChatItems.firstIndex(where: { $0.viewId == viewId }) {
-                        ItemsModel.shared.reversedChatItems[..<index].reduce(into: 0) { unread, chatItem in
-                            if chatItem.isRcvNew { unread += 1 }
-                        }
-                    } else { 0 }
-                }
-                .removeDuplicates()
-                .receive(on: DispatchQueue.main)
-                .assign(to: \.unreadBelow, on: self)
                 .store(in: &bag)
 
             // Is near bottom

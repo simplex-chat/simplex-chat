@@ -204,24 +204,31 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         }
 
         private func updateVisibleItems() {
-            let fbm = ChatView.FloatingButtonModel.shared
-            fbm.scrollOffset.send(tableView.contentOffset.y + InvertedTableView.inset)
-            fbm.visibleItems.send(
-                (tableView.indexPathsForVisibleRows ?? [])
-                    .compactMap { indexPath -> String? in
-                        guard let relativeFrame = tableView.superview?.convert(
-                            tableView.rectForRow(at: indexPath),
-                            from: tableView
-                        ) else { return nil }
-                        // Checks that the cell is visible accounting for the added insets
-                        let isVisible =
-                            relativeFrame.maxY > InvertedTableView.inset &&
-                            relativeFrame.minY < tableView.frame.height - InvertedTableView.inset
-                        return indexPath.item < representer.items.count && isVisible
-                        ? representer.items[indexPath.item].viewId
-                        : nil
-                    }
-            )
+            if let visibleRows = tableView.indexPathsForVisibleRows,
+                visibleRows.last?.item ?? 0 < representer.items.count {
+                let fbm = ChatView.FloatingButtonModel.shared
+                fbm.scrollOffset.send(tableView.contentOffset.y + InvertedTableView.inset)
+                fbm.listState.send((
+                    topItemDate: visibleRows
+                        .last { isVisible(indexPath: $0) }
+                        .map { representer.items[$0.item] }?
+                        .meta.itemTs,
+                    bottomItemId: visibleRows
+                        .first { isVisible(indexPath: $0) }
+                        .map { representer.items[$0.item] }?
+                        .id
+                ))
+            }
+        }
+
+        private func isVisible(indexPath: IndexPath) -> Bool {
+            if let relativeFrame = tableView.superview?.convert(
+                tableView.rectForRow(at: indexPath),
+                from: tableView
+            ) {
+                relativeFrame.maxY > InvertedTableView.inset &&
+                relativeFrame.minY < tableView.frame.height - InvertedTableView.inset
+            } else { false }
         }
     }
 
