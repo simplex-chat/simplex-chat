@@ -177,7 +177,13 @@ private fun UsersLayout(
             onClick = { onUserClicked(u.user) },
             enabled = !stopped
           ) {
-            ProfileImage(size = 44.dp * fontSizeSqrtMultiplier, image = u.user.image)
+            Box {
+              ProfileImage(size = 44.dp * fontSizeSqrtMultiplier, image = u.user.image)
+
+              if (u.unreadCount > 0) {
+                unreadBadge()
+              }
+            }
           }
         }
         IconButton(

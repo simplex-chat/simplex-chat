@@ -466,7 +466,7 @@ fun UserProfileButton(image: String?, allRead: Boolean, onButtonClicked: () -> U
 
 
 @Composable
-private fun BoxScope.unreadBadge(text: String? = "") {
+fun BoxScope.unreadBadge(text: String? = "") {
   Text(
     text ?: "",
     color = MaterialTheme.colors.onPrimary,
