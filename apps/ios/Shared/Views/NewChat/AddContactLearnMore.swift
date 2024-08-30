@@ -28,9 +28,11 @@ struct AddContactLearnMore: View {
                 Text("If you can't meet in person, show QR code in a video call, or share the link.")
                 Text("Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends).")
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
         }
-        .modifier(ThemedBackground())
+        .modifier(ThemedBackground(grouped: true))
     }
 }
 

@@ -175,10 +175,6 @@ func testServerConnection(server: Binding<ServerCfg>) async -> ProtocolTestFailu
     }
 }
 
-func serverHostname(_ srv: String) -> String {
-    parseServerAddress(srv)?.hostnames.first ?? srv
-}
-
 struct ProtocolServerView_Previews: PreviewProvider {
     static var previews: some View {
         ProtocolServerView(

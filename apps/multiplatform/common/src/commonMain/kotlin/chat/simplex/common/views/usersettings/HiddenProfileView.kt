@@ -1,14 +1,12 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
-import SectionItemView
 import SectionItemViewSpaceBetween
+import SectionItemViewWithoutMinPadding
 import SectionSpacer
 import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -63,7 +61,7 @@ private fun HiddenProfileLayout(
       .fillMaxWidth(),
   ) {
     AppBarTitle(stringResource(MR.strings.hide_profile))
-    SectionView(padding = PaddingValues(start = 8.dp, end = DEFAULT_PADDING)) {
+    SectionView(contentPadding = PaddingValues(start = 8.dp, end = DEFAULT_PADDING)) {
       UserProfileRow(user)
     }
     SectionSpacer()
@@ -74,10 +72,10 @@ private fun HiddenProfileLayout(
     val confirmValid by remember { derivedStateOf { confirmHidePassword.value == "" || hidePassword.value == confirmHidePassword.value } }
     val saveDisabled by remember { derivedStateOf { hidePassword.value == "" || !passwordValid || confirmHidePassword.value == "" || !confirmValid } }
     SectionView(stringResource(MR.strings.hidden_profile_password).uppercase()) {
-      SectionItemView {
+      SectionItemViewWithoutMinPadding {
         PassphraseField(hidePassword, generalGetString(MR.strings.password_to_show), isValid = { passwordValid }, showStrength = true)
       }
-      SectionItemView {
+      SectionItemViewWithoutMinPadding {
         PassphraseField(confirmHidePassword, stringResource(MR.strings.confirm_password), isValid = { confirmValid }, dependsOn = hidePassword)
       }
       SectionItemViewSpaceBetween({ saveProfilePassword(hidePassword.value) }, disabled = saveDisabled, minHeight = TextFieldDefaults.MinHeight) {

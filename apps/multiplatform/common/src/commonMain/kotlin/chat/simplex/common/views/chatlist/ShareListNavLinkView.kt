@@ -13,6 +13,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
+import kotlinx.coroutines.launch
 
 @Composable
 fun ShareListNavLinkView(
@@ -23,6 +24,7 @@ fun ShareListNavLinkView(
   hasSimplexLink: Boolean
 ) {
   val stopped = chatModel.chatRunning.value == false
+  val scope = rememberCoroutineScope()
   when (chat.chatInfo) {
     is ChatInfo.Direct -> {
       val voiceProhibited = isVoice && !chat.chatInfo.featureEnabled(ChatFeature.Voice)
@@ -32,7 +34,7 @@ fun ShareListNavLinkView(
           if (voiceProhibited) {
             showForwardProhibitedByPrefAlert()
           } else {
-            directChatAction(chat.remoteHostId, chat.chatInfo.contact, chatModel)
+            scope.launch { directChatAction(chat.remoteHostId, chat.chatInfo.contact, chatModel) }
           }
         },
         stopped
@@ -49,7 +51,7 @@ fun ShareListNavLinkView(
           if (prohibitedByPref) {
             showForwardProhibitedByPrefAlert()
           } else {
-            groupChatAction(chat.remoteHostId, chat.chatInfo.groupInfo, chatModel)
+            scope.launch { groupChatAction(chat.remoteHostId, chat.chatInfo.groupInfo, chatModel) }
           }
         },
         stopped
@@ -58,7 +60,7 @@ fun ShareListNavLinkView(
     is ChatInfo.Local ->
       ShareListNavLinkLayout(
         chatLinkPreview = { SharePreviewView(chat, disabled = false) },
-        click = { noteFolderChatAction(chat.remoteHostId, chat.chatInfo.noteFolder) },
+        click = { scope.launch { noteFolderChatAction(chat.remoteHostId, chat.chatInfo.noteFolder) } },
         stopped
       )
     is ChatInfo.ContactRequest, is ChatInfo.ContactConnection, is ChatInfo.InvalidJSON -> {}
@@ -76,9 +78,9 @@ private fun showForwardProhibitedByPrefAlert() {
 private fun ShareListNavLinkLayout(
   chatLinkPreview: @Composable () -> Unit,
   click: () -> Unit,
-  stopped: Boolean
+  stopped: Boolean,
 ) {
-  SectionItemView(minHeight = 50.dp, click = click, disabled = stopped) {
+  SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING, vertical = 8.dp), click = click, disabled = stopped) {
     chatLinkPreview()
   }
   Divider(Modifier.padding(horizontal = 8.dp))
@@ -96,9 +98,11 @@ private fun SharePreviewView(chat: Chat, disabled: Boolean) {
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
       if (chat.chatInfo is ChatInfo.Local) {
-        ProfileImage(size = 46.dp, null, icon = MR.images.ic_folder_filled, color = NoteFolderIconColor)
+        ProfileImage(size = 42.dp, null, icon = MR.images.ic_folder_filled, color = NoteFolderIconColor)
+      } else if (chat.chatInfo is ChatInfo.Group) {
+        ProfileImage(size = 42.dp, chat.chatInfo.image, icon = MR.images.ic_supervised_user_circle_filled)
       } else {
-        ProfileImage(size = 46.dp, chat.chatInfo.image)
+        ProfileImage(size = 42.dp, chat.chatInfo.image)
       }
       Text(
         chat.chatInfo.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,

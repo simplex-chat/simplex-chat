@@ -16,6 +16,7 @@ import chat.simplex.res.MR
 import com.charleskorn.kaml.decodeFromStream
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import kotlinx.serialization.encodeToString
 import java.io.*
 import java.net.URI
@@ -534,6 +535,13 @@ fun TextUnit.toDp(): Dp {
   check(type == TextUnitType.Sp) { "Only Sp can convert to Px" }
   return Dp(value * LocalDensity.current.fontScale)
 }
+
+fun <T> Flow<T>.throttleLatest(delayMillis: Long): Flow<T> = this
+  .conflate()
+  .transform {
+    emit(it)
+    delay(delayMillis)
+  }
 
 @Composable
 fun DisposableEffectOnGone(always: () -> Unit = {}, whenDispose: () -> Unit = {}, whenGone: () -> Unit) {

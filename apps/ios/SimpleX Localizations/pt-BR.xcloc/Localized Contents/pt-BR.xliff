@@ -5234,6 +5234,274 @@ Isso pode acontecer por causa de algum bug ou quando a conexão está comprometi
         <target state="translated">%1$@ em %2$@:</target>
         <note>copied message info, &lt;sender&gt; at &lt;time&gt;</note>
       </trans-unit>
+      <trans-unit id="Allow your contacts to irreversibly delete sent messages. (24 hours)" xml:space="preserve" approved="no">
+        <source>Allow your contacts to irreversibly delete sent messages. (24 hours)</source>
+        <target state="translated">Permitir que seus contatos deletem mensagens enviadas de maneira irreversível. (24 horas)</target>
+      </trans-unit>
+      <trans-unit id="%@ downloaded" xml:space="preserve" approved="no">
+        <source>%@ downloaded</source>
+        <target state="translated">baixado</target>
+      </trans-unit>
+      <trans-unit id="%@ uploaded" xml:space="preserve" approved="no">
+        <source>%@ uploaded</source>
+        <target state="translated">transferido</target>
+      </trans-unit>
+      <trans-unit id="A new random profile will be shared." xml:space="preserve" approved="no">
+        <source>A new random profile will be shared.</source>
+        <target state="translated">Um novo perfil aleatório será compartilhado.</target>
+      </trans-unit>
+      <trans-unit id="Camera not available" xml:space="preserve" approved="no">
+        <source>Camera not available</source>
+        <target state="translated">Câmera indisponível</target>
+      </trans-unit>
+      <trans-unit id="Admins can block a member for all." xml:space="preserve" approved="no">
+        <source>Admins can block a member for all.</source>
+        <target state="translated">Administradores podem bloquear um membro para todos.</target>
+      </trans-unit>
+      <trans-unit id="Allow to irreversibly delete sent messages. (24 hours)" xml:space="preserve" approved="no">
+        <source>Allow to irreversibly delete sent messages. (24 hours)</source>
+        <target state="translated">Permitir que mensagens enviadas sejam deletadas de maneira irreversível. (24 horas)</target>
+      </trans-unit>
+      <trans-unit id="Apply" xml:space="preserve" approved="no">
+        <source>Apply</source>
+        <target state="translated">Aplicar</target>
+      </trans-unit>
+      <trans-unit id="Accent" xml:space="preserve" approved="no">
+        <source>Accent</source>
+        <target state="translated">Esquema</target>
+      </trans-unit>
+      <trans-unit id="Accept connection request?" xml:space="preserve" approved="no">
+        <source>Accept connection request?</source>
+        <target state="translated">Aceitar solicitação de conexão?</target>
+      </trans-unit>
+      <trans-unit id="Active connections" xml:space="preserve" approved="no">
+        <source>Active connections</source>
+        <target state="translated">Conexões ativas</target>
+      </trans-unit>
+      <trans-unit id="Add contact" xml:space="preserve" approved="no">
+        <source>Add contact</source>
+        <target state="translated">Adicionar contato</target>
+      </trans-unit>
+      <trans-unit id="Additional accent" xml:space="preserve" approved="no">
+        <source>Additional accent</source>
+        <target state="translated">Esquema adicional</target>
+      </trans-unit>
+      <trans-unit id="All new messages from %@ will be hidden!" xml:space="preserve" approved="no">
+        <source>All new messages from %@ will be hidden!</source>
+        <target state="translated">Todas as novas mensagens de %@ serão ocultas!</target>
+      </trans-unit>
+      <trans-unit id="All profiles" xml:space="preserve" approved="no">
+        <source>All profiles</source>
+        <target state="translated">Todos perfis</target>
+      </trans-unit>
+      <trans-unit id="Allow calls?" xml:space="preserve" approved="no">
+        <source>Allow calls?</source>
+        <target state="translated">Permitir chamadas?</target>
+      </trans-unit>
+      <trans-unit id="Archive contacts to chat later." xml:space="preserve" approved="no">
+        <source>Archive contacts to chat later.</source>
+        <target state="translated">Arquivar contatos para conversar depois.</target>
+      </trans-unit>
+      <trans-unit id="Blur media" xml:space="preserve" approved="no">
+        <source>Blur media</source>
+        <target state="translated">Censurar mídia</target>
+      </trans-unit>
+      <trans-unit id="Calls prohibited!" xml:space="preserve" approved="no">
+        <source>Calls prohibited!</source>
+        <target state="translated">Chamadas proibidas!</target>
+      </trans-unit>
+      <trans-unit id="Can't call contact" xml:space="preserve" approved="no">
+        <source>Can't call contact</source>
+        <target state="translated">Não foi possível ligar para o contato</target>
+      </trans-unit>
+      <trans-unit id="%lld messages marked deleted" xml:space="preserve" approved="no">
+        <source>%lld messages marked deleted</source>
+        <target state="translated">mensagens deletadas</target>
+      </trans-unit>
+      <trans-unit id="0 sec" xml:space="preserve" approved="no">
+        <source>0 sec</source>
+        <target state="translated">0 seg</target>
+      </trans-unit>
+      <trans-unit id="%lld messages blocked" xml:space="preserve" approved="no">
+        <source>%lld messages blocked</source>
+        <target state="translated">mensagens bloqueadas</target>
+      </trans-unit>
+      <trans-unit id="%lld messages blocked by admin" xml:space="preserve" approved="no">
+        <source>%lld messages blocked by admin</source>
+        <target state="translated">mensagens bloqueadas pelo administrador</target>
+      </trans-unit>
+      <trans-unit id="**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." xml:space="preserve" approved="no">
+        <source>**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection.</source>
+        <target state="translated">**Nota**: usar o mesmo banco de dados em dois dispositivos irá quebrar a desencriptação das mensagens de suas conexões como uma medida de segurança.</target>
+      </trans-unit>
+      <trans-unit id="- more stable message delivery.&#10;- a bit better groups.&#10;- and more!" xml:space="preserve" approved="no">
+        <source>- more stable message delivery.
+- a bit better groups.
+- and more!</source>
+        <target state="translated">- entrega de mensagens mais estável.
+- grupos melhorados.
+- e muito mais!</target>
+      </trans-unit>
+      <trans-unit id="All messages will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
+        <source>All messages will be deleted - this cannot be undone!</source>
+        <target state="translated">Todas as mensagens serão deletadas - isto não pode ser desfeito!</target>
+      </trans-unit>
+      <trans-unit id="Allow to send files and media." xml:space="preserve" approved="no">
+        <source>Allow to send files and media.</source>
+        <target state="translated">Permitir o envio de arquivos e mídia.</target>
+      </trans-unit>
+      <trans-unit id="Allow to send SimpleX links." xml:space="preserve" approved="no">
+        <source>Allow to send SimpleX links.</source>
+        <target state="translated">Permitir envio de links SimpleX.</target>
+      </trans-unit>
+      <trans-unit id="Block for all" xml:space="preserve" approved="no">
+        <source>Block for all</source>
+        <target state="translated">Bloquear para todos</target>
+      </trans-unit>
+      <trans-unit id="Block member" xml:space="preserve" approved="no">
+        <source>Block member</source>
+        <target state="translated">Bloquear membro</target>
+      </trans-unit>
+      <trans-unit id="Blocked by admin" xml:space="preserve" approved="no">
+        <source>Blocked by admin</source>
+        <target state="translated">Bloqueado por um administrador</target>
+      </trans-unit>
+      <trans-unit id="Block group members" xml:space="preserve" approved="no">
+        <source>Block group members</source>
+        <target state="translated">Bloquear membros de grupo</target>
+      </trans-unit>
+      <trans-unit id="Block member for all?" xml:space="preserve" approved="no">
+        <source>Block member for all?</source>
+        <target state="translated">Bloquear membro para todos?</target>
+      </trans-unit>
+      <trans-unit id="Block member?" xml:space="preserve" approved="no">
+        <source>Block member?</source>
+        <target state="translated">Bloquear membro?</target>
+      </trans-unit>
+      <trans-unit id="Both you and your contact can irreversibly delete sent messages. (24 hours)" xml:space="preserve" approved="no">
+        <source>Both you and your contact can irreversibly delete sent messages. (24 hours)</source>
+        <target state="translated">Você e seu contato podem apagar mensagens enviadas de maneira irreversível. (24 horas)</target>
+      </trans-unit>
+      <trans-unit id="Can't call member" xml:space="preserve" approved="no">
+        <source>Can't call member</source>
+        <target state="translated">Não foi possível ligar para este membro</target>
+      </trans-unit>
+      <trans-unit id="Can't message member" xml:space="preserve" approved="no">
+        <source>Can't message member</source>
+        <target state="translated">Não foi possível enviar mensagem para este membro</target>
+      </trans-unit>
+      <trans-unit id="Cancel migration" xml:space="preserve" approved="no">
+        <source>Cancel migration</source>
+        <target state="translated">Cancelar migração</target>
+      </trans-unit>
+      <trans-unit id="Abort" xml:space="preserve" approved="no">
+        <source>Abort</source>
+        <target state="translated">Abortar</target>
+      </trans-unit>
+      <trans-unit id="Abort changing address" xml:space="preserve" approved="no">
+        <source>Abort changing address</source>
+        <target state="translated">Abortar troca de endereço</target>
+      </trans-unit>
+      <trans-unit id="Abort changing address?" xml:space="preserve" approved="no">
+        <source>Abort changing address?</source>
+        <target state="translated">Abortar troca de endereço?</target>
+      </trans-unit>
+      <trans-unit id="- optionally notify deleted contacts.&#10;- profile names with spaces.&#10;- and more!" xml:space="preserve" approved="no">
+        <source>- optionally notify deleted contacts.
+- profile names with spaces.
+- and more!</source>
+        <target state="translated">- notificar contatos apagados de maneira opcional.
+- nome de perfil com espaços.
+- e muito mais!</target>
+      </trans-unit>
+      <trans-unit id="Allow sharing" xml:space="preserve" approved="no">
+        <source>Allow sharing</source>
+        <target state="translated">Permitir compartilhamento</target>
+      </trans-unit>
+      <trans-unit id="Block" xml:space="preserve" approved="no">
+        <source>Block</source>
+        <target state="translated">Bloquear</target>
+      </trans-unit>
+      <trans-unit id="Additional accent 2" xml:space="preserve" approved="no">
+        <source>Additional accent 2</source>
+        <target state="translated">Esquema adicional 2</target>
+      </trans-unit>
+      <trans-unit id="Address change will be aborted. Old receiving address will be used." xml:space="preserve" approved="no">
+        <source>Address change will be aborted. Old receiving address will be used.</source>
+        <target state="translated">Alteração de endereço será abortada. O endereço antigo será utilizado.</target>
+      </trans-unit>
+      <trans-unit id="Advanced settings" xml:space="preserve" approved="no">
+        <source>Advanced settings</source>
+        <target state="translated">Configurações avançadas</target>
+      </trans-unit>
+      <trans-unit id="All data is private to your device." xml:space="preserve" approved="no">
+        <source>All data is private to your device.</source>
+        <target state="translated">Toda informação é privada em seu dispositivo.</target>
+      </trans-unit>
+      <trans-unit id="All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." xml:space="preserve" approved="no">
+        <source>All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays.</source>
+        <target state="translated">Todos os seus contatos, conversas e arquivos serão encriptados e enviados em pedaços para nós XFTP.</target>
+      </trans-unit>
+      <trans-unit id="Allow irreversible message deletion only if your contact allows it to you. (24 hours)" xml:space="preserve" approved="no">
+        <source>Allow irreversible message deletion only if your contact allows it to you. (24 hours)</source>
+        <target state="translated">Permitir deletar mensagens de maneira irreversível apenas se seu contato permitir para você. (24 horas)</target>
+      </trans-unit>
+      <trans-unit id="Already connecting!" xml:space="preserve" approved="no">
+        <source>Already connecting!</source>
+        <target state="translated">Já está conectando!</target>
+      </trans-unit>
+      <trans-unit id="Already joining the group!" xml:space="preserve" approved="no">
+        <source>Already joining the group!</source>
+        <target state="translated">Já está entrando no grupo!</target>
+      </trans-unit>
+      <trans-unit id="Always use private routing." xml:space="preserve" approved="no">
+        <source>Always use private routing.</source>
+        <target state="translated">Sempre use rotas privadas.</target>
+      </trans-unit>
+      <trans-unit id="Apply to" xml:space="preserve" approved="no">
+        <source>Apply to</source>
+        <target state="translated">Aplicar em</target>
+      </trans-unit>
+      <trans-unit id="Archiving database" xml:space="preserve" approved="no">
+        <source>Archiving database</source>
+        <target state="translated">Arquivando banco de dados</target>
+      </trans-unit>
+      <trans-unit id="Black" xml:space="preserve" approved="no">
+        <source>Black</source>
+        <target state="translated">Preto</target>
+      </trans-unit>
+      <trans-unit id="Cannot forward message" xml:space="preserve" approved="no">
+        <source>Cannot forward message</source>
+        <target state="translated">Não é possível encaminhar mensagem</target>
+      </trans-unit>
+      <trans-unit id="(new)" xml:space="preserve" approved="no">
+        <source>(new)</source>
+        <target state="translated">(novo)</target>
+      </trans-unit>
+      <trans-unit id="(this device v%@)" xml:space="preserve" approved="no">
+        <source>(this device v%@)</source>
+        <target state="translated">este dispositivo</target>
+      </trans-unit>
+      <trans-unit id="**Add contact**: to create a new invitation link, or connect via a link you received." xml:space="preserve" approved="no">
+        <source>**Add contact**: to create a new invitation link, or connect via a link you received.</source>
+        <target state="translated">**Adicionar contato**: criar um novo link de convite ou conectar via um link que você recebeu.</target>
+      </trans-unit>
+      <trans-unit id="**Create group**: to create a new group." xml:space="preserve" approved="no">
+        <source>**Create group**: to create a new group.</source>
+        <target state="translated">**Criar grupo**: criar um novo grupo.</target>
+      </trans-unit>
+      <trans-unit id="**Warning**: the archive will be removed." xml:space="preserve" approved="no">
+        <source>**Warning**: the archive will be removed.</source>
+        <target state="translated">**Aviso**: o arquivo será removido.</target>
+      </trans-unit>
+      <trans-unit id="A few more things" xml:space="preserve" approved="no">
+        <source>A few more things</source>
+        <target state="translated">E mais algumas coisas</target>
+      </trans-unit>
+      <trans-unit id="Archived contacts" xml:space="preserve" approved="no">
+        <source>Archived contacts</source>
+        <target state="translated">Contatos arquivados</target>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="pt-BR" datatype="plaintext">

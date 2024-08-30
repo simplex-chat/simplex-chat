@@ -2,6 +2,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
@@ -120,14 +121,26 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
   CRContactCode u ct code -> ttyUser u $ viewContactCode ct code testView
   CRGroupMemberCode u g m code -> ttyUser u $ viewGroupMemberCode g m code testView
-  CRNewChatItem u (AChatItem _ _ chat item) -> ttyUser u $ unmuted u chat item $ viewChatItem chat item False ts tz <> viewItemReactions item
+  CRNewChatItems u chatItems
+    | length chatItems > 20 ->
+        if
+          | all (\aci -> aChatItemDir aci == MDRcv) chatItems -> ttyUser u [sShow (length chatItems) <> " new messages"]
+          | all (\aci -> aChatItemDir aci == MDSnd) chatItems -> ttyUser u [sShow (length chatItems) <> " messages sent"]
+          | otherwise -> ttyUser u [sShow (length chatItems) <> " new messages created"]
+    | otherwise ->
+        concatMap
+          (\(AChatItem _ _ chat item) -> ttyUser u $ unmuted u chat item $ viewChatItem chat item False ts tz <> viewItemReactions item)
+          chatItems
   CRChatItems u _ chatItems -> ttyUser u $ concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True ts tz <> viewItemReactions item) chatItems
   CRChatItemInfo u ci ciInfo -> ttyUser u $ viewChatItemInfo ci ciInfo tz
   CRChatItemId u itemId -> ttyUser u [plain $ maybe "no item" show itemId]
   CRChatItemStatusUpdated u ci -> ttyUser u $ viewChatItemStatusUpdated ci ts tz testView showReceipts
   CRChatItemUpdated u (AChatItem _ _ chat item) -> ttyUser u $ unmuted u chat item $ viewItemUpdate chat item liveItems ts tz
   CRChatItemNotChanged u ci -> ttyUser u $ viewItemNotChanged ci
-  CRChatItemDeleted u (AChatItem _ _ chat deletedItem) toItem byUser timed -> ttyUser u $ unmuted u chat deletedItem $ viewItemDelete chat deletedItem toItem byUser timed ts tz testView
+  CRChatItemsDeleted u deletions byUser timed -> case deletions of
+    [ChatItemDeletion (AChatItem _ _ chat deletedItem) toItem] ->
+      ttyUser u $ unmuted u chat deletedItem $ viewItemDelete chat deletedItem toItem byUser timed ts tz testView
+    deletions' -> ttyUser u [sShow (length deletions') <> " messages deleted"]
   CRChatItemReaction u added (ACIReaction _ _ chat reaction) -> ttyUser u $ unmutedReaction u chat reaction $ viewItemReaction showReactions chat reaction added ts tz
   CRChatItemDeletedNotFound u Contact {localDisplayName = c} _ -> ttyUser u [ttyFrom $ c <> "> [deleted - original message not found]"]
   CRBroadcastSent u mc s f t -> ttyUser u $ viewSentBroadcast mc s f ts tz t
@@ -169,6 +182,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRVersionInfo info _ _ -> viewVersionInfo logLevel info
   CRInvitation u cReq _ -> ttyUser u $ viewConnReqInvitation cReq
   CRConnectionIncognitoUpdated u c -> ttyUser u $ viewConnectionIncognitoUpdated c
+  CRConnectionUserChanged u c c' nu -> ttyUser u $ viewConnectionUserChanged u c nu c'
   CRConnectionPlan u connectionPlan -> ttyUser u $ viewConnectionPlan connectionPlan
   CRSentConfirmation u _ -> ttyUser u ["confirmation sent!"]
   CRSentInvitation u _ customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
@@ -176,7 +190,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRContactDeleted u c -> ttyUser u [ttyContact' c <> ": contact is deleted"]
   CRContactDeletedByContact u c -> ttyUser u [ttyFullContact c <> " deleted contact with you"]
   CRChatCleared u chatInfo -> ttyUser u $ viewChatCleared chatInfo
-  CRAcceptingContactRequest u c -> ttyUser u [ttyFullContact c <> ": accepting contact request..."]
+  CRAcceptingContactRequest u c -> ttyUser u $ viewAcceptingContactRequest c
   CRContactAlreadyExists u c -> ttyUser u [ttyFullContact c <> ": contact already exists"]
   CRContactRequestAlreadyAccepted u c -> ttyUser u [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
   CRUserContactLinkCreated u cReq -> ttyUser u $ connReqContact_ "Your new chat address is created!" cReq
@@ -231,6 +245,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRStandaloneFileInfo info_ -> maybe ["no file information in URI"] (\j -> [viewJSON j]) info_
   CRContactConnecting u _ -> ttyUser u []
   CRContactConnected u ct userCustomProfile -> ttyUser u $ viewContactConnected ct userCustomProfile testView
+  CRContactSndReady u ct -> ttyUser u [ttyFullContact ct <> ": you can send messages to contact"]
   CRContactAnotherClient u c -> ttyUser u [ttyContact' c <> ": contact is connected to another client"]
   CRSubscriptionEnd u acEntity ->
     let Connection {connId} = entityConnection acEntity
@@ -365,6 +380,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
       "chat entity locks: " <> viewJSON chatEntityLocks,
       "agent locks: " <> viewJSON agentLocks
     ]
+  CRAgentSubsTotal u subsTotal _ -> ttyUser u ["total subscriptions: " <> sShow subsTotal]
   CRAgentServersSummary u serversSummary -> ttyUser u ["agent servers summary: " <> viewJSON serversSummary]
   CRAgentSubs {activeSubs, pendingSubs, removedSubs} ->
     [plain $ "Subscriptions: active = " <> show (sum activeSubs) <> ", pending = " <> show (sum pendingSubs) <> ", removed = " <> show (sum $ M.map length removedSubs)]
@@ -403,14 +419,15 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRChatCmdError u e -> ttyUserPrefix' u $ viewChatError True logLevel testView e
   CRChatError u e -> ttyUser' u $ viewChatError False logLevel testView e
   CRChatErrors u errs -> ttyUser' u $ concatMap (viewChatError False logLevel testView) errs
+  CRArchiveExported archiveErrs -> if null archiveErrs then ["ok"] else ["archive export errors: " <> plain (show archiveErrs)]
   CRArchiveImported archiveErrs -> if null archiveErrs then ["ok"] else ["archive import errors: " <> plain (show archiveErrs)]
   CRAppSettings as -> ["app settings: " <> viewJSON as]
   CRTimedAction _ _ -> []
-  CRCustomChatResponse u r -> ttyUser' u $ [plain r]
+  CRCustomChatResponse u r -> ttyUser' u $ map plain $ T.lines r
   where
     ttyUser :: User -> [StyledString] -> [StyledString]
-    ttyUser user@User {showNtfs, activeUser} ss
-      | showNtfs || activeUser = ttyUserPrefix user ss
+    ttyUser user@User {showNtfs, activeUser, viewPwdHash} ss
+      | (showNtfs && isNothing viewPwdHash) || activeUser = ttyUserPrefix user ss
       | otherwise = []
     ttyUserPrefix :: User -> [StyledString] -> [StyledString]
     ttyUserPrefix _ [] = []
@@ -963,6 +980,11 @@ viewSentInvitation incognitoProfile testView =
         message = ["connection request sent incognito!"]
     Nothing -> ["connection request sent!"]
 
+viewAcceptingContactRequest :: Contact -> [StyledString]
+viewAcceptingContactRequest ct
+  | contactReady ct = [ttyFullContact ct <> ": accepting contact request, you can send messages to contact"]
+  | otherwise = [ttyFullContact ct <> ": accepting contact request..."]
+
 viewReceivedContactRequest :: ContactName -> Profile -> [StyledString]
 viewReceivedContactRequest c Profile {fullName} =
   [ ttyFullName c fullName <> " wants to connect to you!",
@@ -1487,6 +1509,20 @@ viewConnectionIncognitoUpdated PendingContactConnection {pccConnId, customUserPr
   | isJust customUserProfileId = ["connection " <> sShow pccConnId <> " changed to incognito"]
   | otherwise = ["connection " <> sShow pccConnId <> " changed to non incognito"]
 
+viewConnectionUserChanged :: User -> PendingContactConnection -> User -> PendingContactConnection -> [StyledString]
+viewConnectionUserChanged User {localDisplayName = n} PendingContactConnection {pccConnId, connReqInv} User {localDisplayName = n'} PendingContactConnection {connReqInv = connReqInv'} =
+  case (connReqInv, connReqInv') of
+    (Just cReqInv, Just cReqInv')
+      | cReqInv /= cReqInv' -> [userChangedStr <> ", new link:"] <> newLink cReqInv'
+    _ -> [userChangedStr]
+  where
+    userChangedStr = "connection " <> sShow pccConnId <> " changed from user " <> plain n <> " to user " <> plain n'
+    newLink cReqInv =
+      [ "",
+        (plain . strEncode) (simplexChatInvitation cReqInv),
+        ""
+      ]
+
 viewConnectionPlan :: ConnectionPlan -> [StyledString]
 viewConnectionPlan = \case
   CPInvitationLink ilp -> case ilp of
@@ -1999,7 +2035,6 @@ viewChatError isCmd logLevel testView = \case
     CEInlineFileProhibited _ -> ["A small file sent without acceptance - you can enable receiving such files with -f option."]
     CEInvalidQuote -> ["cannot reply to this message"]
     CEInvalidForward -> ["cannot forward this message"]
-    CEForwardNoFile -> ["cannot forward this message, file not found"]
     CEInvalidChatItemUpdate -> ["cannot update this item"]
     CEInvalidChatItemDelete -> ["cannot delete this item"]
     CEHasCurrentCall -> ["call already in progress"]
@@ -2014,6 +2049,7 @@ viewChatError isCmd logLevel testView = \case
     CEAgentCommandError e -> ["agent command error: " <> plain e]
     CEInvalidFileDescription e -> ["invalid file description: " <> plain e]
     CEConnectionIncognitoChangeProhibited -> ["incognito mode change prohibited"]
+    CEConnectionUserChangeProhibited -> ["incognito mode change prohibited for user"]
     CEPeerChatVRangeIncompatible -> ["peer chat protocol version range incompatible"]
     CEInternalError e -> ["internal chat error: " <> plain e]
     CEException e -> ["exception: " <> plain e]

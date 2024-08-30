@@ -12,12 +12,13 @@ import SimpleXChat
 struct ContactRequestView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
     var contactRequest: UserContactRequest
     @ObservedObject var chat: Chat
 
     var body: some View {
         HStack(spacing: 8) {
-            ChatInfoImage(chat: chat, size: 63)
+            ChatInfoImage(chat: chat, size: dynamicSize(userFont).profileImageSize)
                 .padding(.leading, 4)
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top) {

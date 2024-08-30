@@ -1289,6 +1289,15 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
             }
         }
     }
+    
+    public var chatDeleted: Bool {
+        get {
+            switch self {
+            case let .direct(contact): return contact.chatDeleted
+            default: return false
+            }
+        }
+    }
 
     public var sendMsgEnabled: Bool {
         get {
@@ -1401,6 +1410,27 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
+    public enum ShowEnableCallsAlert: Hashable {
+        case userEnable
+        case askContact
+        case other
+    }
+
+    public var showEnableCallsAlert: ShowEnableCallsAlert {
+        switch self {
+        case let .direct(contact):
+            if contact.mergedPreferences.calls.userPreference.preference.allow == .no {
+                return .userEnable
+            } else if contact.mergedPreferences.calls.contactPreference.allow == .no {
+                return .askContact
+            } else {
+                return .other
+            }
+        default:
+            return .other
+        }
+    }
+
     public var ntfsEnabled: Bool {
         self.chatSettings?.enableNtfs == .all
     }
@@ -1463,13 +1493,19 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
     )
 }
 
-public struct ChatData: Decodable, Identifiable, Hashable {
+public struct ChatData: Decodable, Identifiable, Hashable, ChatLike {
     public var chatInfo: ChatInfo
     public var chatItems: [ChatItem]
     public var chatStats: ChatStats
 
     public var id: ChatId { get { chatInfo.id } }
 
+    public init(chatInfo: ChatInfo, chatItems: [ChatItem], chatStats: ChatStats = ChatStats()) {
+        self.chatInfo = chatInfo
+        self.chatItems = chatItems
+        self.chatStats = chatStats
+    }
+    
     public static func invalidJSON(_ json: String) -> ChatData {
         ChatData(
             chatInfo: .invalidJSON(json: json),
@@ -1508,14 +1544,16 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     var contactGroupMemberId: Int64?
     var contactGrpInvSent: Bool
     public var uiThemes: ThemeModeOverrides?
-
+    public var chatDeleted: Bool
+    
     public var id: ChatId { get { "@\(contactId)" } }
     public var apiId: Int64 { get { contactId } }
     public var ready: Bool { get { activeConn?.connStatus == .ready } }
+    public var sndReady: Bool { get { ready || activeConn?.connStatus == .sndReady } }
     public var active: Bool { get { contactStatus == .active } }
     public var sendMsgEnabled: Bool { get {
         (
-            ready
+            sndReady
             && active
             && !(activeConn?.connectionStats?.ratchetSyncSendProhibited ?? false)
             && !(activeConn?.connDisabled ?? true)
@@ -1574,13 +1612,15 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
         mergedPreferences: ContactUserPreferences.sampleData,
         createdAt: .now,
         updatedAt: .now,
-        contactGrpInvSent: false
+        contactGrpInvSent: false,
+        chatDeleted: false
     )
 }
 
 public enum ContactStatus: String, Decodable, Hashable {
     case active = "active"
     case deleted = "deleted"
+    case deletedByUser = "deletedByUser"
 }
 
 public struct ContactRef: Decodable, Equatable, Hashable {
@@ -1824,7 +1864,7 @@ public enum ConnStatus: String, Decodable, Hashable {
             case .joined: return false
             case .requested: return true
             case .accepted: return true
-            case .sndReady: return false
+            case .sndReady: return nil
             case .ready: return nil
             case .deleted: return nil
             }
@@ -2233,6 +2273,11 @@ public struct NtfMsgInfo: Decodable, Hashable {
     public var msgTs: Date
 }
 
+public struct ChatItemDeletion: Decodable, Hashable {
+    public var deletedChatItem: AChatItem
+    public var toChatItem: AChatItem? = nil
+}
+
 public struct AChatItem: Decodable, Hashable {
     public var chatInfo: ChatInfo
     public var chatItem: ChatItem
@@ -2448,13 +2493,16 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         }
     }
 
-    public func memberToModerate(_ chatInfo: ChatInfo) -> (GroupInfo, GroupMember)? {
+    public func memberToModerate(_ chatInfo: ChatInfo) -> (GroupInfo, GroupMember?)? {
         switch (chatInfo, chatDir) {
         case let (.group(groupInfo), .groupRcv(groupMember)):
             let m = groupInfo.membership
             return m.memberRole >= .admin && m.memberRole >= groupMember.memberRole && meta.itemDeleted == nil
                     ? (groupInfo, groupMember)
                     : nil
+        case let (.group(groupInfo), .groupSnd):
+            let m = groupInfo.membership
+            return m.memberRole >= .admin ? (groupInfo, nil) : nil
         default: return nil
         }
     }
@@ -2467,6 +2515,10 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         case .rcvGroupE2EEInfo: return false
         default: return true
         }
+    }
+
+    public var canBeDeletedForSelf: Bool {
+        (content.msgContent != nil && !meta.isLive) || meta.itemDeleted != nil || isDeletedContent || mergeCategory != nil || showLocalDelete
     }
 
     public static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true) -> ChatItem {
@@ -2636,6 +2688,13 @@ public enum CIDirection: Decodable, Hashable {
             }
         }
     }
+    
+    public func sameDirection(_ dir: CIDirection) -> Bool {
+        switch (self, dir) {
+        case let (.groupRcv(m1), .groupRcv(m2)): m1.groupMemberId == m2.groupMemberId
+        default: sent == dir.sent
+        }
+    }
 }
 
 public struct CIMeta: Decodable, Hashable {
@@ -2706,26 +2765,8 @@ public struct CITimed: Decodable, Hashable {
     public var deleteAt: Date?
 }
 
-let msgTimeFormat = Date.FormatStyle.dateTime.hour().minute()
-let msgDateFormat = Date.FormatStyle.dateTime.day(.twoDigits).month(.twoDigits)
-
 public func formatTimestampText(_ date: Date) -> Text {
-    return Text(date, format: recent(date) ? msgTimeFormat : msgDateFormat)
-}
-
-private func recent(_ date: Date) -> Bool {
-    let now = Date()
-    let calendar = Calendar.current
-
-    guard let previousDay = calendar.date(byAdding: DateComponents(day: -1), to: now),
-          let previousDay18 = calendar.date(bySettingHour: 18, minute: 0, second: 0, of: previousDay),
-          let currentDay00 = calendar.date(bySettingHour: 0, minute: 0, second: 0, of: now),
-          let currentDay12 = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: now) else {
-        return false
-    }
-
-    let isSameDay = calendar.isDate(date, inSameDayAs: now)
-    return isSameDay || (now < currentDay12 && date >= previousDay18 && date < currentDay00)
+    Text(verbatim: date.formatted(date: .omitted, time: .shortened))
 }
 
 public enum CIStatus: Decodable, Hashable {
@@ -3290,6 +3331,28 @@ public struct CIFile: Decodable, Hashable {
             case .rcvWarning: return rcvCancelAction
             case .rcvError: return nil
             case .invalid: return nil
+            }
+        }
+    }
+
+    public var showStatusIconInSmallView: Bool {
+        get {
+            switch fileStatus {
+            case .sndStored: fileProtocol != .local
+            case .sndTransfer: true
+            case .sndComplete: false
+            case .sndCancelled: true
+            case .sndError: true
+            case .sndWarning: true
+            case .rcvInvitation: false
+            case .rcvAccepted: true
+            case .rcvTransfer: true
+            case .rcvAborted: true
+            case .rcvCancelled: true
+            case .rcvComplete: false
+            case .rcvError: true
+            case .rcvWarning: true
+            case .invalid: true
             }
         }
     }

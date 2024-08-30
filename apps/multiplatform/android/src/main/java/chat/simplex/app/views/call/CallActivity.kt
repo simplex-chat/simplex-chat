@@ -120,6 +120,7 @@ class CallActivity: ComponentActivity(), ServiceConnection {
     return grantedAudio && grantedCamera
   }
 
+  @Deprecated("Was deprecated in OS")
   override fun onBackPressed() {
     if (isOnLockScreenNow()) {
       super.onBackPressed()
@@ -139,6 +140,7 @@ class CallActivity: ComponentActivity(), ServiceConnection {
   }
 
   override fun onUserLeaveHint() {
+    super.onUserLeaveHint()
     // On Android 12+ PiP is enabled automatically when a user hides the app
     if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R && callSupportsVideo() && platform.androidPictureInPictureAllowed()) {
       enterPictureInPictureMode()
@@ -248,6 +250,9 @@ fun CallActivityView() {
         )
         if (permissionsState.allPermissionsGranted) {
           ActiveCallView()
+          LaunchedEffect(Unit) {
+            activity.startServiceAndBind()
+          }
         } else {
           CallPermissionsView(remember { m.activeCallViewIsCollapsed }.value, callSupportsVideo()) {
             withBGApi { chatModel.callManager.endCall(call) }
@@ -283,11 +288,6 @@ fun CallActivityView() {
     }
     if (!m.activeCallViewIsCollapsed.value) {
       AlertManager.shared.showInView()
-    }
-  }
-  LaunchedEffect(call == null) {
-    if (call != null) {
-      activity.startServiceAndBind()
     }
   }
   LaunchedEffect(invitation, call, switchingCall, showCallView) {
@@ -424,6 +424,7 @@ fun PreviewIncomingCallLockScreenAlert() {
     ) {
       IncomingCallLockScreenAlertLayout(
         invitation = RcvCallInvitation(
+          callUUID = "",
           remoteHostId = null,
           user = User.sampleData,
           contact = Contact.sampleData,

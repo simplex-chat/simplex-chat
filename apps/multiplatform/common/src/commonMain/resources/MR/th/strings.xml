@@ -665,10 +665,7 @@
     <string name="network_settings_title">การตั้งค่าเครือข่าย</string>
     <string name="network_use_onion_hosts_required_desc">จำเป็นต้องมีโฮสต์หัวหอมสำหรับการเชื่อมต่อ</string>
     <string name="network_use_onion_hosts_no">ไม่</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">จำเป็นต้องมีโฮสต์หัวหอมสำหรับการเชื่อมต่อ</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">โฮสต์หัวหอมจะถูกใช้เมื่อมี</string>
     <string name="network_use_onion_hosts_no_desc">โฮสต์หัวหอมจะไม่ถูกใช้</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">โฮสต์หัวหอมจะไม่ถูกใช้</string>
     <string name="password_to_show">รหัสผ่านที่จะแสดง</string>
     <string name="callstatus_missed">สายที่ไม่ได้รับ</string>
     <string name="people_can_connect_only_via_links_you_share">ผู้คนสามารถเชื่อมต่อกับคุณผ่านลิงก์ที่คุณแบ่งปันเท่านั้น</string>
@@ -852,7 +849,6 @@
     <string name="save_and_update_group_profile">บันทึกและอัปเดตโปรไฟล์กลุ่ม</string>
     <string name="receiving_via">กำลังรับผ่าน</string>
     <string name="network_options_reset_to_defaults">รีเซ็ตเป็นค่าเริ่มต้น</string>
-    <string name="network_options_revert">เปลี่ยนกลับ</string>
     <string name="network_options_save">บันทึก</string>
     <string name="reset_color">รีเซ็ตสี</string>
     <string name="feature_received_prohibited">ได้รับ, ห้าม</string>
@@ -1147,7 +1143,6 @@
     <string name="network_socks_toggle_use_socks_proxy">ใช้พร็อกซี SOCKS</string>
     <string name="network_disable_socks">ใช้การเชื่อมต่ออินเทอร์เน็ตโดยตรงหรือไม่\?</string>
     <string name="network_enable_socks">ใช้พร็อกซี SOCKS หรือไม่\?</string>
-    <string name="update_onion_hosts_settings_question">อัปเดตการตั้งค่าโฮสต์ .onion ไหม\?</string>
     <string name="network_use_onion_hosts">ใช้โฮสต์ .onion</string>
     <string name="network_use_onion_hosts_prefer">เมื่อพร้อมใช้งาน</string>
     <string name="update_network_session_mode_question">อัปเดตโหมดการแยกการขนส่งไหม\?</string>

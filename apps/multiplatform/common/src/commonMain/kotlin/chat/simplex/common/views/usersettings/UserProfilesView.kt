@@ -4,10 +4,10 @@ import SectionBottomSpacer
 import SectionDivider
 import SectionItemView
 import SectionItemViewSpaceBetween
+import SectionItemViewWithoutMinPadding
 import SectionSpacer
 import SectionTextFooter
 import SectionView
-import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -269,7 +269,7 @@ private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (
 
     @Composable fun ActionHeader(title: StringResource) {
       AppBarTitle(stringResource(title))
-      SectionView(padding = PaddingValues(start = 8.dp, end = DEFAULT_PADDING)) {
+      SectionView(contentPadding = PaddingValues(start = 8.dp, end = DEFAULT_PADDING)) {
         UserProfileRow(user)
       }
       SectionSpacer()
@@ -277,7 +277,7 @@ private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (
 
     @Composable fun PasswordAndAction(label: StringResource, color: Color = MaterialTheme.colors.primary) {
       SectionView() {
-        SectionItemView {
+        SectionItemViewWithoutMinPadding {
           PassphraseField(actionPassword, generalGetString(MR.strings.profile_password), isValid = { passwordValid }, showStrength = true)
         }
         SectionItemViewSpaceBetween({ doAction(actionPassword.value) }, disabled = !actionEnabled, minHeight = TextFieldDefaults.MinHeight) {
@@ -303,11 +303,11 @@ private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (
   }
 }
 
-private fun filteredUsers(m: ChatModel, searchTextOrPassword: String): List<User> {
+fun filteredUsers(m: ChatModel, searchTextOrPassword: String): List<User> {
   val s = searchTextOrPassword.trim()
   val lower = s.lowercase()
   return m.users.filter { u ->
-    if ((u.user.activeUser || !u.user.hidden) && (s == "" || u.user.chatViewName.lowercase().contains(lower))) {
+    if ((u.user.activeUser || !u.user.hidden) && (s == "" || u.user.anyNameContains(lower))) {
       true
     } else {
       correctPassword(u.user, s)
@@ -317,7 +317,7 @@ private fun filteredUsers(m: ChatModel, searchTextOrPassword: String): List<User
 
 private fun visibleUsersCount(m: ChatModel): Int = m.users.filter { u -> !u.user.hidden }.size
 
-private fun correctPassword(user: User, pwd: String): Boolean {
+fun correctPassword(user: User, pwd: String): Boolean {
   val ph = user.viewPwdHash
   return ph != null && pwd != "" && chatPasswordHash(pwd, ph.salt) == ph.hash
 }

@@ -193,7 +193,6 @@
     <string name="reject">Respinge</string>
     <string name="save_passphrase_in_settings">Salvează fraza de acces în setări</string>
     <string name="save_and_update_group_profile">Salvează și actualizează profilul grupului</string>
-    <string name="network_options_revert">Revenire</string>
     <string name="connect_plan_repeat_join_request">Repetă cererea de alăturare?</string>
     <string name="restart_chat_button">Repornește conversația</string>
     <string name="saved_description">salvat</string>
@@ -527,12 +526,12 @@
     <string name="migrate_from_device_check_connection_and_try_again">Verifică conexiunea la internet și încearcă din nou</string>
     <string name="settings_section_title_chat_colors">Culori conversație</string>
     <string name="settings_section_title_chat_theme">Temă conversație</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>Bun pentru baterie</b>.
+    <string name="onboarding_notifications_mode_periodic_desc"><b>Bun pentru baterie</b>. 
 \nServiciul în fundal verifică mesaje la fiecare 10 minute. Ai putea rata apeluri sau mesaje urgente.</string>
     <string name="theme_black">Negru</string>
     <string name="block_for_all_question">Blochezi membrul pentru toți?</string>
     <string name="both_you_and_your_contacts_can_delete">Și tu și contactul tău puteți șterge ireversibil mesajele trimise. (24 de ore)</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>Folosește mai multă baterie</b>!
+    <string name="onboarding_notifications_mode_service_desc"><b>Folosește mai multă baterie</b>! 
 \nServiciul în fundal rulează mereu – notificările sunt afișate imediat ce mesajele sunt disponibile.</string>
     <string name="cannot_share_message_alert_title">Nu se poate trimite mesajul</string>
     <string name="clear_contacts_selection_button">Ștergeți</string>

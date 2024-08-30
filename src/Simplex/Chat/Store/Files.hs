@@ -455,7 +455,7 @@ lookupChatRefByFileId db User {userId} fileId =
 createSndFileConnection_ :: DB.Connection -> VersionRangeChat -> UserId -> Int64 -> ConnId -> SubscriptionMode -> IO Connection
 createSndFileConnection_ db vr userId fileId agentConnId subMode = do
   currentTs <- getCurrentTime
-  createConnection_ db userId ConnSndFile (Just fileId) agentConnId (minVersion vr) chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff
+  createConnection_ db userId ConnSndFile (Just fileId) agentConnId ConnNew (minVersion vr) chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff
 
 updateSndFileStatus :: DB.Connection -> SndFileTransfer -> FileStatus -> IO ()
 updateSndFileStatus db SndFileTransfer {fileId, connId} status = do
@@ -966,20 +966,20 @@ lookupFileTransferRedirectMeta db User {userId} fileId = do
   redirects <- DB.query db "SELECT file_id FROM files WHERE user_id = ? AND redirect_file_id = ?" (userId, fileId)
   rights <$> mapM (runExceptT . getFileTransferMeta_ db userId . fromOnly) redirects
 
-createLocalFile :: ToField (CIFileStatus d) => CIFileStatus d -> DB.Connection -> User -> NoteFolder -> ChatItemId -> UTCTime -> CryptoFile -> Integer -> Integer -> IO Int64
-createLocalFile fileStatus db User {userId} NoteFolder {noteFolderId} chatItemId itemTs CryptoFile {filePath, cryptoArgs} fileSize fileChunkSize = do
+createLocalFile :: ToField (CIFileStatus d) => CIFileStatus d -> DB.Connection -> User -> NoteFolder -> UTCTime -> CryptoFile -> Integer -> Integer -> IO Int64
+createLocalFile fileStatus db User {userId} NoteFolder {noteFolderId} itemTs CryptoFile {filePath, cryptoArgs} fileSize fileChunkSize = do
   DB.execute
     db
     [sql|
       INSERT INTO files
-        ( user_id, note_folder_id, chat_item_id,
+        ( user_id, note_folder_id,
           file_name, file_path, file_size,
           file_crypto_key, file_crypto_nonce,
           chunk_size, file_inline, ci_file_status, protocol, created_at, updated_at
         )
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
     |]
-    ( (userId, noteFolderId, chatItemId)
+    ( (userId, noteFolderId)
         :. (takeFileName filePath, filePath, fileSize)
         :. maybe (Nothing, Nothing) (\(CFArgs key nonce) -> (Just key, Just nonce)) cryptoArgs
         :. (fileChunkSize, Nothing :: Maybe InlineFileMode, fileStatus, FPLocal, itemTs, itemTs)

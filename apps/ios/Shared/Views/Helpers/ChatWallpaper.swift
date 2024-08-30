@@ -11,20 +11,31 @@ import SwiftUI
 import SimpleXChat
 
 struct ChatViewBackground: ViewModifier {
-    @EnvironmentObject var theme: AppTheme
+    @Environment(\.colorScheme) var colorScheme
     var image: Image
     var imageType: WallpaperType
     var background: Color
     var tint: Color
 
     func body(content: Content) -> some View {
+        // Workaround a problem (SwiftUI bug?) when wallpaper is not updated when user changes global theme in iOS settings from dark to light and vice versa
+        if colorScheme == .light {
+            back(content)
+        } else {
+            back(content)
+        }
+    }
+
+    func back(_ content: Content) -> some View {
         content.background(
             Canvas { context, size in
                 var image = context.resolve(image)
                 let rect = CGRectMake(0, 0, size.width, size.height)
                 func repeatDraw(_ imageScale: CGFloat) {
+                    // Prevent range bounds crash and dividing by zero
+                    if size.height == 0 || size.width == 0 || image.size.height == 0 || image.size.width == 0 { return }
                     image.shading = .color(tint)
-                    let scale = imageScale * 1.57 // for some reason a wallpaper on iOS looks smaller than on Android
+                    let scale = imageScale * 2.5 // scale wallpaper for iOS
                     for h in 0 ... Int(size.height / image.size.height / scale) {
                         for w in 0 ... Int(size.width / image.size.width / scale) {
                             let rect = CGRectMake(CGFloat(w) * image.size.width * scale, CGFloat(h) * image.size.height * scale, image.size.width * scale, image.size.height * scale)
@@ -79,7 +90,7 @@ struct ChatViewBackground: ViewModifier {
                 case WallpaperType.empty: ()
                 }
             }
-        )
+        ).ignoresSafeArea(.all)
     }
 }
 
@@ -89,7 +100,7 @@ extension PresetWallpaper {
             scale
         } else if let type = ChatModel.shared.currentUser?.uiThemes?.preferredMode(base.mode == DefaultThemeMode.dark)?.wallpaper?.toAppWallpaper().type, type.sameType(WallpaperType.preset(filename, nil)) {
             type.scale
-        } else if let scale = themeOverridesDefault.get().first(where: { $0.wallpaper != nil && $0.wallpaper!.preset == filename })?.wallpaper?.scale {
+        } else if let scale = themeOverridesDefault.get().first(where: { $0.wallpaper != nil && $0.wallpaper!.preset == filename && $0.base == base })?.wallpaper?.scale {
             scale
         } else {
             Float(1.0)

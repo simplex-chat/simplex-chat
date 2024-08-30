@@ -18,10 +18,14 @@ struct ChatListView: View {
     @State private var searchText = ""
     @State private var searchShowingSimplexLink = false
     @State private var searchChatFilteredBySimplexLink: String? = nil
-    @State private var newChatMenuOption: NewChatMenuOption? = nil
     @State private var userPickerVisible = false
     @State private var showConnectDesktop = false
+    @State private var scrollToSearchBar = false
+
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
+    @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
+    @AppStorage(DEFAULT_ONE_HAND_UI_CARD_SHOWN) private var oneHandUICardShown = false
+    @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
 
     var body: some View {
         if #available(iOS 16.0, *) {
@@ -32,21 +36,16 @@ struct ChatListView: View {
     }
 
     private var viewBody: some View {
-        ZStack(alignment: .topLeading) {
+        ZStack(alignment: oneHandUI ? .bottomLeading : .topLeading) {
             NavStackCompat(
                 isActive: Binding(
                     get: { chatModel.chatId != nil },
-                    set: { _ in }
+                    set: { active in
+                        if !active { chatModel.chatId = nil }
+                    }
                 ),
                 destination: chatView
-            ) {
-                VStack {
-                    if chatModel.chats.isEmpty {
-                        onboardingButtons()
-                    }
-                    chatListView
-                }
-            }
+            ) { chatListView }
             if userPickerVisible {
                 Rectangle().fill(.white.opacity(0.001)).onTapGesture {
                     withAnimation {
@@ -66,9 +65,14 @@ struct ChatListView: View {
     }
 
     private var chatListView: some View {
-        VStack {
+        let tm = ToolbarMaterial.material(toolbarMaterial)
+        return withToolbar(tm) {
             chatList
+                .background(theme.colors.background)
+                .navigationBarTitleDisplayMode(.inline)
+                .navigationBarHidden(searchMode || oneHandUI)
         }
+        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
         .onDisappear() { withAnimation { userPickerVisible = false } }
         .refreshable {
             AlertManager.shared.showAlert(Alert(
@@ -86,55 +90,111 @@ struct ChatListView: View {
                 secondaryButton: .cancel()
             ))
         }
-        .listStyle(.plain)
-        .background(theme.colors.background)
-        .navigationBarTitleDisplayMode(.inline)
-        .navigationBarHidden(searchMode)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                let user = chatModel.currentUser ?? User.sampleData
-                ZStack(alignment: .topTrailing) {
-                    ProfileImage(imageStr: user.image, size: 32, color: Color(uiColor: .quaternaryLabel))
-                        .padding(.trailing, 4)
-                    let allRead = chatModel.users
-                        .filter { u in !u.user.activeUser && !u.user.hidden }
-                        .allSatisfy { u in u.unreadCount == 0 }
-                    if !allRead {
-                        unreadBadge(size: 12)
-                    }
-                }
-                .onTapGesture {
-                    if chatModel.users.filter({ u in u.user.activeUser || !u.user.hidden }).count > 1 {
-                        withAnimation {
-                            userPickerVisible.toggle()
-                        }
-                    } else {
-                        showSettings = true
-                    }
-                }
+        .safeAreaInset(edge: .top) {
+            if oneHandUI { Divider().background(tm) }
+        }
+        .safeAreaInset(edge: .bottom) {
+            if oneHandUI {
+                Divider().padding(.bottom, Self.hasHomeIndicator ? 0 : 8).background(tm)
             }
-            ToolbarItem(placement: .principal) {
-                HStack(spacing: 4) {
-                    Text("Chats")
-                        .font(.headline)
-                    SubsStatusIndicator()
-                }
-                .frame(maxWidth: .infinity, alignment: .center)
+        }
+    }
+
+    static var hasHomeIndicator: Bool = {
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let window = windowScene.windows.first {
+            window.safeAreaInsets.bottom > 0
+        } else { false }
+    }()
+
+    @ViewBuilder func withToolbar(_ material: Material, content: () -> some View) -> some View {
+        if #available(iOS 16.0, *) {
+            if oneHandUI {
+                content()
+                    .toolbarBackground(.hidden, for: .bottomBar)
+                    .toolbar { bottomToolbar }
+            } else {
+                content()
+                    .toolbarBackground(.automatic, for: .navigationBar)
+                    .toolbarBackground(material)
+                    .toolbar { topToolbar }
             }
-            ToolbarItem(placement: .navigationBarTrailing) {
-                switch chatModel.chatRunning {
-                case .some(true): NewChatMenuButton(newChatMenuOption: $newChatMenuOption)
-                case .some(false): chatStoppedIcon()
-                case .none: EmptyView()
-                }
+        } else {
+            if oneHandUI {
+                content().toolbar { bottomToolbarGroup }
+            } else {
+                content().toolbar { topToolbar }
             }
+        }
+    }
+
+    @ToolbarContentBuilder var topToolbar: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) { leadingToolbarItem }
+        ToolbarItem(placement: .principal) { SubsStatusIndicator() }
+        ToolbarItem(placement: .topBarTrailing) { trailingToolbarItem }
+    }
+
+    @ToolbarContentBuilder var bottomToolbar: some ToolbarContent {
+        let padding: Double = Self.hasHomeIndicator ? 0 : 14
+        ToolbarItem(placement: .bottomBar) {
+            HStack {
+                leadingToolbarItem.padding(.bottom, padding)
+                Spacer()
+                SubsStatusIndicator().padding(.bottom, padding)
+                Spacer()
+                trailingToolbarItem.padding(.bottom, padding)
+            }
+            .contentShape(Rectangle())
+            .onTapGesture { scrollToSearchBar = true }
+        }
+    }
+
+    @ToolbarContentBuilder var bottomToolbarGroup: some ToolbarContent {
+        let padding: Double = Self.hasHomeIndicator ? 0 : 14
+        ToolbarItemGroup(placement: .bottomBar) {
+            leadingToolbarItem.padding(.bottom, padding)
+            Spacer()
+            SubsStatusIndicator().padding(.bottom, padding)
+            Spacer()
+            trailingToolbarItem.padding(.bottom, padding)
+        }
+    }
+
+    @ViewBuilder var leadingToolbarItem: some View {
+        let user = chatModel.currentUser ?? User.sampleData
+        ZStack(alignment: .topTrailing) {
+            ProfileImage(imageStr: user.image, size: 32, color: Color(uiColor: .quaternaryLabel))
+                .padding(.trailing, 4)
+            let allRead = chatModel.users
+                .filter { u in !u.user.activeUser && !u.user.hidden }
+                .allSatisfy { u in u.unreadCount == 0 }
+            if !allRead {
+                unreadBadge(size: 12)
+            }
+        }
+        .onTapGesture {
+            if chatModel.users.filter({ u in u.user.activeUser || !u.user.hidden }).count > 1 {
+                withAnimation {
+                    userPickerVisible.toggle()
+                }
+            } else {
+                showSettings = true
+            }
+        }
+    }
+
+    @ViewBuilder var trailingToolbarItem: some View {
+        switch chatModel.chatRunning {
+        case .some(true): NewChatMenuButton()
+        case .some(false): chatStoppedIcon()
+        case .none: EmptyView()
         }
     }
 
     @ViewBuilder private var chatList: some View {
         let cs = filteredChats()
         ZStack {
-            VStack {
+            ScrollViewReader { scrollProxy in
                 List {
                     if !chatModel.chats.isEmpty {
                         ChatListSearchBar(
@@ -144,27 +204,67 @@ struct ChatListView: View {
                             searchShowingSimplexLink: $searchShowingSimplexLink,
                             searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
                         )
+                        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
                         .frame(maxWidth: .infinity)
+                        .padding(.top, oneHandUI ? 8 : 0)
+                        .id("searchBar")
                     }
-                    ForEach(cs, id: \.viewId) { chat in
-                        ChatListNavLink(chat: chat)
-                            .padding(.trailing, -16)
-                            .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
+                    if !oneHandUICardShown {
+                        OneHandUICard()
+                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                            .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
                     }
-                    .offset(x: -8)
+                    if #available(iOS 16.0, *) {
+                        ForEach(cs, id: \.viewId) { chat in
+                            ChatListNavLink(chat: chat)
+                                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                                .padding(.trailing, -16)
+                                .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
+                                .listRowBackground(Color.clear)
+                        }
+                        .offset(x: -8)
+                    } else {
+                        ForEach(cs, id: \.viewId) { chat in
+                            VStack(spacing: .zero) {
+                                Divider()
+                                    .padding(.leading, 16)
+                                ChatListNavLink(chat: chat)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 6)
+                            }
+                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets())
+                            .background { theme.colors.background } // Hides default list selection colour
+                            .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
+                        }
+                    }
                 }
-            }
-            .onChange(of: chatModel.chatId) { _ in
-                if chatModel.chatId == nil, let chatId = chatModel.chatToTop {
-                    chatModel.chatToTop = nil
-                    chatModel.popChat(chatId)
+                .listStyle(.plain)
+                .onChange(of: chatModel.chatId) { currentChatId in
+                    if let chatId = chatModel.chatToTop, currentChatId != chatId {
+                        chatModel.chatToTop = nil
+                        chatModel.popChat(chatId)
+                    }
+                    stopAudioPlayer()
+                }
+                .onChange(of: chatModel.currentUser?.userId) { _ in
+                    stopAudioPlayer()
+                }
+                .onChange(of: scrollToSearchBar) { scrollToSearchBar in
+                    if scrollToSearchBar {
+                        Task { self.scrollToSearchBar = false }
+                        withAnimation { scrollProxy.scrollTo("searchBar") }
+                    }
                 }
             }
             if cs.isEmpty && !chatModel.chats.isEmpty {
-                Text("No filtered chats").foregroundColor(theme.colors.secondary)
+                Text("No filtered chats")
+                    .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                    .foregroundColor(.secondary)
             }
         }
     }
@@ -175,46 +275,15 @@ struct ChatListView: View {
             .foregroundColor(theme.colors.primary)
     }
 
-    private func onboardingButtons() -> some View {
-        VStack(alignment: .trailing, spacing: 0) {
-            Path { p in
-                p.move(to: CGPoint(x: 8, y: 0))
-                p.addLine(to: CGPoint(x: 16, y: 10))
-                p.addLine(to: CGPoint(x: 0, y: 10))
-                p.addLine(to: CGPoint(x: 8, y: 0))
-            }
-            .fill(theme.colors.primary)
-            .frame(width: 20, height: 10)
-            .padding(.trailing, 12)
-
-            connectButton("Tap to start a new chat") {
-                newChatMenuOption = .newContact
-            }
-
-            Spacer()
-            Text("You have no chats")
-                .foregroundColor(theme.colors.secondary)
-                .frame(maxWidth: .infinity)
-        }
-        .padding(.trailing, 6)
-        .frame(maxHeight: .infinity)
-    }
-
-    private func connectButton(_ label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(label)
-                .padding(.vertical, 10)
-                .padding(.horizontal, 20)
-        }
-        .background(theme.colors.primary)
-        .foregroundColor(.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-    }
-
     @ViewBuilder private func chatView() -> some View {
         if let chatId = chatModel.chatId, let chat = chatModel.getChat(chatId) {
             ChatView(chat: chat)
         }
+    }
+
+    func stopAudioPlayer() {
+        VoiceItemState.smallView.values.forEach { $0.audioPlayer?.stop() }
+        VoiceItemState.smallView = [:]
     }
 
     private func filteredChats() -> [Chat] {
@@ -223,16 +292,20 @@ struct ChatListView: View {
         } else {
             let s = searchString()
             return s == "" && !showUnreadAndFavorites
-            ? chatModel.chats
+            ? chatModel.chats.filter { chat in
+                !chat.chatInfo.chatDeleted && chatContactType(chat: chat) != ContactType.card
+            }
             : chatModel.chats.filter { chat in
                 let cInfo = chat.chatInfo
                 switch cInfo {
                 case let .direct(contact):
-                    return s == ""
-                    ? filtered(chat)
-                    : (viewNameContains(cInfo, s) ||
-                       contact.profile.displayName.localizedLowercase.contains(s) ||
-                       contact.fullName.localizedLowercase.contains(s))
+                    return !contact.chatDeleted && chatContactType(chat: chat) != ContactType.card && (
+                        s == ""
+                        ? filtered(chat)
+                        : (viewNameContains(cInfo, s) ||
+                           contact.profile.displayName.localizedLowercase.contains(s) ||
+                           contact.fullName.localizedLowercase.contains(s))
+                    )
                 case let .group(gInfo):
                     return s == ""
                     ? (filtered(chat) || gInfo.membership.memberStatus == .memInvited)
@@ -266,9 +339,9 @@ struct ChatListView: View {
 }
 
 struct SubsStatusIndicator: View {
-    @State private var serversSummary: PresentedServersSummary?
-    @State private var timer: Timer? = nil
-    @State private var timerCounter = 0
+    @State private var subs: SMPServerSubs = SMPServerSubs.newSMPServerSubs
+    @State private var hasSess: Bool = false
+    @State private var task: Task<Void, Never>?
     @State private var showServersSummary = false
 
     @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
@@ -277,45 +350,49 @@ struct SubsStatusIndicator: View {
         Button {
             showServersSummary = true
         } label: {
-            let subs = serversSummary?.allUsersSMP.smpTotals.subs ?? SMPServerSubs.newSMPServerSubs
-            let sess = serversSummary?.allUsersSMP.smpTotals.sessions ?? ServerSessions.newServerSessions
             HStack(spacing: 4) {
-                SubscriptionStatusIndicatorView(subs: subs, sess: sess)
+                Text("Chats").foregroundStyle(Color.primary).fixedSize().font(.headline)
+                SubscriptionStatusIndicatorView(subs: subs, hasSess: hasSess)
                 if showSubscriptionPercentage {
-                    SubscriptionStatusPercentageView(subs: subs, sess: sess)
+                    SubscriptionStatusPercentageView(subs: subs, hasSess: hasSess)
                 }
             }
         }
+        .disabled(ChatModel.shared.chatRunning != true)
         .onAppear {
-            startTimer()
+            startTask()
         }
         .onDisappear {
-            stopTimer()
+            stopTask()
         }
-        .sheet(isPresented: $showServersSummary) {
-            ServersSummaryView(serversSummary: $serversSummary)
+        .appSheet(isPresented: $showServersSummary) {
+            ServersSummaryView()
+                .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
         }
     }
 
-    private func startTimer() {
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-            if AppChatState.shared.value == .active {
-                getServersSummary()
+    private func startTask() {
+        task = Task {
+            while !Task.isCancelled {
+                if AppChatState.shared.value == .active {
+                    do {
+                        let (subs, hasSess) = try await getAgentSubsTotal()
+                        await MainActor.run {
+                            self.subs = subs
+                            self.hasSess = hasSess
+                        }
+                    } catch let error {
+                        logger.error("getSubsTotal error: \(responseError(error))")
+                    }
+                }
+                try? await Task.sleep(nanoseconds: 1_000_000_000) // Sleep for 1 second
             }
         }
     }
 
-    func stopTimer() {
-        timer?.invalidate()
-        timer = nil
-    }
-
-    private func getServersSummary() {
-        do {
-            serversSummary = try getAgentServersSummary()
-        } catch let error {
-            logger.error("getAgentServersSummary error: \(responseError(error))")
-        }
+    func stopTask() {
+        task?.cancel()
+        task = nil
     }
 }
 
@@ -365,7 +442,6 @@ struct ChatListSearchBar: View {
                     toggleFilterButton()
                 }
             }
-            Divider()
         }
         .onChange(of: searchFocussed) { sf in
             withAnimation { searchMode = sf }
@@ -442,21 +518,21 @@ func chatStoppedIcon() -> some View {
 struct ChatListView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
-        chatModel.chats = [
-            Chat(
+        chatModel.updateChats([
+            ChatData(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
             ),
-            Chat(
+            ChatData(
                 chatInfo: ChatInfo.sampleData.group,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")]
             ),
-            Chat(
+            ChatData(
                 chatInfo: ChatInfo.sampleData.contactRequest,
                 chatItems: []
             )
 
-        ]
+        ])
         return Group {
             ChatListView(showSettings: Binding.constant(false))
                 .environmentObject(chatModel)

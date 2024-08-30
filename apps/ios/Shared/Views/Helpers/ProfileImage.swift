@@ -9,8 +9,6 @@
 import SwiftUI
 import SimpleXChat
 
-let defaultProfileImageCorner = 22.5
-
 struct ProfileImage: View {
     @EnvironmentObject var theme: AppTheme
     var imageStr: String? = nil
@@ -18,11 +16,12 @@ struct ProfileImage: View {
     var size: CGFloat
     var color = Color(uiColor: .tertiarySystemGroupedBackground)
     var backgroundColor: Color? = nil
+    var blurred = false
     @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var radius = defaultProfileImageCorner
 
     var body: some View {
         if let uiImage = UIImage(base64Encoded: imageStr) {
-            clipProfileImage(Image(uiImage: uiImage), size: size, radius: radius)
+            clipProfileImage(Image(uiImage: uiImage), size: size, radius: radius, blurred: blurred)
         } else {
             let c = color.asAnotherColorFromSecondaryVariant(theme)
             Image(systemName: iconName)
@@ -33,26 +32,6 @@ struct ProfileImage: View {
         }
     }
 }
-
-private let squareToCircleRatio = 0.935
-
-private let radiusFactor = (1 - squareToCircleRatio) / 50
-
-@ViewBuilder func clipProfileImage(_ img: Image, size: CGFloat, radius: Double) -> some View {
-    let v = img.resizable()
-    if radius >= 50 {
-        v.frame(width: size, height: size).clipShape(Circle())
-    } else if radius <= 0 {
-        let sz = size * squareToCircleRatio
-        v.frame(width: sz, height: sz).padding((size - sz) / 2)
-    } else {
-        let sz = size * (squareToCircleRatio + radius * radiusFactor)
-        v.frame(width: sz, height: sz)
-        .clipShape(RoundedRectangle(cornerRadius: sz * radius / 100, style: .continuous))
-        .padding((size - sz) / 2)
-    }
-}
-
 
 extension Color {
     func asAnotherColorFromSecondary(_ theme: AppTheme) -> Color {

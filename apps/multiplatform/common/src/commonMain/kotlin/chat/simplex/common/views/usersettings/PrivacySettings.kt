@@ -1,12 +1,10 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
-import SectionCustomFooter
 import SectionDividerSpaced
 import SectionItemView
 import SectionTextFooter
 import SectionView
-import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -22,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.res.MR
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.ProfileNameField
 import chat.simplex.common.views.helpers.*
@@ -31,6 +30,7 @@ import chat.simplex.common.views.isValidDisplayName
 import chat.simplex.common.views.localauth.SetAppPasscodeView
 import chat.simplex.common.views.onboarding.ReadableText
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 
 enum class LAMode {
@@ -95,15 +95,18 @@ fun PrivacySettingsView(
         withBGApi { chatModel.controller.apiSetEncryptLocalFiles(enable) }
       })
       SettingsPreferenceItem(painterResource(MR.images.ic_image), stringResource(MR.strings.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
+      BlurRadiusOptions(remember { appPrefs.privacyMediaBlurRadius.state }) {
+        appPrefs.privacyMediaBlurRadius.set(it)
+      }
       SettingsPreferenceItem(painterResource(MR.images.ic_security), stringResource(MR.strings.protect_ip_address), chatModel.controller.appPrefs.privacyAskToApproveRelays)
     }
-    SectionCustomFooter {
+    SectionTextFooter(
       if (chatModel.controller.appPrefs.privacyAskToApproveRelays.state.value) {
-        Text(stringResource(MR.strings.app_will_ask_to_confirm_unknown_file_servers))
+        stringResource(MR.strings.app_will_ask_to_confirm_unknown_file_servers)
       } else {
-        Text(stringResource(MR.strings.without_tor_or_vpn_ip_address_will_be_visible_to_file_servers))
+        stringResource(MR.strings.without_tor_or_vpn_ip_address_will_be_visible_to_file_servers)
       }
-    }
+    )
 
     val currentUser = chatModel.currentUser.value
     if (currentUser != null) {
@@ -115,14 +118,16 @@ fun PrivacySettingsView(
           chatModel.currentUser.value = currentUser.copy(sendRcptsContacts = enable)
           if (clearOverrides) {
             // For loop here is to prevent ConcurrentModificationException that happens with forEach
-            for (i in 0 until chatModel.chats.size) {
-              val chat = chatModel.chats[i]
-              if (chat.chatInfo is ChatInfo.Direct) {
-                var contact = chat.chatInfo.contact
-                val sendRcpts = contact.chatSettings.sendRcpts
-                if (sendRcpts != null && sendRcpts != enable) {
-                  contact = contact.copy(chatSettings = contact.chatSettings.copy(sendRcpts = null))
-                  chatModel.updateContact(currentUser.remoteHostId, contact)
+            withChats {
+              for (i in 0 until chats.size) {
+                val chat = chats[i]
+                if (chat.chatInfo is ChatInfo.Direct) {
+                  var contact = chat.chatInfo.contact
+                  val sendRcpts = contact.chatSettings.sendRcpts
+                  if (sendRcpts != null && sendRcpts != enable) {
+                    contact = contact.copy(chatSettings = contact.chatSettings.copy(sendRcpts = null))
+                    updateContact(currentUser.remoteHostId, contact)
+                  }
                 }
               }
             }
@@ -137,15 +142,17 @@ fun PrivacySettingsView(
           chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
           chatModel.currentUser.value = currentUser.copy(sendRcptsSmallGroups = enable)
           if (clearOverrides) {
-            // For loop here is to prevent ConcurrentModificationException that happens with forEach
-            for (i in 0 until chatModel.chats.size) {
-              val chat = chatModel.chats[i]
-              if (chat.chatInfo is ChatInfo.Group) {
-                var groupInfo = chat.chatInfo.groupInfo
-                val sendRcpts = groupInfo.chatSettings.sendRcpts
-                if (sendRcpts != null && sendRcpts != enable) {
-                  groupInfo = groupInfo.copy(chatSettings = groupInfo.chatSettings.copy(sendRcpts = null))
-                  chatModel.updateGroup(currentUser.remoteHostId, groupInfo)
+            withChats {
+              // For loop here is to prevent ConcurrentModificationException that happens with forEach
+              for (i in 0 until chats.size) {
+                val chat = chats[i]
+                if (chat.chatInfo is ChatInfo.Group) {
+                  var groupInfo = chat.chatInfo.groupInfo
+                  val sendRcpts = groupInfo.chatSettings.sendRcpts
+                  if (sendRcpts != null && sendRcpts != enable) {
+                    groupInfo = groupInfo.copy(chatSettings = groupInfo.chatSettings.copy(sendRcpts = null))
+                    updateGroup(currentUser.remoteHostId, groupInfo)
+                  }
                 }
               }
             }
@@ -158,7 +165,7 @@ fun PrivacySettingsView(
         DeliveryReceiptsSection(
           currentUser = currentUser,
           setOrAskSendReceiptsContacts = { enable ->
-            val contactReceiptsOverrides = chatModel.chats.fold(0) { count, chat ->
+            val contactReceiptsOverrides = chatModel.chats.value.fold(0) { count, chat ->
               if (chat.chatInfo is ChatInfo.Direct) {
                 val sendRcpts = chat.chatInfo.contact.chatSettings.sendRcpts
                 count + (if (sendRcpts == null || sendRcpts == enable) 0 else 1)
@@ -173,7 +180,7 @@ fun PrivacySettingsView(
             }
           },
           setOrAskSendReceiptsGroups = { enable ->
-            val groupReceiptsOverrides = chatModel.chats.fold(0) { count, chat ->
+            val groupReceiptsOverrides = chatModel.chats.value.fold(0) { count, chat ->
               if (chat.chatInfo is ChatInfo.Group) {
                 val sendRcpts = chat.chatInfo.groupInfo.chatSettings.sendRcpts
                 count + (if (sendRcpts == null || sendRcpts == enable) 0 else 1)
@@ -213,6 +220,30 @@ private fun SimpleXLinkOptions(simplexLinkModeState: State<SimplexLinkMode>, onS
     simplexLinkModeState,
     icon = null,
     enabled = remember { mutableStateOf(true) },
+    onSelected = onSelected
+  )
+}
+
+@Composable
+private fun BlurRadiusOptions(state: State<Int>, onSelected: (Int) -> Unit) {
+  val choices = listOf(0, 12, 24, 48)
+  val pickerValues = choices + if (choices.contains(state.value)) emptyList() else listOf(state.value)
+  val values = remember {
+    pickerValues.map {
+      when (it) {
+        0 -> it to generalGetString(MR.strings.privacy_media_blur_radius_off)
+        12 -> it to generalGetString(MR.strings.privacy_media_blur_radius_soft)
+        24 -> it to generalGetString(MR.strings.privacy_media_blur_radius_medium)
+        48 -> it to generalGetString(MR.strings.privacy_media_blur_radius_strong)
+        else -> it to "$it"
+      }
+    }
+  }
+  ExposedDropDownSettingRow(
+    generalGetString(MR.strings.privacy_media_blur_radius),
+    values,
+    state,
+    icon = painterResource(MR.images.ic_blur_on),
     onSelected = onSelected
   )
 }
@@ -339,7 +370,8 @@ fun SimplexLockView(
   currentLAMode: SharedPreference<LAMode>,
   setPerformLA: (Boolean) -> Unit
 ) {
-  val performLA = remember { chatModel.performLA }
+  val showAuthScreen = remember { chatModel.showAuthScreen }
+  val performLA = remember { appPrefs.performLA.state }
   val laMode = remember { chatModel.controller.appPrefs.laMode.state }
   val laLockDelay = remember { chatModel.controller.appPrefs.laLockDelay }
   val showChangePasscode = remember { derivedStateOf { performLA.value && currentLAMode.state.value == LAMode.PASSCODE } }
@@ -347,13 +379,9 @@ fun SimplexLockView(
   val selfDestructDisplayName = remember { mutableStateOf(chatModel.controller.appPrefs.selfDestructDisplayName.get() ?: "") }
   val selfDestructDisplayNamePref = remember { chatModel.controller.appPrefs.selfDestructDisplayName }
 
-  fun resetLAEnabled(onOff: Boolean) {
-    chatModel.controller.appPrefs.performLA.set(onOff)
-    chatModel.performLA.value = onOff
-  }
-
   fun disableUnavailableLA() {
-    resetLAEnabled(false)
+    chatModel.controller.appPrefs.performLA.set(false)
+    chatModel.showAuthScreen.value = false
     currentLAMode.set(LAMode.default)
     laUnavailableInstructionAlert()
   }
@@ -370,7 +398,8 @@ fun SimplexLockView(
       } else {
         generalGetString(MR.strings.chat_lock)
       },
-      generalGetString(MR.strings.change_lock_mode)
+      generalGetString(MR.strings.change_lock_mode),
+      oneTime = true,
     ) { laResult ->
       when (laResult) {
         is LAResult.Error -> {
@@ -380,7 +409,7 @@ fun SimplexLockView(
         LAResult.Success -> {
           when (toLAMode) {
             LAMode.SYSTEM -> {
-              authenticate(generalGetString(MR.strings.auth_enable_simplex_lock), promptSubtitle = "", usingLAMode = toLAMode) { laResult ->
+              authenticate(generalGetString(MR.strings.auth_enable_simplex_lock), promptSubtitle = "", usingLAMode = toLAMode, oneTime = true) { laResult ->
                 when (laResult) {
                   LAResult.Success -> {
                     currentLAMode.set(toLAMode)
@@ -416,7 +445,7 @@ fun SimplexLockView(
   }
 
   fun toggleSelfDestruct(selfDestruct: SharedPreference<Boolean>) {
-    authenticate(generalGetString(MR.strings.la_current_app_passcode), generalGetString(MR.strings.change_self_destruct_mode)) { laResult ->
+    authenticate(generalGetString(MR.strings.la_current_app_passcode), generalGetString(MR.strings.change_self_destruct_mode), oneTime = true) { laResult ->
       when (laResult) {
         is LAResult.Error -> laFailedAlert()
         is LAResult.Failed -> { /* Can be called multiple times on every failure */ }
@@ -435,7 +464,7 @@ fun SimplexLockView(
   }
 
   fun changeLAPassword() {
-    authenticate(generalGetString(MR.strings.la_current_app_passcode), generalGetString(MR.strings.la_change_app_passcode)) { laResult ->
+    authenticate(generalGetString(MR.strings.la_current_app_passcode), generalGetString(MR.strings.la_change_app_passcode), oneTime = true) { laResult ->
       when (laResult) {
         LAResult.Success -> {
           ModalManager.fullscreen.showCustomModal { close ->
@@ -459,7 +488,7 @@ fun SimplexLockView(
   }
 
   fun changeSelfDestructPassword() {
-    authenticate(generalGetString(MR.strings.la_current_app_passcode), generalGetString(MR.strings.change_self_destruct_passcode)) { laResult ->
+    authenticate(generalGetString(MR.strings.la_current_app_passcode), generalGetString(MR.strings.change_self_destruct_passcode), oneTime = true) { laResult ->
       when (laResult) {
         LAResult.Success -> {
           ModalManager.fullscreen.showCustomModal { close ->
@@ -490,8 +519,8 @@ fun SimplexLockView(
   ) {
     AppBarTitle(stringResource(MR.strings.chat_lock))
     SectionView {
-      EnableLock(performLA) { performLAToggle ->
-        performLA.value = performLAToggle
+      EnableLock(remember { appPrefs.performLA.state }) { performLAToggle ->
+        showAuthScreen.value = performLAToggle
         chatModel.controller.appPrefs.laNoticeShown.set(true)
         if (performLAToggle) {
           when (currentLAMode.state.value) {
@@ -508,7 +537,9 @@ fun SimplexLockView(
                       passcodeAlert(generalGetString(MR.strings.passcode_set))
                     },
                     cancel = {
-                      resetLAEnabled(false)
+                      chatModel.showAuthScreen.value = false
+                      // Don't drop auth pref in case of state inconsistency (eg, you have set passcode but somehow bypassed toggle and turned it off and then on)
+                      // chatModel.controller.appPrefs.performLA.set(false)
                     },
                     close = close
                   )
@@ -625,7 +656,7 @@ private fun EnableSelfDestruct(
 }
 
 @Composable
-private fun EnableLock(performLA: MutableState<Boolean>, onCheckedChange: (Boolean) -> Unit) {
+private fun EnableLock(performLA: State<Boolean>, onCheckedChange: (Boolean) -> Unit) {
   SectionItemView {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Text(

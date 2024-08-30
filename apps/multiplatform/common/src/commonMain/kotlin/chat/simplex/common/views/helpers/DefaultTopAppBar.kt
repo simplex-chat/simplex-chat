@@ -16,7 +16,7 @@ import chat.simplex.res.MR
 
 @Composable
 fun DefaultTopAppBar(
-  navigationButton: @Composable RowScope.() -> Unit,
+  navigationButton: (@Composable RowScope.() -> Unit)? = null,
   title: (@Composable () -> Unit)?,
   onTitleClick: (() -> Unit)? = null,
   showSearch: Boolean,
@@ -49,6 +49,15 @@ fun NavigationButtonBack(onButtonClicked: (() -> Unit)?, tintColor: Color = if (
   IconButton(onButtonClicked ?: {}, enabled = onButtonClicked != null) {
     Icon(
       painterResource(MR.images.ic_arrow_back_ios_new), stringResource(MR.strings.back), Modifier.height(height), tint = tintColor
+    )
+  }
+}
+
+@Composable
+fun NavigationButtonClose(onButtonClicked: (() -> Unit)?, tintColor: Color = if (onButtonClicked != null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary, height: Dp = 24.dp) {
+  IconButton(onButtonClicked ?: {}, enabled = onButtonClicked != null) {
+    Icon(
+      painterResource(MR.images.ic_close), stringResource(MR.strings.back), Modifier.height(height), tint = tintColor
     )
   }
 }
@@ -126,5 +135,6 @@ private fun TopAppBar(
 
 val AppBarHeight = 56.dp
 val AppBarHorizontalPadding = 4.dp
+val BottomAppBarHeight = 60.dp
 private val TitleInsetWithoutIcon = DEFAULT_PADDING - AppBarHorizontalPadding
 val TitleInsetWithIcon = 72.dp

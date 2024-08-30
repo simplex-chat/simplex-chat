@@ -190,7 +190,7 @@ struct MigrateToAppGroupView: View {
             do {
                 try apiSaveAppSettings(settings: AppSettings.current.prepareForExport())
                 try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
-                try await apiExportArchive(config: config)
+                _ = try await apiExportArchive(config: config)
                 await MainActor.run { setV3DBMigration(.exported) }
             } catch let error {
                 await MainActor.run {
@@ -222,7 +222,7 @@ struct MigrateToAppGroupView: View {
     }
 }
 
-func exportChatArchive(_ storagePath: URL? = nil) async throws -> URL {
+func exportChatArchive(_ storagePath: URL? = nil) async throws -> (URL, [ArchiveError]) {
     let archiveTime = Date.now
     let ts = archiveTime.ISO8601Format(Date.ISO8601FormatStyle(timeSeparator: .omitted))
     let archiveName = "simplex-chat.\(ts).zip"
@@ -233,13 +233,13 @@ func exportChatArchive(_ storagePath: URL? = nil) async throws -> URL {
         try apiSaveAppSettings(settings: AppSettings.current.prepareForExport())
     }
     try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
-    try await apiExportArchive(config: config)
+    let errs = try await apiExportArchive(config: config)
     if storagePath == nil {
         deleteOldArchive()
         UserDefaults.standard.set(archiveName, forKey: DEFAULT_CHAT_ARCHIVE_NAME)
         chatArchiveTimeDefault.set(archiveTime)
     }
-    return archivePath
+    return (archivePath, errs)
 }
 
 func deleteOldArchive() {

@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        6.0.0.1
+version:        6.1.0.0
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -146,6 +146,7 @@ library
       Simplex.Chat.Migrations.M20240510_chat_items_via_proxy
       Simplex.Chat.Migrations.M20240515_rcv_files_user_approved_relays
       Simplex.Chat.Migrations.M20240528_quota_err_counter
+      Simplex.Chat.Migrations.M20240827_calls_uuid
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared
@@ -226,9 +227,10 @@ library
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
-    , tls >=1.7.0 && <1.8
+    , tls >=1.9.0 && <1.10
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
+    , uuid ==1.3.*
     , zip ==2.0.*
   default-language: Haskell2010
   if flag(swift)
@@ -289,9 +291,10 @@ executable simplex-bot
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
-    , tls >=1.7.0 && <1.8
+    , tls >=1.9.0 && <1.10
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
+    , uuid ==1.3.*
     , zip ==2.0.*
   default-language: Haskell2010
   if flag(swift)
@@ -352,9 +355,10 @@ executable simplex-bot-advanced
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
-    , tls >=1.7.0 && <1.8
+    , tls >=1.9.0 && <1.10
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
+    , uuid ==1.3.*
     , zip ==2.0.*
   default-language: Haskell2010
   if flag(swift)
@@ -418,9 +422,10 @@ executable simplex-broadcast-bot
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
-    , tls >=1.7.0 && <1.8
+    , tls >=1.9.0 && <1.10
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
+    , uuid ==1.3.*
     , zip ==2.0.*
   default-language: Haskell2010
   if flag(swift)
@@ -482,9 +487,10 @@ executable simplex-chat
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
-    , tls >=1.7.0 && <1.8
+    , tls >=1.9.0 && <1.10
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
+    , uuid ==1.3.*
     , websockets ==0.12.*
     , zip ==2.0.*
   default-language: Haskell2010
@@ -552,9 +558,10 @@ executable simplex-directory-service
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
-    , tls >=1.7.0 && <1.8
+    , tls >=1.9.0 && <1.10
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
+    , uuid ==1.3.*
     , zip ==2.0.*
   default-language: Haskell2010
   if flag(swift)
@@ -593,6 +600,7 @@ test-suite simplex-chat-test
       MessageBatching
       MobileTests
       ProtocolTests
+      RandomServers
       RemoteTests
       SchemaDump
       ValidNames
@@ -651,9 +659,10 @@ test-suite simplex-chat-test
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
-    , tls >=1.7.0 && <1.8
+    , tls >=1.9.0 && <1.10
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
+    , uuid ==1.3.*
     , zip ==2.0.*
   default-language: Haskell2010
   if flag(swift)

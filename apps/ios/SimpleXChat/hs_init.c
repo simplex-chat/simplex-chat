@@ -39,3 +39,19 @@ void haskell_init_nse(void) {
     char **pargv = argv;
     hs_init_with_rtsopts(&argc, &pargv);
 }
+
+void haskell_init_se(void) {
+    int argc = 7;
+    char *argv[] = {
+        "simplex",
+        "+RTS", // requires `hs_init_with_rtsopts`
+        "-A1m", // chunk size for new allocations
+        "-H1m", // initial heap size
+        "-F0.5", // heap growth triggering GC
+        "-Fd1", // memory return
+        "-c", // compacting garbage collector
+        0
+    };
+    char **pargv = argv;
+    hs_init_with_rtsopts(&argc, &pargv);
+}

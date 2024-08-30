@@ -1,0 +1,111 @@
+/* No comment provided by engineer. */
+"%@" = "%@";
+
+/* No comment provided by engineer. */
+"App is locked!" = "¡Aplicación bloqueada!";
+
+/* No comment provided by engineer. */
+"Cancel" = "Cancelar";
+
+/* No comment provided by engineer. */
+"Cannot access keychain to save database password" = "Keychain inaccesible para guardar la contraseña de la base de datos";
+
+/* No comment provided by engineer. */
+"Cannot forward message" = "No se puede reenviar el mensaje";
+
+/* No comment provided by engineer. */
+"Comment" = "Comentario";
+
+/* No comment provided by engineer. */
+"Currently maximum supported file size is %@." = "El tamaño máximo de archivo admitido es %@.";
+
+/* No comment provided by engineer. */
+"Database downgrade required" = "Se requiere volver a versión anterior de la base de datos";
+
+/* No comment provided by engineer. */
+"Database encrypted!" = "¡Base de datos cifrada!";
+
+/* No comment provided by engineer. */
+"Database error" = "Error en base de datos";
+
+/* No comment provided by engineer. */
+"Database passphrase is different from saved in the keychain." = "La contraseña de la base de datos es distinta a la almacenada en keychain.";
+
+/* No comment provided by engineer. */
+"Database passphrase is required to open chat." = "Se requiere la contraseña de la base de datos para abrir la aplicación.";
+
+/* No comment provided by engineer. */
+"Database upgrade required" = "Se requiere actualizar la base de datos";
+
+/* No comment provided by engineer. */
+"Error preparing file" = "Error al preparar el archivo";
+
+/* No comment provided by engineer. */
+"Error preparing message" = "Error al preparar el mensaje";
+
+/* No comment provided by engineer. */
+"Error: %@" = "Error: %@";
+
+/* No comment provided by engineer. */
+"File error" = "Error de archivo";
+
+/* No comment provided by engineer. */
+"Incompatible database version" = "Versión de base de datos incompatible";
+
+/* No comment provided by engineer. */
+"Invalid migration confirmation" = "Confirmación de migración no válida";
+
+/* No comment provided by engineer. */
+"Keychain error" = "Error en keychain";
+
+/* No comment provided by engineer. */
+"Large file!" = "¡Archivo grande!";
+
+/* No comment provided by engineer. */
+"No active profile" = "Ningún perfil activo";
+
+/* No comment provided by engineer. */
+"Ok" = "Ok";
+
+/* No comment provided by engineer. */
+"Open the app to downgrade the database." = "Abre la aplicación para volver a versión anterior de la base de datos.";
+
+/* No comment provided by engineer. */
+"Open the app to upgrade the database." = "Abre la aplicación para actualizar la base de datos.";
+
+/* No comment provided by engineer. */
+"Passphrase" = "Frase de contraseña";
+
+/* No comment provided by engineer. */
+"Please create a profile in the SimpleX app" = "Por favor, crea un perfil en SimpleX";
+
+/* No comment provided by engineer. */
+"Selected chat preferences prohibit this message." = "Las preferencias seleccionadas no permiten este mensaje.";
+
+/* No comment provided by engineer. */
+"Sending a message takes longer than expected." = "Enviar el mensaje lleva más tiempo del esperado.";
+
+/* No comment provided by engineer. */
+"Sending message…" = "Enviando mensaje…";
+
+/* No comment provided by engineer. */
+"Share" = "Compartir";
+
+/* No comment provided by engineer. */
+"Slow network?" = "¿Red lenta?";
+
+/* No comment provided by engineer. */
+"Unknown database error: %@" = "Error desconocido en la base de datos: %@";
+
+/* No comment provided by engineer. */
+"Unsupported format" = "Formato sin soporte";
+
+/* No comment provided by engineer. */
+"Wait" = "Espera";
+
+/* No comment provided by engineer. */
+"Wrong database passphrase" = "Contraseña incorrecta de la base de datos";
+
+/* No comment provided by engineer. */
+"You can allow sharing in Privacy & Security / SimpleX Lock settings." = "Puedes dar permiso para compartir en Privacidad y Seguridad / Bloque SimpleX.";
+

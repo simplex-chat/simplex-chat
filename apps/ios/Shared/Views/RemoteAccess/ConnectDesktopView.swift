@@ -37,7 +37,7 @@ struct ConnectDesktopView: View {
         case badInvitationError
         case badVersionError(version: String?)
         case desktopDisconnectedError
-        case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
+        case error(title: LocalizedStringKey, error: LocalizedStringKey?)
 
         var id: String {
             switch self {
@@ -160,7 +160,7 @@ struct ConnectDesktopView: View {
             case .desktopDisconnectedError:
                 Alert(title: Text("Connection terminated"))
             case let .error(title, error):
-                Alert(title: Text(title), message: Text(error))
+                mkAlert(title: title, message: error)
             }
         }
         .interactiveDismissDisabled(m.activeRemoteCtrl)

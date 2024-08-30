@@ -2,8 +2,10 @@ package chat.simplex.common.views.helpers
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -24,6 +26,7 @@ fun ModalView(
   enableClose: Boolean = true,
   background: Color = MaterialTheme.colors.background,
   modifier: Modifier = Modifier,
+  closeOnTop: Boolean = true,
   endButtons: @Composable RowScope.() -> Unit = {},
   content: @Composable () -> Unit,
 ) {
@@ -32,8 +35,12 @@ fun ModalView(
   }
   Surface(Modifier.fillMaxSize(), contentColor = LocalContentColor.current) {
     Column(if (background != MaterialTheme.colors.background) Modifier.background(background) else Modifier.themedBackground()) {
-      CloseSheetBar(if (enableClose) close else null, showClose, endButtons = endButtons)
-      Box(modifier) { content() }
+      if (closeOnTop) {
+        CloseSheetBar(if (enableClose) close else null, showClose, endButtons = endButtons)
+      }
+      Box(modifier = modifier) {
+        content()
+      }
     }
   }
 }
@@ -42,35 +49,39 @@ enum class ModalPlacement {
   START, CENTER, END, FULLSCREEN
 }
 
-class ModalData {
+class ModalData() {
   private val state = mutableMapOf<String, MutableState<Any?>>()
   fun <T> stateGetOrPut (key: String, default: () -> T): MutableState<T> =
     state.getOrPut(key) { mutableStateOf(default() as Any) } as MutableState<T>
 
   fun <T> stateGetOrPutNullable (key: String, default: () -> T?): MutableState<T?> =
     state.getOrPut(key) { mutableStateOf(default() as Any?) } as MutableState<T?>
+
+  val appBarHandler = AppBarHandler()
 }
 
 class ModalManager(private val placement: ModalPlacement? = null) {
   private val modalViews = arrayListOf<Triple<Boolean, ModalData, (@Composable ModalData.(close: () -> Unit) -> Unit)>>()
-  private val modalCount = mutableStateOf(0)
+  private val _modalCount = mutableStateOf(0)
+  val modalCount: State<Int> = _modalCount
   private val toRemove = mutableSetOf<Int>()
   private var oldViewChanging = AtomicBoolean(false)
   // Don't use mutableStateOf() here, because it produces this if showing from SimpleXAPI.startChat():
   // java.lang.IllegalStateException: Reading a state that was created after the snapshot was taken or in a snapshot that has not yet been applied
   private var passcodeView: MutableStateFlow<(@Composable (close: () -> Unit) -> Unit)?> = MutableStateFlow(null)
+  private var onTimePasscodeView: MutableStateFlow<(@Composable (close: () -> Unit) -> Unit)?> = MutableStateFlow(null)
 
-  fun showModal(settings: Boolean = false, showClose: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
+  fun showModal(settings: Boolean = false, showClose: Boolean = true, closeOnTop: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
     val data = ModalData()
     showCustomModal { close ->
-      ModalView(close, showClose = showClose, endButtons = endButtons, content = { data.content() })
+      ModalView(close, showClose = showClose, closeOnTop = closeOnTop, endButtons = endButtons, content = { data.content() })
     }
   }
 
-  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.(close: () -> Unit) -> Unit) {
+  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, closeOnTop: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.(close: () -> Unit) -> Unit) {
     val data = ModalData()
     showCustomModal { close ->
-      ModalView(close, showClose = showClose, endButtons = endButtons, content = { data.content(close) })
+      ModalView(close, showClose = showClose, endButtons = endButtons, closeOnTop = closeOnTop, content = { data.content(close) })
     }
   }
 
@@ -86,7 +97,7 @@ class ModalManager(private val placement: ModalPlacement? = null) {
     // to prevent unneeded animation on different situations
     val anim = if (appPlatform.isAndroid) animated else animated && (modalCount.value > 0 || placement == ModalPlacement.START)
     modalViews.add(Triple(anim, data, modal))
-    modalCount.value = modalViews.size - toRemove.size
+    _modalCount.value = modalViews.size - toRemove.size
 
     if (placement == ModalPlacement.CENTER) {
       ChatModel.chatId.value = null
@@ -95,9 +106,13 @@ class ModalManager(private val placement: ModalPlacement? = null) {
     }
   }
 
-  fun showPasscodeCustomModal(modal: @Composable (close: () -> Unit) -> Unit) {
-    Log.d(TAG, "ModalManager.showPasscodeCustomModal")
-    passcodeView.value = modal
+  fun showPasscodeCustomModal(oneTime: Boolean, modal: @Composable (close: () -> Unit) -> Unit) {
+    Log.d(TAG, "ModalManager.showPasscodeCustomModal, oneTime: $oneTime")
+    if (oneTime) {
+      onTimePasscodeView.value = modal
+    } else {
+      passcodeView.value = modal
+    }
   }
 
   fun hasModalsOpen() = modalCount.value > 0
@@ -105,18 +120,20 @@ class ModalManager(private val placement: ModalPlacement? = null) {
   val hasModalsOpen: Boolean
   @Composable get () = remember { modalCount }.value > 0
 
+  fun openModalCount() = modalCount.value
+
   fun closeModal() {
     if (modalViews.isNotEmpty()) {
       if (modalViews.lastOrNull()?.first == false) modalViews.removeAt(modalViews.lastIndex)
       else runAtomically { toRemove.add(modalViews.lastIndex - min(toRemove.size, modalViews.lastIndex)) }
     }
-    modalCount.value = modalViews.size - toRemove.size
+    _modalCount.value = modalViews.size - toRemove.size
   }
 
   fun closeModals() {
     modalViews.clear()
     toRemove.clear()
-    modalCount.value = 0
+    _modalCount.value = 0
   }
 
   fun closeModalsExceptFirst() {
@@ -130,7 +147,13 @@ class ModalManager(private val placement: ModalPlacement? = null) {
   fun showInView() {
     // Without animation
     if (modalCount.value > 0 && modalViews.lastOrNull()?.first == false) {
-      modalViews.lastOrNull()?.let { it.third(it.second, ::closeModal) }
+      modalViews.lastOrNull()?.let {
+        CompositionLocalProvider(
+          LocalAppBarHandler provides it.second.appBarHandler
+        ) {
+          it.third(it.second, ::closeModal)
+        }
+      }
       return
     }
     AnimatedContent(targetState = modalCount.value,
@@ -142,7 +165,13 @@ class ModalManager(private val placement: ModalPlacement? = null) {
         }.using(SizeTransform(clip = false))
       }
     ) {
-      modalViews.getOrNull(it - 1)?.let { it.third(it.second, ::closeModal) }
+      modalViews.getOrNull(it - 1)?.let {
+        CompositionLocalProvider(
+          LocalAppBarHandler provides it.second.appBarHandler
+        ) {
+          it.third(it.second, ::closeModal)
+        }
+      }
       // This is needed because if we delete from modalViews immediately on request, animation will be bad
       if (toRemove.isNotEmpty() && it == modalCount.value && transition.currentState == EnterExitState.Visible && !transition.isRunning) {
         runAtomically { toRemove.removeIf { elem -> modalViews.removeAt(elem); true } }
@@ -155,6 +184,11 @@ class ModalManager(private val placement: ModalPlacement? = null) {
     passcodeView.collectAsState().value?.invoke { passcodeView.value = null }
   }
 
+  @Composable
+  fun showOneTimePasscodeInView() {
+    onTimePasscodeView.collectAsState().value?.invoke { onTimePasscodeView.value = null }
+  }
+
   /**
   * Allows to modify a list without getting [ConcurrentModificationException]
   * */
@@ -165,28 +199,6 @@ class ModalManager(private val placement: ModalPlacement? = null) {
     block()
     atomicBoolean.set(false)
   }
-
-  @OptIn(ExperimentalAnimationApi::class)
-  private fun fromStartToEndTransition() =
-    slideInHorizontally(
-      initialOffsetX = { fullWidth -> -fullWidth },
-      animationSpec = animationSpec()
-    ) with slideOutHorizontally(
-      targetOffsetX = { fullWidth -> fullWidth },
-      animationSpec = animationSpec()
-    )
-
-  @OptIn(ExperimentalAnimationApi::class)
-  private fun fromEndToStartTransition() =
-    slideInHorizontally(
-      initialOffsetX = { fullWidth -> fullWidth },
-      animationSpec = animationSpec()
-    ) with slideOutHorizontally(
-      targetOffsetX = { fullWidth -> -fullWidth },
-      animationSpec = animationSpec()
-    )
-
-private fun <T> animationSpec() = tween<T>(durationMillis = 250, easing = FastOutSlowInEasing)
 //  private fun <T> animationSpecFromStart() = tween<T>(durationMillis = 150, easing = FastOutLinearInEasing)
 //  private fun <T> animationSpecFromEnd() = tween<T>(durationMillis = 100, easing = FastOutSlowInEasing)
 
@@ -203,5 +215,27 @@ private fun <T> animationSpec() = tween<T>(durationMillis = 250, easing = FastOu
       end.closeModals()
       fullscreen.closeModals()
     }
+
+    @OptIn(ExperimentalAnimationApi::class)
+    fun fromStartToEndTransition() =
+      slideInHorizontally(
+        initialOffsetX = { fullWidth -> -fullWidth },
+        animationSpec = animationSpec()
+      ) with slideOutHorizontally(
+        targetOffsetX = { fullWidth -> fullWidth },
+        animationSpec = animationSpec()
+      )
+
+    @OptIn(ExperimentalAnimationApi::class)
+    fun fromEndToStartTransition() =
+      slideInHorizontally(
+        initialOffsetX = { fullWidth -> fullWidth },
+        animationSpec = animationSpec()
+      ) with slideOutHorizontally(
+        targetOffsetX = { fullWidth -> -fullWidth },
+        animationSpec = animationSpec()
+      )
+
+    private fun <T> animationSpec() = tween<T>(durationMillis = 250, easing = FastOutSlowInEasing)
   }
 }

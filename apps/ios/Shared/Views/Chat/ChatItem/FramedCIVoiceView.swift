@@ -13,21 +13,23 @@ import SimpleXChat
 
 struct FramedCIVoiceView: View {
     @EnvironmentObject var theme: AppTheme
+    @ObservedObject var chat: Chat
     var chatItem: ChatItem
     let recordingFile: CIFile?
     let duration: Int
-    
+
+    @State var audioPlayer: AudioPlayer? = nil
+    @State var playbackState: VoiceMessagePlaybackState = .noPlayback
+    @State var playbackTime: TimeInterval? = nil
+
     @Binding var allowMenu: Bool
-    
-    @Binding var audioPlayer: AudioPlayer?
-    @Binding var playbackState: VoiceMessagePlaybackState
-    @Binding var playbackTime: TimeInterval?
-    
+
     @State private var seek: (TimeInterval) -> Void = { _ in }
     
     var body: some View {
         HStack {
             VoiceMessagePlayer(
+                chat: chat,
                 chatItem: chatItem,
                 recordingFile: recordingFile,
                 recordingTime: TimeInterval(duration),
@@ -36,7 +38,8 @@ struct FramedCIVoiceView: View {
                 audioPlayer: $audioPlayer,
                 playbackState: $playbackState,
                 playbackTime: $playbackTime,
-                allowMenu: $allowMenu
+                allowMenu: $allowMenu,
+                sizeMultiplier: 1
             )
             VoiceMessagePlayerTime(
                 recordingTime: TimeInterval(duration),

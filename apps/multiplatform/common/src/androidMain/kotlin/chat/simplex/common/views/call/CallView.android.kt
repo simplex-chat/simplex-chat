@@ -457,7 +457,7 @@ private fun DisabledBackgroundCallsButton() {
     ) {
       Text(stringResource(MR.strings.system_restricted_background_in_call_title), color = WarningOrange)
       Spacer(Modifier.width(8.dp))
-      IconButton(onClick = { show = false }, Modifier.size(24.dp)) {
+      IconButton(onClick = { show = false }, Modifier.size(22.dp)) {
         Icon(painterResource(MR.images.ic_close), null, tint = WarningOrange)
       }
     }
@@ -539,7 +539,7 @@ fun CallPermissionsView(pipActive: Boolean, hasVideo: Boolean, cancel: () -> Uni
         Icon(
           painterResource(MR.images.ic_call_500),
           stringResource(MR.strings.permissions_record_audio),
-          Modifier.size(24.dp),
+          Modifier.size(22.dp),
           tint = Color(0xFFFFFFD8)
         )
       }
@@ -547,7 +547,7 @@ fun CallPermissionsView(pipActive: Boolean, hasVideo: Boolean, cancel: () -> Uni
         Icon(
           painterResource(MR.images.ic_videocam),
           stringResource(MR.strings.permissions_camera),
-          Modifier.size(24.dp),
+          Modifier.size(22.dp),
           tint = Color(0xFFFFFFD8)
         )
       }
@@ -770,6 +770,7 @@ fun PreviewActiveCallOverlayVideo() {
         callState = CallState.Negotiated,
         localMedia = CallMediaType.Video,
         peerMedia = CallMediaType.Video,
+        callUUID = "",
         connectionInfo = ConnectionInfo(
           RTCIceCandidate(RTCIceCandidateType.Host, "tcp"),
           RTCIceCandidate(RTCIceCandidateType.Host, "tcp")
@@ -799,6 +800,7 @@ fun PreviewActiveCallOverlayAudio() {
         callState = CallState.Negotiated,
         localMedia = CallMediaType.Audio,
         peerMedia = CallMediaType.Audio,
+        callUUID = "",
         connectionInfo = ConnectionInfo(
           RTCIceCandidate(RTCIceCandidateType.Host, "udp"),
           RTCIceCandidate(RTCIceCandidateType.Host, "udp")

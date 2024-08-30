@@ -1,5 +1,7 @@
 package chat.simplex.common
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -15,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.usersettings.SetDeliveryReceiptsView
 import chat.simplex.common.model.*
@@ -29,6 +32,8 @@ import chat.simplex.common.views.chat.ChatView
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.database.DatabaseErrorView
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.helpers.ModalManager.Companion.fromEndToStartTransition
+import chat.simplex.common.views.helpers.ModalManager.Companion.fromStartToEndTransition
 import chat.simplex.common.views.localauth.VerticalDivider
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.views.usersettings.*
@@ -46,6 +51,7 @@ data class SettingsViewState(
 
 @Composable
 fun AppScreen() {
+  AppBarHandler.appBarMaxHeightPx = with(LocalDensity.current) { AppBarHeight.roundToPx() }
   SimpleXTheme {
     ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
       Surface(color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
@@ -68,9 +74,10 @@ fun MainScreen() {
   LaunchedEffect(showAdvertiseLAAlert) {
     if (
       !chatModel.controller.appPrefs.laNoticeShown.get()
+      && !appPrefs.performLA.get()
       && showAdvertiseLAAlert
       && chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete
-      && chatModel.chats.size > 2
+      && chatModel.chats.size > 3
       && chatModel.activeCallInvitation.value == null
     ) {
       AppLock.showLANotice(ChatModel.controller.appPrefs.laNoticeShown) }
@@ -148,17 +155,30 @@ fun MainScreen() {
           }
         }
       }
-      onboarding == OnboardingStage.Step1_SimpleXInfo -> {
-        SimpleXInfo(chatModel, onboarding = true)
-        if (appPlatform.isDesktop) {
-          ModalManager.fullscreen.showInView()
+      else -> AnimatedContent(targetState = onboarding,
+        transitionSpec = {
+          if (targetState > initialState) {
+            fromEndToStartTransition()
+          } else {
+            fromStartToEndTransition()
+          }.using(SizeTransform(clip = false))
+        }
+      ) { state ->
+        when (state) {
+          OnboardingStage.OnboardingComplete -> { /* handled out of AnimatedContent block */}
+          OnboardingStage.Step1_SimpleXInfo -> {
+            SimpleXInfo(chatModel, onboarding = true)
+            if (appPlatform.isDesktop) {
+              ModalManager.fullscreen.showInView()
+            }
+          }
+          OnboardingStage.Step2_CreateProfile -> CreateFirstProfile(chatModel) {}
+          OnboardingStage.LinkAMobile -> LinkAMobile()
+          OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
+          OnboardingStage.Step3_CreateSimpleXAddress -> CreateSimpleXAddress(chatModel, null)
+          OnboardingStage.Step4_SetNotificationsMode -> SetNotificationsMode(chatModel)
         }
       }
-      onboarding == OnboardingStage.Step2_CreateProfile -> CreateFirstProfile(chatModel) {}
-      onboarding == OnboardingStage.LinkAMobile -> LinkAMobile()
-      onboarding == OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
-      onboarding == OnboardingStage.Step3_CreateSimpleXAddress -> CreateSimpleXAddress(chatModel, null)
-      onboarding == OnboardingStage.Step4_SetNotificationsMode -> SetNotificationsMode(chatModel)
     }
     if (appPlatform.isAndroid) {
       ModalManager.fullscreen.showInView()
@@ -192,10 +212,8 @@ fun MainScreen() {
         } else {
           ActiveCallView()
         }
-      } else {
-        // It's needed for privacy settings toggle, so it can be shown even if the app is passcode unlocked
-        ModalManager.fullscreen.showPasscodeInView()
       }
+      ModalManager.fullscreen.showOneTimePasscodeInView()
       AlertManager.privacySensitive.showInView()
       if (onboarding == OnboardingStage.OnboardingComplete) {
         LaunchedEffect(chatModel.currentUser.value, chatModel.appOpenUrl.value) {
@@ -235,7 +253,7 @@ fun AndroidScreen(settingsState: SettingsViewState) {
   BoxWithConstraints {
     val call = remember { chatModel.activeCall} .value
     val showCallArea = call != null && call.callState != CallState.WaitCapabilities && call.callState != CallState.InvitationAccepted
-    var currentChatId by rememberSaveable { mutableStateOf(chatModel.chatId.value) }
+    val currentChatId = remember { mutableStateOf(chatModel.chatId.value) }
     val offset = remember { Animatable(if (chatModel.chatId.value == null) 0f else maxWidth.value) }
     Box(
       Modifier
@@ -264,21 +282,37 @@ fun AndroidScreen(settingsState: SettingsViewState) {
         snapshotFlow { chatModel.chatId.value }
           .distinctUntilChanged()
           .collect {
-            if (it == null) onComposed(null)
-            currentChatId = it
+            if (it == null) {
+              platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
+              onComposed(null)
+            }
+            currentChatId.value = it
           }
       }
+    }
+    LaunchedEffect(Unit) {
+      snapshotFlow { ModalManager.center.modalCount.value > 0 }
+        .filter { chatModel.chatId.value == null }
+        .collect { modalBackground ->
+          if (chatModel.newChatSheetVisible.value) {
+            platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, false, appPrefs.oneHandUI.get())
+          } else if (modalBackground) {
+            platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, false, false)
+          } else {
+            platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
+          }
+        }
     }
     Box(Modifier
       .graphicsLayer { translationX = maxWidth.toPx() - offset.value.dp.toPx() }
       .padding(top = if (showCallArea) ANDROID_CALL_TOP_PADDING else 0.dp)
     ) Box2@{
-      currentChatId?.let {
-        ChatView(it, chatModel, onComposed)
+      currentChatId.value?.let {
+        ChatView(currentChatId, onComposed)
       }
     }
     if (call != null && showCallArea) {
-      ActiveCallInteractiveArea(call, remember { MutableStateFlow(AnimatedViewState.GONE) })
+      ActiveCallInteractiveArea(call)
     }
   }
 }
@@ -298,9 +332,9 @@ fun StartPartOfScreen(settingsState: SettingsViewState) {
 
 @Composable
 fun CenterPartOfScreen() {
-  val currentChatId by remember { ChatModel.chatId }
+  val currentChatId = remember { ChatModel.chatId }
   LaunchedEffect(Unit) {
-    snapshotFlow { currentChatId }
+    snapshotFlow { currentChatId.value }
       .distinctUntilChanged()
       .collect {
         if (it != null) {
@@ -308,7 +342,7 @@ fun CenterPartOfScreen() {
         }
       }
   }
-  when (val id = currentChatId) {
+  when (currentChatId.value) {
     null -> {
       if (!rememberUpdatedState(ModalManager.center.hasModalsOpen()).value) {
         Box(
@@ -323,7 +357,7 @@ fun CenterPartOfScreen() {
         ModalManager.center.showInView()
       }
     }
-    else -> ChatView(id, chatModel) {}
+    else -> ChatView(currentChatId) {}
   }
 }
 

@@ -24,6 +24,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import kotlinx.coroutines.flow.*
+import kotlin.math.*
 
 // TODO refactor https://github.com/simplex-chat/simplex-chat/pull/1451#discussion_r1033429901
 
@@ -37,11 +38,18 @@ fun CIVoiceView(
   ci: ChatItem,
   timedMessagesTTL: Int?,
   showViaProxy: Boolean,
+  smallView: Boolean = false,
   longClick: () -> Unit,
   receiveFile: (Long) -> Unit,
 ) {
+  val sizeMultiplier = if (smallView) voiceMessageSizeBasedOnSquareSize(36f) / 56f else 1f
+  val padding = when {
+    smallView -> PaddingValues()
+    hasText -> PaddingValues(top = 14.sp.toDp() * sizeMultiplier, bottom = 14.sp.toDp() * sizeMultiplier, start = 6.sp.toDp() * sizeMultiplier, end = 6.sp.toDp() * sizeMultiplier)
+    else -> PaddingValues(top = 4.sp.toDp() * sizeMultiplier, bottom = 6.sp.toDp() * sizeMultiplier, start = 0.dp, end = 0.dp)
+  }
   Row(
-    Modifier.padding(top = if (hasText) 14.dp else 4.dp, bottom = if (hasText) 14.dp else 6.dp, start = if (hasText) 6.dp else 0.dp, end = if (hasText) 6.dp else 0.dp),
+    Modifier.padding(padding),
     verticalAlignment = Alignment.CenterVertically
   ) {
     if (file != null) {
@@ -54,7 +62,7 @@ fun CIVoiceView(
       val play: () -> Unit = {
         val playIfExists = {
           if (fileSource.value != null) {
-            AudioPlayer.play(fileSource.value!!, audioPlaying, progress, duration, true)
+            AudioPlayer.play(fileSource.value!!, audioPlaying, progress, duration, resetOnEnd = true, smallView = smallView)
             brokenAudio = !audioPlaying.value
           }
         }
@@ -69,7 +77,7 @@ fun CIVoiceView(
       val pause = {
         AudioPlayer.pause(audioPlaying, progress)
       }
-      val text = remember {
+      val text = remember(ci.file?.fileId, ci.file?.fileStatus) {
         derivedStateOf {
           val time = when {
             audioPlaying.value || progress.value != 0 -> progress.value
@@ -78,11 +86,18 @@ fun CIVoiceView(
           durationText(time / 1000)
         }
       }
-      VoiceLayout(file, ci, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, timedMessagesTTL, showViaProxy, play, pause, longClick, receiveFile) {
+      VoiceLayout(file, ci, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, timedMessagesTTL, showViaProxy, sizeMultiplier, play, pause, longClick, receiveFile) {
         AudioPlayer.seekTo(it, progress, fileSource.value?.filePath)
       }
+      if (smallView) {
+        KeyChangeEffect(chatModel.chatId.value, chatModel.currentUser.value?.userId, chatModel.currentRemoteHost.value) {
+          AudioPlayer.stop()
+        }
+      }
+    } else if (smallView) {
+      VoiceMsgIndicator(null, false, sent, hasText, null, null, false, sizeMultiplier, {}, {}, longClick, receiveFile)
     } else {
-      VoiceMsgIndicator(null, false, sent, hasText, null, null, false, {}, {}, longClick, receiveFile)
+      VoiceMsgIndicator(null, false, sent, hasText, null, null, false, 1f, {}, {}, longClick, receiveFile)
       val metaReserve = if (edited)
         "                     "
       else
@@ -105,6 +120,7 @@ private fun VoiceLayout(
   hasText: Boolean,
   timedMessagesTTL: Int?,
   showViaProxy: Boolean,
+  sizeMultiplier: Float,
   play: () -> Unit,
   pause: () -> Unit,
   longClick: () -> Unit,
@@ -116,15 +132,16 @@ private fun VoiceLayout(
     var movedManuallyTo by rememberSaveable(file.fileId) { mutableStateOf(-1) }
     if (audioPlaying.value || progress.value > 0 || movedManuallyTo == progress.value) {
       val dp4 = with(LocalDensity.current) { 4.dp.toPx() }
-      val dp10 = with(LocalDensity.current) { 10.dp.toPx() }
       val primary = MaterialTheme.colors.primary
       val inactiveTrackColor =
         MaterialTheme.colors.primary.mixWith(
           backgroundColor.copy(1f).mixWith(MaterialTheme.colors.background, backgroundColor.alpha),
           0.24f)
       val width = LocalWindowWidth()
+      // Built-in slider has rounded corners but we need square corners, so drawing a track manually
       val colors = SliderDefaults.colors(
-        inactiveTrackColor = inactiveTrackColor
+        inactiveTrackColor = Color.Transparent,
+        activeTrackColor = Color.Transparent
       )
       Slider(
         progress.value.toFloat(),
@@ -133,12 +150,12 @@ private fun VoiceLayout(
           movedManuallyTo = it.toInt()
         },
         Modifier
-          .size(width, 48.dp)
+          .size(width, 48.sp.toDp())
           .weight(1f)
           .padding(padding)
           .drawBehind {
-            drawRect(primary, Offset(0f, (size.height - dp4) / 2), size = androidx.compose.ui.geometry.Size(dp10, dp4))
-            drawRect(inactiveTrackColor, Offset(size.width - dp10, (size.height - dp4) / 2), size = androidx.compose.ui.geometry.Size(dp10, dp4))
+            drawRect(inactiveTrackColor, Offset(0f, (size.height - dp4) / 2), size = Size(size.width, dp4))
+            drawRect(primary, Offset(0f, (size.height - dp4) / 2), size = Size(progress.value.toFloat() / max(0.00001f, duration.value.toFloat()) * size.width, dp4))
           },
         valueRange = 0f..duration.value.toFloat(),
         colors = colors
@@ -153,13 +170,22 @@ private fun VoiceLayout(
     }
   }
   when {
+    sizeMultiplier != 1f -> {
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, sizeMultiplier, play, pause, longClick, receiveFile)
+        Row(Modifier.weight(1f, false), verticalAlignment = Alignment.CenterVertically) {
+          DurationText(text, PaddingValues(start = 8.sp.toDp()), true)
+          Slider(MaterialTheme.colors.background, PaddingValues(start = 7.sp.toDp()))
+        }
+      }
+    }
     hasText -> {
       val sentColor = MaterialTheme.appColors.sentMessage
       val receivedColor = MaterialTheme.appColors.receivedMessage
-      Spacer(Modifier.width(6.dp))
-      VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick, receiveFile)
+      Spacer(Modifier.width(6.sp.toDp() * sizeMultiplier))
+      VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, 1f, play, pause, longClick, receiveFile)
       Row(verticalAlignment = Alignment.CenterVertically) {
-        DurationText(text, PaddingValues(start = 12.dp))
+        DurationText(text, PaddingValues(start = 12.sp.toDp() * sizeMultiplier))
         Slider(if (ci.chatDir.sent) sentColor else receivedColor)
       }
     }
@@ -167,13 +193,13 @@ private fun VoiceLayout(
       Column(horizontalAlignment = Alignment.End) {
         Row {
           Row(Modifier.weight(1f, false), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.End) {
-            Spacer(Modifier.height(56.dp))
+            Spacer(Modifier.height(56.sp.toDp() * sizeMultiplier))
             Slider(MaterialTheme.colors.background, PaddingValues(end = DEFAULT_PADDING_HALF + 3.dp))
-            DurationText(text, PaddingValues(end = 12.dp))
+            DurationText(text, PaddingValues(end = 12.sp.toDp() * sizeMultiplier))
           }
-          VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick, receiveFile)
+          VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, 1f, play, pause, longClick, receiveFile)
         }
-        Box(Modifier.padding(top = 6.dp, end = 6.dp)) {
+        Box(Modifier.padding(top = 6.sp.toDp() * sizeMultiplier, end = 6.sp.toDp() * sizeMultiplier)) {
           CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy)
         }
       }
@@ -181,14 +207,14 @@ private fun VoiceLayout(
     else -> {
       Column(horizontalAlignment = Alignment.Start) {
         Row {
-          VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick, receiveFile)
+          VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, 1f, play, pause, longClick, receiveFile)
           Row(Modifier.weight(1f, false), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Start) {
-            DurationText(text, PaddingValues(start = 12.dp))
+            DurationText(text, PaddingValues(start = 12.sp.toDp() * sizeMultiplier))
             Slider(MaterialTheme.colors.background, PaddingValues(start = DEFAULT_PADDING_HALF + 3.dp))
-            Spacer(Modifier.height(56.dp))
+            Spacer(Modifier.height(56.sp.toDp() * sizeMultiplier))
           }
         }
-        Box(Modifier.padding(top = 6.dp)) {
+        Box(Modifier.padding(top = 6.sp.toDp() * sizeMultiplier)) {
           CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy)
         }
       }
@@ -197,7 +223,7 @@ private fun VoiceLayout(
 }
 
 @Composable
-private fun DurationText(text: State<String>, padding: PaddingValues) {
+private fun DurationText(text: State<String>, padding: PaddingValues, smallView: Boolean = false) {
   val minWidth = with(LocalDensity.current) { 45.sp.toDp() }
   Text(
     text.value,
@@ -205,7 +231,7 @@ private fun DurationText(text: State<String>, padding: PaddingValues) {
       .padding(padding)
       .widthIn(min = minWidth),
     color = MaterialTheme.colors.secondary,
-    fontSize = 16.sp,
+    fontSize = if (smallView) 15.sp else 16.sp,
     maxLines = 1
   )
 }
@@ -219,6 +245,7 @@ private fun PlayPauseButton(
   strokeColor: Color,
   enabled: Boolean,
   error: Boolean,
+  sizeMultiplier: Float = 1f,
   play: () -> Unit,
   pause: () -> Unit,
   longClick: () -> Unit,
@@ -234,7 +261,7 @@ private fun PlayPauseButton(
   ) {
     Box(
       Modifier
-        .defaultMinSize(minWidth = 56.dp, minHeight = 56.dp)
+        .defaultMinSize(minWidth = 56.sp.toDp() * sizeMultiplier, minHeight = 56.sp.toDp() * sizeMultiplier)
         .combinedClickable(
           onClick = { if (!audioPlaying) play() else pause() },
           onLongClick = longClick
@@ -245,7 +272,7 @@ private fun PlayPauseButton(
       Icon(
         if (audioPlaying) painterResource(MR.images.ic_pause_filled) else painterResource(icon),
         contentDescription = null,
-        Modifier.size(36.dp),
+        Modifier.size(36.sp.toDp() * sizeMultiplier),
         tint = if (error) WarningOrange else if (!enabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
       )
     }
@@ -262,34 +289,42 @@ private fun PlayablePlayPauseButton(
   strokeWidth: Float,
   strokeColor: Color,
   error: Boolean,
+  sizeMultiplier: Float = 1f,
   play: () -> Unit,
   pause: () -> Unit,
   longClick: () -> Unit,
 ) {
   val angle = 360f * (progress.value.toDouble() / duration.value).toFloat()
   if (hasText) {
-    IconButton({ if (!audioPlaying) play() else pause() }, Modifier.size(56.dp).drawRingModifier(angle, strokeColor, strokeWidth)) {
+    Box(
+      Modifier
+        .defaultMinSize(minWidth = 56.sp.toDp() * sizeMultiplier, minHeight = 56.sp.toDp() * sizeMultiplier)
+        .clip(MaterialTheme.shapes.small.copy(CornerSize(percent = 50)))
+        .combinedClickable(onClick = { if (!audioPlaying) play() else pause() } )
+        .drawRingModifier(angle, strokeColor, strokeWidth),
+      contentAlignment = Alignment.Center
+    ) {
       Icon(
         if (audioPlaying) painterResource(MR.images.ic_pause_filled) else painterResource(MR.images.ic_play_arrow_filled),
         contentDescription = null,
-        Modifier.size(36.dp),
+        Modifier.size(36.sp.toDp() * sizeMultiplier),
         tint = MaterialTheme.colors.primary
       )
     }
   } else {
-    PlayPauseButton(audioPlaying, sent, angle, strokeWidth, strokeColor, true, error, play, pause, longClick = longClick)
+    PlayPauseButton(audioPlaying, sent, angle, strokeWidth, strokeColor, true, error, sizeMultiplier, play, pause, longClick = longClick)
   }
 }
 
 @Composable
-private fun VoiceMsgLoadingProgressIndicator() {
+private fun VoiceMsgLoadingProgressIndicator(sizeMultiplier: Float) {
   Box(
     Modifier
-      .size(56.dp)
-      .clip(RoundedCornerShape(4.dp)),
+      .size(56.sp.toDp() * sizeMultiplier)
+      .clip(RoundedCornerShape(4.sp.toDp() * sizeMultiplier)),
     contentAlignment = Alignment.Center
   ) {
-    ProgressIndicator()
+    ProgressIndicator(sizeMultiplier)
   }
 }
 
@@ -297,6 +332,7 @@ private fun VoiceMsgLoadingProgressIndicator() {
 private fun FileStatusIcon(
   sent: Boolean,
   icon: ImageResource,
+  sizeMultiplier: Float,
   longClick: () -> Unit,
   onClick: () -> Unit,
 ) {
@@ -309,7 +345,7 @@ private fun FileStatusIcon(
   ) {
     Box(
       Modifier
-        .defaultMinSize(minWidth = 56.dp, minHeight = 56.dp)
+        .defaultMinSize(minWidth = 56.sp.toDp() * sizeMultiplier, minHeight = 56.sp.toDp() * sizeMultiplier)
         .combinedClickable(
           onClick = onClick,
           onLongClick = longClick
@@ -320,7 +356,7 @@ private fun FileStatusIcon(
       Icon(
         painterResource(icon),
         contentDescription = null,
-        Modifier.size(36.dp),
+        Modifier.size(36.sp.toDp() * sizeMultiplier),
         tint = MaterialTheme.colors.secondary
       )
     }
@@ -336,26 +372,28 @@ private fun VoiceMsgIndicator(
   progress: State<Int>?,
   duration: State<Int>?,
   error: Boolean,
+  sizeMultiplier: Float,
   play: () -> Unit,
   pause: () -> Unit,
   longClick: () -> Unit,
   receiveFile: (Long) -> Unit,
 ) {
-  val strokeWidth = with(LocalDensity.current) { 3.dp.toPx() }
+  val strokeWidth = with(LocalDensity.current) { 3.sp.toPx() } * sizeMultiplier
   val strokeColor = MaterialTheme.colors.primary
   when {
     file?.fileStatus is CIFileStatus.SndStored ->
       if (file.fileProtocol == FileProtocol.LOCAL && progress != null && duration != null) {
-        PlayablePlayPauseButton(audioPlaying, sent, hasText, progress, duration, strokeWidth, strokeColor, error, play, pause, longClick = longClick)
+        PlayablePlayPauseButton(audioPlaying, sent, hasText, progress, duration, strokeWidth, strokeColor, error, sizeMultiplier, play, pause, longClick = longClick)
       } else {
-        VoiceMsgLoadingProgressIndicator()
+        VoiceMsgLoadingProgressIndicator(sizeMultiplier)
       }
     file?.fileStatus is CIFileStatus.SndTransfer ->
-      VoiceMsgLoadingProgressIndicator()
+      VoiceMsgLoadingProgressIndicator(sizeMultiplier)
     file != null && file.fileStatus is CIFileStatus.SndError ->
       FileStatusIcon(
         sent,
         MR.images.ic_close,
+        sizeMultiplier,
         longClick,
         onClick = {
           AlertManager.shared.showAlertMsg(
@@ -368,6 +406,7 @@ private fun VoiceMsgIndicator(
       FileStatusIcon(
         sent,
         MR.images.ic_warning_filled,
+        sizeMultiplier,
         longClick,
         onClick = {
           AlertManager.shared.showAlertMsg(
@@ -377,15 +416,16 @@ private fun VoiceMsgIndicator(
         }
       )
     file?.fileStatus is CIFileStatus.RcvInvitation ->
-      PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, true, error, { receiveFile(file.fileId) }, {}, longClick = longClick)
+      PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, true, error, sizeMultiplier, { receiveFile(file.fileId) }, {}, longClick = longClick)
     file?.fileStatus is CIFileStatus.RcvTransfer || file?.fileStatus is CIFileStatus.RcvAccepted ->
-      VoiceMsgLoadingProgressIndicator()
+      VoiceMsgLoadingProgressIndicator(sizeMultiplier)
     file?.fileStatus is CIFileStatus.RcvAborted ->
-      PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, true, error, { receiveFile(file.fileId) }, {}, longClick = longClick, icon = MR.images.ic_sync_problem)
+      PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, true, error, sizeMultiplier, { receiveFile(file.fileId) }, {}, longClick = longClick, icon = MR.images.ic_sync_problem)
     file != null && file.fileStatus is CIFileStatus.RcvError ->
       FileStatusIcon(
         sent,
         MR.images.ic_close,
+        sizeMultiplier,
         longClick,
         onClick = {
           AlertManager.shared.showAlertMsg(
@@ -398,6 +438,7 @@ private fun VoiceMsgIndicator(
       FileStatusIcon(
         sent,
         MR.images.ic_warning_filled,
+        sizeMultiplier,
         longClick,
         onClick = {
           AlertManager.shared.showAlertMsg(
@@ -407,9 +448,9 @@ private fun VoiceMsgIndicator(
         }
       )
     file != null && file.loaded && progress != null && duration != null ->
-      PlayablePlayPauseButton(audioPlaying, sent, hasText, progress, duration, strokeWidth, strokeColor, error, play, pause, longClick = longClick)
+      PlayablePlayPauseButton(audioPlaying, sent, hasText, progress, duration, strokeWidth, strokeColor, error, sizeMultiplier, play, pause, longClick = longClick)
     else ->
-      PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, false, false, {}, {}, longClick)
+      PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, false, false, sizeMultiplier, {}, {}, longClick)
   }
 }
 
@@ -435,11 +476,16 @@ fun Modifier.drawRingModifier(angle: Float, color: Color, strokeWidth: Float) = 
   }
 }
 
+fun voiceMessageSizeBasedOnSquareSize(squareSize: Float): Float {
+  val squareToCircleRatio = 0.935f
+  return squareSize + squareSize * (1 - squareToCircleRatio)
+}
+
 @Composable
-private fun ProgressIndicator() {
+private fun ProgressIndicator(sizeMultiplier: Float) {
   CircularProgressIndicator(
-    Modifier.size(32.dp),
+    Modifier.size(32.sp.toDp() * sizeMultiplier),
     color = if (isInDarkTheme()) FileDark else FileLight,
-    strokeWidth = 4.dp
+    strokeWidth = 4.sp.toDp() * sizeMultiplier
   )
 }

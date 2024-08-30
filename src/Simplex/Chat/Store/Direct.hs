@@ -64,6 +64,7 @@ module Simplex.Chat.Store.Direct
     createAcceptedContact,
     getUserByContactRequestId,
     getPendingContactConnections,
+    updatePCCUser,
     getContactConnections,
     getConnectionById,
     getConnectionsContacts,
@@ -424,6 +425,19 @@ updatePCCIncognito db User {userId} conn customUserProfileId = do
     (customUserProfileId, updatedAt, userId, pccConnId conn)
   pure (conn :: PendingContactConnection) {customUserProfileId, updatedAt}
 
+updatePCCUser :: DB.Connection -> UserId -> PendingContactConnection -> UserId -> IO PendingContactConnection
+updatePCCUser db userId conn newUserId = do
+  updatedAt <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE connections
+      SET user_id = ?, custom_user_profile_id = NULL, updated_at = ?
+      WHERE user_id = ? AND connection_id = ?
+    |]
+    (newUserId, updatedAt, userId, pccConnId conn)
+  pure (conn :: PendingContactConnection) {customUserProfileId = Nothing, updatedAt}
+
 deletePCCIncognitoProfile :: DB.Connection -> User -> ProfileId -> IO ()
 deletePCCIncognitoProfile db User {userId} profileId =
   DB.execute
@@ -752,8 +766,8 @@ deleteContactRequest db User {userId} contactRequestId = do
     (userId, userId, contactRequestId, userId)
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
 
-createAcceptedContact :: DB.Connection -> User -> ConnId -> VersionChat -> VersionRangeChat -> ContactName -> ProfileId -> Profile -> Int64 -> Maybe XContactId -> Maybe IncognitoProfile -> SubscriptionMode -> PQSupport -> Bool -> IO Contact
-createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}} agentConnId connChatVersion cReqChatVRange localDisplayName profileId profile userContactLinkId xContactId incognitoProfile subMode pqSup contactUsed = do
+createAcceptedContact :: DB.Connection -> User -> ConnId -> ConnStatus -> VersionChat -> VersionRangeChat -> ContactName -> ProfileId -> Profile -> Int64 -> Maybe XContactId -> Maybe IncognitoProfile -> SubscriptionMode -> PQSupport -> Bool -> IO Contact
+createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}} agentConnId connStatus connChatVersion cReqChatVRange localDisplayName profileId profile userContactLinkId xContactId incognitoProfile subMode pqSup contactUsed = do
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
   createdAt <- getCurrentTime
   customUserProfileId <- forM incognitoProfile $ \case
@@ -765,7 +779,7 @@ createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}
     "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, enable_ntfs, user_preferences, created_at, updated_at, chat_ts, xcontact_id, contact_used) VALUES (?,?,?,?,?,?,?,?,?,?)"
     (userId, localDisplayName, profileId, True, userPreferences, createdAt, createdAt, createdAt, xContactId, contactUsed)
   contactId <- insertedRowId db
-  conn <- createConnection_ db userId ConnContact (Just contactId) agentConnId connChatVersion cReqChatVRange Nothing (Just userContactLinkId) customUserProfileId 0 createdAt subMode pqSup
+  conn <- createConnection_ db userId ConnContact (Just contactId) agentConnId connStatus connChatVersion cReqChatVRange Nothing (Just userContactLinkId) customUserProfileId 0 createdAt subMode pqSup
   let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito conn
   pure $
     Contact

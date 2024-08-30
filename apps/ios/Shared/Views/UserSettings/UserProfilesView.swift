@@ -30,7 +30,7 @@ struct UserProfilesView: View {
         case hiddenProfilesNotice
         case muteProfileAlert
         case activateUserError(error: String)
-        case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
+        case error(title: LocalizedStringKey, error: LocalizedStringKey?)
 
         var id: String {
             switch self {
@@ -172,7 +172,7 @@ struct UserProfilesView: View {
                     message: Text(err)
                 )
             case let .error(title, error):
-                return Alert(title: Text(title), message: Text(error))
+                return mkAlert(title: title, message: error)
             }
         }
     }
@@ -404,6 +404,13 @@ public func chatPasswordHash(_ pwd: String, _ salt: String) -> String {
     let cHash  = chat_password_hash(&cPwd, &cSalt)!
     let hash = fromCString(cHash)
     return hash
+}
+
+public func correctPassword(_ user: User, _ pwd: String) -> Bool {
+    if let ph = user.viewPwdHash {
+        return pwd != "" && chatPasswordHash(pwd, ph.salt) == ph.hash
+    }
+    return false
 }
 
 struct UserProfilesView_Previews: PreviewProvider {

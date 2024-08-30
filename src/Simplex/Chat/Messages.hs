@@ -35,7 +35,7 @@ import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
-import Data.Time.Clock (UTCTime, diffUTCTime, nominalDay)
+import Data.Time.Clock (UTCTime, diffUTCTime, nominalDay, NominalDiffTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Database.SQLite.Simple.FromField (FromField (..))
@@ -336,6 +336,9 @@ aChatItemId (AChatItem _ _ _ ci) = chatItemId' ci
 aChatItemTs :: AChatItem -> UTCTime
 aChatItemTs (AChatItem _ _ _ ci) = chatItemTs' ci
 
+aChatItemDir :: AChatItem -> MsgDirection
+aChatItemDir (AChatItem _ sMsgDir _ _) = toMsgDirection sMsgDir
+
 updateFileStatus :: forall c d. ChatItem c d -> CIFileStatus d -> ChatItem c d
 updateFileStatus ci@ChatItem {file} status = case file of
   Just f -> ci {file = Just (f :: CIFile d) {fileStatus = status}}
@@ -364,14 +367,18 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
 
 mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> UTCTime -> CIMeta c d
 mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive currentTs itemTs forwardedByMember createdAt updatedAt =
-  let deletable = case itemContent of
-        CISndMsgContent _ ->
-          case chatTypeI @c of
-            SCTLocal -> isNothing itemDeleted
-            _ -> diffUTCTime currentTs itemTs < nominalDay && isNothing itemDeleted
-        _ -> False
+  let deletable = deletable' itemContent itemDeleted itemTs nominalDay currentTs
       editable = deletable && isNothing itemForwarded
    in CIMeta {itemId, itemTs, itemText, itemStatus, sentViaProxy, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, deletable, editable, forwardedByMember, createdAt, updatedAt}
+
+deletable' :: forall c d. ChatTypeI c => CIContent d -> Maybe (CIDeleted c) -> UTCTime -> NominalDiffTime -> UTCTime -> Bool
+deletable' itemContent itemDeleted itemTs allowedInterval currentTs =
+  case itemContent of
+    CISndMsgContent _ ->
+      case chatTypeI @c of
+        SCTLocal -> isNothing itemDeleted
+        _ -> diffUTCTime currentTs itemTs < allowedInterval && isNothing itemDeleted
+    _ -> False
 
 dummyMeta :: ChatItemId -> UTCTime -> Text -> CIMeta c 'MDSnd
 dummyMeta itemId ts itemText =

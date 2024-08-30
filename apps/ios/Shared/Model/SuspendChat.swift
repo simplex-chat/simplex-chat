@@ -36,6 +36,18 @@ private func _suspendChat(timeout: Int) {
     }
 }
 
+let seSubscriber = seMessageSubscriber {
+    switch $0 {
+    case let .state(state):
+        switch state {
+        case .inactive:
+            if AppChatState.shared.value.inactive { activateChat() }
+        case .sendingMessage:
+            if AppChatState.shared.value.canSuspend { suspendChat() }
+        }
+    }
+}
+
 func suspendChat() {
     suspendLockQueue.sync {
         _suspendChat(timeout: appSuspendTimeout)

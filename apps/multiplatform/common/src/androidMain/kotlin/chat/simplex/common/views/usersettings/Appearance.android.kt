@@ -13,12 +13,13 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import dev.icerock.moko.resources.compose.stringResource
@@ -78,7 +79,7 @@ fun AppearanceScope.AppearanceLayout(
     Modifier.fillMaxWidth(),
   ) {
     AppBarTitle(stringResource(MR.strings.appearance_settings))
-    SectionView(stringResource(MR.strings.settings_section_title_language), padding = PaddingValues()) {
+    SectionView(stringResource(MR.strings.settings_section_title_interface), contentPadding = PaddingValues()) {
       val context = LocalContext.current
       //      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
       //        SectionItemWithValue(
@@ -104,17 +105,22 @@ fun AppearanceScope.AppearanceLayout(
         }
       }
       //      }
+
+      SettingsPreferenceItem(icon = null, stringResource(MR.strings.one_hand_ui), ChatModel.controller.appPrefs.oneHandUI) {
+        val c = CurrentColors.value.colors
+        platform.androidSetStatusAndNavBarColors(c.isLight, c.background, false, false)
+      }
     }
 
-    SectionDividerSpaced(maxTopPadding = true)
+    SectionDividerSpaced()
     ThemesSection(systemDarkTheme)
 
-    SectionDividerSpaced(maxTopPadding = true)
+    SectionDividerSpaced()
     ProfileImageSection()
 
-    SectionDividerSpaced()
+    SectionDividerSpaced(maxTopPadding = true)
 
-    SectionView(stringResource(MR.strings.settings_section_title_icon), padding = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
+    SectionView(stringResource(MR.strings.settings_section_title_icon), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
       LazyRow {
         items(AppIcon.values().size, { index -> AppIcon.values()[index] }) { index ->
           val item = AppIcon.values()[index]
@@ -123,7 +129,8 @@ fun AppearanceScope.AppearanceLayout(
             contentDescription = "",
             contentScale = ContentScale.Fit,
             modifier = Modifier
-              .shadow(if (item == icon.value) 1.dp else 0.dp, ambientColor = colors.secondaryVariant)
+              .border(1.dp, color = if (item == icon.value) colors.secondaryVariant else Color.Transparent, RoundedCornerShape(percent = 22))
+              .clip(RoundedCornerShape(percent = 22))
               .size(70.dp)
               .clickable { changeIcon(item) }
               .padding(10.dp)
@@ -137,7 +144,7 @@ fun AppearanceScope.AppearanceLayout(
       }
     }
 
-    SectionDividerSpaced(maxBottomPadding = true)
+    SectionDividerSpaced(maxTopPadding = true)
     FontScaleSection()
 
     SectionBottomSpacer()

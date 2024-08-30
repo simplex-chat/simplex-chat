@@ -53,7 +53,7 @@ expect fun AppearanceView(m: ChatModel)
 object AppearanceScope {
   @Composable
   fun ProfileImageSection() {
-    SectionView(stringResource(MR.strings.settings_section_title_profile_images).uppercase(), padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+    SectionView(stringResource(MR.strings.settings_section_title_profile_images).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
       val image = remember { chatModel.currentUser }.value?.image
       Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
         val size = 60
@@ -86,7 +86,7 @@ object AppearanceScope {
   @Composable
   fun FontScaleSection() {
     val localFontScale = remember { mutableStateOf(appPrefs.fontScale.get()) }
-    SectionView(stringResource(MR.strings.appearance_font_size).uppercase(), padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+    SectionView(stringResource(MR.strings.appearance_font_size).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
       Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(60.dp)
           .background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22))
@@ -549,13 +549,13 @@ object AppearanceScope {
           },
         )
       }
-      SectionDividerSpaced(maxTopPadding = true)
+      SectionDividerSpaced()
 
       CustomizeThemeColorsSection(currentTheme) { name ->
         editColor(name)
       }
 
-      SectionSpacer()
+      SectionDividerSpaced(maxBottomPadding = false)
 
       val currentOverrides = remember(currentTheme) { ThemeManager.defaultActiveTheme(appPrefs.themeOverrides.get()) }
       val canResetColors = currentTheme.base.hasChangedAnyColor(currentOverrides)
@@ -889,7 +889,7 @@ object AppearanceScope {
       val hexTrimmed = currentColor.toReadableHex().replaceFirst("#ff", "#")
       val savedColor by remember(wallpaperType) { mutableStateOf(initialColor) }
 
-      Row(Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).height(46.dp)) {
+      Row(Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).height(DEFAULT_MIN_SECTION_ITEM_HEIGHT)) {
         Box(Modifier.weight(1f).fillMaxHeight().background(savedColor).clickable {
           currentColor = savedColor
           onColorChange(currentColor)

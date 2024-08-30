@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.ui.theme.*
@@ -40,6 +41,7 @@ fun UserPicker(
   chatModel: ChatModel,
   userPickerState: MutableStateFlow<AnimatedViewState>,
   showSettings: Boolean = true,
+  contentAlignment: Alignment = Alignment.TopStart,
   showCancel: Boolean = false,
   cancelClicked: () -> Unit = {},
   useFromDesktopClicked: () -> Unit = {},
@@ -148,8 +150,9 @@ fun UserPicker(
     .padding(bottom = 10.dp, top = 10.dp)
     .graphicsLayer {
       alpha = animatedFloat.value
-      translationY = (animatedFloat.value - 1) * xOffset
-    }
+      translationY = (if (appPrefs.oneHandUI.state.value) -1 else 1) * (animatedFloat.value - 1) * xOffset
+    },
+    contentAlignment = contentAlignment
   ) {
     Column(
       Modifier
@@ -259,7 +262,7 @@ fun UserProfilePickerItem(
   Row(
     Modifier
       .fillMaxWidth()
-      .sizeIn(minHeight = 46.dp)
+      .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
       .combinedClickable(
         enabled = enabled,
         onClick = if (u.activeUser) openSettings else onClick,
@@ -327,7 +330,7 @@ fun RemoteHostPickerItem(h: RemoteHostInfo, onLongClick: () -> Unit = {}, action
     Modifier
       .fillMaxWidth()
       .background(color = if (h.activeHost) MaterialTheme.colors.surface.mixWith(MaterialTheme.colors.onBackground, 0.95f) else Color.Unspecified)
-      .sizeIn(minHeight = 46.dp)
+      .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
       .combinedClickable(
         onClick = onClick,
         onLongClick = onLongClick
@@ -370,7 +373,7 @@ fun LocalDevicePickerItem(active: Boolean, onLongClick: () -> Unit = {}, onClick
     Modifier
       .fillMaxWidth()
       .background(color = if (active) MaterialTheme.colors.surface.mixWith(MaterialTheme.colors.onBackground, 0.95f) else Color.Unspecified)
-      .sizeIn(minHeight = 46.dp)
+      .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
       .combinedClickable(
         onClick = if (active) {{}} else onClick,
         onLongClick = onLongClick,

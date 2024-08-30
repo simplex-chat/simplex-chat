@@ -2,19 +2,25 @@ package chat.simplex.common.views.newchat
 
 import SectionBottomSpacer
 import SectionItemView
+import SectionSpacer
 import SectionTextFooter
 import SectionView
+import TextIconSpaced
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.TextStyle
@@ -25,11 +31,13 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.net.URI
 
@@ -41,7 +49,7 @@ enum class NewChatOption {
 fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRCodeScanner: Boolean = false, close: () -> Unit) {
   val selection = remember { stateGetOrPut("selection") { selection } }
   val showQRCodeScanner = remember { stateGetOrPut("showQRCodeScanner") { showQRCodeScanner } }
-  val contactConnection: MutableState<PendingContactConnection?> = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(null) }
+  val contactConnection: MutableState<PendingContactConnection?> = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(chatModel.showingInvitation.value?.conn) }
   val connReqInvitation by remember { derivedStateOf { chatModel.showingInvitation.value?.connReq ?: "" } }
   val creatingConnReq = rememberSaveable { mutableStateOf(false) }
   val pastedLink = rememberSaveable { mutableStateOf("") }
@@ -60,9 +68,8 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRC
       /** When [AddContactLearnMore] is open, we don't need to drop [ChatModel.showingInvitation].
        * Otherwise, it will be called here AFTER [AddContactLearnMore] is launched and will clear the value too soon.
        * It will be dropped automatically when connection established or when user goes away from this screen.
-       * It applies only to Android because on Desktop center space will not be overlapped by [AddContactLearnMore]
        **/
-      if (chatModel.showingInvitation.value != null && (!ModalManager.center.hasModalsOpen() || appPlatform.isDesktop)) {
+      if (chatModel.showingInvitation.value != null && ModalManager.start.openModalCount() == 1) {
         val conn = contactConnection.value
         if (chatModel.showingInvitation.value?.connChatUsed == false && conn != null) {
           AlertManager.shared.showAlertDialog(
@@ -77,7 +84,7 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRC
                 controller.deleteChat(Chat(remoteHostId = rh?.remoteHostId, chatInfo = chatInfo, chatItems = listOf()))
                 if (chatModel.chatId.value == chatInfo.id) {
                   chatModel.chatId.value = null
-                  ModalManager.end.closeModals()
+                  ModalManager.start.closeModals()
                 }
               }
             }
@@ -96,66 +103,61 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRC
     }
   }
 
-  Column(
-    Modifier.fillMaxSize(),
-  ) {
-    Box(contentAlignment = Alignment.Center) {
-      val bottomPadding = DEFAULT_PADDING
-      AppBarTitle(stringResource(MR.strings.new_chat), hostDevice(rh?.remoteHostId), bottomPadding = bottomPadding)
-      Column(Modifier.align(Alignment.CenterEnd).padding(bottom = bottomPadding, end = DEFAULT_PADDING)) {
-        AddContactLearnMoreButton()
+  BoxWithConstraints {
+    ColumnWithScrollBar {
+      AppBarTitle(stringResource(MR.strings.new_chat), hostDevice(rh?.remoteHostId), bottomPadding = DEFAULT_PADDING)
+      val scope = rememberCoroutineScope()
+      val pagerState = rememberPagerState(
+        initialPage = selection.value.ordinal,
+        initialPageOffsetFraction = 0f
+      ) { NewChatOption.values().size }
+      KeyChangeEffect(pagerState.currentPage) {
+        selection.value = NewChatOption.values()[pagerState.currentPage]
       }
-    }
-    val scope = rememberCoroutineScope()
-    val pagerState = rememberPagerState(
-      initialPage = selection.value.ordinal,
-      initialPageOffsetFraction = 0f
-    ) { NewChatOption.values().size }
-    KeyChangeEffect(pagerState.currentPage) {
-      selection.value = NewChatOption.values()[pagerState.currentPage]
-    }
-    TabRow(
-      selectedTabIndex = pagerState.currentPage,
-      backgroundColor = Color.Transparent,
-      contentColor = MaterialTheme.colors.primary,
-    ) {
-      tabTitles.forEachIndexed { index, it ->
-        LeadingIconTab(
-          selected = pagerState.currentPage == index,
-          onClick = {
-            scope.launch {
-              pagerState.animateScrollToPage(index)
-            }
-          },
-          text = { Text(it, fontSize = 13.sp) },
-          icon = {
-            Icon(
-              if (NewChatOption.INVITE.ordinal == index) painterResource(MR.images.ic_repeat_one) else painterResource(MR.images.ic_qr_code),
-              it
-            )
-          },
-          selectedContentColor = MaterialTheme.colors.primary,
-          unselectedContentColor = MaterialTheme.colors.secondary,
-        )
-      }
-    }
-
-    HorizontalPager(state = pagerState, Modifier.fillMaxSize(), verticalAlignment = Alignment.Top, userScrollEnabled = appPlatform.isAndroid) { index ->
-      // LALAL SCROLLBAR DOESN'T WORK
-      ColumnWithScrollBar(
-        Modifier
-          .fillMaxSize(),
-        verticalArrangement = if (index == NewChatOption.INVITE.ordinal && connReqInvitation.isEmpty()) Arrangement.Center else Arrangement.Top) {
-        Spacer(Modifier.height(DEFAULT_PADDING))
-        when (index) {
-          NewChatOption.INVITE.ordinal -> {
-            PrepareAndInviteView(rh?.remoteHostId, contactConnection, connReqInvitation, creatingConnReq)
-          }
-          NewChatOption.CONNECT.ordinal -> {
-            ConnectView(rh?.remoteHostId, showQRCodeScanner, pastedLink, close)
-          }
+      TabRow(
+        selectedTabIndex = pagerState.currentPage,
+        backgroundColor = Color.Transparent,
+        contentColor = MaterialTheme.colors.primary,
+      ) {
+        tabTitles.forEachIndexed { index, it ->
+          LeadingIconTab(
+            selected = pagerState.currentPage == index,
+            onClick = {
+              scope.launch {
+                pagerState.animateScrollToPage(index)
+              }
+            },
+            text = { Text(it, fontSize = 13.sp) },
+            icon = {
+              Icon(
+                if (NewChatOption.INVITE.ordinal == index) painterResource(MR.images.ic_repeat_one) else painterResource(MR.images.ic_qr_code),
+                it
+              )
+            },
+            selectedContentColor = MaterialTheme.colors.primary,
+            unselectedContentColor = MaterialTheme.colors.secondary,
+          )
         }
-        SectionBottomSpacer()
+      }
+
+      HorizontalPager(state = pagerState, Modifier, pageNestedScrollConnection = LocalAppBarHandler.current!!.connection, verticalAlignment = Alignment.Top, userScrollEnabled = appPlatform.isAndroid) { index ->
+        Column(
+          Modifier
+            .fillMaxWidth()
+            .heightIn(min = this@BoxWithConstraints.maxHeight - 150.dp),
+          verticalArrangement = if (index == NewChatOption.INVITE.ordinal && connReqInvitation.isEmpty()) Arrangement.Center else Arrangement.Top
+        ) {
+          Spacer(Modifier.height(DEFAULT_PADDING))
+          when (index) {
+            NewChatOption.INVITE.ordinal -> {
+              PrepareAndInviteView(rh?.remoteHostId, contactConnection, connReqInvitation, creatingConnReq)
+            }
+            NewChatOption.CONNECT.ordinal -> {
+              ConnectView(rh?.remoteHostId, showQRCodeScanner, pastedLink, close)
+            }
+          }
+          SectionBottomSpacer()
+        }
       }
     }
   }
@@ -181,6 +183,15 @@ private fun CreatingLinkProgressView() {
   DefaultProgressView(stringResource(MR.strings.creating_link))
 }
 
+private fun updateShownConnection(conn: PendingContactConnection) {
+  chatModel.showingInvitation.value = chatModel.showingInvitation.value?.copy(
+    conn = conn,
+    connId = conn.id,
+    connReq = conn.connReqInv ?: "",
+    connChatUsed = true
+  )
+}
+
 @Composable
 private fun RetryButton(onClick: () -> Unit) {
   Column(
@@ -197,41 +208,332 @@ private fun RetryButton(onClick: () -> Unit) {
 }
 
 @Composable
+private fun ProfilePickerOption(
+  title: String,
+  selected: Boolean,
+  disabled: Boolean,
+  onSelected: () -> Unit,
+  image: @Composable () -> Unit,
+  onInfo: (() -> Unit)? = null
+) {
+  Row(
+    Modifier
+      .fillMaxWidth()
+      .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 8.dp)
+      .clickable(enabled = !disabled, onClick = onSelected)
+      .padding(horizontal = DEFAULT_PADDING, vertical = 4.dp),
+    horizontalArrangement = Arrangement.SpaceBetween,
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    image()
+    TextIconSpaced(false)
+    Text(title, modifier = Modifier.align(Alignment.CenterVertically))
+    if (onInfo != null) {
+      Spacer(Modifier.padding(6.dp))
+      Column(Modifier
+        .size(48.dp)
+        .clip(CircleShape)
+        .clickable(
+          enabled = !disabled,
+          onClick = { ModalManager.start.showModal { IncognitoView() } }
+        ),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+      ) {
+        Icon(
+          painterResource(MR.images.ic_info),
+          stringResource(MR.strings.incognito),
+          tint = MaterialTheme.colors.primary
+        )
+      }
+    }
+    Spacer(Modifier.weight(1f))
+    if (selected) {
+      Icon(
+        painterResource(
+          MR.images.ic_check
+        ),
+        title,
+        Modifier.size(20.dp),
+        tint = MaterialTheme.colors.primary,
+      )
+    }
+  }
+  Divider(
+    Modifier.padding(
+      start = DEFAULT_PADDING_HALF,
+      end = DEFAULT_PADDING_HALF,
+    )
+  )
+}
+
+private fun filteredProfiles(users: List<User>, searchTextOrPassword: String): List<User> {
+  val s = searchTextOrPassword.trim()
+  val lower = s.lowercase()
+  return users.filter { u ->
+    if ((u.activeUser || !u.hidden) && (s == "" || u.anyNameContains(lower))) {
+      true
+    } else {
+      correctPassword(u, s)
+    }
+  }
+}
+
+@Composable
+private fun ActiveProfilePicker(
+  search: MutableState<String>,
+  contactConnection: PendingContactConnection?,
+  close: () -> Unit,
+  rhId: Long?
+) {
+  val switchingProfile = remember { mutableStateOf(false) }
+  val incognito = remember {
+    chatModel.showingInvitation.value?.conn?.incognito ?: controller.appPrefs.incognito.get()
+  }
+  val selectedProfile by remember { chatModel.currentUser }
+  val searchTextOrPassword = rememberSaveable { search }
+  val profiles = remember {
+    chatModel.users.map { it.user }.sortedBy { !it.activeUser }
+  }
+  val filteredProfiles by remember {
+    derivedStateOf { filteredProfiles(profiles, searchTextOrPassword.value) }
+  }
+
+  var progressByTimeout by rememberSaveable { mutableStateOf(false) }
+
+  LaunchedEffect(switchingProfile.value) {
+    progressByTimeout = if (switchingProfile.value) {
+      delay(500)
+      switchingProfile.value
+    } else {
+      false
+    }
+  }
+
+  @Composable
+  fun ProfilePickerUserOption(user: User) {
+    val selected = selectedProfile?.userId == user.userId && !incognito
+
+    ProfilePickerOption(
+      title = user.chatViewName,
+      disabled = switchingProfile.value || selected,
+      selected = selected,
+      onSelected = {
+        switchingProfile.value = true
+        withApi {
+          try {
+            if (contactConnection != null) {
+              val conn = controller.apiChangeConnectionUser(rhId, contactConnection.pccConnId, user.userId)
+              if (conn != null) {
+                withChats {
+                  updateContactConnection(rhId, conn)
+                  updateShownConnection(conn)
+                }
+                controller.changeActiveUser_(
+                  rhId = user.remoteHostId,
+                  toUserId = user.userId,
+                  viewPwd = if (user.hidden) searchTextOrPassword.value else null
+                )
+
+                if (chatModel.currentUser.value?.userId != user.userId) {
+                  AlertManager.shared.showAlertMsg(generalGetString(
+                    MR.strings.switching_profile_error_title),
+                    String.format(generalGetString(MR.strings.switching_profile_error_message), user.chatViewName)
+                  )
+                }
+
+                withChats {
+                  updateContactConnection(user.remoteHostId, conn)
+                }
+                close.invoke()
+              }
+            }
+          } finally {
+            switchingProfile.value = false
+          }
+        }
+      },
+        image = { ProfileImage(size = 42.dp, image = user.image) }
+    )
+  }
+
+  @Composable
+  fun IncognitoUserOption() {
+    ProfilePickerOption(
+      disabled = switchingProfile.value,
+      title = stringResource(MR.strings.incognito),
+      selected = incognito,
+      onSelected = {
+        if (!incognito) {
+          switchingProfile.value = true
+          withApi {
+            try {
+              if (contactConnection != null) {
+                val conn = controller.apiSetConnectionIncognito(rhId, contactConnection.pccConnId, true)
+
+                if (conn != null) {
+                  withChats {
+                    updateContactConnection(rhId, conn)
+                    updateShownConnection(conn)
+                  }
+                  close.invoke()
+                }
+              }
+            } finally {
+              switchingProfile.value = false
+            }
+          }
+        }
+      },
+      image = {
+        Spacer(Modifier.width(8.dp))
+        Icon(
+          painterResource(MR.images.ic_theater_comedy_filled),
+          contentDescription = stringResource(MR.strings.incognito),
+          Modifier.size(32.dp),
+          tint = Indigo,
+        )
+        Spacer(Modifier.width(2.dp))
+      },
+      onInfo = { ModalManager.start.showModal { IncognitoView() } },
+    )
+  }
+
+  BoxWithConstraints {
+    Column(
+      Modifier
+        .fillMaxSize()
+        .alpha(if (progressByTimeout) 0.6f else 1f)
+    ) {
+      LazyColumnWithScrollBar(userScrollEnabled = !switchingProfile.value) {
+        item {
+          AppBarTitle(stringResource(MR.strings.select_chat_profile), hostDevice(rhId), bottomPadding = DEFAULT_PADDING)
+        }
+        val activeProfile = filteredProfiles.firstOrNull { it.activeUser }
+
+        if (activeProfile != null) {
+          val otherProfiles = filteredProfiles.filter { it.userId != activeProfile.userId }
+
+          if (incognito) {
+            item {
+              IncognitoUserOption()
+            }
+            item {
+              ProfilePickerUserOption(activeProfile)
+            }
+          } else {
+            item {
+              ProfilePickerUserOption(activeProfile)
+            }
+            item {
+              IncognitoUserOption()
+            }
+          }
+
+          itemsIndexed(otherProfiles) { _, p ->
+            ProfilePickerUserOption(p)
+          }
+        } else {
+          item {
+            IncognitoUserOption()
+          }
+          itemsIndexed(filteredProfiles) { _, p ->
+            ProfilePickerUserOption(p)
+          }
+        }
+      }
+    }
+    if (progressByTimeout) {
+      DefaultProgressView("")
+    }
+  }
+}
+
+@Composable
 private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection: MutableState<PendingContactConnection?>) {
-  SectionView(stringResource(MR.strings.share_this_1_time_link).uppercase()) {
+  SectionView(stringResource(MR.strings.share_this_1_time_link).uppercase(), headerBottomPadding = 5.dp) {
     LinkTextView(connReqInvitation, true)
   }
 
   Spacer(Modifier.height(10.dp))
 
-  SectionView(stringResource(MR.strings.or_show_this_qr_code).uppercase()) {
+  SectionView(stringResource(MR.strings.or_show_this_qr_code).uppercase(), headerBottomPadding = 5.dp) {
     SimpleXLinkQRCode(connReqInvitation, onShare = { chatModel.markShowingInvitationUsed() })
   }
 
-  Spacer(Modifier.height(10.dp))
-  val incognito = remember { mutableStateOf(controller.appPrefs.incognito.get()) }
-  IncognitoToggle(controller.appPrefs.incognito, incognito) {
-    if (appPlatform.isDesktop) ModalManager.end.closeModals()
-    ModalManager.end.showModal { IncognitoView() }
-  }
-  KeyChangeEffect(incognito.value) {
-    withBGApi {
-      val contactConn = contactConnection.value ?: return@withBGApi
-      val conn = controller.apiSetConnectionIncognito(rhId, contactConn.pccConnId, incognito.value) ?: return@withBGApi
-      contactConnection.value = conn
-      chatModel.updateContactConnection(rhId, conn)
+  Spacer(Modifier.height(DEFAULT_PADDING))
+  val incognito by remember(chatModel.showingInvitation.value?.conn?.incognito, controller.appPrefs.incognito.get()) {
+    derivedStateOf {
+      chatModel.showingInvitation.value?.conn?.incognito ?: controller.appPrefs.incognito.get()
     }
-    chatModel.markShowingInvitationUsed()
   }
-  SectionTextFooter(sharedProfileInfo(chatModel, incognito.value))
+  val currentUser = remember { chatModel.currentUser }.value
+
+  if (currentUser != null) {
+    SectionView(stringResource(MR.strings.new_chat_share_profile).uppercase(), headerBottomPadding = 5.dp) {
+      SectionItemView(
+        padding = PaddingValues(
+          top = 0.dp,
+          bottom = 0.dp,
+          start = 16.dp,
+          end = 16.dp
+        ),
+        click = {
+          ModalManager.start.showCustomModal { close ->
+            val search = rememberSaveable { mutableStateOf("") }
+            ModalView(
+              { close() },
+              endButtons = {
+                SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
+              },
+              content = {
+                ActiveProfilePicker(
+                  search = search,
+                  close = close,
+                  rhId = rhId,
+                  contactConnection = contactConnection.value
+                )
+              })
+          }
+        }
+      ) {
+        if (incognito) {
+          Spacer(Modifier.width(8.dp))
+          Icon(
+            painterResource(MR.images.ic_theater_comedy_filled),
+            contentDescription = stringResource(MR.strings.incognito),
+            tint = Indigo,
+            modifier = Modifier.size(32.dp)
+          )
+          Spacer(Modifier.width(2.dp))
+        } else {
+          ProfileImage(size = 42.dp, image = currentUser.image)
+        }
+        TextIconSpaced(false)
+        Text(
+          text = if (incognito) stringResource(MR.strings.incognito) else currentUser.chatViewName,
+          color = MaterialTheme.colors.onBackground
+        )
+        Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
+          Icon(
+            painter = painterResource(MR.images.ic_arrow_forward_ios),
+            contentDescription = stringResource(MR.strings.new_chat_share_profile),
+            tint = MaterialTheme.colors.secondary,
+          )
+        }
+      }
+    }
+    if (incognito) {
+      SectionTextFooter(generalGetString(MR.strings.connect__a_new_random_profile_will_be_shared))
+    }
+  }
 }
 
 @Composable
-private fun AddContactLearnMoreButton() {
+fun AddContactLearnMoreButton() {
   IconButton(
     {
-      if (appPlatform.isDesktop) ModalManager.end.closeModals()
-      ModalManager.end.showModalCloseable { close ->
+      ModalManager.start.showModalCloseable { close ->
         AddContactLearnMore(close)
       }
     }
@@ -239,20 +541,21 @@ private fun AddContactLearnMoreButton() {
     Icon(
       painterResource(MR.images.ic_info),
       stringResource(MR.strings.learn_more),
+      tint = MaterialTheme.colors.primary
     )
   }
 }
 
 @Composable
 private fun ConnectView(rhId: Long?, showQRCodeScanner: MutableState<Boolean>, pastedLink: MutableState<String>, close: () -> Unit) {
-  SectionView(stringResource(MR.strings.paste_the_link_you_received).uppercase()) {
+  SectionView(stringResource(MR.strings.paste_the_link_you_received).uppercase(), headerBottomPadding = 5.dp) {
     PasteLinkView(rhId, pastedLink, showQRCodeScanner, close)
   }
 
   if (appPlatform.isAndroid) {
     Spacer(Modifier.height(10.dp))
 
-    SectionView(stringResource(MR.strings.or_scan_qr_code).uppercase()) {
+    SectionView(stringResource(MR.strings.or_scan_qr_code).uppercase(), headerBottomPadding = 5.dp) {
       QRCodeScanner(showQRCodeScanner) { text ->
         withBGApi {
           val res = verify(rhId, text, close)
@@ -296,7 +599,7 @@ private fun PasteLinkView(rhId: Long?, pastedLink: MutableState<String>, showQRC
 @Composable
 fun LinkTextView(link: String, share: Boolean) {
   val clipboard = LocalClipboardManager.current
-  Row(Modifier.fillMaxWidth().heightIn(min = 46.dp).padding(horizontal = DEFAULT_PADDING), verticalAlignment = Alignment.CenterVertically) {
+  Row(Modifier.fillMaxWidth().heightIn(min = DEFAULT_MIN_SECTION_ITEM_HEIGHT).padding(horizontal = DEFAULT_PADDING), verticalAlignment = Alignment.CenterVertically) {
     Box(Modifier.weight(1f).clickable {
       chatModel.markShowingInvitationUsed()
       clipboard.shareText(link)
@@ -367,9 +670,11 @@ private fun createInvitation(
   withBGApi {
     val (r, alert) = controller.apiAddContact(rhId, incognito = controller.appPrefs.incognito.get())
     if (r != null) {
-      chatModel.updateContactConnection(rhId, r.second)
-      chatModel.showingInvitation.value = ShowingInvitation(connId = r.second.id, connReq = simplexChatLink(r.first), connChatUsed = false)
-      contactConnection.value = r.second
+      withChats {
+        updateContactConnection(rhId, r.second)
+        chatModel.showingInvitation.value = ShowingInvitation(connId = r.second.id, connReq = simplexChatLink(r.first), connChatUsed = false, conn = r.second)
+        contactConnection.value = r.second
+      }
     } else {
       creatingConnReq.value = false
       if (alert != null) {

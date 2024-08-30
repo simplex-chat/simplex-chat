@@ -635,7 +635,6 @@
     <string name="messages_section_description">이 설정은 현재 내 프로필의 메시지에 적용되어요.</string>
     <string name="member_info_section_title_member">멤버</string>
     <string name="member_role_will_be_changed_with_invitation">역할이 \"%s\"(으)로 변경되고, 회원은 새로운 초대를 받게 될 거예요.</string>
-    <string name="network_options_revert">되돌리기</string>
     <string name="message_deletion_prohibited">이 채팅에서는 메시지 영구 삭제가 허용되지 않았어요.</string>
     <string name="leave_group_button">나가기</string>
     <string name="large_file">큰 파일!</string>
@@ -667,9 +666,6 @@
     <string name="network_use_onion_hosts_prefer_desc">사용 가능한 경우 Onion 호스트가 사용될 거예요.</string>
     <string name="network_use_onion_hosts_no_desc">Onion 호스트가 사용되지 않을 거예요.</string>
     <string name="network_session_mode_transport_isolation">전송 격리</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">Onion 호스트가 사용되지 않을 거예요.</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">사용 가능한 경우 Onion 호스트가 사용될 거예요.</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">연결하려면 Onion 호스트가 필요해요.</string>
     <string name="next_generation_of_private_messaging">차세대 사생활 보호 메시징</string>
     <string name="new_passphrase">새 비밀번호…</string>
     <string name="network_option_enable_tcp_keep_alive">TCP 연결 유지 활성화</string>

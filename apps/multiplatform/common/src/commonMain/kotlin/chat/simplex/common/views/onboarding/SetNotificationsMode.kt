@@ -17,42 +17,56 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.NotificationsMode
 import chat.simplex.common.platform.ColumnWithScrollBar
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.changeNotificationsMode
 import chat.simplex.res.MR
-import dev.icerock.moko.resources.StringResource
 
 @Composable
 fun SetNotificationsMode(m: ChatModel) {
-  ColumnWithScrollBar(
-    modifier = Modifier
-      .fillMaxSize()
-      .padding(vertical = 14.dp)
+  val handler = remember { AppBarHandler() }
+  CompositionLocalProvider(
+    LocalAppBarHandler provides handler
   ) {
-    //CloseSheetBar(null)
-    AppBarTitle(stringResource(MR.strings.onboarding_notifications_mode_title))
-    val currentMode = rememberSaveable { mutableStateOf(NotificationsMode.default) }
-    Column(Modifier.padding(horizontal = DEFAULT_PADDING * 1f)) {
-      Text(stringResource(MR.strings.onboarding_notifications_mode_subtitle), Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
-      Spacer(Modifier.height(DEFAULT_PADDING * 2f))
-      SelectableCard(currentMode, NotificationsMode.OFF, stringResource(MR.strings.onboarding_notifications_mode_off), annotatedStringResource(MR.strings.onboarding_notifications_mode_off_desc)) {
-        currentMode.value = NotificationsMode.OFF
-      }
-      SelectableCard(currentMode, NotificationsMode.PERIODIC, stringResource(MR.strings.onboarding_notifications_mode_periodic), annotatedStringResource(MR.strings.onboarding_notifications_mode_periodic_desc)){
-        currentMode.value = NotificationsMode.PERIODIC
-      }
-      SelectableCard(currentMode, NotificationsMode.SERVICE, stringResource(MR.strings.onboarding_notifications_mode_service), annotatedStringResource(MR.strings.onboarding_notifications_mode_service_desc)){
-        currentMode.value = NotificationsMode.SERVICE
+    ModalView({}, showClose = false) {
+      ColumnWithScrollBar(
+        modifier = Modifier
+          .fillMaxSize()
+          .themedBackground()
+      ) {
+        Box(Modifier.align(Alignment.CenterHorizontally)) {
+          AppBarTitle(stringResource(MR.strings.onboarding_notifications_mode_title))
+        }
+        val currentMode = rememberSaveable { mutableStateOf(NotificationsMode.default) }
+        Column(Modifier.padding(horizontal = DEFAULT_PADDING * 1f)) {
+          Text(stringResource(MR.strings.onboarding_notifications_mode_subtitle), Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+          Spacer(Modifier.height(DEFAULT_PADDING * 2f))
+          SelectableCard(currentMode, NotificationsMode.OFF, stringResource(MR.strings.onboarding_notifications_mode_off), annotatedStringResource(MR.strings.onboarding_notifications_mode_off_desc)) {
+            currentMode.value = NotificationsMode.OFF
+          }
+          SelectableCard(currentMode, NotificationsMode.PERIODIC, stringResource(MR.strings.onboarding_notifications_mode_periodic), annotatedStringResource(MR.strings.onboarding_notifications_mode_periodic_desc)) {
+            currentMode.value = NotificationsMode.PERIODIC
+          }
+          SelectableCard(currentMode, NotificationsMode.SERVICE, stringResource(MR.strings.onboarding_notifications_mode_service), annotatedStringResource(MR.strings.onboarding_notifications_mode_service_desc)) {
+            currentMode.value = NotificationsMode.SERVICE
+          }
+        }
+        Spacer(Modifier.fillMaxHeight().weight(1f))
+        Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+          OnboardingActionButton(
+            modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier,
+            labelId = MR.strings.use_chat,
+            onboarding = OnboardingStage.OnboardingComplete,
+            onclick = {
+              changeNotificationsMode(currentMode.value, m)
+            }
+          )
+          // Reserve space
+          TextButtonBelowOnboardingButton("", null)
+        }
       }
     }
-    Spacer(Modifier.fillMaxHeight().weight(1f))
-    Box(Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF), contentAlignment = Alignment.Center) {
-      OnboardingActionButton(MR.strings.use_chat, OnboardingStage.OnboardingComplete, false) {
-        changeNotificationsMode(currentMode.value, m)
-      }
-    }
-    Spacer(Modifier.fillMaxHeight().weight(1f))
   }
   SetNotificationsModeAdditions()
 }

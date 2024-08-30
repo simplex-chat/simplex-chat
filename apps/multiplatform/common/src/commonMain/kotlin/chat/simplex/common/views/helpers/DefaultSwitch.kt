@@ -25,9 +25,9 @@ fun DefaultSwitch(
   )
 ) {
   val color = if (checked) MaterialTheme.colors.primary.copy(alpha = 0.3f) else MaterialTheme.colors.secondary.copy(alpha = 0.3f)
-  val size = with(LocalDensity.current) { Size(46.dp.toPx(), 28.dp.toPx()) }
-  val offset = with(LocalDensity.current) { Offset(1.dp.toPx(), 10.dp.toPx()) }
-  val radius = with(LocalDensity.current) { 28.dp.toPx() }
+  val size = with(LocalDensity.current) { Size(40.dp.toPx(), 26.dp.toPx()) }
+  val offset = with(LocalDensity.current) { Offset(4.dp.toPx(), 11.dp.toPx()) }
+  val radius = with(LocalDensity.current) { 13.dp.toPx() }
   Switch(
     checked = checked,
     onCheckedChange = onCheckedChange,

@@ -64,7 +64,7 @@ struct DatabaseErrorView: View {
                 case let .migrationError(mtrError):
                     titleText("Incompatible database version")
                     fileNameText(dbFile)
-                    Text("Error: ") + Text(DatabaseErrorView.mtrErrorDescription(mtrError))
+                    Text("Error: ") + Text(mtrErrorDescription(mtrError))
                 }
             case let .errorSQL(dbFile, migrationSQLError):
                 titleText("Database error")
@@ -103,15 +103,6 @@ struct DatabaseErrorView: View {
 
     private func migrationsText(_ ms: [String]) -> Text {
         Text("Migrations: \(ms.joined(separator: ", "))")
-    }
-
-    static func mtrErrorDescription(_ err: MTRError) -> LocalizedStringKey {
-        switch err {
-        case let .noDown(dbMigrations):
-            return "database version is newer than the app, but no down migration for: \(dbMigrations.joined(separator: ", "))"
-        case let .different(appMigration, dbMigration):
-            return "different migration in the app/database: \(appMigration) / \(dbMigration)"
-        }
     }
 
     private func databaseKeyField(onSubmit: @escaping () -> Void) -> some View {

@@ -45,8 +45,7 @@ import chat.simplex.common.model.ServerProtocol
 import chat.simplex.common.model.ServerSessions
 import chat.simplex.common.model.XFTPServerSummary
 import chat.simplex.common.model.localTimestamp
-import chat.simplex.common.platform.ColumnWithScrollBar
-import chat.simplex.common.platform.appPlatform
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.ProtocolServersView
@@ -54,12 +53,13 @@ import chat.simplex.common.views.usersettings.SettingsPreferenceItem
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import kotlinx.datetime.Instant
 import numOrDash
 import java.text.DecimalFormat
 import kotlin.math.floor
 import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.seconds
 
 enum class SubscriptionColorType {
   ACTIVE, ACTIVE_SOCKS_PROXY, DISCONNECTED, ACTIVE_DISCONNECTED
@@ -68,7 +68,6 @@ enum class SubscriptionColorType {
 data class SubscriptionStatus(
   val color: SubscriptionColorType,
   val variableValue: Float,
-  val opacity: Float,
   val statusPercent: Float
 )
 
@@ -76,9 +75,8 @@ fun subscriptionStatusColorAndPercentage(
   online: Boolean,
   socksProxy: String?,
   subs: SMPServerSubs,
-  sess: ServerSessions
+  hasSess: Boolean
 ): SubscriptionStatus {
-
   fun roundedToQuarter(n: Float): Float = when {
     n >= 1 -> 1f
     n <= 0 -> 0f
@@ -86,23 +84,26 @@ fun subscriptionStatusColorAndPercentage(
   }
 
   val activeColor: SubscriptionColorType = if (socksProxy != null) SubscriptionColorType.ACTIVE_SOCKS_PROXY else SubscriptionColorType.ACTIVE
-  val noConnColorAndPercent = SubscriptionStatus(SubscriptionColorType.DISCONNECTED, 1f, 1f, 0f)
+  val noConnColorAndPercent = SubscriptionStatus(SubscriptionColorType.DISCONNECTED, 1f, 0f)
   val activeSubsRounded = roundedToQuarter(subs.shareOfActive)
 
-  return if (online && subs.total > 0) {
-    if (subs.ssActive == 0) {
-      if (sess.ssConnected == 0)
-        noConnColorAndPercent
-      else
-        SubscriptionStatus(activeColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
-    } else { // ssActive > 0
-      if (sess.ssConnected == 0)
-        // This would mean implementation error
-        SubscriptionStatus(SubscriptionColorType.ACTIVE_DISCONNECTED, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
-      else
-        SubscriptionStatus(activeColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
-    }
-  } else noConnColorAndPercent
+  return if (!online)
+    noConnColorAndPercent
+  else if (subs.total == 0 && !hasSess)
+    // On freshly installed app (without chats) and on app start
+    SubscriptionStatus(activeColor, 0f, 0f)
+  else if (subs.ssActive == 0) {
+    if (hasSess)
+      SubscriptionStatus(activeColor, activeSubsRounded, subs.shareOfActive)
+    else
+      noConnColorAndPercent
+  } else { // ssActive > 0
+    if (hasSess)
+      SubscriptionStatus(activeColor, activeSubsRounded, subs.shareOfActive)
+    else
+      // This would mean implementation error
+      SubscriptionStatus(SubscriptionColorType.ACTIVE_DISCONNECTED, activeSubsRounded, subs.shareOfActive)
+  }
 }
 
 @Composable
@@ -116,9 +117,9 @@ private fun SubscriptionStatusIndicatorPercentage(percentageText: String) {
 }
 
 @Composable
-fun SubscriptionStatusIndicatorView(subs: SMPServerSubs, sess: ServerSessions, leadingPercentage: Boolean = false) {
+fun SubscriptionStatusIndicatorView(subs: SMPServerSubs, hasSess: Boolean, leadingPercentage: Boolean = false) {
   val netCfg = rememberUpdatedState(chatModel.controller.getNetCfg())
-  val statusColorAndPercentage = subscriptionStatusColorAndPercentage(chatModel.networkInfo.value.online, netCfg.value.socksProxy, subs, sess)
+  val statusColorAndPercentage = subscriptionStatusColorAndPercentage(chatModel.networkInfo.value.online, netCfg.value.socksProxy, subs, hasSess)
   val pref = remember { chatModel.controller.appPrefs.networkShowSubscriptionPercentage }
   val percentageText = "${(floor(statusColorAndPercentage.statusPercent * 100)).toInt()}%"
 
@@ -193,7 +194,7 @@ private fun SMPServerView(srvSumm: SMPServerSummary, statsStartedAt: Instant, rh
     )
     if (srvSumm.subs != null) {
       Spacer(Modifier.fillMaxWidth().weight(1f))
-      SubscriptionStatusIndicatorView(subs = srvSumm.subs, sess = srvSumm.sessionsOrNew, leadingPercentage = true)
+      SubscriptionStatusIndicatorView(subs = srvSumm.subs, hasSess = srvSumm.sessionsOrNew.hasSess, leadingPercentage = true)
     } else if (srvSumm.sessions != null) {
       Spacer(Modifier.fillMaxWidth().weight(1f))
       Icon(painterResource(MR.images.ic_arrow_upward), contentDescription = null, tint = SessIconColor(srvSumm.sessions))
@@ -334,7 +335,7 @@ private fun SMPSubscriptionsSection(totals: SMPTotals) {
         style = MaterialTheme.typography.body2,
         fontSize = 12.sp
       )
-      SubscriptionStatusIndicatorView(totals.subs, totals.sessions)
+      SubscriptionStatusIndicatorView(totals.subs, totals.sessions.hasSess)
     }
     Column(Modifier.padding(PaddingValues()).fillMaxWidth()) {
       InfoRow(
@@ -364,7 +365,7 @@ private fun SMPSubscriptionsSection(subs: SMPServerSubs, summary: SMPServerSumma
         style = MaterialTheme.typography.body2,
         fontSize = 12.sp
       )
-      SubscriptionStatusIndicatorView(subs, summary.sessionsOrNew)
+      SubscriptionStatusIndicatorView(subs, summary.sessionsOrNew.hasSess)
     }
     Column(Modifier.padding(PaddingValues()).fillMaxWidth()) {
       InfoRow(
@@ -545,15 +546,19 @@ fun XFTPServerSummaryLayout(summary: XFTPServerSummary, statsStartedAt: Instant,
       }) {
         Text(generalGetString(MR.strings.open_server_settings_button))
       }
+      if (summary.stats != null || summary.sessions != null) {
+        SectionDividerSpaced()
+      }
     }
 
     if (summary.stats != null) {
-      SectionDividerSpaced()
       XFTPStatsView(stats = summary.stats, rh = rh, statsStartedAt = statsStartedAt)
+      if (summary.sessions != null) {
+        SectionDividerSpaced(maxTopPadding = true)
+      }
     }
 
     if (summary.sessions != null) {
-      SectionDividerSpaced()
       ServerSessionsView(summary.sessions)
     }
   }
@@ -580,20 +585,24 @@ fun SMPServerSummaryLayout(summary: SMPServerSummary, statsStartedAt: Instant, r
       }) {
         Text(generalGetString(MR.strings.open_server_settings_button))
       }
+      SectionDividerSpaced()
     }
 
     if (summary.stats != null) {
-      SectionDividerSpaced()
       SMPStatsView(stats = summary.stats, remoteHostInfo = rh, statsStartedAt = statsStartedAt)
+      if (summary.subs != null || summary.sessions != null) {
+        SectionDividerSpaced(maxTopPadding = true)
+      }
     }
 
     if (summary.subs != null) {
-      SectionDividerSpaced()
       SMPSubscriptionsSection(subs = summary.subs, summary = summary, rh = rh)
+      if (summary.sessions != null) {
+        SectionDividerSpaced()
+      }
     }
 
     if (summary.sessions != null) {
-      SectionDividerSpaced()
       ServerSessionsView(summary.sessions)
     }
   }
@@ -614,14 +623,12 @@ fun ModalData.SMPServerSummaryView(
     ColumnWithScrollBar(
       Modifier.fillMaxSize(),
     ) {
-      Box(contentAlignment = Alignment.Center) {
-        val bottomPadding = DEFAULT_PADDING
-        AppBarTitle(
-          stringResource(MR.strings.smp_server),
-          hostDevice(rh?.remoteHostId),
-          bottomPadding = bottomPadding
-        )
-      }
+      val bottomPadding = DEFAULT_PADDING
+      AppBarTitle(
+        stringResource(MR.strings.smp_server),
+        hostDevice(rh?.remoteHostId),
+        bottomPadding = bottomPadding
+      )
       SMPServerSummaryLayout(summary, statsStartedAt, rh)
     }
   }
@@ -708,7 +715,7 @@ fun ModalData.XFTPServerSummaryView(
 
 @Composable
 fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableState<PresentedServersSummary?>) {
-  Column(
+  ColumnWithScrollBar(
     Modifier.fillMaxSize(),
   ) {
     var showUserSelection by remember { mutableStateOf(false) }
@@ -718,6 +725,12 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
       remember { stateGetOrPut("serverTypeSelection") { PresentedServerType.SMP } }
     val scope = rememberCoroutineScope()
 
+    suspend fun setServersSummary() {
+      if (chatModel.currentUser.value != null) {
+        serversSummary.value = chatModel.controller.getAgentServersSummary(chatModel.remoteHostId())
+      }
+    }
+
     LaunchedEffect(Unit) {
       if (chatModel.users.count { u -> u.user.activeUser || !u.user.hidden } == 1
       ) {
@@ -725,19 +738,40 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
       } else {
         showUserSelection = true
       }
+      setServersSummary()
+      scope.launch {
+        while (isActive) {
+          delay(1.seconds)
+          if ((appPlatform.isDesktop || chat.simplex.common.platform.chatModel.chatId.value == null) && isAppVisibleAndFocused()) {
+            setServersSummary()
+          }
+        }
+      }
+    }
+
+    fun resetStats() {
+      withBGApi {
+        val success = controller.resetAgentServersStats(rh?.remoteHostId)
+        if (success) {
+          setServersSummary()
+        } else {
+          AlertManager.shared.showAlertMsg(
+            title = generalGetString(MR.strings.servers_info_modal_error_title),
+            text = generalGetString(MR.strings.servers_info_reset_stats_alert_error_title)
+          )
+        }
+      }
     }
 
     Column(
       Modifier.fillMaxSize(),
     ) {
-      Box(contentAlignment = Alignment.Center) {
-        val bottomPadding = DEFAULT_PADDING
-        AppBarTitle(
-          stringResource(MR.strings.servers_info),
-          hostDevice(rh?.remoteHostId),
-          bottomPadding = bottomPadding
-        )
-      }
+      val bottomPadding = DEFAULT_PADDING
+      AppBarTitle(
+        stringResource(MR.strings.servers_info),
+        hostDevice(rh?.remoteHostId),
+        bottomPadding = bottomPadding
+      )
       if (serversSummary.value == null) {
         Box(
           modifier = Modifier
@@ -797,7 +831,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
           verticalAlignment = Alignment.Top,
           userScrollEnabled = appPlatform.isAndroid
         ) { index ->
-          ColumnWithScrollBar(
+          Column(
             Modifier
               .fillMaxSize(),
             verticalArrangement = Arrangement.Top
@@ -828,7 +862,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
                   val statsStartedAt = it.statsStartedAt
 
                   SMPStatsView(totals.stats, statsStartedAt, rh)
-                  SectionDividerSpaced()
+                  SectionDividerSpaced(maxTopPadding = true)
                   SMPSubscriptionsSection(totals)
                   SectionDividerSpaced()
 
@@ -860,7 +894,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
                       footer = generalGetString(MR.strings.servers_info_proxied_servers_section_footer),
                       rh = rh
                     )
-                    SectionDividerSpaced()
+                    SectionDividerSpaced(maxTopPadding = true)
                   }
 
                   ServerSessionsView(totals.sessions)
@@ -877,7 +911,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
                   val previouslyUsedXFTPServers = xftpSummary.previouslyUsedXFTPServers
 
                   XFTPStatsView(totals.stats, statsStartedAt, rh)
-                  SectionDividerSpaced()
+                  SectionDividerSpaced(maxTopPadding = true)
 
                   if (currentlyUsedXFTPServers.isNotEmpty()) {
                     XFTPServersListView(
@@ -904,11 +938,11 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
               }
             }
 
-            SectionDividerSpaced()
+            SectionDividerSpaced(maxBottomPadding = false)
 
             SectionView {
               ReconnectAllServersButton(rh)
-              ResetStatisticsButton(rh)
+              ResetStatisticsButton(rh, resetStats = { resetStats() })
             }
 
             SectionBottomSpacer()
@@ -949,8 +983,8 @@ private fun reconnectAllServersAlert(rh: RemoteHostInfo?) {
 }
 
 @Composable
-private fun ResetStatisticsButton(rh: RemoteHostInfo?) {
-  SectionItemView(click = { resetStatisticsAlert(rh) }) {
+private fun ResetStatisticsButton(rh: RemoteHostInfo?, resetStats: () -> Unit) {
+  SectionItemView(click = { resetStatisticsAlert(rh, resetStats) }) {
     Text(
       stringResource(MR.strings.servers_info_reset_stats),
       color = MaterialTheme.colors.primary
@@ -958,23 +992,12 @@ private fun ResetStatisticsButton(rh: RemoteHostInfo?) {
   }
 }
 
-private fun resetStatisticsAlert(rh: RemoteHostInfo?) {
+private fun resetStatisticsAlert(rh: RemoteHostInfo?, resetStats: () -> Unit) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.servers_info_reset_stats_alert_title),
     text = generalGetString(MR.strings.servers_info_reset_stats_alert_message),
     confirmText = generalGetString(MR.strings.servers_info_reset_stats_alert_confirm),
     destructive = true,
-    onConfirm = {
-      withBGApi {
-        val success = controller.resetAgentServersStats(rh?.remoteHostId)
-
-        if (!success) {
-          AlertManager.shared.showAlertMsg(
-            title = generalGetString(MR.strings.servers_info_modal_error_title),
-            text = generalGetString(MR.strings.servers_info_reset_stats_alert_error_title)
-          )
-        }
-      }
-    }
+    onConfirm = resetStats
   )
 }

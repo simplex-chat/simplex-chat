@@ -33,6 +33,10 @@ struct AppearanceSettings: View {
     }()
     @State private var darkModeTheme: String = UserDefaults.standard.string(forKey: DEFAULT_SYSTEM_DARK_THEME) ?? DefaultTheme.DARK.themeName
     @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var profileImageCornerRadius = defaultProfileImageCorner
+    @AppStorage(DEFAULT_CHAT_ITEM_ROUNDNESS) private var chatItemRoundness = defaultChatItemRoundness
+    @AppStorage(DEFAULT_CHAT_ITEM_TAIL) private var chatItemTail = true
+    @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
+    @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
 
     @State var themeUserDestination: (Int64, ThemeModeOverrides?)? = {
         if let currentUser = ChatModel.shared.currentUser, let uiThemes = currentUser.uiThemes, uiThemes.preferredMode(!CurrentColors.colors.isLight) != nil {
@@ -62,6 +66,16 @@ struct AppearanceSettings: View {
                     }
                 }
 
+                Section("Chat list") {
+                    Toggle("Reachable chat toolbar", isOn: $oneHandUI)
+                    Picker("Toolbar opacity", selection: $toolbarMaterial) {
+                        ForEach(ToolbarMaterial.allCases, id: \.rawValue) { tm in
+                            Text(tm.text).tag(tm.rawValue)
+                        }
+                    }
+                    .frame(height: 36)
+                }
+                
                 Section {
                     ThemeDestinationPicker(themeUserDestination: $themeUserDestination, themeUserDest: themeUserDestination?.0, customizeThemeIsOpen: $customizeThemeIsOpen)
 
@@ -143,7 +157,8 @@ struct AppearanceSettings: View {
                     Text("Themes")
                         .foregroundColor(theme.colors.secondary)
                 }
-                .onChange(of: profileImageCornerRadius) { _ in
+                .onChange(of: profileImageCornerRadius) { cornerRadius in
+                    profileImageCornerRadiusGroupDefault.set(cornerRadius)
                     saveThemeToDatabase(nil)
                 }
                 .onChange(of: colorMode) { mode in
@@ -164,6 +179,14 @@ struct AppearanceSettings: View {
                     } else if currentThemeDefault.get() != DefaultTheme.LIGHT.themeName {
                         ThemeManager.applyTheme(systemDarkThemeDefault.get())
                     }
+                }
+
+                Section(header: Text("Message shape").foregroundColor(theme.colors.secondary)) {
+                    HStack {
+                        Text("Corner")
+                        Slider(value: $chatItemRoundness, in: 0...1, step: 0.05)
+                    }
+                    Toggle("Tail", isOn: $chatItemTail)
                 }
 
                 Section(header: Text("Profile images").foregroundColor(theme.colors.secondary)) {
@@ -290,6 +313,43 @@ struct AppearanceSettings: View {
     }
 }
 
+enum ToolbarMaterial: String, CaseIterable {
+    case bar
+    case ultraThin
+    case thin
+    case regular
+    case thick
+    case ultraThick
+
+    static func material(_ s: String) -> Material {
+        ToolbarMaterial(rawValue: s)?.material ?? Material.bar
+    }
+
+    static let defaultMaterial: String = ToolbarMaterial.regular.rawValue
+
+    var material: Material {
+        switch self {
+        case .bar: .bar
+        case .ultraThin: .ultraThin
+        case .thin: .thin
+        case .regular: .regular
+        case .thick: .thick
+        case .ultraThick: .ultraThick
+        }
+    }
+    
+    var text: String {
+        switch self {
+        case .bar: "System"
+        case .ultraThin: "Ultra thin"
+        case .thin: "Thin"
+        case .regular: "Regular"
+        case .thick: "Thick"
+        case .ultraThick: "Ultra thick"
+        }
+    }
+}
+
 struct ChatThemePreview: View {
     @EnvironmentObject var theme: AppTheme
     var base: DefaultTheme
@@ -308,20 +368,21 @@ struct ChatThemePreview: View {
                 let bob = ChatItem.getSample(2, CIDirection.directSnd, Date.now, NSLocalizedString("Good morning!", comment: "message preview"), quotedItem: CIQuote.getSample(alice.id, alice.meta.itemTs, alice.content.text, chatDir: alice.chatDir))
                 HStack {
                     ChatItemView(chat: Chat.sampleData, chatItem: alice, revealed: Binding.constant(false))
-                        .modifier(ChatItemClipped())
+                        .modifier(ChatItemClipped(alice, tailVisible: true))
                     Spacer()
                 }
                 HStack {
                     Spacer()
                     ChatItemView(chat: Chat.sampleData, chatItem: bob, revealed: Binding.constant(false))
-                        .modifier(ChatItemClipped())
+                        .modifier(ChatItemClipped(bob, tailVisible: true))
                         .frame(alignment: .trailing)
                 }
             } else {
                 Rectangle().fill(.clear)
             }
         }
-        .padding(10)
+            .padding(.vertical, 10)
+            .padding(.horizontal, 16)
         .frame(maxWidth: .infinity)
 
         if let wallpaperType, let wallpaperImage = wallpaperType.image, let backgroundColor, let tintColor {

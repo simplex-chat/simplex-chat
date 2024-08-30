@@ -228,7 +228,6 @@
     <string name="network_enable_socks">Použít proxy server SOCKS\?</string>
     <string name="network_disable_socks">Použít přímé připojení k internetu\?</string>
     <string name="network_use_onion_hosts_no">Ne</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">Onion hostitelé nebudou použiti.</string>
     <string name="network_session_mode_user">Chat profil</string>
     <string name="network_session_mode_entity">Připojení</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
@@ -357,7 +356,6 @@
     <string name="no_contacts_selected">Nebyl vybrán žádný kontakt</string>
     <string name="invite_prohibited_description">Snažíte se pozvat kontakt, se kterým jste sdíleli inkognito profil, do skupiny, ve které používáte svůj hlavní profil</string>
     <string name="info_row_group">Skupina</string>
-    <string name="network_options_revert">Vrátit</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">Aktualizací nastavení se klient znovu připojí ke všem serverům.</string>
     <string name="accept_feature_set_1_day">Nastavit 1 den</string>
     <string name="connection_error_auth">Chyba spojení (AUTH)</string>
@@ -629,14 +627,11 @@
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Ujistěte se, že adresy serverů WebRTC ICE jsou ve správném formátu, oddělené na řádcích a nejsou duplicitní.</string>
     <string name="save_servers_button">Uložit</string>
     <string name="network_and_servers">Síť a servery</string>
-    <string name="update_onion_hosts_settings_question">Aktualizovat nastavení hostitelů .onion\?</string>
     <string name="network_use_onion_hosts">Použít hostitele .onion</string>
     <string name="network_use_onion_hosts_prefer">Když bude dostupný</string>
     <string name="network_use_onion_hosts_required">Povinné</string>
     <string name="network_use_onion_hosts_prefer_desc">Onion hostitelé budou použiti, pokud jsou k dispozici.</string>
     <string name="network_use_onion_hosts_no_desc">Onion hostitelé nebudou použiti.</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion hostitelé budou použiti, pokud jsou k dispozici.</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">Pro připojení budou vyžadováni Onion hostitelé.</string>
     <string name="network_session_mode_transport_isolation">Izolace přenosu</string>
     <string name="network_session_mode_user_description"><![CDATA[A separate TCP connection (and SOCKS credential) will be used <b>for each chat profile you have in the app</b>.]]></string>
     <string name="network_session_mode_entity_description">Oddělit TCP připojení (a SOCKS pověření) bude použito <b>pro všechny kontakty a členy skupin</b>.
@@ -1854,4 +1849,16 @@
     <string name="network_smp_proxy_fallback_allow">Ano</string>
     <string name="color_wallpaper_tint">Zbarvení tapety</string>
     <string name="color_wallpaper_background">Pozadí tapety</string>
+    <string name="app_check_for_updates_beta">Beta</string>
+    <string name="info_view_call_button">volání</string>
+    <string name="privacy_media_blur_radius">Rozmazat media</string>
+    <string name="cant_call_contact_alert_title">Kontaktu nelze volat</string>
+    <string name="all_users">Všechny profily</string>
+    <string name="attempts_label">pokusy</string>
+    <string name="app_check_for_updates_download_completed_title">Aktualizace aplikace je stažena</string>
+    <string name="servers_info_subscriptions_connections_subscribed">Aktivní spojení</string>
+    <string name="allow_calls_question">Povolit volání?</string>
+    <string name="calls_prohibited_alert_title">Volání zakázáno!</string>
+    <string name="cant_call_member_alert_title">Nelze zavolat člena skupiny</string>
+    <string name="deleted_chats">Archivované kontakty</string>
 </resources>

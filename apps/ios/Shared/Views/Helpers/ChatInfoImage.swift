@@ -16,18 +16,10 @@ struct ChatInfoImage: View {
     var color = Color(uiColor: .tertiarySystemGroupedBackground)
 
     var body: some View {
-        var iconName: String
-        switch chat.chatInfo {
-        case .direct: iconName = "person.crop.circle.fill"
-        case .group: iconName = "person.2.circle.fill"
-        case .local: iconName = "folder.circle.fill"
-        case .contactRequest: iconName = "person.crop.circle.fill"
-        default: iconName = "circle.fill"
-        }
         let iconColor = if case .local = chat.chatInfo { theme.appColors.primaryVariant2 } else { color }
         return ProfileImage(
             imageStr: chat.chatInfo.image,
-            iconName: iconName,
+            iconName: chatIconName(chat.chatInfo),
             size: size,
             color: iconColor
         )

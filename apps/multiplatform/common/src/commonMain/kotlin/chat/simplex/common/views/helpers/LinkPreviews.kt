@@ -1,12 +1,11 @@
 package chat.simplex.common.views.helpers
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -15,9 +14,11 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.LinkPreview
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chat.chatViewScrollState
 import chat.simplex.res.MR
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -121,12 +122,16 @@ fun ComposeLinkView(linkPreview: LinkPreview?, cancelPreview: () -> Unit, cancel
 }
 
 @Composable
-fun ChatItemLinkView(linkPreview: LinkPreview) {
+fun ChatItemLinkView(linkPreview: LinkPreview, showMenu: State<Boolean>, onLongClick: () -> Unit) {
   Column(Modifier.widthIn(max = DEFAULT_MAX_IMAGE_WIDTH)) {
+    val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
     Image(
       base64ToBitmap(linkPreview.image),
       stringResource(MR.strings.image_descr_link_preview),
-      modifier = Modifier.fillMaxWidth(),
+      modifier = Modifier
+        .fillMaxWidth()
+        .desktopModifyBlurredState(true, blurred, showMenu)
+        .privacyBlur(true, blurred, chatViewScrollState.collectAsState(), onLongClick = onLongClick),
       contentScale = ContentScale.FillWidth,
     )
     Column(Modifier.padding(top = 6.dp).padding(horizontal = 12.dp)) {
@@ -179,7 +184,7 @@ private fun normalizeImageUri(u: URL, imageUri: String) = when {
 @Composable
 fun PreviewChatItemLinkView() {
   SimpleXTheme {
-    ChatItemLinkView(LinkPreview.sampleData)
+    ChatItemLinkView(LinkPreview.sampleData, remember { mutableStateOf(false) }) {}
   }
 }
 

@@ -69,11 +69,11 @@ import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo)
-import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, ServerQueueInfo, UserNetworkInfo)
+import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, SMPServerSubs, ServerQueueInfo, UserNetworkInfo)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig, ServerCfg)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration, withTransaction)
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration, withTransaction, withTransactionPriority)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Client (SMPProxyFallback (..), SMPProxyMode (..), SocksMode (..))
@@ -174,8 +174,10 @@ defaultChatHooks =
 
 data DefaultAgentServers = DefaultAgentServers
   { smp :: NonEmpty (ServerCfg 'PSMP),
+    useSMP :: Int,
     ntf :: [NtfServer],
     xftp :: NonEmpty (ServerCfg 'PXFTP),
+    useXFTP :: Int,
     netCfg :: NetworkConfig
   }
 
@@ -263,7 +265,8 @@ data ChatCommand
   | UnmuteUser
   | APIDeleteUser UserId Bool (Maybe UserPwd)
   | DeleteUser UserName Bool (Maybe UserPwd)
-  | StartChat {mainApp :: Bool}
+  | StartChat {mainApp :: Bool, enableSndFiles :: Bool} -- enableSndFiles has no effect when mainApp is True
+  | CheckChatRunning
   | APIStopChat
   | APIActivateChat {restoreChat :: Bool}
   | APISuspendChat {suspendTimeout :: Int}
@@ -289,13 +292,13 @@ data ChatCommand
   | APIGetChat ChatRef ChatPagination (Maybe String)
   | APIGetChatItems ChatPagination (Maybe String)
   | APIGetChatItemInfo ChatRef ChatItemId
-  | APISendMessage {chatRef :: ChatRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessage :: ComposedMessage}
-  | APICreateChatItem {noteFolderId :: NoteFolderId, composedMessage :: ComposedMessage}
+  | APISendMessages {chatRef :: ChatRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessages :: NonEmpty ComposedMessage}
+  | APICreateChatItems {noteFolderId :: NoteFolderId, composedMessages :: NonEmpty ComposedMessage}
   | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, msgContent :: MsgContent}
-  | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
-  | APIDeleteMemberChatItem GroupId GroupMemberId ChatItemId
+  | APIDeleteChatItem ChatRef (NonEmpty ChatItemId) CIDeleteMode
+  | APIDeleteMemberChatItem GroupId (NonEmpty ChatItemId)
   | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, add :: Bool, reaction :: MsgReaction}
-  | APIForwardChatItem {toChatRef :: ChatRef, fromChatRef :: ChatRef, chatItemId :: ChatItemId, ttl :: Maybe Int}
+  | APIForwardChatItems {toChatRef :: ChatRef, fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId, ttl :: Maybe Int}
   | APIUserRead UserId
   | UserRead
   | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
@@ -400,6 +403,7 @@ data ChatCommand
   | APIAddContact UserId IncognitoEnabled
   | AddContact IncognitoEnabled
   | APISetConnectionIncognito Int64 IncognitoEnabled
+  | APIChangeConnectionUser Int64 UserId -- new user id to switch connection to
   | APIConnectPlan UserId AConnectionRequestUri
   | APIConnect UserId IncognitoEnabled (Maybe AConnectionRequestUri)
   | Connect IncognitoEnabled (Maybe AConnectionRequestUri)
@@ -505,6 +509,7 @@ data ChatCommand
   | ShowVersion
   | DebugLocks
   | DebugEvent ChatResponse
+  | GetAgentSubsTotal UserId
   | GetAgentServersSummary UserId
   | ResetAgentServersStats
   | GetAgentSubs
@@ -592,12 +597,12 @@ data ChatResponse
   | CRContactCode {user :: User, contact :: Contact, connectionCode :: Text}
   | CRGroupMemberCode {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionCode :: Text}
   | CRConnectionVerified {user :: User, verified :: Bool, expectedCode :: Text}
-  | CRNewChatItem {user :: User, chatItem :: AChatItem}
+  | CRNewChatItems {user :: User, chatItems :: [AChatItem]}
   | CRChatItemStatusUpdated {user :: User, chatItem :: AChatItem}
   | CRChatItemUpdated {user :: User, chatItem :: AChatItem}
   | CRChatItemNotChanged {user :: User, chatItem :: AChatItem}
   | CRChatItemReaction {user :: User, added :: Bool, reaction :: ACIReaction}
-  | CRChatItemDeleted {user :: User, deletedChatItem :: AChatItem, toChatItem :: Maybe AChatItem, byUser :: Bool, timed :: Bool}
+  | CRChatItemsDeleted {user :: User, chatItemDeletions :: [ChatItemDeletion], byUser :: Bool, timed :: Bool}
   | CRChatItemDeletedNotFound {user :: User, contact :: Contact, sharedMsgId :: SharedMsgId}
   | CRBroadcastSent {user :: User, msgContent :: MsgContent, successes :: Int, failures :: Int, timestamp :: UTCTime}
   | CRMsgIntegrityError {user :: User, msgError :: MsgErrorType}
@@ -624,6 +629,7 @@ data ChatResponse
   | CRVersionInfo {versionInfo :: CoreVersionInfo, chatMigrations :: [UpMigration], agentMigrations :: [UpMigration]}
   | CRInvitation {user :: User, connReqInvitation :: ConnReqInvitation, connection :: PendingContactConnection}
   | CRConnectionIncognitoUpdated {user :: User, toConnection :: PendingContactConnection}
+  | CRConnectionUserChanged {user :: User, fromConnection :: PendingContactConnection, toConnection :: PendingContactConnection, newUser :: User}
   | CRConnectionPlan {user :: User, connectionPlan :: ConnectionPlan}
   | CRSentConfirmation {user :: User, connection :: PendingContactConnection}
   | CRSentInvitation {user :: User, connection :: PendingContactConnection, customUserProfile :: Maybe Profile}
@@ -675,6 +681,7 @@ data ChatResponse
   | CRContactPrefsUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
   | CRContactConnecting {user :: User, contact :: Contact}
   | CRContactConnected {user :: User, contact :: Contact, userCustomProfile :: Maybe Profile}
+  | CRContactSndReady {user :: User, contact :: Contact}
   | CRContactAnotherClient {user :: User, contact :: Contact}
   | CRSubscriptionEnd {user :: User, connectionEntity :: ConnectionEntity}
   | CRContactsDisconnected {server :: SMPServer, contactRefs :: [ContactRef]}
@@ -734,7 +741,7 @@ data ChatResponse
   | CRUserContactLinkSubError {chatError :: ChatError} -- TODO delete
   | CRNtfTokenStatus {status :: NtfTknStatus}
   | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode, ntfServer :: NtfServer}
-  | CRNtfMessages {user_ :: Maybe User, connEntity_ :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessages :: [NtfMsgInfo]}
+  | CRNtfMessages {user_ :: Maybe User, connEntity_ :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessage_ :: Maybe NtfMsgInfo}
   | CRNtfMessage {user :: User, connEntity :: ConnectionEntity, ntfMessage :: NtfMsgInfo}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
@@ -755,6 +762,7 @@ data ChatResponse
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
   | CRDebugLocks {chatLockName :: Maybe String, chatEntityLocks :: Map String String, agentLocks :: AgentLocks}
+  | CRAgentSubsTotal {user :: User, subsTotal :: SMPServerSubs, hasSession :: Bool}
   | CRAgentServersSummary {user :: User, serversSummary :: PresentedServersSummary}
   | CRAgentWorkersDetails {agentWorkersDetails :: AgentWorkersDetails}
   | CRAgentWorkersSummary {agentWorkersSummary :: AgentWorkersSummary}
@@ -771,6 +779,7 @@ data ChatResponse
   | CRChatCmdError {user_ :: Maybe User, chatError :: ChatError}
   | CRChatError {user_ :: Maybe User, chatError :: ChatError}
   | CRChatErrors {user_ :: Maybe User, chatErrors :: [ChatError]}
+  | CRArchiveExported {archiveErrors :: [ArchiveError]}
   | CRArchiveImported {archiveErrors :: [ArchiveError]}
   | CRAppSettings {appSettings :: AppSettings}
   | CRTimedAction {action :: String, durationMilliseconds :: Int64}
@@ -1077,6 +1086,12 @@ tmeToPref currentTTL tme = uncurry TimedMessagesPreference $ case tme of
   TMEEnableKeepTTL -> (FAYes, currentTTL)
   TMEDisableKeepTTL -> (FANo, currentTTL)
 
+data ChatItemDeletion = ChatItemDeletion
+  { deletedChatItem :: AChatItem,
+    toChatItem :: Maybe AChatItem
+  }
+  deriving (Show)
+
 data ChatLogLevel = CLLDebug | CLLInfo | CLLWarning | CLLError | CLLImportant
   deriving (Eq, Ord, Show)
 
@@ -1163,7 +1178,6 @@ data ChatErrorType
   | CEInlineFileProhibited {fileId :: FileTransferId}
   | CEInvalidQuote
   | CEInvalidForward
-  | CEForwardNoFile
   | CEInvalidChatItemUpdate
   | CEInvalidChatItemDelete
   | CEHasCurrentCall
@@ -1178,6 +1192,7 @@ data ChatErrorType
   | CEAgentCommandError {message :: String}
   | CEInvalidFileDescription {message :: String}
   | CEConnectionIncognitoChangeProhibited
+  | CEConnectionUserChangeProhibited
   | CEPeerChatVRangeIncompatible
   | CEInternalError {message :: String}
   | CEException {message :: String}
@@ -1191,7 +1206,7 @@ data DatabaseError
   | DBErrorOpen {sqliteError :: SQLiteError}
   deriving (Show, Exception)
 
-data SQLiteError = SQLiteErrorNotADatabase | SQLiteError String
+data SQLiteError = SQLiteErrorNotADatabase | SQLiteError {dbError :: String}
   deriving (Show, Exception)
 
 throwDBError :: DatabaseError -> CM ()
@@ -1240,8 +1255,8 @@ data RemoteCtrlStopReason
   deriving (Show, Exception)
 
 data ArchiveError
-  = AEImport {chatError :: ChatError}
-  | AEImportFile {file :: String, chatError :: ChatError}
+  = AEImport {importError :: String}
+  | AEFileError {file :: String, fileError :: String}
   deriving (Show, Exception)
 
 -- | Host (mobile) side of transport to process remote commands and forward notifications
@@ -1390,11 +1405,24 @@ toView' ev = do
 
 withStore' :: (DB.Connection -> IO a) -> CM a
 withStore' action = withStore $ liftIO . action
+{-# INLINE withStore' #-}
+
+withFastStore' :: (DB.Connection -> IO a) -> CM a
+withFastStore' action = withFastStore $ liftIO . action
+{-# INLINE withFastStore' #-}
 
 withStore :: (DB.Connection -> ExceptT StoreError IO a) -> CM a
-withStore action = do
+withStore = withStorePriority False
+{-# INLINE withStore #-}
+
+withFastStore :: (DB.Connection -> ExceptT StoreError IO a) -> CM a
+withFastStore = withStorePriority True
+{-# INLINE withFastStore #-}
+
+withStorePriority :: Bool -> (DB.Connection -> ExceptT StoreError IO a) -> CM a
+withStorePriority priority action = do
   ChatController {chatStore} <- ask
-  liftIOEither $ withTransaction chatStore (runExceptT . withExceptT ChatErrorStore . action) `E.catches` handleDBErrors
+  liftIOEither $ withTransactionPriority chatStore priority (runExceptT . withExceptT ChatErrorStore . action) `E.catches` handleDBErrors
 
 withStoreBatch :: Traversable t => (DB.Connection -> t (IO (Either ChatError a))) -> CM' (t (Either ChatError a))
 withStoreBatch actions = do
@@ -1469,6 +1497,8 @@ $(JQ.deriveJSON defaultJSON ''RatchetSyncProgress)
 $(JQ.deriveJSON defaultJSON ''ServerAddress)
 
 $(JQ.deriveJSON defaultJSON ''ParsedServerAddress)
+
+$(JQ.deriveJSON defaultJSON ''ChatItemDeletion)
 
 $(JQ.deriveJSON defaultJSON ''CoreVersionInfo)
 

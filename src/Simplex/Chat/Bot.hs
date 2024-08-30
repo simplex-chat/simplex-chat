@@ -3,6 +3,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedLists #-}
 
 module Simplex.Chat.Bot where
 
@@ -10,6 +11,7 @@ import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad
 import qualified Data.ByteString.Char8 as B
+import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Text as T
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
@@ -30,7 +32,7 @@ chatBotRepl welcome answer _user cc = do
       CRContactConnected _ contact _ -> do
         contactConnected contact
         void $ sendMessage cc contact welcome
-      CRNewChatItem _ (AChatItem _ SMDRcv (DirectChat contact) ChatItem {content = mc@CIRcvMsgContent {}}) -> do
+      CRNewChatItems {chatItems = (AChatItem _ SMDRcv (DirectChat contact) ChatItem {content = mc@CIRcvMsgContent {}}) : _} -> do
         let msg = T.unpack $ ciContentToText mc
         void $ sendMessage cc contact =<< answer contact msg
       _ -> pure ()
@@ -67,15 +69,15 @@ sendComposedMessage cc = sendComposedMessage' cc . contactId'
 sendComposedMessage' :: ChatController -> ContactId -> Maybe ChatItemId -> MsgContent -> IO ()
 sendComposedMessage' cc ctId quotedItemId msgContent = do
   let cm = ComposedMessage {fileSource = Nothing, quotedItemId, msgContent}
-  sendChatCmd cc (APISendMessage (ChatRef CTDirect ctId) False Nothing cm) >>= \case
-    CRNewChatItem {} -> printLog cc CLLInfo $ "sent message to contact ID " <> show ctId
+  sendChatCmd cc (APISendMessages (ChatRef CTDirect ctId) False Nothing (cm :| [])) >>= \case
+    CRNewChatItems {} -> printLog cc CLLInfo $ "sent message to contact ID " <> show ctId
     r -> putStrLn $ "unexpected send message response: " <> show r
 
 deleteMessage :: ChatController -> Contact -> ChatItemId -> IO ()
 deleteMessage cc ct chatItemId = do
-  let cmd = APIDeleteChatItem (contactRef ct) chatItemId CIDMInternal
+  let cmd = APIDeleteChatItem (contactRef ct) [chatItemId] CIDMInternal
   sendChatCmd cc cmd >>= \case
-    CRChatItemDeleted {} -> printLog cc CLLInfo $ "deleted message from " <> contactInfo ct
+    CRChatItemsDeleted {} -> printLog cc CLLInfo $ "deleted message(s) from " <> contactInfo ct
     r -> putStrLn $ "unexpected delete message response: " <> show r
 
 contactRef :: Contact -> ChatRef

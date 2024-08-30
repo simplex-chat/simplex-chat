@@ -30,7 +30,7 @@ struct UserAddressView: View {
         case deleteAddress
         case profileAddress(on: Bool)
         case shareOnCreate
-        case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
+        case error(title: LocalizedStringKey, error: LocalizedStringKey?)
 
         var id: String {
             switch self {
@@ -185,7 +185,7 @@ struct UserAddressView: View {
                     }, secondaryButton: .cancel()
                 )
             case let .error(title, error):
-                return Alert(title: Text(title), message: Text(error))
+                return mkAlert(title: title, message: error)
             }
         }
     }
