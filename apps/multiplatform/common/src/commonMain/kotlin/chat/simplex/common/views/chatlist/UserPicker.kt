@@ -409,7 +409,7 @@ fun UserPicker(
           val currentRemoteHost = remember { chatModel.currentRemoteHost }.value
           Column(
             Modifier
-              .padding(vertical = DEFAULT_PADDING)
+              .padding(vertical = DEFAULT_PADDING_HALF)
           ) {
             if (remoteHosts.isNotEmpty()) {
               val localDeviceActive = currentRemoteHost == null && chatModel.localUserCreated.value == true
