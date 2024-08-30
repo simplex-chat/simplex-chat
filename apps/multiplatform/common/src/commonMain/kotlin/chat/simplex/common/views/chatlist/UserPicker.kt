@@ -74,8 +74,14 @@ private fun UsersLayout(
 
     SectionView(contentPadding = PaddingValues(DEFAULT_PADDING)) {
       Row {
-        Column(modifier = Modifier.clickable(onClick = onCurrentUserClick, enabled = !stopped)) {
-          ProfileImage(size = 54.dp * fontSizeSqrtMultiplier, image = currentUser.image)
+        Column {
+          IconButton(onClick = onCurrentUserClick, enabled = !stopped) {
+              ProfileImage(
+                image = currentUser.image,
+                size = 54.dp * fontSizeSqrtMultiplier,
+                color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f)
+              )
+          }
           Text(
             currentUser.displayName,
             style = MaterialTheme.typography.caption,
@@ -87,23 +93,22 @@ private fun UsersLayout(
         }
         Spacer(Modifier.weight(1f))
         users.forEach { u ->
-          Column(
-            Modifier.clickable(onClick = { onUserClicked(u.user) }, enabled = !stopped)
+          IconButton(
+            onClick = { onUserClicked(u.user) },
+            enabled = !stopped
           ) {
             ProfileImage(size = 44.dp * fontSizeSqrtMultiplier, image = u.user.image)
           }
         }
-        Column(
+        IconButton(
+          onClick = onShowAllProfilesClicked,
+          enabled = !stopped,
           modifier = Modifier
             .clip(CircleShape)
             .border(
               BorderStroke(1.dp, mainColor),
               shape = CircleShape
             )
-            .clickable(onClick = onShowAllProfilesClicked, enabled = !stopped)
-            .size(44.dp * fontSizeSqrtMultiplier),
-          verticalArrangement = Arrangement.Center,
-          horizontalAlignment = Alignment.CenterHorizontally
         ) {
           Icon(painterResource(MR.images.ic_more_horiz), stringResource(MR.strings.your_chat_profiles), tint = mainColor)
         }
