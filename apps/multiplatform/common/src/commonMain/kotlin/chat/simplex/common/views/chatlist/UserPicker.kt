@@ -605,13 +605,16 @@ private fun DevicePickerRow(
     horizontalArrangement = Arrangement.spacedBy(12.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    DevicePill(
-      active = localDeviceActive,
-      icon = painterResource(MR.images.ic_desktop),
-      text = stringResource(MR.strings.this_device),
-      actionButtonVisible = false
-    ) {
-      onLocalDeviceClick()
+
+    if (localDeviceActive) {
+      DevicePill(
+        active = true,
+        icon = painterResource(MR.images.ic_desktop),
+        text = stringResource(MR.strings.this_device),
+        actionButtonVisible = false
+      ) {
+        onLocalDeviceClick()
+      }
     }
     remoteHosts.filter { h -> h.activeHost }.forEach { h ->
       val connecting = rememberSaveable { mutableStateOf(false) }
@@ -624,6 +627,17 @@ private fun DevicePickerRow(
         onActionButtonClick = { onRemoteHostActionButtonClick(h) }
       ) {
         onRemoteHostClick(h, connecting)
+      }
+    }
+
+    if (!localDeviceActive) {
+      DevicePill(
+        active = false,
+        icon = painterResource(MR.images.ic_desktop),
+        text = stringResource(MR.strings.this_device),
+        actionButtonVisible = false
+      ) {
+        onLocalDeviceClick()
       }
     }
   }
