@@ -183,14 +183,12 @@ private fun UsersLayout(
         IconButton(
           onClick = onShowAllProfilesClicked,
           enabled = !stopped,
-          modifier = Modifier
-            .clip(CircleShape)
-            .border(
-              BorderStroke(1.dp, mainColor),
-              shape = CircleShape
-            )
         ) {
-          Icon(painterResource(MR.images.ic_more_horiz), stringResource(MR.strings.your_chat_profiles), tint = mainColor)
+          Icon(
+            painterResource(MR.images.ic_more_horiz),
+            stringResource(MR.strings.your_chat_profiles),
+            tint = mainColor,
+          )
         }
       }
     }
