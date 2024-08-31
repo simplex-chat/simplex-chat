@@ -401,14 +401,22 @@ fun UserPicker(
 
   AnimatedVisibility(
     visible = newChat.isVisible(),
-    enter = if (appPlatform.isAndroid) slideInVertically(
-      initialOffsetY = { it },
-      animationSpec = tween(durationMillis = 300)
-    ) else fadeIn(),
-    exit = if (appPlatform.isAndroid) slideOutVertically(
-      targetOffsetY = { it },
-      animationSpec = tween(durationMillis = 300)
-    ) else fadeOut()
+    enter = if (appPlatform.isAndroid) {
+      slideInVertically(
+        initialOffsetY = { it },
+        animationSpec = tween(durationMillis = 300)
+      ) + fadeIn(animationSpec = tween(durationMillis = 300))
+    } else {
+      fadeIn()
+    },
+    exit = if (appPlatform.isAndroid) {
+      slideOutVertically(
+        targetOffsetY = { it },
+        animationSpec = tween(durationMillis = 300)
+      ) + fadeOut(animationSpec = tween(durationMillis = 300))
+    } else {
+      fadeOut()
+    }
   ) {
     Box(
       Modifier
