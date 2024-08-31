@@ -169,14 +169,14 @@ private fun UsersLayout(
           )
         }
         Spacer(Modifier.weight(1f))
-        Row(horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
           users.forEach { u ->
             IconButton(
               onClick = { onUserClicked(u.user) },
               enabled = !stopped
             ) {
               Box {
-                ProfileImage(size = 44.dp * fontSizeSqrtMultiplier, image = u.user.image)
+                ProfileImage(size = 37.dp * fontSizeSqrtMultiplier, image = u.user.image)
 
                 if (u.unreadCount > 0) {
                   unreadBadge()
@@ -189,9 +189,8 @@ private fun UsersLayout(
             enabled = !stopped,
           ) {
             Box(
-              modifier = Modifier
-                .size(38.dp * fontSizeSqrtMultiplier),
-              contentAlignment = Alignment.Center
+              contentAlignment = Alignment.Center,
+              modifier = Modifier.size(37.dp * fontSizeSqrtMultiplier)
             ) {
               Icon(
                 painterResource(MR.images.ic_add_group),
