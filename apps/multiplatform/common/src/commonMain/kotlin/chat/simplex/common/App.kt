@@ -367,7 +367,6 @@ fun EndPartOfScreen() {
 @Composable
 fun DesktopScreen(settingsState: SettingsViewState) {
   Box {
-    // 56.dp is a size of unused space of settings drawer
     Box(Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier + 56.dp)) {
       StartPartOfScreen(settingsState)
     }

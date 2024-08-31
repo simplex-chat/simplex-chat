@@ -654,7 +654,6 @@ fun ChatLayout(
           modifier = Modifier.navigationBarsWithImePadding(),
           floatingActionButton = { floatingButton.value() },
           contentColor = LocalContentColor.current,
-          drawerContentColor = LocalContentColor.current,
           backgroundColor = Color.Unspecified
         ) { contentPadding ->
           val wallpaperImage = MaterialTheme.wallpaper.type.image

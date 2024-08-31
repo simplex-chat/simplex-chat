@@ -109,7 +109,6 @@ fun TerminalLayout(
         }
       },
       contentColor = LocalContentColor.current,
-      drawerContentColor = LocalContentColor.current,
       modifier = Modifier.navigationBarsWithImePadding()
     ) { contentPadding ->
       Surface(

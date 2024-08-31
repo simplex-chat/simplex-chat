@@ -30,7 +30,6 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
   Scaffold(
     Modifier.padding(end = endPadding),
     contentColor = LocalContentColor.current,
-    drawerContentColor = LocalContentColor.current,
     topBar = {
       if (!oneHandUI.value) {
         Column {

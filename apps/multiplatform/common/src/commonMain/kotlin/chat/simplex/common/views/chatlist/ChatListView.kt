@@ -183,9 +183,6 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
       }
     },
     contentColor = LocalContentColor.current,
-    drawerContentColor = LocalContentColor.current,
-    drawerScrimColor = MaterialTheme.colors.onSurface.copy(alpha = if (isInDarkTheme()) 0.16f else 0.32f),
-    drawerGesturesEnabled = appPlatform.isAndroid,
     floatingActionButton = {
       if (!oneHandUI.value && searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
         FloatingActionButton(
