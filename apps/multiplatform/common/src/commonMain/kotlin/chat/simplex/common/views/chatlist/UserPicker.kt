@@ -160,12 +160,11 @@ private fun UsersLayout(
           }
           Text(
             currentUser.displayName,
-            style = MaterialTheme.typography.caption,
+            style = MaterialTheme.typography.h2,
             fontWeight = FontWeight.Bold,
             color = mainColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            fontSize = 16.sp * fontSizeMultiplier,
             modifier = Modifier.padding(top = 12.dp, start = 4.dp)
           )
         }
