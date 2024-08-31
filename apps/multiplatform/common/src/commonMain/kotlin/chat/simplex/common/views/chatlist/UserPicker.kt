@@ -258,9 +258,12 @@ private fun UserPickerUserSectionLayout (
     )
     if (appPlatform.isAndroid) {
       UseFromDesktopPickerItem {
+        Log.d(TAG, "jere")
         showCustomModal { _, close ->
+          Log.d(TAG, "showing")
+
           ConnectDesktopView(close)
-        }
+        }()
         userPickerState.value = AnimatedViewState.GONE
       }
     } else {
