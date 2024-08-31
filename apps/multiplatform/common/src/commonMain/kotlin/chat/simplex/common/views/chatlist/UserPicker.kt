@@ -45,7 +45,7 @@ private fun UserPickerOptionRow(icon: Painter, text: String, click: (() -> Unit)
   SectionItemView(click, disabled = disabled) {
     Icon(icon, text, tint = if (disabled) MaterialTheme.colors.secondary else MenuTextColor)
     TextIconSpaced()
-    Text(text = text, color = if (disabled) MaterialTheme.colors.secondary else MenuTextColor, fontSize = 14.sp * fontSizeMultiplier)
+    Text(text = text, color = if (disabled) MaterialTheme.colors.secondary else MenuTextColor)
   }
 }
 
@@ -472,7 +472,7 @@ fun UserPicker(
             SectionItemView(settingsClicked, padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)) {
               Icon(painterResource(MR.images.ic_settings), text, tint = MenuTextColor)
               TextIconSpaced()
-              Text(text, color = MenuTextColor, fontSize = 14.sp * fontSizeMultiplier)
+              Text(text, color = MenuTextColor)
               Spacer(Modifier.weight(1f))
               ColorModeSwitcher()
             }
