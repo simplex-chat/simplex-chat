@@ -12,7 +12,7 @@ import SimpleXChat
 struct FramedItemView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
-    @EnvironmentObject var scrollModel: ReverseListScrollModel<ChatItem>
+    @EnvironmentObject var scrollModel: ReverseListScrollModel
     @ObservedObject var chat: Chat
     var chatItem: ChatItem
     var preview: UIImage?
@@ -71,8 +71,8 @@ struct FramedItemView: View {
                     .overlay(DetermineWidth())
                     .accessibilityLabel("")
             }
-        }
-            .background(chatItemFrameColorMaybeImageOrVideo(chatItem, theme))
+        }   
+            .background { chatItemFrameColorMaybeImageOrVideo(chatItem, theme).modifier(ChatTailPadding()) }
             .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
 
         if let (title, text) = chatItem.meta.itemStatus.statusInfo {

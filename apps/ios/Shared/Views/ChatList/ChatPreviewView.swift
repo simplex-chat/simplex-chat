@@ -324,12 +324,12 @@ struct ChatPreviewView: View {
         case let .image(_, image):
             smallContentPreview(size: dynamicMediaSize) {
                 CIImageView(chatItem: ci, preview: UIImage(base64Encoded: image), maxWidth: dynamicMediaSize, smallView: true, showFullScreenImage: $showFullscreenGallery)
-                    .environmentObject(ReverseListScrollModel<ChatItem>())
+                    .environmentObject(ReverseListScrollModel())
             }
         case let .video(_,image, duration):
             smallContentPreview(size: dynamicMediaSize) {
                 CIVideoView(chatItem: ci, preview: UIImage(base64Encoded: image), duration: duration, maxWidth: dynamicMediaSize, videoWidth: nil, smallView: true, showFullscreenPlayer: $showFullscreenGallery)
-                    .environmentObject(ReverseListScrollModel<ChatItem>())
+                    .environmentObject(ReverseListScrollModel())
             }
         case let .voice(_, duration):
             smallContentPreviewVoice(size: dynamicMediaSize) {

@@ -339,7 +339,9 @@ class NotificationService: UNNotificationServiceExtension {
                 CXProvider.reportNewIncomingVoIPPushPayload([
                     "displayName": invitation.contact.displayName,
                     "contactId": invitation.contact.id,
-                    "media": invitation.callType.media.rawValue
+                    "callUUID": invitation.callUUID ?? "",
+                    "media": invitation.callType.media.rawValue,
+                    "callTs": invitation.callTs.timeIntervalSince1970
                 ]) { error in
                     logger.debug("reportNewIncomingVoIPPushPayload result: \(error)")
                     deliver(error == nil ? nil : createCallInvitationNtf(invitation))

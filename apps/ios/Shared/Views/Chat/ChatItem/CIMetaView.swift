@@ -12,6 +12,7 @@ import SimpleXChat
 struct CIMetaView: View {
     @ObservedObject var chat: Chat
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.showTimestamp) var showTimestamp: Bool
     var chatItem: ChatItem
     var metaColor: Color
     var paleMetaColor = Color(UIColor.tertiaryLabel)
@@ -30,24 +31,24 @@ struct CIMetaView: View {
             switch meta.itemStatus {
             case let .sndSent(sndProgress):
                 switch sndProgress {
-                case .complete: ciMetaText(meta, chatTTL: ttl, encrypted: encrypted,  color: metaColor, sent: .sent, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy)
-                case .partial: ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .sent, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy)
+                case .complete: ciMetaText(meta, chatTTL: ttl, encrypted: encrypted,  color: metaColor, sent: .sent, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
+                case .partial: ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .sent, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
                 }
             case let .sndRcvd(_, sndProgress):
                 switch sndProgress {
                 case .complete:
                     ZStack {
-                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, sent: .rcvd1, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy)
-                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, sent: .rcvd2, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy)
+                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, sent: .rcvd1, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
+                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, sent: .rcvd2, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
                     }
                 case .partial:
                     ZStack {
-                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .rcvd1, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy)
-                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .rcvd2, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy)
+                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .rcvd1, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
+                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .rcvd2, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
                     }
                 }
             default:
-                ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy)
+                ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
             }
         }
     }
@@ -69,7 +70,8 @@ func ciMetaText(
     sent: SentCheckmark? = nil,
     showStatus: Bool = true,
     showEdited: Bool = true,
-    showViaProxy: Bool
+    showViaProxy: Bool,
+    showTimesamp: Bool
 ) -> Text {
     var r = Text("")
     if showEdited, meta.itemEdited {
@@ -105,7 +107,9 @@ func ciMetaText(
     if let enc = encrypted {
         r = r + statusIconText(enc ? "lock" : "lock.open", color) + Text(" ")
     }
-    r = r + meta.timestampText.foregroundColor(color)
+    if showTimesamp {
+        r = r + meta.timestampText.foregroundColor(color)
+    }
     return r.font(.caption)
 }
 

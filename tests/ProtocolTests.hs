@@ -16,7 +16,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet
-import Simplex.Messaging.Protocol (supportedSMPClientVRange)
+import Simplex.Messaging.Protocol (EntityId (..), supportedSMPClientVRange)
 import Simplex.Messaging.ServiceScheme
 import Simplex.Messaging.Version
 import Test.Hspec
@@ -33,7 +33,7 @@ queue =
     supportedSMPClientVRange
     SMPQueueAddress
       { smpServer = srv,
-        senderId = "\223\142z\251",
+        senderId = EntityId "\223\142z\251",
         dhPublicKey = "MCowBQYDK2VuAyEAjiswwI3O/NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o=",
         sndSecure = False
       }

@@ -15,6 +15,7 @@ struct CIRcvDecryptionError: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
+    @Environment(\.showTimestamp) var showTimestamp: Bool
     var msgDecryptError: MsgDecryptError
     var msgCount: UInt32
     var chatItem: ChatItem
@@ -68,37 +69,40 @@ struct CIRcvDecryptionError: View {
     }
 
     @ViewBuilder private func viewBody() -> some View {
-        if case let .direct(contact) = chat.chatInfo,
-           let contactStats = contact.activeConn?.connectionStats {
-            if contactStats.ratchetSyncAllowed {
-                decryptionErrorItemFixButton(syncSupported: true) {
-                    alert = .syncAllowedAlert { syncContactConnection(contact) }
+        Group {
+            if case let .direct(contact) = chat.chatInfo,
+               let contactStats = contact.activeConn?.connectionStats {
+                if contactStats.ratchetSyncAllowed {
+                    decryptionErrorItemFixButton(syncSupported: true) {
+                        alert = .syncAllowedAlert { syncContactConnection(contact) }
+                    }
+                } else if !contactStats.ratchetSyncSupported {
+                    decryptionErrorItemFixButton(syncSupported: false) {
+                        alert = .syncNotSupportedContactAlert
+                    }
+                } else {
+                    basicDecryptionErrorItem()
                 }
-            } else if !contactStats.ratchetSyncSupported {
-                decryptionErrorItemFixButton(syncSupported: false) {
-                    alert = .syncNotSupportedContactAlert
+            } else if case let .group(groupInfo) = chat.chatInfo,
+                      case let .groupRcv(groupMember) = chatItem.chatDir,
+                      let mem = m.getGroupMember(groupMember.groupMemberId),
+                      let memberStats = mem.wrapped.activeConn?.connectionStats {
+                if memberStats.ratchetSyncAllowed {
+                    decryptionErrorItemFixButton(syncSupported: true) {
+                        alert = .syncAllowedAlert { syncMemberConnection(groupInfo, groupMember) }
+                    }
+                } else if !memberStats.ratchetSyncSupported {
+                    decryptionErrorItemFixButton(syncSupported: false) {
+                        alert = .syncNotSupportedMemberAlert
+                    }
+                } else {
+                    basicDecryptionErrorItem()
                 }
             } else {
                 basicDecryptionErrorItem()
             }
-        } else if case let .group(groupInfo) = chat.chatInfo,
-                  case let .groupRcv(groupMember) = chatItem.chatDir,
-                  let mem = m.getGroupMember(groupMember.groupMemberId),
-                  let memberStats = mem.wrapped.activeConn?.connectionStats {
-            if memberStats.ratchetSyncAllowed {
-                decryptionErrorItemFixButton(syncSupported: true) {
-                    alert = .syncAllowedAlert { syncMemberConnection(groupInfo, groupMember) }
-                }
-            } else if !memberStats.ratchetSyncSupported {
-                decryptionErrorItemFixButton(syncSupported: false) {
-                    alert = .syncNotSupportedMemberAlert
-                }
-            } else {
-                basicDecryptionErrorItem()
-            }
-        } else {
-            basicDecryptionErrorItem()
         }
+        .background { chatItemFrameColor(chatItem, theme).modifier(ChatTailPadding()) }
     }
 
     private func basicDecryptionErrorItem() -> some View {
@@ -122,7 +126,7 @@ struct CIRcvDecryptionError: View {
                         .foregroundColor(syncSupported ? theme.colors.primary : theme.colors.secondary)
                         .font(.callout)
                     + Text("   ")
-                    + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showViaProxy: showSentViaProxy)
+                    + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
                 )
             }
             .padding(.horizontal, 12)
@@ -131,7 +135,6 @@ struct CIRcvDecryptionError: View {
         }
         .onTapGesture(perform: { onClick() })
         .padding(.vertical, 6)
-        .background(Color(uiColor: .tertiarySystemGroupedBackground))
         .textSelection(.disabled)
     }
 
@@ -142,7 +145,7 @@ struct CIRcvDecryptionError: View {
                     .foregroundColor(.red)
                     .italic()
                 + Text("   ")
-                + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showViaProxy: showSentViaProxy)
+                + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
             }
             .padding(.horizontal, 12)
             CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)
@@ -150,7 +153,6 @@ struct CIRcvDecryptionError: View {
         }
         .onTapGesture(perform: { onClick() })
         .padding(.vertical, 6)
-        .background(Color(uiColor: .tertiarySystemGroupedBackground))
         .textSelection(.disabled)
     }
 
