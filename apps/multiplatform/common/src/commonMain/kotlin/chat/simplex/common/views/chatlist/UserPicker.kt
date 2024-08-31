@@ -399,108 +399,105 @@ fun UserPicker(
     }
   }
 
-  Box(
-    modifier = if (appPlatform.isAndroid && newChat.isVisible()) Modifier.background(color = Color.Gray.copy(alpha = 0.6f)) else Modifier) {
-    AnimatedVisibility(
-      visible = newChat.isVisible(),
-      enter = if (appPlatform.isAndroid) slideInVertically(
-        initialOffsetY = { it },
-        animationSpec = tween(durationMillis = 300)
-      ) else fadeIn(),
-      exit = if (appPlatform.isAndroid) slideOutVertically(
-        targetOffsetY = {  it },
-        animationSpec = tween(durationMillis = 300)
-      ) else fadeOut()
-    ) {
-      Box(Modifier
+  AnimatedVisibility(
+    visible = newChat.isVisible(),
+    enter = if (appPlatform.isAndroid) slideInVertically(
+      initialOffsetY = { it },
+      animationSpec = tween(durationMillis = 300)
+    ) else fadeIn(),
+    exit = if (appPlatform.isAndroid) slideOutVertically(
+      targetOffsetY = { it },
+      animationSpec = tween(durationMillis = 300)
+    ) else fadeOut()
+  ) {
+    Box(
+      Modifier
         .fillMaxSize()
+        .then(if (appPlatform.isAndroid && newChat.isVisible()) Modifier.background(color = MaterialTheme.colors.onSurface.copy(alpha = if (isInDarkTheme()) 0.16f else 0.32f)) else Modifier)
         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = { userPickerState.value = AnimatedViewState.HIDING }),
-        contentAlignment = if (appPlatform.isAndroid) Alignment.BottomStart else Alignment.TopStart
+      contentAlignment = if (appPlatform.isAndroid) Alignment.BottomStart else Alignment.TopStart
+    ) {
+      Column(
+        Modifier
+          .height(IntrinsicSize.Min)
+          .then(if (appPlatform.isDesktop) Modifier.widthIn(max = 450.dp) else Modifier)
+          .shadow(8.dp, clip = true)
+          .fillMaxWidth()
+          .background(MaterialTheme.colors.surface)
       ) {
+        val currentRemoteHost = remember { chatModel.currentRemoteHost }.value
         Column(
           Modifier
-            .height(IntrinsicSize.Min)
-            .then(if (appPlatform.isDesktop) Modifier.widthIn(max = 450.dp) else Modifier)
-            .shadow(8.dp, clip = true)
-            .fillMaxWidth()
-            .background(MaterialTheme.colors.surface)
+            .padding(vertical = DEFAULT_PADDING_HALF)
         ) {
+          if (remoteHosts.isNotEmpty()) {
+            val localDeviceActive = currentRemoteHost == null && chatModel.localUserCreated.value == true
 
-          val currentRemoteHost = remember { chatModel.currentRemoteHost }.value
-          Column(
-            Modifier
-              .padding(vertical = DEFAULT_PADDING_HALF)
-          ) {
-            if (remoteHosts.isNotEmpty()) {
-              val localDeviceActive = currentRemoteHost == null && chatModel.localUserCreated.value == true
-
-              DevicePickerRow(
-                localDeviceActive = localDeviceActive,
-                remoteHosts = remoteHosts,
-                onRemoteHostClick = { h, connecting ->
-                  userPickerState.value = AnimatedViewState.HIDING
-                  switchToRemoteHost(h, connecting)
-                },
-                onLocalDeviceClick = {
-                  userPickerState.value = AnimatedViewState.HIDING
-                  switchToLocalDevice()
-                },
-                onRemoteHostActionButtonClick = { h ->
-                  userPickerState.value = AnimatedViewState.HIDING
-                  stopRemoteHostAndReloadHosts(h, true)
-                }
-              )
-            }
-
-            UserPickerUserSectionLayout(
-              chatModel = chatModel,
-              userPickerState = userPickerState,
-              showCustomModal = { modalView ->
-                {
-                  if (appPlatform.isDesktop) {
-                    userPickerState.value = AnimatedViewState.HIDING
-                  }
-                  ModalManager.start.showCustomModal { close -> modalView(chatModel, close) }
-                }
+            DevicePickerRow(
+              localDeviceActive = localDeviceActive,
+              remoteHosts = remoteHosts,
+              onRemoteHostClick = { h, connecting ->
+                userPickerState.value = AnimatedViewState.HIDING
+                switchToRemoteHost(h, connecting)
               },
-              withAuth = ::doWithAuth,
-              showModalWithSearch = { modalView ->
+              onLocalDeviceClick = {
+                userPickerState.value = AnimatedViewState.HIDING
+                switchToLocalDevice()
+              },
+              onRemoteHostActionButtonClick = { h ->
+                userPickerState.value = AnimatedViewState.HIDING
+                stopRemoteHostAndReloadHosts(h, true)
+              }
+            )
+          }
+
+          UserPickerUserSectionLayout(
+            chatModel = chatModel,
+            userPickerState = userPickerState,
+            showCustomModal = { modalView ->
+              {
                 if (appPlatform.isDesktop) {
                   userPickerState.value = AnimatedViewState.HIDING
                 }
-                ModalManager.start.showCustomModal { close ->
-                  val search = rememberSaveable { mutableStateOf("") }
-                  ModalView(
-                    { close() },
-                    endButtons = {
-                      SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
-                    },
-                    content = { modalView(chatModel, search) })
-                }
-              },
-            )
+                ModalManager.start.showCustomModal { close -> modalView(chatModel, close) }
+              }
+            },
+            withAuth = ::doWithAuth,
+            showModalWithSearch = { modalView ->
+              if (appPlatform.isDesktop) {
+                userPickerState.value = AnimatedViewState.HIDING
+              }
+              ModalManager.start.showCustomModal { close ->
+                val search = rememberSaveable { mutableStateOf("") }
+                ModalView(
+                  { close() },
+                  endButtons = {
+                    SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
+                  },
+                  content = { modalView(chatModel, search) })
+              }
+            },
+          )
 
-            Divider(Modifier.padding(DEFAULT_PADDING))
-
-            val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
-            SectionItemView(
-              click = {
-                userPickerState.value = AnimatedViewState.GONE
-                ModalManager.start.showModalCloseable { close ->
-                  SettingsView(chatModel, setPerformLA, close)
-                }
-              },
-              padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)
-            ) {
-              Icon(painterResource(MR.images.ic_settings), text, tint = MaterialTheme.colors.secondary)
-              TextIconSpaced()
-              Text(text, color = Color.Unspecified)
-              Spacer(Modifier.weight(1f))
-              ColorModeSwitcher()
-            }
-
-            Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+          Divider(Modifier.padding(DEFAULT_PADDING))
+          val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
+          SectionItemView(
+            click = {
+              userPickerState.value = AnimatedViewState.GONE
+              ModalManager.start.showModalCloseable { close ->
+                SettingsView(chatModel, setPerformLA, close)
+              }
+            },
+            padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)
+          ) {
+            Icon(painterResource(MR.images.ic_settings), text, tint = MaterialTheme.colors.secondary)
+            TextIconSpaced()
+            Text(text, color = Color.Unspecified)
+            Spacer(Modifier.weight(1f))
+            ColorModeSwitcher()
           }
+
+          Spacer(Modifier.height(DEFAULT_PADDING_HALF))
         }
       }
     }
