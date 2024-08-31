@@ -43,9 +43,9 @@ import kotlinx.coroutines.flow.*
 @Composable
 private fun UserPickerOptionRow(icon: Painter, text: String, click: (() -> Unit)? = null, disabled: Boolean = false) {
   SectionItemView(click, disabled = disabled) {
-    Icon(icon, text, tint = if (disabled) MaterialTheme.colors.secondary else MenuTextColor)
+    Icon(icon, text, tint = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.secondary)
     TextIconSpaced()
-    Text(text = text, color = if (disabled) MaterialTheme.colors.secondary else MenuTextColor)
+    Text(text = text, color = if (disabled) MaterialTheme.colors.secondary else Color.Unspecified)
   }
 }
 
@@ -146,7 +146,7 @@ private fun UsersLayout(
   }
 
   if (currentUser != null) {
-    val mainColor = if (stopped) MaterialTheme.colors.secondary else MenuTextColor
+    val mainColor = if (stopped) MaterialTheme.colors.secondary else Color.Unspecified
 
     SectionView(contentPadding = PaddingValues(bottom = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF, top = if (appPlatform.isAndroid) DEFAULT_PADDING_HALF else 0.dp)) {
       Row {
@@ -190,16 +190,13 @@ private fun UsersLayout(
           ) {
             Box(
               modifier = Modifier
-                .border(
-                  BorderStroke(1.dp, mainColor), shape = CircleShape
-                )
                 .size(38.dp * fontSizeSqrtMultiplier),
               contentAlignment = Alignment.Center
             ) {
               Icon(
                 painterResource(MR.images.ic_add_group),
                 stringResource(MR.strings.your_chat_profiles),
-                tint = mainColor,
+                tint = MaterialTheme.colors.secondary,
               )
             }
           }
@@ -469,9 +466,9 @@ fun UserPicker(
 
             val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
             SectionItemView(settingsClicked, padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)) {
-              Icon(painterResource(MR.images.ic_settings), text, tint = MenuTextColor)
+              Icon(painterResource(MR.images.ic_settings), text, tint = MaterialTheme.colors.secondary)
               TextIconSpaced()
-              Text(text, color = MenuTextColor)
+              Text(text, color = Color.Unspecified)
               Spacer(Modifier.weight(1f))
               ColorModeSwitcher()
             }
