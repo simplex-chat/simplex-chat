@@ -93,7 +93,7 @@ The important questions for this feature:
 - do you always want that your contacts can see when you read all their messages? Probably, even with your close friends, sometimes you would prefer to have time before you answer their message, and also have a plausible deniability that you have not seen the message. And this should be ok - in the end, this is your device, and it should be for you to decide whether this confirmation message is sent or not, and when it is sent.
 - what practical problems an automatic notification sent to your contacts when you read the message solves for you compared with you simply adding a reaction to a message or sending a quick reply?
 
-Overall, it seems that this feature is more damaging to your communications with your contacts than it is helpful. It keeps senders longer in the app, nervously waiting for read receipts, exploiting addicitve patterns - having you spend more time in the app is the reason why it is usually present in most messaging apps. It also creates a pressure on the recipients to reply sooner, and if read receipts are opt-in, it creates a pressure to enable it, that can be particularly damaging in any relationships with power imbalance.
+Overall, it seems that this feature is more damaging to your communications with your contacts than it is helpful. It keeps senders longer in the app, nervously waiting for read receipts, exploiting addictive patterns - having you spend more time in the app is the reason why it is usually present in most messaging apps. It also creates a pressure on the recipients to reply sooner, and if read receipts are opt-in, it creates a pressure to enable it, that can be particularly damaging in any relationships with power imbalance.
 
 We think that delivery receipts are important and equally benefit both sides as the conversation, as they confirm that communication network functions properly. But we strongly believe that read receipts is an anti-feature that only benefits the app developers, and hurts the relations between the app users. So we are not planning to add it even as opt-in. In case you want your contact to know you've read the message put a reaction to it. And if you don't want them to know it - it is also ok, what your device sends should be under your control.
 
@@ -111,7 +111,7 @@ This is different from most other messengers that allow deleting messages from t
 
 We believe that allowing deleting information from your device to your contacts is a very wrong design decision for several reasons:
 1) it violates your data sovereignty as the device owner - once your are in possession of any information, you have the rights to retain it, and any deletion should be agreed with you. And security and privacy is not possible if users don't have sovereignty over their devices.
-2) it may be a business communication, and either your organisation policy or a compliance requirement is that every message you receive must be preserved for some time.
+2) it may be a business communication, and either your organization policy or a compliance requirement is that every message you receive must be preserved for some time.
 3) the message can contain a legally binding promise, effectively a contract between you and your contact, in which case you both need to keep it.
 4) the messages may contain threat or abuse and you may want to keep them as a proof.
 5) you may have paid for the the message (e.g., it can be a design project or consulting report), and you don't want it to suddenly disappear before you had a chance to store it outside of the conversation.
@@ -292,7 +292,7 @@ Of course! Please check these tutorials: [SMP server](./SERVER.md) and [XFTP ser
 
 ### How are you funded?
 
-SimpleX Chat Ltd is funded by private investors and venture capital. As an open-source project, it is also being generously supported by donations as well. Read [the post from April 2023](../blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.md#how-is-it-funded-and-what-is-the-business-model) and [the post from August 2024](../blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.md) for more details.
+SimpleX Chat Ltd is funded by private investors and venture capital. As an open-source project, it is also being generously supported by donations as well. Read the posts [from 2023](../blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.md#how-is-it-funded-and-what-is-the-business-model) and [from 2024](../blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.md) for more details.
 
 ### Why VCs?
 
