@@ -160,7 +160,7 @@ private fun UsersLayout(
           }
           Text(
             currentUser.displayName,
-            style = MaterialTheme.typography.h2,
+            style = MaterialTheme.typography.h3,
             fontWeight = FontWeight.Bold,
             color = mainColor,
             maxLines = 1,
