@@ -35,7 +35,7 @@ import chat.simplex.res.MR
 import kotlinx.coroutines.*
 
 @Composable
-fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, drawerState: DrawerState) {
+fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, close: () -> Unit) {
   val user = chatModel.currentUser.value
   val stopped = chatModel.chatRunning.value == false
   SettingsLayout(
@@ -69,10 +69,9 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, drawerSt
       }
     },
     withAuth = ::doWithAuth,
-    drawerState = drawerState,
   )
   KeyChangeEffect(chatModel.updatingProgress.value != null) {
-    drawerState.close()
+    close.invoke()
   }
 }
 
@@ -94,18 +93,11 @@ fun SettingsLayout(
   showCustomModal: (@Composable ModalData.(ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showVersion: () -> Unit,
   withAuth: (title: String, desc: String, block: () -> Unit) -> Unit,
-  drawerState: DrawerState,
 ) {
   val scope = rememberCoroutineScope()
-  val closeSettings: () -> Unit = { scope.launch { drawerState.close() } }
   val view = LocalMultiplatformView()
-  if (drawerState.isOpen) {
-    BackHandler {
-      closeSettings()
-    }
-    LaunchedEffect(Unit) {
-      hideKeyboard(view)
-    }
+  LaunchedEffect(Unit) {
+    hideKeyboard(view)
   }
   val theme = CurrentColors.collectAsState()
   val uriHandler = LocalUriHandler.current
@@ -509,7 +501,6 @@ fun PreviewSettingsLayout() {
       showCustomModal = { {} },
       showVersion = {},
       withAuth = { _, _, _ -> },
-      drawerState = DrawerState(DrawerValue.Closed),
     )
   }
 }

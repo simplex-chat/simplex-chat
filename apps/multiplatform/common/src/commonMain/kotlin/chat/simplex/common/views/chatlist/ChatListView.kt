@@ -23,6 +23,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.*
+import chat.simplex.common.AppLock
 import chat.simplex.common.SettingsViewState
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
@@ -155,16 +156,15 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
   }
   val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
-  val scope = rememberCoroutineScope()
-  val (userPickerState, scaffoldState ) = settingsState
+  val (userPickerState) = settingsState
   Scaffold(
     topBar = {
       if (!oneHandUI.value) {
         Column(Modifier.padding(end = endPadding)) {
           ChatListToolbar(
-            scaffoldState.drawerState,
             userPickerState,
             stopped,
+            setPerformLA,
           )
           Divider()
         }
@@ -175,23 +175,10 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
         Column(Modifier.padding(end = endPadding)) {
           Divider()
           ChatListToolbar(
-            scaffoldState.drawerState,
             userPickerState,
             stopped,
-          )
-        }
-      }
-    },
-    scaffoldState = scaffoldState,
-    drawerContent = {
-      tryOrShowError("Settings", error = { ErrorSettingsView() }) {
-        val handler = remember { AppBarHandler() }
-        CompositionLocalProvider(
-          LocalAppBarHandler provides handler
-        ) {
-          ModalView(showClose = appPlatform.isDesktop, close = { scope.launch { scaffoldState.drawerState.close() } }) {
-            SettingsView(chatModel, setPerformLA, scaffoldState.drawerState)
-          }
+            setPerformLA,
+            )
         }
       }
     },
@@ -252,11 +239,8 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
       UserPicker(
         chatModel = chatModel,
         userPickerState = userPickerState,
-        drawerState = scaffoldState.drawerState
-      ) {
-        scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
-        userPickerState.value = AnimatedViewState.GONE
-      }
+        setPerformLA = AppLock::setPerformLA
+      )
     }
   }
 }
@@ -278,7 +262,7 @@ private fun ConnectButton(text: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean) {
+private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean, setPerformLA: (Boolean) -> Unit) {
   val serversSummary: MutableState<PresentedServersSummary?> = remember { mutableStateOf(null) }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val updatingProgress = remember { chatModel.updatingProgress }.value
@@ -349,7 +333,11 @@ private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableSt
   DefaultTopAppBar(
     navigationButton = {
       if (chatModel.users.isEmpty() && !chatModel.desktopNoUserNoRemote) {
-        NavigationButtonMenu { scope.launch { if (drawerState.isOpen) drawerState.close() else drawerState.open() } }
+        NavigationButtonMenu {
+          ModalManager.start.showModalCloseable { close ->
+            SettingsView(chatModel, setPerformLA, close)
+          }
+        }
       } else {
         val users by remember { derivedStateOf { chatModel.users.filter { u -> u.user.activeUser || !u.user.hidden } } }
         val allRead = users

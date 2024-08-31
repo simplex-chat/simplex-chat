@@ -46,7 +46,6 @@ import kotlin.math.sqrt
 
 data class SettingsViewState(
   val userPickerState: MutableStateFlow<AnimatedViewState>,
-  val scaffoldState: ScaffoldState
 )
 
 @Composable
@@ -145,8 +144,7 @@ fun MainScreen() {
               userPickerState.value = AnimatedViewState.VISIBLE
             }
           }
-          val scaffoldState = rememberScaffoldState()
-          val settingsState = remember { SettingsViewState(userPickerState, scaffoldState) }
+          val settingsState = remember { SettingsViewState(userPickerState) }
           SetupClipboardListener()
           if (appPlatform.isAndroid) {
             AndroidScreen(settingsState)
@@ -388,25 +386,21 @@ fun DesktopScreen(settingsState: SettingsViewState) {
         EndPartOfScreen()
       }
     }
-    val (userPickerState, scaffoldState ) = settingsState
+    val (userPickerState ) = settingsState
     val scope = rememberCoroutineScope()
-    if (scaffoldState.drawerState.isOpen || (ModalManager.start.hasModalsOpen && !ModalManager.center.hasModalsOpen)) {
+    if (ModalManager.start.hasModalsOpen && !ModalManager.center.hasModalsOpen) {
       Box(
         Modifier
           .fillMaxSize()
           .padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)
           .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {
             ModalManager.start.closeModals()
-            scope.launch { settingsState.scaffoldState.drawerState.close() }
           })
       )
     }
     VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier))
     tryOrShowError("UserPicker", error = {}) {
-      UserPicker(chatModel, userPickerState, scaffoldState.drawerState) {
-        scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
-        userPickerState.value = AnimatedViewState.GONE
-      }
+      UserPicker(chatModel, userPickerState, setPerformLA = AppLock::setPerformLA)
     }
     ModalManager.fullscreen.showInView()
   }

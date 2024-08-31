@@ -209,7 +209,6 @@ private fun UsersLayout(
 private fun UserPickerUserSectionLayout (
   chatModel: ChatModel,
   userPickerState: MutableStateFlow<AnimatedViewState>,
-  drawerState: DrawerState,
   showCustomModal: (@Composable ModalData.(ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showModalWithSearch: (@Composable (ChatModel, MutableState<String>) -> Unit) -> Unit,
   withAuth: (title: String, desc: String, block: () -> Unit) -> Unit,
@@ -236,7 +235,7 @@ private fun UserPickerUserSectionLayout (
         generalGetString(MR.strings.auth_open_chat_profiles),
         generalGetString(MR.strings.auth_log_in_using_credential)
       ) {
-        showModalWithSearch { it, search -> UserProfilesView(it, search, profileHidden, drawerState) }
+        showModalWithSearch { it, search -> UserProfilesView(it, search, profileHidden) }
       }
     }
   )
@@ -300,8 +299,7 @@ private fun UserPickerUserSectionLayout (
 fun UserPicker(
   chatModel: ChatModel,
   userPickerState: MutableStateFlow<AnimatedViewState>,
-  drawerState: DrawerState,
-  settingsClicked: () -> Unit = {},
+  setPerformLA: (Boolean) -> Unit,
 ) {
   var newChat by remember { mutableStateOf(userPickerState.value) }
   if (newChat.isVisible()) {
@@ -435,7 +433,6 @@ fun UserPicker(
             UserPickerUserSectionLayout(
               chatModel = chatModel,
               userPickerState = userPickerState,
-              drawerState = drawerState,
               showCustomModal = { modalView ->
                 {
                   if (appPlatform.isDesktop) {
@@ -464,7 +461,15 @@ fun UserPicker(
             Divider(Modifier.padding(DEFAULT_PADDING))
 
             val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
-            SectionItemView(settingsClicked, padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)) {
+            SectionItemView(
+              click = {
+                userPickerState.value = AnimatedViewState.GONE
+                ModalManager.start.showModalCloseable { close ->
+                  SettingsView(chatModel, setPerformLA, close)
+                }
+              },
+              padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)
+            ) {
               Icon(painterResource(MR.images.ic_settings), text, tint = MaterialTheme.colors.secondary)
               TextIconSpaced()
               Text(text, color = Color.Unspecified)

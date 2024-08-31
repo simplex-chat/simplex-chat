@@ -23,7 +23,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 @Composable
 fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stopped: Boolean) {
   var searchInList by rememberSaveable { mutableStateOf("") }
-  val (userPickerState, scaffoldState) = settingsState
+  val (userPickerState) = settingsState
   val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
   val oneHandUI = remember { appPrefs.oneHandUI.state }
 
@@ -31,7 +31,6 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
     Modifier.padding(end = endPadding),
     contentColor = LocalContentColor.current,
     drawerContentColor = LocalContentColor.current,
-    scaffoldState = scaffoldState,
     topBar = {
       if (!oneHandUI.value) {
         Column {
