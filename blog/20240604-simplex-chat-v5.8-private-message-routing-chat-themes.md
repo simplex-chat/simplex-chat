@@ -96,8 +96,9 @@ The diagram below shows all the encryption layers used in private message routin
 For private routing to work, both the forwardig and the destination relays should support the updated messaging protocol - it is supported from v5.8 of the messaging relays. It is already released to all relays preset in the app, and available as a self-hosted server. We updated [the guide](../docs/SERVER.md) about how to host your own messaging relays.
 
 Because many self-hosted relays did not upgrade yet, private routing is not enabled by default. To enable it, you can open *Network & servers* settings in the app and change the settings in *Private message routing* section. We recommend setting *Private routing* option to *Unprotected* (to use it only with unknown relays and when not connecting via Tor) and *Allow downgrade* to *Yes* (so messages can still be delivered to the messaging relays that didn't upgrade yet) or to *When IP hidden* (in which case the messages will fail to deliver to unknown relays that didn't upgrade yet unless you connect to them via Tor).
+See [F.A.Q. section](../docs/FAQ.md#does-simplex-protect-my-ip-address) for answers to some commonly asked questions about private message routing.
 
-Read more about the technical design of the private message routing in [this document](https://github.com/simplex-chat/simplexmq/blob/stable/rfcs/2023-09-12-second-relays.md).
+Read more about the technical design of the private message routing in [this document](https://github.com/simplex-chat/simplexmq/blob/stable/rfcs/done/2023-09-12-second-relays.md) and in [the messaging protocol specification](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/simplex-messaging.md#proxying-sender-commands).
 
 ## Server transparency
 
