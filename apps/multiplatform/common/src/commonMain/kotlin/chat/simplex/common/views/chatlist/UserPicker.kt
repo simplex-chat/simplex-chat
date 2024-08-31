@@ -476,6 +476,8 @@ fun UserPicker(
               Spacer(Modifier.weight(1f))
               ColorModeSwitcher()
             }
+
+            Spacer(Modifier.height(DEFAULT_PADDING_HALF))
           }
         }
       }
