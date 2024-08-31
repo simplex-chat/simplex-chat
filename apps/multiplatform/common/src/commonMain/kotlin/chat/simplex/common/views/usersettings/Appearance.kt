@@ -633,7 +633,7 @@ object AppearanceScope {
       verticalArrangement = Arrangement.Center,
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
-      Icon(painterResource(MR.images.ic_light_mode), stringResource(MR.strings.color_mode_light), tint = MenuTextColor)
+      Icon(painterResource(if (themeMode == DefaultThemeMode.LIGHT) MR.images.ic_light_mode else MR.images.ic_dark_mode), stringResource(MR.strings.color_mode_light), tint = MenuTextColor)
     }
   }
 
