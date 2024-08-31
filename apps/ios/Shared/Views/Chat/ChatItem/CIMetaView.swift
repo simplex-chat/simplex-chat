@@ -18,6 +18,7 @@ struct CIMetaView: View {
     var paleMetaColor = Color(UIColor.tertiaryLabel)
     var showStatus = true
     var showEdited = true
+    var inverted = false
 
     @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
 
@@ -28,28 +29,30 @@ struct CIMetaView: View {
             let meta = chatItem.meta
             let ttl = chat.chatInfo.timedMessagesTTL
             let encrypted = chatItem.encryptedFile
-            switch meta.itemStatus {
-            case let .sndSent(sndProgress):
-                switch sndProgress {
-                case .complete: ciMetaText(meta, chatTTL: ttl, encrypted: encrypted,  color: metaColor, sent: .sent, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
-                case .partial: ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .sent, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
-                }
-            case let .sndRcvd(_, sndProgress):
-                switch sndProgress {
-                case .complete:
-                    ZStack {
-                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, sent: .rcvd1, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
-                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, sent: .rcvd2, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
+            Group {
+                switch meta.itemStatus {
+                case let .sndSent(sndProgress):
+                    switch sndProgress {
+                    case .complete: ciMetaText(meta, chatTTL: ttl, encrypted: encrypted,  color: metaColor, sent: .sent, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, inverted: inverted)
+                    case .partial: ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .sent, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, inverted: inverted)
                     }
-                case .partial:
-                    ZStack {
-                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .rcvd1, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
-                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .rcvd2, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
+                case let .sndRcvd(_, sndProgress):
+                    switch sndProgress {
+                    case .complete:
+                        ZStack {
+                            ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, sent: .rcvd1, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, inverted: inverted)
+//                            ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, sent: .rcvd2, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, inverted: inverted)
+                        }
+                    case .partial:
+                        ZStack {
+                            ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .rcvd1, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, inverted: inverted)
+//                            ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .rcvd2, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, inverted: inverted)
+                        }
                     }
+                default:
+                    ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, inverted: inverted)
                 }
-            default:
-                ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
-            }
+            }.invertedForegroundStyle(enabled: inverted)
         }
     }
 }
@@ -71,17 +74,18 @@ func ciMetaText(
     showStatus: Bool = true,
     showEdited: Bool = true,
     showViaProxy: Bool,
-    showTimesamp: Bool
+    showTimesamp: Bool,
+    inverted: Bool = false
 ) -> Text {
     var r = Text("")
     if showEdited, meta.itemEdited {
-        r = r + statusIconText("pencil", color)
+        r = r + statusIconText("pencil", inverted ? nil : color)
     }
     if meta.disappearing {
-        r = r + statusIconText("timer", color).font(.caption2)
+        r = r + statusIconText("timer", inverted ? nil : color).font(.caption2)
         let ttl = meta.itemTimed?.ttl
         if ttl != chatTTL {
-            r = r + Text(shortTimeText(ttl)).foregroundColor(color)
+            r = r + Text(shortTimeText(ttl)).foreground(inverted ? nil : color)
         }
         r = r + Text(" ")
     }
@@ -92,11 +96,12 @@ func ciMetaText(
         if let (icon, statusColor) = meta.statusIcon(color, primaryColor) {
             let t = Text(Image(systemName: icon)).font(.caption2)
             let gap = Text("  ").kerning(-1.25)
-            let t1 = t.foregroundColor(transparent ? .clear : statusColor.opacity(0.67))
+            let c = inverted ? nil : transparent ? .clear : statusColor.opacity(0.67)
+            let t1 = t.foreground(c)
             switch sent {
             case nil: r = r + t1
             case .sent: r = r + t1 + gap
-            case .rcvd1: r = r + t.foregroundColor(transparent ? .clear : statusColor.opacity(0.67)) + gap
+            case .rcvd1: r = r + t.foreground(c) + gap
             case .rcvd2: r = r + gap + t1
             }
             r = r + Text(" ")
@@ -105,16 +110,16 @@ func ciMetaText(
         }
     }
     if let enc = encrypted {
-        r = r + statusIconText(enc ? "lock" : "lock.open", color) + Text(" ")
+        r = r + statusIconText(enc ? "lock" : "lock.open", inverted ? nil : color) + Text(" ")
     }
     if showTimesamp {
-        r = r + meta.timestampText.foregroundColor(color)
+        r = r + meta.timestampText.foreground(inverted ? nil : color)
     }
     return r.font(.caption)
 }
 
-private func statusIconText(_ icon: String, _ color: Color) -> Text {
-    Text(Image(systemName: icon)).foregroundColor(color)
+private func statusIconText(_ icon: String, _ color: Color?) -> Text {
+    Text(Image(systemName: icon)).foreground(color)
 }
 
 struct CIMetaView_Previews: PreviewProvider {

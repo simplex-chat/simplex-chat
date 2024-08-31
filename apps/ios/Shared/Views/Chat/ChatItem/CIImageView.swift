@@ -167,7 +167,7 @@ struct CIImageView: View {
             .resizable()
             .aspectRatio(contentMode: .fit)
             .frame(width: size, height: size)
-            .foregroundColor(.white)
+            .invertedForegroundStyle()
             .padding(padding)
     }
 
@@ -175,7 +175,7 @@ struct CIImageView: View {
         ProgressView()
             .progressViewStyle(.circular)
             .frame(width: 20, height: 20)
-            .tint(.white)
+            .invertedForegroundStyle()
             .padding(8)
     }
 
