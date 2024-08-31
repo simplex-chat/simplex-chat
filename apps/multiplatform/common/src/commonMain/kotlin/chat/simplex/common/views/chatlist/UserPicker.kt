@@ -25,6 +25,7 @@ import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.ui.theme.*
@@ -320,6 +321,7 @@ fun UserPicker(
         .sortedBy { it.hostDeviceName }
     }
   }
+  val currentTheme by CurrentColors.collectAsState()
   val animatedFloat = remember { Animatable(if (newChat.isVisible()) 0f else 1f) }
   LaunchedEffect(Unit) {
     launch {
@@ -332,11 +334,30 @@ fun UserPicker(
       }
     }
   }
+
+  LaunchedEffect(Unit) {
+    snapshotFlow { newChat.isVisible() }
+      .distinctUntilChanged()
+      .filter { !it }
+      .collect {
+        val c = CurrentColors.value.colors
+        platform.androidSetStatusAndNavBarColors(c.isLight, c.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
+      }
+  }
+
+  LaunchedEffect(Unit) {
+    snapshotFlow { currentTheme }
+      .distinctUntilChanged()
+      .collect { c ->
+        platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.surface, false, false)
+      }
+  }
   LaunchedEffect(Unit) {
     snapshotFlow { newChat.isVisible() }
       .distinctUntilChanged()
       .filter { it }
       .collect {
+        platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.surface, false, false)
         try {
           val updatedUsers = chatModel.controller.listUsers(chatModel.remoteHostId()).sortedByDescending { it.user.activeUser }
           var same = users.size == updatedUsers.size
@@ -404,6 +425,7 @@ fun UserPicker(
             .fillMaxWidth()
             .background(MaterialTheme.colors.surface)
         ) {
+
           val currentRemoteHost = remember { chatModel.currentRemoteHost }.value
           Column(
             Modifier
