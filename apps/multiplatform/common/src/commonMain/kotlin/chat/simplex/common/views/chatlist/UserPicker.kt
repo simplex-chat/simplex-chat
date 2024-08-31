@@ -148,7 +148,7 @@ private fun UsersLayout(
   if (currentUser != null) {
     val mainColor = if (stopped) MaterialTheme.colors.secondary else MenuTextColor
 
-    SectionView(contentPadding = PaddingValues(bottom = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)) {
+    SectionView(contentPadding = PaddingValues(bottom = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF, top = if (appPlatform.isAndroid) DEFAULT_PADDING_HALF else 0.dp)) {
       Row {
         Column(modifier = Modifier.widthIn(max = 200.dp).padding(start = DEFAULT_PADDING - 4.dp)) {
           IconButton(onClick = onCurrentUserClick, enabled = !stopped) {
