@@ -626,6 +626,8 @@ object AppearanceScope {
           },
           onLongClick = {
             ThemeManager.applyTheme(DefaultTheme.SYSTEM_THEME_NAME)
+            showToast(generalGetString(MR.strings.system_mode_toast))
+
             saveThemeToDatabase(null)
           }
         )

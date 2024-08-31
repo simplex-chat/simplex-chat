@@ -1720,6 +1720,7 @@
   <string name="theme_remove_image">Remove image</string>
   <string name="appearance_font_size">Font size</string>
   <string name="appearance_zoom">Zoom</string>
+  <string name="system_mode_toast">System mode</string>
 
   <!-- Wallpapers -->
   <string name="wallpaper_preview_hello_alice">Good afternoon!</string>
