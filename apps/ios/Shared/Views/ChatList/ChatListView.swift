@@ -153,7 +153,7 @@ struct ChatListView: View {
         let user = chatModel.currentUser ?? User.sampleData
         ZStack(alignment: .topTrailing) {
             ProfileImage(imageStr: user.image, size: 32, color: Color(uiColor: .quaternaryLabel))
-                .padding(.trailing, 4)
+                .padding([.top, .trailing], 3)
             let allRead = chatModel.users
                 .filter { u in !u.user.activeUser && !u.user.hidden }
                 .allSatisfy { u in u.unreadCount == 0 }

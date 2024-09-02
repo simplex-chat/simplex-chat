@@ -17,7 +17,7 @@ struct UserPicker: View {
     @State private var showProgress: Bool = false
     private let verticalSpaceDefault: CGFloat = 12
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
-    @State private var usersToPreview: ArraySlice<UserInfo> = []
+    @State private var usersToPreview: [UserInfo] = []
     @State private var activeUser: User? = nil
 
     // Sheet height management
@@ -33,8 +33,8 @@ struct UserPicker: View {
         let v = NavigationView {
             VStack(alignment: .leading, spacing: 0) {
                 if let currentUser = activeUser {
-                    VStack(alignment: .leading) {
-                        HStack(alignment: .top, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(alignment: .top) {
                             NavigationLink {
                                 UserProfile()
                                     .navigationTitle("Your current profile")
@@ -43,36 +43,73 @@ struct UserPicker: View {
                                 ProfileImage(imageStr: currentUser.image, size: 52)
                             }
                             Spacer()
-                            ForEach(usersToPreview) { u in
-                                userView(u)
-                            }
-                            NavigationLink(isActive: $isProfilesActive) {
-                                UserProfilesView()
-                                    .navigationBarTitleDisplayMode(.large)
-                            } label: {
-                                Image(systemName: "ellipsis.circle")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 31, height: 31)
-                                    .padding(1)
-                                    .foregroundColor(theme.colors.secondary)
-                                    .onTapGesture {
-                                        let shouldOpenLarge = m.users.count > 3
-                                        isLargeSheet = shouldOpenLarge
-                                        DispatchQueue.main.async {
-                                            allowSmallSheet = !shouldOpenLarge
-                                            isProfilesActive = true
+                            ZStack(alignment: .leading) {
+                                ZStack(alignment: .trailing) {
+                                    let ps = HStack(spacing: 23) {
+                                        Color.clear.frame(width: 23, height: 32)
+                                        ForEach(usersToPreview) { u in
+                                            userView(u)
+                                        }
+                                        Color.clear.frame(width: 32, height: 32)
+                                    }
+                                    
+                                    if usersToPreview.count > 3 {
+                                        let s = ScrollView(.horizontal) { ps }.frame(width: 275)
+                                        if #available(iOS 16.0, *) {
+                                            s.scrollIndicators(.hidden)
+                                        } else {
+                                            s
+                                        }
+                                    } else {
+                                        ps
+                                    }
+                                    HStack(spacing: 0) {
+                                        LinearGradient(
+                                            colors: [.clear, theme.colors.background.asGroupedBackground(theme.base.mode)],
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                        .frame(width: 32, height: 35)
+                                        NavigationLink(isActive: $isProfilesActive) {
+                                            UserProfilesView()
+                                                .navigationBarTitleDisplayMode(.large)
+                                        } label: {
+                                            Image(systemName: "ellipsis.circle.fill")
+                                                .resizable()
+                                                .scaledToFit()
+                                                .frame(width: 31, height: 31)
+                                                .padding(1)
+                                                .padding(.top, 3)
+                                                .foregroundColor(Color(uiColor: .quaternaryLabel))
+                                                .modifier(ThemedBackground(grouped: true))
+                                                .onTapGesture {
+                                                    let shouldOpenLarge = m.users.count > 3
+                                                    isLargeSheet = shouldOpenLarge
+                                                    DispatchQueue.main.async {
+                                                        allowSmallSheet = !shouldOpenLarge
+                                                        isProfilesActive = true
+                                                    }
+                                                }
                                         }
                                     }
+                                }
+                                .padding(.top, 10)
+
+                                LinearGradient(
+                                    colors: [.clear, theme.colors.background.asGroupedBackground(theme.base.mode)],
+                                    startPoint: .trailing,
+                                    endPoint: .leading
+                                )
+                                .frame(width: 32, height: 35)
                             }
                         }
                         
                         Text(currentUser.displayName)
                             .fontWeight(.bold)
-                            .font(.title2)
+                            .font(.headline)
                     }
-                    .padding([.horizontal, .top])
-                    .padding([.horizontal, .top])
+                    .padding(.horizontal, 30)
+                    .padding(.top, 33)
                 }
                 
                 List {
@@ -146,7 +183,7 @@ struct UserPicker: View {
                         .navigationBarTitleDisplayMode(.large)
                 } label: {}
             )
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .onAppear {
                 // This check prevents the call of listUsers after the app is suspended, and the database is closed.
                 if case .active = scenePhase {
@@ -160,9 +197,7 @@ struct UserPicker: View {
                     }
                 }
                 
-                usersToPreview = m.users
-                    .filter({ u in !u.user.hidden && !u.user.activeUser })
-                    .prefix(3)
+                usersToPreview = m.users.filter({ u in !u.user.hidden && !u.user.activeUser })
                 
                 activeUser = m.currentUser
             }
@@ -216,9 +251,10 @@ struct UserPicker: View {
             }
         }, label: {
             ZStack(alignment: .topTrailing) {
-                ProfileImage(imageStr: u.user.image, size: 32)
+                ProfileImage(imageStr: u.user.image, size: 32, color: Color(uiColor: .quaternaryLabel))
+                    .padding([.top, .trailing], 3)
                 if (u.unreadCount > 0) {
-                    unreadCounter()
+                    unreadBadge()
                 }
             }
         })
@@ -247,7 +283,7 @@ struct UserPicker: View {
         .padding(.leading, -19).padding(.vertical, -8).padding(.trailing, -32)
     }
     
-    private func unreadCounter() -> some View {
+    private func unreadBadge() -> some View {
         Circle()
             .frame(width: 12, height: 12)
             .foregroundColor(theme.colors.primary)
