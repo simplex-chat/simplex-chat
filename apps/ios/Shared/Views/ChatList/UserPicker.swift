@@ -54,7 +54,7 @@ struct UserPicker: View {
                                     }
                                     
                                     if usersToPreview.count > 3 {
-                                        let s = ScrollView(.horizontal) { ps }.frame(width: 288)
+                                        let s = ScrollView(.horizontal) { ps }.frame(width: 284)
                                         if #available(iOS 16.0, *) {
                                             s.scrollIndicators(.hidden)
                                         } else {

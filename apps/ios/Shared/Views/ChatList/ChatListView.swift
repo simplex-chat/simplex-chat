@@ -162,12 +162,8 @@ struct ChatListView: View {
             }
         }
         .onTapGesture {
-            if chatModel.users.filter({ u in u.user.activeUser || !u.user.hidden }).count > 1 {
-                withAnimation {
-                    userPickerVisible.toggle()
-                }
-            } else {
-                showSettings = true
+            withAnimation {
+                userPickerVisible.toggle()
             }
         }
     }
