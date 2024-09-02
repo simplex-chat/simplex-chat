@@ -450,8 +450,8 @@ struct ChatItemInfoView: View {
                     .foregroundColor(theme.colors.secondary).opacity(0.67)
             }
             let v = Group {
-                let statusIcon = status.statusIcon(theme.colors.secondary, theme.colors.primary)
-                statusIcon.image.foregroundColor(statusIcon.color)
+                let (image, statusColor) = status.statusIcon(theme.colors.secondary, theme.colors.primary)
+                image.foregroundColor(statusColor)
             }
 
             if let (title, text) = status.statusInfo {

@@ -69,8 +69,8 @@ func ciMetaText(
         r = r + statusIconText("arrow.forward", color.opacity(0.67)).font(.caption2)
     }
     if showStatus {
-        if let icon = meta.itemStatus.statusIcon(color, primaryColor) {
-            r = r + Text(icon.image).foregroundColor(icon.color)
+        if let (image, statusColor) = meta.itemStatus.statusIcon(color, primaryColor) {
+            r = r + Text(image).foregroundColor(transparent ? .clear : statusColor)
         } else if !meta.disappearing {
             r = r + statusIconText("circlebadge.fill", .clear) + Text(" ")
         }

@@ -2765,27 +2765,6 @@ public func formatTimestampText(_ date: Date) -> Text {
     Text(verbatim: date.formatted(date: .omitted, time: .shortened))
 }
 
-public struct StatusIcon {
-    public enum Source {
-        case system(String)
-        case bundled(String)
-    }
-    public let source: Source
-    public let color: Color
-
-    init(_ source: Source, in color: Color) {
-        self.source = source
-        self.color = color
-    }
-
-    public var image: Image {
-        switch source {
-        case let .system(name): Image(systemName: name)
-        case let .bundled(name): Image(name)
-        }
-    }
-}
-
 public enum CIStatus: Decodable, Hashable {
     case sndNew
     case sndSent(sndProgress: SndCIStatusProgress)
@@ -2819,21 +2798,21 @@ public enum CIStatus: Decodable, Hashable {
         }
     }
 
-    public func statusIcon(_ metaColor: Color, _ primaryColor: Color = .accentColor) -> StatusIcon? {
+    public func statusIcon(_ metaColor: Color, _ primaryColor: Color = .accentColor) -> (Image, Color)? {
         switch self {
         case .sndNew: nil
-        case .sndSent: StatusIcon(.bundled("checkmark.space"), in: metaColor)
+        case .sndSent: (Image("checkmark.space"),  metaColor)
         case let .sndRcvd(msgRcptStatus, _):
             switch msgRcptStatus {
-            case .ok: StatusIcon(.bundled("checkmark.slash"), in: metaColor)
-            case .badMsgHash: StatusIcon(.bundled("checkmark.slash"), in: .red)
+            case .ok: (Image("checkmark.slash"), metaColor)
+            case .badMsgHash: (Image("checkmark.slash"), .red)
             }
-        case .sndErrorAuth: StatusIcon(.system("multiply"), in: .red)
-        case .sndError: StatusIcon(.system("multiply"), in: .red)
-        case .sndWarning: StatusIcon(.system("exclamationmark.triangle.fill"), in: .orange)
-        case .rcvNew: StatusIcon(.system("circlebadge.fill"), in: primaryColor)
+        case .sndErrorAuth: (Image(systemName: "multiply"), .red)
+        case .sndError: (Image(systemName: "multiply"), .red)
+        case .sndWarning: (Image(systemName: "exclamationmark.triangle.fill"), .orange)
+        case .rcvNew: (Image(systemName: "circlebadge.fill"), primaryColor)
         case .rcvRead: nil
-        case .invalid: StatusIcon(.system("questionmark"), in: metaColor)
+        case .invalid: (Image(systemName: "questionmark"), metaColor)
         }
     }
 
@@ -2928,20 +2907,20 @@ public enum GroupSndStatus: Decodable, Hashable {
     case warning(agentError: SndError)
     case invalid(text: String)
 
-    public func statusIcon(_ metaColor: Color/* = .secondary*/, _ primaryColor: Color = .accentColor) -> StatusIcon {
+    public func statusIcon(_ metaColor: Color/* = .secondary*/, _ primaryColor: Color = .accentColor) -> (Image, Color) {
         switch self {
-        case .new: StatusIcon(.system("ellipsis"), in: metaColor)
-        case .forwarded: StatusIcon(.system("chevron.forward.2"), in: metaColor)
-        case .inactive: StatusIcon(.system("person.badge.minus"), in: metaColor)
-        case .sent: StatusIcon(.bundled("checkmark.space"), in: metaColor)
+        case .new: (Image(systemName: "ellipsis"), metaColor)
+        case .forwarded: (Image(systemName: "chevron.forward.2"), metaColor)
+        case .inactive: (Image(systemName: "person.badge.minus"), metaColor)
+        case .sent: (Image( "checkmark.space"), metaColor)
         case let .rcvd(msgRcptStatus):
             switch msgRcptStatus {
-            case .ok: StatusIcon(.bundled("checkmark.slash"), in: metaColor)
-            case .badMsgHash: StatusIcon(.bundled("checkmark.slash"), in: .red)
+            case .ok: (Image( "checkmark.slash"), metaColor)
+            case .badMsgHash: (Image( "checkmark.slash"), .red)
             }
-        case .error: StatusIcon(.system("multiply"), in: .red)
-        case .warning: StatusIcon(.system("exclamationmark.triangle.fill"), in: .orange)
-        case .invalid: StatusIcon(.system("questionmark"), in: metaColor)
+        case .error: (Image(systemName: "multiply"), in: .red)
+        case .warning: (Image(systemName: "exclamationmark.triangle.fill"), .orange)
+        case .invalid: (Image(systemName: "questionmark"), metaColor)
         }
     }
 
