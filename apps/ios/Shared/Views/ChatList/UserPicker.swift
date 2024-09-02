@@ -180,7 +180,7 @@ struct UserPicker: View {
                     primaryButton: .default(Text("Save")) {
                         saveAAS()
                     },
-                    secondaryButton: .destructive(Text("Discard"))
+                    secondaryButton: .destructive(Text("Revert"))
                 )
             }
             .sheet(isPresented: $showingAddressSheet, onDismiss: {
