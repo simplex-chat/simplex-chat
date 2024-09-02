@@ -398,22 +398,29 @@ fun UserPicker(
       }
     }
   }
+  val resultingColor = if (isInDarkTheme()) Color.Black.copy(0.64f) else DrawerDefaults.scrimColor
+  val animatedColor = remember {
+    Animatable(
+      if (newChat.isVisible()) Color.Transparent else resultingColor,
+      Color.VectorConverter(resultingColor.colorSpace)
+    )
+  }
 
   AnimatedVisibility(
     visible = newChat.isVisible(),
     enter = if (appPlatform.isAndroid) {
       slideInVertically(
         initialOffsetY = { it },
-        animationSpec = tween(durationMillis = 300)
-      ) + fadeIn(animationSpec = tween(durationMillis = 300))
+        animationSpec = userPickerAnimSpec()
+      ) + fadeIn(animationSpec = userPickerAnimSpec())
     } else {
       fadeIn()
     },
     exit = if (appPlatform.isAndroid) {
       slideOutVertically(
         targetOffsetY = { it },
-        animationSpec = tween(durationMillis = 300)
-      ) + fadeOut(animationSpec = tween(durationMillis = 300))
+        animationSpec = userPickerAnimSpec()
+      ) + fadeOut(animationSpec = userPickerAnimSpec())
     } else {
       fadeOut()
     }
@@ -421,7 +428,7 @@ fun UserPicker(
     Box(
       Modifier
         .fillMaxSize()
-        .then(if (appPlatform.isAndroid && newChat.isVisible()) Modifier.background(color = MaterialTheme.colors.onSurface.copy(alpha = if (isInDarkTheme()) 0.16f else 0.32f)) else Modifier)
+        .drawBehind { drawRect(animatedColor.value) }
         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = { userPickerState.value = AnimatedViewState.HIDING }),
       contentAlignment = if (appPlatform.isAndroid) Alignment.BottomStart else Alignment.TopStart
     ) {
