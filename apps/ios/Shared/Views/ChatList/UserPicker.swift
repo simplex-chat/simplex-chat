@@ -217,7 +217,6 @@ struct UserPicker: View {
                                     ConnectDesktopView(viaSettings: true)
                                         .modifier(ThemedBackground())
                                 }
-
                             case .settings:
                                 SettingsView(showSettings: $showSettings, viaUserPicker: true)
                                     .navigationBarTitleDisplayMode(.large)
