@@ -13,7 +13,7 @@ import AVKit
 
 struct FullScreenMediaView: View {
     @EnvironmentObject var m: ChatModel
-    @EnvironmentObject var scrollModel: ReverseListScrollModel<ChatItem>
+    @EnvironmentObject var scrollModel: ReverseListScrollModel
     @State var chatItem: ChatItem
     @State var image: UIImage?
     @State var player: AVPlayer? = nil
