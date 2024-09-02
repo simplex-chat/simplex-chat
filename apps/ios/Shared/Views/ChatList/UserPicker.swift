@@ -7,7 +7,6 @@ import SwiftUI
 import SimpleXChat
 
 private enum UserPickerSheet: Identifiable {
-    case address
     case chatPreferences
     case chatProfiles
     case currentProfile
@@ -30,6 +29,12 @@ struct UserPicker: View {
     @State private var activeUser: User? = nil
     @State private var activeSheet: UserPickerSheet? = nil
     @State private var showSettings = false
+    
+    // Address sheet state
+    @State private var aas = AutoAcceptState()
+    @State private var savedAAS = AutoAcceptState()
+    @State private var showAASSaveDialogue = false
+    @State private var showingAddressSheet = false
     
     var body: some View {
         let v = NavigationView {
@@ -86,7 +91,7 @@ struct UserPicker: View {
                                     }
                                 }
                                 .padding(.top, 10)
-
+                                
                                 LinearGradient(
                                     colors: [.clear, theme.colors.background.asGroupedBackground(theme.base.mode)],
                                     startPoint: .trailing,
@@ -108,7 +113,7 @@ struct UserPicker: View {
                     Section {
                         if (m.currentUser != nil) {
                             openSheetOnTap(title: m.userAddress == nil ? "Create public address" : "Your public address", image: "qrcode") {
-                                activeSheet = .address
+                                showingAddressSheet = true
                             }
                             
                             openSheetOnTap(title: "Chat preferences", image: "switch.2") {
@@ -165,36 +170,51 @@ struct UserPicker: View {
                     }
                 }
             }
-            .sheet(item: $activeSheet) { sheet in
+            .confirmationDialog("Save settings?", isPresented: $showAASSaveDialogue) {
+                Button("Save auto-accept settings") {
+                    saveAAS()
+                }
+                Button("Exit without saving") { }
+            }
+            .sheet(isPresented: $showingAddressSheet, onDismiss: {
+                if savedAAS != aas {
+                    showAASSaveDialogue = true
+                }
+            }) {
                 if let currentUser = m.currentUser {
                     NavigationView {
-                        switch sheet {
-                        case .chatProfiles:
-                            UserProfilesView()
-                        case .currentProfile:
-                            UserProfile()
-                                .navigationTitle("Your current profile")
-                                .modifier(ThemedBackground())
-                        case .address:
-                            UserAddressView(shareViaProfile: currentUser.addressShared)
-                                .navigationTitle("Public address")
-                                .navigationBarTitleDisplayMode(.large)
-                                .modifier(ThemedBackground(grouped: true))
-                        case .chatPreferences:
-                            PreferencesView(profile: currentUser.profile, preferences: currentUser.fullPreferences, currentPreferences: currentUser.fullPreferences)
-                                .navigationTitle("Your preferences")
-                                .navigationBarTitleDisplayMode(.large)
-                                .modifier(ThemedBackground(grouped: true))
-                        case .useFromDesktop:
-                            ConnectDesktopView(viaSettings: true)
-                        case .settings:
-                            SettingsView(showSettings: $showSettings, viaUserPicker: true)
-                                .navigationBarTitleDisplayMode(.large)
-                        }
+                        UserAddressView(shareViaProfile: currentUser.addressShared, aas: $aas, savedAAS: $savedAAS)
+                            .navigationTitle("Public address")
+                            .navigationBarTitleDisplayMode(.large)
+                            .modifier(ThemedBackground(grouped: true))
                     }
                 }
             }
-            .modifier(ThemedBackground(grouped: true))
+            .sheet(item: $activeSheet) { sheet in
+                    if let currentUser = m.currentUser {
+                        NavigationView {
+                            switch sheet {
+                            case .chatProfiles:
+                                UserProfilesView()
+                            case .currentProfile:
+                                UserProfile()
+                                    .navigationTitle("Your current profile")
+                                    .modifier(ThemedBackground())
+                            case .chatPreferences:
+                                PreferencesView(profile: currentUser.profile, preferences: currentUser.fullPreferences, currentPreferences: currentUser.fullPreferences)
+                                    .navigationTitle("Your preferences")
+                                    .navigationBarTitleDisplayMode(.large)
+                                    .modifier(ThemedBackground(grouped: true))
+                            case .useFromDesktop:
+                                ConnectDesktopView(viaSettings: true)
+                            case .settings:
+                                SettingsView(showSettings: $showSettings, viaUserPicker: true)
+                                    .navigationBarTitleDisplayMode(.large)
+                            }
+                        }
+                    }
+                }
+                .modifier(ThemedBackground(grouped: true))
         }
         
         if #available(iOS 16.0, *) {
@@ -213,6 +233,19 @@ struct UserPicker: View {
     
     private func getActiveUser() -> User? {
         return activeUser ?? m.currentUser
+    }
+    
+    private func saveAAS() {
+        Task {
+            do {
+                if let address = try await userAddressAutoAccept(aas.autoAccept) {
+                    m.userAddress = address
+                    savedAAS = aas
+                }
+            } catch let error {
+                logger.error("userAddressAutoAccept error: \(responseError(error))")
+            }
+        }
     }
     
     private func userView(_ u: UserInfo) -> some View {
