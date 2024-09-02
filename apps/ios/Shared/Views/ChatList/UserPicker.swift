@@ -173,11 +173,15 @@ struct UserPicker: View {
                     }
                 }
             }
-            .confirmationDialog("Save settings?", isPresented: $showAASSaveDialogue) {
-                Button("Save auto-accept settings") {
-                    saveAAS()
-                }
-                Button("Exit without saving") { }
+            .alert(isPresented: $showAASSaveDialogue) {
+                Alert(
+                    title: Text("Auto accept settings"),
+                    message: Text("Settings were changed"),
+                    primaryButton: .default(Text("Save")) {
+                        saveAAS()
+                    },
+                    secondaryButton: .destructive(Text("Cancel"))
+                )
             }
             .sheet(isPresented: $showingAddressSheet, onDismiss: {
                 if savedAAS != aas {
