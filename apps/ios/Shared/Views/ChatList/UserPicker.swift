@@ -27,7 +27,6 @@ struct UserPicker: View {
     @State var disableScrolling: Bool = true
     private let verticalSpaceDefault: CGFloat = 12
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
-    @State private var usersToPreview: [UserInfo] = []
     @State private var activeUser: User? = nil
     @State private var activeSheet: UserPickerSheet? = nil
     @State private var showSettings = false
@@ -35,6 +34,7 @@ struct UserPicker: View {
     var body: some View {
         let v = NavigationView {
             VStack(alignment: .leading, spacing: 0) {
+                let activeUser = getActiveUser()
                 if let currentUser = activeUser {
                     VStack(alignment: .leading, spacing: 6) {
                         HStack(alignment: .top) {
@@ -44,6 +44,7 @@ struct UserPicker: View {
                                 ProfileImage(imageStr: currentUser.image, size: 52)
                             }
                             Spacer()
+                            let usersToPreview = m.users.filter({ u in !u.user.hidden && u.user.userId != currentUser.userId })
                             ZStack(alignment: .leading) {
                                 ZStack(alignment: .trailing) {
                                     let ps = HStack(spacing: 20) {
@@ -105,7 +106,7 @@ struct UserPicker: View {
                 
                 List {
                     Section {
-                        if (activeUser != nil) {
+                        if (m.currentUser != nil) {
                             openSheetOnTap(title: m.userAddress == nil ? "Create public address" : "Your public address", image: "qrcode") {
                                 activeSheet = .address
                             }
@@ -163,13 +164,9 @@ struct UserPicker: View {
                         }
                     }
                 }
-                
-                usersToPreview = m.users.filter({ u in !u.user.hidden && !u.user.activeUser })
-                
-                activeUser = m.currentUser
             }
             .sheet(item: $activeSheet) { sheet in
-                if let currentUser = activeUser {
+                if let currentUser = m.currentUser {
                     NavigationView {
                         switch sheet {
                         case .chatProfiles:
@@ -214,9 +211,15 @@ struct UserPicker: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity )
     }
     
+    private func getActiveUser() -> User? {
+        return activeUser ?? m.currentUser
+    }
+    
     private func userView(_ u: UserInfo) -> some View {
         let user = u.user
         return Button(action: {
+            activeUser = m.currentUser
+
             Task {
                 do {
                     try await changeActiveUserAsync_(user.userId, viewPwd: nil)
