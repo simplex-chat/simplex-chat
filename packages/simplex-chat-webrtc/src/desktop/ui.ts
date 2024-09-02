@@ -34,7 +34,7 @@ function endCallManually() {
 }
 
 function toggleAudioManually() {
-  if (activeCall?.localMedia) {
+  if (activeCall && localMedia(activeCall)) {
     document.getElementById("toggle-audio")!!.innerHTML = toggleMedia(activeCall.localStream, CallMediaType.Audio)
       ? '<img src="/desktop/images/ic_mic.svg" />'
       : '<img src="/desktop/images/ic_mic_off.svg" />'
@@ -50,27 +50,27 @@ function toggleSpeakerManually() {
 }
 
 function toggleVideoManually() {
-  if (activeCall?.localMedia) {
-    if (activeCall?.screenShareEnabled) {
-      activeCall.cameraEnabled = !activeCall.cameraEnabled
-      enableVideoIcon(activeCall.cameraEnabled)
+  if (activeCall) {
+    if (activeCall.localMediaSources.screen) {
+      activeCall.localMediaSources.camera = !activeCall.localMediaSources.camera
+      enableVideoIcon(activeCall.localMediaSources.camera)
       // } else if (activeCall.localMedia == CallMediaType.Video) {
       //   enableVideoIcon(toggleMedia(activeCall.localStream, CallMediaType.Video))
     } else {
-      const apiCall: WVAPICall = {command: {type: "media", media: CallMediaType.Video, enable: activeCall.cameraEnabled != true}}
+      const apiCall: WVAPICall = {command: {type: "media", media: CallMediaType.Video, enable: activeCall.localMediaSources.camera != true}}
       reactOnMessageFromServer(apiCall as any)
       processCommand(apiCall).then(() => {
-        enableVideoIcon(activeCall?.cameraEnabled == true)
+        enableVideoIcon(activeCall?.localMediaSources?.camera == true)
       })
     }
   }
 }
 
 async function toggleScreenManually() {
-  const was = activeCall?.screenShareEnabled
+  const was = activeCall?.localMediaSources.screen
   await toggleScreenShare()
-  if (was != activeCall?.screenShareEnabled) {
-    document.getElementById("toggle-screen")!!.innerHTML = activeCall?.screenShareEnabled
+  if (was != activeCall?.localMediaSources.screen) {
+    document.getElementById("toggle-screen")!!.innerHTML = activeCall?.localMediaSources?.screen
       ? '<img src="/desktop/images/ic_stop_screen_share.svg" />'
       : '<img src="/desktop/images/ic_screen_share.svg" />'
   }
@@ -117,10 +117,12 @@ function reactOnMessageFromServer(msg: WVApiMessage) {
 }
 
 function reactOnMessageToServer(msg: WVApiMessage) {
+  if (!activeCall) return
+
   switch (msg.resp?.type) {
     case "peerMedia":
       const className =
-        activeCall?.localMedia == CallMediaType.Video || activeCall?.peerMediaSources.camera || activeCall?.peerMediaSources.screen
+        localMedia(activeCall) == CallMediaType.Video || activeCall.peerMediaSources.camera || activeCall.peerMediaSources.screen
           ? "video"
           : "audio"
       document.getElementById("info-block")!!.className = className

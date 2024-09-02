@@ -234,16 +234,18 @@ interface WVAPICall {
 interface Call {
   connection: RTCPeerConnection
   iceCandidates: Promise<string> // JSON strings for RTCIceCandidate
-  localMedia: CallMediaType
+  localMediaSources: CallMediaSources
   localCamera: VideoCamera
   localStream: MediaStream
   remoteStream: MediaStream
   peerMediaSources: CallMediaSources
-  screenShareEnabled: boolean
-  cameraEnabled: boolean
   aesKey?: string
   worker?: Worker
   key?: CryptoKey
+}
+
+function localMedia(call: Call): CallMediaType {
+  return call.localMediaSources.camera || call.localMediaSources.screen ? CallMediaType.Video : CallMediaType.Audio
 }
 
 let activeCall: Call | undefined
@@ -379,7 +381,11 @@ const processCommand = (function () {
     const call: Call = {
       connection: pc,
       iceCandidates,
-      localMedia: mediaType,
+      localMediaSources: {
+        mic: true,
+        camera: mediaType == CallMediaType.Video && !isDesktop,
+        screen: false,
+      },
       localCamera,
       localStream,
       remoteStream,
@@ -389,8 +395,6 @@ const processCommand = (function () {
         screen: false,
       },
       aesKey,
-      screenShareEnabled: false,
-      cameraEnabled: !isDesktop,
     }
     await setupMediaStreams(call)
     let connectionTimeout: number | undefined = setTimeout(connectionHandler, answerTimeout)
@@ -571,7 +575,7 @@ const processCommand = (function () {
         case "media":
           if (!activeCall) {
             resp = {type: "error", message: "media: call not started"}
-          } else if (activeCall.localMedia == CallMediaType.Audio && command.media == CallMediaType.Video && command.enable) {
+          } else if (localMedia(activeCall) == CallMediaType.Audio && command.media == CallMediaType.Video && command.enable) {
             await startSendingVideo(activeCall, activeCall.localCamera)
             resp = {type: "ok"}
           } else {
@@ -813,8 +817,7 @@ const processCommand = (function () {
         //pc.addTrack(t, call.localStream)
         console.log("LALAL ADDED VIDEO TRACK " + t)
       }
-      call.localMedia = CallMediaType.Video
-      call.cameraEnabled = true
+      call.localMediaSources.camera = true
     } catch (e: any) {
       return
     }
@@ -846,14 +849,16 @@ const processCommand = (function () {
     const audioWasEnabled = oldAudioTracks.some((elem) => elem.enabled)
     let localStream: MediaStream
     try {
-      localStream = call.screenShareEnabled ? await getLocalScreenCaptureStream() : await getLocalMediaStream(call.localMedia, camera)
+      localStream = call.localMediaSources.screen
+        ? await getLocalScreenCaptureStream()
+        : await getLocalMediaStream(localMedia(call), camera)
     } catch (e: any) {
-      if (call.screenShareEnabled) {
-        call.screenShareEnabled = false
+      if (call.localMediaSources.screen) {
+        call.localMediaSources.screen = false
       }
       return
     }
-    if (!call.screenShareEnabled) {
+    if (!call.localMediaSources.screen) {
       for (const t of call.localStream.getTracks()) t.stop()
     } else {
       // Don't stop audio track if switching to screenshare
@@ -872,7 +877,7 @@ const processCommand = (function () {
     if (!audioWasEnabled && oldAudioTracks.length > 0) {
       audioTracks.forEach((elem) => (elem.enabled = false))
     }
-    if (!call.cameraEnabled && !call.screenShareEnabled) {
+    if (!call.localMediaSources.camera && !call.localMediaSources.screen) {
       videoTracks.forEach((elem) => (elem.enabled = false))
     }
 
@@ -1063,14 +1068,14 @@ const processCommand = (function () {
     const tracks = media == CallMediaType.Video ? s.getVideoTracks() : s.getAudioTracks()
     for (const t of tracks) t.enabled = enable
     if (media == CallMediaType.Video && activeCall) {
-      activeCall.cameraEnabled = enable
+      activeCall.localMediaSources.camera = enable
     }
   }
 
   toggleScreenShare = async function () {
     const call = activeCall
     if (!call) return
-    call.screenShareEnabled = !call.screenShareEnabled
+    call.localMediaSources.screen = !call.localMediaSources.screen
     await replaceMedia(call, call.localCamera)
   }
 
@@ -1090,7 +1095,7 @@ function toggleMedia(s: MediaStream, media: CallMediaType): boolean {
     res = t.enabled
   }
   if (media == CallMediaType.Video && activeCall) {
-    activeCall.cameraEnabled = res
+    activeCall.localMediaSources.camera = res
   }
   return res
 }

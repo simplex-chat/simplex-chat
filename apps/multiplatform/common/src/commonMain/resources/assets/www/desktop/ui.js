@@ -29,7 +29,7 @@ function endCallManually() {
     sendMessageToNative({ resp: { type: "end" } });
 }
 function toggleAudioManually() {
-    if (activeCall === null || activeCall === void 0 ? void 0 : activeCall.localMedia) {
+    if (activeCall && localMedia(activeCall)) {
         document.getElementById("toggle-audio").innerHTML = toggleMedia(activeCall.localStream, CallMediaType.Audio)
             ? '<img src="/desktop/images/ic_mic.svg" />'
             : '<img src="/desktop/images/ic_mic_off.svg" />';
@@ -43,27 +43,29 @@ function toggleSpeakerManually() {
     }
 }
 function toggleVideoManually() {
-    if (activeCall === null || activeCall === void 0 ? void 0 : activeCall.localMedia) {
-        if (activeCall === null || activeCall === void 0 ? void 0 : activeCall.screenShareEnabled) {
-            activeCall.cameraEnabled = !activeCall.cameraEnabled;
-            enableVideoIcon(activeCall.cameraEnabled);
+    if (activeCall) {
+        if (activeCall.localMediaSources.screen) {
+            activeCall.localMediaSources.camera = !activeCall.localMediaSources.camera;
+            enableVideoIcon(activeCall.localMediaSources.camera);
             // } else if (activeCall.localMedia == CallMediaType.Video) {
             //   enableVideoIcon(toggleMedia(activeCall.localStream, CallMediaType.Video))
         }
         else {
-            const apiCall = { command: { type: "media", media: CallMediaType.Video, enable: activeCall.cameraEnabled != true } };
+            const apiCall = { command: { type: "media", media: CallMediaType.Video, enable: activeCall.localMediaSources.camera != true } };
             reactOnMessageFromServer(apiCall);
             processCommand(apiCall).then(() => {
-                enableVideoIcon((activeCall === null || activeCall === void 0 ? void 0 : activeCall.cameraEnabled) == true);
+                var _a;
+                enableVideoIcon(((_a = activeCall === null || activeCall === void 0 ? void 0 : activeCall.localMediaSources) === null || _a === void 0 ? void 0 : _a.camera) == true);
             });
         }
     }
 }
 async function toggleScreenManually() {
-    const was = activeCall === null || activeCall === void 0 ? void 0 : activeCall.screenShareEnabled;
+    var _a;
+    const was = activeCall === null || activeCall === void 0 ? void 0 : activeCall.localMediaSources.screen;
     await toggleScreenShare();
-    if (was != (activeCall === null || activeCall === void 0 ? void 0 : activeCall.screenShareEnabled)) {
-        document.getElementById("toggle-screen").innerHTML = (activeCall === null || activeCall === void 0 ? void 0 : activeCall.screenShareEnabled)
+    if (was != (activeCall === null || activeCall === void 0 ? void 0 : activeCall.localMediaSources.screen)) {
+        document.getElementById("toggle-screen").innerHTML = ((_a = activeCall === null || activeCall === void 0 ? void 0 : activeCall.localMediaSources) === null || _a === void 0 ? void 0 : _a.screen)
             ? '<img src="/desktop/images/ic_stop_screen_share.svg" />'
             : '<img src="/desktop/images/ic_screen_share.svg" />';
     }
@@ -108,9 +110,11 @@ function reactOnMessageFromServer(msg) {
 }
 function reactOnMessageToServer(msg) {
     var _a;
+    if (!activeCall)
+        return;
     switch ((_a = msg.resp) === null || _a === void 0 ? void 0 : _a.type) {
         case "peerMedia":
-            const className = (activeCall === null || activeCall === void 0 ? void 0 : activeCall.localMedia) == CallMediaType.Video || (activeCall === null || activeCall === void 0 ? void 0 : activeCall.peerMediaSources.camera) || (activeCall === null || activeCall === void 0 ? void 0 : activeCall.peerMediaSources.screen)
+            const className = localMedia(activeCall) == CallMediaType.Video || activeCall.peerMediaSources.camera || activeCall.peerMediaSources.screen
                 ? "video"
                 : "audio";
             document.getElementById("info-block").className = className;
