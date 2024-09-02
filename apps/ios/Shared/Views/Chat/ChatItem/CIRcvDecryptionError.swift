@@ -126,7 +126,7 @@ struct CIRcvDecryptionError: View {
                         .foregroundColor(syncSupported ? theme.colors.primary : theme.colors.secondary)
                         .font(.callout)
                     + Text("   ")
-                    + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
+                    + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
                 )
             }
             .padding(.horizontal, 12)
@@ -145,7 +145,7 @@ struct CIRcvDecryptionError: View {
                     .foregroundColor(.red)
                     .italic()
                 + Text("   ")
-                + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
+                + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
             }
             .padding(.horizontal, 12)
             CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)

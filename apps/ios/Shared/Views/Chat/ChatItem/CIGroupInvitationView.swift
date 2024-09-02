@@ -46,7 +46,7 @@ struct CIGroupInvitationView: View {
                                     .foregroundColor(inProgress ? theme.colors.secondary : chatIncognito ? .indigo : theme.colors.primary)
                                     .font(.callout)
                                 + Text("   ")
-                                + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showStatus: false, showEdited: false, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
+                                + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, showStatus: false, showEdited: false, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
                             )
                             .overlay(DetermineWidth())
                         }
@@ -54,7 +54,7 @@ struct CIGroupInvitationView: View {
                         (
                             groupInvitationText()
                             + Text("   ")
-                            + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showStatus: false, showEdited: false, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
+                            + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, showStatus: false, showEdited: false, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
                         )
                         .overlay(DetermineWidth())
                     }
