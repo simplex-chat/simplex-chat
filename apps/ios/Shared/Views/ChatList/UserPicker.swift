@@ -14,7 +14,6 @@ struct UserPicker: View {
     @Binding var userPickerVisible: Bool
     @State var scrollViewContentSize: CGSize = .zero
     @State var disableScrolling: Bool = true
-    @State private var showProgress: Bool = false
     private let verticalSpaceDefault: CGFloat = 12
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
     @State private var usersToPreview: [UserInfo] = []
@@ -201,10 +200,6 @@ struct UserPicker: View {
                 activeUser = m.currentUser
             }
             .modifier(ThemedBackground(grouped: true))
-            
-            if showProgress {
-                progressView()
-            }
         }
         
         if #available(iOS 16.0, *) {
