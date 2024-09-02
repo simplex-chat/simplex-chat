@@ -6,6 +6,17 @@
 import SwiftUI
 import SimpleXChat
 
+private enum UserPickerSheet: Identifiable {
+    case address
+    case chatPreferences
+    case chatProfiles
+    case currentProfile
+    case useFromDesktop
+    case settings
+
+    var id: Self { self }
+}
+
 struct UserPicker: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -18,24 +29,17 @@ struct UserPicker: View {
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
     @State private var usersToPreview: [UserInfo] = []
     @State private var activeUser: User? = nil
-
-    // Sheet height management
-    @State private var isAddressActive = false
-    @State private var isChatPreferencesActive = false
-    @State private var isUseFromDesktopActive = false
-    @State private var isProfilesActive = false
+    @State private var activeSheet: UserPickerSheet? = nil
     @State private var showSettings = false
-
+    
     var body: some View {
         let v = NavigationView {
             VStack(alignment: .leading, spacing: 0) {
                 if let currentUser = activeUser {
                     VStack(alignment: .leading, spacing: 6) {
                         HStack(alignment: .top) {
-                            NavigationLink {
-                                UserProfile()
-                                    .navigationTitle("Your current profile")
-                                    .modifier(ThemedBackground())
+                            Button {
+                                activeSheet = .currentProfile
                             } label: {
                                 ProfileImage(imageStr: currentUser.image, size: 52)
                             }
@@ -67,9 +71,8 @@ struct UserPicker: View {
                                             endPoint: .trailing
                                         )
                                         .frame(width: 32, height: 35)
-                                        NavigationLink(isActive: $isProfilesActive) {
-                                            UserProfilesView()
-                                                .navigationBarTitleDisplayMode(.large)
+                                        Button {
+                                            activeSheet = .chatProfiles
                                         } label: {
                                             Image(systemName: "ellipsis.circle.fill")
                                                 .resizable()
@@ -78,11 +81,6 @@ struct UserPicker: View {
                                                 .padding(.top, 4)
                                                 .foregroundColor(Color(uiColor: .quaternaryLabel))
                                                 .modifier(ThemedBackground(grouped: true))
-                                                .onTapGesture {
-                                                    DispatchQueue.main.async {
-                                                        isProfilesActive = true
-                                                    }
-                                                }
                                         }
                                     }
                                 }
@@ -107,43 +105,25 @@ struct UserPicker: View {
                 
                 List {
                     Section {
-                        if let currentUser = activeUser {
-                            NavigationLink(isActive: $isAddressActive) {
-                                UserAddressView(shareViaProfile: currentUser.addressShared)
-                                    .navigationTitle("Public address")
-                                    .navigationBarTitleDisplayMode(.large)
-                                    .modifier(ThemedBackground(grouped: true))
-                            } label: {
-                                navigateOnTap(title: m.userAddress == nil ? "Create public address" : "Your public address", image: "qrcode") {
-                                    isAddressActive = true
-                                }
+                        if (activeUser != nil) {
+                            openSheetOnTap(title: m.userAddress == nil ? "Create public address" : "Your public address", image: "qrcode") {
+                                activeSheet = .address
                             }
                             
-                            NavigationLink(isActive: $isChatPreferencesActive) {
-                                PreferencesView(profile: currentUser.profile, preferences: currentUser.fullPreferences, currentPreferences: currentUser.fullPreferences)
-                                    .navigationTitle("Your preferences")
-                                    .navigationBarTitleDisplayMode(.large)
-                                    .modifier(ThemedBackground(grouped: true))
-                            } label: {
-                                navigateOnTap(title: "Chat preferences", image: "switch.2") {
-                                    isChatPreferencesActive = true
-                                }
+                            openSheetOnTap(title: "Chat preferences", image: "switch.2") {
+                                activeSheet = .chatPreferences
                             }
                             
-                            NavigationLink(isActive: $isUseFromDesktopActive) {
-                                ConnectDesktopView(viaSettings: true)
-                            } label: {
-                                navigateOnTap(title: "Use from desktop", image: "desktopcomputer") {
-                                    isUseFromDesktopActive = true
-                                }
-                            }                            
+                            openSheetOnTap(title: "Use from desktop", image: "desktopcomputer") {
+                                activeSheet = .useFromDesktop
+                            }
                         }
                     }
                     
                     Section {
                         HStack {
-                            navigateOnTap(title: "Settings", image: "gearshape") {
-                                showSettings = true
+                            openSheetOnTap(title: "Settings", image: "gearshape") {
+                                activeSheet = .settings
                             }
                             Label {} icon: {
                                 Image(systemName: colorScheme == .light ? "sun.max" : "moon.fill")
@@ -170,12 +150,6 @@ struct UserPicker: View {
                     }
                 }
             }
-            .background(
-                NavigationLink(isActive: $showSettings) {
-                    SettingsView(showSettings: $showSettings, viaUserPicker: true)
-                        .navigationBarTitleDisplayMode(.large)
-                } label: {}
-            )
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .onAppear {
                 // This check prevents the call of listUsers after the app is suspended, and the database is closed.
@@ -193,6 +167,35 @@ struct UserPicker: View {
                 usersToPreview = m.users.filter({ u in !u.user.hidden && !u.user.activeUser })
                 
                 activeUser = m.currentUser
+            }
+            .sheet(item: $activeSheet) { sheet in
+                if let currentUser = activeUser {
+                    NavigationView {
+                        switch sheet {
+                        case .chatProfiles:
+                            UserProfilesView()
+                        case .currentProfile:
+                            UserProfile()
+                                .navigationTitle("Your current profile")
+                                .modifier(ThemedBackground())
+                        case .address:
+                            UserAddressView(shareViaProfile: currentUser.addressShared)
+                                .navigationTitle("Public address")
+                                .navigationBarTitleDisplayMode(.large)
+                                .modifier(ThemedBackground(grouped: true))
+                        case .chatPreferences:
+                            PreferencesView(profile: currentUser.profile, preferences: currentUser.fullPreferences, currentPreferences: currentUser.fullPreferences)
+                                .navigationTitle("Your preferences")
+                                .navigationBarTitleDisplayMode(.large)
+                                .modifier(ThemedBackground(grouped: true))
+                        case .useFromDesktop:
+                            ConnectDesktopView(viaSettings: true)
+                        case .settings:
+                            SettingsView(showSettings: $showSettings, viaUserPicker: true)
+                                .navigationBarTitleDisplayMode(.large)
+                        }
+                    }
+                }
             }
             .modifier(ThemedBackground(grouped: true))
         }
@@ -242,24 +245,23 @@ struct UserPicker: View {
         })
     }
     
-    private func navigateOnTap(title: String, image: String, setActive: @escaping () -> Void) -> some View {
-        Label {
-            Text(title)
-        } icon: {
-            Image(systemName: image)
-                .resizable()
-                .symbolRenderingMode(.monochrome)
-                .foregroundColor(theme.colors.secondary)
-                .frame(maxWidth: 20, maxHeight: 20)
+    private func openSheetOnTap(title: String, image: String, setActive: @escaping () -> Void) -> some View {
+        Button {
+            setActive()
+        } label: {
+            Label {
+                Text(title)
+            } icon: {
+                Image(systemName: image)
+                    .resizable()
+                    .symbolRenderingMode(.monochrome)
+                    .foregroundColor(theme.colors.secondary)
+                    .frame(maxWidth: 20, maxHeight: 20)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.leading, 16).padding(.vertical, 8).padding(.trailing, 32)
         .contentShape(Rectangle())
-        .onTapGesture {
-            DispatchQueue.main.async {
-                setActive()
-            }
-        }
         .padding(.leading, -19).padding(.vertical, -8).padding(.trailing, -32)
     }
     
