@@ -2907,7 +2907,7 @@ public enum GroupSndStatus: Decodable, Hashable {
     case warning(agentError: SndError)
     case invalid(text: String)
 
-    public func statusIcon(_ metaColor: Color/* = .secondary*/, _ primaryColor: Color = .accentColor) -> (Image, Color) {
+    public func statusIcon(_ metaColor: Color, _ primaryColor: Color = .accentColor) -> (Image, Color) {
         switch self {
         case .new: (Image(systemName: "ellipsis"), metaColor)
         case .forwarded: (Image(systemName: "chevron.forward.2"), metaColor)
