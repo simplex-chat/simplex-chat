@@ -2790,14 +2790,6 @@ public enum CIStatus: Decodable, Hashable {
         }
     }
 
-    public var sndProgress: SndCIStatusProgress? {
-        switch self {
-        case let .sndSent(sndProgress): sndProgress
-        case let .sndRcvd(_ , sndProgress): sndProgress
-        default: nil
-        }
-    }
-
     public func statusIcon(_ metaColor: Color, _ primaryColor: Color = .accentColor) -> (Image, Color)? {
         switch self {
         case .sndNew: nil
@@ -2813,6 +2805,14 @@ public enum CIStatus: Decodable, Hashable {
         case .rcvNew: (Image(systemName: "circlebadge.fill"), primaryColor)
         case .rcvRead: nil
         case .invalid: (Image(systemName: "questionmark"), metaColor)
+        }
+    }
+
+    public var sndProgress: SndCIStatusProgress? {
+        switch self {
+        case let .sndSent(sndProgress): sndProgress
+        case let .sndRcvd(_ , sndProgress): sndProgress
+        default: nil
         }
     }
 
@@ -2918,7 +2918,7 @@ public enum GroupSndStatus: Decodable, Hashable {
             case .ok: (Image( "checkmark.slash"), metaColor)
             case .badMsgHash: (Image( "checkmark.slash"), .red)
             }
-        case .error: (Image(systemName: "multiply"), in: .red)
+        case .error: (Image(systemName: "multiply"), .red)
         case .warning: (Image(systemName: "exclamationmark.triangle.fill"), .orange)
         case .invalid: (Image(systemName: "questionmark"), metaColor)
         }
