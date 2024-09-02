@@ -45,8 +45,8 @@ struct UserPicker: View {
                             Spacer()
                             ZStack(alignment: .leading) {
                                 ZStack(alignment: .trailing) {
-                                    let ps = HStack(spacing: 23) {
-                                        Color.clear.frame(width: 23, height: 32)
+                                    let ps = HStack(spacing: 20) {
+                                        Color.clear.frame(width: 48, height: 32)
                                         ForEach(usersToPreview) { u in
                                             userView(u)
                                         }
@@ -54,7 +54,7 @@ struct UserPicker: View {
                                     }
                                     
                                     if usersToPreview.count > 3 {
-                                        let s = ScrollView(.horizontal) { ps }.frame(width: 275)
+                                        let s = ScrollView(.horizontal) { ps }.frame(width: 288)
                                         if #available(iOS 16.0, *) {
                                             s.scrollIndicators(.hidden)
                                         } else {
@@ -78,8 +78,7 @@ struct UserPicker: View {
                                                 .resizable()
                                                 .scaledToFit()
                                                 .frame(width: 31, height: 31)
-                                                .padding(1)
-                                                .padding(.top, 3)
+                                                .padding(.top, 4)
                                                 .foregroundColor(Color(uiColor: .quaternaryLabel))
                                                 .modifier(ThemedBackground(grouped: true))
                                                 .onTapGesture {
