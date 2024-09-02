@@ -46,6 +46,8 @@ func ciMetaText(
     chatTTL: Int?,
     encrypted: Bool?,
     color: Color = .clear,
+    primaryColor: Color = .accentColor,
+    transparent: Bool = false,
     showStatus: Bool = true,
     showEdited: Bool = true,
     showViaProxy: Bool,
@@ -67,7 +69,7 @@ func ciMetaText(
         r = r + statusIconText("arrow.forward", color.opacity(0.67)).font(.caption2)
     }
     if showStatus {
-        if let icon = meta.itemStatus.statusIcon(color, .accentColor) {
+        if let icon = meta.itemStatus.statusIcon(color, primaryColor) {
             r = r + Text(icon.image).foregroundColor(icon.color)
         } else if !meta.disappearing {
             r = r + statusIconText("circlebadge.fill", .clear) + Text(" ")
