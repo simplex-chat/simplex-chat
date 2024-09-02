@@ -224,13 +224,6 @@ struct UserPicker: View {
         }
     }
     
-    private func progressView() -> some View {
-        VStack {
-            ProgressView().scaleEffect(2)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity )
-    }
-    
     private func getActiveUser() -> User? {
         return activeUser ?? m.currentUser
     }
