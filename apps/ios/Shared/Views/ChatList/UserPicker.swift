@@ -20,8 +20,6 @@ struct UserPicker: View {
     @State private var activeUser: User? = nil
 
     // Sheet height management
-    @State private var isLargeSheet = false
-    @State private var allowSmallSheet = true
     @State private var isAddressActive = false
     @State private var isChatPreferencesActive = false
     @State private var isUseFromDesktopActive = false
@@ -82,9 +80,7 @@ struct UserPicker: View {
                                                 .modifier(ThemedBackground(grouped: true))
                                                 .onTapGesture {
                                                     let shouldOpenLarge = m.users.count > 3
-                                                    isLargeSheet = shouldOpenLarge
                                                     DispatchQueue.main.async {
-                                                        allowSmallSheet = !shouldOpenLarge
                                                         isProfilesActive = true
                                                     }
                                                 }
@@ -205,11 +201,7 @@ struct UserPicker: View {
         if #available(iOS 16.0, *) {
             let sheetHeight: CGFloat = 400
             v.presentationDetents(
-                allowSmallSheet ? [.height(sheetHeight), .large] : [.large],
-                selection: Binding(
-                    get: { isLargeSheet || !allowSmallSheet ? .large : .height(sheetHeight) },
-                    set: { isLargeSheet = $0 == .large }
-                )
+                [.height(sheetHeight), .large]
             )
         } else {
             v
@@ -268,9 +260,7 @@ struct UserPicker: View {
         .padding(.leading, 16).padding(.vertical, 8).padding(.trailing, 32)
         .contentShape(Rectangle())
         .onTapGesture {
-            isLargeSheet = true
             DispatchQueue.main.async {
-                allowSmallSheet = false
                 setActive()
             }
         }
