@@ -44,28 +44,20 @@ function toggleSpeakerManually() {
 }
 function toggleVideoManually() {
     if (activeCall) {
-        if (activeCall.localMediaSources.screen) {
-            activeCall.localMediaSources.camera = !activeCall.localMediaSources.camera;
-            enableVideoIcon(activeCall.localMediaSources.camera);
-            // } else if (activeCall.localMedia == CallMediaType.Video) {
-            //   enableVideoIcon(toggleMedia(activeCall.localStream, CallMediaType.Video))
-        }
-        else {
-            const apiCall = { command: { type: "media", media: CallMediaType.Video, enable: activeCall.localMediaSources.camera != true } };
-            reactOnMessageFromServer(apiCall);
-            processCommand(apiCall).then(() => {
-                var _a;
-                enableVideoIcon(((_a = activeCall === null || activeCall === void 0 ? void 0 : activeCall.localMediaSources) === null || _a === void 0 ? void 0 : _a.camera) == true);
-            });
-        }
+        const apiCall = { command: { type: "media", media: CallMediaType.Video, enable: activeCall.localMediaSources.camera != true } };
+        reactOnMessageFromServer(apiCall);
+        processCommand(apiCall).then(() => {
+            var _a;
+            enableVideoIcon(((_a = activeCall === null || activeCall === void 0 ? void 0 : activeCall.localMediaSources) === null || _a === void 0 ? void 0 : _a.camera) == true);
+        });
     }
 }
 async function toggleScreenManually() {
     var _a;
-    const was = activeCall === null || activeCall === void 0 ? void 0 : activeCall.localMediaSources.screen;
+    const was = activeCall === null || activeCall === void 0 ? void 0 : activeCall.localMediaSources.screenVideo;
     await toggleScreenShare();
-    if (was != (activeCall === null || activeCall === void 0 ? void 0 : activeCall.localMediaSources.screen)) {
-        document.getElementById("toggle-screen").innerHTML = ((_a = activeCall === null || activeCall === void 0 ? void 0 : activeCall.localMediaSources) === null || _a === void 0 ? void 0 : _a.screen)
+    if (was != (activeCall === null || activeCall === void 0 ? void 0 : activeCall.localMediaSources.screenVideo)) {
+        document.getElementById("toggle-screen").innerHTML = ((_a = activeCall === null || activeCall === void 0 ? void 0 : activeCall.localMediaSources) === null || _a === void 0 ? void 0 : _a.screenVideo)
             ? '<img src="/desktop/images/ic_stop_screen_share.svg" />'
             : '<img src="/desktop/images/ic_screen_share.svg" />';
     }
@@ -92,7 +84,7 @@ function reactOnMessageFromServer(msg) {
         case "media":
             const className = (msg.command.media == CallMediaType.Video && msg.command.enable) ||
                 (activeCall === null || activeCall === void 0 ? void 0 : activeCall.peerMediaSources.camera) ||
-                (activeCall === null || activeCall === void 0 ? void 0 : activeCall.peerMediaSources.screen)
+                (activeCall === null || activeCall === void 0 ? void 0 : activeCall.peerMediaSources.screenVideo)
                 ? "video"
                 : "audio";
             document.getElementById("info-block").className = className;
@@ -114,7 +106,7 @@ function reactOnMessageToServer(msg) {
         return;
     switch ((_a = msg.resp) === null || _a === void 0 ? void 0 : _a.type) {
         case "peerMedia":
-            const className = localMedia(activeCall) == CallMediaType.Video || activeCall.peerMediaSources.camera || activeCall.peerMediaSources.screen
+            const className = localMedia(activeCall) == CallMediaType.Video || activeCall.peerMediaSources.camera || activeCall.peerMediaSources.screenVideo
                 ? "video"
                 : "audio";
             document.getElementById("info-block").className = className;

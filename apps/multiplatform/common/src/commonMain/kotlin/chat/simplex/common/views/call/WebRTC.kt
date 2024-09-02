@@ -71,9 +71,10 @@ enum class CallState {
 @Serializable data class CallMediaSources(
   val mic: Boolean = false,
   val camera: Boolean = false,
-  val screen: Boolean = false
+  val screenAudio: Boolean = false,
+  val screenVideo: Boolean = false
 ) {
-  fun hasVideo() = camera || screen
+  fun hasVideo() = camera || screenVideo
 }
 
 @Serializable
@@ -178,7 +179,8 @@ enum class CallMediaType {
 enum class CallMediaSource {
   @SerialName("mic") Mic,
   @SerialName("camera") Camera,
-  @SerialName("screen") Screen
+  @SerialName("screenAudio") ScreenAudio,
+  @SerialName("screenVideo") ScreenVideo
 }
 
 @Serializable

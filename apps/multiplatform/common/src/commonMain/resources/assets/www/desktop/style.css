@@ -12,6 +12,13 @@ body {
   object-fit: cover;
 }
 
+#remote-screen-video-stream.inline {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 #local-video-stream.inline {
   position: absolute;
   width: 20%;
@@ -23,6 +30,17 @@ body {
   right: 0;
 }
 
+#local-screen-video-stream.inline {
+  position: absolute;
+  width: 20%;
+  max-width: 20%;
+  object-fit: cover;
+  margin: 16px;
+  border-radius: 16px;
+  top: 33%;
+  right: 0;
+}
+
 #remote-video-stream.fullscreen {
   position: absolute;
   height: 100%;
@@ -30,7 +48,21 @@ body {
   object-fit: cover;
 }
 
+#remote-screen-video-stream.fullscreen {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
 #local-video-stream.fullscreen {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
+#local-screen-video-stream.fullscreen {
   position: absolute;
   height: 100%;
   width: 100%;

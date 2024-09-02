@@ -168,7 +168,8 @@ actual fun ActiveCallView() {
               when (r.source) {
                 CallMediaSource.Mic -> it.copy(peerMediaSources = sources.copy(mic = r.enabled))
                 CallMediaSource.Camera -> it.copy(peerMediaSources = sources.copy(camera = r.enabled))
-                CallMediaSource.Screen -> it.copy(peerMediaSources = sources.copy(screen = r.enabled))
+                CallMediaSource.ScreenAudio -> it.copy(peerMediaSources = sources.copy(screenAudio = r.enabled))
+                CallMediaSource.ScreenVideo -> it.copy(peerMediaSources = sources.copy(screenVideo = r.enabled))
               }
             }
           }

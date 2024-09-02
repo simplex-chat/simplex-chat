@@ -56,7 +56,8 @@ enum CallMediaType {
 enum CallMediaSource {
   Mic = "mic",
   Camera = "camera",
-  Screen = "screen",
+  ScreenAudio = "screenAudio",
+  ScreenVideo = "screenVideo",
   Unknown = "unknown",
 }
 
@@ -74,7 +75,8 @@ enum LayoutType {
 interface CallMediaSources {
   mic: boolean
   camera: boolean
-  screen: boolean
+  screenAudio: boolean
+  screenVideo: boolean
 }
 
 interface IWCallCommand {
@@ -237,15 +239,20 @@ interface Call {
   localMediaSources: CallMediaSources
   localCamera: VideoCamera
   localStream: MediaStream
+  localScreenStream: MediaStream
   remoteStream: MediaStream
+  remoteScreenStream: MediaStream
   peerMediaSources: CallMediaSources
   aesKey?: string
   worker?: Worker
   key?: CryptoKey
+  // controls whether transceiver's track was replaced already or set initially (in video call)
+  cameraTrackWasSetBefore: boolean
+  screenShareWasSetupBefore: boolean
 }
 
 function localMedia(call: Call): CallMediaType {
-  return call.localMediaSources.camera || call.localMediaSources.screen ? CallMediaType.Video : CallMediaType.Audio
+  return call.localMediaSources.camera || call.localMediaSources.screenVideo ? CallMediaType.Video : CallMediaType.Audio
 }
 
 let activeCall: Call | undefined
@@ -368,8 +375,10 @@ const processCommand = (function () {
       pc = new RTCPeerConnection(config.peerConnectionConfig)
     }
     const remoteStream = new MediaStream()
+    const remoteScreenStream = new MediaStream()
     const localCamera = VideoCamera.User
     const localStream = await getLocalMediaStream(mediaType, localCamera)
+    const localScreenStream = new MediaStream()
     if (isDesktop) {
       localStream
         .getTracks()
@@ -384,17 +393,23 @@ const processCommand = (function () {
       localMediaSources: {
         mic: true,
         camera: mediaType == CallMediaType.Video && !isDesktop,
-        screen: false,
+        screenAudio: false,
+        screenVideo: false,
       },
       localCamera,
       localStream,
+      localScreenStream,
       remoteStream,
+      remoteScreenStream,
       peerMediaSources: {
         mic: false,
         camera: false,
-        screen: false,
+        screenAudio: false,
+        screenVideo: false,
       },
       aesKey,
+      cameraTrackWasSetBefore: mediaType == CallMediaType.Video,
+      screenShareWasSetupBefore: false,
     }
     await setupMediaStreams(call)
     let connectionTimeout: number | undefined = setTimeout(connectionHandler, answerTimeout)
@@ -488,11 +503,12 @@ const processCommand = (function () {
           const pc = activeCall.connection
           if (media == CallMediaType.Audio) {
             console.log("LALAL ADDING TRANSCEIVER for video")
-            // For camera. So the first video in the list is for camera
+            // For camera. The first video in the list is for camera
             pc.addTransceiver("video", {streams: [activeCall.localStream]})
           }
-          // For screenshare. So the second video in the list is for screenshare
-          pc.addTransceiver("video", {streams: [activeCall.localStream]})
+          // For screenshare. So the second audio and video in the list is for screenshare
+          pc.addTransceiver("audio", {streams: [activeCall.localScreenStream]})
+          pc.addTransceiver("video", {streams: [activeCall.localScreenStream]})
 
           const offer = await pc.createOffer()
           await pc.setLocalDescription(offer)
@@ -529,8 +545,13 @@ const processCommand = (function () {
             const pc = activeCall.connection
             // console.log("offer remoteIceCandidates", JSON.stringify(remoteIceCandidates))
             await pc.setRemoteDescription(new RTCSessionDescription(offer))
+            // Enable using the same transceivers for sending media too, so total number of transceivers will be: audio, camera, screen audio, screen video
             pc.getTransceivers().forEach((elem) => (elem.direction = "sendrecv"))
-            console.log("LALAL TRANSCE", pc.getTransceivers())
+            console.log(
+              "LALAL TRANSCE",
+              pc.getTransceivers(),
+              pc.getTransceivers().map((elem) => "" + elem.mid + " " + elem.sender.track?.kind + " " + elem.sender.track?.label)
+            )
             let answer = await pc.createAnswer()
             console.log("LALAL SDP", answer, answer.sdp)
             // answer!.sdp = answer.sdp?.replace("a=recvonly", "a=sendrecv")
@@ -575,8 +596,8 @@ const processCommand = (function () {
         case "media":
           if (!activeCall) {
             resp = {type: "error", message: "media: call not started"}
-          } else if (localMedia(activeCall) == CallMediaType.Audio && command.media == CallMediaType.Video && command.enable) {
-            await startSendingVideo(activeCall, activeCall.localCamera)
+          } else if (!activeCall.cameraTrackWasSetBefore && command.media == CallMediaType.Video && command.enable) {
+            await startSendingCamera(activeCall, activeCall.localCamera)
             resp = {type: "ok"}
           } else {
             enableMedia(activeCall.localStream, command.media, command.enable)
@@ -644,10 +665,14 @@ const processCommand = (function () {
     // setupVideoElement(videos.local)
     // setupVideoElement(videos.remote)
     videos.local.srcObject = call.localStream
+    videos.localScreen.srcObject = call.localScreenStream
     videos.remote.srcObject = call.remoteStream
+    videos.remoteScreen.srcObject = call.remoteScreenStream
     // Without doing it manually Firefox shows black screen but video can be played in Picture-in-Picture
     videos.local.play()
+    // videos.localScreen.play()
     videos.remote.play()
+    videos.remoteScreen.play()
   }
 
   async function setupEncryptionWorker(call: Call) {
@@ -713,42 +738,26 @@ const processCommand = (function () {
             event.transceiver.mid
           )
         }
-        // const source = mediaSourceFromTransceiverMid(event.transceiver.mid)
-        // const sources = call.peerMediaSources
-        // if (source == CallMediaSource.Mic) {
-        //   sources.mic = true
-        // } else if (source == CallMediaSource.Camera) {
-        //   sources.camera = true
-        // } else if (source == CallMediaSource.Screen) {
-        //   sources.screen = true
-        // }
-        // call.peerMediaSources = sources
 
         if (event.streams.length > 0) {
           for (const stream of event.streams) {
             for (const track of stream.getTracks()) {
-              call.remoteStream.addTrack(track)
-              // const resp: WRPeerMedia = {
-              //   type: "peerMedia",
-              //   media: track.kind == "audio" ? CallMediaType.Audio : CallMediaType.Video,
-              //   source: source,
-              //   enabled: track.enabled,
-              // }
-              // console.log("LALAL ADDED REMOTE", track, track.kind)
-              // sendMessageToNative({resp: resp})
+              const mediaSource = mediaSourceFromTransceiverMid(event.transceiver.mid)
+              if (mediaSource == CallMediaSource.ScreenAudio || mediaSource == CallMediaSource.ScreenVideo) {
+                call.remoteScreenStream.addTrack(track)
+              } else {
+                call.remoteStream.addTrack(track)
+              }
             }
           }
         } else {
           const track = event.track
-          call.remoteStream.addTrack(track)
-          // const resp: WRPeerMedia = {
-          //   type: "peerMedia",
-          //   media: track.kind == "audio" ? CallMediaType.Audio : CallMediaType.Video,
-          //   source: source,
-          //   enabled: track.enabled,
-          // }
-          // console.log("LALAL ADDED REMOTE", track, track.kind)
-          // sendMessageToNative({resp: resp})
+          const mediaSource = mediaSourceFromTransceiverMid(event.transceiver.mid)
+          if (mediaSource == CallMediaSource.ScreenAudio || mediaSource == CallMediaSource.ScreenVideo) {
+            call.remoteScreenStream.addTrack(track)
+          } else {
+            call.remoteStream.addTrack(track)
+          }
         }
         console.log(`ontrack success`)
       } catch (e) {
@@ -797,7 +806,7 @@ const processCommand = (function () {
     }
   }
 
-  async function startSendingVideo(call: Call, camera: VideoCamera): Promise<void> {
+  async function startSendingCamera(call: Call, camera: VideoCamera): Promise<void> {
     console.log("LALAL STARTING SENDING VIDEO")
     const videos = getVideoElements()
     if (!videos) throw Error("no video elements")
@@ -818,6 +827,7 @@ const processCommand = (function () {
         console.log("LALAL ADDED VIDEO TRACK " + t)
       }
       call.localMediaSources.camera = true
+      call.cameraTrackWasSetBefore = true
     } catch (e: any) {
       return
     }
@@ -841,6 +851,71 @@ const processCommand = (function () {
     console.log("LALAL SENDING VIDEO")
   }
 
+  async function enableDisableScreenShare(call: Call): Promise<void> {
+    const videos = getVideoElements()
+    if (!videos) throw Error("no video elements")
+    const pc = call.connection
+
+    if (call.localMediaSources.screenVideo) {
+      let localScreenStream: MediaStream
+      try {
+        localScreenStream = await getLocalScreenCaptureStream()
+      } catch (e: any) {
+        call.localMediaSources.screenAudio = false
+        call.localMediaSources.screenVideo = false
+        return
+      }
+
+      for (const t of localScreenStream.getTracks()) call.localScreenStream.addTrack(t)
+      for (const t of localScreenStream.getTracks()) localScreenStream.removeTrack(t)
+
+      pc.getTransceivers().forEach((elem) => {
+        const source = mediaSourceFromTransceiverMid(elem.mid)
+        const screenAudioTrack = call.localScreenStream.getTracks().find((elem) => elem.kind == "audio")
+        const screenVideoTrack = call.localScreenStream.getTracks().find((elem) => elem.kind == "video")
+        if (source == CallMediaSource.ScreenAudio && screenAudioTrack) {
+          elem.sender.replaceTrack(screenAudioTrack)
+          console.log("LALAL REPLACED AUDIO SCREEN TRACK")
+        } else if (source == CallMediaSource.ScreenVideo && screenVideoTrack) {
+          elem.sender.replaceTrack(screenVideoTrack)
+          console.log("LALAL REPLACED VIDEO SCREEN TRACK")
+        }
+        if (
+          !call.screenShareWasSetupBefore &&
+          call.aesKey &&
+          call.key &&
+          (source == CallMediaSource.ScreenAudio || source == CallMediaSource.ScreenVideo)
+        ) {
+          setupPeerTransform(
+            TransformOperation.Encrypt,
+            elem.sender as RTCRtpSenderWithEncryption,
+            call.worker,
+            call.aesKey,
+            call.key,
+            source == CallMediaSource.ScreenVideo ? CallMediaType.Video : CallMediaType.Audio,
+            elem.mid
+          )
+        }
+      })
+
+      call.screenShareWasSetupBefore = true
+      // videos.localScreen.pause()
+      // videos.localScreen.srcObject = call.localScreenStream
+      videos.localScreen.play()
+      videos.localScreen.style.display = "block"
+    } else {
+      pc.getTransceivers().forEach((elem) => {
+        const source = mediaSourceFromTransceiverMid(elem.mid)
+        if (source == CallMediaSource.ScreenAudio || source == CallMediaSource.ScreenVideo) {
+          elem.sender.replaceTrack(null)
+        }
+      })
+      for (const t of call.localScreenStream.getTracks()) t.stop()
+      for (const t of call.localScreenStream.getTracks()) call.localScreenStream.removeTrack(t)
+      videos.localScreen.style.display = "none"
+    }
+  }
+
   async function replaceMedia(call: Call, camera: VideoCamera): Promise<void> {
     const videos = getVideoElements()
     if (!videos) throw Error("no video elements")
@@ -849,36 +924,17 @@ const processCommand = (function () {
     const audioWasEnabled = oldAudioTracks.some((elem) => elem.enabled)
     let localStream: MediaStream
     try {
-      localStream = call.localMediaSources.screen
-        ? await getLocalScreenCaptureStream()
-        : await getLocalMediaStream(localMedia(call), camera)
+      localStream = await getLocalMediaStream(localMedia(call), camera)
     } catch (e: any) {
-      if (call.localMediaSources.screen) {
-        call.localMediaSources.screen = false
-      }
       return
     }
-    if (!call.localMediaSources.screen) {
-      for (const t of call.localStream.getTracks()) t.stop()
-    } else {
-      // Don't stop audio track if switching to screenshare
-      for (const t of call.localStream.getVideoTracks()) t.stop()
-      // Replace new track from screenshare with old track from recording device
-      for (const t of localStream.getAudioTracks()) {
-        t.stop()
-        localStream.removeTrack(t)
-      }
-      for (const t of call.localStream.getAudioTracks()) localStream.addTrack(t)
-    }
+    for (const t of call.localStream.getTracks()) t.stop()
     call.localCamera = camera
 
     const audioTracks = localStream.getAudioTracks()
     const videoTracks = localStream.getVideoTracks()
     if (!audioWasEnabled && oldAudioTracks.length > 0) {
       audioTracks.forEach((elem) => (elem.enabled = false))
-    }
-    if (!call.localMediaSources.camera && !call.localMediaSources.screen) {
-      videoTracks.forEach((elem) => (elem.enabled = false))
     }
 
     replaceTracks(pc, audioTracks)
@@ -901,7 +957,9 @@ const processCommand = (function () {
       case "1":
         return CallMediaSource.Camera
       case "2":
-        return CallMediaSource.Screen
+        return CallMediaSource.ScreenAudio
+      case "3":
+        return CallMediaSource.ScreenVideo
       default:
         return CallMediaSource.Unknown
     }
@@ -942,6 +1000,8 @@ const processCommand = (function () {
   }
 
   function onMediaMuteUnmute(transceiverMid: string | null, mute: boolean) {
+    const videos = getVideoElements()
+    if (!videos) throw Error("no video elements")
     if (activeCall) {
       const source = mediaSourceFromTransceiverMid(transceiverMid)
       console.log("LALAL ON MUTE/UNMUTE", mute, source, transceiverMid)
@@ -965,16 +1025,28 @@ const processCommand = (function () {
         }
         sources.camera = !mute
         activeCall.peerMediaSources = sources
+        videos.remote.style.display = !mute ? "block" : "none"
         sendMessageToNative({resp: resp})
-      } else if (source == CallMediaSource.Screen && activeCall.peerMediaSources.screen == mute) {
+      } else if (source == CallMediaSource.ScreenAudio && activeCall.peerMediaSources.screenAudio == mute) {
+        const resp: WRPeerMedia = {
+          type: "peerMedia",
+          media: CallMediaType.Audio,
+          source: source,
+          enabled: !mute,
+        }
+        sources.screenAudio = !mute
+        activeCall.peerMediaSources = sources
+        sendMessageToNative({resp: resp})
+      } else if (source == CallMediaSource.ScreenVideo && activeCall.peerMediaSources.screenVideo == mute) {
         const resp: WRPeerMedia = {
           type: "peerMedia",
           media: CallMediaType.Video,
           source: source,
           enabled: !mute,
         }
-        sources.screen = !mute
+        sources.screenVideo = !mute
         activeCall.peerMediaSources = sources
+        videos.remoteScreen.style.display = !mute ? "block" : "none"
         sendMessageToNative({resp: resp})
       }
     }
@@ -1033,7 +1105,9 @@ const processCommand = (function () {
 
   interface VideoElements {
     local: HTMLMediaElement
+    localScreen: HTMLMediaElement
     remote: HTMLMediaElement
+    remoteScreen: HTMLMediaElement
   }
 
   function shutdownCameraAndMic() {
@@ -1046,14 +1120,30 @@ const processCommand = (function () {
     const videos = getVideoElements()
     if (!videos) return
     videos.local.srcObject = null
+    videos.localScreen.srcObject = null
     videos.remote.srcObject = null
+    videos.remoteScreen.srcObject = null
   }
 
   function getVideoElements(): VideoElements | undefined {
     const local = document.getElementById("local-video-stream")
+    const localScreen = document.getElementById("local-screen-video-stream")
     const remote = document.getElementById("remote-video-stream")
-    if (!(local && remote && local instanceof HTMLMediaElement && remote instanceof HTMLMediaElement)) return
-    return {local, remote}
+    const remoteScreen = document.getElementById("remote-screen-video-stream")
+    if (
+      !(
+        local &&
+        localScreen &&
+        remote &&
+        remoteScreen &&
+        local instanceof HTMLMediaElement &&
+        localScreen instanceof HTMLMediaElement &&
+        remote instanceof HTMLMediaElement &&
+        remoteScreen instanceof HTMLMediaElement
+      )
+    )
+      return
+    return {local, localScreen, remote, remoteScreen}
   }
 
   // function setupVideoElement(video: HTMLElement) {
@@ -1066,7 +1156,16 @@ const processCommand = (function () {
 
   function enableMedia(s: MediaStream, media: CallMediaType, enable: boolean) {
     const tracks = media == CallMediaType.Video ? s.getVideoTracks() : s.getAudioTracks()
-    for (const t of tracks) t.enabled = enable
+    for (const t of tracks)
+      activeCall?.connection.getTransceivers().forEach((elem) => {
+        if (enable) {
+          t.enabled = true
+          elem.sender.replaceTrack(t)
+        } else {
+          t.enabled = false
+          elem.sender.replaceTrack(null)
+        }
+      })
     if (media == CallMediaType.Video && activeCall) {
       activeCall.localMediaSources.camera = enable
     }
@@ -1075,8 +1174,9 @@ const processCommand = (function () {
   toggleScreenShare = async function () {
     const call = activeCall
     if (!call) return
-    call.localMediaSources.screen = !call.localMediaSources.screen
-    await replaceMedia(call, call.localCamera)
+    call.localMediaSources.screenAudio = !call.localMediaSources.screenAudio
+    call.localMediaSources.screenVideo = !call.localMediaSources.screenVideo
+    await enableDisableScreenShare(call)
   }
 
   return processCommand
@@ -1173,7 +1273,21 @@ function callCryptoFunction(): CallCrypto {
     onMediaMuteUnmute: (mute: boolean) => void
   ): (frame: RTCEncodedVideoFrame, controller: TransformStreamDefaultController) => Promise<void> {
     let wasMuted = true
-    let lastBytes: number[] = []
+    let timeout: number = 0
+    const resetTimeout = () => {
+      if (wasMuted) {
+        wasMuted = false
+        onMediaMuteUnmute(wasMuted)
+      }
+      clearTimeout(timeout)
+      timeout = setTimeout(() => {
+        if (!wasMuted) {
+          wasMuted = true
+          onMediaMuteUnmute(wasMuted)
+        }
+      }, 3000)
+    }
+    // let lastBytes: number[] = []
     return async (frame, controller) => {
       const data = new Uint8Array(frame.data)
       const n = initialPlainTextRequired[frame.type] || 1
@@ -1186,22 +1300,27 @@ function callCryptoFunction(): CallCrypto {
           : new Uint8Array(0)
         frame.data = concatN(initial, plaintext).buffer
         controller.enqueue(frame)
-        lastBytes.push(frame.data.byteLength)
-        const sliced = lastBytes.slice(-20, lastBytes.length)
-        const average = sliced.reduce((prev, value) => value + prev, 0) / Math.max(1, sliced.length)
-        if (lastBytes.length > 20) {
-          console.log("LALAL REPLACED", lastBytes.length, sliced.length)
-          lastBytes = sliced
-        }
-        console.log("LALAL DECRYPT", frame.type, frame.data.byteLength, average)
-        // frame.type is undefined for audio stream, but defined for video
-        if (frame.type && wasMuted && average > 200) {
-          wasMuted = false
-          onMediaMuteUnmute(false)
-        } else if (frame.type && !wasMuted && average < 200) {
-          wasMuted = true
-          onMediaMuteUnmute(true)
-        }
+
+        resetTimeout()
+
+        // Check by bytes if track was disabled (not set to null)
+        // lastBytes.push(frame.data.byteLength)
+        // const sliced = lastBytes.slice(-20, lastBytes.length)
+        // const average = sliced.reduce((prev, value) => value + prev, 0) / Math.max(1, sliced.length)
+        // if (lastBytes.length > 20) {
+        //   lastBytes = sliced
+        // }
+        // if (frame.type) {
+        //   console.log("LALAL DECRYPT", frame.type, frame.data.byteLength, average)
+        // }
+        // // frame.type is undefined for audio stream, but defined for video
+        // if (frame.type && wasMuted && average > 200) {
+        //   wasMuted = false
+        //   onMediaMuteUnmute(false)
+        // } else if (frame.type && !wasMuted && average < 200) {
+        //   wasMuted = true
+        //   onMediaMuteUnmute(true)
+        // }
       } catch (e) {
         console.log(`decryption error ${e}`)
         throw e

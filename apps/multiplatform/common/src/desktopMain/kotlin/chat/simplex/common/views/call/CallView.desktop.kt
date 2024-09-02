@@ -70,7 +70,8 @@ actual fun ActiveCallView() {
           chatModel.activeCall.value = when (r.source) {
             CallMediaSource.Mic -> call.copy(peerMediaSources = sources.copy(mic = r.enabled))
             CallMediaSource.Camera -> call.copy(peerMediaSources = sources.copy(camera = r.enabled))
-            CallMediaSource.Screen -> call.copy(peerMediaSources = sources.copy(screen = r.enabled))
+            CallMediaSource.ScreenAudio -> call.copy(peerMediaSources = sources.copy(screenAudio = r.enabled))
+            CallMediaSource.ScreenVideo -> call.copy(peerMediaSources = sources.copy(screenVideo = r.enabled))
           }
         }
         is WCallResponse.End -> {

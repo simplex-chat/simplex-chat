@@ -51,26 +51,19 @@ function toggleSpeakerManually() {
 
 function toggleVideoManually() {
   if (activeCall) {
-    if (activeCall.localMediaSources.screen) {
-      activeCall.localMediaSources.camera = !activeCall.localMediaSources.camera
-      enableVideoIcon(activeCall.localMediaSources.camera)
-      // } else if (activeCall.localMedia == CallMediaType.Video) {
-      //   enableVideoIcon(toggleMedia(activeCall.localStream, CallMediaType.Video))
-    } else {
-      const apiCall: WVAPICall = {command: {type: "media", media: CallMediaType.Video, enable: activeCall.localMediaSources.camera != true}}
-      reactOnMessageFromServer(apiCall as any)
-      processCommand(apiCall).then(() => {
-        enableVideoIcon(activeCall?.localMediaSources?.camera == true)
-      })
-    }
+    const apiCall: WVAPICall = {command: {type: "media", media: CallMediaType.Video, enable: activeCall.localMediaSources.camera != true}}
+    reactOnMessageFromServer(apiCall as any)
+    processCommand(apiCall).then(() => {
+      enableVideoIcon(activeCall?.localMediaSources?.camera == true)
+    })
   }
 }
 
 async function toggleScreenManually() {
-  const was = activeCall?.localMediaSources.screen
+  const was = activeCall?.localMediaSources.screenVideo
   await toggleScreenShare()
-  if (was != activeCall?.localMediaSources.screen) {
-    document.getElementById("toggle-screen")!!.innerHTML = activeCall?.localMediaSources?.screen
+  if (was != activeCall?.localMediaSources.screenVideo) {
+    document.getElementById("toggle-screen")!!.innerHTML = activeCall?.localMediaSources?.screenVideo
       ? '<img src="/desktop/images/ic_stop_screen_share.svg" />'
       : '<img src="/desktop/images/ic_screen_share.svg" />'
   }
@@ -99,7 +92,7 @@ function reactOnMessageFromServer(msg: WVApiMessage) {
       const className =
         (msg.command.media == CallMediaType.Video && msg.command.enable) ||
         activeCall?.peerMediaSources.camera ||
-        activeCall?.peerMediaSources.screen
+        activeCall?.peerMediaSources.screenVideo
           ? "video"
           : "audio"
       document.getElementById("info-block")!!.className = className
@@ -122,7 +115,7 @@ function reactOnMessageToServer(msg: WVApiMessage) {
   switch (msg.resp?.type) {
     case "peerMedia":
       const className =
-        localMedia(activeCall) == CallMediaType.Video || activeCall.peerMediaSources.camera || activeCall.peerMediaSources.screen
+        localMedia(activeCall) == CallMediaType.Video || activeCall.peerMediaSources.camera || activeCall.peerMediaSources.screenVideo
           ? "video"
           : "audio"
       document.getElementById("info-block")!!.className = className
