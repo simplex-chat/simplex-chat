@@ -79,7 +79,6 @@ struct UserPicker: View {
                                                 .foregroundColor(Color(uiColor: .quaternaryLabel))
                                                 .modifier(ThemedBackground(grouped: true))
                                                 .onTapGesture {
-                                                    let shouldOpenLarge = m.users.count > 3
                                                     DispatchQueue.main.async {
                                                         isProfilesActive = true
                                                     }
@@ -199,10 +198,7 @@ struct UserPicker: View {
         }
         
         if #available(iOS 16.0, *) {
-            let sheetHeight: CGFloat = 400
-            v.presentationDetents(
-                [.height(sheetHeight), .large]
-            )
+            v.presentationDetents([.height(400)])
         } else {
             v
         }
