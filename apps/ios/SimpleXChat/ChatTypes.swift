@@ -2723,10 +2723,6 @@ public struct CIMeta: Decodable, Hashable {
         return false
     }
 
-    public func statusIcon(_ metaColor: Color/* = .secondary*/, _ primaryColor: Color = .accentColor) -> (String, Color)? {
-        itemStatus.statusIcon(metaColor, primaryColor)
-    }
-
     public static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true) -> CIMeta {
         CIMeta(
             itemId: id,
@@ -2794,21 +2790,43 @@ public enum CIStatus: Decodable, Hashable {
         }
     }
 
-    public func statusIcon(_ metaColor: Color/* = .secondary*/, _ primaryColor: Color = .accentColor) -> (String, Color)? {
+    public var sndProgress: SndCIStatusProgress? {
         switch self {
-        case .sndNew: return nil
-        case .sndSent: return ("checkmark", metaColor)
+        case let .sndSent(sndProgress): sndProgress
+        case let .sndRcvd(_ , sndProgress): sndProgress
+        default: nil
+        }
+    }
+
+    public struct Icon {
+        public enum Source {
+            case system(String)
+            case bundled(String)
+        }
+        public let source: Source
+        public let color: Color
+
+        init(_ source: Source, in color: Color) {
+            self.source = source
+            self.color = color
+        }
+    }
+
+    public func statusIcon(_ metaColor: Color, _ primaryColor: Color = .accentColor) -> Icon? {
+        switch self {
+        case .sndNew: nil
+        case .sndSent: Icon(.bundled("checkmark.space"), in: metaColor)
         case let .sndRcvd(msgRcptStatus, _):
             switch msgRcptStatus {
-            case .ok: return ("checkmark", metaColor)
-            case .badMsgHash: return ("checkmark", .red)
+            case .ok: Icon(.bundled("checkmark.slash"), in: metaColor)
+            case .badMsgHash: Icon(.bundled("checkmark.slash"), in: .red)
             }
-        case .sndErrorAuth: return ("multiply", .red)
-        case .sndError: return ("multiply", .red)
-        case .sndWarning: return ("exclamationmark.triangle.fill", .orange)
-        case .rcvNew: return ("circlebadge.fill", primaryColor)
-        case .rcvRead: return nil
-        case .invalid: return ("questionmark", metaColor)
+        case .sndErrorAuth: Icon(.system("multiply"), in: .red)
+        case .sndError:  Icon(.system("multiply"), in: .red)
+        case .sndWarning: Icon(.system("exclamationmark.triangle.fill"), in: .orange)
+        case .rcvNew: Icon(.system("circlebadge.fill"), in: primaryColor)
+        case .rcvRead: nil
+        case .invalid: Icon(.system("questionmark"), in: metaColor)
         }
     }
 
