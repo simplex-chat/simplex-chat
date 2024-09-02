@@ -15,8 +15,8 @@ extension View {
             foregroundStyle(Material.ultraThin)
                 .environment(\.colorScheme, .dark)
                 .grayscale(1)
-                .brightness(0.05)
-                .contrast(-5)
+                .brightness(0.00)
+                .contrast(-20)
         } else { self }
     }
 }

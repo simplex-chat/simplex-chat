@@ -41,12 +41,12 @@ struct CIMetaView: View {
                     case .complete:
                         ZStack {
                             ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, sent: .rcvd1, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, inverted: inverted)
-//                            ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, sent: .rcvd2, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, inverted: inverted)
+                            ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, sent: .rcvd2, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, inverted: inverted)
                         }
                     case .partial:
                         ZStack {
                             ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .rcvd1, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, inverted: inverted)
-//                            ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .rcvd2, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, inverted: inverted)
+                            ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .rcvd2, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, inverted: inverted)
                         }
                     }
                 default:
@@ -77,15 +77,19 @@ func ciMetaText(
     showTimesamp: Bool,
     inverted: Bool = false
 ) -> Text {
+    let resolved: Color? = switch sent {
+    case .rcvd2: .clear
+    default: inverted ? nil : color
+    }
     var r = Text("")
     if showEdited, meta.itemEdited {
-        r = r + statusIconText("pencil", inverted ? nil : color)
+        r = r + statusIconText("pencil", resolved)
     }
     if meta.disappearing {
-        r = r + statusIconText("timer", inverted ? nil : color).font(.caption2)
+        r = r + statusIconText("timer", resolved).font(.caption2)
         let ttl = meta.itemTimed?.ttl
         if ttl != chatTTL {
-            r = r + Text(shortTimeText(ttl)).foreground(inverted ? nil : color)
+            r = r + Text(shortTimeText(ttl)).foreground(resolved)
         }
         r = r + Text(" ")
     }
@@ -110,10 +114,10 @@ func ciMetaText(
         }
     }
     if let enc = encrypted {
-        r = r + statusIconText(enc ? "lock" : "lock.open", inverted ? nil : color) + Text(" ")
+        r = r + statusIconText(enc ? "lock" : "lock.open", resolved) + Text(" ")
     }
     if showTimesamp {
-        r = r + meta.timestampText.foreground(inverted ? nil : color)
+        r = r + meta.timestampText.foreground(resolved)
     }
     return r.font(.caption)
 }
