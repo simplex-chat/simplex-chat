@@ -22,8 +22,8 @@ struct ChatView: View {
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.scenePhase) var scenePhase
     @State @ObservedObject var chat: Chat
-    @StateObject private var scrollModel = ReverseListScrollModel<ChatItem>()
-    @StateObject private var floatingButtonModel = FloatingButtonModel()
+    @StateObject private var scrollModel = ReverseListScrollModel()
+    @StateObject private var floatingButtonModel: FloatingButtonModel = .shared
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
@@ -76,7 +76,8 @@ struct ChatView: View {
             VStack(spacing: 0) {
                 ZStack(alignment: .bottomTrailing) {
                     chatItemsList()
-                    floatingButtons(counts: floatingButtonModel.unreadChatItemCounts)
+                    // TODO: Extract into a separate view, to reduce the scope of `FloatingButtonModel` updates
+                    floatingButtons(unreadBelow: floatingButtonModel.unreadBelow, isNearBottom: floatingButtonModel.isNearBottom)
                 }
                 connectingText()
                 if selectedChatItems == nil {
@@ -413,12 +414,6 @@ struct ChatView: View {
                     revealedChatItem: $revealedChatItem,
                     selectedChatItems: $selectedChatItems
                 )
-                .onAppear {
-                    floatingButtonModel.appeared(viewId: ci.viewId)
-                }
-                .onDisappear {
-                    floatingButtonModel.disappeared(viewId: ci.viewId)
-                }
                 .id(ci.id) // Required to trigger `onAppear` on iOS15
             } loadPage: {
                 loadChatItems(cInfo)
@@ -429,13 +424,10 @@ struct ChatView: View {
             .onChange(of: searchText) { _ in
                 Task { await loadChat(chat: chat, search: searchText) }
             }
-            .onChange(of: im.reversedChatItems) { _ in
-                floatingButtonModel.chatItemsChanged()
-            }
             .onChange(of: im.itemAdded) { added in
                 if added {
                     im.itemAdded = false
-                    if floatingButtonModel.unreadChatItemCounts.isReallyNearBottom {
+                    if floatingButtonModel.isReallyNearBottom {
                         scrollModel.scrollToBottom()
                     }
                 }
@@ -458,57 +450,43 @@ struct ChatView: View {
     }
 
     class FloatingButtonModel: ObservableObject {
-        private enum Event {
-            case appeared(String)
-            case disappeared(String)
-            case chatItemsChanged
-        }
-
-        @Published var unreadChatItemCounts: UnreadChatItemCounts
-
-        private let events = PassthroughSubject<Event, Never>()
+        static let shared = FloatingButtonModel()
+        @Published var unreadBelow: Int = 0
+        @Published var isNearBottom: Bool = true
+        var isReallyNearBottom: Bool { scrollOffset.value > 0 && scrollOffset.value < 500 }
+        let visibleItems = PassthroughSubject<[String], Never>()
+        let scrollOffset = CurrentValueSubject<Double, Never>(0)
         private var bag = Set<AnyCancellable>()
 
         init() {
-            unreadChatItemCounts = UnreadChatItemCounts(
-                isNearBottom: true,
-                isReallyNearBottom: true,
-                unreadBelow: 0
-            )
-            events
+            visibleItems
                 .receive(on: DispatchQueue.global(qos: .background))
-                .scan(Set<String>()) { itemsInView, event in
-                    var updated = itemsInView
-                    switch event {
-                    case let .appeared(viewId): updated.insert(viewId)
-                    case let .disappeared(viewId): updated.remove(viewId)
-                    case .chatItemsChanged: ()
-                    }
-                    return updated
+                .map { itemIds in
+                    if let viewId = itemIds.first,
+                       let index = ItemsModel.shared.reversedChatItems.firstIndex(where: { $0.viewId == viewId }) {
+                        ItemsModel.shared.reversedChatItems[..<index].reduce(into: 0) { unread, chatItem in
+                            if chatItem.isRcvNew { unread += 1 }
+                        }
+                    } else { 0 }
                 }
-                .map { ChatModel.shared.unreadChatItemCounts(itemsInView: $0) }
                 .removeDuplicates()
-                .throttle(for: .seconds(0.2), scheduler: DispatchQueue.main, latest: true)
-                .assign(to: \.unreadChatItemCounts, on: self)
+                .receive(on: DispatchQueue.main)
+                .assign(to: \.unreadBelow, on: self)
                 .store(in: &bag)
-        }
 
-        func appeared(viewId: String) {
-            events.send(.appeared(viewId))
-        }
-
-        func disappeared(viewId: String) {
-            events.send(.disappeared(viewId))
-        }
-
-        func chatItemsChanged() {
-            events.send(.chatItemsChanged)
+            scrollOffset
+                .map { $0 < 800 }
+                .removeDuplicates()
+                // Delay the state change until scroll to bottom animation is finished
+                .delay(for: 0.35, scheduler: DispatchQueue.main)
+                .assign(to: \.isNearBottom, on: self)
+                .store(in: &bag)
         }
     }
 
-    private func floatingButtons(counts: UnreadChatItemCounts) -> some View {
+    private func floatingButtons(unreadBelow: Int, isNearBottom: Bool) -> some View {
         VStack {
-            let unreadAbove = chat.chatStats.unreadCount - counts.unreadBelow
+            let unreadAbove = chat.chatStats.unreadCount - unreadBelow
             if unreadAbove > 0 {
                 circleButton {
                     unreadCountText(unreadAbove)
@@ -529,16 +507,16 @@ struct ChatView: View {
                 }
             }
             Spacer()
-            if counts.unreadBelow > 0 {
+            if unreadBelow > 0 {
                 circleButton {
-                    unreadCountText(counts.unreadBelow)
+                    unreadCountText(unreadBelow)
                         .font(.callout)
                         .foregroundColor(theme.colors.primary)
                 }
                 .onTapGesture {
                     scrollModel.scrollToBottom()
                 }
-            } else if !counts.isNearBottom {
+            } else if !isNearBottom {
                 circleButton {
                     Image(systemName: "chevron.down")
                         .foregroundColor(theme.colors.primary)
@@ -710,7 +688,8 @@ struct ChatView: View {
         @State private var showChatItemInfoSheet: Bool = false
         @State private var chatItemInfo: ChatItemInfo?
         @State private var showForwardingSheet: Bool = false
-
+        @State private var msgWidth: CGFloat = 0
+        
         @Binding var selectedChatItems: Set<Int64>?
 
         @State private var allowMenu: Bool = true
@@ -824,6 +803,51 @@ struct ChatView: View {
                 }
             }
         }
+        
+
+        @available(iOS 16.0, *)
+        struct MemberLayout: Layout {
+            let spacing: Double
+            let msgWidth: Double
+
+            private func sizes(subviews: Subviews, proposal: ProposedViewSize) -> (CGSize, CGSize) {
+                assert(subviews.count == 2, "member layout must contain exactly two subviews")
+                let roleSize = subviews[1].sizeThatFits(proposal)
+                let memberSize = subviews[0].sizeThatFits(
+                    ProposedViewSize(
+                        width: (proposal.width ?? msgWidth) - roleSize.width,
+                        height: proposal.height
+                    )
+                )
+                return (memberSize, roleSize)
+            }
+
+            func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout Void) -> CGSize {
+                let (memberSize, roleSize) = sizes(subviews: subviews, proposal: proposal)
+                return CGSize(
+                    width: min(
+                        proposal.width ?? msgWidth,
+                        max(msgWidth, roleSize.width + spacing + memberSize.width)
+                    ),
+                    height: max(memberSize.height, roleSize.height)
+                )
+            }
+
+            func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout Void) {
+                let (memberSize, roleSize) = sizes(subviews: subviews, proposal: proposal)
+                subviews[0].place(
+                    at: CGPoint(x: bounds.minX, y: bounds.midY - memberSize.height / 2),
+                    proposal: ProposedViewSize(memberSize)
+                )
+                subviews[1].place(
+                    at: CGPoint(
+                        x: bounds.minX + max(memberSize.width + spacing, msgWidth - roleSize.width),
+                        y: bounds.midY - roleSize.height / 2
+                    ),
+                    proposal: ProposedViewSize(roleSize)
+                )
+            }
+        }
 
         @ViewBuilder func chatItemView(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ prevItem: ChatItem?, _ itemSeparation: ItemSeparation) -> some View {
             let bottomPadding: Double = itemSeparation.largeGap ? 10 : 2
@@ -838,15 +862,40 @@ struct ChatView: View {
                 if prevItem == nil || showMemberImage(member, prevItem) || prevMember != nil {
                     VStack(alignment: .leading, spacing: 4) {
                         if ci.content.showMemberName {
-                            let t = if memCount == 1 && member.memberRole > .member {
-                                Text(member.memberRole.text + " ").fontWeight(.semibold) + Text(member.displayName)
-                            } else {
-                                Text(memberNames(member, prevMember, memCount))
+                            Group {
+                                if memCount == 1 && member.memberRole > .member {
+                                    Group {
+                                        if #available(iOS 16.0, *) {
+                                            MemberLayout(spacing: 16, msgWidth: msgWidth) {
+                                                Text(member.chatViewName)
+                                                    .lineLimit(1)
+                                                Text(member.memberRole.text)
+                                                    .fontWeight(.semibold)
+                                                    .lineLimit(1)
+                                                    .padding(.trailing, 8)
+                                            }
+                                        } else {
+                                            HStack(spacing: 16) {
+                                                Text(member.chatViewName)
+                                                    .lineLimit(1)
+                                                Text(member.memberRole.text)
+                                                    .fontWeight(.semibold)
+                                                    .lineLimit(1)
+                                                    .layoutPriority(1)
+                                            }
+                                        }
+                                    }
+                                    .frame(
+                                        maxWidth: maxWidth,
+                                        alignment: chatItem.chatDir.sent ? .trailing : .leading
+                                    )
+                                } else {
+                                    Text(memberNames(member, prevMember, memCount))
+                                        .lineLimit(2)
+                                }
                             }
-                            t
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
-                                .lineLimit(2)
                                 .padding(.leading, memberImageSize + 14 + (selectedChatItems != nil && ci.canBeDeletedForSelf ? 12 + 24 : 0))
                                 .padding(.top, 3) // this is in addition to message sequence gap
                         }
@@ -869,6 +918,7 @@ struct ChatView: View {
                                         }
                                     }
                                 chatItemWithMenu(ci, range, maxWidth, itemSeparation)
+                                    .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
                             }
                         }
                     }

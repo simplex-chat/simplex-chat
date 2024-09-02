@@ -102,7 +102,7 @@ kotlin {
         implementation("com.github.Dansoftowner:jSystemThemeDetector:3.8")
         implementation("com.sshtools:two-slices:0.9.0-SNAPSHOT")
         implementation("org.slf4j:slf4j-simple:2.0.12")
-        implementation("uk.co.caprica:vlcj:4.8.2")
+        implementation("uk.co.caprica:vlcj:4.8.3")
         implementation("com.github.NanoHttpd.nanohttpd:nanohttpd:efb2ebf85a")
         implementation("com.github.NanoHttpd.nanohttpd:nanohttpd-websocket:efb2ebf85a")
         implementation("com.squareup.okhttp3:okhttp:4.12.0")

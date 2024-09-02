@@ -74,6 +74,7 @@ fun MainScreen() {
   LaunchedEffect(showAdvertiseLAAlert) {
     if (
       !chatModel.controller.appPrefs.laNoticeShown.get()
+      && !appPrefs.performLA.get()
       && showAdvertiseLAAlert
       && chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete
       && chatModel.chats.size > 3
@@ -211,10 +212,8 @@ fun MainScreen() {
         } else {
           ActiveCallView()
         }
-      } else {
-        // It's needed for privacy settings toggle, so it can be shown even if the app is passcode unlocked
-        ModalManager.fullscreen.showPasscodeInView()
       }
+      ModalManager.fullscreen.showOneTimePasscodeInView()
       AlertManager.privacySensitive.showInView()
       if (onboarding == OnboardingStage.OnboardingComplete) {
         LaunchedEffect(chatModel.currentUser.value, chatModel.appOpenUrl.value) {

@@ -888,35 +888,6 @@ final class ChatModel: ObservableObject {
             _ = upsertGroupMember(groupInfo, updatedMember)
         }
     }
-
-    func unreadChatItemCounts(itemsInView: Set<String>) -> UnreadChatItemCounts {
-        var i = 0
-        var totalBelow = 0
-        var unreadBelow = 0
-        while i < im.reversedChatItems.count - 1 && !itemsInView.contains(im.reversedChatItems[i].viewId) {
-            totalBelow += 1
-            if im.reversedChatItems[i].isRcvNew {
-                unreadBelow += 1
-            }
-            i += 1
-        }
-        return UnreadChatItemCounts(
-            // TODO these thresholds account for the fact that items are still "visible" while
-            // covered by compose area, they should be replaced with the actual height in pixels below the screen.
-            isNearBottom: totalBelow < 15,
-            isReallyNearBottom: totalBelow < 2,
-            unreadBelow: unreadBelow
-        )
-    }
-
-    func topItemInView(itemsInView: Set<String>) -> ChatItem? {
-        let maxIx = im.reversedChatItems.count - 1
-        var i = 0
-        let inView = { itemsInView.contains(self.im.reversedChatItems[$0].viewId) }
-        while i < maxIx && !inView(i) { i += 1 }
-        while i < maxIx && inView(i) { i += 1 }
-        return im.reversedChatItems[min(i - 1, maxIx)]
-    }
 }
 
 struct ShowingInvitation {
@@ -927,12 +898,6 @@ struct ShowingInvitation {
 struct NTFContactRequest {
     var incognito: Bool
     var chatId: String
-}
-
-struct UnreadChatItemCounts: Equatable {
-    var isNearBottom: Bool
-    var isReallyNearBottom: Bool
-    var unreadBelow: Int
 }
 
 final class Chat: ObservableObject, Identifiable, ChatLike {
