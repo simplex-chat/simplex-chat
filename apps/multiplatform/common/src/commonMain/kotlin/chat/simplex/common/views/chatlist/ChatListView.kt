@@ -169,7 +169,7 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
     },
     bottomBar = {
       if (oneHandUI.value) {
-        Column {
+        Column(Modifier.imePadding()) {
           Divider()
           ChatListToolbar(
             userPickerState,
@@ -189,6 +189,7 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
             }
           },
           Modifier
+            .navigationBarsPadding()
             .padding(end = DEFAULT_PADDING - 16.dp, bottom = DEFAULT_PADDING - 16.dp)
             .size(AppBarHeight * fontSizeSqrtMultiplier),
           elevation = FloatingActionButtonDefaults.elevation(
@@ -372,6 +373,7 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
     },
     onTitleClick = null,
     showSearch = false,
+    onTop = !oneHandUI.value,
     onSearchValueChanged = {},
     buttons = barButtons
   )

@@ -314,37 +314,38 @@ class SimplexApp: Application(), LifecycleEventObserver {
         @Suppress("DEPRECATION")
         val windowInsetController = ViewCompat.getWindowInsetsController(window.decorView)
 
-        var statusBar = (if (hasTop && appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
-          backgroundColor.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
-        } else {
-          if (CurrentColors.value.base == DefaultTheme.SIMPLEX) {
-            backgroundColor.lighter(0.4f)
-          } else {
-            backgroundColor
-          }
-        }).toArgb()
+//        var statusBar = (if (hasTop && appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
+//          backgroundColor.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
+//        } else {
+//          if (CurrentColors.value.base == DefaultTheme.SIMPLEX) {
+//            backgroundColor.lighter(0.4f)
+//          } else {
+//            backgroundColor
+//          }
+//        }).toArgb()
         var statusBarLight = isLight
-
-        // SimplexGreen while in call
+//
+//        // SimplexGreen while in call
         if (window.statusBarColor == SimplexGreen.toArgb()) {
-          statusBarColorAfterCall.intValue = statusBar
-          statusBar = SimplexGreen.toArgb()
+//          statusBarColorAfterCall.intValue = statusBar
+//          statusBar = SimplexGreen.toArgb()
           statusBarLight = false
         }
-        val navBar = (if (hasBottom && appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
-          backgroundColor.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
-        } else {
-          backgroundColor
-        }).toArgb()
-        if (window.statusBarColor != statusBar) {
-          window.statusBarColor = statusBar
-        }
+//        val navBar = (if (hasBottom && appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
+//          backgroundColor.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
+//        } else {
+//          backgroundColor
+//        }).toArgb()
+//        if (window.statusBarColor != statusBar) {
+//          window.statusBarColor = statusBar
+//        }
         if (windowInsetController?.isAppearanceLightStatusBars != statusBarLight) {
           windowInsetController?.isAppearanceLightStatusBars = statusBarLight
         }
-        if (window.navigationBarColor != navBar) {
-          window.navigationBarColor = navBar
-        }
+//        if (window.navigationBarColor != navBar) {
+//          window.navigationBarColor = navBar
+//        }
+        window.navigationBarColor = Color.Transparent.toArgb()
         if (windowInsetController?.isAppearanceLightNavigationBars != isLight) {
           windowInsetController?.isAppearanceLightNavigationBars = isLight
         }

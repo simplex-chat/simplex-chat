@@ -19,6 +19,8 @@ fun ChooseAttachmentView(attachmentOption: MutableState<AttachmentOption?>, hide
   Box(
     modifier = Modifier
       .fillMaxWidth()
+      .navigationBarsPadding()
+      .imePadding()
       .wrapContentHeight()
       .onFocusChanged { focusState ->
         if (!focusState.hasFocus) hide()

@@ -41,9 +41,19 @@ actual fun LazyColumnWithScrollBar(
       }
   }
   if (connection != null) {
-    LazyColumn(modifier.nestedScroll(connection), state, contentPadding, reverseLayout, verticalArrangement, horizontalAlignment, flingBehavior, userScrollEnabled, content)
+    LazyColumn(modifier.nestedScroll(connection), state, contentPadding, reverseLayout, verticalArrangement, horizontalAlignment, flingBehavior, userScrollEnabled) {
+      content()
+      item {
+        Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.systemBars))
+      }
+    }
   } else {
-    LazyColumn(modifier, state, contentPadding, reverseLayout, verticalArrangement, horizontalAlignment, flingBehavior, userScrollEnabled, content)
+    LazyColumn(modifier, state, contentPadding, reverseLayout, verticalArrangement, horizontalAlignment, flingBehavior, userScrollEnabled) {
+      content()
+      item {
+        Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.systemBars))
+      }
+    }
   }
 }
 
@@ -74,12 +84,18 @@ actual fun ColumnWithScrollBar(
           modifier.nestedScroll(connection).verticalScroll(state).height(IntrinsicSize.Max)
         } else {
           modifier.nestedScroll(connection).verticalScroll(state)
-        }, verticalArrangement, horizontalAlignment, content)
+        }, verticalArrangement, horizontalAlignment) {
+        content()
+        Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.systemBars))
+      }
   } else {
       Column(if (maxIntrinsicSize) {
         modifier.verticalScroll(state).height(IntrinsicSize.Max)
       } else {
         modifier.verticalScroll(state)
-      }, verticalArrangement, horizontalAlignment, content)
+      }, verticalArrangement, horizontalAlignment) {
+        content()
+        Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.systemBars))
+      }
   }
 }

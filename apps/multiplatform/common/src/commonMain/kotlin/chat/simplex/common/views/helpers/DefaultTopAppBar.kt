@@ -4,6 +4,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.*
@@ -11,6 +12,7 @@ import androidx.compose.ui.unit.Dp
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.theme.*
 import chat.simplex.res.MR
 
@@ -20,6 +22,7 @@ fun DefaultTopAppBar(
   title: (@Composable () -> Unit)?,
   onTitleClick: (() -> Unit)? = null,
   showSearch: Boolean,
+  onTop: Boolean,
   onSearchValueChanged: (String) -> Unit,
   buttons: List<@Composable RowScope.() -> Unit> = emptyList(),
 ) {
@@ -41,6 +44,7 @@ fun DefaultTopAppBar(
     navigationIcon = navigationButton,
     buttons = if (!showSearch) buttons else emptyList(),
     centered = !showSearch,
+    onTop = onTop,
   )
 }
 
@@ -90,12 +94,14 @@ private fun TopAppBar(
   buttons: List<@Composable RowScope.() -> Unit> = emptyList(),
   backgroundColor: Color = MaterialTheme.colors.primarySurface,
   centered: Boolean,
+  onTop: Boolean,
 ) {
   Box(
     modifier
       .fillMaxWidth()
-      .height(AppBarHeight * fontSizeSqrtMultiplier)
       .background(backgroundColor)
+      .then(if (onTop) Modifier.statusBarsPadding() else Modifier.navigationBarsPadding())
+      .height(AppBarHeight * fontSizeSqrtMultiplier)
       .padding(horizontal = 4.dp),
     contentAlignment = Alignment.CenterStart,
   ) {

@@ -656,10 +656,8 @@ fun ChatLayout(
         },
       )
   ) {
-    ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
       ModalBottomSheetLayout(
         scrimColor = Color.Black.copy(alpha = 0.12F),
-        modifier = Modifier.navigationBarsWithImePadding(),
         sheetElevation = 0.dp,
         sheetContent = {
           ChooseAttachmentView(
@@ -687,7 +685,6 @@ fun ChatLayout(
             }
           },
           bottomBar = composeView,
-          modifier = Modifier.navigationBarsWithImePadding(),
           floatingActionButton = { floatingButton.value() },
           contentColor = LocalContentColor.current,
           backgroundColor = Color.Unspecified
@@ -719,7 +716,6 @@ fun ChatLayout(
           }
         }
       }
-    }
   }
 }
 
@@ -882,11 +878,12 @@ fun ChatInfoToolbar(
     title = { ChatInfoToolbarTitle(chatInfo) },
     onTitleClick = if (chatInfo is ChatInfo.Local) null else info,
     showSearch = showSearch.value,
+    onTop = true,
     onSearchValueChanged = onSearchValueChanged,
     buttons = barButtons
   )
 
-  Divider(Modifier.padding(top = AppBarHeight * fontSizeSqrtMultiplier))
+  Divider(Modifier.statusBarsPadding().padding(top = AppBarHeight * fontSizeSqrtMultiplier))
 
   Box(Modifier.fillMaxWidth().wrapContentSize(Alignment.TopEnd).offset(y = AppBarHeight * fontSizeSqrtMultiplier)) {
     DefaultDropdownMenu(showMenu) {

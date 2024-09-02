@@ -1044,6 +1044,7 @@ fun ComposeView(
         textStyle = textStyle
       )
     }
+    Spacer(Modifier.imePadding().navigationBarsPadding())
   }
   }
 }

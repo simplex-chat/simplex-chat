@@ -44,10 +44,8 @@ import kotlinx.coroutines.flow.*
 fun AppScreen() {
   AppBarHandler.appBarMaxHeightPx = with(LocalDensity.current) { AppBarHeight.roundToPx() }
   SimpleXTheme {
-    ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
-      Surface(color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
-        MainScreen()
-      }
+    Surface(color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
+      MainScreen()
     }
   }
 }

@@ -242,6 +242,8 @@ private fun ModalData.NewChatSheetLayout(
         )
         if (!oneHandUI.value) {
           Divider()
+        } else {
+          Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
         }
       }
     }
@@ -610,6 +612,8 @@ private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats
       item {
         if (!oneHandUI.value) {
           Divider()
+        } else {
+          Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
         }
         ContactsSearchBar(
           listState = listState,

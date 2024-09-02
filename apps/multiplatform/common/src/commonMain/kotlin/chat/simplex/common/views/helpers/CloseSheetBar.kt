@@ -23,12 +23,18 @@ import kotlin.math.absoluteValue
 
 @Composable
 fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Color = if (close != null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,  arrangement: Arrangement.Vertical = Arrangement.Top, closeBarTitle: String? = null, barPaddingValues: PaddingValues = PaddingValues(horizontal = AppBarHorizontalPadding), endButtons: @Composable RowScope.() -> Unit = {}) {
-  var rowModifier = Modifier
-    .fillMaxWidth()
-    .height(AppBarHeight * fontSizeSqrtMultiplier)
   val themeBackgroundMix = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
-  if (!closeBarTitle.isNullOrEmpty()) {
-    rowModifier = rowModifier.background(themeBackgroundMix)
+  val rowModifier = if (closeBarTitle.isNullOrEmpty()) {
+    Modifier
+      .fillMaxWidth()
+      .then(if (arrangement == Arrangement.Top) Modifier.statusBarsPadding() else Modifier.navigationBarsPadding())
+      .height(AppBarHeight * fontSizeSqrtMultiplier)
+  } else {
+    Modifier
+      .fillMaxWidth()
+      .background(themeBackgroundMix)
+      .then(if (arrangement == Arrangement.Top) Modifier.statusBarsPadding() else Modifier.navigationBarsPadding())
+      .height(AppBarHeight * fontSizeSqrtMultiplier)
   }
   val handler = LocalAppBarHandler.current
   val connection = LocalAppBarHandler.current?.connection
