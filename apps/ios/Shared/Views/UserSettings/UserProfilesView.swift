@@ -307,6 +307,7 @@ struct UserProfilesView: View {
             Task {
                 do {
                     try await changeActiveUserAsync_(user.userId, viewPwd: userViewPassword(user))
+                    dismiss()
                 } catch {
                     await MainActor.run { alert = .activateUserError(error: responseError(error)) }
                 }
