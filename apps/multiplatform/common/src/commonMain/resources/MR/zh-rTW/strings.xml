@@ -599,8 +599,8 @@
     <string name="button_create_group_link">建立連結</string>
     <string name="delete_link_question">刪除連結？</string>
     <string name="button_remove_member">移除成員</string>
-    <string name="member_role_will_be_changed_with_notification">成員的身份會修改為 \"%s\"。所有在群組內的成員都接收到通知。</string>
-    <string name="member_role_will_be_changed_with_invitation">成員的身份會修改為 \"%s\"。該成員將接收到新的邀請。</string>
+    <string name="member_role_will_be_changed_with_notification">成員的身份會修改為 "%s"。所有在群組內的成員都接收到通知。</string>
+    <string name="member_role_will_be_changed_with_invitation">成員的身份會修改為 "%s"。該成員將接收到新的邀請。</string>
     <string name="network_status">網路狀態</string>
     <string name="network_options_reset_to_defaults">重置為預設值</string>
     <string name="incognito_info_share">當你與某人分享已啟用匿名聊天模式的個人檔案時，此個人檔案將用於他們邀請你參加的群組。</string>

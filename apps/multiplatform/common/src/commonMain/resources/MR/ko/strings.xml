@@ -634,7 +634,7 @@
     <string name="messages_section_title">메시지</string>
     <string name="messages_section_description">이 설정은 현재 내 프로필의 메시지에 적용되어요.</string>
     <string name="member_info_section_title_member">멤버</string>
-    <string name="member_role_will_be_changed_with_invitation">역할이 \"%s\"(으)로 변경되고, 회원은 새로운 초대를 받게 될 거예요.</string>
+    <string name="member_role_will_be_changed_with_invitation">역할이 "%s"(으)로 변경되고, 회원은 새로운 초대를 받게 될 거예요.</string>
     <string name="message_deletion_prohibited">이 채팅에서는 메시지 영구 삭제가 허용되지 않았어요.</string>
     <string name="leave_group_button">나가기</string>
     <string name="large_file">큰 파일!</string>
@@ -675,11 +675,11 @@
     <string name="leave_group_question">그룹에서 나갈까요\?</string>
     <string name="mtr_error_no_down_migration">데이터베이스 버전이 앱보다 최신이지만, 다음에 대한 다운 마이그레이션 없음: %s</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">멤버가 그룹에서 제거되어요. 이 작업은 되돌릴 수 없어요!</string>
-    <string name="member_role_will_be_changed_with_notification">역할이 \"%s\"(으)로 변경되어요. 그룹의 모든 멤버에게 알림이 전송됩니다.</string>
+    <string name="member_role_will_be_changed_with_notification">역할이 "%s"(으)로 변경되어요. 그룹의 모든 멤버에게 알림이 전송됩니다.</string>
     <string name="network_options_reset_to_defaults">기본값으로 재설정</string>
     <string name="notification_preview_mode_message">메시지 내용</string>
     <string name="notification_preview_mode_message_desc">대화 상대 이름 및 메시지 표시</string>
-    <string name="only_you_can_delete_messages">나만 메시지를 영구 삭제할 수 있어요(대화 상대는 \"삭제됨\" 표시만 할 수 있음).</string>
+    <string name="only_you_can_delete_messages">나만 메시지를 영구 삭제할 수 있어요(대화 상대는 "삭제됨" 표시만 할 수 있음).</string>
     <string name="profile_will_be_sent_to_contact_sending_link">이 링크를 보낸 상대에게 프로필이 전송될 거예요.</string>
     <string name="receiving_files_not_yet_supported">파일 수신은 아직 지원되지 않아요.</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">올바른 링크를 사용했는지 확인하거나 상대에게 다른 링크를 보내달라고 말해 주세요</string>
@@ -714,7 +714,7 @@
     <string name="only_your_contact_can_send_voice">대화 상대만 음성 메시지를 보낼 수 있어요.</string>
     <string name="prohibit_message_deletion">메시지 영구 삭제 허용되지 않음.</string>
     <string name="prohibit_sending_voice">음성 메시지 허용되지 않음.</string>
-    <string name="only_your_contact_can_delete">상대만 메시지를 영구 삭제할 수 있어요(나는 \"삭제됨\"으로 표시만 할 수 있음).</string>
+    <string name="only_your_contact_can_delete">상대만 메시지를 영구 삭제할 수 있어요(나는 "삭제됨"으로 표시만 할 수 있음).</string>
     <string name="only_group_owners_can_enable_voice">그룹 소유자만 음성 메시지를 사용 가능하도록 설정할 수 있어요.</string>
     <string name="one_time_link">일회성 초대 링크</string>
     <string name="paste_button">붙여넣기</string>
