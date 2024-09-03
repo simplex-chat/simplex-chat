@@ -285,7 +285,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
         // Animate to the target color
         //animatedColor.animateTo(targetColor, spec)
         // Set the status bar color to the animated color
-        window.statusBarColor = animatedColor.value.toArgb()
+        window.statusBarColor = CurrentColors.value.colors.background.mixWith(animatedColor.value.copy(1f), 1 - animatedColor.value.alpha).toArgb()
         // Update light status bar appearance if necessary
         if (windowInsetController?.isAppearanceLightStatusBars != isLight) {
           windowInsetController?.isAppearanceLightStatusBars = isLight
