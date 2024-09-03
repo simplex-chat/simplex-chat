@@ -70,7 +70,7 @@ func ciMetaText(
     }
     if showStatus {
         if let (image, statusColor) = meta.itemStatus.statusIcon(color, primaryColor) {
-            r = r + Text(image).foregroundColor(transparent ? .clear : statusColor)
+            r = r + Text(image).foregroundColor(transparent ? .clear : statusColor) + Text(" ")
         } else if !meta.disappearing {
             r = r + statusIconText("circlebadge.fill", .clear) + Text(" ")
         }

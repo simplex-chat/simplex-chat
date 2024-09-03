@@ -2793,11 +2793,11 @@ public enum CIStatus: Decodable, Hashable {
     public func statusIcon(_ metaColor: Color, _ primaryColor: Color = .accentColor) -> (Image, Color)? {
         switch self {
         case .sndNew: nil
-        case .sndSent: (Image("checkmark.space"),  metaColor)
+        case .sndSent: (Image("checkmark.wide"),  metaColor)
         case let .sndRcvd(msgRcptStatus, _):
             switch msgRcptStatus {
-            case .ok: (Image("checkmark.slash"), metaColor)
-            case .badMsgHash: (Image("checkmark.slash"), .red)
+            case .ok: (Image("checkmark.2"), metaColor)
+            case .badMsgHash: (Image("checkmark.2"), .red)
             }
         case .sndErrorAuth: (Image(systemName: "multiply"), .red)
         case .sndError: (Image(systemName: "multiply"), .red)
@@ -2912,11 +2912,11 @@ public enum GroupSndStatus: Decodable, Hashable {
         case .new: (Image(systemName: "ellipsis"), metaColor)
         case .forwarded: (Image(systemName: "chevron.forward.2"), metaColor)
         case .inactive: (Image(systemName: "person.badge.minus"), metaColor)
-        case .sent: (Image( "checkmark.space"), metaColor)
+        case .sent: (Image("checkmark.wide"), metaColor)
         case let .rcvd(msgRcptStatus):
             switch msgRcptStatus {
-            case .ok: (Image( "checkmark.slash"), metaColor)
-            case .badMsgHash: (Image( "checkmark.slash"), .red)
+            case .ok: (Image("checkmark.2"), metaColor)
+            case .badMsgHash: (Image("checkmark.2"), .red)
             }
         case .error: (Image(systemName: "multiply"), .red)
         case .warning: (Image(systemName: "exclamationmark.triangle.fill"), .orange)
