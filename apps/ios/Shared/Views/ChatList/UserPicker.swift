@@ -28,11 +28,10 @@ struct UserPicker: View {
                         if let currentUser = activeUser {
                             VStack(alignment: .leading, spacing: 6) {
                                 HStack(alignment: .top) {
-                                    Button {
-                                        activeSheet = .currentProfile
-                                    } label: {
-                                        ProfileImage(imageStr: currentUser.image, size: 52)
-                                    }
+                                    ProfileImage(imageStr: currentUser.image, size: 52)
+                                        .onTapGesture {
+                                            activeSheet = .currentProfile
+                                        }
                                     Spacer()
                                     let usersToPreview = m.users.filter({ u in !u.user.hidden && u.user.userId != currentUser.userId })
                                     ZStack(alignment: .leading) {
