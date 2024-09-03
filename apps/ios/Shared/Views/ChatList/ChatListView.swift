@@ -65,7 +65,7 @@ struct ChatListView: View {
                 destination: chatView
             ) { chatListView }
         }
-        .sheetWithDetents(
+        .sheet(
             item: $activeUserPickerSheet,
             detents: [activeUserPickerSheet == .userPicker ? .height(400) : .large]
         ) { sheet in

@@ -2,7 +2,7 @@ import SwiftUI
 
 extension View {
     @ViewBuilder
-    func sheetWithDetents<Item: Identifiable, Content: View>(
+    func sheet<Item: Identifiable, Content: View>(
         item: Binding<Item?>,
         detents: [SheetDetent],
         @ViewBuilder content: @escaping (Item) -> Content
@@ -16,8 +16,8 @@ extension View {
         } else {
             ZStack {
                 SheetPresenter(
-                    item: item,
                     detents: detents.map { $0.controllerDetent },
+                    item: item,
                     content: content
                 )
                 self
@@ -26,6 +26,7 @@ extension View {
     }
 }
 
+/// iOS 15 Compatible detents
 enum SheetDetent {
     case medium
     case large
@@ -33,7 +34,7 @@ enum SheetDetent {
     case fraction(Double)
 
     @available(iOS 16.0, *)
-    var presentationDetent: PresentationDetent {
+    fileprivate var presentationDetent: PresentationDetent {
         switch self {
         case .medium: .medium
         case .large: .large
@@ -42,7 +43,7 @@ enum SheetDetent {
         }
     }
 
-    var controllerDetent: UISheetPresentationController.Detent {
+    fileprivate var controllerDetent: UISheetPresentationController.Detent {
         switch self {
         case .medium: .medium()
         case .large: .large()
@@ -58,16 +59,13 @@ private var lastSheetHash: Int?
 /// An transparent view which is added to SwiftUI
 /// view hierarchy and presents a UIKit sheet with detents
 private struct SheetPresenter<Item: Identifiable, Content: View>: UIViewRepresentable {
-    @Binding var item: Item?
-    @State var lastPresented: Item.ID?
-
     let detents: [UISheetPresentationController.Detent]
+    @Binding var item: Item?
     @ViewBuilder let content: (Item) -> Content
 
     func makeUIView(context: Context) -> UIView { UIView() }
 
     func updateUIView(_ uiView: UIView, context: Context) {
-        // Prevent
         guard let root = uiView.window?.rootViewController else { return }
         guard item?.id.hashValue != lastSheetHash else { return }
         lastSheetHash = item?.id.hashValue
@@ -75,9 +73,7 @@ private struct SheetPresenter<Item: Identifiable, Content: View>: UIViewRepresen
             let hc = UIHostingController(rootView: content(item))
             if let spc = hc.presentationController as? UISheetPresentationController {
                 spc.detents = detents
-                spc.prefersGrabberVisible = true
-                spc.prefersScrollingExpandsWhenScrolledToEdge = false
-                spc.largestUndimmedDetentIdentifier = .medium
+                spc.prefersGrabberVisible = detents.count > 1
             }
             hc.presentationController?.delegate = context.coordinator
             if root.presentedViewController != nil {
@@ -98,9 +94,7 @@ private struct SheetPresenter<Item: Identifiable, Content: View>: UIViewRepresen
 
         init(item: Binding<Item?>) { _item = item }
 
-        func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
-            item = nil
-        }
+        func presentationControllerDidDismiss(_: UIPresentationController) { item = nil }
     }
 }
 
