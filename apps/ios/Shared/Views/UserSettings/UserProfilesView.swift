@@ -9,8 +9,8 @@ import SimpleXChat
 struct UserProfilesView: View {
     @EnvironmentObject private var m: ChatModel
     @EnvironmentObject private var theme: AppTheme
-    @Binding var showSettings: Bool
     @Environment(\.editMode) private var editMode
+    @Environment(\.dismiss) var dismiss: DismissAction
     @AppStorage(DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE) private var showHiddenProfilesNotice = true
     @AppStorage(DEFAULT_SHOW_MUTE_PROFILE_ALERT) private var showMuteProfileAlert = true
     @State private var showDeleteConfirmation = false
@@ -96,8 +96,7 @@ struct UserProfilesView: View {
                     } label: {
                         Label("Add profile", systemImage: "plus")
                     }
-                    .frame(height: 44)
-                    .padding(.vertical, 4)
+                    .frame(height: 38)
                 }
             } footer: {
                 Text("Tap to activate profile.")
@@ -285,7 +284,7 @@ struct UserProfilesView: View {
                     await MainActor.run {
                         onboardingStageDefault.set(.step1_SimpleXInfo)
                         m.onboardingStage = .step1_SimpleXInfo
-                        showSettings = false
+                        dismiss()
                     }
                 }
             } else {
@@ -308,14 +307,14 @@ struct UserProfilesView: View {
             Task {
                 do {
                     try await changeActiveUserAsync_(user.userId, viewPwd: userViewPassword(user))
+                    dismiss()
                 } catch {
                     await MainActor.run { alert = .activateUserError(error: responseError(error)) }
                 }
             }
         } label: {
             HStack {
-                ProfileImage(imageStr: user.image, size: 44)
-                    .padding(.vertical, 4)
+                ProfileImage(imageStr: user.image, size: 38)
                     .padding(.trailing, 12)
                 Text(user.chatViewName)
                 Spacer()
@@ -415,6 +414,6 @@ public func correctPassword(_ user: User, _ pwd: String) -> Bool {
 
 struct UserProfilesView_Previews: PreviewProvider {
     static var previews: some View {
-        UserProfilesView(showSettings: Binding.constant(true))
+        UserProfilesView()
     }
 }

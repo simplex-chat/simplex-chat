@@ -262,7 +262,9 @@ struct SettingsView: View {
 
     var body: some View {
         ZStack {
-            settingsView()
+            NavigationView {
+                settingsView()
+            }
             if showProgress {
                 progressView()
             }
@@ -274,63 +276,7 @@ struct SettingsView: View {
 
     @ViewBuilder func settingsView() -> some View {
         let user = chatModel.currentUser
-        NavigationView {
             List {
-                Section(header: Text("You").foregroundColor(theme.colors.secondary)) {
-                    if let user = user {
-                        NavigationLink {
-                            UserProfile()
-                                .navigationTitle("Your current profile")
-                                .modifier(ThemedBackground())
-                        } label: {
-                            ProfilePreview(profileOf: user)
-                                .padding(.leading, -8)
-                        }
-                    }
-
-                    NavigationLink {
-                        UserProfilesView(showSettings: $showSettings)
-                    } label: {
-                        settingsRow("person.crop.rectangle.stack", color: theme.colors.secondary) { Text("Your chat profiles") }
-                    }
-
-
-                    if let user = user {
-                        NavigationLink {
-                            UserAddressView(shareViaProfile: user.addressShared)
-                                .navigationTitle("SimpleX address")
-                                .modifier(ThemedBackground(grouped: true))
-                                .navigationBarTitleDisplayMode(.large)
-                        } label: {
-                            settingsRow("qrcode", color: theme.colors.secondary) { Text("Your SimpleX address") }
-                        }
-
-                        NavigationLink {
-                            PreferencesView(profile: user.profile, preferences: user.fullPreferences, currentPreferences: user.fullPreferences)
-                                .navigationTitle("Your preferences")
-                                .modifier(ThemedBackground(grouped: true))
-                        } label: {
-                            settingsRow("switch.2", color: theme.colors.secondary) { Text("Chat preferences") }
-                        }
-                    }
-
-                    NavigationLink {
-                        ConnectDesktopView(viaSettings: true)
-                    } label: {
-                        settingsRow("desktopcomputer", color: theme.colors.secondary) { Text("Use from desktop") }
-                    }
-
-                    NavigationLink {
-                        MigrateFromDevice(showSettings: $showSettings, showProgressOnSettings: $showProgress)
-                            .navigationTitle("Migrate device")
-                            .modifier(ThemedBackground(grouped: true))
-                            .navigationBarTitleDisplayMode(.large)
-                    } label: {
-                        settingsRow("tray.and.arrow.up", color: theme.colors.secondary) { Text("Migrate to another device") }
-                    }
-                }
-                .disabled(chatModel.chatRunning != true)
-
                 Section(header: Text("Settings").foregroundColor(theme.colors.secondary)) {
                     NavigationLink {
                         NotificationsView()
@@ -381,10 +327,20 @@ struct SettingsView: View {
                         }
                         .disabled(chatModel.chatRunning != true)
                     }
-                    
-                    chatDatabaseRow()
                 }
 
+                Section(header: Text("Chat database").foregroundColor(theme.colors.secondary)) {
+                    chatDatabaseRow()
+                    NavigationLink {
+                        MigrateFromDevice(showProgressOnSettings: $showProgress)
+                            .navigationTitle("Migrate device")
+                            .modifier(ThemedBackground(grouped: true))
+                            .navigationBarTitleDisplayMode(.large)
+                    } label: {
+                        settingsRow("tray.and.arrow.up", color: theme.colors.secondary) { Text("Migrate to another device") }
+                    }
+                }
+                
                 Section(header: Text("Help").foregroundColor(theme.colors.secondary)) {
                     if let user = user {
                         NavigationLink {
@@ -462,11 +418,10 @@ struct SettingsView: View {
             }
             .navigationTitle("Your settings")
             .modifier(ThemedBackground(grouped: true))
-        }
-        .onDisappear {
-            chatModel.showingTerminal = false
-            chatModel.terminalItems = []
-        }
+            .onDisappear {
+                chatModel.showingTerminal = false
+                chatModel.terminalItems = []
+            }
     }
     
     private func chatDatabaseRow() -> some View {
