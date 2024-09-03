@@ -32,6 +32,18 @@ struct PreferencesView: View {
                 .disabled(currentPreferences == preferences)
             }
         }
+        .onDisappear {
+            if currentPreferences != preferences {
+                AlertManager.shared.showAlert(Alert(
+                    title: Text("Your chat preferences"),
+                    message: Text("Chat preferences were changed."),
+                    primaryButton: .default(Text("Save")) {
+                        savePreferences()
+                    },
+                    secondaryButton: .cancel()
+                ))
+            }
+        }
     }
 
     private func featureSection(_ feature: ChatFeature, _ allowFeature: Binding<FeatureAllowed>) -> some View {
