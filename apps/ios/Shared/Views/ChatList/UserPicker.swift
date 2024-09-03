@@ -14,15 +14,26 @@ struct UserPicker: View {
     @Binding var activeSheet: UserPickerSheet?
     @State private var activeUser: User? = nil
 
+    
+    @ViewBuilder
+    private func usersRow(users: [UserInfo]) -> some View {
+        let gradientInset: Double = 16
+        let leadingPadding: Double = 32
+        let scrollView = ScrollView(.horizontal) {
+            HStack(spacing: 0) {
+                ForEach(users) { userView($0) }
+            }
+            .padding(.leading, leadingPadding)
+            .padding(.horizontal, gradientInset)
 
-    private func usersRow(users: [UserInfo], gradientInset: Double) -> some View {
+        }
         ZStack {
-            ScrollView(.horizontal) {
-                HStack {
-                    ForEach(users) { userView($0) }
-                }
-                .padding(.horizontal, gradientInset)
-                .padding(.leading, 32)
+            if #available(iOS 16.4, *) {
+                scrollView
+                    .scrollBounceBehavior(.basedOnSize, axes: [.horizontal])
+                    .scrollIndicators(.hidden)
+            } else {
+                scrollView
             }
             HStack(spacing: 0) {
                 LinearGradient(
@@ -37,7 +48,9 @@ struct UserPicker: View {
                     endPoint: .trailing
                 ).frame(width: gradientInset)
             }.blendMode(.destinationOut)
-        }.compositingGroup()
+        }
+        .compositingGroup()
+        .frame(maxWidth: gradientInset + leadingPadding + Double(users.count) * 40 + gradientInset)
     }
 
     var body: some View {
@@ -52,7 +65,7 @@ struct UserPicker: View {
                         Spacer()
                         let usersToPreview = m.users.filter({ u in !u.user.hidden && u.user.userId != currentUser.userId })
                         HStack(spacing: 0) {
-                            usersRow(users: usersToPreview, gradientInset: 32)
+                            usersRow(users: usersToPreview)
                             Button {
                                 activeSheet = .chatProfiles
                             } label: {
@@ -63,55 +76,6 @@ struct UserPicker: View {
                                     .foregroundColor(Color(uiColor: .quaternaryLabel))
                             }
                         }
-//                        ZStack(alignment: .leading) {
-//                            ZStack(alignment: .trailing) {
-//                                let ps = HStack(spacing: 20) {
-//                                    Color.clear.frame(width: 48, height: 32)
-//                                    ForEach(usersToPreview) { u in
-//                                        userView(u)
-//                                    }
-//                                    Color.clear.frame(width: 32, height: 32)
-//                                }
-//                                
-//                                if usersToPreview.count > 3 {
-//                                    let s = ScrollView(.horizontal) { ps }.frame(width: 284)
-//                                    if #available(iOS 16.0, *) {
-//                                        s.scrollIndicators(.hidden)
-//                                    } else {
-//                                        s
-//                                    }
-//                                } else {
-//                                    ps
-//                                }
-//                                HStack(spacing: 0) {
-//                                    LinearGradient(
-//                                        colors: [.clear, theme.colors.background.asGroupedBackground(theme.base.mode)],
-//                                        startPoint: .leading,
-//                                        endPoint: .trailing
-//                                    )
-//                                    .frame(width: 32, height: 35)
-//                                    Button {
-//                                        activeSheet = .chatProfiles
-//                                    } label: {
-//                                        Image(systemName: "ellipsis.circle.fill")
-//                                            .resizable()
-//                                            .scaledToFit()
-//                                            .frame(width: 31, height: 31)
-//                                            .padding(.top, 4)
-//                                            .foregroundColor(Color(uiColor: .quaternaryLabel))
-//                                            .modifier(ThemedBackground(grouped: true))
-//                                    }
-//                                }
-//                            }.border(.red)
-//                            .padding(.top, 10)
-//
-//                            LinearGradient(
-//                                colors: [.clear, theme.colors.background.asGroupedBackground(theme.base.mode)],
-//                                startPoint: .trailing,
-//                                endPoint: .leading
-//                            )
-//                            .frame(width: 32, height: 35).border(.blue)
-//                        }.border(.green)
                     }
                     Text(currentUser.displayName)
                         .fontWeight(.bold)
@@ -194,7 +158,7 @@ struct UserPicker: View {
     private func userView(_ u: UserInfo) -> some View {
         ZStack(alignment: .topTrailing) {
             ProfileImage(imageStr: u.user.image, size: 32, color: Color(uiColor: .quaternaryLabel))
-                .padding([.top, .trailing], 3)
+                .padding(4)
             if (u.unreadCount > 0) {
                 unreadBadge()
             }
