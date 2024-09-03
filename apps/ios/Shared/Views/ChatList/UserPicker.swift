@@ -200,9 +200,7 @@ struct UserPicker: View {
     }
     
     private func openSheetOnTap(title: LocalizedStringKey, image: String, setActive: @escaping () -> Void) -> some View {
-        Button {
-            setActive()
-        } label: {
+        Button(action: setActive) {
             Label {
                 Text(title).foregroundColor(.primary)
             } icon: {
