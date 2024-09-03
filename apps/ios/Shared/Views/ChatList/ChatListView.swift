@@ -46,6 +46,13 @@ struct ChatListView: View {
         }
     }
 
+    var isUserPickerSheetPresented: Binding<Bool> {
+        Binding(
+            get: { activeUserPickerSheet != nil }, 
+            set: { if !$0 { activeUserPickerSheet = nil } }
+        )
+    }
+
     private var viewBody: some View {
         ZStack(alignment: oneHandUI ? .bottomLeading : .topLeading) {
             NavStackCompat(
@@ -58,8 +65,9 @@ struct ChatListView: View {
                 destination: chatView
             ) { chatListView }
         }
-        .sheet(item: $activeUserPickerSheet) { sheet in
-            if let currentUser = chatModel.currentUser {
+        .sheetWithDetents(isPresented: isUserPickerSheetPresented) {
+            if let sheet = activeUserPickerSheet, let currentUser = chatModel.currentUser {
+                Group {
                     switch sheet {
                     case .address:
                         NavigationView {
@@ -95,9 +103,13 @@ struct ChatListView: View {
                             activeSheet: $activeUserPickerSheet
                         )
                     }
+                }
+                .environmentObject(ChatModel.shared)
+                .environmentObject(AppTheme.shared)
             }
         }
     }
+
 
     private var chatListView: some View {
         let tm = ToolbarMaterial.material(toolbarMaterial)
