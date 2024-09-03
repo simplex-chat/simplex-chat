@@ -1,7 +1,6 @@
 package chat.simplex.common.platform
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.AnimationVector1D
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.*
@@ -22,6 +21,7 @@ interface PlatformInterface {
   fun androidIsBackgroundCallAllowed(): Boolean = true
   fun androidSetNightModeIfSupported() {}
   fun androidSetStatusAndNavBarColors(isLight: Boolean, backgroundColor: Color, hasTop: Boolean, hasBottom: Boolean) {}
+  fun androidSetStatusBarColor(isLight: Boolean, animatedColor: Animatable<Color, AnimationVector4D>) {}
   fun androidStartCallActivity(acceptCall: Boolean, remoteHostId: Long? = null, chatId: ChatId? = null) {}
   fun androidPictureInPictureAllowed(): Boolean = true
   fun androidCallEnded() {}

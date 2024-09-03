@@ -1,5 +1,7 @@
 package chat.simplex.app
 
+import android.animation.ArgbEvaluator
+import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
 import android.app.*
 import android.content.Context
@@ -8,6 +10,7 @@ import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.*
 import android.view.View
+import androidx.compose.animation.core.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.graphics.Color
@@ -260,7 +263,6 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
       override fun androidSetNightModeIfSupported() {
         if (Build.VERSION.SDK_INT < 31) return
-
         val light = if (CurrentColors.value.name == DefaultTheme.SYSTEM_THEME_NAME) {
           null
         } else {
@@ -274,6 +276,21 @@ class SimplexApp: Application(), LifecycleEventObserver {
         val uiModeManager = androidAppContext.getSystemService(UI_MODE_SERVICE) as UiModeManager
         uiModeManager.setApplicationNightMode(mode)
       }
+
+      override fun androidSetStatusBarColor(isLight: Boolean, animatedColor: Animatable<Color, AnimationVector4D>) {
+        val window = mainActivity.get()?.window ?: return
+
+        @Suppress("DEPRECATION")
+        val windowInsetController = ViewCompat.getWindowInsetsController(window.decorView)
+        // Animate to the target color
+        //animatedColor.animateTo(targetColor, spec)
+        // Set the status bar color to the animated color
+        window.statusBarColor = animatedColor.value.toArgb()
+        // Update light status bar appearance if necessary
+        if (windowInsetController?.isAppearanceLightStatusBars != isLight) {
+          windowInsetController?.isAppearanceLightStatusBars = isLight
+        }
+    }
 
       override fun androidSetStatusAndNavBarColors(isLight: Boolean, backgroundColor: Color, hasTop: Boolean, hasBottom: Boolean) {
         val window = mainActivity.get()?.window ?: return

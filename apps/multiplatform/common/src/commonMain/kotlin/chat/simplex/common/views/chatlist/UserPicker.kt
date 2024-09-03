@@ -348,10 +348,14 @@ fun UserPicker(
   LaunchedEffect(Unit) {
     snapshotFlow { newChat.isVisible() }
       .distinctUntilChanged()
-      .filter { !it }
-      .collect {
+      .collect { visible ->
         val c = CurrentColors.value.colors
-        platform.androidSetStatusAndNavBarColors(c.isLight, c.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
+
+        if (visible) {
+          platform.androidSetStatusAndNavBarColors(c.isLight, c.surface, !appPrefs.oneHandUI.get(), false)
+        } else {
+          platform.androidSetStatusAndNavBarColors(c.isLight, c.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
+        }
       }
   }
 
@@ -359,7 +363,7 @@ fun UserPicker(
     snapshotFlow { currentTheme }
       .distinctUntilChanged()
       .collect { _ ->
-        platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.surface, false, false)
+        platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.surface, !appPrefs.oneHandUI.get(), false)
       }
   }
   LaunchedEffect(Unit) {
@@ -367,7 +371,6 @@ fun UserPicker(
       .distinctUntilChanged()
       .filter { it }
       .collect {
-        platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.surface, false, false)
         try {
           val updatedUsers = chatModel.controller.listUsers(chatModel.remoteHostId()).sortedByDescending { it.user.activeUser }
           var same = users.size == updatedUsers.size
