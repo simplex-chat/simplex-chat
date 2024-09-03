@@ -26,7 +26,9 @@ extension View {
     }
 }
 
-/// iOS 15 Compatible detents
+/// iOS 15 Compatible detents.
+/// Defines the fallback thresholds,
+/// since fractional and constant height sheets are unavailable.
 enum SheetDetent {
     case medium
     case large

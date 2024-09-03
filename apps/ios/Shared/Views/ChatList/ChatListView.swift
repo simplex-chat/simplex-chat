@@ -46,13 +46,6 @@ struct ChatListView: View {
         }
     }
 
-    var isUserPickerSheetPresented: Binding<Bool> {
-        Binding(
-            get: { activeUserPickerSheet != nil }, 
-            set: { if !$0 { activeUserPickerSheet = nil } }
-        )
-    }
-
     private var viewBody: some View {
         ZStack(alignment: oneHandUI ? .bottomLeading : .topLeading) {
             NavStackCompat(
