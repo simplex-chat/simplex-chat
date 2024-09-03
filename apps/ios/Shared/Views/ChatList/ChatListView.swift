@@ -70,7 +70,7 @@ struct ChatListView: View {
                     primaryButton: .default(Text("Save")) {
                         saveAAS()
                     },
-                    secondaryButton: .destructive(Text("Revert"))
+                    secondaryButton: .cancel()
                 ))
             }
         }) {
