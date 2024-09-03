@@ -22,8 +22,8 @@
     <string name="messages_section_description">ينطبق هذا الإعداد على الرسائل الموجودة في ملف تعريف الدردشة الحالي الخاص بك</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">منصة الرسائل والتطبيقات تحمي خصوصيتك وأمنك.</string>
     <string name="profile_is_only_shared_with_your_contacts">يتم مشاركة ملف التعريف مع جهات اتصالك فقط.</string>
-    <string name="member_role_will_be_changed_with_notification">سيتم تغيير الدور إلى \"%s\". سيتم إبلاغ كل فرد في المجموعة.</string>
-    <string name="member_role_will_be_changed_with_invitation">سيتم تغيير الدور إلى \"%s\". سيستلم العضو دعوة جديدة.</string>
+    <string name="member_role_will_be_changed_with_notification">سيتم تغيير الدور إلى "%s". سيتم إبلاغ كل فرد في المجموعة.</string>
+    <string name="member_role_will_be_changed_with_invitation">سيتم تغيير الدور إلى "%s". سيستلم العضو دعوة جديدة.</string>
     <string name="smp_servers_per_user">خوادم الاتصالات الجديدة لملف تعريف الدردشة الحالي الخاص بك</string>
     <string name="switch_receiving_address_desc">سيتم تغيير عنوان الاستلام إلى خادم مختلف. سيتم إكمال تغيير العنوان بعد اتصال المرسل بالإنترنت.</string>
     <string name="this_link_is_not_a_valid_connection_link">هذا الرابط ليس رابط اتصال صالح!</string>
@@ -767,7 +767,7 @@
     <string name="no_contacts_selected">لم تٌحدد جهات اتصال</string>
     <string name="v4_6_group_moderation_descr">يمكّن للمشرف الآن:
 \n- حذف رسائل الأعضاء.
-\n- تعطيل الأعضاء (دور \"المراقب\")</string>
+\n- تعطيل الأعضاء (دور "المراقب")</string>
     <string name="settings_notifications_mode_title">خدمة الإشعار</string>
     <string name="chat_preferences_off">غير مفعّل</string>`
   <string name="chat_preferences_on">مفعل</string>
@@ -1076,7 +1076,7 @@
     <string name="stop_file__action">إيقاف الملف</string>
     <string name="stop_snd_file__title">التوقف عن إرسال الملف؟</string>
     <string name="icon_descr_address">عنوان SimpleX</string>
-    <string name="disable_onion_hosts_when_not_supported"><![CDATA[اضبط <i>استخدم مضيفي .onion</i> إلى \"لا\" إذا كان وكيل SOCKS لا يدعمها.]]></string>
+    <string name="disable_onion_hosts_when_not_supported"><![CDATA[اضبط <i>استخدم مضيفي .onion</i> إلى "لا" إذا كان وكيل SOCKS لا يدعمها.]]></string>
     <string name="share_with_contacts">مشاركة مع جهات الاتصال</string>
     <string name="shutdown_alert_question">إيقاف التشغيل؟</string>
     <string name="network_socks_proxy_settings">إعدادات وكيل SOCKS</string>
@@ -1406,7 +1406,7 @@
     <string name="connected_desktop">سطح المكتب متصل</string>
     <string name="multicast_connect_automatically">اتصل تلقائيًا</string>
     <string name="desktop_address">عنوان سطح المكتب</string>
-    <string name="marked_deleted_items_description">وضّع علامة \"محذوفة\" على %d من الرسائل</string>
+    <string name="marked_deleted_items_description">وضّع علامة "محذوفة" على %d من الرسائل</string>
     <string name="discover_on_network">اكتشف عبر الشبكة المحلية</string>
     <string name="connect_plan_connect_via_link">اتصل عبر الرابط؟</string>
     <string name="connect_plan_connect_to_yourself">اتصل بنفسك؟</string>

@@ -600,7 +600,7 @@
     <string name="invite_prohibited">Nepavyko pakviesti kontakto!</string>
     <string name="v4_5_transport_isolation_descr">Pagal pokalbių profilį (numatytieji nustatymai) arba pagal ryšį (BETA).</string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Naudoja daugiau baterijos</b>! Fono paslauga veikia visada - pranešimai rodomi, kai tik atsiranda žinučių.]]></string>
-    <string name="cannot_access_keychain">Negalima pasiekti \"Keystore\", kad išsaugotumėte duomenų bazės slaptažodį</string>
+    <string name="cannot_access_keychain">Negalima pasiekti "Keystore", kad išsaugotumėte duomenų bazės slaptažodį</string>
     <string name="icon_descr_cancel_file_preview">Atšaukti failo peržiūrą</string>
     <string name="icon_descr_cancel_image_preview">Atšaukti vaizdo peržiūrą</string>
     <string name="share_text_database_id">Duomenų bazės ID: %d</string>
@@ -1484,7 +1484,7 @@
     <string name="no_info_on_delivery">Nėra pristatymo informacijos</string>
     <string name="v4_6_group_moderation_descr">Dabar administratoriai gali:
 \n- ištrinti narių žinutes.
-\n- išjungti narius (\"stebėtojas\" rolė)</string>
+\n- išjungti narius ("stebėtojas" rolė)</string>
     <string name="chat_preferences_on">įj.</string>
     <string name="unfavorite_chat">Nebemėgti</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">Nustatymų atnaujinimas perjungs klientą iš naujo prie visų serverių.</string>
