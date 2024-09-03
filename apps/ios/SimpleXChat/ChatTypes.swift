@@ -2723,10 +2723,6 @@ public struct CIMeta: Decodable, Hashable {
         return false
     }
 
-    public func statusIcon(_ metaColor: Color/* = .secondary*/, _ primaryColor: Color = .accentColor) -> (String, Color)? {
-        itemStatus.statusIcon(metaColor, primaryColor)
-    }
-
     public static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true) -> CIMeta {
         CIMeta(
             itemId: id,
@@ -2794,21 +2790,29 @@ public enum CIStatus: Decodable, Hashable {
         }
     }
 
-    public func statusIcon(_ metaColor: Color/* = .secondary*/, _ primaryColor: Color = .accentColor) -> (String, Color)? {
+    public func statusIcon(_ metaColor: Color, _ primaryColor: Color = .accentColor) -> (Image, Color)? {
         switch self {
-        case .sndNew: return nil
-        case .sndSent: return ("checkmark", metaColor)
+        case .sndNew: nil
+        case .sndSent: (Image("checkmark.wide"),  metaColor)
         case let .sndRcvd(msgRcptStatus, _):
             switch msgRcptStatus {
-            case .ok: return ("checkmark", metaColor)
-            case .badMsgHash: return ("checkmark", .red)
+            case .ok: (Image("checkmark.2"), metaColor)
+            case .badMsgHash: (Image("checkmark.2"), .red)
             }
-        case .sndErrorAuth: return ("multiply", .red)
-        case .sndError: return ("multiply", .red)
-        case .sndWarning: return ("exclamationmark.triangle.fill", .orange)
-        case .rcvNew: return ("circlebadge.fill", primaryColor)
-        case .rcvRead: return nil
-        case .invalid: return ("questionmark", metaColor)
+        case .sndErrorAuth: (Image(systemName: "multiply"), .red)
+        case .sndError: (Image(systemName: "multiply"), .red)
+        case .sndWarning: (Image(systemName: "exclamationmark.triangle.fill"), .orange)
+        case .rcvNew: (Image(systemName: "circlebadge.fill"), primaryColor)
+        case .rcvRead: nil
+        case .invalid: (Image(systemName: "questionmark"), metaColor)
+        }
+    }
+
+    public var sndProgress: SndCIStatusProgress? {
+        switch self {
+        case let .sndSent(sndProgress): sndProgress
+        case let .sndRcvd(_ , sndProgress): sndProgress
+        default: nil
         }
     }
 
@@ -2903,20 +2907,20 @@ public enum GroupSndStatus: Decodable, Hashable {
     case warning(agentError: SndError)
     case invalid(text: String)
 
-    public func statusIcon(_ metaColor: Color/* = .secondary*/, _ primaryColor: Color = .accentColor) -> (String, Color) {
+    public func statusIcon(_ metaColor: Color, _ primaryColor: Color = .accentColor) -> (Image, Color) {
         switch self {
-        case .new: return ("ellipsis", metaColor)
-        case .forwarded: return ("chevron.forward.2", metaColor)
-        case .inactive: return ("person.badge.minus", metaColor)
-        case .sent: return ("checkmark", metaColor)
+        case .new: (Image(systemName: "ellipsis"), metaColor)
+        case .forwarded: (Image(systemName: "chevron.forward.2"), metaColor)
+        case .inactive: (Image(systemName: "person.badge.minus"), metaColor)
+        case .sent: (Image("checkmark.wide"), metaColor)
         case let .rcvd(msgRcptStatus):
             switch msgRcptStatus {
-            case .ok: return ("checkmark", metaColor)
-            case .badMsgHash: return ("checkmark", .red)
+            case .ok: (Image("checkmark.2"), metaColor)
+            case .badMsgHash: (Image("checkmark.2"), .red)
             }
-        case .error: return ("multiply", .red)
-        case .warning: return ("exclamationmark.triangle.fill", .orange)
-        case .invalid: return ("questionmark", metaColor)
+        case .error: (Image(systemName: "multiply"), .red)
+        case .warning: (Image(systemName: "exclamationmark.triangle.fill"), .orange)
+        case .invalid: (Image(systemName: "questionmark"), metaColor)
         }
     }
 

@@ -25,39 +25,20 @@ struct CIMetaView: View {
         if chatItem.isDeletedContent {
             chatItem.timestampText.font(.caption).foregroundColor(metaColor)
         } else {
-            let meta = chatItem.meta
-            let ttl = chat.chatInfo.timedMessagesTTL
-            let encrypted = chatItem.encryptedFile
-            switch meta.itemStatus {
-            case let .sndSent(sndProgress):
-                switch sndProgress {
-                case .complete: ciMetaText(meta, chatTTL: ttl, encrypted: encrypted,  color: metaColor, sent: .sent, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
-                case .partial: ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .sent, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
-                }
-            case let .sndRcvd(_, sndProgress):
-                switch sndProgress {
-                case .complete:
-                    ZStack {
-                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, sent: .rcvd1, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
-                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, sent: .rcvd2, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
-                    }
-                case .partial:
-                    ZStack {
-                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .rcvd1, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
-                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .rcvd2, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
-                    }
-                }
-            default:
-                ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
-            }
+            ciMetaText(
+                chatItem.meta,
+                chatTTL: chat.chatInfo.timedMessagesTTL,
+                encrypted: chatItem.encryptedFile,
+                color: chatItem.meta.itemStatus.sndProgress == .partial
+                    ? paleMetaColor
+                    : metaColor,
+                showStatus: showStatus,
+                showEdited: showEdited,
+                showViaProxy: showSentViaProxy,
+                showTimesamp: showTimestamp
+            )
         }
     }
-}
-
-enum SentCheckmark {
-    case sent
-    case rcvd1
-    case rcvd2
 }
 
 func ciMetaText(
@@ -67,7 +48,6 @@ func ciMetaText(
     color: Color = .clear,
     primaryColor: Color = .accentColor,
     transparent: Bool = false,
-    sent: SentCheckmark? = nil,
     showStatus: Bool = true,
     showEdited: Bool = true,
     showViaProxy: Bool,
@@ -89,17 +69,8 @@ func ciMetaText(
         r = r + statusIconText("arrow.forward", color.opacity(0.67)).font(.caption2)
     }
     if showStatus {
-        if let (icon, statusColor) = meta.statusIcon(color, primaryColor) {
-            let t = Text(Image(systemName: icon)).font(.caption2)
-            let gap = Text("  ").kerning(-1.25)
-            let t1 = t.foregroundColor(transparent ? .clear : statusColor.opacity(0.67))
-            switch sent {
-            case nil: r = r + t1
-            case .sent: r = r + t1 + gap
-            case .rcvd1: r = r + t.foregroundColor(transparent ? .clear : statusColor.opacity(0.67)) + gap
-            case .rcvd2: r = r + gap + t1
-            }
-            r = r + Text(" ")
+        if let (image, statusColor) = meta.itemStatus.statusIcon(color, primaryColor) {
+            r = r + Text(image).foregroundColor(transparent ? .clear : statusColor) + Text(" ")
         } else if !meta.disappearing {
             r = r + statusIconText("circlebadge.fill", .clear) + Text(" ")
         }
