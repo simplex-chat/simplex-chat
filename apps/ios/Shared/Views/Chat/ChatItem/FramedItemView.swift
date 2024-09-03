@@ -21,7 +21,6 @@ struct FramedItemView: View {
     @State var msgWidth: CGFloat = 0
     var imgWidth: CGFloat? = nil
     var videoWidth: CGFloat? = nil
-    @State private var useWhiteMetaColor: Bool = false
     @State var showFullScreenImage = false
     @Binding var allowMenu: Bool
     @State private var showSecrets = false
@@ -64,12 +63,17 @@ struct FramedItemView: View {
                     .overlay(DetermineWidth())
             }
 
-            if chatItem.content.msgContent != nil {
-                CIMetaView(chat: chat, chatItem: chatItem, metaColor: useWhiteMetaColor ? Color.white : theme.colors.secondary)
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 6)
-                    .overlay(DetermineWidth())
-                    .accessibilityLabel("")
+            if let content = chatItem.content.msgContent {
+                CIMetaView(
+                    chat: chat,
+                    chatItem: chatItem,
+                    metaColor: theme.colors.secondary,
+                    invertedMaterial: content.isImageOrVideo && content.text.isEmpty
+                )
+                .padding(.horizontal, 12)
+                .padding(.bottom, 6)
+                .overlay(DetermineWidth())
+                .accessibilityLabel("")
             }
         }   
             .background { chatItemFrameColorMaybeImageOrVideo(chatItem, theme).modifier(ChatTailPadding()) }
@@ -105,31 +109,13 @@ struct FramedItemView: View {
             case let .image(text, _):
                 CIImageView(chatItem: chatItem, preview: preview, maxWidth: maxWidth, imgWidth: imgWidth, showFullScreenImage: $showFullscreenGallery)
                     .overlay(DetermineWidth())
-                if text == "" && !chatItem.meta.isLive {
-                    Color.clear
-                        .frame(width: 0, height: 0)
-                        .onAppear {
-                            useWhiteMetaColor = true
-                        }
-                        .onDisappear {
-                            useWhiteMetaColor = false
-                        }
-                } else {
+                if text != "" || chatItem.meta.isLive {
                     ciMsgContentView(chatItem)
                 }
             case let .video(text, _, duration):
                 CIVideoView(chatItem: chatItem, preview: preview, duration: duration, maxWidth: maxWidth, videoWidth: videoWidth, showFullscreenPlayer: $showFullscreenGallery)
                 .overlay(DetermineWidth())
-                if text == "" && !chatItem.meta.isLive {
-                    Color.clear
-                    .frame(width: 0, height: 0)
-                    .onAppear {
-                        useWhiteMetaColor = true
-                    }
-                    .onDisappear {
-                        useWhiteMetaColor = false
-                    }
-                } else {
+                if text != "" || chatItem.meta.isLive {
                     ciMsgContentView(chatItem)
                 }
             case let .voice(text, duration):

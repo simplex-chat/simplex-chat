@@ -278,7 +278,8 @@ struct CIVideoView: View {
         .foregroundColor(color)
         .padding(.leading, smallView ? 0 : 4)
         .frame(width: 40 * sizeMultiplier, height: 40 * sizeMultiplier)
-        .background(Color.black.opacity(0.35))
+        .background(.ultraThinMaterial)
+        .environment(\.colorScheme, .dark)
         .clipShape(Circle())
     }
 
@@ -288,32 +289,22 @@ struct CIVideoView: View {
             .frame(width: smallView ? 12 * sizeMultiplier : 12, height: smallView ? 12 * sizeMultiplier : 12)
             .tint(color)
             .frame(width: smallView ? 40 * sizeMultiplier * 0.9 : 40, height: smallView ? 40 * sizeMultiplier * 0.9 : 40)
-            .background(Color.black.opacity(0.35))
+            .background(.ultraThinMaterial)
+            .environment(\.colorScheme, .dark)
             .clipShape(Circle())
     }
 
-    private func durationProgress() -> some View {
-        HStack {
-            Text("\(durationText(videoPlaying ? progress : duration))")
-            .foregroundColor(.white)
-            .font(.caption)
-            .padding(.vertical, 3)
-            .padding(.horizontal, 6)
-            .background(Color.black.opacity(0.35))
-            .cornerRadius(10)
-            .padding([.top, .leading], 6)
+    private var fileSizeString: String {
+        if let file = chatItem.file, !videoPlaying {
+            "  \(ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .binary))"
+        } else { "" }
+    }
 
-            if let file = chatItem.file, !videoPlaying {
-                Text("\(ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .binary))")
-                .foregroundColor(.white)
-                .font(.caption)
-                .padding(.vertical, 3)
-                .padding(.horizontal, 6)
-                .background(Color.black.opacity(0.35))
-                .cornerRadius(10)
-                .padding(.top, 6)
-            }
-        }
+    private func durationProgress() -> some View {
+        Text("\(durationText(videoPlaying ? progress : duration))" + fileSizeString)
+            .invertedForegroundStyle()
+            .font(.caption)
+            .padding([.top, .leading], 6)
     }
 
     private func imageView(_ img: UIImage) -> some View {
@@ -411,9 +402,9 @@ struct CIVideoView: View {
     private func fileIcon(_ icon: String, _ size: CGFloat, _ padding: CGFloat) -> some View {
         Image(systemName: icon)
             .resizable()
+            .invertedForegroundStyle()
             .aspectRatio(contentMode: .fit)
             .frame(width: size, height: size)
-            .foregroundColor(.white)
             .padding(smallView ? 0 : padding)
     }
 

@@ -18,6 +18,7 @@ struct CIMetaView: View {
     var paleMetaColor = Color(UIColor.tertiaryLabel)
     var showStatus = true
     var showEdited = true
+    var invertedMaterial = false
 
     @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
 
@@ -29,14 +30,17 @@ struct CIMetaView: View {
                 chatItem.meta,
                 chatTTL: chat.chatInfo.timedMessagesTTL,
                 encrypted: chatItem.encryptedFile,
-                color: chatItem.meta.itemStatus.sndProgress == .partial
-                    ? paleMetaColor
-                    : metaColor,
+                color: invertedMaterial
+                    ? nil
+                    : chatItem.meta.itemStatus.sndProgress == .partial
+                        ? paleMetaColor
+                        : metaColor,
                 showStatus: showStatus,
                 showEdited: showEdited,
                 showViaProxy: showSentViaProxy,
                 showTimesamp: showTimestamp
             )
+            .invertedForegroundStyle(enabled: invertedMaterial)
         }
     }
 }
@@ -45,7 +49,7 @@ func ciMetaText(
     _ meta: CIMeta,
     chatTTL: Int?,
     encrypted: Bool?,
-    color: Color = .clear,
+    color: Color? = .clear,
     primaryColor: Color = .accentColor,
     transparent: Bool = false,
     showStatus: Bool = true,
@@ -66,11 +70,14 @@ func ciMetaText(
         r = r + Text(" ")
     }
     if showViaProxy, meta.sentViaProxy == true {
-        r = r + statusIconText("arrow.forward", color.opacity(0.67)).font(.caption2)
+        r = r + statusIconText("arrow.forward", color?.opacity(0.67)).font(.caption2)
     }
     if showStatus {
         if let (image, statusColor) = meta.itemStatus.statusIcon(color, primaryColor) {
-            r = r + Text(image).foregroundColor(transparent ? .clear : statusColor) + Text(" ")
+            let metaColor = color == nil
+            ? nil
+            : transparent ? .clear : statusColor
+            r = r + Text(image).foreground(metaColor) + Text(" ")
         } else if !meta.disappearing {
             r = r + statusIconText("circlebadge.fill", .clear) + Text(" ")
         }
@@ -79,13 +86,13 @@ func ciMetaText(
         r = r + statusIconText(enc ? "lock" : "lock.open", color) + Text(" ")
     }
     if showTimesamp {
-        r = r + meta.timestampText.foregroundColor(color)
+        r = r + meta.timestampText.foreground(color)
     }
     return r.font(.caption)
 }
 
-private func statusIconText(_ icon: String, _ color: Color) -> Text {
-    Text(Image(systemName: icon)).foregroundColor(color)
+private func statusIconText(_ icon: String, _ color: Color?) -> Text {
+    Text(Image(systemName: icon)).foreground(color)
 }
 
 struct CIMetaView_Previews: PreviewProvider {
