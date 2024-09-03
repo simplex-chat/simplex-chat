@@ -71,12 +71,6 @@ fun SearchTextField(
     }
   }
 
-  DisposableEffect(Unit) {
-    onDispose {
-      if (searchText.value.text.isNotEmpty()) onValueChange("")
-    }
-  }
-
   val colors = TextFieldDefaults.textFieldColors(
     backgroundColor = Color.Unspecified,
     textColor = MaterialTheme.colors.onBackground,
