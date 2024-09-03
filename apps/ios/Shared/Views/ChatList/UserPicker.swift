@@ -15,7 +15,7 @@ struct UserPicker: View {
     @State private var activeUser: User? = nil
     
     var body: some View {
-        let v = List {
+        List {
             VStack(alignment: .leading, spacing: 6) {
                 if let currentUser = activeUser ?? m.currentUser {
                     HStack(alignment: .top) {
@@ -146,12 +146,6 @@ struct UserPicker: View {
             }
         }
         .modifier(ThemedBackground(grouped: true))
-
-        if #available(iOS 16.0, *) {
-            v.presentationDetents([.height(400)])
-        } else {
-            v
-        }
     }
 
     private func userView(_ u: UserInfo) -> some View {

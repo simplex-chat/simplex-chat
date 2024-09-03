@@ -65,7 +65,12 @@ struct ChatListView: View {
                 destination: chatView
             ) { chatListView }
         }
-        .sheetWithDetents(isPresented: isUserPickerSheetPresented) {
+        .sheetWithDetents(
+            isPresented: isUserPickerSheetPresented,
+            detents: activeUserPickerSheet == .userPicker
+            ? [.medium(), .large()]
+            : [.large()]
+        ) {
             if let sheet = activeUserPickerSheet, let currentUser = chatModel.currentUser {
                 Group {
                     switch sheet {
