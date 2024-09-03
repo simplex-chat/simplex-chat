@@ -12,10 +12,6 @@ struct UserPicker: View {
     @Environment(\.scenePhase) var scenePhase
     @Environment(\.colorScheme) var colorScheme
     @Binding var activeSheet: UserPickerSheet?
-    @State var scrollViewContentSize: CGSize = .zero
-    @State var disableScrolling: Bool = true
-    private let verticalSpaceDefault: CGFloat = 12
-    @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
     @State private var activeUser: User? = nil
     
     var body: some View {
