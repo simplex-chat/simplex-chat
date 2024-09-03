@@ -138,14 +138,14 @@
     <string name="save_and_notify_contact">Kaydet ve kişiyi bilgilendir</string>
     <string name="save_passphrase_in_keychain">Parolayı, Keystore\'a kaydet.</string>
     <string name="icon_descr_audio_on">Ses açık</string>
-    <string name="member_role_will_be_changed_with_notification">Yetki, \"%s\" olarak değiştirelecek. Gruptaki herkes bilgilendirilecek.</string>
+    <string name="member_role_will_be_changed_with_notification">Yetki, "%s" olarak değiştirelecek. Gruptaki herkes bilgilendirilecek.</string>
     <string name="calls_prohibited_with_this_contact">Sesli/görüntülü aramalar yasaktır.</string>
     <string name="la_auth_failed">Kimlik doğrulama başarısız</string>
     <string name="icon_descr_address">SimpleX Adresi</string>
     <string name="moderate_message_will_be_deleted_warning">Mesaj, tüm üyeler için silinecek.</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Gizliliğinizi ve güvenliğinizi koruyan mesajlaşma ve uygulama platformu.</string>
     <string name="settings_section_title_incognito">Gizlilik kipi</string>
-    <string name="member_role_will_be_changed_with_invitation">Yetki, \"%s\" olarak değiştirilecek. Üye, yeni bir davet alacak.</string>
+    <string name="member_role_will_be_changed_with_invitation">Yetki, "%s" olarak değiştirilecek. Üye, yeni bir davet alacak.</string>
     <string name="role_in_group">Yetki</string>
     <string name="allow_voice_messages_question">Sesli mesajlara izin verilsin mi?</string>
     <string name="users_add">Profil ekle</string>
@@ -360,7 +360,7 @@
     <string name="ttl_hours">%d saat</string>
     <string name="v4_6_group_moderation_descr">Yeni yöneticiler artık:
 \n- üyelerin mesajlarını silebilir.
-\n- üyeleri etkisizleştirebilir (\"gözlemci\" yetkisi verir)</string>
+\n- üyeleri etkisizleştirebilir ("gözlemci" yetkisi verir)</string>
     <string name="receipts_section_contacts">Konuşmalar</string>
     <string name="create_group_link">Grup bağlantısı oluştur</string>
     <string name="error_accepting_contact_request">Konuşma isteğini onaylarken hata oluştu</string>
