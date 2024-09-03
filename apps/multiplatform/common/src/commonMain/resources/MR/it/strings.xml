@@ -822,8 +822,8 @@
     <string name="theme_system">Sistema</string>
     <string name="network_option_tcp_connection_timeout">Scadenza connessione TCP</string>
     <string name="group_is_decentralized">Completamente decentralizzato: visibile solo ai membri.</string>
-    <string name="member_role_will_be_changed_with_notification">Il ruolo verrà cambiato in \"%s\". Tutti i membri del gruppo riceveranno una notifica.</string>
-    <string name="member_role_will_be_changed_with_invitation">Il ruolo verrà cambiato in \"%s\". Il membro riceverà un nuovo invito.</string>
+    <string name="member_role_will_be_changed_with_notification">Il ruolo verrà cambiato in "%s". Tutti i membri del gruppo riceveranno una notifica.</string>
+    <string name="member_role_will_be_changed_with_invitation">Il ruolo verrà cambiato in "%s". Il membro riceverà un nuovo invito.</string>
     <string name="update_network_settings_confirmation">Aggiorna</string>
     <string name="update_network_settings_question">Aggiornare le impostazioni di rete\?</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">L\'aggiornamento delle impostazioni riconnetterà il client a tutti i server.</string>
@@ -978,11 +978,11 @@
     <string name="v4_6_chinese_spanish_interface_descr">Grazie agli utenti – contribuite via Weblate!</string>
     <string name="hidden_profile_password">Password del profilo nascosta</string>
     <string name="save_profile_password">Salva la password del profilo</string>
-    <string name="to_reveal_profile_enter_password">Per rivelare il tuo profilo nascosto, inserisci una password completa in un campo di ricerca nella pagina \"I tuoi profili di chat\".</string>
+    <string name="to_reveal_profile_enter_password">Per rivelare il tuo profilo nascosto, inserisci una password completa in un campo di ricerca nella pagina "I tuoi profili di chat".</string>
     <string name="password_to_show">Password per mostrare</string>
     <string name="v4_6_group_moderation_descr">Ora gli amministratori possono:
 \n- eliminare i messaggi dei membri.
-\n- disattivare i membri (ruolo \"osservatore\")</string>
+\n- disattivare i membri (ruolo "osservatore")</string>
     <string name="hide_profile">Nascondi il profilo</string>
     <string name="confirm_password">Conferma password</string>
     <string name="error_updating_user_privacy">Errore nell\'aggiornamento della privacy dell\'utente</string>
