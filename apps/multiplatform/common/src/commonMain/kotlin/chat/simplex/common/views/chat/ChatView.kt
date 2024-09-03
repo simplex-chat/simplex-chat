@@ -86,6 +86,7 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
           .collect { chatId ->
             markUnreadChatAsRead(chatId)
             showSearch.value = false
+            searchText.value = ""
             selectedChatItems.value = null
           }
       }
@@ -997,7 +998,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
     }
   )
   LazyColumnWithScrollBar(Modifier.align(Alignment.BottomCenter), state = listState, reverseLayout = true) {
-    itemsIndexed(reversedChatItems, key = { _, item -> item.id }) { i, cItem ->
+    itemsIndexed(reversedChatItems, key = { _, item -> item.id to item.meta.createdAt.toEpochMilliseconds() }) { i, cItem ->
       CompositionLocalProvider(
         // Makes horizontal and vertical scrolling to coexist nicely.
         // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view

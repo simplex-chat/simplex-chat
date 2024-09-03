@@ -442,6 +442,7 @@ smpServerCfg =
       logStatsStartTime = 0,
       serverStatsLogFile = "tests/smp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
+      pendingENDInterval = 500000,
       smpServerVRange = supportedServerSMPRelayVRange,
       transportConfig = defaultTransportServerConfig {alpn = Just supportedSMPHandshakes},
       smpHandshakeTimeout = 1000000,

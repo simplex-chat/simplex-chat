@@ -5348,6 +5348,7 @@ abstract class TerminalItem {
   val date: Instant = Clock.System.now()
   abstract val label: String
   abstract val details: String
+  val createdAtNanos: Long = System.nanoTime()
 
   class Cmd(override val id: Long, override val remoteHostId: Long?, val cmd: CC): TerminalItem() {
     override val label get() = "> ${cmd.cmdString}"

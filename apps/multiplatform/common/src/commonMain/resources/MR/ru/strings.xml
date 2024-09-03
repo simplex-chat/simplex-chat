@@ -796,8 +796,8 @@
     <string name="change_verb">Поменять</string>
     <string name="switch_verb">Переключить</string>
     <string name="change_member_role_question">Поменять роль в группе?</string>
-    <string name="member_role_will_be_changed_with_notification">Роль будет изменена на \"%s\". Все в группе получат сообщение.</string>
-    <string name="member_role_will_be_changed_with_invitation">Роль будет изменена на \"%s\". Будет отправлено новое приглашение.</string>
+    <string name="member_role_will_be_changed_with_notification">Роль будет изменена на "%s". Все в группе получат сообщение.</string>
+    <string name="member_role_will_be_changed_with_invitation">Роль будет изменена на "%s". Будет отправлено новое приглашение.</string>
     <string name="error_removing_member">Ошибка при удалении члена группы</string>
     <string name="error_changing_role">Ошибка при изменении роли</string>
     <string name="info_row_group">Группа</string>
@@ -964,7 +964,7 @@
     <string name="v4_4_disappearing_messages">Исчезающие сообщения</string>
     <string name="v4_4_disappearing_messages_desc">Отправленные сообщения будут удалены через заданное время.</string>
     <string name="v4_3_improved_server_configuration">Улучшенная конфигурация серверов</string>
-    <string name="v4_4_live_messages">\"Живые\" сообщения</string>
+    <string name="v4_4_live_messages">"Живые" сообщения</string>
     <string name="v4_4_live_messages_desc">Получатели видят их в то время как Вы их набираете.</string>
     <string name="v4_4_verify_connection_security">Проверить безопасность соединения</string>
     <string name="v4_4_verify_connection_security_desc">Сравните код безопасности с Вашими контактами.</string>
@@ -1065,7 +1065,7 @@
     <string name="v4_6_reduced_battery_usage_descr">Дополнительные улучшения скоро!</string>
     <string name="v4_6_group_moderation_descr">Теперь админы могут:
 \n- удалять сообщения членов.
-\n- приостанавливать членов (роль \"наблюдатель\")</string>
+\n- приостанавливать членов (роль "наблюдатель")</string>
     <string name="v4_6_hidden_chat_profiles_descr">Защитите Ваши профили чата паролем!</string>
     <string name="user_unhide">Раскрыть</string>
     <string name="v4_6_audio_video_calls_descr">Поддержка bluetooth и другие улучшения.</string>
