@@ -14,45 +14,6 @@ struct UserPicker: View {
     @Binding var activeSheet: UserPickerSheet?
     @State private var activeUser: User? = nil
 
-    
-    @ViewBuilder
-    private func usersRow(users: [UserInfo]) -> some View {
-        let gradientInset: Double = 16
-        let leadingPadding: Double = 32
-        let scrollView = ScrollView(.horizontal) {
-            HStack(spacing: 0) {
-                ForEach(users) { userView($0) }
-            }
-            .padding(.leading, leadingPadding)
-            .padding(.horizontal, gradientInset)
-
-        }
-        ZStack {
-            if #available(iOS 16.4, *) {
-                scrollView
-                    .scrollBounceBehavior(.basedOnSize, axes: [.horizontal])
-                    .scrollIndicators(.hidden)
-            } else {
-                scrollView
-            }
-            HStack(spacing: 0) {
-                LinearGradient(
-                    colors: [.black, .clear],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                ).frame(width: gradientInset)
-                Color.clear
-                LinearGradient(
-                    colors: [.clear, .black],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                ).frame(width: gradientInset)
-            }.blendMode(.destinationOut)
-        }
-        .compositingGroup()
-        .frame(maxWidth: gradientInset + leadingPadding + Double(users.count) * 40 + gradientInset)
-    }
-
     var body: some View {
         let v = List {
             VStack(alignment: .leading, spacing: 6) {
@@ -153,6 +114,44 @@ struct UserPicker: View {
         } else {
             v
         }
+    }
+
+    @ViewBuilder
+    private func usersRow(users: [UserInfo]) -> some View {
+        let gradientInset: Double = 16
+        let leadingPadding: Double = 32
+        let scrollView = ScrollView(.horizontal) {
+            HStack(spacing: 0) {
+                ForEach(users) { userView($0) }
+            }
+            .padding(.leading, leadingPadding)
+            .padding(.horizontal, gradientInset)
+
+        }
+        ZStack {
+            if #available(iOS 16.4, *) {
+                scrollView
+                    .scrollBounceBehavior(.basedOnSize, axes: [.horizontal])
+                    .scrollIndicators(.hidden)
+            } else {
+                scrollView
+            }
+            HStack(spacing: 0) {
+                LinearGradient(
+                    colors: [.black, .clear],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                ).frame(width: gradientInset)
+                Color.clear
+                LinearGradient(
+                    colors: [.clear, .black],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                ).frame(width: gradientInset)
+            }.blendMode(.destinationOut)
+        }
+        .compositingGroup()
+        .frame(maxWidth: gradientInset + leadingPadding + Double(users.count) * 40 + gradientInset)
     }
 
     private func userView(_ u: UserInfo) -> some View {
