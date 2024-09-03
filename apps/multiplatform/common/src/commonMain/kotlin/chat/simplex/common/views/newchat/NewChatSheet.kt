@@ -36,11 +36,13 @@ import chat.simplex.common.views.chatlist.ScrollDirection
 import chat.simplex.common.views.contacts.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import java.net.URI
 
 @Composable
-fun NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
+fun ModalData.NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val keyboardState by getKeyboardState()
   val showToolbarInOneHandUI = remember { derivedStateOf { keyboardState == KeyboardState.Closed && oneHandUI.value } }
@@ -111,10 +113,8 @@ private fun filterContactTypes(c: List<Chat>, contactTypes: List<ContactType>): 
   return c.filter { chat -> contactTypes.contains(chatContactType(chat)) }
 }
 
-private var lazyListState = 0 to 0
-
 @Composable
-private fun NewChatSheetLayout(
+private fun ModalData.NewChatSheetLayout(
   rh: RemoteHostInfo?,
   addContact: () -> Unit,
   scanPaste: () -> Unit,
@@ -122,7 +122,23 @@ private fun NewChatSheetLayout(
   close: () -> Unit,
 ) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
-  val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
+  val listState = remember { appBarHandler.listState }
+  // This is workaround of an issue when position of a list is not restored (when going back to that screen) when a header exists.
+  // Upon returning back, this code returns correct index and position if number of items is the same
+  LaunchedEffect(Unit) {
+    val prevIndex = listState.firstVisibleItemIndex
+    val prevOffset = listState.firstVisibleItemScrollOffset
+    val total = listState.layoutInfo.totalItemsCount
+    if (prevIndex == 0 && prevOffset == 0) return@LaunchedEffect
+    snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
+      .filter { it == 0 to 0  }
+      .collect {
+        if (total <= listState.layoutInfo.totalItemsCount) {
+          listState.scrollToItem(prevIndex, prevOffset)
+        }
+        cancel()
+      }
+  }
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
   val searchShowingSimplexLink = remember { mutableStateOf(false) }
   val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
@@ -536,7 +552,7 @@ private fun contactTypesSearchTargets(baseContactTypes: List<ContactType>, searc
 }
 
 @Composable
-private fun DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats: () -> Unit, close: () -> Unit) {
+private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats: () -> Unit, close: () -> Unit) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val keyboardState by getKeyboardState()
   val showToolbarInOneHandUI = remember { derivedStateOf { keyboardState == KeyboardState.Closed && oneHandUI.value } }
@@ -558,7 +574,7 @@ private fun DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats: () -> Un
       }
     }
   ) { contentPadding ->
-    val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
+    val listState = remember { appBarHandler.listState }
     val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
     val searchShowingSimplexLink = remember { mutableStateOf(false) }
     val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
@@ -723,6 +739,6 @@ fun ActionButton(
 @Composable
 private fun PreviewNewChatSheet() {
   SimpleXTheme {
-    NewChatSheet(rh = null, close = {})
+    ModalData().NewChatSheet(rh = null, close = {})
   }
 }
