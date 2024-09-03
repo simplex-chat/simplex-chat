@@ -8,10 +8,11 @@ extension View {
         @ViewBuilder content: @escaping () -> Content
     ) -> some View {
         if #available(iOS 16, *) {
-            sheet(isPresented: isPresented, content: content)
-                .presentationDetents(
-                    Set(detents.compactMap { presentationDetent(detent:$0) })
+            sheet(isPresented: isPresented) {
+                content().presentationDetents(
+                    Set(detents.compactMap { presentationDetent(detent: $0) })
                 )
+            }
         } else {
             ZStack {
                 SheetPresenter(
