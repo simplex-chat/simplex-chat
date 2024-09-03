@@ -191,12 +191,12 @@ private fun UsersLayout(
           ) {
             Box(
               contentAlignment = Alignment.Center,
-              modifier = Modifier.size(37.dp * fontSizeSqrtMultiplier)
+              modifier = Modifier.size(31.dp * fontSizeSqrtMultiplier).background(MaterialTheme.colors.secondaryVariant, CircleShape)
             ) {
               Icon(
-                painterResource(MR.images.ic_add_group),
+                painterResource(MR.images.ic_more_horiz),
                 stringResource(MR.strings.your_chat_profiles),
-                tint = MaterialTheme.colors.secondary,
+                tint = MaterialTheme.colors.surface,
               )
             }
           }
