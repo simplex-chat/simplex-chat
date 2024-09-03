@@ -10,6 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 enum UserPickerSheet: Identifiable {
+    case address
     case chatPreferences
     case chatProfiles
     case currentProfile
@@ -31,11 +32,6 @@ struct ChatListView: View {
     @State private var searchChatFilteredBySimplexLink: String? = nil
     @State private var scrollToSearchBar = false
     @State private var activeUserPickerSheet: UserPickerSheet? = nil
-
-    // Address sheet state
-    @State private var aas = AutoAcceptState()
-    @State private var savedAAS = AutoAcceptState()
-    @State private var showingAddressSheet = false
     
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
@@ -62,30 +58,16 @@ struct ChatListView: View {
                 destination: chatView
             ) { chatListView }
         }
-        .sheet(isPresented: $showingAddressSheet, onDismiss: {
-            if savedAAS != aas {
-                AlertManager.shared.showAlert(Alert(
-                    title: Text("Auto-accept settings"),
-                    message: Text("Settings were changed."),
-                    primaryButton: .default(Text("Save")) {
-                        saveAAS()
-                    },
-                    secondaryButton: .cancel()
-                ))
-            }
-        }) {
-            if let currentUser = chatModel.currentUser {
-                NavigationView {
-                    UserAddressView(shareViaProfile: currentUser.addressShared, aas: $aas, savedAAS: $savedAAS)
-                        .navigationTitle("Public address")
-                        .navigationBarTitleDisplayMode(.large)
-                        .modifier(ThemedBackground(grouped: true))
-                }
-            }
-        }
         .sheet(item: $activeUserPickerSheet) { sheet in
             if let currentUser = chatModel.currentUser {
                     switch sheet {
+                    case .address:
+                        NavigationView {
+                            UserAddressView(shareViaProfile: currentUser.addressShared)
+                                .navigationTitle("Public address")
+                                .navigationBarTitleDisplayMode(.large)
+                                .modifier(ThemedBackground(grouped: true))
+                        }
                     case .chatProfiles:
                         NavigationView {
                             UserProfilesView()
@@ -110,27 +92,13 @@ struct ChatListView: View {
                             .navigationBarTitleDisplayMode(.large)
                     case .userPicker:
                         UserPicker(
-                            activeSheet: $activeUserPickerSheet,
-                            showingAddressSheet: $showingAddressSheet
+                            activeSheet: $activeUserPickerSheet
                         )
                     }
             }
         }
     }
 
-    private func saveAAS() {
-        Task {
-            do {
-                if let address = try await userAddressAutoAccept(aas.autoAccept) {
-                    chatModel.userAddress = address
-                    savedAAS = aas
-                }
-            } catch let error {
-                logger.error("userAddressAutoAccept error: \(responseError(error))")
-            }
-        }
-    }
-    
     private var chatListView: some View {
         let tm = ToolbarMaterial.material(toolbarMaterial)
         return withToolbar(tm) {

@@ -12,7 +12,6 @@ struct UserPicker: View {
     @Environment(\.scenePhase) var scenePhase
     @Environment(\.colorScheme) var colorScheme
     @Binding var activeSheet: UserPickerSheet?
-    @Binding var showingAddressSheet: Bool
     @State var scrollViewContentSize: CGSize = .zero
     @State var disableScrolling: Bool = true
     private let verticalSpaceDefault: CGFloat = 12
@@ -98,8 +97,7 @@ struct UserPicker: View {
                     Section {
                         if (m.currentUser != nil) {
                             openSheetOnTap(title: m.userAddress == nil ? "Create public address" : "Your public address", image: "qrcode") {
-                                activeSheet = nil
-                                showingAddressSheet = true
+                                activeSheet = .address
                             }
                             
                             openSheetOnTap(title: "Chat preferences", image: "switch.2") {
@@ -235,8 +233,7 @@ struct UserPicker_Previews: PreviewProvider {
         let m = ChatModel()
         m.users = [UserInfo.sampleData, UserInfo.sampleData]
         return UserPicker(
-            activeSheet: $activeSheet,
-            showingAddressSheet: Binding.constant(false)
+            activeSheet: $activeSheet
         )
         .environmentObject(m)
     }
