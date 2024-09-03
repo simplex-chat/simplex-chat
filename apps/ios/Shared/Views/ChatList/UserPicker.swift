@@ -155,13 +155,19 @@ struct UserPicker: View {
     }
 
     private func userView(_ u: UserInfo) -> some View {
-        let user = u.user
-        return Button(action: {
+        ZStack(alignment: .topTrailing) {
+            ProfileImage(imageStr: u.user.image, size: 32, color: Color(uiColor: .quaternaryLabel))
+                .padding([.top, .trailing], 3)
+            if (u.unreadCount > 0) {
+                unreadBadge()
+            }
+        }
+        .onTapGesture {
             activeUser = m.currentUser
 
             Task {
                 do {
-                    try await changeActiveUserAsync_(user.userId, viewPwd: nil)
+                    try await changeActiveUserAsync_(u.user.userId, viewPwd: nil)
                     await MainActor.run {
                         activeSheet = nil
                     }
@@ -174,15 +180,7 @@ struct UserPicker: View {
                     }
                 }
             }
-        }, label: {
-            ZStack(alignment: .topTrailing) {
-                ProfileImage(imageStr: u.user.image, size: 32, color: Color(uiColor: .quaternaryLabel))
-                    .padding([.top, .trailing], 3)
-                if (u.unreadCount > 0) {
-                    unreadBadge()
-                }
-            }
-        })
+        }
     }
     
     private func openSheetOnTap(title: LocalizedStringKey, image: String, setActive: @escaping () -> Void) -> some View {
