@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.*
+import androidx.compose.material.DrawerDefaults.ScrimOpacity
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
@@ -323,7 +324,12 @@ fun UserPicker(
   }
   val currentTheme by CurrentColors.collectAsState()
   val animatedFloat = remember { Animatable(if (newChat.isVisible()) 0f else 1f) }
-  val resultingColor = if (isInDarkTheme()) Color.Black.copy(0.64f) else DrawerDefaults.scrimColor
+
+  val resultingColor by remember {
+    derivedStateOf {
+        if (currentTheme.colors.isLight) currentTheme.colors.onSurface.copy(alpha = ScrimOpacity)else Color.Black.copy(0.64f)
+    }
+  }
   val animatedColor = remember {
     Animatable(
       if (newChat.isVisible()) Color.Transparent else resultingColor,
@@ -335,10 +341,25 @@ fun UserPicker(
     launch {
       userPickerState.collect {
         newChat = it
-        animatedColor.animateTo(if (newChat.isVisible()) resultingColor else Color.Transparent, newChatSheetAnimSpec())
+        val colors = CurrentColors.value.colors
+        val toColor = if (colors.isLight) colors.onSurface.copy(alpha = ScrimOpacity) else Color.Black.copy(0.64f)
+
+        animatedColor.animateTo(if (newChat.isVisible()) toColor else Color.Transparent, newChatSheetAnimSpec()) {
+          if (newChat.isVisible()) {
+            platform.androidSetStatusAndNavBarColors(colors.isLight, colors.surface, !appPrefs.oneHandUI.get(), false)
+          } else {
+            platform.androidSetStatusAndNavBarColors(colors.isLight, colors.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
+          }
+          if (newChat.isVisible() || newChat.isHiding()) {
+            platform.androidSetStatusBarColor(
+              CurrentColors.value.colors.isLight,
+              animatedColor
+            )
+          }
+        }
 
         launch {
-          animatedFloat.animateTo(if (newChat.isVisible()) 1f else 0f, newChatSheetAnimSpec())
+            animatedFloat.animateTo(if (newChat.isVisible()) 1f else 0f, newChatSheetAnimSpec())
           if (newChat.isHiding()) userPickerState.value = AnimatedViewState.GONE
         }
       }
@@ -346,24 +367,9 @@ fun UserPicker(
   }
 
   LaunchedEffect(Unit) {
-    snapshotFlow { newChat.isVisible() }
-      .distinctUntilChanged()
-      .collect { visible ->
-        val c = CurrentColors.value.colors
-
-        if (visible) {
-          platform.androidSetStatusAndNavBarColors(c.isLight, c.surface, !appPrefs.oneHandUI.get(), false)
-        } else {
-          platform.androidSetStatusAndNavBarColors(c.isLight, c.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
-        }
-      }
-  }
-
-  LaunchedEffect(Unit) {
     snapshotFlow { currentTheme }
       .distinctUntilChanged()
       .collect { _ ->
-        platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.surface, !appPrefs.oneHandUI.get(), false)
       }
   }
   LaunchedEffect(Unit) {
