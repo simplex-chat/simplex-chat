@@ -302,7 +302,8 @@ struct CIVideoView: View {
         Text("\(durationText(videoPlaying ? progress : duration))" + fileSizeString)
             .invertedForegroundStyle()
             .font(.caption)
-            .padding([.top, .leading], 6)
+            .padding(.vertical, 6)
+            .padding(.horizontal, 12)
     }
 
     private func imageView(_ img: UIImage) -> some View {
