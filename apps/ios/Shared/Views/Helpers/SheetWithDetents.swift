@@ -2,23 +2,23 @@ import SwiftUI
 
 extension View {
     @ViewBuilder
-    func sheetWithDetents<Content: View>(
-        isPresented: Binding<Bool>,
-        detents: [UISheetPresentationController.Detent] = [.medium(), .large()],
-        @ViewBuilder content: @escaping () -> Content
+    func sheetWithDetents<Item: Identifiable, Content: View>(
+        item: Binding<Item?>,
+        detents: [SheetDetent],
+        @ViewBuilder content: @escaping (Item) -> Content
     ) -> some View {
         if #available(iOS 16, *) {
-            sheet(isPresented: isPresented) {
-                content().presentationDetents(
-                    Set(detents.compactMap { presentationDetent(detent: $0) })
+            sheet(item: item) { item in
+                content(item).presentationDetents(
+                    Set(detents.map { $0.presentationDetent })
                 )
             }
         } else {
             ZStack {
                 SheetPresenter(
-                    isPresented: isPresented,
-                    detents: detents,
-                    content: content()
+                    item: item,
+                    detents: detents.map { $0.controllerDetent },
+                    content: content
                 )
                 self
             }
@@ -26,55 +26,80 @@ extension View {
     }
 }
 
-@available(iOS 16.0, *)
-private func presentationDetent(detent: UISheetPresentationController.Detent) -> PresentationDetent? {
-    let map: [UISheetPresentationController.Detent.Identifier: PresentationDetent] = [
-        .medium: .medium,
-        .large: .large
-    ]
-    return map[detent.identifier]
+enum SheetDetent {
+    case medium
+    case large
+    case height(Double)
+    case fraction(Double)
+
+    @available(iOS 16.0, *)
+    var presentationDetent: PresentationDetent {
+        switch self {
+        case .medium: .medium
+        case .large: .large
+        case let .height(value): .height(value)
+        case let .fraction(value): .fraction(value)
+        }
+    }
+
+    var controllerDetent: UISheetPresentationController.Detent {
+        switch self {
+        case .medium: .medium()
+        case .large: .large()
+        case let .height(h): h > 500 ? .large() : .medium()
+        case let .fraction(f): f > 0.5 ? .large() : .medium()
+        }
+    }
 }
 
-/// An transparent view which is added to SwfttUI view hierarchy an presents a UIKit sheet with detents
-private struct SheetPresenter<Content: View>: UIViewRepresentable {
-    @Binding var isPresented: Bool
+/// Prevents re-presenting the same sheet
+private var lastSheetHash: Int?
+
+/// An transparent view which is added to SwiftUI
+/// view hierarchy and presents a UIKit sheet with detents
+private struct SheetPresenter<Item: Identifiable, Content: View>: UIViewRepresentable {
+    @Binding var item: Item?
+    @State var lastPresented: Item.ID?
+
     let detents: [UISheetPresentationController.Detent]
-    let content: Content
+    @ViewBuilder let content: (Item) -> Content
 
     func makeUIView(context: Context) -> UIView { UIView() }
 
     func updateUIView(_ uiView: UIView, context: Context) {
-        let hc = UIHostingController(rootView: content)
-        if let spc = hc.presentationController as? UISheetPresentationController {
-            spc.detents = detents
-            spc.prefersGrabberVisible = true
-            spc.prefersScrollingExpandsWhenScrolledToEdge = false
-            spc.largestUndimmedDetentIdentifier = .medium
-        }
-        hc.presentationController?.delegate = context.coordinator
-        if let root = uiView.window?.rootViewController {
-            if isPresented {
-                if root.presentedViewController != nil {
-                    // Simultaneous sheets are not allowed - dismiss the previous one
-                    root.dismiss(animated: true) { root.present(hc, animated: true) }
-                } else {
-                    root.present(hc, animated: true)
-                }
-            } else {
-                root.dismiss(animated: true)
+        // Prevent
+        guard let root = uiView.window?.rootViewController else { return }
+        guard item?.id.hashValue != lastSheetHash else { return }
+        lastSheetHash = item?.id.hashValue
+        if let item {
+            let hc = UIHostingController(rootView: content(item))
+            if let spc = hc.presentationController as? UISheetPresentationController {
+                spc.detents = detents
+                spc.prefersGrabberVisible = true
+                spc.prefersScrollingExpandsWhenScrolledToEdge = false
+                spc.largestUndimmedDetentIdentifier = .medium
             }
+            hc.presentationController?.delegate = context.coordinator
+            if root.presentedViewController != nil {
+                // Simultaneous sheets are not allowed - dismiss the previous one
+                root.dismiss(animated: true) { root.present(hc, animated: true) }
+            } else {
+                root.present(hc, animated: true)
+            }
+        } else {
+            root.dismiss(animated: true)
         }
     }
 
-    func makeCoordinator() -> Coordinator { Coordinator(isPresented: $isPresented) }
+    func makeCoordinator() -> Coordinator { Coordinator(item: $item) }
 
     class Coordinator: NSObject, UISheetPresentationControllerDelegate {
-        @Binding var isPresented: Bool
+        @Binding var item: Item?
 
-        init(isPresented: Binding<Bool>) { self._isPresented = isPresented }
+        init(item: Binding<Item?>) { _item = item }
 
         func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
-            isPresented = false
+            item = nil
         }
     }
 }
