@@ -65,8 +65,8 @@ struct ChatListView: View {
         .sheet(isPresented: $showingAddressSheet, onDismiss: {
             if savedAAS != aas {
                 AlertManager.shared.showAlert(Alert(
-                    title: Text("Auto accept settings"),
-                    message: Text("Settings were changed"),
+                    title: Text("Auto-accept settings"),
+                    message: Text("Settings were changed."),
                     primaryButton: .default(Text("Save")) {
                         saveAAS()
                     },
