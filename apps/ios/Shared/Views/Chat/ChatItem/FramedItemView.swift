@@ -21,6 +21,7 @@ struct FramedItemView: View {
     @State var msgWidth: CGFloat = 0
     var imgWidth: CGFloat? = nil
     var videoWidth: CGFloat? = nil
+    @State private var useWhiteMetaColor: Bool = false
     @State var showFullScreenImage = false
     @Binding var allowMenu: Bool
     @State private var showSecrets = false
@@ -68,7 +69,7 @@ struct FramedItemView: View {
                     chat: chat,
                     chatItem: chatItem,
                     metaColor: theme.colors.secondary,
-                    invertedMaterial: content.isImageOrVideo && content.text.isEmpty
+                    invertedMaterial: useWhiteMetaColor
                 )
                 .padding(.horizontal, 12)
                 .padding(.bottom, 6)
@@ -109,13 +110,31 @@ struct FramedItemView: View {
             case let .image(text, _):
                 CIImageView(chatItem: chatItem, preview: preview, maxWidth: maxWidth, imgWidth: imgWidth, showFullScreenImage: $showFullscreenGallery)
                     .overlay(DetermineWidth())
-                if text != "" || chatItem.meta.isLive {
+                if text == "" && !chatItem.meta.isLive {
+                    Color.clear
+                        .frame(width: 0, height: 0)
+                        .onAppear {
+                            useWhiteMetaColor = true
+                        }
+                        .onDisappear {
+                            useWhiteMetaColor = false
+                        }
+                } else {
                     ciMsgContentView(chatItem)
                 }
             case let .video(text, _, duration):
                 CIVideoView(chatItem: chatItem, preview: preview, duration: duration, maxWidth: maxWidth, videoWidth: videoWidth, showFullscreenPlayer: $showFullscreenGallery)
                 .overlay(DetermineWidth())
-                if text != "" || chatItem.meta.isLive {
+                if text == "" && !chatItem.meta.isLive {
+                    Color.clear
+                    .frame(width: 0, height: 0)
+                    .onAppear {
+                        useWhiteMetaColor = true
+                    }
+                    .onDisappear {
+                        useWhiteMetaColor = false
+                    }
+                } else {
                     ciMsgContentView(chatItem)
                 }
             case let .voice(text, duration):
