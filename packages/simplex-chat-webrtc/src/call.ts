@@ -134,7 +134,7 @@ interface WCallIceCandidates extends IWCallCommand, IWCallResponse {
 
 interface WCEnableMedia extends IWCallCommand {
   type: "media"
-  media: CallMediaType
+  source: CallMediaSource
   enable: boolean
 }
 
@@ -377,7 +377,15 @@ const processCommand = (function () {
     const remoteStream = new MediaStream()
     const remoteScreenStream = new MediaStream()
     const localCamera = VideoCamera.User
-    const localStream = await getLocalMediaStream(mediaType, localCamera)
+    let localStream: MediaStream
+    try {
+      localStream = await getLocalMediaStream(mediaType, localCamera)
+    } catch (e) {
+      if (isDesktop) {
+        window.alert("Permissions denied. Please, allow mic and video to make the call working and repeat again.")
+      }
+      throw e
+    }
     const localScreenStream = new MediaStream()
     if (isDesktop) {
       localStream
@@ -596,11 +604,11 @@ const processCommand = (function () {
         case "media":
           if (!activeCall) {
             resp = {type: "error", message: "media: call not started"}
-          } else if (!activeCall.cameraTrackWasSetBefore && command.media == CallMediaType.Video && command.enable) {
+          } else if (!activeCall.cameraTrackWasSetBefore && command.source == CallMediaSource.Camera && command.enable) {
             await startSendingCamera(activeCall, activeCall.localCamera)
             resp = {type: "ok"}
           } else {
-            enableMedia(activeCall.localStream, command.media, command.enable)
+            enableMedia(activeCall.localStream, command.source, command.enable)
             resp = {type: "ok"}
           }
           break
@@ -902,7 +910,7 @@ const processCommand = (function () {
       // videos.localScreen.pause()
       // videos.localScreen.srcObject = call.localScreenStream
       videos.localScreen.play()
-      videos.localScreen.style.display = "block"
+      videos.localScreen.style.visibility = "visible"
     } else {
       pc.getTransceivers().forEach((elem) => {
         const source = mediaSourceFromTransceiverMid(elem.mid)
@@ -912,7 +920,7 @@ const processCommand = (function () {
       })
       for (const t of call.localScreenStream.getTracks()) t.stop()
       for (const t of call.localScreenStream.getTracks()) call.localScreenStream.removeTrack(t)
-      videos.localScreen.style.display = "none"
+      videos.localScreen.style.visibility = "hidden"
     }
   }
 
@@ -1002,59 +1010,72 @@ const processCommand = (function () {
   function onMediaMuteUnmute(transceiverMid: string | null, mute: boolean) {
     const videos = getVideoElements()
     if (!videos) throw Error("no video elements")
-    if (activeCall) {
-      const source = mediaSourceFromTransceiverMid(transceiverMid)
-      console.log("LALAL ON MUTE/UNMUTE", mute, source, transceiverMid)
-      const sources = activeCall.peerMediaSources
-      if (source == CallMediaSource.Mic && activeCall.peerMediaSources.mic == mute) {
-        const resp: WRPeerMedia = {
-          type: "peerMedia",
-          media: CallMediaType.Audio,
-          source: source,
-          enabled: !mute,
-        }
-        sources.mic = !mute
-        activeCall.peerMediaSources = sources
-        sendMessageToNative({resp: resp})
-      } else if (source == CallMediaSource.Camera && activeCall.peerMediaSources.camera == mute) {
-        const resp: WRPeerMedia = {
-          type: "peerMedia",
-          media: CallMediaType.Video,
-          source: source,
-          enabled: !mute,
-        }
-        sources.camera = !mute
-        activeCall.peerMediaSources = sources
-        videos.remote.style.display = !mute ? "block" : "none"
-        sendMessageToNative({resp: resp})
-      } else if (source == CallMediaSource.ScreenAudio && activeCall.peerMediaSources.screenAudio == mute) {
-        const resp: WRPeerMedia = {
-          type: "peerMedia",
-          media: CallMediaType.Audio,
-          source: source,
-          enabled: !mute,
-        }
-        sources.screenAudio = !mute
-        activeCall.peerMediaSources = sources
-        sendMessageToNative({resp: resp})
-      } else if (source == CallMediaSource.ScreenVideo && activeCall.peerMediaSources.screenVideo == mute) {
-        const resp: WRPeerMedia = {
-          type: "peerMedia",
-          media: CallMediaType.Video,
-          source: source,
-          enabled: !mute,
-        }
-        sources.screenVideo = !mute
-        activeCall.peerMediaSources = sources
-        videos.remoteScreen.style.display = !mute ? "block" : "none"
-        sendMessageToNative({resp: resp})
+    if (!activeCall) return
+    const source = mediaSourceFromTransceiverMid(transceiverMid)
+    console.log("LALAL ON MUTE/UNMUTE", mute, source, transceiverMid)
+    const sources = activeCall.peerMediaSources
+    if (source == CallMediaSource.Mic && activeCall.peerMediaSources.mic == mute) {
+      const resp: WRPeerMedia = {
+        type: "peerMedia",
+        media: CallMediaType.Audio,
+        source: source,
+        enabled: !mute,
       }
+      sources.mic = !mute
+      activeCall.peerMediaSources = sources
+      sendMessageToNative({resp: resp})
+    } else if (source == CallMediaSource.Camera && activeCall.peerMediaSources.camera == mute) {
+      const resp: WRPeerMedia = {
+        type: "peerMedia",
+        media: CallMediaType.Video,
+        source: source,
+        enabled: !mute,
+      }
+      sources.camera = !mute
+      activeCall.peerMediaSources = sources
+      videos.remote.style.visibility = !mute ? "visible" : "hidden"
+      sendMessageToNative({resp: resp})
+    } else if (source == CallMediaSource.ScreenAudio && activeCall.peerMediaSources.screenAudio == mute) {
+      const resp: WRPeerMedia = {
+        type: "peerMedia",
+        media: CallMediaType.Audio,
+        source: source,
+        enabled: !mute,
+      }
+      sources.screenAudio = !mute
+      activeCall.peerMediaSources = sources
+      sendMessageToNative({resp: resp})
+    } else if (source == CallMediaSource.ScreenVideo && activeCall.peerMediaSources.screenVideo == mute) {
+      const resp: WRPeerMedia = {
+        type: "peerMedia",
+        media: CallMediaType.Video,
+        source: source,
+        enabled: !mute,
+      }
+      sources.screenVideo = !mute
+      activeCall.peerMediaSources = sources
+      videos.remoteScreen.style.visibility = !mute ? "visible" : "hidden"
+      sendMessageToNative({resp: resp})
+    }
+    if (activeCall.peerMediaSources.screenVideo) {
+      videos.remote.className = "collapsed"
+    } else {
+      videos.remote.className = "inline"
     }
   }
 
   function getLocalMediaStream(mediaType: CallMediaType, facingMode: VideoCamera): Promise<MediaStream> {
     const constraints = callMediaConstraints(mediaType, facingMode)
     return navigator.mediaDevices.getUserMedia(constraints)
+  }
+
+  function getEmptyStream(mediaType: CallMediaType, pc: RTCPeerConnection): MediaStream {
+    const stream = new MediaStream()
+    pc.addTransceiver("audio", {streams: [stream]})
+    if (mediaType == CallMediaType.Video) {
+      pc.addTransceiver("video", {streams: [stream]})
+    }
+    return stream
   }
 
   function getLocalScreenCaptureStream(): Promise<MediaStream> {
@@ -1154,19 +1175,24 @@ const processCommand = (function () {
   //   }
   // }
 
-  function enableMedia(s: MediaStream, media: CallMediaType, enable: boolean) {
-    const tracks = media == CallMediaType.Video ? s.getVideoTracks() : s.getAudioTracks()
+  function enableMedia(s: MediaStream, source: CallMediaSource, enable: boolean) {
+    const tracks = source == CallMediaSource.Camera ? s.getVideoTracks() : s.getAudioTracks()
     for (const t of tracks)
       activeCall?.connection.getTransceivers().forEach((elem) => {
-        if (enable) {
-          t.enabled = true
-          elem.sender.replaceTrack(t)
-        } else {
-          t.enabled = false
-          elem.sender.replaceTrack(null)
+        if (
+          (t.kind == CallMediaType.Audio && mediaSourceFromTransceiverMid(elem.mid) == CallMediaSource.Mic) ||
+          (t.kind == CallMediaType.Video && mediaSourceFromTransceiverMid(elem.mid) == CallMediaSource.Camera)
+        ) {
+          if (enable) {
+            t.enabled = true
+            elem.sender.replaceTrack(t)
+          } else {
+            t.enabled = false
+            elem.sender.replaceTrack(null)
+          }
         }
       })
-    if (media == CallMediaType.Video && activeCall) {
+    if (source == CallMediaSource.Camera && activeCall) {
       activeCall.localMediaSources.camera = enable
     }
   }
@@ -1185,6 +1211,11 @@ const processCommand = (function () {
 function toggleRemoteVideoFitFill() {
   const remote = document.getElementById("remote-video-stream")!
   remote.style.objectFit = remote.style.objectFit != "contain" ? "contain" : "cover"
+}
+
+function toggleRemoteScreenVideoFitFill() {
+  const remoteScreen = document.getElementById("remote-screen-video-stream")!
+  remoteScreen.style.objectFit = remoteScreen.style.objectFit != "contain" ? "contain" : "cover"
 }
 
 function toggleMedia(s: MediaStream, media: CallMediaType): boolean {

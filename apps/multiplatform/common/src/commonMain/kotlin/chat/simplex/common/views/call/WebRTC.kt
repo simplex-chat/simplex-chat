@@ -2,6 +2,7 @@ package chat.simplex.common.views.call
 
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.res.MR
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
@@ -15,12 +16,11 @@ data class Call(
   val contact: Contact,
   val callUUID: String?,
   val callState: CallState,
-  val localMedia: CallMediaType,
+  val initialCallType: CallMediaType,
+  val localMediaSources: CallMediaSources = CallMediaSources(mic = true, camera = initialCallType == CallMediaType.Video && appPlatform.isAndroid),
   val localCapabilities: CallCapabilities? = null,
   val peerMediaSources: CallMediaSources = CallMediaSources(),
   val sharedKey: String? = null,
-  val audioEnabled: Boolean = true,
-  val videoEnabled: Boolean = localMedia == CallMediaType.Video,
   var localCamera: VideoCamera = VideoCamera.User,
   val connectionInfo: ConnectionInfo? = null,
   var connectedAt: Instant? = null,
@@ -34,6 +34,9 @@ data class Call(
     CallState.InvitationAccepted -> generalGetString(if (sharedKey == null) MR.strings.status_contact_has_no_e2e_encryption else MR.strings.status_contact_has_e2e_encryption)
     else -> generalGetString(if (!localEncrypted) MR.strings.status_no_e2e_encryption else if (sharedKey == null) MR.strings.status_contact_has_no_e2e_encryption else MR.strings.status_e2e_encrypted)
   }
+
+  val localMedia: CallMediaType
+    get() = if (localMediaSources.camera) CallMediaType.Video else CallMediaType.Audio
 
   val hasMedia: Boolean get() = callState == CallState.OfferSent || callState == CallState.Negotiated || callState == CallState.Connected
 
@@ -84,7 +87,7 @@ sealed class WCallCommand {
   @Serializable @SerialName("offer") data class Offer(val offer: String, val iceCandidates: String, val media: CallMediaType, val aesKey: String? = null, val iceServers: List<RTCIceServer>? = null, val relay: Boolean? = null): WCallCommand()
   @Serializable @SerialName("answer") data class Answer (val answer: String, val iceCandidates: String): WCallCommand()
   @Serializable @SerialName("ice") data class Ice(val iceCandidates: String): WCallCommand()
-  @Serializable @SerialName("media") data class Media(val media: CallMediaType, val enable: Boolean): WCallCommand()
+  @Serializable @SerialName("media") data class Media(val source: CallMediaSource, val enable: Boolean): WCallCommand()
   @Serializable @SerialName("camera") data class Camera(val camera: VideoCamera): WCallCommand()
   @Serializable @SerialName("description") data class Description(val state: String, val description: String): WCallCommand()
   @Serializable @SerialName("layout") data class Layout(val layout: LayoutType): WCallCommand()

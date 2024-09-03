@@ -136,7 +136,16 @@ const processCommand = (function () {
         const remoteStream = new MediaStream();
         const remoteScreenStream = new MediaStream();
         const localCamera = VideoCamera.User;
-        const localStream = await getLocalMediaStream(mediaType, localCamera);
+        let localStream;
+        try {
+            localStream = await getLocalMediaStream(mediaType, localCamera);
+        }
+        catch (e) {
+            if (isDesktop) {
+                window.alert("Permission denied. Please, allow mic and video to make the call working.");
+            }
+            throw e;
+        }
         const localScreenStream = new MediaStream();
         if (isDesktop) {
             localStream
@@ -355,12 +364,12 @@ const processCommand = (function () {
                     if (!activeCall) {
                         resp = { type: "error", message: "media: call not started" };
                     }
-                    else if (!activeCall.cameraTrackWasSetBefore && command.media == CallMediaType.Video && command.enable) {
+                    else if (!activeCall.cameraTrackWasSetBefore && command.source == CallMediaSource.Camera && command.enable) {
                         await startSendingCamera(activeCall, activeCall.localCamera);
                         resp = { type: "ok" };
                     }
                     else {
-                        enableMedia(activeCall.localStream, command.media, command.enable);
+                        enableMedia(activeCall.localStream, command.source, command.enable);
                         resp = { type: "ok" };
                     }
                     break;
@@ -629,7 +638,7 @@ const processCommand = (function () {
             // videos.localScreen.pause()
             // videos.localScreen.srcObject = call.localScreenStream
             videos.localScreen.play();
-            videos.localScreen.style.display = "block";
+            videos.localScreen.style.visibility = "visible";
         }
         else {
             pc.getTransceivers().forEach((elem) => {
@@ -642,7 +651,7 @@ const processCommand = (function () {
                 t.stop();
             for (const t of call.localScreenStream.getTracks())
                 call.localScreenStream.removeTrack(t);
-            videos.localScreen.style.display = "none";
+            videos.localScreen.style.visibility = "hidden";
         }
     }
     async function replaceMedia(call, camera) {
@@ -727,56 +736,62 @@ const processCommand = (function () {
         const videos = getVideoElements();
         if (!videos)
             throw Error("no video elements");
-        if (activeCall) {
-            const source = mediaSourceFromTransceiverMid(transceiverMid);
-            console.log("LALAL ON MUTE/UNMUTE", mute, source, transceiverMid);
-            const sources = activeCall.peerMediaSources;
-            if (source == CallMediaSource.Mic && activeCall.peerMediaSources.mic == mute) {
-                const resp = {
-                    type: "peerMedia",
-                    media: CallMediaType.Audio,
-                    source: source,
-                    enabled: !mute,
-                };
-                sources.mic = !mute;
-                activeCall.peerMediaSources = sources;
-                sendMessageToNative({ resp: resp });
-            }
-            else if (source == CallMediaSource.Camera && activeCall.peerMediaSources.camera == mute) {
-                const resp = {
-                    type: "peerMedia",
-                    media: CallMediaType.Video,
-                    source: source,
-                    enabled: !mute,
-                };
-                sources.camera = !mute;
-                activeCall.peerMediaSources = sources;
-                videos.remote.style.display = !mute ? "block" : "none";
-                sendMessageToNative({ resp: resp });
-            }
-            else if (source == CallMediaSource.ScreenAudio && activeCall.peerMediaSources.screenAudio == mute) {
-                const resp = {
-                    type: "peerMedia",
-                    media: CallMediaType.Audio,
-                    source: source,
-                    enabled: !mute,
-                };
-                sources.screenAudio = !mute;
-                activeCall.peerMediaSources = sources;
-                sendMessageToNative({ resp: resp });
-            }
-            else if (source == CallMediaSource.ScreenVideo && activeCall.peerMediaSources.screenVideo == mute) {
-                const resp = {
-                    type: "peerMedia",
-                    media: CallMediaType.Video,
-                    source: source,
-                    enabled: !mute,
-                };
-                sources.screenVideo = !mute;
-                activeCall.peerMediaSources = sources;
-                videos.remoteScreen.style.display = !mute ? "block" : "none";
-                sendMessageToNative({ resp: resp });
-            }
+        if (!activeCall)
+            return;
+        const source = mediaSourceFromTransceiverMid(transceiverMid);
+        console.log("LALAL ON MUTE/UNMUTE", mute, source, transceiverMid);
+        const sources = activeCall.peerMediaSources;
+        if (source == CallMediaSource.Mic && activeCall.peerMediaSources.mic == mute) {
+            const resp = {
+                type: "peerMedia",
+                media: CallMediaType.Audio,
+                source: source,
+                enabled: !mute,
+            };
+            sources.mic = !mute;
+            activeCall.peerMediaSources = sources;
+            sendMessageToNative({ resp: resp });
+        }
+        else if (source == CallMediaSource.Camera && activeCall.peerMediaSources.camera == mute) {
+            const resp = {
+                type: "peerMedia",
+                media: CallMediaType.Video,
+                source: source,
+                enabled: !mute,
+            };
+            sources.camera = !mute;
+            activeCall.peerMediaSources = sources;
+            videos.remote.style.visibility = !mute ? "visible" : "hidden";
+            sendMessageToNative({ resp: resp });
+        }
+        else if (source == CallMediaSource.ScreenAudio && activeCall.peerMediaSources.screenAudio == mute) {
+            const resp = {
+                type: "peerMedia",
+                media: CallMediaType.Audio,
+                source: source,
+                enabled: !mute,
+            };
+            sources.screenAudio = !mute;
+            activeCall.peerMediaSources = sources;
+            sendMessageToNative({ resp: resp });
+        }
+        else if (source == CallMediaSource.ScreenVideo && activeCall.peerMediaSources.screenVideo == mute) {
+            const resp = {
+                type: "peerMedia",
+                media: CallMediaType.Video,
+                source: source,
+                enabled: !mute,
+            };
+            sources.screenVideo = !mute;
+            activeCall.peerMediaSources = sources;
+            videos.remoteScreen.style.visibility = !mute ? "visible" : "hidden";
+            sendMessageToNative({ resp: resp });
+        }
+        if (activeCall.peerMediaSources.screenVideo) {
+            videos.remote.className = "collapsed";
+        }
+        else {
+            videos.remote.className = "inline";
         }
     }
     function getLocalMediaStream(mediaType, facingMode) {
@@ -861,20 +876,23 @@ const processCommand = (function () {
     //     video.style.opacity = "1"
     //   }
     // }
-    function enableMedia(s, media, enable) {
-        const tracks = media == CallMediaType.Video ? s.getVideoTracks() : s.getAudioTracks();
+    function enableMedia(s, source, enable) {
+        const tracks = source == CallMediaSource.Camera ? s.getVideoTracks() : s.getAudioTracks();
         for (const t of tracks)
             activeCall === null || activeCall === void 0 ? void 0 : activeCall.connection.getTransceivers().forEach((elem) => {
-                if (enable) {
-                    t.enabled = true;
-                    elem.sender.replaceTrack(t);
-                }
-                else {
-                    t.enabled = false;
-                    elem.sender.replaceTrack(null);
+                if ((t.kind == CallMediaType.Audio && mediaSourceFromTransceiverMid(elem.mid) == CallMediaSource.Mic) ||
+                    (t.kind == CallMediaType.Video && mediaSourceFromTransceiverMid(elem.mid) == CallMediaSource.Camera)) {
+                    if (enable) {
+                        t.enabled = true;
+                        elem.sender.replaceTrack(t);
+                    }
+                    else {
+                        t.enabled = false;
+                        elem.sender.replaceTrack(null);
+                    }
                 }
             });
-        if (media == CallMediaType.Video && activeCall) {
+        if (source == CallMediaSource.Camera && activeCall) {
             activeCall.localMediaSources.camera = enable;
         }
     }
@@ -891,6 +909,10 @@ const processCommand = (function () {
 function toggleRemoteVideoFitFill() {
     const remote = document.getElementById("remote-video-stream");
     remote.style.objectFit = remote.style.objectFit != "contain" ? "contain" : "cover";
+}
+function toggleRemoteScreenVideoFitFill() {
+    const remoteScreen = document.getElementById("remote-screen-video-stream");
+    remoteScreen.style.objectFit = remoteScreen.style.objectFit != "contain" ? "contain" : "cover";
 }
 function toggleMedia(s, media) {
     let res = false;

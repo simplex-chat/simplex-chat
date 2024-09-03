@@ -8,19 +8,19 @@
   </head>
   <body>
     <video
-      id="remote-video-stream"
-      class="inline"
-      playsinline
-      poster="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAQAAAAnOwc2AAAAEUlEQVR42mNk+M+AARiHsiAAcCIKAYwFoQ8AAAAASUVORK5CYII="
-      onclick="javascript:toggleRemoteVideoFitFill()"
-    ></video>
-
-    <video
       id="remote-screen-video-stream"
       class="inline"
       playsinline
       poster="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAQAAAAnOwc2AAAAEUlEQVR42mNk+M+AARiHsiAAcCIKAYwFoQ8AAAAASUVORK5CYII="
-      style="display: none"
+      style="visibility: hidden"
+      onclick="javascript:toggleRemoteScreenVideoFitFill()"
+    ></video>
+
+    <video
+      id="remote-video-stream"
+      class="inline"
+      playsinline
+      poster="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAQAAAAnOwc2AAAAEUlEQVR42mNk+M+AARiHsiAAcCIKAYwFoQ8AAAAASUVORK5CYII="
       onclick="javascript:toggleRemoteVideoFitFill()"
     ></video>
 
@@ -38,7 +38,7 @@
       muted
       playsinline
       poster="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAQAAAAnOwc2AAAAEUlEQVR42mNk+M+AARiHsiAAcCIKAYwFoQ8AAAAASUVORK5CYII="
-      style="display: none"
+      style="visibility: hidden"
     ></video>
 
     <div id="progress"></div>
@@ -50,19 +50,19 @@
       <img src="/desktop/images/ic_phone_in_talk.svg" />
     </div>
     <p id="manage-call">
-      <button id="toggle-screen" style="display: none" onclick="javascript:toggleScreenManually()">
+      <button id="toggle-screen" style="display: none; width: 44px; height: 44px" onclick="javascript:toggleScreenManually()">
         <img src="/desktop/images/ic_screen_share.svg" />
       </button>
-      <button id="toggle-audio" style="display: none" onclick="javascript:toggleAudioManually()">
+      <button id="toggle-audio" style="display: none; width: 44px; height: 44px" onclick="javascript:toggleAudioManually()">
         <img src="/desktop/images/ic_mic.svg" />
       </button>
       <button id="end-call" onclick="javascript:endCallManually()">
         <img src="/desktop/images/ic_call_end_filled.svg" />
       </button>
-      <button id="toggle-speaker" style="display: none" onclick="javascript:toggleSpeakerManually()">
+      <button id="toggle-speaker" style="display: none; width: 44px; height: 44px" onclick="javascript:toggleSpeakerManually()">
         <img src="/desktop/images/ic_volume_up.svg" />
       </button>
-      <button id="toggle-video" style="display: none" onclick="javascript:toggleVideoManually()">
+      <button id="toggle-video" style="display: none; width: 44px; height: 44px" onclick="javascript:toggleVideoManually()">
         <img src="/desktop/images/ic_videocam_off.svg" />
       </button>
     </p>

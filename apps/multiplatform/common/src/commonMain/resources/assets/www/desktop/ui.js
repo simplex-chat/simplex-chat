@@ -44,7 +44,9 @@ function toggleSpeakerManually() {
 }
 function toggleVideoManually() {
     if (activeCall) {
-        const apiCall = { command: { type: "media", media: CallMediaType.Video, enable: activeCall.localMediaSources.camera != true } };
+        const apiCall = {
+            command: { type: "media", source: CallMediaSource.Camera, enable: activeCall.localMediaSources.camera != true },
+        };
         reactOnMessageFromServer(apiCall);
         processCommand(apiCall).then(() => {
             var _a;
@@ -82,7 +84,7 @@ function reactOnMessageFromServer(msg) {
             document.getElementById("info-block").className = msg.command.media;
             break;
         case "media":
-            const className = (msg.command.media == CallMediaType.Video && msg.command.enable) ||
+            const className = (msg.command.source == CallMediaSource.Camera && msg.command.enable) ||
                 (activeCall === null || activeCall === void 0 ? void 0 : activeCall.peerMediaSources.camera) ||
                 (activeCall === null || activeCall === void 0 ? void 0 : activeCall.peerMediaSources.screenVideo)
                 ? "video"

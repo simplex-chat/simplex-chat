@@ -51,7 +51,9 @@ function toggleSpeakerManually() {
 
 function toggleVideoManually() {
   if (activeCall) {
-    const apiCall: WVAPICall = {command: {type: "media", media: CallMediaType.Video, enable: activeCall.localMediaSources.camera != true}}
+    const apiCall: WVAPICall = {
+      command: {type: "media", source: CallMediaSource.Camera, enable: activeCall.localMediaSources.camera != true},
+    }
     reactOnMessageFromServer(apiCall as any)
     processCommand(apiCall).then(() => {
       enableVideoIcon(activeCall?.localMediaSources?.camera == true)
@@ -90,7 +92,7 @@ function reactOnMessageFromServer(msg: WVApiMessage) {
       break
     case "media":
       const className =
-        (msg.command.media == CallMediaType.Video && msg.command.enable) ||
+        (msg.command.source == CallMediaSource.Camera && msg.command.enable) ||
         activeCall?.peerMediaSources.camera ||
         activeCall?.peerMediaSources.screenVideo
           ? "video"

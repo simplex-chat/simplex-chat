@@ -119,7 +119,7 @@ actual fun ActiveCallView() {
         val callRh = call.remoteHostId
         when (val r = apiMsg.resp) {
           is WCallResponse.Capabilities -> withBGApi {
-            val callType = CallType(call.localMedia, r.capabilities)
+            val callType = CallType(call.initialCallType, r.capabilities)
             chatModel.controller.apiSendCallInvitation(callRh, call.contact, callType)
             updateActiveCall(call) { it.copy(callState = CallState.InvitationSent, localCapabilities = r.capabilities) }
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
@@ -132,7 +132,7 @@ actual fun ActiveCallView() {
             activeCallWaitDeliveryReceipt(scope)
           }
           is WCallResponse.Offer -> withBGApi {
-            chatModel.controller.apiSendCallOffer(callRh, call.contact, r.offer, r.iceCandidates, call.localMedia, r.capabilities)
+            chatModel.controller.apiSendCallOffer(callRh, call.contact, r.offer, r.iceCandidates, call.initialCallType, r.capabilities)
             updateActiveCall(call) { it.copy(callState = CallState.OfferSent, localCapabilities = r.capabilities) }
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
               // Starting is delayed to make Android <= 11 working good with Bluetooth
@@ -185,16 +185,19 @@ actual fun ActiveCallView() {
               updateActiveCall(call) { it.copy(callState = CallState.Negotiated) }
             is WCallCommand.Media -> {
               updateActiveCall(call) {
-                when (cmd.media) {
-                  CallMediaType.Video -> it.copy(videoEnabled = cmd.enable, localMedia = if (cmd.enable) CallMediaType.Video else CallMediaType.Audio)
-                  CallMediaType.Audio -> it.copy(audioEnabled = cmd.enable)
+                val sources = it.localMediaSources
+                when (cmd.source) {
+                  CallMediaSource.Mic -> it.copy(localMediaSources = sources.copy(mic = cmd.enable))
+                  CallMediaSource.Camera -> it.copy(localMediaSources = sources.copy(camera = cmd.enable))
+                  CallMediaSource.ScreenAudio -> it.copy(localMediaSources = sources.copy(screenAudio = cmd.enable))
+                  CallMediaSource.ScreenVideo -> it.copy(localMediaSources = sources.copy(screenVideo = cmd.enable))
                 }
               }
             }
             is WCallCommand.Camera -> {
               updateActiveCall(call) { it.copy(localCamera = cmd.camera) }
-              if (!call.audioEnabled) {
-                chatModel.callCommand.add(WCallCommand.Media(CallMediaType.Audio, enable = false))
+              if (!call.localMediaSources.mic) {
+                chatModel.callCommand.add(WCallCommand.Media(CallMediaSource.Mic, enable = false))
               }
             }
             is WCallCommand.End -> {
@@ -248,9 +251,9 @@ private fun ActiveCallOverlay(call: Call, chatModel: ChatModel, callAudioDeviceM
     devices = remember { callAudioDeviceManager.devices }.value,
     currentDevice = remember { callAudioDeviceManager.currentDevice },
     dismiss = { withBGApi { chatModel.callManager.endCall(call) } },
-    toggleAudio = { chatModel.callCommand.add(WCallCommand.Media(CallMediaType.Audio, enable = !call.audioEnabled)) },
+    toggleAudio = { chatModel.callCommand.add(WCallCommand.Media(CallMediaSource.Mic, enable = !call.localMediaSources.mic)) },
     selectDevice = { callAudioDeviceManager.selectDevice(it.id) },
-    toggleVideo = { chatModel.callCommand.add(WCallCommand.Media(CallMediaType.Video, enable = !call.videoEnabled)) },
+    toggleVideo = { chatModel.callCommand.add(WCallCommand.Media(CallMediaSource.Camera, enable = !call.localMediaSources.camera)) },
     toggleSound = {
       val enableSpeaker = callAudioDeviceManager.currentDevice.value?.type == AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
       val preferredInternalDevice = callAudioDeviceManager.devices.value.firstOrNull { it.type == if (enableSpeaker) AudioDeviceInfo.TYPE_BUILTIN_SPEAKER else AudioDeviceInfo.TYPE_BUILTIN_EARPIECE }
@@ -365,7 +368,7 @@ private fun ActiveCallOverlayLayout(
         IconButton(onClick = dismiss, enabled = enabled) {
           Icon(painterResource(MR.images.ic_call_end_filled), stringResource(MR.strings.icon_descr_hang_up), tint = if (enabled) Color.Red else MaterialTheme.colors.secondary, modifier = Modifier.size(64.dp))
         }
-        if (call.videoEnabled) {
+        if (call.localMediaSources.camera) {
           ControlButton(call, painterResource(MR.images.ic_flip_camera_android_filled), MR.strings.icon_descr_flip_camera, enabled, flipCamera)
           ControlButton(call, painterResource(MR.images.ic_videocam_filled), MR.strings.icon_descr_video_off, enabled, toggleVideo)
         } else {
@@ -390,7 +393,7 @@ private fun ControlButton(call: Call, icon: Painter, iconText: StringResource, e
 
 @Composable
 private fun ToggleAudioButton(call: Call, enabled: Boolean = true, toggleAudio: () -> Unit) {
-  if (call.audioEnabled) {
+  if (call.localMediaSources.mic) {
     ControlButton(call, painterResource(MR.images.ic_mic), MR.strings.icon_descr_audio_off, enabled, toggleAudio)
   } else {
     ControlButton(call, painterResource(MR.images.ic_mic_off), MR.strings.icon_descr_audio_on, enabled, toggleAudio)
@@ -762,7 +765,7 @@ fun PreviewActiveCallOverlayVideo() {
         userProfile = Profile.sampleData,
         contact = Contact.sampleData,
         callState = CallState.Negotiated,
-        localMedia = CallMediaType.Video,
+        initialCallType = CallMediaType.Video,
         peerMediaSources = CallMediaSources(),
         callUUID = "",
         connectionInfo = ConnectionInfo(
@@ -792,7 +795,7 @@ fun PreviewActiveCallOverlayAudio() {
         userProfile = Profile.sampleData,
         contact = Contact.sampleData,
         callState = CallState.Negotiated,
-        localMedia = CallMediaType.Audio,
+        initialCallType = CallMediaType.Audio,
         peerMediaSources = CallMediaSources(),
         callUUID = "",
         connectionInfo = ConnectionInfo(
