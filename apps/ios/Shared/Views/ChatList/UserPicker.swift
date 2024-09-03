@@ -6,35 +6,18 @@
 import SwiftUI
 import SimpleXChat
 
-private enum UserPickerSheet: Identifiable {
-    case chatPreferences
-    case chatProfiles
-    case currentProfile
-    case useFromDesktop
-    case settings
-
-    var id: Self { self }
-}
-
 struct UserPicker: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.scenePhase) var scenePhase
     @Environment(\.colorScheme) var colorScheme
-    @Binding var userPickerVisible: Bool
+    @Binding var activeSheet: UserPickerSheet?
+    @Binding var showingAddressSheet: Bool
     @State var scrollViewContentSize: CGSize = .zero
     @State var disableScrolling: Bool = true
     private let verticalSpaceDefault: CGFloat = 12
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
     @State private var activeUser: User? = nil
-    @State private var activeSheet: UserPickerSheet? = nil
-    @State private var showSettings = false
-    
-    // Address sheet state
-    @State private var aas = AutoAcceptState()
-    @State private var savedAAS = AutoAcceptState()
-    @State private var showAASSaveDialogue = false
-    @State private var showingAddressSheet = false
     
     var body: some View {
         let v = NavigationView {
@@ -116,6 +99,7 @@ struct UserPicker: View {
                     Section {
                         if (m.currentUser != nil) {
                             openSheetOnTap(title: m.userAddress == nil ? "Create public address" : "Your public address", image: "qrcode") {
+                                activeSheet = nil
                                 showingAddressSheet = true
                             }
                             
@@ -173,58 +157,7 @@ struct UserPicker: View {
                     }
                 }
             }
-            .alert(isPresented: $showAASSaveDialogue) {
-                Alert(
-                    title: Text("Auto accept settings"),
-                    message: Text("Settings were changed"),
-                    primaryButton: .default(Text("Save")) {
-                        saveAAS()
-                    },
-                    secondaryButton: .destructive(Text("Revert"))
-                )
-            }
-            .sheet(isPresented: $showingAddressSheet, onDismiss: {
-                if savedAAS != aas {
-                    showAASSaveDialogue = true
-                }
-            }) {
-                if let currentUser = m.currentUser {
-                    NavigationView {
-                        UserAddressView(shareViaProfile: currentUser.addressShared, aas: $aas, savedAAS: $savedAAS)
-                            .navigationTitle("Public address")
-                            .navigationBarTitleDisplayMode(.large)
-                            .modifier(ThemedBackground(grouped: true))
-                    }
-                }
-            }
-            .sheet(item: $activeSheet) { sheet in
-                    if let currentUser = m.currentUser {
-                        NavigationView {
-                            switch sheet {
-                            case .chatProfiles:
-                                UserProfilesView()
-                            case .currentProfile:
-                                UserProfile()
-                                    .navigationTitle("Your current profile")
-                                    .modifier(ThemedBackground())
-                            case .chatPreferences:
-                                PreferencesView(profile: currentUser.profile, preferences: currentUser.fullPreferences, currentPreferences: currentUser.fullPreferences)
-                                    .navigationTitle("Your preferences")
-                                    .navigationBarTitleDisplayMode(.large)
-                                    .modifier(ThemedBackground(grouped: true))
-                            case .useFromDesktop:
-                                VStack {
-                                    ConnectDesktopView(viaSettings: true)
-                                        .modifier(ThemedBackground())
-                                }
-                            case .settings:
-                                SettingsView(showSettings: $showSettings, viaUserPicker: true)
-                                    .navigationBarTitleDisplayMode(.large)
-                            }
-                        }
-                    }
-                }
-                .modifier(ThemedBackground(grouped: true))
+            .modifier(ThemedBackground(grouped: true))
         }
         
         if #available(iOS 16.0, *) {
@@ -238,19 +171,6 @@ struct UserPicker: View {
         return activeUser ?? m.currentUser
     }
     
-    private func saveAAS() {
-        Task {
-            do {
-                if let address = try await userAddressAutoAccept(aas.autoAccept) {
-                    m.userAddress = address
-                    savedAAS = aas
-                }
-            } catch let error {
-                logger.error("userAddressAutoAccept error: \(responseError(error))")
-            }
-        }
-    }
-    
     private func userView(_ u: UserInfo) -> some View {
         let user = u.user
         return Button(action: {
@@ -260,9 +180,7 @@ struct UserPicker: View {
                 do {
                     try await changeActiveUserAsync_(user.userId, viewPwd: nil)
                     await MainActor.run {
-                        withAnimation {
-                            userPickerVisible.toggle()
-                        }
+                        activeSheet = nil
                     }
                 } catch {
                     await MainActor.run {
@@ -313,10 +231,13 @@ struct UserPicker: View {
 
 struct UserPicker_Previews: PreviewProvider {
     static var previews: some View {
+        @State var activeSheet: UserPickerSheet?
+
         let m = ChatModel()
         m.users = [UserInfo.sampleData, UserInfo.sampleData]
         return UserPicker(
-            userPickerVisible: Binding.constant(true)
+            activeSheet: $activeSheet,
+            showingAddressSheet: Binding.constant(false)
         )
         .environmentObject(m)
     }
