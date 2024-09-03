@@ -13,7 +13,33 @@ struct UserPicker: View {
     @Environment(\.colorScheme) var colorScheme
     @Binding var activeSheet: UserPickerSheet?
     @State private var activeUser: User? = nil
-    
+
+
+    private func usersRow(users: [UserInfo], gradientInset: Double) -> some View {
+        ZStack {
+            ScrollView(.horizontal) {
+                HStack {
+                    ForEach(users) { userView($0) }
+                }
+                .padding(.horizontal, gradientInset)
+                .padding(.leading, 32)
+            }
+            HStack(spacing: 0) {
+                LinearGradient(
+                    colors: [.black, .clear],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                ).frame(width: gradientInset)
+                Color.clear
+                LinearGradient(
+                    colors: [.clear, .black],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                ).frame(width: gradientInset)
+            }.blendMode(.destinationOut)
+        }.compositingGroup()
+    }
+
     var body: some View {
         let v = List {
             VStack(alignment: .leading, spacing: 6) {
@@ -25,57 +51,68 @@ struct UserPicker: View {
                             }
                         Spacer()
                         let usersToPreview = m.users.filter({ u in !u.user.hidden && u.user.userId != currentUser.userId })
-                        ZStack(alignment: .leading) {
-                            ZStack(alignment: .trailing) {
-                                let ps = HStack(spacing: 20) {
-                                    Color.clear.frame(width: 48, height: 32)
-                                    ForEach(usersToPreview) { u in
-                                        userView(u)
-                                    }
-                                    Color.clear.frame(width: 32, height: 32)
-                                }
-                                
-                                if usersToPreview.count > 3 {
-                                    let s = ScrollView(.horizontal) { ps }.frame(width: 284)
-                                    if #available(iOS 16.0, *) {
-                                        s.scrollIndicators(.hidden)
-                                    } else {
-                                        s
-                                    }
-                                } else {
-                                    ps
-                                }
-                                HStack(spacing: 0) {
-                                    LinearGradient(
-                                        colors: [.clear, theme.colors.background.asGroupedBackground(theme.base.mode)],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                    .frame(width: 32, height: 35)
-                                    Button {
-                                        activeSheet = .chatProfiles
-                                    } label: {
-                                        Image(systemName: "ellipsis.circle.fill")
-                                            .resizable()
-                                            .scaledToFit()
-                                            .frame(width: 31, height: 31)
-                                            .padding(.top, 4)
-                                            .foregroundColor(Color(uiColor: .quaternaryLabel))
-                                            .modifier(ThemedBackground(grouped: true))
-                                    }
-                                }
+                        HStack(spacing: 0) {
+                            usersRow(users: usersToPreview, gradientInset: 32)
+                            Button {
+                                activeSheet = .chatProfiles
+                            } label: {
+                                Image(systemName: "ellipsis.circle.fill")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 32, height: 32)
+                                    .foregroundColor(Color(uiColor: .quaternaryLabel))
                             }
-                            .padding(.top, 10)
-                            
-                            LinearGradient(
-                                colors: [.clear, theme.colors.background.asGroupedBackground(theme.base.mode)],
-                                startPoint: .trailing,
-                                endPoint: .leading
-                            )
-                            .frame(width: 32, height: 35)
                         }
+//                        ZStack(alignment: .leading) {
+//                            ZStack(alignment: .trailing) {
+//                                let ps = HStack(spacing: 20) {
+//                                    Color.clear.frame(width: 48, height: 32)
+//                                    ForEach(usersToPreview) { u in
+//                                        userView(u)
+//                                    }
+//                                    Color.clear.frame(width: 32, height: 32)
+//                                }
+//                                
+//                                if usersToPreview.count > 3 {
+//                                    let s = ScrollView(.horizontal) { ps }.frame(width: 284)
+//                                    if #available(iOS 16.0, *) {
+//                                        s.scrollIndicators(.hidden)
+//                                    } else {
+//                                        s
+//                                    }
+//                                } else {
+//                                    ps
+//                                }
+//                                HStack(spacing: 0) {
+//                                    LinearGradient(
+//                                        colors: [.clear, theme.colors.background.asGroupedBackground(theme.base.mode)],
+//                                        startPoint: .leading,
+//                                        endPoint: .trailing
+//                                    )
+//                                    .frame(width: 32, height: 35)
+//                                    Button {
+//                                        activeSheet = .chatProfiles
+//                                    } label: {
+//                                        Image(systemName: "ellipsis.circle.fill")
+//                                            .resizable()
+//                                            .scaledToFit()
+//                                            .frame(width: 31, height: 31)
+//                                            .padding(.top, 4)
+//                                            .foregroundColor(Color(uiColor: .quaternaryLabel))
+//                                            .modifier(ThemedBackground(grouped: true))
+//                                    }
+//                                }
+//                            }.border(.red)
+//                            .padding(.top, 10)
+//
+//                            LinearGradient(
+//                                colors: [.clear, theme.colors.background.asGroupedBackground(theme.base.mode)],
+//                                startPoint: .trailing,
+//                                endPoint: .leading
+//                            )
+//                            .frame(width: 32, height: 35).border(.blue)
+//                        }.border(.green)
                     }
-                    
                     Text(currentUser.displayName)
                         .fontWeight(.bold)
                         .font(.headline)
