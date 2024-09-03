@@ -106,7 +106,6 @@ struct ChatListView: View {
         }
     }
 
-
     private var chatListView: some View {
         let tm = ToolbarMaterial.material(toolbarMaterial)
         return withToolbar(tm) {
