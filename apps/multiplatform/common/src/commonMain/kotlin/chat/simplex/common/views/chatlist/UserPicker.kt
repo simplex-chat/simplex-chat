@@ -221,17 +221,18 @@ private fun UsersLayout(
               onClick = onShowAllProfilesClicked,
               enabled = !stopped,
             ) {
+              val iconColor = MaterialTheme.colors.secondary.copy(alpha = 0.63f)
               Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                   .size(31.dp * fontSizeSqrtMultiplier)
                   .background(MaterialTheme.colors.surface, CircleShape)
-                  .border(border = BorderStroke(2.dp, MaterialTheme.colors.secondary), shape = CircleShape),
+                  .border(border = BorderStroke(2.dp, iconColor), shape = CircleShape),
                 ) {
                 Icon(
                   painterResource(MR.images.ic_chevron_right),
                   stringResource(MR.strings.your_chat_profiles),
-                  tint = MaterialTheme.colors.secondary,
+                  tint = iconColor,
                 )
               }
             }
