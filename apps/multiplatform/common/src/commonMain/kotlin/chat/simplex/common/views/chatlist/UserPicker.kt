@@ -380,51 +380,47 @@ fun UserPicker(
     )
   }
 
-  val originalNavColor = mutableStateOf<Color?>(null)
-
-  LaunchedEffect(Unit) {
-    launch {
-      userPickerState.collect {
-        newChat = it
-        val colors = CurrentColors.value.colors
-        val toColor = if (colors.isLight) colors.onSurface.copy(alpha = ScrimOpacity) else Color.Black.copy(0.64f)
-
-        animatedColor.animateTo(if (newChat.isVisible()) toColor else Color.Transparent, newChatSheetAnimSpec()) {
-          if (newChat.isVisible()) {
-            platform.androidSetDrawerStatusAndNavBarColor(
-              isLight = colors.isLight,
-              drawerShadingColor = animatedColor,
-              toolbarOnTop = !appPrefs.oneHandUI.get(),
-              navBarColor = colors.surface
-            )
-          } else if (newChat.isHiding()) {
-            platform.androidSetDrawerStatusAndNavBarColor(
-              isLight = colors.isLight,
-              drawerShadingColor = animatedColor,
-              toolbarOnTop = !appPrefs.oneHandUI.get(),
-              navBarColor = (if (appPrefs.oneHandUI.get() && appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
-                colors.background.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
-              } else {
-                colors.background
-              })
-            )
-          }
-        }
-
-        launch {
-            animatedFloat.animateTo(if (newChat.isVisible()) 1f else 0f, newChatSheetAnimSpec())
-          if (newChat.isHiding()) userPickerState.value = AnimatedViewState.GONE
-        }
-      }
-    }
-  }
-
   LaunchedEffect(Unit) {
     snapshotFlow { currentTheme }
       .distinctUntilChanged()
       .collect { _ ->
+        launch {
+          userPickerState.collect {
+            newChat = it
+            val colors = CurrentColors.value.colors
+            val toColor = if (colors.isLight) colors.onSurface.copy(alpha = ScrimOpacity) else Color.Black.copy(0.64f)
+
+            animatedColor.animateTo(if (newChat.isVisible()) toColor else Color.Transparent, newChatSheetAnimSpec()) {
+              if (newChat.isVisible()) {
+                platform.androidSetDrawerStatusAndNavBarColor(
+                  isLight = colors.isLight,
+                  drawerShadingColor = animatedColor,
+                  toolbarOnTop = !appPrefs.oneHandUI.get(),
+                  navBarColor = colors.surface
+                )
+              } else if (newChat.isHiding()) {
+                platform.androidSetDrawerStatusAndNavBarColor(
+                  isLight = colors.isLight,
+                  drawerShadingColor = animatedColor,
+                  toolbarOnTop = !appPrefs.oneHandUI.get(),
+                  navBarColor = (if (appPrefs.oneHandUI.get() && appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
+                    colors.background.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
+                  } else {
+                    colors.background
+                  })
+                )
+              }
+            }
+
+            launch {
+              animatedFloat.animateTo(if (newChat.isVisible()) 1f else 0f, newChatSheetAnimSpec())
+              if (newChat.isHiding()) userPickerState.value = AnimatedViewState.GONE
+            }
+          }
+        }
       }
   }
+
   LaunchedEffect(Unit) {
     snapshotFlow { newChat.isVisible() }
       .distinctUntilChanged()
