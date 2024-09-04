@@ -12,7 +12,7 @@ struct UserPicker: View {
     @Environment(\.scenePhase) var scenePhase
     @Environment(\.colorScheme) var colorScheme
     @Binding var activeSheet: UserPickerSheet?
-    
+
     var body: some View {
         if #available(iOS 16.0, *) {
             let v = viewBody.presentationDetents([.height(425)])
