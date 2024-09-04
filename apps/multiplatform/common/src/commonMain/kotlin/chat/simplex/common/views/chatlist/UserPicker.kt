@@ -153,7 +153,7 @@ private fun UsersLayout(
 
     SectionView(contentPadding = PaddingValues(bottom = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF, top = if (appPlatform.isAndroid) DEFAULT_PADDING_HALF else 0.dp)) {
       Row {
-        Column(modifier = Modifier.widthIn(max = 200.dp).padding(start = DEFAULT_PADDING - 4.dp)) {
+        Column(modifier = Modifier.padding(start = DEFAULT_PADDING - 4.dp)) {
           IconButton(onClick = onCurrentUserClick, enabled = !stopped) {
               ProfileImage(
                 image = currentUser.image,
@@ -161,15 +161,6 @@ private fun UsersLayout(
                 color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f)
               )
           }
-          Text(
-            currentUser.displayName,
-            style = MaterialTheme.typography.h3,
-            fontWeight = FontWeight.Bold,
-            color = mainColor,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = 12.dp, start = 4.dp)
-          )
         }
         Box(
           contentAlignment = Alignment.CenterStart
@@ -243,6 +234,15 @@ private fun UsersLayout(
           }
         }
       }
+      Text(
+        currentUser.displayName,
+        style = MaterialTheme.typography.h3,
+        fontWeight = FontWeight.Bold,
+        color = mainColor,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.padding(top = 12.dp, start = DEFAULT_PADDING)
+      )
     }
   }
 }
