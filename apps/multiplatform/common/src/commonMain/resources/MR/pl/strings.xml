@@ -739,7 +739,7 @@
     <string name="switch_verb">Przełącz</string>
     <string name="switch_receiving_address">Zmień adres odbioru</string>
     <string name="group_is_decentralized">W pełni zdecentralizowana – widoczna tylko dla członków.</string>
-    <string name="member_role_will_be_changed_with_invitation">Rola zostanie zmieniona na \"%s\". Członek otrzyma nowe zaproszenie.</string>
+    <string name="member_role_will_be_changed_with_invitation">Rola zostanie zmieniona na "%s". Członek otrzyma nowe zaproszenie.</string>
     <string name="group_welcome_title">Wiadomość powitalna</string>
     <string name="users_delete_question">Usunąć profil czatu\?</string>
     <string name="users_delete_profile_for">Usuń profil czatu dla</string>
@@ -944,7 +944,7 @@
     <string name="failed_to_parse_chat_title">Nie udało się załadować czatu</string>
     <string name="v4_6_group_moderation_descr">Teraz administratorzy mogą:
 \n- usuwać wiadomości członków.
-\n- wyłączyć członków (rola \"obserwatora\")</string>
+\n- wyłączyć członków (rola "obserwatora")</string>
     <string name="from_gallery_button">Z Galerii</string>
     <string name="gallery_image_button">Obraz</string>
     <string name="gallery_video_button">Wideo</string>
@@ -993,7 +993,7 @@
     <string name="smp_servers_test_some_failed">Niektóre serwery nie przeszły testu:</string>
     <string name="thank_you_for_installing_simplex">Dziękujemy za zainstalowanie SimpleX Chat!</string>
     <string name="moderate_message_will_be_marked_warning">Wiadomość zostanie oznaczona jako zmoderowana dla wszystkich członków.</string>
-    <string name="member_role_will_be_changed_with_notification">Rola zostanie zmieniona na \"%s\". Wszyscy w grupie zostaną powiadomieni.</string>
+    <string name="member_role_will_be_changed_with_notification">Rola zostanie zmieniona na "%s". Wszyscy w grupie zostaną powiadomieni.</string>
     <string name="delete_files_and_media_desc">Tego działania nie można cofnąć - wszystkie odebrane i wysłane pliki oraz media zostaną usunięte. Obrazy o niskiej rozdzielczości pozostaną.</string>
     <string name="switch_receiving_address_desc">Adres odbiorczy zostanie zmieniony na inny serwer. Zmiana adresu zostanie zakończona gdy nadawca będzie online.</string>
     <string name="this_link_is_not_a_valid_connection_link">Ten link nie jest prawidłowym linkiem połączenia!</string>

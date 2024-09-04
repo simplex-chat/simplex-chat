@@ -742,7 +742,7 @@
     <string name="v4_6_reduced_battery_usage_descr">การปรับปรุงเพิ่มเติมกำลังจะมาเร็ว ๆ นี้!</string>
     <string name="v4_6_group_moderation_descr">ขณะนี้ผู้ดูแลระบบสามารถ:
 \n- ลบข้อความของสมาชิก
-\n- ปิดการใช้งานสมาชิก (บทบาท \"ผู้สังเกตการณ์\")</string>
+\n- ปิดการใช้งานสมาชิก (บทบาท "ผู้สังเกตการณ์")</string>
     <string name="v5_1_message_reactions">ปฏิกิริยาต่อข้อความ</string>
     <string name="custom_time_unit_minutes">นาที</string>
     <string name="custom_time_unit_months">เดือน</string>
@@ -1020,7 +1020,7 @@
     <string name="v5_0_polish_interface_descr">ขอบคุณผู้ใช้ – มีส่วนร่วมผ่าน Weblate!</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">แพลตฟอร์มการส่งข้อความและแอปพลิเคชันที่ปกป้องความเป็นส่วนตัวและความปลอดภัยของคุณ</string>
     <string name="next_generation_of_private_messaging">การส่งข้อความส่วนตัวรุ่นต่อไป</string>
-    <string name="member_role_will_be_changed_with_notification">บทบาทจะถูกเปลี่ยนเป็น \"%s\" ทุกคนในกลุ่มจะได้รับแจ้ง</string>
+    <string name="member_role_will_be_changed_with_notification">บทบาทจะถูกเปลี่ยนเป็น "%s" ทุกคนในกลุ่มจะได้รับแจ้ง</string>
     <string name="delete_files_and_media_desc">การดำเนินการนี้ไม่สามารถยกเลิกได้ ไฟล์และสื่อที่ได้รับและส่งทั้งหมดจะถูกลบ รูปภาพความละเอียดต่ำจะยังคงอยู่</string>
     <string name="to_reveal_profile_enter_password">หากต้องการเปิดเผยโปรไฟล์ที่ซ่อนอยู่ของคุณ ให้ป้อนรหัสผ่านแบบเต็มในช่องค้นหาในหน้าโปรไฟล์แชทของคุณ</string>
     <string name="network_session_mode_transport_isolation">การแยกการขนส่ง</string>
@@ -1198,7 +1198,7 @@
     <string name="button_welcome_message">ข้อความต้อนรับ</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">คุณสามารถแชร์ลิงก์หรือคิวอาร์โค้ดได้ ทุกคนจะสามารถเข้าร่วมกลุ่มได้ คุณจะไม่สูญเสียสมาชิกของกลุ่มหากคุณลบในภายหลัง</string>
     <string name="you_can_share_this_address_with_your_contacts">คุณสามารถแบ่งปันที่อยู่นี้กับผู้ติดต่อของคุณเพื่อให้พวกเขาเชื่อมต่อกับ %s</string>
-    <string name="member_role_will_be_changed_with_invitation">บทบาทจะถูกเปลี่ยนเป็น \"%s\" สมาชิกจะได้รับคำเชิญใหม่</string>
+    <string name="member_role_will_be_changed_with_invitation">บทบาทจะถูกเปลี่ยนเป็น "%s" สมาชิกจะได้รับคำเชิญใหม่</string>
     <string name="group_welcome_title">ข้อความต้อนรับ</string>
     <string name="group_main_profile_sent">โปรไฟล์การแชทของคุณจะถูกส่งไปยังสมาชิกในกลุ่ม</string>
     <string name="update_network_settings_confirmation">อัปเดต</string>
