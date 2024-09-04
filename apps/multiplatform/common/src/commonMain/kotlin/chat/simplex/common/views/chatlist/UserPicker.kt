@@ -80,7 +80,7 @@ fun ShareListUserPicker(
     }
   }
 
-  BoxWithConstraints {
+  Box {
     Column(
       Modifier
         .fillMaxSize()
@@ -679,31 +679,6 @@ fun UserProfileRow(u: User, enabled: Boolean = chatModel.chatRunning.value == tr
       color = if (enabled) MenuTextColor else MaterialTheme.colors.secondary,
       fontWeight = if (u.activeUser) FontWeight.Medium else FontWeight.Normal
     )
-  }
-}
-
-@Composable
-fun RemoteHostPickerItem(h: RemoteHostInfo, onLongClick: () -> Unit = {}, actionButtonClick: () -> Unit = {}, onClick: () -> Unit) {
-  Row(
-    Modifier
-      .fillMaxWidth()
-      .background(color = if (h.activeHost) MaterialTheme.colors.surface.mixWith(MaterialTheme.colors.onBackground, 0.95f) else Color.Unspecified)
-      .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
-      .combinedClickable(
-        onClick = onClick,
-        onLongClick = onLongClick
-      )
-      .onRightClick { onLongClick() }
-      .padding(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING),
-    horizontalArrangement = Arrangement.SpaceBetween,
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    RemoteHostRow(h)
-    if (h.sessionState is RemoteHostSessionState.Connected) {
-      HostDisconnectButton(actionButtonClick)
-    } else {
-      Box(Modifier.size(20.dp))
-    }
   }
 }
 
