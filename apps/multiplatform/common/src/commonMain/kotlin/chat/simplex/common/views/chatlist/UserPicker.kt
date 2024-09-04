@@ -243,7 +243,7 @@ private fun UsersLayout(
       }
       Text(
         currentUser.displayName,
-        style = MaterialTheme.typography.h3,
+        style = MaterialTheme.typography.body1,
         fontWeight = FontWeight.Bold,
         color = mainColor,
         maxLines = 1,
