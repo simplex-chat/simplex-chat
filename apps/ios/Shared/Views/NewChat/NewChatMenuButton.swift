@@ -199,7 +199,7 @@ func chatContactType(chat: Chat) -> ContactType {
     case .contactRequest:
         return .request
     case let .direct(contact):
-        if contact.activeConn == nil && contact.profile.contactLink != nil && contact.active {
+        if contact.activeConn == nil && contact.profile.contactLink != nil {
             return .card
         } else if contact.chatDeleted {
             return .chatDeleted
