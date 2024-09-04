@@ -10,13 +10,15 @@ struct UserPicker: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
-    @Environment(\.scenePhase) var scenePhase
-    @Environment(\.colorScheme) var colorScheme
+    @Environment(\.scenePhase) private var scenePhase: ScenePhase
+    @Environment(\.colorScheme) private var colorScheme: ColorScheme
+    @Environment(\.dismiss) private var dismiss: DismissAction
     @Binding var activeSheet: UserPickerSheet?
+    @State private var switchingProfile = false
 
     var body: some View {
         if #available(iOS 16.0, *) {
-            let v = viewBody.presentationDetents([.height(410)])
+            let v = viewBody.presentationDetents([.height(420)])
             if #available(iOS 16.4, *) {
                 v.scrollBounceBehavior(.basedOnSize)
             } else {
@@ -119,6 +121,7 @@ struct UserPicker: View {
             }
         }
         .modifier(ThemedBackground(grouped: true))
+        .disabled(switchingProfile)
     }
         
     private func userPickerRow(_ users: [UserInfo], size: CGFloat) -> some View {
@@ -193,14 +196,17 @@ struct UserPicker: View {
         }
         .frame(width: size)
         .onTapGesture {
+            switchingProfile = true
             Task {
                 do {
                     try await changeActiveUserAsync_(u.user.userId, viewPwd: nil)
                     await MainActor.run {
-                        activeSheet = nil
+                        switchingProfile = false
+                        dismiss()
                     }
                 } catch {
                     await MainActor.run {
+                        switchingProfile = false
                         AlertManager.shared.showAlertMsg(
                             title: "Error switching profile!",
                             message: "Error: \(responseError(error))"

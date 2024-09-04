@@ -10,7 +10,6 @@ struct UserProfilesView: View {
     @EnvironmentObject private var m: ChatModel
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.editMode) private var editMode
-    @Environment(\.dismiss) var dismiss: DismissAction
     @AppStorage(DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE) private var showHiddenProfilesNotice = true
     @AppStorage(DEFAULT_SHOW_MUTE_PROFILE_ALERT) private var showMuteProfileAlert = true
     @State private var showDeleteConfirmation = false
@@ -284,7 +283,7 @@ struct UserProfilesView: View {
                     await MainActor.run {
                         onboardingStageDefault.set(.step1_SimpleXInfo)
                         m.onboardingStage = .step1_SimpleXInfo
-                        dismiss()
+                        dismissAllSheets()
                     }
                 }
             } else {
@@ -307,7 +306,7 @@ struct UserProfilesView: View {
             Task {
                 do {
                     try await changeActiveUserAsync_(user.userId, viewPwd: userViewPassword(user))
-                    dismiss()
+                    dismissAllSheets()
                 } catch {
                     await MainActor.run { alert = .activateUserError(error: responseError(error)) }
                 }
