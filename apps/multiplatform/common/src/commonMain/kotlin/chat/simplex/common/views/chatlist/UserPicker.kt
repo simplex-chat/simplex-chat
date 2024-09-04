@@ -303,25 +303,7 @@ private fun UserPickerProfileSettingsLayout (
       }),
       disabled = stopped
     )
-    if (appPlatform.isAndroid) {
-      UseFromDesktopPickerItem {
-        showCustomModal { _, close ->
-          ConnectDesktopView(close)
-        }()
-      }
-    } else {
-      UserPickerOptionRow(
-        icon = painterResource(MR.images.ic_smartphone_300),
-        text = stringResource(if (remember { chat.simplex.common.platform.chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles),
-        click = {
-          userPickerState.value = AnimatedViewState.HIDING
-          ModalManager.start.showModal {
-            ConnectMobileView()
-          }
-        },
-        disabled = stopped
-      )
-    }
+
     if (chatModel.desktopNoUserNoRemote) {
       UserPickerOptionRow(
         painterResource(MR.images.ic_manage_accounts),
@@ -346,8 +328,34 @@ private fun UserPickerGlobalSettingsLayout(
   chatModel: ChatModel,
   userPickerState: MutableStateFlow<AnimatedViewState>,
   setPerformLA: (Boolean) -> Unit,
-) {
-  val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
+  showCustomModal: (@Composable ModalData.(ChatModel, () -> Unit) -> Unit) -> (() -> Unit)
+  ) {
+  val stopped = chatModel.chatRunning.value == false
+
+  if (appPlatform.isAndroid) {
+    val text = generalGetString(MR.strings.settings_section_title_use_from_desktop).lowercase().capitalize(Locale.current)
+
+    UserPickerOptionRow(
+      painterResource(MR.images.ic_desktop),
+      text,
+      showCustomModal { _, close ->
+        ConnectDesktopView(close)
+      }
+    )
+  } else {
+    UserPickerOptionRow(
+      icon = painterResource(MR.images.ic_smartphone_300),
+      text = stringResource(if (remember { chat.simplex.common.platform.chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles),
+      click = {
+        userPickerState.value = AnimatedViewState.HIDING
+        ModalManager.start.showModal {
+          ConnectMobileView()
+        }
+      },
+      disabled = stopped
+    )
+  }
+
   SectionItemView(
     click = {
       if (appPlatform.isDesktop) {
@@ -359,6 +367,7 @@ private fun UserPickerGlobalSettingsLayout(
     },
     padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)
   ) {
+    val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
     Icon(painterResource(MR.images.ic_settings), text, tint = MaterialTheme.colors.secondary)
     TextIconSpaced()
     Text(text, color = Color.Unspecified)
@@ -576,17 +585,19 @@ fun UserPicker(
               )
             }
 
+            val showCustomModal: (@Composable() (ModalData.(ChatModel, () -> Unit) -> Unit)) -> () -> Unit = { modalView ->
+              {
+                if (appPlatform.isDesktop) {
+                  userPickerState.value = AnimatedViewState.HIDING
+                }
+                ModalManager.start.showCustomModal { close -> modalView(chatModel, close) }
+              }
+            }
+
             UserPickerProfileSettingsLayout(
               chatModel = chatModel,
               userPickerState = userPickerState,
-              showCustomModal = { modalView ->
-                {
-                  if (appPlatform.isDesktop) {
-                    userPickerState.value = AnimatedViewState.HIDING
-                  }
-                  ModalManager.start.showCustomModal { close -> modalView(chatModel, close) }
-                }
-              },
+              showCustomModal = showCustomModal,
               withAuth = ::doWithAuth,
               showModalWithSearch = { modalView ->
                 if (appPlatform.isDesktop) {
@@ -606,7 +617,12 @@ fun UserPicker(
 
             Divider(Modifier.padding(DEFAULT_PADDING))
 
-            UserPickerGlobalSettingsLayout(chatModel = chatModel, userPickerState = userPickerState, setPerformLA = setPerformLA)
+            UserPickerGlobalSettingsLayout(
+              chatModel = chatModel,
+              userPickerState = userPickerState,
+              setPerformLA = setPerformLA,
+              showCustomModal = showCustomModal
+            )
 
             Spacer(Modifier.height(DEFAULT_PADDING_HALF))
           }
@@ -800,17 +816,6 @@ fun DevicePill(
       }
     }
   }
-}
-
-@Composable
-private fun UseFromDesktopPickerItem(onClick: () -> Unit) {
-  val text = generalGetString(MR.strings.settings_section_title_use_from_desktop).lowercase().capitalize(Locale.current)
-
-  UserPickerOptionRow(
-    painterResource(MR.images.ic_desktop),
-    text,
-    onClick
-  )
 }
 
 @Composable
