@@ -151,9 +151,9 @@ private fun UsersLayout(
     val mainColor = if (stopped) MaterialTheme.colors.secondary else Color.Unspecified
     val scrollState = rememberScrollState()
 
-    SectionView(contentPadding = PaddingValues(bottom = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF, top = if (appPlatform.isAndroid) DEFAULT_PADDING_HALF else 0.dp)) {
+    SectionView(contentPadding = PaddingValues(bottom = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF, top = if (appPlatform.isAndroid) DEFAULT_PADDING_HALF - 5.dp else 0.dp)) {
       Row {
-        Column(modifier = Modifier.padding(start = DEFAULT_PADDING - 4.dp)) {
+        Column(modifier = Modifier.padding(start = DEFAULT_PADDING - 5.dp, top = 4.dp)) {
           IconButton(onClick = onCurrentUserClick, enabled = !stopped) {
               ProfileImage(
                 image = currentUser.image,
@@ -163,7 +163,7 @@ private fun UsersLayout(
           }
         }
         Box(
-          contentAlignment = Alignment.CenterStart
+          contentAlignment = Alignment.TopStart
         ) {
           Row(
             horizontalArrangement = Arrangement.End,
