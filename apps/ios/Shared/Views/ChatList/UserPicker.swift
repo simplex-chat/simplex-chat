@@ -12,7 +12,6 @@ struct UserPicker: View {
     @Environment(\.scenePhase) var scenePhase
     @Environment(\.colorScheme) var colorScheme
     @Binding var activeSheet: UserPickerSheet?
-    @State private var activeUser: User? = nil
     
     var body: some View {
         if #available(iOS 16.0, *) {
@@ -164,8 +163,6 @@ struct UserPicker: View {
         }
         .frame(width: size)
         .onTapGesture {
-            activeUser = m.currentUser
-
             Task {
                 do {
                     try await changeActiveUserAsync_(u.user.userId, viewPwd: nil)
@@ -194,16 +191,6 @@ struct UserPicker: View {
                     .foregroundColor(.primary)
                     .padding(.leading, 36)
             }
-//            Label {
-//                Text(title).foregroundColor(.primary)
-//            } icon: {
-//                Image(systemName: image)
-//                    .resizable()
-//                    .scaledToFit()
-//                    .symbolRenderingMode(.monochrome)
-//                    .foregroundColor(theme.colors.secondary)
-//                    .frame(maxHeight: 20)
-//            }
         }, action: action)
     }
     
