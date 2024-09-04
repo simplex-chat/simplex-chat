@@ -513,14 +513,13 @@ fun UserPicker(
       Box(
         Modifier
           .fillMaxSize()
-
           .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = { userPickerState.value = AnimatedViewState.HIDING }),
         contentAlignment = if (appPlatform.isAndroid) Alignment.BottomStart else Alignment.TopStart
       ) {
         Column(
           Modifier
             .height(IntrinsicSize.Min)
-            .then(if (appPlatform.isDesktop) Modifier.widthIn(max = 450.dp) else Modifier)
+            .then(if (appPlatform.isDesktop) Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier) else Modifier)
             .shadow(8.dp, clip = true)
             .fillMaxWidth()
             .background(MaterialTheme.colors.surface)
