@@ -222,7 +222,7 @@ private fun UsersLayout(
             ) {
               Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.size(31.dp * fontSizeSqrtMultiplier).background(MaterialTheme.colors.secondaryVariant, CircleShape)
+                modifier = Modifier.size(31.dp * fontSizeSqrtMultiplier).background(MaterialTheme.colors.secondary, CircleShape)
               ) {
                 Icon(
                   painterResource(MR.images.ic_more_horiz),
@@ -303,7 +303,6 @@ private fun UserPickerUserSectionLayout (
         showCustomModal { _, close ->
           ConnectDesktopView(close)
         }()
-        userPickerState.value = AnimatedViewState.GONE
       }
     } else {
       UserPickerOptionRow(
@@ -553,7 +552,6 @@ fun UserPicker(
             val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
             SectionItemView(
               click = {
-                userPickerState.value = AnimatedViewState.GONE
                 ModalManager.start.showModalCloseable { close ->
                   SettingsView(chatModel, setPerformLA, close)
                 }
