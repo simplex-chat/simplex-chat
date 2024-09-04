@@ -36,7 +36,7 @@ struct UserPicker: View {
                     }
                 } else {
                     userPickerRow(otherUsers)
-                        .listRowInsets(EdgeInsets(top: 0, leading: 12, bottom: 0, trailing: 12))
+                        .listRowInsets(EdgeInsets(top: 1, leading: 12, bottom: 1, trailing: 12))
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                 }
@@ -125,20 +125,32 @@ struct UserPicker: View {
                 .padding(.leading, 2)
                 .padding(.trailing, 24)
             }
-            ZStack(alignment: .topTrailing) {
+            ZStack {
                 if #available(iOS 16.0, *) {
                     s.scrollIndicators(.hidden)
                 } else {
                     s
                 }
-                LinearGradient(
-                    colors: [.clear, theme.colors.background.asGroupedBackground(theme.base.mode)],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-                .frame(width: 24, height: 35)
+                HStack(spacing: 0) {
+                    LinearGradient(
+                        colors: [.black, .clear],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    .frame(width: 24)
+                    Color.clear
+                    LinearGradient(
+                        colors: [.clear, .black],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    .frame(width: 24)
+                }
+                .frame(height: 35)
+                .blendMode(.destinationOut)
                 .allowsHitTesting(false)
             }
+            .compositingGroup()
             .padding(.top, -3) // to fit unread badge
             Spacer()
             Image(systemName: "chevron.right.circle")
