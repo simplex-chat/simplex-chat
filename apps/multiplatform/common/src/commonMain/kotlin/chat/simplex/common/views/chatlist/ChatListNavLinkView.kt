@@ -186,7 +186,7 @@ fun ErrorChatListItem() {
 
 suspend fun directChatAction(rhId: Long?, contact: Contact, chatModel: ChatModel) {
   when {
-    contact.activeConn == null && contact.profile.contactLink != null && contact.contactStatus == ContactStatus.Active -> askCurrentOrIncognitoProfileConnectContactViaAddress(chatModel, rhId, contact, close = null, openChat = true)
+    contact.activeConn == null && contact.profile.contactLink != null && contact.active -> askCurrentOrIncognitoProfileConnectContactViaAddress(chatModel, rhId, contact, close = null, openChat = true)
     else -> openChat(rhId, ChatInfo.Direct(contact), chatModel)
   }
 }
