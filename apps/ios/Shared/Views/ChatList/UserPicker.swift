@@ -12,8 +12,7 @@ struct UserPicker: View {
     @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
     @Environment(\.scenePhase) private var scenePhase: ScenePhase
     @Environment(\.colorScheme) private var colorScheme: ColorScheme
-    @Environment(\.dismiss) private var dismiss: DismissAction
-    @Binding var activeSheet: UserPickerSheet?
+    let setActiveSheet: (UserPickerSheet?) -> Void
     @State private var switchingProfile = false
 
     var body: some View {
@@ -46,15 +45,15 @@ struct UserPicker: View {
                             }
                         }
                     }) {
-                        activeSheet = .currentProfile
+                        setActiveSheet(.currentProfile)
                     }
 
                     openSheetOnTap(title: m.userAddress == nil ? "Create public address" : "Your public address", icon: "qrcode") {
-                        activeSheet = .address
+                        setActiveSheet(.address)
                     }
                     
                     openSheetOnTap(title: "Chat preferences", icon: "switch.2") {
-                        activeSheet = .chatPreferences
+                        setActiveSheet(.chatPreferences)
                     }
                 }
             }
@@ -62,7 +61,7 @@ struct UserPicker: View {
             Section {
                 if otherUsers.isEmpty {
                     openSheetOnTap(title: "Your chat profiles", icon: "person.crop.rectangle.stack") {
-                        activeSheet = .chatProfiles
+                        setActiveSheet(.chatProfiles)
                     }
                 } else {
                     let v = userPickerRow(otherUsers, size: 44)
@@ -75,12 +74,12 @@ struct UserPicker: View {
                 }
 
                 openSheetOnTap(title: "Use from desktop", icon: "desktopcomputer") {
-                    activeSheet = .useFromDesktop
+                    setActiveSheet(.useFromDesktop)
                 }
 
                 HStack {
                     openSheetOnTap(title: "Settings", icon: "gearshape") {
-                        activeSheet = .settings
+                        setActiveSheet(.settings)
                     }
                     Label {} icon: {
                         Image(systemName: colorScheme == .light ? "sun.max" : "moon.fill")
@@ -181,7 +180,7 @@ struct UserPicker: View {
                 .foregroundColor(theme.colors.secondary)
                 .padding(.trailing, 4)
                 .onTapGesture {
-                    activeSheet = .chatProfiles
+                    setActiveSheet(.chatProfiles)
                 }
         }
     }
@@ -202,7 +201,7 @@ struct UserPicker: View {
                     try await changeActiveUserAsync_(u.user.userId, viewPwd: nil)
                     await MainActor.run {
                         switchingProfile = false
-                        dismiss()
+                        setActiveSheet(nil)
                     }
                 } catch {
                     await MainActor.run {
@@ -250,12 +249,10 @@ struct UserPicker: View {
 
 struct UserPicker_Previews: PreviewProvider {
     static var previews: some View {
-        @State var activeSheet: UserPickerSheet?
-
         let m = ChatModel()
         m.users = [UserInfo.sampleData, UserInfo.sampleData]
         return UserPicker(
-            activeSheet: $activeSheet
+            setActiveSheet: { _ in }
         )
         .environmentObject(m)
     }
