@@ -20,7 +20,7 @@ struct ProfileImage: View {
     @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var radius = defaultProfileImageCorner
 
     var body: some View {
-        if let uiImage = UIImage(base64Encoded: imageStr) {
+        if let uiImage = imageFromBase64(imageStr) {
             clipProfileImage(Image(uiImage: uiImage), size: size, radius: radius, blurred: blurred)
         } else {
             let c = color.asAnotherColorFromSecondaryVariant(theme)

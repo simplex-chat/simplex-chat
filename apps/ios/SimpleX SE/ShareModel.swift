@@ -104,7 +104,7 @@ class ShareModel: ObservableObject {
                         // Decode base64 images on background thread
                         let profileImages = chats.reduce(into: Dictionary<ChatInfo.ID, UIImage>()) { dict, chatData in
                             if let profileImage = chatData.chatInfo.image,
-                               let uiImage = UIImage(base64Encoded: profileImage) {
+                               let uiImage = imageFromBase64(profileImage) {
                                 dict[chatData.id] = uiImage
                             }
                         }
