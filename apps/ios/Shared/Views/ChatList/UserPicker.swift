@@ -145,7 +145,7 @@ struct UserPicker: View {
             Image(systemName: "chevron.right.circle")
                 .resizable()
                 .scaledToFit()
-                .foregroundColor(theme.colors.secondary.opacity(0.67))
+                .foregroundColor(theme.colors.secondary.opacity(0.63))
                 .frame(width: 31, height: 31)
                 .padding(1)
                 .onTapGesture {
