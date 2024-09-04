@@ -137,7 +137,7 @@ struct UserPicker: View {
                         startPoint: .leading,
                         endPoint: .trailing
                     )
-                    .frame(width: 24)
+                    .frame(width: 2)
                     Color.clear
                     LinearGradient(
                         colors: [.clear, .black],
