@@ -79,7 +79,7 @@ func ciMetaText(
             : transparent ? .clear : statusColor
             r = r + Text(image).foreground(metaColor) + Text(" ")
         } else if !meta.disappearing {
-            r = r + statusIconText("circlebadge.fill", .clear) + Text(" ")
+            r = r + Text(" ").kerning(13)/* kerning to match checkmark.wide width */ + Text(" ")
         }
     }
     if let enc = encrypted {
