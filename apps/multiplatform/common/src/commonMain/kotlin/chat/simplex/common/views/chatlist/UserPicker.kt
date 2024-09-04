@@ -17,7 +17,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
 import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.ui.text.capitalize
@@ -143,12 +144,12 @@ private fun UsersLayout(
     derivedStateOf {
       chatModel.users
         .filter { u -> !u.user.hidden && !u.user.activeUser }
-        .take(3)
     }
   }
 
   if (currentUser != null) {
     val mainColor = if (stopped) MaterialTheme.colors.secondary else Color.Unspecified
+    val scrollState = rememberScrollState()
 
     SectionView(contentPadding = PaddingValues(bottom = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF, top = if (appPlatform.isAndroid) DEFAULT_PADDING_HALF else 0.dp)) {
       Row {
@@ -170,35 +171,74 @@ private fun UsersLayout(
             modifier = Modifier.padding(top = 12.dp, start = 4.dp)
           )
         }
-        Spacer(Modifier.weight(1f))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-          users.forEach { u ->
-            IconButton(
-              onClick = { onUserClicked(u.user) },
-              enabled = !stopped
-            ) {
-              Box {
-                ProfileImage(size = 37.dp * fontSizeSqrtMultiplier, image = u.user.image)
+        Box(
+          contentAlignment = Alignment.CenterStart
+        ) {
+          Row(
+            horizontalArrangement = Arrangement.End,
+            modifier = Modifier.padding(end = DEFAULT_PADDING_HALF).fillMaxWidth().horizontalScroll(scrollState)
+          ) {
+            Spacer(Modifier.width((93.dp + 8.dp) * fontSizeSqrtMultiplier))
+            users.forEach { u ->
+              IconButton(
+                onClick = { onUserClicked(u.user) },
+                enabled = !stopped
+              ) {
+                Box {
+                  ProfileImage(size = 37.dp * fontSizeSqrtMultiplier, image = u.user.image)
 
-                if (u.unreadCount > 0) {
-                  unreadBadge()
+                  if (u.unreadCount > 0) {
+                    unreadBadge()
+                  }
                 }
               }
+              Spacer(Modifier.width(8.dp))
             }
+            Spacer(Modifier.width(37.dp * fontSizeSqrtMultiplier))
           }
-          IconButton(
-            onClick = onShowAllProfilesClicked,
-            enabled = !stopped,
-          ) {
-            Box(
-              contentAlignment = Alignment.Center,
-              modifier = Modifier.size(31.dp * fontSizeSqrtMultiplier).background(MaterialTheme.colors.secondaryVariant, CircleShape)
-            ) {
-              Icon(
-                painterResource(MR.images.ic_more_horiz),
-                stringResource(MR.strings.your_chat_profiles),
-                tint = MaterialTheme.colors.surface,
+          Box(
+            modifier = Modifier
+              .size(width = 37.dp, height = 37.dp)
+              .background(
+                brush = Brush.horizontalGradient(
+                  colors = listOf(
+                    MaterialTheme.colors.surface,
+                    Color.Transparent
+                  )
+                )
               )
+          )
+          Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+            Box(
+              modifier = Modifier.background(MaterialTheme.colors.surface).size(width = 30.dp, height = 37.dp)
+            )
+            Box(
+              modifier = Modifier
+                .padding(end = 27.dp)
+                .size(37.dp)
+                .background(
+                  brush = Brush.horizontalGradient(
+                    colors = listOf(
+                      Color.Transparent,
+                      MaterialTheme.colors.surface
+                    )
+                  )
+                )
+            )
+            IconButton(
+              onClick = onShowAllProfilesClicked,
+              enabled = !stopped,
+            ) {
+              Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.size(31.dp * fontSizeSqrtMultiplier).background(MaterialTheme.colors.secondaryVariant, CircleShape)
+              ) {
+                Icon(
+                  painterResource(MR.images.ic_more_horiz),
+                  stringResource(MR.strings.your_chat_profiles),
+                  tint = MaterialTheme.colors.surface,
+                )
+              }
             }
           }
         }
