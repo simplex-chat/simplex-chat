@@ -420,10 +420,8 @@ struct CIVideoView: View {
     private func progressCircle(_ progress: Int64, _ total: Int64) -> some View {
         Circle()
         .trim(from: 0, to: Double(progress) / Double(total))
-        .stroke(
-            Color(uiColor: .white),
-            style: StrokeStyle(lineWidth: 2)
-        )
+        .stroke(style: StrokeStyle(lineWidth: 2))
+        .invertedForegroundStyle()
         .rotationEffect(.degrees(-90))
         .frame(width: 16, height: 16)
         .padding([.trailing, .top], smallView ? 0 : 11)
