@@ -34,10 +34,12 @@ struct UserPicker: View {
                                     .resizable()
                                     .scaledToFit()
                                     .frame(width: 32, height: 32)
+                                    .padding(.top, 3) // Unread badge padding
                                     .foregroundColor(Color(uiColor: .quaternaryLabel))
                             }
                         }
                     }
+
                     Text(currentUser.displayName)
                         .fontWeight(.bold)
                         .font(.headline)
@@ -120,14 +122,23 @@ struct UserPicker: View {
     private func usersRow(users: [UserInfo]) -> some View {
         let gradientInset: Double = 16
         let leadingPadding: Double = 32
+        let userWidth: Double = 35
+        let userSpacing: Double = 20
+
+        let maxWidth = 
+            leadingPadding +
+            userWidth * Double(users.count) +
+            userSpacing * Double(users.count - 1) +
+            gradientInset * 2
+
         let scrollView = ScrollView(.horizontal) {
-            HStack(spacing: 0) {
+            HStack(spacing: userSpacing) {
                 ForEach(users) { userView($0) }
             }
             .padding(.leading, leadingPadding)
             .padding(.horizontal, gradientInset)
-
         }
+
         ZStack {
             if #available(iOS 16.4, *) {
                 scrollView
@@ -151,13 +162,13 @@ struct UserPicker: View {
             }.blendMode(.destinationOut)
         }
         .compositingGroup()
-        .frame(maxWidth: gradientInset + leadingPadding + Double(users.count) * 40 + gradientInset)
+        .frame(maxWidth: maxWidth)
     }
 
     private func userView(_ u: UserInfo) -> some View {
         ZStack(alignment: .topTrailing) {
             ProfileImage(imageStr: u.user.image, size: 32, color: Color(uiColor: .quaternaryLabel))
-                .padding(4)
+                .padding([.top, .trailing], 3)
             if (u.unreadCount > 0) {
                 unreadBadge()
             }
