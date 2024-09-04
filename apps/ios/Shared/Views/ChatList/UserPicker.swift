@@ -9,102 +9,77 @@ import SimpleXChat
 struct UserPicker: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
-    @Environment(\.scenePhase) var scenePhase
-    @Environment(\.colorScheme) var colorScheme
+    @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
+    @Environment(\.scenePhase) private var scenePhase: ScenePhase
+    @Environment(\.colorScheme) private var colorScheme: ColorScheme
+    @Environment(\.dismiss) private var dismiss: DismissAction
     @Binding var activeSheet: UserPickerSheet?
-    @State private var activeUser: User? = nil
-    
-    var body: some View {
-        let v = List {
-            VStack(alignment: .leading, spacing: 6) {
-                if let currentUser = activeUser ?? m.currentUser {
-                    HStack(alignment: .top) {
-                        ProfileImage(imageStr: currentUser.image, size: 52)
-                            .onTapGesture {
-                                activeSheet = .currentProfile
-                            }
-                        Spacer()
-                        let usersToPreview = m.users.filter({ u in !u.user.hidden && u.user.userId != currentUser.userId })
-                        ZStack(alignment: .leading) {
-                            ZStack(alignment: .trailing) {
-                                let ps = HStack(spacing: 20) {
-                                    Color.clear.frame(width: 48, height: 32)
-                                    ForEach(usersToPreview) { u in
-                                        userView(u)
-                                    }
-                                    Color.clear.frame(width: 32, height: 32)
-                                }
-                                
-                                if usersToPreview.count > 3 {
-                                    let s = ScrollView(.horizontal) { ps }.frame(width: 284)
-                                    if #available(iOS 16.0, *) {
-                                        s.scrollIndicators(.hidden)
-                                    } else {
-                                        s
-                                    }
-                                } else {
-                                    ps
-                                }
-                                HStack(spacing: 0) {
-                                    LinearGradient(
-                                        colors: [.clear, theme.colors.background.asGroupedBackground(theme.base.mode)],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                    .frame(width: 32, height: 35)
-                                    Button {
-                                        activeSheet = .chatProfiles
-                                    } label: {
-                                        Image(systemName: "ellipsis.circle.fill")
-                                            .resizable()
-                                            .scaledToFit()
-                                            .frame(width: 31, height: 31)
-                                            .padding(.top, 4)
-                                            .foregroundColor(Color(uiColor: .quaternaryLabel))
-                                            .modifier(ThemedBackground(grouped: true))
-                                    }
-                                }
-                            }
-                            .padding(.top, 10)
-                            
-                            LinearGradient(
-                                colors: [.clear, theme.colors.background.asGroupedBackground(theme.base.mode)],
-                                startPoint: .trailing,
-                                endPoint: .leading
-                            )
-                            .frame(width: 32, height: 35)
-                        }
-                    }
-                    
-                    Text(currentUser.displayName)
-                        .fontWeight(.bold)
-                        .font(.headline)
-                }
-            }
-            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
-            .padding(.horizontal, 12)
+    @State private var switchingProfile = false
 
-            Section {
-                if (m.currentUser != nil) {
-                    openSheetOnTap(title: m.userAddress == nil ? "Create public address" : "Your public address", image: "qrcode") {
+    var body: some View {
+        if #available(iOS 16.0, *) {
+            let v = viewBody.presentationDetents([.height(420)])
+            if #available(iOS 16.4, *) {
+                v.scrollBounceBehavior(.basedOnSize)
+            } else {
+                v
+            }
+        } else {
+            viewBody
+        }
+    }
+    
+    private var viewBody: some View {
+        let otherUsers = m.users.filter { u in !u.user.hidden && u.user.userId != m.currentUser?.userId }
+        return List {
+            Section(header: Text("You").foregroundColor(theme.colors.secondary)) {
+                if let user = m.currentUser {
+                    openSheetOnTap(label: {
+                        ZStack {
+                            let v = ProfilePreview(profileOf: user)
+                                .foregroundColor(.primary)
+                                .padding(.leading, -8)
+                            if #available(iOS 16.0, *) {
+                                v
+                            } else {
+                                v.padding(.vertical, 4)
+                            }
+                        }
+                    }) {
+                        activeSheet = .currentProfile
+                    }
+
+                    openSheetOnTap(title: m.userAddress == nil ? "Create public address" : "Your public address", icon: "qrcode") {
                         activeSheet = .address
                     }
                     
-                    openSheetOnTap(title: "Chat preferences", image: "switch.2") {
+                    openSheetOnTap(title: "Chat preferences", icon: "switch.2") {
                         activeSheet = .chatPreferences
-                    }
-                    
-                    openSheetOnTap(title: "Use from desktop", image: "desktopcomputer") {
-                        activeSheet = .useFromDesktop
                     }
                 }
             }
-            
+
             Section {
+                if otherUsers.isEmpty {
+                    openSheetOnTap(title: "Your chat profiles", icon: "person.crop.rectangle.stack") {
+                        activeSheet = .chatProfiles
+                    }
+                } else {
+                    let v = userPickerRow(otherUsers, size: 44)
+                        .padding(.leading, -8)
+                    if #available(iOS 16.0, *) {
+                        v
+                    } else {
+                        v.padding(.vertical, 4)
+                    }
+                }
+
+                openSheetOnTap(title: "Use from desktop", icon: "desktopcomputer") {
+                    activeSheet = .useFromDesktop
+                }
+
                 HStack {
-                    openSheetOnTap(title: "Settings", image: "gearshape") {
+                    openSheetOnTap(title: "Settings", icon: "gearshape") {
                         activeSheet = .settings
                     }
                     Label {} icon: {
@@ -146,33 +121,92 @@ struct UserPicker: View {
             }
         }
         .modifier(ThemedBackground(grouped: true))
-
-        if #available(iOS 16.0, *) {
-            v.presentationDetents([.height(400)])
-        } else {
-            v
+        .disabled(switchingProfile)
+    }
+        
+    private func userPickerRow(_ users: [UserInfo], size: CGFloat) -> some View {
+        HStack(spacing: 6) {
+            let s = ScrollView(.horizontal) {
+                HStack(spacing: 27) {
+//                    Image(systemName: "person.crop.rectangle.stack.fill")
+//                        .resizable()
+//                        .scaledToFit()
+//                        .frame(height: size)
+//                        .foregroundColor(Color(uiColor: .tertiarySystemGroupedBackground).asAnotherColorFromSecondaryVariant(theme))
+//                        .padding([.top, .trailing], 3)
+//                    Image(systemName: "theatermasks.fill")
+//                        .resizable()
+//                        .scaledToFit()
+//                        .frame(width: size, height: size)
+//                        .foregroundColor(.indigo)
+//                        .padding([.top, .trailing], 3)
+                    ForEach(users) { u in
+                        if !u.user.hidden && u.user.userId != m.currentUser?.userId {
+                            userView(u, size: size)
+                        }
+                    }
+                }
+                .padding(.leading, 2)
+                .padding(.trailing, 22)
+            }
+            ZStack {
+                if #available(iOS 16.0, *) {
+                    s.scrollIndicators(.hidden)
+                } else {
+                    s
+                }
+                HStack(spacing: 0) {
+                    LinearGradient(
+                        colors: [.black, .clear],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    .frame(width: 2)
+                    Color.clear
+                    LinearGradient(
+                        colors: [.clear, .black],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    .frame(width: size)
+                }
+                .frame(height: size + 3)
+                .blendMode(.destinationOut)
+                .allowsHitTesting(false)
+            }
+            .compositingGroup()
+            .padding(.top, -3) // to fit unread badge
+            Spacer()
+            Image(systemName: "chevron.right")
+                .foregroundColor(theme.colors.secondary)
+                .padding(.trailing, 4)
+                .onTapGesture {
+                    activeSheet = .chatProfiles
+                }
         }
     }
 
-    private func userView(_ u: UserInfo) -> some View {
+    private func userView(_ u: UserInfo, size: CGFloat) -> some View {
         ZStack(alignment: .topTrailing) {
-            ProfileImage(imageStr: u.user.image, size: 32, color: Color(uiColor: .quaternaryLabel))
+            ProfileImage(imageStr: u.user.image, size: size, color: Color(uiColor: .tertiarySystemGroupedBackground))
                 .padding([.top, .trailing], 3)
             if (u.unreadCount > 0) {
-                unreadBadge()
+                unreadBadge(u)
             }
         }
+        .frame(width: size)
         .onTapGesture {
-            activeUser = m.currentUser
-
+            switchingProfile = true
             Task {
                 do {
                     try await changeActiveUserAsync_(u.user.userId, viewPwd: nil)
                     await MainActor.run {
-                        activeSheet = nil
+                        switchingProfile = false
+                        dismiss()
                     }
                 } catch {
                     await MainActor.run {
+                        switchingProfile = false
                         AlertManager.shared.showAlertMsg(
                             title: "Error switching profile!",
                             message: "Error: \(responseError(error))"
@@ -183,28 +217,34 @@ struct UserPicker: View {
         }
     }
     
-    private func openSheetOnTap(title: LocalizedStringKey, image: String, setActive: @escaping () -> Void) -> some View {
-        Button(action: setActive) {
-            Label {
-                Text(title).foregroundColor(.primary)
-            } icon: {
-                Image(systemName: image)
-                    .resizable()
+    private func openSheetOnTap(title: LocalizedStringKey, icon: String, action: @escaping () -> Void) -> some View {
+        openSheetOnTap(label: {
+            ZStack(alignment: .leading) {
+                Image(systemName: icon).frame(maxWidth: 24, maxHeight: 24, alignment: .center)
                     .symbolRenderingMode(.monochrome)
                     .foregroundColor(theme.colors.secondary)
-                    .frame(maxWidth: 20, maxHeight: 20)
+                Text(title)
+                    .foregroundColor(.primary)
+                    .padding(.leading, 36)
             }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.leading, 16).padding(.vertical, 8).padding(.trailing, 32)
-        .contentShape(Rectangle())
-        .padding(.leading, -19).padding(.vertical, -8).padding(.trailing, -32)
+        }, action: action)
     }
     
-    private func unreadBadge() -> some View {
-        Circle()
-            .frame(width: 12, height: 12)
-            .foregroundColor(theme.colors.primary)
+    private func openSheetOnTap<V: View>(label: () -> V, action: @escaping () -> Void) -> some View {
+        Button(action: action, label: label)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+    }
+    
+    private func unreadBadge(_ u: UserInfo) -> some View {
+        let size = dynamicSize(userFont).chatInfoSize
+        return unreadCountText(u.unreadCount)
+            .font(userFont <= .xxxLarge ? .caption  : .caption2)
+            .foregroundColor(.white)
+            .padding(.horizontal, dynamicSize(userFont).unreadPadding)
+            .frame(minWidth: size, minHeight: size)
+            .background(u.user.showNtfs ? theme.colors.primary : theme.colors.secondary)
+            .cornerRadius(dynamicSize(userFont).unreadCorner)
     }
 }
 

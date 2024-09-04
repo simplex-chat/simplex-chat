@@ -504,16 +504,17 @@ struct ProfilePreview: View {
         HStack {
             ProfileImage(imageStr: profileOf.image, size: 44, color: color)
                 .padding(.trailing, 6)
-                .padding(.vertical, 6)
-            VStack(alignment: .leading) {
-                Text(profileOf.displayName)
-                    .fontWeight(.bold)
-                    .font(.title2)
-                if profileOf.fullName != "" && profileOf.fullName != profileOf.displayName {
-                    Text(profileOf.fullName)
-                }
-            }
+            profileName().lineLimit(1)
         }
+    }
+    
+    private func profileName() -> Text {
+        var t = Text(profileOf.displayName).fontWeight(.semibold).font(.title2)
+        if profileOf.fullName != "" && profileOf.fullName != profileOf.displayName {
+            t = t + Text(" (" + profileOf.fullName + ")")
+//                        .font(.callout)
+            }
+        return t
     }
 }
 
