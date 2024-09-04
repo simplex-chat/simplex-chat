@@ -190,7 +190,7 @@ struct FramedItemView: View {
         let v = ZStack(alignment: .topTrailing) {
             switch (qi.content) {
             case let .image(_, image):
-                if let uiImage = UIImage(base64Encoded: image) {
+                if let uiImage = imageFromBase64(image) {
                     ciQuotedMsgView(qi)
                         .padding(.trailing, 70).frame(minWidth: msgWidth, alignment: .leading)
                     Image(uiImage: uiImage)
@@ -202,7 +202,7 @@ struct FramedItemView: View {
                     ciQuotedMsgView(qi)
                 }
             case let .video(_, image, _):
-                if let uiImage = UIImage(base64Encoded: image) {
+                if let uiImage = imageFromBase64(image) {
                     ciQuotedMsgView(qi)
                     .padding(.trailing, 70).frame(minWidth: msgWidth, alignment: .leading)
                     Image(uiImage: uiImage)

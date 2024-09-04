@@ -972,7 +972,7 @@
     <string name="v4_6_hidden_chat_profiles">Profils de chat cachés</string>
     <string name="v4_6_group_moderation_descr">Désormais, les administrateurs peuvent :
 \n- supprimer les messages des membres.
-\n- désactiver des membres (rôle \"observateur\")</string>
+\n- désactiver des membres (rôle "observateur")</string>
     <string name="save_welcome_message_question">Enregistrer le message d\'accueil ?</string>
     <string name="v4_6_group_welcome_message_descr">Choisissez un message à l\'attention des nouveaux membres !</string>
     <string name="hide_profile">Masquer le profil</string>

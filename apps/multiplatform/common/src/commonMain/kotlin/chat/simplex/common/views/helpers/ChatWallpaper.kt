@@ -356,7 +356,8 @@ sealed class WallpaperType {
 private fun drawToBitmap(image: ImageBitmap, imageScale: Float, tint: Color, size: Size, density: Float, layoutDirection: LayoutDirection): ImageBitmap {
   val quality = if (appPlatform.isAndroid) FilterQuality.High else FilterQuality.Low
   val drawScope = CanvasDrawScope()
-  val bitmap = ImageBitmap(size.width.toInt(), size.height.toInt())
+  // Don't allow to make zero size because it crashes the app when reducing a size of a window on desktop
+  val bitmap = ImageBitmap(size.width.toInt().coerceAtLeast(1), size.height.toInt().coerceAtLeast(1))
   val canvas = Canvas(bitmap)
   drawScope.draw(
     density = Density(density),

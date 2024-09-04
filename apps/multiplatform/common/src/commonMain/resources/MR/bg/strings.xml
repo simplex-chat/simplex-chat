@@ -482,7 +482,7 @@
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Изпращането на потвърждениe за доставка ще бъде активирано за всички контакти във всички видими чат профили.</string>
     <string name="send_receipts">Изпращане на потвърждениe за доставка</string>
     <string name="you_can_enable_delivery_receipts_later">Можете да активирате по-късно през Настройки</string>
-    <string name="you_can_enable_delivery_receipts_later_alert">Можете да ги активирате по-късно през настройките за \"Поверителност и сигурност\" на приложението.</string>
+    <string name="you_can_enable_delivery_receipts_later_alert">Можете да ги активирате по-късно през настройките за "Поверителност и сигурност" на приложението.</string>
     <string name="database_downgrade_warning">Предупреждение: Може да загубите някои данни!</string>
     <string name="enter_correct_passphrase">Въведи правилна парола.</string>
     <string name="feature_enabled_for_you">активирано за вас</string>
@@ -517,7 +517,7 @@
     <string name="snd_conn_event_ratchet_sync_agreed">криптирането е съгласувано за %s</string>
     <string name="button_edit_group_profile">Редактирай групов профил</string>
     <string name="share_text_disappears_at">Изчезва в: %s</string>
-    <string name="member_role_will_be_changed_with_invitation">Ролята ще бъде променена на \"%s\". Членът ще получи нова покана.</string>
+    <string name="member_role_will_be_changed_with_invitation">Ролята ще бъде променена на "%s". Членът ще получи нова покана.</string>
     <string name="conn_level_desc_direct">директна</string>
     <string name="renegotiate_encryption">Предоговори криптирането</string>
     <string name="group_display_name_field">Въведи име на групата:</string>
@@ -918,7 +918,7 @@
     <string name="member_will_be_removed_from_group_cannot_be_undone">Членът ще бъде премахнат от групата - това не може да бъде отменено!</string>
     <string name="item_info_no_text">няма текст</string>
     <string name="button_remove_member">Острани член</string>
-    <string name="member_role_will_be_changed_with_notification">Ролята ще бъде променена на \"%s\". Всички в групата ще бъдат уведомени.</string>
+    <string name="member_role_will_be_changed_with_notification">Ролята ще бъде променена на "%s". Всички в групата ще бъдат уведомени.</string>
     <string name="users_delete_data_only">Само данни за локален профил</string>
     <string name="users_delete_with_connections">Профилни и сървърни връзки</string>
     <string name="user_mute">Без звук</string>
@@ -936,7 +936,7 @@
     <string name="v4_6_hidden_chat_profiles_descr">Защитете чат профилите с парола!</string>
     <string name="v4_6_group_moderation_descr">Сега администраторите могат:
 \n- да изтриват съобщения на членове.
-\n- да деактивират членове (роля \"наблюдател\")</string>
+\n- да деактивират членове (роля "наблюдател")</string>
     <string name="v4_6_reduced_battery_usage_descr">Очаквайте скоро още подобрения!</string>
     <string name="v5_0_polish_interface">Полски интерфейс</string>
     <string name="v5_1_message_reactions">Реакции на съобщения</string>
@@ -1155,7 +1155,7 @@
     <string name="this_link_is_not_a_valid_connection_link">Този линк не е валиден линк за връзка!</string>
     <string name="your_chat_profiles">Вашите чат профили</string>
     <string name="smp_servers_per_user">Сървърите за нови връзки на текущия ви чат профил</string>
-    <string name="to_reveal_profile_enter_password">За да покажете скрития профил, въведете пълната парола в полето за търсене на страницата \"Вашите чат профили\".</string>
+    <string name="to_reveal_profile_enter_password">За да покажете скрития профил, въведете пълната парола в полето за търсене на страницата "Вашите чат профили".</string>
     <string name="profile_is_only_shared_with_your_contacts">Профилът се споделя само с вашите контакти.</string>
     <string name="delete_files_and_media_desc">Това действие не може да бъде отменено - всички получени и изпратени файлове и медия ще бъдат изтрити. Снимките с ниска разделителна способност ще бъдат запазени.</string>
     <string name="tap_to_activate_profile">Докосни за активиране на профил.</string>
@@ -1646,7 +1646,7 @@
     <string name="v5_6_quantum_resistant_encryption">Квантово устойчиво криптиране</string>
     <string name="v5_6_app_data_migration">Миграция на данните от приложението</string>
     <string name="v5_6_app_data_migration_descr">Мигрирайте към друго устройство чрез QR код.</string>
-    <string name="v5_6_picture_in_picture_calls">Обаждания \"картина в картина\"</string>
+    <string name="v5_6_picture_in_picture_calls">Обаждания "картина в картина"</string>
     <string name="v5_6_safer_groups">По-безопасни групи</string>
     <string name="v5_6_safer_groups_descr">Администраторите могат да блокират член за всички.</string>
     <string name="migrate_to_device_downloading_details">Подробности за линка се изтеглят</string>
