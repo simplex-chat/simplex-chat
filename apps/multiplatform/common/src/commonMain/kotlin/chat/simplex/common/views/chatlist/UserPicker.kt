@@ -381,6 +381,24 @@ fun UserPicker(
   }
 
   LaunchedEffect(Unit) {
+    launch {
+      snapshotFlow { ModalManager.start.modalCount.value }
+        .collect { modalCount ->
+          val colors = CurrentColors.value.colors
+
+          if (modalCount == 0 && newChat.isVisible()) {
+            platform.androidSetDrawerStatusAndNavBarColor(
+              isLight = colors.isLight,
+              drawerShadingColor = animatedColor,
+              toolbarOnTop = !appPrefs.oneHandUI.get(),
+              navBarColor = colors.surface
+            )
+          }
+        }
+    }
+  }
+
+  LaunchedEffect(Unit) {
     snapshotFlow { currentTheme }
       .distinctUntilChanged()
       .collect {
