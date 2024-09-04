@@ -134,15 +134,143 @@ fun ShareListUserPicker(
 }
 
 @Composable
-private fun UsersSectionLayout(
+private fun ActiveUserSection(
   chatModel: ChatModel,
-  onCurrentUserClick: () -> Unit,
-  onUserClicked: (user: User) -> Unit,
-  onShowAllProfilesClicked: () -> Unit
+  userPickerState: MutableStateFlow<AnimatedViewState>,
+  showCustomModal: (@Composable ModalData.(ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
 ) {
   val currentUser = remember { chatModel.currentUser }.value
   val stopped = chatModel.chatRunning.value == false
 
+  if (currentUser != null) {
+    Spacer(Modifier.height(if (appPlatform.isAndroid) DEFAULT_PADDING_HALF else 0.dp))
+    SectionView(
+      title = stringResource(MR.strings.settings_section_title_you),
+      ) {
+      SectionItemView(showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }, 80.dp, padding = PaddingValues(start = 16.dp, end = DEFAULT_PADDING), disabled = stopped) {
+        ProfilePreview(currentUser.profile, stopped = stopped)
+      }
+      UserPickerOptionRow(
+        painterResource(MR.images.ic_qr_code),
+        if (chatModel.userAddress.value != null) generalGetString(MR.strings.your_public_contact_address) else generalGetString(MR.strings.create_public_contact_address),
+        showCustomModal { it, close -> UserAddressView(it, shareViaProfile = it.currentUser.value!!.addressShared, close = close) }, disabled = stopped
+      )
+      UserPickerOptionRow(
+        painterResource(MR.images.ic_toggle_on),
+        stringResource(MR.strings.chat_preferences),
+        click = if (stopped) null else ({
+          showCustomModal { m, close ->
+            PreferencesView(m, m.currentUser.value ?: return@showCustomModal, close)
+          }()
+        }),
+        disabled = stopped
+      )
+    }
+  } else {
+    SectionView {
+      if (chatModel.desktopNoUserNoRemote) {
+        UserPickerOptionRow(
+          painterResource(MR.images.ic_manage_accounts),
+          generalGetString(MR.strings.create_chat_profile),
+          {
+            doWithAuth(generalGetString(MR.strings.auth_open_chat_profiles), generalGetString(MR.strings.auth_log_in_using_credential)) {
+              ModalManager.center.showModalCloseable { close ->
+                LaunchedEffect(Unit) {
+                  userPickerState.value = AnimatedViewState.HIDING
+                }
+                CreateProfile(chat.simplex.common.platform.chatModel, close)
+              }
+            }
+          }
+        )
+      }
+    }
+  }
+}
+
+@Composable
+private fun InactiveUserBadge(userInfo: UserInfo, stopped: Boolean, onClick: (user: User) -> Unit) {
+  Box {
+    IconButton(
+      onClick = { onClick(userInfo.user) },
+      enabled = !stopped
+    ) {
+      Box {
+        ProfileImage(size = 60.dp, image = userInfo.user.profile.image, color = MaterialTheme.colors.secondaryVariant)
+        if (userInfo.unreadCount > 0) {
+          unreadBadge()
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun InactiveUsersSection(
+  users: List<UserInfo>,
+  stopped: Boolean,
+  onShowAllProfilesClicked: () -> Unit,
+  onUserClicked: (user: User) -> Unit,
+) {
+  val scrollState = rememberScrollState()
+
+  SectionItemView(minHeight = 80.dp, padding = PaddingValues(start = 16.dp, end = DEFAULT_PADDING), disabled = stopped) {
+    Box {
+      Row(modifier = Modifier.horizontalScroll(scrollState).padding(end = DEFAULT_PADDING)) {
+        users.forEach { u ->
+          val size = 60
+          InactiveUserBadge(u, stopped) {
+            onUserClicked(it)
+          }
+          Spacer(Modifier.width((size * 0.618).dp))
+        }
+      }
+      Box(
+        contentAlignment = Alignment.CenterEnd,
+        modifier = Modifier.fillMaxWidth()
+      ) {
+        Box(
+          modifier = Modifier
+            .width(90.dp * fontSizeSqrtMultiplier)
+            .height(60.dp * fontSizeSqrtMultiplier)
+            .background(
+              brush = Brush.horizontalGradient(
+                colors = listOf(
+                  Color.Transparent,
+                  MaterialTheme.colors.surface
+                )
+              )
+            )
+        )
+        IconButton(
+          onClick = onShowAllProfilesClicked,
+          enabled = !stopped,
+        ) {
+          Box(
+            contentAlignment = Alignment.Center,
+          ) {
+            Icon(
+              painterResource(MR.images.ic_chevron_right),
+              stringResource(MR.strings.your_chat_profiles),
+              tint = MaterialTheme.colors.secondary,
+              modifier = Modifier.size(60.dp * fontSizeSqrtMultiplier)
+            )
+          }
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun GlobalSettingsSection(
+  chatModel: ChatModel,
+  userPickerState: MutableStateFlow<AnimatedViewState>,
+  setPerformLA: (Boolean) -> Unit,
+  onUserClicked: (user: User) -> Unit,
+  onShowAllProfilesClicked: () -> Unit
+) {
+  val stopped = chatModel.chatRunning.value == false
   val users by remember {
     derivedStateOf {
       chatModel.users
@@ -150,232 +278,66 @@ private fun UsersSectionLayout(
     }
   }
 
-  if (currentUser != null) {
-    val mainColor = if (stopped) MaterialTheme.colors.secondary else Color.Unspecified
-    val scrollState = rememberScrollState()
-
-    SectionView(contentPadding = PaddingValues(bottom = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF, top = if (appPlatform.isAndroid) DEFAULT_PADDING_HALF - 5.dp else 0.dp)) {
-      Row {
-        Column(modifier = Modifier.padding(start = DEFAULT_PADDING - 5.dp, top = 4.dp)) {
-          IconButton(onClick = onCurrentUserClick, enabled = !stopped) {
-              ProfileImage(
-                image = currentUser.image,
-                size = 57.dp * fontSizeSqrtMultiplier,
-                color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f)
-              )
-          }
-        }
-        Box(
-          contentAlignment = Alignment.TopStart
-        ) {
-          Row(
-            horizontalArrangement = Arrangement.End,
-            modifier = Modifier.padding(end = DEFAULT_PADDING_HALF).fillMaxWidth().horizontalScroll(scrollState)
-          ) {
-            val spacingLeft = if (appPlatform.isAndroid) 93.dp else 66.dp
-            Spacer(Modifier.width((spacingLeft + 8.dp) * fontSizeSqrtMultiplier))
-            users.forEach { u ->
-              IconButton(
-                onClick = { onUserClicked(u.user) },
-                enabled = !stopped
-              ) {
-                Box {
-                  ProfileImage(size = 37.dp * fontSizeSqrtMultiplier, image = u.user.image)
-
-                  if (u.unreadCount > 0) {
-                    unreadBadge()
-                  }
-                }
-              }
-              Spacer(Modifier.width(8.dp))
-            }
-            Spacer(Modifier.width(37.dp * fontSizeSqrtMultiplier))
-          }
-          Box(
-            modifier = Modifier
-              .size(width = 37.dp, height = 37.dp)
-              .background(
-                brush = Brush.horizontalGradient(
-                  colors = listOf(
-                    MaterialTheme.colors.surface,
-                    Color.Transparent
-                  )
-                )
-              )
-          )
-          Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-            Box(
-              modifier = Modifier.background(MaterialTheme.colors.surface).size(width = 30.dp, height = 37.dp)
-            )
-            Box(
-              modifier = Modifier
-                .padding(end = 27.dp)
-                .size(37.dp)
-                .background(
-                  brush = Brush.horizontalGradient(
-                    colors = listOf(
-                      Color.Transparent,
-                      MaterialTheme.colors.surface
-                    )
-                  )
-                )
-            )
-            IconButton(
-              onClick = onShowAllProfilesClicked,
-              enabled = !stopped,
-            ) {
-              val iconColor = MaterialTheme.colors.secondary.copy(alpha = 0.63f)
-              Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                  .size(31.dp * fontSizeSqrtMultiplier)
-                  .background(MaterialTheme.colors.surface, CircleShape)
-                  .border(border = BorderStroke(2.dp, iconColor), shape = CircleShape),
-                ) {
-                Icon(
-                  painterResource(MR.images.ic_chevron_right),
-                  stringResource(MR.strings.your_chat_profiles),
-                  tint = iconColor,
-                )
-              }
-            }
-          }
-        }
-      }
-      Text(
-        currentUser.displayName,
-        style = MaterialTheme.typography.body1,
-        fontWeight = FontWeight.Bold,
-        color = mainColor,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.padding(top = DEFAULT_SPACE_AFTER_ICON, start = DEFAULT_PADDING)
-      )
-    }
-  }
-}
-
-@Composable
-private fun UserPickerProfileSettingsLayout (
-  chatModel: ChatModel,
-  userPickerState: MutableStateFlow<AnimatedViewState>,
-  showCustomModal: (@Composable ModalData.(ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
-  showModalWithSearch: (@Composable (ChatModel, MutableState<String>) -> Unit) -> Unit,
-  withAuth: (title: String, desc: String, block: () -> Unit) -> Unit,
-  ) {
-  val stopped = chatModel.chatRunning.value == false
-  val profileHidden = rememberSaveable { mutableStateOf(false) }
-
-  UsersSectionLayout(
-    chatModel = chatModel,
-    onCurrentUserClick = showCustomModal { m, close -> UserProfileView(m, close) },
-    onUserClicked = { user ->
-      userPickerState.value = AnimatedViewState.HIDING
-      if (!user.activeUser) {
-        withBGApi {
-          controller.showProgressIfNeeded {
-            ModalManager.closeAllModalsEverywhere()
-            chatModel.controller.changeActiveUser(user.remoteHostId, user.userId, null)
-          }
-        }
-      }
-    },
-    onShowAllProfilesClicked = {
-      withAuth(
-        generalGetString(MR.strings.auth_open_chat_profiles),
-        generalGetString(MR.strings.auth_log_in_using_credential)
-      ) {
-        showModalWithSearch { it, search -> UserProfilesView(it, search, profileHidden) }
-      }
-    }
-  )
-
   SectionView {
-    UserPickerOptionRow(
-      painterResource(MR.images.ic_qr_code),
-      if (chatModel.userAddress.value != null) generalGetString(MR.strings.your_public_contact_address) else generalGetString(MR.strings.create_public_contact_address),
-      showCustomModal { it, close -> UserAddressView(it, shareViaProfile = it.currentUser.value!!.addressShared, close = close) }, disabled = stopped
-    )
-    UserPickerOptionRow(
-      painterResource(MR.images.ic_toggle_on),
-      stringResource(MR.strings.chat_preferences),
-      click = if (stopped) null else ({
-        showCustomModal { m, close ->
-          PreferencesView(m, m.currentUser.value ?: return@showCustomModal, close)
-        }()
-      }),
-      disabled = stopped
-    )
-
-    if (chatModel.desktopNoUserNoRemote) {
+    if (users.isNotEmpty()) {
+      InactiveUsersSection(
+        users = users,
+        onShowAllProfilesClicked = onShowAllProfilesClicked,
+        onUserClicked = onUserClicked,
+        stopped = stopped
+      )
+    } else {
       UserPickerOptionRow(
         painterResource(MR.images.ic_manage_accounts),
-        generalGetString(MR.strings.create_chat_profile),
-        {
-          doWithAuth(generalGetString(MR.strings.auth_open_chat_profiles), generalGetString(MR.strings.auth_log_in_using_credential)) {
-            ModalManager.center.showModalCloseable { close ->
-              LaunchedEffect(Unit) {
-                userPickerState.value = AnimatedViewState.HIDING
-              }
-              CreateProfile(chat.simplex.common.platform.chatModel, close)
-            }
+        stringResource(MR.strings.your_chat_profiles),
+        onShowAllProfilesClicked
+      )
+    }
+
+    if (appPlatform.isAndroid) {
+      val text = generalGetString(MR.strings.settings_section_title_use_from_desktop).lowercase().capitalize(Locale.current)
+
+      UserPickerOptionRow(
+        painterResource(MR.images.ic_desktop),
+        text,
+        click = {
+          ModalManager.start.showCustomModal { close ->
+            ConnectDesktopView(close)
           }
         }
       )
+    } else {
+      UserPickerOptionRow(
+        icon = painterResource(MR.images.ic_smartphone_300),
+        text = stringResource(if (remember { chat.simplex.common.platform.chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles),
+        click = {
+          userPickerState.value = AnimatedViewState.HIDING
+          ModalManager.start.showModal {
+            ConnectMobileView()
+          }
+        },
+        disabled = stopped
+      )
     }
-  }
-}
 
-@Composable
-private fun UserPickerGlobalSettingsLayout(
-  chatModel: ChatModel,
-  userPickerState: MutableStateFlow<AnimatedViewState>,
-  setPerformLA: (Boolean) -> Unit,
-  showCustomModal: (@Composable ModalData.(ChatModel, () -> Unit) -> Unit) -> (() -> Unit)
-  ) {
-  val stopped = chatModel.chatRunning.value == false
-
-  if (appPlatform.isAndroid) {
-    val text = generalGetString(MR.strings.settings_section_title_use_from_desktop).lowercase().capitalize(Locale.current)
-
-    UserPickerOptionRow(
-      painterResource(MR.images.ic_desktop),
-      text,
-      showCustomModal { _, close ->
-        ConnectDesktopView(close)
-      }
-    )
-  } else {
-    UserPickerOptionRow(
-      icon = painterResource(MR.images.ic_smartphone_300),
-      text = stringResource(if (remember { chat.simplex.common.platform.chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles),
+    SectionItemView(
       click = {
-        userPickerState.value = AnimatedViewState.HIDING
-        ModalManager.start.showModal {
-          ConnectMobileView()
+        if (appPlatform.isDesktop) {
+          userPickerState.value = AnimatedViewState.HIDING
+        }
+        ModalManager.start.showModalCloseable { close ->
+          SettingsView(chatModel, setPerformLA, close)
         }
       },
-      disabled = stopped
-    )
-  }
-
-  SectionItemView(
-    click = {
-      if (appPlatform.isDesktop) {
-        userPickerState.value = AnimatedViewState.HIDING
-      }
-      ModalManager.start.showModalCloseable { close ->
-        SettingsView(chatModel, setPerformLA, close)
-      }
-    },
-    padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)
-  ) {
-    val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
-    Icon(painterResource(MR.images.ic_settings), text, tint = MaterialTheme.colors.secondary)
-    TextIconSpaced()
-    Text(text, color = Color.Unspecified)
-    Spacer(Modifier.weight(1f))
-    ColorModeSwitcher()
+      padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)
+    ) {
+      val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
+      Icon(painterResource(MR.images.ic_settings), text, tint = MaterialTheme.colors.secondary)
+      TextIconSpaced()
+      Text(text, color = Color.Unspecified)
+      Spacer(Modifier.weight(1f))
+      ColorModeSwitcher()
+    } 
   }
 }
 
@@ -613,34 +575,50 @@ fun UserPicker(
               }
             }
 
-            UserPickerProfileSettingsLayout(
+            ActiveUserSection(
               chatModel = chatModel,
               userPickerState = userPickerState,
               showCustomModal = showCustomModal,
-              withAuth = ::doWithAuth,
-              showModalWithSearch = { modalView ->
-                if (appPlatform.isDesktop) {
-                  userPickerState.value = AnimatedViewState.HIDING
-                }
-                ModalManager.start.showCustomModal { close ->
-                  val search = rememberSaveable { mutableStateOf("") }
-                  ModalView(
-                    { close() },
-                    endButtons = {
-                      SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
-                    },
-                    content = { modalView(chatModel, search) })
-                }
-              },
             )
 
             Divider(Modifier.padding(DEFAULT_PADDING))
 
-            UserPickerGlobalSettingsLayout(
+            val profileHidden = rememberSaveable { mutableStateOf(false) }
+
+            GlobalSettingsSection(
               chatModel = chatModel,
               userPickerState = userPickerState,
               setPerformLA = setPerformLA,
-              showCustomModal = showCustomModal
+              onUserClicked = { user ->
+                userPickerState.value = AnimatedViewState.HIDING
+                if (!user.activeUser) {
+                  withBGApi {
+                    controller.showProgressIfNeeded {
+                      ModalManager.closeAllModalsEverywhere()
+                      chatModel.controller.changeActiveUser(user.remoteHostId, user.userId, null)
+                    }
+                  }
+                }
+              },
+              onShowAllProfilesClicked = {
+                doWithAuth(
+                  generalGetString(MR.strings.auth_open_chat_profiles),
+                  generalGetString(MR.strings.auth_log_in_using_credential)
+                ) {
+                  if (appPlatform.isDesktop) {
+                    userPickerState.value = AnimatedViewState.HIDING
+                  }
+                  ModalManager.start.showCustomModal { close ->
+                    val search = rememberSaveable { mutableStateOf("") }
+                    ModalView(
+                      { close() },
+                      endButtons = {
+                        SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
+                      },
+                      content = { UserProfilesView(chatModel, search, profileHidden) })
+                  }
+                }
+              }
             )
 
             Spacer(Modifier.height(DEFAULT_PADDING_HALF))
