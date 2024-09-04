@@ -383,7 +383,7 @@ fun UserPicker(
   LaunchedEffect(Unit) {
     snapshotFlow { currentTheme }
       .distinctUntilChanged()
-      .collect { _ ->
+      .collect {
         launch {
           userPickerState.collect {
             newChat = it
