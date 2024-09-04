@@ -222,12 +222,15 @@ private fun UsersLayout(
             ) {
               Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.size(31.dp * fontSizeSqrtMultiplier).background(MaterialTheme.colors.secondary, CircleShape)
-              ) {
+                modifier = Modifier
+                  .size(31.dp * fontSizeSqrtMultiplier)
+                  .background(MaterialTheme.colors.surface, CircleShape)
+                  .border(border = BorderStroke(2.dp, MaterialTheme.colors.secondary), shape = CircleShape),
+                ) {
                 Icon(
-                  painterResource(MR.images.ic_more_horiz),
+                  painterResource(MR.images.ic_chevron_right),
                   stringResource(MR.strings.your_chat_profiles),
-                  tint = MaterialTheme.colors.surface,
+                  tint = MaterialTheme.colors.secondary,
                 )
               }
             }
