@@ -59,9 +59,10 @@ struct ChatListView: View {
             ) { chatListView }
         }
         .sheet(isPresented: $userPickerShown) {
-            UserPicker {
-                userPickerShown = false
-                activeUserPickerSheet = $0
+            UserPicker { sheet in
+                dismissAllSheets(animated: true) {
+                    activeUserPickerSheet = sheet
+                }
             }
         }
         .sheet(item: $activeUserPickerSheet) { sheet in
