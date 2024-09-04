@@ -28,46 +28,79 @@ socket.addEventListener("close", (_event) => {
 function endCallManually() {
     sendMessageToNative({ resp: { type: "end" } });
 }
-function toggleAudioManually() {
-    if (activeCall && localMedia(activeCall)) {
-        document.getElementById("toggle-audio").innerHTML = toggleMedia(activeCall.localStream, CallMediaType.Audio)
-            ? '<img src="/desktop/images/ic_mic.svg" />'
-            : '<img src="/desktop/images/ic_mic_off.svg" />';
+function toggleMicManually() {
+    if (activeCall === null || activeCall === void 0 ? void 0 : activeCall.localStream) {
+        const apiCall = {
+            command: { type: "media", source: CallMediaSource.Mic, enable: !activeCall.localMediaSources.mic },
+        };
+        processCommand(apiCall);
     }
 }
 function toggleSpeakerManually() {
     if (activeCall === null || activeCall === void 0 ? void 0 : activeCall.remoteStream) {
-        document.getElementById("toggle-speaker").innerHTML = toggleMedia(activeCall.remoteStream, CallMediaType.Audio)
+        document.getElementById("toggle-speaker").innerHTML = togglePeerMedia(activeCall.remoteStream, CallMediaType.Audio)
             ? '<img src="/desktop/images/ic_volume_up.svg" />'
             : '<img src="/desktop/images/ic_volume_down.svg" />';
     }
 }
-function toggleVideoManually() {
+function toggleCameraManually() {
     if (activeCall) {
         const apiCall = {
             command: { type: "media", source: CallMediaSource.Camera, enable: activeCall.localMediaSources.camera != true },
         };
-        reactOnMessageFromServer(apiCall);
-        processCommand(apiCall).then(() => {
-            var _a;
-            enableVideoIcon(((_a = activeCall === null || activeCall === void 0 ? void 0 : activeCall.localMediaSources) === null || _a === void 0 ? void 0 : _a.camera) == true);
-        });
+        processCommand(apiCall);
     }
 }
 async function toggleScreenManually() {
-    var _a;
-    const was = activeCall === null || activeCall === void 0 ? void 0 : activeCall.localMediaSources.screenVideo;
     await toggleScreenShare();
-    if (was != (activeCall === null || activeCall === void 0 ? void 0 : activeCall.localMediaSources.screenVideo)) {
-        document.getElementById("toggle-screen").innerHTML = ((_a = activeCall === null || activeCall === void 0 ? void 0 : activeCall.localMediaSources) === null || _a === void 0 ? void 0 : _a.screenVideo)
-            ? '<img src="/desktop/images/ic_stop_screen_share.svg" />'
-            : '<img src="/desktop/images/ic_screen_share.svg" />';
-    }
 }
-function enableVideoIcon(enabled) {
-    document.getElementById("toggle-video").innerHTML = enabled
+// override function in call.ts to adapt UI to enabled media sources
+localOrPeerMediaSourcesChanged = (call) => {
+    enableMicIcon(call.localMediaSources.mic);
+    enableCameraIcon(call.localMediaSources.camera);
+    enableScreenIcon(call.localMediaSources.screenVideo);
+    const className = localMedia(call) == CallMediaType.Video || peerMedia(call) == CallMediaType.Video ? CallMediaType.Video : CallMediaType.Audio;
+    document.getElementById("info-block").className = className;
+    if (call.connection.iceConnectionState == "connected") {
+        document.getElementById("audio-call-icon").style.display = className == CallMediaType.Audio ? "block" : "none";
+    }
+    document.getElementById("media-sources").innerText = mediaSourcesStatus(call);
+};
+function enableMicIcon(enabled) {
+    document.getElementById("toggle-mic").innerHTML = enabled
+        ? '<img src="/desktop/images/ic_mic.svg" />'
+        : '<img src="/desktop/images/ic_mic_off.svg" />';
+}
+function enableCameraIcon(enabled) {
+    document.getElementById("toggle-camera").innerHTML = enabled
         ? '<img src="/desktop/images/ic_videocam_filled.svg" />'
         : '<img src="/desktop/images/ic_videocam_off.svg" />';
+}
+function enableScreenIcon(enabled) {
+    document.getElementById("toggle-screen").innerHTML = enabled
+        ? '<img src="/desktop/images/ic_stop_screen_share.svg" />'
+        : '<img src="/desktop/images/ic_screen_share.svg" />';
+}
+function mediaSourcesStatus(call) {
+    let status = "local";
+    if (call.localMediaSources.mic)
+        status += " mic";
+    if (call.localMediaSources.camera)
+        status += " cam";
+    if (call.localMediaSources.screenAudio)
+        status += " scrA";
+    if (call.localMediaSources.screenVideo)
+        status += " scrV";
+    status += " | peer";
+    if (call.peerMediaSources.mic)
+        status += " mic";
+    if (call.peerMediaSources.camera)
+        status += " cam";
+    if (call.peerMediaSources.screenAudio)
+        status += " scrA";
+    if (call.peerMediaSources.screenVideo)
+        status += " scrV";
+    return status;
 }
 function reactOnMessageFromServer(msg) {
     var _a;
@@ -77,20 +110,11 @@ function reactOnMessageFromServer(msg) {
             break;
         case "offer":
         case "start":
-            document.getElementById("toggle-audio").style.display = "inline-block";
+            document.getElementById("toggle-mic").style.display = "inline-block";
             document.getElementById("toggle-speaker").style.display = "inline-block";
-            document.getElementById("toggle-video").style.display = "inline-block";
+            document.getElementById("toggle-camera").style.display = "inline-block";
             document.getElementById("toggle-screen").style.display = "inline-block";
             document.getElementById("info-block").className = msg.command.media;
-            break;
-        case "media":
-            const className = (msg.command.source == CallMediaSource.Camera && msg.command.enable) ||
-                (activeCall === null || activeCall === void 0 ? void 0 : activeCall.peerMediaSources.camera) ||
-                (activeCall === null || activeCall === void 0 ? void 0 : activeCall.peerMediaSources.screenVideo)
-                ? "video"
-                : "audio";
-            document.getElementById("info-block").className = className;
-            document.getElementById("audio-call-icon").style.display = className == CallMediaType.Audio ? "block" : "none";
             break;
         case "description":
             updateCallInfoView(msg.command.state, msg.command.description);

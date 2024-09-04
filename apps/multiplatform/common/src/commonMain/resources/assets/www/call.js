@@ -29,6 +29,7 @@ var LayoutType;
 // var sendMessageToNative = ({resp}: WVApiMessage) => console.log(JSON.stringify({command: resp}))
 var sendMessageToNative = (msg) => console.log(JSON.stringify(msg));
 var toggleScreenShare = async () => { };
+var localOrPeerMediaSourcesChanged = (_call) => { };
 // Global object with cryptrographic/encoding functions
 const callCrypto = callCryptoFunction();
 var TransformOperation;
@@ -39,12 +40,20 @@ var TransformOperation;
 function localMedia(call) {
     return call.localMediaSources.camera || call.localMediaSources.screenVideo ? CallMediaType.Video : CallMediaType.Audio;
 }
+function peerMedia(call) {
+    return call.peerMediaSources.camera || call.peerMediaSources.screenVideo ? CallMediaType.Video : CallMediaType.Audio;
+}
 let activeCall;
 let answerTimeout = 30000;
 var useWorker = false;
 var isDesktop = false;
 var localizedState = "";
 var localizedDescription = "";
+// Passing true here will send audio in screen record stream
+const allowSendScreenAudio = false;
+// When one side of a call sends candidates tot fast (until local & remote descriptions are set), that candidates
+// will be stored here and then set when the call will be ready to process them
+var afterCallInitializedCandidates = [];
 const processCommand = (function () {
     const defaultIceServers = [
         { urls: ["stuns:stun.simplex.im:443"] },
@@ -137,14 +146,22 @@ const processCommand = (function () {
         const remoteScreenStream = new MediaStream();
         const localCamera = VideoCamera.User;
         let localStream;
+        // Mic can be disabled while in call if a user didn't give permission to use it, it's fine
+        let micEnabled = false;
         try {
             localStream = await getLocalMediaStream(mediaType, localCamera);
+            micEnabled = true;
         }
         catch (e) {
+            console.log("Error while getting local media stream", e);
             if (isDesktop) {
-                window.alert("Permission denied. Please, allow mic and video to make the call working.");
+                desktopShowPermissionsAlert(mediaType);
+                localStream = getEmptyStream(mediaType, pc);
             }
-            throw e;
+            else {
+                // On Android all streams should be present
+                throw e;
+            }
         }
         const localScreenStream = new MediaStream();
         if (isDesktop) {
@@ -159,7 +176,7 @@ const processCommand = (function () {
             connection: pc,
             iceCandidates,
             localMediaSources: {
-                mic: true,
+                mic: micEnabled,
                 camera: mediaType == CallMediaType.Video && !isDesktop,
                 screenAudio: false,
                 screenVideo: false,
@@ -179,6 +196,7 @@ const processCommand = (function () {
             cameraTrackWasSetBefore: mediaType == CallMediaType.Video,
             screenShareWasSetupBefore: false,
         };
+        localOrPeerMediaSourcesChanged(call);
         await setupMediaStreams(call);
         let connectionTimeout = setTimeout(connectionHandler, answerTimeout);
         pc.addEventListener("connectionstatechange", connectionStateChange);
@@ -254,8 +272,15 @@ const processCommand = (function () {
                     if (activeCall)
                         endCall();
                     // This request for local media stream is made to prompt for camera/mic permissions on call start
-                    if (command.media)
-                        await getLocalMediaStream(command.media, VideoCamera.User);
+                    if (command.media) {
+                        try {
+                            await getLocalMediaStream(command.media, VideoCamera.User);
+                        }
+                        catch (e) {
+                            // Will be shown on the next stage of call estabilishing, can work without any streams
+                            //desktopShowPermissionsAlert(command.media)
+                        }
+                    }
                     const encryption = supportsInsertableStreams(useWorker);
                     resp = { type: "capabilities", capabilities: { encryption } };
                     break;
@@ -278,6 +303,8 @@ const processCommand = (function () {
                     pc.addTransceiver("video", { streams: [activeCall.localScreenStream] });
                     const offer = await pc.createOffer();
                     await pc.setLocalDescription(offer);
+                    addIceCandidates(pc, afterCallInitializedCandidates);
+                    afterCallInitializedCandidates = [];
                     // for debugging, returning the command for callee to use
                     // resp = {
                     //   type: "offer",
@@ -321,6 +348,8 @@ const processCommand = (function () {
                         // answer!.sdp = answer.sdp?.replace("a=recvonly", "a=sendrecv")
                         await pc.setLocalDescription(answer);
                         addIceCandidates(pc, remoteIceCandidates);
+                        addIceCandidates(pc, afterCallInitializedCandidates);
+                        afterCallInitializedCandidates = [];
                         // same as command for caller to use
                         resp = {
                             type: "answer",
@@ -351,13 +380,14 @@ const processCommand = (function () {
                     }
                     break;
                 case "ice":
+                    const remoteIceCandidates = parse(command.iceCandidates);
                     if (pc) {
-                        const remoteIceCandidates = parse(command.iceCandidates);
                         addIceCandidates(pc, remoteIceCandidates);
                         resp = { type: "ok" };
                     }
                     else {
-                        resp = { type: "error", message: "ice: call not started" };
+                        afterCallInitializedCandidates = remoteIceCandidates;
+                        resp = { type: "error", message: "ice: call not started yet, will add candidates later" };
                     }
                     break;
                 case "media":
@@ -368,9 +398,22 @@ const processCommand = (function () {
                         await startSendingCamera(activeCall, activeCall.localCamera);
                         resp = { type: "ok" };
                     }
+                    else if ((command.source == CallMediaSource.Mic && activeCall.localStream.getAudioTracks().length > 0) ||
+                        (command.source == CallMediaSource.Camera && activeCall.localStream.getVideoTracks().length > 0)) {
+                        if (enableMedia(activeCall.localStream, command.source, command.enable)) {
+                            resp = { type: "ok" };
+                        }
+                        else {
+                            resp = { type: "error", message: "media: cannot enable media source" };
+                        }
+                    }
                     else {
-                        enableMedia(activeCall.localStream, command.source, command.enable);
-                        resp = { type: "ok" };
+                        if (await replaceMedia(activeCall, activeCall.localCamera)) {
+                            resp = { type: "ok" };
+                        }
+                        else {
+                            resp = { type: "error", message: "media: cannot replace media source" };
+                        }
                     }
                     break;
                 case "camera":
@@ -378,7 +421,12 @@ const processCommand = (function () {
                         resp = { type: "error", message: "camera: call not started" };
                     }
                     else {
-                        await replaceMedia(activeCall, command.camera);
+                        if (await replaceMedia(activeCall, command.camera)) {
+                            resp = { type: "ok" };
+                        }
+                        else {
+                            resp = { type: "error", message: "camera: cannot replace media source" };
+                        }
                         resp = { type: "ok" };
                     }
                     break;
@@ -440,10 +488,11 @@ const processCommand = (function () {
         videos.remote.srcObject = call.remoteStream;
         videos.remoteScreen.srcObject = call.remoteScreenStream;
         // Without doing it manually Firefox shows black screen but video can be played in Picture-in-Picture
-        videos.local.play();
+        videos.local.play().catch((e) => console.log(e));
         // videos.localScreen.play()
-        videos.remote.play();
-        videos.remoteScreen.play();
+        // For example, exception can be: NotAllowedError: play() failed because the user didn't interact with the document first
+        videos.remote.play().catch((e) => console.log(e));
+        videos.remoteScreen.play().catch((e) => console.log(e));
     }
     async function setupEncryptionWorker(call) {
         if (call.aesKey) {
@@ -476,7 +525,7 @@ const processCommand = (function () {
             console.log("set up encryption for sending");
             for (const transceiver of pc.getTransceivers()) {
                 const sender = transceiver.sender;
-                setupPeerTransform(TransformOperation.Encrypt, sender, call.worker, call.aesKey, call.key, transceiver.sender.track.kind == "video" ? CallMediaType.Video : CallMediaType.Audio, transceiver.mid);
+                setupPeerTransform(TransformOperation.Encrypt, sender, call.worker, call.aesKey, call.key, mediaSourceFromTransceiverMid(transceiver.mid) == CallMediaSource.Camera ? CallMediaType.Video : CallMediaType.Audio, transceiver.mid);
             }
         }
     }
@@ -583,8 +632,11 @@ const processCommand = (function () {
             }
             call.localMediaSources.camera = true;
             call.cameraTrackWasSetBefore = true;
+            localOrPeerMediaSourcesChanged(call);
         }
         catch (e) {
+            console.log("Start sending camera error", e);
+            desktopShowPermissionsAlert(CallMediaType.Video);
             return;
         }
         const sender = tc === null || tc === void 0 ? void 0 : tc.sender;
@@ -593,22 +645,23 @@ const processCommand = (function () {
             setupPeerTransform(TransformOperation.Encrypt, sender, call.worker, call.aesKey, call.key, CallMediaType.Video, tc.mid);
         }
         // Without doing it manually Firefox shows black screen but video can be played in Picture-in-Picture
-        videos.local.play();
+        videos.local.play().catch((e) => console.log(e));
         console.log("LALAL SENDING VIDEO");
     }
-    async function enableDisableScreenShare(call) {
+    toggleScreenShare = async function () {
+        const call = activeCall;
+        if (!call)
+            return;
         const videos = getVideoElements();
         if (!videos)
             throw Error("no video elements");
         const pc = call.connection;
-        if (call.localMediaSources.screenVideo) {
+        if (!call.localMediaSources.screenVideo) {
             let localScreenStream;
             try {
                 localScreenStream = await getLocalScreenCaptureStream();
             }
             catch (e) {
-                call.localMediaSources.screenAudio = false;
-                call.localMediaSources.screenVideo = false;
                 return;
             }
             for (const t of localScreenStream.getTracks())
@@ -625,6 +678,10 @@ const processCommand = (function () {
                 }
                 else if (source == CallMediaSource.ScreenVideo && screenVideoTrack) {
                     elem.sender.replaceTrack(screenVideoTrack);
+                    screenVideoTrack.onended = () => {
+                        console.log("LALAL ENDED SCREEN TRACK");
+                        toggleScreenShare();
+                    };
                     console.log("LALAL REPLACED VIDEO SCREEN TRACK");
                 }
                 if (!call.screenShareWasSetupBefore &&
@@ -637,7 +694,7 @@ const processCommand = (function () {
             call.screenShareWasSetupBefore = true;
             // videos.localScreen.pause()
             // videos.localScreen.srcObject = call.localScreenStream
-            videos.localScreen.play();
+            videos.localScreen.play().catch((e) => console.log(e));
             videos.localScreen.style.visibility = "visible";
         }
         else {
@@ -653,7 +710,12 @@ const processCommand = (function () {
                 call.localScreenStream.removeTrack(t);
             videos.localScreen.style.visibility = "hidden";
         }
-    }
+        if (allowSendScreenAudio) {
+            call.localMediaSources.screenAudio = !call.localMediaSources.screenAudio;
+        }
+        call.localMediaSources.screenVideo = !call.localMediaSources.screenVideo;
+        localOrPeerMediaSourcesChanged(call);
+    };
     async function replaceMedia(call, camera) {
         const videos = getVideoElements();
         if (!videos)
@@ -666,7 +728,9 @@ const processCommand = (function () {
             localStream = await getLocalMediaStream(localMedia(call), camera);
         }
         catch (e) {
-            return;
+            console.log("Replace media error", e);
+            desktopShowPermissionsAlert(CallMediaType.Video);
+            return false;
         }
         for (const t of call.localStream.getTracks())
             t.stop();
@@ -680,7 +744,11 @@ const processCommand = (function () {
         replaceTracks(pc, videoTracks);
         call.localStream = localStream;
         videos.local.srcObject = localStream;
-        videos.local.play();
+        videos.local.play().catch((e) => console.log(e));
+        call.localMediaSources.mic = call.localStream.getAudioTracks().length > 0;
+        call.localMediaSources.camera = call.localStream.getVideoTracks().length > 0;
+        localOrPeerMediaSourcesChanged(call);
+        return true;
     }
     function replaceTracks(pc, tracks) {
         if (!tracks.length)
@@ -751,6 +819,8 @@ const processCommand = (function () {
             sources.mic = !mute;
             activeCall.peerMediaSources = sources;
             sendMessageToNative({ resp: resp });
+            if (!mute)
+                videos.remote.play().catch((e) => console.log(e));
         }
         else if (source == CallMediaSource.Camera && activeCall.peerMediaSources.camera == mute) {
             const resp = {
@@ -763,6 +833,8 @@ const processCommand = (function () {
             activeCall.peerMediaSources = sources;
             videos.remote.style.visibility = !mute ? "visible" : "hidden";
             sendMessageToNative({ resp: resp });
+            if (!mute)
+                videos.remote.play().catch((e) => console.log(e));
         }
         else if (source == CallMediaSource.ScreenAudio && activeCall.peerMediaSources.screenAudio == mute) {
             const resp = {
@@ -774,6 +846,8 @@ const processCommand = (function () {
             sources.screenAudio = !mute;
             activeCall.peerMediaSources = sources;
             sendMessageToNative({ resp: resp });
+            if (!mute)
+                videos.remoteScreen.play().catch((e) => console.log(e));
         }
         else if (source == CallMediaSource.ScreenVideo && activeCall.peerMediaSources.screenVideo == mute) {
             const resp = {
@@ -786,6 +860,8 @@ const processCommand = (function () {
             activeCall.peerMediaSources = sources;
             videos.remoteScreen.style.visibility = !mute ? "visible" : "hidden";
             sendMessageToNative({ resp: resp });
+            if (!mute)
+                videos.remoteScreen.play().catch((e) => console.log(e));
         }
         if (activeCall.peerMediaSources.screenVideo) {
             videos.remote.className = "collapsed";
@@ -793,10 +869,19 @@ const processCommand = (function () {
         else {
             videos.remote.className = "inline";
         }
+        localOrPeerMediaSourcesChanged(activeCall);
     }
     function getLocalMediaStream(mediaType, facingMode) {
         const constraints = callMediaConstraints(mediaType, facingMode);
         return navigator.mediaDevices.getUserMedia(constraints);
+    }
+    function getEmptyStream(mediaType, pc) {
+        const stream = new MediaStream();
+        pc.addTransceiver("audio", { streams: [stream] });
+        if (mediaType == CallMediaType.Video) {
+            pc.addTransceiver("video", { streams: [stream] });
+        }
+        return stream;
     }
     function getLocalScreenCaptureStream() {
         const constraints /* DisplayMediaStreamConstraints */ = {
@@ -809,7 +894,7 @@ const processCommand = (function () {
                 //},
                 //aspectRatio: 1.33,
             },
-            audio: false,
+            audio: allowSendScreenAudio,
             // This works with Chrome, Edge, Opera, but not with Firefox and Safari
             // systemAudio: "include"
         };
@@ -877,33 +962,43 @@ const processCommand = (function () {
     //   }
     // }
     function enableMedia(s, source, enable) {
+        if (!activeCall)
+            return false;
         const tracks = source == CallMediaSource.Camera ? s.getVideoTracks() : s.getAudioTracks();
-        for (const t of tracks)
-            activeCall === null || activeCall === void 0 ? void 0 : activeCall.connection.getTransceivers().forEach((elem) => {
-                if ((t.kind == CallMediaType.Audio && mediaSourceFromTransceiverMid(elem.mid) == CallMediaSource.Mic) ||
-                    (t.kind == CallMediaType.Video && mediaSourceFromTransceiverMid(elem.mid) == CallMediaSource.Camera)) {
+        let changedSource = false;
+        for (const t of tracks) {
+            for (const transceiver of activeCall.connection.getTransceivers()) {
+                if ((t.kind == CallMediaType.Audio && mediaSourceFromTransceiverMid(transceiver.mid) == CallMediaSource.Mic) ||
+                    (t.kind == CallMediaType.Video && mediaSourceFromTransceiverMid(transceiver.mid) == CallMediaSource.Camera)) {
                     if (enable) {
                         t.enabled = true;
-                        elem.sender.replaceTrack(t);
+                        transceiver.sender.replaceTrack(t);
                     }
                     else {
                         t.enabled = false;
-                        elem.sender.replaceTrack(null);
+                        transceiver.sender.replaceTrack(null);
+                    }
+                    if (source == CallMediaSource.Mic) {
+                        activeCall.localMediaSources.mic = enable;
+                        changedSource = true;
+                    }
+                    else if (source == CallMediaSource.Camera) {
+                        activeCall.localMediaSources.camera = enable;
+                        changedSource = true;
                     }
                 }
-            });
-        if (source == CallMediaSource.Camera && activeCall) {
-            activeCall.localMediaSources.camera = enable;
+            }
+        }
+        if (changedSource) {
+            localOrPeerMediaSourcesChanged(activeCall);
+            return true;
+        }
+        else {
+            console.log("Enable media error");
+            desktopShowPermissionsAlert(source == CallMediaSource.Mic ? CallMediaType.Audio : CallMediaType.Video);
+            return false;
         }
     }
-    toggleScreenShare = async function () {
-        const call = activeCall;
-        if (!call)
-            return;
-        call.localMediaSources.screenAudio = !call.localMediaSources.screenAudio;
-        call.localMediaSources.screenVideo = !call.localMediaSources.screenVideo;
-        await enableDisableScreenShare(call);
-    };
     return processCommand;
 })();
 function toggleRemoteVideoFitFill() {
@@ -914,15 +1009,14 @@ function toggleRemoteScreenVideoFitFill() {
     const remoteScreen = document.getElementById("remote-screen-video-stream");
     remoteScreen.style.objectFit = remoteScreen.style.objectFit != "contain" ? "contain" : "cover";
 }
-function toggleMedia(s, media) {
+function togglePeerMedia(s, media) {
+    if (!activeCall)
+        return false;
     let res = false;
     const tracks = media == CallMediaType.Video ? s.getVideoTracks() : s.getAudioTracks();
     for (const t of tracks) {
         t.enabled = !t.enabled;
         res = t.enabled;
-    }
-    if (media == CallMediaType.Video && activeCall) {
-        activeCall.localMediaSources.camera = res;
     }
     return res;
 }
@@ -946,6 +1040,16 @@ function changeLayout(layout) {
             local.style.visibility = "hidden";
             remote.style.visibility = "visible";
             break;
+    }
+}
+function desktopShowPermissionsAlert(mediaType) {
+    if (!isDesktop)
+        return;
+    if (mediaType == CallMediaType.Audio) {
+        window.alert("Permissions denied. Please, allow access to mic to make the call working and hit unmute button. Don't reload the page.");
+    }
+    else {
+        window.alert("Permissions denied. Please, allow access to mic and camera to make the call working and hit unmute button. Don't reload the page.");
     }
 }
 // Cryptography function - it is loaded both in the main window and in worker context (if the worker is used)

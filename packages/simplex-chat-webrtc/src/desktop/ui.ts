@@ -33,48 +33,85 @@ function endCallManually() {
   sendMessageToNative({resp: {type: "end"}})
 }
 
-function toggleAudioManually() {
-  if (activeCall && localMedia(activeCall)) {
-    document.getElementById("toggle-audio")!!.innerHTML = toggleMedia(activeCall.localStream, CallMediaType.Audio)
-      ? '<img src="/desktop/images/ic_mic.svg" />'
-      : '<img src="/desktop/images/ic_mic_off.svg" />'
+function toggleMicManually() {
+  if (activeCall?.localStream) {
+    const apiCall: WVAPICall = {
+      command: {type: "media", source: CallMediaSource.Mic, enable: !activeCall.localMediaSources.mic},
+    }
+    processCommand(apiCall)
   }
 }
 
 function toggleSpeakerManually() {
   if (activeCall?.remoteStream) {
-    document.getElementById("toggle-speaker")!!.innerHTML = toggleMedia(activeCall.remoteStream, CallMediaType.Audio)
+    document.getElementById("toggle-speaker")!!.innerHTML = togglePeerMedia(activeCall.remoteStream, CallMediaType.Audio)
       ? '<img src="/desktop/images/ic_volume_up.svg" />'
       : '<img src="/desktop/images/ic_volume_down.svg" />'
   }
 }
 
-function toggleVideoManually() {
+function toggleCameraManually() {
   if (activeCall) {
     const apiCall: WVAPICall = {
       command: {type: "media", source: CallMediaSource.Camera, enable: activeCall.localMediaSources.camera != true},
     }
-    reactOnMessageFromServer(apiCall as any)
-    processCommand(apiCall).then(() => {
-      enableVideoIcon(activeCall?.localMediaSources?.camera == true)
-    })
+    processCommand(apiCall)
   }
 }
 
 async function toggleScreenManually() {
-  const was = activeCall?.localMediaSources.screenVideo
   await toggleScreenShare()
-  if (was != activeCall?.localMediaSources.screenVideo) {
-    document.getElementById("toggle-screen")!!.innerHTML = activeCall?.localMediaSources?.screenVideo
-      ? '<img src="/desktop/images/ic_stop_screen_share.svg" />'
-      : '<img src="/desktop/images/ic_screen_share.svg" />'
-  }
 }
 
-function enableVideoIcon(enabled: boolean) {
-  document.getElementById("toggle-video")!!.innerHTML = enabled
+// override function in call.ts to adapt UI to enabled media sources
+localOrPeerMediaSourcesChanged = (call: Call) => {
+  enableMicIcon(call.localMediaSources.mic)
+  enableCameraIcon(call.localMediaSources.camera)
+  enableScreenIcon(call.localMediaSources.screenVideo)
+
+  const className =
+    localMedia(call) == CallMediaType.Video || peerMedia(call) == CallMediaType.Video ? CallMediaType.Video : CallMediaType.Audio
+  document.getElementById("info-block")!.className = className
+
+  if (call.connection.iceConnectionState == "connected") {
+    document.getElementById("audio-call-icon")!.style.display = className == CallMediaType.Audio ? "block" : "none"
+  }
+
+  document.getElementById("media-sources")!.innerText = mediaSourcesStatus(call)
+}
+
+function enableMicIcon(enabled: boolean) {
+  document.getElementById("toggle-mic")!.innerHTML = enabled
+    ? '<img src="/desktop/images/ic_mic.svg" />'
+    : '<img src="/desktop/images/ic_mic_off.svg" />'
+}
+
+function enableCameraIcon(enabled: boolean) {
+  document.getElementById("toggle-camera")!.innerHTML = enabled
     ? '<img src="/desktop/images/ic_videocam_filled.svg" />'
     : '<img src="/desktop/images/ic_videocam_off.svg" />'
+}
+
+function enableScreenIcon(enabled: boolean) {
+  document.getElementById("toggle-screen")!.innerHTML = enabled
+    ? '<img src="/desktop/images/ic_stop_screen_share.svg" />'
+    : '<img src="/desktop/images/ic_screen_share.svg" />'
+}
+
+function mediaSourcesStatus(call: Call): string {
+  let status = "local"
+  if (call.localMediaSources.mic) status += " mic"
+  if (call.localMediaSources.camera) status += " cam"
+  if (call.localMediaSources.screenAudio) status += " scrA"
+  if (call.localMediaSources.screenVideo) status += " scrV"
+
+  status += " | peer"
+
+  if (call.peerMediaSources.mic) status += " mic"
+  if (call.peerMediaSources.camera) status += " cam"
+  if (call.peerMediaSources.screenAudio) status += " scrA"
+  if (call.peerMediaSources.screenVideo) status += " scrV"
+  return status
 }
 
 function reactOnMessageFromServer(msg: WVApiMessage) {
@@ -84,21 +121,11 @@ function reactOnMessageFromServer(msg: WVApiMessage) {
       break
     case "offer":
     case "start":
-      document.getElementById("toggle-audio")!!.style.display = "inline-block"
+      document.getElementById("toggle-mic")!!.style.display = "inline-block"
       document.getElementById("toggle-speaker")!!.style.display = "inline-block"
-      document.getElementById("toggle-video")!!.style.display = "inline-block"
+      document.getElementById("toggle-camera")!!.style.display = "inline-block"
       document.getElementById("toggle-screen")!!.style.display = "inline-block"
       document.getElementById("info-block")!!.className = msg.command.media
-      break
-    case "media":
-      const className =
-        (msg.command.source == CallMediaSource.Camera && msg.command.enable) ||
-        activeCall?.peerMediaSources.camera ||
-        activeCall?.peerMediaSources.screenVideo
-          ? "video"
-          : "audio"
-      document.getElementById("info-block")!!.className = className
-      document.getElementById("audio-call-icon")!.style.display = className == CallMediaType.Audio ? "block" : "none"
       break
     case "description":
       updateCallInfoView(msg.command.state, msg.command.description)
