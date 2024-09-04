@@ -387,7 +387,7 @@ fun UserPicker(
         .collect { modalCount ->
           val colors = CurrentColors.value.colors
 
-          if (modalCount == 0 && newChat.isVisible()) {
+          if (modalCount == 0 && newChat.isVisible() && appPlatform.isAndroid) {
             platform.androidSetDrawerStatusAndNavBarColor(
               isLight = colors.isLight,
               drawerShadingColor = animatedColor,
@@ -410,24 +410,26 @@ fun UserPicker(
             val toColor = if (colors.isLight) colors.onSurface.copy(alpha = ScrimOpacity) else Color.Black.copy(0.64f)
 
             animatedColor.animateTo(if (newChat.isVisible()) toColor else Color.Transparent, newChatSheetAnimSpec()) {
-              if (newChat.isVisible()) {
-                platform.androidSetDrawerStatusAndNavBarColor(
-                  isLight = colors.isLight,
-                  drawerShadingColor = animatedColor,
-                  toolbarOnTop = !appPrefs.oneHandUI.get(),
-                  navBarColor = colors.surface
-                )
-              } else if (newChat.isHiding()) {
-                platform.androidSetDrawerStatusAndNavBarColor(
-                  isLight = colors.isLight,
-                  drawerShadingColor = animatedColor,
-                  toolbarOnTop = !appPrefs.oneHandUI.get(),
-                  navBarColor = (if (appPrefs.oneHandUI.get() && appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
-                    colors.background.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
-                  } else {
-                    colors.background
-                  })
-                )
+              if (appPlatform.isAndroid) {
+                if (newChat.isVisible()) {
+                  platform.androidSetDrawerStatusAndNavBarColor(
+                    isLight = colors.isLight,
+                    drawerShadingColor = animatedColor,
+                    toolbarOnTop = !appPrefs.oneHandUI.get(),
+                    navBarColor = colors.surface
+                  )
+                } else if (newChat.isHiding()) {
+                  platform.androidSetDrawerStatusAndNavBarColor(
+                    isLight = colors.isLight,
+                    drawerShadingColor = animatedColor,
+                    toolbarOnTop = !appPrefs.oneHandUI.get(),
+                    navBarColor = (if (appPrefs.oneHandUI.get() && appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
+                      colors.background.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
+                    } else {
+                      colors.background
+                    })
+                  )
+                }
               }
             }
 
