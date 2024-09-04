@@ -86,15 +86,19 @@ struct UserPicker: View {
 //            .listRowSeparator(.hidden)
 //            .padding(.horizontal, 12)
 
-            Section {
-                let otherUsers = m.users.filter { u in !u.user.hidden && u.user.userId != m.currentUser?.userId }
-                if otherUsers.isEmpty {
+            let otherUsers = m.users.filter { u in !u.user.hidden && u.user.userId != m.currentUser?.userId }
+            if otherUsers.isEmpty {
+                Section {
                     openSheetOnTap(title: "Create chat profile", image: "person.crop.circle.fill.badge.plus") {
                         activeSheet = .chatProfiles
                     }
-                } else {
-                    userPickerRow(otherUsers)
                 }
+            } else {
+                userPickerRow(otherUsers)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .padding(.vertical, -16)
             }
                 
 
@@ -175,7 +179,7 @@ struct UserPicker: View {
     }
         
     private func userPickerRow(_ users: [UserInfo]) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 0) {
             let s = ScrollView(.horizontal) {
                 HStack(spacing: 20) {
                     ForEach(users) { u in
@@ -184,7 +188,8 @@ struct UserPicker: View {
                         }
                     }
                 }
-                .padding(.trailing, 14)
+                .padding(.leading, 2)
+                .padding(.trailing, 20)
             }
             ZStack(alignment: .topTrailing) {
                 if #available(iOS 16.0, *) {
@@ -193,22 +198,25 @@ struct UserPicker: View {
                     s
                 }
                 LinearGradient(
-                    colors: [.clear, theme.colors.background],
+                    colors: [.clear, theme.colors.background.asGroupedBackground(theme.base.mode)],
                     startPoint: .leading,
                     endPoint: .trailing
                 )
-                .frame(width: 28, height: 31)
+                .frame(width: 20, height: 31)
                 .allowsHitTesting(false)
             }
             .padding(.top, -3) // to fit unread badge
             Spacer()
-            Image(systemName: "chevron.right")
+            Image(systemName: "chevron.right.circle")
+                .resizable()
+                .scaledToFit()
                 .foregroundColor(theme.colors.secondary)
+                .frame(width: 27, height: 27)
+                .padding(1)
                 .onTapGesture {
                     activeSheet = .chatProfiles
                 }
         }
-        .padding(.leading, -4)
     }
 
     private func userView(_ u: UserInfo, size: CGFloat) -> some View {
