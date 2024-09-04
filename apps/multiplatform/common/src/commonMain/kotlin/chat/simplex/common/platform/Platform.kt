@@ -21,7 +21,7 @@ interface PlatformInterface {
   fun androidIsBackgroundCallAllowed(): Boolean = true
   fun androidSetNightModeIfSupported() {}
   fun androidSetStatusAndNavBarColors(isLight: Boolean, backgroundColor: Color, hasTop: Boolean, hasBottom: Boolean) {}
-  fun androidSetStatusBarColor(isLight: Boolean, animatedColor: Animatable<Color, AnimationVector4D>) {}
+  fun androidSetDrawerStatusAndNavBarColor(isLight: Boolean, drawerShadingColor: Animatable<Color, AnimationVector4D>, toolbarOnTop: Boolean, changeNavBarColor: (originalColor: Color) -> Color) {}
   fun androidStartCallActivity(acceptCall: Boolean, remoteHostId: Long? = null, chatId: ChatId? = null) {}
   fun androidPictureInPictureAllowed(): Boolean = true
   fun androidCallEnded() {}

@@ -379,6 +379,8 @@ fun UserPicker(
     )
   }
 
+  val originalNavColor = mutableStateOf<Color?>(null)
+
   LaunchedEffect(Unit) {
     launch {
       userPickerState.collect {
@@ -387,15 +389,18 @@ fun UserPicker(
         val toColor = if (colors.isLight) colors.onSurface.copy(alpha = ScrimOpacity) else Color.Black.copy(0.64f)
 
         animatedColor.animateTo(if (newChat.isVisible()) toColor else Color.Transparent, newChatSheetAnimSpec()) {
-          if (newChat.isVisible()) {
-            platform.androidSetStatusAndNavBarColors(colors.isLight, colors.surface, !appPrefs.oneHandUI.get(), false)
-          } else {
-            platform.androidSetStatusAndNavBarColors(colors.isLight, colors.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
-          }
           if (newChat.isVisible() || newChat.isHiding()) {
-            platform.androidSetStatusBarColor(
-              CurrentColors.value.colors.isLight,
-              animatedColor
+            platform.androidSetDrawerStatusAndNavBarColor(
+              isLight = CurrentColors.value.colors.isLight,
+              drawerShadingColor =  animatedColor,
+              toolbarOnTop = !appPrefs.oneHandUI.get(),
+              changeNavBarColor = { c ->
+                val onc = originalNavColor.value
+                if (onc == null) {
+                  originalNavColor.value = c
+                }
+                if (newChat.isVisible()) colors.surface else onc ?: colors.background.mixWith(colors.onBackground, 0.97f)
+              },
             )
           }
         }

@@ -11,6 +11,7 @@ import android.content.pm.ActivityInfo
 import android.os.*
 import android.view.View
 import androidx.compose.animation.core.*
+import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.graphics.Color
@@ -277,18 +278,28 @@ class SimplexApp: Application(), LifecycleEventObserver {
         uiModeManager.setApplicationNightMode(mode)
       }
 
-      override fun androidSetStatusBarColor(isLight: Boolean, animatedColor: Animatable<Color, AnimationVector4D>) {
+      override fun androidSetDrawerStatusAndNavBarColor(
+        isLight: Boolean,
+        drawerShadingColor: Animatable<Color, AnimationVector4D>,
+        toolbarOnTop: Boolean,
+        changeNavBarColor: (originalColor: Color) -> Color,
+      ) {
         val window = mainActivity.get()?.window ?: return
 
         @Suppress("DEPRECATION")
         val windowInsetController = ViewCompat.getWindowInsetsController(window.decorView)
-        // Animate to the target color
-        //animatedColor.animateTo(targetColor, spec)
-        // Set the status bar color to the animated color
-        window.statusBarColor = CurrentColors.value.colors.background.mixWith(animatedColor.value.copy(1f), 1 - animatedColor.value.alpha).toArgb()
-        // Update light status bar appearance if necessary
-        if (windowInsetController?.isAppearanceLightStatusBars != isLight) {
-          windowInsetController?.isAppearanceLightStatusBars = isLight
+        // Blend status bar color to the animated color
+        val colors = CurrentColors.value.colors
+        val baseBackgroundColor = if (toolbarOnTop) colors.background.mixWith(colors.onBackground, 0.97f) else colors.background
+        window.statusBarColor = baseBackgroundColor.mixWith(drawerShadingColor.value.copy(1f), 1 - drawerShadingColor.value.alpha).toArgb()
+
+        val navBar = changeNavBarColor(Color(window.navigationBarColor)).toArgb()
+
+        if (window.navigationBarColor != navBar) {
+          window.navigationBarColor = navBar
+        }
+        if (windowInsetController?.isAppearanceLightNavigationBars != isLight) {
+          windowInsetController?.isAppearanceLightNavigationBars = isLight
         }
     }
 
