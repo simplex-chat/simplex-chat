@@ -6,6 +6,7 @@ import TextIconSpaced
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
@@ -19,6 +20,8 @@ import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
 import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
@@ -523,6 +526,9 @@ fun UserPicker(
     }
   }
 
+  var drawerHeightPx by remember { mutableStateOf(0) }
+  var offsetY by remember { mutableStateOf(0f) }
+
   Box(
     if (appPlatform.isAndroid) Modifier.drawBehind { drawRect(animatedColor.value) } else Modifier
   ) {
@@ -548,6 +554,15 @@ fun UserPicker(
       Box(
         Modifier
           .fillMaxSize()
+          .pointerInput(Unit) {
+            detectVerticalDragGestures { _, dragAmount ->
+              offsetY += dragAmount
+
+              if (offsetY > drawerHeightPx * 0.3f) {
+                userPickerState.value = AnimatedViewState.HIDING
+              }
+            }
+          }
           .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = { userPickerState.value = AnimatedViewState.HIDING }),
         contentAlignment = if (appPlatform.isAndroid) Alignment.BottomStart else Alignment.TopStart
       ) {
@@ -558,6 +573,10 @@ fun UserPicker(
             .shadow(8.dp, clip = true)
             .fillMaxWidth()
             .background(MaterialTheme.colors.surface)
+            .onGloballyPositioned { coordinates ->
+              offsetY = 0f
+              drawerHeightPx = coordinates.size.height
+            }
         ) {
           val currentRemoteHost = remember { chatModel.currentRemoteHost }.value
           Column(
