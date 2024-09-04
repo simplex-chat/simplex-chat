@@ -133,7 +133,7 @@ fun ShareListUserPicker(
 }
 
 @Composable
-private fun UsersLayout(
+private fun UsersSectionLayout(
   chatModel: ChatModel,
   onCurrentUserClick: () -> Unit,
   onUserClicked: (user: User) -> Unit,
@@ -255,7 +255,7 @@ private fun UsersLayout(
 }
 
 @Composable
-private fun UserPickerUserSectionLayout (
+private fun UserPickerProfileSettingsLayout (
   chatModel: ChatModel,
   userPickerState: MutableStateFlow<AnimatedViewState>,
   showCustomModal: (@Composable ModalData.(ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
@@ -265,7 +265,7 @@ private fun UserPickerUserSectionLayout (
   val stopped = chatModel.chatRunning.value == false
   val profileHidden = rememberSaveable { mutableStateOf(false) }
 
-  UsersLayout(
+  UsersSectionLayout(
     chatModel = chatModel,
     onCurrentUserClick = showCustomModal { m, close -> UserProfileView(m, close) },
     onUserClicked = { user ->
@@ -340,6 +340,32 @@ private fun UserPickerUserSectionLayout (
         }
       )
     }
+  }
+}
+
+@Composable
+private fun UserPickerGlobalSettingsLayout(
+  chatModel: ChatModel,
+  userPickerState: MutableStateFlow<AnimatedViewState>,
+  setPerformLA: (Boolean) -> Unit,
+) {
+  val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
+  SectionItemView(
+    click = {
+      if (appPlatform.isDesktop) {
+        userPickerState.value = AnimatedViewState.HIDING
+      }
+      ModalManager.start.showModalCloseable { close ->
+        SettingsView(chatModel, setPerformLA, close)
+      }
+    },
+    padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)
+  ) {
+    Icon(painterResource(MR.images.ic_settings), text, tint = MaterialTheme.colors.secondary)
+    TextIconSpaced()
+    Text(text, color = Color.Unspecified)
+    Spacer(Modifier.weight(1f))
+    ColorModeSwitcher()
   }
 }
 
@@ -552,7 +578,7 @@ fun UserPicker(
               )
             }
 
-            UserPickerUserSectionLayout(
+            UserPickerProfileSettingsLayout(
               chatModel = chatModel,
               userPickerState = userPickerState,
               showCustomModal = { modalView ->
@@ -581,24 +607,8 @@ fun UserPicker(
             )
 
             Divider(Modifier.padding(DEFAULT_PADDING))
-            val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
-            SectionItemView(
-              click = {
-                if (appPlatform.isDesktop) {
-                  userPickerState.value = AnimatedViewState.HIDING
-                }
-                ModalManager.start.showModalCloseable { close ->
-                  SettingsView(chatModel, setPerformLA, close)
-                }
-              },
-              padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)
-            ) {
-              Icon(painterResource(MR.images.ic_settings), text, tint = MaterialTheme.colors.secondary)
-              TextIconSpaced()
-              Text(text, color = Color.Unspecified)
-              Spacer(Modifier.weight(1f))
-              ColorModeSwitcher()
-            }
+
+            UserPickerGlobalSettingsLayout(chatModel = chatModel, userPickerState = userPickerState, setPerformLA = setPerformLA)
 
             Spacer(Modifier.height(DEFAULT_PADDING_HALF))
           }
@@ -678,24 +688,6 @@ fun UserProfileRow(u: User, enabled: Boolean = chatModel.chatRunning.value == tr
         .padding(start = 10.dp, end = 8.dp),
       color = if (enabled) MenuTextColor else MaterialTheme.colors.secondary,
       fontWeight = if (u.activeUser) FontWeight.Medium else FontWeight.Normal
-    )
-  }
-}
-
-@Composable
-fun RemoteHostRow(h: RemoteHostInfo) {
-  Row(
-    Modifier
-      .widthIn(max = windowWidth() * 0.7f)
-      .padding(start = 17.dp),
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    Icon(painterResource(MR.images.ic_smartphone_300), h.hostDeviceName, Modifier.size(20.dp * fontSizeSqrtMultiplier), tint = MaterialTheme.colors.onBackground)
-    Text(
-      h.hostDeviceName,
-      modifier = Modifier.padding(start = 26.dp, end = 8.dp),
-      color = if (h.activeHost) MaterialTheme.colors.onBackground else MenuTextColor,
-      fontSize = 14.sp,
     )
   }
 }
