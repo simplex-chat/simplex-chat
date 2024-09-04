@@ -159,7 +159,7 @@ private fun UsersLayout(
           IconButton(onClick = onCurrentUserClick, enabled = !stopped) {
               ProfileImage(
                 image = currentUser.image,
-                size = 54.dp * fontSizeSqrtMultiplier,
+                size = 57.dp * fontSizeSqrtMultiplier,
                 color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f)
               )
           }
@@ -247,7 +247,7 @@ private fun UsersLayout(
         color = mainColor,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.padding(top = 12.dp, start = DEFAULT_PADDING)
+        modifier = Modifier.padding(top = DEFAULT_SPACE_AFTER_ICON, start = DEFAULT_PADDING)
       )
     }
   }
