@@ -583,6 +583,9 @@ fun UserPicker(
             val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
             SectionItemView(
               click = {
+                if (appPlatform.isDesktop) {
+                  userPickerState.value = AnimatedViewState.HIDING
+                }
                 ModalManager.start.showModalCloseable { close ->
                   SettingsView(chatModel, setPerformLA, close)
                 }
