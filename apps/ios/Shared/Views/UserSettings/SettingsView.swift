@@ -505,14 +505,6 @@ struct ProfilePreview: View {
             ProfileImage(imageStr: profileOf.image, size: 44, color: color)
                 .padding(.trailing, 6)
             profileName().lineLimit(1)
-//            VStack(alignment: .leading, spacing: 0) {
-//            var t = Text(profileOf.displayName).fontWeight(.semibold).font(.title3)
-//            if profileOf.fullName != "" && profileOf.fullName != profileOf.displayName {
-//                t = t + Text(" (" + profileOf.fullName + ")")
-////                        .font(.callout)
-//                }
-//            t
-//            }
         }
     }
     

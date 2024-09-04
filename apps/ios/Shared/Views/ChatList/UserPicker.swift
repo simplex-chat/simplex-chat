@@ -9,13 +9,14 @@ import SimpleXChat
 struct UserPicker: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
     @Environment(\.scenePhase) var scenePhase
     @Environment(\.colorScheme) var colorScheme
     @Binding var activeSheet: UserPickerSheet?
 
     var body: some View {
         if #available(iOS 16.0, *) {
-            let v = viewBody.presentationDetents([.height(425)])
+            let v = viewBody.presentationDetents([.height(410)])
             if #available(iOS 16.4, *) {
                 v.scrollBounceBehavior(.basedOnSize)
             } else {
@@ -29,25 +30,19 @@ struct UserPicker: View {
     private var viewBody: some View {
         let otherUsers = m.users.filter { u in !u.user.hidden && u.user.userId != m.currentUser?.userId }
         return List {
-            Section {
-                if otherUsers.isEmpty {
-                    openSheetOnTap(title: "Create chat profile", icon: "person.crop.circle.fill.badge.plus") {
-                        activeSheet = .chatProfiles
-                    }
-                } else {
-                    userPickerRow(otherUsers)
-                        .listRowInsets(EdgeInsets(top: 1, leading: 12, bottom: 1, trailing: 12))
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                }
-            }
-                
-            Section {
+            Section(header: Text("You").foregroundColor(theme.colors.secondary)) {
                 if let user = m.currentUser {
                     openSheetOnTap(label: {
-                        ProfilePreview(profileOf: user)
-                            .foregroundColor(.primary)
-                            .padding(.leading, -8)
+                        ZStack {
+                            let v = ProfilePreview(profileOf: user)
+                                .foregroundColor(.primary)
+                                .padding(.leading, -8)
+                            if #available(iOS 16.0, *) {
+                                v
+                            } else {
+                                v.padding(.vertical, 4)
+                            }
+                        }
                     }) {
                         activeSheet = .currentProfile
                     }
@@ -61,8 +56,22 @@ struct UserPicker: View {
                     }
                 }
             }
-            
+
             Section {
+                if otherUsers.isEmpty {
+                    openSheetOnTap(title: "Your chat profiles", icon: "person.crop.rectangle.stack") {
+                        activeSheet = .chatProfiles
+                    }
+                } else {
+                    let v = userPickerRow(otherUsers, size: 44)
+                        .padding(.leading, -8)
+                    if #available(iOS 16.0, *) {
+                        v
+                    } else {
+                        v.padding(.vertical, 4)
+                    }
+                }
+
                 openSheetOnTap(title: "Use from desktop", icon: "desktopcomputer") {
                     activeSheet = .useFromDesktop
                 }
@@ -112,18 +121,30 @@ struct UserPicker: View {
         .modifier(ThemedBackground(grouped: true))
     }
         
-    private func userPickerRow(_ users: [UserInfo]) -> some View {
-        HStack(spacing: 0) {
+    private func userPickerRow(_ users: [UserInfo], size: CGFloat) -> some View {
+        HStack(spacing: 6) {
             let s = ScrollView(.horizontal) {
-                HStack(spacing: 24) {
+                HStack(spacing: 27) {
+//                    Image(systemName: "person.crop.rectangle.stack.fill")
+//                        .resizable()
+//                        .scaledToFit()
+//                        .frame(height: size)
+//                        .foregroundColor(Color(uiColor: .tertiarySystemGroupedBackground).asAnotherColorFromSecondaryVariant(theme))
+//                        .padding([.top, .trailing], 3)
+//                    Image(systemName: "theatermasks.fill")
+//                        .resizable()
+//                        .scaledToFit()
+//                        .frame(width: size, height: size)
+//                        .foregroundColor(.indigo)
+//                        .padding([.top, .trailing], 3)
                     ForEach(users) { u in
                         if !u.user.hidden && u.user.userId != m.currentUser?.userId {
-                            userView(u, size: 32)
+                            userView(u, size: size)
                         }
                     }
                 }
                 .padding(.leading, 2)
-                .padding(.trailing, 24)
+                .padding(.trailing, 22)
             }
             ZStack {
                 if #available(iOS 16.0, *) {
@@ -144,21 +165,18 @@ struct UserPicker: View {
                         startPoint: .leading,
                         endPoint: .trailing
                     )
-                    .frame(width: 24)
+                    .frame(width: size)
                 }
-                .frame(height: 35)
+                .frame(height: size + 3)
                 .blendMode(.destinationOut)
                 .allowsHitTesting(false)
             }
             .compositingGroup()
             .padding(.top, -3) // to fit unread badge
             Spacer()
-            Image(systemName: "chevron.right.circle")
-                .resizable()
-                .scaledToFit()
-                .foregroundColor(theme.colors.secondary.opacity(0.63))
-                .frame(width: 31, height: 31)
-                .padding(1)
+            Image(systemName: "chevron.right")
+                .foregroundColor(theme.colors.secondary)
+                .padding(.trailing, 4)
                 .onTapGesture {
                     activeSheet = .chatProfiles
                 }
@@ -167,10 +185,10 @@ struct UserPicker: View {
 
     private func userView(_ u: UserInfo, size: CGFloat) -> some View {
         ZStack(alignment: .topTrailing) {
-            ProfileImage(imageStr: u.user.image, size: size, color: Color(uiColor: .quaternaryLabel))
+            ProfileImage(imageStr: u.user.image, size: size, color: Color(uiColor: .tertiarySystemGroupedBackground))
                 .padding([.top, .trailing], 3)
             if (u.unreadCount > 0) {
-                unreadBadge(size: 10)
+                unreadBadge(u)
             }
         }
         .frame(width: size)
@@ -212,10 +230,15 @@ struct UserPicker: View {
         .contentShape(Rectangle())
     }
     
-    private func unreadBadge(size: CGFloat) -> some View {
-        Circle()
-            .frame(width: size, height: size)
-            .foregroundColor(theme.colors.primary)
+    private func unreadBadge(_ u: UserInfo) -> some View {
+        let size = dynamicSize(userFont).chatInfoSize
+        return unreadCountText(u.unreadCount)
+            .font(userFont <= .xxxLarge ? .caption  : .caption2)
+            .foregroundColor(.white)
+            .padding(.horizontal, dynamicSize(userFont).unreadPadding)
+            .frame(minWidth: size, minHeight: size)
+            .background(u.user.showNtfs ? theme.colors.primary : theme.colors.secondary)
+            .cornerRadius(dynamicSize(userFont).unreadCorner)
     }
 }
 

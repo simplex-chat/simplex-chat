@@ -297,7 +297,7 @@ struct ChatListView: View {
         }
     }
 
-    private func unreadBadge(_ text: Text? = Text(" "), size: CGFloat = 18) -> some View {
+    private func unreadBadge(size: CGFloat = 18) -> some View {
         Circle()
             .frame(width: size, height: size)
             .foregroundColor(theme.colors.primary)
