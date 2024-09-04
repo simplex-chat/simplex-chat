@@ -282,7 +282,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
         isLight: Boolean,
         drawerShadingColor: Animatable<Color, AnimationVector4D>,
         toolbarOnTop: Boolean,
-        changeNavBarColor: (originalColor: Color) -> Color,
+        navBarColor: Color,
       ) {
         val window = mainActivity.get()?.window ?: return
 
@@ -292,16 +292,16 @@ class SimplexApp: Application(), LifecycleEventObserver {
         val colors = CurrentColors.value.colors
         val baseBackgroundColor = if (toolbarOnTop) colors.background.mixWith(colors.onBackground, 0.97f) else colors.background
         window.statusBarColor = baseBackgroundColor.mixWith(drawerShadingColor.value.copy(1f), 1 - drawerShadingColor.value.alpha).toArgb()
-
-        val navBar = changeNavBarColor(Color(window.navigationBarColor)).toArgb()
+        val navBar = navBarColor.toArgb()
 
         if (window.navigationBarColor != navBar) {
           window.navigationBarColor = navBar
         }
+
         if (windowInsetController?.isAppearanceLightNavigationBars != isLight) {
           windowInsetController?.isAppearanceLightNavigationBars = isLight
         }
-    }
+      }
 
       override fun androidSetStatusAndNavBarColors(isLight: Boolean, backgroundColor: Color, hasTop: Boolean, hasBottom: Boolean) {
         val window = mainActivity.get()?.window ?: return

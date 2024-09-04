@@ -35,6 +35,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.CreateProfile
 import chat.simplex.common.views.newchat.*
+import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.remote.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.views.usersettings.AppearanceScope.ColorModeSwitcher
@@ -389,18 +390,23 @@ fun UserPicker(
         val toColor = if (colors.isLight) colors.onSurface.copy(alpha = ScrimOpacity) else Color.Black.copy(0.64f)
 
         animatedColor.animateTo(if (newChat.isVisible()) toColor else Color.Transparent, newChatSheetAnimSpec()) {
-          if (newChat.isVisible() || newChat.isHiding()) {
+          if (newChat.isVisible()) {
             platform.androidSetDrawerStatusAndNavBarColor(
-              isLight = CurrentColors.value.colors.isLight,
-              drawerShadingColor =  animatedColor,
+              isLight = colors.isLight,
+              drawerShadingColor = animatedColor,
               toolbarOnTop = !appPrefs.oneHandUI.get(),
-              changeNavBarColor = { c ->
-                val onc = originalNavColor.value
-                if (onc == null) {
-                  originalNavColor.value = c
-                }
-                if (newChat.isVisible()) colors.surface else onc ?: colors.background.mixWith(colors.onBackground, 0.97f)
-              },
+              navBarColor = colors.surface
+            )
+          } else if (newChat.isHiding()) {
+            platform.androidSetDrawerStatusAndNavBarColor(
+              isLight = colors.isLight,
+              drawerShadingColor = animatedColor,
+              toolbarOnTop = !appPrefs.oneHandUI.get(),
+              navBarColor = (if (appPrefs.oneHandUI.get() && appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
+                colors.background.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
+              } else {
+                colors.background
+              })
             )
           }
         }
