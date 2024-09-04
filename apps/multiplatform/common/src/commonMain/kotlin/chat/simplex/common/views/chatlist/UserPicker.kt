@@ -171,7 +171,8 @@ private fun UsersLayout(
             horizontalArrangement = Arrangement.End,
             modifier = Modifier.padding(end = DEFAULT_PADDING_HALF).fillMaxWidth().horizontalScroll(scrollState)
           ) {
-            Spacer(Modifier.width((93.dp + 8.dp) * fontSizeSqrtMultiplier))
+            val spacingLeft = if (appPlatform.isAndroid) 93.dp else 66.dp
+            Spacer(Modifier.width((spacingLeft + 8.dp) * fontSizeSqrtMultiplier))
             users.forEach { u ->
               IconButton(
                 onClick = { onUserClicked(u.user) },
