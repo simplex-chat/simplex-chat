@@ -59,46 +59,42 @@ struct ChatListView: View {
             ) { chatListView }
         }
         .sheet(isPresented: $userPickerShown) {
-            UserPicker { sheet in
-                dismissAllSheets(animated: true) {
-                    activeUserPickerSheet = sheet
+            UserPicker(activeSheet: $activeUserPickerSheet)
+                .sheet(item: $activeUserPickerSheet) { sheet in
+                    if let currentUser = chatModel.currentUser {
+                        switch sheet {
+                        case .address:
+                            NavigationView {
+                                UserAddressView(shareViaProfile: currentUser.addressShared)
+                                    .navigationTitle("Public address")
+                                    .navigationBarTitleDisplayMode(.large)
+                                    .modifier(ThemedBackground(grouped: true))
+                            }
+                        case .chatProfiles:
+                            NavigationView {
+                                UserProfilesView()
+                            }
+                        case .currentProfile:
+                            NavigationView {
+                                UserProfile()
+                                    .navigationTitle("Your current profile")
+                                    .modifier(ThemedBackground())
+                            }
+                        case .chatPreferences:
+                            NavigationView {
+                                PreferencesView(profile: currentUser.profile, preferences: currentUser.fullPreferences, currentPreferences: currentUser.fullPreferences)
+                                    .navigationTitle("Your preferences")
+                                    .navigationBarTitleDisplayMode(.large)
+                                    .modifier(ThemedBackground(grouped: true))
+                            }
+                        case .useFromDesktop:
+                            ConnectDesktopView(viaSettings: false)
+                        case .settings:
+                            SettingsView(showSettings: $showSettings)
+                                .navigationBarTitleDisplayMode(.large)
+                        }
+                    }
                 }
-            }
-        }
-        .sheet(item: $activeUserPickerSheet) { sheet in
-            if let currentUser = chatModel.currentUser {
-                switch sheet {
-                case .address:
-                    NavigationView {
-                        UserAddressView(shareViaProfile: currentUser.addressShared)
-                            .navigationTitle("Public address")
-                            .navigationBarTitleDisplayMode(.large)
-                            .modifier(ThemedBackground(grouped: true))
-                    }
-                case .chatProfiles:
-                    NavigationView {
-                        UserProfilesView()
-                    }
-                case .currentProfile:
-                    NavigationView {
-                        UserProfile()
-                            .navigationTitle("Your current profile")
-                            .modifier(ThemedBackground())
-                    }
-                case .chatPreferences:
-                    NavigationView {
-                        PreferencesView(profile: currentUser.profile, preferences: currentUser.fullPreferences, currentPreferences: currentUser.fullPreferences)
-                            .navigationTitle("Your preferences")
-                            .navigationBarTitleDisplayMode(.large)
-                            .modifier(ThemedBackground(grouped: true))
-                    }
-                case .useFromDesktop:
-                    ConnectDesktopView(viaSettings: false)
-                case .settings:
-                    SettingsView(showSettings: $showSettings)
-                        .navigationBarTitleDisplayMode(.large)
-                }
-            }
         }
     }
 
