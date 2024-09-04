@@ -15,93 +15,34 @@ struct UserPicker: View {
     @State private var activeUser: User? = nil
     
     var body: some View {
-        let v = List {
-//            VStack(alignment: .leading, spacing: 6) {
-//                if let currentUser = activeUser ?? m.currentUser {
-//                    HStack(alignment: .top) {
-//                        ProfileImage(imageStr: currentUser.image, size: 52)
-//                            .onTapGesture {
-//                                activeSheet = .currentProfile
-//                            }
-//                        Spacer()
-//                        let usersToPreview = m.users.filter({ u in !u.user.hidden && u.user.userId != currentUser.userId })
-//                        ZStack(alignment: .leading) {
-//                            ZStack(alignment: .trailing) {
-//                                let ps = HStack(spacing: 20) {
-//                                    Color.clear.frame(width: 48, height: 32)
-//                                    ForEach(usersToPreview) { u in
-//                                        userView(u)
-//                                    }
-//                                    Color.clear.frame(width: 32, height: 32)
-//                                }
-//                                
-//                                if usersToPreview.count > 3 {
-//                                    let s = ScrollView(.horizontal) { ps }.frame(width: 284)
-//                                    if #available(iOS 16.0, *) {
-//                                        s.scrollIndicators(.hidden)
-//                                    } else {
-//                                        s
-//                                    }
-//                                } else {
-//                                    ps
-//                                }
-//                                HStack(spacing: 0) {
-//                                    LinearGradient(
-//                                        colors: [.clear, theme.colors.background.asGroupedBackground(theme.base.mode)],
-//                                        startPoint: .leading,
-//                                        endPoint: .trailing
-//                                    )
-//                                    .frame(width: 32, height: 35)
-//                                    Button {
-//                                        activeSheet = .chatProfiles
-//                                    } label: {
-//                                        Image(systemName: "ellipsis.circle.fill")
-//                                            .resizable()
-//                                            .scaledToFit()
-//                                            .frame(width: 31, height: 31)
-//                                            .padding(.top, 4)
-//                                            .foregroundColor(Color(uiColor: .quaternaryLabel))
-//                                            .modifier(ThemedBackground(grouped: true))
-//                                    }
-//                                }
-//                            }
-//                            .padding(.top, 10)
-//                            
-//                            LinearGradient(
-//                                colors: [.clear, theme.colors.background.asGroupedBackground(theme.base.mode)],
-//                                startPoint: .trailing,
-//                                endPoint: .leading
-//                            )
-//                            .frame(width: 32, height: 35)
-//                        }
-//                    }
-//                    
-//                    Text(currentUser.displayName)
-//                        .fontWeight(.bold)
-//                        .font(.headline)
-//                }
-//            }
-//            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-//            .listRowBackground(Color.clear)
-//            .listRowSeparator(.hidden)
-//            .padding(.horizontal, 12)
-
-            let otherUsers = m.users.filter { u in !u.user.hidden && u.user.userId != m.currentUser?.userId }
-            if otherUsers.isEmpty {
-                Section {
-                    openSheetOnTap(title: "Create chat profile", image: "person.crop.circle.fill.badge.plus") {
+        if #available(iOS 16.0, *) {
+            let v = viewBody.presentationDetents([.height(425)])
+            if #available(iOS 16.4, *) {
+                v.scrollBounceBehavior(.basedOnSize)
+            } else {
+                v
+            }
+        } else {
+            viewBody
+        }
+    }
+    
+    private var viewBody: some View {
+        let otherUsers = m.users.filter { u in !u.user.hidden && u.user.userId != m.currentUser?.userId }
+        return List {
+            Section {
+                if otherUsers.isEmpty {
+                    openSheetOnTap(title: "Create chat profile", icon: "person.crop.circle.fill.badge.plus") {
                         activeSheet = .chatProfiles
                     }
+                } else {
+                    userPickerRow(otherUsers)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 12, bottom: 0, trailing: 12))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
                 }
-            } else {
-                userPickerRow(otherUsers)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .padding(.vertical, -16)
             }
                 
-
             Section {
                 if let user = m.currentUser {
                     openSheetOnTap(label: {
@@ -112,23 +53,23 @@ struct UserPicker: View {
                         activeSheet = .currentProfile
                     }
 
-                    openSheetOnTap(title: m.userAddress == nil ? "Create public address" : "Your public address", image: "qrcode") {
+                    openSheetOnTap(title: m.userAddress == nil ? "Create public address" : "Your public address", icon: "qrcode") {
                         activeSheet = .address
                     }
                     
-                    openSheetOnTap(title: "Chat preferences", image: "switch.2") {
+                    openSheetOnTap(title: "Chat preferences", icon: "switch.2") {
                         activeSheet = .chatPreferences
                     }
                 }
             }
             
             Section {
-                openSheetOnTap(title: "Use from desktop", image: "desktopcomputer") {
+                openSheetOnTap(title: "Use from desktop", icon: "desktopcomputer") {
                     activeSheet = .useFromDesktop
                 }
 
                 HStack {
-                    openSheetOnTap(title: "Settings", image: "gearshape") {
+                    openSheetOnTap(title: "Settings", icon: "gearshape") {
                         activeSheet = .settings
                     }
                     Label {} icon: {
@@ -170,26 +111,20 @@ struct UserPicker: View {
             }
         }
         .modifier(ThemedBackground(grouped: true))
-
-        if #available(iOS 16.0, *) {
-            v.presentationDetents([.height(425)])
-        } else {
-            v
-        }
     }
         
     private func userPickerRow(_ users: [UserInfo]) -> some View {
         HStack(spacing: 0) {
             let s = ScrollView(.horizontal) {
-                HStack(spacing: 20) {
+                HStack(spacing: 24) {
                     ForEach(users) { u in
                         if !u.user.hidden && u.user.userId != m.currentUser?.userId {
-                            userView(u, size: 28)
+                            userView(u, size: 32)
                         }
                     }
                 }
                 .padding(.leading, 2)
-                .padding(.trailing, 20)
+                .padding(.trailing, 24)
             }
             ZStack(alignment: .topTrailing) {
                 if #available(iOS 16.0, *) {
@@ -202,7 +137,7 @@ struct UserPicker: View {
                     startPoint: .leading,
                     endPoint: .trailing
                 )
-                .frame(width: 20, height: 31)
+                .frame(width: 24, height: 35)
                 .allowsHitTesting(false)
             }
             .padding(.top, -3) // to fit unread badge
@@ -210,8 +145,8 @@ struct UserPicker: View {
             Image(systemName: "chevron.right.circle")
                 .resizable()
                 .scaledToFit()
-                .foregroundColor(theme.colors.secondary)
-                .frame(width: 27, height: 27)
+                .foregroundColor(theme.colors.secondary.opacity(0.67))
+                .frame(width: 31, height: 31)
                 .padding(1)
                 .onTapGesture {
                     activeSheet = .chatProfiles
@@ -249,18 +184,26 @@ struct UserPicker: View {
         }
     }
     
-    private func openSheetOnTap(title: LocalizedStringKey, image: String, action: @escaping () -> Void) -> some View {
+    private func openSheetOnTap(title: LocalizedStringKey, icon: String, action: @escaping () -> Void) -> some View {
         openSheetOnTap(label: {
-            Label {
-                Text(title).foregroundColor(.primary)
-            } icon: {
-                Image(systemName: image)
-                    .resizable()
-                    .scaledToFit()
+            ZStack(alignment: .leading) {
+                Image(systemName: icon).frame(maxWidth: 24, maxHeight: 24, alignment: .center)
                     .symbolRenderingMode(.monochrome)
                     .foregroundColor(theme.colors.secondary)
-                    .frame(maxWidth: 20, maxHeight: 20)
+                Text(title)
+                    .foregroundColor(.primary)
+                    .padding(.leading, 36)
             }
+//            Label {
+//                Text(title).foregroundColor(.primary)
+//            } icon: {
+//                Image(systemName: image)
+//                    .resizable()
+//                    .scaledToFit()
+//                    .symbolRenderingMode(.monochrome)
+//                    .foregroundColor(theme.colors.secondary)
+//                    .frame(maxHeight: 20)
+//            }
         }, action: action)
     }
     
