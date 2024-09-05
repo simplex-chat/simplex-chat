@@ -22,7 +22,6 @@ struct UserAddressView: View {
     @State private var mailViewResult: Result<MFMailComposeResult, Error>? = nil
     @State private var alert: UserAddressAlert?
     @State private var progressIndicator = false
-    @State private var shareItem: ShareItem?
     @FocusState private var keyboardVisible: Bool
 
     private enum UserAddressAlert: Identifiable {
@@ -69,7 +68,6 @@ struct UserAddressView: View {
                 }
             }
         }
-        .shareSheet(item: $shareItem)
     }
 
     @Namespace private var bottomID
@@ -247,7 +245,7 @@ struct UserAddressView: View {
 
     private func shareQRCodeButton(_ userAddress: UserContactLink) -> some View {
         Button {
-            shareItem = ShareItem(content: simplexChatLink(userAddress.connReqContact))
+            showShareSheet(items: [simplexChatLink(userAddress.connReqContact)])
         } label: {
             settingsRow("square.and.arrow.up", color: theme.colors.secondary) {
                 Text("Share address")

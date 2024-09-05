@@ -31,7 +31,7 @@ struct ChatListView: View {
     @State private var searchChatFilteredBySimplexLink: String? = nil
     @State private var scrollToSearchBar = false
     @State private var activeUserPickerSheet: UserPickerSheet? = nil
-    @State private var isUserPickerPresented: Bool = false
+    @State private var userPickerShown: Bool = false
 
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
@@ -58,7 +58,7 @@ struct ChatListView: View {
                 destination: chatView
             ) { chatListView }
         }
-        .sheet(isPresented: $isUserPickerPresented) {
+        .sheet(isPresented: $userPickerShown) {
             UserPicker(activeSheet: $activeUserPickerSheet)
                 .sheet(item: $activeUserPickerSheet) { sheet in
                     if let currentUser = chatModel.currentUser {
@@ -207,7 +207,7 @@ struct ChatListView: View {
             }
         }
         .onTapGesture {
-            isUserPickerPresented = true
+            userPickerShown = true
         }
     }
 
