@@ -635,7 +635,7 @@ object AppearanceScope {
       verticalArrangement = Arrangement.Center,
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
-      Icon(painterResource(if (themeMode == DefaultThemeMode.LIGHT) MR.images.ic_light_mode else MR.images.ic_dark_mode), stringResource(MR.strings.color_mode_light), tint = MaterialTheme.colors.secondary)
+      Icon(painterResource(if (themeMode == DefaultThemeMode.LIGHT) MR.images.ic_light_mode else MR.images.ic_bedtime_moon), stringResource(MR.strings.color_mode_light), tint = MaterialTheme.colors.secondary)
     }
   }
 
