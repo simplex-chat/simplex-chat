@@ -12,8 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.User
 import chat.simplex.common.model.UserInfo
-import chat.simplex.common.ui.theme.CurrentColors
-import chat.simplex.common.ui.theme.DEFAULT_PADDING
+import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.fontSizeSqrtMultiplier
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
@@ -31,7 +30,7 @@ actual fun UserPickerInactiveUsersSection(
   if (users.isNotEmpty()) {
     SectionItemView(minHeight = 80.dp, padding = PaddingValues(start = 16.dp), disabled = stopped) {
       Box {
-        Row(modifier = Modifier.padding(end = DEFAULT_PADDING).horizontalScroll(scrollState)) {
+        Row(modifier = Modifier.padding(end = DEFAULT_PADDING * 1.9f).horizontalScroll(scrollState)) {
           users.forEach { u ->
             UserPickerInactiveUserBadge(u, stopped) {
               onUserClicked(it)
@@ -41,7 +40,7 @@ actual fun UserPickerInactiveUsersSection(
         }
         Box(
           contentAlignment = Alignment.CenterEnd,
-          modifier = Modifier.fillMaxWidth()
+          modifier = Modifier.padding(end = DEFAULT_PADDING * 0.7f).fillMaxWidth()
         ) {
           Row(
             horizontalArrangement = Arrangement.End,
@@ -60,7 +59,7 @@ actual fun UserPickerInactiveUsersSection(
           }
           IconButton(
             onClick = onShowAllProfilesClicked,
-            enabled = !stopped,
+            enabled = !stopped
           ) {
             Box(
               contentAlignment = Alignment.CenterEnd
