@@ -141,10 +141,7 @@ private fun ActiveUserSection(
   val stopped = chatModel.chatRunning.value == false
 
   if (currentUser != null) {
-    Spacer(Modifier.height(DEFAULT_PADDING_HALF))
-    SectionView(
-      title = stringResource(MR.strings.settings_section_title_you),
-      ) {
+    SectionView {
       SectionItemView(showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }, 80.dp, padding = PaddingValues(start = 16.dp, end = DEFAULT_PADDING), disabled = stopped) {
         ProfilePreview(currentUser.profile, stopped = stopped)
       }
