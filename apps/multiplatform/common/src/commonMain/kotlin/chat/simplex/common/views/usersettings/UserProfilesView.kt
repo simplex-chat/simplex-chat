@@ -51,13 +51,6 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
     addUser = {
       ModalManager.center.showModalCloseable { close ->
         CreateProfile(m, close)
-        if (appPlatform.isDesktop) {
-          // Hide settings to allow clicks to pass through to CreateProfile view
-          DisposableEffectOnGone(always = { scope.launch { close.invoke() } }) {
-            // Show settings again to allow intercept clicks to close modals after profile creation finishes
-            //scope.launch(NonCancellable) { drawerState.open() }
-          }
-        }
       }
     },
     activateUser = { user ->
