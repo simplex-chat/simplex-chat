@@ -46,7 +46,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
 @Composable fun UserPickerOptionRow(icon: Painter, text: String, click: (() -> Unit)? = null, disabled: Boolean = false) {
-  SectionItemView(click, disabled = disabled) {
+  SectionItemView(click, disabled = disabled, extraPadding = true) {
     Icon(icon, text, tint = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.secondary)
     TextIconSpaced()
     Text(text = text, color = if (disabled) MaterialTheme.colors.secondary else Color.Unspecified)
@@ -262,7 +262,7 @@ private fun GlobalSettingsSection(
           SettingsView(chatModel, setPerformLA, close)
         }
       },
-      padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)
+      padding = PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING + 2.dp)
     ) {
       val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
       Icon(painterResource(MR.images.ic_settings), text, tint = MaterialTheme.colors.secondary)
