@@ -26,21 +26,62 @@ struct CIMetaView: View {
         if chatItem.isDeletedContent {
             chatItem.timestampText.font(.caption).foregroundColor(metaColor)
         } else {
-            ciMetaText(
-                chatItem.meta,
-                chatTTL: chat.chatInfo.timedMessagesTTL,
-                encrypted: chatItem.encryptedFile,
-                color: invertedMaterial
-                    ? nil
-                    : chatItem.meta.itemStatus.sndProgress == .partial
+            ZStack {
+                ciMetaText(
+                    chatItem.meta,
+                    chatTTL: chat.chatInfo.timedMessagesTTL,
+                    encrypted: chatItem.encryptedFile,
+                    color: chatItem.meta.itemStatus.sndProgress == .partial
                         ? paleMetaColor
                         : metaColor,
-                showStatus: showStatus,
-                showEdited: showEdited,
-                showViaProxy: showSentViaProxy,
-                showTimesamp: showTimestamp
-            )
-            .invertedForegroundStyle(enabled: invertedMaterial)
+                    colorMode: invertedMaterial
+                        ? .invertedMaterial
+                        : .normal,
+                    showStatus: showStatus,
+                    showEdited: showEdited,
+                    showViaProxy: showSentViaProxy,
+                    showTimesamp: showTimestamp
+                ).invertedForegroundStyle(enabled: invertedMaterial)
+                if invertedMaterial {
+                    ciMetaText(
+                        chatItem.meta,
+                        chatTTL: chat.chatInfo.timedMessagesTTL,
+                        encrypted: chatItem.encryptedFile,
+                        colorMode: .colorOverride,
+                        showStatus: showStatus,
+                        showEdited: showEdited,
+                        showViaProxy: showSentViaProxy,
+                        showTimesamp: showTimestamp
+                    )
+                }
+            }
+        }
+    }
+}
+
+enum MetaColorMode {
+    // Renders provided colours
+    case normal
+    // Fully transparent meta - used for reserving space
+    case transparent
+    // Renders white on dark backgrounds and black on light ones
+    case invertedMaterial
+    // Only renders colors that differ from base
+    case colorOverride
+
+    func resolve(_ c: Color?, isOverride: Bool = false) -> Color? {
+        switch self {
+        case .normal: c
+        case .transparent: .clear
+        case .invertedMaterial: nil
+        case .colorOverride: isOverride ? c : .clear
+        }
+    }
+
+    var statusSpacer: Text {
+        switch self {
+        case .normal, .transparent: Text(Image(systemName: "circlebadge.fill"))
+        case .invertedMaterial, .colorOverride: Text(" ").kerning(13)
         }
     }
 }
@@ -49,44 +90,43 @@ func ciMetaText(
     _ meta: CIMeta,
     chatTTL: Int?,
     encrypted: Bool?,
-    color: Color? = .clear,
+    color: Color = .clear,
     primaryColor: Color = .accentColor,
-    transparent: Bool = false,
+    colorMode: MetaColorMode = .normal,
     showStatus: Bool = true,
     showEdited: Bool = true,
     showViaProxy: Bool,
     showTimesamp: Bool
 ) -> Text {
     var r = Text("")
+    let resolved = colorMode.resolve(color)
     if showEdited, meta.itemEdited {
-        r = r + statusIconText("pencil", color)
+        r = r + statusIconText("pencil", resolved)
     }
     if meta.disappearing {
-        r = r + statusIconText("timer", color).font(.caption2)
+        r = r + statusIconText("timer", resolved).font(.caption2)
         let ttl = meta.itemTimed?.ttl
         if ttl != chatTTL {
-            r = r + Text(shortTimeText(ttl)).foregroundColor(color)
+            r = r + Text(shortTimeText(ttl)).foreground(resolved)
         }
         r = r + Text(" ")
     }
     if showViaProxy, meta.sentViaProxy == true {
-        r = r + statusIconText("arrow.forward", color?.opacity(0.67)).font(.caption2)
+        r = r + statusIconText("arrow.forward", resolved?.opacity(0.67)).font(.caption2)
     }
     if showStatus {
         if let (image, statusColor) = meta.itemStatus.statusIcon(color, primaryColor) {
-            let metaColor = color == nil
-            ? nil
-            : transparent ? .clear : statusColor
+            let metaColor = colorMode.resolve(statusColor, isOverride: statusColor != color)
             r = r + Text(image).foreground(metaColor) + Text(" ")
         } else if !meta.disappearing {
-            r = r + Text(" ").kerning(13)/* kerning to match checkmark.wide width */ + Text(" ")
+            r = r + colorMode.statusSpacer.foreground(.clear) + Text(" ")
         }
     }
     if let enc = encrypted {
-        r = r + statusIconText(enc ? "lock" : "lock.open", color) + Text(" ")
+        r = r + statusIconText(enc ? "lock" : "lock.open", resolved) + Text(" ")
     }
     if showTimesamp {
-        r = r + meta.timestampText.foreground(color)
+        r = r + meta.timestampText.foreground(resolved)
     }
     return r.font(.caption)
 }
