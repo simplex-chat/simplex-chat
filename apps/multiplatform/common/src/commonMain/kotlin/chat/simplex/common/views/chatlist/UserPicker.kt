@@ -22,10 +22,12 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.text.TextStyle
 import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
@@ -184,16 +186,18 @@ private fun ActiveUserSection(
 }
 
 @Composable
-private fun BoxScope.unreadBadge(text: String? = "") {
+private fun BoxScope.unreadBadge(unreadCount: Int) {
   Text(
-    text ?: "",
-    color = MaterialTheme.colors.onPrimary,
-    fontSize = 12.sp,
+    if (unreadCount > 0) unreadCountStr(unreadCount) else "",
+    color = Color.White,
+    fontSize = 10.sp,
+    style = TextStyle(textAlign = TextAlign.Center),
     modifier = Modifier
-      .background(MaterialTheme.colors.primary, shape = CircleShape)
+      .offset(y = 3.sp.toDp())
+      .background(MaterialTheme.colors.primaryVariant, shape = CircleShape)
       .badgeLayout()
-      .padding(horizontal = 3.dp)
-      .padding(vertical = 2.dp)
+      .padding(horizontal = 2.sp.toDp())
+      .padding(vertical = 2.sp.toDp())
       .align(Alignment.TopEnd)
   )
 }
@@ -209,7 +213,7 @@ fun UserPickerInactiveUserBadge(userInfo: UserInfo, stopped: Boolean, size: Int 
         ProfileImage(size = size.dp, image = userInfo.user.profile.image, color = MaterialTheme.colors.secondaryVariant)
 
         if (userInfo.unreadCount > 0) {
-          unreadBadge("${userInfo.unreadCount}")
+          unreadBadge(userInfo.unreadCount)
         }
       }
     }
