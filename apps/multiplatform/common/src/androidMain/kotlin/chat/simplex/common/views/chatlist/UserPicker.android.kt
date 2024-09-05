@@ -37,6 +37,7 @@ actual fun UserPickerInactiveUsersSection(
             }
             Spacer(Modifier.width(20.dp))
           }
+          Spacer(Modifier.width(60.dp))
         }
         Box(
           contentAlignment = Alignment.CenterEnd,
@@ -46,7 +47,7 @@ actual fun UserPickerInactiveUsersSection(
             horizontalArrangement = Arrangement.End,
             modifier = Modifier.fillMaxWidth().padding(end = DEFAULT_PADDING).height(60.dp)
           ) {
-            Canvas(modifier = Modifier.height(60.dp).width(200.dp)) {
+            Canvas(modifier = Modifier.height(60.dp).width(100.dp)) {
               drawRect(
                 brush = Brush.linearGradient(
                   colors = listOf(
