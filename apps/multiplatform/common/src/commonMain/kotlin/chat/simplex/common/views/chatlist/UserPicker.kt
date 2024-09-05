@@ -26,7 +26,6 @@ import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
@@ -189,7 +188,7 @@ private fun ActiveUserSection(
 }
 
 @Composable
-private fun InactiveUserBadge(userInfo: UserInfo, stopped: Boolean, onClick: (user: User) -> Unit) {
+fun UserPickerInactiveUserBadge(userInfo: UserInfo, stopped: Boolean, onClick: (user: User) -> Unit) {
   Box {
     IconButton(
       onClick = { onClick(userInfo.user) },
@@ -199,65 +198,6 @@ private fun InactiveUserBadge(userInfo: UserInfo, stopped: Boolean, onClick: (us
         ProfileImage(size = 60.dp, image = userInfo.user.profile.image, color = MaterialTheme.colors.secondaryVariant)
         if (userInfo.unreadCount > 0) {
           unreadBadge()
-        }
-      }
-    }
-  }
-}
-
-@Composable
-private fun InactiveUsersSection(
-  users: List<UserInfo>,
-  stopped: Boolean,
-  onShowAllProfilesClicked: () -> Unit,
-  onUserClicked: (user: User) -> Unit,
-) {
-  val scrollState = rememberScrollState()
-
-  SectionItemView(minHeight = 80.dp, padding = PaddingValues(start = 16.dp), disabled = stopped) {
-    Box {
-      Row(modifier = Modifier.padding(end = DEFAULT_PADDING).horizontalScroll(scrollState)) {
-        users.forEach { u ->
-          val size = 60
-          InactiveUserBadge(u, stopped) {
-            onUserClicked(it)
-          }
-          Spacer(Modifier.width((size * 0.618).dp))
-        }
-      }
-      Box(
-        contentAlignment = Alignment.CenterEnd,
-        modifier = Modifier.fillMaxWidth()
-      ) {
-        Row(
-          horizontalArrangement = Arrangement.End,
-          modifier = Modifier.fillMaxWidth().padding(end = DEFAULT_PADDING).height(60.dp)
-        ) {
-          Canvas(modifier = Modifier.height(60.dp).width(200.dp)) {
-            drawRect(
-              brush = Brush.linearGradient(
-                colors = listOf(
-                  Color.Transparent,
-                  CurrentColors.value.colors.surface,
-                )
-              ),
-            )
-          }
-        }
-        IconButton(
-          onClick = onShowAllProfilesClicked,
-          enabled = !stopped,
-        ) {
-          Box(
-            contentAlignment = Alignment.CenterEnd
-          ) {
-            Icon(
-              painterResource(MR.images.ic_chevron_right),
-              stringResource(MR.strings.your_chat_profiles),
-              tint = MaterialTheme.colors.secondary,
-              modifier = Modifier.size(60.dp * fontSizeSqrtMultiplier)
-            )
-          }
         }
       }
     }
@@ -282,7 +222,7 @@ private fun GlobalSettingsSection(
 
   SectionView {
     if (users.isNotEmpty()) {
-      InactiveUsersSection(
+      UserPickerInactiveUsersSection(
         users = users,
         onShowAllProfilesClicked = onShowAllProfilesClicked,
         onUserClicked = onUserClicked,
@@ -761,6 +701,14 @@ private fun DevicePickerRow(
     }
   }
 }
+
+@Composable
+expect fun UserPickerInactiveUsersSection(
+  users: List<UserInfo>,
+  stopped: Boolean,
+  onShowAllProfilesClicked: () -> Unit,
+  onUserClicked: (user: User) -> Unit,
+)
 
 @Composable
 fun DevicePill(

@@ -1,0 +1,79 @@
+package chat.simplex.common.views.chatlist
+
+import SectionItemView
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import chat.simplex.common.model.User
+import chat.simplex.common.model.UserInfo
+import chat.simplex.common.ui.theme.CurrentColors
+import chat.simplex.common.ui.theme.DEFAULT_PADDING
+import chat.simplex.common.views.helpers.fontSizeSqrtMultiplier
+import chat.simplex.res.MR
+import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
+
+@Composable
+actual fun UserPickerInactiveUsersSection(
+  users: List<UserInfo>,
+  stopped: Boolean,
+  onShowAllProfilesClicked: () -> Unit,
+  onUserClicked: (user: User) -> Unit,
+) {
+  val scrollState = rememberScrollState()
+
+  SectionItemView(minHeight = 80.dp, padding = PaddingValues(start = 16.dp), disabled = stopped) {
+    Box {
+      Row(modifier = Modifier.padding(end = DEFAULT_PADDING).horizontalScroll(scrollState)) {
+        users.forEach { u ->
+          val size = 60
+          UserPickerInactiveUserBadge(u, stopped) {
+            onUserClicked(it)
+          }
+          Spacer(Modifier.width((size * 0.618).dp))
+        }
+      }
+      Box(
+        contentAlignment = Alignment.CenterEnd,
+        modifier = Modifier.fillMaxWidth()
+      ) {
+        Row(
+          horizontalArrangement = Arrangement.End,
+          modifier = Modifier.fillMaxWidth().padding(end = DEFAULT_PADDING).height(60.dp)
+        ) {
+          Canvas(modifier = Modifier.height(60.dp).width(200.dp)) {
+            drawRect(
+              brush = Brush.linearGradient(
+                colors = listOf(
+                  Color.Transparent,
+                  CurrentColors.value.colors.surface,
+                )
+              ),
+            )
+          }
+        }
+        IconButton(
+          onClick = onShowAllProfilesClicked,
+          enabled = !stopped,
+        ) {
+          Box(
+            contentAlignment = Alignment.CenterEnd
+          ) {
+            Icon(
+              painterResource(MR.images.ic_chevron_right),
+              stringResource(MR.strings.your_chat_profiles),
+              tint = MaterialTheme.colors.secondary,
+              modifier = Modifier.size(60.dp * fontSizeSqrtMultiplier)
+            )
+          }
+        }
+      }
+    }
+  }
+}
