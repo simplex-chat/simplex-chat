@@ -28,52 +28,60 @@ actual fun UserPickerInactiveUsersSection(
 ) {
   val scrollState = rememberScrollState()
 
-  SectionItemView(minHeight = 80.dp, padding = PaddingValues(start = 16.dp), disabled = stopped) {
-    Box {
-      Row(modifier = Modifier.padding(end = DEFAULT_PADDING).horizontalScroll(scrollState)) {
-        users.forEach { u ->
-          val size = 60
-          UserPickerInactiveUserBadge(u, stopped) {
-            onUserClicked(it)
-          }
-          Spacer(Modifier.width((size * 0.618).dp))
-        }
-      }
-      Box(
-        contentAlignment = Alignment.CenterEnd,
-        modifier = Modifier.fillMaxWidth()
-      ) {
-        Row(
-          horizontalArrangement = Arrangement.End,
-          modifier = Modifier.fillMaxWidth().padding(end = DEFAULT_PADDING).height(60.dp)
-        ) {
-          Canvas(modifier = Modifier.height(60.dp).width(200.dp)) {
-            drawRect(
-              brush = Brush.linearGradient(
-                colors = listOf(
-                  Color.Transparent,
-                  CurrentColors.value.colors.surface,
-                )
-              ),
-            )
+  if (users.isNotEmpty()) {
+    SectionItemView(minHeight = 80.dp, padding = PaddingValues(start = 16.dp), disabled = stopped) {
+      Box {
+        Row(modifier = Modifier.padding(end = DEFAULT_PADDING).horizontalScroll(scrollState)) {
+          users.forEach { u ->
+            val size = 60
+            UserPickerInactiveUserBadge(u, stopped) {
+              onUserClicked(it)
+            }
+            Spacer(Modifier.width((size * 0.618).dp))
           }
         }
-        IconButton(
-          onClick = onShowAllProfilesClicked,
-          enabled = !stopped,
+        Box(
+          contentAlignment = Alignment.CenterEnd,
+          modifier = Modifier.fillMaxWidth()
         ) {
-          Box(
-            contentAlignment = Alignment.CenterEnd
+          Row(
+            horizontalArrangement = Arrangement.End,
+            modifier = Modifier.fillMaxWidth().padding(end = DEFAULT_PADDING).height(60.dp)
           ) {
-            Icon(
-              painterResource(MR.images.ic_chevron_right),
-              stringResource(MR.strings.your_chat_profiles),
-              tint = MaterialTheme.colors.secondary,
-              modifier = Modifier.size(60.dp * fontSizeSqrtMultiplier)
-            )
+            Canvas(modifier = Modifier.height(60.dp).width(200.dp)) {
+              drawRect(
+                brush = Brush.linearGradient(
+                  colors = listOf(
+                    Color.Transparent,
+                    CurrentColors.value.colors.surface,
+                  )
+                ),
+              )
+            }
+          }
+          IconButton(
+            onClick = onShowAllProfilesClicked,
+            enabled = !stopped,
+          ) {
+            Box(
+              contentAlignment = Alignment.CenterEnd
+            ) {
+              Icon(
+                painterResource(MR.images.ic_chevron_right),
+                stringResource(MR.strings.your_chat_profiles),
+                tint = MaterialTheme.colors.secondary,
+                modifier = Modifier.size(60.dp * fontSizeSqrtMultiplier)
+              )
+            }
           }
         }
       }
     }
+  } else {
+    UserPickerOptionRow(
+      painterResource(MR.images.ic_manage_accounts),
+      stringResource(MR.strings.your_chat_profiles),
+      onShowAllProfilesClicked
+    )
   }
 }

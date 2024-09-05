@@ -45,8 +45,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
-@Composable
-private fun UserPickerOptionRow(icon: Painter, text: String, click: (() -> Unit)? = null, disabled: Boolean = false) {
+@Composable fun UserPickerOptionRow(icon: Painter, text: String, click: (() -> Unit)? = null, disabled: Boolean = false) {
   SectionItemView(click, disabled = disabled) {
     Icon(icon, text, tint = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.secondary)
     TextIconSpaced()
@@ -221,20 +220,12 @@ private fun GlobalSettingsSection(
   }
 
   SectionView {
-    if (users.isNotEmpty()) {
-      UserPickerInactiveUsersSection(
-        users = users,
-        onShowAllProfilesClicked = onShowAllProfilesClicked,
-        onUserClicked = onUserClicked,
-        stopped = stopped
-      )
-    } else {
-      UserPickerOptionRow(
-        painterResource(MR.images.ic_manage_accounts),
-        stringResource(MR.strings.your_chat_profiles),
-        onShowAllProfilesClicked
-      )
-    }
+    UserPickerInactiveUsersSection(
+      users = users,
+      onShowAllProfilesClicked = onShowAllProfilesClicked,
+      onUserClicked = onUserClicked,
+      stopped = stopped
+    )
 
     if (appPlatform.isAndroid) {
       val text = generalGetString(MR.strings.settings_section_title_use_from_desktop).lowercase().capitalize(Locale.current)
