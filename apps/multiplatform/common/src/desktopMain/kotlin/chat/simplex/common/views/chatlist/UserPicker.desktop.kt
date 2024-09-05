@@ -27,7 +27,10 @@ actual fun UserPickerInactiveUsersSection(
     val rowsToDisplay = if (userRows.count() > 2) 2 else userRows.count()
     val horizontalPadding = DEFAULT_PADDING_HALF + 8.dp
 
-    Column(Modifier.padding(horizontal = horizontalPadding).height((55.dp + DEFAULT_PADDING) * rowsToDisplay)) {
+    Column(Modifier
+      .padding(horizontal = horizontalPadding, vertical = DEFAULT_PADDING_HALF)
+      .height(55.dp * rowsToDisplay + (if (rowsToDisplay > 1) DEFAULT_PADDING else 0.dp))
+    ) {
       ColumnWithScrollBar(
         verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING)
       ) {
