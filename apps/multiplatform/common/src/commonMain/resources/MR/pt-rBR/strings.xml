@@ -695,14 +695,14 @@
     <string name="chat_preferences_no">não</string>
     <string name="v4_6_group_moderation_descr">Agora administradores podem:
 \n- excluir mensagens de membros.
-\n- desativar membros (cargo de \"observador\")</string>
+\n- desativar membros (cargo de "observador")</string>
     <string name="v4_6_group_moderation">Moderação do grupo</string>
     <string name="v4_6_group_welcome_message">Mensagem de boas-vindas do grupo</string>
     <string name="database_downgrade">Desatualizar banco de dados</string>
     <string name="mtr_error_different">migração diferente no aplicativo/banco de dados: %s / %s</string>
     <string name="invite_to_group_button">Convidar para o grupo</string>
     <string name="no_contacts_to_add">Sem contatos para adicionar</string>
-    <string name="member_role_will_be_changed_with_notification">O cargo será alterada para \"%s\". Todos no grupo serão notificados.</string>
+    <string name="member_role_will_be_changed_with_notification">O cargo será alterada para "%s". Todos no grupo serão notificados.</string>
     <string name="user_mute">Mutar</string>
     <string name="only_you_can_send_voice">Somente você pode enviar mensagens de voz.</string>
     <string name="only_your_contact_can_send_voice">Somente seu contato pode enviar mensagens de voz.</string>
@@ -813,7 +813,7 @@
     <string name="settings_section_title_experimenta">EXPERIMENTAL</string>
     <string name="snd_conn_event_switch_queue_phase_completed">você alterou o endereço</string>
     <string name="database_upgrade">Atualização do banco de dados</string>
-    <string name="member_role_will_be_changed_with_invitation">O cargo será alterado para \"%s\". O membro receberá um novo convite.</string>
+    <string name="member_role_will_be_changed_with_invitation">O cargo será alterado para "%s". O membro receberá um novo convite.</string>
     <string name="only_group_owners_can_change_prefs">Somente os proprietários do grupo podem alterar as preferências do grupo.</string>
     <string name="button_add_welcome_message">Adicionar mensagem de boas-vindas</string>
     <string name="group_welcome_title">Mensagem de boas-vindas</string>

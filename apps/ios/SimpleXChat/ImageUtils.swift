@@ -383,15 +383,29 @@ extension UIImage {
         }
         return self
     }
+}
 
-    public convenience init?(base64Encoded: String?) {
-        if let base64Encoded, let data = Data(base64Encoded: dropImagePrefix(base64Encoded)) {
-            self.init(data: data)
+public func imageFromBase64(_ base64Encoded: String?) -> UIImage? {
+    if let base64Encoded {
+        if let img = imageCache.object(forKey: base64Encoded as NSString) {
+            return img
+        } else if let data = Data(base64Encoded: dropImagePrefix(base64Encoded)),
+            let img = UIImage(data: data) {
+            imageCache.setObject(img, forKey: base64Encoded as NSString)
+            return img
         } else {
             return nil
         }
+    } else {
+        return nil
     }
 }
+
+private var imageCache: NSCache<NSString, UIImage> = {
+    var cache = NSCache<NSString, UIImage>()
+    cache.countLimit = 1000
+    return cache
+}()
 
 public func getLinkPreview(url: URL, cb: @escaping (LinkPreview?) -> Void) {
     logger.debug("getLinkMetadata: fetching URL preview")
