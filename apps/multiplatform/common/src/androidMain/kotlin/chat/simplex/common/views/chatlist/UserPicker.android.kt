@@ -33,11 +33,10 @@ actual fun UserPickerInactiveUsersSection(
       Box {
         Row(modifier = Modifier.padding(end = DEFAULT_PADDING).horizontalScroll(scrollState)) {
           users.forEach { u ->
-            val size = 60
             UserPickerInactiveUserBadge(u, stopped) {
               onUserClicked(it)
             }
-            Spacer(Modifier.width((size * 0.618).dp))
+            Spacer(Modifier.width(20.dp))
           }
         }
         Box(
