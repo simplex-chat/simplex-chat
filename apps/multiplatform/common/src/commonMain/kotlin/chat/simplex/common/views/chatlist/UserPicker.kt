@@ -187,14 +187,14 @@ private fun ActiveUserSection(
 }
 
 @Composable
-fun UserPickerInactiveUserBadge(userInfo: UserInfo, stopped: Boolean, onClick: (user: User) -> Unit) {
+fun UserPickerInactiveUserBadge(userInfo: UserInfo, stopped: Boolean, size: Int = 60, onClick: (user: User) -> Unit) {
   Box {
     IconButton(
       onClick = { onClick(userInfo.user) },
       enabled = !stopped
     ) {
       Box {
-        ProfileImage(size = 60.dp, image = userInfo.user.profile.image, color = MaterialTheme.colors.secondaryVariant)
+        ProfileImage(size = size.dp, image = userInfo.user.profile.image, color = MaterialTheme.colors.secondaryVariant)
         if (userInfo.unreadCount > 0) {
           unreadBadge()
         }
