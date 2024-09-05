@@ -141,7 +141,7 @@ private fun ActiveUserSection(
   val stopped = chatModel.chatRunning.value == false
 
   if (currentUser != null) {
-    Spacer(Modifier.height(DEFAULT_PADDING))
+    Spacer(Modifier.height(DEFAULT_PADDING_HALF))
     SectionView(
       title = stringResource(MR.strings.settings_section_title_you),
       ) {
@@ -569,8 +569,6 @@ fun UserPicker(
                 }
               }
             )
-
-            Spacer(Modifier.height(DEFAULT_PADDING_HALF))
           }
         }
       }
@@ -664,7 +662,7 @@ private fun DevicePickerRow(
     Modifier
       .fillMaxWidth()
       .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
-      .padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING),
+      .padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF),
     horizontalArrangement = Arrangement.spacedBy(12.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
