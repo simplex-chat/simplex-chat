@@ -40,7 +40,6 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
   val searchTextOrPassword = rememberSaveable { search }
   val users by remember { derivedStateOf { m.users.map { it.user } } }
   val filteredUsers by remember { derivedStateOf { filteredUsers(m, searchTextOrPassword.value) } }
-  val scope = rememberCoroutineScope()
   UserProfilesLayout(
     users = users,
     filteredUsers = filteredUsers,
