@@ -187,6 +187,21 @@ private fun ActiveUserSection(
 }
 
 @Composable
+private fun BoxScope.unreadBadge(text: String? = "") {
+  Text(
+    text ?: "",
+    color = MaterialTheme.colors.onPrimary,
+    fontSize = 12.sp,
+    modifier = Modifier
+      .background(MaterialTheme.colors.primary, shape = CircleShape)
+      .badgeLayout()
+      .padding(horizontal = 3.dp)
+      .padding(vertical = 2.dp)
+      .align(Alignment.TopEnd)
+  )
+}
+
+@Composable
 fun UserPickerInactiveUserBadge(userInfo: UserInfo, stopped: Boolean, size: Int = 60, onClick: (user: User) -> Unit) {
   Box {
     IconButton(
@@ -195,8 +210,9 @@ fun UserPickerInactiveUserBadge(userInfo: UserInfo, stopped: Boolean, size: Int 
     ) {
       Box {
         ProfileImage(size = size.dp, image = userInfo.user.profile.image, color = MaterialTheme.colors.secondaryVariant)
+
         if (userInfo.unreadCount > 0) {
-          unreadBadge()
+          unreadBadge("${userInfo.unreadCount}")
         }
       }
     }
