@@ -214,9 +214,9 @@ private fun InactiveUsersSection(
 ) {
   val scrollState = rememberScrollState()
 
-  SectionItemView(minHeight = 80.dp, padding = PaddingValues(start = 16.dp, end = DEFAULT_PADDING), disabled = stopped) {
+  SectionItemView(minHeight = 80.dp, padding = PaddingValues(start = 16.dp), disabled = stopped) {
     Box {
-      Row(modifier = Modifier.horizontalScroll(scrollState).padding(end = DEFAULT_PADDING)) {
+      Row(modifier = Modifier.padding(end = DEFAULT_PADDING).horizontalScroll(scrollState)) {
         users.forEach { u ->
           val size = 60
           InactiveUserBadge(u, stopped) {
@@ -229,25 +229,16 @@ private fun InactiveUsersSection(
         contentAlignment = Alignment.CenterEnd,
         modifier = Modifier.fillMaxWidth()
       ) {
-        Box(
-          modifier = Modifier
-            .width(90.dp * fontSizeSqrtMultiplier)
-            .height(60.dp * fontSizeSqrtMultiplier)
-            .background(
-              brush = Brush.horizontalGradient(
-                colors = listOf(
-                  Color.Transparent,
-                  MaterialTheme.colors.surface
-                )
-              )
-            )
-        )
+        Row(
+          modifier = Modifier.fillMaxWidth().height(60.dp)
+        ) {
+        }
         IconButton(
           onClick = onShowAllProfilesClicked,
           enabled = !stopped,
         ) {
           Box(
-            contentAlignment = Alignment.Center,
+            contentAlignment = Alignment.CenterEnd
           ) {
             Icon(
               painterResource(MR.images.ic_chevron_right),
