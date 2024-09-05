@@ -30,7 +30,9 @@ actual fun UserPickerInactiveUsersSection(
   if (users.isNotEmpty()) {
     SectionItemView(minHeight = 80.dp, padding = PaddingValues(start = 16.dp), disabled = stopped) {
       Box {
-        Row(modifier = Modifier.padding(end = DEFAULT_PADDING * 1.9f).horizontalScroll(scrollState)) {
+        Row(
+          modifier = Modifier.padding(end = DEFAULT_PADDING + 30.dp).horizontalScroll(scrollState)
+        ) {
           users.forEach { u ->
             UserPickerInactiveUserBadge(u, stopped) {
               onUserClicked(it)
@@ -39,39 +41,42 @@ actual fun UserPickerInactiveUsersSection(
           }
           Spacer(Modifier.width(60.dp))
         }
-        Box(
-          contentAlignment = Alignment.CenterEnd,
-          modifier = Modifier.padding(end = DEFAULT_PADDING * 0.7f).fillMaxWidth()
+        Row(
+          horizontalArrangement = Arrangement.End,
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(end = DEFAULT_PADDING + 30.dp)
+            .height(80.dp)
         ) {
-          Row(
-            horizontalArrangement = Arrangement.End,
-            modifier = Modifier.fillMaxWidth().padding(end = DEFAULT_PADDING).height(60.dp)
-          ) {
-            Canvas(modifier = Modifier.height(60.dp).width(100.dp)) {
-              drawRect(
-                brush = Brush.linearGradient(
-                  colors = listOf(
-                    Color.Transparent,
-                    CurrentColors.value.colors.surface,
-                  )
-                ),
-              )
-            }
+          Canvas(modifier = Modifier.size(60.dp)) {
+            drawRect(
+              brush = Brush.horizontalGradient(
+                colors = listOf(
+                  Color.Transparent,
+                  CurrentColors.value.colors.surface,
+                )
+              ),
+            )
           }
+        }
+        Row(
+          horizontalArrangement = Arrangement.End,
+          verticalAlignment = Alignment.CenterVertically,
+          modifier = Modifier
+            .height(60.dp)
+            .fillMaxWidth()
+            .padding(end = DEFAULT_PADDING)
+        ) {
           IconButton(
             onClick = onShowAllProfilesClicked,
             enabled = !stopped
           ) {
-            Box(
-              contentAlignment = Alignment.Center,
-              modifier = Modifier.padding(end = DEFAULT_PADDING_HALF)
-            ) {
-              Icon(
-                painterResource(MR.images.ic_arrow_forward_ios),
-                stringResource(MR.strings.your_chat_profiles),
-                tint = MaterialTheme.colors.secondary,
-              )
-            }
+            Icon(
+              painterResource(MR.images.ic_chevron_right),
+              stringResource(MR.strings.your_chat_profiles),
+              tint = MaterialTheme.colors.secondary,
+              modifier = Modifier.size(34.dp)
+            )
           }
         }
       }
