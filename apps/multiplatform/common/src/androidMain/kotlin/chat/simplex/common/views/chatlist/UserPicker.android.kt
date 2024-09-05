@@ -63,13 +63,13 @@ actual fun UserPickerInactiveUsersSection(
             enabled = !stopped
           ) {
             Box(
-              contentAlignment = Alignment.CenterEnd
+              contentAlignment = Alignment.Center,
+              modifier = Modifier.padding(end = DEFAULT_PADDING_HALF)
             ) {
               Icon(
-                painterResource(MR.images.ic_chevron_right),
+                painterResource(MR.images.ic_arrow_forward_ios),
                 stringResource(MR.strings.your_chat_profiles),
                 tint = MaterialTheme.colors.secondary,
-                modifier = Modifier.size(60.dp * fontSizeSqrtMultiplier)
               )
             }
           }
