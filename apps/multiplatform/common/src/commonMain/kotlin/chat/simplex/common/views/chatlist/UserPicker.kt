@@ -230,8 +230,19 @@ private fun InactiveUsersSection(
         modifier = Modifier.fillMaxWidth()
       ) {
         Row(
-          modifier = Modifier.fillMaxWidth().height(60.dp)
+          horizontalArrangement = Arrangement.End,
+          modifier = Modifier.fillMaxWidth().padding(end = DEFAULT_PADDING).height(60.dp)
         ) {
+          Canvas(modifier = Modifier.height(60.dp).width(200.dp)) {
+            drawRect(
+              brush = Brush.linearGradient(
+                colors = listOf(
+                  Color.Transparent,
+                  CurrentColors.value.colors.surface,
+                )
+              ),
+            )
+          }
         }
         IconButton(
           onClick = onShowAllProfilesClicked,
