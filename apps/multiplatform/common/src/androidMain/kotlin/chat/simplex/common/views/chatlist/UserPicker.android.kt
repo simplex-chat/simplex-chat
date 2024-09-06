@@ -169,7 +169,7 @@ actual fun UserPickerScaffold(pickerState: MutableStateFlow<AnimatedViewState>, 
       }
   }
 
-  Box(if (appPlatform.isAndroid) Modifier.drawBehind { drawRect(animatedColor.value) } else Modifier) {
+  Box(Modifier.drawBehind { drawRect(animatedColor.value) }) {
     AnimatedVisibility(
       visible = pickerState.run { value.isVisible() },
       enter = if (appPlatform.isAndroid) {
