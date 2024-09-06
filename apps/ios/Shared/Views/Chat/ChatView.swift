@@ -466,10 +466,10 @@ struct ChatView: View {
 
         private var bag = Set<AnyCancellable>()
 
-        typealias ListState = (
-            topItemDate: Date?,
-            bottomItemId: ChatItem.ID?
-        )
+        struct ListState: Equatable {
+            let topItemDate: Date?
+            let bottomItemId: ChatItem.ID?
+        }
 
         private struct ViewUpdate: Equatable {
             let unreadBelow: Int
@@ -504,6 +504,7 @@ struct ChatView: View {
 
             // Date visibility
             listState
+                .removeDuplicates()
                 .map { _ in self.setDate(visibility: true) }
                 // Hide the date after 1 second of no scrolling
                 .debounce(for: 1, scheduler: DispatchQueue.main)

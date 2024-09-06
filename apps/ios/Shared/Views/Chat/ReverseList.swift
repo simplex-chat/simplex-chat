@@ -208,7 +208,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 visibleRows.last?.item ?? 0 < representer.items.count {
                 let fbm = ChatView.FloatingButtonModel.shared
                 fbm.scrollOffset.send(tableView.contentOffset.y + InvertedTableView.inset)
-                fbm.listState.send((
+                fbm.listState.send(.init(
                     topItemDate: visibleRows
                         .last { isVisible(indexPath: $0) }
                         .map { representer.items[$0.item] }?
