@@ -45,14 +45,13 @@ struct UserAddressView: View {
             userAddressScrollView()
                 .onDisappear {
                     if savedAAS != aas {
-                        AlertManager.shared.showAlert(Alert(
-                            title: Text("Auto-accept settings"),
-                            message: Text("Settings were changed."),
-                            primaryButton: .default(Text("Save")) {
-                                saveAAS()
-                            },
-                            secondaryButton: .cancel()
-                        ))
+                        showAlert(
+                            title: NSLocalizedString("Auto-accept settings", comment: "alert title"),
+                            message: NSLocalizedString("Settings were changed.", comment: "alert message"),
+                            buttonTitle: NSLocalizedString("Save", comment: "alert button"),
+                            buttonAction: saveAAS,
+                            cancelButton: true
+                        )
                     }
                 }
 

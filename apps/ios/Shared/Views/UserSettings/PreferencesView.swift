@@ -34,14 +34,13 @@ struct PreferencesView: View {
         }
         .onDisappear {
             if currentPreferences != preferences {
-                AlertManager.shared.showAlert(Alert(
-                    title: Text("Your chat preferences"),
-                    message: Text("Chat preferences were changed."),
-                    primaryButton: .default(Text("Save")) {
-                        savePreferences()
-                    },
-                    secondaryButton: .cancel()
-                ))
+                showAlert(
+                    title: NSLocalizedString("Your chat preferences", comment: "alert title"),
+                    message: NSLocalizedString("Chat preferences were changed.", comment: "alert message"),
+                    buttonTitle: NSLocalizedString("Save", comment: "alert button"),
+                    buttonAction: savePreferences,
+                    cancelButton: true
+                )
             }
         }
     }
