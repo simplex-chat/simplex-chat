@@ -225,15 +225,15 @@ fun DraggableBottomDrawerModifier(
   val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
   val anchors = mutableMapOf(0f to DismissValue.Default)
   anchors += swipeDistance to DismissValue.DismissedToEnd
-  val offsetY = state.offset.value.roundToInt();
 
   return Modifier.swipeable(
     state = state,
     anchors = anchors,
-    thresholds = { _, _ -> FractionalThreshold(0.99f) },
+    thresholds = { from, to -> FixedThreshold(500.dp) },
     orientation = Orientation.Vertical,
     reverseDirection = isRtl,
-  ).offset { IntOffset(0, if (offsetY > 0) offsetY else 0) }
+    resistance = null
+  )
 }
 
 @Composable
@@ -400,16 +400,32 @@ fun UserPicker(
         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = { userPickerState.value = AnimatedViewState.HIDING }),
       contentAlignment = if (appPlatform.isAndroid) Alignment.BottomStart else Alignment.TopStart
     ) {
+      var offsetY by remember { mutableStateOf(0) }
+      var fixedOffset by remember { mutableStateOf(false) }
+
       val dismissState = rememberDismissState(initialValue = DismissValue.Default) {
+        if (offsetY > 400) {
+          fixedOffset = true
+          userPickerState.value = AnimatedViewState.HIDING
+        }
         if (it == DismissValue.DismissedToEnd) {
           userPickerState.value = AnimatedViewState.HIDING
         }
         true
       }
 
+      LaunchedEffect(Unit) {
+        snapshotFlow { dismissState.offset.value }
+          .collect {
+            if (!fixedOffset) {
+              offsetY = it.roundToInt()
+            }
+          }
+      }
+
       val swipeableModifier = DraggableBottomDrawerModifier(
         state = dismissState,
-        swipeDistance = with(LocalDensity.current) { 150.dp.toPx() },
+        swipeDistance = with(LocalDensity.current) { 500.dp.toPx() },
       )
 
       Column(
@@ -418,6 +434,7 @@ fun UserPicker(
           .then(if (appPlatform.isDesktop) Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier) else swipeableModifier)
           .shadow(8.dp, clip = true)
           .fillMaxWidth()
+          .offset { IntOffset(0, if (offsetY > 0) offsetY else 0) }
           .background(MaterialTheme.colors.surface)
       ) {
         val currentRemoteHost = remember { chatModel.currentRemoteHost }.value
