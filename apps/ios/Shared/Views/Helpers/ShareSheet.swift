@@ -11,12 +11,18 @@ import SwiftUI
 func showShareSheet(items: [Any], completed: (() -> Void)? = nil) {
     let keyWindowScene = UIApplication.shared.connectedScenes.first { $0.activationState == .foregroundActive } as? UIWindowScene
     if let keyWindow = keyWindowScene?.windows.filter(\.isKeyWindow).first,
-       let presentedViewController = keyWindow.rootViewController?.presentedViewController ?? keyWindow.rootViewController {
+       let rootViewController = keyWindow.rootViewController {        
+        // Find the top-most presented view controller
+        var topController = rootViewController
+        while let presentedViewController = topController.presentedViewController {
+            topController = presentedViewController
+        }
         let activityViewController = UIActivityViewController(activityItems: items, applicationActivities: nil)
         if let completed = completed {
-            let handler: UIActivityViewController.CompletionWithItemsHandler = { _,_,_,_ in completed() }
-            activityViewController.completionWithItemsHandler = handler
-        }
-        presentedViewController.present(activityViewController, animated: true)
+            activityViewController.completionWithItemsHandler = { _, _, _, _ in
+                completed()
+            }
+        }        
+        topController.present(activityViewController, animated: true)
     }
 }

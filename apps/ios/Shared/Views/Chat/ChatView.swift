@@ -704,7 +704,7 @@ struct ChatView: View {
                 let nextItem = im.reversedChatItems[i - 1]
                 let largeGap = !nextItem.chatDir.sameDirection(chatItem.chatDir) || nextItem.meta.itemTs.timeIntervalSince(chatItem.meta.itemTs) > 60
                 return (
-                    timestamp: largeGap || formatTimestampText(chatItem.meta.itemTs) != formatTimestampText(nextItem.meta.itemTs),
+                    timestamp: largeGap || formatTimestampMeta(chatItem.meta.itemTs) != formatTimestampMeta(nextItem.meta.itemTs),
                     largeGap: largeGap,
                     date: Calendar.current.isDate(chatItem.meta.itemTs, inSameDayAs: nextItem.meta.itemTs) ? nil : nextItem.meta.itemTs
                 )
