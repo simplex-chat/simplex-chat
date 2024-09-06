@@ -409,7 +409,7 @@ fun UserPicker(
 
       val swipeableModifier = DraggableBottomDrawerModifier(
         state = dismissState,
-        swipeDistance = with(LocalDensity.current) { 250.dp.toPx() },
+        swipeDistance = with(LocalDensity.current) { 150.dp.toPx() },
       )
 
       Column(
