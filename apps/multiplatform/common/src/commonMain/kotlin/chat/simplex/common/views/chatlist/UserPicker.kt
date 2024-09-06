@@ -6,6 +6,7 @@ import TextIconSpaced
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
@@ -22,6 +23,8 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.TextStyle
 import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.ui.text.capitalize
@@ -37,6 +40,8 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.CreateProfile
+import chat.simplex.common.views.chat.ComposeContextItem
+import chat.simplex.common.views.chat.ComposeState
 import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.remote.*
@@ -46,6 +51,7 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlin.math.roundToInt
 
 @Composable fun UserPickerOptionRow(icon: Painter, text: String, click: (() -> Unit)? = null, disabled: Boolean = false) {
   SectionItemView(click, disabled = disabled, extraPadding = true) {
@@ -221,6 +227,25 @@ fun UserPickerInactiveUserBadge(userInfo: UserInfo, stopped: Boolean, size: Int 
 }
 
 @Composable
+fun DraggableBottomDrawerModifier(
+  state: DismissState,
+  swipeDistance: Float,
+): Modifier {
+  val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+  val anchors = mutableMapOf(0f to DismissValue.Default)
+  anchors += swipeDistance to DismissValue.DismissedToEnd
+  val offsetY = state.offset.value.roundToInt();
+
+  return Modifier.swipeable(
+    state = state,
+    anchors = anchors,
+    thresholds = { _, _ -> FractionalThreshold(0.99f) },
+    orientation = Orientation.Vertical,
+    reverseDirection = isRtl,
+  ).offset { IntOffset(0, if (offsetY > 0) offsetY else 0) }
+}
+
+@Composable
 private fun GlobalSettingsSection(
   chatModel: ChatModel,
   userPickerState: MutableStateFlow<AnimatedViewState>,
@@ -384,10 +409,22 @@ fun UserPicker(
         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = { userPickerState.value = AnimatedViewState.HIDING }),
       contentAlignment = if (appPlatform.isAndroid) Alignment.BottomStart else Alignment.TopStart
     ) {
+      val dismissState = rememberDismissState(initialValue = DismissValue.Default) {
+        if (it == DismissValue.DismissedToEnd) {
+          userPickerState.value = AnimatedViewState.HIDING
+        }
+        true
+      }
+
+      val swipeableModifier = DraggableBottomDrawerModifier(
+        state = dismissState,
+        swipeDistance = with(LocalDensity.current) { 250.dp.toPx() },
+      )
+
       Column(
         Modifier
           .height(IntrinsicSize.Min)
-          .then(if (appPlatform.isDesktop) Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier) else Modifier)
+          .then(if (appPlatform.isDesktop) Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier) else swipeableModifier)
           .shadow(8.dp, clip = true)
           .fillMaxWidth()
           .background(MaterialTheme.colors.surface)
