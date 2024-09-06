@@ -7,7 +7,6 @@ import chat.simplex.common.platform.Log
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.*
-import android.view.View
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.graphics.Color
@@ -37,7 +36,7 @@ import java.util.concurrent.TimeUnit
 
 const val TAG = "SIMPLEX"
 
-class SimplexApp: Application(), LifecycleEventObserver {
+class SimplexApp: Application(), LifecycleEventObserver, Configuration.Provider {
   val chatModel: ChatModel
     get() = chatController.chatModel
 
@@ -161,7 +160,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       .addTag(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC)
       .build()
     Log.d(TAG, "ServiceStartWorker: Scheduling period work every ${SimplexService.SERVICE_START_WORKER_INTERVAL_MINUTES} minutes")
-    WorkManager.getInstance(context)?.enqueueUniquePeriodicWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC, workPolicy, work)
+    getWorkManagerInstance().enqueueUniquePeriodicWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC, workPolicy, work)
   }
 
   fun schedulePeriodicWakeUp() = CoroutineScope(Dispatchers.Default).launch {
@@ -364,4 +363,9 @@ class SimplexApp: Application(), LifecycleEventObserver {
       }
     }
   }
+
+  // Fix for an exception:
+  // WorkManager is not initialized properly. You have explicitly disabled WorkManagerInitializer in your manifest, have not manually called WorkManager#initialize at this point, and your Application does not implement Configuration.Provider.
+  override val workManagerConfiguration: Configuration
+    get() = Configuration.Builder().build()
 }

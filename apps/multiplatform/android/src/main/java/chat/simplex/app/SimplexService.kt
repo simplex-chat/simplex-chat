@@ -272,7 +272,7 @@ class SimplexService: Service() {
 
     fun scheduleStart(context: Context) {
       Log.d(TAG, "Enqueuing work to start subscriber service")
-      val workManager = WorkManager.getInstance(context)
+      val workManager = context.getWorkManagerInstance()
       val startServiceRequest = OneTimeWorkRequest.Builder(ServiceStartWorker::class.java).build()
       workManager.enqueueUniqueWork(WORK_NAME_ONCE, ExistingWorkPolicy.KEEP, startServiceRequest) // Unique avoids races!
     }
