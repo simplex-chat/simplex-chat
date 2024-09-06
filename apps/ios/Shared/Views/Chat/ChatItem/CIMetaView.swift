@@ -31,9 +31,8 @@ struct CIMetaView: View {
                     chatItem.meta,
                     chatTTL: chat.chatInfo.timedMessagesTTL,
                     encrypted: chatItem.encryptedFile,
-                    color: chatItem.meta.itemStatus.sndProgress == .partial
-                        ? paleMetaColor
-                        : metaColor,
+                    color: metaColor,
+                    paleColor: paleMetaColor,
                     colorMode: invertedMaterial
                         ? .invertedMaterial
                         : .normal,
@@ -89,6 +88,7 @@ func ciMetaText(
     chatTTL: Int?,
     encrypted: Bool?,
     color: Color = .clear, // we use this function to reserve space without rendering meta
+    paleColor: Color? = nil,
     primaryColor: Color = .accentColor,
     colorMode: MetaColorMode = .normal,
     onlyOverrides: Bool = false, // only render colors that differ from base
@@ -123,7 +123,7 @@ func ciMetaText(
     }
     if showStatus {
         appendSpace()
-        if let (image, statusColor) = meta.itemStatus.statusIcon(color, primaryColor) {
+        if let (image, statusColor) = meta.itemStatus.statusIcon(color, paleColor ?? color, primaryColor) {
             let metaColor = if onlyOverrides && statusColor == color {
                 Color.clear
             } else {
