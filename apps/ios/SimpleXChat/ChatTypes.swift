@@ -2713,7 +2713,7 @@ public struct CIMeta: Decodable, Hashable {
     public var deletable: Bool
     public var editable: Bool
 
-    public var timestampText: Text { get { formatTimestampText(itemTs) } }
+    public var timestampText: Text { Text(formatTimestampMeta(itemTs)) }
     public var recent: Bool { updatedAt + 10 > .now }
     public var isLive: Bool { itemLive == true }
     public var disappearing: Bool { !isRcvNew && itemTimed?.deleteAt != nil }
@@ -2761,8 +2761,30 @@ public struct CITimed: Decodable, Hashable {
     public var deleteAt: Date?
 }
 
+let msgTimeFormat = Date.FormatStyle.dateTime.hour().minute()
+let msgDateFormat = Date.FormatStyle.dateTime.day(.twoDigits).month(.twoDigits)
+
 public func formatTimestampText(_ date: Date) -> Text {
-    Text(verbatim: date.formatted(date: .omitted, time: .shortened))
+    Text(verbatim: date.formatted(recent(date) ? msgTimeFormat : msgDateFormat))
+}
+
+public func formatTimestampMeta(_ date: Date) -> String {
+    date.formatted(date: .omitted, time: .shortened)
+}
+
+private func recent(_ date: Date) -> Bool {
+    let now = Date()
+    let calendar = Calendar.current
+
+    guard let previousDay = calendar.date(byAdding: DateComponents(day: -1), to: now),
+          let previousDay18 = calendar.date(bySettingHour: 18, minute: 0, second: 0, of: previousDay),
+          let currentDay00 = calendar.date(bySettingHour: 0, minute: 0, second: 0, of: now),
+          let currentDay12 = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: now) else {
+        return false
+    }
+
+    let isSameDay = calendar.isDate(date, inSameDayAs: now)
+    return isSameDay || (now < currentDay12 && date >= previousDay18 && date < currentDay00)
 }
 
 public enum CIStatus: Decodable, Hashable {
