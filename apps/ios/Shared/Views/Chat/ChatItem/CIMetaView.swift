@@ -99,9 +99,9 @@ func ciMetaText(
 ) -> Text {
     var r = Text("")
     var space: Text? = nil
-    let prependSpace = {
+    let appendSpace = {
         if let sp = space {
-            r = sp + r
+            r = r + sp
             space = nil
         }
     }
@@ -118,11 +118,11 @@ func ciMetaText(
         space = Text(" ")
     }
     if showViaProxy, meta.sentViaProxy == true {
-        prependSpace()
+        appendSpace()
         r = r + statusIconText("arrow.forward", resolved?.opacity(0.67)).font(.caption2)
     }
     if showStatus {
-        prependSpace()
+        appendSpace()
         if let (image, statusColor) = meta.itemStatus.statusIcon(color, primaryColor) {
             let metaColor = if onlyOverrides && statusColor == color {
                 Color.clear
@@ -136,12 +136,12 @@ func ciMetaText(
         }
     }
     if let enc = encrypted {
-        prependSpace()
+        appendSpace()
         r = r + statusIconText(enc ? "lock" : "lock.open", resolved)
         space = Text(" ")
     }
     if showTimesamp {
-        prependSpace()
+        appendSpace()
         r = r + colored(meta.timestampText, resolved)
     }
     return r.font(.caption)
