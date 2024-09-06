@@ -5,22 +5,28 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
+import androidx.compose.material.DrawerDefaults.ScrimOpacity
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.User
 import chat.simplex.common.model.UserInfo
 import chat.simplex.common.platform.appPlatform
+import chat.simplex.common.platform.platform
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.helpers.fontSizeSqrtMultiplier
-import chat.simplex.common.views.helpers.userPickerAnimSpec
+import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 
 @Composable
 actual fun UserPickerInactiveUsersSection(
@@ -95,10 +101,77 @@ actual fun UserPickerInactiveUsersSection(
 }
 
 @Composable
-actual fun UserPickerScaffold(isVisible: Boolean, content: @Composable () -> Unit) {
-  Box {
+actual fun UserPickerScaffold(pickerState: MutableStateFlow<AnimatedViewState>, content: @Composable () -> Unit) {
+  val currentTheme by CurrentColors.collectAsState()
+  val resultingColor by remember {
+    derivedStateOf {
+      if (currentTheme.colors.isLight) currentTheme.colors.onSurface.copy(alpha = ScrimOpacity) else Color.Black.copy(0.64f)
+    }
+  }
+  val animatedColor = remember {
+    androidx.compose.animation.core.Animatable(
+      if (pickerState.value.isVisible()) Color.Transparent else resultingColor,
+      Color.VectorConverter(resultingColor.colorSpace)
+    )
+  }
+
+  LaunchedEffect(Unit) {
+    launch {
+      snapshotFlow { ModalManager.start.modalCount.value }
+        .collect { modalCount ->
+          val colors = CurrentColors.value.colors
+
+          if (modalCount == 0 && pickerState.value.isVisible()) {
+            platform.androidSetDrawerStatusAndNavBarColor(
+              isLight = colors.isLight,
+              drawerShadingColor = animatedColor,
+              toolbarOnTop = !appPrefs.oneHandUI.get(),
+              navBarColor = colors.surface
+            )
+          }
+        }
+    }
+  }
+
+  LaunchedEffect(Unit) {
+    snapshotFlow { currentTheme }
+      .distinctUntilChanged()
+      .collect {
+        launch {
+          pickerState.collect {
+            val newState = it
+            val colors = CurrentColors.value.colors
+            val toColor = if (colors.isLight) colors.onSurface.copy(alpha = ScrimOpacity) else Color.Black.copy(0.64f)
+
+            animatedColor.animateTo(if (newState.isVisible()) toColor else Color.Transparent, newChatSheetAnimSpec()) {
+                if (newState.isVisible()) {
+                  platform.androidSetDrawerStatusAndNavBarColor(
+                    isLight = colors.isLight,
+                    drawerShadingColor = animatedColor,
+                    toolbarOnTop = !appPrefs.oneHandUI.get(),
+                    navBarColor = colors.surface
+                  )
+                } else if (newState.isHiding()) {
+                  platform.androidSetDrawerStatusAndNavBarColor(
+                    isLight = colors.isLight,
+                    drawerShadingColor = animatedColor,
+                    toolbarOnTop = !appPrefs.oneHandUI.get(),
+                    navBarColor = (if (appPrefs.oneHandUI.get() && appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
+                      colors.background.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
+                    } else {
+                      colors.background
+                    })
+                  )
+              }
+            }
+          }
+        }
+      }
+  }
+
+  Box(if (appPlatform.isAndroid) Modifier.drawBehind { drawRect(animatedColor.value) } else Modifier) {
     AnimatedVisibility(
-      visible = isVisible,
+      visible = pickerState.run { value.isVisible() },
       enter = if (appPlatform.isAndroid) {
         slideInVertically(
           initialOffsetY = { it },

@@ -317,79 +317,18 @@ fun UserPicker(
         .sortedBy { it.hostDeviceName }
     }
   }
-  val currentTheme by CurrentColors.collectAsState()
   val animatedFloat = remember { Animatable(if (newChat.isVisible()) 0f else 1f) }
-  val resultingColor by remember {
-    derivedStateOf {
-      if (currentTheme.colors.isLight) currentTheme.colors.onSurface.copy(alpha = ScrimOpacity) else Color.Black.copy(0.64f)
-    }
-  }
-  val animatedColor = remember {
-    Animatable(
-      if (newChat.isVisible()) Color.Transparent else resultingColor,
-      Color.VectorConverter(resultingColor.colorSpace)
-    )
-  }
 
   LaunchedEffect(Unit) {
     launch {
-      snapshotFlow { ModalManager.start.modalCount.value }
-        .collect { modalCount ->
-          val colors = CurrentColors.value.colors
-
-          if (modalCount == 0 && newChat.isVisible() && appPlatform.isAndroid) {
-            platform.androidSetDrawerStatusAndNavBarColor(
-              isLight = colors.isLight,
-              drawerShadingColor = animatedColor,
-              toolbarOnTop = !appPrefs.oneHandUI.get(),
-              navBarColor = colors.surface
-            )
-          }
-        }
-    }
-  }
-
-  LaunchedEffect(Unit) {
-    snapshotFlow { currentTheme }
-      .distinctUntilChanged()
-      .collect {
+      userPickerState.collect {
+        newChat = it
         launch {
-          userPickerState.collect {
-            newChat = it
-            val colors = CurrentColors.value.colors
-            val toColor = if (colors.isLight) colors.onSurface.copy(alpha = ScrimOpacity) else Color.Black.copy(0.64f)
-
-            animatedColor.animateTo(if (newChat.isVisible()) toColor else Color.Transparent, newChatSheetAnimSpec()) {
-              if (appPlatform.isAndroid) {
-                if (newChat.isVisible()) {
-                  platform.androidSetDrawerStatusAndNavBarColor(
-                    isLight = colors.isLight,
-                    drawerShadingColor = animatedColor,
-                    toolbarOnTop = !appPrefs.oneHandUI.get(),
-                    navBarColor = colors.surface
-                  )
-                } else if (newChat.isHiding()) {
-                  platform.androidSetDrawerStatusAndNavBarColor(
-                    isLight = colors.isLight,
-                    drawerShadingColor = animatedColor,
-                    toolbarOnTop = !appPrefs.oneHandUI.get(),
-                    navBarColor = (if (appPrefs.oneHandUI.get() && appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
-                      colors.background.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
-                    } else {
-                      colors.background
-                    })
-                  )
-                }
-              }
-            }
-
-            launch {
-              animatedFloat.animateTo(if (newChat.isVisible()) 1f else 0f, newChatSheetAnimSpec())
-              if (newChat.isHiding()) userPickerState.value = AnimatedViewState.GONE
-            }
-          }
+          animatedFloat.animateTo(if (newChat.isVisible()) 1f else 0f, newChatSheetAnimSpec())
+          if (newChat.isHiding()) userPickerState.value = AnimatedViewState.GONE
         }
       }
+    }
   }
 
   LaunchedEffect(Unit) {
@@ -437,117 +376,100 @@ fun UserPicker(
       }
     }
   }
-  var drawerHeightPx by remember { mutableStateOf(0) }
-  var offsetY by remember { mutableStateOf(0f) }
 
-  Box(if (appPlatform.isAndroid) Modifier.drawBehind { drawRect(animatedColor.value) } else Modifier) {
-    UserPickerScaffold(isVisible = newChat.isVisible()) {
-      Box(
+  UserPickerScaffold(pickerState = userPickerState) {
+    Box(
+      Modifier
+        .fillMaxSize()
+        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = { userPickerState.value = AnimatedViewState.HIDING }),
+      contentAlignment = if (appPlatform.isAndroid) Alignment.BottomStart else Alignment.TopStart
+    ) {
+      Column(
         Modifier
-          .fillMaxSize()
-          .pointerInput(Unit) {
-            detectVerticalDragGestures { _, dragAmount ->
-              offsetY += dragAmount
-
-              if (offsetY > drawerHeightPx * 0.3f) {
-                userPickerState.value = AnimatedViewState.HIDING
-              }
-            }
-          }
-          .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = { userPickerState.value = AnimatedViewState.HIDING }),
-        contentAlignment = if (appPlatform.isAndroid) Alignment.BottomStart else Alignment.TopStart
+          .height(IntrinsicSize.Min)
+          .then(if (appPlatform.isDesktop) Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier) else Modifier)
+          .shadow(8.dp, clip = true)
+          .fillMaxWidth()
+          .background(MaterialTheme.colors.surface)
       ) {
+        val currentRemoteHost = remember { chatModel.currentRemoteHost }.value
         Column(
           Modifier
-            .height(IntrinsicSize.Min)
-            .then(if (appPlatform.isDesktop) Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier) else Modifier)
-            .shadow(8.dp, clip = true)
-            .fillMaxWidth()
-            .background(MaterialTheme.colors.surface)
-            .onGloballyPositioned { coordinates ->
-              offsetY = 0f
-              drawerHeightPx = coordinates.size.height
-            }
+            .padding(vertical = DEFAULT_PADDING)
         ) {
-          val currentRemoteHost = remember { chatModel.currentRemoteHost }.value
-          Column(
-            Modifier
-              .padding(vertical = DEFAULT_PADDING)
-          ) {
-            if (remoteHosts.isNotEmpty()) {
-              val localDeviceActive = currentRemoteHost == null && chatModel.localUserCreated.value == true
+          if (remoteHosts.isNotEmpty()) {
+            val localDeviceActive = currentRemoteHost == null && chatModel.localUserCreated.value == true
 
-              DevicePickerRow(
-                localDeviceActive = localDeviceActive,
-                remoteHosts = remoteHosts,
-                onRemoteHostClick = { h, connecting ->
-                  userPickerState.value = AnimatedViewState.HIDING
-                  switchToRemoteHost(h, connecting)
-                },
-                onLocalDeviceClick = {
-                  userPickerState.value = AnimatedViewState.HIDING
-                  switchToLocalDevice()
-                },
-                onRemoteHostActionButtonClick = { h ->
-                  userPickerState.value = AnimatedViewState.HIDING
-                  stopRemoteHostAndReloadHosts(h, true)
-                }
-              )
+            DevicePickerRow(
+              localDeviceActive = localDeviceActive,
+              remoteHosts = remoteHosts,
+              onRemoteHostClick = { h, connecting ->
+                userPickerState.value = AnimatedViewState.HIDING
+                switchToRemoteHost(h, connecting)
+              },
+              onLocalDeviceClick = {
+                userPickerState.value = AnimatedViewState.HIDING
+                switchToLocalDevice()
+              },
+              onRemoteHostActionButtonClick = { h ->
+                userPickerState.value = AnimatedViewState.HIDING
+                stopRemoteHostAndReloadHosts(h, true)
+              }
+            )
+          }
+          val showCustomModal: (@Composable() (ModalData.(ChatModel, () -> Unit) -> Unit)) -> () -> Unit = { modalView ->
+            {
+              if (appPlatform.isDesktop) {
+                userPickerState.value = AnimatedViewState.HIDING
+              }
+              ModalManager.start.showCustomModal { close -> modalView(chatModel, close) }
             }
-            val showCustomModal: (@Composable() (ModalData.(ChatModel, () -> Unit) -> Unit)) -> () -> Unit = { modalView ->
-              {
+          }
+
+          ActiveUserSection(
+            chatModel = chatModel,
+            userPickerState = userPickerState,
+            showCustomModal = showCustomModal,
+          )
+
+          Divider(Modifier.padding(DEFAULT_PADDING))
+          val profileHidden = rememberSaveable { mutableStateOf(false) }
+
+          GlobalSettingsSection(
+            chatModel = chatModel,
+            userPickerState = userPickerState,
+            setPerformLA = setPerformLA,
+            onUserClicked = { user ->
+              userPickerState.value = AnimatedViewState.HIDING
+              if (!user.activeUser) {
+                withBGApi {
+                  controller.showProgressIfNeeded {
+                    ModalManager.closeAllModalsEverywhere()
+                    chatModel.controller.changeActiveUser(user.remoteHostId, user.userId, null)
+                  }
+                }
+              }
+            },
+            onShowAllProfilesClicked = {
+              doWithAuth(
+                generalGetString(MR.strings.auth_open_chat_profiles),
+                generalGetString(MR.strings.auth_log_in_using_credential)
+              ) {
                 if (appPlatform.isDesktop) {
                   userPickerState.value = AnimatedViewState.HIDING
                 }
-                ModalManager.start.showCustomModal { close -> modalView(chatModel, close) }
+                ModalManager.start.showCustomModal { close ->
+                  val search = rememberSaveable { mutableStateOf("") }
+                  ModalView(
+                    { close() },
+                    endButtons = {
+                      SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
+                    },
+                    content = { UserProfilesView(chatModel, search, profileHidden) })
+                }
               }
             }
-
-            ActiveUserSection(
-              chatModel = chatModel,
-              userPickerState = userPickerState,
-              showCustomModal = showCustomModal,
-            )
-
-            Divider(Modifier.padding(DEFAULT_PADDING))
-            val profileHidden = rememberSaveable { mutableStateOf(false) }
-
-            GlobalSettingsSection(
-              chatModel = chatModel,
-              userPickerState = userPickerState,
-              setPerformLA = setPerformLA,
-              onUserClicked = { user ->
-                userPickerState.value = AnimatedViewState.HIDING
-                if (!user.activeUser) {
-                  withBGApi {
-                    controller.showProgressIfNeeded {
-                      ModalManager.closeAllModalsEverywhere()
-                      chatModel.controller.changeActiveUser(user.remoteHostId, user.userId, null)
-                    }
-                  }
-                }
-              },
-              onShowAllProfilesClicked = {
-                doWithAuth(
-                  generalGetString(MR.strings.auth_open_chat_profiles),
-                  generalGetString(MR.strings.auth_log_in_using_credential)
-                ) {
-                  if (appPlatform.isDesktop) {
-                    userPickerState.value = AnimatedViewState.HIDING
-                  }
-                  ModalManager.start.showCustomModal { close ->
-                    val search = rememberSaveable { mutableStateOf("") }
-                    ModalView(
-                      { close() },
-                      endButtons = {
-                        SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
-                      },
-                      content = { UserProfilesView(chatModel, search, profileHidden) })
-                  }
-                }
-              }
-            )
-          }
+          )
         }
       }
     }
@@ -695,7 +617,7 @@ expect fun UserPickerInactiveUsersSection(
 
 @Composable
 expect fun UserPickerScaffold(
-  isVisible: Boolean,
+  pickerState: MutableStateFlow<AnimatedViewState>,
   content: @Composable () -> Unit
 )
 

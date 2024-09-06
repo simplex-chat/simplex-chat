@@ -11,11 +11,11 @@ import chat.simplex.common.model.User
 import chat.simplex.common.model.UserInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.helpers.fontSizeSqrtMultiplier
-import chat.simplex.common.views.helpers.userPickerAnimSpec
+import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import kotlinx.coroutines.flow.MutableStateFlow
 
 @Composable
 actual fun UserPickerInactiveUsersSection(
@@ -62,9 +62,9 @@ actual fun UserPickerInactiveUsersSection(
 }
 
 @Composable
-actual fun UserPickerScaffold(isVisible: Boolean, content: @Composable () -> Unit) {
+actual fun UserPickerScaffold(pickerState: MutableStateFlow<AnimatedViewState>, content: @Composable () -> Unit) {
   AnimatedVisibility(
-    visible = isVisible,
+    visible = pickerState.value.isVisible(),
     enter = fadeIn(),
     exit = fadeOut()
   ) {
