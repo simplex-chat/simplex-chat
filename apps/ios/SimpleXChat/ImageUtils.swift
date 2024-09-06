@@ -391,7 +391,9 @@ public func imageFromBase64(_ base64Encoded: String?) -> UIImage? {
             return img
         } else if let data = Data(base64Encoded: dropImagePrefix(base64Encoded)),
             let img = UIImage(data: data) {
-            imageCache.setObject(img, forKey: base64Encoded as NSString)
+            imageCacheQueue.async {
+                imageCache.setObject(img, forKey: base64Encoded as NSString)
+            }
             return img
         } else {
             return nil
@@ -400,6 +402,8 @@ public func imageFromBase64(_ base64Encoded: String?) -> UIImage? {
         return nil
     }
 }
+
+private let imageCacheQueue = DispatchQueue.global(qos: .background)
 
 private var imageCache: NSCache<NSString, UIImage> = {
     var cache = NSCache<NSString, UIImage>()
