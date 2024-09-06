@@ -172,22 +172,14 @@ actual fun UserPickerScaffold(pickerState: MutableStateFlow<AnimatedViewState>, 
   Box(Modifier.drawBehind { drawRect(animatedColor.value) }) {
     AnimatedVisibility(
       visible = pickerState.run { value.isVisible() },
-      enter = if (appPlatform.isAndroid) {
-        slideInVertically(
+      enter = slideInVertically(
           initialOffsetY = { it },
           animationSpec = userPickerAnimSpec()
-        ) + fadeIn(animationSpec = userPickerAnimSpec())
-      } else {
-        fadeIn()
-      },
-      exit = if (appPlatform.isAndroid) {
-        slideOutVertically(
+        ) + fadeIn(animationSpec = userPickerAnimSpec()),
+      exit = slideOutVertically(
           targetOffsetY = { it },
           animationSpec = userPickerAnimSpec()
         ) + fadeOut(animationSpec = userPickerAnimSpec())
-      } else {
-        fadeOut()
-      }
     ) {
       content()
     }
