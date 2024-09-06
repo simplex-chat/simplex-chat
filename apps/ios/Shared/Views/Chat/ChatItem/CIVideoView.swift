@@ -278,8 +278,7 @@ struct CIVideoView: View {
         .foregroundColor(color)
         .padding(.leading, smallView ? 0 : 4)
         .frame(width: 40 * sizeMultiplier, height: 40 * sizeMultiplier)
-        .background(Material.regular)
-        .environment(\.colorScheme, .dark)
+        .background(Color.black.opacity(0.35))
         .clipShape(Circle())
     }
 
@@ -289,8 +288,7 @@ struct CIVideoView: View {
             .frame(width: smallView ? 12 * sizeMultiplier : 12, height: smallView ? 12 * sizeMultiplier : 12)
             .tint(color)
             .frame(width: smallView ? 40 * sizeMultiplier * 0.9 : 40, height: smallView ? 40 * sizeMultiplier * 0.9 : 40)
-            .background(Material.regular)
-            .environment(\.colorScheme, .dark)
+            .background(Color.black.opacity(0.35))
             .clipShape(Circle())
     }
 
