@@ -10,6 +10,7 @@ import uk.co.caprica.vlcj.player.base.State
 import uk.co.caprica.vlcj.player.component.AudioPlayerComponent
 import java.io.File
 import java.util.*
+import java.util.concurrent.Executors
 import kotlin.math.max
 
 actual class RecorderNative: RecorderInterface {
@@ -42,7 +43,9 @@ actual object AudioPlayer: AudioPlayerInterface {
     RecorderInterface.stopRecording?.invoke()
     val current = currentlyPlaying.value
     if (current == null || current.fileSource != fileSource || !player.status().isPlayable || smallView != current.smallView) {
-      stopListener()
+      val oldPath = current?.fileSource?.filePath
+      println("LALAL ABSOLUTE new $absoluteFilePath, old ${oldPath} ${if (oldPath != null) File(oldPath).exists() else null}")
+      //stopListener()
       player.stop()
       runCatching {
         if (fileSource.cryptoArgs != null) {
