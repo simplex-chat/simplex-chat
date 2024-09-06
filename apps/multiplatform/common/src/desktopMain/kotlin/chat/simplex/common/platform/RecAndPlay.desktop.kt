@@ -215,7 +215,7 @@ actual object SoundPlayer: SoundPlayerInterface {
     tmpFile.deleteOnExit()
     SoundPlayer::class.java.getResource("/media/ring_once.mp3")!!.openStream()!!.use { it.copyTo(tmpFile.outputStream()) }
     playing = true
-    scope.launch {
+    scope.launch(Dispatchers.Default) {
       while (playing && sound) {
         AudioPlayer.play(CryptoFile.plain(tmpFile.absolutePath), mutableStateOf(true), mutableStateOf(0), mutableStateOf(0), resetOnEnd = true, smallView = false)
         delay(3500)
