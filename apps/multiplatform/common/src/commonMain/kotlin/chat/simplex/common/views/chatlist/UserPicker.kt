@@ -340,7 +340,7 @@ fun UserPicker(
       userPickerState.collect {
         newChat = it
         launch {
-          animatedFloat.animateTo(if (newChat.isVisible()) 1f else 0f, newChatSheetAnimSpec())
+          animatedFloat.animateTo(if (newChat.isVisible()) 1f else 0f, userPickerAnimSpec())
           if (newChat.isHiding()) userPickerState.value = AnimatedViewState.GONE
         }
       }

@@ -143,7 +143,7 @@ actual fun UserPickerScaffold(pickerState: MutableStateFlow<AnimatedViewState>, 
             val colors = CurrentColors.value.colors
             val toColor = if (colors.isLight) colors.onSurface.copy(alpha = ScrimOpacity) else Color.Black.copy(0.64f)
 
-            animatedColor.animateTo(if (newState.isVisible()) toColor else Color.Transparent, newChatSheetAnimSpec()) {
+            animatedColor.animateTo(if (newState.isVisible()) toColor else Color.Transparent, userPickerAnimSpec()) {
                 if (newState.isVisible()) {
                   platform.androidSetDrawerStatusAndNavBarColor(
                     isLight = colors.isLight,
@@ -175,11 +175,11 @@ actual fun UserPickerScaffold(pickerState: MutableStateFlow<AnimatedViewState>, 
       enter = slideInVertically(
           initialOffsetY = { it },
           animationSpec = userPickerAnimSpec()
-        ) + fadeIn(animationSpec = userPickerAnimSpec()),
+        ) ,
       exit = slideOutVertically(
           targetOffsetY = { it },
           animationSpec = userPickerAnimSpec()
-        ) + fadeOut(animationSpec = userPickerAnimSpec())
+        )
     ) {
       content()
     }
