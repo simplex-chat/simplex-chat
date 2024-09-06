@@ -98,6 +98,13 @@ func ciMetaText(
     showTimesamp: Bool
 ) -> Text {
     var r = Text("")
+    var space: Text? = nil
+    let prependSpace = {
+        if let sp = space {
+            r = sp + r
+            space = nil
+        }
+    }
     let resolved = colorMode.resolve(color)
     if showEdited, meta.itemEdited {
         r = r + statusIconText("pencil", resolved)
@@ -108,27 +115,33 @@ func ciMetaText(
         if ttl != chatTTL {
             r = r + colored(Text(shortTimeText(ttl)), resolved)
         }
-        r = r + Text(" ")
+        space = Text(" ")
     }
     if showViaProxy, meta.sentViaProxy == true {
+        prependSpace()
         r = r + statusIconText("arrow.forward", resolved?.opacity(0.67)).font(.caption2)
     }
     if showStatus {
+        prependSpace()
         if let (image, statusColor) = meta.itemStatus.statusIcon(color, primaryColor) {
             let metaColor = if onlyOverrides && statusColor != color {
                 colorMode.resolve(statusColor)
             } else {
                 Color.clear
             }
-            r = r + colored(Text(image), metaColor) + Text(" ")
+            r = r + colored(Text(image), metaColor)
+            space = Text(" ")
         } else if !meta.disappearing {
-            r = r + colorMode.statusSpacer + Text(" ")
+            space = colorMode.statusSpacer + Text(" ")
         }
     }
     if let enc = encrypted {
-        r = r + statusIconText(enc ? "lock" : "lock.open", resolved) + Text(" ")
+        prependSpace()
+        r = r + statusIconText(enc ? "lock" : "lock.open", resolved)
+        space = Text(" ")
     }
     if showTimesamp {
+        prependSpace()
         r = r + colored(meta.timestampText, resolved)
     }
     return r.font(.caption)
