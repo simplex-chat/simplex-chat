@@ -2790,7 +2790,7 @@ public enum CIStatus: Decodable, Hashable {
         }
     }
 
-    public func statusIcon(_ metaColor: Color?, _ primaryColor: Color = .accentColor) -> (Image, Color?)? {
+    public func statusIcon(_ metaColor: Color, _ primaryColor: Color = .accentColor) -> (Image, Color)? {
         switch self {
         case .sndNew: nil
         case .sndSent: (Image("checkmark.wide"),  metaColor)

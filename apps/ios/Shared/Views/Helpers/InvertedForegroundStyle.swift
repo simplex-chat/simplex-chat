@@ -19,14 +19,3 @@ extension View {
         } else { self }
     }
 }
-
-extension Text {
-    // Applying `foregroundColor(nil)` breaks `.invertedForegroundStyle` modifier
-   func foreground(_ color: Color?) -> Text {
-        if let color {
-           foregroundColor(color)
-        } else {
-            self
-        }
-    }
-}

@@ -47,7 +47,8 @@ struct CIMetaView: View {
                         chatItem.meta,
                         chatTTL: chat.chatInfo.timedMessagesTTL,
                         encrypted: chatItem.encryptedFile,
-                        colorMode: .colorOverride,
+                        colorMode: .normal,
+                        onlyOverrides: true,
                         showStatus: showStatus,
                         showEdited: showEdited,
                         showViaProxy: showSentViaProxy,
@@ -66,22 +67,19 @@ enum MetaColorMode {
     case transparent
     // Renders white on dark backgrounds and black on light ones
     case invertedMaterial
-    // Only renders colors that differ from base
-    case colorOverride
 
-    func resolve(_ c: Color?, isOverride: Bool = false) -> Color? {
+    func resolve(_ c: Color?) -> Color? {
         switch self {
         case .normal: c
         case .transparent: .clear
         case .invertedMaterial: nil
-        case .colorOverride: isOverride ? c : .clear
         }
     }
 
     var statusSpacer: Text {
         switch self {
-        case .normal, .transparent: Text(Image(systemName: "circlebadge.fill"))
-        case .invertedMaterial, .colorOverride: Text(" ").kerning(13)
+        case .normal, .transparent: Text(Image(systemName: "circlebadge.fill")).foregroundColor(.clear)
+        case .invertedMaterial: Text(" ").kerning(13)
         }
     }
 }
@@ -90,9 +88,10 @@ func ciMetaText(
     _ meta: CIMeta,
     chatTTL: Int?,
     encrypted: Bool?,
-    color: Color = .clear,
+    color: Color = .clear, // we use this function to reserve space without rendering meta
     primaryColor: Color = .accentColor,
     colorMode: MetaColorMode = .normal,
+    onlyOverrides: Bool = false, // only render colors that differ from base
     showStatus: Bool = true,
     showEdited: Bool = true,
     showViaProxy: Bool,
@@ -107,7 +106,7 @@ func ciMetaText(
         r = r + statusIconText("timer", resolved).font(.caption2)
         let ttl = meta.itemTimed?.ttl
         if ttl != chatTTL {
-            r = r + Text(shortTimeText(ttl)).foreground(resolved)
+            r = r + colored(Text(shortTimeText(ttl)), resolved)
         }
         r = r + Text(" ")
     }
@@ -116,23 +115,36 @@ func ciMetaText(
     }
     if showStatus {
         if let (image, statusColor) = meta.itemStatus.statusIcon(color, primaryColor) {
-            let metaColor = colorMode.resolve(statusColor, isOverride: statusColor != color)
-            r = r + Text(image).foreground(metaColor) + Text(" ")
+            let metaColor = if onlyOverrides && statusColor != color {
+                colorMode.resolve(statusColor)
+            } else {
+                Color.clear
+            }
+            r = r + colored(Text(image), metaColor) + Text(" ")
         } else if !meta.disappearing {
-            r = r + colorMode.statusSpacer.foreground(.clear) + Text(" ")
+            r = r + colorMode.statusSpacer + Text(" ")
         }
     }
     if let enc = encrypted {
         r = r + statusIconText(enc ? "lock" : "lock.open", resolved) + Text(" ")
     }
     if showTimesamp {
-        r = r + meta.timestampText.foreground(resolved)
+        r = r + colored(meta.timestampText, resolved)
     }
     return r.font(.caption)
 }
 
 private func statusIconText(_ icon: String, _ color: Color?) -> Text {
-    Text(Image(systemName: icon)).foreground(color)
+    colored(Text(Image(systemName: icon)), color)
+}
+
+// Applying `foregroundColor(nil)` breaks `.invertedForegroundStyle` modifier
+private func colored(_ t: Text, _ color: Color?) -> Text {
+    if let color {
+        t.foregroundColor(color)
+    } else {
+        t
+    }
 }
 
 struct CIMetaView_Previews: PreviewProvider {

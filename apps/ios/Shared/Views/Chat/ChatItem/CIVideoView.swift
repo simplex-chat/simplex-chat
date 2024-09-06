@@ -296,12 +296,14 @@ struct CIVideoView: View {
 
     private var fileSizeString: String {
         if let file = chatItem.file, !videoPlaying {
-            "  \(ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .binary))"
-        } else { "" }
+            "  " + ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .binary)
+        } else {
+            ""
+        }
     }
 
     private func durationProgress() -> some View {
-        Text("\(durationText(videoPlaying ? progress : duration))" + fileSizeString)
+        Text((durationText(videoPlaying ? progress : duration)) + fileSizeString)
             .invertedForegroundStyle()
             .font(.caption)
             .padding(.vertical, 6)
