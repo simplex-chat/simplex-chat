@@ -533,12 +533,12 @@ struct ChatView: View {
                        !isDateVisible,
                        let date, !Calendar.current.isDateInToday(date) {
                         await MainActor.run {
-                            withAnimation { isDateVisible = true }
+                            isDateVisible = true
                         }
                     }
                 } else if isDateVisible {
                     await MainActor.run {
-                        withAnimation { isDateVisible = false }
+                        isDateVisible = false
                     }
                 }
             }
