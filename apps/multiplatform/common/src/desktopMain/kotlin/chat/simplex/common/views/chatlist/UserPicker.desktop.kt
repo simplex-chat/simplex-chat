@@ -1,5 +1,6 @@
 package chat.simplex.common.views.chatlist
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
@@ -11,6 +12,7 @@ import chat.simplex.common.model.UserInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.fontSizeSqrtMultiplier
+import chat.simplex.common.views.helpers.userPickerAnimSpec
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -57,4 +59,15 @@ actual fun UserPickerInactiveUsersSection(
     stringResource(MR.strings.your_chat_profiles),
     onShowAllProfilesClicked
   )
+}
+
+@Composable
+actual fun UserPickerScaffold(isVisible: Boolean, content: @Composable () -> Unit) {
+  AnimatedVisibility(
+    visible = isVisible,
+    enter = fadeIn(),
+    exit = fadeOut()
+  ) {
+    content()
+  }
 }

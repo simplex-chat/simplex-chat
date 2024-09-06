@@ -291,6 +291,7 @@ private fun GlobalSettingsSection(
   }
 }
 
+
 @Composable
 fun UserPicker(
   chatModel: ChatModel,
@@ -318,10 +319,9 @@ fun UserPicker(
   }
   val currentTheme by CurrentColors.collectAsState()
   val animatedFloat = remember { Animatable(if (newChat.isVisible()) 0f else 1f) }
-
   val resultingColor by remember {
     derivedStateOf {
-        if (currentTheme.colors.isLight) currentTheme.colors.onSurface.copy(alpha = ScrimOpacity)else Color.Black.copy(0.64f)
+      if (currentTheme.colors.isLight) currentTheme.colors.onSurface.copy(alpha = ScrimOpacity) else Color.Black.copy(0.64f)
     }
   }
   val animatedColor = remember {
@@ -437,32 +437,11 @@ fun UserPicker(
       }
     }
   }
-
   var drawerHeightPx by remember { mutableStateOf(0) }
   var offsetY by remember { mutableStateOf(0f) }
 
-  Box(
-    if (appPlatform.isAndroid) Modifier.drawBehind { drawRect(animatedColor.value) } else Modifier
-  ) {
-    AnimatedVisibility(
-      visible = newChat.isVisible(),
-      enter = if (appPlatform.isAndroid) {
-        slideInVertically(
-          initialOffsetY = { it },
-          animationSpec = userPickerAnimSpec()
-        ) + fadeIn(animationSpec = userPickerAnimSpec())
-      } else {
-        fadeIn()
-      },
-      exit = if (appPlatform.isAndroid) {
-        slideOutVertically(
-          targetOffsetY = { it },
-          animationSpec = userPickerAnimSpec()
-        ) + fadeOut(animationSpec = userPickerAnimSpec())
-      } else {
-        fadeOut()
-      }
-    ) {
+  Box(if (appPlatform.isAndroid) Modifier.drawBehind { drawRect(animatedColor.value) } else Modifier) {
+    UserPickerScaffold(isVisible = newChat.isVisible()) {
       Box(
         Modifier
           .fillMaxSize()
@@ -515,7 +494,6 @@ fun UserPicker(
                 }
               )
             }
-
             val showCustomModal: (@Composable() (ModalData.(ChatModel, () -> Unit) -> Unit)) -> () -> Unit = { modalView ->
               {
                 if (appPlatform.isDesktop) {
@@ -532,7 +510,6 @@ fun UserPicker(
             )
 
             Divider(Modifier.padding(DEFAULT_PADDING))
-
             val profileHidden = rememberSaveable { mutableStateOf(false) }
 
             GlobalSettingsSection(
@@ -623,7 +600,7 @@ fun UserProfilePickerItem(
       }
     } else if (!u.showNtfs) {
       Icon(painterResource(MR.images.ic_notifications_off), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
-    }  else {
+    } else {
       Box(Modifier.size(20.dp))
     }
   }
@@ -714,6 +691,12 @@ expect fun UserPickerInactiveUsersSection(
   stopped: Boolean,
   onShowAllProfilesClicked: () -> Unit,
   onUserClicked: (user: User) -> Unit,
+)
+
+@Composable
+expect fun UserPickerScaffold(
+  isVisible: Boolean,
+  content: @Composable () -> Unit
 )
 
 @Composable

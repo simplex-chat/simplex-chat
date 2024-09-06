@@ -1,19 +1,23 @@
 package chat.simplex.common.views.chatlist
 
 import SectionItemView
+import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.User
 import chat.simplex.common.model.UserInfo
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.fontSizeSqrtMultiplier
+import chat.simplex.common.views.helpers.userPickerAnimSpec
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -87,5 +91,32 @@ actual fun UserPickerInactiveUsersSection(
       stringResource(MR.strings.your_chat_profiles),
       onShowAllProfilesClicked
     )
+  }
+}
+
+@Composable
+actual fun UserPickerScaffold(isVisible: Boolean, content: @Composable () -> Unit) {
+  Box {
+    AnimatedVisibility(
+      visible = isVisible,
+      enter = if (appPlatform.isAndroid) {
+        slideInVertically(
+          initialOffsetY = { it },
+          animationSpec = userPickerAnimSpec()
+        ) + fadeIn(animationSpec = userPickerAnimSpec())
+      } else {
+        fadeIn()
+      },
+      exit = if (appPlatform.isAndroid) {
+        slideOutVertically(
+          targetOffsetY = { it },
+          animationSpec = userPickerAnimSpec()
+        ) + fadeOut(animationSpec = userPickerAnimSpec())
+      } else {
+        fadeOut()
+      }
+    ) {
+      content()
+    }
   }
 }
