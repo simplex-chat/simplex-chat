@@ -62,8 +62,10 @@ fun CIVoiceView(
       val play: () -> Unit = {
         val playIfExists = {
           if (fileSource.value != null) {
-            AudioPlayer.play(fileSource.value!!, audioPlaying, progress, duration, resetOnEnd = true, smallView = smallView)
-            brokenAudio = !audioPlaying.value
+            withBGApi {
+              AudioPlayer.play(fileSource.value!!, audioPlaying, progress, duration, resetOnEnd = true, smallView = smallView)
+              brokenAudio = !audioPlaying.value
+            }
           }
         }
         if (chatModel.connectedToRemote() && fileSource.value == null) {
@@ -75,7 +77,10 @@ fun CIVoiceView(
         } else playIfExists()
       }
       val pause = {
-        AudioPlayer.pause(audioPlaying, progress)
+        withBGApi {
+          AudioPlayer.pause(audioPlaying, progress)
+        }
+        Unit
       }
       val text = remember(ci.file?.fileId, ci.file?.fileStatus) {
         derivedStateOf {
@@ -87,7 +92,9 @@ fun CIVoiceView(
         }
       }
       VoiceLayout(file, ci, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, timedMessagesTTL, showViaProxy, sizeMultiplier, play, pause, longClick, receiveFile) {
-        AudioPlayer.seekTo(it, progress, fileSource.value?.filePath)
+        withBGApi {
+          AudioPlayer.seekTo(it, progress, fileSource.value?.filePath)
+        }
       }
       if (smallView) {
         KeyChangeEffect(chatModel.chatId.value, chatModel.currentUser.value?.userId, chatModel.currentRemoteHost.value) {

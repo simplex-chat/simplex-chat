@@ -28,7 +28,7 @@ data class CurrentlyPlayingState(
 
 interface AudioPlayerInterface {
   val currentlyPlaying: MutableState<CurrentlyPlayingState?>
-  fun play(
+  suspend fun play(
     fileSource: CryptoFile,
     audioPlaying: MutableState<Boolean>,
     progress: MutableState<Int>,
@@ -36,12 +36,12 @@ interface AudioPlayerInterface {
     resetOnEnd: Boolean,
     smallView: Boolean,
   )
-  fun stop()
-  fun stop(item: ChatItem)
-  fun stop(fileName: String?)
-  fun pause(audioPlaying: MutableState<Boolean>, pro: MutableState<Int>)
-  fun seekTo(ms: Int, pro: MutableState<Int>, filePath: String?)
-  fun duration(unencryptedFilePath: String): Int?
+  suspend fun stop()
+  suspend fun stop(item: ChatItem)
+  suspend fun stop(fileName: String?)
+  suspend fun pause(audioPlaying: MutableState<Boolean>, pro: MutableState<Int>)
+  suspend fun seekTo(ms: Int, pro: MutableState<Int>, filePath: String?)
+  suspend fun duration(unencryptedFilePath: String): Int?
 }
 
 expect object AudioPlayer: AudioPlayerInterface

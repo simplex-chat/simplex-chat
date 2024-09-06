@@ -60,7 +60,9 @@ actual class VideoPlayer actual constructor(
     if (soundEnabled.value)  {
       RecorderInterface.stopRecording?.invoke()
     }
-    AudioPlayer.stop()
+    withBGApi {
+      AudioPlayer.stop()
+    }
     VideoPlayerHolder.stopAll()
     if (listener.value == null) {
       runCatching {

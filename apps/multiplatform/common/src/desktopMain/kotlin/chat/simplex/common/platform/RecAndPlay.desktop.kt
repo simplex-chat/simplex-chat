@@ -92,16 +92,16 @@ actual object AudioPlayer: AudioPlayerInterface {
     return position
   }
 
-  override fun stop() {
+  override suspend fun stop() {
     if (currentlyPlaying.value == null) return
     player.stop()
     stopListener()
   }
 
-  override fun stop(item: ChatItem) = stop(item.file?.fileName)
+  override suspend fun stop(item: ChatItem) = stop(item.file?.fileName)
 
   // FileName or filePath are ok
-  override fun stop(fileName: String?) {
+  override suspend fun stop(fileName: String?) {
     if (fileName != null && currentlyPlaying.value?.fileSource?.filePath?.endsWith(fileName) == true) {
       stop()
     }
@@ -126,7 +126,7 @@ actual object AudioPlayer: AudioPlayerInterface {
     progressJob = null
   }
 
-  override fun play(
+  override suspend fun play(
     fileSource: CryptoFile,
     audioPlaying: MutableState<Boolean>,
     progress: MutableState<Int>,
@@ -155,19 +155,19 @@ actual object AudioPlayer: AudioPlayerInterface {
     realDuration?.let { duration.value = it }
   }
 
-  override fun pause(audioPlaying: MutableState<Boolean>, pro: MutableState<Int>) {
+  override suspend fun pause(audioPlaying: MutableState<Boolean>, pro: MutableState<Int>) {
     pro.value = pause()
     audioPlaying.value = false
   }
 
-  override fun seekTo(ms: Int, pro: MutableState<Int>, filePath: String?) {
+  override suspend fun seekTo(ms: Int, pro: MutableState<Int>, filePath: String?) {
     pro.value = ms
     if (currentlyPlaying.value?.fileSource?.filePath == filePath) {
       player.seekTo(ms)
     }
   }
 
-  override fun duration(unencryptedFilePath: String): Int? {
+  override suspend fun duration(unencryptedFilePath: String): Int? {
     var res: Int? = null
     try {
       val helperPlayer = AudioPlayerComponent().mediaPlayer()
@@ -215,7 +215,7 @@ actual object SoundPlayer: SoundPlayerInterface {
     tmpFile.deleteOnExit()
     SoundPlayer::class.java.getResource("/media/ring_once.mp3")!!.openStream()!!.use { it.copyTo(tmpFile.outputStream()) }
     playing = true
-    scope.launch(Dispatchers.Default) {
+    scope.launch {
       while (playing && sound) {
         AudioPlayer.play(CryptoFile.plain(tmpFile.absolutePath), mutableStateOf(true), mutableStateOf(0), mutableStateOf(0), resetOnEnd = true, smallView = false)
         delay(3500)
@@ -225,7 +225,9 @@ actual object SoundPlayer: SoundPlayerInterface {
 
   override fun stop() {
     playing = false
-    AudioPlayer.stop()
+    withBGApi {
+      AudioPlayer.stop()
+    }
   }
 }
 
@@ -259,6 +261,8 @@ actual object CallSoundsPlayer: CallSoundsPlayerInterface {
 
   override fun stop() {
     playingJob?.cancel()
-    AudioPlayer.stop()
+    withBGApi {
+      AudioPlayer.stop()
+    }
   }
 }

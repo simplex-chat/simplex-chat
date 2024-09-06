@@ -52,10 +52,12 @@ fun ComposeVoiceView(
       ) {
         IconButton(
           onClick = {
-            if (!audioPlaying.value) {
-              AudioPlayer.play(CryptoFile.plain(filePath), audioPlaying, progress, duration, resetOnEnd = false, smallView = false)
-            } else {
-              AudioPlayer.pause(audioPlaying, progress)
+            withBGApi {
+              if (!audioPlaying.value) {
+                AudioPlayer.play(CryptoFile.plain(filePath), audioPlaying, progress, duration, resetOnEnd = false, smallView = false)
+              } else {
+                AudioPlayer.pause(audioPlaying, progress)
+              }
             }
           },
           enabled = finishedRecording
@@ -87,7 +89,9 @@ fun ComposeVoiceView(
         if (cancelEnabled) {
           IconButton(
             onClick = {
-              AudioPlayer.stop(filePath)
+              withBGApi {
+                AudioPlayer.stop(filePath)
+              }
               cancelVoice()
             },
             modifier = Modifier.padding(0.dp)
@@ -121,7 +125,7 @@ fun FinishedRecordingSlider(backgroundColor: Color, progress: MutableState<Int>,
     0.24f)
   Slider(
     progress.value.toFloat(),
-    onValueChange = { AudioPlayer.seekTo(it.toInt(), progress, filePath) },
+    onValueChange = { withBGApi { AudioPlayer.seekTo(it.toInt(), progress, filePath) } },
     Modifier
       .fillMaxWidth()
       .drawBehind {

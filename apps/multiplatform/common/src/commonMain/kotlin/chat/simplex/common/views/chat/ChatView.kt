@@ -178,7 +178,9 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
             selectedChatItems = selectedChatItems,
             back = {
               hideKeyboard(view)
-              AudioPlayer.stop()
+              withBGApi {
+                AudioPlayer.stop()
+              }
               chatModel.chatId.value = null
               chatModel.groupMembers.clear()
               chatModel.groupMembersIndexes.clear()

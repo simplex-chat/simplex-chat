@@ -414,7 +414,7 @@ object ChatModel {
           // We delete taking into account meta.createdAt to make sure we will not be in situation when two items with the same id will be deleted
           // (it can happen if already deleted chat item in backend still in the list and new one came with the same (re-used) chat item id)
           val remove = it.id == cItem.id && it.meta.createdAt == cItem.meta.createdAt
-          if (remove) { AudioPlayer.stop(it) }
+          if (remove) { withBGApi { AudioPlayer.stop(it) } }
           remove
         }
       }
