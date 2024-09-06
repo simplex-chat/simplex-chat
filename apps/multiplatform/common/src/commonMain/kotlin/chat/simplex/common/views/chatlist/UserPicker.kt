@@ -432,9 +432,9 @@ fun UserPicker(
         Modifier
           .height(IntrinsicSize.Min)
           .then(if (appPlatform.isDesktop) Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier) else swipeableModifier)
-          .shadow(8.dp, clip = true)
           .fillMaxWidth()
           .offset { IntOffset(0, if (offsetY > 0) offsetY else 0) }
+          .shadow(8.dp, clip = true)
           .background(MaterialTheme.colors.surface)
       ) {
         val currentRemoteHost = remember { chatModel.currentRemoteHost }.value
