@@ -124,10 +124,10 @@ func ciMetaText(
     if showStatus {
         prependSpace()
         if let (image, statusColor) = meta.itemStatus.statusIcon(color, primaryColor) {
-            let metaColor = if onlyOverrides && statusColor != color {
-                colorMode.resolve(statusColor)
-            } else {
+            let metaColor = if onlyOverrides && statusColor == color {
                 Color.clear
+            } else {
+                colorMode.resolve(statusColor)
             }
             r = r + colored(Text(image), metaColor)
             space = Text(" ")
