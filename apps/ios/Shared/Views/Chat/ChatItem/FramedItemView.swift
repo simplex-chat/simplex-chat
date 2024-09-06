@@ -64,12 +64,17 @@ struct FramedItemView: View {
                     .overlay(DetermineWidth())
             }
 
-            if chatItem.content.msgContent != nil {
-                CIMetaView(chat: chat, chatItem: chatItem, metaColor: useWhiteMetaColor ? Color.white : theme.colors.secondary)
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 6)
-                    .overlay(DetermineWidth())
-                    .accessibilityLabel("")
+            if let content = chatItem.content.msgContent {
+                CIMetaView(
+                    chat: chat,
+                    chatItem: chatItem,
+                    metaColor: theme.colors.secondary,
+                    invertedMaterial: useWhiteMetaColor
+                )
+                .padding(.horizontal, 12)
+                .padding(.bottom, 6)
+                .overlay(DetermineWidth())
+                .accessibilityLabel("")
             }
         }   
             .background { chatItemFrameColorMaybeImageOrVideo(chatItem, theme).modifier(ChatTailPadding()) }

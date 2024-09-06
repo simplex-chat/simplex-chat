@@ -165,9 +165,9 @@ struct CIImageView: View {
     private func fileIcon(_ icon: String, _ size: CGFloat, _ padding: CGFloat) -> some View {
         Image(systemName: icon)
             .resizable()
+            .invertedForegroundStyle()
             .aspectRatio(contentMode: .fit)
             .frame(width: size, height: size)
-            .foregroundColor(.white)
             .padding(padding)
     }
 
