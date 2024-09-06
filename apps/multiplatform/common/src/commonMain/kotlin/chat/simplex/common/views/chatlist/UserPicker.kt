@@ -192,7 +192,7 @@ private fun ActiveUserSection(
 }
 
 @Composable
-private fun BoxScope.unreadBadge(unreadCount: Int) {
+private fun BoxScope.unreadBadge(unreadCount: Int, userMuted: Boolean) {
   Text(
     if (unreadCount > 0) unreadCountStr(unreadCount) else "",
     color = Color.White,
@@ -200,7 +200,7 @@ private fun BoxScope.unreadBadge(unreadCount: Int) {
     style = TextStyle(textAlign = TextAlign.Center),
     modifier = Modifier
       .offset(y = 3.sp.toDp())
-      .background(MaterialTheme.colors.primaryVariant, shape = CircleShape)
+      .background(if (userMuted) MaterialTheme.colors.primaryVariant else MaterialTheme.colors.secondary, shape = CircleShape)
       .badgeLayout()
       .padding(horizontal = 2.sp.toDp())
       .padding(vertical = 2.sp.toDp())
@@ -219,7 +219,7 @@ fun UserPickerInactiveUserBadge(userInfo: UserInfo, stopped: Boolean, size: Int 
         ProfileImage(size = size.dp, image = userInfo.user.profile.image, color = MaterialTheme.colors.secondaryVariant)
 
         if (userInfo.unreadCount > 0) {
-          unreadBadge(userInfo.unreadCount)
+          unreadBadge(userInfo.unreadCount, userInfo.user.showNtfs)
         }
       }
     }
