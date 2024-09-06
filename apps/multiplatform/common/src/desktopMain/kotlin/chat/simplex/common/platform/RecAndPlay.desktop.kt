@@ -193,7 +193,7 @@ fun MediaPlayer.seekTo(time: Int) {
 }
 
 fun MediaPlayer.start() {
-  controls().start()
+  println("LALAL START ${controls().start()}")
 }
 
 fun MediaPlayer.pause() {
@@ -221,7 +221,7 @@ actual object SoundPlayer: SoundPlayerInterface {
     scope.launch {
       while (playing && sound) {
         AudioPlayer.play(CryptoFile.plain(tmpFile.absolutePath), mutableStateOf(true), mutableStateOf(0), mutableStateOf(0), resetOnEnd = true, smallView = false)
-        delay(3500)
+        //delay(3500)
       }
     }
   }
