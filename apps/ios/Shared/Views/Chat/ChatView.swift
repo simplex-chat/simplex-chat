@@ -797,9 +797,10 @@ struct ChatView: View {
         }
         
         private func waitToMarkRead(_ op: @Sendable @escaping () async -> Void) {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            Task {
+                _ = try? await Task.sleep(nanoseconds: 600_000000)
                 if m.chatId == chat.chatInfo.id {
-                    Task(operation: op)
+                    await op()
                 }
             }
         }
