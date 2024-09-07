@@ -49,7 +49,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         private var dataSource: UITableViewDiffableDataSource<Section, ChatItem>!
         private var itemCount: Int = 0
         private let updateFloatingButtons = PassthroughSubject<Void, Never>()
-        private let seenItem = PassthroughSubject<ChatItem.ID, Never>()
+        private let seenItem = PassthroughSubject<Set<ChatItem.ID>, Never>()
         private var bag = Set<AnyCancellable>()
 
         init(representer: ReverseList) {
@@ -213,25 +213,19 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             updateFloatingButtons.send()
         }
 
-        private var toBeSeenItems = Set<ChatItem.ID>()
+        private var scheduledToMarkRead = Set<ChatItem.ID>()
 
         override func scrollViewDidScroll(_ scrollView: UIScrollView) {
             updateFloatingButtons.send()
-            let visibleItems = (tableView.indexPathsForVisibleRows ?? [])
-                .filter { isVisible(indexPath: $0) }
-                .compactMap {
-                    let item = representer.items[$0.item]
-                    return item.isRcvNew ? item.id : nil
-                }
-            for visibleItem in visibleItems {
-                if !toBeSeenItems.contains(visibleItem) {
-                    toBeSeenItems.insert(visibleItem)
-                    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(600)) { [weak self] in
-                        self?.toBeSeenItems.remove(visibleItem)
-                        if self?.isVisible(chatItemId: visibleItem) ?? false {
-                            self?.seenItem.send(visibleItem)
-                        }
-                    }
+            let visible = getVisibleUnreadItems().subtracting(scheduledToMarkRead)
+            if visible.isEmpty { return }
+            scheduledToMarkRead.formUnion(visible)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+                guard let it = self else { return }
+                it.scheduledToMarkRead.subtract(visible)
+                let stillVisible = visible.intersection(it.getVisibleUnreadItems())
+                if !stillVisible.isEmpty {
+                    it.seenItem.send(stillVisible)
                 }
             }
         }
@@ -257,6 +251,19 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             return nil
         }
         
+        private func getVisibleUnreadItems() -> Set<ChatItem.ID> {
+            var visibleItems: Set<ChatItem.ID> = []
+            if let indexPaths = tableView.indexPathsForVisibleRows {
+                for indexPath in indexPaths {
+                    if isVisible(indexPath: indexPath) {
+                        let item = representer.items[indexPath.item]
+                        if item.isRcvNew { visibleItems.insert(item.id) }
+                    }
+                }
+            }
+            return visibleItems
+        }
+        
         private func isVisible(indexPath: IndexPath) -> Bool {
             if let relativeFrame = tableView.superview?.convert(
                 tableView.rectForRow(at: indexPath),
@@ -265,13 +272,6 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 relativeFrame.maxY > InvertedTableView.inset &&
                 relativeFrame.minY < tableView.frame.height - InvertedTableView.inset
             } else { false }
-        }
-
-        private func isVisible(chatItemId: ChatItem.ID) -> Bool? {
-            tableView.indexPathsForVisibleRows?
-                .filter { isVisible(indexPath: $0) }
-                .map { representer.items[$0.item].id }
-                .contains(chatItemId)
         }
     }
 
