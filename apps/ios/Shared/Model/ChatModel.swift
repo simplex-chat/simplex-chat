@@ -631,12 +631,10 @@ final class ChatModel: ObservableObject {
            let itemIndex = getChatItemIndex(cItem),
            im.reversedChatItems[itemIndex].isRcvNew {
             await MainActor.run {
-                withTransaction(Transaction()) {
-                    // update current chat
-                    markChatItemRead_(itemIndex)
-                    // update preview
-                    unreadCollector.changeUnreadCounter(cInfo.id, by: -1)
-                }
+                // update current chat
+                markChatItemRead_(itemIndex)
+                // update preview
+                unreadCollector.changeUnreadCounter(cInfo.id, by: -1)
             }
         }
     }
@@ -664,9 +662,7 @@ final class ChatModel: ObservableObject {
         }
 
         func changeUnreadCounter(_ chatId: ChatId, by count: Int) {
-            DispatchQueue.main.async {
-                self.unreadCounts[chatId] = (self.unreadCounts[chatId] ?? 0) + count
-            }
+            self.unreadCounts[chatId] = (self.unreadCounts[chatId] ?? 0) + count
             subject.send()
         }
     }
@@ -734,13 +730,15 @@ final class ChatModel: ObservableObject {
     }
 
     private func markChatItemRead_(_ i: Int) {
-        let meta = im.reversedChatItems[i].meta
+        var ci = im.reversedChatItems[i]
+        let meta = ci.meta
         if case .rcvNew = meta.itemStatus {
-            im.reversedChatItems[i].meta.itemStatus = .rcvRead
-            im.reversedChatItems[i].viewTimestamp = .now
+            ci.meta.itemStatus = .rcvRead
+            ci.viewTimestamp = .now
             if meta.itemLive != true, let ttl = meta.itemTimed?.ttl {
-                im.reversedChatItems[i].meta.itemTimed?.deleteAt = .now + TimeInterval(ttl)
+                ci.meta.itemTimed?.deleteAt = .now + TimeInterval(ttl)
             }
+            im.reversedChatItems[i] = ci
         }
     }
 
