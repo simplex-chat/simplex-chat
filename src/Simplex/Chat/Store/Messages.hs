@@ -1343,32 +1343,14 @@ getDirectUnreadTimedItems db User {userId} contactId itemsRange_ = case itemsRan
       |]
       (userId, contactId, CISRcvNew)
 
-updateDirectChatItemsReadList :: DB.Connection -> User -> ContactId -> NonEmpty ChatItemId -> UTCTime -> IO [(ChatItemId, Int)]
-updateDirectChatItemsReadList db User {userId} contactId itemIds currentTs = do
+updateDirectChatItemsReadList :: DB.Connection -> User -> ContactId -> NonEmpty ChatItemId -> IO [(ChatItemId, Int)]
+updateDirectChatItemsReadList db user contactId itemIds = do
   catMaybes . L.toList <$> mapM getUpdateDirectItem itemIds
   where
     getUpdateDirectItem chatItemId = do
-      timedItem <-
-        maybeFirstRow id $
-          DB.query
-            db
-            [sql|
-              SELECT chat_item_id, timed_ttl
-              FROM chat_items
-              WHERE user_id = ? AND contact_id = ?
-                AND chat_item_id = ?
-                AND item_status = ?
-                AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
-                AND (item_live IS NULL OR item_live = ?)
-            |]
-            (userId, contactId, chatItemId, CISRcvNew, False)
-      DB.execute
-        db
-        [sql|
-          UPDATE chat_items SET item_status = ?, updated_at = ?
-          WHERE user_id = ? AND contact_id = ? AND chat_item_id = ? AND item_status = ?
-        |]
-        (CISRcvRead, currentTs, userId, contactId, chatItemId, CISRcvNew)
+      let itemsRange = Just (chatItemId, chatItemId)
+      timedItem <- maybeFirstRow id $ getDirectUnreadTimedItems db user contactId itemsRange
+      updateDirectChatItemsRead db user contactId itemsRange
       pure timedItem
 
 setDirectChatItemsDeleteAt :: DB.Connection -> User -> ContactId -> [(ChatItemId, Int)] -> UTCTime -> IO [(ChatItemId, UTCTime)]
@@ -1426,32 +1408,14 @@ getGroupUnreadTimedItems db User {userId} groupId itemsRange_ = case itemsRange_
       |]
       (userId, groupId, CISRcvNew)
 
-updateGroupChatItemsReadList :: DB.Connection -> User -> GroupId -> NonEmpty ChatItemId -> UTCTime -> IO [(ChatItemId, Int)]
-updateGroupChatItemsReadList db User {userId} groupId itemIds currentTs = do
+updateGroupChatItemsReadList :: DB.Connection -> User -> GroupId -> NonEmpty ChatItemId -> IO [(ChatItemId, Int)]
+updateGroupChatItemsReadList db user groupId itemIds = do
   catMaybes . L.toList <$> mapM getUpdateGroupItem itemIds
   where
     getUpdateGroupItem chatItemId = do
-      timedItem <-
-        maybeFirstRow id $
-          DB.query
-            db
-            [sql|
-              SELECT chat_item_id, timed_ttl
-              FROM chat_items
-              WHERE user_id = ? AND group_id = ?
-                AND chat_item_id = ?
-                AND item_status = ?
-                AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
-                AND (item_live IS NULL OR item_live = ?)
-            |]
-            (userId, groupId, chatItemId, CISRcvNew, False)
-      DB.execute
-        db
-        [sql|
-          UPDATE chat_items SET item_status = ?, updated_at = ?
-          WHERE user_id = ? AND group_id = ? AND chat_item_id = ? AND item_status = ?
-        |]
-        (CISRcvRead, currentTs, userId, groupId, chatItemId, CISRcvNew)
+      let itemsRange = Just (chatItemId, chatItemId)
+      timedItem <- maybeFirstRow id $ getGroupUnreadTimedItems db user groupId itemsRange
+      updateGroupChatItemsRead db user groupId itemsRange
       pure timedItem
 
 setGroupChatItemsDeleteAt :: DB.Connection -> User -> GroupId -> [(ChatItemId, Int)] -> UTCTime -> IO [(ChatItemId, UTCTime)]
