@@ -489,6 +489,7 @@ struct ChatView: View {
                             } else {
                                 nil
                             }
+                        self.setDate(visibility: true)
                         DispatchQueue.main.sync {
                             self.unreadBelow = unreadBelow
                             self.date = date
