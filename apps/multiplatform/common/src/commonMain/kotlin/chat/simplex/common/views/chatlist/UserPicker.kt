@@ -339,14 +339,12 @@ fun UserPicker(
         .sortedBy { it.hostDeviceName }
     }
   }
-  val animatedFloat = remember { Animatable(if (newChat.isVisible()) 0f else 1f) }
 
   LaunchedEffect(Unit) {
     launch {
       userPickerState.collect {
         newChat = it
         launch {
-          animatedFloat.animateTo(if (newChat.isVisible()) 1f else 0f, userPickerAnimSpec())
           if (newChat.isHiding()) userPickerState.value = AnimatedViewState.GONE
         }
       }
