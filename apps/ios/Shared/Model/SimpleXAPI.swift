@@ -1000,8 +1000,8 @@ func apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64)) async thr
     try await sendCommandOkResp(.apiChatRead(type: type, id: id, itemRange: itemRange))
 }
 
-func apiChatItemsReadSync(type: ChatType, id: Int64, itemIds: Set<Int64>) throws {
-    try sendCommandOkRespSync(.apiChatItemsRead(type: type, id: id, itemIds: itemIds))
+func apiChatItemsRead(chatId: ChatId, itemIds: Set<Int64>) async throws {
+    try await sendCommandOkResp(.apiChatItemsRead(chatId: chatId, itemIds: itemIds))
 }
 
 func apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool) async throws {
@@ -1756,7 +1756,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 _ = m.upsertGroupMember(groupInfo, toMember)
             }
         }
-    case let .contactsMerged(user, intoContact, mergedContact):
+    case let .contactsMerged(user, _intoContact, mergedContact):
         if active(user) && m.hasChat(mergedContact.id) {
             await MainActor.run {
                 if m.chatId == mergedContact.id {
