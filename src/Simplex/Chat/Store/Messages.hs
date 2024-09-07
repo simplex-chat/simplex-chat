@@ -60,9 +60,11 @@ module Simplex.Chat.Store.Messages
     deleteLocalChatItem,
     updateDirectChatItemsRead,
     getDirectUnreadTimedItems,
+    updateDirectChatItemsReadList,
     setDirectChatItemsDeleteAt,
     updateGroupChatItemsRead,
     getGroupUnreadTimedItems,
+    updateGroupChatItemsReadList,
     setGroupChatItemsDeleteAt,
     updateLocalChatItemsRead,
     getChatRefViaItemId,
@@ -126,7 +128,9 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Either (fromRight, rights)
 import Data.Int (Int64)
 import Data.List (sortBy)
-import Data.Maybe (fromMaybe, isJust, mapMaybe)
+import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as L
+import Data.Maybe (catMaybes, fromMaybe, isJust, mapMaybe)
 import Data.Ord (Down (..), comparing)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -1339,6 +1343,34 @@ getDirectUnreadTimedItems db User {userId} contactId itemsRange_ = case itemsRan
       |]
       (userId, contactId, CISRcvNew)
 
+updateDirectChatItemsReadList :: DB.Connection -> User -> ContactId -> NonEmpty ChatItemId -> UTCTime -> IO [(ChatItemId, Int)]
+updateDirectChatItemsReadList db User {userId} contactId itemIds currentTs = do
+  catMaybes . L.toList <$> mapM getUpdateDirectItem itemIds
+  where
+    getUpdateDirectItem chatItemId = do
+      timedItem <-
+        maybeFirstRow id $
+          DB.query
+            db
+            [sql|
+              SELECT chat_item_id, timed_ttl
+              FROM chat_items
+              WHERE user_id = ? AND contact_id = ?
+                AND chat_item_id = ?
+                AND item_status = ?
+                AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
+                AND (item_live IS NULL OR item_live = ?)
+            |]
+            (userId, contactId, chatItemId, CISRcvNew, False)
+      DB.execute
+        db
+        [sql|
+          UPDATE chat_items SET item_status = ?, updated_at = ?
+          WHERE user_id = ? AND contact_id = ? AND chat_item_id = ? AND item_status = ?
+        |]
+        (CISRcvRead, currentTs, userId, contactId, chatItemId, CISRcvNew)
+      pure timedItem
+
 setDirectChatItemsDeleteAt :: DB.Connection -> User -> ContactId -> [(ChatItemId, Int)] -> UTCTime -> IO [(ChatItemId, UTCTime)]
 setDirectChatItemsDeleteAt db User {userId} contactId itemIds currentTs = forM itemIds $ \(chatItemId, ttl) -> do
   let deleteAt = addUTCTime (realToFrac ttl) currentTs
@@ -1393,6 +1425,34 @@ getGroupUnreadTimedItems db User {userId} groupId itemsRange_ = case itemsRange_
         WHERE user_id = ? AND group_id = ? AND item_status = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
       |]
       (userId, groupId, CISRcvNew)
+
+updateGroupChatItemsReadList :: DB.Connection -> User -> GroupId -> NonEmpty ChatItemId -> UTCTime -> IO [(ChatItemId, Int)]
+updateGroupChatItemsReadList db User {userId} groupId itemIds currentTs = do
+  catMaybes . L.toList <$> mapM getUpdateGroupItem itemIds
+  where
+    getUpdateGroupItem chatItemId = do
+      timedItem <-
+        maybeFirstRow id $
+          DB.query
+            db
+            [sql|
+              SELECT chat_item_id, timed_ttl
+              FROM chat_items
+              WHERE user_id = ? AND group_id = ?
+                AND chat_item_id = ?
+                AND item_status = ?
+                AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
+                AND (item_live IS NULL OR item_live = ?)
+            |]
+            (userId, groupId, chatItemId, CISRcvNew, False)
+      DB.execute
+        db
+        [sql|
+          UPDATE chat_items SET item_status = ?, updated_at = ?
+          WHERE user_id = ? AND group_id = ? AND chat_item_id = ? AND item_status = ?
+        |]
+        (CISRcvRead, currentTs, userId, groupId, chatItemId, CISRcvNew)
+      pure timedItem
 
 setGroupChatItemsDeleteAt :: DB.Connection -> User -> GroupId -> [(ChatItemId, Int)] -> UTCTime -> IO [(ChatItemId, UTCTime)]
 setGroupChatItemsDeleteAt db User {userId} groupId itemIds currentTs = forM itemIds $ \(chatItemId, ttl) -> do

@@ -1000,6 +1000,10 @@ func apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64)) async thr
     try await sendCommandOkResp(.apiChatRead(type: type, id: id, itemRange: itemRange))
 }
 
+func apiChatItemsRead(type: ChatType, id: Int64, itemIds: [Int64]) async throws {
+    try await sendCommandOkResp(.apiChatItemsRead(type: type, id: id, itemIds: itemIds))
+}
+
 func apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool) async throws {
     try await sendCommandOkResp(.apiChatUnread(type: type, id: id, unreadChat: unreadChat))
 }
