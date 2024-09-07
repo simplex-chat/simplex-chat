@@ -107,10 +107,15 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     name: notificationName,
                     object: nil
                 )
-//            updateFloatingButtons
-//                .throttle(for: 0.2, scheduler: DispatchQueue.main, latest: true)
-//                .sink { self.updateVisibleItems() }
-//                .store(in: &bag)
+
+            updateFloatingButtons
+                .throttle(for: 0.2, scheduler: DispatchQueue.global(qos: .background), latest: true)
+                .sink {
+                    if let listState = DispatchQueue.main.sync(execute: { [weak self] in self?.getListState() }) {
+                        ChatView.FloatingButtonModel.shared.updateOnListChange(listState)
+                    }
+                }
+                .store(in: &bag)
         }
 
         @available(*, unavailable)
@@ -196,22 +201,12 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 )
             }
             itemCount = items.count
-//            updateFloatingButtons.send()
-            ChatView.FloatingButtonModel.shared.reverseListUpdated.send({ self.getListState() })
+            updateFloatingButtons.send()
         }
 
         override func scrollViewDidScroll(_ scrollView: UIScrollView) {
-//            updateFloatingButtons.send()
-            ChatView.FloatingButtonModel.shared.reverseListUpdated.send({ self.getListState() })
+            updateFloatingButtons.send()
         }
-
-//        private func updateVisibleItems() {
-//            if let listState = getListState() {
-//                let fbm = ChatView.FloatingButtonModel.shared
-//                fbm.scrollOffset.send(listState.scrollOffset)
-//                fbm.listState.send(listState)
-//            }
-//        }
 
         func getListState() -> ListState? {
             if let visibleRows = tableView.indexPathsForVisibleRows,

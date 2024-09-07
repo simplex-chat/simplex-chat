@@ -453,10 +453,9 @@ struct ChatView: View {
         @Published var isNearBottom: Bool = true
         @Published var date: Date?
         @Published var isDateVisible: Bool = false
-        var isReallyNearBottom: Bool { scrollOffset.value > 0 && scrollOffset.value < 500 }
-        let listState = PassthroughSubject<ListState, Never>()
-        let scrollOffset = CurrentValueSubject<Double, Never>(0)
+        var isReallyNearBottom: Bool = true
         let reverseListUpdated = PassthroughSubject<() -> ListState?, Never>()
+        var hideDateWorkItem: DispatchWorkItem?
 
         private var bag = Set<AnyCancellable>()
 
@@ -466,88 +465,62 @@ struct ChatView: View {
         }
 
         init() {
-//            let receiver = listState.receive(on: DispatchQueue.global(qos: .background))
-            // Date
             reverseListUpdated
                 .throttle(for: 0.2, scheduler: DispatchQueue.global(qos: .background), latest: true)
                 .map { getListState in
                     if let listState = DispatchQueue.main.sync(execute: getListState) {
-                        let im = ItemsModel.shared
-                        let unreadBelow =
-                            if let id = listState.bottomItemId,
-                               let index = im.reversedChatItems.firstIndex(where: { $0.id == id })
-                            {
-                             im.reversedChatItems[..<index].reduce(into: 0) { unread, chatItem in
-                                 if chatItem.isRcvNew { unread += 1 }
-                             }
-                            } else {
-                                0
-                            }
-                        let date: Date? =
-                            if let topItemDate = listState.topItemDate {
-                                Calendar.current.startOfDay(for: topItemDate)
-                            } else {
-                                nil
-                            }
-                        self.setDate(visibility: true)
-                        DispatchQueue.main.sync {
-                            self.unreadBelow = unreadBelow
-                            self.date = date
-                        }
-                        let nearBottom = listState.scrollOffset < 800
-                        if nearBottom != self.isNearBottom {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                                self.isNearBottom = nearBottom
-                            }
-                        }
+                        self.updateOnListChange(listState)
                     }
                 }
                 .debounce(for: 1, scheduler: DispatchQueue.main)
                 .sink { self.setDate(visibility: false) } // Date visibility
                 .store(in: &bag)
+        }
+        
+        func updateOnListChange(_ listState: ListState) {
+            let im = ItemsModel.shared
+            let unreadBelow =
+                if let id = listState.bottomItemId,
+                   let index = im.reversedChatItems.firstIndex(where: { $0.id == id })
+                {
+                 im.reversedChatItems[..<index].reduce(into: 0) { unread, chatItem in
+                     if chatItem.isRcvNew { unread += 1 }
+                 }
+                } else {
+                    0
+                }
+            let date: Date? =
+                if let topItemDate = listState.topItemDate {
+                    Calendar.current.startOfDay(for: topItemDate)
+                } else {
+                    nil
+                }
+            self.setDate(visibility: true)
+            // set the counters and date indicator
+            DispatchQueue.main.async { [weak self] in
+                if let it = self {
+                    it.unreadBelow = unreadBelow
+                    it.date = date
+                    it.isReallyNearBottom = listState.scrollOffset > 0 && listState.scrollOffset < 500
+                }
+            }
             
-//            listState
-//                .receive(on: DispatchQueue.global(qos: .background))
-//                .map { listState -> ViewUpdate in
-//                    let im = ItemsModel.shared
-//                    return ViewUpdate(
-//                        unreadBelow: {
-//                            if let id = listState.bottomItemId,
-//                               let index = im.reversedChatItems.firstIndex(where: { $0.id == id }) {
-//                                im.reversedChatItems[..<index].reduce(into: 0) { unread, chatItem in
-//                                    if chatItem.isRcvNew { unread += 1 }
-//                                }
-//                            } else { 0 }
-//                        }(),
-//                        date: listState.topItemDate.map { Calendar.current.startOfDay(for: $0) }
-//                    )
-//                }
-//                .removeDuplicates()
-//                .receive(on: DispatchQueue.main)
-//                .sink {
-//                    self.unreadBelow = $0.unreadBelow
-//                    self.date = $0.date
-//                }
-//                .store(in: &bag)
-
-            // Date visibility
-//            listState
-//                .receive(on: DispatchQueue.global(qos: .background))
-//                .map { _ in self.setDate(visibility: true) }
-//                // Hide the date after 1 second of no scrolling
-//                .debounce(for: 1, scheduler: DispatchQueue.main)
-//                .sink { self.setDate(visibility: false) }
-//                .store(in: &bag)
-
-            // Is near bottom
-//            scrollOffset
-//                .receive(on: DispatchQueue.global(qos: .background))
-//                .map { $0 < 800 }
-//                .removeDuplicates()
-//                // Delay the state change until scroll to bottom animation is finished
-//                .delay(for: 0.35, scheduler: DispatchQueue.main)
-//                .assign(to: \.isNearBottom, on: self)
-//                .store(in: &bag)
+            // set floating button indication mode
+            let nearBottom = listState.scrollOffset < 800
+            if nearBottom != self.isNearBottom {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+                    self?.isNearBottom = nearBottom
+                }
+            }
+            
+            // hide Date indicator after 1 second of no scrolling
+            hideDateWorkItem?.cancel()
+            let workItem = DispatchWorkItem { [weak self] in
+                self?.setDate(visibility: false)
+                self?.hideDateWorkItem = nil
+            }
+            hideDateWorkItem = workItem
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: workItem)
         }
 
         func resetDate() {
