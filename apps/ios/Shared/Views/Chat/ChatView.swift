@@ -456,13 +456,9 @@ struct ChatView: View {
         var isReallyNearBottom: Bool { scrollOffset.value > 0 && scrollOffset.value < 500 }
         let listState = PassthroughSubject<ListState, Never>()
         let scrollOffset = CurrentValueSubject<Double, Never>(0)
+        let reverseListUpdated = PassthroughSubject<() -> ListState?, Never>()
 
         private var bag = Set<AnyCancellable>()
-
-        typealias ListState = (
-            topItemDate: Date?,
-            bottomItemId: ChatItem.ID?
-        )
 
         private struct ViewUpdate: Equatable {
             let unreadBelow: Int
@@ -470,47 +466,87 @@ struct ChatView: View {
         }
 
         init() {
+//            let receiver = listState.receive(on: DispatchQueue.global(qos: .background))
             // Date
-            listState
-                .receive(on: DispatchQueue.global(qos: .background))
-                .map { listState -> ViewUpdate in
-                    let im = ItemsModel.shared
-                    return ViewUpdate(
-                        unreadBelow: {
+            reverseListUpdated
+                .throttle(for: 0.2, scheduler: DispatchQueue.global(qos: .background), latest: true)
+                .map { getListState in
+                    if let listState = DispatchQueue.main.sync(execute: getListState) {
+                        let im = ItemsModel.shared
+                        let unreadBelow =
                             if let id = listState.bottomItemId,
-                               let index = im.reversedChatItems.firstIndex(where: { $0.id == id }) {
-                                im.reversedChatItems[..<index].reduce(into: 0) { unread, chatItem in
-                                    if chatItem.isRcvNew { unread += 1 }
-                                }
-                            } else { 0 }
-                        }(),
-                        date: listState.topItemDate.map { Calendar.current.startOfDay(for: $0) }
-                    )
+                               let index = im.reversedChatItems.firstIndex(where: { $0.id == id })
+                            {
+                             im.reversedChatItems[..<index].reduce(into: 0) { unread, chatItem in
+                                 if chatItem.isRcvNew { unread += 1 }
+                             }
+                            } else {
+                                0
+                            }
+                        let date: Date? =
+                            if let topItemDate = listState.topItemDate {
+                                Calendar.current.startOfDay(for: topItemDate)
+                            } else {
+                                nil
+                            }
+                        DispatchQueue.main.sync {
+                            self.unreadBelow = unreadBelow
+                            self.date = date
+                        }
+                        let nearBottom = listState.scrollOffset < 800
+                        if nearBottom != self.isNearBottom {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                                self.isNearBottom = nearBottom
+                            }
+                        }
+                    }
                 }
-                .removeDuplicates()
-                .receive(on: DispatchQueue.main)
-                .sink {
-                    self.unreadBelow = $0.unreadBelow
-                    self.date = $0.date
-                }
+                .debounce(for: 1, scheduler: DispatchQueue.main)
+                .sink { self.setDate(visibility: false) } // Date visibility
                 .store(in: &bag)
+            
+//            listState
+//                .receive(on: DispatchQueue.global(qos: .background))
+//                .map { listState -> ViewUpdate in
+//                    let im = ItemsModel.shared
+//                    return ViewUpdate(
+//                        unreadBelow: {
+//                            if let id = listState.bottomItemId,
+//                               let index = im.reversedChatItems.firstIndex(where: { $0.id == id }) {
+//                                im.reversedChatItems[..<index].reduce(into: 0) { unread, chatItem in
+//                                    if chatItem.isRcvNew { unread += 1 }
+//                                }
+//                            } else { 0 }
+//                        }(),
+//                        date: listState.topItemDate.map { Calendar.current.startOfDay(for: $0) }
+//                    )
+//                }
+//                .removeDuplicates()
+//                .receive(on: DispatchQueue.main)
+//                .sink {
+//                    self.unreadBelow = $0.unreadBelow
+//                    self.date = $0.date
+//                }
+//                .store(in: &bag)
 
             // Date visibility
-            listState
-                .map { _ in self.setDate(visibility: true) }
-                // Hide the date after 1 second of no scrolling
-                .debounce(for: 1, scheduler: DispatchQueue.main)
-                .sink { self.setDate(visibility: false) }
-                .store(in: &bag)
+//            listState
+//                .receive(on: DispatchQueue.global(qos: .background))
+//                .map { _ in self.setDate(visibility: true) }
+//                // Hide the date after 1 second of no scrolling
+//                .debounce(for: 1, scheduler: DispatchQueue.main)
+//                .sink { self.setDate(visibility: false) }
+//                .store(in: &bag)
 
             // Is near bottom
-            scrollOffset
-                .map { $0 < 800 }
-                .removeDuplicates()
-                // Delay the state change until scroll to bottom animation is finished
-                .delay(for: 0.35, scheduler: DispatchQueue.main)
-                .assign(to: \.isNearBottom, on: self)
-                .store(in: &bag)
+//            scrollOffset
+//                .receive(on: DispatchQueue.global(qos: .background))
+//                .map { $0 < 800 }
+//                .removeDuplicates()
+//                // Delay the state change until scroll to bottom animation is finished
+//                .delay(for: 0.35, scheduler: DispatchQueue.main)
+//                .assign(to: \.isNearBottom, on: self)
+//                .store(in: &bag)
         }
 
         func resetDate() {
@@ -519,19 +555,17 @@ struct ChatView: View {
         }
 
         private func setDate(visibility isVisible: Bool) {
-            Task {
-                if isVisible {
-                    if !isNearBottom,
-                       !isDateVisible,
-                       let date, !Calendar.current.isDateInToday(date) {
-                        await MainActor.run {
-                            withAnimation { isDateVisible = true }
-                        }
+            if isVisible {
+                if !isNearBottom,
+                   !isDateVisible,
+                   let date, !Calendar.current.isDateInToday(date) {
+                    DispatchQueue.main.async {
+                        withAnimation { self.isDateVisible = true }
                     }
-                } else if isDateVisible {
-                    await MainActor.run {
-                        withAnimation { isDateVisible = false }
-                    }
+                }
+            } else if isDateVisible {
+                DispatchQueue.main.async {
+                    withAnimation { self.isDateVisible = false }
                 }
             }
         }
