@@ -217,9 +217,12 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
 
         override func scrollViewDidScroll(_ scrollView: UIScrollView) {
             updateFloatingButtons.send()
-            let visibleItems = ( tableView.indexPathsForVisibleRows ?? [])
+            let visibleItems = (tableView.indexPathsForVisibleRows ?? [])
                 .filter { isVisible(indexPath: $0) }
-                .map { representer.items[$0.item].id }
+                .compactMap {
+                    let item = representer.items[$0.item]
+                    return item.isRcvNew ? item.id : nil
+                }
             for visibleItem in visibleItems {
                 if !toBeSeenItems.contains(visibleItem) {
                     toBeSeenItems.insert(visibleItem)
