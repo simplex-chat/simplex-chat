@@ -116,24 +116,6 @@ actual fun UserPickerScaffold(pickerState: MutableStateFlow<AnimatedViewState>, 
   }
 
   LaunchedEffect(Unit) {
-    launch {
-      snapshotFlow { ModalManager.start.modalCount.value }
-        .collect { modalCount ->
-          val colors = CurrentColors.value.colors
-
-          if (modalCount == 0 && pickerState.value.isVisible()) {
-            platform.androidSetDrawerStatusAndNavBarColor(
-              isLight = colors.isLight,
-              drawerShadingColor = animatedColor,
-              toolbarOnTop = !appPrefs.oneHandUI.get(),
-              navBarColor = colors.surface
-            )
-          }
-        }
-    }
-  }
-
-  LaunchedEffect(Unit) {
     snapshotFlow { currentTheme }
       .distinctUntilChanged()
       .collect {
@@ -151,7 +133,7 @@ actual fun UserPickerScaffold(pickerState: MutableStateFlow<AnimatedViewState>, 
                     toolbarOnTop = !appPrefs.oneHandUI.get(),
                     navBarColor = colors.surface
                   )
-                } else if (newState.isHiding()) {
+                } else if (newState.isHiding() && ModalManager.start.modalCount.value == 0) {
                   platform.androidSetDrawerStatusAndNavBarColor(
                     isLight = colors.isLight,
                     drawerShadingColor = animatedColor,

@@ -28,6 +28,7 @@ import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.ui.theme.*
@@ -288,9 +289,6 @@ private fun GlobalSettingsSection(
 
     SectionItemView(
       click = {
-        if (appPlatform.isDesktop) {
-          userPickerState.value = AnimatedViewState.HIDING
-        }
         ModalManager.start.showModalCloseable { close ->
           SettingsView(chatModel, setPerformLA, close)
         }
@@ -305,6 +303,14 @@ private fun GlobalSettingsSection(
       ColorModeSwitcher()
     } 
   }
+}
+
+private suspend fun closePicker(userPickerState: MutableStateFlow<AnimatedViewState>) {
+  if (appPlatform.isAndroid) {
+    delay(500)
+  }
+
+  userPickerState.value = AnimatedViewState.HIDING
 }
 
 
@@ -344,6 +350,16 @@ fun UserPicker(
           if (newChat.isHiding()) userPickerState.value = AnimatedViewState.GONE
         }
       }
+    }
+  }
+
+  LaunchedEffect(Unit) {
+    launch {
+      snapshotFlow { ModalManager.start.modalCount.value }
+        .filter { it > 0 }
+        .collect {
+          closePicker(userPickerState)
+        }
     }
   }
 
@@ -464,9 +480,6 @@ fun UserPicker(
           }
           val showCustomModal: (@Composable() (ModalData.(ChatModel, () -> Unit) -> Unit)) -> () -> Unit = { modalView ->
             {
-              if (appPlatform.isDesktop) {
-                userPickerState.value = AnimatedViewState.HIDING
-              }
               ModalManager.start.showCustomModal { close -> modalView(chatModel, close) }
             }
           }
@@ -500,9 +513,6 @@ fun UserPicker(
                 generalGetString(MR.strings.auth_open_chat_profiles),
                 generalGetString(MR.strings.auth_log_in_using_credential)
               ) {
-                if (appPlatform.isDesktop) {
-                  userPickerState.value = AnimatedViewState.HIDING
-                }
                 ModalManager.start.showCustomModal { close ->
                   val search = rememberSaveable { mutableStateOf("") }
                   ModalView(
