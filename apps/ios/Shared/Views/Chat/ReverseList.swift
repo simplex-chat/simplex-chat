@@ -264,6 +264,14 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 relativeFrame.minY < tableView.frame.height - InvertedTableView.inset
             } else { false }
         }
+
+        private func isVisible(chatItemId: ChatItem.ID) -> Bool {
+            tableView.indexPathsForVisibleRows?
+                .filter { isVisible(indexPath: $0) }
+                .map { representer.items[$0.item].id }
+                .contains(chatItemId)
+            ?? false
+        }
     }
 
     /// `UIHostingConfiguration` back-port for iOS14 and iOS15
