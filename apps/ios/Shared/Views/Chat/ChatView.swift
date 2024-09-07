@@ -454,23 +454,7 @@ struct ChatView: View {
         @Published var date: Date?
         @Published var isDateVisible: Bool = false
         var isReallyNearBottom: Bool = true
-        let reverseListUpdated = PassthroughSubject<() -> ListState?, Never>()
         var hideDateWorkItem: DispatchWorkItem?
-
-        private var bag = Set<AnyCancellable>()
-
-        init() {
-            reverseListUpdated
-                .throttle(for: 0.2, scheduler: DispatchQueue.global(qos: .background), latest: true)
-                .map { getListState in
-                    if let listState = DispatchQueue.main.sync(execute: getListState) {
-                        self.updateOnListChange(listState)
-                    }
-                }
-                .debounce(for: 1, scheduler: DispatchQueue.main)
-                .sink { self.setDate(visibility: false) } // Date visibility
-                .store(in: &bag)
-        }
 
         func updateOnListChange(_ listState: ListState) {
             let im = ItemsModel.shared
@@ -490,14 +474,14 @@ struct ChatView: View {
                 } else {
                     nil
                 }
-            self.setDate(visibility: true)
+
             // set the counters and date indicator
             DispatchQueue.main.async { [weak self] in
-                if let it = self {
-                    it.unreadBelow = unreadBelow
-                    it.date = date
-                    it.isReallyNearBottom = listState.scrollOffset > 0 && listState.scrollOffset < 500
-                }
+                guard let it = self else { return }
+                it.setDate(visibility: true)
+                it.unreadBelow = unreadBelow
+                it.date = date
+                it.isReallyNearBottom = listState.scrollOffset > 0 && listState.scrollOffset < 500
             }
             
             // set floating button indication mode
@@ -511,8 +495,9 @@ struct ChatView: View {
             // hide Date indicator after 1 second of no scrolling
             hideDateWorkItem?.cancel()
             let workItem = DispatchWorkItem { [weak self] in
-                self?.setDate(visibility: false)
-                self?.hideDateWorkItem = nil
+                guard let it = self else { return }
+                it.setDate(visibility: false)
+                it.hideDateWorkItem = nil
             }
             hideDateWorkItem = workItem
             DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: workItem)
@@ -528,14 +513,10 @@ struct ChatView: View {
                 if !isNearBottom,
                    !isDateVisible,
                    let date, !Calendar.current.isDateInToday(date) {
-                    DispatchQueue.main.async {
-                        withAnimation { self.isDateVisible = true }
-                    }
+                    withAnimation { self.isDateVisible = true }
                 }
             } else if isDateVisible {
-                DispatchQueue.main.async {
-                    withAnimation { self.isDateVisible = false }
-                }
+                withAnimation { self.isDateVisible = false }
             }
         }
 
