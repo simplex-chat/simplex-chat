@@ -126,8 +126,9 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                         let cInfo = ChatInfo.sampleData.direct // TODO
                         try apiChatItemsReadSync(type: cInfo.chatType, id: cInfo.apiId, itemIds: itemIds)
                         DispatchQueue.main.async {
-                            ChatModel.shared.unreadCollector.changeUnreadCounter(cInfo.id, by: -itemIds.count)
-                            if ChatModel.shared.chatId == cInfo.id {
+                            let m = ChatModel.shared
+                            m.unreadCollector.changeUnreadCounter(cInfo.id, by: -itemIds.count)
+                            if m.chatId == cInfo.id {
                                 ItemsModel.shared.markItemsRead(itemIds)
                             }
                         }
