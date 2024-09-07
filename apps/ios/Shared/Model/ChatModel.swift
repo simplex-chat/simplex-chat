@@ -54,7 +54,8 @@ class ItemsModel: ObservableObject {
         willSet { publisher.send() }
     }
     
-    private var readItems: [ChatItem.ID] = []
+    private var readItemsPublisher = PassthroughSubject<Void, Never>()
+    private var readItems: Set<ChatItem.ID> = []
     private var readItemsChatId: ChatId? = nil
     
     // Publishes directly to `objectWillChange` publisher,
@@ -65,18 +66,24 @@ class ItemsModel: ObservableObject {
     init() {
         publisher
             .throttle(for: 0.2, scheduler: DispatchQueue.main, latest: true)
-            .sink {
-                if let chatId = self.readItemsChatId, chatId == ChatModel.shared.chatId {
+            .sink { self.objectWillChange.send() }
+            .store(in: &bag)
+        readItemsPublisher
+            .throttle(for: 0.2, scheduler: DispatchQueue.main, latest: true)
+            .sink { [weak self] in
+                guard let it = self else { return }
+                if let chatId = it.readItemsChatId, chatId == ChatModel.shared.chatId {
                     let m = ChatModel.shared
-                    for itemId in self.readItems {
-                        if let itemIndex = self.reversedChatItems.firstIndex(where: { $0.id == itemId }),
-                           self.reversedChatItems[itemIndex].isRcvNew {
-                            m.markChatItemRead_(itemIndex)
+                    var i = 0
+                    while i < it.reversedChatItems.count && !it.readItems.isEmpty {
+                        let ci = it.reversedChatItems[i]
+                        if ci.isRcvNew && it.readItems.remove(ci.id) != nil {
+                            m.markChatItemRead_(i)
                         }
+                        i += 1
                     }
                 }
-                self.readItems = []
-                self.objectWillChange.send()
+                it.readItems = []
             }
             .store(in: &bag)
     }
@@ -115,13 +122,14 @@ class ItemsModel: ObservableObject {
     }
     
     func markItemRead(_ itemId: ChatItem.ID) {
-        if readItemsChatId != ChatModel.shared.chatId {
-            readItemsChatId = ChatModel.shared.chatId
+        let m = ChatModel.shared
+        if readItemsChatId != m.chatId {
+            readItemsChatId = m.chatId
             readItems = []
         }
         if readItemsChatId != nil {
-            readItems.append(itemId)
-            publisher.send()
+            readItems.insert(itemId)
+            readItemsPublisher.send()
         }
     }
 }
