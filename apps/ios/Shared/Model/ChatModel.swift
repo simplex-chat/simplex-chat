@@ -54,6 +54,9 @@ class ItemsModel: ObservableObject {
         willSet { publisher.send() }
     }
     
+    private var readItems: [ChatItem.ID] = []
+    private var readItemsChatId: ChatId? = nil
+    
     // Publishes directly to `objectWillChange` publisher,
     // this will cause reversedChatItems to be rendered without throttling
     @Published var isLoading = false
@@ -61,8 +64,20 @@ class ItemsModel: ObservableObject {
 
     init() {
         publisher
-            .throttle(for: 0.25, scheduler: DispatchQueue.main, latest: true)
-            .sink { self.objectWillChange.send() }
+            .throttle(for: 0.2, scheduler: DispatchQueue.main, latest: true)
+            .sink {
+                if let chatId = self.readItemsChatId, chatId == ChatModel.shared.chatId {
+                    let m = ChatModel.shared
+                    for itemId in self.readItems {
+                        if let itemIndex = self.reversedChatItems.firstIndex(where: { $0.id == itemId }),
+                           self.reversedChatItems[itemIndex].isRcvNew {
+                            m.markChatItemRead_(itemIndex)
+                        }
+                    }
+                }
+                self.readItems = []
+                self.objectWillChange.send()
+            }
             .store(in: &bag)
     }
 
@@ -96,6 +111,17 @@ class ItemsModel: ObservableObject {
                     ChatModel.shared.chatId = chatId
                 }
             }
+        }
+    }
+    
+    func markItemRead(_ itemId: ChatItem.ID) {
+        if readItemsChatId != ChatModel.shared.chatId {
+            readItemsChatId = ChatModel.shared.chatId
+            readItems = []
+        }
+        if readItemsChatId != nil {
+            readItems.append(itemId)
+            publisher.send()
         }
     }
 }
@@ -626,17 +652,11 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
-        if chatId == cInfo.id,
-           let itemIndex = getChatItemIndex(cItem),
-           im.reversedChatItems[itemIndex].isRcvNew {
-            await MainActor.run {
-                // update current chat
-                markChatItemRead_(itemIndex)
-                // update preview
-                unreadCollector.changeUnreadCounter(cInfo.id, by: -1)
-            }
+    func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) {
+        if self.chatId == cInfo.id {
+            ItemsModel.shared.markItemRead(cItem.id)
         }
+        self.unreadCollector.changeUnreadCounter(cInfo.id, by: -1)
     }
 
     private let unreadCollector = UnreadCollector()
@@ -729,7 +749,7 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    private func markChatItemRead_(_ i: Int) {
+    func markChatItemRead_(_ i: Int) {
         var ci = im.reversedChatItems[i]
         let meta = ci.meta
         if case .rcvNew = meta.itemStatus {

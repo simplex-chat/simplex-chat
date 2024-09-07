@@ -1289,7 +1289,9 @@ func apiMarkChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
     do {
         logger.debug("apiMarkChatItemRead: \(cItem.id)")
         try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: (cItem.id, cItem.id))
-        await ChatModel.shared.markChatItemRead(cInfo, cItem)
+        DispatchQueue.main.async {
+            ChatModel.shared.markChatItemRead(cInfo, cItem)
+        }
     } catch {
         logger.error("apiMarkChatItemRead apiChatRead error: \(responseError(error))")
     }
