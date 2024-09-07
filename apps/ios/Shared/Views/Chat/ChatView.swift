@@ -476,7 +476,7 @@ struct ChatView: View {
                 .sink { self.setDate(visibility: false) } // Date visibility
                 .store(in: &bag)
         }
-        
+
         func updateOnListChange(_ listState: ListState) {
             let im = ItemsModel.shared
             let unreadBelow =
