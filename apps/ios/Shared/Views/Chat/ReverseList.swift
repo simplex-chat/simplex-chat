@@ -228,7 +228,9 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     toBeSeenItems.insert(visibleItem)
                     DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(600)) { [weak self] in
                         self?.toBeSeenItems.remove(visibleItem)
-                        self?.seenItem.send(visibleItem)
+                        if self?.isVisible(chatItemId: visibleItem) ?? false {
+                            self?.seenItem.send(visibleItem)
+                        }
                     }
                 }
             }
@@ -265,12 +267,11 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             } else { false }
         }
 
-        private func isVisible(chatItemId: ChatItem.ID) -> Bool {
+        private func isVisible(chatItemId: ChatItem.ID) -> Bool? {
             tableView.indexPathsForVisibleRows?
                 .filter { isVisible(indexPath: $0) }
                 .map { representer.items[$0.item].id }
                 .contains(chatItemId)
-            ?? false
         }
     }
 
