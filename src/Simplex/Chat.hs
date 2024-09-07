@@ -55,9 +55,9 @@ import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDay, nominalDiffTimeToSeconds)
 import Data.Time.Clock.System (systemToUTCTime)
-import Data.Word (Word32)
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
+import Data.Word (Word32)
 import qualified Database.SQLite.Simple as SQL
 import Simplex.Chat.Archive
 import Simplex.Chat.Call
@@ -1114,26 +1114,24 @@ processChatCommand' vr = \case
                 when (size' > 0) $ copyChunks r w size'
   APIUserRead userId -> withUserId userId $ \user -> withFastStore' (`setUserChatsRead` user) >> ok user
   UserRead -> withUser $ \User {userId} -> processChatCommand $ APIUserRead userId
-  APIChatRead (ChatRef cType chatId) fromToIds -> withUser $ \_ -> case cType of
+  APIChatRead chatRef@(ChatRef cType chatId) fromToIds -> withUser $ \_ -> case cType of
     CTDirect -> do
       user <- withFastStore $ \db -> getUserByContactId db chatId
-      timedItems <- withFastStore' $ \db -> getDirectUnreadTimedItems db user chatId fromToIds
       ts <- liftIO getCurrentTime
-      forM_ timedItems $ \(itemId, ttl) -> do
-        let deleteAt = addUTCTime (realToFrac ttl) ts
-        withFastStore' $ \db -> setDirectChatItemDeleteAt db user chatId itemId deleteAt
-        startProximateTimedItemThread user (ChatRef CTDirect chatId, itemId) deleteAt
-      withFastStore' $ \db -> updateDirectChatItemsRead db user chatId fromToIds
+      timedItems <- withFastStore' $ \db -> do
+        timedItems <- getDirectUnreadTimedItems db user chatId fromToIds
+        updateDirectChatItemsRead db user chatId fromToIds
+        setDirectChatItemsDeleteAt db user chatId timedItems ts
+      forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
       ok user
     CTGroup -> do
-      user@User {userId} <- withFastStore $ \db -> getUserByGroupId db chatId
-      timedItems <- withFastStore' $ \db -> getGroupUnreadTimedItems db user chatId fromToIds
+      user <- withFastStore $ \db -> getUserByGroupId db chatId
       ts <- liftIO getCurrentTime
-      forM_ timedItems $ \(itemId, ttl) -> do
-        let deleteAt = addUTCTime (realToFrac ttl) ts
-        withFastStore' $ \db -> setGroupChatItemDeleteAt db user chatId itemId deleteAt
-        startProximateTimedItemThread user (ChatRef CTGroup chatId, itemId) deleteAt
-      withFastStore' $ \db -> updateGroupChatItemsRead db userId chatId fromToIds
+      timedItems <- withFastStore' $ \db -> do
+        timedItems <- getGroupUnreadTimedItems db user chatId fromToIds
+        updateGroupChatItemsRead db user chatId fromToIds
+        setGroupChatItemsDeleteAt db user chatId timedItems ts
+      forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
       ok user
     CTLocal -> do
       user <- withFastStore $ \db -> getUserByNoteFolderId db chatId

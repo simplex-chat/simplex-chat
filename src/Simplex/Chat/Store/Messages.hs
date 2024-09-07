@@ -60,10 +60,10 @@ module Simplex.Chat.Store.Messages
     deleteLocalChatItem,
     updateDirectChatItemsRead,
     getDirectUnreadTimedItems,
-    setDirectChatItemDeleteAt,
+    setDirectChatItemsDeleteAt,
     updateGroupChatItemsRead,
     getGroupUnreadTimedItems,
-    setGroupChatItemDeleteAt,
+    setGroupChatItemsDeleteAt,
     updateLocalChatItemsRead,
     getChatRefViaItemId,
     getChatItemVersions,
@@ -1339,15 +1339,17 @@ getDirectUnreadTimedItems db User {userId} contactId itemsRange_ = case itemsRan
       |]
       (userId, contactId, CISRcvNew)
 
-setDirectChatItemDeleteAt :: DB.Connection -> User -> ContactId -> ChatItemId -> UTCTime -> IO ()
-setDirectChatItemDeleteAt db User {userId} contactId chatItemId deleteAt =
+setDirectChatItemsDeleteAt :: DB.Connection -> User -> ContactId -> [(ChatItemId, Int)] -> UTCTime -> IO [(ChatItemId, UTCTime)]
+setDirectChatItemsDeleteAt db User {userId} contactId itemIds currentTs = forM itemIds $ \(chatItemId, ttl) -> do
+  let deleteAt = addUTCTime (realToFrac ttl) currentTs
   DB.execute
     db
     "UPDATE chat_items SET timed_delete_at = ? WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?"
     (deleteAt, userId, contactId, chatItemId)
+  pure (chatItemId, deleteAt)
 
-updateGroupChatItemsRead :: DB.Connection -> UserId -> GroupId -> Maybe (ChatItemId, ChatItemId) -> IO ()
-updateGroupChatItemsRead db userId groupId itemsRange_ = do
+updateGroupChatItemsRead :: DB.Connection -> User -> GroupId -> Maybe (ChatItemId, ChatItemId) -> IO ()
+updateGroupChatItemsRead db User {userId} groupId itemsRange_ = do
   currentTs <- getCurrentTime
   case itemsRange_ of
     Just (fromItemId, toItemId) ->
@@ -1392,12 +1394,14 @@ getGroupUnreadTimedItems db User {userId} groupId itemsRange_ = case itemsRange_
       |]
       (userId, groupId, CISRcvNew)
 
-setGroupChatItemDeleteAt :: DB.Connection -> User -> GroupId -> ChatItemId -> UTCTime -> IO ()
-setGroupChatItemDeleteAt db User {userId} groupId chatItemId deleteAt =
+setGroupChatItemsDeleteAt :: DB.Connection -> User -> GroupId -> [(ChatItemId, Int)] -> UTCTime -> IO [(ChatItemId, UTCTime)]
+setGroupChatItemsDeleteAt db User {userId} groupId itemIds currentTs = forM itemIds $ \(chatItemId, ttl) -> do
+  let deleteAt = addUTCTime (realToFrac ttl) currentTs
   DB.execute
     db
     "UPDATE chat_items SET timed_delete_at = ? WHERE user_id = ? AND group_id = ? AND chat_item_id = ?"
     (deleteAt, userId, groupId, chatItemId)
+  pure (chatItemId, deleteAt)
 
 updateLocalChatItemsRead :: DB.Connection -> User -> NoteFolderId -> Maybe (ChatItemId, ChatItemId) -> IO ()
 updateLocalChatItemsRead db User {userId} noteFolderId itemsRange_ = do
