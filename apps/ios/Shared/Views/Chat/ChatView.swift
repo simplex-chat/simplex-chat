@@ -459,11 +459,6 @@ struct ChatView: View {
 
         private var bag = Set<AnyCancellable>()
 
-        private struct ViewUpdate: Equatable {
-            let unreadBelow: Int
-            let date: Date?
-        }
-
         init() {
             reverseListUpdated
                 .throttle(for: 0.2, scheduler: DispatchQueue.global(qos: .background), latest: true)
