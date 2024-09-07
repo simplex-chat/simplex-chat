@@ -121,14 +121,14 @@ class ItemsModel: ObservableObject {
         }
     }
     
-    func markItemRead(_ itemId: ChatItem.ID) {
+    func markItemsRead(_ itemIds: Set<ChatItem.ID>) {
         let m = ChatModel.shared
         if readItemsChatId != m.chatId {
             readItemsChatId = m.chatId
             readItems = []
         }
         if readItemsChatId != nil {
-            readItems.insert(itemId)
+            readItems.formUnion(itemIds)
             readItemsPublisher.send()
         }
     }
@@ -660,14 +660,14 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) {
-        if self.chatId == cInfo.id {
-            ItemsModel.shared.markItemRead(cItem.id)
-        }
-        self.unreadCollector.changeUnreadCounter(cInfo.id, by: -1)
-    }
+//    func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) {
+//        if self.chatId == cInfo.id {
+//            ItemsModel.shared.markItemRead(cItem.id)
+//        }
+//        self.unreadCollector.changeUnreadCounter(cInfo.id, by: -1)
+//    }
 
-    private let unreadCollector = UnreadCollector()
+    let unreadCollector = UnreadCollector()
 
     class UnreadCollector {
         private let subject = PassthroughSubject<Void, Never>()

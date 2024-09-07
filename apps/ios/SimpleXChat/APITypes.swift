@@ -129,7 +129,7 @@ public enum ChatCommand {
     // WebRTC calls /
     case apiGetNetworkStatuses
     case apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64))
-    case apiChatItemsRead(type: ChatType, id: Int64, itemIds: [Int64])
+    case apiChatItemsRead(type: ChatType, id: Int64, itemIds: Set<Int64>)
     case apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool)
     case receiveFile(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool?, inline: Bool?)
     case setFileToReceive(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool?)
@@ -465,7 +465,7 @@ public enum ChatCommand {
         "\(type.rawValue)\(id)"
     }
 
-    func joinedIds(_ ids: [Int64]) -> String {
+    func joinedIds(_ ids: any Sequence<Int64>) -> String {
         ids.map { "\($0)" }.joined(separator: ",")
     }
     

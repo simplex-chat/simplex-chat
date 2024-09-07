@@ -49,7 +49,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         private var dataSource: UITableViewDiffableDataSource<Section, ChatItem>!
         private var itemCount: Int = 0
         private let updateFloatingButtons = PassthroughSubject<Void, Never>()
-        private let seenItem = PassthroughSubject<Set<ChatItem.ID>, Never>()
+        private let readItems = PassthroughSubject<Set<ChatItem.ID>, Never>()
         private var bag = Set<AnyCancellable>()
 
         init(representer: ReverseList) {
@@ -118,11 +118,22 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 }
                 .store(in: &bag)
 
-            seenItem
-                .collect(.byTime(DispatchQueue.main, .milliseconds(200)))
-                .sink { seenItems in
-                    // TODO: Mark seen items as read
-                    print("Seen \(seenItems.count) items")
+            readItems
+                .collect(.byTime(DispatchQueue.global(qos: .background), 0.2))
+                .sink { itemSets in
+                    let itemIds: Set<ChatItem.ID> = itemSets.reduce(into: []) { s, itemIds in s.formUnion(itemIds) }
+                    do {
+                        let cInfo = ChatInfo.sampleData.direct // TODO
+                        try apiChatItemsReadSync(type: cInfo.chatType, id: cInfo.apiId, itemIds: itemIds)
+                        DispatchQueue.main.async {
+                            ChatModel.shared.unreadCollector.changeUnreadCounter(cInfo.id, by: -itemIds.count)
+                            if ChatModel.shared.chatId == cInfo.id {
+                                ItemsModel.shared.markItemsRead(itemIds)
+                            }
+                        }
+                    } catch let e {
+                        logger.error("apiChatItemsRead error: \(responseError(e))")
+                    }
                 }
                 .store(in: &bag)
         }
@@ -225,7 +236,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 it.scheduledToMarkRead.subtract(visible)
                 let stillVisible = visible.intersection(it.getVisibleUnreadItems())
                 if !stillVisible.isEmpty {
-                    it.seenItem.send(stillVisible)
+                    it.readItems.send(stillVisible)
                 }
             }
         }
