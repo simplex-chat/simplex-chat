@@ -49,6 +49,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         private var dataSource: UITableViewDiffableDataSource<Section, ChatItem>!
         private var itemCount: Int = 0
         private let updateFloatingButtons = PassthroughSubject<Void, Never>()
+        private let seenItem = PassthroughSubject<ChatItem.ID, Never>()
         private var bag = Set<AnyCancellable>()
 
         init(representer: ReverseList) {
@@ -78,6 +79,12 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             self.dataSource = UITableViewDiffableDataSource<Section, ChatItem>(
                 tableView: tableView
             ) { (tableView, indexPath, item) -> UITableViewCell? in
+                DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(600)) {
+                    let isStillVisible = tableView.indexPathsForVisibleRows?
+                        .map { self.representer.items[$0.item].id }
+                        .contains(item.id) ?? false
+                    if isStillVisible && item.isRcvNew { self.seenItem.send(item.id) }
+                }
                 if indexPath.item > self.itemCount - 8, self.itemCount > 8 {
                     self.representer.loadPage()
                 }
@@ -114,6 +121,14 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     if let listState = DispatchQueue.main.sync(execute: { [weak self] in self?.getListState() }) {
                         ChatView.FloatingButtonModel.shared.updateOnListChange(listState)
                     }
+                }
+                .store(in: &bag)
+
+            seenItem
+                .collect(.byTime(DispatchQueue.main, .milliseconds(200)))
+                .sink { seenItems in
+                    // TODO: Mark seen items as read
+                    print("Seen \(seenItems.count) items")
                 }
                 .store(in: &bag)
         }
