@@ -79,12 +79,6 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             self.dataSource = UITableViewDiffableDataSource<Section, ChatItem>(
                 tableView: tableView
             ) { (tableView, indexPath, item) -> UITableViewCell? in
-                DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(600)) {
-                    let isStillVisible = tableView.indexPathsForVisibleRows?
-                        .map { self.representer.items[$0.item].id }
-                        .contains(item.id) ?? false
-                    if isStillVisible && item.isRcvNew { self.seenItem.send(item.id) }
-                }
                 if indexPath.item > self.itemCount - 8, self.itemCount > 8 {
                     self.representer.loadPage()
                 }
@@ -219,8 +213,22 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             updateFloatingButtons.send()
         }
 
+        private var toBeSeenItems = Set<ChatItem.ID>()
+
         override func scrollViewDidScroll(_ scrollView: UIScrollView) {
             updateFloatingButtons.send()
+            let visibleItems = ( tableView.indexPathsForVisibleRows ?? [])
+                .filter { isVisible(indexPath: $0) }
+                .map { representer.items[$0.item].id }
+            for visibleItem in visibleItems {
+                if !toBeSeenItems.contains(visibleItem) {
+                    toBeSeenItems.insert(visibleItem)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(600)) { [weak self] in
+                        self?.toBeSeenItems.remove(visibleItem)
+                        self?.seenItem.send(visibleItem)
+                    }
+                }
+            }
         }
 
         func getListState() -> ListState? {
