@@ -294,7 +294,7 @@ public enum ChatCommand {
             case let .apiCallStatus(contact, callStatus): return "/_call status @\(contact.apiId) \(callStatus.rawValue)"
             case .apiGetNetworkStatuses: return "/_network_statuses"
             case let .apiChatRead(type, id, itemRange: (from, to)): return "/_read chat \(ref(type, id)) from=\(from) to=\(to)"
-            case let .apiChatItemsRead(type, id, itemIds): return "/_read chat items \(itemIds.map { "\($0)" }.joined(separator: ","))"
+            case let .apiChatItemsRead(type, id, itemIds): return "/_read chat items \(ref(type, id)) \(joinedIds(itemIds))"
             case let .apiChatUnread(type, id, unreadChat): return "/_unread chat \(ref(type, id)) \(onOff(unreadChat))"
             case let .receiveFile(fileId, userApprovedRelays, encrypt, inline): return "/freceive \(fileId)\(onOffParam("approved_relays", userApprovedRelays))\(onOffParam("encrypt", encrypt))\(onOffParam("inline", inline))"
             case let .setFileToReceive(fileId, userApprovedRelays, encrypt): return "/_set_file_to_receive \(fileId)\(onOffParam("approved_relays", userApprovedRelays))\(onOffParam("encrypt", encrypt))"
@@ -465,6 +465,10 @@ public enum ChatCommand {
         "\(type.rawValue)\(id)"
     }
 
+    func joinedIds(_ ids: [Int64]) -> String {
+        ids.map { "\($0)" }.joined(separator: ",")
+    }
+    
     func protoServersStr(_ servers: [ServerCfg]) -> String {
         encodeJSON(ProtoServersConfig(servers: servers))
     }
