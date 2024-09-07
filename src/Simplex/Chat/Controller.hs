@@ -302,6 +302,7 @@ data ChatCommand
   | APIUserRead UserId
   | UserRead
   | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
+  | APIChatItemsRead ChatRef (NonEmpty ChatItemId)
   | APIChatUnread ChatRef Bool
   | APIDeleteChat ChatRef ChatDeleteMode -- currently delete mode settings are only applied to direct chats
   | APIClearChat ChatRef
