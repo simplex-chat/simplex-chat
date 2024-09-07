@@ -1,6 +1,7 @@
 package chat.simplex.common.views.chatlist
 
 import SectionItemView
+import androidx.compose.animation.core.*
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -27,6 +28,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @Composable
 actual fun UserPickerInactiveUsersSection(
@@ -103,13 +105,14 @@ actual fun UserPickerInactiveUsersSection(
 @Composable
 actual fun UserPickerScaffold(pickerState: MutableStateFlow<AnimatedViewState>, content: @Composable () -> Unit) {
   val currentTheme by CurrentColors.collectAsState()
+  var animatedVisibility by remember { mutableStateOf(pickerState.value) }
   val resultingColor by remember {
     derivedStateOf {
       if (currentTheme.colors.isLight) currentTheme.colors.onSurface.copy(alpha = ScrimOpacity) else Color.Black.copy(0.64f)
     }
   }
   val animatedColor = remember {
-    androidx.compose.animation.core.Animatable(
+    Animatable(
       if (pickerState.value.isVisible()) Color.Transparent else resultingColor,
       Color.VectorConverter(resultingColor.colorSpace)
     )
@@ -121,19 +124,19 @@ actual fun UserPickerScaffold(pickerState: MutableStateFlow<AnimatedViewState>, 
       .collect {
         launch {
           pickerState.collect {
-            val newState = it
+            animatedVisibility = it
             val colors = CurrentColors.value.colors
             val toColor = if (colors.isLight) colors.onSurface.copy(alpha = ScrimOpacity) else Color.Black.copy(0.64f)
 
-            animatedColor.animateTo(if (newState.isVisible()) toColor else Color.Transparent, userPickerAnimSpec()) {
-                if (newState.isVisible()) {
+            animatedColor.animateTo(if (animatedVisibility.isVisible()) toColor else Color.Transparent, userPickerAnimSpec()) {
+                if (animatedVisibility.isVisible()) {
                   platform.androidSetDrawerStatusAndNavBarColor(
                     isLight = colors.isLight,
                     drawerShadingColor = animatedColor,
                     toolbarOnTop = !appPrefs.oneHandUI.get(),
                     navBarColor = colors.surface
                   )
-                } else if (newState.isHiding() && ModalManager.start.modalCount.value == 0) {
+                } else if (animatedVisibility.isHiding() && ModalManager.start.modalCount.value == 0) {
                   platform.androidSetDrawerStatusAndNavBarColor(
                     isLight = colors.isLight,
                     drawerShadingColor = animatedColor,
@@ -153,9 +156,9 @@ actual fun UserPickerScaffold(pickerState: MutableStateFlow<AnimatedViewState>, 
 
   Box(Modifier.drawBehind { drawRect(animatedColor.value) }) {
     AnimatedVisibility(
-      visible = pickerState.run { value.isVisible() },
+      visible = animatedVisibility.isVisible(),
       enter = slideInVertically(
-          initialOffsetY = { it },
+          initialOffsetY = { (it * 0.52).roundToInt() },
           animationSpec = userPickerAnimSpec()
         ) ,
       exit = slideOutVertically(
