@@ -139,34 +139,6 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     }
                 }
                 .store(in: &bag)
-
-//            readItems
-//                .collect(.byTime(DispatchQueue.global(qos: .background), 0.2))
-//                .sink { itemSets in
-//                    let m = ChatModel.shared
-//                    guard let chatId = m.chatId else { return }
-//                    let itemIds: Set<ChatItem.ID> = itemSets.reduce(into: []) { s, seenItems in
-//                        let (setChatId, items) = seenItems
-//                        if chatId == setChatId {
-//                            s.formUnion(items)
-//                        }
-//                    }
-//                    if itemIds.isEmpty { return }
-//                    Task {
-//                        do {
-//                            try await apiChatItemsRead(chatId: chatId, itemIds: itemIds)
-//                            DispatchQueue.main.async {
-//                                m.unreadCollector.changeUnreadCounter(chatId, by: -itemIds.count)
-//                                if chatId == m.chatId {
-//                                    ItemsModel.shared.markItemsRead(itemIds)
-//                                }
-//                            }
-//                        } catch let e {
-//                            logger.error("apiChatItemsRead error: \(responseError(e))")
-//                        }
-//                    }
-//                }
-//                .store(in: &bag)
         }
 
         @available(*, unavailable)
