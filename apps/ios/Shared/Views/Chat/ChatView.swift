@@ -546,7 +546,7 @@ struct ChatView: View {
     private struct FloatingButtons: View {
         let theme: AppTheme
         let scrollModel: ReverseListScrollModel
-        @ObservedObject var model: FloatingButtonModel = .shared
+        @ObservedObject var model = FloatingButtonModel.shared
         @ObservedObject var chat: Chat
 
         var body: some View {
