@@ -727,16 +727,14 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func markChatItemRead_(_ i: Int) {
-        var ci = im.reversedChatItems[i]
-        let meta = ci.meta
+    private func markChatItemRead_(_ i: Int) {
+        let meta = im.reversedChatItems[i].meta
         if case .rcvNew = meta.itemStatus {
-            ci.meta.itemStatus = .rcvRead
-            ci.viewTimestamp = .now
+            im.reversedChatItems[i].meta.itemStatus = .rcvRead
+            im.reversedChatItems[i].viewTimestamp = .now
             if meta.itemLive != true, let ttl = meta.itemTimed?.ttl {
-                ci.meta.itemTimed?.deleteAt = .now + TimeInterval(ttl)
+                im.reversedChatItems[i].meta.itemTimed?.deleteAt = .now + TimeInterval(ttl)
             }
-            im.reversedChatItems[i] = ci
         }
     }
 
