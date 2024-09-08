@@ -477,7 +477,7 @@ struct ChatView: View {
         var isReallyNearBottom: Bool = true
         var hideDateWorkItem: DispatchWorkItem?
 
-        // called on background thread from ReverseList updateUnreadItems subscriber
+        // called on background thread from ReverseList
         // once items have been on screen for 0.6 seconds
         // ONLY if chatId is the current chat and itemIds is not empty
         func markItemsRead(_ chatId: ChatId, _ itemIds: Set<ChatItem.ID>) {
@@ -495,6 +495,7 @@ struct ChatView: View {
             }
         }
         
+        // called on background thread from ReverseList on scroll and list changes
         func updateOnListChange(_ listState: ListState) {
             let im = ItemsModel.shared
             let unreadBelow =

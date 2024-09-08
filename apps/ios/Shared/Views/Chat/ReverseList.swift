@@ -219,16 +219,21 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 let visible = getVisibleUnreadItems().subtracting(scheduledVisible)
                 if !visible.isEmpty {
                     scheduledVisible.formUnion(visible)
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+                    DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + 0.6) { [weak self] in
                         guard let it = self else { return }
-                        if chatId == m.chatId {
-                            it.scheduledVisible.subtract(visible)
-                            let stillVisible = visible.intersection(it.getVisibleUnreadItems())
-                            if !stillVisible.isEmpty {
-                                DispatchQueue.global(qos: .background).async {
+                        if chatId == m.chatId,
+                           let newVisible: Set<ChatItem.ID> = DispatchQueue.main.sync(execute: { [weak self] in
+                               if let it = self {
+                                   it.scheduledVisible.subtract(visible)
+                                   return it.getVisibleUnreadItems()
+                               } else {
+                                   return nil
+                               }
+                           }) {
+                                let stillVisible = visible.intersection(newVisible)
+                                if !stillVisible.isEmpty {
                                     ChatView.UnreadItemsModel.shared.markItemsRead(chatId, stillVisible)
                                 }
-                            }
                         }
                     }
                 }
