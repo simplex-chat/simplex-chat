@@ -499,7 +499,7 @@ struct ChatView: View {
             let im = ItemsModel.shared
             let unreadBelow =
                 if let id = listState.bottomItemId,
-                   let index = im.reversedChatItems.firstIndex(where: { $0.id == id })
+                   let index = im.getChatItemIndex(itemId: id)
                 {
                  im.reversedChatItems[..<index].reduce(into: 0) { unread, chatItem in
                      if chatItem.isRcvNew { unread += 1 }

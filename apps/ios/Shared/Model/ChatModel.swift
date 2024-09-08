@@ -66,6 +66,10 @@ class ItemsModel: ObservableObject {
             .store(in: &bag)
     }
 
+    func getChatItemIndex(itemId: ChatItem.ID) -> Int? {
+        reversedChatItems.firstIndex(where: { $0.id == itemId })
+    }
+
     func loadOpenChat(_ chatId: ChatId, willNavigate: @escaping () -> Void = {}) {
         let navigationTimeout = Task {
             do {
@@ -499,7 +503,7 @@ final class ChatModel: ObservableObject {
     }
 
     func nextChatItemData<T>(_ chatItemId: Int64, previous: Bool, map: @escaping (ChatItem) -> T?) -> T? {
-        guard var i = im.reversedChatItems.firstIndex(where: { $0.id == chatItemId }) else { return nil }
+        guard var i = im.getChatItemIndex(itemId: chatItemId) else { return nil }
         if previous {
             while i < im.reversedChatItems.count - 1 {
                 i += 1
@@ -573,16 +577,10 @@ final class ChatModel: ObservableObject {
 
     private func markCurrentChatRead(fromIndex i: Int = 0) {
         var j = i
-        var items = im.reversedChatItems
-        while j < items.count {
-            var ci = items[j]
-            if ci.isRcvNew {
-                markChatItemRead_(&ci)
-                items[j] = ci
-            }
+        while j < im.reversedChatItems.count {
+            markChatItemRead_(j)
             j += 1
         }
-        im.reversedChatItems = items
     }
 
     func markChatItemsRead(_ cInfo: ChatInfo, aboveItem: ChatItem? = nil) {
@@ -634,15 +632,11 @@ final class ChatModel: ObservableObject {
 
     func markChatItemsRead(_ chatId: ChatId, _ itemIds: Set<ChatItem.ID>) {
         if self.chatId == chatId {
-            var items = im.reversedChatItems
             for itemId in itemIds {
-                if let i = items.firstIndex(where: { $0.id == itemId }) {
-                    var ci = items[i]
-                    markChatItemRead_(&ci)
-                    items[i] = ci
+                if let i = im.getChatItemIndex(itemId: itemId) {
+                    markChatItemRead_(i)
                 }
             }
-            im.reversedChatItems = items
         }
         unreadCollector.changeUnreadCounter(chatId, by: -itemIds.count)
     }
@@ -737,7 +731,8 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func markChatItemRead_(_ ci: inout ChatItem) {
+    func markChatItemRead_(_ i: Int) {
+        var ci = im.reversedChatItems[i]
         let meta = ci.meta
         if case .rcvNew = meta.itemStatus {
             ci.meta.itemStatus = .rcvRead
@@ -746,6 +741,7 @@ final class ChatModel: ObservableObject {
             if meta.itemLive != true, let ttl = meta.itemTimed?.ttl {
                 ci.meta.itemTimed?.deleteAt = ts + TimeInterval(ttl)
             }
+            im.reversedChatItems[i] = ci
         }
     }
 
