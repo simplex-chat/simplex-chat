@@ -1289,12 +1289,12 @@ func markChatUnread(_ chat: Chat, unreadChat: Bool = true) async {
     }
 }
 
-//func apiMarkChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
+//func apiMarkChatItemRead(_ cInfo: ChatInfo, _ itemIds: [ChatItem.ID]) async {
 //    do {
-//        logger.debug("apiMarkChatItemRead: \(cItem.id)")
-//        try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: (cItem.id, cItem.id))
+//        logger.debug("apiMarkChatItemRead")
+//        try await apiChatItemsRead(chatId: cInfo.id, itemIds: itemIds)
 //        DispatchQueue.main.async {
-//            ChatModel.shared.markChatItemRead(cInfo, cItem)
+//            ChatModel.shared.markChatItemsRead(cInfo, itemIds)
 //        }
 //    } catch {
 //        logger.error("apiMarkChatItemRead apiChatRead error: \(responseError(error))")

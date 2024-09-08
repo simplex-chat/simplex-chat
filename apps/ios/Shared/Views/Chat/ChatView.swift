@@ -484,9 +484,10 @@ struct ChatView: View {
             do {
                 try apiChatItemsReadSync(chatId: chatId, itemIds: itemIds)
                 DispatchQueue.main.async {
-                    ChatModel.UnreadCollector.shared.changeUnreadCounter(chatId, by: -itemIds.count)
-                    if chatId == ChatModel.shared.chatId {
-                        ItemsModel.shared.markItemsRead(chatId, itemIds)
+                    let m = ChatModel.shared
+                    m.unreadCollector.changeUnreadCounter(chatId, by: -itemIds.count)
+                    if chatId == m.chatId {
+                        m.markChatItemsRead(chatId, itemIds)
                     }
                 }
             } catch let e {
@@ -867,34 +868,32 @@ struct ChatView: View {
                     }
                 }
             }
-//            .onAppear {
-//                if let range {
-//                    if let items = unreadItems(range) {
-//                        waitToMarkRead {
-//                            for ci in items {
-//                                await apiMarkChatItemRead(chat.chatInfo, ci)
-//                            }
-//                        }
-//                    }
-//                } else if chatItem.isRcvNew  {
-//                    waitToMarkRead {
-//                        await apiMarkChatItemRead(chat.chatInfo, chatItem)
-//                    }
-//                }
-//            }
+            // .onAppear {
+            //     if let range {
+            //         let itemIds = unreadItemIds(range)
+            //         if !itemIds.isEmpty {
+            //             waitToMarkRead {
+            //                 await apiMarkChatItemRead(chat.chatInfo, itemIds)
+            //             }
+            //         }
+            //     } else if chatItem.isRcvNew  {
+            //         waitToMarkRead {
+            //             await apiMarkChatItemRead(chat.chatInfo, [chatItem.id])
+            //         }
+            //     }
+            // }
         }
         
-        private func unreadItems(_ range: ClosedRange<Int>) -> [ChatItem]? {
+        private func unreadItemIds(_ range: ClosedRange<Int>) -> [ChatItem.ID] {
             let im = ItemsModel.shared
-            let items = range.compactMap { i in
+            return range.compactMap { i in
                 if i >= 0 && i < im.reversedChatItems.count {
                     let ci = im.reversedChatItems[i]
-                    return if ci.isRcvNew { ci } else { nil }
+                    return if ci.isRcvNew { ci.id } else { nil }
                 } else {
                     return nil
                 }
             }
-            return if items.isEmpty { nil } else { items }
         }
         
         private func waitToMarkRead(_ op: @Sendable @escaping () async -> Void) {

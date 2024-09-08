@@ -47,10 +47,9 @@ class ItemsModel: ObservableObject {
     static let shared = ItemsModel()
     private let publisher = ObservableObjectPublisher()
     private var bag = Set<AnyCancellable>()
-    var reversedChatItems: [ChatItem] = []
-//    {
-//        willSet { publisher.send() }
-//    }
+    var reversedChatItems: [ChatItem] = [] {
+        willSet { publisher.send() }
+    }
     var itemAdded = false {
         willSet { publisher.send() }
     }
@@ -60,12 +59,12 @@ class ItemsModel: ObservableObject {
     @Published var isLoading = false
     @Published var showLoadingProgress = false
 
-//    init() {
-//        publisher
-//            .throttle(for: 0.1, scheduler: DispatchQueue.main, latest: true)
-//            .sink { self.objectWillChange.send() }
-//            .store(in: &bag)
-//    }
+    init() {
+        publisher
+            .throttle(for: 0.2, scheduler: DispatchQueue.main, latest: true)
+            .sink { self.objectWillChange.send() }
+            .store(in: &bag)
+    }
 
     func loadOpenChat(_ chatId: ChatId, willNavigate: @escaping () -> Void = {}) {
         let navigationTimeout = Task {
@@ -98,25 +97,6 @@ class ItemsModel: ObservableObject {
                 }
             }
         }
-    }
-    
-    // called on main thread from UnreadItemsModel once apiChatItemsRead responds
-    // ONLY if chatId is the current chat and itemIds is not empty
-    func markItemsRead(_ chatId: ChatId, _ itemIds: Set<ChatItem.ID>) {
-        let m = ChatModel.shared
-        var i = 0
-        var itemIds_ = itemIds
-        var items = reversedChatItems
-        while i < items.count && !itemIds_.isEmpty {
-            let ci = items[i]
-            if ci.isRcvNew && itemIds_.remove(ci.id) != nil {
-                var ci = items[i]
-                m.markChatItemRead_(&ci)
-                items[i] = ci
-            }
-            i += 1
-        }
-//        reversedChatItems = items
     }
 }
 
@@ -323,7 +303,7 @@ final class ChatModel: ObservableObject {
         } else {
             addChat_(chat, at: 0)
         }
-        PopChatCollector.shared.throttlePopChat(chat.chatInfo.id, currentPosition: 0)
+        popChatCollector.throttlePopChat(chat.chatInfo.id, currentPosition: 0)
     }
 
     func addChat_(_ chat: Chat, at position: Int = 0) {
@@ -388,7 +368,7 @@ final class ChatModel: ObservableObject {
     func updateChats(_ newChats: [ChatData]) {
         chats = newChats.map { Chat($0) }
         NtfManager.shared.setNtfBadgeCount(totalUnreadCountForAllUsers())
-        PopChatCollector.shared.clear()
+        popChatCollector.clear()
     }
 
 //    func addGroup(_ group: SimpleXChat.Group) {
@@ -419,9 +399,9 @@ final class ChatModel: ObservableObject {
                 [cItem]
             }
             if case .rcvNew = cItem.meta.itemStatus {
-                UnreadCollector.shared.changeUnreadCounter(cInfo.id, by: 1)
+                unreadCollector.changeUnreadCounter(cInfo.id, by: 1)
             }
-            PopChatCollector.shared.throttlePopChat(cInfo.id, currentPosition: i)
+            popChatCollector.throttlePopChat(cInfo.id, currentPosition: i)
         } else {
             addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
         }
@@ -499,7 +479,7 @@ final class ChatModel: ObservableObject {
 
     func removeChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         if cItem.isRcvNew {
-            UnreadCollector.shared.changeUnreadCounter(cInfo.id, by: -1)
+            unreadCollector.changeUnreadCounter(cInfo.id, by: -1)
         }
         // update previews
         if let chat = getChat(cInfo.id) {
@@ -652,15 +632,24 @@ final class ChatModel: ObservableObject {
         }
     }
 
-//    func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) {
-//        if self.chatId == cInfo.id {
-//            ItemsModel.shared.markItemRead(cItem.id)
-//        }
-//        self.unreadCollector.changeUnreadCounter(cInfo.id, by: -1)
-//    }
+    func markChatItemsRead(_ chatId: ChatId, _ itemIds: Set<ChatItem.ID>) {
+        if self.chatId == chatId {
+            var items = im.reversedChatItems
+            for itemId in itemIds {
+                if let i = items.firstIndex(where: { $0.id == itemId }) {
+                    var ci = items[i]
+                    markChatItemRead_(&ci)
+                    items[i] = ci
+                }
+            }
+            im.reversedChatItems = items
+        }
+        unreadCollector.changeUnreadCounter(chatId, by: -itemIds.count)
+    }
+
+    let unreadCollector = UnreadCollector()
 
     class UnreadCollector {
-        static let shared = UnreadCollector()
         private let subject = PassthroughSubject<Void, Never>()
         private var bag = Set<AnyCancellable>()
         private var unreadCounts: [ChatId: Int] = [:]
@@ -685,9 +674,10 @@ final class ChatModel: ObservableObject {
             subject.send()
         }
     }
+
+    let popChatCollector = PopChatCollector()
     
     class PopChatCollector {
-        static let shared = PopChatCollector()
         private let subject = PassthroughSubject<Void, Never>()
         private var bag = Set<AnyCancellable>()
         private var chatsToPop: [ChatId: Date] = [:]
