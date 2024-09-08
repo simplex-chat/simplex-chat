@@ -855,12 +855,12 @@ struct ChatView: View {
                     let itemIds = unreadItemIds(range)
                     if !itemIds.isEmpty {
                         waitToMarkRead {
-                            await apiMarkChatItemRead(chat.chatInfo, itemIds)
+                            await apiMarkChatItemsRead(chat.chatInfo, itemIds)
                         }
                     }
                 } else if chatItem.isRcvNew  {
                     waitToMarkRead {
-                        await apiMarkChatItemRead(chat.chatInfo, [chatItem.id])
+                        await apiMarkChatItemRead(chat.chatInfo, chatItem)
                     }
                 }
             }
