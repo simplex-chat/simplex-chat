@@ -478,7 +478,7 @@ struct ChatView: View {
         var hideDateWorkItem: DispatchWorkItem?
 
         // called on background thread from ReverseList updateUnreadItems subscriber
-        // once items have been on screen for 0.55-0.65 seconds
+        // once items have been on screen for 0.6 seconds
         // ONLY if chatId is the current chat and itemIds is not empty
         func markItemsRead(_ chatId: ChatId, _ itemIds: Set<ChatItem.ID>) {
             do {

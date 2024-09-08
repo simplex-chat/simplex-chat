@@ -109,33 +109,10 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 )
 
             updateUnreadItems
-                .throttle(for: 0.1, scheduler: DispatchQueue.main, latest: true)
-                .sink { [weak self] in
-                    guard let it = self else { return }
-                    let m = ChatModel.shared
-                    let uim = ChatView.UnreadItemsModel.shared
-                    if let chatId = it.currentChatId, chatId == m.chatId && !it.toScheduleVisible.isEmpty {
-                        let visible = it.toScheduleVisible
-                        it.scheduledVisible.formUnion(visible)
-                        it.toScheduleVisible = []
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
-                            guard let it = self else { return }
-                            if chatId == m.chatId {
-                                it.scheduledVisible.subtract(visible)
-                                let stillVisible = visible.intersection(it.getVisibleUnreadItems())
-                                if !stillVisible.isEmpty {
-                                    DispatchQueue.global(qos: .background).async {
-                                        uim.markItemsRead(chatId, stillVisible)
-                                    }
-                                }
-                            }
-                        }
-                    } // we could call below in else?
-                    
-                    if let listState = it.getListState() {
-                        DispatchQueue.global(qos: .background).async {
-                            uim.updateOnListChange(listState)
-                        }
+                .throttle(for: 0.2, scheduler: DispatchQueue.global(qos: .background), latest: true)
+                .sink {
+                    if let listState = DispatchQueue.main.sync(execute: { [weak self] in self?.getListState() }) {
+                        ChatView.UnreadItemsModel.shared.updateOnListChange(listState)
                     }
                 }
                 .store(in: &bag)
@@ -228,7 +205,6 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         }
 
         private var currentChatId: ChatId? = nil
-        private var toScheduleVisible: Set<ChatItem.ID> = []
         private var scheduledVisible: Set<ChatItem.ID> = []
 
         // this runs on main thread, it stores items that entered the view in toScheduleVisible
@@ -237,12 +213,25 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             let m = ChatModel.shared
             if currentChatId != m.chatId {
                 currentChatId = m.chatId
-                toScheduleVisible = []
                 scheduledVisible = []
             }
-            if currentChatId != nil {
+            if let chatId = currentChatId {
                 let visible = getVisibleUnreadItems().subtracting(scheduledVisible)
-                if !visible.isEmpty { toScheduleVisible.formUnion(visible) }
+                if !visible.isEmpty {
+                    scheduledVisible.formUnion(visible)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+                        guard let it = self else { return }
+                        if chatId == m.chatId {
+                            it.scheduledVisible.subtract(visible)
+                            let stillVisible = visible.intersection(it.getVisibleUnreadItems())
+                            if !stillVisible.isEmpty {
+                                DispatchQueue.global(qos: .background).async {
+                                    ChatView.UnreadItemsModel.shared.markItemsRead(chatId, stillVisible)
+                                }
+                            }
+                        }
+                    }
+                }
             }
             updateUnreadItems.send()
         }
