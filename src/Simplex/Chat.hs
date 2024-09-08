@@ -55,9 +55,9 @@ import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDay, nominalDiffTimeToSeconds)
 import Data.Time.Clock.System (systemToUTCTime)
-import Data.Word (Word32)
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
+import Data.Word (Word32)
 import qualified Database.SQLite.Simple as SQL
 import Simplex.Chat.Archive
 import Simplex.Chat.Call
@@ -115,7 +115,7 @@ import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), EntityId, ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, XFTPServer, userProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, XFTPServer, userProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
 import qualified Simplex.Messaging.TMap as TM
@@ -1114,31 +1114,47 @@ processChatCommand' vr = \case
                 when (size' > 0) $ copyChunks r w size'
   APIUserRead userId -> withUserId userId $ \user -> withFastStore' (`setUserChatsRead` user) >> ok user
   UserRead -> withUser $ \User {userId} -> processChatCommand $ APIUserRead userId
-  APIChatRead (ChatRef cType chatId) fromToIds -> withUser $ \_ -> case cType of
+  APIChatRead chatRef@(ChatRef cType chatId) fromToIds -> withUser $ \_ -> case cType of
     CTDirect -> do
       user <- withFastStore $ \db -> getUserByContactId db chatId
-      timedItems <- withFastStore' $ \db -> getDirectUnreadTimedItems db user chatId fromToIds
       ts <- liftIO getCurrentTime
-      forM_ timedItems $ \(itemId, ttl) -> do
-        let deleteAt = addUTCTime (realToFrac ttl) ts
-        withFastStore' $ \db -> setDirectChatItemDeleteAt db user chatId itemId deleteAt
-        startProximateTimedItemThread user (ChatRef CTDirect chatId, itemId) deleteAt
-      withFastStore' $ \db -> updateDirectChatItemsRead db user chatId fromToIds
+      timedItems <- withFastStore' $ \db -> do
+        timedItems <- getDirectUnreadTimedItems db user chatId fromToIds
+        updateDirectChatItemsRead db user chatId fromToIds
+        setDirectChatItemsDeleteAt db user chatId timedItems ts
+      forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
       ok user
     CTGroup -> do
-      user@User {userId} <- withFastStore $ \db -> getUserByGroupId db chatId
-      timedItems <- withFastStore' $ \db -> getGroupUnreadTimedItems db user chatId fromToIds
+      user <- withFastStore $ \db -> getUserByGroupId db chatId
       ts <- liftIO getCurrentTime
-      forM_ timedItems $ \(itemId, ttl) -> do
-        let deleteAt = addUTCTime (realToFrac ttl) ts
-        withFastStore' $ \db -> setGroupChatItemDeleteAt db user chatId itemId deleteAt
-        startProximateTimedItemThread user (ChatRef CTGroup chatId, itemId) deleteAt
-      withFastStore' $ \db -> updateGroupChatItemsRead db userId chatId fromToIds
+      timedItems <- withFastStore' $ \db -> do
+        timedItems <- getGroupUnreadTimedItems db user chatId fromToIds
+        updateGroupChatItemsRead db user chatId fromToIds
+        setGroupChatItemsDeleteAt db user chatId timedItems ts
+      forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
       ok user
     CTLocal -> do
       user <- withFastStore $ \db -> getUserByNoteFolderId db chatId
       withFastStore' $ \db -> updateLocalChatItemsRead db user chatId fromToIds
       ok user
+    CTContactRequest -> pure $ chatCmdError Nothing "not supported"
+    CTContactConnection -> pure $ chatCmdError Nothing "not supported"
+  APIChatItemsRead chatRef@(ChatRef cType chatId) itemIds -> withUser $ \_ -> case cType of
+    CTDirect -> do
+      user <- withFastStore $ \db -> getUserByContactId db chatId
+      timedItems <- withFastStore' $ \db -> do
+        timedItems <- updateDirectChatItemsReadList db user chatId itemIds
+        setDirectChatItemsDeleteAt db user chatId timedItems =<< getCurrentTime
+      forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
+      ok user
+    CTGroup -> do
+      user <- withFastStore $ \db -> getUserByGroupId db chatId
+      timedItems <- withFastStore' $ \db -> do
+        timedItems <- updateGroupChatItemsReadList db user chatId itemIds
+        setGroupChatItemsDeleteAt db user chatId timedItems =<< getCurrentTime
+      forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
+      ok user
+    CTLocal -> pure $ chatCmdError Nothing "not supported"
     CTContactRequest -> pure $ chatCmdError Nothing "not supported"
     CTContactConnection -> pure $ chatCmdError Nothing "not supported"
   APIChatUnread (ChatRef cType chatId) unreadChat -> withUser $ \user -> case cType of
@@ -7873,6 +7889,7 @@ chatCommandP =
       "/_read user " *> (APIUserRead <$> A.decimal),
       "/read user" $> UserRead,
       "/_read chat " *> (APIChatRead <$> chatRefP <*> optional (A.space *> ((,) <$> ("from=" *> A.decimal) <* A.space <*> ("to=" *> A.decimal)))),
+      "/_read chat items " *> (APIChatItemsRead <$> chatRefP <*> _strP),
       "/_unread chat " *> (APIChatUnread <$> chatRefP <* A.space <*> onOffP),
       "/_delete " *> (APIDeleteChat <$> chatRefP <*> chatDeleteMode),
       "/_clear chat " *> (APIClearChat <$> chatRefP),

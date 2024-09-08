@@ -1480,6 +1480,13 @@ object ChatController {
     return false
   }
 
+  suspend fun apiChatItemsRead(rh: Long?, type: ChatType, id: Long, itemIds: List<Long>): Boolean {
+    val r = sendCmd(rh, CC.ApiChatItemsRead(type, id, itemIds))
+    if (r is CR.CmdOk) return true
+    Log.e(TAG, "apiChatItemsRead bad response: ${r.responseType} ${r.details}")
+    return false
+  }
+
   suspend fun apiChatUnread(rh: Long?, type: ChatType, id: Long, unreadChat: Boolean): Boolean {
     val r = sendCmd(rh, CC.ApiChatUnread(type, id, unreadChat))
     if (r is CR.CmdOk) return true
@@ -2967,6 +2974,7 @@ sealed class CC {
   class ApiAcceptContact(val incognito: Boolean, val contactReqId: Long): CC()
   class ApiRejectContact(val contactReqId: Long): CC()
   class ApiChatRead(val type: ChatType, val id: Long, val range: ItemRange): CC()
+  class ApiChatItemsRead(val type: ChatType, val id: Long, val itemIds: List<Long>): CC()
   class ApiChatUnread(val type: ChatType, val id: Long, val unreadChat: Boolean): CC()
   class ReceiveFile(val fileId: Long, val userApprovedRelays: Boolean, val encrypt: Boolean, val inline: Boolean?): CC()
   class CancelFile(val fileId: Long): CC()
@@ -3123,6 +3131,7 @@ sealed class CC {
     is ApiCallStatus -> "/_call status @${contact.apiId} ${callStatus.value}"
     is ApiGetNetworkStatuses -> "/_network_statuses"
     is ApiChatRead -> "/_read chat ${chatRef(type, id)} from=${range.from} to=${range.to}"
+    is ApiChatItemsRead -> "/_read chat items ${chatRef(type, id)} ${itemIds.joinToString(",")}"
     is ApiChatUnread -> "/_unread chat ${chatRef(type, id)} ${onOff(unreadChat)}"
     is ReceiveFile ->
       "/freceive $fileId" +
@@ -3266,6 +3275,7 @@ sealed class CC {
     is ApiCallStatus -> "apiCallStatus"
     is ApiGetNetworkStatuses -> "apiGetNetworkStatuses"
     is ApiChatRead -> "apiChatRead"
+    is ApiChatItemsRead -> "apiChatItemsRead"
     is ApiChatUnread -> "apiChatUnread"
     is ReceiveFile -> "receiveFile"
     is CancelFile -> "cancelFile"

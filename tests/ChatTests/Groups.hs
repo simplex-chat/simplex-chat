@@ -16,6 +16,7 @@ import Data.List (intercalate, isInfixOf)
 import qualified Data.Text as T
 import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.Controller (ChatConfig (..))
+import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
@@ -34,6 +35,7 @@ chatGroupTests :: SpecWith FilePath
 chatGroupTests = do
   describe "chat groups" $ do
     describe "add contacts, create group and send/receive messages" testGroupMatrix
+    it "mark multiple messages as read" testMarkReadGroup
     it "v1: add contacts, create group and send/receive messages" testGroup
     it "v1: add contacts, create group and send/receive messages, check messages" testGroupCheckMessages
     it "send large message" testGroupLargeMessage
@@ -354,6 +356,22 @@ testGroupShared alice bob cath checkMessages directConnections = do
       cath #$> ("/_read chat #1", id, "ok")
       alice #$> ("/_unread chat #1 on", id, "ok")
       alice #$> ("/_unread chat #1 off", id, "ok")
+
+testMarkReadGroup :: HasCallStack => FilePath -> IO ()
+testMarkReadGroup = testChat2 aliceProfile bobProfile $ \alice bob -> do
+  createGroup2 "team" alice bob
+  alice #> "#team 1"
+  alice #> "#team 2"
+  alice #> "#team 3"
+  alice #> "#team 4"
+  bob <# "#team alice> 1"
+  bob <# "#team alice> 2"
+  bob <# "#team alice> 3"
+  bob <# "#team alice> 4"
+  bob ##> "/last_item_id"
+  i :: ChatItemId <- read <$> getTermLine bob
+  let itemIds = intercalate "," $ map show [i - 3 .. i]
+  bob #$> ("/_read chat items #1 " <> itemIds, id, "ok")
 
 testGroupLargeMessage :: HasCallStack => FilePath -> IO ()
 testGroupLargeMessage =
