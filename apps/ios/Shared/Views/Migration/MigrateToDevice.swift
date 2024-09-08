@@ -93,7 +93,6 @@ struct MigrateToDevice: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
-    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @Binding var migrationState: MigrationToState?
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @State private var alert: MigrateToDeviceViewAlert?
@@ -102,6 +101,7 @@ struct MigrateToDevice: View {
     // Prevent from hiding the view until migration is finished or app deleted
     @State private var backDisabled: Bool = false
     @State private var showQRCodeScanner: Bool = true
+    @State private var pasteboardHasStrings = UIPasteboard.general.hasStrings
 
     var body: some View {
         VStack {
@@ -197,10 +197,8 @@ struct MigrateToDevice: View {
                         }
                     }
                 }
-                if developerTools {
-                    Section(header: Text("Or paste archive link").foregroundColor(theme.colors.secondary)) {
-                        pasteLinkView()
-                    }
+                Section(header: Text("Or paste archive link").foregroundColor(theme.colors.secondary)) {
+                    pasteLinkView()
                 }
             }
         }
@@ -218,7 +216,7 @@ struct MigrateToDevice: View {
         } label: {
             Text("Tap to paste link")
         }
-        .disabled(!ChatModel.shared.pasteboardHasStrings)
+        .disabled(!pasteboardHasStrings)
         .frame(maxWidth: .infinity, alignment: .center)
     }
 

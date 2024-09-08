@@ -183,7 +183,6 @@ final class ChatModel: ObservableObject {
     @Published var stopPreviousRecPlay: URL? = nil // coordinates currently playing source
     @Published var draft: ComposeState?
     @Published var draftChatId: String?
-    @Published var pasteboardHasStrings: Bool = UIPasteboard.general.hasStrings
     @Published var networkInfo = UserNetworkInfo(networkType: .other, online: true)
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
