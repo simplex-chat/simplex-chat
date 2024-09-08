@@ -2807,7 +2807,10 @@ processChatCommand' vr = \case
       filesInfo <- withFastStore' (`getUserFileInfo` user)
       cancelFilesInProgress user filesInfo
       deleteFilesLocally filesInfo
-      withAgent $ \a -> deleteUser a (aUserId user) delSMPQueues
+      withAgent (\a -> deleteUser a (aUserId user) delSMPQueues)
+        `catchChatError` \case
+          e@(ChatErrorAgent NO_USER _) -> toView $ CRChatError (Just user) e
+          e -> throwError e
       withFastStore' (`deleteUserRecord` user)
       when (activeUser user) $ chatWriteVar currentUser Nothing
       ok_
