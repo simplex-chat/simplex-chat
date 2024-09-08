@@ -48,8 +48,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         var representer: ReverseList
         private var dataSource: UITableViewDiffableDataSource<Section, ChatItem>!
         private var itemCount: Int = 0
-        private let updateFloatingButtons = PassthroughSubject<Void, Never>()
-        private let readItems = PassthroughSubject<(ChatId, Set<ChatItem.ID>), Never>()
+        private let updateUnreadItems = PassthroughSubject<Void, Never>()
         private var bag = Set<AnyCancellable>()
 
         init(representer: ReverseList) {
@@ -109,42 +108,65 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     object: nil
                 )
 
-            updateFloatingButtons
-                .throttle(for: 0.2, scheduler: DispatchQueue.global(qos: .background), latest: true)
-                .sink {
-                    if let listState = DispatchQueue.main.sync(execute: { [weak self] in self?.getListState() }) {
-                        ChatView.FloatingButtonModel.shared.updateOnListChange(listState)
+            updateUnreadItems
+                .throttle(for: 0.1, scheduler: DispatchQueue.main, latest: true)
+                .sink { [weak self] in
+                    guard let it = self else { return }
+                    let m = ChatModel.shared
+                    let uim = ChatView.UnreadItemsModel.shared
+                    if let chatId = it.currentChatId, chatId == m.chatId && !it.toScheduleVisible.isEmpty {
+                        let visible = it.toScheduleVisible
+                        it.scheduledVisible.formUnion(visible)
+                        it.toScheduleVisible = []
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+                            guard let it = self else { return }
+                            if chatId == m.chatId {
+                                it.scheduledVisible.subtract(visible)
+                                let stillVisible = visible.intersection(it.getVisibleUnreadItems())
+                                if !stillVisible.isEmpty {
+                                    DispatchQueue.global(qos: .background).async {
+                                        uim.markItemsRead(chatId, stillVisible)
+                                    }
+                                }
+                            }
+                        }
+                    } // we could call below in else?
+                    
+                    if let listState = it.getListState() {
+                        DispatchQueue.global(qos: .background).async {
+                            uim.updateOnListChange(listState)
+                        }
                     }
                 }
                 .store(in: &bag)
 
-            readItems
-                .collect(.byTime(DispatchQueue.global(qos: .background), 0.2))
-                .sink { itemSets in
-                    let m = ChatModel.shared
-                    guard let chatId = m.chatId else { return }
-                    let itemIds: Set<ChatItem.ID> = itemSets.reduce(into: []) { s, seenItems in
-                        let (setChatId, items) = seenItems
-                        if chatId == setChatId {
-                            s.formUnion(items)
-                        }
-                    }
-                    if itemIds.isEmpty { return }
-                    Task {
-                        do {
-                            try await apiChatItemsRead(chatId: chatId, itemIds: itemIds)
-                            DispatchQueue.main.async {
-                                m.unreadCollector.changeUnreadCounter(chatId, by: -itemIds.count)
-                                if chatId == m.chatId {
-                                    ItemsModel.shared.markItemsRead(itemIds)
-                                }
-                            }
-                        } catch let e {
-                            logger.error("apiChatItemsRead error: \(responseError(e))")
-                        }
-                    }
-                }
-                .store(in: &bag)
+//            readItems
+//                .collect(.byTime(DispatchQueue.global(qos: .background), 0.2))
+//                .sink { itemSets in
+//                    let m = ChatModel.shared
+//                    guard let chatId = m.chatId else { return }
+//                    let itemIds: Set<ChatItem.ID> = itemSets.reduce(into: []) { s, seenItems in
+//                        let (setChatId, items) = seenItems
+//                        if chatId == setChatId {
+//                            s.formUnion(items)
+//                        }
+//                    }
+//                    if itemIds.isEmpty { return }
+//                    Task {
+//                        do {
+//                            try await apiChatItemsRead(chatId: chatId, itemIds: itemIds)
+//                            DispatchQueue.main.async {
+//                                m.unreadCollector.changeUnreadCounter(chatId, by: -itemIds.count)
+//                                if chatId == m.chatId {
+//                                    ItemsModel.shared.markItemsRead(itemIds)
+//                                }
+//                            }
+//                        } catch let e {
+//                            logger.error("apiChatItemsRead error: \(responseError(e))")
+//                        }
+//                    }
+//                }
+//                .store(in: &bag)
         }
 
         @available(*, unavailable)
@@ -230,28 +252,27 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 )
             }
             itemCount = items.count
-            updateFloatingButtons.send()
+            updateUnreadItems.send()
         }
 
-        private var scheduledToMarkRead = Set<ChatItem.ID>()
+        private var currentChatId: ChatId? = nil
+        private var toScheduleVisible: Set<ChatItem.ID> = []
+        private var scheduledVisible: Set<ChatItem.ID> = []
 
+        // this runs on main thread, it stores items that entered the view in toScheduleVisible
+        // and resets all states if currentChatId changes
         override func scrollViewDidScroll(_ scrollView: UIScrollView) {
-            updateFloatingButtons.send()
             let m = ChatModel.shared
-            guard let chatId = m.chatId else { return }
-            let visible = getVisibleUnreadItems().subtracting(scheduledToMarkRead)
-            if visible.isEmpty { return }
-            scheduledToMarkRead.formUnion(visible)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
-                guard let it = self else { return }
-                it.scheduledToMarkRead.subtract(visible)
-                if chatId == m.chatId {
-                    let stillVisible = visible.intersection(it.getVisibleUnreadItems())
-                    if !stillVisible.isEmpty {
-                        it.readItems.send((chatId, stillVisible))
-                    }
-                }
+            if currentChatId != m.chatId {
+                currentChatId = m.chatId
+                toScheduleVisible = []
+                scheduledVisible = []
             }
+            if currentChatId != nil {
+                let visible = getVisibleUnreadItems().subtracting(scheduledVisible)
+                if !visible.isEmpty { toScheduleVisible.formUnion(visible) }
+            }
+            updateUnreadItems.send()
         }
 
         func getListState() -> ListState? {

@@ -446,7 +446,7 @@ struct ChatView: View {
             .onChange(of: im.itemAdded) { added in
                 if added {
                     im.itemAdded = false
-                    if FloatingButtonModel.shared.isReallyNearBottom {
+                    if UnreadItemsModel.shared.isReallyNearBottom {
                         scrollModel.scrollToBottom()
                     }
                 }
@@ -468,8 +468,8 @@ struct ChatView: View {
         }
     }
 
-    class FloatingButtonModel: ObservableObject {
-        static let shared = FloatingButtonModel()
+    class UnreadItemsModel: ObservableObject {
+        static let shared = UnreadItemsModel()
         @Published var unreadBelow: Int = 0
         @Published var isNearBottom: Bool = true
         @Published var date: Date?
@@ -477,6 +477,23 @@ struct ChatView: View {
         var isReallyNearBottom: Bool = true
         var hideDateWorkItem: DispatchWorkItem?
 
+        // called on background thread from ReverseList updateUnreadItems subscriber
+        // once items have been on screen for 0.55-0.65 seconds
+        // ONLY if chatId is the current chat and itemIds is not empty
+        func markItemsRead(_ chatId: ChatId, _ itemIds: Set<ChatItem.ID>) {
+            do {
+                try apiChatItemsReadSync(chatId: chatId, itemIds: itemIds)
+                DispatchQueue.main.async {
+                    ChatModel.UnreadCollector.shared.changeUnreadCounter(chatId, by: -itemIds.count)
+                    if chatId == ChatModel.shared.chatId {
+                        ItemsModel.shared.markItemsRead(chatId, itemIds)
+                    }
+                }
+            } catch let e {
+                logger.error("apiChatItemsRead error: \(responseError(e))")
+            }
+        }
+        
         func updateOnListChange(_ listState: ListState) {
             let im = ItemsModel.shared
             let unreadBelow =
@@ -546,7 +563,7 @@ struct ChatView: View {
     private struct FloatingButtons: View {
         let theme: AppTheme
         let scrollModel: ReverseListScrollModel
-        @ObservedObject var model: FloatingButtonModel = .shared
+        @ObservedObject var model: UnreadItemsModel = .shared
         @ObservedObject var chat: Chat
 
         var body: some View {
