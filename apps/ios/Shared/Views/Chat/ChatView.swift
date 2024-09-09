@@ -449,11 +449,11 @@ struct ChatView: View {
 
     class FloatingButtonModel: ObservableObject {
         static let shared = FloatingButtonModel()
-        @Published var totalUnread: Int = 0
         @Published var unreadBelow: Int = 0
         @Published var isNearBottom: Bool = true
         @Published var date: Date?
         @Published var isDateVisible: Bool = false
+        var totalUnread: Int = 0
         var isReallyNearBottom: Bool = true
         var hideDateWorkItem: DispatchWorkItem?
 
