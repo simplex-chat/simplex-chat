@@ -35,6 +35,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.CreateProfile
+import chat.simplex.common.views.localauth.VerticalDivider
 import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.remote.*
 import chat.simplex.common.views.usersettings.*
@@ -135,8 +136,12 @@ fun ShareListUserPicker(
 private fun ActiveUserSection(
   chatModel: ChatModel,
   userPickerState: MutableStateFlow<AnimatedViewState>,
-  showCustomModal: (@Composable ModalData.(ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
 ) {
+  val showCustomModal: (@Composable() (ModalData.(ChatModel, () -> Unit) -> Unit)) -> () -> Unit = { modalView ->
+    {
+      ModalManager.start.showCustomModal { close -> modalView(chatModel, close) }
+    }
+  }
   val currentUser = remember { chatModel.currentUser }.value
   val stopped = chatModel.chatRunning.value == false
 
@@ -234,7 +239,7 @@ private fun GlobalSettingsSection(
     }
   }
 
-  SectionView {
+  SectionView(headerBottomPadding = if (appPlatform.isDesktop || windowOrientation() == WindowOrientation.PORTRAIT) DEFAULT_PADDING else 0.dp) {
     UserPickerInactiveUsersSection(
       users = users,
       onShowAllProfilesClicked = onShowAllProfilesClicked,
@@ -392,79 +397,90 @@ fun UserPicker(
         .fillMaxWidth()
         .shadow(8.dp, clip = true)
         .background(MaterialTheme.colors.surface)
+        .padding(vertical = DEFAULT_PADDING)
     ) {
-      val currentRemoteHost = remember { chatModel.currentRemoteHost }.value
-      Column(
-        Modifier
-          .padding(vertical = DEFAULT_PADDING)
-      ) {
-        if (remoteHosts.isNotEmpty()) {
-          val localDeviceActive = currentRemoteHost == null && chatModel.localUserCreated.value == true
+        @Composable
+        fun FirstSection() {
+          if (remoteHosts.isNotEmpty()) {
+            val currentRemoteHost = remember { chatModel.currentRemoteHost }.value
+            val localDeviceActive = currentRemoteHost == null && chatModel.localUserCreated.value == true
 
-          DevicePickerRow(
-            localDeviceActive = localDeviceActive,
-            remoteHosts = remoteHosts,
-            onRemoteHostClick = { h, connecting ->
-              userPickerState.value = AnimatedViewState.HIDING
-              switchToRemoteHost(h, connecting)
-            },
-            onLocalDeviceClick = {
-              userPickerState.value = AnimatedViewState.HIDING
-              switchToLocalDevice()
-            },
-            onRemoteHostActionButtonClick = { h ->
-              userPickerState.value = AnimatedViewState.HIDING
-              stopRemoteHostAndReloadHosts(h, true)
-            }
+            DevicePickerRow(
+              localDeviceActive = localDeviceActive,
+              remoteHosts = remoteHosts,
+              onRemoteHostClick = { h, connecting ->
+                userPickerState.value = AnimatedViewState.HIDING
+                switchToRemoteHost(h, connecting)
+              },
+              onLocalDeviceClick = {
+                userPickerState.value = AnimatedViewState.HIDING
+                switchToLocalDevice()
+              },
+              onRemoteHostActionButtonClick = { h ->
+                userPickerState.value = AnimatedViewState.HIDING
+                stopRemoteHostAndReloadHosts(h, true)
+              }
+            )
+          }
+          ActiveUserSection(
+            chatModel = chatModel,
+            userPickerState = userPickerState,
           )
         }
-        val showCustomModal: (@Composable() (ModalData.(ChatModel, () -> Unit) -> Unit)) -> () -> Unit = { modalView ->
-          {
-            ModalManager.start.showCustomModal { close -> modalView(chatModel, close) }
-          }
-        }
 
-        ActiveUserSection(
-          chatModel = chatModel,
-          userPickerState = userPickerState,
-          showCustomModal = showCustomModal,
-        )
-
-        Divider(Modifier.padding(DEFAULT_PADDING))
-        val profileHidden = rememberSaveable { mutableStateOf(false) }
-
-        GlobalSettingsSection(
-          chatModel = chatModel,
-          userPickerState = userPickerState,
-          setPerformLA = setPerformLA,
-          onUserClicked = { user ->
-            userPickerState.value = AnimatedViewState.HIDING
-            if (!user.activeUser) {
-              withBGApi {
-                controller.showProgressIfNeeded {
-                  ModalManager.closeAllModalsEverywhere()
-                  chatModel.controller.changeActiveUser(user.remoteHostId, user.userId, null)
+        @Composable
+        fun SecondSection() {
+          GlobalSettingsSection(
+            chatModel = chatModel,
+            userPickerState = userPickerState,
+            setPerformLA = setPerformLA,
+            onUserClicked = { user ->
+              userPickerState.value = AnimatedViewState.HIDING
+              if (!user.activeUser) {
+                withBGApi {
+                  controller.showProgressIfNeeded {
+                    ModalManager.closeAllModalsEverywhere()
+                    chatModel.controller.changeActiveUser(user.remoteHostId, user.userId, null)
+                  }
+                }
+              }
+            },
+            onShowAllProfilesClicked = {
+              doWithAuth(
+                generalGetString(MR.strings.auth_open_chat_profiles),
+                generalGetString(MR.strings.auth_log_in_using_credential)
+              ) {
+                ModalManager.start.showCustomModal { close ->
+                  val search = rememberSaveable { mutableStateOf("") }
+                  val profileHidden = rememberSaveable { mutableStateOf(false) }
+                  ModalView(
+                    { close() },
+                    endButtons = {
+                      SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
+                    },
+                    content = { UserProfilesView(chatModel, search, profileHidden) })
                 }
               }
             }
-          },
-          onShowAllProfilesClicked = {
-            doWithAuth(
-              generalGetString(MR.strings.auth_open_chat_profiles),
-              generalGetString(MR.strings.auth_log_in_using_credential)
-            ) {
-              ModalManager.start.showCustomModal { close ->
-                val search = rememberSaveable { mutableStateOf("") }
-                ModalView(
-                  { close() },
-                  endButtons = {
-                    SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
-                  },
-                  content = { UserProfilesView(chatModel, search, profileHidden) })
-              }
-            }
+          )
+        }
+
+      if (appPlatform.isDesktop || windowOrientation() == WindowOrientation.PORTRAIT) {
+        Column {
+          FirstSection()
+          Divider(Modifier.padding(DEFAULT_PADDING))
+          SecondSection()
+        }
+      } else {
+        Row {
+          Box(Modifier.weight(1f)) {
+            FirstSection()
           }
-        )
+          VerticalDivider()
+          Box(Modifier.weight(1f)) {
+            SecondSection()
+          }
+        }
       }
     }
   }

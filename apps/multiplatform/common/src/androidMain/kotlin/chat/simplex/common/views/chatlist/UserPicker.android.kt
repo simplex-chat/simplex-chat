@@ -36,7 +36,13 @@ actual fun UserPickerInactiveUsersSection(
   val scrollState = rememberScrollState()
 
   if (users.isNotEmpty()) {
-    SectionItemView(padding = PaddingValues(start = 16.dp, top = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL, bottom = DEFAULT_PADDING_HALF), disabled = stopped) {
+    SectionItemView(
+      padding = PaddingValues(
+        start = 16.dp,
+        top = if (windowOrientation() == WindowOrientation.PORTRAIT) DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL else DEFAULT_PADDING_HALF,
+        bottom = DEFAULT_PADDING_HALF),
+      disabled = stopped
+    ) {
       Box {
         Row(
           modifier = Modifier.padding(end = DEFAULT_PADDING + 30.dp).horizontalScroll(scrollState)
