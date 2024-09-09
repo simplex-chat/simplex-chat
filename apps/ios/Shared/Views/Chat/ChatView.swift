@@ -58,25 +58,6 @@ struct ChatView: View {
         }
     }
 
-//    var testButtons: some View {
-//        VStack {
-//            Button("Mark all unread") {
-//                let im = ItemsModel.shared
-//                for i in 0..<im.reversedChatItems.count {
-//                    im.reversedChatItems[i].meta.itemStatus = .rcvNew
-//                }
-//            }
-//            Button("ItemsModel changed") {
-//                ItemsModel.shared.objectWillChange.send()
-//            }
-//            Button("ChatModel changed") {
-//                ChatModel.shared.objectWillChange.send()
-//            }
-//        }
-//        .buttonStyle(BorderedProminentButtonStyle())
-//        .frame(maxWidth: .infinity, alignment: .leading)
-//    }
-
     @ViewBuilder
     private var viewBody: some View {
         let cInfo = chat.chatInfo
@@ -95,7 +76,6 @@ struct ChatView: View {
                 ZStack(alignment: .bottomTrailing) {
                     chatItemsList()
                     FloatingButtons(theme: theme, scrollModel: scrollModel, chat: chat)
-//                    testButtons
                 }
                 connectingText()
                 if selectedChatItems == nil {
@@ -852,20 +832,21 @@ struct ChatView: View {
                 }
             }
             .onAppear {
-                if !markedRead {
-                    if let range {
-                        let itemIds = unreadItemIds(range)
-                        if !itemIds.isEmpty {
-                            markedRead = true
-                            waitToMarkRead {
-                                await apiMarkChatItemsRead(chat.chatInfo, itemIds)
-                            }
-                        }
-                    } else if chatItem.isRcvNew  {
-                        markedRead = true
+                if markedRead {
+                    return
+                } else {
+                    markedRead = true
+                }
+                if let range {
+                    let itemIds = unreadItemIds(range)
+                    if !itemIds.isEmpty {
                         waitToMarkRead {
-                            await apiMarkChatItemRead(chat.chatInfo, chatItem)
+                            await apiMarkChatItemsRead(chat.chatInfo, itemIds)
                         }
+                    }
+                } else if chatItem.isRcvNew  {
+                    waitToMarkRead {
+                        await apiMarkChatItemRead(chat.chatInfo, chatItem)
                     }
                 }
             }
