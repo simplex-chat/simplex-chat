@@ -389,7 +389,7 @@ fun UserPicker(
       modifier
         .height(IntrinsicSize.Min)
         .fillMaxWidth()
-        .shadow(8.dp, clip = true)
+        .then(if (newChat.isVisible()) Modifier.shadow(8.dp, clip = true) else Modifier)
         .background(MaterialTheme.colors.surface)
         .padding(vertical = DEFAULT_PADDING)
     ) {
