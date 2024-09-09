@@ -146,7 +146,7 @@ struct UserPicker: View {
                         }
                     }
                 }
-                .padding(.leading, 2)
+                .padding(.leading, 4)
                 .padding(.trailing, 22)
             }
             ZStack {
