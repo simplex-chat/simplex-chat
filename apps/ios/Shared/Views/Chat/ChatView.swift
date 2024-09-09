@@ -339,6 +339,7 @@ struct ChatView: View {
                 await markChatUnread(chat, unreadChat: false)
             }
         }
+        ChatView.FloatingButtonModel.shared.totalUnread = chat.chatStats.unreadCount
     }
 
     private func searchToolbar() -> some View {

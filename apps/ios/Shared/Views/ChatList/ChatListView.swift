@@ -250,14 +250,6 @@ struct ChatListView: View {
                         chatModel.popChat(chatId)
                     }
                     stopAudioPlayer()
-                    Task {
-                        if let id = currentChatId,
-                           let chat = chatModel.getChat(id) {
-                            await MainActor.run {
-                                ChatView.FloatingButtonModel.shared.totalUnread = chat.chatStats.unreadCount
-                            }
-                        }
-                    }
                 }
                 .onChange(of: chatModel.currentUser?.userId) { _ in
                     stopAudioPlayer()
