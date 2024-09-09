@@ -58,24 +58,24 @@ struct ChatView: View {
         }
     }
 
-    var testButtons: some View {
-        VStack {
-            Button("Mark all unread") {
-                let im = ItemsModel.shared
-                for i in 0..<im.reversedChatItems.count {
-                    im.reversedChatItems[i].meta.itemStatus = .rcvNew
-                }
-            }
-            Button("ItemsModel changed") {
-                ItemsModel.shared.objectWillChange.send()
-            }
-            Button("ChatModel changed") {
-                ChatModel.shared.objectWillChange.send()
-            }
-        }
-        .buttonStyle(BorderedProminentButtonStyle())
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
+//    var testButtons: some View {
+//        VStack {
+//            Button("Mark all unread") {
+//                let im = ItemsModel.shared
+//                for i in 0..<im.reversedChatItems.count {
+//                    im.reversedChatItems[i].meta.itemStatus = .rcvNew
+//                }
+//            }
+//            Button("ItemsModel changed") {
+//                ItemsModel.shared.objectWillChange.send()
+//            }
+//            Button("ChatModel changed") {
+//                ChatModel.shared.objectWillChange.send()
+//            }
+//        }
+//        .buttonStyle(BorderedProminentButtonStyle())
+//        .frame(maxWidth: .infinity, alignment: .leading)
+//    }
 
     @ViewBuilder
     private var viewBody: some View {
@@ -95,7 +95,7 @@ struct ChatView: View {
                 ZStack(alignment: .bottomTrailing) {
                     chatItemsList()
                     FloatingButtons(theme: theme, scrollModel: scrollModel, chat: chat)
-                    testButtons
+//                    testButtons
                 }
                 connectingText()
                 if selectedChatItems == nil {

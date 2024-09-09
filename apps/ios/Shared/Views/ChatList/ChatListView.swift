@@ -253,7 +253,6 @@ struct ChatListView: View {
                     Task {
                         if let id = currentChatId,
                            let chat = chatModel.getChat(id) {
-                            print("🔴 Set total unread to: \(chat.chatStats.unreadCount)")
                             await MainActor.run {
                                 ChatView.FloatingButtonModel.shared.totalUnread = chat.chatStats.unreadCount
                             }

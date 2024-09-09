@@ -634,7 +634,6 @@ final class ChatModel: ObservableObject {
                 }
             }
         }
-        print("🟢 \(itemIds)")
         self.unreadCollector.changeUnreadCounter(cInfo.id, by: -itemIds.count)
     }
 
@@ -663,7 +662,6 @@ final class ChatModel: ObservableObject {
         func changeUnreadCounter(_ chatId: ChatId, by count: Int) {
             if chatId == ChatModel.shared.chatId {
                 ChatView.FloatingButtonModel.shared.totalUnread += count
-                print("🔴 Update total unread to: \(ChatView.FloatingButtonModel.shared.totalUnread), \(count)")
             }
             self.unreadCounts[chatId] = (self.unreadCounts[chatId] ?? 0) + count
             subject.send()
