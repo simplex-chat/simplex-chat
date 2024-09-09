@@ -399,71 +399,71 @@ fun UserPicker(
         .background(MaterialTheme.colors.surface)
         .padding(vertical = DEFAULT_PADDING)
     ) {
-        @Composable
-        fun FirstSection() {
-          if (remoteHosts.isNotEmpty()) {
-            val currentRemoteHost = remember { chatModel.currentRemoteHost }.value
-            val localDeviceActive = currentRemoteHost == null && chatModel.localUserCreated.value == true
+      @Composable
+      fun FirstSection() {
+        if (remoteHosts.isNotEmpty()) {
+          val currentRemoteHost = remember { chatModel.currentRemoteHost }.value
+          val localDeviceActive = currentRemoteHost == null && chatModel.localUserCreated.value == true
 
-            DevicePickerRow(
-              localDeviceActive = localDeviceActive,
-              remoteHosts = remoteHosts,
-              onRemoteHostClick = { h, connecting ->
-                userPickerState.value = AnimatedViewState.HIDING
-                switchToRemoteHost(h, connecting)
-              },
-              onLocalDeviceClick = {
-                userPickerState.value = AnimatedViewState.HIDING
-                switchToLocalDevice()
-              },
-              onRemoteHostActionButtonClick = { h ->
-                userPickerState.value = AnimatedViewState.HIDING
-                stopRemoteHostAndReloadHosts(h, true)
-              }
-            )
-          }
-          ActiveUserSection(
-            chatModel = chatModel,
-            userPickerState = userPickerState,
-          )
-        }
-
-        @Composable
-        fun SecondSection() {
-          GlobalSettingsSection(
-            chatModel = chatModel,
-            userPickerState = userPickerState,
-            setPerformLA = setPerformLA,
-            onUserClicked = { user ->
+          DevicePickerRow(
+            localDeviceActive = localDeviceActive,
+            remoteHosts = remoteHosts,
+            onRemoteHostClick = { h, connecting ->
               userPickerState.value = AnimatedViewState.HIDING
-              if (!user.activeUser) {
-                withBGApi {
-                  controller.showProgressIfNeeded {
-                    ModalManager.closeAllModalsEverywhere()
-                    chatModel.controller.changeActiveUser(user.remoteHostId, user.userId, null)
-                  }
-                }
-              }
+              switchToRemoteHost(h, connecting)
             },
-            onShowAllProfilesClicked = {
-              doWithAuth(
-                generalGetString(MR.strings.auth_open_chat_profiles),
-                generalGetString(MR.strings.auth_log_in_using_credential)
-              ) {
-                ModalManager.start.showCustomModal { close ->
-                  val search = rememberSaveable { mutableStateOf("") }
-                  val profileHidden = rememberSaveable { mutableStateOf(false) }
-                  ModalView(
-                    { close() },
-                    endButtons = {
-                      SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
-                    },
-                    content = { UserProfilesView(chatModel, search, profileHidden) })
-                }
-              }
+            onLocalDeviceClick = {
+              userPickerState.value = AnimatedViewState.HIDING
+              switchToLocalDevice()
+            },
+            onRemoteHostActionButtonClick = { h ->
+              userPickerState.value = AnimatedViewState.HIDING
+              stopRemoteHostAndReloadHosts(h, true)
             }
           )
         }
+        ActiveUserSection(
+          chatModel = chatModel,
+          userPickerState = userPickerState,
+        )
+      }
+
+      @Composable
+      fun SecondSection() {
+        GlobalSettingsSection(
+          chatModel = chatModel,
+          userPickerState = userPickerState,
+          setPerformLA = setPerformLA,
+          onUserClicked = { user ->
+            userPickerState.value = AnimatedViewState.HIDING
+            if (!user.activeUser) {
+              withBGApi {
+                controller.showProgressIfNeeded {
+                  ModalManager.closeAllModalsEverywhere()
+                  chatModel.controller.changeActiveUser(user.remoteHostId, user.userId, null)
+                }
+              }
+            }
+          },
+          onShowAllProfilesClicked = {
+            doWithAuth(
+              generalGetString(MR.strings.auth_open_chat_profiles),
+              generalGetString(MR.strings.auth_log_in_using_credential)
+            ) {
+              ModalManager.start.showCustomModal { close ->
+                val search = rememberSaveable { mutableStateOf("") }
+                val profileHidden = rememberSaveable { mutableStateOf(false) }
+                ModalView(
+                  { close() },
+                  endButtons = {
+                    SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
+                  },
+                  content = { UserProfilesView(chatModel, search, profileHidden) })
+              }
+            }
+          }
+        )
+      }
 
       if (appPlatform.isDesktop || windowOrientation() == WindowOrientation.PORTRAIT) {
         Column {
