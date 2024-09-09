@@ -501,8 +501,10 @@ struct ChatView: View {
                 it.setDate(visibility: false)
                 it.hideDateWorkItem = nil
             }
-            hideDateWorkItem = workItem
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: workItem)
+            DispatchQueue.main.async { [weak self] in
+                self?.hideDateWorkItem = workItem
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: workItem)
+            }
         }
 
         func resetDate() {
