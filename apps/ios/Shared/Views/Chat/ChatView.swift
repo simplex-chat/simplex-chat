@@ -58,25 +58,24 @@ struct ChatView: View {
         }
     }
 
-//    var testButtons: some View {
-//        VStack {
-//            Button("Mark all unread") {
-//                let im = ItemsModel.shared
-//                for i in 0..<im.reversedChatItems.count {
-//                    im.reversedChatItems[i].meta.itemStatus = .rcvNew
-//                }
-//            }
-//            Button("ItemsModel changed") {
-//                ItemsModel.shared.objectWillChange.send()
-//            }
-//
-//            Button("ChatModel changed") {
-//                ChatModel.shared.objectWillChange.send()
-//            }
-//        }
-//        .buttonStyle(BorderedProminentButtonStyle())
-//        .frame(maxWidth: .infinity, alignment: .leading)
-//    }
+    var testButtons: some View {
+        VStack {
+            Button("Mark all unread") {
+                let im = ItemsModel.shared
+                for i in 0..<im.reversedChatItems.count {
+                    im.reversedChatItems[i].meta.itemStatus = .rcvNew
+                }
+            }
+            Button("ItemsModel changed") {
+                ItemsModel.shared.objectWillChange.send()
+            }
+            Button("ChatModel changed") {
+                ChatModel.shared.objectWillChange.send()
+            }
+        }
+        .buttonStyle(BorderedProminentButtonStyle())
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
 
     @ViewBuilder
     private var viewBody: some View {
@@ -96,7 +95,7 @@ struct ChatView: View {
                 ZStack(alignment: .bottomTrailing) {
                     chatItemsList()
                     FloatingButtons(theme: theme, scrollModel: scrollModel, chat: chat)
-//                    testButtons
+                    testButtons
                 }
                 connectingText()
                 if selectedChatItems == nil {
@@ -470,6 +469,7 @@ struct ChatView: View {
 
     class FloatingButtonModel: ObservableObject {
         static let shared = FloatingButtonModel()
+        @Published var totalUnread: Int = 0
         @Published var unreadBelow: Int = 0
         @Published var isNearBottom: Bool = true
         @Published var date: Date?
@@ -546,8 +546,8 @@ struct ChatView: View {
     private struct FloatingButtons: View {
         let theme: AppTheme
         let scrollModel: ReverseListScrollModel
+        let chat: Chat
         @ObservedObject var model = FloatingButtonModel.shared
-        @ObservedObject var chat: Chat
 
         var body: some View {
             ZStack(alignment: .top) {
@@ -559,7 +559,7 @@ struct ChatView: View {
                          .opacity(model.isDateVisible ? 1 : 0)
                 }
                 VStack {
-                    let unreadAbove = chat.chatStats.unreadCount - model.unreadBelow
+                    let unreadAbove = model.totalUnread - model.unreadBelow
                     if unreadAbove > 0 {
                         circleButton {
                             unreadCountText(unreadAbove)
@@ -785,6 +785,7 @@ struct ChatView: View {
         @Binding var selectedChatItems: Set<Int64>?
 
         @State private var allowMenu: Bool = true
+        @State private var markedRead = false
 
         var revealed: Bool { chatItem == revealedChatItem }
 
@@ -851,21 +852,25 @@ struct ChatView: View {
                 }
             }
             .onAppear {
-                if let range {
-                    let itemIds = unreadItemIds(range)
-                    if !itemIds.isEmpty {
-                        waitToMarkRead {
-                            await apiMarkChatItemsRead(chat.chatInfo, itemIds)
+                if !markedRead {
+                    if let range {
+                        let itemIds = unreadItemIds(range)
+                        if !itemIds.isEmpty {
+                            markedRead = true
+                            waitToMarkRead {
+                                await apiMarkChatItemsRead(chat.chatInfo, itemIds)
+                            }
                         }
-                    }
-                } else if chatItem.isRcvNew  {
-                    waitToMarkRead {
-                        await apiMarkChatItemRead(chat.chatInfo, chatItem)
+                    } else if chatItem.isRcvNew  {
+                        markedRead = true
+                        waitToMarkRead {
+                            await apiMarkChatItemRead(chat.chatInfo, chatItem)
+                        }
                     }
                 }
             }
         }
-        
+
         private func unreadItemIds(_ range: ClosedRange<Int>) -> [ChatItem.ID] {
             let im = ItemsModel.shared
             return range.compactMap { i in
