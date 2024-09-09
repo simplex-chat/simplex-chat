@@ -115,9 +115,10 @@ actual fun UserPickerScaffold(pickerState: MutableStateFlow<AnimatedViewState>, 
       if (currentTheme.colors.isLight) currentTheme.colors.onSurface.copy(alpha = ScrimOpacity) else Color.Black.copy(0.64f)
     }
   }
-  var manualDrag by remember { mutableStateOf(0f) }
+  var manualDrag by remember { mutableFloatStateOf(0f) }
   val drawerProgress by animateFloatAsState(
     targetValue = manualDrag,
+    label = "drawer animation"
   )
   val drawerHeight = 457.dp
   val maxDragOffset = with(LocalDensity.current) { drawerHeight * density }
