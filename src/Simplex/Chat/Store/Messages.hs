@@ -60,10 +60,12 @@ module Simplex.Chat.Store.Messages
     deleteLocalChatItem,
     updateDirectChatItemsRead,
     getDirectUnreadTimedItems,
-    setDirectChatItemDeleteAt,
+    updateDirectChatItemsReadList,
+    setDirectChatItemsDeleteAt,
     updateGroupChatItemsRead,
     getGroupUnreadTimedItems,
-    setGroupChatItemDeleteAt,
+    updateGroupChatItemsReadList,
+    setGroupChatItemsDeleteAt,
     updateLocalChatItemsRead,
     getChatRefViaItemId,
     getChatItemVersions,
@@ -126,7 +128,9 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Either (fromRight, rights)
 import Data.Int (Int64)
 import Data.List (sortBy)
-import Data.Maybe (fromMaybe, isJust, mapMaybe)
+import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as L
+import Data.Maybe (catMaybes, fromMaybe, isJust, mapMaybe)
 import Data.Ord (Down (..), comparing)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -1339,15 +1343,27 @@ getDirectUnreadTimedItems db User {userId} contactId itemsRange_ = case itemsRan
       |]
       (userId, contactId, CISRcvNew)
 
-setDirectChatItemDeleteAt :: DB.Connection -> User -> ContactId -> ChatItemId -> UTCTime -> IO ()
-setDirectChatItemDeleteAt db User {userId} contactId chatItemId deleteAt =
+updateDirectChatItemsReadList :: DB.Connection -> User -> ContactId -> NonEmpty ChatItemId -> IO [(ChatItemId, Int)]
+updateDirectChatItemsReadList db user contactId itemIds = do
+  catMaybes . L.toList <$> mapM getUpdateDirectItem itemIds
+  where
+    getUpdateDirectItem chatItemId = do
+      let itemsRange = Just (chatItemId, chatItemId)
+      timedItem <- maybeFirstRow id $ getDirectUnreadTimedItems db user contactId itemsRange
+      updateDirectChatItemsRead db user contactId itemsRange
+      pure timedItem
+
+setDirectChatItemsDeleteAt :: DB.Connection -> User -> ContactId -> [(ChatItemId, Int)] -> UTCTime -> IO [(ChatItemId, UTCTime)]
+setDirectChatItemsDeleteAt db User {userId} contactId itemIds currentTs = forM itemIds $ \(chatItemId, ttl) -> do
+  let deleteAt = addUTCTime (realToFrac ttl) currentTs
   DB.execute
     db
     "UPDATE chat_items SET timed_delete_at = ? WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?"
     (deleteAt, userId, contactId, chatItemId)
+  pure (chatItemId, deleteAt)
 
-updateGroupChatItemsRead :: DB.Connection -> UserId -> GroupId -> Maybe (ChatItemId, ChatItemId) -> IO ()
-updateGroupChatItemsRead db userId groupId itemsRange_ = do
+updateGroupChatItemsRead :: DB.Connection -> User -> GroupId -> Maybe (ChatItemId, ChatItemId) -> IO ()
+updateGroupChatItemsRead db User {userId} groupId itemsRange_ = do
   currentTs <- getCurrentTime
   case itemsRange_ of
     Just (fromItemId, toItemId) ->
@@ -1392,12 +1408,24 @@ getGroupUnreadTimedItems db User {userId} groupId itemsRange_ = case itemsRange_
       |]
       (userId, groupId, CISRcvNew)
 
-setGroupChatItemDeleteAt :: DB.Connection -> User -> GroupId -> ChatItemId -> UTCTime -> IO ()
-setGroupChatItemDeleteAt db User {userId} groupId chatItemId deleteAt =
+updateGroupChatItemsReadList :: DB.Connection -> User -> GroupId -> NonEmpty ChatItemId -> IO [(ChatItemId, Int)]
+updateGroupChatItemsReadList db user groupId itemIds = do
+  catMaybes . L.toList <$> mapM getUpdateGroupItem itemIds
+  where
+    getUpdateGroupItem chatItemId = do
+      let itemsRange = Just (chatItemId, chatItemId)
+      timedItem <- maybeFirstRow id $ getGroupUnreadTimedItems db user groupId itemsRange
+      updateGroupChatItemsRead db user groupId itemsRange
+      pure timedItem
+
+setGroupChatItemsDeleteAt :: DB.Connection -> User -> GroupId -> [(ChatItemId, Int)] -> UTCTime -> IO [(ChatItemId, UTCTime)]
+setGroupChatItemsDeleteAt db User {userId} groupId itemIds currentTs = forM itemIds $ \(chatItemId, ttl) -> do
+  let deleteAt = addUTCTime (realToFrac ttl) currentTs
   DB.execute
     db
     "UPDATE chat_items SET timed_delete_at = ? WHERE user_id = ? AND group_id = ? AND chat_item_id = ?"
     (deleteAt, userId, groupId, chatItemId)
+  pure (chatItemId, deleteAt)
 
 updateLocalChatItemsRead :: DB.Connection -> User -> NoteFolderId -> Maybe (ChatItemId, ChatItemId) -> IO ()
 updateLocalChatItemsRead db User {userId} noteFolderId itemsRange_ = do
