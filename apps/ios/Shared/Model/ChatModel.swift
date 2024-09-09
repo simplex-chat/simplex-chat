@@ -563,6 +563,7 @@ final class ChatModel: ObservableObject {
         // update preview
         _updateChat(cInfo.id) { chat in
             self.decreaseUnreadCounter(user: self.currentUser!, by: chat.chatStats.unreadCount)
+            self.updateFloatingButtons(unreadCount: 0)
             chat.chatStats = ChatStats()
         }
         // update current chat
@@ -577,6 +578,12 @@ final class ChatModel: ObservableObject {
             markChatItemRead_(j)
             j += 1
         }
+    }
+
+    private func updateFloatingButtons(unreadCount: Int) {
+        let fbm = ChatView.FloatingButtonModel.shared
+        fbm.totalUnread = unreadCount
+        fbm.objectWillChange.send()
     }
 
     func markChatItemsRead(_ cInfo: ChatInfo, aboveItem: ChatItem? = nil) {
@@ -597,6 +604,7 @@ final class ChatModel: ObservableObject {
                     if markedCount > 0 {
                         chat.chatStats.unreadCount -= markedCount
                         self.decreaseUnreadCounter(user: self.currentUser!, by: markedCount)
+                        self.updateFloatingButtons(unreadCount: chat.chatStats.unreadCount)
                     }
                 }
             }
