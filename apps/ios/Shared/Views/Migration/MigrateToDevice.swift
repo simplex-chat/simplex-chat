@@ -570,8 +570,8 @@ struct MigrateToDevice: View {
             logger.error("Error importing settings: \(error.localizedDescription)")
             AlertManager.shared.showAlert(
                 Alert(
-                    title: Text("Error importing settings"),
-                    message: Text ("Not all settings were imported. Repeat migration if you need them.") + Text("\n\n") + Text(responseError(error)))
+                    title: Text("Error migrating settings"),
+                    message: Text ("Not all settings were migrated. Repeat migration if you need them.") + Text("\n\n") + Text(responseError(error)))
             )
         }
         hideView()
