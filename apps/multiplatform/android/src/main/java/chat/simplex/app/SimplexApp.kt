@@ -276,7 +276,7 @@ class SimplexApp: Application(), LifecycleEventObserver, Configuration.Provider 
 
       override fun androidSetDrawerStatusAndNavBarColor(
         isLight: Boolean,
-        drawerShadingColor: Animatable<Color, AnimationVector4D>,
+        drawerShadingColor: Color,
         toolbarOnTop: Boolean,
         navBarColor: Color,
       ) {
@@ -287,7 +287,7 @@ class SimplexApp: Application(), LifecycleEventObserver, Configuration.Provider 
         // Blend status bar color to the animated color
         val colors = CurrentColors.value.colors
         val baseBackgroundColor = if (toolbarOnTop) colors.background.mixWith(colors.onBackground, 0.97f) else colors.background
-        window.statusBarColor = baseBackgroundColor.mixWith(drawerShadingColor.value.copy(1f), 1 - drawerShadingColor.value.alpha).toArgb()
+        window.statusBarColor = baseBackgroundColor.mixWith(drawerShadingColor.copy(1f), 1 - drawerShadingColor.alpha).toArgb()
         val navBar = navBarColor.toArgb()
 
         if (window.navigationBarColor != navBar) {

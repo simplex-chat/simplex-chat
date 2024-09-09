@@ -2,8 +2,12 @@ package chat.simplex.common.views.chatlist
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -62,12 +66,19 @@ actual fun UserPickerInactiveUsersSection(
 }
 
 @Composable
-actual fun UserPickerScaffold(pickerState: MutableStateFlow<AnimatedViewState>, content: @Composable () -> Unit) {
+actual fun UserPickerScaffold(pickerState: MutableStateFlow<AnimatedViewState>, content: @Composable (modifier: Modifier) -> Unit) {
   AnimatedVisibility(
     visible = pickerState.value.isVisible(),
     enter = fadeIn(),
     exit = fadeOut()
   ) {
-    content()
+    Box(
+      Modifier
+        .fillMaxSize()
+        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = { pickerState.value = AnimatedViewState.HIDING }),
+      contentAlignment = if (appPlatform.isAndroid) Alignment.BottomStart else Alignment.TopStart
+    ) {
+      content(Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier))
+    }
   }
 }
