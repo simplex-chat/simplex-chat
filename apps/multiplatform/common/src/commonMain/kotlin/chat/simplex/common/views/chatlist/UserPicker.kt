@@ -287,10 +287,7 @@ private fun GlobalSettingsSection(
 }
 
 private suspend fun closePicker(userPickerState: MutableStateFlow<AnimatedViewState>) {
-  if (appPlatform.isAndroid) {
-    delay(500)
-  }
-
+  delay(500)
   userPickerState.value = AnimatedViewState.HIDING
 }
 

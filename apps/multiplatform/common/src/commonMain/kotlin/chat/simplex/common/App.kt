@@ -366,9 +366,14 @@ fun EndPartOfScreen() {
 
 @Composable
 fun DesktopScreen(settingsState: SettingsViewState) {
+  val (userPickerState ) = settingsState
+
   Box {
     Box(Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier + 56.dp)) {
       StartPartOfScreen(settingsState)
+    }
+    tryOrShowError("UserPicker", error = {}) {
+      UserPicker(chatModel, userPickerState, setPerformLA = AppLock::setPerformLA)
     }
     Box(Modifier.widthIn(max = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
       ModalManager.start.showInView()
@@ -385,8 +390,6 @@ fun DesktopScreen(settingsState: SettingsViewState) {
         EndPartOfScreen()
       }
     }
-    val (userPickerState ) = settingsState
-    val scope = rememberCoroutineScope()
     if (ModalManager.start.hasModalsOpen && !ModalManager.center.hasModalsOpen) {
       Box(
         Modifier
@@ -398,9 +401,6 @@ fun DesktopScreen(settingsState: SettingsViewState) {
       )
     }
     VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier))
-    tryOrShowError("UserPicker", error = {}) {
-      UserPicker(chatModel, userPickerState, setPerformLA = AppLock::setPerformLA)
-    }
     ModalManager.fullscreen.showInView()
   }
 }
