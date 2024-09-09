@@ -485,6 +485,9 @@ struct MigrateToDevice: View {
             do {
                 if !hasChatCtrl() {
                     chatInitControllerRemovingDatabases()
+                } else if ChatModel.shared.chatRunning == true {
+                    // cannot delete storage if chat is running
+                    try await apiStopChat()
                 }
                 try await apiDeleteStorage()
                 try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
@@ -554,11 +557,22 @@ struct MigrateToDevice: View {
         do {
             try? FileManager.default.removeItem(at: getMigrationTempFilesDirectory())
             MigrationToDeviceState.save(nil)
-            appSettings.importIntoApp()
-            try SimpleX.startChat(refreshInvitations: true)
-            AlertManager.shared.showAlertMsg(title: "Chat migrated!", message: "Finalize migration on another device.")
+            try ObjC.catchException {
+                appSettings.importIntoApp()
+            }
+            do {
+                try SimpleX.startChat(refreshInvitations: true)
+                AlertManager.shared.showAlertMsg(title: "Chat migrated!", message: "Finalize migration on another device.")
+            } catch let error {
+                AlertManager.shared.showAlert(Alert(title: Text("Error starting chat"), message: Text(responseError(error))))
+            }
         } catch let error {
-            AlertManager.shared.showAlert(Alert(title: Text("Error starting chat"), message: Text(responseError(error))))
+            logger.error("Error importing settings: \(error.localizedDescription)")
+            AlertManager.shared.showAlert(
+                Alert(
+                    title: Text("Error importing settings"),
+                    message: Text ("Not all settings were imported. Repeat migration if you need them.") + Text("\n\n") + Text(responseError(error)))
+            )
         }
         hideView()
     }
