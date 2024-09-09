@@ -24,6 +24,7 @@ import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 
 @Composable
@@ -50,6 +51,10 @@ actual fun UserPickerInactiveUsersSection(
           users.forEach { u ->
             UserPickerInactiveUserBadge(u, stopped) {
               onUserClicked(it)
+              withBGApi {
+                delay(500)
+                scrollState.scrollTo(0)
+              }
             }
             Spacer(Modifier.width(20.dp))
           }
