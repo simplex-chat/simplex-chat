@@ -152,7 +152,7 @@ actual fun UserPickerScaffold(pickerState: MutableStateFlow<AnimatedViewState>, 
           )
         }
         drawRect(
-          if (pickerState.value.isVisible() || pickerState.value.isHiding()) resultingColor else Color.Transparent,
+          if (pos != 0f) resultingColor else Color.Transparent,
           alpha = calculateFraction(pos = pos)
         )
       }
