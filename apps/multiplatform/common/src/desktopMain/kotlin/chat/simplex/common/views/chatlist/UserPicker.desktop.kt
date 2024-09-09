@@ -66,7 +66,7 @@ actual fun UserPickerInactiveUsersSection(
 }
 
 @Composable
-actual fun UserPickerScaffold(pickerState: MutableStateFlow<AnimatedViewState>, content: @Composable (modifier: Modifier) -> Unit) {
+actual fun PlatformUserPicker(pickerState: MutableStateFlow<AnimatedViewState>, content: @Composable (modifier: Modifier) -> Unit) {
   AnimatedVisibility(
     visible = pickerState.value.isVisible(),
     enter = fadeIn(),

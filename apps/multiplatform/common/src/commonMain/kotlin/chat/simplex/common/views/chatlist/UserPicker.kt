@@ -3,9 +3,7 @@ package chat.simplex.common.views.chatlist
 import SectionItemView
 import SectionView
 import TextIconSpaced
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
@@ -18,8 +16,6 @@ import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.TextStyle
 import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.ui.text.capitalize
@@ -28,7 +24,6 @@ import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.ui.theme.*
@@ -44,7 +39,6 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlin.math.roundToInt
 
 @Composable fun UserPickerOptionRow(icon: Painter, text: String, click: (() -> Unit)? = null, disabled: Boolean = false) {
   SectionItemView(click, disabled = disabled, extraPadding = true) {
@@ -390,7 +384,7 @@ fun UserPicker(
     }
   }
 
-  UserPickerScaffold(pickerState = userPickerState) { modifier ->
+  PlatformUserPicker(pickerState = userPickerState) { modifier ->
     Column(
       modifier
         .height(IntrinsicSize.Min)
@@ -626,7 +620,7 @@ expect fun UserPickerInactiveUsersSection(
 )
 
 @Composable
-expect fun UserPickerScaffold(
+expect fun PlatformUserPicker(
   pickerState: MutableStateFlow<AnimatedViewState>,
   content: @Composable (modifier: Modifier) -> Unit
 )
