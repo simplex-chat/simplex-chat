@@ -219,25 +219,6 @@ fun UserPickerInactiveUserBadge(userInfo: UserInfo, stopped: Boolean, size: Int 
 }
 
 @Composable
-fun DraggableBottomDrawerModifier(
-  state: DismissState,
-  swipeDistance: Float,
-): Modifier {
-  val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-  val anchors = mutableMapOf(0f to DismissValue.Default)
-  anchors += swipeDistance to DismissValue.DismissedToEnd
-
-  return Modifier.swipeable(
-    state = state,
-    anchors = anchors,
-    thresholds = { from, to -> FixedThreshold(500.dp) },
-    orientation = Orientation.Vertical,
-    reverseDirection = isRtl,
-    resistance = null
-  )
-}
-
-@Composable
 private fun GlobalSettingsSection(
   chatModel: ChatModel,
   userPickerState: MutableStateFlow<AnimatedViewState>,

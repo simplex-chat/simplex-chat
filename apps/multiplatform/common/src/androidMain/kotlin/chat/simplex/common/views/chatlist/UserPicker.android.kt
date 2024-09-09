@@ -1,9 +1,8 @@
 package chat.simplex.common.views.chatlist
 
 import SectionItemView
-import androidx.compose.animation.core.*
-import androidx.compose.animation.*
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -12,10 +11,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.User
@@ -28,9 +25,6 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 
 @Composable
 actual fun UserPickerInactiveUsersSection(
@@ -109,26 +103,33 @@ private fun calculateFraction(pos: Float) =
 
 @Composable
 actual fun UserPickerScaffold(pickerState: MutableStateFlow<AnimatedViewState>, content: @Composable (modifier: Modifier) -> Unit) {
-  val currentTheme by CurrentColors.collectAsState()
-  val resultingColor by remember {
-    derivedStateOf {
-      if (currentTheme.colors.isLight) currentTheme.colors.onSurface.copy(alpha = ScrimOpacity) else Color.Black.copy(0.64f)
+  val pickerIsVisible = pickerState.collectAsState().value.isVisible()
+  val dismissState = rememberDismissState(initialValue = if (pickerIsVisible) DismissValue.Default else DismissValue.DismissedToEnd) {
+    if (it == DismissValue.DismissedToEnd) {
+      pickerState.value = AnimatedViewState.HIDING
     }
+    true
   }
-  var manualDrag by remember { mutableFloatStateOf(0f) }
-  val drawerProgress by animateFloatAsState(
-    targetValue = manualDrag,
-    label = "drawer animation"
-  )
-  val drawerHeight = 457.dp
-  val maxDragOffset = with(LocalDensity.current) { drawerHeight * density }
-
-
-  LaunchedEffect(Unit) {
-    snapshotFlow { drawerProgress }
-      .collect {
+  val height = remember { mutableIntStateOf(0) }
+  val heightValue = height.intValue
+  val clickableModifier = if (pickerIsVisible) {
+    Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = { pickerState.value = AnimatedViewState.HIDING })
+  } else {
+    Modifier
+  }
+  Box(
+    Modifier
+      .fillMaxSize()
+      .drawBehind {
+        val pos = when {
+          dismissState.progress.from == DismissValue.Default && dismissState.progress.to == DismissValue.Default -> 1f
+          dismissState.progress.from == DismissValue.DismissedToEnd && dismissState.progress.to == DismissValue.DismissedToEnd -> 0f
+          dismissState.progress.to == DismissValue.Default -> dismissState.progress.fraction
+          else -> 1 - dismissState.progress.fraction
+        }
         val colors = CurrentColors.value.colors
-        val adjustedAlpha = resultingColor.alpha * calculateFraction(pos = it)
+        val resultingColor = if (colors.isLight) colors.onSurface.copy(alpha = ScrimOpacity) else Color.Black.copy(0.64f)
+        val adjustedAlpha = resultingColor.alpha * calculateFraction(pos = pos)
         val shadingColor = resultingColor.copy(alpha = adjustedAlpha)
 
         if (pickerState.value.isVisible()) {
@@ -150,72 +151,49 @@ actual fun UserPickerScaffold(pickerState: MutableStateFlow<AnimatedViewState>, 
             })
           )
         }
-      }
-  }
-
-
-  LaunchedEffect(Unit) {
-    snapshotFlow { currentTheme }
-      .distinctUntilChanged()
-      .collect {
-        launch {
-          pickerState.collect {
-            manualDrag = if (pickerState.value.isVisible()) {
-              1f
-            } else {
-              0f
-            }
-          }
-        }
-      }
-  }
-
-  val dismissState = rememberDismissState(initialValue = DismissValue.Default) {
-    if (drawerProgress < 0.75) {
-      pickerState.value = AnimatedViewState.HIDING
-    }
-    if (it == DismissValue.DismissedToEnd) {
-      pickerState.value = AnimatedViewState.HIDING
-    }
-    true
-  }
-
-  LaunchedEffect(Unit) {
-    snapshotFlow { dismissState.offset.value }
-      .collect {
-        if (pickerState.value.isVisible() || pickerState.value.isHiding()) {
-          manualDrag = 1 - (it / maxDragOffset.value)
-        }
-      }
-  }
-
-  val swipeableModifier = DraggableBottomDrawerModifier(
-    state = dismissState,
-    swipeDistance = with(LocalDensity.current) { drawerHeight.toPx() },
-  )
-
-  Box(
-    Modifier
-      .drawBehind {
         drawRect(
           if (pickerState.value.isVisible() || pickerState.value.isHiding()) resultingColor else Color.Transparent,
-          alpha = calculateFraction(pos = drawerProgress)
+          alpha = calculateFraction(pos = pos)
         )
       }
-      .offset {
-        IntOffset(
-          x = 0,
-          y = ((1f - drawerProgress) * drawerHeight.toPx()).roundToInt()
-        )
-      }
+      .graphicsLayer {
+        if (heightValue == 0) {
+          alpha = 0f
+        }
+        translationY = dismissState.offset.value
+       }
+      .then(clickableModifier),
+    contentAlignment = Alignment.BottomCenter
   ) {
     Box(
-      Modifier
-        .fillMaxSize()
-        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = { pickerState.value = AnimatedViewState.HIDING }),
-      contentAlignment = Alignment.BottomStart
+      Modifier.onSizeChanged { height.intValue = it.height }
     ) {
-      content(swipeableModifier)
+      KeyChangeEffect(pickerIsVisible) {
+        if (pickerState.value.isVisible()) {
+          dismissState.animateTo(DismissValue.Default, userPickerAnimSpec())
+        } else {
+          dismissState.animateTo(DismissValue.DismissedToEnd, userPickerAnimSpec())
+        }
+      }
+      content(
+        if (height.intValue != 0)
+          Modifier.draggableBottomDrawerModifier(
+            state = dismissState,
+            swipeDistance = height.intValue.toFloat(),
+          )
+        else Modifier
+      )
     }
   }
 }
+
+private fun Modifier.draggableBottomDrawerModifier(
+  state: DismissState,
+  swipeDistance: Float,
+): Modifier = this.swipeable(
+  state = state,
+  anchors = mapOf(0f to DismissValue.Default, swipeDistance to DismissValue.DismissedToEnd),
+  thresholds = { _, _ -> FractionalThreshold(0.3f) },
+  orientation = Orientation.Vertical,
+  resistance = null
+)
