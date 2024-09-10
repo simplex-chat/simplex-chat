@@ -23,7 +23,7 @@ enum ComposeContextItem {
     case noContextItem
     case quotedItem(chatItem: ChatItem)
     case editingItem(chatItem: ChatItem)
-    case forwardingItem(chatItem: ChatItem, fromChatInfo: ChatInfo)
+    case forwardingItems(chatItems: [ChatItem], fromChatInfo: ChatInfo)
 }
 
 enum VoiceMessageRecordingState {
@@ -73,10 +73,10 @@ struct ComposeState {
         }
     }
 
-    init(forwardingItem: ChatItem, fromChatInfo: ChatInfo) {
+    init(forwardingItems: [ChatItem], fromChatInfo: ChatInfo) {
         self.message = ""
         self.preview = .noPreview
-        self.contextItem = .forwardingItem(chatItem: forwardingItem, fromChatInfo: fromChatInfo)
+        self.contextItem = .forwardingItems(chatItems: forwardingItems, fromChatInfo: fromChatInfo)
         self.voiceMessageRecordingState = .noRecording
     }
 
@@ -112,7 +112,7 @@ struct ComposeState {
 
     var forwarding: Bool {
         switch contextItem {
-        case .forwardingItem: return true
+        case .forwardingItems: return true
         default: return false
         }
     }
@@ -687,7 +687,7 @@ struct ComposeView: View {
         case let .quotedItem(chatItem: quotedItem):
             ContextItemView(
                 chat: chat,
-                contextItem: quotedItem,
+                contextItems: [quotedItem],
                 contextIcon: "arrowshape.turn.up.left",
                 cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) }
             )
@@ -695,18 +695,17 @@ struct ComposeView: View {
         case let .editingItem(chatItem: editingItem):
             ContextItemView(
                 chat: chat,
-                contextItem: editingItem,
+                contextItems: [editingItem],
                 contextIcon: "pencil",
                 cancelContextItem: { clearState() }
             )
             Divider()
-        case let .forwardingItem(chatItem: forwardedItem, _):
+        case let .forwardingItems(chatItems, _):
             ContextItemView(
                 chat: chat,
-                contextItem: forwardedItem,
+                contextItems: chatItems,
                 contextIcon: "arrowshape.turn.up.forward",
-                cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) },
-                showSender: false
+                cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) }
             )
             Divider()
         }
@@ -730,10 +729,13 @@ struct ComposeView: View {
         }
         if chat.chatInfo.contact?.nextSendGrpInv ?? false {
             await sendMemberContactInvitation()
-        } else if case let .forwardingItem(ci, fromChatInfo) = composeState.contextItem {
-            sent = await forwardItem(ci, fromChatInfo, ttl)
-            if !composeState.message.isEmpty {
-                sent = await send(checkLinkPreview(), quoted: sent?.id, live: false, ttl: ttl)
+        } else if case let .forwardingItems(chatItems, fromChatInfo) = composeState.contextItem {
+            // `sent` remains nil, since forwarding is not enabled for live messages
+            if let lastItem = chatItems.last {
+                await forwardItems(chatItems, fromChatInfo, ttl)
+                if !composeState.message.isEmpty {
+                    _ = await send(checkLinkPreview(), quoted: lastItem.id, live: false, ttl: ttl)
+                }
             }
         } else if case let .editingItem(ci) = composeState.contextItem {
             sent = await updateMessage(ci, live: live)
@@ -915,13 +917,13 @@ struct ComposeView: View {
             return nil
         }
 
-        func forwardItem(_ forwardedItem: ChatItem, _ fromChatInfo: ChatInfo, _ ttl: Int?) async -> ChatItem? {
+        func forwardItems(_ forwardedItems: [ChatItem], _ fromChatInfo: ChatInfo, _ ttl: Int?) async {
             if let chatItems = await apiForwardChatItems(
                 toChatType: chat.chatInfo.chatType,
                 toChatId: chat.chatInfo.apiId,
                 fromChatType: fromChatInfo.chatType,
                 fromChatId: fromChatInfo.apiId,
-                itemIds: [forwardedItem.id],
+                itemIds: forwardedItems.map { $0.id },
                 ttl: ttl
             ) {
                 await MainActor.run {
@@ -929,10 +931,7 @@ struct ComposeView: View {
                         chatModel.addChatItem(chat.chatInfo, chatItem)
                     }
                 }
-                // TODO batch send: forward multiple messages
-                return chatItems.first
             }
-            return nil
         }
 
         func checkLinkPreview() -> MsgContent {

@@ -42,6 +42,7 @@ struct ChatView: View {
     @State private var showGroupLinkSheet: Bool = false
     @State private var groupLink: String?
     @State private var groupLinkMemberRole: GroupMemberRole = .member
+    @State private var forwardedChatItems: [ChatItem]?
     @State private var selectedChatItems: Set<Int64>? = nil
     @State private var showDeleteSelectedMessages: Bool = false
     @State private var allowToDeleteSelectedMessagesForAll: Bool = false
@@ -98,6 +99,12 @@ struct ChatView: View {
                             if case let .group(groupInfo) = chat.chatInfo {
                                 showModerateSelectedMessagesAlert(groupInfo)
                             }
+                        },
+                        forwardItems: {
+                            let im = ItemsModel.shared
+                            forwardedChatItems = selectedChatItems?
+                                .compactMap { id in im.reversedChatItems.first { $0.id == id } }
+                                .sorted { $0.meta.itemTs == $1.meta.itemTs }
                         }
                     )
                 }
@@ -133,6 +140,14 @@ struct ChatView: View {
                 if case let .group(groupInfo) = chat.chatInfo {
                     GroupMemberInfoView(groupInfo: groupInfo, groupMember: member, navigation: true)
                 }
+            }
+        }
+        .sheet(item: $forwardedChatItems) { items in
+            if #available(iOS 16.0, *) {
+                ChatItemForwardingView(chatItems: items, fromChatInfo: chat.chatInfo, composeState: $composeState)
+                    .presentationDetents([.fraction(0.8)])
+            } else {
+                ChatItemForwardingView(chatItems: items, fromChatInfo: chat.chatInfo, composeState: $composeState)
             }
         }
         .onAppear {
@@ -1078,14 +1093,6 @@ struct ChatView: View {
                     chatItemInfo = nil
                 }) {
                     ChatItemInfoView(ci: ci, chatItemInfo: $chatItemInfo)
-                }
-                .sheet(isPresented: $showForwardingSheet) {
-                    if #available(iOS 16.0, *) {
-                        ChatItemForwardingView(ci: ci, fromChatInfo: chat.chatInfo, composeState: $composeState)
-                            .presentationDetents([.fraction(0.8)])
-                    } else {
-                        ChatItemForwardingView(ci: ci, fromChatInfo: chat.chatInfo, composeState: $composeState)
-                    }
                 }
         }
 

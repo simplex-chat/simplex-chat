@@ -2659,6 +2659,12 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     }
 }
 
+extension [ChatItem]: Identifiable {
+    public var id: [Int64] {
+        map { $0.id }
+    }
+}
+
 public enum CIMergeCategory: Hashable {
     case memberConnected
     case rcvGroupEvent

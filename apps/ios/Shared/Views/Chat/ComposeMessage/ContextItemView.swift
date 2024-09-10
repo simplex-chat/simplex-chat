@@ -12,10 +12,9 @@ import SimpleXChat
 struct ContextItemView: View {
     @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
-    let contextItem: ChatItem
+    let contextItems: [ChatItem]
     let contextIcon: String
     let cancelContextItem: () -> Void
-    var showSender: Bool = true
 
     var body: some View {
         HStack {
@@ -24,13 +23,10 @@ struct ContextItemView: View {
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 16, height: 16)
                 .foregroundColor(theme.colors.secondary)
-            if showSender, let sender = contextItem.memberDisplayName {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(sender).font(.caption).foregroundColor(theme.colors.secondary)
-                    msgContentView(lines: 2)
-                }
+            if let singleItem = contextItems.first, contextItems.count == 1 {
+                msgContentView(lines: 3, contextItem: singleItem)
             } else {
-                msgContentView(lines: 3)
+                Text("")
             }
             Spacer()
             Button {
@@ -45,16 +41,22 @@ struct ContextItemView: View {
         .padding(12)
         .frame(minHeight: 54)
         .frame(maxWidth: .infinity)
-        .background(chatItemFrameColor(contextItem, theme))
+        .background(background)
     }
 
-    private func msgContentView(lines: Int) -> some View {
-        contextMsgPreview()
+    private var background: Color {
+        contextItems.first
+            .map { chatItemFrameColor($0, theme) }
+            ?? Color(uiColor: .tertiarySystemBackground)
+    }
+
+    private func msgContentView(lines: Int, contextItem: ChatItem) -> some View {
+        contextMsgPreview(contextItem)
             .multilineTextAlignment(isRightToLeft(contextItem.text) ? .trailing : .leading)
             .lineLimit(lines)
     }
 
-    private func contextMsgPreview() -> Text {
+    private func contextMsgPreview(_ contextItem: ChatItem) -> Text {
         return attachment() + messageText(contextItem.text, contextItem.formattedText, nil, preview: true, showSecrets: false, secondaryColor: theme.colors.secondary)
 
         func attachment() -> Text {
@@ -72,9 +74,9 @@ struct ContextItemView: View {
     }
 }
 
-struct ContextItemView_Previews: PreviewProvider {
-    static var previews: some View {
-        let contextItem: ChatItem = ChatItem.getSample(1, .directSnd, .now, "hello")
-        return ContextItemView(chat: Chat.sampleData, contextItem: contextItem, contextIcon: "pencil.circle", cancelContextItem: {})
-    }
-}
+//struct ContextItemView_Previews: PreviewProvider {
+//    static var previews: some View {
+//        let contextItem: ChatItem = ChatItem.getSample(1, .directSnd, .now, "hello")
+//        return ContextItemView(chat: Chat.sampleData, contextItem: contextItem, contextIcon: "pencil.circle", cancelContextItem: {})
+//    }
+//}

@@ -32,6 +32,7 @@ struct SelectedItemsBottomToolbar: View {
     var deleteItems: (Bool) -> Void
     var moderateItems: () -> Void
     //var shareItems: () -> Void
+    var forwardItems: () -> Void
     @State var deleteEnabled: Bool = false
     @State var deleteForEveryoneEnabled: Bool = false
 
@@ -50,6 +51,7 @@ struct SelectedItemsBottomToolbar: View {
                 } label: {
                     Image(systemName: "trash")
                         .resizable()
+                        .scaledToFit()
                         .frame(width: 20, height: 20, alignment: .center)
                         .foregroundColor(!deleteEnabled || allButtonsDisabled ? theme.colors.secondary: .red)
                 }
@@ -61,6 +63,7 @@ struct SelectedItemsBottomToolbar: View {
                 } label: {
                     Image(systemName: "flag")
                         .resizable()
+                        .scaledToFit()
                         .frame(width: 20, height: 20, alignment: .center)
                         .foregroundColor(!moderateEnabled || allButtonsDisabled ? theme.colors.secondary : .red)
                 }
@@ -68,17 +71,28 @@ struct SelectedItemsBottomToolbar: View {
                 .opacity(canModerate ? 1 : 0)
 
 
+//                Spacer()
+//                Button {
+//                    shareItems()
+//                } label: {
+//                    Image(systemName: "square.and.arrow.up")
+//                        .resizable()
+//                        .frame(width: 20, height: 20, alignment: .center)
+//                        .foregroundColor(allButtonsDisabled ? theme.colors.secondary : theme.colors.primary)
+//                }
+//                .disabled(allButtonsDisabled)
+
                 Spacer()
                 Button {
-                    //shareItems()
+                    forwardItems()
                 } label: {
-                    Image(systemName: "square.and.arrow.up")
+                    Image(systemName: "arrowshape.turn.up.forward")
                         .resizable()
+                        .scaledToFit()
                         .frame(width: 20, height: 20, alignment: .center)
-                        .foregroundColor(allButtonsDisabled ? theme.colors.secondary : theme.colors.primary)
+                        .foregroundColor(allButtonsDisabled ? theme.colors.secondary : .accentColor)
                 }
                 .disabled(allButtonsDisabled)
-                .opacity(0)
             }
             .frame(maxHeight: .infinity)
             .padding([.leading, .trailing], 12)
