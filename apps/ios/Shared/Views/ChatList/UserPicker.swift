@@ -66,7 +66,7 @@ struct UserPicker: View {
                     }
                 } else {
                     let v = userPickerRow(otherUsers, size: 44)
-                        .padding(.leading, -8)
+                        .padding(.leading, -11)
                     if #available(iOS 16.0, *) {
                         v
                     } else {
@@ -130,7 +130,7 @@ struct UserPicker: View {
                         }
                     }
                 }
-//                .padding(.leading, 4)
+                .padding(.leading, 4)
                 .padding(.trailing, 22)
             }
             ZStack(alignment: .trailing) {
