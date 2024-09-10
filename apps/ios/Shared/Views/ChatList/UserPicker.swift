@@ -128,18 +128,6 @@ struct UserPicker: View {
         HStack(spacing: 6) {
             let s = ScrollView(.horizontal) {
                 HStack(spacing: 27) {
-//                    Image(systemName: "person.crop.rectangle.stack.fill")
-//                        .resizable()
-//                        .scaledToFit()
-//                        .frame(height: size)
-//                        .foregroundColor(Color(uiColor: .tertiarySystemGroupedBackground).asAnotherColorFromSecondaryVariant(theme))
-//                        .padding([.top, .trailing], 3)
-//                    Image(systemName: "theatermasks.fill")
-//                        .resizable()
-//                        .scaledToFit()
-//                        .frame(width: size, height: size)
-//                        .foregroundColor(.indigo)
-//                        .padding([.top, .trailing], 3)
                     ForEach(users) { u in
                         if !u.user.hidden && u.user.userId != m.currentUser?.userId {
                             userView(u, size: size)
