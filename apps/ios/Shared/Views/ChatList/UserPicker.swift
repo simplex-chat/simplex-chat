@@ -78,7 +78,7 @@ struct UserPicker: View {
                     activeSheet = .useFromDesktop
                 }
 
-                HStack {
+                ZStack(alignment: .trailing) {
                     openSheetOnTap(title: "Settings", icon: "gearshape") {
                         activeSheet = .settings
                     }
@@ -89,8 +89,6 @@ struct UserPicker: View {
                             .foregroundColor(theme.colors.secondary)
                             .frame(maxWidth: 20, maxHeight: 20)
                     }
-                    .padding(.leading, 16).padding(.vertical, 8).padding(.trailing, 16)
-                    .contentShape(Rectangle())
                     .onTapGesture {
                         if (colorScheme == .light) {
                             ThemeManager.applyTheme(systemDarkThemeDefault.get())
@@ -101,9 +99,7 @@ struct UserPicker: View {
                     .onLongPressGesture {
                         ThemeManager.applyTheme(DefaultTheme.SYSTEM_THEME_NAME)
                     }
-                    .padding(.leading, -16).padding(.vertical, -8).padding(.trailing, -16)
                 }
-                .padding(.horizontal, -3)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
