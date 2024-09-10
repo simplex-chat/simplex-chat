@@ -116,7 +116,7 @@ private fun calculateFraction(pos: Float) =
 actual fun PlatformUserPicker(modifier: Modifier, pickerState: MutableStateFlow<AnimatedViewState>, content: @Composable () -> Unit) {
   val pickerIsVisible = pickerState.collectAsState().value.isVisible()
   val dismissState = rememberDismissState(initialValue = if (pickerIsVisible) DismissValue.Default else DismissValue.DismissedToEnd) {
-    if (it == DismissValue.DismissedToEnd) {
+    if (it == DismissValue.DismissedToEnd && pickerState.value.isVisible()) {
       pickerState.value = AnimatedViewState.HIDING
     }
     true
@@ -186,13 +186,13 @@ actual fun PlatformUserPicker(modifier: Modifier, pickerState: MutableStateFlow<
           dismissState.animateTo(DismissValue.DismissedToEnd, userPickerAnimSpec())
         }
       }
-      val swipeableModifier = if (height.intValue != 0)
+      val draggableModifier = if (height.intValue != 0)
         Modifier.draggableBottomDrawerModifier(
           state = dismissState,
           swipeDistance = height.intValue.toFloat(),
         )
       else Modifier
-      Box(swipeableModifier.then(modifier)) {
+      Box(draggableModifier.then(modifier)) {
         content()
       }
     }
