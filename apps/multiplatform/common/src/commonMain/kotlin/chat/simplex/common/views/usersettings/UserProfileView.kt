@@ -35,7 +35,6 @@ fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
     close()
   }
 
-  Log.d(TAG, "here: ${user?.userId}")
   if (user != null) {
     var profile by remember { mutableStateOf(user.profile.toProfile()) }
     UserProfileLayout(

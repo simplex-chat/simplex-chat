@@ -30,7 +30,7 @@ actual fun UserPickerInactiveUsersSection(
 ) {
   if (users.isNotEmpty()) {
     val userRows = users.chunked(5)
-    val rowsToDisplay = if (userRows.count() > 2) 2 else userRows.count()
+    val rowsToDisplay = if (userRows.size > 2) 2 else userRows.size
     val horizontalPadding = DEFAULT_PADDING_HALF + 8.dp
 
     Column(Modifier
@@ -40,7 +40,7 @@ actual fun UserPickerInactiveUsersSection(
       ColumnWithScrollBar(
         verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING)
       ) {
-        val spaceBetween = (((DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier) - (horizontalPadding)) - (55.dp * 5f)) / 5f
+        val spaceBetween = (((DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier) - (horizontalPadding)) - (55.dp * 5)) / 5
 
         userRows.forEach { row ->
           Row(
@@ -48,7 +48,7 @@ actual fun UserPickerInactiveUsersSection(
             horizontalArrangement = Arrangement.spacedBy(spaceBetween),
           ) {
             row.forEach { u ->
-              UserPickerInactiveUserBadge(u, stopped, size = 55) {
+              UserPickerInactiveUserBadge(u, stopped, size = 55.dp) {
                 onUserClicked(u.user)
               }
             }

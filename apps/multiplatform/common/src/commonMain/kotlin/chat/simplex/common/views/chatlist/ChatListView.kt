@@ -322,7 +322,6 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
       }
     }
   }
-  val scope = rememberCoroutineScope()
   val clipboard = LocalClipboardManager.current
   DefaultTopAppBar(
     navigationButton = {

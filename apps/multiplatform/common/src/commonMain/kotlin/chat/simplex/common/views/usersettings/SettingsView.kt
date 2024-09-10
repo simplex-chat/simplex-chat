@@ -71,7 +71,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, close: (
     withAuth = ::doWithAuth,
   )
   KeyChangeEffect(chatModel.updatingProgress.value != null) {
-    close.invoke()
+    close()
   }
 }
 

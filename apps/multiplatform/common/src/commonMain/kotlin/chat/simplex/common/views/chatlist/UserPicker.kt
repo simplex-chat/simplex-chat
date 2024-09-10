@@ -200,14 +200,14 @@ private fun BoxScope.unreadBadge(unreadCount: Int, userMuted: Boolean) {
 }
 
 @Composable
-fun UserPickerInactiveUserBadge(userInfo: UserInfo, stopped: Boolean, size: Int = 60, onClick: (user: User) -> Unit) {
+fun UserPickerInactiveUserBadge(userInfo: UserInfo, stopped: Boolean, size: Dp = 60.dp, onClick: (user: User) -> Unit) {
   Box {
     IconButton(
       onClick = { onClick(userInfo.user) },
       enabled = !stopped
     ) {
       Box {
-        ProfileImage(size = size.dp, image = userInfo.user.profile.image, color = MaterialTheme.colors.secondaryVariant)
+        ProfileImage(size = size, image = userInfo.user.profile.image, color = MaterialTheme.colors.secondaryVariant)
 
         if (userInfo.unreadCount > 0) {
           unreadBadge(userInfo.unreadCount, userInfo.user.showNtfs)
