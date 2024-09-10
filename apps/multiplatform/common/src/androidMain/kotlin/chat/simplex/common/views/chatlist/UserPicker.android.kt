@@ -113,7 +113,7 @@ private fun calculateFraction(pos: Float) =
   (pos / 1f).coerceIn(0f, 1f)
 
 @Composable
-actual fun PlatformUserPicker(pickerState: MutableStateFlow<AnimatedViewState>, content: @Composable (modifier: Modifier) -> Unit) {
+actual fun PlatformUserPicker(modifier: Modifier, pickerState: MutableStateFlow<AnimatedViewState>, content: @Composable () -> Unit) {
   val pickerIsVisible = pickerState.collectAsState().value.isVisible()
   val dismissState = rememberDismissState(initialValue = if (pickerIsVisible) DismissValue.Default else DismissValue.DismissedToEnd) {
     if (it == DismissValue.DismissedToEnd) {
@@ -186,14 +186,15 @@ actual fun PlatformUserPicker(pickerState: MutableStateFlow<AnimatedViewState>, 
           dismissState.animateTo(DismissValue.DismissedToEnd, userPickerAnimSpec())
         }
       }
-      content(
-        if (height.intValue != 0)
-          Modifier.draggableBottomDrawerModifier(
-            state = dismissState,
-            swipeDistance = height.intValue.toFloat(),
-          )
-        else Modifier
-      )
+      val swipeableModifier = if (height.intValue != 0)
+        Modifier.draggableBottomDrawerModifier(
+          state = dismissState,
+          swipeDistance = height.intValue.toFloat(),
+        )
+      else Modifier
+      Box(swipeableModifier.then(modifier)) {
+        content()
+      }
     }
   }
 }

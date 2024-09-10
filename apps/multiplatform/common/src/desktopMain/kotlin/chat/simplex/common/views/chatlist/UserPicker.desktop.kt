@@ -66,7 +66,7 @@ actual fun UserPickerInactiveUsersSection(
 }
 
 @Composable
-actual fun PlatformUserPicker(pickerState: MutableStateFlow<AnimatedViewState>, content: @Composable (modifier: Modifier) -> Unit) {
+actual fun PlatformUserPicker(modifier: Modifier, pickerState: MutableStateFlow<AnimatedViewState>, content: @Composable () -> Unit) {
   AnimatedVisibility(
     visible = pickerState.value.isVisible(),
     enter = fadeIn(),
@@ -78,8 +78,8 @@ actual fun PlatformUserPicker(pickerState: MutableStateFlow<AnimatedViewState>, 
         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = { pickerState.value = AnimatedViewState.HIDING }),
       contentAlignment = Alignment.TopStart
     ) {
-      ColumnWithScrollBar {
-        content(Modifier)
+      ColumnWithScrollBar(modifier) {
+        content()
       }
     }
   }

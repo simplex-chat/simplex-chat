@@ -133,96 +133,95 @@ fun UserPicker(
     }
   }
 
-  PlatformUserPicker(pickerState = userPickerState) { modifier ->
-    Column(
-      modifier
-        .height(IntrinsicSize.Min)
-        .fillMaxWidth()
-        .then(if (newChat.isVisible()) Modifier.shadow(8.dp, clip = true) else Modifier)
-        .background(MaterialTheme.colors.surface)
-        .padding(vertical = DEFAULT_PADDING)
-    ) {
-      @Composable
-      fun FirstSection() {
-        if (remoteHosts.isNotEmpty()) {
-          val currentRemoteHost = remember { chatModel.currentRemoteHost }.value
-          val localDeviceActive = currentRemoteHost == null && chatModel.localUserCreated.value == true
+  PlatformUserPicker(
+    modifier = Modifier
+      .height(IntrinsicSize.Min)
+      .fillMaxWidth()
+      .then(if (newChat.isVisible()) Modifier.shadow(8.dp, clip = true) else Modifier)
+      .background(MaterialTheme.colors.surface)
+      .padding(vertical = DEFAULT_PADDING),
+    pickerState = userPickerState
+  ) {
+    @Composable
+    fun FirstSection() {
+      if (remoteHosts.isNotEmpty()) {
+        val currentRemoteHost = remember { chatModel.currentRemoteHost }.value
+        val localDeviceActive = currentRemoteHost == null && chatModel.localUserCreated.value == true
 
-          DevicePickerRow(
-            localDeviceActive = localDeviceActive,
-            remoteHosts = remoteHosts,
-            onRemoteHostClick = { h, connecting ->
-              userPickerState.value = AnimatedViewState.HIDING
-              switchToRemoteHost(h, connecting)
-            },
-            onLocalDeviceClick = {
-              userPickerState.value = AnimatedViewState.HIDING
-              switchToLocalDevice()
-            },
-            onRemoteHostActionButtonClick = { h ->
-              userPickerState.value = AnimatedViewState.HIDING
-              stopRemoteHostAndReloadHosts(h, true)
-            }
-          )
-        }
-        ActiveUserSection(
-          chatModel = chatModel,
-          userPickerState = userPickerState,
-        )
-      }
-
-      @Composable
-      fun SecondSection() {
-        GlobalSettingsSection(
-          chatModel = chatModel,
-          userPickerState = userPickerState,
-          setPerformLA = setPerformLA,
-          onUserClicked = { user ->
+        DevicePickerRow(
+          localDeviceActive = localDeviceActive,
+          remoteHosts = remoteHosts,
+          onRemoteHostClick = { h, connecting ->
             userPickerState.value = AnimatedViewState.HIDING
-            if (!user.activeUser) {
-              withBGApi {
-                controller.showProgressIfNeeded {
-                  ModalManager.closeAllModalsEverywhere()
-                  chatModel.controller.changeActiveUser(user.remoteHostId, user.userId, null)
-                }
-              }
-            }
+            switchToRemoteHost(h, connecting)
           },
-          onShowAllProfilesClicked = {
-            doWithAuth(
-              generalGetString(MR.strings.auth_open_chat_profiles),
-              generalGetString(MR.strings.auth_log_in_using_credential)
-            ) {
-              ModalManager.start.showCustomModal { close ->
-                val search = rememberSaveable { mutableStateOf("") }
-                val profileHidden = rememberSaveable { mutableStateOf(false) }
-                ModalView(
-                  { close() },
-                  endButtons = {
-                    SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
-                  },
-                  content = { UserProfilesView(chatModel, search, profileHidden) })
-              }
-            }
+          onLocalDeviceClick = {
+            userPickerState.value = AnimatedViewState.HIDING
+            switchToLocalDevice()
+          },
+          onRemoteHostActionButtonClick = { h ->
+            userPickerState.value = AnimatedViewState.HIDING
+            stopRemoteHostAndReloadHosts(h, true)
           }
         )
       }
+      ActiveUserSection(
+        chatModel = chatModel,
+        userPickerState = userPickerState,
+      )
+    }
 
-      if (appPlatform.isDesktop || windowOrientation() == WindowOrientation.PORTRAIT) {
-        Column {
-          FirstSection()
-          Divider(Modifier.padding(DEFAULT_PADDING))
-          SecondSection()
+    @Composable
+    fun SecondSection() {
+      GlobalSettingsSection(
+        chatModel = chatModel,
+        userPickerState = userPickerState,
+        setPerformLA = setPerformLA,
+        onUserClicked = { user ->
+          userPickerState.value = AnimatedViewState.HIDING
+          if (!user.activeUser) {
+            withBGApi {
+              controller.showProgressIfNeeded {
+                ModalManager.closeAllModalsEverywhere()
+                chatModel.controller.changeActiveUser(user.remoteHostId, user.userId, null)
+              }
+            }
+          }
+        },
+        onShowAllProfilesClicked = {
+          doWithAuth(
+            generalGetString(MR.strings.auth_open_chat_profiles),
+            generalGetString(MR.strings.auth_log_in_using_credential)
+          ) {
+            ModalManager.start.showCustomModal { close ->
+              val search = rememberSaveable { mutableStateOf("") }
+              val profileHidden = rememberSaveable { mutableStateOf(false) }
+              ModalView(
+                { close() },
+                endButtons = {
+                  SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
+                },
+                content = { UserProfilesView(chatModel, search, profileHidden) })
+            }
+          }
         }
-      } else {
-        Row {
-          Box(Modifier.weight(1f)) {
-            FirstSection()
-          }
-          VerticalDivider()
-          Box(Modifier.weight(1f)) {
-            SecondSection()
-          }
+      )
+    }
+
+    if (appPlatform.isDesktop || windowOrientation() == WindowOrientation.PORTRAIT) {
+      Column {
+        FirstSection()
+        Divider(Modifier.padding(DEFAULT_PADDING))
+        SecondSection()
+      }
+    } else {
+      Row {
+        Box(Modifier.weight(1f)) {
+          FirstSection()
+        }
+        VerticalDivider()
+        Box(Modifier.weight(1f)) {
+          SecondSection()
         }
       }
     }
@@ -521,8 +520,9 @@ expect fun UserPickerInactiveUsersSection(
 
 @Composable
 expect fun PlatformUserPicker(
+  modifier: Modifier,
   pickerState: MutableStateFlow<AnimatedViewState>,
-  content: @Composable (modifier: Modifier) -> Unit
+  content: @Composable () -> Unit
 )
 
 @Composable
