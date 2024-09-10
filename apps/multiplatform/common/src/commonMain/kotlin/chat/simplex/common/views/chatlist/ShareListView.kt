@@ -12,7 +12,6 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import chat.simplex.common.SettingsViewState
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.views.helpers.*
@@ -21,9 +20,8 @@ import chat.simplex.res.MR
 import kotlinx.coroutines.flow.MutableStateFlow
 
 @Composable
-fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stopped: Boolean) {
+fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
   var searchInList by rememberSaveable { mutableStateOf("") }
-  val (userPickerState) = settingsState
   val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
   val oneHandUI = remember { appPrefs.oneHandUI.state }
 

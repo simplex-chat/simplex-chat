@@ -6,16 +6,12 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -42,11 +38,6 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlin.math.sqrt
-
-data class SettingsViewState(
-  val userPickerState: MutableStateFlow<AnimatedViewState>,
-)
 
 @Composable
 fun AppScreen() {
@@ -144,12 +135,11 @@ fun MainScreen() {
               userPickerState.value = AnimatedViewState.VISIBLE
             }
           }
-          val settingsState = remember { SettingsViewState(userPickerState) }
           SetupClipboardListener()
           if (appPlatform.isAndroid) {
-            AndroidScreen(settingsState)
+            AndroidScreen(userPickerState)
           } else {
-            DesktopScreen(settingsState)
+            DesktopScreen(userPickerState)
           }
         }
       }
@@ -247,7 +237,7 @@ fun MainScreen() {
 val ANDROID_CALL_TOP_PADDING = 40.dp
 
 @Composable
-fun AndroidScreen(settingsState: SettingsViewState) {
+fun AndroidScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
   BoxWithConstraints {
     val call = remember { chatModel.activeCall} .value
     val showCallArea = call != null && call.callState != CallState.WaitCapabilities && call.callState != CallState.InvitationAccepted
@@ -260,7 +250,7 @@ fun AndroidScreen(settingsState: SettingsViewState) {
         }
         .padding(top = if (showCallArea) ANDROID_CALL_TOP_PADDING else 0.dp)
     ) {
-      StartPartOfScreen(settingsState)
+      StartPartOfScreen(userPickerState)
     }
     val scope = rememberCoroutineScope()
     val onComposed: suspend (chatId: String?) -> Unit = { chatId ->
@@ -316,15 +306,15 @@ fun AndroidScreen(settingsState: SettingsViewState) {
 }
 
 @Composable
-fun StartPartOfScreen(settingsState: SettingsViewState) {
+fun StartPartOfScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
   if (chatModel.setDeliveryReceipts.value) {
     SetDeliveryReceiptsView(chatModel)
   } else {
     val stopped = chatModel.chatRunning.value == false
     if (chatModel.sharedContent.value == null)
-      ChatListView(chatModel, settingsState, AppLock::setPerformLA, stopped)
+      ChatListView(chatModel, userPickerState, AppLock::setPerformLA, stopped)
     else
-      ShareListView(chatModel, settingsState, stopped)
+      ShareListView(chatModel, stopped)
   }
 }
 
@@ -365,12 +355,10 @@ fun EndPartOfScreen() {
 }
 
 @Composable
-fun DesktopScreen(settingsState: SettingsViewState) {
-  val (userPickerState ) = settingsState
-
+fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
   Box {
     Box(Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier + 56.dp)) {
-      StartPartOfScreen(settingsState)
+      StartPartOfScreen(userPickerState)
     }
     tryOrShowError("UserPicker", error = {}) {
       UserPicker(chatModel, userPickerState, setPerformLA = AppLock::setPerformLA)

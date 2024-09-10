@@ -24,7 +24,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.*
 import chat.simplex.common.AppLock
-import chat.simplex.common.SettingsViewState
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
@@ -136,7 +135,7 @@ fun ToggleChatListCard() {
 }
 
 @Composable
-fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
+fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedViewState>, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   LaunchedEffect(Unit) {
     if (shouldShowWhatsNew(chatModel)) {
@@ -156,7 +155,6 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
   }
   val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
-  val (userPickerState) = settingsState
   Scaffold(
     topBar = {
       if (!oneHandUI.value) {
