@@ -730,12 +730,10 @@ struct ComposeView: View {
         if chat.chatInfo.contact?.nextSendGrpInv ?? false {
             await sendMemberContactInvitation()
         } else if case let .forwardingItems(chatItems, fromChatInfo) = composeState.contextItem {
-            // `sent` remains nil, since forwarding is not enabled for live messages
-            if let lastItem = chatItems.last {
-                await forwardItems(chatItems, fromChatInfo, ttl)
-                if !composeState.message.isEmpty {
-                    _ = await send(checkLinkPreview(), quoted: lastItem.id, live: false, ttl: ttl)
-                }
+            // Composed text is send as a reply to the last forwarded item
+            sent = await forwardItems(chatItems, fromChatInfo, ttl).last
+            if !composeState.message.isEmpty {
+                _ = await send(checkLinkPreview(), quoted: sent?.id, live: false, ttl: ttl)
             }
         } else if case let .editingItem(ci) = composeState.contextItem {
             sent = await updateMessage(ci, live: live)
@@ -917,7 +915,7 @@ struct ComposeView: View {
             return nil
         }
 
-        func forwardItems(_ forwardedItems: [ChatItem], _ fromChatInfo: ChatInfo, _ ttl: Int?) async {
+        func forwardItems(_ forwardedItems: [ChatItem], _ fromChatInfo: ChatInfo, _ ttl: Int?) async -> [ChatItem] {
             if let chatItems = await apiForwardChatItems(
                 toChatType: chat.chatInfo.chatType,
                 toChatId: chat.chatInfo.apiId,
@@ -931,6 +929,9 @@ struct ComposeView: View {
                         chatModel.addChatItem(chat.chatInfo, chatItem)
                     }
                 }
+                return chatItems
+            } else {
+                return []
             }
         }
 

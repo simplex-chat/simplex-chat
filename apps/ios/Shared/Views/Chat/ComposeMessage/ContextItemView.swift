@@ -26,7 +26,7 @@ struct ContextItemView: View {
             if let singleItem = contextItems.first, contextItems.count == 1 {
                 msgContentView(lines: 3, contextItem: singleItem)
             } else {
-                Text("")
+                Text("Forwarding \(contextItems.count) items")
             }
             Spacer()
             Button {

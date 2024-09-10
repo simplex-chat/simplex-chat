@@ -426,7 +426,8 @@ struct ChatView: View {
                     composeState: $composeState,
                     selectedMember: $selectedMember,
                     revealedChatItem: $revealedChatItem,
-                    selectedChatItems: $selectedChatItems
+                    selectedChatItems: $selectedChatItems,
+                    forwardedChatItems: $forwardedChatItems
                 )
                 .id(ci.id) // Required to trigger `onAppear` on iOS15
             } loadPage: {
@@ -777,10 +778,10 @@ struct ChatView: View {
         @State private var showDeleteMessages = false
         @State private var showChatItemInfoSheet: Bool = false
         @State private var chatItemInfo: ChatItemInfo?
-        @State private var showForwardingSheet: Bool = false
         @State private var msgWidth: CGFloat = 0
         
         @Binding var selectedChatItems: Set<Int64>?
+        @Binding var forwardedChatItems: [ChatItem]?
 
         @State private var allowMenu: Bool = true
         @State private var markedRead = false
@@ -1234,7 +1235,7 @@ struct ChatView: View {
 
         var forwardButton: Button<some View> {
             Button {
-                showForwardingSheet = true
+                forwardedChatItems = [chatItem]
             } label: {
                 Label(
                     NSLocalizedString("Forward", comment: "chat item action"),
