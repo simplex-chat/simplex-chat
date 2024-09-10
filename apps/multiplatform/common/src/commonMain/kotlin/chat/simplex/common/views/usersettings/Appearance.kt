@@ -610,12 +610,18 @@ object AppearanceScope {
   @Composable
   fun ColorModeSwitcher() {
     val currentTheme by CurrentColors.collectAsState()
-    var themeMode = currentTheme.base.mode;
-
-    if (appPrefs.currentTheme.get() === DefaultTheme.SYSTEM_THEME_NAME) {
-      themeMode = if (systemInDarkThemeCurrently) DefaultThemeMode.DARK else DefaultThemeMode.LIGHT
+    val themeMode = if (remember { appPrefs.currentTheme.state }.value == DefaultTheme.SYSTEM_THEME_NAME) {
+      if (systemInDarkThemeCurrently) DefaultThemeMode.DARK else DefaultThemeMode.LIGHT
+    } else {
+      currentTheme.base.mode
     }
 
+    val onLongClick = {
+      ThemeManager.applyTheme(DefaultTheme.SYSTEM_THEME_NAME)
+      showToast(generalGetString(MR.strings.system_mode_toast))
+
+      saveThemeToDatabase(null)
+    }
     Column(
       modifier = Modifier
         .clip(CircleShape)
@@ -624,13 +630,9 @@ object AppearanceScope {
             ThemeManager.applyTheme(if (themeMode == DefaultThemeMode.LIGHT) appPrefs.systemDarkTheme.get()!! else DefaultTheme.LIGHT.themeName)
             saveThemeToDatabase(null)
           },
-          onLongClick = {
-            ThemeManager.applyTheme(DefaultTheme.SYSTEM_THEME_NAME)
-            showToast(generalGetString(MR.strings.system_mode_toast))
-
-            saveThemeToDatabase(null)
-          }
+          onLongClick = onLongClick
         )
+        .onRightClick(onLongClick)
         .size(44.dp),
       verticalArrangement = Arrangement.Center,
       horizontalAlignment = Alignment.CenterHorizontally
