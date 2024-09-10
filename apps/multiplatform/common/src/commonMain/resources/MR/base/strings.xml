@@ -383,6 +383,7 @@
   <string name="share_image">Share media…</string>
   <string name="share_file">Share file…</string>
   <string name="forward_message">Forward message…</string>
+  <string name="forward_multiple">Forward to</string>
   <string name="cannot_share_message_alert_title">Cannot send message</string>
   <string name="cannot_share_message_alert_text">Selected chat preferences prohibit this message.</string>
 
@@ -408,6 +409,7 @@
   <string name="files_and_media_not_allowed">Files and media not allowed</string>
   <string name="voice_messages_not_allowed">Voice messages not allowed</string>
   <string name="compose_message_placeholder">Message</string>
+  <string name="forward_multiple_messages">Forward %1$s messages.</string>
 
   <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
   <string name="image_descr">Image</string>

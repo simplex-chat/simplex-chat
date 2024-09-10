@@ -49,7 +49,7 @@ sealed class ComposeContextItem {
   @Serializable object NoContextItem: ComposeContextItem()
   @Serializable class QuotedItem(val chatItem: ChatItem): ComposeContextItem()
   @Serializable class EditingItem(val chatItem: ChatItem): ComposeContextItem()
-  @Serializable class ForwardingItem(val chatItem: ChatItem, val fromChatInfo: ChatInfo): ComposeContextItem()
+  @Serializable class ForwardingItems(val chatItems: List<ChatItem>, val fromChatInfo: ChatInfo): ComposeContextItem()
 }
 
 @Serializable
@@ -85,7 +85,7 @@ data class ComposeState(
       }
   val forwarding: Boolean
     get() = when (contextItem) {
-      is ComposeContextItem.ForwardingItem -> true
+      is ComposeContextItem.ForwardingItems -> true
       else -> false
     }
   val sendEnabled: () -> Boolean
@@ -365,6 +365,7 @@ fun ComposeView(
         is SharedContent.File -> listOf(shared.uri.toString())
         is SharedContent.Text -> emptyList()
         is SharedContent.Forward -> emptyList()
+        is SharedContent.BulkForward -> emptyList()
       }
       // When sharing a file and pasting it in SimpleX itself, the file shouldn't be deleted before sending or before leaving the chat after sharing
       chatModel.filesToDelete.removeAll { file ->
@@ -417,14 +418,14 @@ fun ComposeView(
       composeState.value = composeState.value.copy(inProgress = true)
     }
 
-    suspend fun forwardItem(rhId: Long?, forwardedItem: ChatItem, fromChatInfo: ChatInfo, ttl: Int?): ChatItem? {
+    suspend fun forwardItem(rhId: Long?, forwardedItem: List<ChatItem>, fromChatInfo: ChatInfo, ttl: Int?): ChatItem? {
       val chatItems = controller.apiForwardChatItems(
         rh = rhId,
         toChatType = chat.chatInfo.chatType,
         toChatId = chat.chatInfo.apiId,
         fromChatType = fromChatInfo.chatType,
         fromChatId = fromChatInfo.apiId,
-        itemIds = listOf(forwardedItem.id),
+        itemIds = forwardedItem.map { it.id },
         ttl = ttl
       )
       chatItems?.forEach { chatItem ->
@@ -506,12 +507,13 @@ fun ComposeView(
     if (chat.nextSendGrpInv) {
       sendMemberContactInvitation()
       sent = null
-    } else if (cs.contextItem is ComposeContextItem.ForwardingItem) {
-      sent = forwardItem(chat.remoteHostId, cs.contextItem.chatItem, cs.contextItem.fromChatInfo, ttl = ttl)
+    } else if (cs.contextItem is ComposeContextItem.ForwardingItems) {
+      sent = forwardItem(chat.remoteHostId, cs.contextItem.chatItems, cs.contextItem.fromChatInfo, ttl = ttl)
       if (cs.message.isNotEmpty()) {
         sent = send(chat, checkLinkPreview(), quoted = sent?.id, live = false, ttl = ttl)
       }
-    } else if (cs.contextItem is ComposeContextItem.EditingItem) {
+    }
+    else if (cs.contextItem is ComposeContextItem.EditingItem) {
       val ei = cs.contextItem.chatItem
       sent = updateMessage(ei, chat, live)
     } else if (liveMessage != null && liveMessage.sent) {
@@ -622,7 +624,7 @@ fun ComposeView(
       }
     }
     val wasForwarding = cs.forwarding
-    val forwardingFromChatId = (cs.contextItem as? ComposeContextItem.ForwardingItem)?.fromChatInfo?.id
+    val forwardingFromChatId = (cs.contextItem as? ComposeContextItem.ForwardingItems)?.fromChatInfo?.id
     clearState(live)
     val draft = chatModel.draft.value
     if (wasForwarding && chatModel.draftChatId.value == chat.chatInfo.id && forwardingFromChatId != chat.chatInfo.id && draft != null) {
@@ -805,13 +807,13 @@ fun ComposeView(
   fun contextItemView() {
     when (val contextItem = composeState.value.contextItem) {
       ComposeContextItem.NoContextItem -> {}
-      is ComposeContextItem.QuotedItem -> ContextItemView(contextItem.chatItem, painterResource(MR.images.ic_reply)) {
+      is ComposeContextItem.QuotedItem -> ContextItemView(listOf(contextItem.chatItem), painterResource(MR.images.ic_reply)) {
         composeState.value = composeState.value.copy(contextItem = ComposeContextItem.NoContextItem)
       }
-      is ComposeContextItem.EditingItem -> ContextItemView(contextItem.chatItem, painterResource(MR.images.ic_edit_filled)) {
+      is ComposeContextItem.EditingItem -> ContextItemView(listOf(contextItem.chatItem), painterResource(MR.images.ic_edit_filled)) {
         clearState()
       }
-      is ComposeContextItem.ForwardingItem -> ContextItemView(contextItem.chatItem, painterResource(MR.images.ic_forward), showSender = false) {
+      is ComposeContextItem.ForwardingItems -> ContextItemView(contextItem.chatItems, painterResource(MR.images.ic_forward), showSender = false) {
         composeState.value = composeState.value.copy(contextItem = ComposeContextItem.NoContextItem)
       }
     }
@@ -834,9 +836,15 @@ fun ComposeView(
       is SharedContent.Media -> composeState.processPickedMedia(shared.uris, shared.text)
       is SharedContent.File -> composeState.processPickedFile(shared.uri, shared.text)
       is SharedContent.Forward -> composeState.value = composeState.value.copy(
-        contextItem = ComposeContextItem.ForwardingItem(shared.chatItem, shared.fromChatInfo),
+        contextItem = ComposeContextItem.ForwardingItems(listOf(shared.chatItem), shared.fromChatInfo),
         preview = if (composeState.value.preview is ComposePreview.CLinkPreview) composeState.value.preview else ComposePreview.NoPreview
       )
+      is SharedContent.BulkForward -> {
+        composeState.value = composeState.value.copy(
+          contextItem = ComposeContextItem.ForwardingItems(shared.chatItems, shared.fromChatInfo),
+          preview = ComposePreview.NoPreview
+        )
+      }
       null -> {}
     }
     chatModel.sharedContent.value = null

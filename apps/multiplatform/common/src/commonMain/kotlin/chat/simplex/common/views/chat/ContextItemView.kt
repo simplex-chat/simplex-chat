@@ -18,23 +18,23 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.model.*
+import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import kotlinx.datetime.Clock
 
 @Composable
 fun ContextItemView(
-  contextItem: ChatItem,
+  contextItems: List<ChatItem>,
   contextIcon: Painter,
   showSender: Boolean = true,
   cancelContextItem: () -> Unit
 ) {
-  val sent = contextItem.chatDir.sent
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
 
   @Composable
-  fun MessageText(attachment: ImageResource?, lines: Int) {
+  fun MessageText(contextItem: ChatItem, attachment: ImageResource?, lines: Int) {
     val inlineContent: Pair<AnnotatedString.Builder.() -> Unit, Map<String, InlineTextContent>>? = if (attachment != null) {
       remember(contextItem.id) {
         val inlineContentBuilder: AnnotatedString.Builder.() -> Unit = {
@@ -62,7 +62,7 @@ fun ContextItemView(
     )
   }
 
-  fun attachment(): ImageResource? =
+  fun attachment(contextItem: ChatItem): ImageResource? =
     when (contextItem.content.msgContent) {
       is MsgContent.MCFile -> MR.images.ic_draft_filled
       is MsgContent.MCImage -> MR.images.ic_image
@@ -71,9 +71,11 @@ fun ContextItemView(
     }
 
   @Composable
-  fun ContextMsgPreview(lines: Int) {
-    MessageText(remember(contextItem.id) { attachment() }, lines)
+  fun ContextMsgPreview(contextItem: ChatItem, lines: Int) {
+    MessageText(contextItem, remember(contextItem.id) { attachment(contextItem) }, lines)
   }
+
+  val sent = contextItems[0].chatDir.sent
 
   Row(
     Modifier
@@ -97,20 +99,27 @@ fun ContextItemView(
         contentDescription = stringResource(MR.strings.icon_descr_context),
         tint = MaterialTheme.colors.secondary,
       )
-      val sender = contextItem.memberDisplayName
-      if (showSender && sender != null) {
-        Column(
-          horizontalAlignment = Alignment.Start,
-          verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-          Text(
-            sender,
-            style = TextStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary)
-          )
-          ContextMsgPreview(lines = 2)
+
+      if (contextItems.count() == 1) {
+        val contextItem = contextItems[0]
+        val sender = contextItem.memberDisplayName
+
+        if (showSender && sender != null) {
+          Column(
+            horizontalAlignment = Alignment.Start,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+          ) {
+            Text(
+              sender,
+              style = TextStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary)
+            )
+            ContextMsgPreview(contextItem, lines = 2)
+          }
+        } else {
+          ContextMsgPreview(contextItem, lines = 3)
         }
-      } else {
-        ContextMsgPreview(lines = 3)
+      } else if (contextItems.isNotEmpty()) {
+        Text(String.format(generalGetString(MR.strings.forward_multiple_messages), contextItems.count()))
       }
     }
     IconButton(onClick = cancelContextItem) {
@@ -129,7 +138,7 @@ fun ContextItemView(
 fun PreviewContextItemView() {
   SimpleXTheme {
     ContextItemView(
-      contextItem = ChatItem.getSampleData(1, CIDirection.DirectRcv(), Clock.System.now(), "hello"),
+      contextItems = listOf(ChatItem.getSampleData(1, CIDirection.DirectRcv(), Clock.System.now(), "hello")),
       contextIcon = painterResource(MR.images.ic_edit_filled)
     ) {}
   }

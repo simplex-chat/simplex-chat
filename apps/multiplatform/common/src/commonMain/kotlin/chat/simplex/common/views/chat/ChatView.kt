@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.*
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.apiForwardChatItems
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.withChats
@@ -166,7 +167,18 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                         })
                       }
                     }
-                  }
+                  },
+                  forwardItems = {
+                    val itemIds = selectedChatItems.value
+
+                    if (itemIds != null) {
+                      chatModel.chatId.value = null
+                      chatModel.sharedContent.value = SharedContent.BulkForward(
+                        chatModel.chatItems.value.filter { itemIds.contains(it.id) },
+                        chatInfo
+                      )
+                    }
+                  },
                 )
               }
             },

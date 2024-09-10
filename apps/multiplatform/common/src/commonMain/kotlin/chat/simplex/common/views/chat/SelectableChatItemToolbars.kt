@@ -51,6 +51,7 @@ fun SelectedItemsBottomToolbar(
   selectedChatItems: MutableState<Set<Long>?>,
   deleteItems: (Boolean) -> Unit, // Boolean - delete for everyone is possible
   moderateItems: () -> Unit,
+  forwardItems: () -> Unit,
 //  shareItems: () -> Unit,
 ) {
   val deleteEnabled = remember { mutableStateOf(false) }
@@ -86,6 +87,15 @@ fun SelectedItemsBottomToolbar(
           null,
           Modifier.size(22.dp),
           tint = if (allButtonsDisabled.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
+        )
+      }
+
+      IconButton({ forwardItems() }, enabled = deleteEnabled.value && !allButtonsDisabled.value) {
+        Icon(
+          painterResource(MR.images.ic_forward),
+          null,
+          Modifier.size(22.dp),
+          tint =  if (allButtonsDisabled.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
         )
       }
     }
