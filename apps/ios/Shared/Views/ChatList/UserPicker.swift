@@ -146,31 +146,21 @@ struct UserPicker: View {
                         }
                     }
                 }
-                .padding(.leading, 4)
+//                .padding(.leading, 4)
                 .padding(.trailing, 22)
             }
-            ZStack {
+            ZStack(alignment: .trailing) {
                 if #available(iOS 16.0, *) {
                     s.scrollIndicators(.hidden)
                 } else {
                     s
                 }
-                HStack(spacing: 0) {
-                    LinearGradient(
-                        colors: [.black, .clear],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                    .frame(width: 2)
-                    Color.clear
-                    LinearGradient(
-                        colors: [.clear, .black],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                    .frame(width: size)
-                }
-                .frame(height: size + 3)
+                LinearGradient(
+                    colors: [.clear, .black],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+                .frame(width: size, height: size + 3)
                 .blendMode(.destinationOut)
                 .allowsHitTesting(false)
             }
