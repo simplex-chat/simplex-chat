@@ -76,9 +76,11 @@ actual fun PlatformUserPicker(pickerState: MutableStateFlow<AnimatedViewState>, 
       Modifier
         .fillMaxSize()
         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = { pickerState.value = AnimatedViewState.HIDING }),
-      contentAlignment = if (appPlatform.isAndroid) Alignment.BottomStart else Alignment.TopStart
+      contentAlignment = Alignment.TopStart
     ) {
-      content(Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier))
+      ColumnWithScrollBar {
+        content(Modifier)
+      }
     }
   }
 }
