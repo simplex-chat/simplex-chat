@@ -540,11 +540,12 @@ fun DevicePill(
         BorderStroke(1.dp, MaterialTheme.colors.secondaryVariant),
         shape = RoundedCornerShape(8.dp)
       )
-      .background(if (active) MaterialTheme.colors.secondaryVariant else MaterialTheme.colors.surface)
+      .background(if (active) MaterialTheme.colors.secondaryVariant else Color.Transparent)
       .clickable(
-        onClick = if (active) {{}} else onClick,
+        enabled = !active,
+        onClick = onClick,
         interactionSource = remember { MutableInteractionSource() },
-        indication = if (!active) LocalIndication.current else null
+        indication = LocalIndication.current
       ),
     verticalAlignment = Alignment.CenterVertically
   ) {
