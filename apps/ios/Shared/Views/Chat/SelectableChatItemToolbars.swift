@@ -39,6 +39,8 @@ struct SelectedItemsBottomToolbar: View {
     @State var canModerate: Bool = false
     @State var moderateEnabled: Bool = false
 
+    @State var forwardEnabled: Bool = false
+
     @State var allButtonsDisabled = false
 
     var body: some View {
@@ -90,9 +92,9 @@ struct SelectedItemsBottomToolbar: View {
                         .resizable()
                         .scaledToFit()
                         .frame(width: 20, height: 20, alignment: .center)
-                        .foregroundColor(allButtonsDisabled ? theme.colors.secondary : .accentColor)
+                        .foregroundColor(!forwardEnabled || allButtonsDisabled ? theme.colors.secondary : .accentColor)
                 }
-                .disabled(allButtonsDisabled)
+                .disabled(!forwardEnabled || allButtonsDisabled)
             }
             .frame(maxHeight: .infinity)
             .padding([.leading, .trailing], 12)
@@ -120,15 +122,16 @@ struct SelectedItemsBottomToolbar: View {
         if let selected = selectedItems {
             let me: Bool
             let onlyOwnGroupItems: Bool
-            (deleteEnabled, deleteForEveryoneEnabled, me, onlyOwnGroupItems, selectedChatItems) = chatItems.reduce((true, true, true, true, [])) { (r, ci) in
+            (deleteEnabled, deleteForEveryoneEnabled, me, onlyOwnGroupItems, forwardEnabled, selectedChatItems) = chatItems.reduce((true, true, true, true, true, [])) { (r, ci) in
                 if selected.contains(ci.id) {
-                    var (de, dee, me, onlyOwnGroupItems, sel) = r
+                    var (de, dee, me, onlyOwnGroupItems, fe, sel) = r
                     de = de && ci.canBeDeletedForSelf
                     dee = dee && ci.meta.deletable && !ci.localNote
                     onlyOwnGroupItems = onlyOwnGroupItems && ci.chatDir == .groupSnd
                     me = me && ci.content.msgContent != nil && ci.memberToModerate(chatInfo) != nil
+                    fe = fe && ci.meta.itemDeleted == nil && !ci.isLiveDummy
                     sel.insert(ci.id) // we are collecting new selected items here to account for any changes in chat items list
-                    return (de, dee, me, onlyOwnGroupItems, sel)
+                    return (de, dee, me, onlyOwnGroupItems, true, sel)
                 } else {
                     return r
                 }
