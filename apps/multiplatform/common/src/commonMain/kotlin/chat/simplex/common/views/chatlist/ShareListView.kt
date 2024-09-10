@@ -15,6 +15,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.newchat.ActiveProfilePicker
 import chat.simplex.res.MR
 
 @Composable
@@ -124,10 +125,12 @@ private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchVal
                   SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
                 },
                 content = {
-                  ShareListUserPicker(
-                    chatModel = chatModel,
+                  ActiveProfilePicker(
                     search = search,
+                    rhId = chatModel.remoteHostId,
                     close = close,
+                    contactConnection = null,
+                    showIncognito = false
                   )
                 }
               )
