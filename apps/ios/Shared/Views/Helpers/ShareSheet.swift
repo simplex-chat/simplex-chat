@@ -8,15 +8,22 @@
 
 import SwiftUI
 
-func showShareSheet(items: [Any], completed: (() -> Void)? = nil) {
+func getTopViewController() -> UIViewController? {
     let keyWindowScene = UIApplication.shared.connectedScenes.first { $0.activationState == .foregroundActive } as? UIWindowScene
     if let keyWindow = keyWindowScene?.windows.filter(\.isKeyWindow).first,
-       let rootViewController = keyWindow.rootViewController {        
+       let rootViewController = keyWindow.rootViewController {
         // Find the top-most presented view controller
         var topController = rootViewController
         while let presentedViewController = topController.presentedViewController {
             topController = presentedViewController
         }
+        return topController
+    }
+    return nil
+}
+
+func showShareSheet(items: [Any], completed: (() -> Void)? = nil) {
+    if let topController = getTopViewController() {
         let activityViewController = UIActivityViewController(activityItems: items, applicationActivities: nil)
         if let completed = completed {
             activityViewController.completionWithItemsHandler = { _, _, _, _ in
@@ -24,5 +31,24 @@ func showShareSheet(items: [Any], completed: (() -> Void)? = nil) {
             }
         }        
         topController.present(activityViewController, animated: true)
+    }
+}
+
+func showAlert(
+    title: String,
+    message: String? = nil,
+    buttonTitle: String,
+    buttonAction: @escaping () -> Void,
+    cancelButton: Bool
+) -> Void {
+    if let topController = getTopViewController() {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: buttonTitle, style: .default) { _ in
+            buttonAction()
+        })
+        if cancelButton {
+            alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: "alert button"), style: .cancel))
+        }
+        topController.present(alert, animated: true)
     }
 }
