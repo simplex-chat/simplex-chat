@@ -622,7 +622,7 @@ object AppearanceScope {
 
       saveThemeToDatabase(null)
     }
-    Column(
+    Box(
       modifier = Modifier
         .clip(CircleShape)
         .combinedClickable(
@@ -634,8 +634,7 @@ object AppearanceScope {
         )
         .onRightClick(onLongClick)
         .size(44.dp),
-      verticalArrangement = Arrangement.Center,
-      horizontalAlignment = Alignment.CenterHorizontally
+      contentAlignment = Alignment.Center
     ) {
       Icon(painterResource(if (themeMode == DefaultThemeMode.LIGHT) MR.images.ic_light_mode else MR.images.ic_bedtime_moon), stringResource(MR.strings.color_mode_light), tint = MaterialTheme.colors.secondary)
     }
