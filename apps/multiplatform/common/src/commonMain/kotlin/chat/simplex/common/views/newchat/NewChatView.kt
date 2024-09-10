@@ -266,18 +266,6 @@ private fun ProfilePickerOption(
   )
 }
 
-fun filteredProfiles(users: List<User>, searchTextOrPassword: String): List<User> {
-  val s = searchTextOrPassword.trim()
-  val lower = s.lowercase()
-  return users.filter { u ->
-    if ((u.activeUser || !u.hidden) && (s == "" || u.anyNameContains(lower))) {
-      true
-    } else {
-      correctPassword(u, s)
-    }
-  }
-}
-
 @Composable
 fun ActiveProfilePicker(
   search: MutableState<String>,
@@ -292,11 +280,9 @@ fun ActiveProfilePicker(
   }
   val selectedProfile by remember { chatModel.currentUser }
   val searchTextOrPassword = rememberSaveable { search }
-  val profiles = remember {
-    chatModel.users.map { it.user }.sortedBy { !it.activeUser }
-  }
-  val filteredProfiles by remember {
-    derivedStateOf { filteredProfiles(profiles, searchTextOrPassword.value) }
+  // Intentionally don't use derivedStateOf in order to NOT change an order after user was selected
+  val filteredProfiles = remember(searchTextOrPassword.value) {
+    filteredProfiles(chatModel.users.map { it.user }.sortedBy { !it.activeUser }, searchTextOrPassword.value)
   }
 
   var progressByTimeout by rememberSaveable { mutableStateOf(false) }
@@ -640,6 +626,18 @@ fun LinkTextView(link: String, share: Boolean) {
       }, Modifier.size(20.dp)) {
         Icon(painterResource(MR.images.ic_share_filled), null, tint = MaterialTheme.colors.primary)
       }
+    }
+  }
+}
+
+private fun filteredProfiles(users: List<User>, searchTextOrPassword: String): List<User> {
+  val s = searchTextOrPassword.trim()
+  val lower = s.lowercase()
+  return users.filter { u ->
+    if ((u.activeUser || !u.hidden) && (s == "" || u.anyNameContains(lower))) {
+      true
+    } else {
+      correctPassword(u, s)
     }
   }
 }
