@@ -2,7 +2,6 @@ package chat.simplex.common.views.newchat
 
 import SectionBottomSpacer
 import SectionItemView
-import SectionSpacer
 import SectionTextFooter
 import SectionView
 import TextIconSpaced
@@ -285,7 +284,7 @@ fun ActiveProfilePicker(
   contactConnection: PendingContactConnection?,
   close: () -> Unit,
   rhId: Long?,
-  showIncognito: Boolean? = true
+  showIncognito: Boolean = true
 ) {
   val switchingProfile = remember { mutableStateOf(false) }
   val incognito = remember {
@@ -354,7 +353,7 @@ fun ActiveProfilePicker(
               }
             }
 
-            close.invoke()
+            close()
           } finally {
             switchingProfile.value = false
           }
@@ -366,46 +365,41 @@ fun ActiveProfilePicker(
 
   @Composable
   fun IncognitoUserOption() {
-    if (showIncognito == true) {
-      ProfilePickerOption(
-        disabled = switchingProfile.value,
-        title = stringResource(MR.strings.incognito),
-        selected = incognito,
-        onSelected = {
-          if (!incognito) {
-            switchingProfile.value = true
-            withApi {
-              try {
-                if (contactConnection != null) {
-                  val conn = controller.apiSetConnectionIncognito(rhId, contactConnection.pccConnId, true)
+    ProfilePickerOption(
+      disabled = switchingProfile.value,
+      title = stringResource(MR.strings.incognito),
+      selected = incognito,
+      onSelected = {
+        if (incognito || switchingProfile.value || contactConnection == null) return@ProfilePickerOption
 
-                  if (conn != null) {
-                    withChats {
-                      updateContactConnection(rhId, conn)
-                      updateShownConnection(conn)
-                    }
-                    close.invoke()
-                  }
-                }
-              } finally {
-                switchingProfile.value = false
+        switchingProfile.value = true
+        withApi {
+          try {
+            val conn = controller.apiSetConnectionIncognito(rhId, contactConnection.pccConnId, true)
+            if (conn != null) {
+              withChats {
+                updateContactConnection(rhId, conn)
+                updateShownConnection(conn)
               }
+              close()
             }
+          } finally {
+            switchingProfile.value = false
           }
-        },
-        image = {
-          Spacer(Modifier.width(8.dp))
-          Icon(
-            painterResource(MR.images.ic_theater_comedy_filled),
-            contentDescription = stringResource(MR.strings.incognito),
-            Modifier.size(32.dp),
-            tint = Indigo,
-          )
-          Spacer(Modifier.width(2.dp))
-        },
-        onInfo = { ModalManager.start.showModal { IncognitoView() } },
-      )
-    }
+        }
+      },
+      image = {
+        Spacer(Modifier.width(8.dp))
+        Icon(
+          painterResource(MR.images.ic_theater_comedy_filled),
+          contentDescription = stringResource(MR.strings.incognito),
+          Modifier.size(32.dp),
+          tint = Indigo,
+        )
+        Spacer(Modifier.width(2.dp))
+      },
+      onInfo = { ModalManager.start.showModal { IncognitoView() } },
+    )
   }
 
   BoxWithConstraints {
@@ -422,20 +416,18 @@ fun ActiveProfilePicker(
 
         if (activeProfile != null) {
           val otherProfiles = filteredProfiles.filter { it.userId != activeProfile.userId }
-
-          if (incognito) {
-            item {
-              IncognitoUserOption()
-            }
-            item {
-              ProfilePickerUserOption(activeProfile)
-            }
-          } else {
-            item {
-              ProfilePickerUserOption(activeProfile)
-            }
-            item {
-              IncognitoUserOption()
+          item {
+            when {
+              !showIncognito ->
+                ProfilePickerUserOption(activeProfile)
+              incognito -> {
+                IncognitoUserOption()
+                ProfilePickerUserOption(activeProfile)
+              }
+              else -> {
+                ProfilePickerUserOption(activeProfile)
+                IncognitoUserOption()
+              }
             }
           }
 
@@ -443,8 +435,10 @@ fun ActiveProfilePicker(
             ProfilePickerUserOption(p)
           }
         } else {
-          item {
-            IncognitoUserOption()
+          if (showIncognito) {
+            item {
+              IncognitoUserOption()
+            }
           }
           itemsIndexed(filteredProfiles) { _, p ->
             ProfilePickerUserOption(p)
