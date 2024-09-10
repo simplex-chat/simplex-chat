@@ -116,25 +116,23 @@ private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchVal
           .filter { u -> !u.user.activeUser && !u.user.hidden }
           .all { u -> u.unreadCount == 0 }
         UserProfileButton(chatModel.currentUser.value?.profile?.image, allRead) {
-          if (appPlatform.isAndroid) {
-            ModalManager.start.showCustomModal { close ->
-              val search = rememberSaveable { mutableStateOf("") }
-              ModalView(
-                { close() },
-                endButtons = {
-                  SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
-                },
-                content = {
-                  ActiveProfilePicker(
-                    search = search,
-                    rhId = chatModel.remoteHostId,
-                    close = close,
-                    contactConnection = null,
-                    showIncognito = false
-                  )
-                }
-              )
-            }
+          ModalManager.start.showCustomModal { close ->
+            val search = rememberSaveable { mutableStateOf("") }
+            ModalView(
+              { close() },
+              endButtons = {
+                SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
+              },
+              content = {
+                ActiveProfilePicker(
+                  search = search,
+                  rhId = chatModel.remoteHostId,
+                  close = close,
+                  contactConnection = null,
+                  showIncognito = false
+                )
+              }
+            )
           }
         }
       }
