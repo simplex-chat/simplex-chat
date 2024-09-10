@@ -131,7 +131,7 @@ struct SelectedItemsBottomToolbar: View {
                     me = me && ci.content.msgContent != nil && ci.memberToModerate(chatInfo) != nil
                     fe = fe && ci.meta.itemDeleted == nil && !ci.isLiveDummy
                     sel.insert(ci.id) // we are collecting new selected items here to account for any changes in chat items list
-                    return (de, dee, me, onlyOwnGroupItems, true, sel)
+                    return (de, dee, me, onlyOwnGroupItems, fe, sel)
                 } else {
                     return r
                 }
