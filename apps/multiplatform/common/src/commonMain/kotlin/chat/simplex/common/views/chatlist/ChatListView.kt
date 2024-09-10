@@ -153,12 +153,11 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
       VideoPlayerHolder.stopAll()
     }
   }
-  val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
   Scaffold(
     topBar = {
       if (!oneHandUI.value) {
-        Column(Modifier.padding(end = endPadding)) {
+        Column {
           ChatListToolbar(
             userPickerState,
             stopped,
@@ -170,7 +169,7 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
     },
     bottomBar = {
       if (oneHandUI.value) {
-        Column(Modifier.padding(end = endPadding)) {
+        Column {
           Divider()
           ChatListToolbar(
             userPickerState,
@@ -190,7 +189,7 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
             }
           },
           Modifier
-            .padding(end = DEFAULT_PADDING - 16.dp + endPadding, bottom = DEFAULT_PADDING - 16.dp)
+            .padding(end = DEFAULT_PADDING - 16.dp, bottom = DEFAULT_PADDING - 16.dp)
             .size(AppBarHeight * fontSizeSqrtMultiplier),
           elevation = FloatingActionButtonDefaults.elevation(
             defaultElevation = 0.dp,
@@ -206,7 +205,7 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
       }
     }
   ) {
-    Box(Modifier.padding(it).padding(end = endPadding)) {
+    Box(Modifier.padding(it)) {
       Box(
         modifier = Modifier
           .fillMaxSize()

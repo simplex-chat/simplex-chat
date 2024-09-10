@@ -12,6 +12,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -356,41 +357,40 @@ fun EndPartOfScreen() {
 
 @Composable
 fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
-  Box {
-    Box(Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier + 56.dp)) {
-      StartPartOfScreen(userPickerState)
-    }
+  Box(Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
+    StartPartOfScreen(userPickerState)
     tryOrShowError("UserPicker", error = {}) {
       UserPicker(chatModel, userPickerState, setPerformLA = AppLock::setPerformLA)
     }
-    Box(Modifier.widthIn(max = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
-      ModalManager.start.showInView()
-      SwitchingUsersView()
-    }
-    Row(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier).clipToBounds()) {
-      Box(Modifier.widthIn(min = DEFAULT_MIN_CENTER_MODAL_WIDTH).weight(1f)) {
-        CenterPartOfScreen()
-      }
-      if (ModalManager.end.hasModalsOpen()) {
-        VerticalDivider()
-      }
-      Box(Modifier.widthIn(max = DEFAULT_END_MODAL_WIDTH * fontSizeSqrtMultiplier).clipToBounds()) {
-        EndPartOfScreen()
-      }
-    }
-    if (ModalManager.start.hasModalsOpen && !ModalManager.center.hasModalsOpen) {
-      Box(
-        Modifier
-          .fillMaxSize()
-          .padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)
-          .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {
-            ModalManager.start.closeModals()
-          })
-      )
-    }
-    VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier))
-    ModalManager.fullscreen.showInView()
   }
+  Box(Modifier.widthIn(max = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
+    ModalManager.start.showInView()
+    SwitchingUsersView()
+  }
+  Row(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier).clipToBounds()) {
+    Box(Modifier.widthIn(min = DEFAULT_MIN_CENTER_MODAL_WIDTH).weight(1f)) {
+      CenterPartOfScreen()
+    }
+    if (ModalManager.end.hasModalsOpen()) {
+      VerticalDivider()
+    }
+    Box(Modifier.widthIn(max = DEFAULT_END_MODAL_WIDTH * fontSizeSqrtMultiplier).clipToBounds()) {
+      EndPartOfScreen()
+    }
+  }
+  if (userPickerState.collectAsState().value.isVisible() || (ModalManager.start.hasModalsOpen && !ModalManager.center.hasModalsOpen)) {
+    Box(
+      Modifier
+        .fillMaxSize()
+        .padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)
+        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {
+          ModalManager.start.closeModals()
+          userPickerState.value = AnimatedViewState.HIDING
+        })
+    )
+  }
+  VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier))
+  ModalManager.fullscreen.showInView()
 }
 
 @Composable
