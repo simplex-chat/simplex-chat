@@ -307,7 +307,7 @@ fun UserPicker(
   }
 
   PlatformUserPicker(pickerState = userPickerState) { modifier ->
-    Column(
+    ColumnWithScrollBar(
       modifier
         .height(IntrinsicSize.Min)
         .fillMaxWidth()
