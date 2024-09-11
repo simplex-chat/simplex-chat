@@ -33,7 +33,7 @@ chatForwardTests = do
     it "with relative paths: from contact to contact" testForwardFileContactToContact
     it "with relative paths: from group to notes" testForwardFileGroupToNotes
     it "with relative paths: from notes to group" testForwardFileNotesToGroup
-  describe "multi forward api" $ do
+  fdescribe "multi forward api" $ do
     it "from contact to contact" testForwardContactToContactMulti
     it "from group to group" testForwardGroupToGroupMulti
     it "with relative paths: multiple files from contact to contact" testMultiForwardFiles
@@ -773,7 +773,7 @@ testMultiForwardFiles =
 
       bob <# "@cath <- @alice"
       bob <## "      sending file 1"
-      bob <# "/f @cath test_2.jpg"
+      bob <# "/f @cath test_1.jpg"
       bob <## "use /fc 5 to cancel sending"
 
       bob <# "@cath <- @alice"
@@ -796,7 +796,7 @@ testMultiForwardFiles =
 
       cath <# "bob> -> forwarded"
       cath <## "      sending file 1"
-      cath <# "bob> sends file test_2.jpg (136.5 KiB / 139737 bytes)"
+      cath <# "bob> sends file test_1.jpg (136.5 KiB / 139737 bytes)"
       cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
 
       cath <# "bob> -> forwarded"
@@ -810,15 +810,15 @@ testMultiForwardFiles =
       cath <## "" -- Nothing sent here
 
       -- file transfer
-      bob <## "completed uploading file 5 (test_2.jpg) for cath"
+      bob <## "completed uploading file 5 (test_1.jpg) for cath"
       bob <## "completed uploading file 6 (test_1.pdf) for cath"
 
       cath ##> "/fr 1"
       cath
-        <### [ "saving file 1 from bob to test_2.jpg",
-               "started receiving file 1 (test_2.jpg) from bob"
+        <### [ "saving file 1 from bob to test_1.jpg",
+               "started receiving file 1 (test_1.jpg) from bob"
              ]
-      cath <## "completed receiving file 1 (test_2.jpg) from bob"
+      cath <## "completed receiving file 1 (test_1.jpg) from bob"
 
       cath ##> "/fr 2"
       cath
@@ -827,9 +827,9 @@ testMultiForwardFiles =
              ]
       cath <## "completed receiving file 2 (test_1.pdf) from bob"
 
-      src1B <- B.readFile "./tests/tmp/bob_app_files/test_2.jpg"
+      src1B <- B.readFile "./tests/tmp/bob_app_files/test_1.jpg"
       src1B `shouldBe` dest1
-      dest1C <- B.readFile "./tests/tmp/cath_app_files/test_2.jpg"
+      dest1C <- B.readFile "./tests/tmp/cath_app_files/test_1.jpg"
       dest1C `shouldBe` src1B
 
       src2B <- B.readFile "./tests/tmp/bob_app_files/test_1.pdf"
@@ -841,5 +841,5 @@ testMultiForwardFiles =
       checkActionDeletesFile "./tests/tmp/bob_app_files/test.jpg" $ do
         bob ##> "/clear alice"
         bob <## "alice: all messages are removed locally ONLY"
-      fwdFileExists <- doesFileExist "./tests/tmp/bob_app_files/test_2.jpg"
+      fwdFileExists <- doesFileExist "./tests/tmp/bob_app_files/test_1.jpg"
       fwdFileExists `shouldBe` True
