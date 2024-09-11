@@ -318,6 +318,7 @@
   <string name="delete_message__question">Delete message?</string>
   <string name="delete_messages__question">Delete %d messages?</string>
   <string name="delete_message_cannot_be_undone_warning">Message will be deleted - this cannot be undone!</string>
+  <string name="delete_messages_cannot_be_undone_warning">Messages will be deleted - this cannot be undone!</string>
   <string name="delete_message_mark_deleted_warning">Message will be marked for deletion. The recipient(s) will be able to reveal this message.</string>
   <string name="delete_messages_mark_deleted_warning">Messages will be marked for deletion. The recipient(s) will be able to reveal these messages.</string>
   <string name="delete_member_message__question">Delete member message?</string>
