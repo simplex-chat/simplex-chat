@@ -105,6 +105,7 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
       is ChatInfo.Direct, is ChatInfo.Group, is ChatInfo.Local -> {
         val perChatTheme = remember(chatInfo, CurrentColors.value.base) { if (chatInfo is ChatInfo.Direct) chatInfo.contact.uiThemes?.preferredMode(!CurrentColors.value.colors.isLight) else if (chatInfo is ChatInfo.Group) chatInfo.groupInfo.uiThemes?.preferredMode(!CurrentColors.value.colors.isLight) else null }
         val overrides = if (perChatTheme != null) ThemeManager.currentColors(null, perChatTheme, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get()) else null
+        val fullDeleteAllowed = remember(chatInfo) { chatInfo.featureEnabled(ChatFeature.FullDelete) }
         SimpleXThemeOverride(overrides ?: CurrentColors.collectAsState().value) {
           ChatLayout(
             remoteHostId = remoteHostId,
@@ -142,10 +143,15 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                   chatInfo = chatInfo,
                   deleteItems = { canDeleteForAll ->
                     val itemIds = selectedChatItems.value
+                    val questionText =
+                      if (!canDeleteForAll || fullDeleteAllowed || chatInfo is ChatInfo.Local)
+                        generalGetString(MR.strings.delete_messages_cannot_be_undone_warning)
+                      else
+                        generalGetString(MR.strings.delete_messages_mark_deleted_warning)
                     if (itemIds != null) {
                       deleteMessagesAlertDialog(
                         itemIds.sorted(),
-                        generalGetString(if (itemIds.size == 1) MR.strings.delete_message_mark_deleted_warning else MR.strings.delete_messages_mark_deleted_warning),
+                        questionText = questionText,
                         forAll = canDeleteForAll,
                         deleteMessages = { ids, forAll ->
                           deleteMessages(chatRh, chatInfo, ids, forAll, moderate = false) {
