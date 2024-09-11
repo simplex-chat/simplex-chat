@@ -1095,7 +1095,29 @@ private fun handleForwardError(error: ChatErrorType) {
         }
       )
     }
-    is ChatErrorType.ForwardFilesMissing -> null
+    is ChatErrorType.ForwardFilesMissing -> {
+      AlertManager.shared.showAlertDialogButtonsColumn(
+        title = generalGetString(MR.strings.forward_files_in_missing_title),
+        text = generalGetString(MR.strings.forward_files_in_missing_desc),
+        buttons = {
+          Column {
+            // TODO: Backend for this is broken
+            if (error.msgCount > 0) {
+              SectionItemView({
+                AlertManager.shared.hideAlert()
+              }) {
+                Text(stringResource(MR.strings.forward_files_forward_without_files), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+              }
+            }
+            SectionItemView({
+              AlertManager.shared.hideAlert()
+            }) {
+              Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+            }
+          }
+        }
+      )
+    }
     is ChatErrorType.ForwardFilesFailed -> null
     else -> null
   }

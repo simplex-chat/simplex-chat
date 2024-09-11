@@ -419,6 +419,8 @@
   <string name="forward_files_in_progress_title">Files to forward still downloading</string>
   <string name="forward_files_in_progress_desc">Some file(s) selected to forward haven\'t finish downloading and can\'t be forwarded.</string>
   <string name="forward_files_in_progress_wait">Wait</string>
+  <string name="forward_files_in_missing_title">Files to forward not found</string>
+  <string name="forward_files_in_missing_desc">Some file(s) selected to forward can\'t be found and can\'t be forwarded.</string>
 
   <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
   <string name="image_descr">Image</string>
