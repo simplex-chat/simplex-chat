@@ -144,7 +144,7 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                   deleteItems = { canDeleteForAll ->
                     val itemIds = selectedChatItems.value
                     val questionText =
-                      if (!canDeleteForAll || fullDeleteAllowed)
+                      if (!canDeleteForAll || fullDeleteAllowed || chatInfo is ChatInfo.Local)
                         generalGetString(MR.strings.delete_messages_cannot_be_undone_warning)
                       else
                         generalGetString(MR.strings.delete_messages_mark_deleted_warning)

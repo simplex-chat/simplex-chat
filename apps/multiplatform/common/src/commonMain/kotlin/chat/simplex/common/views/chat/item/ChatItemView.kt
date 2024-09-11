@@ -135,7 +135,7 @@ fun ChatItemView(
         }
 
         fun deleteMessageQuestionText(): String {
-          return if (!sent || fullDeleteAllowed) {
+          return if (!sent || fullDeleteAllowed || cInfo is ChatInfo.Local) {
             generalGetString(MR.strings.delete_message_cannot_be_undone_warning)
           } else {
             generalGetString(MR.strings.delete_message_mark_deleted_warning)
