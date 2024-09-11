@@ -2034,7 +2034,7 @@ viewChatError isCmd logLevel testView = \case
     CEFallbackToSMPProhibited fileId -> ["recipient tried to accept file " <> sShow fileId <> " via old protocol, prohibited"]
     CEInlineFileProhibited _ -> ["A small file sent without acceptance - you can enable receiving such files with -f option."]
     CEInvalidQuote -> ["cannot reply to this message"]
-    CEInvalidForward -> ["cannot forward this message(s)"]
+    CEInvalidForward -> ["cannot forward message(s)"]
     CEForwardFilesNotAccepted files msgCount -> [plain $ "Some files are not accepted: " <> intercalate ", " (map show files), showForwardMsgCount msgCount]
     CEForwardFilesInProgress cnt msgCount -> [plain $ "Still receiving " <> show cnt <> " file(s)", showForwardMsgCount msgCount]
     CEForwardFilesMissing cnt msgCount -> [plain $ show cnt <> " file(s) are missing", showForwardMsgCount msgCount]
