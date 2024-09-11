@@ -33,7 +33,7 @@ chatForwardTests = do
     it "with relative paths: from contact to contact" testForwardFileContactToContact
     it "with relative paths: from group to notes" testForwardFileGroupToNotes
     it "with relative paths: from notes to group" testForwardFileNotesToGroup
-  describe "multi forward api" $ do
+  fdescribe "multi forward api" $ do
     it "from contact to contact" testForwardContactToContactMulti
     it "from group to group" testForwardGroupToGroupMulti
     it "with relative paths: multiple files from contact to contact" testMultiForwardFiles
@@ -691,8 +691,9 @@ testMultiForwardFiles =
           cm2 = "{\"filePath\": \"test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"sending file 1\"}}"
           cm3 = "{\"filePath\": \"test.pdf\", \"msgContent\": {\"type\": \"text\", \"text\": \"sending file 2\"}}"
           cm4 = "{\"filePath\": \"test_4.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"sending file 3\"}}"
+          cm5 = "{\"filePath\": \"test_3.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"file\"}}"
 
-      alice ##> ("/_send @2 json [" <> cm1 <> "," <> cm2 <> "," <> cm3 <> "," <> cm4 <> "]")
+      alice ##> ("/_send @2 json [" <> cm1 <> "," <> cm2 <> "," <> cm3 <> "," <> cm4 <> "," <> cm5 <> "]")
 
       alice <# "@bob message without file"
 
@@ -708,6 +709,9 @@ testMultiForwardFiles =
       alice <# "/f @bob test_4.jpg"
       alice <## "use /fc 3 to cancel sending"
 
+      alice <# "/f @bob test_3.jpg"
+      alice <## "use /fc 4 to cancel sending"
+
       bob <# "alice> message without file"
 
       bob <# "alice> sending file 1"
@@ -722,9 +726,13 @@ testMultiForwardFiles =
       bob <# "alice> sends file test_4.jpg (136.5 KiB / 139737 bytes)"
       bob <## "use /fr 3 [<dir>/ | <path>] to receive it"
 
+      bob <# "alice> sends file test_3.jpg (136.5 KiB / 139737 bytes)"
+      bob <## "use /fr 4 [<dir>/ | <path>] to receive it"
+
       alice <## "completed uploading file 1 (test.jpg) for bob"
       alice <## "completed uploading file 2 (test.pdf) for bob"
       alice <## "completed uploading file 3 (test_4.jpg) for bob"
+      alice <## "completed uploading file 4 (test_3.jpg) for bob"
 
       bob ##> "/fr 1"
       bob
@@ -735,8 +743,8 @@ testMultiForwardFiles =
 
       -- try to forward file without receiving 2nd file
       let msgId1 = (read msgIdZero :: Int) + 1
-      bob ##> ("/_forward @3 @2 " <> show msgId1 <> "," <> show (msgId1 + 1) <> "," <> show (msgId1 + 2) <> "," <> show (msgId1 + 3) <> "," <> show (msgId1 + 4))
-      bob <### ["2 file(s) are missing", "Use ignore_files to forward 2 message(s)"]
+      bob ##> ("/_forward @3 @2 " <> show msgId1 <> "," <> show (msgId1 + 1) <> "," <> show (msgId1 + 2) <> "," <> show (msgId1 + 3) <> "," <> show (msgId1 + 4) <> "," <> show (msgId1 + 5))
+      bob <### ["3 file(s) are missing", "Use ignore_files to forward 2 message(s)"]
 
       bob ##> "/fr 2"
       bob
@@ -754,7 +762,7 @@ testMultiForwardFiles =
       dest2 `shouldBe` src2
 
       -- forward file
-      bob ##> ("/_forward @3 @2 " <> show msgId1 <> "," <> show (msgId1 + 1) <> "," <> show (msgId1 + 2) <> "," <> show (msgId1 + 3) <> "," <> show (msgId1 + 4) <> " ignore_files=on")
+      bob ##> ("/_forward @3 @2 " <> show msgId1 <> "," <> show (msgId1 + 1) <> "," <> show (msgId1 + 2) <> "," <> show (msgId1 + 3) <> "," <> show (msgId1 + 4) <> "," <> show (msgId1 + 5) <> " ignore_files=on")
 
       -- messages printed for bob
       bob <# "@cath <- you @alice"
@@ -766,15 +774,18 @@ testMultiForwardFiles =
       bob <# "@cath <- @alice"
       bob <## "      sending file 1"
       bob <# "/f @cath test_2.jpg"
-      bob <## "use /fc 4 to cancel sending"
+      bob <## "use /fc 5 to cancel sending"
 
       bob <# "@cath <- @alice"
       bob <## "      sending file 2"
       bob <# "/f @cath test_1.pdf"
-      bob <## "use /fc 5 to cancel sending"
+      bob <## "use /fc 6 to cancel sending"
 
       bob <# "@cath <- @alice"
       bob <## "      sending file 3"
+
+      bob <# "@cath <- @alice"
+      bob <## "" -- Nothing sent here
 
       -- messages printed for cath
       cath <# "bob> -> forwarded"
@@ -796,9 +807,12 @@ testMultiForwardFiles =
       cath <# "bob> -> forwarded"
       cath <## "      sending file 3" -- No file sent here
 
+      cath <# "bob> -> forwarded"
+      cath <## "" -- Nothing sent here
+
       -- file transfer
-      bob <## "completed uploading file 4 (test_2.jpg) for cath"
-      bob <## "completed uploading file 5 (test_1.pdf) for cath"
+      bob <## "completed uploading file 5 (test_2.jpg) for cath"
+      bob <## "completed uploading file 6 (test_1.pdf) for cath"
 
       cath ##> "/fr 1"
       cath
