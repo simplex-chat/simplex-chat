@@ -885,9 +885,27 @@ object ChatController {
     }
   }
 
-  suspend fun apiForwardChatItems(rh: Long?, toChatType: ChatType, toChatId: Long, fromChatType: ChatType, fromChatId: Long, itemIds: List<Long>, ttl: Int?): List<ChatItem>? {
+  suspend fun apiForwardChatItems(rh: Long?, toChatType: ChatType, toChatId: Long, fromChatType: ChatType, fromChatId: Long, itemIds: List<Long>, ttl: Int?): Pair<List<ChatItem>?, ChatErrorType?>? {
     val cmd = CC.ApiForwardChatItems(toChatType, toChatId, fromChatType, fromChatId, itemIds, ttl)
-    return processSendMessageCmd(rh, cmd)?.map { it.chatItem }
+
+    return when (val r = sendCmd(rh, cmd)) {
+      is CR.NewChatItems -> r.chatItems.map { it.chatItem } to null
+      is CR.ChatCmdError -> when (r.chatError) {
+        is ChatError.ChatErrorChat -> null to r.chatError.errorType
+        else -> {
+          if (!(networkErrorAlert(r))) {
+            apiErrorAlert("apiForwardChatItems", generalGetString(MR.strings.error_forwarding_messages), r)
+          }
+          return null
+        }
+      }
+      else -> {
+        if (!(networkErrorAlert(r))) {
+          apiErrorAlert("apiForwardChatItems", generalGetString(MR.strings.error_forwarding_messages), r)
+        }
+        return null
+      }
+    }
   }
 
 

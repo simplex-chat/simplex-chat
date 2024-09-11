@@ -1,6 +1,7 @@
 @file:UseSerializers(UriSerializer::class)
 package chat.simplex.common.views.chat
 
+import SectionItemView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -13,8 +14,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextAlign
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
@@ -419,7 +423,7 @@ fun ComposeView(
     }
 
     suspend fun forwardItem(rhId: Long?, forwardedItem: List<ChatItem>, fromChatInfo: ChatInfo, ttl: Int?): ChatItem? {
-      val chatItems = controller.apiForwardChatItems(
+      val (chatItems, error) = controller.apiForwardChatItems(
         rh = rhId,
         toChatType = chat.chatInfo.chatType,
         toChatId = chat.chatInfo.apiId,
@@ -427,14 +431,21 @@ fun ComposeView(
         fromChatId = fromChatInfo.apiId,
         itemIds = forwardedItem.map { it.id },
         ttl = ttl
-      )
-      chatItems?.forEach { chatItem ->
-        withChats {
-          addChatItem(rhId, chat.chatInfo, chatItem)
+      ) ?: Pair(null, null)
+
+      if (chatItems != null) {
+        chatItems.forEach { chatItem ->
+          withChats {
+            addChatItem(rhId, chat.chatInfo, chatItem)
+          }
         }
+        // TODO batch send: forward multiple messages
+        return chatItems.firstOrNull()
+      } else if (error != null) {
+        handleForwardError(error)
       }
-      // TODO batch send: forward multiple messages
-      return chatItems?.firstOrNull()
+
+      return null
     }
 
     fun checkLinkPreview(): MsgContent {
@@ -1035,5 +1046,38 @@ fun ComposeView(
       )
     }
   }
+  }
+}
+
+private fun handleForwardError(error: ChatErrorType) {
+  when (error) {
+    is ChatErrorType.ForwardFilesNotAccepted -> {
+      AlertManager.shared.showAlertDialogButtonsColumn(
+        title = generalGetString(MR.strings.forward_files_not_accepted_title),
+        text = String.format(generalGetString(MR.strings.forward_files_not_accepted_desc), error.files.count()),
+        buttons = {
+          Column {
+            SectionItemView({
+              AlertManager.shared.hideAlert()
+            }) {
+              Text(stringResource(MR.strings.forward_files_not_accepted_receive_files), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+            }
+            SectionItemView({
+              AlertManager.shared.hideAlert()
+            }) {
+              if (error.msgCount - error.files.count() > 0) {
+                Text(stringResource(MR.strings.forward_files_not_accepted_forward_without_files), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+              } else {
+                Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+              }
+            }
+          }
+        }
+      )
+    }
+    is ChatErrorType.ForwardFilesInProgress -> null
+    is ChatErrorType.ForwardFilesMissing -> null
+    is ChatErrorType.ForwardFilesFailed -> null
+    else -> null
   }
 }
