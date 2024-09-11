@@ -701,6 +701,10 @@
   <string name="is_verified">%s is verified</string>
   <string name="is_not_verified">%s is not verified</string>
 
+  <!-- user picker - UserPicker.kt -->
+  <string name="create_public_contact_address">Create public address</string>
+  <string name="your_public_contact_address">Your public address</string>
+
   <!-- settings - SettingsView.kt -->
   <string name="your_settings">Your settings</string>
   <string name="your_simplex_contact_address">Your SimpleX address</string>
@@ -849,6 +853,8 @@
   <string name="shutdown_alert_desc">Notifications will stop working until you re-launch the app</string>
 
   <!-- Address Items - UserAddressView.kt -->
+  <string name="public_address">Public address</string>
+  <string name="create_public_address">Create public address</string>
   <string name="create_address">Create address</string>
   <string name="delete_address__question">Delete address?</string>
   <string name="your_contacts_will_remain_connected">Your contacts will remain connected.</string>
@@ -1150,6 +1156,7 @@
   <!-- Settings sections -->
   <string name="settings_section_title_you">YOU</string>
   <string name="settings_section_title_settings">SETTINGS</string>
+  <string name="settings_section_title_chat_database">CHAT DATABASE</string>
   <string name="settings_section_title_help">HELP</string>
   <string name="settings_section_title_support">SUPPORT SIMPLEX CHAT</string>
   <string name="settings_section_title_app">APP</string>
@@ -1714,6 +1721,7 @@
   <string name="theme_remove_image">Remove image</string>
   <string name="appearance_font_size">Font size</string>
   <string name="appearance_zoom">Zoom</string>
+  <string name="system_mode_toast">System mode</string>
 
   <!-- Wallpapers -->
   <string name="wallpaper_preview_hello_alice">Good afternoon!</string>
