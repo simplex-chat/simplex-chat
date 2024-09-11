@@ -910,7 +910,10 @@ struct ComposeView: View {
             if let chatItems = chat.chatInfo.chatType == .local
                 ? await apiCreateChatItems(
                     noteFolderId: chat.chatInfo.apiId,
-                    composedMessages: composedMessages.map { $0.withoutQuote() }
+                    composedMessages: composedMessages.map {
+                        // Exclude quotes for local items
+                        ComposedMessage(fileSource: $0.fileSource, msgContent: $0.msgContent)
+                    }
                 )
                 : await apiSendMessages(
                     type: chat.chatInfo.chatType,
@@ -965,14 +968,6 @@ struct ComposeView: View {
                 }
             default:
                 return .text(msgText)
-            }
-        }
-
-        func saveAnyImage(_ img: UploadContent) -> CryptoFile? {
-            switch img {
-            case let .simpleImage(image): return saveImage(image)
-            case let .animatedImage(image): return saveAnimImage(image)
-            default: return nil
             }
         }
     }

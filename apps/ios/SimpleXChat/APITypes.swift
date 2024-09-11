@@ -1138,10 +1138,6 @@ public struct ComposedMessage: Encodable {
         self.quotedItemId = quotedItemId
         self.msgContent = msgContent
     }
-
-    public func withoutQuote() -> ComposedMessage {
-        ComposedMessage(fileSource: fileSource, msgContent: msgContent)
-    }
 }
 
 public struct ArchiveConfig: Encodable {
