@@ -1002,23 +1002,23 @@ processChatCommand' vr = \case
           [] -> case L.nonEmpty (catMaybes cmrs) of
             Nothing -> throwChatError $ CEInternalError "no chat items to forward"
             Just cmrs' -> do
-              -- to keep forwarded files in case original is deleted
-              withFilesFolder $ \filesFolder ->
-                forM_ cmrs' $ \(_, file_) ->
-                  forM_ file_ $ \(fromCF@CryptoFile {filePath = fromFPath}, toCF@CryptoFile {filePath = toFPath}) -> do
-                    let fsFromPath = filesFolder </> fromFPath
-                        fsToPath = filesFolder </> toFPath
+              -- copy forwarded files, in case originals are deleted
+              withFilesFolder $ \filesFolder -> do
+                let toFolder cf@CryptoFile {filePath} = cf {filePath = filesFolder </> filePath} :: CryptoFile
+                forM_ cmrs' $ \case
+                  (_, Just (fromCF, toCF)) ->
                     liftIOEither $ runExceptT $ withExceptT (ChatError . CEInternalError . show) $
-                      copyCryptoFile (fromCF {filePath = fsFromPath} :: CryptoFile) (toCF {filePath = fsToPath} :: CryptoFile)
+                      copyCryptoFile (toFolder fromCF) (toFolder toCF)
+                  _ -> pure ()
               pure $ L.map fst cmrs'
           errs'@((err, _) : _) -> do
             -- cleanup files
             withFilesFolder $ \filesFolder ->
               forM_ cmrs $ \case
-                (Just (_, file_)) ->
-                  forM_ file_ $ \(_, CryptoFile {filePath = toFPath}) -> do
-                    let fsToPath = filesFolder </> toFPath
-                    removeFile fsToPath `catchChatError` const (logError $ "prepareForwardOrFail: failed to clean up" <> tshow fsToPath)
+                Just (_, Just (_, CryptoFile {filePath = toFPath})) -> do
+                  let fsToPath = filesFolder </> toFPath
+                  removeFile fsToPath `catchChatError` \e ->
+                    logError ("prepareForwardOrFail: failed to clean up " <> tshow fsToPath <> ": " <> tshow e)
                 _ -> pure ()
             throwChatError $ case err of
               FFENotAccepted _ -> CEForwardFilesNotAccepted files msgCount
@@ -1098,19 +1098,16 @@ processChatCommand' vr = \case
                   chatReadVar filesFolder >>= \case
                     Nothing ->
                       ifM (doesFileExist filePath) (pure $ Right $ Just (mc, Just (fromCF, fromCF))) (pure $ ignoreOrError FFEMissing)
-                    Just filesFolder -> do
-                      let fsFromPath = filesFolder </> filePath
-                      ifM
-                        (doesFileExist fsFromPath)
-                        ( do
-                            fsNewPath <- liftIO $ filesFolder `uniqueCombine` fileName
-                            liftIO $ B.writeFile fsNewPath "" -- create empty file
-                            encrypt <- chatReadVar encryptLocalFiles
-                            cfArgs <- if encrypt then Just <$> (atomically . CF.randomArgs =<< asks random) else pure Nothing
-                            let toCF = CryptoFile fsNewPath cfArgs
-                            pure $ Right $ Just (mc, Just (fromCF, toCF {filePath = takeFileName fsNewPath} :: CryptoFile))
-                        )
-                        (pure $ ignoreOrError FFEMissing)
+                    Just filesFolder ->
+                      ifM (doesFileExist $ filesFolder </> filePath) forwardedFile (pure $ ignoreOrError FFEMissing)
+                      where
+                        forwardedFile = do
+                          fsNewPath <- liftIO $ filesFolder `uniqueCombine` fileName
+                          liftIO $ B.writeFile fsNewPath "" -- create empty file
+                          encrypt <- chatReadVar encryptLocalFiles
+                          cfArgs <- if encrypt then Just <$> (atomically . CF.randomArgs =<< asks random) else pure Nothing
+                          let toCF = CryptoFile fsNewPath cfArgs
+                          pure $ Right $ Just (mc, Just (fromCF, toCF {filePath = takeFileName fsNewPath} :: CryptoFile))
             _ -> pure $ ignoreOrError FFEMissing
             where
               ignoreOrError err = if ignoreMissingFiles then Right (newContent mc) else Left (err, hasContent mc)
