@@ -415,7 +415,10 @@
   <string name="forward_files_not_accepted_title">Files to forward not received</string>
   <string name="forward_files_not_accepted_desc">A total of %1$d file(s) selected to forward haven\'t been received and can\'t be forwarded.</string>
   <string name="forward_files_not_accepted_receive_files">Receive files</string>
-  <string name="forward_files_not_accepted_forward_without_files">Forward without files</string>
+  <string name="forward_files_forward_without_files">Forward without files</string>
+  <string name="forward_files_in_progress_title">Files to forward still downloading</string>
+  <string name="forward_files_in_progress_desc">Some file(s) selected to forward haven\'t finish downloading and can\'t be forwarded.</string>
+  <string name="forward_files_in_progress_wait">Wait</string>
 
   <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
   <string name="image_descr">Image</string>

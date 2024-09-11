@@ -1066,7 +1066,7 @@ private fun handleForwardError(error: ChatErrorType) {
               AlertManager.shared.hideAlert()
             }) {
               if (error.msgCount - error.files.count() > 0) {
-                Text(stringResource(MR.strings.forward_files_not_accepted_forward_without_files), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+                Text(stringResource(MR.strings.forward_files_forward_without_files), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
               } else {
                 Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
               }
@@ -1075,7 +1075,26 @@ private fun handleForwardError(error: ChatErrorType) {
         }
       )
     }
-    is ChatErrorType.ForwardFilesInProgress -> null
+    is ChatErrorType.ForwardFilesInProgress -> {
+      AlertManager.shared.showAlertDialogButtonsColumn(
+        title = generalGetString(MR.strings.forward_files_in_progress_title),
+        text = generalGetString(MR.strings.forward_files_in_progress_desc),
+        buttons = {
+          Column {
+            SectionItemView({
+              AlertManager.shared.hideAlert()
+            }) {
+              Text(stringResource(MR.strings.forward_files_in_progress_wait), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+            }
+            SectionItemView({
+              AlertManager.shared.hideAlert()
+            }) {
+              Text(stringResource(MR.strings.forward_files_forward_without_files), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+            }
+          }
+        }
+      )
+    }
     is ChatErrorType.ForwardFilesMissing -> null
     is ChatErrorType.ForwardFilesFailed -> null
     else -> null
