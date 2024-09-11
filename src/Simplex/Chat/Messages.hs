@@ -591,7 +591,7 @@ ciFileForwardError fId = \case
   CIFSRcvInvitation -> Just $ FFENotAccepted fId
   CIFSRcvAccepted -> Just FFEInProgress
   CIFSRcvTransfer {} -> Just FFEInProgress
-  CIFSRcvAborted -> Just FFEFailed
+  CIFSRcvAborted -> Just $ FFENotAccepted fId
   CIFSRcvCancelled -> Just FFEFailed -- ?
   CIFSRcvComplete -> Nothing
   CIFSRcvError {} -> Just FFEFailed
