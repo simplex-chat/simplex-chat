@@ -2179,6 +2179,8 @@
   <string name="migrate_from_device_creating_archive_link">Creating archive link</string>
   <string name="migrate_from_device_cancel_migration">Cancel migration</string>
   <string name="migrate_from_device_finalize_migration">Finalize migration</string>
+  <string name="migrate_from_device_remove_archive_question">Remove archive?</string>
+  <string name="migrate_from_device_uploaded_archive_will_be_removed">The uploaded database archive will be permanently removed from the servers.</string>
   <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[Choose <i>Migrate from another device</i> on the new device and scan QR code.]]></string>
   <string name="migrate_from_device_or_share_this_file_link">Or securely share this file link</string>
   <string name="migrate_from_device_delete_database_from_device">Delete database from this device</string>

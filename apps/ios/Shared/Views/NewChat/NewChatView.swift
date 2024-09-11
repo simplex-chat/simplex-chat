@@ -585,6 +585,7 @@ private struct ConnectView: View {
     @Binding var pastedLink: String
     @Binding var alert: NewChatViewAlert?
     @State private var sheet: PlanAndConnectActionSheet?
+    @State private var pasteboardHasStrings = UIPasteboard.general.hasStrings
 
     var body: some View {
         List {
@@ -621,7 +622,7 @@ private struct ConnectView: View {
             } label: {
                 Text("Tap to paste link")
             }
-            .disabled(!ChatModel.shared.pasteboardHasStrings)
+            .disabled(!pasteboardHasStrings)
             .frame(maxWidth: .infinity, alignment: .center)
         } else {
             linkTextView(pastedLink)
