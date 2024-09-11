@@ -980,7 +980,7 @@ processChatCommand' vr = \case
           throwChatError (CECommandError $ "reaction already " <> if add then "added" else "removed")
         when (add && length rs >= maxMsgReactions) $
           throwChatError (CECommandError "too many reactions")
-  APIForwardChatItems (ChatRef toCType toChatId) (ChatRef fromCType fromChatId) itemIds itemTTL -> withUser $ \user -> case toCType of
+  APIForwardChatItems (ChatRef toCType toChatId) (ChatRef fromCType fromChatId) itemIds itemTTL ignoreMissingFiles -> withUser $ \user -> case toCType of
     CTDirect -> do
       cmrs <- prepareForward user
       case L.nonEmpty cmrs of
@@ -1061,7 +1061,7 @@ processChatCommand' vr = \case
         CTContactConnection -> throwChatError $ CECommandError "not supported"
         where
           forwardMC :: ChatItem c d -> CM (MsgContent, MsgDirection)
-          forwardMC ChatItem {meta = CIMeta {itemDeleted = Just _}} = throwChatError CEInvalidForward
+          forwardMC ChatItem {meta = CIMeta {itemDeleted = Just _}} = throwChatError CEForwardFilesDeleted
           forwardMC ChatItem {content = CISndMsgContent fmc} = pure (fmc, MDSnd)
           forwardMC ChatItem {content = CIRcvMsgContent fmc} = pure (fmc, MDRcv)
           forwardMC _ = throwChatError CEInvalidForward
@@ -1070,29 +1070,34 @@ processChatCommand' vr = \case
             Nothing -> ciff
             Just CIFFUnknown -> ciff
             Just prevCIFF -> Just prevCIFF
+          ignoreOrThrow :: ChatErrorType -> CM (Maybe a)
+          ignoreOrThrow err = if ignoreMissingFiles then pure Nothing else throwChatError err
           forwardCryptoFile :: ChatItem c d -> CM (Maybe CryptoFile)
           forwardCryptoFile ChatItem {file = Nothing} = pure Nothing
           forwardCryptoFile ChatItem {file = Just ciFile} = case ciFile of
-            CIFile {fileName, fileSource = Just fromCF@CryptoFile {filePath}} ->
-              chatReadVar filesFolder >>= \case
-                Nothing ->
-                  ifM (doesFileExist filePath) (pure $ Just fromCF) (pure Nothing)
-                Just filesFolder -> do
-                  let fsFromPath = filesFolder </> filePath
-                  ifM
-                    (doesFileExist fsFromPath)
-                    ( do
-                        fsNewPath <- liftIO $ filesFolder `uniqueCombine` fileName
-                        liftIO $ B.writeFile fsNewPath "" -- create empty file
-                        encrypt <- chatReadVar encryptLocalFiles
-                        cfArgs <- if encrypt then Just <$> (atomically . CF.randomArgs =<< asks random) else pure Nothing
-                        let toCF = CryptoFile fsNewPath cfArgs
-                        -- to keep forwarded file in case original is deleted
-                        liftIOEither $ runExceptT $ withExceptT (ChatError . CEInternalError . show) $ copyCryptoFile (fromCF {filePath = fsFromPath} :: CryptoFile) toCF
-                        pure $ Just (toCF {filePath = takeFileName fsNewPath} :: CryptoFile)
-                    )
-                    (pure Nothing)
-            _ -> pure Nothing
+            CIFile {fileName, fileStatus, fileSource = Just fromCF@CryptoFile {filePath}}
+              | ciFileLoading fileStatus -> ignoreOrThrow CEForwardFilesInProgress
+              | ciFileLoaded fileStatus ->
+                  chatReadVar filesFolder >>= \case
+                    Nothing ->
+                      ifM (doesFileExist filePath) (pure $ Just fromCF) (throwChatError CEForwardFilesDeleted)
+                    Just filesFolder -> do
+                      let fsFromPath = filesFolder </> filePath
+                      ifM
+                        (doesFileExist fsFromPath)
+                        ( do
+                            fsNewPath <- liftIO $ filesFolder `uniqueCombine` fileName
+                            liftIO $ B.writeFile fsNewPath "" -- create empty file
+                            encrypt <- chatReadVar encryptLocalFiles
+                            cfArgs <- if encrypt then Just <$> (atomically . CF.randomArgs =<< asks random) else pure Nothing
+                            let toCF = CryptoFile fsNewPath cfArgs
+                            -- to keep forwarded file in case original is deleted
+                            liftIOEither $ runExceptT $ withExceptT (ChatError . CEInternalError . show) $ copyCryptoFile (fromCF {filePath = fsFromPath} :: CryptoFile) toCF
+                            pure $ Just (toCF {filePath = takeFileName fsNewPath} :: CryptoFile)
+                        )
+                        (ignoreOrThrow CEForwardFilesDeleted)
+              | otherwise -> ignoreOrThrow CEForwardFilesDeleted
+            _ -> ignoreOrThrow CEForwardFilesDeleted
           copyCryptoFile :: CryptoFile -> CryptoFile -> ExceptT CF.FTCryptoError IO ()
           copyCryptoFile fromCF@CryptoFile {filePath = fsFromPath, cryptoArgs = fromArgs} toCF@CryptoFile {cryptoArgs = toArgs} = do
             fromSizeFull <- getFileSize fsFromPath
@@ -1831,17 +1836,17 @@ processChatCommand' vr = \case
     contactId <- withFastStore $ \db -> getContactIdByName db user fromContactName
     forwardedItemId <- withFastStore $ \db -> getDirectChatItemIdByText' db user contactId forwardedMsg
     toChatRef <- getChatRef user toChatName
-    processChatCommand $ APIForwardChatItems toChatRef (ChatRef CTDirect contactId) (forwardedItemId :| []) Nothing
+    processChatCommand $ APIForwardChatItems toChatRef (ChatRef CTDirect contactId) (forwardedItemId :| []) Nothing False
   ForwardGroupMessage toChatName fromGroupName fromMemberName_ forwardedMsg -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user fromGroupName
     forwardedItemId <- withFastStore $ \db -> getGroupChatItemIdByText db user groupId fromMemberName_ forwardedMsg
     toChatRef <- getChatRef user toChatName
-    processChatCommand $ APIForwardChatItems toChatRef (ChatRef CTGroup groupId) (forwardedItemId :| []) Nothing
+    processChatCommand $ APIForwardChatItems toChatRef (ChatRef CTGroup groupId) (forwardedItemId :| []) Nothing False
   ForwardLocalMessage toChatName forwardedMsg -> withUser $ \user -> do
     folderId <- withFastStore (`getUserNoteFolderId` user)
     forwardedItemId <- withFastStore $ \db -> getLocalChatItemIdByText' db user folderId forwardedMsg
     toChatRef <- getChatRef user toChatName
-    processChatCommand $ APIForwardChatItems toChatRef (ChatRef CTLocal folderId) (forwardedItemId :| []) Nothing
+    processChatCommand $ APIForwardChatItems toChatRef (ChatRef CTLocal folderId) (forwardedItemId :| []) Nothing False
   SendMessage (ChatName cType name) msg -> withUser $ \user -> do
     let mc = MCText msg
     case cType of
@@ -7888,7 +7893,7 @@ chatCommandP =
       "/_delete item " *> (APIDeleteChatItem <$> chatRefP <*> _strP <* A.space <*> ciDeleteMode),
       "/_delete member item #" *> (APIDeleteMemberChatItem <$> A.decimal <*> _strP),
       "/_reaction " *> (APIChatItemReaction <$> chatRefP <* A.space <*> A.decimal <* A.space <*> onOffP <* A.space <*> jsonP),
-      "/_forward " *> (APIForwardChatItems <$> chatRefP <* A.space <*> chatRefP <*> _strP <*> sendMessageTTLP),
+      "/_forward " *> (APIForwardChatItems <$> chatRefP <* A.space <*> chatRefP <*> _strP <*> sendMessageTTLP <* A.space <*> onOffP),
       "/_read user " *> (APIUserRead <$> A.decimal),
       "/read user" $> UserRead,
       "/_read chat " *> (APIChatRead <$> chatRefP <*> optional (A.space *> ((,) <$> ("from=" *> A.decimal) <* A.space <*> ("to=" *> A.decimal)))),

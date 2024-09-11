@@ -1181,6 +1181,7 @@ data ChatErrorType
   | CEForwardFilesNotReceived {files :: [FileTransferId]}
   | CEForwardFilesInProgress
   | CEForwardFilesDeleted
+  | CEInvalidForward
   | CEInvalidChatItemUpdate
   | CEInvalidChatItemDelete
   | CEHasCurrentCall

@@ -35,7 +35,7 @@ import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
-import Data.Time.Clock (UTCTime, diffUTCTime, nominalDay, NominalDiffTime)
+import Data.Time.Clock (NominalDiffTime, UTCTime, diffUTCTime, nominalDay)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Database.SQLite.Simple.FromField (FromField (..))
@@ -594,6 +594,11 @@ ciFileLoaded = \case
   CIFSRcvError {} -> False
   CIFSRcvWarning {} -> False
   CIFSInvalid {} -> False
+
+ciFileLoading :: CIFileStatus d -> Bool
+ciFileLoading = \case
+  CIFSRcvTransfer {} -> True
+  _ -> False
 
 data ACIFileStatus = forall d. MsgDirectionI d => AFS (SMsgDirection d) (CIFileStatus d)
 
