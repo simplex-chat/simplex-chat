@@ -2,7 +2,6 @@ package chat.simplex.common.views.newchat
 
 import SectionBottomSpacer
 import SectionItemView
-import SectionSpacer
 import SectionTextFooter
 import SectionView
 import TextIconSpaced
@@ -267,24 +266,13 @@ private fun ProfilePickerOption(
   )
 }
 
-private fun filteredProfiles(users: List<User>, searchTextOrPassword: String): List<User> {
-  val s = searchTextOrPassword.trim()
-  val lower = s.lowercase()
-  return users.filter { u ->
-    if ((u.activeUser || !u.hidden) && (s == "" || u.anyNameContains(lower))) {
-      true
-    } else {
-      correctPassword(u, s)
-    }
-  }
-}
-
 @Composable
-private fun ActiveProfilePicker(
+fun ActiveProfilePicker(
   search: MutableState<String>,
   contactConnection: PendingContactConnection?,
   close: () -> Unit,
-  rhId: Long?
+  rhId: Long?,
+  showIncognito: Boolean = true
 ) {
   val switchingProfile = remember { mutableStateOf(false) }
   val incognito = remember {
@@ -292,11 +280,9 @@ private fun ActiveProfilePicker(
   }
   val selectedProfile by remember { chatModel.currentUser }
   val searchTextOrPassword = rememberSaveable { search }
-  val profiles = remember {
-    chatModel.users.map { it.user }.sortedBy { !it.activeUser }
-  }
-  val filteredProfiles by remember {
-    derivedStateOf { filteredProfiles(profiles, searchTextOrPassword.value) }
+  // Intentionally don't use derivedStateOf in order to NOT change an order after user was selected
+  val filteredProfiles = remember(searchTextOrPassword.value) {
+    filteredProfiles(chatModel.users.map { it.user }.sortedBy { !it.activeUser }, searchTextOrPassword.value)
   }
 
   var progressByTimeout by rememberSaveable { mutableStateOf(false) }
@@ -322,32 +308,38 @@ private fun ActiveProfilePicker(
         switchingProfile.value = true
         withApi {
           try {
+            var updatedConn: PendingContactConnection? = null;
+
             if (contactConnection != null) {
-              val conn = controller.apiChangeConnectionUser(rhId, contactConnection.pccConnId, user.userId)
-              if (conn != null) {
+              updatedConn = controller.apiChangeConnectionUser(rhId, contactConnection.pccConnId, user.userId)
+              if (updatedConn != null) {
                 withChats {
-                  updateContactConnection(rhId, conn)
-                  updateShownConnection(conn)
+                  updateContactConnection(rhId, updatedConn)
+                  updateShownConnection(updatedConn)
                 }
-                controller.changeActiveUser_(
-                  rhId = user.remoteHostId,
-                  toUserId = user.userId,
-                  viewPwd = if (user.hidden) searchTextOrPassword.value else null
-                )
-
-                if (chatModel.currentUser.value?.userId != user.userId) {
-                  AlertManager.shared.showAlertMsg(generalGetString(
-                    MR.strings.switching_profile_error_title),
-                    String.format(generalGetString(MR.strings.switching_profile_error_message), user.chatViewName)
-                  )
-                }
-
-                withChats {
-                  updateContactConnection(user.remoteHostId, conn)
-                }
-                close.invoke()
               }
             }
+
+            controller.changeActiveUser_(
+              rhId = user.remoteHostId,
+              toUserId = user.userId,
+              viewPwd = if (user.hidden) searchTextOrPassword.value else null
+            )
+
+            if (chatModel.currentUser.value?.userId != user.userId) {
+              AlertManager.shared.showAlertMsg(generalGetString(
+                MR.strings.switching_profile_error_title),
+                String.format(generalGetString(MR.strings.switching_profile_error_message), user.chatViewName)
+              )
+            }
+
+            if (updatedConn != null) {
+              withChats {
+                updateContactConnection(user.remoteHostId, updatedConn)
+              }
+            }
+
+            close()
           } finally {
             switchingProfile.value = false
           }
@@ -364,24 +356,21 @@ private fun ActiveProfilePicker(
       title = stringResource(MR.strings.incognito),
       selected = incognito,
       onSelected = {
-        if (!incognito) {
-          switchingProfile.value = true
-          withApi {
-            try {
-              if (contactConnection != null) {
-                val conn = controller.apiSetConnectionIncognito(rhId, contactConnection.pccConnId, true)
+        if (incognito || switchingProfile.value || contactConnection == null) return@ProfilePickerOption
 
-                if (conn != null) {
-                  withChats {
-                    updateContactConnection(rhId, conn)
-                    updateShownConnection(conn)
-                  }
-                  close.invoke()
-                }
+        switchingProfile.value = true
+        withApi {
+          try {
+            val conn = controller.apiSetConnectionIncognito(rhId, contactConnection.pccConnId, true)
+            if (conn != null) {
+              withChats {
+                updateContactConnection(rhId, conn)
+                updateShownConnection(conn)
               }
-            } finally {
-              switchingProfile.value = false
+              close()
             }
+          } finally {
+            switchingProfile.value = false
           }
         }
       },
@@ -413,20 +402,18 @@ private fun ActiveProfilePicker(
 
         if (activeProfile != null) {
           val otherProfiles = filteredProfiles.filter { it.userId != activeProfile.userId }
-
-          if (incognito) {
-            item {
-              IncognitoUserOption()
-            }
-            item {
-              ProfilePickerUserOption(activeProfile)
-            }
-          } else {
-            item {
-              ProfilePickerUserOption(activeProfile)
-            }
-            item {
-              IncognitoUserOption()
+          item {
+            when {
+              !showIncognito ->
+                ProfilePickerUserOption(activeProfile)
+              incognito -> {
+                IncognitoUserOption()
+                ProfilePickerUserOption(activeProfile)
+              }
+              else -> {
+                ProfilePickerUserOption(activeProfile)
+                IncognitoUserOption()
+              }
             }
           }
 
@@ -434,8 +421,10 @@ private fun ActiveProfilePicker(
             ProfilePickerUserOption(p)
           }
         } else {
-          item {
-            IncognitoUserOption()
+          if (showIncognito) {
+            item {
+              IncognitoUserOption()
+            }
           }
           itemsIndexed(filteredProfiles) { _, p ->
             ProfilePickerUserOption(p)
@@ -637,6 +626,18 @@ fun LinkTextView(link: String, share: Boolean) {
       }, Modifier.size(20.dp)) {
         Icon(painterResource(MR.images.ic_share_filled), null, tint = MaterialTheme.colors.primary)
       }
+    }
+  }
+}
+
+private fun filteredProfiles(users: List<User>, searchTextOrPassword: String): List<User> {
+  val s = searchTextOrPassword.trim()
+  val lower = s.lowercase()
+  return users.filter { u ->
+    if ((u.activeUser || !u.hidden) && (s == "" || u.anyNameContains(lower))) {
+      true
+    } else {
+      correctPassword(u, s)
     }
   }
 }
