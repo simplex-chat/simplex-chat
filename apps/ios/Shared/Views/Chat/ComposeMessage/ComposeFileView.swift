@@ -1,3 +1,4 @@
+
 //
 //  ComposeFileView.swift
 //  SimpleX (iOS)

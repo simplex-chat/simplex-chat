@@ -1131,12 +1131,16 @@ public enum ChatPagination {
 public struct ComposedMessage: Encodable {
     public var fileSource: CryptoFile?
     var quotedItemId: Int64?
-    var msgContent: MsgContent
+    public var msgContent: MsgContent
 
     public init(fileSource: CryptoFile? = nil, quotedItemId: Int64? = nil, msgContent: MsgContent) {
         self.fileSource = fileSource
         self.quotedItemId = quotedItemId
         self.msgContent = msgContent
+    }
+
+    public func withoutQuote() -> ComposedMessage {
+        ComposedMessage(fileSource: fileSource, msgContent: msgContent)
     }
 }
 
