@@ -33,7 +33,7 @@ chatForwardTests = do
     it "with relative paths: from contact to contact" testForwardFileContactToContact
     it "with relative paths: from group to notes" testForwardFileGroupToNotes
     it "with relative paths: from notes to group" testForwardFileNotesToGroup
-  fdescribe "multi forward api" $ do
+  describe "multi forward api" $ do
     it "from contact to contact" testForwardContactToContactMulti
     it "from group to group" testForwardGroupToGroupMulti
     it "with relative paths: multiple files from contact to contact" testMultiForwardFiles
@@ -784,9 +784,6 @@ testMultiForwardFiles =
       bob <# "@cath <- @alice"
       bob <## "      sending file 3"
 
-      bob <# "@cath <- @alice"
-      bob <## "" -- Nothing sent here
-
       -- messages printed for cath
       cath <# "bob> -> forwarded"
       cath <## "      hi"
@@ -806,8 +803,6 @@ testMultiForwardFiles =
 
       cath <# "bob> -> forwarded"
       cath <## "      sending file 3" -- No file sent here
-      cath <# "bob> -> forwarded"
-      cath <## "" -- Nothing sent here
 
       -- file transfer
       bob <## "completed uploading file 5 (test_1.jpg) for cath"
