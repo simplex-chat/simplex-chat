@@ -66,10 +66,14 @@ fun UserPicker(
     }
   }
 
+  val view = LocalMultiplatformView()
   LaunchedEffect(Unit) {
     launch {
       userPickerState.collect {
         newChat = it
+        if (it.isVisible()) {
+          hideKeyboard(view)
+        }
         launch {
           if (newChat.isHiding()) userPickerState.value = AnimatedViewState.GONE
         }

@@ -24,6 +24,7 @@ import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -114,7 +115,8 @@ private fun calculateFraction(pos: Float) =
 
 @Composable
 actual fun PlatformUserPicker(modifier: Modifier, pickerState: MutableStateFlow<AnimatedViewState>, content: @Composable () -> Unit) {
-  val pickerIsVisible = pickerState.collectAsState().value.isVisible()
+  val pickerAsState = pickerState.collectAsState()
+  val pickerIsVisible = remember { pickerAsState }.value.isVisible()
   val dismissState = rememberDismissState(initialValue = if (pickerIsVisible) DismissValue.Default else DismissValue.DismissedToEnd) {
     if (it == DismissValue.DismissedToEnd && pickerState.value.isVisible()) {
       pickerState.value = AnimatedViewState.HIDING
@@ -131,6 +133,7 @@ actual fun PlatformUserPicker(modifier: Modifier, pickerState: MutableStateFlow<
   Box(
     Modifier
       .fillMaxSize()
+      .then(clickableModifier)
       .drawBehind {
         val pos = when {
           dismissState.progress.from == DismissValue.Default && dismissState.progress.to == DismissValue.Default -> 1f
@@ -172,8 +175,7 @@ actual fun PlatformUserPicker(modifier: Modifier, pickerState: MutableStateFlow<
           alpha = 0f
         }
         translationY = dismissState.offset.value
-       }
-      .then(clickableModifier),
+       },
     contentAlignment = Alignment.BottomCenter
   ) {
     Box(
@@ -181,9 +183,19 @@ actual fun PlatformUserPicker(modifier: Modifier, pickerState: MutableStateFlow<
     ) {
       KeyChangeEffect(pickerIsVisible) {
         if (pickerState.value.isVisible()) {
-          dismissState.animateTo(DismissValue.Default, userPickerAnimSpec())
+          try {
+            dismissState.animateTo(DismissValue.Default, userPickerAnimSpec())
+          } catch (e: CancellationException) {
+            Log.e(TAG, "Cancelled animateTo: ${e.stackTraceToString()}")
+            pickerState.value = AnimatedViewState.GONE
+          }
         } else {
-          dismissState.animateTo(DismissValue.DismissedToEnd, userPickerAnimSpec())
+          try {
+            dismissState.animateTo(DismissValue.DismissedToEnd, userPickerAnimSpec())
+          } catch (e: CancellationException) {
+            Log.e(TAG, "Cancelled animateTo2: ${e.stackTraceToString()}")
+            pickerState.value = AnimatedViewState.VISIBLE
+          }
         }
       }
       val draggableModifier = if (height.intValue != 0)
