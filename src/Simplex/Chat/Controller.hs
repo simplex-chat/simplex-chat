@@ -1178,9 +1178,10 @@ data ChatErrorType
   | CEFallbackToSMPProhibited {fileId :: FileTransferId}
   | CEInlineFileProhibited {fileId :: FileTransferId}
   | CEInvalidQuote
-  | CEForwardFilesNotReceived {files :: [FileTransferId]}
-  | CEForwardFilesInProgress
-  | CEForwardFilesDeleted
+  | CEForwardFilesNotAccepted {files :: [FileTransferId], msgCount :: Int} -- contentCount is the count of messages if files are ignored
+  | CEForwardFilesInProgress {filesCount :: Int, msgCount :: Int}
+  | CEForwardFilesMissing {filesCount :: Int, msgCount :: Int}
+  | CEForwardFilesFailed {filesCount :: Int, msgCount :: Int}
   | CEInvalidForward
   | CEInvalidChatItemUpdate
   | CEInvalidChatItemDelete

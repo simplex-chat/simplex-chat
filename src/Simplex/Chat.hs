@@ -982,86 +982,64 @@ processChatCommand' vr = \case
           throwChatError (CECommandError "too many reactions")
   APIForwardChatItems (ChatRef toCType toChatId) (ChatRef fromCType fromChatId) itemIds itemTTL ignoreMissingFiles -> withUser $ \user -> case toCType of
     CTDirect -> do
-      cmrs <- prepareForward user
-      case L.nonEmpty cmrs of
-        Just cmrs' ->
-          withContactLock "forwardChatItem, to contact" toChatId $
-            sendContactContentMessages user toChatId False itemTTL cmrs'
-        Nothing -> throwChatError $ CEInternalError "no chat items to forward"
+      cmrs <- prepareForwardOrFail user
+      withContactLock "forwardChatItem, to contact" toChatId $
+        sendContactContentMessages user toChatId False itemTTL cmrs
     CTGroup -> do
-      cmrs <- prepareForward user
-      case L.nonEmpty cmrs of
-        Just cmrs' ->
-          withGroupLock "forwardChatItem, to group" toChatId $
-            sendGroupContentMessages user toChatId False itemTTL cmrs'
-        Nothing -> throwChatError $ CEInternalError "no chat items to forward"
+      cmrs <- prepareForwardOrFail user
+      withGroupLock "forwardChatItem, to group" toChatId $
+        sendGroupContentMessages user toChatId False itemTTL cmrs
     CTLocal -> do
-      cmrs <- prepareForward user
-      case L.nonEmpty cmrs of
-        Just cmrs' ->
-          createNoteFolderContentItems user toChatId cmrs'
-        Nothing -> throwChatError $ CEInternalError "no chat items to forward"
+      cmrs <- prepareForwardOrFail user
+      createNoteFolderContentItems user toChatId cmrs
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     where
-      prepareForward :: User -> CM [ComposeMessageReq]
+      prepareForwardOrFail :: User -> CM (NonEmpty ComposeMessageReq)
+      prepareForwardOrFail user = do
+        (errs, cmrs) <- partitionEithers . L.toList <$> prepareForward user
+        case sortOn fst errs of
+          [] -> maybe (throwChatError $ CEInternalError "no chat items to forward") pure $ L.nonEmpty cmrs
+          errs'@((err, _) : _) -> throwChatError $ case err of
+            FFENotAccepted _ -> CEForwardFilesNotAccepted files msgCount
+            FFEInProgress -> CEForwardFilesInProgress filesCount msgCount
+            FFEMissing -> CEForwardFilesMissing filesCount msgCount
+            FFEFailed -> CEForwardFilesFailed filesCount msgCount
+            where
+              msgCount = foldl' (\cnt (_, hasContent) -> if hasContent then cnt + 1 else cnt) 0 errs'
+              filesCount = foldl' (\cnt (e, _) -> if err == e then cnt + 1 else cnt) 0 errs'
+              files = foldl' (\ftIds -> \case (FFENotAccepted ftId, _) -> ftId : ftIds; _ -> ftIds) [] errs'
+      prepareForward :: User -> CM (NonEmpty (Either (ForwardFileError, Bool) ComposeMessageReq))
       prepareForward user = case fromCType of
         CTDirect -> withContactLock "forwardChatItem, from contact" fromChatId $ do
           ct <- withFastStore $ \db -> getContact db vr user fromChatId
-          (errs, items) <- lift $ partitionEithers <$> withStoreBatch (\db -> map (getDirectCI db) (L.toList itemIds))
-          unless (null errs) $ toView $ CRChatErrors (Just user) errs
-          mapM (ciComposeMsgReq ct) items
+          items <- withFastStore $ \db -> mapM (getDirectChatItem db user fromChatId) itemIds
+          mapM (ciComposeMsgReq $ Just $ CIFFContact $ forwardName ct) items
           where
-            getDirectCI :: DB.Connection -> ChatItemId -> IO (Either ChatError (CChatItem 'CTDirect))
-            getDirectCI db itemId = runExceptT . withExceptT ChatErrorStore $ getDirectChatItem db user fromChatId itemId
-            ciComposeMsgReq :: Contact -> CChatItem 'CTDirect -> CM ComposeMessageReq
-            ciComposeMsgReq ct (CChatItem _ ci) = do
-              (mc, mDir) <- forwardMC ci
-              file <- forwardCryptoFile ci
-              let itemId = chatItemId' ci
-                  ciff = forwardCIFF ci $ Just (CIFFContact (forwardName ct) mDir (Just fromChatId) (Just itemId))
-              pure (ComposedMessage file Nothing mc, ciff)
-              where
-                forwardName :: Contact -> ContactName
-                forwardName Contact {profile = LocalProfile {displayName, localAlias}}
-                  | localAlias /= "" = localAlias
-                  | otherwise = displayName
+            forwardName Contact {profile = LocalProfile {displayName, localAlias}}
+              | localAlias /= "" = localAlias
+              | otherwise = displayName
         CTGroup -> withGroupLock "forwardChatItem, from group" fromChatId $ do
-          gInfo <- withFastStore $ \db -> getGroupInfo db vr user fromChatId
-          (errs, items) <- lift $ partitionEithers <$> withStoreBatch (\db -> map (getGroupCI db) (L.toList itemIds))
-          unless (null errs) $ toView $ CRChatErrors (Just user) errs
-          mapM (ciComposeMsgReq gInfo) items
-          where
-            getGroupCI :: DB.Connection -> ChatItemId -> IO (Either ChatError (CChatItem 'CTGroup))
-            getGroupCI db itemId = runExceptT . withExceptT ChatErrorStore $ getGroupChatItem db user fromChatId itemId
-            ciComposeMsgReq :: GroupInfo -> CChatItem 'CTGroup -> CM ComposeMessageReq
-            ciComposeMsgReq gInfo (CChatItem _ ci) = do
-              (mc, mDir) <- forwardMC ci
-              file <- forwardCryptoFile ci
-              let itemId = chatItemId' ci
-                  ciff = forwardCIFF ci $ Just (CIFFGroup (forwardName gInfo) mDir (Just fromChatId) (Just itemId))
-              pure (ComposedMessage file Nothing mc, ciff)
-              where
-                forwardName :: GroupInfo -> ContactName
-                forwardName GroupInfo {groupProfile = GroupProfile {displayName}} = displayName
+          GroupInfo {groupProfile = GroupProfile {displayName}} <- withFastStore $ \db -> getGroupInfo db vr user fromChatId
+          items <- withFastStore $ \db -> mapM (getGroupChatItem db user fromChatId) itemIds
+          mapM (ciComposeMsgReq $ Just $ CIFFGroup displayName) items
         CTLocal -> do
-          (errs, items) <- lift $ partitionEithers <$> withStoreBatch (\db -> map (getLocalCI db) (L.toList itemIds))
-          unless (null errs) $ toView $ CRChatErrors (Just user) errs
-          mapM ciComposeMsgReq items
-          where
-            getLocalCI :: DB.Connection -> ChatItemId -> IO (Either ChatError (CChatItem 'CTLocal))
-            getLocalCI db itemId = runExceptT . withExceptT ChatErrorStore $ getLocalChatItem db user fromChatId itemId
-            ciComposeMsgReq :: CChatItem 'CTLocal -> CM ComposeMessageReq
-            ciComposeMsgReq (CChatItem _ ci) = do
-              (mc, _) <- forwardMC ci
-              file <- forwardCryptoFile ci
-              let ciff = forwardCIFF ci Nothing
-              pure (ComposedMessage file Nothing mc, ciff)
+          items <- withFastStore $ \db -> mapM (getLocalChatItem db user fromChatId) itemIds
+          mapM (ciComposeMsgReq Nothing) items
         CTContactRequest -> throwChatError $ CECommandError "not supported"
         CTContactConnection -> throwChatError $ CECommandError "not supported"
         where
+          ciComposeMsgReq :: Maybe (MsgDirection -> Maybe Int64 -> Maybe ChatItemId -> CIForwardedFrom) -> CChatItem d -> CM (Either (ForwardFileError, Bool) ComposeMessageReq)
+          ciComposeMsgReq mkCiff_ (CChatItem _ ci) = do
+            mcDir <- forwardMC ci
+            forwardCryptoFile ci (fst mcDir) >>= mapM (msgReq mcDir)
+            where
+              msgReq (mc, mDir) file = do
+                let itemId = chatItemId' ci
+                    ciff = forwardCIFF ci $ (\mkCiff -> mkCiff mDir (Just fromChatId) (Just itemId)) <$> mkCiff_
+                pure (ComposedMessage file Nothing mc, ciff)
           forwardMC :: ChatItem c d -> CM (MsgContent, MsgDirection)
-          forwardMC ChatItem {meta = CIMeta {itemDeleted = Just _}} = throwChatError CEForwardFilesDeleted
+          forwardMC ChatItem {meta = CIMeta {itemDeleted = Just _}} = throwChatError CEInvalidForward
           forwardMC ChatItem {content = CISndMsgContent fmc} = pure (fmc, MDSnd)
           forwardMC ChatItem {content = CIRcvMsgContent fmc} = pure (fmc, MDRcv)
           forwardMC _ = throwChatError CEInvalidForward
@@ -1070,17 +1048,15 @@ processChatCommand' vr = \case
             Nothing -> ciff
             Just CIFFUnknown -> ciff
             Just prevCIFF -> Just prevCIFF
-          ignoreOrThrow :: ChatErrorType -> CM (Maybe a)
-          ignoreOrThrow err = if ignoreMissingFiles then pure Nothing else throwChatError err
-          forwardCryptoFile :: ChatItem c d -> CM (Maybe CryptoFile)
-          forwardCryptoFile ChatItem {file = Nothing} = pure Nothing
-          forwardCryptoFile ChatItem {file = Just ciFile} = case ciFile of
-            CIFile {fileName, fileStatus, fileSource = Just fromCF@CryptoFile {filePath}}
-              | ciFileLoading fileStatus -> ignoreOrThrow CEForwardFilesInProgress
-              | ciFileLoaded fileStatus ->
+          forwardCryptoFile :: ChatItem c d -> MsgContent -> CM (Either (ForwardFileError, Bool) (Maybe CryptoFile))
+          forwardCryptoFile ChatItem {file = Nothing} _ = pure $ Right Nothing
+          forwardCryptoFile ChatItem {file = Just ciFile} mc = case ciFile of
+            CIFile {fileId, fileName, fileStatus, fileSource = Just fromCF@CryptoFile {filePath}} -> case ciFileForwardError fileId fileStatus of
+              Just e -> pure $ ignoreOrError e
+              Nothing ->
                   chatReadVar filesFolder >>= \case
                     Nothing ->
-                      ifM (doesFileExist filePath) (pure $ Just fromCF) (throwChatError CEForwardFilesDeleted)
+                      ifM (doesFileExist filePath) (pure $ Right $ Just fromCF) (pure $ ignoreOrError FFEMissing)
                     Just filesFolder -> do
                       let fsFromPath = filesFolder </> filePath
                       ifM
@@ -1093,11 +1069,16 @@ processChatCommand' vr = \case
                             let toCF = CryptoFile fsNewPath cfArgs
                             -- to keep forwarded file in case original is deleted
                             liftIOEither $ runExceptT $ withExceptT (ChatError . CEInternalError . show) $ copyCryptoFile (fromCF {filePath = fsFromPath} :: CryptoFile) toCF
-                            pure $ Just (toCF {filePath = takeFileName fsNewPath} :: CryptoFile)
+                            pure $ Right $ Just (toCF {filePath = takeFileName fsNewPath} :: CryptoFile)
                         )
-                        (ignoreOrThrow CEForwardFilesDeleted)
-              | otherwise -> ignoreOrThrow CEForwardFilesDeleted
-            _ -> ignoreOrThrow CEForwardFilesDeleted
+                        (pure $ ignoreOrError FFEMissing)
+            _ -> pure $ ignoreOrError FFEMissing
+            where
+              ignoreOrError err = if ignoreMissingFiles then Right Nothing else Left (err, hasContent mc)
+                where
+                  hasContent = \case
+                    MCImage {} -> True
+                    mc' -> msgContentText mc' /= ""
           copyCryptoFile :: CryptoFile -> CryptoFile -> ExceptT CF.FTCryptoError IO ()
           copyCryptoFile fromCF@CryptoFile {filePath = fsFromPath, cryptoArgs = fromArgs} toCF@CryptoFile {cryptoArgs = toArgs} = do
             fromSizeFull <- getFileSize fsFromPath
@@ -1836,17 +1817,17 @@ processChatCommand' vr = \case
     contactId <- withFastStore $ \db -> getContactIdByName db user fromContactName
     forwardedItemId <- withFastStore $ \db -> getDirectChatItemIdByText' db user contactId forwardedMsg
     toChatRef <- getChatRef user toChatName
-    processChatCommand $ APIForwardChatItems toChatRef (ChatRef CTDirect contactId) (forwardedItemId :| []) Nothing False
+    processChatCommand $ APIForwardChatItems toChatRef (ChatRef CTDirect contactId) (forwardedItemId :| []) Nothing True
   ForwardGroupMessage toChatName fromGroupName fromMemberName_ forwardedMsg -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user fromGroupName
     forwardedItemId <- withFastStore $ \db -> getGroupChatItemIdByText db user groupId fromMemberName_ forwardedMsg
     toChatRef <- getChatRef user toChatName
-    processChatCommand $ APIForwardChatItems toChatRef (ChatRef CTGroup groupId) (forwardedItemId :| []) Nothing False
+    processChatCommand $ APIForwardChatItems toChatRef (ChatRef CTGroup groupId) (forwardedItemId :| []) Nothing True
   ForwardLocalMessage toChatName forwardedMsg -> withUser $ \user -> do
     folderId <- withFastStore (`getUserNoteFolderId` user)
     forwardedItemId <- withFastStore $ \db -> getLocalChatItemIdByText' db user folderId forwardedMsg
     toChatRef <- getChatRef user toChatName
-    processChatCommand $ APIForwardChatItems toChatRef (ChatRef CTLocal folderId) (forwardedItemId :| []) Nothing False
+    processChatCommand $ APIForwardChatItems toChatRef (ChatRef CTLocal folderId) (forwardedItemId :| []) Nothing True
   SendMessage (ChatName cType name) msg -> withUser $ \user -> do
     let mc = MCText msg
     case cType of
@@ -7893,7 +7874,7 @@ chatCommandP =
       "/_delete item " *> (APIDeleteChatItem <$> chatRefP <*> _strP <* A.space <*> ciDeleteMode),
       "/_delete member item #" *> (APIDeleteMemberChatItem <$> A.decimal <*> _strP),
       "/_reaction " *> (APIChatItemReaction <$> chatRefP <* A.space <*> A.decimal <* A.space <*> onOffP <* A.space <*> jsonP),
-      "/_forward " *> (APIForwardChatItems <$> chatRefP <* A.space <*> chatRefP <*> _strP <*> sendMessageTTLP <* A.space <*> onOffP),
+      "/_forward " *> (APIForwardChatItems <$> chatRefP <* A.space <*> chatRefP <*> _strP <*> sendMessageTTLP <*> (" ignore_files=" *> onOffP <|> pure False)),
       "/_read user " *> (APIUserRead <$> A.decimal),
       "/read user" $> UserRead,
       "/_read chat " *> (APIChatRead <$> chatRefP <*> optional (A.space *> ((,) <$> ("from=" *> A.decimal) <* A.space <*> ("to=" *> A.decimal)))),
