@@ -5577,6 +5577,10 @@ sealed class ChatErrorType {
       is InlineFileProhibited -> "inlineFileProhibited"
       is InvalidQuote -> "invalidQuote"
       is InvalidForward -> "invalidForward"
+      is ForwardFilesNotAccepted -> "forwardFilesNotAccepted"
+      is ForwardFilesInProgress -> "forwardFilesInProgress"
+      is ForwardFilesMissing -> "forwardFilesMissing"
+      is ForwardFilesFailed -> "forwardFilesFailed"
       is InvalidChatItemUpdate -> "invalidChatItemUpdate"
       is InvalidChatItemDelete -> "invalidChatItemDelete"
       is HasCurrentCall -> "hasCurrentCall"
@@ -5655,6 +5659,10 @@ sealed class ChatErrorType {
   @Serializable @SerialName("inlineFileProhibited") class InlineFileProhibited(val fileId: Long): ChatErrorType()
   @Serializable @SerialName("invalidQuote") object InvalidQuote: ChatErrorType()
   @Serializable @SerialName("invalidForward") object InvalidForward: ChatErrorType()
+  @Serializable @SerialName("forwardFilesNotAccepted") class ForwardFilesNotAccepted(val files: List<Long>, val msgCount: Int): ChatErrorType()
+  @Serializable @SerialName("forwardFilesInProgress") class ForwardFilesInProgress(val msgCount: Int): ChatErrorType()
+  @Serializable @SerialName("forwardFilesMissing") class ForwardFilesMissing(val msgCount: Int): ChatErrorType()
+  @Serializable @SerialName("forwardFilesFailed") class ForwardFilesFailed(val msgCount: Int): ChatErrorType()
   @Serializable @SerialName("invalidChatItemUpdate") object InvalidChatItemUpdate: ChatErrorType()
   @Serializable @SerialName("invalidChatItemDelete") object InvalidChatItemDelete: ChatErrorType()
   @Serializable @SerialName("hasCurrentCall") object HasCurrentCall: ChatErrorType()
