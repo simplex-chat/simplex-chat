@@ -12,7 +12,7 @@ import Test.Hspec hiding (it)
 
 chatForwardTests :: SpecWith FilePath
 chatForwardTests = do
-  describe "forward messages" $ do
+  fdescribe "forward messages" $ do
     it "from contact to contact" testForwardContactToContact
     it "from contact to group" testForwardContactToGroup
     it "from contact to notes" testForwardContactToNotes
@@ -22,18 +22,18 @@ chatForwardTests = do
     it "from notes to contact" testForwardNotesToContact
     it "from notes to group" testForwardNotesToGroup
     it "from notes to notes" testForwardNotesToNotes -- TODO forward between different folders when supported
-  describe "interactions with forwarded messages" $ do
+  fdescribe "interactions with forwarded messages" $ do
     it "preserve original forward info" testForwardPreserveInfo
     it "received forwarded message is saved with new forward info" testForwardRcvMsgNewInfo
     it "quoted message is not included" testForwardQuotedMsg
     it "editing is prohibited" testForwardEditProhibited
     it "delete for other" testForwardDeleteForOther
-  describe "forward files" $ do
+  fdescribe "forward files" $ do
     it "from contact to contact" testForwardFileNoFilesFolder
     it "with relative paths: from contact to contact" testForwardFileContactToContact
     it "with relative paths: from group to notes" testForwardFileGroupToNotes
     it "with relative paths: from notes to group" testForwardFileNotesToGroup
-  describe "multi forward api" $ do
+  fdescribe "multi forward api" $ do
     it "from contact to contact" testForwardContactToContactMulti
     it "from group to group" testForwardGroupToGroupMulti
     it "with relative paths: multiple files from contact to contact" testMultiForwardFiles

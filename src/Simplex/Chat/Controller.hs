@@ -650,7 +650,7 @@ data ChatResponse
   | CRContactRequestAlreadyAccepted {user :: User, contact :: Contact}
   | CRLeftMemberUser {user :: User, groupInfo :: GroupInfo}
   | CRGroupDeletedUser {user :: User, groupInfo :: GroupInfo}
-  | CRForwardPlan {user :: User, chatItemIds :: [ChatItemId], forwardConfirmation :: Maybe ForwardConfirmation}
+  | CRForwardPlan {user :: User, itemsCount :: Int, chatItemIds :: [ChatItemId], forwardConfirmation :: Maybe ForwardConfirmation}
   | CRRcvFileDescrReady {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer, rcvFileDescr :: RcvFileDescr}
   | CRRcvFileAccepted {user :: User, chatItem :: AChatItem}
   | CRRcvFileAcceptedSndCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer}
@@ -908,7 +908,7 @@ connectionPlanProceed = \case
     _ -> False
 
 data ForwardConfirmation
-  = FCFilesNotAccepted {files :: [FileTransferId]}
+  = FCFilesNotAccepted {fileIds :: [FileTransferId]}
   | FCFilesInProgress {filesCount :: Int}
   | FCFilesMissing {filesCount :: Int}
   | FCFilesFailed {filesCount :: Int}
