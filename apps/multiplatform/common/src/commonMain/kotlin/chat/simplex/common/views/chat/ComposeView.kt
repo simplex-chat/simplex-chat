@@ -14,9 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import dev.icerock.moko.resources.compose.painterResource
@@ -441,8 +438,6 @@ fun ComposeView(
         }
         // TODO batch send: forward multiple messages
         return chatItems.firstOrNull()
-      } else if (error != null) {
-        handleForwardError(error)
       }
 
       return null
@@ -1049,12 +1044,12 @@ fun ComposeView(
   }
 }
 
-private fun handleForwardError(error: ChatErrorType) {
-  when (error) {
-    is ChatErrorType.ForwardFilesNotAccepted -> {
+private fun handleForwardConfirmation(forwardPlan: CR.ForwardPlan?) {
+  when (val confirmation = forwardPlan?.forwardConfirmation) {
+    is ForwardConfirmation.FilesNotAccepted -> {
       AlertManager.shared.showAlertDialogButtonsColumn(
         title = generalGetString(MR.strings.forward_files_not_accepted_title),
-        text = String.format(generalGetString(MR.strings.forward_files_not_accepted_desc), error.files.count()),
+        text = String.format(generalGetString(MR.strings.forward_files_not_accepted_desc), confirmation.files.count()),
         buttons = {
           Column {
             SectionItemView({
@@ -1065,7 +1060,7 @@ private fun handleForwardError(error: ChatErrorType) {
             SectionItemView({
               AlertManager.shared.hideAlert()
             }) {
-              if (error.msgCount - error.files.count() > 0) {
+              if (forwardPlan.chatItemIds.isNotEmpty()) {
                 Text(stringResource(MR.strings.forward_files_forward_without_files), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
               } else {
                 Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
@@ -1075,7 +1070,7 @@ private fun handleForwardError(error: ChatErrorType) {
         }
       )
     }
-    is ChatErrorType.ForwardFilesInProgress -> {
+    is ForwardConfirmation.FilesInProgress -> {
       AlertManager.shared.showAlertDialogButtonsColumn(
         title = generalGetString(MR.strings.forward_files_in_progress_title),
         text = generalGetString(MR.strings.forward_files_in_progress_desc),
@@ -1095,14 +1090,13 @@ private fun handleForwardError(error: ChatErrorType) {
         }
       )
     }
-    is ChatErrorType.ForwardFilesMissing -> {
+    is ForwardConfirmation.FilesMissing -> {
       AlertManager.shared.showAlertDialogButtonsColumn(
         title = generalGetString(MR.strings.forward_files_in_missing_title),
         text = generalGetString(MR.strings.forward_files_in_missing_desc),
         buttons = {
           Column {
-            // TODO: Backend for this is broken
-            if (error.msgCount > 0) {
+            if (forwardPlan.chatItemIds.isNotEmpty()) {
               SectionItemView({
                 AlertManager.shared.hideAlert()
               }) {
@@ -1118,7 +1112,7 @@ private fun handleForwardError(error: ChatErrorType) {
         }
       )
     }
-    is ChatErrorType.ForwardFilesFailed -> null
-    else -> null
+    is ForwardConfirmation.FilesFailed -> {}
+    else -> {}
   }
 }

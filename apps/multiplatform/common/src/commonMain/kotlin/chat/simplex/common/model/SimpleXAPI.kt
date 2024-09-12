@@ -2918,6 +2918,7 @@ sealed class CC {
   class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemIds: List<Long>, val mode: CIDeleteMode): CC()
   class ApiDeleteMemberChatItem(val groupId: Long, val itemIds: List<Long>): CC()
   class ApiChatItemReaction(val type: ChatType, val id: Long, val itemId: Long, val add: Boolean, val reaction: MsgReaction): CC()
+  class ApiPlanForwardChatItems(val fromChatType: ChatType, val fromChatId: Long, val chatItemIds: List<Long>): CC()
   class ApiForwardChatItems(val toChatType: ChatType, val toChatId: Long, val fromChatType: ChatType, val fromChatId: Long, val itemIds: List<Long>, val ttl: Int?): CC()
   class ApiNewGroup(val userId: Long, val incognito: Boolean, val groupProfile: GroupProfile): CC()
   class ApiAddMember(val groupId: Long, val contactId: Long, val memberRole: GroupMemberRole): CC()
@@ -3076,6 +3077,9 @@ sealed class CC {
       val ttlStr = if (ttl != null) "$ttl" else "default"
       "/_forward ${chatRef(toChatType, toChatId)} ${chatRef(fromChatType, fromChatId)} ${itemIds.joinToString(",")} ttl=${ttlStr}"
     }
+    is ApiPlanForwardChatItems -> {
+      "/_forward plan ${chatRef(fromChatType, fromChatId)} ${chatItemIds.joinToString(",")}"
+    }
     is ApiNewGroup -> "/_group $userId incognito=${onOff(incognito)} ${json.encodeToString(groupProfile)}"
     is ApiAddMember -> "/_add #$groupId $contactId ${memberRole.memberRole}"
     is ApiJoinGroup -> "/_join #$groupId"
@@ -3220,6 +3224,7 @@ sealed class CC {
     is ApiDeleteMemberChatItem -> "apiDeleteMemberChatItem"
     is ApiChatItemReaction -> "apiChatItemReaction"
     is ApiForwardChatItems -> "apiForwardChatItems"
+    is ApiPlanForwardChatItems -> "apiPlanForwardChatItems"
     is ApiNewGroup -> "apiNewGroup"
     is ApiAddMember -> "apiAddMember"
     is ApiJoinGroup -> "apiJoinGroup"
@@ -4854,6 +4859,7 @@ sealed class CR {
   @Serializable @SerialName("chatItemNotChanged") class ChatItemNotChanged(val user: UserRef, val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemReaction") class ChatItemReaction(val user: UserRef, val added: Boolean, val reaction: ACIReaction): CR()
   @Serializable @SerialName("chatItemsDeleted") class ChatItemsDeleted(val user: UserRef, val chatItemDeletions: List<ChatItemDeletion>, val byUser: Boolean): CR()
+  @Serializable @SerialName("forwardPlan") class ForwardPlan(val user: UserRef, val chatItemIds: List<Long>, val forwardConfirmation: ForwardConfirmation): CR()
   // group events
   @Serializable @SerialName("groupCreated") class GroupCreated(val user: UserRef, val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("sentGroupInvitation") class SentGroupInvitation(val user: UserRef, val groupInfo: GroupInfo, val contact: Contact, val member: GroupMember): CR()
@@ -5031,6 +5037,7 @@ sealed class CR {
     is ChatItemNotChanged -> "chatItemNotChanged"
     is ChatItemReaction -> "chatItemReaction"
     is ChatItemsDeleted -> "chatItemsDeleted"
+    is ForwardPlan -> "forwardPlan"
     is GroupCreated -> "groupCreated"
     is SentGroupInvitation -> "sentGroupInvitation"
     is UserAcceptedGroupSent -> "userAcceptedGroupSent"
@@ -5200,6 +5207,7 @@ sealed class CR {
     is ChatItemNotChanged -> withUser(user, json.encodeToString(chatItem))
     is ChatItemReaction -> withUser(user, "added: $added\n${json.encodeToString(reaction)}")
     is ChatItemsDeleted -> withUser(user, "${chatItemDeletions.map { (deletedChatItem, toChatItem) -> "deletedChatItem: ${json.encodeToString(deletedChatItem)}\ntoChatItem: ${json.encodeToString(toChatItem)}" }} \nbyUser: $byUser")
+    is ForwardPlan -> withUser(user, "chatItemIds: ${json.encodeToString(chatItemIds)}\nforwardConfirmation:  ${json.encodeToString(forwardConfirmation)}")
     is GroupCreated -> withUser(user, json.encodeToString(groupInfo))
     is SentGroupInvitation -> withUser(user, "groupInfo: $groupInfo\ncontact: $contact\nmember: $member")
     is UserAcceptedGroupSent -> json.encodeToString(groupInfo)
@@ -5595,10 +5603,6 @@ sealed class ChatErrorType {
       is InlineFileProhibited -> "inlineFileProhibited"
       is InvalidQuote -> "invalidQuote"
       is InvalidForward -> "invalidForward"
-      is ForwardFilesNotAccepted -> "forwardFilesNotAccepted"
-      is ForwardFilesInProgress -> "forwardFilesInProgress"
-      is ForwardFilesMissing -> "forwardFilesMissing"
-      is ForwardFilesFailed -> "forwardFilesFailed"
       is InvalidChatItemUpdate -> "invalidChatItemUpdate"
       is InvalidChatItemDelete -> "invalidChatItemDelete"
       is HasCurrentCall -> "hasCurrentCall"
@@ -5677,10 +5681,6 @@ sealed class ChatErrorType {
   @Serializable @SerialName("inlineFileProhibited") class InlineFileProhibited(val fileId: Long): ChatErrorType()
   @Serializable @SerialName("invalidQuote") object InvalidQuote: ChatErrorType()
   @Serializable @SerialName("invalidForward") object InvalidForward: ChatErrorType()
-  @Serializable @SerialName("forwardFilesNotAccepted") class ForwardFilesNotAccepted(val files: List<Long>, val msgCount: Int): ChatErrorType()
-  @Serializable @SerialName("forwardFilesInProgress") class ForwardFilesInProgress(val msgCount: Int): ChatErrorType()
-  @Serializable @SerialName("forwardFilesMissing") class ForwardFilesMissing(val msgCount: Int): ChatErrorType()
-  @Serializable @SerialName("forwardFilesFailed") class ForwardFilesFailed(val msgCount: Int): ChatErrorType()
   @Serializable @SerialName("invalidChatItemUpdate") object InvalidChatItemUpdate: ChatErrorType()
   @Serializable @SerialName("invalidChatItemDelete") object InvalidChatItemDelete: ChatErrorType()
   @Serializable @SerialName("hasCurrentCall") object HasCurrentCall: ChatErrorType()
