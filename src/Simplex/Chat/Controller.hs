@@ -298,7 +298,7 @@ data ChatCommand
   | APIDeleteChatItem ChatRef (NonEmpty ChatItemId) CIDeleteMode
   | APIDeleteMemberChatItem GroupId (NonEmpty ChatItemId)
   | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, add :: Bool, reaction :: MsgReaction}
-  | APIForwardChatItems {toChatRef :: ChatRef, fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId, ttl :: Maybe Int, ignoreMissingFiles :: Bool}
+  | APIForwardChatItems {toChatRef :: ChatRef, fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId, ttl :: Maybe Int}
   | APIUserRead UserId
   | UserRead
   | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
@@ -1178,10 +1178,6 @@ data ChatErrorType
   | CEFallbackToSMPProhibited {fileId :: FileTransferId}
   | CEInlineFileProhibited {fileId :: FileTransferId}
   | CEInvalidQuote
-  | CEForwardFilesNotAccepted {files :: [FileTransferId], msgCount :: Int} -- contentCount is the count of messages if files are ignored
-  | CEForwardFilesInProgress {filesCount :: Int, msgCount :: Int}
-  | CEForwardFilesMissing {filesCount :: Int, msgCount :: Int}
-  | CEForwardFilesFailed {filesCount :: Int, msgCount :: Int}
   | CEInvalidForward
   | CEInvalidChatItemUpdate
   | CEInvalidChatItemDelete
