@@ -364,7 +364,7 @@ private fun ActiveCallOverlayLayout(
         DisabledBackgroundCallsButton()
       }
 
-      BoxWithConstraints(Modifier.padding(horizontal = 6.dp)) {
+      BoxWithConstraints(Modifier.padding(start = 6.dp, end = 6.dp, bottom = DEFAULT_PADDING)) {
         val size = ((maxWidth - 4 * DEFAULT_PADDING_HALF) / 5).coerceAtMost(60.dp)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
           ToggleAudioButton(call, enabled, toggleAudio, size = size)
