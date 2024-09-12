@@ -890,6 +890,16 @@ object ChatController {
     return processSendMessageCmd(rh, cmd)?.map { it.chatItem }
   }
 
+  suspend fun apiPlanForwardChatItems(rh: Long?, fromChatType: ChatType, fromChatId: Long, chatItemIds: List<Long>): CR.ForwardPlan? {
+    return when (val r = sendCmd(rh, CC.ApiPlanForwardChatItems(fromChatType, fromChatId, chatItemIds))) {
+      is CR.ForwardPlan -> r
+      else -> {
+        apiErrorAlert("apiPlanForwardChatItems", generalGetString(MR.strings.error_forwarding_messages), r)
+        null
+      }
+    }
+  }
+
   suspend fun apiUpdateChatItem(rh: Long?, type: ChatType, id: Long, itemId: Long, mc: MsgContent, live: Boolean = false): AChatItem? {
     val r = sendCmd(rh, CC.ApiUpdateChatItem(type, id, itemId, mc, live))
     if (r is CR.ChatItemUpdated) return r.chatItem
