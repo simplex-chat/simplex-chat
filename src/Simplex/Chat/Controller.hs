@@ -298,6 +298,7 @@ data ChatCommand
   | APIDeleteChatItem ChatRef (NonEmpty ChatItemId) CIDeleteMode
   | APIDeleteMemberChatItem GroupId (NonEmpty ChatItemId)
   | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, add :: Bool, reaction :: MsgReaction}
+  | APIPlanForwardChatItems {fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId}
   | APIForwardChatItems {toChatRef :: ChatRef, fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId, ttl :: Maybe Int}
   | APIUserRead UserId
   | UserRead
@@ -649,6 +650,7 @@ data ChatResponse
   | CRContactRequestAlreadyAccepted {user :: User, contact :: Contact}
   | CRLeftMemberUser {user :: User, groupInfo :: GroupInfo}
   | CRGroupDeletedUser {user :: User, groupInfo :: GroupInfo}
+  | CRForwardPlan {user :: User, chatItemIds :: [ChatItemId], forwardConfirmation :: Maybe ForwardConfirmation}
   | CRRcvFileDescrReady {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer, rcvFileDescr :: RcvFileDescr}
   | CRRcvFileAccepted {user :: User, chatItem :: AChatItem}
   | CRRcvFileAcceptedSndCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer}
@@ -904,6 +906,13 @@ connectionPlanProceed = \case
     GLPOwnLink _ -> True
     GLPConnectingConfirmReconnect -> True
     _ -> False
+
+data ForwardConfirmation
+  = FCFilesNotAccepted {files :: [FileTransferId]}
+  | FCFilesInProgress {filesCount :: Int}
+  | FCFilesMissing {filesCount :: Int}
+  | FCFilesFailed {filesCount :: Int}
+  deriving (Show)
 
 newtype UserPwd = UserPwd {unUserPwd :: Text}
   deriving (Eq, Show)
@@ -1462,6 +1471,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CAP") ''ContactAddressPlan)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GLP") ''GroupLinkPlan)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CP") ''ConnectionPlan)
+
+$(JQ.deriveJSON defaultJSON ''ForwardConfirmation)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CE") ''ChatErrorType)
 
