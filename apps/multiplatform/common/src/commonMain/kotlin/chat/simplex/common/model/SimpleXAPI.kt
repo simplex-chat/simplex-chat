@@ -885,30 +885,10 @@ object ChatController {
     }
   }
 
-  suspend fun apiForwardChatItems(rh: Long?, toChatType: ChatType, toChatId: Long, fromChatType: ChatType, fromChatId: Long, itemIds: List<Long>, ttl: Int?): Pair<List<ChatItem>?, ChatErrorType?>? {
+  suspend fun apiForwardChatItems(rh: Long?, toChatType: ChatType, toChatId: Long, fromChatType: ChatType, fromChatId: Long, itemIds: List<Long>, ttl: Int?): List<ChatItem>? {
     val cmd = CC.ApiForwardChatItems(toChatType, toChatId, fromChatType, fromChatId, itemIds, ttl)
-
-    return when (val r = sendCmd(rh, cmd)) {
-      is CR.NewChatItems -> r.chatItems.map { it.chatItem } to null
-      is CR.ChatCmdError -> when (r.chatError) {
-        is ChatError.ChatErrorChat -> null to r.chatError.errorType
-        else -> {
-          if (!(networkErrorAlert(r))) {
-            apiErrorAlert("apiForwardChatItems", generalGetString(MR.strings.error_forwarding_messages), r)
-          }
-          return null
-        }
-      }
-      else -> {
-        if (!(networkErrorAlert(r))) {
-          apiErrorAlert("apiForwardChatItems", generalGetString(MR.strings.error_forwarding_messages), r)
-        }
-        return null
-      }
-    }
+    return processSendMessageCmd(rh, cmd)?.map { it.chatItem }
   }
-
-
 
   suspend fun apiUpdateChatItem(rh: Long?, type: ChatType, id: Long, itemId: Long, mc: MsgContent, live: Boolean = false): AChatItem? {
     val r = sendCmd(rh, CC.ApiUpdateChatItem(type, id, itemId, mc, live))

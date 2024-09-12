@@ -420,7 +420,7 @@ fun ComposeView(
     }
 
     suspend fun forwardItem(rhId: Long?, forwardedItem: List<ChatItem>, fromChatInfo: ChatInfo, ttl: Int?): ChatItem? {
-      val (chatItems, error) = controller.apiForwardChatItems(
+      val chatItems = controller.apiForwardChatItems(
         rh = rhId,
         toChatType = chat.chatInfo.chatType,
         toChatId = chat.chatInfo.apiId,
@@ -428,19 +428,15 @@ fun ComposeView(
         fromChatId = fromChatInfo.apiId,
         itemIds = forwardedItem.map { it.id },
         ttl = ttl
-      ) ?: Pair(null, null)
+      )
 
-      if (chatItems != null) {
-        chatItems.forEach { chatItem ->
-          withChats {
-            addChatItem(rhId, chat.chatInfo, chatItem)
-          }
+      chatItems?.forEach { chatItem ->
+        withChats {
+          addChatItem(rhId, chat.chatInfo, chatItem)
         }
-        // TODO batch send: forward multiple messages
-        return chatItems.firstOrNull()
       }
-
-      return null
+      // TODO batch send: forward multiple messages
+      return chatItems?.firstOrNull()
     }
 
     fun checkLinkPreview(): MsgContent {
