@@ -9,6 +9,171 @@
 import SwiftUI
 import SimpleXChat
 
+struct NewUserProfile: View {
+    @State private var profile = Profile(displayName: "", fullName: "")
+    // Modals
+    @State private var showChooseSource = false
+    @State private var showImagePicker = false
+    @State private var showFilePicker = false
+    @State private var showTakePhoto = false
+    @State private var chosenImage: UIImage? = nil
+    @State private var alert: UserProfileAlert?
+
+    var body: some View {
+        List {
+            Section {
+                Text("""
+Your profile is stored on your device and shared only with your contacts.
+SimpleX servers cannot see your profile.
+"""
+                )
+            }
+            Section {
+                ProfileImage(imageStr: profile.image, size: 128)
+                    .padding(8)
+                    .overlay {
+                        if profile.image != nil {
+                            overlayButton("xmark", color: .red, alignment: .topTrailing) { profile.image = nil }
+                        }
+                        overlayButton("pencil", color: .accentColor, alignment: .bottomTrailing) {
+                            showChooseSource = true
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                if showFullName {
+                    nameField("Full name", text: $profile.fullName)
+                }
+                nameField("Profile name", text: $profile.displayName)
+                Button("Save and notify contacts", action: saveProfile).disabled(!canSaveProfile)
+            }
+        }
+        // Lifecycle
+        .task {
+            if let user = ChatModel.shared.currentUser {
+                profile = fromLocalProfile(user.profile)
+            }
+        }
+        .onChange(of: chosenImage) { image in
+            if let image {
+                profile.image = resizeImageToStrSize(cropToSquare(image), maxDataSize: 12500)
+            } else {
+                profile.image = nil
+            }
+        }
+        // Modals
+        .confirmationDialog("Profile image", isPresented: $showChooseSource, titleVisibility: .visible) {
+            Button("Take picture") {
+                showTakePhoto = true
+            }
+            Button("Choose from library") {
+                showImagePicker = true
+            }
+            Button("Choose file") {
+                showFilePicker = true
+            }
+            if UIPasteboard.general.hasImages {
+                Button("Paste image") {
+                    chosenImage = UIPasteboard.general.image
+                }
+            }
+        }
+        .fullScreenCover(isPresented: $showTakePhoto) {
+            ZStack {
+                Color.black.edgesIgnoringSafeArea(.all)
+                CameraImagePicker(image: $chosenImage)
+            }
+        }
+        .sheet(isPresented: $showImagePicker) {
+            LibraryImagePicker(image: $chosenImage) { _ in
+                await MainActor.run {
+                    showImagePicker = false
+                }
+            }
+        }
+        .fileImporter(isPresented: $showFilePicker, allowedContentTypes: [.image]) { url in
+
+        }
+        .alert(item: $alert) { a in userProfileAlert(a, $profile.displayName) }
+    }
+
+    @ViewBuilder
+    private func overlayButton(
+        _ systemName: String,
+        color: Color,
+        alignment: Alignment,
+        action: @escaping () -> Void
+    ) -> some View {
+        Image(systemName: systemName)
+            .foregroundStyle(color)
+            .imageScale(.large)
+            .padding(8)
+            .background(.bar)
+            .clipShape(Circle())
+            .onTapGesture(perform: action)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
+    }
+
+    @ViewBuilder
+    private func nameField(
+        _ title: LocalizedStringKey,
+        text: Binding<String>
+    ) -> some View {
+        let isValid = validDisplayName(text.wrappedValue)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(title).foregroundStyle(.secondary).font(.caption)
+                Spacer()
+                Image(systemName: "exclamationmark.circle")
+                    .foregroundColor(.red)
+                    .opacity(isValid ? 0 : 1)
+                    .onTapGesture {
+                        alert = .invalidNameError(validName: mkValidName(profile.displayName))
+                    }
+            }
+            TextField(title, text: text)
+                .padding(.vertical, 4)
+                .padding(.horizontal, 4)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .stroke(isValid ? Color(.tertiaryLabel) : Color.red)
+                }
+        }.listRowSeparator(.hidden)
+    }
+
+    // MARK: Computed
+    private func validNewProfileName(_ user: User) -> Bool {
+        profile.displayName == user.profile.displayName || validDisplayName(profile.displayName.trimmingCharacters(in: .whitespaces))
+    }
+
+    private var showFullName: Bool {
+        profile.fullName != "" &&
+        profile.fullName != profile.displayName
+    }
+
+    private var canSaveProfile: Bool {
+        profile.displayName.trimmingCharacters(in: .whitespaces) != "" &&
+        validDisplayName(profile.displayName.trimmingCharacters(in: .whitespaces))
+    }
+
+    private func saveProfile() {
+        Task {
+            do {
+                profile.displayName = profile.displayName.trimmingCharacters(in: .whitespaces)
+                if let (newProfile, _) = try await apiUpdateProfile(profile: profile) {
+                    DispatchQueue.main.async {
+                        ChatModel.shared.updateCurrentUser(newProfile)
+                        profile = newProfile
+                    }
+                } else {
+                    alert = .duplicateUserError
+                }
+            } catch {
+                logger.error("UserProfile apiUpdateProfile error: \(responseError(error))")
+            }
+        }
+    }
+}
+
 struct UserProfile: View {
     @EnvironmentObject var chatModel: ChatModel
     @State private var profile = Profile(displayName: "", fullName: "")
