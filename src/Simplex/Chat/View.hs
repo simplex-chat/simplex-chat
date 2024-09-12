@@ -935,7 +935,7 @@ viewForwardPlan :: Int -> [ChatItemId] -> Maybe ForwardConfirmation -> [StyledSt
 viewForwardPlan count itemIds = maybe [forwardCount] $ \fc -> [confirmation fc, forwardCount]
   where
     confirmation = \case
-      FCFilesNotAccepted fileIds -> plain $ "Some files are not accepted: " <> intercalate ", " (map show fileIds)
+      FCFilesNotAccepted fileIds -> plain $ "Files can be received: " <> intercalate ", " (map show fileIds)
       FCFilesInProgress cnt -> plain $ "Still receiving " <> show cnt <> " file(s)"
       FCFilesMissing cnt -> plain $ show cnt <> " file(s) are missing"
       FCFilesFailed cnt -> plain $ "Receiving " <> show cnt <> " file(s) failed"

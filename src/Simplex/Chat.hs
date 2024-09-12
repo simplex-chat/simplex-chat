@@ -991,17 +991,23 @@ processChatCommand' vr = \case
           forwardContentPlan :: ChatItem c d -> MsgContent -> CM (Maybe ChatItemId, Maybe ForwardFileError)
           forwardContentPlan ChatItem {file, meta = CIMeta {itemId}} mc = case file of
             Nothing -> pure (Just itemId, Nothing)
-            Just CIFile {fileId, fileStatus, fileSource = Just CryptoFile {filePath}} -> case ciFileForwardError fileId fileStatus of
+            Just CIFile {fileId, fileStatus, fileSource} -> case ciFileForwardError fileId fileStatus of
               Just err -> pure $ itemIdWithoutFile err
-              Nothing -> do
-                exists <- doesFileExist . maybe filePath (</> filePath) =<< chatReadVar filesFolder
-                pure $ if exists then (Just itemId, Nothing) else itemIdWithoutFile FFEMissing
-            _ -> pure $ itemIdWithoutFile FFEMissing
+              Nothing -> case fileSource of
+                Just CryptoFile {filePath} -> do
+                  exists <- doesFileExist . maybe filePath (</> filePath) =<< chatReadVar filesFolder
+                  pure $ if exists then (Just itemId, Nothing) else itemIdWithoutFile FFEMissing
+                Nothing -> pure $ itemIdWithoutFile FFEMissing
             where
               itemIdWithoutFile err = (if hasContent then Just itemId else Nothing, Just err)
               hasContent = case mc of
+                MCText _ -> True
+                MCLink {} -> True
                 MCImage {} -> True
-                _ -> msgContentText mc /= ""
+                MCVideo {text} -> text /= ""
+                MCVoice {} -> False
+                MCFile t -> t /= ""
+                MCUnknown {} -> True
   APIForwardChatItems (ChatRef toCType toChatId) (ChatRef fromCType fromChatId) itemIds itemTTL -> withUser $ \user -> case toCType of
     CTDirect -> do
       cmrs <- prepareForward user
@@ -1098,6 +1104,7 @@ processChatCommand' vr = \case
             where
               contentWithoutFile = case mc of
                 MCImage {} -> Just (mc, Nothing)
+                MCLink {} -> Just (mc, Nothing)
                 _ | contentText /= "" -> Just (MCText contentText, Nothing)
                 _ -> Nothing
               contentText = msgContentText mc
