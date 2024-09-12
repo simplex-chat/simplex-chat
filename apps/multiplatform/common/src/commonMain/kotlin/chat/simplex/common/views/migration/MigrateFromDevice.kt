@@ -349,7 +349,15 @@ private fun MutableState<MigrationFromState>.LinkShownView(fileId: Long, link: S
       text = stringResource(MR.strings.migrate_from_device_finalize_migration),
       textColor = MaterialTheme.colors.primary,
       click = {
-        finishMigration(fileId, ctrl)
+        AlertManager.shared.showAlertDialog(
+          title = generalGetString(MR.strings.migrate_from_device_remove_archive_question),
+          text = generalGetString(MR.strings.migrate_from_device_uploaded_archive_will_be_removed),
+          confirmText = generalGetString(MR.strings.continue_to_next_step),
+          destructive = true,
+          onConfirm = {
+            finishMigration(fileId, ctrl)
+          }
+        )
       }
     ) {}
     SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_archive_will_be_deleted))

@@ -23,7 +23,6 @@ struct ChatView: View {
     @Environment(\.scenePhase) var scenePhase
     @State @ObservedObject var chat: Chat
     @StateObject private var scrollModel = ReverseListScrollModel()
-    @StateObject private var floatingButtonModel: FloatingButtonModel = .shared
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
@@ -76,8 +75,7 @@ struct ChatView: View {
             VStack(spacing: 0) {
                 ZStack(alignment: .bottomTrailing) {
                     chatItemsList()
-                    // TODO: Extract into a separate view, to reduce the scope of `FloatingButtonModel` updates
-                    floatingButtons(unreadBelow: floatingButtonModel.unreadBelow, isNearBottom: floatingButtonModel.isNearBottom)
+                    FloatingButtons(theme: theme, scrollModel: scrollModel, chat: chat)
                 }
                 connectingText()
                 if selectedChatItems == nil {
@@ -341,6 +339,7 @@ struct ChatView: View {
                 await markChatUnread(chat, unreadChat: false)
             }
         }
+        ChatView.FloatingButtonModel.shared.totalUnread = chat.chatStats.unreadCount
     }
 
     private func searchToolbar() -> some View {
@@ -427,7 +426,7 @@ struct ChatView: View {
             .onChange(of: im.itemAdded) { added in
                 if added {
                     im.itemAdded = false
-                    if floatingButtonModel.isReallyNearBottom {
+                    if FloatingButtonModel.shared.isReallyNearBottom {
                         scrollModel.scrollToBottom()
                     }
                 }
@@ -453,86 +452,162 @@ struct ChatView: View {
         static let shared = FloatingButtonModel()
         @Published var unreadBelow: Int = 0
         @Published var isNearBottom: Bool = true
-        var isReallyNearBottom: Bool { scrollOffset.value > 0 && scrollOffset.value < 500 }
-        let visibleItems = PassthroughSubject<[String], Never>()
-        let scrollOffset = CurrentValueSubject<Double, Never>(0)
-        private var bag = Set<AnyCancellable>()
+        @Published var date: Date?
+        @Published var isDateVisible: Bool = false
+        var totalUnread: Int = 0
+        var isReallyNearBottom: Bool = true
+        var hideDateWorkItem: DispatchWorkItem?
 
-        init() {
-            visibleItems
-                .receive(on: DispatchQueue.global(qos: .background))
-                .map { itemIds in
-                    if let viewId = itemIds.first,
-                       let index = ItemsModel.shared.reversedChatItems.firstIndex(where: { $0.viewId == viewId }) {
-                        ItemsModel.shared.reversedChatItems[..<index].reduce(into: 0) { unread, chatItem in
-                            if chatItem.isRcvNew { unread += 1 }
-                        }
-                    } else { 0 }
+        func updateOnListChange(_ listState: ListState) {
+            let im = ItemsModel.shared
+            let unreadBelow =
+                if let id = listState.bottomItemId,
+                   let index = im.reversedChatItems.firstIndex(where: { $0.id == id })
+                {
+                 im.reversedChatItems[..<index].reduce(into: 0) { unread, chatItem in
+                     if chatItem.isRcvNew { unread += 1 }
+                 }
+                } else {
+                    0
                 }
-                .removeDuplicates()
-                .receive(on: DispatchQueue.main)
-                .assign(to: \.unreadBelow, on: self)
-                .store(in: &bag)
+            let date: Date? =
+                if let topItemDate = listState.topItemDate {
+                    Calendar.current.startOfDay(for: topItemDate)
+                } else {
+                    nil
+                }
 
-            scrollOffset
-                .map { $0 < 800 }
-                .removeDuplicates()
-                // Delay the state change until scroll to bottom animation is finished
-                .delay(for: 0.35, scheduler: DispatchQueue.main)
-                .assign(to: \.isNearBottom, on: self)
-                .store(in: &bag)
+            // set the counters and date indicator
+            DispatchQueue.main.async { [weak self] in
+                guard let it = self else { return }
+                it.setDate(visibility: true)
+                it.unreadBelow = unreadBelow
+                it.date = date
+                it.isReallyNearBottom = listState.scrollOffset > 0 && listState.scrollOffset < 500
+            }
+            
+            // set floating button indication mode
+            let nearBottom = listState.scrollOffset < 800
+            if nearBottom != self.isNearBottom {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+                    self?.isNearBottom = nearBottom
+                }
+            }
+            
+            // hide Date indicator after 1 second of no scrolling
+            hideDateWorkItem?.cancel()
+            let workItem = DispatchWorkItem { [weak self] in
+                guard let it = self else { return }
+                it.setDate(visibility: false)
+                it.hideDateWorkItem = nil
+            }
+            DispatchQueue.main.async { [weak self] in
+                self?.hideDateWorkItem = workItem
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: workItem)
+            }
         }
+
+        func resetDate() {
+            date = nil
+            isDateVisible = false
+        }
+
+        private func setDate(visibility isVisible: Bool) {
+            if isVisible {
+                if !isNearBottom,
+                   !isDateVisible,
+                   let date, !Calendar.current.isDateInToday(date) {
+                    withAnimation { self.isDateVisible = true }
+                }
+            } else if isDateVisible {
+                withAnimation { self.isDateVisible = false }
+            }
+        }
+
     }
 
-    private func floatingButtons(unreadBelow: Int, isNearBottom: Bool) -> some View {
-        VStack {
-            let unreadAbove = chat.chatStats.unreadCount - unreadBelow
-            if unreadAbove > 0 {
-                circleButton {
-                    unreadCountText(unreadAbove)
-                        .font(.callout)
-                        .foregroundColor(theme.colors.primary)
+    private struct FloatingButtons: View {
+        let theme: AppTheme
+        let scrollModel: ReverseListScrollModel
+        let chat: Chat
+        @ObservedObject var model = FloatingButtonModel.shared
+
+        var body: some View {
+            ZStack(alignment: .top) {
+                if let date = model.date {
+                     DateSeparator(date: date)
+                         .padding(.vertical, 4).padding(.horizontal, 8)
+                         .background(.thinMaterial)
+                         .clipShape(Capsule())
+                         .opacity(model.isDateVisible ? 1 : 0)
                 }
-                .onTapGesture {
-                    scrollModel.scrollToNextPage()
-                }
-                .contextMenu {
-                    Button {
-                        Task {
-                            await markChatRead(chat)
+                VStack {
+                    let unreadAbove = model.totalUnread - model.unreadBelow
+                    if unreadAbove > 0 {
+                        circleButton {
+                            unreadCountText(unreadAbove)
+                                .font(.callout)
+                                .foregroundColor(theme.colors.primary)
                         }
-                    } label: {
-                        Label("Mark read", systemImage: "checkmark")
+                        .onTapGesture {
+                            scrollModel.scrollToNextPage()
+                        }
+                        .contextMenu {
+                            Button {
+                                Task {
+                                    await markChatRead(chat)
+                                }
+                            } label: {
+                                Label("Mark read", systemImage: "checkmark")
+                            }
+                        }
+                    }
+                    Spacer()
+                    if model.unreadBelow > 0 {
+                        circleButton {
+                            unreadCountText(model.unreadBelow)
+                                .font(.callout)
+                                .foregroundColor(theme.colors.primary)
+                        }
+                        .onTapGesture {
+                            scrollModel.scrollToBottom()
+                        }
+                    } else if !model.isNearBottom {
+                        circleButton {
+                            Image(systemName: "chevron.down")
+                                .foregroundColor(theme.colors.primary)
+                        }
+                        .onTapGesture { scrollModel.scrollToBottom() }
                     }
                 }
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .trailing)
             }
-            Spacer()
-            if unreadBelow > 0 {
-                circleButton {
-                    unreadCountText(unreadBelow)
-                        .font(.callout)
-                        .foregroundColor(theme.colors.primary)
-                }
-                .onTapGesture {
-                    scrollModel.scrollToBottom()
-                }
-            } else if !isNearBottom {
-                circleButton {
-                    Image(systemName: "chevron.down")
-                        .foregroundColor(theme.colors.primary)
-                }
-                .onTapGesture { scrollModel.scrollToBottom() }
+            .onDisappear(perform: model.resetDate)
+        }
+
+        private func circleButton<Content: View>(_ content: @escaping () -> Content) -> some View {
+            ZStack {
+                Circle()
+                    .foregroundColor(Color(uiColor: .tertiarySystemGroupedBackground))
+                    .frame(width: 44, height: 44)
+                content()
             }
         }
-        .padding()
     }
 
-    private func circleButton<Content: View>(_ content: @escaping () -> Content) -> some View {
-        ZStack {
-            Circle()
-                .foregroundColor(Color(uiColor: .tertiarySystemGroupedBackground))
-                .frame(width: 44, height: 44)
-            content()
+    private struct DateSeparator: View {
+        let date: Date
+
+        var body: some View {
+            Text(String.localizedStringWithFormat(
+                NSLocalizedString("%@, %@", comment: "format for date separator in chat"),
+                date.formatted(.dateTime.weekday(.abbreviated)),
+                date.formatted(.dateTime.day().month(.abbreviated))
+            ))
+            .font(.callout)
+            .fontWeight(.medium)
+            .foregroundStyle(.secondary)
         }
     }
 
@@ -693,6 +768,7 @@ struct ChatView: View {
         @Binding var selectedChatItems: Set<Int64>?
 
         @State private var allowMenu: Bool = true
+        @State private var markedRead = false
 
         var revealed: Bool { chatItem == revealedChatItem }
 
@@ -704,7 +780,7 @@ struct ChatView: View {
                 let nextItem = im.reversedChatItems[i - 1]
                 let largeGap = !nextItem.chatDir.sameDirection(chatItem.chatDir) || nextItem.meta.itemTs.timeIntervalSince(chatItem.meta.itemTs) > 60
                 return (
-                    timestamp: largeGap || formatTimestampText(chatItem.meta.itemTs) != formatTimestampText(nextItem.meta.itemTs),
+                    timestamp: largeGap || formatTimestampMeta(chatItem.meta.itemTs) != formatTimestampMeta(nextItem.meta.itemTs),
                     largeGap: largeGap,
                     date: Calendar.current.isDate(chatItem.meta.itemTs, inSameDayAs: nextItem.meta.itemTs) ? nil : nextItem.meta.itemTs
                 )
@@ -743,15 +819,7 @@ struct ChatView: View {
                     VStack(spacing: 0) {
                         chatItemView(chatItem, range, prevItem, timeSeparation)
                         if let date = timeSeparation.date {
-                            Text(String.localizedStringWithFormat(
-                                NSLocalizedString("%@, %@", comment: "format for date separator in chat"),
-                                date.formatted(.dateTime.weekday(.abbreviated)),
-                                date.formatted(.dateTime.day().month(.abbreviated))
-                            ))
-                            .font(.callout)
-                            .fontWeight(.medium)
-                            .foregroundStyle(.secondary)
-                            .padding(8)
+                            DateSeparator(date: date).padding(8)
                         }
                     }
                     .overlay {
@@ -767,12 +835,16 @@ struct ChatView: View {
                 }
             }
             .onAppear {
+                if markedRead {
+                    return
+                } else {
+                    markedRead = true
+                }
                 if let range {
-                    if let items = unreadItems(range) {
+                    let itemIds = unreadItemIds(range)
+                    if !itemIds.isEmpty {
                         waitToMarkRead {
-                            for ci in items {
-                                await apiMarkChatItemRead(chat.chatInfo, ci)
-                            }
+                            await apiMarkChatItemsRead(chat.chatInfo, itemIds)
                         }
                     }
                 } else if chatItem.isRcvNew  {
@@ -782,24 +854,24 @@ struct ChatView: View {
                 }
             }
         }
-        
-        private func unreadItems(_ range: ClosedRange<Int>) -> [ChatItem]? {
+
+        private func unreadItemIds(_ range: ClosedRange<Int>) -> [ChatItem.ID] {
             let im = ItemsModel.shared
-            let items = range.compactMap { i in
+            return range.compactMap { i in
                 if i >= 0 && i < im.reversedChatItems.count {
                     let ci = im.reversedChatItems[i]
-                    return if ci.isRcvNew { ci } else { nil }
+                    return if ci.isRcvNew { ci.id } else { nil }
                 } else {
                     return nil
                 }
             }
-            return if items.isEmpty { nil } else { items }
         }
         
         private func waitToMarkRead(_ op: @Sendable @escaping () async -> Void) {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            Task {
+                _ = try? await Task.sleep(nanoseconds: 600_000000)
                 if m.chatId == chat.chatInfo.id {
-                    Task(operation: op)
+                    await op()
                 }
             }
         }

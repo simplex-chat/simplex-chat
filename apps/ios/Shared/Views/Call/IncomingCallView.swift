@@ -38,6 +38,7 @@ struct IncomingCallView: View {
             }
             HStack {
                 ProfilePreview(profileOf: invitation.contact, color: .white)
+                    .padding(.vertical, 6)
                 Spacer()
 
                 callButton("Reject", "phone.down.fill", .red) {

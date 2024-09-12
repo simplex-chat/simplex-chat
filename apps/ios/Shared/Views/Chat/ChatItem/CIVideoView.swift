@@ -292,28 +292,20 @@ struct CIVideoView: View {
             .clipShape(Circle())
     }
 
-    private func durationProgress() -> some View {
-        HStack {
-            Text("\(durationText(videoPlaying ? progress : duration))")
-            .foregroundColor(.white)
-            .font(.caption)
-            .padding(.vertical, 3)
-            .padding(.horizontal, 6)
-            .background(Color.black.opacity(0.35))
-            .cornerRadius(10)
-            .padding([.top, .leading], 6)
-
-            if let file = chatItem.file, !videoPlaying {
-                Text("\(ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .binary))")
-                .foregroundColor(.white)
-                .font(.caption)
-                .padding(.vertical, 3)
-                .padding(.horizontal, 6)
-                .background(Color.black.opacity(0.35))
-                .cornerRadius(10)
-                .padding(.top, 6)
-            }
+    private var fileSizeString: String {
+        if let file = chatItem.file, !videoPlaying {
+            "  " + ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .binary)
+        } else {
+            ""
         }
+    }
+
+    private func durationProgress() -> some View {
+        Text((durationText(videoPlaying ? progress : duration)) + fileSizeString)
+            .invertedForegroundStyle()
+            .font(.caption)
+            .padding(.vertical, 6)
+            .padding(.horizontal, 12)
     }
 
     private func imageView(_ img: UIImage) -> some View {
@@ -411,9 +403,9 @@ struct CIVideoView: View {
     private func fileIcon(_ icon: String, _ size: CGFloat, _ padding: CGFloat) -> some View {
         Image(systemName: icon)
             .resizable()
+            .invertedForegroundStyle()
             .aspectRatio(contentMode: .fit)
             .frame(width: size, height: size)
-            .foregroundColor(.white)
             .padding(smallView ? 0 : padding)
     }
 
@@ -428,10 +420,8 @@ struct CIVideoView: View {
     private func progressCircle(_ progress: Int64, _ total: Int64) -> some View {
         Circle()
         .trim(from: 0, to: Double(progress) / Double(total))
-        .stroke(
-            Color(uiColor: .white),
-            style: StrokeStyle(lineWidth: 2)
-        )
+        .stroke(style: StrokeStyle(lineWidth: 2))
+        .invertedForegroundStyle()
         .rotationEffect(.degrees(-90))
         .frame(width: 16, height: 16)
         .padding([.trailing, .top], smallView ? 0 : 11)

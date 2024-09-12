@@ -107,9 +107,14 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     name: notificationName,
                     object: nil
                 )
+
             updateFloatingButtons
-                .throttle(for: 0.2, scheduler: DispatchQueue.main, latest: true)
-                .sink { self.updateVisibleItems() }
+                .throttle(for: 0.2, scheduler: DispatchQueue.global(qos: .background), latest: true)
+                .sink {
+                    if let listState = DispatchQueue.main.sync(execute: { [weak self] in self?.getListState() }) {
+                        ChatView.FloatingButtonModel.shared.updateOnListChange(listState)
+                    }
+                }
                 .store(in: &bag)
         }
 
@@ -203,25 +208,35 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             updateFloatingButtons.send()
         }
 
-        private func updateVisibleItems() {
-            let fbm = ChatView.FloatingButtonModel.shared
-            fbm.scrollOffset.send(tableView.contentOffset.y + InvertedTableView.inset)
-            fbm.visibleItems.send(
-                (tableView.indexPathsForVisibleRows ?? [])
-                    .compactMap { indexPath -> String? in
-                        guard let relativeFrame = tableView.superview?.convert(
-                            tableView.rectForRow(at: indexPath),
-                            from: tableView
-                        ) else { return nil }
-                        // Checks that the cell is visible accounting for the added insets
-                        let isVisible =
-                            relativeFrame.maxY > InvertedTableView.inset &&
-                            relativeFrame.minY < tableView.frame.height - InvertedTableView.inset
-                        return indexPath.item < representer.items.count && isVisible
-                        ? representer.items[indexPath.item].viewId
-                        : nil
+        func getListState() -> ListState? {
+            if let visibleRows = tableView.indexPathsForVisibleRows,
+                visibleRows.last?.item ?? 0 < representer.items.count {
+                let scrollOffset: Double = tableView.contentOffset.y + InvertedTableView.inset
+                let topItemDate: Date? =
+                    if let lastVisible = visibleRows.last(where: { isVisible(indexPath: $0) }) {
+                        representer.items[lastVisible.item].meta.itemTs
+                    } else {
+                        nil
                     }
-            )
+                let bottomItemId: ChatItem.ID? =
+                    if let firstVisible = visibleRows.first(where: { isVisible(indexPath: $0) }) {
+                        representer.items[firstVisible.item].id
+                    } else {
+                        nil
+                    }
+                return (scrollOffset: scrollOffset, topItemDate: topItemDate, bottomItemId: bottomItemId)
+            }
+            return nil
+        }
+        
+        private func isVisible(indexPath: IndexPath) -> Bool {
+            if let relativeFrame = tableView.superview?.convert(
+                tableView.rectForRow(at: indexPath),
+                from: tableView
+            ) {
+                relativeFrame.maxY > InvertedTableView.inset &&
+                relativeFrame.minY < tableView.frame.height - InvertedTableView.inset
+            } else { false }
         }
     }
 
@@ -264,6 +279,12 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         }
     }
 }
+
+typealias ListState = (
+    scrollOffset: Double,
+    topItemDate: Date?,
+    bottomItemId: ChatItem.ID?
+)
 
 /// Manages ``ReverseList`` scrolling
 class ReverseListScrollModel: ObservableObject {

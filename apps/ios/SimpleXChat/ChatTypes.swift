@@ -2713,7 +2713,7 @@ public struct CIMeta: Decodable, Hashable {
     public var deletable: Bool
     public var editable: Bool
 
-    public var timestampText: Text { get { formatTimestampText(itemTs) } }
+    public var timestampText: Text { Text(formatTimestampMeta(itemTs)) }
     public var recent: Bool { updatedAt + 10 > .now }
     public var isLive: Bool { itemLive == true }
     public var disappearing: Bool { !isRcvNew && itemTimed?.deleteAt != nil }
@@ -2721,10 +2721,6 @@ public struct CIMeta: Decodable, Hashable {
     public var isRcvNew: Bool {
         if case .rcvNew = itemStatus { return true }
         return false
-    }
-
-    public func statusIcon(_ metaColor: Color/* = .secondary*/, _ primaryColor: Color = .accentColor) -> (String, Color)? {
-        itemStatus.statusIcon(metaColor, primaryColor)
     }
 
     public static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true) -> CIMeta {
@@ -2765,8 +2761,30 @@ public struct CITimed: Decodable, Hashable {
     public var deleteAt: Date?
 }
 
+let msgTimeFormat = Date.FormatStyle.dateTime.hour().minute()
+let msgDateFormat = Date.FormatStyle.dateTime.day(.twoDigits).month(.twoDigits)
+
 public func formatTimestampText(_ date: Date) -> Text {
-    Text(verbatim: date.formatted(date: .omitted, time: .shortened))
+    Text(verbatim: date.formatted(recent(date) ? msgTimeFormat : msgDateFormat))
+}
+
+public func formatTimestampMeta(_ date: Date) -> String {
+    date.formatted(date: .omitted, time: .shortened)
+}
+
+private func recent(_ date: Date) -> Bool {
+    let now = Date()
+    let calendar = Calendar.current
+
+    guard let previousDay = calendar.date(byAdding: DateComponents(day: -1), to: now),
+          let previousDay18 = calendar.date(bySettingHour: 18, minute: 0, second: 0, of: previousDay),
+          let currentDay00 = calendar.date(bySettingHour: 0, minute: 0, second: 0, of: now),
+          let currentDay12 = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: now) else {
+        return false
+    }
+
+    let isSameDay = calendar.isDate(date, inSameDayAs: now)
+    return isSameDay || (now < currentDay12 && date >= previousDay18 && date < currentDay00)
 }
 
 public enum CIStatus: Decodable, Hashable {
@@ -2794,21 +2812,22 @@ public enum CIStatus: Decodable, Hashable {
         }
     }
 
-    public func statusIcon(_ metaColor: Color/* = .secondary*/, _ primaryColor: Color = .accentColor) -> (String, Color)? {
+    public func statusIcon(_ metaColor: Color, _ paleMetaColor: Color, _ primaryColor: Color = .accentColor) -> (Image, Color)? {
         switch self {
-        case .sndNew: return nil
-        case .sndSent: return ("checkmark", metaColor)
-        case let .sndRcvd(msgRcptStatus, _):
+        case .sndNew: nil
+        case let .sndSent(sndProgress):
+            (Image("checkmark.wide"),  sndProgress == .partial ? paleMetaColor : metaColor)
+        case let .sndRcvd(msgRcptStatus, sndProgress):
             switch msgRcptStatus {
-            case .ok: return ("checkmark", metaColor)
-            case .badMsgHash: return ("checkmark", .red)
+            case .ok: (Image("checkmark.2"), sndProgress == .partial ? paleMetaColor : metaColor)
+            case .badMsgHash: (Image("checkmark.2"), .red)
             }
-        case .sndErrorAuth: return ("multiply", .red)
-        case .sndError: return ("multiply", .red)
-        case .sndWarning: return ("exclamationmark.triangle.fill", .orange)
-        case .rcvNew: return ("circlebadge.fill", primaryColor)
-        case .rcvRead: return nil
-        case .invalid: return ("questionmark", metaColor)
+        case .sndErrorAuth: (Image(systemName: "multiply"), .red)
+        case .sndError: (Image(systemName: "multiply"), .red)
+        case .sndWarning: (Image(systemName: "exclamationmark.triangle.fill"), .orange)
+        case .rcvNew: (Image(systemName: "circlebadge.fill"), primaryColor)
+        case .rcvRead: nil
+        case .invalid: (Image(systemName: "questionmark"), metaColor)
         }
     }
 
@@ -2903,20 +2922,20 @@ public enum GroupSndStatus: Decodable, Hashable {
     case warning(agentError: SndError)
     case invalid(text: String)
 
-    public func statusIcon(_ metaColor: Color/* = .secondary*/, _ primaryColor: Color = .accentColor) -> (String, Color) {
+    public func statusIcon(_ metaColor: Color, _ primaryColor: Color = .accentColor) -> (Image, Color) {
         switch self {
-        case .new: return ("ellipsis", metaColor)
-        case .forwarded: return ("chevron.forward.2", metaColor)
-        case .inactive: return ("person.badge.minus", metaColor)
-        case .sent: return ("checkmark", metaColor)
+        case .new: (Image(systemName: "ellipsis"), metaColor)
+        case .forwarded: (Image(systemName: "chevron.forward.2"), metaColor)
+        case .inactive: (Image(systemName: "person.badge.minus"), metaColor)
+        case .sent: (Image("checkmark.wide"), metaColor)
         case let .rcvd(msgRcptStatus):
             switch msgRcptStatus {
-            case .ok: return ("checkmark", metaColor)
-            case .badMsgHash: return ("checkmark", .red)
+            case .ok: (Image("checkmark.2"), metaColor)
+            case .badMsgHash: (Image("checkmark.2"), .red)
             }
-        case .error: return ("multiply", .red)
-        case .warning: return ("exclamationmark.triangle.fill", .orange)
-        case .invalid: return ("questionmark", metaColor)
+        case .error: (Image(systemName: "multiply"), .red)
+        case .warning: (Image(systemName: "exclamationmark.triangle.fill"), .orange)
+        case .invalid: (Image(systemName: "questionmark"), metaColor)
         }
     }
 

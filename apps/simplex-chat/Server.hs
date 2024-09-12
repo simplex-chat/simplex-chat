@@ -23,7 +23,7 @@ import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
 import Simplex.Chat.Options
-import Simplex.Messaging.Transport.Server (runTCPServer)
+import Simplex.Messaging.Transport.Server (runLocalTCPServer)
 import Simplex.Messaging.Util (raceAny_)
 import UnliftIO.Exception
 import UnliftIO.STM
@@ -68,7 +68,7 @@ newChatServerClient qSize = do
 runChatServer :: ChatServerConfig -> ChatController -> IO ()
 runChatServer ChatServerConfig {chatPort, clientQSize} cc = do
   started <- newEmptyTMVarIO
-  runTCPServer started chatPort $ \sock -> do
+  runLocalTCPServer started chatPort $ \sock -> do
     ws <- liftIO $ getConnection sock
     c <- atomically $ newChatServerClient clientQSize
     putStrLn "client connected"

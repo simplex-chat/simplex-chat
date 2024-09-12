@@ -10,6 +10,7 @@
 #define SimpleX_h
 
 #include "hs_init.h"
+#include "objc.h"
 
 extern void hs_init(int argc, char **argv[]);
 

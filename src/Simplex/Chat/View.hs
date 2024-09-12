@@ -203,6 +203,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRUnknownMemberBlocked u g byM um -> ttyUser u [ttyGroup' g <> ": " <> ttyMember byM <> " blocked an unknown member, creating unknown member record " <> ttyMember um]
   CRUnknownMemberAnnounced u g _ um m -> ttyUser u [ttyGroup' g <> ": unknown member " <> ttyMember um <> " updated to " <> ttyMember m]
   CRGroupDeletedUser u g -> ttyUser u [ttyGroup' g <> ": you deleted the group"]
+  CRForwardPlan u count itemIds fc -> ttyUser u $ viewForwardPlan count itemIds fc
   CRRcvFileDescrReady _ _ _ _ -> []
   CRRcvFileProgressXFTP {} -> []
   CRRcvFileAccepted u ci -> ttyUser u $ savingFile' ci
@@ -929,6 +930,20 @@ viewUserContactLinkDeleted =
   [ "Your chat address is deleted - accepted contacts will remain connected.",
     "To create a new chat address use " <> highlight' "/ad"
   ]
+
+viewForwardPlan :: Int -> [ChatItemId] -> Maybe ForwardConfirmation -> [StyledString]
+viewForwardPlan count itemIds = maybe [forwardCount] $ \fc -> [confirmation fc, forwardCount]
+  where
+    confirmation = \case
+      FCFilesNotAccepted fileIds -> plain $ "Files can be received: " <> intercalate ", " (map show fileIds)
+      FCFilesInProgress cnt -> plain $ "Still receiving " <> show cnt <> " file(s)"
+      FCFilesMissing cnt -> plain $ show cnt <> " file(s) are missing"
+      FCFilesFailed cnt -> plain $ "Receiving " <> show cnt <> " file(s) failed"
+    forwardCount
+      | count == len = "all messages can be forwarded"
+      | len == 0 = "nothing to forward"
+      | otherwise = plain $ show len <> " message(s) out of " <> show count <> " can be forwarded"
+    len = length itemIds
 
 connReqContact_ :: StyledString -> ConnReqContact -> [StyledString]
 connReqContact_ intro cReq =
@@ -2034,7 +2049,7 @@ viewChatError isCmd logLevel testView = \case
     CEFallbackToSMPProhibited fileId -> ["recipient tried to accept file " <> sShow fileId <> " via old protocol, prohibited"]
     CEInlineFileProhibited _ -> ["A small file sent without acceptance - you can enable receiving such files with -f option."]
     CEInvalidQuote -> ["cannot reply to this message"]
-    CEInvalidForward -> ["cannot forward this message"]
+    CEInvalidForward -> ["cannot forward message(s)"]
     CEInvalidChatItemUpdate -> ["cannot update this item"]
     CEInvalidChatItemDelete -> ["cannot delete this item"]
     CEHasCurrentCall -> ["call already in progress"]
