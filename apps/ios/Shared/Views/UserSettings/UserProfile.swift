@@ -24,7 +24,11 @@ struct UserProfile: View {
     var body: some View {
         List {
             Section {
-                Text("Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile.")
+                Text("""
+Your profile is stored on your device and shared only with your contacts.
+SimpleX servers cannot see your profile.
+"""
+                )
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets())
             }
@@ -38,7 +42,7 @@ struct UserProfile: View {
                                 Image(systemName: "xmark")
                                     .foregroundStyle(Color.red)
                                     .padding(8)
-                                    .background(Material.ultraThin)
+                                    .background(Material.bar)
                                     .clipShape(Circle())
                                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                                     .onTapGesture { profile.image = nil }
@@ -52,7 +56,6 @@ struct UserProfile: View {
                 if showFullName {
                     nameField("Full name", text: $profile.fullName)
                 }
-
                 nameField("Profile name", text: $profile.displayName)
                 Button("Save and notify contacts", action: saveProfile).disabled(!canSaveProfile)
             }
@@ -175,5 +178,20 @@ struct UserProfile: View {
                 logger.error("UserProfile apiUpdateProfile error: \(responseError(error))")
             }
         }
+    }
+}
+
+func profileImageView(_ imageStr: String?) -> some View {
+    ProfileImage(imageStr: imageStr, size: 192)
+}
+
+func editImageButton(action: @escaping () -> Void) -> some View {
+    Button {
+        action()
+    } label: {
+        Image(systemName: "camera")
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 48)
     }
 }
