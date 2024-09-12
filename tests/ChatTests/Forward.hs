@@ -12,7 +12,7 @@ import Test.Hspec hiding (it)
 
 chatForwardTests :: SpecWith FilePath
 chatForwardTests = do
-  fdescribe "forward messages" $ do
+  describe "forward messages" $ do
     it "from contact to contact" testForwardContactToContact
     it "from contact to group" testForwardContactToGroup
     it "from contact to notes" testForwardContactToNotes
@@ -22,13 +22,13 @@ chatForwardTests = do
     it "from notes to contact" testForwardNotesToContact
     it "from notes to group" testForwardNotesToGroup
     it "from notes to notes" testForwardNotesToNotes -- TODO forward between different folders when supported
-  fdescribe "interactions with forwarded messages" $ do
+  describe "interactions with forwarded messages" $ do
     it "preserve original forward info" testForwardPreserveInfo
     it "received forwarded message is saved with new forward info" testForwardRcvMsgNewInfo
     it "quoted message is not included" testForwardQuotedMsg
     it "editing is prohibited" testForwardEditProhibited
     it "delete for other" testForwardDeleteForOther
-  fdescribe "forward files" $ do
+  describe "forward files" $ do
     it "from contact to contact" testForwardFileNoFilesFolder
     it "with relative paths: from contact to contact" testForwardFileContactToContact
     it "with relative paths: from group to notes" testForwardFileGroupToNotes
@@ -613,6 +613,8 @@ testForwardContactToContactMulti =
       alice <# "bob> hey"
       msgId2 <- lastItemId alice
 
+      alice ##> ("/_forward plan @2 " <> msgId1 <> "," <> msgId2)
+      alice <## "all messages can be forwarded"
       alice ##> ("/_forward @3 @2 " <> msgId1 <> "," <> msgId2)
       alice <# "@cath <- you @bob"
       alice <## "      hi"
@@ -642,6 +644,8 @@ testForwardGroupToGroupMulti =
       alice <# "#team bob> hey"
       msgId2 <- lastItemId alice
 
+      alice ##> ("/_forward plan #1 " <> msgId1 <> "," <> msgId2)
+      alice <## "all messages can be forwarded"
       alice ##> ("/_forward #2 #1 " <> msgId1 <> "," <> msgId2)
       alice <# "#club <- you #team"
       alice <## "      hi"
@@ -713,6 +717,13 @@ testMultiForwardFiles =
       alice <## "completed uploading file 1 (test.jpg) for bob"
       alice <## "completed uploading file 2 (test.pdf) for bob"
 
+      -- IDs to forward
+      let msgId1 = (read msgIdZero :: Int) + 1
+          msgIds = show msgId1 <> "," <> show (msgId1 + 1) <> "," <> show (msgId1 + 2) <> "," <> show (msgId1 + 3)
+      bob ##> ("/_forward plan @2 " <> msgIds)
+      bob <## "2 file(s) are missing" -- incorrect
+      bob <## "all messages can be forwarded" -- incorrect
+
       bob ##> "/fr 1"
       bob
         <### [ "saving file 1 from alice to test.jpg",
@@ -736,8 +747,9 @@ testMultiForwardFiles =
       dest2 `shouldBe` src2
 
       -- forward file
-      let msgId1 = (read msgIdZero :: Int) + 1
-      bob ##> ("/_forward @3 @2 " <> show msgId1 <> "," <> show (msgId1 + 1) <> "," <> show (msgId1 + 2) <> "," <> show (msgId1 + 3))
+      bob ##> ("/_forward plan @2 " <> msgIds)
+      bob <## "all messages can be forwarded"
+      bob ##> ("/_forward @3 @2 " <> msgIds)
 
       -- messages printed for bob
       bob <# "@cath <- you @alice"
