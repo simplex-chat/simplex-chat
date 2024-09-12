@@ -99,10 +99,15 @@ kotlin {
     val desktopMain by getting {
       dependencies {
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.8.0")
-        implementation("com.github.Dansoftowner:jSystemThemeDetector:3.8")
+        implementation("com.github.Dansoftowner:jSystemThemeDetector:3.8") {
+          exclude("net.java.dev.jna")
+        }
+        // For jSystemThemeDetector only
+        implementation("net.java.dev.jna:jna-platform:5.14.0")
         implementation("com.sshtools:two-slices:0.9.0-SNAPSHOT")
         implementation("org.slf4j:slf4j-simple:2.0.12")
         implementation("uk.co.caprica:vlcj:4.8.3")
+        implementation("net.java.dev.jna:jna:5.14.0")
         implementation("com.github.NanoHttpd.nanohttpd:nanohttpd:efb2ebf85a")
         implementation("com.github.NanoHttpd.nanohttpd:nanohttpd-websocket:efb2ebf85a")
         implementation("com.squareup.okhttp3:okhttp:4.12.0")
