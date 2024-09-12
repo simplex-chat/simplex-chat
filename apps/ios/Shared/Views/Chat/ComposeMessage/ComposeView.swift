@@ -758,8 +758,10 @@ struct ComposeView: View {
             case .linkPreview:
                 sent = await send(checkLinkPreview(), quoted: quoted, live: live, ttl: ttl)
             case let .mediaPreviews(mediaPreviews):
-                var composedMessages = mediaPreviews.compactMap { (previewImage, uploadContent) in
-                    switch uploadContent {
+                var composedMessages = [ComposedMessage]()
+                for (previewImage, uploadContent) in mediaPreviews {
+                    try? await Task.sleep(nanoseconds: 100_000000) // Sleep to allow `progressByTimeout` update be rendered
+                    let cm: ComposedMessage? = switch uploadContent {
                     case let .simpleImage(image):
                         saveImage(image).map { cryptoFile in
                             ComposedMessage(
@@ -785,6 +787,7 @@ struct ComposeView: View {
                     case .none:
                         nil
                     }
+                    if let cm { composedMessages.append(cm) }
                 }
                 if let last = composedMessages.popLast() {
                     // Add compose text and quote to the last media message
