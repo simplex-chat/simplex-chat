@@ -1088,8 +1088,8 @@ private fun handleForwardConfirmation(forwardPlan: CR.ForwardPlan?) {
     }
     is ForwardConfirmation.FilesMissing -> {
       AlertManager.shared.showAlertDialogButtonsColumn(
-        title = generalGetString(MR.strings.forward_files_in_missing_title),
-        text = generalGetString(MR.strings.forward_files_in_missing_desc),
+        title = generalGetString(MR.strings.forward_files_missing_title),
+        text = generalGetString(MR.strings.forward_files_missing_desc),
         buttons = {
           Column {
             if (forwardPlan.chatItemIds.isNotEmpty()) {
@@ -1108,7 +1108,28 @@ private fun handleForwardConfirmation(forwardPlan: CR.ForwardPlan?) {
         }
       )
     }
-    is ForwardConfirmation.FilesFailed -> {}
+    is ForwardConfirmation.FilesFailed -> {
+      AlertManager.shared.showAlertDialogButtonsColumn(
+        title = generalGetString(MR.strings.forward_files_failed_to_receive_title),
+        text = generalGetString(MR.strings.forward_files_failed_to_receive_desc),
+        buttons = {
+          Column {
+            if (forwardPlan.chatItemIds.isNotEmpty()) {
+              SectionItemView({
+                AlertManager.shared.hideAlert()
+              }) {
+                Text(stringResource(MR.strings.forward_files_forward_without_files), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+              }
+            }
+            SectionItemView({
+              AlertManager.shared.hideAlert()
+            }) {
+              Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+            }
+          }
+        }
+      )
+    }
     else -> {}
   }
 }
