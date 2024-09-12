@@ -167,6 +167,13 @@ struct ComposeState {
         }
     }
 
+    var manyMediaPreviews: Bool {
+        switch preview {
+        case let .mediaPreviews(mediaPreviews): return mediaPreviews.count > 1
+        default: return false
+        }
+    }
+
     var attachmentDisabled: Bool {
         if editing || forwarding || liveMessage != nil || inProgress { return true }
         switch preview {
