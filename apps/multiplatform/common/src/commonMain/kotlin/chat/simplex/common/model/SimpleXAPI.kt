@@ -1532,6 +1532,67 @@ object ChatController {
     }
   }
 
+  suspend fun apiReceiveFiles(rh: Long?, fileIds: List<Long>, userApprovedRelays: Boolean, encrypted: Boolean, inline: Boolean? = null): List<Long> {
+    val failures = mutableListOf<Long>()
+    val serversToApprove = mutableSetOf<String>()
+    val filesIdsFromNonApprovedSources = mutableListOf<Long>()
+
+    fileIds.forEach { fileId ->
+      val r = sendCmd(rh, CC.ReceiveFile(fileId, userApprovedRelays = userApprovedRelays, encrypt = encrypted, inline = inline))
+
+      when (r) {
+        is CR.RcvFileAcceptedSndCancelled -> failures.add(fileId)
+        is CR.RcvFileCancelled -> failures.add(fileId)
+        is CR.RcvFileSndCancelled -> failures.add(fileId)
+        else -> {
+          if (!(networkErrorAlert(r))) {
+            when (val maybeChatError = chatError(r)) {
+              is ChatErrorType.FileAlreadyReceiving -> {}
+              is ChatErrorType.FileNotApproved -> {
+                if (userApprovedRelays) {
+                  failures.add(fileId)
+                } else {
+                  serversToApprove.addAll(maybeChatError.unknownServers.map { serverHostname(it) })
+                  filesIdsFromNonApprovedSources.add(fileId)
+                }
+              }
+
+              else -> {
+                failures.add(fileId)
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (serversToApprove.isNotEmpty() && filesIdsFromNonApprovedSources.isNotEmpty()) {
+      AlertManager.shared.showAlertDialog(
+        title = generalGetString(MR.strings.file_not_approved_title),
+        text = generalGetString(MR.strings.file_not_approved_descr).format(serversToApprove.sorted().joinToString(separator = ", ")),
+        confirmText = generalGetString(MR.strings.download_file),
+        onConfirm = {
+          val user = chatModel.currentUser.value
+          if (user != null) {
+            withBGApi {
+              failures.addAll(
+                apiReceiveFiles(
+                  rh = rh,
+                  fileIds = filesIdsFromNonApprovedSources,
+                  userApprovedRelays = true,
+                  encrypted = encrypted,
+                  inline = inline
+                )
+              )
+            }
+          }
+        },
+      )
+    }
+
+    return failures
+  }
+
   suspend fun apiReceiveFile(rh: Long?, fileId: Long, userApprovedRelays: Boolean, encrypted: Boolean, inline: Boolean? = null, auto: Boolean = false): AChatItem? {
     // -1 here is to override default behavior of providing current remote host id because file can be asked by local device while remote is connected
     val r = sendCmd(rh, CC.ReceiveFile(fileId, userApprovedRelays = userApprovedRelays, encrypt = encrypted, inline = inline))
@@ -4849,7 +4910,7 @@ sealed class CR {
   @Serializable @SerialName("chatItemNotChanged") class ChatItemNotChanged(val user: UserRef, val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemReaction") class ChatItemReaction(val user: UserRef, val added: Boolean, val reaction: ACIReaction): CR()
   @Serializable @SerialName("chatItemsDeleted") class ChatItemsDeleted(val user: UserRef, val chatItemDeletions: List<ChatItemDeletion>, val byUser: Boolean): CR()
-  @Serializable @SerialName("forwardPlan") class ForwardPlan(val user: UserRef, val chatItemIds: List<Long>, val forwardConfirmation: ForwardConfirmation): CR()
+  @Serializable @SerialName("forwardPlan") class ForwardPlan(val user: UserRef, val chatItemIds: List<Long>, val forwardConfirmation: ForwardConfirmation?): CR()
   // group events
   @Serializable @SerialName("groupCreated") class GroupCreated(val user: UserRef, val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("sentGroupInvitation") class SentGroupInvitation(val user: UserRef, val groupInfo: GroupInfo, val contact: Contact, val member: GroupMember): CR()
