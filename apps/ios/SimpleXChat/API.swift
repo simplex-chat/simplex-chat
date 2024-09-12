@@ -184,7 +184,7 @@ public func chatResponse(_ s: String) -> ChatResponse {
     //    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
     do {
         let executor = ThreadExecutor<APIResponse>(
-            stackSize: 1024*1024*4, // 4MiB
+            stackSize: 2*1024*1024, // 2MiB
             qos: Thread.current.qualityOfService // inherit priority
         )
         return try executor.executeSync {
