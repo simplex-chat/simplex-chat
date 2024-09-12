@@ -213,6 +213,7 @@ interface ConnectionInfo {
 var sendMessageToNative = (msg: WVApiMessage) => console.log(JSON.stringify(msg))
 var toggleScreenShare = async () => {}
 var localOrPeerMediaSourcesChanged = (_call: Call) => {}
+var inactiveCallMediaSourcesChanged = (_inactiveCallMediaSources: Map<CallMediaSource, boolean>) => {}
 
 // Global object with cryptrographic/encoding functions
 const callCrypto = callCryptoFunction()
@@ -249,7 +250,6 @@ interface Call {
   key?: CryptoKey
   // controls whether transceiver's track was replaced already or set initially (in video call)
   cameraTrackWasSetBefore: boolean
-  screenShareWasSetupBefore: boolean
 }
 
 function localMedia(call: Call): CallMediaType {
@@ -260,6 +260,7 @@ function peerMedia(call: Call): CallMediaType {
   return call.peerMediaSources.camera || call.peerMediaSources.screenVideo ? CallMediaType.Video : CallMediaType.Audio
 }
 
+let inactiveCallMediaSources: Map<CallMediaSource, boolean> = new Map()
 let activeCall: Call | undefined
 let answerTimeout = 30_000
 var useWorker = false
@@ -270,7 +271,7 @@ var localizedDescription = ""
 const allowSendScreenAudio = false
 // When one side of a call sends candidates tot fast (until local & remote descriptions are set), that candidates
 // will be stored here and then set when the call will be ready to process them
-var afterCallInitializedCandidates: RTCIceCandidateInit[] = []
+let afterCallInitializedCandidates: RTCIceCandidateInit[] = []
 
 const processCommand = (function () {
   type RTCRtpSenderWithEncryption = RTCRtpSender & {
@@ -388,38 +389,34 @@ const processCommand = (function () {
     const remoteScreenStream = new MediaStream()
     const localCamera = VideoCamera.User
     let localStream: MediaStream
-    // Mic can be disabled while in call if a user didn't give permission to use it, it's fine
-    let micEnabled = false
     try {
-      localStream = await getLocalMediaStream(mediaType, localCamera)
-      micEnabled = true
+      localStream = await getLocalMediaStream(
+        inactiveCallMediaSources.get(CallMediaSource.Mic) == true,
+        inactiveCallMediaSources.get(CallMediaSource.Camera) == true,
+        localCamera
+      )
     } catch (e) {
       console.log("Error while getting local media stream", e)
       if (isDesktop) {
         desktopShowPermissionsAlert(mediaType)
-        localStream = getEmptyStream(mediaType, pc)
+        localStream = new MediaStream()
       } else {
         // On Android all streams should be present
         throw e
       }
     }
+    console.log("LALAL LOCAL STREAM", localStream.getTracks().length, JSON.stringify(inactiveCallMediaSources))
     const localScreenStream = new MediaStream()
-    if (isDesktop) {
-      localStream
-        .getTracks()
-        .filter((elem) => elem.kind == "video")
-        .forEach((elem) => (elem.enabled = false))
-    }
     // Will become video when any video tracks will be added
     const iceCandidates = getIceCandidates(pc, config)
     const call: Call = {
       connection: pc,
       iceCandidates,
       localMediaSources: {
-        mic: micEnabled,
-        camera: mediaType == CallMediaType.Video && !isDesktop,
-        screenAudio: false,
-        screenVideo: false,
+        mic: localStream.getAudioTracks().length > 0,
+        camera: localStream.getVideoTracks().length > 0,
+        screenAudio: localScreenStream.getAudioTracks().length > 0,
+        screenVideo: localScreenStream.getVideoTracks().length > 0,
       },
       localCamera,
       localStream,
@@ -434,7 +431,6 @@ const processCommand = (function () {
       },
       aesKey,
       cameraTrackWasSetBefore: mediaType == CallMediaType.Video,
-      screenShareWasSetupBefore: false,
     }
     localOrPeerMediaSourcesChanged(call)
     await setupMediaStreams(call)
@@ -514,10 +510,16 @@ const processCommand = (function () {
         case "capabilities":
           console.log("starting outgoing call - capabilities")
           if (activeCall) endCall()
+
+          // Specify defaults that can be changed via UI before call estabilished. It's only used before activeCall instance appears
+          inactiveCallMediaSources.set(CallMediaSource.Mic, true)
+          inactiveCallMediaSources.set(CallMediaSource.Camera, command.media == CallMediaType.Video && !isDesktop)
+          inactiveCallMediaSourcesChanged(inactiveCallMediaSources)
+
           // This request for local media stream is made to prompt for camera/mic permissions on call start
           if (command.media) {
             try {
-              await getLocalMediaStream(command.media, VideoCamera.User)
+              await getLocalMediaStream(true, command.media == CallMediaType.Video && !isDesktop, VideoCamera.User)
             } catch (e) {
               // Will be shown on the next stage of call estabilishing, can work without any streams
               //desktopShowPermissionsAlert(command.media)
@@ -529,22 +531,23 @@ const processCommand = (function () {
         case "start": {
           console.log("starting incoming call - create webrtc session")
           if (activeCall) endCall()
+
+          inactiveCallMediaSources.set(CallMediaSource.Mic, true)
+          inactiveCallMediaSources.set(CallMediaSource.Camera, command.media == CallMediaType.Video && !isDesktop)
+          inactiveCallMediaSourcesChanged(inactiveCallMediaSources)
+
           const {media, iceServers, relay} = command
           const encryption = supportsInsertableStreams(useWorker)
           const aesKey = encryption ? command.aesKey : undefined
           activeCall = await initializeCall(getCallConfig(encryption && !!aesKey, iceServers, relay), media, aesKey)
-          const pc = activeCall.connection
-          if (media == CallMediaType.Audio) {
-            console.log("LALAL ADDING TRANSCEIVER for video")
-            // For camera. The first video in the list is for camera
-            pc.addTransceiver("video", {streams: [activeCall.localStream]})
-          }
-          // For screenshare. So the second audio and video in the list is for screenshare
-          pc.addTransceiver("audio", {streams: [activeCall.localScreenStream]})
-          pc.addTransceiver("video", {streams: [activeCall.localScreenStream]})
+          await setupLocalStream(true, activeCall)
+          setupCodecPreferences(activeCall)
 
+          const pc = activeCall.connection
           const offer = await pc.createOffer()
           await pc.setLocalDescription(offer)
+          // should be called after setLocalDescription in order to have transceiver.mid set
+          setupEncryptionForLocalStream(activeCall)
           addIceCandidates(pc, afterCallInitializedCandidates)
           afterCallInitializedCandidates = []
           // for debugging, returning the command for callee to use
@@ -580,16 +583,20 @@ const processCommand = (function () {
             const pc = activeCall.connection
             // console.log("offer remoteIceCandidates", JSON.stringify(remoteIceCandidates))
             await pc.setRemoteDescription(new RTCSessionDescription(offer))
-            // Enable using the same transceivers for sending media too, so total number of transceivers will be: audio, camera, screen audio, screen video
+            // setting up local stream only after setRemoteDescription in order to have transceivers set
+            await setupLocalStream(false, activeCall)
+            setupEncryptionForLocalStream(activeCall)
+            setupCodecPreferences(activeCall)
+
+            // enable using the same transceivers for sending media too, so total number of transceivers will be: audio, camera, screen audio, screen video
             pc.getTransceivers().forEach((elem) => (elem.direction = "sendrecv"))
+            // setting media streams after remote description in order to have all transceivers ready (so ordering will be preserved)
             console.log(
               "LALAL TRANSCE",
               pc.getTransceivers(),
               pc.getTransceivers().map((elem) => "" + elem.mid + " " + elem.sender.track?.kind + " " + elem.sender.track?.label)
             )
             let answer = await pc.createAnswer()
-            console.log("LALAL SDP", answer, answer.sdp)
-            // answer!.sdp = answer.sdp?.replace("a=recvonly", "a=sendrecv")
             await pc.setLocalDescription(answer)
             addIceCandidates(pc, remoteIceCandidates)
             addIceCandidates(pc, afterCallInitializedCandidates)
@@ -614,10 +621,11 @@ const processCommand = (function () {
             const answer: RTCSessionDescriptionInit = parse(command.answer)
             const remoteIceCandidates: RTCIceCandidateInit[] = parse(command.iceCandidates)
             // console.log("answer remoteIceCandidates", JSON.stringify(remoteIceCandidates))
-            console.log("LALAL SDP2", answer, answer.sdp)
 
             await pc.setRemoteDescription(new RTCSessionDescription(answer))
             addIceCandidates(pc, remoteIceCandidates)
+            addIceCandidates(pc, afterCallInitializedCandidates)
+            afterCallInitializedCandidates = []
             resp = {type: "ok"}
           }
           break
@@ -627,13 +635,15 @@ const processCommand = (function () {
             addIceCandidates(pc, remoteIceCandidates)
             resp = {type: "ok"}
           } else {
-            afterCallInitializedCandidates = remoteIceCandidates
+            afterCallInitializedCandidates.push(...remoteIceCandidates)
             resp = {type: "error", message: "ice: call not started yet, will add candidates later"}
           }
           break
         case "media":
           if (!activeCall) {
-            resp = {type: "error", message: "media: call not started"}
+            inactiveCallMediaSources.set(command.source, command.enable)
+            inactiveCallMediaSourcesChanged(inactiveCallMediaSources)
+            resp = {type: "ok"}
           } else if (!activeCall.cameraTrackWasSetBefore && command.source == CallMediaSource.Camera && command.enable) {
             await startSendingCamera(activeCall, activeCall.localCamera)
             resp = {type: "ok"}
@@ -647,7 +657,7 @@ const processCommand = (function () {
               resp = {type: "error", message: "media: cannot enable media source"}
             }
           } else {
-            if (await replaceMedia(activeCall, activeCall.localCamera)) {
+            if (await replaceMedia(activeCall, command.source, command.enable, activeCall.localCamera)) {
               resp = {type: "ok"}
             } else {
               resp = {type: "error", message: "media: cannot replace media source"}
@@ -658,7 +668,7 @@ const processCommand = (function () {
           if (!activeCall || !pc) {
             resp = {type: "error", message: "camera: call not started"}
           } else {
-            if (await replaceMedia(activeCall, command.camera)) {
+            if (await replaceMedia(activeCall, CallMediaSource.Camera, true, command.camera)) {
               resp = {type: "ok"}
             } else {
               resp = {type: "error", message: "camera: cannot replace media source"}
@@ -713,17 +723,11 @@ const processCommand = (function () {
     const videos = getVideoElements()
     if (!videos) throw Error("no video elements")
     await setupEncryptionWorker(call)
-    setupLocalStream(call)
     setupRemoteStream(call)
-    setupCodecPreferences(call)
-    // setupVideoElement(videos.local)
-    // setupVideoElement(videos.remote)
-    videos.local.srcObject = call.localStream
+
     videos.localScreen.srcObject = call.localScreenStream
     videos.remote.srcObject = call.remoteStream
     videos.remoteScreen.srcObject = call.remoteScreenStream
-    // Without doing it manually Firefox shows black screen but video can be played in Picture-in-Picture
-    videos.local.play().catch((e) => console.log(e))
     // videos.localScreen.play()
     // For example, exception can be: NotAllowedError: play() failed because the user didn't interact with the document first
     videos.remote.play().catch((e) => console.log(e))
@@ -748,27 +752,77 @@ const processCommand = (function () {
     }
   }
 
-  function setupLocalStream(call: Call) {
+  async function setupLocalStream(incomingCall: boolean, call: Call) {
     const videos = getVideoElements()
     if (!videos) throw Error("no video elements")
     const pc = call.connection
     let {localStream} = call
 
-    for (const track of localStream.getTracks()) {
-      pc.addTrack(track, localStream)
+    const transceivers = call.connection.getTransceivers()
+    const audioTracks = localStream.getAudioTracks()
+    const videoTracks = localStream.getVideoTracks()
+
+    console.log("LALAL TRANS SIZE", transceivers.length)
+
+    if (incomingCall) {
+      // incoming call, no transceivers yet. But they should be added in order: mic, camera, screen audio, screen video
+      // mid = 0
+      const audioTransceiver = pc.addTransceiver("audio", {streams: [localStream]})
+      if (audioTracks.length != 0) {
+        audioTransceiver.sender.replaceTrack(audioTracks[0])
+      }
+      // mid = 1
+      const videoTransceiver = pc.addTransceiver("video", {streams: [localStream]})
+      if (videoTracks.length != 0) {
+        videoTransceiver.sender.replaceTrack(videoTracks[0])
+      }
+      if (call.localScreenStream.getAudioTracks().length == 0) {
+        // mid = 2
+        pc.addTransceiver("audio", {streams: [call.localScreenStream]})
+      }
+      if (call.localScreenStream.getVideoTracks().length == 0) {
+        // mid = 3
+        pc.addTransceiver("video", {streams: [call.localScreenStream]})
+      }
+    } else {
+      // new version
+      if (transceivers.length > 2) {
+        // Outgoing call. All transceivers are ready. Don't addTrack() because it will create new transceivers, replace existing (null) tracks
+        await transceivers
+          .find((elem) => mediaSourceFromTransceiverMid(elem.mid) == CallMediaSource.Mic)
+          ?.sender?.replaceTrack(audioTracks[0])
+        await transceivers
+          .find((elem) => mediaSourceFromTransceiverMid(elem.mid) == CallMediaSource.Camera)
+          ?.sender?.replaceTrack(videoTracks[0])
+      } else {
+        // old version, only two transceivers
+        for (const track of localStream.getTracks()) {
+          pc.addTrack(track, localStream)
+        }
+      }
     }
 
+    console.log("LALAL TRANS AFTER SIZE", pc.getTransceivers().length)
+
+    videos.local.srcObject = call.localStream
+    // Without doing it manually Firefox shows black screen but video can be played in Picture-in-Picture
+    videos.local.play().catch((e) => console.log(e))
+  }
+
+  function setupEncryptionForLocalStream(call: Call) {
     if (call.aesKey && call.key) {
+      const pc = call.connection
       console.log("set up encryption for sending")
       for (const transceiver of pc.getTransceivers()) {
         const sender = transceiver.sender as RTCRtpSenderWithEncryption
+        const source = mediaSourceFromTransceiverMid(transceiver.mid)
         setupPeerTransform(
           TransformOperation.Encrypt,
           sender,
           call.worker,
           call.aesKey,
           call.key,
-          mediaSourceFromTransceiverMid(transceiver.mid) == CallMediaSource.Camera ? CallMediaType.Video : CallMediaType.Audio,
+          source == CallMediaSource.Camera || source == CallMediaSource.ScreenVideo ? CallMediaType.Video : CallMediaType.Audio,
           transceiver.mid
         )
       }
@@ -871,7 +925,7 @@ const processCommand = (function () {
     console.log(pc.getTransceivers().map((elem) => "" + elem.sender.track?.kind + " " + elem.receiver.track?.kind + " " + elem.direction))
     let localStream: MediaStream
     try {
-      localStream = await getLocalMediaStream(CallMediaType.Video, camera)
+      localStream = await getLocalMediaStream(call.localMediaSources.mic, true, camera)
       for (const t of localStream.getVideoTracks()) {
         console.log("LALAL TC", tc, pc.getTransceivers())
         call.localStream.addTrack(t)
@@ -892,17 +946,6 @@ const processCommand = (function () {
 
     const sender = tc?.sender
     console.log("LALAL SENDER " + sender + " " + sender?.getParameters())
-    if (call.aesKey && call.key && sender) {
-      setupPeerTransform(
-        TransformOperation.Encrypt,
-        sender as RTCRtpSenderWithEncryption,
-        call.worker,
-        call.aesKey,
-        call.key,
-        CallMediaType.Video,
-        tc.mid
-      )
-    }
 
     // Without doing it manually Firefox shows black screen but video can be played in Picture-in-Picture
     videos.local.play().catch((e) => console.log(e))
@@ -943,25 +986,7 @@ const processCommand = (function () {
           }
           console.log("LALAL REPLACED VIDEO SCREEN TRACK")
         }
-        if (
-          !call.screenShareWasSetupBefore &&
-          call.aesKey &&
-          call.key &&
-          (source == CallMediaSource.ScreenAudio || source == CallMediaSource.ScreenVideo)
-        ) {
-          setupPeerTransform(
-            TransformOperation.Encrypt,
-            elem.sender as RTCRtpSenderWithEncryption,
-            call.worker,
-            call.aesKey,
-            call.key,
-            source == CallMediaSource.ScreenVideo ? CallMediaType.Video : CallMediaType.Audio,
-            elem.mid
-          )
-        }
       })
-
-      call.screenShareWasSetupBefore = true
       // videos.localScreen.pause()
       // videos.localScreen.srcObject = call.localScreenStream
       videos.localScreen.play().catch((e) => console.log(e))
@@ -985,34 +1010,40 @@ const processCommand = (function () {
     localOrPeerMediaSourcesChanged(call)
   }
 
-  async function replaceMedia(call: Call, camera: VideoCamera): Promise<boolean> {
+  async function replaceMedia(call: Call, source: CallMediaSource, enable: boolean, camera: VideoCamera): Promise<boolean> {
     const videos = getVideoElements()
     if (!videos) throw Error("no video elements")
     const pc = call.connection
-    const oldAudioTracks = call.localStream.getAudioTracks()
-    const audioWasEnabled = oldAudioTracks.some((elem) => elem.enabled)
     let localStream: MediaStream
     try {
-      localStream = await getLocalMediaStream(localMedia(call), camera)
+      localStream = await getLocalMediaStream(
+        source == CallMediaSource.Mic ? enable : call.localMediaSources.mic,
+        source == CallMediaSource.Camera ? enable : call.localMediaSources.camera,
+        camera
+      )
     } catch (e: any) {
       console.log("Replace media error", e)
-      desktopShowPermissionsAlert(CallMediaType.Video)
+      desktopShowPermissionsAlert(source == CallMediaSource.Mic ? CallMediaType.Audio : CallMediaType.Video)
       return false
     }
-    for (const t of call.localStream.getTracks()) t.stop()
+    for (const t of call.localStream.getTracks()) {
+      t.stop()
+      call.localStream.removeTrack(t)
+    }
+    for (const t of localStream.getTracks()) {
+      call.localStream.addTrack(t)
+      localStream.removeTrack(t)
+    }
     call.localCamera = camera
 
-    const audioTracks = localStream.getAudioTracks()
-    const videoTracks = localStream.getVideoTracks()
-    if (!audioWasEnabled && oldAudioTracks.length > 0) {
-      audioTracks.forEach((elem) => (elem.enabled = false))
-    }
+    const audioTracks = call.localStream.getAudioTracks()
+    const videoTracks = call.localStream.getVideoTracks()
+    console.log("LALAL MEDIA " + audioTracks.length + " " + videoTracks.length)
 
-    replaceTracks(pc, audioTracks)
-    replaceTracks(pc, videoTracks)
-    call.localStream = localStream
-    videos.local.srcObject = localStream
-    videos.local.play().catch((e) => console.log(e))
+    replaceTracks(pc, CallMediaSource.Mic, audioTracks)
+    replaceTracks(pc, CallMediaSource.Camera, videoTracks)
+
+    videos.local.play().catch((e) => console.log("replace media: local play", JSON.stringify(e)))
 
     call.localMediaSources.mic = call.localStream.getAudioTracks().length > 0
     call.localMediaSources.camera = call.localStream.getVideoTracks().length > 0
@@ -1021,10 +1052,19 @@ const processCommand = (function () {
     return true
   }
 
-  function replaceTracks(pc: RTCPeerConnection, tracks: MediaStreamTrack[]) {
-    if (!tracks.length) return
-    const sender = pc.getSenders().find((s) => s.track?.kind === tracks[0].kind)
-    if (sender) for (const t of tracks) sender.replaceTrack(t)
+  function replaceTracks(pc: RTCPeerConnection, source: CallMediaSource, tracks: MediaStreamTrack[]) {
+    const sender = pc.getTransceivers().find((elem) => mediaSourceFromTransceiverMid(elem.mid) == source)?.sender
+    if (sender) {
+      if (tracks.length > 0)
+        for (const t of tracks) {
+          console.log("LALAL MEDIA REPLACE TRACK")
+          sender.replaceTrack(t)
+        }
+      else {
+        console.log("LALAL MEDIA REPLACE TRACK2")
+        sender.replaceTrack(null)
+      }
+    }
   }
 
   function mediaSourceFromTransceiverMid(mid: string | null) {
@@ -1139,18 +1179,10 @@ const processCommand = (function () {
     localOrPeerMediaSourcesChanged(activeCall)
   }
 
-  function getLocalMediaStream(mediaType: CallMediaType, facingMode: VideoCamera): Promise<MediaStream> {
-    const constraints = callMediaConstraints(mediaType, facingMode)
-    return navigator.mediaDevices.getUserMedia(constraints)
-  }
-
-  function getEmptyStream(mediaType: CallMediaType, pc: RTCPeerConnection): MediaStream {
-    const stream = new MediaStream()
-    pc.addTransceiver("audio", {streams: [stream]})
-    if (mediaType == CallMediaType.Video) {
-      pc.addTransceiver("video", {streams: [stream]})
-    }
-    return stream
+  async function getLocalMediaStream(mic: boolean, camera: boolean, facingMode: VideoCamera): Promise<MediaStream> {
+    if (!mic && !camera) return new MediaStream()
+    const constraints = callMediaConstraints(mic, camera, facingMode)
+    return await navigator.mediaDevices.getUserMedia(constraints)
   }
 
   function getLocalScreenCaptureStream(): Promise<MediaStream> {
@@ -1171,14 +1203,12 @@ const processCommand = (function () {
     return navigator.mediaDevices.getDisplayMedia(constraints)
   }
 
-  function callMediaConstraints(mediaType: CallMediaType, facingMode: VideoCamera): MediaStreamConstraints {
-    switch (mediaType) {
-      case CallMediaType.Audio:
-        return {audio: true, video: false}
-      case CallMediaType.Video:
-        return {
-          audio: true,
-          video: {
+  function callMediaConstraints(mic: boolean, camera: boolean, facingMode: VideoCamera): MediaStreamConstraints {
+    return {
+      audio: mic,
+      video: !camera
+        ? false
+        : {
             frameRate: 24,
             width: {
               min: 480,
@@ -1188,7 +1218,6 @@ const processCommand = (function () {
             aspectRatio: 1.33,
             facingMode,
           },
-        }
     }
   }
 

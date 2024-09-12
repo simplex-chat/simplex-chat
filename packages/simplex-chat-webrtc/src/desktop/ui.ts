@@ -80,6 +80,26 @@ localOrPeerMediaSourcesChanged = (call: Call) => {
   document.getElementById("media-sources")!.innerText = mediaSourcesStatus(call)
 }
 
+// override function in call.ts to adapt UI to enabled media sources
+inactiveCallMediaSourcesChanged = (inactiveCallMediaSources: Map<CallMediaSource, boolean>) => {
+  const mic = inactiveCallMediaSources.get(CallMediaSource.Mic)
+  const camera = inactiveCallMediaSources.get(CallMediaSource.Camera)
+  const screenVideo = inactiveCallMediaSources.get(CallMediaSource.ScreenVideo)
+  if (mic != undefined) {
+    enableMicIcon(mic)
+  }
+  if (camera != undefined) {
+    enableCameraIcon(camera)
+  }
+  if (screenVideo != undefined) {
+    enableScreenIcon(screenVideo)
+  }
+
+  const className = camera ? CallMediaType.Video : CallMediaType.Audio
+  document.getElementById("info-block")!.className = className
+  document.getElementById("media-sources")!.innerText = inactiveCallMediaSourcesStatus(inactiveCallMediaSources)
+}
+
 function enableMicIcon(enabled: boolean) {
   document.getElementById("toggle-mic")!.innerHTML = enabled
     ? '<img src="/desktop/images/ic_mic.svg" />'
@@ -111,6 +131,19 @@ function mediaSourcesStatus(call: Call): string {
   if (call.peerMediaSources.camera) status += " cam"
   if (call.peerMediaSources.screenAudio) status += " scrA"
   if (call.peerMediaSources.screenVideo) status += " scrV"
+  return status
+}
+
+function inactiveCallMediaSourcesStatus(inactiveCallMediaSources: Map<CallMediaSource, boolean>): string {
+  let status = "local"
+  const mic = inactiveCallMediaSources.get(CallMediaSource.Mic)
+  const camera = inactiveCallMediaSources.get(CallMediaSource.Camera)
+  const screenAudio = inactiveCallMediaSources.get(CallMediaSource.ScreenAudio)
+  const screenVideo = inactiveCallMediaSources.get(CallMediaSource.ScreenVideo)
+  if (mic == true) status += " mic"
+  if (camera == true) status += " cam"
+  if (screenAudio == true) status += " scrA"
+  if (screenVideo == true) status += " scrV"
   return status
 }
 

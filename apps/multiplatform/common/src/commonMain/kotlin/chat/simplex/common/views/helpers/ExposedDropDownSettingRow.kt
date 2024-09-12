@@ -1,7 +1,12 @@
 package chat.simplex.common.views.helpers
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
+import androidx.compose.material.ripple.rememberRipple
 import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -9,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.res.MR
@@ -85,10 +91,12 @@ fun <T> ExposedDropDownSettingWithIcon(
   values: List<Triple<T, ImageResource, String>>,
   selection: State<T>,
   fontSize: TextUnit = 16.sp,
-  iconSize: Dp = 40.dp,
+  iconPadding: Dp = 10.dp,
   listIconSize: Dp = 30.dp,
+  boxSize: Dp = 60.dp,
   iconColor: Color = MenuTextColor,
   enabled: State<Boolean> = mutableStateOf(true),
+  background: Color,
   minWidth: Dp = 200.dp,
   onSelected: (T) -> Unit
 ) {
@@ -99,13 +107,23 @@ fun <T> ExposedDropDownSettingWithIcon(
       expanded.value = !expanded.value && enabled.value
     }
   ) {
-    Row(
-      Modifier.padding(start = 10.dp),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.End
+    Box(
+      Modifier
+        .background(background, CircleShape)
+        .size(boxSize)
+        .clickable(
+          onClick = {
+            expanded.value = !expanded.value && enabled.value
+          },
+          role = Role.Button,
+          interactionSource = remember { MutableInteractionSource() },
+          indication = rememberRipple(bounded = false, radius = boxSize / 2, color = background.lighter(0.1f)),
+          enabled = enabled.value
+        ),
+      contentAlignment = Alignment.Center
     ) {
       val choice = values.first { it.first == selection.value }
-      Icon(painterResource(choice.second), choice.third, Modifier.size(iconSize), tint = iconColor)
+      Icon(painterResource(choice.second), choice.third, Modifier.padding(iconPadding).fillMaxSize(), tint = iconColor)
     }
     DefaultExposedDropdownMenu(
       modifier = Modifier.widthIn(min = minWidth),
