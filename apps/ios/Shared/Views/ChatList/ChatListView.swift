@@ -78,7 +78,7 @@ struct ChatListView: View {
                             NavigationView {
                                 UserProfile()
                                     .navigationTitle("Your current profile")
-                                    .modifier(ThemedBackground())
+                                    .modifier(ThemedBackground(grouped: true))
                             }
                         case .chatPreferences:
                             NavigationView {
