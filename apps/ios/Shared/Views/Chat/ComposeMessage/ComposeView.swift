@@ -804,7 +804,7 @@ struct ComposeView: View {
                         )
                     )
                 }
-                let _ = await send(composedMessages, live: live, ttl: ttl)
+                sent = await send(composedMessages, live: live, ttl: ttl).last
 
             case let .voicePreview(recordingFileName, duration):
                 stopPlayback.toggle()
