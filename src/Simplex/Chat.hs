@@ -1005,7 +1005,7 @@ processChatCommand' vr = \case
                 MCLink {} -> True
                 MCImage {} -> True
                 MCVideo {text} -> text /= ""
-                MCVoice {} -> False
+                MCVoice {text} -> text /= ""
                 MCFile t -> t /= ""
                 MCUnknown {} -> True
   APIForwardChatItems (ChatRef toCType toChatId) (ChatRef fromCType fromChatId) itemIds itemTTL -> withUser $ \user -> case toCType of
