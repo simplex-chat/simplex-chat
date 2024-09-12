@@ -183,8 +183,13 @@ public func chatResponse(_ s: String) -> ChatResponse {
     //    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
     //    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
     do {
-        let r = try jsonDecoder.decode(APIResponse.self, from: d)
-        return r.resp
+        let executor = ThreadExecutor<APIResponse>(
+            stackSize: 1024*1024*4, // 4MiB
+            qos: Thread.current.qualityOfService // inherit priority
+        )
+        return try executor.executeSync {
+            try jsonDecoder.decode(APIResponse.self, from: d)
+        }.resp
     } catch {
         logger.error("chatResponse jsonDecoder.decode error: \(error.localizedDescription)")
     }

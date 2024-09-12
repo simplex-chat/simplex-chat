@@ -18,6 +18,7 @@
 		18415FEFE153C5920BFB7828 /* GroupWelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1841516F0CE5992B0EDFB377 /* GroupWelcomeView.swift */; };
 		3CDBCF4227FAE51000354CDD /* ComposeLinkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CDBCF4127FAE51000354CDD /* ComposeLinkView.swift */; };
 		3CDBCF4827FF621E00354CDD /* CILinkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CDBCF4727FF621E00354CDD /* CILinkView.swift */; };
+		5009BE252C92CE8A00C86DD8 /* ThreadUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5009BE242C92CE8A00C86DD8 /* ThreadUtils.swift */; };
 		5C00168128C4FE760094D739 /* KeyChain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C00168028C4FE760094D739 /* KeyChain.swift */; };
 		5C029EA82837DBB3004A9677 /* CICallItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C029EA72837DBB3004A9677 /* CICallItemView.swift */; };
 		5C029EAA283942EA004A9677 /* CallController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C029EA9283942EA004A9677 /* CallController.swift */; };
@@ -310,6 +311,7 @@
 		18415FD2E36F13F596A45BB4 /* CIVideoView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CIVideoView.swift; sourceTree = "<group>"; };
 		3CDBCF4127FAE51000354CDD /* ComposeLinkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeLinkView.swift; sourceTree = "<group>"; };
 		3CDBCF4727FF621E00354CDD /* CILinkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CILinkView.swift; sourceTree = "<group>"; };
+		5009BE242C92CE8A00C86DD8 /* ThreadUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThreadUtils.swift; sourceTree = "<group>"; };
 		5C00168028C4FE760094D739 /* KeyChain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyChain.swift; sourceTree = "<group>"; };
 		5C029EA72837DBB3004A9677 /* CICallItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CICallItemView.swift; sourceTree = "<group>"; };
 		5C029EA9283942EA004A9677 /* CallController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallController.swift; sourceTree = "<group>"; };
@@ -971,6 +973,7 @@
 				5CBD2859295711D700EC2CF4 /* ImageUtils.swift */,
 				CE2AD9CD2C452A4D00E844E3 /* ChatUtils.swift */,
 				64DAE1502809D9F5000DA960 /* FileUtils.swift */,
+				5009BE242C92CE8A00C86DD8 /* ThreadUtils.swift */,
 				5C9D81182AA7A4F1001D49FD /* CryptoFile.swift */,
 				5C00168028C4FE760094D739 /* KeyChain.swift */,
 				5CF9371F2B24DE8C00E1D781 /* SharedFileSubscriber.swift */,
@@ -1547,6 +1550,7 @@
 				5CD67B902B0E858A00C510B1 /* hs_init.c in Sources */,
 				5CE2BA91284533A300EC33A6 /* Notifications.swift in Sources */,
 				8C01E9C12C8EFC33008A4B0A /* objc.m in Sources */,
+				5009BE252C92CE8A00C86DD8 /* ThreadUtils.swift in Sources */,
 				5CE2BA79284530CC00EC33A6 /* SimpleXChat.docc in Sources */,
 				5CE2BA90284533A300EC33A6 /* JSON.swift in Sources */,
 				5CE2BA8B284533A300EC33A6 /* ChatTypes.swift in Sources */,
@@ -1914,6 +1918,10 @@
 				LLVM_LTO = YES_THIN;
 				MARKETING_VERSION = 6.0.4;
 				PRODUCT_BUNDLE_IDENTIFIER = chat.simplex.app;
+				OTHER_LDFLAGS = (
+					"-Wl,-stack_size",
+					"-Wl,0x400000",
+				);
 				PRODUCT_NAME = SimpleX;
 				SDKROOT = iphoneos;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -1963,6 +1971,10 @@
 				LLVM_LTO = YES;
 				MARKETING_VERSION = 6.0.4;
 				PRODUCT_BUNDLE_IDENTIFIER = chat.simplex.app;
+				OTHER_LDFLAGS = (
+					"-Wl,-stack_size",
+					"-Wl,0x400000",
+				);
 				PRODUCT_NAME = SimpleX;
 				SDKROOT = iphoneos;
 				SWIFT_EMIT_LOC_STRINGS = YES;
