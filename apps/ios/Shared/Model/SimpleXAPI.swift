@@ -1000,6 +1000,10 @@ func apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64)) async thr
     try await sendCommandOkResp(.apiChatRead(type: type, id: id, itemRange: itemRange))
 }
 
+func apiChatItemsRead(type: ChatType, id: Int64, itemIds: [Int64]) async throws {
+    try await sendCommandOkResp(.apiChatItemsRead(type: type, id: id, itemIds: itemIds))
+}
+
 func apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool) async throws {
     try await sendCommandOkResp(.apiChatUnread(type: type, id: id, unreadChat: unreadChat))
 }
@@ -1287,11 +1291,23 @@ func markChatUnread(_ chat: Chat, unreadChat: Bool = true) async {
 
 func apiMarkChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
     do {
-        logger.debug("apiMarkChatItemRead: \(cItem.id)")
         try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: (cItem.id, cItem.id))
-        await ChatModel.shared.markChatItemRead(cInfo, cItem)
+        DispatchQueue.main.async {
+            ChatModel.shared.markChatItemsRead(cInfo, [cItem.id])
+        }
     } catch {
-        logger.error("apiMarkChatItemRead apiChatRead error: \(responseError(error))")
+        logger.error("apiChatRead error: \(responseError(error))")
+    }
+}
+
+func apiMarkChatItemsRead(_ cInfo: ChatInfo, _ itemIds: [ChatItem.ID]) async {
+    do {
+        try await apiChatItemsRead(type: cInfo.chatType, id: cInfo.apiId, itemIds: itemIds)
+        DispatchQueue.main.async {
+            ChatModel.shared.markChatItemsRead(cInfo, itemIds)
+        }
+    } catch {
+        logger.error("apiChatItemsRead error: \(responseError(error))")
     }
 }
 

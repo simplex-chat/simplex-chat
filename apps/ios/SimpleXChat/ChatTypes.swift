@@ -2713,7 +2713,7 @@ public struct CIMeta: Decodable, Hashable {
     public var deletable: Bool
     public var editable: Bool
 
-    public var timestampText: Text { get { formatTimestampText(itemTs) } }
+    public var timestampText: Text { Text(formatTimestampMeta(itemTs)) }
     public var recent: Bool { updatedAt + 10 > .now }
     public var isLive: Bool { itemLive == true }
     public var disappearing: Bool { !isRcvNew && itemTimed?.deleteAt != nil }
@@ -2761,8 +2761,30 @@ public struct CITimed: Decodable, Hashable {
     public var deleteAt: Date?
 }
 
+let msgTimeFormat = Date.FormatStyle.dateTime.hour().minute()
+let msgDateFormat = Date.FormatStyle.dateTime.day(.twoDigits).month(.twoDigits)
+
 public func formatTimestampText(_ date: Date) -> Text {
-    Text(verbatim: date.formatted(date: .omitted, time: .shortened))
+    Text(verbatim: date.formatted(recent(date) ? msgTimeFormat : msgDateFormat))
+}
+
+public func formatTimestampMeta(_ date: Date) -> String {
+    date.formatted(date: .omitted, time: .shortened)
+}
+
+private func recent(_ date: Date) -> Bool {
+    let now = Date()
+    let calendar = Calendar.current
+
+    guard let previousDay = calendar.date(byAdding: DateComponents(day: -1), to: now),
+          let previousDay18 = calendar.date(bySettingHour: 18, minute: 0, second: 0, of: previousDay),
+          let currentDay00 = calendar.date(bySettingHour: 0, minute: 0, second: 0, of: now),
+          let currentDay12 = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: now) else {
+        return false
+    }
+
+    let isSameDay = calendar.isDate(date, inSameDayAs: now)
+    return isSameDay || (now < currentDay12 && date >= previousDay18 && date < currentDay00)
 }
 
 public enum CIStatus: Decodable, Hashable {
@@ -2790,13 +2812,14 @@ public enum CIStatus: Decodable, Hashable {
         }
     }
 
-    public func statusIcon(_ metaColor: Color, _ primaryColor: Color = .accentColor) -> (Image, Color)? {
+    public func statusIcon(_ metaColor: Color, _ paleMetaColor: Color, _ primaryColor: Color = .accentColor) -> (Image, Color)? {
         switch self {
         case .sndNew: nil
-        case .sndSent: (Image("checkmark.wide"),  metaColor)
-        case let .sndRcvd(msgRcptStatus, _):
+        case let .sndSent(sndProgress):
+            (Image("checkmark.wide"),  sndProgress == .partial ? paleMetaColor : metaColor)
+        case let .sndRcvd(msgRcptStatus, sndProgress):
             switch msgRcptStatus {
-            case .ok: (Image("checkmark.2"), metaColor)
+            case .ok: (Image("checkmark.2"), sndProgress == .partial ? paleMetaColor : metaColor)
             case .badMsgHash: (Image("checkmark.2"), .red)
             }
         case .sndErrorAuth: (Image(systemName: "multiply"), .red)
@@ -2805,14 +2828,6 @@ public enum CIStatus: Decodable, Hashable {
         case .rcvNew: (Image(systemName: "circlebadge.fill"), primaryColor)
         case .rcvRead: nil
         case .invalid: (Image(systemName: "questionmark"), metaColor)
-        }
-    }
-
-    public var sndProgress: SndCIStatusProgress? {
-        switch self {
-        case let .sndSent(sndProgress): sndProgress
-        case let .sndRcvd(_ , sndProgress): sndProgress
-        default: nil
         }
     }
 

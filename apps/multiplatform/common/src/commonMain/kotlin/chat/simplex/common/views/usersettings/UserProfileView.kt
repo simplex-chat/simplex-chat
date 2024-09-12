@@ -34,6 +34,7 @@ fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
   KeyChangeEffect(u.value?.remoteHostId, u.value?.userId) {
     close()
   }
+
   if (user != null) {
     var profile by remember { mutableStateOf(user.profile.toProfile()) }
     UserProfileLayout(

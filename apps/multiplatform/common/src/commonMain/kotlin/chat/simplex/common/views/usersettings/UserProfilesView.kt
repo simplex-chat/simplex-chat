@@ -36,11 +36,10 @@ import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 
 @Composable
-fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: MutableState<Boolean>, drawerState: DrawerState) {
+fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: MutableState<Boolean>) {
   val searchTextOrPassword = rememberSaveable { search }
   val users by remember { derivedStateOf { m.users.map { it.user } } }
   val filteredUsers by remember { derivedStateOf { filteredUsers(m, searchTextOrPassword.value) } }
-  val scope = rememberCoroutineScope()
   UserProfilesLayout(
     users = users,
     filteredUsers = filteredUsers,
@@ -51,12 +50,6 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
     addUser = {
       ModalManager.center.showModalCloseable { close ->
         CreateProfile(m, close)
-        if (appPlatform.isDesktop) {
-          // Hide settings to allow clicks to pass through to CreateProfile view
-          DisposableEffectOnGone(always = { scope.launch { drawerState.close() } }) {
-            // Show settings again to allow intercept clicks to close modals after profile creation finishes
-            scope.launch(NonCancellable) { drawerState.open() } }
-        }
       }
     },
     activateUser = { user ->
