@@ -15,14 +15,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         logger.debug("AppDelegate: didFinishLaunchingWithOptions")
         application.registerForRemoteNotifications()
-        NotificationCenter.default.addObserver(self, selector: #selector(pasteboardChanged), name: UIPasteboard.changedNotification, object: nil)
         removePasscodesIfReinstalled()
         prepareForLaunch()
         return true
-    }
-
-    @objc func pasteboardChanged() {
-        ChatModel.shared.pasteboardHasStrings = UIPasteboard.general.hasStrings
     }
 
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {

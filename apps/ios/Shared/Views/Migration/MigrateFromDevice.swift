@@ -24,6 +24,7 @@ private enum MigrationFromState: Equatable {
 }
 
 private enum MigrateFromDeviceViewAlert: Identifiable {
+    case finishMigration(_ fileId: Int64, _ ctrl: chat_ctrl)
     case deleteChat(_ title: LocalizedStringKey = "Delete chat profile?", _ text: LocalizedStringKey = "This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost.")
     case startChat(_ title: LocalizedStringKey = "Start chat?", _ text: LocalizedStringKey = "Warning: starting chat on multiple devices is not supported and will cause message delivery failures")
 
@@ -38,6 +39,7 @@ private enum MigrateFromDeviceViewAlert: Identifiable {
 
     var id: String {
         switch self {
+        case .finishMigration: return "finishMigration"
         case let .deleteChat(title, text): return "\(title) \(text)"
         case let .startChat(title, text): return "\(title) \(text)"
 
@@ -133,6 +135,15 @@ struct MigrateFromDevice: View {
         }
         .alert(item: $alert) { alert in
             switch alert {
+            case let .finishMigration(fileId, ctrl):
+                return Alert(
+                    title: Text("Remove archive?"),
+                    message: Text("The uploaded database archive will be permanently removed from the servers."),
+                    primaryButton: .destructive(Text("Continue")) {
+                        finishMigration(fileId, ctrl)
+                    },
+                    secondaryButton: .cancel()
+                )
             case let .startChat(title, text):
                 return Alert(
                     title: Text(title),
@@ -313,7 +324,7 @@ struct MigrateFromDevice: View {
                         Text("Cancel migration").foregroundColor(.red)
                     }
                 }
-                Button(action: { finishMigration(fileId, ctrl) }) {
+                Button(action: { alert = .finishMigration(fileId, ctrl) }) {
                     settingsRow("checkmark", color: theme.colors.secondary) {
                         Text("Finalize migration").foregroundColor(theme.colors.primary)
                     }

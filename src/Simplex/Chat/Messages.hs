@@ -595,6 +595,27 @@ ciFileLoaded = \case
   CIFSRcvWarning {} -> False
   CIFSInvalid {} -> False
 
+data ForwardFileError = FFENotAccepted FileTransferId | FFEInProgress | FFEFailed | FFEMissing
+   deriving (Eq, Ord)
+
+ciFileForwardError :: FileTransferId -> CIFileStatus d -> Maybe ForwardFileError
+ciFileForwardError fId = \case
+  CIFSSndStored -> Nothing
+  CIFSSndTransfer {} -> Nothing
+  CIFSSndComplete -> Nothing
+  CIFSSndCancelled -> Nothing
+  CIFSSndError {} -> Nothing
+  CIFSSndWarning {} -> Nothing
+  CIFSRcvInvitation -> Just $ FFENotAccepted fId
+  CIFSRcvAccepted -> Just FFEInProgress
+  CIFSRcvTransfer {} -> Just FFEInProgress
+  CIFSRcvAborted -> Just $ FFENotAccepted fId
+  CIFSRcvCancelled -> Just FFEFailed
+  CIFSRcvComplete -> Nothing
+  CIFSRcvError {} -> Just FFEFailed
+  CIFSRcvWarning {} -> Just FFEFailed
+  CIFSInvalid {} -> Just FFEFailed
+
 data ACIFileStatus = forall d. MsgDirectionI d => AFS (SMsgDirection d) (CIFileStatus d)
 
 deriving instance Show ACIFileStatus
