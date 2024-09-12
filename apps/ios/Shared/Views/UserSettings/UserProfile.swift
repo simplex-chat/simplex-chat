@@ -11,7 +11,7 @@ import SimpleXChat
 
 struct UserProfile: View {
     @State private var profile = Profile(displayName: "", fullName: "")
-    @State private var loadedProfileHash: Int?
+    @State private var currentProfileHash: Int?
     @FocusState private var focus
     // Modals
     @State private var showChooseSource = false
@@ -64,7 +64,7 @@ SimpleX servers cannot see your profile.
         .task {
             if let user = ChatModel.shared.currentUser {
                 profile = fromLocalProfile(user.profile)
-                loadedProfileHash = profile.hashValue
+                currentProfileHash = profile.hashValue
             }
         }
         .onChange(of: chosenImage) { image in
@@ -156,9 +156,9 @@ SimpleX servers cannot see your profile.
     }
 
     private var canSaveProfile: Bool {
-        loadedProfileHash != profile.hashValue &&
+        currentProfileHash != profile.hashValue &&
         profile.displayName.trimmingCharacters(in: .whitespaces) != "" &&
-        validDisplayName(profile.displayName.trimmingCharacters(in: .whitespaces))
+        validDisplayName(profile.displayName)
     }
 
     private func saveProfile() {
@@ -169,6 +169,7 @@ SimpleX servers cannot see your profile.
                     DispatchQueue.main.async {
                         ChatModel.shared.updateCurrentUser(newProfile)
                         profile = newProfile
+                        currentProfileHash = newProfile.hashValue
                     }
 
                 } else {
