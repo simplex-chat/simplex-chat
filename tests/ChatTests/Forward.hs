@@ -7,7 +7,11 @@ import ChatClient
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import qualified Data.ByteString.Char8 as B
-import System.Directory (copyFile, doesFileExist)
+import Data.List (intercalate)
+import qualified Data.Text as T
+import System.Directory (copyFile, doesFileExist, removeFile)
+import Simplex.Chat (fixedImagePreview)
+import Simplex.Chat.Types (ImageData (..))
 import Test.Hspec hiding (it)
 
 chatForwardTests :: SpecWith FilePath
@@ -613,6 +617,8 @@ testForwardContactToContactMulti =
       alice <# "bob> hey"
       msgId2 <- lastItemId alice
 
+      alice ##> ("/_forward plan @2 " <> msgId1 <> "," <> msgId2)
+      alice <## "all messages can be forwarded"
       alice ##> ("/_forward @3 @2 " <> msgId1 <> "," <> msgId2)
       alice <# "@cath <- you @bob"
       alice <## "      hi"
@@ -642,6 +648,8 @@ testForwardGroupToGroupMulti =
       alice <# "#team bob> hey"
       msgId2 <- lastItemId alice
 
+      alice ##> ("/_forward plan #1 " <> msgId1 <> "," <> msgId2)
+      alice <## "all messages can be forwarded"
       alice ##> ("/_forward #2 #1 " <> msgId1 <> "," <> msgId2)
       alice <# "#club <- you #team"
       alice <## "      hi"
@@ -671,9 +679,8 @@ testMultiForwardFiles =
     \alice bob cath -> withXFTPServer $ do
       setRelativePaths alice "./tests/tmp/alice_app_files" "./tests/tmp/alice_xftp"
       copyFile "./tests/fixtures/test.jpg" "./tests/tmp/alice_app_files/test.jpg"
-      copyFile "./tests/fixtures/test.jpg" "./tests/tmp/alice_app_files/test_3.jpg"
-      copyFile "./tests/fixtures/test.jpg" "./tests/tmp/alice_app_files/test_4.jpg"
       copyFile "./tests/fixtures/test.pdf" "./tests/tmp/alice_app_files/test.pdf"
+      copyFile "./tests/fixtures/test_1MB.pdf" "./tests/tmp/alice_app_files/test_1MB.pdf"
       setRelativePaths bob "./tests/tmp/bob_app_files" "./tests/tmp/bob_xftp"
       setRelativePaths cath "./tests/tmp/cath_app_files" "./tests/tmp/cath_xftp"
       connectUsers alice bob
@@ -688,51 +695,46 @@ testMultiForwardFiles =
 
       -- send original files
       let cm1 = "{\"msgContent\": {\"type\": \"text\", \"text\": \"message without file\"}}"
-          cm2 = "{\"filePath\": \"test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"sending file 1\"}}"
-          cm3 = "{\"filePath\": \"test.pdf\", \"msgContent\": {\"type\": \"text\", \"text\": \"sending file 2\"}}"
-          cm4 = "{\"filePath\": \"test_4.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"sending file 3\"}}"
-          cm5 = "{\"filePath\": \"test_3.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"file\"}}"
-
-      alice ##> ("/_send @2 json [" <> cm1 <> "," <> cm2 <> "," <> cm3 <> "," <> cm4 <> "," <> cm5 <> "]")
+          ImageData img = fixedImagePreview
+          cm2 = "{\"filePath\": \"test.jpg\", \"msgContent\": {\"type\": \"image\", \"image\":\"" <> T.unpack img <> "\", \"text\": \"\"}}"
+          cm3 = "{\"filePath\": \"test.pdf\", \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}"
+          cm4 = "{\"filePath\": \"test_1MB.pdf\", \"msgContent\": {\"type\": \"file\", \"text\": \"message with large file\"}}"
+      alice ##> ("/_send @2 json [" <> cm1 <> "," <> cm2 <> "," <> cm3 <> "," <> cm4 <> "]")
 
       alice <# "@bob message without file"
 
-      alice <# "@bob sending file 1"
       alice <# "/f @bob test.jpg"
       alice <## "use /fc 1 to cancel sending"
 
-      alice <# "@bob sending file 2"
       alice <# "/f @bob test.pdf"
       alice <## "use /fc 2 to cancel sending"
 
-      alice <# "@bob sending file 3"
-      alice <# "/f @bob test_4.jpg"
+      alice <# "@bob message with large file"
+      alice <# "/f @bob test_1MB.pdf"
       alice <## "use /fc 3 to cancel sending"
-
-      alice <# "/f @bob test_3.jpg"
-      alice <## "use /fc 4 to cancel sending"
 
       bob <# "alice> message without file"
 
-      bob <# "alice> sending file 1"
       bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
 
-      bob <# "alice> sending file 2"
       bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
       bob <## "use /fr 2 [<dir>/ | <path>] to receive it"
 
-      bob <# "alice> sending file 3"
-      bob <# "alice> sends file test_4.jpg (136.5 KiB / 139737 bytes)"
+      bob <# "alice> message with large file"
+      bob <# "alice> sends file test_1MB.pdf (1017.7 KiB / 1042157 bytes)"
       bob <## "use /fr 3 [<dir>/ | <path>] to receive it"
-
-      bob <# "alice> sends file test_3.jpg (136.5 KiB / 139737 bytes)"
-      bob <## "use /fr 4 [<dir>/ | <path>] to receive it"
 
       alice <## "completed uploading file 1 (test.jpg) for bob"
       alice <## "completed uploading file 2 (test.pdf) for bob"
-      alice <## "completed uploading file 3 (test_4.jpg) for bob"
-      alice <## "completed uploading file 4 (test_3.jpg) for bob"
+      alice <## "completed uploading file 3 (test_1MB.pdf) for bob"
+
+      -- IDs to forward
+      let msgId1 = (read msgIdZero :: Int) + 1
+          msgIds = intercalate "," $ map show [msgId1, msgId1 + 1, msgId1 + 2, msgId1 + 3, msgId1 + 4]
+      bob ##> ("/_forward plan @2 " <> msgIds)
+      bob <## "Files can be received: 1, 2, 3"
+      bob <## "4 message(s) out of 5 can be forwarded"
 
       bob ##> "/fr 1"
       bob
@@ -741,10 +743,9 @@ testMultiForwardFiles =
              ]
       bob <## "completed receiving file 1 (test.jpg) from alice"
 
-      -- try to forward file without receiving 2nd file
-      let msgId1 = (read msgIdZero :: Int) + 1
-      bob ##> ("/_forward @3 @2 " <> show msgId1 <> "," <> show (msgId1 + 1) <> "," <> show (msgId1 + 2) <> "," <> show (msgId1 + 3) <> "," <> show (msgId1 + 4) <> "," <> show (msgId1 + 5))
-      bob <### ["3 file(s) are missing", "Use ignore_files to forward 2 message(s)"]
+      bob ##> ("/_forward plan @2 " <> msgIds)
+      bob <## "Files can be received: 2, 3"
+      bob <## "4 message(s) out of 5 can be forwarded"
 
       bob ##> "/fr 2"
       bob
@@ -762,7 +763,10 @@ testMultiForwardFiles =
       dest2 `shouldBe` src2
 
       -- forward file
-      bob ##> ("/_forward @3 @2 " <> show msgId1 <> "," <> show (msgId1 + 1) <> "," <> show (msgId1 + 2) <> "," <> show (msgId1 + 3) <> "," <> show (msgId1 + 4) <> "," <> show (msgId1 + 5) <> " ignore_files=on")
+      bob ##> ("/_forward plan @2 " <> msgIds)
+      bob <## "Files can be received: 3"
+      bob <## "all messages can be forwarded"
+      bob ##> ("/_forward @3 @2 " <> msgIds)
 
       -- messages printed for bob
       bob <# "@cath <- you @alice"
@@ -772,17 +776,17 @@ testMultiForwardFiles =
       bob <## "      message without file"
 
       bob <# "@cath <- @alice"
-      bob <## "      sending file 1"
+      bob <## "      test_1.jpg"
       bob <# "/f @cath test_1.jpg"
+      bob <## "use /fc 4 to cancel sending"
+
+      bob <# "@cath <- @alice"
+      bob <## "      test_1.pdf"
+      bob <# "/f @cath test_1.pdf"
       bob <## "use /fc 5 to cancel sending"
 
       bob <# "@cath <- @alice"
-      bob <## "      sending file 2"
-      bob <# "/f @cath test_1.pdf"
-      bob <## "use /fc 6 to cancel sending"
-
-      bob <# "@cath <- @alice"
-      bob <## "      sending file 3"
+      bob <## "      message with large file"
 
       -- messages printed for cath
       cath <# "bob> -> forwarded"
@@ -792,21 +796,21 @@ testMultiForwardFiles =
       cath <## "      message without file"
 
       cath <# "bob> -> forwarded"
-      cath <## "      sending file 1"
+      cath <## "      test_1.jpg"
       cath <# "bob> sends file test_1.jpg (136.5 KiB / 139737 bytes)"
       cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
 
       cath <# "bob> -> forwarded"
-      cath <## "      sending file 2"
+      cath <## "      test_1.pdf"
       cath <# "bob> sends file test_1.pdf (266.0 KiB / 272376 bytes)"
       cath <## "use /fr 2 [<dir>/ | <path>] to receive it"
 
       cath <# "bob> -> forwarded"
-      cath <## "      sending file 3" -- No file sent here
+      cath <## "      message with large file"
 
       -- file transfer
-      bob <## "completed uploading file 5 (test_1.jpg) for cath"
-      bob <## "completed uploading file 6 (test_1.pdf) for cath"
+      bob <## "completed uploading file 4 (test_1.jpg) for cath"
+      bob <## "completed uploading file 5 (test_1.pdf) for cath"
 
       cath ##> "/fr 1"
       cath
@@ -831,6 +835,26 @@ testMultiForwardFiles =
       src2B `shouldBe` dest2
       dest2C <- B.readFile "./tests/tmp/cath_app_files/test_1.pdf"
       dest2C `shouldBe` src2B
+
+      bob ##> "/fr 3"
+      bob
+        <### [ "saving file 3 from alice to test_1MB.pdf",
+               "started receiving file 3 (test_1MB.pdf) from alice"
+             ]
+      bob <## "completed receiving file 3 (test_1MB.pdf) from alice"
+
+      bob ##> ("/_forward plan @2 " <> msgIds)
+      bob <## "all messages can be forwarded"
+
+      removeFile "./tests/tmp/bob_app_files/test_1MB.pdf"
+      bob ##> ("/_forward plan @2 " <> msgIds)
+      bob <## "1 file(s) are missing"
+      bob <## "all messages can be forwarded"
+
+      removeFile "./tests/tmp/bob_app_files/test.pdf"
+      bob ##> ("/_forward plan @2 " <> msgIds)
+      bob <## "2 file(s) are missing"
+      bob <## "4 message(s) out of 5 can be forwarded"
 
       -- deleting original file doesn't delete forwarded file
       checkActionDeletesFile "./tests/tmp/bob_app_files/test.jpg" $ do

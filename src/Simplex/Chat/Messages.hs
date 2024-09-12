@@ -35,7 +35,7 @@ import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
-import Data.Time.Clock (NominalDiffTime, UTCTime, diffUTCTime, nominalDay)
+import Data.Time.Clock (UTCTime, diffUTCTime, nominalDay, NominalDiffTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Database.SQLite.Simple.FromField (FromField (..))
@@ -577,8 +577,26 @@ ciFileEnded = \case
   CIFSRcvWarning {} -> False
   CIFSInvalid {} -> True
 
+ciFileLoaded :: CIFileStatus d -> Bool
+ciFileLoaded = \case
+  CIFSSndStored -> True
+  CIFSSndTransfer {} -> True
+  CIFSSndComplete -> True
+  CIFSSndCancelled -> True
+  CIFSSndError {} -> True
+  CIFSSndWarning {} -> True
+  CIFSRcvInvitation -> False
+  CIFSRcvAccepted -> False
+  CIFSRcvTransfer {} -> False
+  CIFSRcvAborted -> False
+  CIFSRcvCancelled -> False
+  CIFSRcvComplete -> True
+  CIFSRcvError {} -> False
+  CIFSRcvWarning {} -> False
+  CIFSInvalid {} -> False
+
 data ForwardFileError = FFENotAccepted FileTransferId | FFEInProgress | FFEFailed | FFEMissing
-  deriving (Eq, Ord)
+   deriving (Eq, Ord)
 
 ciFileForwardError :: FileTransferId -> CIFileStatus d -> Maybe ForwardFileError
 ciFileForwardError fId = \case
@@ -592,11 +610,11 @@ ciFileForwardError fId = \case
   CIFSRcvAccepted -> Just FFEInProgress
   CIFSRcvTransfer {} -> Just FFEInProgress
   CIFSRcvAborted -> Just $ FFENotAccepted fId
-  CIFSRcvCancelled -> Just FFEFailed -- ?
+  CIFSRcvCancelled -> Just FFEFailed
   CIFSRcvComplete -> Nothing
   CIFSRcvError {} -> Just FFEFailed
   CIFSRcvWarning {} -> Just FFEFailed
-  CIFSInvalid {} -> Just FFEFailed -- ?
+  CIFSInvalid {} -> Just FFEFailed
 
 data ACIFileStatus = forall d. MsgDirectionI d => AFS (SMsgDirection d) (CIFileStatus d)
 
