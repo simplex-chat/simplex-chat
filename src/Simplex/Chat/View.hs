@@ -2034,11 +2034,7 @@ viewChatError isCmd logLevel testView = \case
     CEFallbackToSMPProhibited fileId -> ["recipient tried to accept file " <> sShow fileId <> " via old protocol, prohibited"]
     CEInlineFileProhibited _ -> ["A small file sent without acceptance - you can enable receiving such files with -f option."]
     CEInvalidQuote -> ["cannot reply to this message"]
-    CEInvalidForward -> ["cannot forward message(s)"]
-    CEForwardFilesNotAccepted files msgCount -> [plain $ "Some files are not accepted: " <> intercalate ", " (map show files), showForwardMsgCount msgCount]
-    CEForwardFilesInProgress cnt msgCount -> [plain $ "Still receiving " <> show cnt <> " file(s)", showForwardMsgCount msgCount]
-    CEForwardFilesMissing cnt msgCount -> [plain $ show cnt <> " file(s) are missing", showForwardMsgCount msgCount]
-    CEForwardFilesFailed cnt msgCount -> [plain $ show cnt <> " file(s) failed", showForwardMsgCount msgCount]
+    CEInvalidForward -> ["cannot forward this message"]
     CEInvalidChatItemUpdate -> ["cannot update this item"]
     CEInvalidChatItemDelete -> ["cannot delete this item"]
     CEHasCurrentCall -> ["call already in progress"]
@@ -2057,9 +2053,6 @@ viewChatError isCmd logLevel testView = \case
     CEPeerChatVRangeIncompatible -> ["peer chat protocol version range incompatible"]
     CEInternalError e -> ["internal chat error: " <> plain e]
     CEException e -> ["exception: " <> plain e]
-    where
-      showForwardMsgCount 0 = "No other messages to forward"
-      showForwardMsgCount msgCount = plain $ "Use ignore_files to forward " <> show msgCount <> " message(s)"
   -- e -> ["chat error: " <> sShow e]
   ChatErrorStore err -> case err of
     SEDuplicateName -> ["this display name is already used by user, contact or group"]
