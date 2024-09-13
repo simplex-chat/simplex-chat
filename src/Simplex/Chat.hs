@@ -995,7 +995,7 @@ processChatCommand' vr = \case
               Just err -> pure $ itemIdWithoutFile err
               Nothing -> case fileSource of
                 Just CryptoFile {filePath} -> do
-                  exists <- doesFileExist . maybe filePath (</> filePath) =<< chatReadVar filesFolder
+                  exists <- doesFileExist =<< lift (toFSFilePath filePath)
                   pure $ if exists then (Just itemId, Nothing) else itemIdWithoutFile FFEMissing
                 Nothing -> pure $ itemIdWithoutFile FFEMissing
             where
@@ -3444,7 +3444,7 @@ callStatusItemContent user Contact {contactId} chatItemId receivedStatus = do
 -- used during file transfer for actual operations with file system
 toFSFilePath :: FilePath -> CM' FilePath
 toFSFilePath f =
-  maybe f (</> f) <$> (readTVarIO =<< asks filesFolder)
+  maybe f (</> f) <$> (chatReadVar' filesFolder)
 
 setFileToEncrypt :: RcvFileTransfer -> CM RcvFileTransfer
 setFileToEncrypt ft@RcvFileTransfer {fileId} = do
@@ -4287,17 +4287,26 @@ processAgentMsgRcvFile _corrId aFileId msg = do
             liftIO $ updateCIFileStatus db user fileId (CIFSRcvWarning $ agentFileError e)
             lookupChatItemByFileId db vr user fileId
           toView $ CRRcvFileWarning user ci e ft
-        RFERR e
-          | e == FILE NOT_APPROVED -> do
+        RFERR e -> do
+          cleanupEmptyFile
+          if e == FILE NOT_APPROVED
+            then do
               aci_ <- resetRcvCIFileStatus user fileId CIFSRcvAborted
               agentXFTPDeleteRcvFile aFileId fileId
               forM_ aci_ $ \aci -> toView $ CRChatItemUpdated user aci
-          | otherwise -> do
+            else do
               ci <- withStore $ \db -> do
                 liftIO $ updateFileCancelled db user fileId (CIFSRcvError $ agentFileError e)
                 lookupChatItemByFileId db vr user fileId
               agentXFTPDeleteRcvFile aFileId fileId
               toView $ CRRcvFileError user ci e ft
+          where
+            cleanupEmptyFile :: CM ()
+            cleanupEmptyFile = case liveRcvFileTransferPath ft of
+              Nothing -> pure ()
+              Just targetPath -> do
+                fsTargetPath <- lift $ toFSFilePath targetPath
+                removeFile fsTargetPath `catchChatError` \_ -> pure ()
 
 processAgentMessageConn :: VersionRangeChat -> User -> ACorrId -> ConnId -> AEvent 'AEConn -> CM ()
 processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = do
