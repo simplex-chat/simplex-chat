@@ -167,6 +167,13 @@ struct ComposeState {
         }
     }
 
+    var manyMediaPreviews: Bool {
+        switch preview {
+        case let .mediaPreviews(mediaPreviews): return mediaPreviews.count > 1
+        default: return false
+        }
+    }
+
     var attachmentDisabled: Bool {
         if editing || forwarding || liveMessage != nil || inProgress { return true }
         switch preview {
@@ -750,27 +757,58 @@ struct ComposeView: View {
                 sent = await send(.text(msgText), quoted: quoted, live: live, ttl: ttl)
             case .linkPreview:
                 sent = await send(checkLinkPreview(), quoted: quoted, live: live, ttl: ttl)
-            case let .mediaPreviews(mediaPreviews: media):
-                // TODO batch send: batch media previews
-                let last = media.count - 1
-                if last >= 0 {
-                    for i in 0..<last {
-                        if case (_, .video(_, _, _)) = media[i] {
-                            sent = await sendVideo(media[i], ttl: ttl)
-                        } else {
-                            sent = await sendImage(media[i], ttl: ttl)
+            case let .mediaPreviews(mediaPreviews):
+                var composedMessages = [ComposedMessage]()
+                for (previewImage, uploadContent) in mediaPreviews {
+                    try? await Task.sleep(nanoseconds: 100_000000) // Sleep to allow `progressByTimeout` update be rendered
+                    let cm: ComposedMessage? = switch uploadContent {
+                    case let .simpleImage(image):
+                        saveImage(image).map { cryptoFile in
+                            ComposedMessage(
+                                fileSource: cryptoFile,
+                                msgContent: .image(text: "", image: previewImage)
+                            )
                         }
-                        _ = try? await Task.sleep(nanoseconds: 100_000000)
+                    case let .animatedImage(image):
+                        saveAnimImage(image).map { cryptoFile in
+                            ComposedMessage(
+                                fileSource: cryptoFile,
+                                msgContent: .image(text: "", image: previewImage)
+                            )
+                        }
+                    case let .video(_, url, duration):
+                        moveTempFileFromURL(url).map { cryptoFile in
+                            ChatModel.shared.filesToDelete.remove(url)
+                            return ComposedMessage(
+                                fileSource: cryptoFile,
+                                msgContent: .video(text: "", image: previewImage, duration: duration)
+                            )
+                        }
+                    case .none:
+                        nil
                     }
-                    if case (_, .video(_, _, _)) = media[last] {
-                        sent = await sendVideo(media[last], text: msgText, quoted: quoted, live: live, ttl: ttl)
-                    } else {
-                        sent = await sendImage(media[last], text: msgText, quoted: quoted, live: live, ttl: ttl)
-                    }
+                    if let cm { composedMessages.append(cm) }
                 }
-                if sent == nil {
-                    sent = await send(.text(msgText), quoted: quoted, live: live, ttl: ttl)
+                if let last = composedMessages.popLast() {
+                    // Add compose text and quote to the last media message
+                    composedMessages.append(
+                        ComposedMessage(
+                            fileSource: last.fileSource,
+                            quotedItemId: quoted,
+                            msgContent: last.msgContent.with(text: msgText)
+                        )
+                    )
+                } else {
+                    // If all media messages have failed - send only text and quote
+                    composedMessages.append(
+                        ComposedMessage(
+                            quotedItemId: quoted,
+                            msgContent: .text(msgText)
+                        )
+                    )
                 }
+                sent = await send(composedMessages, live: live, ttl: ttl).last
+
             case let .voicePreview(recordingFileName, duration):
                 stopPlayback.toggle()
                 let file = voiceCryptoFile(recordingFileName)
@@ -855,23 +893,6 @@ struct ComposeView: View {
             }
         }
 
-        func sendImage(_ imageData: (String, UploadContent?), text: String = "", quoted: Int64? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
-            let (image, data) = imageData
-            if let data = data, let savedFile = saveAnyImage(data) {
-                return await send(.image(text: text, image: image), quoted: quoted, file: savedFile, live: live, ttl: ttl)
-            }
-            return nil
-        }
-
-        func sendVideo(_ imageData: (String, UploadContent?), text: String = "", quoted: Int64? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
-            let (image, data) = imageData
-            if case let .video(_, url, duration) = data, let savedFile = moveTempFileFromURL(url) {
-                ChatModel.shared.filesToDelete.remove(url)
-                return await send(.video(text: text, image: image, duration: duration), quoted: quoted, file: savedFile, live: live, ttl: ttl)
-            }
-            return nil
-        }
-
         func voiceCryptoFile(_ fileName: String) -> CryptoFile? {
             if !privacyEncryptLocalFilesGroupDefault.get() {
                 return CryptoFile.plain(fileName)
@@ -888,17 +909,28 @@ struct ComposeView: View {
         }
 
         func send(_ mc: MsgContent, quoted: Int64?, file: CryptoFile? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
+            await send(
+                [ComposedMessage(fileSource: file, quotedItemId: quoted, msgContent: mc)],
+                live: live,
+                ttl: ttl
+            ).first
+        }
+
+        func send(_ composedMessages: [ComposedMessage], live: Bool, ttl: Int?) async -> [ChatItem] {
             if let chatItems = chat.chatInfo.chatType == .local
                 ? await apiCreateChatItems(
                     noteFolderId: chat.chatInfo.apiId,
-                    composedMessages: [ComposedMessage(fileSource: file, msgContent: mc)]
+                    composedMessages: composedMessages.map {
+                        // Exclude quotes for local items
+                        ComposedMessage(fileSource: $0.fileSource, msgContent: $0.msgContent)
+                    }
                 )
                 : await apiSendMessages(
                     type: chat.chatInfo.chatType,
                     id: chat.chatInfo.apiId,
                     live: live,
                     ttl: ttl,
-                    composedMessages: [ComposedMessage(fileSource: file, quotedItemId: quoted, msgContent: mc)]
+                    composedMessages: composedMessages
                 ) {
                 await MainActor.run {
                     chatModel.removeLiveDummy(animated: false)
@@ -906,13 +938,12 @@ struct ComposeView: View {
                         chatModel.addChatItem(chat.chatInfo, chatItem)
                     }
                 }
-                // UI only supports sending one item at a time
-                return chatItems.first
+                return chatItems
             }
-            if let file = file {
-                removeFile(file.filePath)
-            }
-            return nil
+            composedMessages
+                .compactMap { $0.fileSource }
+                .forEach { removeFile($0.filePath) }
+            return []
         }
 
         func forwardItems(_ forwardedItems: [ChatItem], _ fromChatInfo: ChatInfo, _ ttl: Int?) async -> [ChatItem] {
@@ -947,14 +978,6 @@ struct ComposeView: View {
                 }
             default:
                 return .text(msgText)
-            }
-        }
-
-        func saveAnyImage(_ img: UploadContent) -> CryptoFile? {
-            switch img {
-            case let .simpleImage(image): return saveImage(image)
-            case let .animatedImage(image): return saveAnimImage(image)
-            default: return nil
             }
         }
     }
