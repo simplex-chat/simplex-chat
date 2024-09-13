@@ -154,7 +154,7 @@ Check the color of the bolt icon next to Notifications in app settings - it shou
 
 If it's not, please open notifications, disable them (choose Off / Local), and then enable again - you should do it when you have Internet connection.
 
-Check if your push server has been restarted at time of the issue (Notifications -> Push server) at https://status.simplex.chat
+Check if your push server has been restarted at time of the issue (Notifications -> Push server) at https://status.simplex.chat if it has been restarted, you may not receive notifications from that time.
 
 If device was offline, you may need to open the app to start receiving notifications.
 
