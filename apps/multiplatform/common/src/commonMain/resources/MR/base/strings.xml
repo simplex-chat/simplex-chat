@@ -414,7 +414,7 @@
   <string name="forward_multiple_messages">Forward %1$s messages.</string>
   <string name="forward_files_not_accepted_title">Files to forward not received</string>
   <string name="forward_files_not_accepted_desc">A total of %1$d file(s) selected to forward haven\'t been received and can\'t be forwarded.</string>
-  <string name="forward_files_not_accepted_receive_files">Receive files</string>
+  <string name="forward_files_not_accepted_receive_files">Receive</string>
   <string name="forward_files_forward_without_files">Forward without files</string>
   <string name="forward_files_in_progress_title">Files to forward still downloading</string>
   <string name="forward_files_in_progress_desc">Some file(s) selected to forward haven\'t finish downloading and can\'t be forwarded.</string>
@@ -423,6 +423,10 @@
   <string name="forward_files_missing_desc">Some file(s) selected to forward can\'t be found and can\'t be forwarded.</string>
   <string name="forward_files_failed_to_receive_title">Files to forward failed to receive</string>
   <string name="forward_files_failed_to_receive_desc">Some file(s) selected to forward couldn\'t be received and can\'t be forwarded.</string>
+  <string name="forward_alert_title_messages_to_forward">Forward %1$s messages?</string>
+  <string name="forward_alert_title_no_messages_to_forward">No messages to forward</string>
+  <string name="forward_files_messages_deleted_after_selection">Some messages were deleted after selection</string>
+
 
   <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
   <string name="image_descr">Image</string>

@@ -180,19 +180,20 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
 
                     if (itemIds != null) {
                       withBGApi {
+                        val chatItemIds = itemIds.toList()
                         val forwardPlan = controller.apiPlanForwardChatItems(
                           rh = chatRh,
                           fromChatType = chatInfo.chatType,
                           fromChatId = chatInfo.apiId,
-                          chatItemIds = itemIds.toList()
+                          chatItemIds = chatItemIds
                         )
 
-                        handleForwardConfirmation(chatRh, forwardPlan) { chatItemsIds ->
-                          chatModel.chatId.value = null
-                          chatModel.sharedContent.value = SharedContent.BulkForward(
-                            chatModel.chatItems.value.filter { chatItemsIds.contains(it.id) },
-                            chatInfo
-                          )
+                        if (forwardPlan != null) {
+                          if (forwardPlan.chatItemIds.count() < chatItemIds.count() || forwardPlan.forwardConfirmation != null) {
+                            handleForwardConfirmation(chatRh, forwardPlan, chatInfo)
+                          } else {
+                            forwardContent(forwardPlan.chatItemIds, chatInfo)
+                          }
                         }
                       }
                     }
@@ -1736,135 +1737,101 @@ private fun ViewConfiguration.bigTouchSlop(slop: Float = 50f) = object: ViewConf
   override val touchSlop: Float get() = slop
 }
 
-private fun showFilesNotAcceptedAlert(
-  confirmation: ForwardConfirmation.FilesNotAccepted,
-  readyToForwardChatItemIds: List<Long>,
-  rhId: Long?
-) {
-  AlertManager.shared.showAlertDialogButtonsColumn(
-    title = generalGetString(MR.strings.forward_files_not_accepted_title),
-    text = String.format(generalGetString(MR.strings.forward_files_not_accepted_desc), confirmation.fileIds.count()),
-    buttons = {
-      Column {
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-
-          withBGApi {
-            val failures = controller.apiReceiveFiles(
-              rh = rhId,
-              fileIds = confirmation.fileIds,
-              userApprovedRelays = !appPrefs.privacyAskToApproveRelays.get(),
-              encrypted = appPrefs.privacyEncryptLocalFiles.get(),
-            )
-
-            if (failures.isNotEmpty()) {
-              Log.e(TAG, "errors happened")
-            }
-          }
-        }) {
-          Text(stringResource(MR.strings.forward_files_not_accepted_receive_files), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-        }
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-        }) {
-          if (readyToForwardChatItemIds.isNotEmpty()) {
-            Text(stringResource(MR.strings.forward_files_forward_without_files), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-          } else {
-            Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-          }
-        }
-      }
-    }
+private fun forwardContent(chatItemsIds: List<Long>, chatInfo: ChatInfo) {
+  chatModel.chatId.value = null
+  chatModel.sharedContent.value = SharedContent.BulkForward(
+    chatModel.chatItems.value.filter { chatItemsIds.contains(it.id) },
+    chatInfo
   )
 }
 
-private fun showFilesInProgressAlert() {
-  AlertManager.shared.showAlertDialogButtonsColumn(
-    title = generalGetString(MR.strings.forward_files_in_progress_title),
-    text = generalGetString(MR.strings.forward_files_in_progress_desc),
-    buttons = {
-      Column {
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-        }) {
-          Text(stringResource(MR.strings.forward_files_in_progress_wait), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-        }
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-        }) {
-          Text(stringResource(MR.strings.forward_files_forward_without_files), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-        }
-      }
-    }
-  )
-}
-
-private fun showFilesMissingAlert(chatItemIds: List<Long>) {
-  AlertManager.shared.showAlertDialogButtonsColumn(
-    title = generalGetString(MR.strings.forward_files_missing_title),
-    text = generalGetString(MR.strings.forward_files_missing_desc),
-    buttons = {
-      Column {
-        if (chatItemIds.isNotEmpty()) {
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-          }) {
-            Text(stringResource(MR.strings.forward_files_forward_without_files), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-          }
-        }
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-        }) {
-          Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-        }
-      }
-    }
-  )
-}
-
-private fun showFilesFailedAlert(chatItemIds: List<Long>) {
-  AlertManager.shared.showAlertDialogButtonsColumn(
-    title = generalGetString(MR.strings.forward_files_failed_to_receive_title),
-    text = generalGetString(MR.strings.forward_files_failed_to_receive_desc),
-    buttons = {
-      Column {
-        if (chatItemIds.isNotEmpty()) {
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-          }) {
-            Text(stringResource(MR.strings.forward_files_forward_without_files), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-          }
-        }
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-        }) {
-          Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-        }
-      }
-    }
-  )
+private fun forwardConfirmationAlertDescription(forwardConfirmation: ForwardConfirmation): String {
+  return when (forwardConfirmation) {
+    is ForwardConfirmation.FilesNotAccepted -> String.format(generalGetString(MR.strings.forward_files_not_accepted_desc), forwardConfirmation.fileIds.count())
+    is ForwardConfirmation.FilesInProgress -> generalGetString(MR.strings.forward_files_in_progress_desc)
+    is ForwardConfirmation.FilesFailed -> generalGetString(MR.strings.forward_files_failed_to_receive_desc)
+    is ForwardConfirmation.FilesMissing -> generalGetString(MR.strings.forward_files_missing_desc)
+  }
 }
 
 private fun handleForwardConfirmation(
   rhId: Long?,
-  forwardPlan: CR.ForwardPlan?,
-  onForwardReady: (chatItemIds: List<Long>) -> Unit,
+  forwardPlan: CR.ForwardPlan,
+  chatInfo: ChatInfo
 ) {
-  when (val confirmation = forwardPlan?.forwardConfirmation) {
-    is ForwardConfirmation.FilesNotAccepted -> showFilesNotAcceptedAlert(
-      confirmation = confirmation,
-      readyToForwardChatItemIds = forwardPlan.chatItemIds,
-      rhId = rhId,
-    )
-    is ForwardConfirmation.FilesInProgress -> showFilesInProgressAlert()
-    is ForwardConfirmation.FilesMissing -> showFilesMissingAlert(forwardPlan.chatItemIds)
-    is ForwardConfirmation.FilesFailed -> showFilesFailedAlert(forwardPlan.chatItemIds)
-    else -> {
-      if (forwardPlan != null) {
-        onForwardReady(forwardPlan.chatItemIds)
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = if (forwardPlan.chatItemIds.isNotEmpty())
+      String.format(generalGetString(MR.strings.forward_alert_title_messages_to_forward), forwardPlan.chatItemIds.count()) else
+        generalGetString(MR.strings.forward_alert_title_no_messages_to_forward),
+    text = if (forwardPlan.forwardConfirmation != null)
+      forwardConfirmationAlertDescription(forwardPlan.forwardConfirmation) else
+        generalGetString(MR.strings.forward_files_messages_deleted_after_selection),
+    buttons = {
+      Column {
+        if (forwardPlan.chatItemIds.isNotEmpty()) {
+          SectionItemView({
+            forwardContent(forwardPlan.chatItemIds, chatInfo)
+            AlertManager.shared.hideAlert()
+          }) {
+            Text(stringResource(MR.strings.forward_chat_item), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+          }
+        }
+        if (forwardPlan.forwardConfirmation != null) {
+          when (forwardPlan.forwardConfirmation) {
+            is ForwardConfirmation.FilesNotAccepted -> {
+              SectionItemView({
+                AlertManager.shared.hideAlert()
+
+                withBGApi {
+                  val failures = controller.apiReceiveFiles(
+                    rh = rhId,
+                    fileIds = forwardPlan.forwardConfirmation.fileIds,
+                    userApprovedRelays = !appPrefs.privacyAskToApproveRelays.get(),
+                    encrypted = appPrefs.privacyEncryptLocalFiles.get(),
+                  )
+
+                  if (failures.isNotEmpty()) {
+                    Log.e(TAG, "errors happened")
+                  }
+                }
+              }) {
+                Text(stringResource(MR.strings.forward_files_not_accepted_receive_files), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+              }
+              SectionItemView({
+                AlertManager.shared.hideAlert()
+              }) {
+                Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+              }
+            }
+
+            is ForwardConfirmation.FilesInProgress -> {
+              SectionItemView({
+                AlertManager.shared.hideAlert()
+              }) {
+                Text(stringResource(MR.strings.forward_files_in_progress_wait), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+              }
+            }
+
+            is ForwardConfirmation.FilesFailed -> {
+              SectionItemView({
+                AlertManager.shared.hideAlert()
+              }) {
+                Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+              }
+            }
+
+            is ForwardConfirmation.FilesMissing -> {
+              SectionItemView({
+                AlertManager.shared.hideAlert()
+              }) {
+                Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+              }
+            }
+          }
+        }
       }
     }
-  }
+  )
 }
 
 @Preview/*(
