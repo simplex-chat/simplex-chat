@@ -409,17 +409,17 @@ fun ComposeView(
     return null
   }
 
-  suspend fun sendMessageAsync(text: String?, live: Boolean, ttl: Int?): ChatItem? {
+  suspend fun sendMessageAsync(text: String?, live: Boolean, ttl: Int?): List<ChatItem>? {
     val cInfo = chat.chatInfo
     val cs = composeState.value
-    var sent: ChatItem?
+    var sent: List<ChatItem>?
     val msgText = text ?: cs.message
 
     fun sending() {
       composeState.value = composeState.value.copy(inProgress = true)
     }
 
-    suspend fun forwardItem(rhId: Long?, forwardedItem: List<ChatItem>, fromChatInfo: ChatInfo, ttl: Int?): ChatItem? {
+    suspend fun forwardItem(rhId: Long?, forwardedItem: List<ChatItem>, fromChatInfo: ChatInfo, ttl: Int?): List<ChatItem>? {
       val chatItems = controller.apiForwardChatItems(
         rh = rhId,
         toChatType = chat.chatInfo.chatType,
@@ -435,8 +435,12 @@ fun ComposeView(
           addChatItem(rhId, chat.chatInfo, chatItem)
         }
       }
-      // TODO batch send: forward multiple messages
-      return chatItems?.firstOrNull()
+
+      if (chatItems != null && chatItems.count() < forwardedItem.count()) {
+        // TODO: Alert here.
+      }
+
+      return chatItems
     }
 
     fun checkLinkPreview(): MsgContent {
@@ -512,14 +516,22 @@ fun ComposeView(
     } else if (cs.contextItem is ComposeContextItem.ForwardingItems) {
       sent = forwardItem(chat.remoteHostId, cs.contextItem.chatItems, cs.contextItem.fromChatInfo, ttl = ttl)
       if (cs.message.isNotEmpty()) {
-        sent = send(chat, checkLinkPreview(), quoted = sent?.id, live = false, ttl = ttl)
+        sent?.mapIndexed { index, message ->
+          if (index == sent!!.lastIndex) {
+            send(chat, checkLinkPreview(), quoted = message.id, live = false, ttl = ttl)
+          } else {
+            message
+          }
+        }
       }
     }
     else if (cs.contextItem is ComposeContextItem.EditingItem) {
       val ei = cs.contextItem.chatItem
-      sent = updateMessage(ei, chat, live)
+      val updatedMessage = updateMessage(ei, chat, live)
+      sent = if (updatedMessage != null) listOf(updatedMessage) else null
     } else if (liveMessage != null && liveMessage.sent) {
-      sent = updateMessage(liveMessage.chatItem, chat, live)
+      val updatedMessage = updateMessage(liveMessage.chatItem, chat, live)
+      sent = if (updatedMessage != null) listOf(updatedMessage) else null
     } else {
       val msgs: ArrayList<MsgContent> = ArrayList()
       val files: ArrayList<CryptoFile> = ArrayList()
@@ -612,17 +624,19 @@ fun ComposeView(
             localPath = file.filePath
           )
         }
-        sent = send(chat, content, if (index == 0) quotedItemId else null, file,
+        val sendResult = send(chat, content, if (index == 0) quotedItemId else null, file,
           live = if (content !is MsgContent.MCVoice && index == msgs.lastIndex) live else false,
           ttl = ttl
         )
+        sent = if (sendResult != null) listOf(sendResult) else null
       }
       if (sent == null &&
         (cs.preview is ComposePreview.MediaPreview ||
             cs.preview is ComposePreview.FilePreview ||
             cs.preview is ComposePreview.VoicePreview)
       ) {
-        sent = send(chat, MsgContent.MCText(msgText), quotedItemId, null, live, ttl)
+        val sendResult =send(chat, MsgContent.MCText(msgText), quotedItemId, null, live, ttl)
+        sent = if (sendResult != null) listOf(sendResult) else null
       }
     }
     val wasForwarding = cs.forwarding
@@ -728,8 +742,8 @@ fun ComposeView(
     val typedMsg = cs.message
     if ((cs.sendEnabled() || cs.contextItem is ComposeContextItem.QuotedItem) && (cs.liveMessage == null || !cs.liveMessage.sent)) {
       val ci = sendMessageAsync(typedMsg, live = true, ttl = null)
-      if (ci != null) {
-        composeState.value = composeState.value.copy(liveMessage = LiveMessage(ci, typedMsg = typedMsg, sentMsg = typedMsg, sent = true))
+      if (!ci.isNullOrEmpty()) {
+        composeState.value = composeState.value.copy(liveMessage = LiveMessage(ci.first(), typedMsg = typedMsg, sentMsg = typedMsg, sent = true))
       }
     } else if (cs.liveMessage == null) {
       val cItem = chatModel.addLiveDummy(chat.chatInfo)
@@ -749,8 +763,8 @@ fun ComposeView(
       val sentMsg = liveMessageToSend(liveMessage, typedMsg)
       if (sentMsg != null) {
         val ci = sendMessageAsync(sentMsg, live = true, ttl = null)
-        if (ci != null) {
-          composeState.value = composeState.value.copy(liveMessage = LiveMessage(ci, typedMsg = typedMsg, sentMsg = sentMsg, sent = true))
+        if (!ci.isNullOrEmpty()) {
+          composeState.value = composeState.value.copy(liveMessage = LiveMessage(ci.first(), typedMsg = typedMsg, sentMsg = sentMsg, sent = true))
         }
       } else if (liveMessage.typedMsg != typedMsg) {
         composeState.value = composeState.value.copy(liveMessage = liveMessage.copy(typedMsg = typedMsg))
