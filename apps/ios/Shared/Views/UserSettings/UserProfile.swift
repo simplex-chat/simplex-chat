@@ -50,11 +50,15 @@ struct UserProfile: View {
                 }.disabled(!canSaveProfile)
             } header: {
                 ProfileImage(imageStr: profile.image, size: 128)
-                    .padding(4)
+                    .padding(12)
                     .overlay {
                         if profile.image != nil {
-                            overlayButton("xmark", alignmnet: .topTrailing) { profile.image = nil }
-                            overlayButton("camera", alignmnet: .bottomTrailing) { showChooseSource = true }
+                            overlayButton("xmark", alignmnet: .topTrailing, drawsBackground: false) {
+                                profile.image = nil
+                            }
+                            overlayButton("camera", alignmnet: .bottomTrailing) {
+                                showChooseSource = true
+                            }.padding(8)
                         } else {
                             editImageButton { showChooseSource = true }
                         }
@@ -120,13 +124,14 @@ struct UserProfile: View {
     private func overlayButton(
         _ systemName: String,
         alignmnet: Alignment,
+        drawsBackground: Bool = true,
         action: @escaping () -> Void
     ) -> some View {
         Image(systemName: systemName)
             .foregroundStyle(Color.accentColor)
             .font(.system(size: 18, weight: .medium))
             .padding(6)
-            .background(Color(.systemBackground).opacity(0.8))
+            .background(drawsBackground ? Color(.systemBackground).opacity(0.8) : Color.clear)
             .clipShape(Circle())
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignmnet)
             .onTapGesture(perform: action)
