@@ -148,13 +148,19 @@ Check battery settings for the app - it should be set to Unrestricted.
 
 For some devices, there may be additional options to prevent the app from being killed - e.g., on Xiaomi you need to enable Auto Start setting for the app. Please consult https://dontkillmyapp.com site for any additional settings for your device.
 
-**iOS notifications failed to initialize correctly**
+**Why my notifications aren't working on iOS**
 
 Check the color of the bolt icon next to Notifications in app settings - it should be green.
 
 If it's not, please open notifications, disable them (choose Off / Local), and then enable again - you should do it when you have Internet connection.
 
+Check if your push server has been restarted at time of the issue (Notifications -> Push server) at https://status.simplex.chat
+
+If device was offline, you may need to open the app to start receiving notifications.
+
 If the above didn't help, the reason could be that iOS failed to issue notification token - we have seen this issue several times. In this case, restarting the whole device should help.
+
+In some cases notifications may still not work, iOS notifications are hard to do right in a decentralized app, we will be improving them soon to be more reliable.
 
 **Messaging server or notification server is under maintenance**
 
