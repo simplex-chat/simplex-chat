@@ -100,12 +100,7 @@ struct ChatView: View {
                                 showModerateSelectedMessagesAlert(groupInfo)
                             }
                         },
-                        forwardItems: {
-                            let im = ItemsModel.shared
-                            forwardedChatItems = selectedChatItems?
-                                .compactMap { id in im.reversedChatItems.first { $0.id == id } }
-                                .sorted { $0.meta.itemTs == $1.meta.itemTs }
-                        }
+                        forwardItems: forwardSelectedMessages
                     )
                 }
             }
@@ -713,6 +708,40 @@ struct ChatView: View {
         await MainActor.run {
             withAnimation {
                 selectedChatItems = nil
+            }
+        }
+    }
+
+    private func forwardSelectedMessages() {
+        func openForwardingSheet(_ items: [Int64]) {
+            let im = ItemsModel.shared
+            forwardedChatItems = items
+                .compactMap { id in im.reversedChatItems.first { $0.id == id } }
+                .sorted { $0.meta.itemTs == $1.meta.itemTs }
+        }
+        Task {
+            do {
+                if let selectedChatItems {
+                    let (validItems, forwardConfirmation) = try await apiPlanForwardChatItems(
+                        type: chat.chatInfo.chatType,
+                        id: chat.chatInfo.apiId,
+                        itemIds: Array(selectedChatItems)
+                    )
+                    switch forwardConfirmation {
+                    case let .filesNotAccepted(fileIds):
+                        print(fileIds) // TODO: Show alert
+                    case let .filesInProgress(filesCount):
+                        print(filesCount) // TODO: Show alert
+                    case let .filesMissing(filesCount):
+                        print(filesCount) // TODO: Show alert
+                    case let .filesFailed(filesCount):
+                        print(filesCount) // TODO: Show alert
+                    case nil:
+                        openForwardingSheet(validItems)
+                    }
+                }
+            } catch {
+                logger.error("Plan forward chat items failed: \(error.localizedDescription)")
             }
         }
     }
