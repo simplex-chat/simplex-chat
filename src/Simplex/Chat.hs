@@ -4305,10 +4305,10 @@ processAgentMsgRcvFile _corrId aFileId msg = do
               toView $ CRRcvFileError user aci_ e ft
 
 cleanupACIFile :: AChatItem -> CM ()
-cleanupACIFile aci =
-  forM_ (aChatItemFileSource aci) $ \CryptoFile {filePath} -> do
-    fsFilePath <- lift $ toFSFilePath filePath
-    removeFile fsFilePath `catchChatError` \_ -> pure ()
+cleanupACIFile (AChatItem _ _ _ ChatItem {file = Just CIFile {fileSource = Just CryptoFile {filePath}}}) = do
+  fsFilePath <- lift $ toFSFilePath filePath
+  removeFile fsFilePath `catchChatError` \_ -> pure ()
+cleanupACIFile _ = pure ()
 
 processAgentMessageConn :: VersionRangeChat -> User -> ACorrId -> ConnId -> AEvent 'AEConn -> CM ()
 processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = do

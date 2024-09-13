@@ -339,9 +339,6 @@ aChatItemTs (AChatItem _ _ _ ci) = chatItemTs' ci
 aChatItemDir :: AChatItem -> MsgDirection
 aChatItemDir (AChatItem _ sMsgDir _ _) = toMsgDirection sMsgDir
 
-aChatItemFileSource :: AChatItem -> Maybe CryptoFile
-aChatItemFileSource (AChatItem _ _ _ ChatItem {file}) = file >>= fileSource
-
 updateFileStatus :: forall c d. ChatItem c d -> CIFileStatus d -> ChatItem c d
 updateFileStatus ci@ChatItem {file} status = case file of
   Just f -> ci {file = Just (f :: CIFile d) {fileStatus = status}}
@@ -581,7 +578,22 @@ ciFileEnded = \case
   CIFSInvalid {} -> True
 
 ciFileLoaded :: CIFileStatus d -> Bool
-ciFileLoaded fStatus = isNothing $ ciFileForwardError 0 fStatus -- 0 is a dummy value
+ciFileLoaded = \case
+  CIFSSndStored -> True
+  CIFSSndTransfer {} -> True
+  CIFSSndComplete -> True
+  CIFSSndCancelled -> True
+  CIFSSndError {} -> True
+  CIFSSndWarning {} -> True
+  CIFSRcvInvitation -> False
+  CIFSRcvAccepted -> False
+  CIFSRcvTransfer {} -> False
+  CIFSRcvAborted -> False
+  CIFSRcvCancelled -> False
+  CIFSRcvComplete -> True
+  CIFSRcvError {} -> False
+  CIFSRcvWarning {} -> False
+  CIFSInvalid {} -> False
 
 data ForwardFileError = FFENotAccepted FileTransferId | FFEInProgress | FFEFailed | FFEMissing
   deriving (Eq, Ord)
