@@ -743,7 +743,7 @@ fun ComposeView(
     if ((cs.sendEnabled() || cs.contextItem is ComposeContextItem.QuotedItem) && (cs.liveMessage == null || !cs.liveMessage.sent)) {
       val ci = sendMessageAsync(typedMsg, live = true, ttl = null)
       if (!ci.isNullOrEmpty()) {
-        composeState.value = composeState.value.copy(liveMessage = LiveMessage(ci.first(), typedMsg = typedMsg, sentMsg = typedMsg, sent = true))
+        composeState.value = composeState.value.copy(liveMessage = LiveMessage(ci.last(), typedMsg = typedMsg, sentMsg = typedMsg, sent = true))
       }
     } else if (cs.liveMessage == null) {
       val cItem = chatModel.addLiveDummy(chat.chatInfo)
@@ -764,7 +764,7 @@ fun ComposeView(
       if (sentMsg != null) {
         val ci = sendMessageAsync(sentMsg, live = true, ttl = null)
         if (!ci.isNullOrEmpty()) {
-          composeState.value = composeState.value.copy(liveMessage = LiveMessage(ci.first(), typedMsg = typedMsg, sentMsg = sentMsg, sent = true))
+          composeState.value = composeState.value.copy(liveMessage = LiveMessage(ci.last(), typedMsg = typedMsg, sentMsg = sentMsg, sent = true))
         }
       } else if (liveMessage.typedMsg != typedMsg) {
         composeState.value = composeState.value.copy(liveMessage = liveMessage.copy(typedMsg = typedMsg))
