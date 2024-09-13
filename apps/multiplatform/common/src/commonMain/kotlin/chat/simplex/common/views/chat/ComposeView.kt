@@ -437,7 +437,10 @@ fun ComposeView(
       }
 
       if (chatItems != null && chatItems.count() < forwardedItem.count()) {
-        // TODO: Alert here.
+        AlertManager.shared.showAlertMsg(
+          title = String.format(generalGetString(MR.strings.forward_files_messages_deleted_after_selection_title), forwardedItem.count() - chatItems.count()),
+          text = generalGetString(MR.strings.forward_files_messages_deleted_after_selection_desc)
+        )
       }
 
       return chatItems

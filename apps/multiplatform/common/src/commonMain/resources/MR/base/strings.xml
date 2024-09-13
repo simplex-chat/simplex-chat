@@ -425,8 +425,8 @@
   <string name="forward_files_failed_to_receive_desc">Some file(s) selected to forward couldn\'t be received and can\'t be forwarded.</string>
   <string name="forward_alert_title_messages_to_forward">Forward %1$s messages?</string>
   <string name="forward_alert_title_no_messages_to_forward">No messages to forward</string>
-  <string name="forward_files_messages_deleted_after_selection">Some messages were deleted after selection</string>
-
+  <string name="forward_files_messages_deleted_after_selection_title">%1$s messages not forwarded</string>
+  <string name="forward_files_messages_deleted_after_selection_desc">Some messages were deleted after selection and couldn\'t be forwarded</string>
 
   <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
   <string name="image_descr">Image</string>

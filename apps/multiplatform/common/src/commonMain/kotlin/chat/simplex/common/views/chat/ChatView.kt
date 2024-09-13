@@ -1765,7 +1765,7 @@ private fun handleForwardConfirmation(
         generalGetString(MR.strings.forward_alert_title_no_messages_to_forward),
     text = if (forwardPlan.forwardConfirmation != null)
       forwardConfirmationAlertDescription(forwardPlan.forwardConfirmation) else
-        generalGetString(MR.strings.forward_files_messages_deleted_after_selection),
+        generalGetString(MR.strings.forward_files_messages_deleted_after_selection_desc),
     buttons = {
       Column {
         if (forwardPlan.chatItemIds.isNotEmpty()) {
