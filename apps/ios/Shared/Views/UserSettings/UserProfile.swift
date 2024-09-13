@@ -10,12 +10,18 @@ import SwiftUI
 import SimpleXChat
 
 struct UserProfile: View {
+    private enum Focus: Hashable {
+        case fullName
+        case displayName
+    }
+
+    @EnvironmentObject var theme: AppTheme
+    @FocusState private var focus: Focus?
     @State private var profile = Profile(displayName: "", fullName: "")
     @State private var currentProfileHash: Int?
     // Modals
     @State private var showChooseSource = false
     @State private var showImagePicker = false
-    @State private var showFilePicker = false
     @State private var showTakePhoto = false
     @State private var chosenImage: UIImage? = nil
     @State private var alert: UserProfileAlert?
@@ -23,40 +29,27 @@ struct UserProfile: View {
     var body: some View {
         List {
             Section {
-                Text("""
-Your profile is stored on your device and shared only with your contacts.
-SimpleX servers cannot see your profile.
-"""
-                )
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets())
-            }
-            Section {
-                VStack {
-                    ProfileImage(imageStr: profile.image, size: 128)
-                        .onTapGesture { showChooseSource = true }
-                        .padding(4)
-                        .overlay {
-                            if profile.image != nil {
-                                Image(systemName: "xmark")
-                                    .foregroundStyle(Color.red)
-                                    .padding(8)
-                                    .background(Material.bar)
-                                    .clipShape(Circle())
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                                    .onTapGesture { profile.image = nil }
-                            }
+                if showFullName { TextField("Full name", text: $profile.fullName) }
+                TextField("Enter your name…", text: $profile.displayName)
+                Button(action: saveProfile) {
+                    Label("Save and notify contacts", systemImage: "checkmark")
+                }.disabled(!canSaveProfile)
+            } header: {
+                ProfileImage(imageStr: profile.image, size: 128)
+                    .padding(4)
+                    .overlay {
+                        if profile.image != nil {
+                            overlayButton("xmark", alignmnet: .topTrailing) { profile.image = nil }
+                            overlayButton("camera", alignmnet: .bottomTrailing) { showChooseSource = true }
+                        } else {
+                            editImageButton { showChooseSource = true }
                         }
-                    Text(profile.image != nil ? "Edit" : "Add")
-                        .foregroundStyle(Color.accentColor)
-                }
-                .onTapGesture { showChooseSource = true }
-                .frame(maxWidth: .infinity, alignment: .center)
-                if showFullName {
-                    nameField("Full name", text: $profile.fullName)
-                }
-                nameField("Profile name", text: $profile.displayName)
-                Button("Save and notify contacts", action: saveProfile).disabled(!canSaveProfile)
+                    }
+                    .onTapGesture { showChooseSource = true }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.bottom)
+            } footer: {
+                Text("Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile.")
             }
         }
         // Lifecycle
@@ -81,9 +74,6 @@ SimpleX servers cannot see your profile.
             Button("Choose from library") {
                 showImagePicker = true
             }
-            Button("Choose file") {
-                showFilePicker = true
-            }
             if UIPasteboard.general.hasImages {
                 Button("Paste image") {
                     chosenImage = UIPasteboard.general.image
@@ -103,45 +93,23 @@ SimpleX servers cannot see your profile.
                 }
             }
         }
-        .fileImporter(isPresented: $showFilePicker, allowedContentTypes: [.image]) { result in
-            Task {
-                if case let .success(url) = result, url.startAccessingSecurityScopedResource() {
-                    if let data = try? Data(contentsOf: url),
-                       let image = UIImage(data: data) {
-                        await MainActor.run { chosenImage = image }
-                    }
-                    url.stopAccessingSecurityScopedResource()
-                }
-            }
-        }
         .alert(item: $alert) { a in userProfileAlert(a, $profile.displayName) }
     }
 
     @ViewBuilder
-    private func nameField(
-        _ title: LocalizedStringKey,
-        text: Binding<String>
+    private func overlayButton(
+        _ systemName: String,
+        alignmnet: Alignment,
+        action: @escaping () -> Void
     ) -> some View {
-        let isValid = validDisplayName(text.wrappedValue)
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(title).foregroundStyle(.secondary).font(.caption)
-                Spacer()
-                Image(systemName: "exclamationmark.circle")
-                    .foregroundColor(.red)
-                    .opacity(isValid ? 0 : 1)
-                    .onTapGesture {
-                        alert = .invalidNameError(validName: mkValidName(profile.displayName))
-                    }
-            }
-            TextField(title, text: text)
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(isValid ? Color(.tertiaryLabel) : Color.red)
-                }
-        }.listRowSeparator(.hidden)
+        Image(systemName: systemName)
+            .foregroundStyle(Color.accentColor)
+            .font(.system(size: 18, weight: .medium))
+            .padding(6)
+            .background(Color(.systemBackground).opacity(0.8))
+            .clipShape(Circle())
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignmnet)
+            .onTapGesture(perform: action)
     }
 
     // MARK: Computed
@@ -161,6 +129,7 @@ SimpleX servers cannot see your profile.
     }
 
     private func saveProfile() {
+        focus = nil
         Task {
             do {
                 profile.displayName = profile.displayName.trimmingCharacters(in: .whitespaces)
