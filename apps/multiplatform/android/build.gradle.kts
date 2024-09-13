@@ -32,7 +32,6 @@ android {
         }
         manifestPlaceholders["app_name"] = "@string/app_name"
         manifestPlaceholders["provider_authorities"] = "chat.simplex.app.provider"
-        manifestPlaceholders["extract_native_libs"] = rootProject.extra["compression.level"] as Int != 0
     }
 
     buildTypes {
@@ -75,7 +74,6 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
-        jniLibs.useLegacyPackaging = rootProject.extra["compression.level"] as Int != 0
     }
     android.sourceSets["main"].assets.setSrcDirs(listOf("../common/src/commonMain/resources/assets"))
     val isRelease = gradle.startParameter.taskNames.find { it.lowercase().contains("release") } != null

@@ -32,6 +32,7 @@ for ORIG_NAME in "${ORIG_NAMES[@]}"; do
     (cd apk && zip -r -q -"$level" ../"$ORIG_NAME" .)
     # Shouldn't be compressed because of Android requirement
     (cd apk && zip -r -q -0 ../"$ORIG_NAME" resources.arsc)
+    (cd apk && zip -r -q -0 ../"$ORIG_NAME" lib/**/*.so)
 
     if [ $case_insensitive -eq 1 ]; then
         # For case-insensitive file systems
