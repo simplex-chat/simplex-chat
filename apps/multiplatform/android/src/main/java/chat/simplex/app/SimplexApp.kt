@@ -36,7 +36,7 @@ import java.util.concurrent.TimeUnit
 
 const val TAG = "SIMPLEX"
 
-class SimplexApp: Application(), LifecycleEventObserver, Configuration.Provider {
+class SimplexApp: Application(), LifecycleEventObserver {
   val chatModel: ChatModel
     get() = chatController.chatModel
 
@@ -363,9 +363,4 @@ class SimplexApp: Application(), LifecycleEventObserver, Configuration.Provider 
       }
     }
   }
-
-  // Fix for an exception:
-  // WorkManager is not initialized properly. You have explicitly disabled WorkManagerInitializer in your manifest, have not manually called WorkManager#initialize at this point, and your Application does not implement Configuration.Provider.
-  override val workManagerConfiguration: Configuration
-    get() = Configuration.Builder().build()
 }
