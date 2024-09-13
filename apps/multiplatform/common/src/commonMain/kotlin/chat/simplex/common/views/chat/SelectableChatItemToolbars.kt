@@ -81,15 +81,6 @@ fun SelectedItemsBottomToolbar(
         )
       }
 
-      IconButton({ /*shareItems()*/ }, Modifier.alpha(0f), enabled = false/*!allButtonsDisabled.value*/) {
-        Icon(
-          painterResource(MR.images.ic_share),
-          null,
-          Modifier.size(22.dp),
-          tint = if (allButtonsDisabled.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
-        )
-      }
-
       IconButton({ forwardItems() }, enabled = deleteEnabled.value && !allButtonsDisabled.value) {
         Icon(
           painterResource(MR.images.ic_forward),
