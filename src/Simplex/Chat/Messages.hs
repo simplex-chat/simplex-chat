@@ -35,7 +35,7 @@ import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
-import Data.Time.Clock (UTCTime, diffUTCTime, nominalDay, NominalDiffTime)
+import Data.Time.Clock (NominalDiffTime, UTCTime, diffUTCTime, nominalDay)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Database.SQLite.Simple.FromField (FromField (..))
@@ -584,7 +584,7 @@ ciFileLoaded :: CIFileStatus d -> Bool
 ciFileLoaded fStatus = isNothing $ ciFileForwardError 0 fStatus -- 0 is a dummy value
 
 data ForwardFileError = FFENotAccepted FileTransferId | FFEInProgress | FFEFailed | FFEMissing
-   deriving (Eq, Ord)
+  deriving (Eq, Ord)
 
 ciFileForwardError :: FileTransferId -> CIFileStatus d -> Maybe ForwardFileError
 ciFileForwardError fId = \case
