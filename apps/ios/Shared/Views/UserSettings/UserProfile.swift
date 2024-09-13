@@ -12,7 +12,6 @@ import SimpleXChat
 struct UserProfile: View {
     @State private var profile = Profile(displayName: "", fullName: "")
     @State private var currentProfileHash: Int?
-    @FocusState private var focus
     // Modals
     @State private var showChooseSource = false
     @State private var showImagePicker = false
