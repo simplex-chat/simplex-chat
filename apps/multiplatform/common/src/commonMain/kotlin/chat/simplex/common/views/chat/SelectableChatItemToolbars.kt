@@ -52,7 +52,6 @@ fun SelectedItemsBottomToolbar(
   deleteItems: (Boolean) -> Unit, // Boolean - delete for everyone is possible
   moderateItems: () -> Unit,
   forwardItems: () -> Unit,
-//  shareItems: () -> Unit,
 ) {
   val deleteEnabled = remember { mutableStateOf(false) }
   val deleteForEveryoneEnabled = remember { mutableStateOf(false) }
