@@ -1,12 +1,14 @@
 package chat.simplex.common.views.chat
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -61,7 +63,18 @@ fun SelectedItemsBottomToolbar(
   Box {
     // It's hard to measure exact height of ComposeView with different fontSizes. Better to depend on actual ComposeView, even empty
     ComposeView(chatModel = chatModel, Chat.sampleData, remember { mutableStateOf(ComposeState(useLinkPreviews = false)) }, remember { mutableStateOf(null) }, {})
-    Row(Modifier.matchParentSize().background(MaterialTheme.colors.background), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+    Row(
+      Modifier
+        .matchParentSize()
+        .background(MaterialTheme.colors.background)
+        .pointerInput(Unit) {
+          detectGesture {
+            true
+          }
+        },
+      horizontalArrangement = Arrangement.SpaceBetween,
+      verticalAlignment = Alignment.CenterVertically
+    ) {
       IconButton({ deleteItems(deleteForEveryoneEnabled.value) }, enabled = deleteEnabled.value && !allButtonsDisabled.value) {
         Icon(
           painterResource(MR.images.ic_delete),
