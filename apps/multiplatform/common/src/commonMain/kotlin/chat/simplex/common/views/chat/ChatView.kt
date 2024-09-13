@@ -25,8 +25,6 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatController.apiForwardChatItems
-import chat.simplex.common.model.ChatController.apiStopChat
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.withChats
@@ -189,7 +187,7 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                           chatItemIds = itemIds.toList()
                         )
 
-                        handleForwardConfirmation(forwardPlan) { chatItemsIds ->
+                        handleForwardConfirmation(chatRh, forwardPlan) { chatItemsIds ->
                           chatModel.chatId.value = null
                           chatModel.sharedContent.value = SharedContent.BulkForward(
                             chatModel.chatItems.value.filter { chatItemsIds.contains(it.id) },
@@ -1738,21 +1736,38 @@ private fun ViewConfiguration.bigTouchSlop(slop: Float = 50f) = object: ViewConf
   override val touchSlop: Float get() = slop
 }
 
-private fun showFilesNotAcceptedAlert(confirmation: ForwardConfirmation.FilesNotAccepted, chatItemIds: List<Long>) {
+private fun showFilesNotAcceptedAlert(
+  confirmation: ForwardConfirmation.FilesNotAccepted,
+  readyToForwardChatItemIds: List<Long>,
+  rhId: Long?
+) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.forward_files_not_accepted_title),
-    text = String.format(generalGetString(MR.strings.forward_files_not_accepted_desc), confirmation.files.count()),
+    text = String.format(generalGetString(MR.strings.forward_files_not_accepted_desc), confirmation.fileIds.count()),
     buttons = {
       Column {
         SectionItemView({
           AlertManager.shared.hideAlert()
+
+          withBGApi {
+            val failures = controller.apiReceiveFiles(
+              rh = rhId,
+              fileIds = confirmation.fileIds,
+              userApprovedRelays = !appPrefs.privacyAskToApproveRelays.get(),
+              encrypted = appPrefs.privacyEncryptLocalFiles.get(),
+            )
+
+            if (failures.isNotEmpty()) {
+              Log.e(TAG, "errors happened")
+            }
+          }
         }) {
           Text(stringResource(MR.strings.forward_files_not_accepted_receive_files), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
         SectionItemView({
           AlertManager.shared.hideAlert()
         }) {
-          if (chatItemIds.isNotEmpty()) {
+          if (readyToForwardChatItemIds.isNotEmpty()) {
             Text(stringResource(MR.strings.forward_files_forward_without_files), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
           } else {
             Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
@@ -1830,9 +1845,17 @@ private fun showFilesFailedAlert(chatItemIds: List<Long>) {
   )
 }
 
-private fun handleForwardConfirmation(forwardPlan: CR.ForwardPlan?, onForwardReady: (chatItemIds: List<Long>) -> Unit) {
+private fun handleForwardConfirmation(
+  rhId: Long?,
+  forwardPlan: CR.ForwardPlan?,
+  onForwardReady: (chatItemIds: List<Long>) -> Unit,
+) {
   when (val confirmation = forwardPlan?.forwardConfirmation) {
-    is ForwardConfirmation.FilesNotAccepted -> showFilesNotAcceptedAlert(confirmation, forwardPlan.chatItemIds)
+    is ForwardConfirmation.FilesNotAccepted -> showFilesNotAcceptedAlert(
+      confirmation = confirmation,
+      readyToForwardChatItemIds = forwardPlan.chatItemIds,
+      rhId = rhId,
+    )
     is ForwardConfirmation.FilesInProgress -> showFilesInProgressAlert()
     is ForwardConfirmation.FilesMissing -> showFilesMissingAlert(forwardPlan.chatItemIds)
     is ForwardConfirmation.FilesFailed -> showFilesFailedAlert(forwardPlan.chatItemIds)
@@ -1843,7 +1866,6 @@ private fun handleForwardConfirmation(forwardPlan: CR.ForwardPlan?, onForwardRea
     }
   }
 }
-
 
 @Preview/*(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
