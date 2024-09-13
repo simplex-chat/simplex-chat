@@ -1081,30 +1081,27 @@ processChatCommand' vr = \case
           forwardContent :: ChatItem c d -> MsgContent -> CM (Maybe (MsgContent, Maybe CryptoFile))
           forwardContent ChatItem {file} mc = case file of
             Nothing -> pure $ Just (mc, Nothing)
-            Just CIFile {fileName, fileStatus, fileSource} ->
-              if not (ciFileLoaded fileStatus)
-                then pure contentWithoutFile
-                else case fileSource of
-                  Nothing -> pure contentWithoutFile
-                  Just fromCF@CryptoFile {filePath} ->
-                    chatReadVar filesFolder >>= \case
-                      Nothing ->
-                        ifM (doesFileExist filePath) (pure $ Just (mc, Just fromCF)) (pure contentWithoutFile)
-                      Just filesFolder -> do
-                        let fsFromPath = filesFolder </> filePath
-                        ifM
-                          (doesFileExist fsFromPath)
-                          ( do
-                              fsNewPath <- liftIO $ filesFolder `uniqueCombine` fileName
-                              liftIO $ B.writeFile fsNewPath "" -- create empty file
-                              encrypt <- chatReadVar encryptLocalFiles
-                              cfArgs <- if encrypt then Just <$> (atomically . CF.randomArgs =<< asks random) else pure Nothing
-                              let toCF = CryptoFile fsNewPath cfArgs
-                              -- to keep forwarded file in case original is deleted
-                              liftIOEither $ runExceptT $ withExceptT (ChatError . CEInternalError . show) $ copyCryptoFile (fromCF {filePath = fsFromPath} :: CryptoFile) toCF
-                              pure $ Just (mc, Just (toCF {filePath = takeFileName fsNewPath} :: CryptoFile))
-                          )
-                          (pure contentWithoutFile)
+            Just CIFile {fileName, fileStatus, fileSource = Just fromCF@CryptoFile {filePath}}
+              | ciFileLoaded fileStatus ->
+                  chatReadVar filesFolder >>= \case
+                    Nothing ->
+                      ifM (doesFileExist filePath) (pure $ Just (mc, Just fromCF)) (pure contentWithoutFile)
+                    Just filesFolder -> do
+                      let fsFromPath = filesFolder </> filePath
+                      ifM
+                        (doesFileExist fsFromPath)
+                        ( do
+                            fsNewPath <- liftIO $ filesFolder `uniqueCombine` fileName
+                            liftIO $ B.writeFile fsNewPath "" -- create empty file
+                            encrypt <- chatReadVar encryptLocalFiles
+                            cfArgs <- if encrypt then Just <$> (atomically . CF.randomArgs =<< asks random) else pure Nothing
+                            let toCF = CryptoFile fsNewPath cfArgs
+                            -- to keep forwarded file in case original is deleted
+                            liftIOEither $ runExceptT $ withExceptT (ChatError . CEInternalError . show) $ copyCryptoFile (fromCF {filePath = fsFromPath} :: CryptoFile) toCF
+                            pure $ Just (mc, Just (toCF {filePath = takeFileName fsNewPath} :: CryptoFile))
+                        )
+                        (pure contentWithoutFile)
+            _ -> pure contentWithoutFile
             where
               contentWithoutFile = case mc of
                 MCImage {} -> Just (mc, Nothing)
