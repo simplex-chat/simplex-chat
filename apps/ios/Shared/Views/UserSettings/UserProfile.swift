@@ -19,6 +19,7 @@ struct UserProfile: View {
     @FocusState private var focus: Focus?
     @State private var profile = Profile(displayName: "", fullName: "")
     @State private var currentProfileHash: Int?
+    @State private var hideFullName = true
     // Modals
     @State private var showChooseSource = false
     @State private var showImagePicker = false
@@ -29,8 +30,21 @@ struct UserProfile: View {
     var body: some View {
         List {
             Section {
-                if showFullName { TextField("Full name", text: $profile.fullName) }
-                TextField("Enter your name…", text: $profile.displayName)
+                if !hideFullName {
+                    TextField("Full name", text: $profile.fullName)
+                        .focused($focus, equals: .displayName)
+                }
+                HStack {
+                    TextField("Enter your name…", text: $profile.displayName)
+                        .focused($focus, equals: .displayName)
+                    if !validDisplayName(profile.displayName) {
+                        Button {
+                            alert = .invalidNameError(validName: mkValidName(profile.displayName))
+                        } label: {
+                            Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+                        }
+                    }
+                }
                 Button(action: saveProfile) {
                     Label("Save and notify contacts", systemImage: "checkmark")
                 }.disabled(!canSaveProfile)
@@ -49,14 +63,20 @@ struct UserProfile: View {
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.bottom)
             } footer: {
-                Text("Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile.")
+                Text("Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.")
             }
         }
         // Lifecycle
-        .task {
-            if let user = ChatModel.shared.currentUser {
-                profile = fromLocalProfile(user.profile)
-                currentProfileHash = profile.hashValue
+        .onAppear(perform: loadProfile)
+        .onDisappear {
+            if canSaveProfile {
+                showAlert(
+                    title: NSLocalizedString("User Profile", comment: "alert title"),
+                    message: NSLocalizedString("Settings were changed.", comment: "alert message"),
+                    buttonTitle: NSLocalizedString("Save", comment: "alert button"),
+                    buttonAction: saveProfile,
+                    cancelButton: true
+                )
             }
         }
         .onChange(of: chosenImage) { image in
@@ -112,16 +132,6 @@ struct UserProfile: View {
             .onTapGesture(perform: action)
     }
 
-    // MARK: Computed
-    private func validNewProfileName(_ user: User) -> Bool {
-        profile.displayName == user.profile.displayName || validDisplayName(profile.displayName.trimmingCharacters(in: .whitespaces))
-    }
-
-    private var showFullName: Bool {
-        profile.fullName != "" &&
-        profile.fullName != profile.displayName
-    }
-
     private var canSaveProfile: Bool {
         currentProfileHash != profile.hashValue &&
         profile.displayName.trimmingCharacters(in: .whitespaces) != "" &&
@@ -134,18 +144,24 @@ struct UserProfile: View {
             do {
                 profile.displayName = profile.displayName.trimmingCharacters(in: .whitespaces)
                 if let (newProfile, _) = try await apiUpdateProfile(profile: profile) {
-                    DispatchQueue.main.async {
+                    await MainActor.run {
                         ChatModel.shared.updateCurrentUser(newProfile)
-                        profile = newProfile
-                        currentProfileHash = newProfile.hashValue
+                        loadProfile()
                     }
-
                 } else {
                     alert = .duplicateUserError
                 }
             } catch {
                 logger.error("UserProfile apiUpdateProfile error: \(responseError(error))")
             }
+        }
+    }
+
+    private func loadProfile() {
+        if let user = ChatModel.shared.currentUser {
+            profile = fromLocalProfile(user.profile)
+            currentProfileHash = profile.hashValue
+            hideFullName = profile.fullName.isEmpty || profile.fullName == profile.displayName
         }
     }
 }
