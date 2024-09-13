@@ -581,22 +581,7 @@ ciFileEnded = \case
   CIFSInvalid {} -> True
 
 ciFileLoaded :: CIFileStatus d -> Bool
-ciFileLoaded = \case
-  CIFSSndStored -> True
-  CIFSSndTransfer {} -> True
-  CIFSSndComplete -> True
-  CIFSSndCancelled -> True
-  CIFSSndError {} -> True
-  CIFSSndWarning {} -> True
-  CIFSRcvInvitation -> False
-  CIFSRcvAccepted -> False
-  CIFSRcvTransfer {} -> False
-  CIFSRcvAborted -> False
-  CIFSRcvCancelled -> False
-  CIFSRcvComplete -> True
-  CIFSRcvError {} -> False
-  CIFSRcvWarning {} -> False
-  CIFSInvalid {} -> False
+ciFileLoaded fStatus = isNothing $ ciFileForwardError 0 fStatus -- 0 is a dummy value
 
 data ForwardFileError = FFENotAccepted FileTransferId | FFEInProgress | FFEFailed | FFEMissing
    deriving (Eq, Ord)
