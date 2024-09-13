@@ -3566,7 +3566,9 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
     relaysNotApproved :: [XFTPServer] -> CM ()
     relaysNotApproved unknownSrvs = do
       aci_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
-      forM_ aci_ $ \aci -> toView $ CRChatItemUpdated user aci
+      forM_ aci_ $ \aci -> do
+        cleanupACIFile aci
+        toView $ CRChatItemUpdated user aci
       throwChatError $ CEFileNotApproved fileId unknownSrvs
 
 getNetworkConfig :: CM' NetworkConfig
@@ -4287,26 +4289,25 @@ processAgentMsgRcvFile _corrId aFileId msg = do
             liftIO $ updateCIFileStatus db user fileId (CIFSRcvWarning $ agentFileError e)
             lookupChatItemByFileId db vr user fileId
           toView $ CRRcvFileWarning user ci e ft
-        RFERR e -> do
-          cleanupEmptyFile
-          if e == FILE NOT_APPROVED
-            then do
+        RFERR e
+          | e == FILE NOT_APPROVED -> do
               aci_ <- resetRcvCIFileStatus user fileId CIFSRcvAborted
+              forM_ aci_ cleanupACIFile
               agentXFTPDeleteRcvFile aFileId fileId
               forM_ aci_ $ \aci -> toView $ CRChatItemUpdated user aci
-            else do
-              ci <- withStore $ \db -> do
+          | otherwise -> do
+              aci_ <- withStore $ \db -> do
                 liftIO $ updateFileCancelled db user fileId (CIFSRcvError $ agentFileError e)
                 lookupChatItemByFileId db vr user fileId
+              forM_ aci_ cleanupACIFile
               agentXFTPDeleteRcvFile aFileId fileId
-              toView $ CRRcvFileError user ci e ft
-          where
-            cleanupEmptyFile :: CM ()
-            cleanupEmptyFile = case liveRcvFileTransferPath ft of
-              Nothing -> pure ()
-              Just targetPath -> do
-                fsTargetPath <- lift $ toFSFilePath targetPath
-                removeFile fsTargetPath `catchChatError` \_ -> pure ()
+              toView $ CRRcvFileError user aci_ e ft
+
+cleanupACIFile :: AChatItem -> CM ()
+cleanupACIFile aci =
+  forM_ (aChatItemFileSource aci) $ \CryptoFile {filePath} -> do
+    fsFilePath <- lift $ toFSFilePath filePath
+    removeFile fsFilePath `catchChatError` \_ -> pure ()
 
 processAgentMessageConn :: VersionRangeChat -> User -> ACorrId -> ConnId -> AEvent 'AEConn -> CM ()
 processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = do
