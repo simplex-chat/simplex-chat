@@ -72,7 +72,7 @@ func alertAction(
     action: (() -> Void)? = nil
 ) -> UIAlertAction {
     .init(
-        title: title,
+        title: NSLocalizedString(title, comment: "alert action"),
         style: style,
         handler: { _ in action?() }
     )

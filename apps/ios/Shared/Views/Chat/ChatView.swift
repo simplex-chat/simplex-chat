@@ -736,9 +736,9 @@ struct ChatView: View {
                             ) {
                                 switch forwardConfirmation {
                                 case let .filesNotAccepted(fileIds):
-                                    [forward(validItems), download(fileIds), cancel()]
-                                default: 
-                                    [forward(validItems), cancel()]
+                                    [forward(validItems), download(fileIds), alertAction("Cancel", style: .cancel)]
+                                default:
+                                    [forward(validItems), alertAction("Cancel", style: .cancel)]
                                 }
                             }
                         } else {
@@ -749,9 +749,9 @@ struct ChatView: View {
                             ) {
                                 switch forwardConfirmation {
                                 case let .filesNotAccepted(fileIds): 
-                                    [download(fileIds), cancel()]
-                                default: 
-                                    [ok()]
+                                    [download(fileIds), alertAction("Cancel", style: .cancel)]
+                                default:
+                                    [alertAction("Ok")]
                                 }
                             }
                         }
@@ -762,14 +762,6 @@ struct ChatView: View {
             } catch {
                 logger.error("Plan forward chat items failed: \(error.localizedDescription)")
             }
-        }
-
-        func ok() -> UIAlertAction {
-            alertAction(NSLocalizedString("Ok", comment: "alert action"))
-        }
-
-        func cancel() -> UIAlertAction {
-            alertAction(NSLocalizedString("Cancel", comment: "alert action"), style: .cancel)
         }
 
         func forward(_ items: [Int64]) -> UIAlertAction {
@@ -788,7 +780,6 @@ struct ChatView: View {
                         }
                     }
                 }
-
             }
         }
 
