@@ -52,3 +52,28 @@ func showAlert(
         topController.present(alert, animated: true)
     }
 }
+
+func showAlert(
+    _ title: String,
+    message: String? = nil,
+    style: UIAlertController.Style = .alert,
+    actions: () -> [UIAlertAction]
+) {
+    if let topController = getTopViewController() {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: style)
+        for action in actions() { alert.addAction(action) }
+        topController.present(alert, animated: true)
+    }
+}
+
+func alertAction(
+    _ title: String,
+    style: UIAlertAction.Style = .default,
+    action: (() -> Void)? = nil
+) -> UIAlertAction {
+    .init(
+        title: title,
+        style: style,
+        handler: { _ in action?() }
+    )
+}

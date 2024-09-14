@@ -1547,7 +1547,14 @@ public enum ForwardConfirmation: Decodable, Hashable {
     case filesMissing(filesCount: Int)
     case filesFailed(filesCount: Int)
 
-    var reason: String {
+    public var fileIds: [Int64]? {
+        switch self {
+        case let .filesNotAccepted(fileIds): fileIds
+        default: nil
+        }
+    }
+
+    public var reason: String {
         switch self {
         case let .filesNotAccepted(fileIds):
             format(fileIds.count, with: "were not downloaded")

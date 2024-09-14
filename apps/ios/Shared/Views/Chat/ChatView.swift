@@ -713,12 +713,6 @@ struct ChatView: View {
     }
 
     private func forwardSelectedMessages() {
-        func openForwardingSheet(_ items: [Int64]) {
-            let im = ItemsModel.shared
-            forwardedChatItems = items
-                .compactMap { id in im.reversedChatItems.first { $0.id == id } }
-                .sorted { $0.meta.itemTs == $1.meta.itemTs }
-        }
         Task {
             do {
                 if let selectedChatItems {
@@ -727,22 +721,82 @@ struct ChatView: View {
                         id: chat.chatInfo.apiId,
                         itemIds: Array(selectedChatItems)
                     )
-                    switch forwardConfirmation {
-                    case let .filesNotAccepted(fileIds):
-                        print(fileIds) // TODO: Show alert
-                    case let .filesInProgress(filesCount):
-                        print(filesCount) // TODO: Show alert
-                    case let .filesMissing(filesCount):
-                        print(filesCount) // TODO: Show alert
-                    case let .filesFailed(filesCount):
-                        print(filesCount) // TODO: Show alert
-                    case nil:
+                    if let forwardConfirmation {
+                        if validItems.count > 0 {
+                            showAlert(
+                                String.localizedStringWithFormat(
+                                    NSLocalizedString("Forward %d message(s)", comment: "alert title"),
+                                    validItems.count
+                                ),
+                                message: forwardConfirmation.reason + "\n" + NSLocalizedString(
+                                    "Forward messages without files?", 
+                                    comment: "alert message"
+                                ),
+                                style: .actionSheet
+                            ) {
+                                switch forwardConfirmation {
+                                case let .filesNotAccepted(fileIds):
+                                    [forward(validItems), download(fileIds), cancel()]
+                                default: 
+                                    [forward(validItems), cancel()]
+                                }
+                            }
+                        } else {
+                            showAlert(
+                                NSLocalizedString("Nothing to forward!", comment: "alert title"),
+                                message: forwardConfirmation.reason,
+                                style: .actionSheet
+                            ) {
+                                switch forwardConfirmation {
+                                case let .filesNotAccepted(fileIds): 
+                                    [download(fileIds), cancel()]
+                                default: 
+                                    [ok()]
+                                }
+                            }
+                        }
+                    } else {
                         openForwardingSheet(validItems)
                     }
                 }
             } catch {
                 logger.error("Plan forward chat items failed: \(error.localizedDescription)")
             }
+        }
+
+        func ok() -> UIAlertAction {
+            alertAction(NSLocalizedString("Ok", comment: "alert action"))
+        }
+
+        func cancel() -> UIAlertAction {
+            alertAction(NSLocalizedString("Cancel", comment: "alert action"), style: .cancel)
+        }
+
+        func forward(_ items: [Int64]) -> UIAlertAction {
+            alertAction(NSLocalizedString("Forward", comment: "alert action")) {
+                openForwardingSheet(items)
+            }
+        }
+
+        func download(_ fileIds: [Int64]) -> UIAlertAction {
+            alertAction(NSLocalizedString("Download", comment: "alert action")) {
+                Task {
+                    if let user = ChatModel.shared.currentUser {
+                        // TODO: Only show unknown server alert once
+                        for fileId in fileIds {
+                            await receiveFile(user: user, fileId: fileId)
+                        }
+                    }
+                }
+
+            }
+        }
+
+        func openForwardingSheet(_ items: [Int64]) {
+            let im = ItemsModel.shared
+            forwardedChatItems = items
+                .compactMap { id in im.reversedChatItems.first { $0.id == id } }
+                .sorted { $0.meta.itemTs == $1.meta.itemTs }
         }
     }
 
