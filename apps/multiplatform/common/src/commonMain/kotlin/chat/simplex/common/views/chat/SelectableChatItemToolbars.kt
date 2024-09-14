@@ -1,7 +1,6 @@
 package chat.simplex.common.views.chat
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -98,7 +97,7 @@ fun SelectedItemsBottomToolbar(
           painterResource(MR.images.ic_forward),
           null,
           Modifier.size(22.dp),
-          tint =  if (allButtonsDisabled.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
+          tint = if (allButtonsDisabled.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
         )
       }
     }
