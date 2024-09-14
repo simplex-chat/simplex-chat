@@ -681,6 +681,7 @@ testMultiForwardFiles =
       copyFile "./tests/fixtures/test.jpg" "./tests/tmp/alice_app_files/test.jpg"
       copyFile "./tests/fixtures/test.pdf" "./tests/tmp/alice_app_files/test.pdf"
       copyFile "./tests/fixtures/test_1MB.pdf" "./tests/tmp/alice_app_files/test_1MB.pdf"
+      copyFile "./tests/fixtures/logo.jpg" "./tests/tmp/alice_app_files/logo.jpg"
       setRelativePaths bob "./tests/tmp/bob_app_files" "./tests/tmp/bob_xftp"
       setRelativePaths cath "./tests/tmp/cath_app_files" "./tests/tmp/cath_xftp"
       connectUsers alice bob
@@ -699,7 +700,8 @@ testMultiForwardFiles =
           cm2 = "{\"filePath\": \"test.jpg\", \"msgContent\": {\"type\": \"image\", \"image\":\"" <> T.unpack img <> "\", \"text\": \"\"}}"
           cm3 = "{\"filePath\": \"test.pdf\", \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}"
           cm4 = "{\"filePath\": \"test_1MB.pdf\", \"msgContent\": {\"type\": \"file\", \"text\": \"message with large file\"}}"
-      alice ##> ("/_send @2 json [" <> cm1 <> "," <> cm2 <> "," <> cm3 <> "," <> cm4 <> "]")
+          cm5 = "{\"filePath\": \"logo.jpg\", \"msgContent\": {\"type\": \"image\", \"image\":\"" <> T.unpack img <> "\", \"text\": \"\"}}"
+      alice ##> ("/_send @2 json [" <> intercalate "," [cm1, cm2, cm3, cm4, cm5] <> "]")
 
       alice <# "@bob message without file"
 
@@ -713,6 +715,9 @@ testMultiForwardFiles =
       alice <# "/f @bob test_1MB.pdf"
       alice <## "use /fc 3 to cancel sending"
 
+      alice <# "/f @bob logo.jpg"
+      alice <## "use /fc 4 to cancel sending"
+
       bob <# "alice> message without file"
 
       bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
@@ -725,16 +730,20 @@ testMultiForwardFiles =
       bob <# "alice> sends file test_1MB.pdf (1017.7 KiB / 1042157 bytes)"
       bob <## "use /fr 3 [<dir>/ | <path>] to receive it"
 
+      bob <# "alice> sends file logo.jpg (31.3 KiB / 32080 bytes)"
+      bob <## "use /fr 4 [<dir>/ | <path>] to receive it"
+
       alice <## "completed uploading file 1 (test.jpg) for bob"
       alice <## "completed uploading file 2 (test.pdf) for bob"
       alice <## "completed uploading file 3 (test_1MB.pdf) for bob"
+      alice <## "completed uploading file 4 (logo.jpg) for bob"
 
       -- IDs to forward
       let msgId1 = (read msgIdZero :: Int) + 1
-          msgIds = intercalate "," $ map show [msgId1, msgId1 + 1, msgId1 + 2, msgId1 + 3, msgId1 + 4]
+          msgIds = intercalate "," $ map (show . (msgId1 +)) [0..5]
       bob ##> ("/_forward plan @2 " <> msgIds)
-      bob <## "Files can be received: 1, 2, 3"
-      bob <## "4 message(s) out of 5 can be forwarded"
+      bob <## "Files can be received: 1, 2, 3, 4"
+      bob <## "5 message(s) out of 6 can be forwarded"
 
       bob ##> "/fr 1"
       bob
@@ -744,8 +753,8 @@ testMultiForwardFiles =
       bob <## "completed receiving file 1 (test.jpg) from alice"
 
       bob ##> ("/_forward plan @2 " <> msgIds)
-      bob <## "Files can be received: 2, 3"
-      bob <## "4 message(s) out of 5 can be forwarded"
+      bob <## "Files can be received: 2, 3, 4"
+      bob <## "5 message(s) out of 6 can be forwarded"
 
       bob ##> "/fr 2"
       bob
@@ -764,7 +773,7 @@ testMultiForwardFiles =
 
       -- forward file
       bob ##> ("/_forward plan @2 " <> msgIds)
-      bob <## "Files can be received: 3"
+      bob <## "Files can be received: 3, 4"
       bob <## "all messages can be forwarded"
       bob ##> ("/_forward @3 @2 " <> msgIds)
 
@@ -778,15 +787,18 @@ testMultiForwardFiles =
       bob <# "@cath <- @alice"
       bob <## "      test_1.jpg"
       bob <# "/f @cath test_1.jpg"
-      bob <## "use /fc 4 to cancel sending"
+      bob <## "use /fc 5 to cancel sending"
 
       bob <# "@cath <- @alice"
       bob <## "      test_1.pdf"
       bob <# "/f @cath test_1.pdf"
-      bob <## "use /fc 5 to cancel sending"
+      bob <## "use /fc 6 to cancel sending"
 
       bob <# "@cath <- @alice"
       bob <## "      message with large file"
+
+      bob <# "@cath <- @alice"
+      bob <## ""
 
       -- messages printed for cath
       cath <# "bob> -> forwarded"
@@ -808,9 +820,12 @@ testMultiForwardFiles =
       cath <# "bob> -> forwarded"
       cath <## "      message with large file"
 
+      cath <# "bob> -> forwarded"
+      cath <## ""
+
       -- file transfer
-      bob <## "completed uploading file 4 (test_1.jpg) for cath"
-      bob <## "completed uploading file 5 (test_1.pdf) for cath"
+      bob <## "completed uploading file 5 (test_1.jpg) for cath"
+      bob <## "completed uploading file 6 (test_1.pdf) for cath"
 
       cath ##> "/fr 1"
       cath
@@ -844,6 +859,17 @@ testMultiForwardFiles =
       bob <## "completed receiving file 3 (test_1MB.pdf) from alice"
 
       bob ##> ("/_forward plan @2 " <> msgIds)
+      bob <## "Files can be received: 4"
+      bob <## "all messages can be forwarded"
+
+      bob ##> "/fr 4"
+      bob
+        <### [ "saving file 4 from alice to logo.jpg",
+               "started receiving file 4 (logo.jpg) from alice"
+             ]
+      bob <## "completed receiving file 4 (logo.jpg) from alice"
+
+      bob ##> ("/_forward plan @2 " <> msgIds)
       bob <## "all messages can be forwarded"
 
       removeFile "./tests/tmp/bob_app_files/test_1MB.pdf"
@@ -854,7 +880,7 @@ testMultiForwardFiles =
       removeFile "./tests/tmp/bob_app_files/test.pdf"
       bob ##> ("/_forward plan @2 " <> msgIds)
       bob <## "2 file(s) are missing"
-      bob <## "4 message(s) out of 5 can be forwarded"
+      bob <## "5 message(s) out of 6 can be forwarded"
 
       -- deleting original file doesn't delete forwarded file
       checkActionDeletesFile "./tests/tmp/bob_app_files/test.jpg" $ do
