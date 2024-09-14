@@ -30,10 +30,6 @@ struct UserProfile: View {
     var body: some View {
         List {
             Section {
-                if !hideFullName {
-                    TextField("Full name", text: $profile.fullName)
-                        .focused($focus, equals: .displayName)
-                }
                 HStack {
                     TextField("Enter your name…", text: $profile.displayName)
                         .focused($focus, equals: .displayName)
@@ -44,6 +40,10 @@ struct UserProfile: View {
                             Image(systemName: "exclamationmark.circle").foregroundColor(.red)
                         }
                     }
+                }
+                if !hideFullName {
+                    TextField("Full name", text: $profile.fullName)
+                        .focused($focus, equals: .displayName)
                 }
                 Button(action: saveProfile) {
                     Label("Save and notify contacts", systemImage: "checkmark")
@@ -166,7 +166,7 @@ struct UserProfile: View {
         if let user = ChatModel.shared.currentUser {
             profile = fromLocalProfile(user.profile)
             currentProfileHash = profile.hashValue
-            hideFullName = profile.fullName.isEmpty || profile.fullName == profile.displayName
+            hideFullName = profile.fullName == "" || profile.fullName == profile.displayName
         }
     }
 }
