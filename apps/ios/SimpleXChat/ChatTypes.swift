@@ -2974,13 +2974,6 @@ public enum GroupSndStatus: Decodable, Hashable {
     }
 }
 
-public enum ForwardConfirmation: Decodable, Hashable {
-    case filesNotAccepted(fileIds: [Int64])
-    case filesInProgress(filesCount: Int)
-    case filesMissing(filesCount: Int)
-    case filesFailed(filesCount: Int)
-}
-
 public enum CIDeleted: Decodable, Hashable {
     case deleted(deletedTs: Date?)
     case blocked(deletedTs: Date?)

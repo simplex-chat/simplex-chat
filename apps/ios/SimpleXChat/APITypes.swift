@@ -1541,6 +1541,36 @@ public enum NetworkStatus: Decodable, Equatable {
     }
 }
 
+public enum ForwardConfirmation: Decodable, Hashable {
+    case filesNotAccepted(fileIds: [Int64])
+    case filesInProgress(filesCount: Int)
+    case filesMissing(filesCount: Int)
+    case filesFailed(filesCount: Int)
+
+    var reason: String {
+        switch self {
+        case let .filesNotAccepted(fileIds):
+            format(fileIds.count, with: "were not downloaded")
+        case let .filesInProgress(filesCount):
+            format(filesCount, with: "are still being downloaded")
+        case let .filesMissing(filesCount):
+            format(filesCount, with: "were deleted")
+        case let .filesFailed(filesCount):
+            format(filesCount, with: "failed to download")
+        }
+    }
+
+    private func format(_ count: Int, with reason: String) -> String {
+        String.localizedStringWithFormat(
+            NSLocalizedString(
+                "%d file(s) \(reason).",
+                comment: "forward confirmation reason"
+            ),
+            count
+        )
+    }
+}
+
 public struct ConnNetworkStatus: Decodable {
     public var agentConnId: String
     public var networkStatus: NetworkStatus
