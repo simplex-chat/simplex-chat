@@ -66,7 +66,7 @@ class SimplexApp: Application(), LifecycleEventObserver, Configuration.Provider 
       }
     }
     context = this
-    initHaskell()
+    initHaskell(packageName)
     initMultiplatform()
     runMigrations()
     tmpDir.deleteRecursively()

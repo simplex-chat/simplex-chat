@@ -995,7 +995,7 @@ processChatCommand' vr = \case
               Just err -> pure $ itemIdWithoutFile err
               Nothing -> case fileSource of
                 Just CryptoFile {filePath} -> do
-                  exists <- doesFileExist . maybe filePath (</> filePath) =<< chatReadVar filesFolder
+                  exists <- doesFileExist =<< lift (toFSFilePath filePath)
                   pure $ if exists then (Just itemId, Nothing) else itemIdWithoutFile FFEMissing
                 Nothing -> pure $ itemIdWithoutFile FFEMissing
             where
@@ -1079,27 +1079,28 @@ processChatCommand' vr = \case
             Just CIFFUnknown -> ciff
             Just prevCIFF -> Just prevCIFF
           forwardContent :: ChatItem c d -> MsgContent -> CM (Maybe (MsgContent, Maybe CryptoFile))
-          forwardContent ChatItem {file = Nothing} mc = pure $ Just (mc, Nothing)
-          forwardContent ChatItem {file = Just ciFile} mc = case ciFile of
-            CIFile {fileName, fileSource = Just fromCF@CryptoFile {filePath}} ->
-              chatReadVar filesFolder >>= \case
-                Nothing ->
-                  ifM (doesFileExist filePath) (pure $ Just (mc, Just fromCF)) (pure contentWithoutFile)
-                Just filesFolder -> do
-                  let fsFromPath = filesFolder </> filePath
-                  ifM
-                    (doesFileExist fsFromPath)
-                    ( do
-                        fsNewPath <- liftIO $ filesFolder `uniqueCombine` fileName
-                        liftIO $ B.writeFile fsNewPath "" -- create empty file
-                        encrypt <- chatReadVar encryptLocalFiles
-                        cfArgs <- if encrypt then Just <$> (atomically . CF.randomArgs =<< asks random) else pure Nothing
-                        let toCF = CryptoFile fsNewPath cfArgs
-                        -- to keep forwarded file in case original is deleted
-                        liftIOEither $ runExceptT $ withExceptT (ChatError . CEInternalError . show) $ copyCryptoFile (fromCF {filePath = fsFromPath} :: CryptoFile) toCF
-                        pure $ Just (mc, Just (toCF {filePath = takeFileName fsNewPath} :: CryptoFile))
-                    )
-                    (pure contentWithoutFile)
+          forwardContent ChatItem {file} mc = case file of
+            Nothing -> pure $ Just (mc, Nothing)
+            Just CIFile {fileName, fileStatus, fileSource = Just fromCF@CryptoFile {filePath}}
+              | ciFileLoaded fileStatus ->
+                  chatReadVar filesFolder >>= \case
+                    Nothing ->
+                      ifM (doesFileExist filePath) (pure $ Just (mc, Just fromCF)) (pure contentWithoutFile)
+                    Just filesFolder -> do
+                      let fsFromPath = filesFolder </> filePath
+                      ifM
+                        (doesFileExist fsFromPath)
+                        ( do
+                            fsNewPath <- liftIO $ filesFolder `uniqueCombine` fileName
+                            liftIO $ B.writeFile fsNewPath "" -- create empty file
+                            encrypt <- chatReadVar encryptLocalFiles
+                            cfArgs <- if encrypt then Just <$> (atomically . CF.randomArgs =<< asks random) else pure Nothing
+                            let toCF = CryptoFile fsNewPath cfArgs
+                            -- to keep forwarded file in case original is deleted
+                            liftIOEither $ runExceptT $ withExceptT (ChatError . CEInternalError . show) $ copyCryptoFile (fromCF {filePath = fsFromPath} :: CryptoFile) toCF
+                            pure $ Just (mc, Just (toCF {filePath = takeFileName fsNewPath} :: CryptoFile))
+                        )
+                        (pure contentWithoutFile)
             _ -> pure contentWithoutFile
             where
               contentWithoutFile = case mc of
@@ -3444,7 +3445,7 @@ callStatusItemContent user Contact {contactId} chatItemId receivedStatus = do
 -- used during file transfer for actual operations with file system
 toFSFilePath :: FilePath -> CM' FilePath
 toFSFilePath f =
-  maybe f (</> f) <$> (readTVarIO =<< asks filesFolder)
+  maybe f (</> f) <$> (chatReadVar' filesFolder)
 
 setFileToEncrypt :: RcvFileTransfer -> CM RcvFileTransfer
 setFileToEncrypt ft@RcvFileTransfer {fileId} = do
@@ -3566,7 +3567,9 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
     relaysNotApproved :: [XFTPServer] -> CM ()
     relaysNotApproved unknownSrvs = do
       aci_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
-      forM_ aci_ $ \aci -> toView $ CRChatItemUpdated user aci
+      forM_ aci_ $ \aci -> do
+        cleanupACIFile aci
+        toView $ CRChatItemUpdated user aci
       throwChatError $ CEFileNotApproved fileId unknownSrvs
 
 getNetworkConfig :: CM' NetworkConfig
@@ -4290,14 +4293,22 @@ processAgentMsgRcvFile _corrId aFileId msg = do
         RFERR e
           | e == FILE NOT_APPROVED -> do
               aci_ <- resetRcvCIFileStatus user fileId CIFSRcvAborted
+              forM_ aci_ cleanupACIFile
               agentXFTPDeleteRcvFile aFileId fileId
               forM_ aci_ $ \aci -> toView $ CRChatItemUpdated user aci
           | otherwise -> do
-              ci <- withStore $ \db -> do
+              aci_ <- withStore $ \db -> do
                 liftIO $ updateFileCancelled db user fileId (CIFSRcvError $ agentFileError e)
                 lookupChatItemByFileId db vr user fileId
+              forM_ aci_ cleanupACIFile
               agentXFTPDeleteRcvFile aFileId fileId
-              toView $ CRRcvFileError user ci e ft
+              toView $ CRRcvFileError user aci_ e ft
+
+cleanupACIFile :: AChatItem -> CM ()
+cleanupACIFile (AChatItem _ _ _ ChatItem {file = Just CIFile {fileSource = Just CryptoFile {filePath}}}) = do
+  fsFilePath <- lift $ toFSFilePath filePath
+  removeFile fsFilePath `catchChatError` \_ -> pure ()
+cleanupACIFile _ = pure ()
 
 processAgentMessageConn :: VersionRangeChat -> User -> ACorrId -> ConnId -> AEvent 'AEConn -> CM ()
 processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = do
