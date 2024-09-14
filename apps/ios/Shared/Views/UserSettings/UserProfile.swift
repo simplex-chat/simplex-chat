@@ -42,6 +42,7 @@ struct UserProfile: View {
                             }
                         }
                     }
+
                     editImageButton { showChooseSource = true }
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
