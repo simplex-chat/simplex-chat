@@ -1866,7 +1866,7 @@ private fun handleForwardConfirmation(
               DownloadFilesButton(confirmation, rhId)
             }
           }
-          else -> ButtonRow {
+          else -> Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             HideForwardConfirmationButton(stringResource(MR.strings.ok))
           }
         }
