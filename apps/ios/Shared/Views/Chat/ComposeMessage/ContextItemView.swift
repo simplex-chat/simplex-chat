@@ -74,9 +74,9 @@ struct ContextItemView: View {
     }
 }
 
-//struct ContextItemView_Previews: PreviewProvider {
-//    static var previews: some View {
-//        let contextItem: ChatItem = ChatItem.getSample(1, .directSnd, .now, "hello")
-//        return ContextItemView(chat: Chat.sampleData, contextItem: contextItem, contextIcon: "pencil.circle", cancelContextItem: {})
-//    }
-//}
+struct ContextItemView_Previews: PreviewProvider {
+    static var previews: some View {
+        let contextItem: ChatItem = ChatItem.getSample(1, .directSnd, .now, "hello")
+        return ContextItemView(chat: Chat.sampleData, contextItems: [contextItem], contextIcon: "pencil.circle", cancelContextItem: {})
+    }
+}

@@ -124,11 +124,11 @@ struct ChatItemForwardingView: View {
     }
 }
 
-//#Preview {
-//    ChatItemForwardingView(
-//        ci: ChatItem.getSample(1, .directSnd, .now, "hello"),
-//        fromChatInfo: .direct(contact: Contact.sampleData),
-//        composeState: Binding.constant(ComposeState(message: "hello"))
-//    ).environmentObject(CurrentColors.toAppTheme())
-//}
+#Preview {
+    ChatItemForwardingView(
+        chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")],
+        fromChatInfo: .direct(contact: Contact.sampleData),
+        composeState: Binding.constant(ComposeState(message: "hello"))
+    ).environmentObject(CurrentColors.toAppTheme())
+}
 
