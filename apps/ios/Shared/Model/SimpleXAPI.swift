@@ -1045,20 +1045,67 @@ func standaloneFileInfo(url: String, ctrl: chat_ctrl? = nil) async -> MigrationF
 }
 
 func receiveFile(user: any UserLike, fileId: Int64, userApprovedRelays: Bool = false, auto: Bool = false) async {
-    if let chatItem = await apiReceiveFile(
-        fileId: fileId,
-        userApprovedRelays: userApprovedRelays || !privacyAskToApproveRelaysGroupDefault.get(),
-        encrypted: privacyEncryptLocalFilesGroupDefault.get(),
+    await receiveFiles(
+        user: user,
+        fileIds: [fileId],
+        userApprovedRelays: userApprovedRelays,
         auto: auto
-    ) {
-        await chatItemSimpleUpdate(user, chatItem)
+    )
+}
+
+func receiveFiles(user: any UserLike, fileIds: [Int64], userApprovedRelays: Bool = false, auto: Bool = false) async {
+    var unknownServers = Set<String>()
+    var unapprovedFileIds = [Int64]()
+    for fileId in fileIds {
+        if let receiveFileResult = await apiReceiveFile(
+            fileId: fileId,
+            userApprovedRelays: userApprovedRelays || !privacyAskToApproveRelaysGroupDefault.get(),
+            encrypted: privacyEncryptLocalFilesGroupDefault.get(),
+            auto: auto
+        ) {
+            switch receiveFileResult {
+            case .accepted(let chatItem):
+                await chatItemSimpleUpdate(user, chatItem)
+            case let .notApproved(fileId, servers):
+                unknownServers.formUnion(servers)
+                unapprovedFileIds.append(fileId)
+            }
+        }
+    }
+    let fileIds = unapprovedFileIds
+    if !fileIds.isEmpty {
+        let servers: String = unknownServers.sorted().joined(separator: ", ")
+        showAlert(
+            NSLocalizedString("Unknown servers!", comment: "alert title"),
+            message: NSLocalizedString(
+                "Without Tor or VPN, your IP address will be visible to these XFTP relays: \(servers).",
+                comment: "alert message"
+            )
+        ) {
+            [
+                alertAction("Download") { 
+                    Task {
+                        logger.debug("apiReceiveFile fileNotApproved alert - in Task")
+                        if let user = ChatModel.shared.currentUser {
+                            await receiveFiles(user: user, fileIds: fileIds, userApprovedRelays: true)
+                        }
+                    }
+                },
+                alertAction("Cancel", style: .cancel)
+            ]
+        }
     }
 }
 
-func apiReceiveFile(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool, inline: Bool? = nil, auto: Bool = false) async -> AChatItem? {
+enum ReceiveFileResult {
+    case accepted(chatItem: AChatItem)
+    case notApproved(fileId: Int64, unknownServers: [String])
+}
+
+func apiReceiveFile(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool, inline: Bool? = nil, auto: Bool = false) async -> ReceiveFileResult? {
     let r = await chatSendCmd(.receiveFile(fileId: fileId, userApprovedRelays: userApprovedRelays, encrypted: encrypted, inline: inline))
     let am = AlertManager.shared
-    if case let .rcvFileAccepted(_, chatItem) = r { return chatItem }
+    if case let .rcvFileAccepted(_, chatItem) = r { return .accepted(chatItem: chatItem) }
     if case .rcvFileAcceptedSndCancelled = r {
         logger.debug("apiReceiveFile error: sender cancelled file transfer")
         if !auto {
@@ -1088,22 +1135,7 @@ func apiReceiveFile(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool, in
                         serverHost(s)
                     }
                 }
-                am.showAlert(Alert(
-                    title: Text("Unknown servers!"),
-                    message: Text("Without Tor or VPN, your IP address will be visible to these XFTP relays: \(srvs.sorted().joined(separator: ", "))."),
-                    primaryButton: .default(
-                        Text("Download"),
-                        action: {
-                            Task {
-                                logger.debug("apiReceiveFile fileNotApproved alert - in Task")
-                                if let user = ChatModel.shared.currentUser {
-                                    await receiveFile(user: user, fileId: fileId, userApprovedRelays: true)
-                                }
-                            }
-                        }
-                    ),
-                    secondaryButton: .cancel()
-                ))
+                return .notApproved(fileId: fileId, unknownServers: unknownServers)
             }
         default:
             logger.error("apiReceiveFile error: \(String(describing: r))")
