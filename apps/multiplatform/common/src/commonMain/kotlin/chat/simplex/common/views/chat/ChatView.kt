@@ -1440,6 +1440,76 @@ private fun TopEndFloatingButton(
   }
 }
 
+@Composable
+private fun DownloadFilesButton(
+  forwardConfirmation: ForwardConfirmation.FilesNotAccepted,
+  rhId: Long?,
+  modifier: Modifier = Modifier,
+  contentPadding: PaddingValues = ButtonDefaults.TextButtonContentPadding
+) {
+  TextButton(
+    contentPadding = contentPadding,
+    modifier = modifier,
+    onClick = {
+      AlertManager.shared.hideAlert()
+      withBGApi {
+        val failures = controller.apiReceiveFiles(
+          rh = rhId,
+          fileIds = forwardConfirmation.fileIds,
+          userApprovedRelays = !appPrefs.privacyAskToApproveRelays.get(),
+          encrypted = appPrefs.privacyEncryptLocalFiles.get(),
+        )
+
+        if (failures.isNotEmpty()) {
+          Log.e(TAG, "${failures.count()} files failed to download.")
+        }
+      }
+    }
+  ) {
+    Text(stringResource(MR.strings.forward_files_not_accepted_receive_files), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+  }
+}
+
+@Composable
+private fun HideForwardConfirmationButton(
+  text: String,
+  modifier: Modifier = Modifier,
+  contentPadding: PaddingValues = ButtonDefaults.TextButtonContentPadding
+) {
+  TextButton(onClick = { AlertManager.shared.hideAlert() }, modifier = modifier, contentPadding = contentPadding) {
+    Text(text, textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+  }
+}
+
+@Composable
+private fun ForwardButton(
+  forwardPlan: CR.ForwardPlan,
+  chatInfo: ChatInfo,
+  modifier: Modifier = Modifier,
+  contentPadding: PaddingValues = ButtonDefaults.TextButtonContentPadding
+) {
+  TextButton(
+    onClick = {
+      forwardContent(forwardPlan.chatItemIds, chatInfo)
+      AlertManager.shared.hideAlert()
+    },
+    modifier = modifier,
+    contentPadding = contentPadding
+  ) {
+    Text(stringResource(MR.strings.forward_chat_item), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+  }
+}
+
+@Composable
+private fun ButtonRow(horizontalArrangement: Arrangement.Horizontal, content: @Composable() (RowScope.() -> Unit)) {
+  Row(
+    Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING),
+    horizontalArrangement = horizontalArrangement
+  ) {
+    content()
+  }
+}
+
 val chatViewScrollState = MutableStateFlow(false)
 
 fun addGroupMembers(groupInfo: GroupInfo, rhId: Long?, view: Any? = null, close: (() -> Unit)? = null) {
@@ -1753,76 +1823,6 @@ private fun forwardConfirmationAlertDescription(forwardConfirmation: ForwardConf
   }
 }
 
-@Composable
-private fun DownloadFilesButton(
-  forwardConfirmation: ForwardConfirmation.FilesNotAccepted,
-  rhId: Long?,
-  modifier: Modifier = Modifier,
-  contentPadding: PaddingValues = ButtonDefaults.TextButtonContentPadding
-) {
-  TextButton(
-    contentPadding = contentPadding,
-    modifier = modifier,
-    onClick = {
-      AlertManager.shared.hideAlert()
-      withBGApi {
-        val failures = controller.apiReceiveFiles(
-          rh = rhId,
-          fileIds = forwardConfirmation.fileIds,
-          userApprovedRelays = !appPrefs.privacyAskToApproveRelays.get(),
-          encrypted = appPrefs.privacyEncryptLocalFiles.get(),
-        )
-
-        if (failures.isNotEmpty()) {
-          Log.e(TAG, "${failures.count()} files failed to download.")
-        }
-      }
-    }
-  ) {
-    Text(stringResource(MR.strings.forward_files_not_accepted_receive_files), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-  }
-}
-
-@Composable
-private fun HideForwardConfirmationButton(
-  text: String,
-  modifier: Modifier = Modifier,
-  contentPadding: PaddingValues = ButtonDefaults.TextButtonContentPadding
-) {
-  TextButton(onClick = { AlertManager.shared.hideAlert() }, modifier = modifier, contentPadding = contentPadding) {
-    Text(text, textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-  }
-}
-
-@Composable
-private fun ForwardButton(
-  forwardPlan: CR.ForwardPlan,
-  chatInfo: ChatInfo,
-  modifier: Modifier = Modifier,
-  contentPadding: PaddingValues = ButtonDefaults.TextButtonContentPadding
-) {
-  TextButton(
-    onClick = {
-      forwardContent(forwardPlan.chatItemIds, chatInfo)
-      AlertManager.shared.hideAlert()
-    },
-    modifier = modifier,
-    contentPadding = contentPadding
-  ) {
-    Text(stringResource(MR.strings.forward_chat_item), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-  }
-}
-
-@Composable
-private fun ButtonRow (content: @Composable() (RowScope.() -> Unit)) {
-  Row(
-    Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING),
-    horizontalArrangement = Arrangement.SpaceBetween
-  ) {
-    content()
-  }
-}
-
 private fun handleForwardConfirmation(
   rhId: Long?,
   forwardPlan: CR.ForwardPlan,
@@ -1852,7 +1852,7 @@ private fun handleForwardConfirmation(
             }
           }
           else -> {
-            ButtonRow {
+            ButtonRow(Arrangement.SpaceBetween) {
               HideForwardConfirmationButton(stringResource(MR.strings.cancel_verb))
               ForwardButton(forwardPlan, chatInfo)
             }
@@ -1861,12 +1861,12 @@ private fun handleForwardConfirmation(
       } else {
         when (val confirmation = forwardPlan.forwardConfirmation) {
           is ForwardConfirmation.FilesNotAccepted -> {
-            ButtonRow {
+            ButtonRow(Arrangement.SpaceBetween) {
               HideForwardConfirmationButton(stringResource(MR.strings.cancel_verb))
               DownloadFilesButton(confirmation, rhId)
             }
           }
-          else -> Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+          else -> ButtonRow(Arrangement.Center) {
             HideForwardConfirmationButton(stringResource(MR.strings.ok))
           }
         }
