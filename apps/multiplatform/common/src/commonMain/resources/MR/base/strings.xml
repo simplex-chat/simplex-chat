@@ -379,6 +379,16 @@
   <string name="no_selected_chat">No selected chat</string>
   <string name="selected_chat_items_nothing_selected">Nothing selected</string>
   <string name="selected_chat_items_selected_n">Selected %d</string>
+  <string name="forward_alert_title_messages_to_forward">Forward %1$s message(s)?</string>
+  <string name="forward_alert_title_nothing_to_forward">Nothing to forward!</string>
+  <string name="forward_alert_forward_messages_without_files">Forward messages without files?</string>
+  <string name="forward_files_messages_deleted_after_selection_desc">Messages were deleted after you selected them.</string>
+  <string name="forward_files_not_accepted_desc">%1$d file(s) were not downloaded.</string>
+  <string name="forward_files_in_progress_desc">%1$d file(s) are still being downloaded.</string>
+  <string name="forward_files_failed_to_receive_desc">%1$d file(s) failed to download.</string>
+  <string name="forward_files_missing_desc">%1$d file(s) were deleted.</string>
+  <string name="forward_files_not_accepted_receive_files">Download</string>
+  <string name="forward_files_messages_deleted_after_selection_title">%1$s messages not forwarded</string>
 
   <!-- ShareListView.kt -->
   <string name="share_message">Share message…</string>
@@ -411,22 +421,6 @@
   <string name="files_and_media_not_allowed">Files and media not allowed</string>
   <string name="voice_messages_not_allowed">Voice messages not allowed</string>
   <string name="compose_message_placeholder">Message</string>
-  <string name="forward_multiple_messages">Forward %1$s messages.</string>
-  <string name="forward_files_not_accepted_title">Files to forward not received</string>
-  <string name="forward_files_not_accepted_desc">A total of %1$d file(s) selected to forward haven\'t been received and can\'t be forwarded.</string>
-  <string name="forward_files_not_accepted_receive_files">Receive</string>
-  <string name="forward_files_forward_without_files">Forward without files</string>
-  <string name="forward_files_in_progress_title">Files to forward still downloading</string>
-  <string name="forward_files_in_progress_desc">Some file(s) selected to forward haven\'t finish downloading and can\'t be forwarded.</string>
-  <string name="forward_files_in_progress_wait">Wait</string>
-  <string name="forward_files_missing_title">Files to forward not found</string>
-  <string name="forward_files_missing_desc">Some file(s) selected to forward can\'t be found and can\'t be forwarded.</string>
-  <string name="forward_files_failed_to_receive_title">Files to forward failed to receive</string>
-  <string name="forward_files_failed_to_receive_desc">Some file(s) selected to forward couldn\'t be received and can\'t be forwarded.</string>
-  <string name="forward_alert_title_messages_to_forward">Forward %1$s messages?</string>
-  <string name="forward_alert_title_no_messages_to_forward">No messages to forward</string>
-  <string name="forward_files_messages_deleted_after_selection_title">%1$s messages not forwarded</string>
-  <string name="forward_files_messages_deleted_after_selection_desc">Some messages were deleted after selection and couldn\'t be forwarded</string>
 
   <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
   <string name="image_descr">Image</string>
@@ -2309,4 +2303,7 @@
   <string name="download_errors">Download errors</string>
   <string name="server_address">Server address</string>
   <string name="open_server_settings_button">Open server settings</string>
+
+  <!-- ContextItemView.kt -->
+  <string name="forward_messages_n">Forward %1$s messages.</string>
 </resources>

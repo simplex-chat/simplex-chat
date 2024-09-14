@@ -1,6 +1,5 @@
 package chat.simplex.common.views.chat
 
-import SectionItemView
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.desktop.ui.tooling.preview.Preview
@@ -14,6 +13,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.*
 import dev.icerock.moko.resources.compose.painterResource
@@ -1748,9 +1749,79 @@ private fun forwardContent(chatItemsIds: List<Long>, chatInfo: ChatInfo) {
 private fun forwardConfirmationAlertDescription(forwardConfirmation: ForwardConfirmation): String {
   return when (forwardConfirmation) {
     is ForwardConfirmation.FilesNotAccepted -> String.format(generalGetString(MR.strings.forward_files_not_accepted_desc), forwardConfirmation.fileIds.count())
-    is ForwardConfirmation.FilesInProgress -> generalGetString(MR.strings.forward_files_in_progress_desc)
-    is ForwardConfirmation.FilesFailed -> generalGetString(MR.strings.forward_files_failed_to_receive_desc)
-    is ForwardConfirmation.FilesMissing -> generalGetString(MR.strings.forward_files_missing_desc)
+    is ForwardConfirmation.FilesInProgress -> String.format(generalGetString(MR.strings.forward_files_in_progress_desc), forwardConfirmation.filesCount)
+    is ForwardConfirmation.FilesFailed -> String.format(generalGetString(MR.strings.forward_files_failed_to_receive_desc), forwardConfirmation.filesCount)
+    is ForwardConfirmation.FilesMissing -> String.format(generalGetString(MR.strings.forward_files_missing_desc), forwardConfirmation.filesCount)
+  }
+}
+
+@Composable
+private fun DownloadFilesButton(
+  forwardConfirmation: ForwardConfirmation.FilesNotAccepted,
+  rhId: Long?,
+  modifier: Modifier = Modifier,
+  contentPadding: PaddingValues = ButtonDefaults.TextButtonContentPadding
+) {
+  TextButton(
+    contentPadding = contentPadding,
+    modifier = modifier,
+    onClick = {
+      AlertManager.shared.hideAlert()
+      withBGApi {
+        val failures = controller.apiReceiveFiles(
+          rh = rhId,
+          fileIds = forwardConfirmation.fileIds,
+          userApprovedRelays = !appPrefs.privacyAskToApproveRelays.get(),
+          encrypted = appPrefs.privacyEncryptLocalFiles.get(),
+        )
+
+        if (failures.isNotEmpty()) {
+          Log.e(TAG, "${failures.count()} files failed to download.")
+        }
+      }
+    }
+  ) {
+    Text(stringResource(MR.strings.forward_files_not_accepted_receive_files), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+  }
+}
+
+@Composable
+private fun HideForwardConfirmationButton(
+  text: String,
+  modifier: Modifier = Modifier,
+  contentPadding: PaddingValues = ButtonDefaults.TextButtonContentPadding
+) {
+  TextButton(onClick = { AlertManager.shared.hideAlert() }, modifier = modifier, contentPadding = contentPadding) {
+    Text(text, textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+  }
+}
+
+@Composable
+private fun ForwardButton(
+  forwardPlan: CR.ForwardPlan,
+  chatInfo: ChatInfo,
+  modifier: Modifier = Modifier,
+  contentPadding: PaddingValues = ButtonDefaults.TextButtonContentPadding
+) {
+  TextButton(
+    onClick = {
+      forwardContent(forwardPlan.chatItemIds, chatInfo)
+      AlertManager.shared.hideAlert()
+    },
+    modifier = modifier,
+    contentPadding = contentPadding
+  ) {
+    Text(stringResource(MR.strings.forward_chat_item), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+  }
+}
+
+@Composable
+private fun ButtonRow (content: @Composable() (RowScope.() -> Unit)) {
+  Row(
+    Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING),
+    horizontalArrangement = Arrangement.SpaceBetween
+  ) {
+    content()
   }
 }
 
@@ -1759,74 +1830,46 @@ private fun handleForwardConfirmation(
   forwardPlan: CR.ForwardPlan,
   chatInfo: ChatInfo
 ) {
+  var alertDescription = if (forwardPlan.forwardConfirmation != null) forwardConfirmationAlertDescription(forwardPlan.forwardConfirmation) else ""
+
+  if (forwardPlan.chatItemIds.isNotEmpty()) {
+    alertDescription += "\n${generalGetString(MR.strings.forward_alert_forward_messages_without_files)}"
+  }
+
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = if (forwardPlan.chatItemIds.isNotEmpty())
       String.format(generalGetString(MR.strings.forward_alert_title_messages_to_forward), forwardPlan.chatItemIds.count()) else
-        generalGetString(MR.strings.forward_alert_title_no_messages_to_forward),
-    text = if (forwardPlan.forwardConfirmation != null)
-      forwardConfirmationAlertDescription(forwardPlan.forwardConfirmation) else
-        generalGetString(MR.strings.forward_files_messages_deleted_after_selection_desc),
+        generalGetString(MR.strings.forward_alert_title_nothing_to_forward),
+    text = alertDescription,
     buttons = {
-      Column {
-        if (forwardPlan.chatItemIds.isNotEmpty()) {
-          SectionItemView({
-            forwardContent(forwardPlan.chatItemIds, chatInfo)
-            AlertManager.shared.hideAlert()
-          }) {
-            Text(stringResource(MR.strings.forward_chat_item), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+      if (forwardPlan.chatItemIds.isNotEmpty()) {
+        when (val confirmation = forwardPlan.forwardConfirmation) {
+          is ForwardConfirmation.FilesNotAccepted -> {
+            val fillMaxWidthModifier = Modifier.fillMaxWidth()
+            val contentPadding = PaddingValues(vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)
+            Column {
+              ForwardButton(forwardPlan, chatInfo, fillMaxWidthModifier, contentPadding)
+              DownloadFilesButton(confirmation, rhId, fillMaxWidthModifier, contentPadding)
+              HideForwardConfirmationButton(stringResource(MR.strings.cancel_verb), fillMaxWidthModifier, contentPadding)
+            }
+          }
+          else -> {
+            ButtonRow {
+              HideForwardConfirmationButton(stringResource(MR.strings.cancel_verb))
+              ForwardButton(forwardPlan, chatInfo)
+            }
           }
         }
-        if (forwardPlan.forwardConfirmation != null) {
-          when (forwardPlan.forwardConfirmation) {
-            is ForwardConfirmation.FilesNotAccepted -> {
-              SectionItemView({
-                AlertManager.shared.hideAlert()
-
-                withBGApi {
-                  val failures = controller.apiReceiveFiles(
-                    rh = rhId,
-                    fileIds = forwardPlan.forwardConfirmation.fileIds,
-                    userApprovedRelays = !appPrefs.privacyAskToApproveRelays.get(),
-                    encrypted = appPrefs.privacyEncryptLocalFiles.get(),
-                  )
-
-                  if (failures.isNotEmpty()) {
-                    Log.e(TAG, "errors happened")
-                  }
-                }
-              }) {
-                Text(stringResource(MR.strings.forward_files_not_accepted_receive_files), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-              }
-              SectionItemView({
-                AlertManager.shared.hideAlert()
-              }) {
-                Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-              }
+      } else {
+        when (val confirmation = forwardPlan.forwardConfirmation) {
+          is ForwardConfirmation.FilesNotAccepted -> {
+            ButtonRow {
+              HideForwardConfirmationButton(stringResource(MR.strings.cancel_verb))
+              DownloadFilesButton(confirmation, rhId)
             }
-
-            is ForwardConfirmation.FilesInProgress -> {
-              SectionItemView({
-                AlertManager.shared.hideAlert()
-              }) {
-                Text(stringResource(MR.strings.forward_files_in_progress_wait), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-              }
-            }
-
-            is ForwardConfirmation.FilesFailed -> {
-              SectionItemView({
-                AlertManager.shared.hideAlert()
-              }) {
-                Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-              }
-            }
-
-            is ForwardConfirmation.FilesMissing -> {
-              SectionItemView({
-                AlertManager.shared.hideAlert()
-              }) {
-                Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-              }
-            }
+          }
+          else -> ButtonRow {
+            HideForwardConfirmationButton(stringResource(MR.strings.ok))
           }
         }
       }
