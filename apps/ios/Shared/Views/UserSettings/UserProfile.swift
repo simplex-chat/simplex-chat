@@ -10,29 +10,23 @@ import SwiftUI
 import SimpleXChat
 
 struct UserProfile: View {
-    private enum Focus: Hashable {
-        case fullName
-        case displayName
-    }
-
     @EnvironmentObject var theme: AppTheme
-    @FocusState private var focus: Focus?
     @State private var profile = Profile(displayName: "", fullName: "")
     @State private var currentProfileHash: Int?
-    @State private var hideFullName = true
     // Modals
     @State private var showChooseSource = false
     @State private var showImagePicker = false
     @State private var showTakePhoto = false
     @State private var chosenImage: UIImage? = nil
     @State private var alert: UserProfileAlert?
+    @FocusState private var focusDisplayName
 
     var body: some View {
         List {
             Section {
                 HStack {
                     TextField("Enter your name…", text: $profile.displayName)
-                        .focused($focus, equals: .displayName)
+                        .focused($focusDisplayName)
                     if !validDisplayName(profile.displayName) {
                         Button {
                             alert = .invalidNameError(validName: mkValidName(profile.displayName))
@@ -41,9 +35,8 @@ struct UserProfile: View {
                         }
                     }
                 }
-                if !hideFullName {
+                if showFullName {
                     TextField("Full name", text: $profile.fullName)
-                        .focused($focus, equals: .displayName)
                 }
                 Button(action: saveProfile) {
                     Label("Save and notify contacts", systemImage: "checkmark")
@@ -71,7 +64,10 @@ struct UserProfile: View {
             }
         }
         // Lifecycle
-        .onAppear(perform: loadProfile)
+        .onAppear {
+            loadProfile()
+            focusDisplayName = true
+        }
         .onDisappear {
             if canSaveProfile {
                 showAlert(
@@ -137,6 +133,10 @@ struct UserProfile: View {
             .onTapGesture(perform: action)
     }
 
+    private var showFullName: Bool {
+        profile.fullName != "" && profile.fullName != profile.displayName
+    }
+    
     private var canSaveProfile: Bool {
         currentProfileHash != profile.hashValue &&
         profile.displayName.trimmingCharacters(in: .whitespaces) != "" &&
@@ -144,7 +144,7 @@ struct UserProfile: View {
     }
 
     private func saveProfile() {
-        focus = nil
+        focusDisplayName = false
         Task {
             do {
                 profile.displayName = profile.displayName.trimmingCharacters(in: .whitespaces)
@@ -166,7 +166,6 @@ struct UserProfile: View {
         if let user = ChatModel.shared.currentUser {
             profile = fromLocalProfile(user.profile)
             currentProfileHash = profile.hashValue
-            hideFullName = profile.fullName == "" || profile.fullName == profile.displayName
         }
     }
 }
