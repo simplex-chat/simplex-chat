@@ -49,7 +49,7 @@ struct UserProfile: View {
                     Label("Save and notify contacts", systemImage: "checkmark")
                 }.disabled(!canSaveProfile)
             } header: {
-                ProfileImage(imageStr: profile.image, size: 128)
+                profileImageView(profile.image)
                     .padding(12)
                     .overlay {
                         if profile.image != nil {
