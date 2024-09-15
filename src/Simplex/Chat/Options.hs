@@ -13,6 +13,7 @@ module Simplex.Chat.Options
     coreChatOptsP,
     getChatOpts,
     protocolServersP,
+    defaultHostMode,
   )
 where
 
@@ -20,6 +21,7 @@ import Control.Logger.Simple (LogLevel (..))
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteArray (ScrubbedBytes)
 import qualified Data.ByteString.Char8 as B
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -27,11 +29,11 @@ import Numeric.Natural (Natural)
 import Options.Applicative
 import Simplex.Chat.Controller (ChatLogLevel (..), SimpleNetCfg (..), updateStr, versionNumber, versionString)
 import Simplex.FileTransfer.Description (mb)
-import Simplex.Messaging.Client (SocksMode (..))
+import Simplex.Messaging.Client (HostMode (..), SocksMode (..), textToHostMode)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI, SMPServerWithAuth, XFTPServerWithAuth)
-import Simplex.Messaging.Transport.Client (defaultSocksProxyWithAuth)
+import Simplex.Messaging.Transport.Client (SocksProxyWithAuth (..), SocksAuth (..), defaultSocksProxyWithAuth)
 import System.FilePath (combine)
 
 data ChatOpts = ChatOpts
@@ -139,6 +141,19 @@ coreChatOptsP appDir defaultDbFileName = do
           <> help "Use SOCKS5 proxy: always (default), onion (with onion-only relays)"
           <> value SMAlways
       )
+  hostMode_ <-
+    optional $
+      option
+        parseHostMode
+        ( long "host-mode"
+            <> metavar "HOST_MODE"
+            <> help "Preferred server host type: onion (when SOCKS proxy with isolate-by-auth is used), public"
+        )
+  requiredHostMode <-
+    switch
+      ( long "required-host-mode"
+          <> help "Refuse connection if preferred server host type is not available"
+      )
   smpProxyMode_ <-
     optional $
       option
@@ -226,7 +241,17 @@ coreChatOptsP appDir defaultDbFileName = do
         dbKey,
         smpServers,
         xftpServers,
-        simpleNetCfg = SimpleNetCfg {socksProxy, socksMode, smpProxyMode_, smpProxyFallback_, tcpTimeout_ = Just $ useTcpTimeout socksProxy t, logTLSErrors},
+        simpleNetCfg =
+          SimpleNetCfg
+            { socksProxy,
+              socksMode,
+              hostMode = fromMaybe (defaultHostMode socksProxy) hostMode_,
+              requiredHostMode,
+              smpProxyMode_,
+              smpProxyFallback_,
+              tcpTimeout_ = Just $ useTcpTimeout socksProxy t,
+              logTLSErrors
+            },
         logLevel,
         logConnections = logConnections || logLevel <= CLLInfo,
         logServerHosts = logServerHosts || logLevel <= CLLInfo,
@@ -239,6 +264,11 @@ coreChatOptsP appDir defaultDbFileName = do
   where
     useTcpTimeout p t = 1000000 * if t > 0 then t else maybe 7 (const 15) p
     defaultDbFilePath = combine appDir defaultDbFileName
+
+defaultHostMode :: Maybe SocksProxyWithAuth -> HostMode
+defaultHostMode = \case
+  Just (SocksProxyWithAuth SocksIsolateByAuth _) -> HMOnionViaSocks;
+  _ -> HMPublic
 
 chatOptsP :: FilePath -> FilePath -> Parser ChatOpts
 chatOptsP appDir defaultDbFileName = do
@@ -359,6 +389,9 @@ parseProtocolServers = eitherReader $ parseAll protocolServersP . B.pack
 
 strParse :: StrEncoding a => ReadM a
 strParse = eitherReader $ parseAll strP . encodeUtf8 . T.pack
+
+parseHostMode :: ReadM HostMode
+parseHostMode = eitherReader $ textToHostMode . T.pack
 
 parseServerPort :: ReadM (Maybe String)
 parseServerPort = eitherReader $ parseAll serverPortP . B.pack
