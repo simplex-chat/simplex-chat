@@ -542,19 +542,19 @@ $(JQ.deriveJSON defaultJSON ''QuotedMsg)
 -- this limit reserves space for metadata in forwarded messages
 -- 15780 (limit used for fileChunkSize) - 161 (x.grp.msg.forward overhead) = 15619, round to 15610
 maxEncodedMsgLength :: Int
-maxEncodedMsgLength = 15594
+maxEncodedMsgLength = 15602
 
 -- maxEncodedMsgLength - 2222, see e2eEncUserMsgLength in agent
 maxCompressedMsgLength :: Int
-maxCompressedMsgLength = 13372
+maxCompressedMsgLength = 13380
 
 -- maxEncodedMsgLength - delta between MSG and INFO + 100 (returned for forward overhead)
 -- delta between MSG and INFO = e2eEncUserMsgLength (no PQ) - e2eEncConnInfoLength (no PQ) = 1008
 maxEncodedInfoLength :: Int
-maxEncodedInfoLength = 14686
+maxEncodedInfoLength = 14694
 
 maxCompressedInfoLength :: Int
-maxCompressedInfoLength = 10960 -- maxEncodedInfoLength - 3726, see e2eEncConnInfoLength in agent
+maxCompressedInfoLength = 10968 -- maxEncodedInfoLength - 3726, see e2eEncConnInfoLength in agent
 
 data EncodedChatMessage = ECMEncoded ByteString | ECMLarge
 
