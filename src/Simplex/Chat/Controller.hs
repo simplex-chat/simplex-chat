@@ -87,7 +87,7 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, p
 import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), CorrId, NtfServer, ProtocolType (..), ProtocolTypeI, QueueId, SMPMsgMeta (..), SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServer, userProtocol)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, simplexMQVersion)
-import Simplex.Messaging.Transport.Client (SocksProxy, TransportHost)
+import Simplex.Messaging.Transport.Client (SocksProxyWithAuth, TransportHost)
 import Simplex.Messaging.Util (allFinally, catchAllErrors, catchAllErrors', tryAllErrors, tryAllErrors', (<$$>))
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Invitation (RCSignedInvitation, RCVerifiedInvitation)
@@ -974,7 +974,7 @@ data AppFilePathsConfig = AppFilePathsConfig
   deriving (Show)
 
 data SimpleNetCfg = SimpleNetCfg
-  { socksProxy :: Maybe SocksProxy,
+  { socksProxy :: Maybe SocksProxyWithAuth,
     socksMode :: SocksMode,
     smpProxyMode_ :: Maybe SMPProxyMode,
     smpProxyFallback_ :: Maybe SMPProxyFallback,

@@ -31,7 +31,7 @@ import Simplex.Messaging.Client (SocksMode (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI, SMPServerWithAuth, XFTPServerWithAuth)
-import Simplex.Messaging.Transport.Client (defaultSocksProxy)
+import Simplex.Messaging.Transport.Client (SocksProxyWithAuth (..), SocksAuth (..), defaultSocksProxy)
 import System.FilePath (combine)
 
 data ChatOpts = ChatOpts
@@ -123,7 +123,7 @@ coreChatOptsP appDir defaultDbFileName = do
           <> value []
       )
   socksProxy <-
-    flag' (Just defaultSocksProxy) (short 'x' <> help "Use local SOCKS5 proxy at :9050")
+    flag' (Just $ SocksProxyWithAuth SocksIsolateByAuth defaultSocksProxy) (short 'x' <> help "Use local SOCKS5 proxy at :9050")
       <|> option
         strParse
         ( long "socks-proxy"
