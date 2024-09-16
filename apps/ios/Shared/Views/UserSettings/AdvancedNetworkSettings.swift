@@ -8,6 +8,7 @@
 
 import SwiftUI
 import SimpleXChat
+import Network
 
 private let secondsLabel =  NSLocalizedString("sec", comment: "network option")
 
@@ -38,8 +39,9 @@ struct AdvancedNetworkSettings: View {
     @State private var showSaveDialog = false
     @State private var useSocksProxy = false
     @State private var socksProxy = ProxyComponents()
+    @State private var currentSocksProxy = ProxyComponents()
 
-    struct ProxyComponents {
+    struct ProxyComponents: Equatable {
         var host: String = ""
         var port: String = ""
         var auth: Bool = false
@@ -47,7 +49,16 @@ struct AdvancedNetworkSettings: View {
         var password: String = ""
         
         var valid: Bool {
-            host != "" && port != "" && (!auth || username != "" || password != "")
+            let hostOk = switch NWEndpoint.Host(host) {
+            case .ipv4: true
+            case .ipv6: true
+            default: false
+            }
+            return if let portNum = Int(port) {
+                hostOk && portNum > 0 && portNum <= 65535 && (!auth || username != "" || password != "")
+            } else {
+                false
+            }
         }
         
         var string: String {
@@ -156,24 +167,41 @@ struct AdvancedNetworkSettings: View {
                 }
 
                 Section {
-                    Toggle("Use proxy", isOn: $useSocksProxy)
+                    Toggle("Use SOCKS proxy", isOn: $useSocksProxy)
                     if useSocksProxy {
                         TextField("IP address", text: $socksProxy.host)
                         TextField("Port", text: $socksProxy.port)
-                        Toggle("Server password", isOn: $socksProxy.auth)
+                        Toggle("Proxy requires password", isOn: $socksProxy.auth)
                         if socksProxy.auth {
                             TextField("Username", text: $socksProxy.username)
                             TextField("Password", text: $socksProxy.password)
                         }
                     }
                 } header: {
-                    Text("SOCKS proxy").foregroundColor(theme.colors.secondary)
+                    HStack {
+                        Text("SOCKS proxy").foregroundColor(theme.colors.secondary)
+                        if useSocksProxy && !socksProxy.valid {
+                            Spacer()
+                            Image(systemName: "exclamationmark.circle.fill").foregroundColor(.red)
+                        }
+                    }
                 } footer: {
                     if socksProxy.auth {
                         Text("Credentials are sent unencrypted.").foregroundColor(theme.colors.secondary)
                     }
                 }
-                
+                .onChange(of: useSocksProxy) { _ in
+                    socksProxy = ProxyComponents()
+                }
+                .onChange(of: socksProxy.auth) { _ in
+                    socksProxy.username = ""
+                    socksProxy.password = ""
+                }
+                .onChange(of: socksProxy) { sp in
+                    if sp.valid && sp.string != netCfg.socksProxy {
+                        netCfg.socksProxy = sp.string
+                    }
+                }
                 Section("TCP connection") {
                     timeoutSettingPicker("TCP connection timeout", selection: $netCfg.tcpConnectTimeout, values: [10_000000, 15_000000, 20_000000, 30_000000, 45_000000, 60_000000, 90_000000], label: secondsLabel)
                     timeoutSettingPicker("Protocol timeout", selection: $netCfg.tcpTimeout, values: [5_000000, 7_000000, 10_000000, 15_000000, 20_000000, 30_000000], label: secondsLabel)
@@ -211,7 +239,7 @@ struct AdvancedNetworkSettings: View {
                     Button("Save and reconnect") {
                         showSettingsAlert = .update
                     }
-                    .disabled(netCfg == currentNetCfg)
+                    .disabled(netCfg == currentNetCfg && (!useSocksProxy || socksProxy.valid))
                 }
             }
         }
