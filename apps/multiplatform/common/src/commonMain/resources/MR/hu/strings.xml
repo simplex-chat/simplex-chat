@@ -325,7 +325,7 @@
     <string name="contact_connection_pending">kapcsolódás…</string>
     <string name="chat_database_deleted">Csevegési adatbázis törölve</string>
     <string name="group_member_status_introduced">kapcsolódás (bejelentve)</string>
-    <string name="create_group_link">Hivatkozás létrehozása a csoporthoz</string>
+    <string name="create_group_link">Csoporthivatkozás létrehozása</string>
     <string name="chat_console">Csevegési konzol</string>
     <string name="delete_files_and_media_for_all_users">Fájlok törlése minden csevegési profilból</string>
     <string name="smp_server_test_delete_queue">Várólista törlése</string>
@@ -499,7 +499,7 @@
     <string name="failed_to_parse_chats_title">A csevegések betöltése sikertelen</string>
     <string name="connect_plan_group_already_exists">A csoport már létezik!</string>
     <string name="v4_4_french_interface">Francia kezelőfelület</string>
-    <string name="v4_2_group_links">Csoport hivatkozások</string>
+    <string name="v4_2_group_links">Csoporthivatkozások</string>
     <string name="v5_1_message_reactions_descr">Végre, megvannak! 🚀</string>
     <string name="error_starting_chat">Hiba a csevegés elindításakor</string>
     <string name="group_profile_is_stored_on_members_devices">A csoport profilja a tagok eszközein tárolódik, nem a kiszolgálókon.</string>
@@ -515,7 +515,7 @@
     <string name="favorite_chat">Kedvenc</string>
     <string name="v4_6_group_moderation">Csoport moderáció</string>
     <string name="choose_file">Fájl</string>
-    <string name="group_link">Csoport hivatkozás</string>
+    <string name="group_link">Csoporthivatkozás</string>
     <string name="snd_conn_event_ratchet_sync_required">titkosítás újraegyeztetés szükséges %s számára</string>
     <string name="failed_to_active_user_title">Hiba a profil váltásakor!</string>
     <string name="settings_experimental_features">Kísérleti funkciók</string>
@@ -536,7 +536,7 @@
     <string name="group_is_decentralized">Teljesen decentralizált - kizárólag tagok számára látható.</string>
     <string name="file_with_path">Fájl: %s</string>
     <string name="icon_descr_hang_up">Hívás befejezése</string>
-    <string name="error_deleting_link_for_group">Hiba a csoport hivatkozásának törlésekor</string>
+    <string name="error_deleting_link_for_group">Hiba a csoporthivatkozás törlésekor</string>
     <string name="file_saved">Fájl elmentve</string>
     <string name="fix_connection_question">Kapcsolat javítása?</string>
     <string name="files_and_media">Fájlok és médiatartalom</string>
@@ -552,7 +552,7 @@
     <string name="failed_to_parse_chat_title">A csevegés betöltése sikertelen</string>
     <string name="smp_servers_enter_manually">Kiszolgáló megadása kézzel</string>
     <string name="file_will_be_received_when_contact_is_online">A fájl akkor érkezik meg, amikor a küldője elérhető lesz, várjon, vagy ellenőrizze később!</string>
-    <string name="error_creating_link_for_group">Hiba a csoport hivatkozásának létrehozásakor</string>
+    <string name="error_creating_link_for_group">Hiba a csoporthivatkozás létrehozásakor</string>
     <string name="from_gallery_button">A galériából</string>
     <string name="receipts_groups_enable_keep_overrides">Engedélyezés (csoport felülírások megtartásával)</string>
     <string name="error_deleting_contact">Hiba az ismerős törlésekor</string>
@@ -567,7 +567,7 @@
     <string name="group_members_can_send_files">A csoport tagjai küldhetnek fájlokat és médiatartalmakat.</string>
     <string name="delete_after">Törlés ennyi idő után</string>
     <string name="error_changing_message_deletion">Hiba a beállítás megváltoztatásakor</string>
-    <string name="error_updating_link_for_group">Hiba a csoport hivatkozásának frissítésekor</string>
+    <string name="error_updating_link_for_group">Hiba a csoporthivatkozás frissítésekor</string>
     <string name="group_member_status_group_deleted">a csoport törölve</string>
     <string name="snd_group_event_group_profile_updated">csoportprofil frissítve</string>
     <string name="error_deleting_pending_contact_connection">Hiba a függőben lévő ismerős kapcsolatának törlésekor</string>
@@ -752,7 +752,7 @@
     <string name="notification_new_contact_request">Új ismerőskérelem</string>
     <string name="joining_group">Csatlakozás a csoporthoz</string>
     <string name="linked_desktop_options">Társított számítógép beállítások</string>
-    <string name="rcv_group_event_invited_via_your_group_link">meghíva az ön csoport hivatkozásán keresztül</string>
+    <string name="rcv_group_event_invited_via_your_group_link">meghíva az ön csoporthivatkozásán keresztül</string>
     <string name="rcv_group_event_member_left">elhagyta a csoportot</string>
     <string name="linked_desktops">Társított számítógépek</string>
     <string name="la_no_app_password">Nincs alkalmazás jelkód</string>
@@ -829,7 +829,7 @@
 \n2. Az üzenet visszafejtése sikertelen volt, mert ön, vagy az ismerőse régebbi adatbázis biztonsági mentést használt.
 \n3. A kapcsolat sérült.</string>
     <string name="group_member_role_observer">megfigyelő</string>
-    <string name="description_via_group_link_incognito">inkognitó a csoport hivatkozásán keresztül</string>
+    <string name="description_via_group_link_incognito">inkognitó a csoporthivatkozáson keresztül</string>
     <string name="network_use_onion_hosts_prefer_desc">Onion kiszolgálók használata, ha azok rendelkezésre állnak.</string>
     <string name="invite_friends">Ismerősök meghívása</string>
     <string name="color_surface">Menük és figyelmeztetések</string>
@@ -904,7 +904,7 @@
     <string name="settings_notification_preview_mode_title">Előnézet megjelenítése</string>
     <string name="callstate_waiting_for_confirmation">várakozás a visszaigazolásra…</string>
     <string name="stop_file__action">Fájl megállítása</string>
-    <string name="description_via_group_link">a csoport hivatkozásán keresztül</string>
+    <string name="description_via_group_link">a csoporthivatkozáson keresztül</string>
     <string name="network_option_ping_interval">PING időköze</string>
     <string name="send_disappearing_message">Eltűnő üzenet küldése</string>
     <string name="self_destruct_passcode">Önmegsemmisítési jelkód</string>
@@ -1020,7 +1020,7 @@
     <string name="profile_password">Profiljelszó</string>
     <string name="theme">Téma</string>
     <string name="remove_passphrase_from_settings">Jelmondat eltávolítása a beállításokból?</string>
-    <string name="simplex_link_group">SimpleX csoport hivatkozás</string>
+    <string name="simplex_link_group">SimpleX csoporthivatkozás</string>
     <string name="icon_descr_waiting_for_image">Képre várakozás</string>
     <string name="self_destruct">Önmegsemmisítés</string>
     <string name="callstate_waiting_for_answer">várakozás a válaszra…</string>
