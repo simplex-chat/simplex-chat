@@ -137,7 +137,9 @@ struct ChatView: View {
                 }
             }
         }
-        .sheet(item: $forwardedChatItems) { items in
+        .sheet(item: $forwardedChatItems) {
+            selectedChatItems = nil
+        } content: { items in
             if #available(iOS 16.0, *) {
                 ChatItemForwardingView(chatItems: items, fromChatInfo: chat.chatInfo, composeState: $composeState)
                     .presentationDetents([.fraction(0.8)])
