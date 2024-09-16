@@ -725,14 +725,13 @@ struct ChatView: View {
                         if validItems.count > 0 {
                             showAlert(
                                 String.localizedStringWithFormat(
-                                    NSLocalizedString("Forward %d message(s)", comment: "alert title"),
+                                    NSLocalizedString("Forward %d message(s)?", comment: "alert title"),
                                     validItems.count
                                 ),
                                 message: forwardConfirmation.reason + "\n" + NSLocalizedString(
                                     "Forward messages without files?", 
                                     comment: "alert message"
-                                ),
-                                style: .actionSheet
+                                )
                             ) {
                                 switch forwardConfirmation {
                                 case let .filesNotAccepted(fileIds):
@@ -765,13 +764,13 @@ struct ChatView: View {
         }
 
         func forward(_ items: [Int64]) -> UIAlertAction {
-            alertAction(NSLocalizedString("Forward", comment: "alert action")) {
+            alertAction(NSLocalizedString("Forward messages", comment: "alert action")) {
                 openForwardingSheet(items)
             }
         }
 
         func download(_ fileIds: [Int64]) -> UIAlertAction {
-            alertAction(NSLocalizedString("Download", comment: "alert action")) {
+            alertAction(NSLocalizedString("Download files", comment: "alert action")) {
                 Task {
                     if let user = ChatModel.shared.currentUser {
                         await receiveFiles(user: user, fileIds: fileIds)
