@@ -4547,7 +4547,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           checkSndInlineFTComplete conn msgId
           cis <- withStore $ \db -> do
             cis <- updateDirectItemsStatus' db ct conn msgId (CISSndSent SSPComplete)
-            forM cis $ \ci -> liftIO $ setDirectSndChatItemViaProxy db user ct ci (isJust proxy)
+            liftIO $ forM cis $ \ci -> setDirectSndChatItemViaProxy db user ct ci (isJust proxy)
           let acis = map ctItem cis
           unless (null acis) $ toView $ CRChatItemsStatusesUpdated user acis
           where
@@ -6726,7 +6726,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     updateDirectItemsStatus' :: DB.Connection -> Contact -> Connection -> AgentMsgId -> CIStatus 'MDSnd -> ExceptT StoreError IO [ChatItem 'CTDirect 'MDSnd]
     updateDirectItemsStatus' db ct@Contact {contactId} Connection {connId} msgId newStatus = do
       items <- liftIO $ getDirectChatItemsByAgentMsgId db user contactId connId msgId
-      catMaybes <$> forM items updateItem
+      catMaybes <$> mapM updateItem items
       where
         updateItem :: CChatItem 'CTDirect -> ExceptT StoreError IO (Maybe (ChatItem 'CTDirect 'MDSnd))
         updateItem = \case
