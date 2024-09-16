@@ -1084,15 +1084,15 @@ func receiveFiles(user: any UserLike, fileIds: [Int64], userApprovedRelays: Bool
             }
             .sorted()
             .joined(separator: ", ")
-        showAlert(
-            NSLocalizedString("Unknown servers!", comment: "alert title"),
-            message: NSLocalizedString(
-                "Without Tor or VPN, your IP address will be visible to these XFTP relays: \(srvs).",
-                comment: "alert message"
-            )
-        ) {
-            [
-                alertAction("Download") { 
+        DispatchQueue.main.async {
+            showAlert(
+                title: NSLocalizedString("Unknown servers!", comment: "alert title"),
+                message: NSLocalizedString(
+                    "Without Tor or VPN, your IP address will be visible to these XFTP relays: \(srvs).",
+                    comment: "alert message"
+                ),
+                buttonTitle: NSLocalizedString("Download", comment: "alert button"),
+                buttonAction: {
                     Task {
                         logger.debug("apiReceiveFile fileNotApproved alert - in Task")
                         if let user = ChatModel.shared.currentUser {
@@ -1100,8 +1100,8 @@ func receiveFiles(user: any UserLike, fileIds: [Int64], userApprovedRelays: Bool
                         }
                     }
                 },
-                alertAction("Cancel", style: .cancel)
-            ]
+                cancelButton: true
+            )
         }
     }
 }
