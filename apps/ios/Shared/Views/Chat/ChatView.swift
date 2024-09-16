@@ -774,10 +774,7 @@ struct ChatView: View {
             alertAction(NSLocalizedString("Download", comment: "alert action")) {
                 Task {
                     if let user = ChatModel.shared.currentUser {
-                        // TODO: Only show unknown server alert once
-                        for fileId in fileIds {
-                            await receiveFile(user: user, fileId: fileId)
-                        }
+                        await receiveFiles(user: user, fileIds: fileIds)
                     }
                 }
             }
