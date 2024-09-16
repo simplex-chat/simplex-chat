@@ -703,7 +703,7 @@
 /* No comment provided by engineer. */
 "Can't invite contacts!" = "Kişiler davet edilemiyor!";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Cancel" = "İptal et";
 
 /* No comment provided by engineer. */
@@ -1931,9 +1931,6 @@
 "Full name (optional)" = "Bütün isim (opsiyonel)";
 
 /* No comment provided by engineer. */
-"Full name:" = "Bütün isim:";
-
-/* No comment provided by engineer. */
 "Fully decentralized – visible only to members." = "Tamamiyle merkezi olmayan - sadece kişilere görünür.";
 
 /* No comment provided by engineer. */
@@ -2992,12 +2989,6 @@
 "Profile images" = "Profil resimleri";
 
 /* No comment provided by engineer. */
-"Profile name" = "Profil ismi";
-
-/* No comment provided by engineer. */
-"Profile name:" = "Profil ismi:";
-
-/* No comment provided by engineer. */
 "Profile password" = "Profil parolası";
 
 /* No comment provided by engineer. */
@@ -3271,10 +3262,11 @@
 /* No comment provided by engineer. */
 "Safer groups" = "Daha güvenli gruplar";
 
-/* chat item action */
+/* alert button
+   chat item action */
 "Save" = "Kaydet";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Save (and notify contacts)" = "Kaydet (ve kişilere bildir)";
 
 /* No comment provided by engineer. */
@@ -3288,9 +3280,6 @@
 
 /* No comment provided by engineer. */
 "Save archive" = "Arşivi kaydet";
-
-/* No comment provided by engineer. */
-"Save auto-accept settings" = "Otomatik kabul et ayarlarını kaydet";
 
 /* No comment provided by engineer. */
 "Save group profile" = "Grup profilini kaydet";
@@ -3312,9 +3301,6 @@
 
 /* No comment provided by engineer. */
 "Save servers?" = "Sunucular kaydedilsin mi?";
-
-/* No comment provided by engineer. */
-"Save settings?" = "Ayarlar kaydedilsin mi?";
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "Hoşgeldin mesajı kaydedilsin mi?";
@@ -4544,7 +4530,7 @@
 "Your profile **%@** will be shared." = "Profiliniz **%@** paylaşılacaktır.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Profiliniz cihazınızda saklanır ve sadece kişilerinizle paylaşılır.\nSimpleX sunucuları profilinizi göremez.";
+"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Profiliniz cihazınızda saklanır ve sadece kişilerinizle paylaşılır. SimpleX sunucuları profilinizi göremez.";
 
 /* No comment provided by engineer. */
 "Your profile, contacts and delivered messages are stored on your device." = "Profiliniz, kişileriniz ve gönderilmiş mesajlar cihazınızda saklanır.";
