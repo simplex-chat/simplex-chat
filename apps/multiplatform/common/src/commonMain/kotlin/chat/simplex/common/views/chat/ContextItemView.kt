@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.getLoadedFilePath
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
@@ -62,13 +63,16 @@ fun ContextItemView(
     )
   }
 
-  fun attachment(contextItem: ChatItem): ImageResource? =
-    when (contextItem.content.msgContent) {
-      is MsgContent.MCFile -> MR.images.ic_draft_filled
+  fun attachment(contextItem: ChatItem): ImageResource? {
+    val fileIsLoaded = getLoadedFilePath(contextItem.file) != null
+
+    return when (contextItem.content.msgContent) {
+      is MsgContent.MCFile -> if (fileIsLoaded) MR.images.ic_draft_filled else null
       is MsgContent.MCImage -> MR.images.ic_image
-      is MsgContent.MCVoice -> MR.images.ic_play_arrow_filled
+      is MsgContent.MCVoice ->  if (fileIsLoaded) MR.images.ic_play_arrow_filled else null
       else -> null
     }
+  }
 
   @Composable
   fun ContextMsgPreview(contextItem: ChatItem, lines: Int) {
