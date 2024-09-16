@@ -215,10 +215,10 @@ struct ActiveCallView: View {
                 return
             }
             if case let .chatItemsStatusesUpdated(_, chatItems) = msg,
-               chatItems.contains(where: {
-                   $0.chatInfo.id == call.contact.id &&
-                   $0.chatItem.content.isSndCall &&
-                   $0.chatItem.meta.itemStatus.isSndRcvd
+               chatItems.contains(where: { ci in
+                   ci.chatInfo.id == call.contact.id &&
+                   ci.chatItem.content.isSndCall &&
+                   ci.chatItem.meta.itemStatus.isSndRcvd
                }) {
                 CallSoundsPlayer.shared.startInCallSound()
                 ChatReceiver.shared.messagesChannel = nil
