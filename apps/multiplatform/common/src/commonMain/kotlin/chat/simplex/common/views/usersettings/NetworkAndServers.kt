@@ -123,7 +123,7 @@ fun NetworkAndServersView() {
 
         if (currentRemoteHost == null) {
           UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy)
-          SettingsActionItem(painterResource(MR.images.ic_settings_ethernet), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkUseSocksProxy.value, appPrefs.networkProxyHostPort, onionHosts, false, it) }})
+          SettingsActionItem(painterResource(MR.images.ic_settings_ethernet), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkUseSocksProxy.value, appPrefs.networkProxyHostPort, onionHosts, sessionMode = appPrefs.networkSessionMode.get(), false, it) }})
           SettingsActionItem(painterResource(MR.images.ic_cable), stringResource(MR.strings.network_settings), { ModalManager.start.showCustomModal { AdvancedNetworkSettingsView(showModal, it) } })
           if (networkUseSocksProxy.value) {
             SectionTextFooter(annotatedStringResource(MR.strings.socks_proxy_setting_limitations))
@@ -164,7 +164,7 @@ fun NetworkAndServersView() {
   val showModal = { it: @Composable ModalData.() -> Unit ->  ModalManager.fullscreen.showModal(content = it) }
   val showCustomModal = { it: @Composable (close: () -> Unit) -> Unit -> ModalManager.fullscreen.showCustomModal { close -> it(close) }}
   UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy)
-  SettingsActionItem(painterResource(MR.images.ic_settings_ethernet), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkUseSocksProxy.value, networkProxyHostPort, onionHosts, true, it) } })
+  SettingsActionItem(painterResource(MR.images.ic_settings_ethernet), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkUseSocksProxy.value, networkProxyHostPort, onionHosts, sessionMode.value, true, it) } })
   if (developerTools) {
     SessionModePicker(sessionMode, showModal, updateSessionMode)
   }
@@ -204,6 +204,7 @@ fun SocksProxySettings(
   networkUseSocksProxy: Boolean,
   networkProxyHostPort: SharedPreference<String?> = appPrefs.networkProxyHostPort,
   onionHosts: MutableState<OnionHosts>,
+  sessionMode: TransportSessionMode,
   migration: Boolean,
   close: () -> Unit
 ) {
@@ -365,7 +366,7 @@ fun SocksProxySettings(
             )
           }
         }
-        SectionTextFooter(proxyAuthModeUnsaved.value.text)
+        SectionTextFooter(proxyAuthModeUnsaved.value.text(sessionMode))
       }
 
       SectionDividerSpaced(maxBottomPadding = false, maxTopPadding = true)
@@ -451,9 +452,8 @@ enum class ProxyAuthenticationMode {
   NO_AUTH,
   USERNAME_PASSWORD;
 
-  val text: String
-    get() = when (this) {
-      ISOLATE_BY_AUTH -> generalGetString(if (appPrefs.networkSessionMode.get() == TransportSessionMode.User) MR.strings.network_proxy_auth_mode_isolate_by_auth_user else MR.strings.network_proxy_auth_mode_isolate_by_auth_entity)
+  fun text(sessionMode: TransportSessionMode): String = when (this) {
+      ISOLATE_BY_AUTH -> generalGetString(if (sessionMode == TransportSessionMode.User) MR.strings.network_proxy_auth_mode_isolate_by_auth_user else MR.strings.network_proxy_auth_mode_isolate_by_auth_entity)
       NO_AUTH -> generalGetString(MR.strings.network_proxy_auth_mode_no_auth)
       USERNAME_PASSWORD -> generalGetString(MR.strings.network_proxy_auth_mode_username_password)
     }
