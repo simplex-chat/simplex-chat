@@ -92,7 +92,7 @@ struct SelectedItemsBottomToolbar: View {
                         .resizable()
                         .scaledToFit()
                         .frame(width: 20, height: 20, alignment: .center)
-                        .foregroundColor(!forwardEnabled || allButtonsDisabled ? theme.colors.secondary : .accentColor)
+                        .foregroundColor(!forwardEnabled || allButtonsDisabled ? theme.colors.secondary : theme.colors.primary)
                 }
                 .disabled(!forwardEnabled || allButtonsDisabled)
             }
