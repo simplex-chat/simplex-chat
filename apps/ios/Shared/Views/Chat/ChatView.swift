@@ -138,7 +138,7 @@ struct ChatView: View {
             }
         }
         .sheet(item: $forwardedChatItems) {
-            selectedChatItems = nil
+            if composeState.forwarding { selectedChatItems = nil }
         } content: { items in
             if #available(iOS 16.0, *) {
                 ChatItemForwardingView(chatItems: items, fromChatInfo: chat.chatInfo, composeState: $composeState)
