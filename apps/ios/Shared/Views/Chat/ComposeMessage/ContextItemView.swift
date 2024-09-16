@@ -68,9 +68,11 @@ struct ContextItemView: View {
         return attachment() + messageText(contextItem.text, contextItem.formattedText, nil, preview: true, showSecrets: false, secondaryColor: theme.colors.secondary)
 
         func attachment() -> Text {
-            let isFileLoaded = getLoadedFileSource(contextItem.file) != nil
+            let isFileLoaded = if let fileSource = getLoadedFileSource(contextItem.file) {
+                FileManager.default.fileExists(atPath: getAppFilePath(fileSource.filePath).path)
+            } else { false }
             switch contextItem.content.msgContent {
-            case .file: return isFileLoaded ? image("ant") : Text("")
+            case .file: return isFileLoaded ? image("doc.fill") : Text("")
             case .image: return image("photo")
             case .voice: return isFileLoaded ? image("play.fill") : Text("")
             default: return Text("")
