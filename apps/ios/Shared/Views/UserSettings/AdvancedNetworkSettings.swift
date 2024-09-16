@@ -278,8 +278,9 @@ struct AdvancedNetworkSettings: View {
                     socksProxy.password = ""
                 }
                 .onChange(of: socksProxy) { sp in
-                    if sp.valid && sp.string != netCfg.socksProxy {
-                        netCfg.socksProxy = sp.string
+                    let string = sp.toProxyString()
+                    if let string, sp.valid, string != netCfg.socksProxy {
+                        netCfg.socksProxy = string
                     }
                 }
                 Section("TCP connection") {
@@ -328,10 +329,6 @@ struct AdvancedNetworkSettings: View {
         }
         .onChange(of: enableKeepAlive) { on in
             netCfg.tcpKeepAlive = on ? (currentNetCfg.tcpKeepAlive ?? KeepAliveOpts.defaults) : nil
-        }
-        .onChange(of: socksProxy) { p in
-            logger.debug("LALAL UP \(String(describing: p))")
-            netCfg.socksProxy = p.toProxyString()
         }
         .onAppear {
             if cfgLoaded { return }
