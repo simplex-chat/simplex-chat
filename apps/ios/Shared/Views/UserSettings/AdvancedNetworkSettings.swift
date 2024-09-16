@@ -36,7 +36,31 @@ struct AdvancedNetworkSettings: View {
     @State private var showSettingsAlert: NetworkSettingsAlert?
     @State private var onionHosts: OnionHosts = .no
     @State private var showSaveDialog = false
+    @State private var useSocksProxy = false
+    @State private var socksProxy = ProxyComponents()
 
+    struct ProxyComponents {
+        var host: String = ""
+        var port: String = ""
+        var auth: Bool = false
+        var username: String = ""
+        var password: String = ""
+        
+        var valid: Bool {
+            host != "" && port != "" && (!auth || username != "" || password != "")
+        }
+        
+        var string: String {
+            auth
+            ? "\(username):\(password)@\(normalizedHost):\(port)"
+            : "@\(normalizedHost):\(port)"
+        }
+        
+        var normalizedHost: String {
+            host
+        }
+    }
+    
     var body: some View {
         VStack {
             List {
@@ -131,6 +155,25 @@ struct AdvancedNetworkSettings: View {
                     }
                 }
 
+                Section {
+                    Toggle("Use proxy", isOn: $useSocksProxy)
+                    if useSocksProxy {
+                        TextField("IP address", text: $socksProxy.host)
+                        TextField("Port", text: $socksProxy.port)
+                        Toggle("Server password", isOn: $socksProxy.auth)
+                        if socksProxy.auth {
+                            TextField("Username", text: $socksProxy.username)
+                            TextField("Password", text: $socksProxy.password)
+                        }
+                    }
+                } header: {
+                    Text("SOCKS proxy").foregroundColor(theme.colors.secondary)
+                } footer: {
+                    if socksProxy.auth {
+                        Text("Credentials are sent unencrypted.").foregroundColor(theme.colors.secondary)
+                    }
+                }
+                
                 Section("TCP connection") {
                     timeoutSettingPicker("TCP connection timeout", selection: $netCfg.tcpConnectTimeout, values: [10_000000, 15_000000, 20_000000, 30_000000, 45_000000, 60_000000, 90_000000], label: secondsLabel)
                     timeoutSettingPicker("Protocol timeout", selection: $netCfg.tcpTimeout, values: [5_000000, 7_000000, 10_000000, 15_000000, 20_000000, 30_000000], label: secondsLabel)
