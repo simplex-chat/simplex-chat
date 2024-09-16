@@ -38,7 +38,7 @@ fun NetworkAndServersView() {
   val netCfg = remember { chatModel.controller.getNetCfg() }
   val networkUseSocksProxy: MutableState<Boolean> = remember { mutableStateOf(netCfg.useSocksProxy) }
 
-  val proxyPort = remember { derivedStateOf { chatModel.controller.appPrefs.networkProxyHostPort.state.value?.split(":")?.lastOrNull()?.toIntOrNull() ?: 9050 } }
+  val proxyPort = remember { derivedStateOf { ProxyComponents.from(appPrefs.networkProxyHostPort.state.value).port } }
   NetworkAndServersLayout(
     currentRemoteHost = currentRemoteHost,
     networkUseSocksProxy = networkUseSocksProxy,
