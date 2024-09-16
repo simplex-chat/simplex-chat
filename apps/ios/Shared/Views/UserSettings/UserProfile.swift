@@ -10,7 +10,9 @@ import SwiftUI
 import SimpleXChat
 
 struct UserProfile: View {
+    @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
+    @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var radius = defaultProfileImageCorner
     @State private var profile = Profile(displayName: "", fullName: "")
     @State private var currentProfileHash: Int?
     // Modals
@@ -23,6 +25,29 @@ struct UserProfile: View {
 
     var body: some View {
         List {
+            Group {
+                if profile.image != nil {
+                    ZStack(alignment: .bottomTrailing) {
+                        ZStack(alignment: .topTrailing) {
+                            profileImageView(profile.image)
+                                .onTapGesture { showChooseSource = true }
+                            overlayButton("multiply", edge: .top) { profile.image = nil }
+                        }
+                        overlayButton("camera", edge: .bottom) { showChooseSource = true }
+                    }
+                } else {
+                    ZStack(alignment: .center) {
+                        profileImageView(profile.image)
+                        editImageButton { showChooseSource = true }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+            .padding(.top)
+            .contentShape(Rectangle())
+
             Section {
                 HStack {
                     TextField("Enter your name…", text: $profile.displayName)
@@ -35,45 +60,34 @@ struct UserProfile: View {
                         }
                     }
                 }
-                if showFullName {
+                if let user = chatModel.currentUser, showFullName(user) {
                     TextField("Full name", text: $profile.fullName)
                 }
-                Button(action: saveProfile) {
-                    Label("Save and notify contacts", systemImage: "checkmark")
-                }.disabled(!canSaveProfile)
-            } header: {
-                profileImageView(profile.image)
-                    .padding(12)
-                    .overlay {
-                        if profile.image != nil {
-                            overlayButton("xmark", alignmnet: .topTrailing, drawsBackground: false) {
-                                profile.image = nil
-                            }
-                            overlayButton("camera", alignmnet: .bottomTrailing) {
-                                showChooseSource = true
-                            }.padding(8)
-                        } else {
-                            editImageButton { showChooseSource = true }
-                        }
-                    }
-                    .onTapGesture { showChooseSource = true }
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.bottom)
             } footer: {
                 Text("Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.")
+            }
+
+            Section {
+                Button(action: getCurrentProfile) {
+                    Text("Reset")
+                }
+                .disabled(currentProfileHash == profile.hashValue)
+                Button(action: saveProfile) {
+                    Text("Save (and notify contacts)")
+                }
+                .disabled(!canSaveProfile)
             }
         }
         // Lifecycle
         .onAppear {
-            loadProfile()
-            focusDisplayName = true
+            getCurrentProfile()
         }
         .onDisappear {
             if canSaveProfile {
                 showAlert(
-                    title: NSLocalizedString("User Profile", comment: "alert title"),
-                    message: NSLocalizedString("Settings were changed.", comment: "alert message"),
-                    buttonTitle: NSLocalizedString("Save", comment: "alert button"),
+                    title: NSLocalizedString("Update profile?", comment: "alert title"),
+                    message: NSLocalizedString("Your profile was changed.", comment: "alert message"),
+                    buttonTitle: NSLocalizedString("Save and notify contacts", comment: "alert button"),
                     buttonAction: saveProfile,
                     cancelButton: true
                 )
@@ -119,22 +133,25 @@ struct UserProfile: View {
     @ViewBuilder
     private func overlayButton(
         _ systemName: String,
-        alignmnet: Alignment,
-        drawsBackground: Bool = true,
+        edge: Edge.Set,
         action: @escaping () -> Void
     ) -> some View {
         Image(systemName: systemName)
-            .foregroundStyle(Color.accentColor)
-            .font(.system(size: 18, weight: .medium))
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(height: 12)
+            .foregroundColor(theme.colors.primary)
             .padding(6)
-            .background(drawsBackground ? Color(.systemBackground).opacity(0.8) : Color.clear)
+            .frame(width: 36, height: 36, alignment: .center)
+            .background(radius >= 20 ? Color.clear : theme.colors.background.opacity(0.5))
             .clipShape(Circle())
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignmnet)
+            .contentShape(Circle())
+            .padding([.trailing, edge], -12)
             .onTapGesture(perform: action)
     }
 
-    private var showFullName: Bool {
-        profile.fullName != "" && profile.fullName != profile.displayName
+    private func showFullName(_ user: User) -> Bool {
+        user.profile.fullName != "" && user.profile.fullName != user.profile.displayName
     }
     
     private var canSaveProfile: Bool {
@@ -150,8 +167,8 @@ struct UserProfile: View {
                 profile.displayName = profile.displayName.trimmingCharacters(in: .whitespaces)
                 if let (newProfile, _) = try await apiUpdateProfile(profile: profile) {
                     await MainActor.run {
-                        ChatModel.shared.updateCurrentUser(newProfile)
-                        loadProfile()
+                        chatModel.updateCurrentUser(newProfile)
+                        getCurrentProfile()
                     }
                 } else {
                     alert = .duplicateUserError
@@ -162,8 +179,8 @@ struct UserProfile: View {
         }
     }
 
-    private func loadProfile() {
-        if let user = ChatModel.shared.currentUser {
+    private func getCurrentProfile() {
+        if let user = chatModel.currentUser {
             profile = fromLocalProfile(user.profile)
             currentProfileHash = profile.hashValue
         }
