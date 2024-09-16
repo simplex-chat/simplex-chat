@@ -76,7 +76,7 @@ import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration, withTransaction, withTransactionPriority)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
-import Simplex.Messaging.Client (SMPProxyFallback (..), SMPProxyMode (..), SocksMode (..))
+import Simplex.Messaging.Client (HostMode (..), SMPProxyFallback (..), SMPProxyMode (..), SocksMode (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -87,7 +87,7 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, p
 import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), CorrId, NtfServer, ProtocolType (..), ProtocolTypeI, QueueId, SMPMsgMeta (..), SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServer, userProtocol)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, simplexMQVersion)
-import Simplex.Messaging.Transport.Client (SocksProxy, TransportHost)
+import Simplex.Messaging.Transport.Client (SocksProxyWithAuth, TransportHost)
 import Simplex.Messaging.Util (allFinally, catchAllErrors, catchAllErrors', tryAllErrors, tryAllErrors', (<$$>))
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Invitation (RCSignedInvitation, RCVerifiedInvitation)
@@ -298,6 +298,7 @@ data ChatCommand
   | APIDeleteChatItem ChatRef (NonEmpty ChatItemId) CIDeleteMode
   | APIDeleteMemberChatItem GroupId (NonEmpty ChatItemId)
   | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, add :: Bool, reaction :: MsgReaction}
+  | APIPlanForwardChatItems {fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId}
   | APIForwardChatItems {toChatRef :: ChatRef, fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId, ttl :: Maybe Int}
   | APIUserRead UserId
   | UserRead
@@ -649,6 +650,7 @@ data ChatResponse
   | CRContactRequestAlreadyAccepted {user :: User, contact :: Contact}
   | CRLeftMemberUser {user :: User, groupInfo :: GroupInfo}
   | CRGroupDeletedUser {user :: User, groupInfo :: GroupInfo}
+  | CRForwardPlan {user :: User, itemsCount :: Int, chatItemIds :: [ChatItemId], forwardConfirmation :: Maybe ForwardConfirmation}
   | CRRcvFileDescrReady {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer, rcvFileDescr :: RcvFileDescr}
   | CRRcvFileAccepted {user :: User, chatItem :: AChatItem}
   | CRRcvFileAcceptedSndCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer}
@@ -905,6 +907,13 @@ connectionPlanProceed = \case
     GLPConnectingConfirmReconnect -> True
     _ -> False
 
+data ForwardConfirmation
+  = FCFilesNotAccepted {fileIds :: [FileTransferId]}
+  | FCFilesInProgress {filesCount :: Int}
+  | FCFilesMissing {filesCount :: Int}
+  | FCFilesFailed {filesCount :: Int}
+  deriving (Show)
+
 newtype UserPwd = UserPwd {unUserPwd :: Text}
   deriving (Eq, Show)
 
@@ -975,8 +984,10 @@ data AppFilePathsConfig = AppFilePathsConfig
   deriving (Show)
 
 data SimpleNetCfg = SimpleNetCfg
-  { socksProxy :: Maybe SocksProxy,
+  { socksProxy :: Maybe SocksProxyWithAuth,
     socksMode :: SocksMode,
+    hostMode :: HostMode,
+    requiredHostMode :: Bool,
     smpProxyMode_ :: Maybe SMPProxyMode,
     smpProxyFallback_ :: Maybe SMPProxyFallback,
     tcpTimeout_ :: Maybe Int,
@@ -985,7 +996,7 @@ data SimpleNetCfg = SimpleNetCfg
   deriving (Show)
 
 defaultSimpleNetCfg :: SimpleNetCfg
-defaultSimpleNetCfg = SimpleNetCfg Nothing SMAlways Nothing Nothing Nothing False
+defaultSimpleNetCfg = SimpleNetCfg Nothing SMAlways HMOnionViaSocks True Nothing Nothing Nothing False
 
 data ContactSubStatus = ContactSubStatus
   { contact :: Contact,
@@ -1462,6 +1473,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CAP") ''ContactAddressPlan)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GLP") ''GroupLinkPlan)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CP") ''ConnectionPlan)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "FC") ''ForwardConfirmation)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CE") ''ChatErrorType)
 
