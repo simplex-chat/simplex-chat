@@ -636,7 +636,7 @@ fun ComposeView(
             cs.preview is ComposePreview.FilePreview ||
             cs.preview is ComposePreview.VoicePreview)
       ) {
-        val sendResult =send(chat, MsgContent.MCText(msgText), quotedItemId, null, live, ttl)
+        val sendResult = send(chat, MsgContent.MCText(msgText), quotedItemId, null, live, ttl)
         sent = if (sendResult != null) listOf(sendResult) else null
       }
     }
