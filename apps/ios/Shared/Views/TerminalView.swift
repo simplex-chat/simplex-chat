@@ -160,7 +160,7 @@ struct TerminalView_Previews: PreviewProvider {
         let chatModel = ChatModel()
         chatModel.terminalItems = [
             .resp(.now, ChatResponse.response(type: "contactSubscribed", json: "{}")),
-            .resp(.now, ChatResponse.response(type: "newChatItem", json: "{}"))
+            .resp(.now, ChatResponse.response(type: "newChatItems", json: "{}"))
         ]
         return NavigationView {
             TerminalView()

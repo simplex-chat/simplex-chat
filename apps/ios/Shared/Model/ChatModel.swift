@@ -61,7 +61,7 @@ class ItemsModel: ObservableObject {
 
     init() {
         publisher
-            .throttle(for: 0.25, scheduler: DispatchQueue.main, latest: true)
+            .throttle(for: 0.2, scheduler: DispatchQueue.main, latest: true)
             .sink { self.objectWillChange.send() }
             .store(in: &bag)
     }
@@ -121,6 +121,14 @@ class NetworkModel: ObservableObject {
             .unknown
         }
     }
+}
+
+/// ChatItemWithMenu can depend on previous or next item for it's appearance
+/// This dummy model is used to force an update of all chat items,
+/// when they might have changed appearance.
+class ChatItemDummyModel: ObservableObject {
+    static let shared = ChatItemDummyModel()
+    func sendUpdate() { objectWillChange.send() }
 }
 
 final class ChatModel: ObservableObject {
@@ -427,19 +435,17 @@ final class ChatModel: ObservableObject {
 
     private func _upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
         if let i = getChatItemIndex(cItem) {
-            withConditionalAnimation {
-                _updateChatItem(at: i, with: cItem)
-            }
+            _updateChatItem(at: i, with: cItem)
+            ChatItemDummyModel.shared.sendUpdate()
             return false
         } else {
-            withConditionalAnimation(itemAnimation()) {
-                var ci = cItem
-                if let status = chatItemStatuses.removeValue(forKey: ci.id), case .sndNew = ci.meta.itemStatus {
-                    ci.meta.itemStatus = status
-                }
-                im.reversedChatItems.insert(ci, at: hasLiveDummy ? 1 : 0)
-                im.itemAdded = true
+            var ci = cItem
+            if let status = chatItemStatuses.removeValue(forKey: ci.id), case .sndNew = ci.meta.itemStatus {
+                ci.meta.itemStatus = status
             }
+            im.reversedChatItems.insert(ci, at: hasLiveDummy ? 1 : 0)
+            im.itemAdded = true
+            ChatItemDummyModel.shared.sendUpdate()
             return true
         }
 
@@ -556,6 +562,7 @@ final class ChatModel: ObservableObject {
         // update preview
         _updateChat(cInfo.id) { chat in
             self.decreaseUnreadCounter(user: self.currentUser!, by: chat.chatStats.unreadCount)
+            self.updateFloatingButtons(unreadCount: 0)
             chat.chatStats = ChatStats()
         }
         // update current chat
@@ -570,6 +577,12 @@ final class ChatModel: ObservableObject {
             markChatItemRead_(j)
             j += 1
         }
+    }
+
+    private func updateFloatingButtons(unreadCount: Int) {
+        let fbm = ChatView.FloatingButtonModel.shared
+        fbm.totalUnread = unreadCount
+        fbm.objectWillChange.send()
     }
 
     func markChatItemsRead(_ cInfo: ChatInfo, aboveItem: ChatItem? = nil) {
@@ -590,6 +603,7 @@ final class ChatModel: ObservableObject {
                     if markedCount > 0 {
                         chat.chatStats.unreadCount -= markedCount
                         self.decreaseUnreadCounter(user: self.currentUser!, by: markedCount)
+                        self.updateFloatingButtons(unreadCount: chat.chatStats.unreadCount)
                     }
                 }
             }
@@ -619,19 +633,15 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
-        if chatId == cInfo.id,
-           let itemIndex = getChatItemIndex(cItem),
-           im.reversedChatItems[itemIndex].isRcvNew {
-            await MainActor.run {
-                withTransaction(Transaction()) {
-                    // update current chat
-                    markChatItemRead_(itemIndex)
-                    // update preview
-                    unreadCollector.changeUnreadCounter(cInfo.id, by: -1)
+    func markChatItemsRead(_ cInfo: ChatInfo, _ itemIds: [ChatItem.ID]) {
+        if self.chatId == cInfo.id {
+            for itemId in itemIds {
+                if let i = im.reversedChatItems.firstIndex(where: { $0.id == itemId }) {
+                    markChatItemRead_(i)
                 }
             }
         }
+        self.unreadCollector.changeUnreadCounter(cInfo.id, by: -itemIds.count)
     }
 
     private let unreadCollector = UnreadCollector()
@@ -657,9 +667,10 @@ final class ChatModel: ObservableObject {
         }
 
         func changeUnreadCounter(_ chatId: ChatId, by count: Int) {
-            DispatchQueue.main.async {
-                self.unreadCounts[chatId] = (self.unreadCounts[chatId] ?? 0) + count
+            if chatId == ChatModel.shared.chatId {
+                ChatView.FloatingButtonModel.shared.totalUnread += count
             }
+            self.unreadCounts[chatId] = (self.unreadCounts[chatId] ?? 0) + count
             subject.send()
         }
     }
@@ -881,35 +892,6 @@ final class ChatModel: ObservableObject {
             _ = upsertGroupMember(groupInfo, updatedMember)
         }
     }
-
-    func unreadChatItemCounts(itemsInView: Set<String>) -> UnreadChatItemCounts {
-        var i = 0
-        var totalBelow = 0
-        var unreadBelow = 0
-        while i < im.reversedChatItems.count - 1 && !itemsInView.contains(im.reversedChatItems[i].viewId) {
-            totalBelow += 1
-            if im.reversedChatItems[i].isRcvNew {
-                unreadBelow += 1
-            }
-            i += 1
-        }
-        return UnreadChatItemCounts(
-            // TODO these thresholds account for the fact that items are still "visible" while
-            // covered by compose area, they should be replaced with the actual height in pixels below the screen.
-            isNearBottom: totalBelow < 15,
-            isReallyNearBottom: totalBelow < 2,
-            unreadBelow: unreadBelow
-        )
-    }
-
-    func topItemInView(itemsInView: Set<String>) -> ChatItem? {
-        let maxIx = im.reversedChatItems.count - 1
-        var i = 0
-        let inView = { itemsInView.contains(self.im.reversedChatItems[$0].viewId) }
-        while i < maxIx && !inView(i) { i += 1 }
-        while i < maxIx && inView(i) { i += 1 }
-        return im.reversedChatItems[min(i - 1, maxIx)]
-    }
 }
 
 struct ShowingInvitation {
@@ -920,12 +902,6 @@ struct ShowingInvitation {
 struct NTFContactRequest {
     var incognito: Bool
     var chatId: String
-}
-
-struct UnreadChatItemCounts: Equatable {
-    var isNearBottom: Bool
-    var isReallyNearBottom: Bool
-    var unreadBelow: Int
 }
 
 final class Chat: ObservableObject, Identifiable, ChatLike {

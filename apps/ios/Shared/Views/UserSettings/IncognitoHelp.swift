@@ -26,6 +26,7 @@ struct IncognitoHelp: View {
                 Text("Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).")
             }
             .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
         }
         .modifier(ThemedBackground())
     }

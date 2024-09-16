@@ -1,6 +1,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
+{-# LANGUAGE TypeApplications #-}
 
 module ChatTests.Profiles where
 
@@ -18,6 +19,8 @@ import Simplex.Chat.Types (ConnStatus (..), Profile (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
+import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
+import Simplex.Messaging.Transport
 import Simplex.Messaging.Util (encodeJSON)
 import System.Directory (copyFile, createDirectoryIfMissing)
 import Test.Hspec hiding (it)
@@ -1653,34 +1656,42 @@ testChangePCCUserAndThenIncognito = testChat2 aliceProfile bobProfile $
       ]
 
 testChangePCCUserDiffSrv :: HasCallStack => FilePath -> IO ()
-testChangePCCUserDiffSrv = testChat2 aliceProfile bobProfile $
-  \alice bob -> do
-    -- Create a new invite
-    alice ##> "/connect"
-    _ <- getInvitation alice
-    alice ##> "/_set incognito :1 on"
-    alice <## "connection 1 changed to incognito"
-    -- Create new user with different servers
-    alice ##> "/create user alisa"
-    showActiveUser alice "alisa"
-    alice #$> ("/smp smp://2345-w==@smp2.example.im smp://3456-w==@smp3.example.im:5224", id, "ok")
-    alice ##> "/user alice"
-    showActiveUser alice "alice (Alice)"
-    -- Change connection to newly created user and use the newly created connection
-    alice ##> "/_set conn user :1 2"
-    alice <## "connection 1 changed from user alice to user alisa, new link:"
-    alice <## ""
-    inv <- getTermLine alice
-    alice <## ""
-    alice `hasContactProfiles` ["alice"]
-    alice ##> "/user alisa"
-    showActiveUser alice "alisa"
-    -- Connect
-    bob ##> ("/connect " <> inv)
-    bob <## "confirmation sent!"
-    concurrently_
-      (alice <## "bob (Bob): contact is connected")
-      (bob <## "alisa: contact is connected")
+testChangePCCUserDiffSrv tmp = do
+  withSmpServer' serverCfg' $ do
+    withNewTestChatCfgOpts tmp testCfg testOpts "alice" aliceProfile $ \alice -> do
+      withNewTestChatCfgOpts tmp testCfg testOpts "bob" bobProfile $ \bob -> do
+        -- Create a new invite
+        alice ##> "/connect"
+        _ <- getInvitation alice
+        alice ##> "/_set incognito :1 on"
+        alice <## "connection 1 changed to incognito"
+        -- Create new user with different servers
+        alice ##> "/create user alisa"
+        showActiveUser alice "alisa"
+        alice #$> ("/smp smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003", id, "ok")
+        alice ##> "/user alice"
+        showActiveUser alice "alice (Alice)"
+        -- Change connection to newly created user and use the newly created connection
+        alice ##> "/_set conn user :1 2"
+        alice <## "connection 1 changed from user alice to user alisa, new link:"
+        alice <## ""
+        inv <- getTermLine alice
+        alice <## ""
+        alice `hasContactProfiles` ["alice"]
+        alice ##> "/user alisa"
+        showActiveUser alice "alisa"
+        -- Connect
+        bob ##> ("/connect " <> inv)
+        bob <## "confirmation sent!"
+        concurrently_
+          (alice <## "bob (Bob): contact is connected")
+          (bob <## "alisa: contact is connected")
+  where
+    serverCfg' =
+      smpServerCfg
+        { transports = [("7003", transport @TLS), ("7002", transport @TLS)],
+          msgQueueQuota = 2
+        }
 
 testSetConnectionAlias :: HasCallStack => FilePath -> IO ()
 testSetConnectionAlias = testChat2 aliceProfile bobProfile $
@@ -1721,7 +1732,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     let startFeatures = [(0, e2eeInfoPQStr), (0, "Disappearing messages: allowed"), (0, "Full deletion: off"), (0, "Message reactions: enabled"), (0, "Voice messages: off"), (0, "Audio/video calls: enabled")]
     alice #$> ("/_get chat @2 count=100", chat, startFeatures)
     bob #$> ("/_get chat @2 count=100", chat, startFeatures)
-    let sendVoice = "/_send @2 json {\"filePath\": \"test.txt\", \"msgContent\": {\"type\": \"voice\", \"text\": \"\", \"duration\": 10}}"
+    let sendVoice = "/_send @2 json [{\"filePath\": \"test.txt\", \"msgContent\": {\"type\": \"voice\", \"text\": \"\", \"duration\": 10}}]"
         voiceNotAllowed = "bad chat command: feature not allowed Voice messages"
     alice ##> sendVoice
     alice <## voiceNotAllowed
@@ -2227,7 +2238,7 @@ testGroupPrefsSimplexLinksForRole = testChat3 aliceProfile bobProfile cathProfil
     inv <- getInvitation bob
     bob ##> ("#team \"" <> inv <> "\\ntest\"")
     bob <## "bad chat command: feature not allowed SimpleX links"
-    bob ##> ("/_send #1 json {\"msgContent\": {\"type\": \"text\", \"text\": \"" <> inv <> "\\ntest\"}}")
+    bob ##> ("/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"" <> inv <> "\\ntest\"}}]")
     bob <## "bad chat command: feature not allowed SimpleX links"
     (alice </)
     (cath </)

@@ -619,7 +619,7 @@
 /* No comment provided by engineer. */
 "Can't invite contacts!" = "連絡先を招待できません！";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Cancel" = "中止";
 
 /* feature offered item */
@@ -1593,9 +1593,6 @@
 
 /* No comment provided by engineer. */
 "Full name (optional)" = "フルネーム (任意)：";
-
-/* No comment provided by engineer. */
-"Full name:" = "フルネーム：";
 
 /* No comment provided by engineer. */
 "Fully re-implemented - work in background!" = "完全に再実装されました - バックグラウンドで動作します!";
@@ -2647,10 +2644,11 @@
 /* No comment provided by engineer. */
 "Run chat" = "チャット起動";
 
-/* chat item action */
+/* alert button
+   chat item action */
 "Save" = "保存";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Save (and notify contacts)" = "保存（連絡先に通知）";
 
 /* No comment provided by engineer. */
@@ -2664,9 +2662,6 @@
 
 /* No comment provided by engineer. */
 "Save archive" = "アーカイブを保存";
-
-/* No comment provided by engineer. */
-"Save auto-accept settings" = "自動受け入れ設定を保存する";
 
 /* No comment provided by engineer. */
 "Save group profile" = "グループプロフィールの保存";
@@ -2688,9 +2683,6 @@
 
 /* No comment provided by engineer. */
 "Save servers?" = "サーバを保存しますか？";
-
-/* No comment provided by engineer. */
-"Save settings?" = "設定を保存しますか？";
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "ウェルカムメッセージを保存しますか？";
@@ -3566,7 +3558,7 @@
 "Your profile **%@** will be shared." = "あなたのプロファイル **%@** が共有されます。";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "プロフィールはデバイスに保存され、連絡先とのみ共有されます。\nSimpleX サーバーはあなたのプロファイルを参照できません。";
+"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "プロフィールはデバイスに保存され、連絡先とのみ共有されます。 SimpleX サーバーはあなたのプロファイルを参照できません。";
 
 /* No comment provided by engineer. */
 "Your profile, contacts and delivered messages are stored on your device." = "あなたのプロフィール、連絡先、送信したメッセージがご自分の端末に保存されます。";

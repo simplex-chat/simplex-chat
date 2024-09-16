@@ -7,6 +7,7 @@ import chat.simplex.common.platform.Log
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.*
+import androidx.compose.animation.core.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.graphics.Color
@@ -65,7 +66,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       }
     }
     context = this
-    initHaskell()
+    initHaskell(packageName)
     initMultiplatform()
     runMigrations()
     tmpDir.deleteRecursively()
@@ -119,7 +120,10 @@ class SimplexApp: Application(), LifecycleEventObserver {
            * */
           if (chatModel.chatRunning.value != false &&
             chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete &&
-            appPrefs.notificationsMode.get() == NotificationsMode.SERVICE
+            appPrefs.notificationsMode.get() == NotificationsMode.SERVICE &&
+            // New installation passes all checks above and tries to start the service which is not needed at all
+            // because preferred notification type is not yet chosen. So, check that the user has initialized db already
+            appPrefs.newDatabaseInitialized.get()
           ) {
             SimplexService.start()
           }
@@ -256,7 +260,6 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
       override fun androidSetNightModeIfSupported() {
         if (Build.VERSION.SDK_INT < 31) return
-
         val light = if (CurrentColors.value.name == DefaultTheme.SYSTEM_THEME_NAME) {
           null
         } else {
@@ -269,6 +272,31 @@ class SimplexApp: Application(), LifecycleEventObserver {
         }
         val uiModeManager = androidAppContext.getSystemService(UI_MODE_SERVICE) as UiModeManager
         uiModeManager.setApplicationNightMode(mode)
+      }
+
+      override fun androidSetDrawerStatusAndNavBarColor(
+        isLight: Boolean,
+        drawerShadingColor: Color,
+        toolbarOnTop: Boolean,
+        navBarColor: Color,
+      ) {
+        val window = mainActivity.get()?.window ?: return
+
+        @Suppress("DEPRECATION")
+        val windowInsetController = ViewCompat.getWindowInsetsController(window.decorView)
+        // Blend status bar color to the animated color
+        val colors = CurrentColors.value.colors
+        val baseBackgroundColor = if (toolbarOnTop) colors.background.mixWith(colors.onBackground, 0.97f) else colors.background
+        window.statusBarColor = baseBackgroundColor.mixWith(drawerShadingColor.copy(1f), 1 - drawerShadingColor.alpha).toArgb()
+        val navBar = navBarColor.toArgb()
+
+        if (window.navigationBarColor != navBar) {
+          window.navigationBarColor = navBar
+        }
+
+        if (windowInsetController?.isAppearanceLightNavigationBars != isLight) {
+          windowInsetController?.isAppearanceLightNavigationBars = isLight
+        }
       }
 
       override fun androidSetStatusAndNavBarColors(isLight: Boolean, backgroundColor: Color, hasTop: Boolean, hasBottom: Boolean) {

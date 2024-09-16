@@ -8,15 +8,16 @@
 
 import SwiftUI
 import Combine
+import SimpleXChat
 
 /// A List, which displays it's items in reverse order - from bottom to top
-struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIViewControllerRepresentable {
-    let items: Array<Item>
+struct ReverseList<Content: View>: UIViewControllerRepresentable {
+    let items: Array<ChatItem>
 
-    @Binding var scrollState: ReverseListScrollModel<Item>.State
+    @Binding var scrollState: ReverseListScrollModel.State
 
     /// Closure, that returns user interface for a given item
-    let content: (Item) -> Content
+    let content: (ChatItem) -> Content
 
     let loadPage: () -> Void
 
@@ -25,7 +26,9 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
     }
 
     func updateUIViewController(_ controller: Controller, context: Context) {
+        controller.representer = self
         if case let .scrollingTo(destination) = scrollState, !items.isEmpty {
+            controller.view.layer.removeAllAnimations()
             switch destination {
             case .nextPage:
                 controller.scrollToNextPage()
@@ -42,9 +45,10 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
     /// Controller, which hosts SwiftUI cells
     class Controller: UITableViewController {
         private enum Section { case main }
-        private let representer: ReverseList
-        private var dataSource: UITableViewDiffableDataSource<Section, Item>!
+        var representer: ReverseList
+        private var dataSource: UITableViewDiffableDataSource<Section, ChatItem>!
         private var itemCount: Int = 0
+        private let updateFloatingButtons = PassthroughSubject<Void, Never>()
         private var bag = Set<AnyCancellable>()
 
         init(representer: ReverseList) {
@@ -71,7 +75,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
             }
 
             // 3. Configure data source
-            self.dataSource = UITableViewDiffableDataSource<Section, Item>(
+            self.dataSource = UITableViewDiffableDataSource<Section, ChatItem>(
                 tableView: tableView
             ) { (tableView, indexPath, item) -> UITableViewCell? in
                 if indexPath.item > self.itemCount - 8, self.itemCount > 8 {
@@ -103,6 +107,15 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
                     name: notificationName,
                     object: nil
                 )
+
+            updateFloatingButtons
+                .throttle(for: 0.2, scheduler: DispatchQueue.global(qos: .background), latest: true)
+                .sink {
+                    if let listState = DispatchQueue.main.sync(execute: { [weak self] in self?.getListState() }) {
+                        ChatView.FloatingButtonModel.shared.updateOnListChange(listState)
+                    }
+                }
+                .store(in: &bag)
         }
 
         @available(*, unavailable)
@@ -171,8 +184,8 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
             Task { representer.scrollState = .atDestination }
         }
 
-        func update(items: Array<Item>) {
-            var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
+        func update(items: [ChatItem]) {
+            var snapshot = NSDiffableDataSourceSnapshot<Section, ChatItem>()
             snapshot.appendSections([.main])
             snapshot.appendItems(items)
             dataSource.defaultRowAnimation = .none
@@ -188,6 +201,42 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
                 )
             }
             itemCount = items.count
+            updateFloatingButtons.send()
+        }
+
+        override func scrollViewDidScroll(_ scrollView: UIScrollView) {
+            updateFloatingButtons.send()
+        }
+
+        func getListState() -> ListState? {
+            if let visibleRows = tableView.indexPathsForVisibleRows,
+                visibleRows.last?.item ?? 0 < representer.items.count {
+                let scrollOffset: Double = tableView.contentOffset.y + InvertedTableView.inset
+                let topItemDate: Date? =
+                    if let lastVisible = visibleRows.last(where: { isVisible(indexPath: $0) }) {
+                        representer.items[lastVisible.item].meta.itemTs
+                    } else {
+                        nil
+                    }
+                let bottomItemId: ChatItem.ID? =
+                    if let firstVisible = visibleRows.first(where: { isVisible(indexPath: $0) }) {
+                        representer.items[firstVisible.item].id
+                    } else {
+                        nil
+                    }
+                return (scrollOffset: scrollOffset, topItemDate: topItemDate, bottomItemId: bottomItemId)
+            }
+            return nil
+        }
+        
+        private func isVisible(indexPath: IndexPath) -> Bool {
+            if let relativeFrame = tableView.superview?.convert(
+                tableView.rectForRow(at: indexPath),
+                from: tableView
+            ) {
+                relativeFrame.maxY > InvertedTableView.inset &&
+                relativeFrame.minY < tableView.frame.height - InvertedTableView.inset
+            } else { false }
         }
     }
 
@@ -231,13 +280,19 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
     }
 }
 
+typealias ListState = (
+    scrollOffset: Double,
+    topItemDate: Date?,
+    bottomItemId: ChatItem.ID?
+)
+
 /// Manages ``ReverseList`` scrolling
-class ReverseListScrollModel<Item: Identifiable>: ObservableObject {
+class ReverseListScrollModel: ObservableObject {
     /// Represents Scroll State of ``ReverseList``
     enum State: Equatable {
         enum Destination: Equatable {
             case nextPage
-            case item(Item.ID)
+            case item(ChatItem.ID)
             case bottom
         }
 
@@ -255,7 +310,7 @@ class ReverseListScrollModel<Item: Identifiable>: ObservableObject {
         state = .scrollingTo(.bottom)
     }
 
-    func scrollToItem(id: Item.ID) {
+    func scrollToItem(id: ChatItem.ID) {
         state = .scrollingTo(.item(id))
     }
 }

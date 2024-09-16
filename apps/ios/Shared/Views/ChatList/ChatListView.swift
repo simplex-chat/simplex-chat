@@ -9,6 +9,17 @@
 import SwiftUI
 import SimpleXChat
 
+enum UserPickerSheet: Identifiable {
+    case address
+    case chatPreferences
+    case chatProfiles
+    case currentProfile
+    case useFromDesktop
+    case settings
+
+    var id: Self { self }
+}
+
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -18,9 +29,9 @@ struct ChatListView: View {
     @State private var searchText = ""
     @State private var searchShowingSimplexLink = false
     @State private var searchChatFilteredBySimplexLink: String? = nil
-    @State private var userPickerVisible = false
-    @State private var showConnectDesktop = false
     @State private var scrollToSearchBar = false
+    @State private var activeUserPickerSheet: UserPickerSheet? = nil
+    @State private var userPickerShown: Bool = false
 
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
@@ -46,21 +57,44 @@ struct ChatListView: View {
                 ),
                 destination: chatView
             ) { chatListView }
-            if userPickerVisible {
-                Rectangle().fill(.white.opacity(0.001)).onTapGesture {
-                    withAnimation {
-                        userPickerVisible.toggle()
+        }
+        .sheet(isPresented: $userPickerShown) {
+            UserPicker(activeSheet: $activeUserPickerSheet)
+                .sheet(item: $activeUserPickerSheet) { sheet in
+                    if let currentUser = chatModel.currentUser {
+                        switch sheet {
+                        case .address:
+                            NavigationView {
+                                UserAddressView(shareViaProfile: currentUser.addressShared)
+                                    .navigationTitle("SimpleX address")
+                                    .navigationBarTitleDisplayMode(.large)
+                                    .modifier(ThemedBackground(grouped: true))
+                            }
+                        case .chatProfiles:
+                            NavigationView {
+                                UserProfilesView()
+                            }
+                        case .currentProfile:
+                            NavigationView {
+                                UserProfile()
+                                    .navigationTitle("Your current profile")
+                                    .modifier(ThemedBackground(grouped: true))
+                            }
+                        case .chatPreferences:
+                            NavigationView {
+                                PreferencesView(profile: currentUser.profile, preferences: currentUser.fullPreferences, currentPreferences: currentUser.fullPreferences)
+                                    .navigationTitle("Your preferences")
+                                    .navigationBarTitleDisplayMode(.large)
+                                    .modifier(ThemedBackground(grouped: true))
+                            }
+                        case .useFromDesktop:
+                            ConnectDesktopView(viaSettings: false)
+                        case .settings:
+                            SettingsView(showSettings: $showSettings)
+                                .navigationBarTitleDisplayMode(.large)
+                        }
                     }
                 }
-            }
-            UserPicker(
-                showSettings: $showSettings,
-                showConnectDesktop: $showConnectDesktop,
-                userPickerVisible: $userPickerVisible
-            )
-        }
-        .sheet(isPresented: $showConnectDesktop) {
-            ConnectDesktopView()
         }
     }
 
@@ -73,7 +107,7 @@ struct ChatListView: View {
                 .navigationBarHidden(searchMode || oneHandUI)
         }
         .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-        .onDisappear() { withAnimation { userPickerVisible = false } }
+        .onDisappear() { activeUserPickerSheet = nil }
         .refreshable {
             AlertManager.shared.showAlert(Alert(
                 title: Text("Reconnect servers?"),
@@ -164,7 +198,7 @@ struct ChatListView: View {
         let user = chatModel.currentUser ?? User.sampleData
         ZStack(alignment: .topTrailing) {
             ProfileImage(imageStr: user.image, size: 32, color: Color(uiColor: .quaternaryLabel))
-                .padding(.trailing, 4)
+                .padding([.top, .trailing], 3)
             let allRead = chatModel.users
                 .filter { u in !u.user.activeUser && !u.user.hidden }
                 .allSatisfy { u in u.unreadCount == 0 }
@@ -173,13 +207,7 @@ struct ChatListView: View {
             }
         }
         .onTapGesture {
-            if chatModel.users.filter({ u in u.user.activeUser || !u.user.hidden }).count > 1 {
-                withAnimation {
-                    userPickerVisible.toggle()
-                }
-            } else {
-                showSettings = true
-            }
+            userPickerShown = true
         }
     }
 
@@ -269,7 +297,7 @@ struct ChatListView: View {
         }
     }
 
-    private func unreadBadge(_ text: Text? = Text(" "), size: CGFloat = 18) -> some View {
+    private func unreadBadge(size: CGFloat = 18) -> some View {
         Circle()
             .frame(width: size, height: size)
             .foregroundColor(theme.colors.primary)

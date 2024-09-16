@@ -104,7 +104,7 @@ class ShareModel: ObservableObject {
                         // Decode base64 images on background thread
                         let profileImages = chats.reduce(into: Dictionary<ChatInfo.ID, UIImage>()) { dict, chatData in
                             if let profileImage = chatData.chatInfo.image,
-                               let uiImage = UIImage(base64Encoded: profileImage) {
+                               let uiImage = imageFromBase64(profileImage) {
                                 dict[chatData.id] = uiImage
                             }
                         }
@@ -141,23 +141,25 @@ class ShareModel: ObservableObject {
                 do {
                     SEChatState.shared.set(.sendingMessage)
                     await waitForOtherProcessesToSuspend()
-                    let ci = try apiSendMessage(
+                    let chatItems = try apiSendMessages(
                         chatInfo: selected.chatInfo,
-                        cryptoFile: sharedContent.cryptoFile,
-                        msgContent: sharedContent.msgContent(comment: self.comment)
+                        composedMessages: [ComposedMessage(fileSource: sharedContent.cryptoFile, msgContent: sharedContent.msgContent(comment: self.comment))]
                     )
                     if selected.chatInfo.chatType == .local {
                         completion()
                     } else {
-                        await MainActor.run { self.bottomBar = .loadingBar(progress: 0) }
-                        if let e = await handleEvents(
-                            isGroupChat: ci.chatInfo.chatType == .group,
-                            isWithoutFile: sharedContent.cryptoFile == nil,
-                            chatItemId: ci.chatItem.id
-                        ) {
-                            await MainActor.run { errorAlert = e }
-                        } else {
-                            completion()
+                        // TODO batch send: share multiple items
+                        if let ci = chatItems.first {
+                            await MainActor.run { self.bottomBar = .loadingBar(progress: 0) }
+                            if let e = await handleEvents(
+                                isGroupChat: ci.chatInfo.chatType == .group,
+                                isWithoutFile: sharedContent.cryptoFile == nil,
+                                chatItemId: ci.chatItem.id
+                            ) {
+                                await MainActor.run { errorAlert = e }
+                            } else {
+                                completion()
+                            }
                         }
                     }
                 } catch {

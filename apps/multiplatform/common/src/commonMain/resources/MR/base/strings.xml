@@ -666,6 +666,10 @@
   <string name="one_time_link_short">1-time link</string>
   <string name="simplex_address">SimpleX address</string>
   <string name="or_show_this_qr_code">Or show this code</string>
+  <string name="new_chat_share_profile">Share profile</string>
+  <string name="select_chat_profile">Select chat profile</string>
+  <string name="switching_profile_error_title">Error switching profile</string>
+  <string name="switching_profile_error_message">Your connection was moved to %s but an unexpected error occurred while redirecting you to the profile.</string>
   <string name="or_scan_qr_code">Or scan QR code</string>
   <string name="keep_unused_invitation_question">Keep unused invitation?</string>
   <string name="you_can_view_invitation_link_again">You can view invitation link again in connection details.</string>
@@ -1156,6 +1160,7 @@
   <!-- Settings sections -->
   <string name="settings_section_title_you">YOU</string>
   <string name="settings_section_title_settings">SETTINGS</string>
+  <string name="settings_section_title_chat_database">CHAT DATABASE</string>
   <string name="settings_section_title_help">HELP</string>
   <string name="settings_section_title_support">SUPPORT SIMPLEX CHAT</string>
   <string name="settings_section_title_app">APP</string>
@@ -1720,6 +1725,7 @@
   <string name="theme_remove_image">Remove image</string>
   <string name="appearance_font_size">Font size</string>
   <string name="appearance_zoom">Zoom</string>
+  <string name="system_mode_toast">System mode</string>
 
   <!-- Wallpapers -->
   <string name="wallpaper_preview_hello_alice">Good afternoon!</string>
