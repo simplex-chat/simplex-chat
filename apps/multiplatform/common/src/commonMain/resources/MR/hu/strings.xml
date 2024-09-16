@@ -845,7 +845,7 @@
     <string name="info_row_moderated_at">Moderálva ekkor:</string>
     <string name="v4_4_live_messages">Élő üzenetek</string>
     <string name="mark_code_verified">Hitelesítés</string>
-    <string name="v5_2_message_delivery_receipts">Üzenetkézbesítési bizonylatok!</string>
+    <string name="v5_2_message_delivery_receipts">Üzenetkézbesítési jelentések!</string>
     <string name="image_descr_link_preview">hivatkozás előnézeti képe</string>
     <string name="leave_group_question">Csoport elhagyása?</string>
     <string name="chat_preferences_no">nem</string>
@@ -2066,4 +2066,10 @@
     <string name="switching_profile_error_title">Hiba a profilváltás közben</string>
     <string name="switching_profile_error_message">A kapcsolata át lett helyezve ide: %s, de egy váratlan hiba történt a profilra való átirányítás közben.</string>
     <string name="delete_messages_cannot_be_undone_warning">Az üzenetek törlésre kerülnek - ez a művelet nem vonható vissza!</string>
+    <string name="migrate_from_device_remove_archive_question">Archívum eltávolítása?</string>
+    <string name="migrate_from_device_uploaded_archive_will_be_removed">A feltöltött adatbázis-archívum véglegesen eltávolításra kerül a kiszolgálókról.</string>
+    <string name="settings_section_title_chat_database">CSEVEGÉSI ADATBÁZIS</string>
+    <string name="new_chat_share_profile">Profil megosztása</string>
+    <string name="system_mode_toast">Rendszerbeállítások használata</string>
+    <string name="select_chat_profile">Csevegési profil kiválasztása</string>
 </resources>
