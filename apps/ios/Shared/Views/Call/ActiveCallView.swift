@@ -214,10 +214,12 @@ struct ActiveCallView: View {
                 ChatReceiver.shared.messagesChannel = nil
                 return
             }
-            if case let .chatItemStatusUpdated(_, msg) = msg,
-               msg.chatInfo.id == call.contact.id,
-               case .sndCall = msg.chatItem.content,
-               case .sndRcvd = msg.chatItem.meta.itemStatus {
+            if case let .chatItemsStatusesUpdated(_, chatItems) = msg,
+               chatItems.contains(where: {
+                   $0.chatInfo.id == call.contact.id &&
+                   $0.chatItem.content.isSndCall &&
+                   $0.chatItem.meta.itemStatus.isSndRcvd
+               }) {
                 CallSoundsPlayer.shared.startInCallSound()
                 ChatReceiver.shared.messagesChannel = nil
             }
