@@ -42,11 +42,11 @@ struct AdvancedNetworkSettings: View {
     @State private var currentSocksProxy = ProxyComponents()
 
     struct ProxyComponents: Equatable {
-        var host: String = ""
-        var port: String = ""
-        var auth: Bool = false
         var username: String = ""
         var password: String = ""
+        var host: String = "localhost"
+        var port: String = "9050"
+        var auth: Bool = false
         
         var valid: Bool {
             let hostOk = switch NWEndpoint.Host(host) {
@@ -60,18 +60,94 @@ struct AdvancedNetworkSettings: View {
                 false
             }
         }
-        
-        var string: String {
-            auth
-            ? "\(username):\(password)@\(normalizedHost):\(port)"
-            : "@\(normalizedHost):\(port)"
+
+        func toProxyString() -> String? {
+            var res = ""
+            let usernameTrimmed = username.trimmingCharacters(in: .whitespaces)
+            let passwordTrimmed = password.trimmingCharacters(in: .whitespaces)
+            if auth && (usernameTrimmed.count > 0 || passwordTrimmed.count > 0) {
+                res += usernameTrimmed + ":" + passwordTrimmed + "@"
+            } else if auth {
+                res += "@"
+            }
+            if host != "localhost" {
+                if host.contains(":") {
+                    res += "[\(host.trimmingCharacters(in: [" ", "[", "]"]))]"
+                } else {
+                    res += host.trimmingCharacters(in: .whitespaces)
+                }
+            }
+            if let port = Int(port.trimmingCharacters(in: .whitespaces)), port != 9050 {
+                res += ":\(port)"
+            }
+            return res.count == 0 ? nil : res
         }
-        
-        var normalizedHost: String {
-            host
+
+        static func from(proxy: String?) -> ProxyComponents {
+            guard let proxy else {
+                return ProxyComponents(username: "", password: "", host: "localhost", port: "9050", auth: false)
+            }
+            var username = ""
+            var password = ""
+            if proxy.contains("@") {
+                let userPass = proxy.split(separator: "@", omittingEmptySubsequences: false)[0]
+                let split = userPass.split(separator: ":", omittingEmptySubsequences: false)
+                username = String(split[0])
+                password = split.count > 1 ? String(split[1]) : ""
+            }
+            let allSplit = proxy.split(separator: "@", omittingEmptySubsequences: false)
+            let host: String
+            let port: String
+            if allSplit.count < 2 {
+                host = ""
+                port = ""
+            } else if allSplit[1].contains("[") && allSplit[1].contains("]") {
+                // ipv6 with or without port
+                let split = allSplit[1].split(separator: "]", omittingEmptySubsequences: false)
+                host = split[0] + "]"
+                port = split[1].trimmingCharacters(in: .whitespaces)
+            } else {
+                // ipv4 with or without port
+                let split = allSplit[1].split(separator: ":", omittingEmptySubsequences: false)
+                host = String(split[0])
+                port = split.count > 1 ? String(split[1]) : ""
+            }
+            return ProxyComponents(
+                username: username,
+                password: password,
+                host: host.count > 0 ? host : "localhost",
+                port: port.count > 0 ? port : "9050",
+                auth: username.count > 0 || password.count > 0
+            )
         }
+
+//        enum ProxyAuthenticationMode: StringLiteralType {
+//            case isolateByAuth
+//            case noAuth
+//            case usernamePassword
+//
+//
+//            func text(_ sessionMode: TransportSessionMode) -> LocalizedStringKey {
+//                switch (self) {
+//                case .isolateByAuth:
+//                    sessionMode == TransportSessionMode.user
+//                    ? "Use different proxy credentials for each profile."
+//                    : "Use different proxy credentials for each connection."
+//                case .noAuth: "Do not use credentials with proxy."
+//                case .usernamePassword: "Your credentials may be sent unencrypted."
+//                }
+//            }
+//
+//            static func from(_ proxy: String?) -> ProxyAuthenticationMode {
+//                guard let proxy = proxy else { return .isolateByAuth }
+//                if proxy.count == 0 { return .isolateByAuth }
+//                else if !proxy.contains("@") { return .isolateByAuth }
+//                else if proxy.hasPrefix("@") { return .noAuth }
+//                else { return .usernamePassword }
+//            }
+//        }
     }
-    
+
     var body: some View {
         VStack {
             List {
@@ -174,7 +250,7 @@ struct AdvancedNetworkSettings: View {
                         Toggle("Proxy requires password", isOn: $socksProxy.auth)
                         if socksProxy.auth {
                             TextField("Username", text: $socksProxy.username)
-                            TextField("Password", text: $socksProxy.password)
+                            SecureField("Password", text: $socksProxy.password)
                         }
                     }
                 } header: {
@@ -187,7 +263,11 @@ struct AdvancedNetworkSettings: View {
                     }
                 } footer: {
                     if socksProxy.auth {
-                        Text("Credentials are sent unencrypted.").foregroundColor(theme.colors.secondary)
+                        Text("Your credentials may be sent unencrypted.")
+                            .foregroundColor(theme.colors.secondary)
+                    } else {
+                        Text("Do not use credentials with proxy.")
+                            .foregroundColor(theme.colors.secondary)
                     }
                 }
                 .onChange(of: useSocksProxy) { _ in
@@ -249,6 +329,10 @@ struct AdvancedNetworkSettings: View {
         .onChange(of: enableKeepAlive) { on in
             netCfg.tcpKeepAlive = on ? (currentNetCfg.tcpKeepAlive ?? KeepAliveOpts.defaults) : nil
         }
+        .onChange(of: socksProxy) { p in
+            logger.debug("LALAL UP \(String(describing: p))")
+            netCfg.socksProxy = p.toProxyString()
+        }
         .onAppear {
             if cfgLoaded { return }
             cfgLoaded = true
@@ -297,6 +381,8 @@ struct AdvancedNetworkSettings: View {
         onionHosts = OnionHosts(netCfg: netCfg)
         enableKeepAlive = netCfg.enableKeepAlive
         keepAliveOpts = netCfg.tcpKeepAlive ?? KeepAliveOpts.defaults
+        socksProxy = ProxyComponents.from(proxy: netCfg.socksProxy)
+        useSocksProxy = netCfg.socksProxy != nil
     }
 
     private func saveNetCfg() -> Bool {
