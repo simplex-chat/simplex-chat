@@ -254,10 +254,10 @@ fun SocksProxySettings(
     )
     val oldCfg = controller.getNetCfg()
     val cfg = oldCfg.withOnionHosts(onionHosts.value)
+    val oldOnionHosts = onionHostsSaved.value
+    onionHostsSaved.value = onionHosts.value
 
-    if (migration) {
-      onionHostsSaved.value = onionHosts.value
-    } else {
+    if (!migration) {
       controller.setNetCfg(cfg)
     }
     if (networkUseSocksProxy && !migration) {
@@ -277,7 +277,7 @@ fun SocksProxySettings(
         } else {
           controller.setNetCfg(oldCfg)
           networkProxyHostPort.set(oldValue)
-          onionHosts.value = oldCfg.onionHosts
+          onionHostsSaved.value = oldOnionHosts
           showWrongProxyConfigAlert()
         }
       }
