@@ -137,8 +137,9 @@
         <target>%@ wil verbinding maken!</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="%@, %@" xml:space="preserve">
+      <trans-unit id="%@, %@" xml:space="preserve" approved="no">
         <source>%1$@, %2$@</source>
+        <target state="translated">%1$@, %2$@</target>
         <note>format for date separator in chat</note>
       </trans-unit>
       <trans-unit id="%@, %@ and %lld members" xml:space="preserve">
@@ -514,9 +515,9 @@
         <target>Een nieuw willekeurig profiel wordt gedeeld.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="A separate TCP connection will be used **for each chat profile you have in the app**." xml:space="preserve">
+      <trans-unit id="A separate TCP connection will be used **for each chat profile you have in the app**." xml:space="preserve" approved="no">
         <source>A separate TCP connection will be used **for each chat profile you have in the app**.</source>
-        <target>Er wordt een aparte TCP-verbinding gebruikt **voor elk chat profiel dat je in de app hebt**.</target>
+        <target state="translated">Er wordt een aparte TCP-verbinding gebruikt **voor elk chatprofiel dat je in de app hebt**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="A separate TCP connection will be used **for each contact and group member**.&#10;**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." xml:space="preserve">
@@ -1024,8 +1025,9 @@
         <target>Afbeeldingen automatisch accepteren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Auto-accept settings" xml:space="preserve">
+      <trans-unit id="Auto-accept settings" xml:space="preserve" approved="no">
         <source>Auto-accept settings</source>
+        <target state="translated">Instellingen automatisch accepteren</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Back" xml:space="preserve">
@@ -1148,9 +1150,9 @@
         <target>Bulgaars, Fins, Thais en Oekraïens - dankzij de gebruikers en [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
+      <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve" approved="no">
         <source>By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</source>
-        <target>Via chat profiel (standaard) of [via verbinding](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</target>
+        <target state="translated">Via chatprofiel (standaard) of [via verbinding](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Call already ended!" xml:space="preserve">
@@ -1349,8 +1351,9 @@
         <target>Gesprek voorkeuren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat preferences were changed." xml:space="preserve">
+      <trans-unit id="Chat preferences were changed." xml:space="preserve" approved="no">
         <source>Chat preferences were changed.</source>
+        <target state="translated">Chatvoorkeuren zijn gewijzigd.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Chat theme" xml:space="preserve">
@@ -1358,9 +1361,9 @@
         <target>Chat thema</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chats" xml:space="preserve">
+      <trans-unit id="Chats" xml:space="preserve" approved="no">
         <source>Chats</source>
-        <target>Gesprekken</target>
+        <target state="translated">Chats</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Check server address and try again." xml:space="preserve">
@@ -1752,8 +1755,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Core versie: v% @</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Corner" xml:space="preserve">
+      <trans-unit id="Corner" xml:space="preserve" approved="no">
         <source>Corner</source>
+        <target state="translated">Hoek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Correct name to %@?" xml:space="preserve">
@@ -1965,9 +1969,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Het wachtwoord van de database verschilt van het wachtwoord dat is opgeslagen in de keychain.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database passphrase is required to open chat." xml:space="preserve">
+      <trans-unit id="Database passphrase is required to open chat." xml:space="preserve" approved="no">
         <source>Database passphrase is required to open chat.</source>
-        <target>Database wachtwoord is vereist om je gesprekken te openen.</target>
+        <target state="translated">Database wachtwoord is vereist om je chats te openen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database upgrade" xml:space="preserve">
@@ -2060,14 +2064,14 @@ Dit is uw eigen eenmalige link!</target>
         <target>Chat archief verwijderen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete chat profile" xml:space="preserve">
+      <trans-unit id="Delete chat profile" xml:space="preserve" approved="no">
         <source>Delete chat profile</source>
-        <target>Chat profiel verwijderen</target>
+        <target state="translated">Chatprofiel verwijderen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete chat profile?" xml:space="preserve">
+      <trans-unit id="Delete chat profile?" xml:space="preserve" approved="no">
         <source>Delete chat profile?</source>
-        <target>Chat profiel verwijderen?</target>
+        <target state="translated">Chatprofiel verwijderen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete connection" xml:space="preserve">
@@ -2105,9 +2109,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Bestanden en media verwijderen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete files for all chat profiles" xml:space="preserve">
+      <trans-unit id="Delete files for all chat profiles" xml:space="preserve" approved="no">
         <source>Delete files for all chat profiles</source>
-        <target>Verwijder bestanden voor alle chat profielen</target>
+        <target state="translated">Verwijder bestanden voor alle chatprofielen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete for everyone" xml:space="preserve">
@@ -2740,8 +2744,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Fout bij wijzigen van adres</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error changing connection profile" xml:space="preserve">
+      <trans-unit id="Error changing connection profile" xml:space="preserve" approved="no">
         <source>Error changing connection profile</source>
+        <target state="translated">Fout bij wijzigen van verbindingsprofiel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error changing role" xml:space="preserve">
@@ -2754,8 +2759,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Fout bij wijzigen van instelling</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error changing to incognito!" xml:space="preserve">
+      <trans-unit id="Error changing to incognito!" xml:space="preserve" approved="no">
         <source>Error changing to incognito!</source>
+        <target state="translated">Fout bij het overschakelen naar incognito!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error connecting to forwarding server %@. Please try later." xml:space="preserve">
@@ -2878,8 +2884,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Fout bij het laden van %@ servers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error migrating settings" xml:space="preserve">
+      <trans-unit id="Error migrating settings" xml:space="preserve" approved="no">
         <source>Error migrating settings</source>
+        <target state="translated">Fout bij migreren van instellingen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error opening chat" xml:space="preserve">
@@ -2982,8 +2989,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Fout bij het stoppen van de chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error switching profile" xml:space="preserve">
+      <trans-unit id="Error switching profile" xml:space="preserve" approved="no">
         <source>Error switching profile</source>
+        <target state="translated">Fout bij wisselen van profiel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error switching profile!" xml:space="preserve">
@@ -3212,9 +3220,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Eindelijk, we hebben ze! 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Find chats faster" xml:space="preserve">
+      <trans-unit id="Find chats faster" xml:space="preserve" approved="no">
         <source>Find chats faster</source>
-        <target>Vind gesprekken sneller</target>
+        <target state="translated">Vind chats sneller</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix" xml:space="preserve">
@@ -3491,9 +3499,9 @@ Fout: %2$@</target>
         <target>Verborgen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Hidden chat profiles" xml:space="preserve">
+      <trans-unit id="Hidden chat profiles" xml:space="preserve" approved="no">
         <source>Hidden chat profiles</source>
-        <target>Verborgen chat profielen</target>
+        <target state="translated">Verborgen chatprofielen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Hidden profile password" xml:space="preserve">
@@ -3843,9 +3851,9 @@ Fout: %2$@</target>
         <target>Het onomkeerbaar verwijderen van berichten is verboden in deze groep.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It allows having many anonymous connections without any shared data between them in a single chat profile." xml:space="preserve">
+      <trans-unit id="It allows having many anonymous connections without any shared data between them in a single chat profile." xml:space="preserve" approved="no">
         <source>It allows having many anonymous connections without any shared data between them in a single chat profile.</source>
-        <target>Het maakt het mogelijk om veel anonieme verbindingen te hebben zonder enige gedeelde gegevens tussen hen in een enkel chat profiel.</target>
+        <target state="translated">Het maakt het mogelijk om veel anonieme verbindingen te hebben zonder enige gedeelde gegevens tussen hen in een enkel chatprofiel.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="It can happen when you or your connection used the old database backup." xml:space="preserve">
@@ -4211,8 +4219,9 @@ Dit is jouw link voor groep %@!</target>
         <target>Berichtservers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message shape" xml:space="preserve">
+      <trans-unit id="Message shape" xml:space="preserve" approved="no">
         <source>Message shape</source>
+        <target state="translated">Berichtvorm</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message source remains private." xml:space="preserve">
@@ -4365,9 +4374,9 @@ Dit is jouw link voor groep %@!</target>
         <target>Hoogstwaarschijnlijk is deze verbinding verwijderd.</target>
         <note>item status description</note>
       </trans-unit>
-      <trans-unit id="Multiple chat profiles" xml:space="preserve">
+      <trans-unit id="Multiple chat profiles" xml:space="preserve" approved="no">
         <source>Multiple chat profiles</source>
-        <target>Meerdere chat profielen</target>
+        <target state="translated">Meerdere chatprofielen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Mute" xml:space="preserve">
@@ -4515,9 +4524,9 @@ Dit is jouw link voor groep %@!</target>
         <target>Nog geen directe verbinding, bericht wordt doorgestuurd door beheerder.</target>
         <note>item status description</note>
       </trans-unit>
-      <trans-unit id="No filtered chats" xml:space="preserve">
+      <trans-unit id="No filtered chats" xml:space="preserve" approved="no">
         <source>No filtered chats</source>
-        <target>Geen gefilterde gesprekken</target>
+        <target state="translated">Geen gefilterde chats</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No group!" xml:space="preserve">
@@ -4873,9 +4882,9 @@ Vereist het inschakelen van VPN.</target>
         <target>Beeld-in-beeld oproepen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Play from the chat list." xml:space="preserve">
+      <trans-unit id="Play from the chat list." xml:space="preserve" approved="no">
         <source>Play from the chat list.</source>
-        <target>Afspelen via de gesprekken lijst.</target>
+        <target state="translated">Afspelen via de chat lijst.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please ask your contact to enable calls." xml:space="preserve">
@@ -4952,9 +4961,9 @@ Fout: %@</target>
         <target>Start de app opnieuw en migreer de database om push meldingen in te schakelen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please store passphrase securely, you will NOT be able to access chat if you lose it." xml:space="preserve">
+      <trans-unit id="Please store passphrase securely, you will NOT be able to access chat if you lose it." xml:space="preserve" approved="no">
         <source>Please store passphrase securely, you will NOT be able to access chat if you lose it.</source>
-        <target>Sla het wachtwoord veilig op. Als u deze kwijtraakt, heeft u GEEN toegang tot de gesprekken.</target>
+        <target state="translated">Sla het wachtwoord veilig op. Als u deze kwijtraakt, heeft u GEEN toegang tot de chats.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please store passphrase securely, you will NOT be able to change it if you lose it." xml:space="preserve">
@@ -5129,9 +5138,9 @@ Enable in *Network &amp; servers* settings.</source>
 Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protect your chat profiles with a password!" xml:space="preserve">
+      <trans-unit id="Protect your chat profiles with a password!" xml:space="preserve" approved="no">
         <source>Protect your chat profiles with a password!</source>
-        <target>Bescherm je chat profielen met een wachtwoord!</target>
+        <target state="translated">Bescherm je chatprofielen met een wachtwoord!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protocol timeout" xml:space="preserve">
@@ -5375,8 +5384,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Verwijderen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Remove archive?" xml:space="preserve">
+      <trans-unit id="Remove archive?" xml:space="preserve" approved="no">
         <source>Remove archive?</source>
+        <target state="translated">Archief verwijderen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Remove image" xml:space="preserve">
@@ -5489,9 +5499,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Terugzetten naar gebruikersthema</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Restart the app to create a new chat profile" xml:space="preserve">
+      <trans-unit id="Restart the app to create a new chat profile" xml:space="preserve" approved="no">
         <source>Restart the app to create a new chat profile</source>
-        <target>Start de app opnieuw om een nieuw chat profiel aan te maken</target>
+        <target state="translated">Start de app opnieuw om een nieuw chatprofiel aan te maken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Restart the app to use imported chat database" xml:space="preserve">
@@ -5610,9 +5620,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Groep profiel opslaan</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save passphrase and open chat" xml:space="preserve">
+      <trans-unit id="Save passphrase and open chat" xml:space="preserve" approved="no">
         <source>Save passphrase and open chat</source>
-        <target>Bewaar het wachtwoord en open je gesprekken</target>
+        <target state="translated">Bewaar het wachtwoord en open je chats</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save passphrase in Keychain" xml:space="preserve">
@@ -5630,9 +5640,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Bewaar profiel wachtwoord</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save servers" xml:space="preserve">
+      <trans-unit id="Save servers" xml:space="preserve" approved="no">
         <source>Save servers</source>
-        <target>Bewaar servers</target>
+        <target state="translated">Servers opslaan</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save servers?" xml:space="preserve">
@@ -5645,8 +5655,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Welkom bericht opslaan?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save your profile?" xml:space="preserve">
+      <trans-unit id="Save your profile?" xml:space="preserve" approved="no">
         <source>Save your profile?</source>
+        <target state="translated">Uw profiel opslaan?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Saved" xml:space="preserve">
@@ -5749,8 +5760,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Selecteer</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Select chat profile" xml:space="preserve">
+      <trans-unit id="Select chat profile" xml:space="preserve" approved="no">
         <source>Select chat profile</source>
+        <target state="translated">Selecteer chatprofiel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Selected %lld" xml:space="preserve">
@@ -6088,8 +6100,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Instellingen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Settings were changed." xml:space="preserve">
+      <trans-unit id="Settings were changed." xml:space="preserve" approved="no">
         <source>Settings were changed.</source>
+        <target state="translated">Instellingen zijn gewijzigd.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Shape profile images" xml:space="preserve">
@@ -6127,8 +6140,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Deel link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share profile" xml:space="preserve">
+      <trans-unit id="Share profile" xml:space="preserve" approved="no">
         <source>Share profile</source>
+        <target state="translated">Profiel delen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share this 1-time invite link" xml:space="preserve">
@@ -6296,8 +6310,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Soft</target>
         <note>blur media</note>
       </trans-unit>
-      <trans-unit id="Some app settings were not migrated." xml:space="preserve">
+      <trans-unit id="Some app settings were not migrated." xml:space="preserve" approved="no">
         <source>Some app settings were not migrated.</source>
+        <target state="translated">Sommige app-instellingen zijn niet gemigreerd.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Some file(s) were not exported:" xml:space="preserve">
@@ -6661,9 +6676,9 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
         <target>De afzender wordt NIET op de hoogte gebracht</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The servers for new connections of your current chat profile **%@**." xml:space="preserve">
+      <trans-unit id="The servers for new connections of your current chat profile **%@**." xml:space="preserve" approved="no">
         <source>The servers for new connections of your current chat profile **%@**.</source>
-        <target>De servers voor nieuwe verbindingen van uw huidige chat profiel **%@**.</target>
+        <target state="translated">De servers voor nieuwe verbindingen van uw huidige chatprofiel **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The text you pasted is not a SimpleX link." xml:space="preserve">
@@ -6671,8 +6686,9 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
         <target>De tekst die u hebt geplakt is geen SimpleX link.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The uploaded database archive will be permanently removed from the servers." xml:space="preserve">
+      <trans-unit id="The uploaded database archive will be permanently removed from the servers." xml:space="preserve" approved="no">
         <source>The uploaded database archive will be permanently removed from the servers.</source>
+        <target state="translated">Het geüploade databasearchief wordt permanent van de servers verwijderd.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Themes" xml:space="preserve">
@@ -6750,9 +6766,9 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
         <target>Deze link is gebruikt met een ander mobiel apparaat. Maak een nieuwe link op de desktop.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This setting applies to messages in your current chat profile **%@**." xml:space="preserve">
+      <trans-unit id="This setting applies to messages in your current chat profile **%@**." xml:space="preserve" approved="no">
         <source>This setting applies to messages in your current chat profile **%@**.</source>
-        <target>Deze instelling is van toepassing op berichten in je huidige chat profiel **%@**.</target>
+        <target state="translated">Deze instelling is van toepassing op berichten in je huidige chatprofiel **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Title" xml:space="preserve">
@@ -6807,9 +6823,9 @@ U wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingesc
         <target>Geef toestemming om de microfoon te gebruiken om een spraakbericht op te nemen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." xml:space="preserve">
+      <trans-unit id="To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." xml:space="preserve" approved="no">
         <source>To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page.</source>
-        <target>Om uw verborgen profiel te onthullen, voert u een volledig wachtwoord in een zoek veld in op de pagina **Uw chat profielen**.</target>
+        <target state="translated">Om uw verborgen profiel te onthullen, voert u een volledig wachtwoord in een zoek veld in op de pagina **Uw chatprofielen**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To support instant push notifications the chat database has to be migrated." xml:space="preserve">
@@ -6922,9 +6938,9 @@ U wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingesc
         <target>zichtbaar maken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unhide chat profile" xml:space="preserve">
+      <trans-unit id="Unhide chat profile" xml:space="preserve" approved="no">
         <source>Unhide chat profile</source>
-        <target>Chat profiel zichtbaar maken</target>
+        <target state="translated">Chatprofiel zichtbaar maken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unhide profile" xml:space="preserve">
@@ -7424,9 +7440,9 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>Jij staat toe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You already have a chat profile with the same display name. Please choose another name." xml:space="preserve">
+      <trans-unit id="You already have a chat profile with the same display name. Please choose another name." xml:space="preserve" approved="no">
         <source>You already have a chat profile with the same display name. Please choose another name.</source>
-        <target>Je hebt al een chat profiel met dezelfde weergave naam. Kies een andere naam.</target>
+        <target state="translated">Je hebt al een chatprofiel met dezelfde weergave naam. Kies een andere naam.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already connected to %@." xml:space="preserve">
@@ -7758,17 +7774,19 @@ Verbindingsverzoek herhalen?</target>
         <target>Uw chat database is niet versleuteld, stel een wachtwoord in om deze te versleutelen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your chat preferences" xml:space="preserve">
+      <trans-unit id="Your chat preferences" xml:space="preserve" approved="no">
         <source>Your chat preferences</source>
+        <target state="translated">Uw chat voorkeuren</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Your chat profiles" xml:space="preserve">
+      <trans-unit id="Your chat profiles" xml:space="preserve" approved="no">
         <source>Your chat profiles</source>
-        <target>Uw chat profielen</target>
+        <target state="translated">Uw chat profielen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile." xml:space="preserve">
+      <trans-unit id="Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile." xml:space="preserve" approved="no">
         <source>Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile.</source>
+        <target state="translated">Uw verbinding is verplaatst naar %@, maar er is een onverwachte fout opgetreden tijdens het omleiden naar het profiel.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">
@@ -7821,8 +7839,9 @@ Verbindingsverzoek herhalen?</target>
         <target>Uw profiel wordt op uw apparaat opgeslagen en alleen gedeeld met uw contacten. SimpleX servers kunnen uw profiel niet zien.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your profile was changed. If you save it, the updated profile will be sent to all your contacts." xml:space="preserve">
+      <trans-unit id="Your profile was changed. If you save it, the updated profile will be sent to all your contacts." xml:space="preserve" approved="no">
         <source>Your profile was changed. If you save it, the updated profile will be sent to all your contacts.</source>
+        <target state="translated">Je profiel is gewijzigd. Als je het opslaat, wordt het bijgewerkte profiel naar al je contacten verzonden.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Your profile, contacts and delivered messages are stored on your device." xml:space="preserve">
@@ -8969,9 +8988,9 @@ laatst ontvangen bericht: %2$@</target>
         <target>Het wachtwoord van de database verschilt van het wachtwoord die in de keychain is opgeslagen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database passphrase is required to open chat." xml:space="preserve">
+      <trans-unit id="Database passphrase is required to open chat." xml:space="preserve" approved="no">
         <source>Database passphrase is required to open chat.</source>
-        <target>Database wachtwoord is vereist om je gesprekken te openen.</target>
+        <target state="translated">Database wachtwoord is vereist om je chats te openen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database upgrade required" xml:space="preserve">
