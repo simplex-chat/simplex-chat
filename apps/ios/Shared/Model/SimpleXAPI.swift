@@ -585,13 +585,13 @@ func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) throws -> (Gro
     throw r
 }
 
-func apiContactQueueInfo(_ contactId: Int64) async throws -> (RcvMsgInfo?, QueueInfo) {
+func apiContactQueueInfo(_ contactId: Int64) async throws -> (RcvMsgInfo?, ServerQueueInfo) {
     let r = await chatSendCmd(.apiContactQueueInfo(contactId: contactId))
     if case let .queueInfo(_, rcvMsgInfo, queueInfo) = r { return (rcvMsgInfo, queueInfo) }
     throw r
 }
 
-func apiGroupMemberQueueInfo(_ groupId: Int64, _ groupMemberId: Int64) async throws -> (RcvMsgInfo?, QueueInfo) {
+func apiGroupMemberQueueInfo(_ groupId: Int64, _ groupMemberId: Int64) async throws -> (RcvMsgInfo?, ServerQueueInfo) {
     let r = await chatSendCmd(.apiGroupMemberQueueInfo(groupId: groupId, groupMemberId: groupMemberId))
     if case let .queueInfo(_, rcvMsgInfo, queueInfo) = r { return (rcvMsgInfo, queueInfo) }
     throw r
@@ -1000,6 +1000,10 @@ func apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64)) async thr
     try await sendCommandOkResp(.apiChatRead(type: type, id: id, itemRange: itemRange))
 }
 
+func apiChatItemsRead(type: ChatType, id: Int64, itemIds: [Int64]) async throws {
+    try await sendCommandOkResp(.apiChatItemsRead(type: type, id: id, itemIds: itemIds))
+}
+
 func apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool) async throws {
     try await sendCommandOkResp(.apiChatUnread(type: type, id: id, unreadChat: unreadChat))
 }
@@ -1287,11 +1291,23 @@ func markChatUnread(_ chat: Chat, unreadChat: Bool = true) async {
 
 func apiMarkChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
     do {
-        logger.debug("apiMarkChatItemRead: \(cItem.id)")
         try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: (cItem.id, cItem.id))
-        await ChatModel.shared.markChatItemRead(cInfo, cItem)
+        DispatchQueue.main.async {
+            ChatModel.shared.markChatItemsRead(cInfo, [cItem.id])
+        }
     } catch {
-        logger.error("apiMarkChatItemRead apiChatRead error: \(responseError(error))")
+        logger.error("apiChatRead error: \(responseError(error))")
+    }
+}
+
+func apiMarkChatItemsRead(_ cInfo: ChatInfo, _ itemIds: [ChatItem.ID]) async {
+    do {
+        try await apiChatItemsRead(type: cInfo.chatType, id: cInfo.apiId, itemIds: itemIds)
+        DispatchQueue.main.async {
+            ChatModel.shared.markChatItemsRead(cInfo, itemIds)
+        }
+    } catch {
+        logger.error("apiChatItemsRead error: \(responseError(error))")
     }
 }
 
@@ -2199,9 +2215,11 @@ func refreshCallInvitations() async throws {
     }
 }
 
-func justRefreshCallInvitations() throws {
+func justRefreshCallInvitations() async throws {
     let callInvitations = try apiGetCallInvitationsSync()
-    ChatModel.shared.callInvitations = callsByChat(callInvitations)
+    await MainActor.run {
+        ChatModel.shared.callInvitations = callsByChat(callInvitations)
+    }
 }
 
 private func callsByChat(_ callInvitations: [RcvCallInvitation]) -> [ChatId: RcvCallInvitation] {
@@ -2211,12 +2229,13 @@ private func callsByChat(_ callInvitations: [RcvCallInvitation]) -> [ChatId: Rcv
 }
 
 func activateCall(_ callInvitation: RcvCallInvitation) {
-    if !callInvitation.user.showNotifications { return }
     let m = ChatModel.shared
+    logger.debug("reportNewIncomingCall activeCallUUID \(String(describing: m.activeCall?.callUUID)) invitationUUID \(String(describing: callInvitation.callUUID))")
+    if !callInvitation.user.showNotifications || m.activeCall?.callUUID == callInvitation.callUUID { return }
     CallController.shared.reportNewIncomingCall(invitation: callInvitation) { error in
         if let error = error {
             DispatchQueue.main.async {
-                m.callInvitations[callInvitation.contact.id]?.callkitUUID = nil
+                m.callInvitations[callInvitation.contact.id]?.callUUID = nil
             }
             logger.error("reportNewIncomingCall error: \(error.localizedDescription)")
         } else {

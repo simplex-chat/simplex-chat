@@ -8,179 +8,228 @@ import SimpleXChat
 
 struct UserPicker: View {
     @EnvironmentObject var m: ChatModel
-    @Environment(\.scenePhase) var scenePhase
     @EnvironmentObject var theme: AppTheme
-    @Binding var showSettings: Bool
-    @Binding var showConnectDesktop: Bool
-    @Binding var userPickerVisible: Bool
-    @State var scrollViewContentSize: CGSize = .zero
-    @State var disableScrolling: Bool = true
-    private let menuButtonHeight: CGFloat = 68
-    @State var chatViewNameWidth: CGFloat = 0
-
+    @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
+    @Environment(\.scenePhase) private var scenePhase: ScenePhase
+    @Environment(\.colorScheme) private var colorScheme: ColorScheme
+    @Environment(\.dismiss) private var dismiss: DismissAction
+    @Binding var activeSheet: UserPickerSheet?
+    @State private var switchingProfile = false
 
     var body: some View {
-        VStack {
-            Spacer().frame(height: 1)
-            VStack(spacing: 0) {
-                ScrollView {
-                    ScrollViewReader { sp in
-                        let users = m.users
-                                    .filter({ u in u.user.activeUser || !u.user.hidden })
-                                    .sorted { u, _ in u.user.activeUser }
-                        VStack(spacing: 0) {
-                            ForEach(users) { u in
-                                userView(u)
-                                Divider()
-                                if u.user.activeUser { Divider() }
+        if #available(iOS 16.0, *) {
+            let v = viewBody.presentationDetents([.height(420)])
+            if #available(iOS 16.4, *) {
+                v.scrollBounceBehavior(.basedOnSize)
+            } else {
+                v
+            }
+        } else {
+            viewBody
+        }
+    }
+    
+    private var viewBody: some View {
+        let otherUsers = m.users.filter { u in !u.user.hidden && u.user.userId != m.currentUser?.userId }
+        return List {
+            Section(header: Text("You").foregroundColor(theme.colors.secondary)) {
+                if let user = m.currentUser {
+                    openSheetOnTap(label: {
+                        ZStack {
+                            let v = ProfilePreview(profileOf: user)
+                                .foregroundColor(.primary)
+                                .padding(.leading, -8)
+                            if #available(iOS 16.0, *) {
+                                v
+                            } else {
+                                v.padding(.vertical, 4)
                             }
                         }
-                        .overlay {
-                            GeometryReader { geo -> Color in
-                                DispatchQueue.main.async {
-                                    scrollViewContentSize = geo.size
-                                    let scenes = UIApplication.shared.connectedScenes
-                                    if let windowScene = scenes.first as? UIWindowScene {
-                                        let layoutFrame = windowScene.windows[0].safeAreaLayoutGuide.layoutFrame
-                                        disableScrolling = scrollViewContentSize.height + menuButtonHeight + 10 < layoutFrame.height
-                                    }
-                                }
-                                return Color.clear
-                            }
-                        }
-                        .onChange(of: userPickerVisible) { visible in
-                            if visible, let u = users.first {
-                                sp.scrollTo(u.id)
-                            }
-                        }
+                    }) {
+                        activeSheet = .currentProfile
                     }
-                }
-                .simultaneousGesture(DragGesture(minimumDistance: disableScrolling ? 0 : 10000000))
-                .frame(maxHeight: scrollViewContentSize.height)
 
-                menuButton("Use from desktop", icon: "desktopcomputer") {
-                    showConnectDesktop = true
-                    withAnimation {
-                        userPickerVisible.toggle()
+                    openSheetOnTap(title: m.userAddress == nil ? "Create SimpleX address" : "Your SimpleX address", icon: "qrcode") {
+                        activeSheet = .address
+                    }
+                    
+                    openSheetOnTap(title: "Chat preferences", icon: "switch.2") {
+                        activeSheet = .chatPreferences
                     }
                 }
-                Divider()
-                menuButton("Settings", icon: "gearshape") {
-                    showSettings = true
-                    withAnimation {
-                        userPickerVisible.toggle()
+            }
+
+            Section {
+                if otherUsers.isEmpty {
+                    openSheetOnTap(title: "Your chat profiles", icon: "person.crop.rectangle.stack") {
+                        activeSheet = .chatProfiles
+                    }
+                } else {
+                    let v = userPickerRow(otherUsers, size: 44)
+                        .padding(.leading, -11)
+                    if #available(iOS 16.0, *) {
+                        v
+                    } else {
+                        v.padding(.vertical, 4)
+                    }
+                }
+
+                openSheetOnTap(title: "Use from desktop", icon: "desktopcomputer") {
+                    activeSheet = .useFromDesktop
+                }
+
+                ZStack(alignment: .trailing) {
+                    openSheetOnTap(title: "Settings", icon: "gearshape") {
+                        activeSheet = .settings
+                    }
+                    Label {} icon: {
+                        Image(systemName: colorScheme == .light ? "sun.max" : "moon.fill")
+                            .resizable()
+                            .symbolRenderingMode(.monochrome)
+                            .foregroundColor(theme.colors.secondary)
+                            .frame(maxWidth: 20, maxHeight: 20)
+                    }
+                    .onTapGesture {
+                        if (colorScheme == .light) {
+                            ThemeManager.applyTheme(systemDarkThemeDefault.get())
+                        } else {
+                            ThemeManager.applyTheme(DefaultTheme.LIGHT.themeName)
+                        }
+                    }
+                    .onLongPressGesture {
+                        ThemeManager.applyTheme(DefaultTheme.SYSTEM_THEME_NAME)
                     }
                 }
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .background(
-            Rectangle()
-                .fill(theme.colors.surface)
-                .cornerRadius(16)
-                .shadow(color: .black.opacity(0.12), radius: 24, x: 0, y: 0)
-        )
-        .onPreferenceChange(DetermineWidth.Key.self) { chatViewNameWidth = $0 }
-        .frame(maxWidth: chatViewNameWidth > 0 ? min(300, chatViewNameWidth + 130) : 300)
-        .padding(8)
-        .opacity(userPickerVisible ? 1.0 : 0.0)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .onAppear {
-             // This check prevents the call of listUsers after the app is suspended, and the database is closed.
-             if case .active = scenePhase {
-                 Task {
-                     do {
-                         let users = try await listUsersAsync()
-                         await MainActor.run { m.users = users }
-                     } catch {
-                         logger.error("Error loading users \(responseError(error))")
-                     }
-                 }
-             }
-         }
-    }
-
-    private func userView(_ u: UserInfo) -> some View {
-        let user = u.user
-        return Button(action: {
-            if user.activeUser {
-                showSettings = true
-                withAnimation {
-                    userPickerVisible.toggle()
-                }
-            } else {
+            // This check prevents the call of listUsers after the app is suspended, and the database is closed.
+            if case .active = scenePhase {
                 Task {
                     do {
-                        try await changeActiveUserAsync_(user.userId, viewPwd: nil)
-                        await MainActor.run { userPickerVisible = false }
+                        let users = try await listUsersAsync()
+                        await MainActor.run { m.users = users }
                     } catch {
-                        await MainActor.run {
-                            AlertManager.shared.showAlertMsg(
-                                title: "Error switching profile!",
-                                message: "Error: \(responseError(error))"
-                            )
-                        }
+                        logger.error("Error loading users \(responseError(error))")
                     }
                 }
             }
-        }, label: {
-            HStack(spacing: 0) {
-                ProfileImage(imageStr: user.image, size: 44, color: Color(uiColor: .tertiarySystemFill))
-                    .padding(.trailing, 12)
-                Text(user.chatViewName)
-                    .fontWeight(user.activeUser ? .medium : .regular)
-                    .foregroundColor(theme.colors.onBackground)
-                    .overlay(DetermineWidth())
-                Spacer()
-                if user.activeUser {
-                    Image(systemName: "checkmark")
-                } else if u.unreadCount > 0 {
-                    unreadCounter(u.unreadCount, color: user.showNtfs ? theme.colors.primary : theme.colors.secondary)
-                } else if !user.showNtfs {
-                    Image(systemName: "speaker.slash")
+        }
+        .modifier(ThemedBackground(grouped: true))
+        .disabled(switchingProfile)
+    }
+        
+    private func userPickerRow(_ users: [UserInfo], size: CGFloat) -> some View {
+        HStack(spacing: 6) {
+            let s = ScrollView(.horizontal) {
+                HStack(spacing: 27) {
+                    ForEach(users) { u in
+                        if !u.user.hidden && u.user.userId != m.currentUser?.userId {
+                            userView(u, size: size)
+                        }
+                    }
+                }
+                .padding(.leading, 4)
+                .padding(.trailing, 22)
+            }
+            ZStack(alignment: .trailing) {
+                if #available(iOS 16.0, *) {
+                    s.scrollIndicators(.hidden)
+                } else {
+                    s
+                }
+                LinearGradient(
+                    colors: [.clear, .black],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+                .frame(width: size, height: size + 3)
+                .blendMode(.destinationOut)
+                .allowsHitTesting(false)
+            }
+            .compositingGroup()
+            .padding(.top, -3) // to fit unread badge
+            Spacer()
+            Image(systemName: "chevron.right")
+                .foregroundColor(theme.colors.secondary)
+                .padding(.trailing, 4)
+                .onTapGesture {
+                    activeSheet = .chatProfiles
+                }
+        }
+    }
+
+    private func userView(_ u: UserInfo, size: CGFloat) -> some View {
+        ZStack(alignment: .topTrailing) {
+            ProfileImage(imageStr: u.user.image, size: size, color: Color(uiColor: .tertiarySystemGroupedBackground))
+                .padding([.top, .trailing], 3)
+            if (u.unreadCount > 0) {
+                unreadBadge(u)
+            }
+        }
+        .frame(width: size)
+        .onTapGesture {
+            switchingProfile = true
+            Task {
+                do {
+                    try await changeActiveUserAsync_(u.user.userId, viewPwd: nil)
+                    await MainActor.run {
+                        switchingProfile = false
+                        dismiss()
+                    }
+                } catch {
+                    await MainActor.run {
+                        switchingProfile = false
+                        AlertManager.shared.showAlertMsg(
+                            title: "Error switching profile!",
+                            message: "Error: \(responseError(error))"
+                        )
+                    }
                 }
             }
-            .padding(.trailing)
-            .padding([.leading, .vertical], 12)
-        })
-        .buttonStyle(PressedButtonStyle(defaultColor: theme.colors.surface, pressedColor: Color(uiColor: .secondarySystemFill)))
+        }
     }
-
-    private func menuButton(_ title: LocalizedStringKey, icon: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 0) {
-                Text(title)
-                    .overlay(DetermineWidth())
-                Spacer()
-                Image(systemName: icon)
+    
+    private func openSheetOnTap(title: LocalizedStringKey, icon: String, action: @escaping () -> Void) -> some View {
+        openSheetOnTap(label: {
+            ZStack(alignment: .leading) {
+                Image(systemName: icon).frame(maxWidth: 24, maxHeight: 24, alignment: .center)
                     .symbolRenderingMode(.monochrome)
                     .foregroundColor(theme.colors.secondary)
+                Text(title)
+                    .foregroundColor(.primary)
+                    .padding(.leading, 36)
             }
-            .padding(.horizontal)
-            .padding(.vertical, 22)
-            .frame(height: menuButtonHeight)
-        }
-        .buttonStyle(PressedButtonStyle(defaultColor: theme.colors.surface, pressedColor: Color(uiColor: .secondarySystemFill)))
+        }, action: action)
     }
-}
-
-private func unreadCounter(_ unread: Int, color: Color) -> some View {
-    unreadCountText(unread)
-    .font(.caption)
-    .foregroundColor(.white)
-    .padding(.horizontal, 4)
-    .frame(minWidth: 18, minHeight: 18)
-    .background(color)
-    .cornerRadius(10)
+    
+    private func openSheetOnTap<V: View>(label: () -> V, action: @escaping () -> Void) -> some View {
+        Button(action: action, label: label)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+    }
+    
+    private func unreadBadge(_ u: UserInfo) -> some View {
+        let size = dynamicSize(userFont).chatInfoSize
+        return unreadCountText(u.unreadCount)
+            .font(userFont <= .xxxLarge ? .caption  : .caption2)
+            .foregroundColor(.white)
+            .padding(.horizontal, dynamicSize(userFont).unreadPadding)
+            .frame(minWidth: size, minHeight: size)
+            .background(u.user.showNtfs ? theme.colors.primary : theme.colors.secondary)
+            .cornerRadius(dynamicSize(userFont).unreadCorner)
+    }
 }
 
 struct UserPicker_Previews: PreviewProvider {
     static var previews: some View {
+        @State var activeSheet: UserPickerSheet?
+
         let m = ChatModel()
         m.users = [UserInfo.sampleData, UserInfo.sampleData]
         return UserPicker(
-            showSettings: Binding.constant(false),
-            showConnectDesktop: Binding.constant(false),
-            userPickerVisible: Binding.constant(true)
+            activeSheet: $activeSheet
         )
         .environmentObject(m)
     }

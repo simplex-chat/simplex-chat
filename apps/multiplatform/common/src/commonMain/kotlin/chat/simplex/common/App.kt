@@ -6,14 +6,11 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -42,12 +39,6 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlin.math.sqrt
-
-data class SettingsViewState(
-  val userPickerState: MutableStateFlow<AnimatedViewState>,
-  val scaffoldState: ScaffoldState
-)
 
 @Composable
 fun AppScreen() {
@@ -74,6 +65,7 @@ fun MainScreen() {
   LaunchedEffect(showAdvertiseLAAlert) {
     if (
       !chatModel.controller.appPrefs.laNoticeShown.get()
+      && !appPrefs.performLA.get()
       && showAdvertiseLAAlert
       && chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete
       && chatModel.chats.size > 3
@@ -144,13 +136,11 @@ fun MainScreen() {
               userPickerState.value = AnimatedViewState.VISIBLE
             }
           }
-          val scaffoldState = rememberScaffoldState()
-          val settingsState = remember { SettingsViewState(userPickerState, scaffoldState) }
           SetupClipboardListener()
           if (appPlatform.isAndroid) {
-            AndroidScreen(settingsState)
+            AndroidScreen(userPickerState)
           } else {
-            DesktopScreen(settingsState)
+            DesktopScreen(userPickerState)
           }
         }
       }
@@ -211,10 +201,8 @@ fun MainScreen() {
         } else {
           ActiveCallView()
         }
-      } else {
-        // It's needed for privacy settings toggle, so it can be shown even if the app is passcode unlocked
-        ModalManager.fullscreen.showPasscodeInView()
       }
+      ModalManager.fullscreen.showOneTimePasscodeInView()
       AlertManager.privacySensitive.showInView()
       if (onboarding == OnboardingStage.OnboardingComplete) {
         LaunchedEffect(chatModel.currentUser.value, chatModel.appOpenUrl.value) {
@@ -250,7 +238,7 @@ fun MainScreen() {
 val ANDROID_CALL_TOP_PADDING = 40.dp
 
 @Composable
-fun AndroidScreen(settingsState: SettingsViewState) {
+fun AndroidScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
   BoxWithConstraints {
     val call = remember { chatModel.activeCall} .value
     val showCallArea = call != null && call.callState != CallState.WaitCapabilities && call.callState != CallState.InvitationAccepted
@@ -263,7 +251,7 @@ fun AndroidScreen(settingsState: SettingsViewState) {
         }
         .padding(top = if (showCallArea) ANDROID_CALL_TOP_PADDING else 0.dp)
     ) {
-      StartPartOfScreen(settingsState)
+      StartPartOfScreen(userPickerState)
     }
     val scope = rememberCoroutineScope()
     val onComposed: suspend (chatId: String?) -> Unit = { chatId ->
@@ -319,15 +307,15 @@ fun AndroidScreen(settingsState: SettingsViewState) {
 }
 
 @Composable
-fun StartPartOfScreen(settingsState: SettingsViewState) {
+fun StartPartOfScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
   if (chatModel.setDeliveryReceipts.value) {
     SetDeliveryReceiptsView(chatModel)
   } else {
     val stopped = chatModel.chatRunning.value == false
     if (chatModel.sharedContent.value == null)
-      ChatListView(chatModel, settingsState, AppLock::setPerformLA, stopped)
+      ChatListView(chatModel, userPickerState, AppLock::setPerformLA, stopped)
     else
-      ShareListView(chatModel, settingsState, stopped)
+      ShareListView(chatModel, stopped)
   }
 }
 
@@ -368,49 +356,41 @@ fun EndPartOfScreen() {
 }
 
 @Composable
-fun DesktopScreen(settingsState: SettingsViewState) {
-  Box {
-    // 56.dp is a size of unused space of settings drawer
-    Box(Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier + 56.dp)) {
-      StartPartOfScreen(settingsState)
-    }
-    Box(Modifier.widthIn(max = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
-      ModalManager.start.showInView()
-      SwitchingUsersView()
-    }
-    Row(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier).clipToBounds()) {
-      Box(Modifier.widthIn(min = DEFAULT_MIN_CENTER_MODAL_WIDTH).weight(1f)) {
-        CenterPartOfScreen()
-      }
-      if (ModalManager.end.hasModalsOpen()) {
-        VerticalDivider()
-      }
-      Box(Modifier.widthIn(max = DEFAULT_END_MODAL_WIDTH * fontSizeSqrtMultiplier).clipToBounds()) {
-        EndPartOfScreen()
-      }
-    }
-    val (userPickerState, scaffoldState ) = settingsState
-    val scope = rememberCoroutineScope()
-    if (scaffoldState.drawerState.isOpen || (ModalManager.start.hasModalsOpen && !ModalManager.center.hasModalsOpen)) {
-      Box(
-        Modifier
-          .fillMaxSize()
-          .padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)
-          .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {
-            ModalManager.start.closeModals()
-            scope.launch { settingsState.scaffoldState.drawerState.close() }
-          })
-      )
-    }
-    VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier))
+fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
+  Box(Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
+    StartPartOfScreen(userPickerState)
     tryOrShowError("UserPicker", error = {}) {
-      UserPicker(chatModel, userPickerState) {
-        scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
-        userPickerState.value = AnimatedViewState.GONE
-      }
+      UserPicker(chatModel, userPickerState, setPerformLA = AppLock::setPerformLA)
     }
-    ModalManager.fullscreen.showInView()
   }
+  Box(Modifier.widthIn(max = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
+    ModalManager.start.showInView()
+    SwitchingUsersView()
+  }
+  Row(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier).clipToBounds()) {
+    Box(Modifier.widthIn(min = DEFAULT_MIN_CENTER_MODAL_WIDTH).weight(1f)) {
+      CenterPartOfScreen()
+    }
+    if (ModalManager.end.hasModalsOpen()) {
+      VerticalDivider()
+    }
+    Box(Modifier.widthIn(max = DEFAULT_END_MODAL_WIDTH * fontSizeSqrtMultiplier).clipToBounds()) {
+      EndPartOfScreen()
+    }
+  }
+  if (userPickerState.collectAsState().value.isVisible() || (ModalManager.start.hasModalsOpen && !ModalManager.center.hasModalsOpen)) {
+    Box(
+      Modifier
+        .fillMaxSize()
+        .padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)
+        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {
+          ModalManager.start.closeModals()
+          userPickerState.value = AnimatedViewState.HIDING
+        })
+    )
+  }
+  VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier))
+  ModalManager.fullscreen.showInView()
 }
 
 @Composable

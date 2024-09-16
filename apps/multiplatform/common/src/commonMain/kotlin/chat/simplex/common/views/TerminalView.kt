@@ -109,7 +109,6 @@ fun TerminalLayout(
         }
       },
       contentColor = LocalContentColor.current,
-      drawerContentColor = LocalContentColor.current,
       modifier = Modifier.navigationBarsWithImePadding()
     ) { contentPadding ->
       Surface(
@@ -132,7 +131,7 @@ fun TerminalLog() {
   }
   val clipboard = LocalClipboardManager.current
   LazyColumnWithScrollBar(reverseLayout = true) {
-    items(reversedTerminalItems) { item ->
+    items(reversedTerminalItems, key = { item -> item.id to item.createdAtNanos }) { item ->
       val rhId = item.remoteHostId
       val rhIdStr = if (rhId == null) "" else "$rhId "
       Text(

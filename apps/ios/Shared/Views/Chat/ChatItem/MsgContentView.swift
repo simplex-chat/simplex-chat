@@ -26,6 +26,7 @@ private func typing(_ w: Font.Weight = .light) -> Text {
 
 struct MsgContentView: View {
     @ObservedObject var chat: Chat
+    @Environment(\.showTimestamp) var showTimestamp: Bool
     @EnvironmentObject var theme: AppTheme
     var text: String
     var formattedText: [FormattedText]? = nil
@@ -84,7 +85,7 @@ struct MsgContentView: View {
     }
 
     private func reserveSpaceForMeta(_ mt: CIMeta) -> Text {
-        (rightToLeft ? Text("\n") : Text("   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: nil, transparent: true, showViaProxy: showSentViaProxy)
+        (rightToLeft ? Text("\n") : Text("   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
     }
 }
 

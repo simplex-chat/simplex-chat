@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chatlist.DevicePill
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import kotlin.math.absoluteValue
@@ -85,7 +86,8 @@ fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Co
               Text(
                 title.value,
                 fontWeight = FontWeight.SemiBold,
-                maxLines = 1
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
               )
             }
           } else {
@@ -156,9 +158,13 @@ private fun bottomTitleAlpha(connection: CollapsingAppBarNestedScrollConnection?
 @Composable
 private fun HostDeviceTitle(hostDevice: Pair<Long?, String>, extraPadding: Boolean = false) {
   Row(Modifier.fillMaxWidth().padding(top = 5.dp, bottom = if (extraPadding) DEFAULT_PADDING * 2 else DEFAULT_PADDING_HALF), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Start) {
-    Icon(painterResource(if (hostDevice.first == null) MR.images.ic_desktop else MR.images.ic_smartphone_300), null, Modifier.size(15.dp), tint = MaterialTheme.colors.secondary)
-    Spacer(Modifier.width(10.dp))
-    Text(hostDevice.second, color = MaterialTheme.colors.secondary)
+    DevicePill(
+      active = true,
+      onClick = {},
+      actionButtonVisible = false,
+      icon = painterResource(if (hostDevice.first == null) MR.images.ic_desktop else MR.images.ic_smartphone_300),
+      text = hostDevice.second
+    )
   }
 }
 

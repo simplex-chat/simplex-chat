@@ -9,6 +9,7 @@ import SectionView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.MaterialTheme.colors
@@ -53,7 +54,7 @@ expect fun AppearanceView(m: ChatModel)
 object AppearanceScope {
   @Composable
   fun ProfileImageSection() {
-    SectionView(stringResource(MR.strings.settings_section_title_profile_images).uppercase(), padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+    SectionView(stringResource(MR.strings.settings_section_title_profile_images).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
       val image = remember { chatModel.currentUser }.value?.image
       Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
         val size = 60
@@ -86,7 +87,7 @@ object AppearanceScope {
   @Composable
   fun FontScaleSection() {
     val localFontScale = remember { mutableStateOf(appPrefs.fontScale.get()) }
-    SectionView(stringResource(MR.strings.appearance_font_size).uppercase(), padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+    SectionView(stringResource(MR.strings.appearance_font_size).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
       Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(60.dp)
           .background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22))
@@ -603,6 +604,39 @@ object AppearanceScope {
         }
       }
       SectionBottomSpacer()
+    }
+  }
+
+  @Composable
+  fun ColorModeSwitcher() {
+    val currentTheme by CurrentColors.collectAsState()
+    val themeMode = if (remember { appPrefs.currentTheme.state }.value == DefaultTheme.SYSTEM_THEME_NAME) {
+      if (systemInDarkThemeCurrently) DefaultThemeMode.DARK else DefaultThemeMode.LIGHT
+    } else {
+      currentTheme.base.mode
+    }
+
+    val onLongClick = {
+      ThemeManager.applyTheme(DefaultTheme.SYSTEM_THEME_NAME)
+      showToast(generalGetString(MR.strings.system_mode_toast))
+
+      saveThemeToDatabase(null)
+    }
+    Box(
+      modifier = Modifier
+        .clip(CircleShape)
+        .combinedClickable(
+          onClick = {
+            ThemeManager.applyTheme(if (themeMode == DefaultThemeMode.LIGHT) appPrefs.systemDarkTheme.get()!! else DefaultTheme.LIGHT.themeName)
+            saveThemeToDatabase(null)
+          },
+          onLongClick = onLongClick
+        )
+        .onRightClick(onLongClick)
+        .size(44.dp),
+      contentAlignment = Alignment.Center
+    ) {
+      Icon(painterResource(if (themeMode == DefaultThemeMode.LIGHT) MR.images.ic_light_mode else MR.images.ic_bedtime_moon), stringResource(MR.strings.color_mode_light), tint = MaterialTheme.colors.secondary)
     }
   }
 

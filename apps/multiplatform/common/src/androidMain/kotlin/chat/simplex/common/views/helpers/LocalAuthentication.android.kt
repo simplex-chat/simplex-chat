@@ -14,6 +14,7 @@ actual fun authenticate(
   promptSubtitle: String,
   selfDestruct: Boolean,
   usingLAMode: LAMode,
+  oneTime: Boolean,
   completed: (LAResult) -> Unit
 ) {
   val activity = mainActivity.get() ?: return completed(LAResult.Error(""))
@@ -27,7 +28,7 @@ actual fun authenticate(
       else -> completed(LAResult.Unavailable())
     }
     LAMode.PASSCODE -> {
-      authenticateWithPasscode(promptTitle, promptSubtitle, selfDestruct, completed)
+      authenticateWithPasscode(promptTitle, promptSubtitle, selfDestruct, oneTime, completed)
     }
   }
 }

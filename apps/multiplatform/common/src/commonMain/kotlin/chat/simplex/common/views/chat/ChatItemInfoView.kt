@@ -282,14 +282,14 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
       val versions = ciInfo.itemVersions
       if (versions.isNotEmpty()) {
-        SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+        SectionView(contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
           Text(stringResource(MR.strings.edit_history), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
           versions.forEachIndexed { i, ciVersion ->
             ItemVersionView(ciVersion, current = i == 0)
           }
         }
       } else {
-        SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+        SectionView(contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
           Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(stringResource(MR.strings.no_history), color = MaterialTheme.colors.secondary)
           }
@@ -304,7 +304,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
     ColumnWithScrollBar(Modifier.fillMaxWidth()) {
       Details()
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
-      SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+      SectionView(contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
         Text(stringResource(MR.strings.in_reply_to), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
         QuotedMsgView(qi)
       }
@@ -381,14 +381,14 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
       val mss = membersStatuses(chatModel, memberDeliveryStatuses)
       if (mss.isNotEmpty()) {
-        SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+        SectionView(contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
           Text(stringResource(MR.strings.delivery), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
           mss.forEach { (member, status, sentViaProxy) ->
             MemberDeliveryStatusView(member, status, sentViaProxy)
           }
         }
       } else {
-        SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+        SectionView(contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
           Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(stringResource(MR.strings.no_info_on_delivery), color = MaterialTheme.colors.secondary)
           }

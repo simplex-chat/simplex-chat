@@ -59,13 +59,6 @@ struct ConnectDesktopView: View {
     var body: some View {
         if viaSettings {
             viewBody
-                .modifier(BackButton(label: "Back", disabled: Binding.constant(false)) {
-                    if m.activeRemoteCtrl {
-                        alert = .disconnectDesktop(action: .back)
-                    } else {
-                        dismiss()
-                    }
-                })
         } else {
             NavigationView {
                 viewBody
