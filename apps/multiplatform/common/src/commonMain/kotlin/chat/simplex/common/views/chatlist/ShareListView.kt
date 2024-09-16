@@ -69,9 +69,9 @@ fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
         sharedContent.chatItems.forEach {
           val mc = it.content.msgContent
           if (mc != null) {
-            isMediaOrFileAttachment = mc.isMediaOrFileAttachment
-            isVoice = mc.isVoice
-            hasSimplexLink = hasSimplexLink(mc.text)
+            isMediaOrFileAttachment = isMediaOrFileAttachment || mc.isMediaOrFileAttachment
+            isVoice = isVoice || mc.isVoice
+            hasSimplexLink = hasSimplexLink || hasSimplexLink(mc.text)
           }
         }
       }
