@@ -1471,17 +1471,6 @@ private fun DownloadFilesButton(
 }
 
 @Composable
-private fun HideForwardConfirmationButton(
-  text: String,
-  modifier: Modifier = Modifier,
-  contentPadding: PaddingValues = ButtonDefaults.TextButtonContentPadding
-) {
-  TextButton(onClick = { AlertManager.shared.hideAlert() }, modifier = modifier, contentPadding = contentPadding) {
-    Text(text, textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-  }
-}
-
-@Composable
 private fun ForwardButton(
   forwardPlan: CR.ForwardPlan,
   chatInfo: ChatInfo,
@@ -1848,12 +1837,16 @@ private fun handleForwardConfirmation(
             Column {
               ForwardButton(forwardPlan, chatInfo, fillMaxWidthModifier, contentPadding)
               DownloadFilesButton(confirmation, rhId, fillMaxWidthModifier, contentPadding)
-              HideForwardConfirmationButton(stringResource(MR.strings.cancel_verb), fillMaxWidthModifier, contentPadding)
+              TextButton(onClick = { AlertManager.shared.hideAlert() }, modifier = fillMaxWidthModifier, contentPadding = contentPadding) {
+                Text(stringResource(MR.strings.cancel_verb), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+              }
             }
           }
           else -> {
             ButtonRow(Arrangement.SpaceBetween) {
-              HideForwardConfirmationButton(stringResource(MR.strings.cancel_verb))
+              TextButton(onClick = { AlertManager.shared.hideAlert() }) {
+                Text(stringResource(MR.strings.cancel_verb), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+              }
               ForwardButton(forwardPlan, chatInfo)
             }
           }
@@ -1862,12 +1855,16 @@ private fun handleForwardConfirmation(
         when (val confirmation = forwardPlan.forwardConfirmation) {
           is ForwardConfirmation.FilesNotAccepted -> {
             ButtonRow(Arrangement.SpaceBetween) {
-              HideForwardConfirmationButton(stringResource(MR.strings.cancel_verb))
+              TextButton(onClick = { AlertManager.shared.hideAlert() }) {
+                Text(stringResource(MR.strings.cancel_verb), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+              }
               DownloadFilesButton(confirmation, rhId)
             }
           }
           else -> ButtonRow(Arrangement.Center) {
-            HideForwardConfirmationButton(stringResource(MR.strings.ok))
+            TextButton(onClick = { AlertManager.shared.hideAlert() }) {
+              Text(stringResource(MR.strings.ok), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+            }
           }
         }
       }
