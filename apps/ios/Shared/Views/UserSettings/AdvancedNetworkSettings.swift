@@ -38,14 +38,14 @@ struct AdvancedNetworkSettings: View {
     @State private var onionHosts: OnionHosts = .no
     @State private var showSaveDialog = false
     @State private var useSocksProxy = false
-    @State private var socksProxy = ProxyComponents()
-    @State private var currentSocksProxy = ProxyComponents()
+    @State private var socksProxy = SocksProxy()
+    @State private var currentSocksProxy = SocksProxy()
 
-    struct ProxyComponents: Equatable {
+    struct SocksProxy: Equatable {
         var username: String = ""
         var password: String = ""
-        var host: String = "localhost"
-        var port: String = "9050"
+        var host: String = ""
+        var port: String = ""
         var auth: Bool = false
         
         var valid: Bool {
@@ -70,7 +70,7 @@ struct AdvancedNetworkSettings: View {
             } else if auth {
                 res += "@"
             }
-            if host != "localhost" {
+            if host != "" {
                 if host.contains(":") {
                     res += "[\(host.trimmingCharacters(in: [" ", "[", "]"]))]"
                 } else {
@@ -82,10 +82,10 @@ struct AdvancedNetworkSettings: View {
             }
             return res.count == 0 ? nil : res
         }
-
-        static func from(proxy: String?) -> ProxyComponents {
+        
+        static func from(proxy: String?) -> SocksProxy {
             guard let proxy else {
-                return ProxyComponents(username: "", password: "", host: "localhost", port: "9050", auth: false)
+                return SocksProxy(username: "", password: "", host: "", port: "", auth: false)
             }
             var username = ""
             var password = ""
@@ -112,11 +112,11 @@ struct AdvancedNetworkSettings: View {
                 host = String(split[0])
                 port = split.count > 1 ? String(split[1]) : ""
             }
-            return ProxyComponents(
+            return SocksProxy(
                 username: username,
                 password: password,
-                host: host.count > 0 ? host : "localhost",
-                port: port.count > 0 ? port : "9050",
+                host: host.count > 0 ? host : "",
+                port: port.count > 0 ? port : "",
                 auth: username.count > 0 || password.count > 0
             )
         }
@@ -214,6 +214,47 @@ struct AdvancedNetworkSettings: View {
                 }
 
                 Section {
+                    Toggle("Use SOCKS proxy", isOn: $useSocksProxy)
+                    if useSocksProxy {
+                        TextField("IP address", text: $socksProxy.host)
+                        TextField("Port", text: $socksProxy.port)
+                        Toggle("Proxy requires password", isOn: $socksProxy.auth)
+                        if socksProxy.auth {
+                            TextField("Username", text: $socksProxy.username)
+                            SecureField("Password", text: $socksProxy.password)
+                        }
+                    }
+                } header: {
+                    HStack {
+                        Text("SOCKS proxy").foregroundColor(theme.colors.secondary)
+                        if useSocksProxy && !socksProxy.valid {
+                            Spacer()
+                            Image(systemName: "exclamationmark.circle.fill").foregroundColor(.red)
+                        }
+                    }
+                } footer: {
+                    if socksProxy.auth {
+                        Text("Your credentials may be sent unencrypted.")
+                            .foregroundColor(theme.colors.secondary)
+                    } else {
+                        Text("Do not use credentials with proxy.")
+                            .foregroundColor(theme.colors.secondary)
+                    }
+                }
+                .onChange(of: useSocksProxy) { useSocksProxy in
+                    netCfg.socksProxy = useSocksProxy && socksProxy.valid ? socksProxy.toProxyString() : nil
+                }
+                .onChange(of: socksProxy.auth) { _ in
+                    socksProxy.username = ""
+                    socksProxy.password = ""
+                }
+                .onChange(of: socksProxy) { sp in
+                    if sp.valid, let string = sp.toProxyString(), string != netCfg.socksProxy {
+                        netCfg.socksProxy = string
+                    }
+                }
+
+                Section {
                     Picker("Use .onion hosts", selection: $onionHosts) {
                         ForEach(OnionHosts.values, id: \.self) { Text($0.text) }
                     }
@@ -242,47 +283,6 @@ struct AdvancedNetworkSettings: View {
                     }
                 }
 
-                Section {
-                    Toggle("Use SOCKS proxy", isOn: $useSocksProxy)
-                    if useSocksProxy {
-                        TextField("IP address", text: $socksProxy.host)
-                        TextField("Port", text: $socksProxy.port)
-                        Toggle("Proxy requires password", isOn: $socksProxy.auth)
-                        if socksProxy.auth {
-                            TextField("Username", text: $socksProxy.username)
-                            SecureField("Password", text: $socksProxy.password)
-                        }
-                    }
-                } header: {
-                    HStack {
-                        Text("SOCKS proxy").foregroundColor(theme.colors.secondary)
-                        if useSocksProxy && !socksProxy.valid {
-                            Spacer()
-                            Image(systemName: "exclamationmark.circle.fill").foregroundColor(.red)
-                        }
-                    }
-                } footer: {
-                    if socksProxy.auth {
-                        Text("Your credentials may be sent unencrypted.")
-                            .foregroundColor(theme.colors.secondary)
-                    } else {
-                        Text("Do not use credentials with proxy.")
-                            .foregroundColor(theme.colors.secondary)
-                    }
-                }
-                .onChange(of: useSocksProxy) { _ in
-                    socksProxy = ProxyComponents()
-                }
-                .onChange(of: socksProxy.auth) { _ in
-                    socksProxy.username = ""
-                    socksProxy.password = ""
-                }
-                .onChange(of: socksProxy) { sp in
-                    let string = sp.toProxyString()
-                    if let string, sp.valid, string != netCfg.socksProxy {
-                        netCfg.socksProxy = string
-                    }
-                }
                 Section("TCP connection") {
                     timeoutSettingPicker("TCP connection timeout", selection: $netCfg.tcpConnectTimeout, values: [10_000000, 15_000000, 20_000000, 30_000000, 45_000000, 60_000000, 90_000000], label: secondsLabel)
                     timeoutSettingPicker("Protocol timeout", selection: $netCfg.tcpTimeout, values: [5_000000, 7_000000, 10_000000, 15_000000, 20_000000, 30_000000], label: secondsLabel)
@@ -378,7 +378,7 @@ struct AdvancedNetworkSettings: View {
         onionHosts = OnionHosts(netCfg: netCfg)
         enableKeepAlive = netCfg.enableKeepAlive
         keepAliveOpts = netCfg.tcpKeepAlive ?? KeepAliveOpts.defaults
-        socksProxy = ProxyComponents.from(proxy: netCfg.socksProxy)
+        socksProxy = SocksProxy.from(proxy: netCfg.socksProxy)
         useSocksProxy = netCfg.socksProxy != nil
     }
 
