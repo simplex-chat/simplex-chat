@@ -2664,9 +2664,9 @@ Ez az ön egyszer használatos hivatkozása!</target>
         <target>Jelkód megadása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enter correct passphrase." xml:space="preserve">
+      <trans-unit id="Enter correct passphrase." xml:space="preserve" approved="no">
         <source>Enter correct passphrase.</source>
-        <target>Helyes jelmondat bevitele.</target>
+        <target state="translated">Adja meg a helyes jelmondatot.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter group name…" xml:space="preserve">
@@ -2882,8 +2882,9 @@ Ez az ön egyszer használatos hivatkozása!</target>
         <target>Hiba a %@ kiszolgálók betöltésekor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error migrating settings" xml:space="preserve">
+      <trans-unit id="Error migrating settings" xml:space="preserve" approved="no">
         <source>Error migrating settings</source>
+        <target state="translated">Hiba a beallítások átköltöztetése közben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error opening chat" xml:space="preserve">
@@ -2986,8 +2987,9 @@ Ez az ön egyszer használatos hivatkozása!</target>
         <target>Hiba a csevegés megállításakor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error switching profile" xml:space="preserve">
+      <trans-unit id="Error switching profile" xml:space="preserve" approved="no">
         <source>Error switching profile</source>
+        <target state="translated">Hiba a profilváltás közben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error switching profile!" xml:space="preserve">
@@ -3455,9 +3457,9 @@ Hiba: %2$@</target>
         <target>Csoport moderáció</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group preferences" xml:space="preserve">
+      <trans-unit id="Group preferences" xml:space="preserve" approved="no">
         <source>Group preferences</source>
-        <target>Csoport beállítások</target>
+        <target state="translated">Csoportbeállítások</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group profile" xml:space="preserve">
@@ -4324,9 +4326,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Átköltöztetés hiba:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migration failed. Tap **Skip** below to continue using the current database. Please report the issue to the app developers via chat or email [chat@simplex.chat](mailto:chat@simplex.chat)." xml:space="preserve">
+      <trans-unit id="Migration failed. Tap **Skip** below to continue using the current database. Please report the issue to the app developers via chat or email [chat@simplex.chat](mailto:chat@simplex.chat)." xml:space="preserve" approved="no">
         <source>Migration failed. Tap **Skip** below to continue using the current database. Please report the issue to the app developers via chat or email [chat@simplex.chat](mailto:chat@simplex.chat).</source>
-        <target>Sikertelen átköltöztetés. Koppintson a **Kihagyás** lehetőségre az aktuális adatbázis használatának folytatásához. Jelentse a problémát az alkalmazás fejlesztőinek csevegésben vagy e-mailben [chat@simplex.chat](mailto:chat@simplex.chat).</target>
+        <target state="translated">Sikertelen átköltöztetés. Koppintson a **Kihagyás** lehetőségre a jelenlegi adatbázis használatának folytatásához. Jelentse a problémát az alkalmazás fejlesztőinek csevegésben vagy e-mailben [chat@simplex.chat](mailto:chat@simplex.chat).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migration is completed" xml:space="preserve">
@@ -4737,9 +4739,9 @@ VPN engedélyezése szükséges.</target>
         <target>Átköltöztetés megkezdése egy másik eszközre</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Open server settings" xml:space="preserve">
+      <trans-unit id="Open server settings" xml:space="preserve" approved="no">
         <source>Open server settings</source>
-        <target>Kiszolgáló beállításainak megnyitása</target>
+        <target state="translated">Kiszolgáló-beállítások megnyitása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Open user profiles" xml:space="preserve">
@@ -4827,9 +4829,9 @@ VPN engedélyezése szükséges.</target>
         <target>Jelszó megjelenítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Past member %@" xml:space="preserve">
+      <trans-unit id="Past member %@" xml:space="preserve" approved="no">
         <source>Past member %@</source>
-        <target>%@ (már nem tag)</target>
+        <target state="translated">(már nem tag) %@</target>
         <note>past/unknown group member</note>
       </trans-unit>
       <trans-unit id="Paste desktop address" xml:space="preserve">
@@ -4931,9 +4933,9 @@ Hiba: %@</target>
         <target>Lépjen kapcsolatba a csoport adminnal.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please enter correct current passphrase." xml:space="preserve">
+      <trans-unit id="Please enter correct current passphrase." xml:space="preserve" approved="no">
         <source>Please enter correct current passphrase.</source>
-        <target>Adja meg a helyes aktuális jelmondatát.</target>
+        <target state="translated">Adja meg a helyes, jelenlegi jelmondatát.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please enter the previous password after restoring database backup. This action can not be undone." xml:space="preserve">
@@ -5379,8 +5381,9 @@ Engedélyezze a Beállítások / Hálózat és kiszolgálók menüben.</target>
         <target>Eltávolítás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Remove archive?" xml:space="preserve">
+      <trans-unit id="Remove archive?" xml:space="preserve" approved="no">
         <source>Remove archive?</source>
+        <target state="translated">Archívum törlése?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Remove image" xml:space="preserve">
@@ -7263,19 +7266,19 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
         <target>Várakozás az asztali kliensre...</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Waiting for file" xml:space="preserve">
+      <trans-unit id="Waiting for file" xml:space="preserve" approved="no">
         <source>Waiting for file</source>
-        <target>Fájlra várakozás</target>
+        <target state="translated">Várakozás a fájlra</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Waiting for image" xml:space="preserve">
+      <trans-unit id="Waiting for image" xml:space="preserve" approved="no">
         <source>Waiting for image</source>
-        <target>Képre várakozás</target>
+        <target state="translated">Várakozás a képre</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Waiting for video" xml:space="preserve">
+      <trans-unit id="Waiting for video" xml:space="preserve" approved="no">
         <source>Waiting for video</source>
-        <target>Videóra várakozás</target>
+        <target state="translated">Várakozás a videóra</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Wallpaper accent" xml:space="preserve">
