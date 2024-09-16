@@ -3,6 +3,7 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PostfixOperators #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module ChatTests.Direct where
 
@@ -22,6 +23,7 @@ import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatConfig (..))
+import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
@@ -38,6 +40,7 @@ chatDirectTests :: SpecWith FilePath
 chatDirectTests = do
   describe "direct messages" $ do
     describe "add contact and send/receive messages" testAddContact
+    it "mark multiple messages as read" testMarkReadDirect
     it "clear chat with contact" testContactClear
     it "deleting contact deletes profile" testDeleteContactDeletesProfile
     it "delete contact keeping conversation" testDeleteContactKeepConversation
@@ -211,6 +214,22 @@ testAddContact = versionTestMatrix2 runTestAddContact
           if pqExpected
             then chatFeatures
             else (0, e2eeInfoNoPQStr) : tail chatFeatures
+
+testMarkReadDirect :: HasCallStack => FilePath -> IO ()
+testMarkReadDirect = testChat2 aliceProfile bobProfile $ \alice bob -> do
+  connectUsers alice bob
+  alice #> "@bob 1"
+  alice #> "@bob 2"
+  alice #> "@bob 3"
+  alice #> "@bob 4"
+  bob <# "alice> 1"
+  bob <# "alice> 2"
+  bob <# "alice> 3"
+  bob <# "alice> 4"
+  bob ##> "/last_item_id"
+  i :: ChatItemId <- read <$> getTermLine bob
+  let itemIds = intercalate "," $ map show [i - 3 .. i]
+  bob #$> ("/_read chat items @2 " <> itemIds, id, "ok")
 
 testDuplicateContactsSeparate :: HasCallStack => FilePath -> IO ()
 testDuplicateContactsSeparate =

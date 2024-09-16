@@ -302,7 +302,7 @@ struct ChatPreviewView: View {
         case let .link(_, preview):
             smallContentPreview(size: dynamicMediaSize) {
                 ZStack(alignment: .topTrailing) {
-                    Image(uiImage: UIImage(base64Encoded: preview.image) ?? UIImage(systemName: "arrow.up.right")!)
+                    Image(uiImage: imageFromBase64(preview.image) ?? UIImage(systemName: "arrow.up.right")!)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                         .frame(width: dynamicMediaSize, height: dynamicMediaSize)
@@ -323,13 +323,13 @@ struct ChatPreviewView: View {
             }
         case let .image(_, image):
             smallContentPreview(size: dynamicMediaSize) {
-                CIImageView(chatItem: ci, preview: UIImage(base64Encoded: image), maxWidth: dynamicMediaSize, smallView: true, showFullScreenImage: $showFullscreenGallery)
-                    .environmentObject(ReverseListScrollModel<ChatItem>())
+                CIImageView(chatItem: ci, preview: imageFromBase64(image), maxWidth: dynamicMediaSize, smallView: true, showFullScreenImage: $showFullscreenGallery)
+                    .environmentObject(ReverseListScrollModel())
             }
         case let .video(_,image, duration):
             smallContentPreview(size: dynamicMediaSize) {
-                CIVideoView(chatItem: ci, preview: UIImage(base64Encoded: image), duration: duration, maxWidth: dynamicMediaSize, videoWidth: nil, smallView: true, showFullscreenPlayer: $showFullscreenGallery)
-                    .environmentObject(ReverseListScrollModel<ChatItem>())
+                CIVideoView(chatItem: ci, preview: imageFromBase64(image), duration: duration, maxWidth: dynamicMediaSize, videoWidth: nil, smallView: true, showFullscreenPlayer: $showFullscreenGallery)
+                    .environmentObject(ReverseListScrollModel())
             }
         case let .voice(_, duration):
             smallContentPreviewVoice(size: dynamicMediaSize) {

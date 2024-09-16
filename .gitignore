@@ -61,6 +61,7 @@ website/package/generated*
 # Ignore build tool output, e.g. code coverage
 website/.nyc_output/
 website/coverage/
+result
 
 # Ignore API documentation
 website/api-docs/

@@ -7,7 +7,7 @@ import chat.simplex.common.platform.Log
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.*
-import android.view.View
+import androidx.compose.animation.core.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.graphics.Color
@@ -66,7 +66,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       }
     }
     context = this
-    initHaskell()
+    initHaskell(packageName)
     initMultiplatform()
     runMigrations()
     tmpDir.deleteRecursively()
@@ -164,7 +164,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       .addTag(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC)
       .build()
     Log.d(TAG, "ServiceStartWorker: Scheduling period work every ${SimplexService.SERVICE_START_WORKER_INTERVAL_MINUTES} minutes")
-    WorkManager.getInstance(context)?.enqueueUniquePeriodicWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC, workPolicy, work)
+    getWorkManagerInstance().enqueueUniquePeriodicWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC, workPolicy, work)
   }
 
   fun schedulePeriodicWakeUp() = CoroutineScope(Dispatchers.Default).launch {
@@ -260,7 +260,6 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
       override fun androidSetNightModeIfSupported() {
         if (Build.VERSION.SDK_INT < 31) return
-
         val light = if (CurrentColors.value.name == DefaultTheme.SYSTEM_THEME_NAME) {
           null
         } else {
@@ -273,6 +272,31 @@ class SimplexApp: Application(), LifecycleEventObserver {
         }
         val uiModeManager = androidAppContext.getSystemService(UI_MODE_SERVICE) as UiModeManager
         uiModeManager.setApplicationNightMode(mode)
+      }
+
+      override fun androidSetDrawerStatusAndNavBarColor(
+        isLight: Boolean,
+        drawerShadingColor: Color,
+        toolbarOnTop: Boolean,
+        navBarColor: Color,
+      ) {
+        val window = mainActivity.get()?.window ?: return
+
+        @Suppress("DEPRECATION")
+        val windowInsetController = ViewCompat.getWindowInsetsController(window.decorView)
+        // Blend status bar color to the animated color
+        val colors = CurrentColors.value.colors
+        val baseBackgroundColor = if (toolbarOnTop) colors.background.mixWith(colors.onBackground, 0.97f) else colors.background
+        window.statusBarColor = baseBackgroundColor.mixWith(drawerShadingColor.copy(1f), 1 - drawerShadingColor.alpha).toArgb()
+        val navBar = navBarColor.toArgb()
+
+        if (window.navigationBarColor != navBar) {
+          window.navigationBarColor = navBar
+        }
+
+        if (windowInsetController?.isAppearanceLightNavigationBars != isLight) {
+          windowInsetController?.isAppearanceLightNavigationBars = isLight
+        }
       }
 
       override fun androidSetStatusAndNavBarColors(isLight: Boolean, backgroundColor: Color, hasTop: Boolean, hasBottom: Boolean) {

@@ -1015,7 +1015,7 @@
     <string name="group_invitation_tap_to_join">הקישו כדי להצטרף</string>
     <string name="network_option_tcp_connection_timeout">תום זמן חיבור TCP</string>
     <string name="periodic_notifications_desc">האפליקציה בודקת הודעות חדשות מעת לעת - היא משתמשת בכמה אחוזים מהסוללה ביום. האפליקציה לא משתמשת בהתראות דחיפה - נתונים מהמכשיר שלך לא נשלחים לשרתים.</string>
-    <string name="member_role_will_be_changed_with_notification">התפקיד ישתנה ל־\"%s\". כל חברי הקבוצה יקבלו הודעה על כך.</string>
+    <string name="member_role_will_be_changed_with_notification">התפקיד ישתנה ל־"%s". כל חברי הקבוצה יקבלו הודעה על כך.</string>
     <string name="to_connect_via_link_title">כדי להתחבר באמצעות קישור</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">פלטפורמת ההודעות והיישומים המגנה על הפרטיות והאבטחה שלך.</string>
     <string name="alert_text_msg_bad_id">המזהה של ההודעה הבאה שגוי (קטן או שווה להודעה הקודמת).
@@ -1027,7 +1027,7 @@
     <string name="thank_you_for_installing_simplex">תודה שהתקנתם את SimpleX Chat!</string>
     <string name="this_link_is_not_a_valid_connection_link">קישור זה אינו קישור חיבור תקין!</string>
     <string name="theme_colors_section_title">צבעי ערכת נושא</string>
-    <string name="member_role_will_be_changed_with_invitation">התפקיד ישתנה ל־\"%s\". החבר יקבל הזמנה חדשה.</string>
+    <string name="member_role_will_be_changed_with_invitation">התפקיד ישתנה ל־"%s". החבר יקבל הזמנה חדשה.</string>
     <string name="smp_servers_per_user">השרתים לחיבורים חדשים של פרופיל הצ׳אט הנוכחי שלך</string>
     <string name="first_platform_without_user_ids">הפלטפורמה הראשונה ללא כל מזהי משתמש - פרטית בעיצובה.</string>
     <string name="next_generation_of_private_messaging">הדור הבא של תקשורת פרטית</string>
@@ -1836,7 +1836,7 @@
     <string name="color_mode_system">מערכת</string>
     <string name="error_showing_desktop_notification">שגיאה בהצגת התראה, צור קשר עם המפתחים</string>
     <string name="smp_proxy_error_connecting">שגיאה בהתחברות לשרת %1$s, אנא נסה מאוחר יותר</string>
-    <string name="message_forwarded_desc">אין עדיין חיבור ישיר, ההודעה תעובר ע\"י מנהל.</string>
+    <string name="message_forwarded_desc">אין עדיין חיבור ישיר, ההודעה תעובר ע"י מנהל.</string>
     <string name="member_inactive_title">חבר לא פעיל</string>
     <string name="xftp_servers_other">שרתי XFTP אחרים</string>
     <string name="subscription_percentage">הראה אחוזים</string>
@@ -1920,11 +1920,11 @@
     <string name="servers_info_files_tab">קבצים</string>
     <string name="servers_info_missing">אין מידע, נסה לרענן</string>
     <string name="servers_info">מידע על השרתים</string>
-    <string name="servers_info_detailed_statistics_received_total">התקבל סה\"כ</string>
+    <string name="servers_info_detailed_statistics_received_total">התקבל סה"כ</string>
     <string name="servers_info_detailed_statistics_receive_errors">התקבלו שגיאות</string>
     <string name="reconnect">התחבר מחדש</string>
     <string name="servers_info_detailed_statistics_sent_messages_header">שלח הודעות</string>
-    <string name="servers_info_detailed_statistics_sent_messages_total">נשלח בסה\"כ</string>
+    <string name="servers_info_detailed_statistics_sent_messages_total">נשלח בסה"כ</string>
     <string name="smp_server">שרת SMP</string>
     <string name="xftp_server">שרת XFTP</string>
     <string name="privacy_media_blur_radius_soft">חלש</string>

@@ -2,7 +2,6 @@ package chat.simplex.common.views.usersettings
 
 import SectionView
 import androidx.compose.runtime.Composable
-import androidx.work.WorkManager
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.*
@@ -33,7 +32,7 @@ fun restartApp() {
 }
 
 private fun shutdownApp() {
-  WorkManager.getInstance(androidAppContext).cancelAllWork()
+  androidAppContext.getWorkManagerInstance().cancelAllWork()
   platform.androidServiceSafeStop()
   Runtime.getRuntime().exit(0)
 }

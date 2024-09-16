@@ -20,7 +20,6 @@ import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.flow.internal.ChannelFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.*
@@ -98,7 +97,7 @@ object ChatModel {
       }
     )
   }
-  val performLA by lazy { mutableStateOf(ChatController.appPrefs.performLA.get()) }
+  val showAuthScreen by lazy { mutableStateOf(ChatController.appPrefs.performLA.get()) }
   val showAdvertiseLAUnavailableAlert = mutableStateOf(false)
   val showChatPreviews by lazy { mutableStateOf(ChatController.appPrefs.privacyShowChatPreviews.get()) }
 
@@ -412,7 +411,9 @@ object ChatModel {
       // remove from current chat
       if (chatId.value == cInfo.id) {
         chatItems.removeAll {
-          val remove = it.id == cItem.id
+          // We delete taking into account meta.createdAt to make sure we will not be in situation when two items with the same id will be deleted
+          // (it can happen if already deleted chat item in backend still in the list and new one came with the same (re-used) chat item id)
+          val remove = it.id == cItem.id && it.meta.createdAt == cItem.meta.createdAt
           if (remove) { AudioPlayer.stop(it) }
           remove
         }

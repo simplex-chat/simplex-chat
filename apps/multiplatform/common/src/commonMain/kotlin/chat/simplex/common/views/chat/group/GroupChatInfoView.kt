@@ -40,7 +40,7 @@ import kotlinx.coroutines.launch
 const val SMALL_GROUPS_RCPS_MEM_LIMIT: Int = 20
 
 @Composable
-fun GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLink: String?, groupLinkMemberRole: GroupMemberRole?, onGroupLinkUpdated: (Pair<String, GroupMemberRole>?) -> Unit, close: () -> Unit, onSearchClicked: () -> Unit) {
+fun ModalData.GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLink: String?, groupLinkMemberRole: GroupMemberRole?, onGroupLinkUpdated: (Pair<String, GroupMemberRole>?) -> Unit, close: () -> Unit, onSearchClicked: () -> Unit) {
   BackHandler(onBack = close)
   // TODO derivedStateOf?
   val chat = chatModel.chats.value.firstOrNull { ch -> ch.id == chatId && ch.remoteHostId == rhId }
@@ -249,9 +249,8 @@ fun AddGroupMembersButton(
   )
 }
 
-
 @Composable
-fun GroupChatInfoLayout(
+fun ModalData.GroupChatInfoLayout(
   chat: Chat,
   groupInfo: GroupInfo,
   currentUser: User,
@@ -272,12 +271,12 @@ fun GroupChatInfoLayout(
   close: () -> Unit = { ModalManager.closeAllModalsEverywhere()},
   onSearchClicked: () -> Unit
 ) {
-  val listState = rememberLazyListState()
+  val listState = remember { appBarHandler.listState }
   val scope = rememberCoroutineScope()
   KeyChangeEffect(chat.id) {
     scope.launch { listState.scrollToItem(0) }
   }
-  val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue()) }
+  val searchText = remember { stateGetOrPut("searchText") { TextFieldValue() } }
   val filteredMembers = remember(members) {
     derivedStateOf {
       val s = searchText.value.text.trim().lowercase()
@@ -674,7 +673,7 @@ private fun SearchRowView(
 @Composable
 fun PreviewGroupChatInfoLayout() {
   SimpleXTheme {
-    GroupChatInfoLayout(
+    ModalData().GroupChatInfoLayout(
       chat = Chat(
         remoteHostId = null,
         chatInfo = ChatInfo.Direct.sampleData,

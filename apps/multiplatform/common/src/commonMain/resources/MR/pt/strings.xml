@@ -631,7 +631,7 @@
     <string name="chat_preferences_on">ligado</string>
     <string name="v4_6_group_moderation_descr">Agora os administradores podem:
 \n- eliminar mensagens de membros.
-\n- desativar membros (função de \"observador\")</string>
+\n- desativar membros (função de "observador")</string>
     <string name="simplex_link_group">Ligação do grupo SimpleX</string>
     <string name="images_limit_desc">Apenas 10 imagens podem ser enviadas ao mesmo tempo</string>
     <string name="videos_limit_desc">Apenas 10 vídeos podem ser enviados ao mesmo tempo</string>

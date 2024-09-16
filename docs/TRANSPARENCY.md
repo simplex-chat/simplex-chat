@@ -17,8 +17,8 @@ This page will include any and all reports on requests for user data.
 Our objective is to consistently ensure that no user data and absolute minimum of the metadata required for the network to function is available for disclosure by any infrastructure operators, under any circumstances.
 
 **Helpful resources**:
-- [Privacy policy](../PRIVACY.md)
-- [Privacy and security: technical details and limitations](../README.md#privacy-and-security-technical-details-and-limitations)
+- [Privacy policy](/PRIVACY.md)
+- [Privacy and security: technical details and limitations](https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#privacy-and-security-technical-details-and-limitations)
 - Whitepaper:
   - [Trust in servers](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md#trust-in-servers)
   - [Encryption Primitives Used](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md#encryption-primitives-used)
