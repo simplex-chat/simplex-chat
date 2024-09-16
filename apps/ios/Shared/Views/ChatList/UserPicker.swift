@@ -49,7 +49,7 @@ struct UserPicker: View {
                         activeSheet = .currentProfile
                     }
 
-                    openSheetOnTap(title: m.userAddress == nil ? "Create public address" : "Your public address", icon: "qrcode") {
+                    openSheetOnTap(title: m.userAddress == nil ? "Create SimpleX address" : "Your SimpleX address", icon: "qrcode") {
                         activeSheet = .address
                     }
                     
