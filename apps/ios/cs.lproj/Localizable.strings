@@ -562,7 +562,7 @@
 /* No comment provided by engineer. */
 "Can't invite contacts!" = "Nelze pozvat kontakty!";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Cancel" = "Zrušit";
 
 /* feature offered item */
@@ -1542,9 +1542,6 @@
 
 /* No comment provided by engineer. */
 "Full name (optional)" = "Celé jméno (volitelně)";
-
-/* No comment provided by engineer. */
-"Full name:" = "Celé jméno:";
 
 /* No comment provided by engineer. */
 "Fully re-implemented - work in background!" = "Plně přepracováno, prácuje na pozadí!";
@@ -2602,10 +2599,11 @@
 /* No comment provided by engineer. */
 "Run chat" = "Spustit chat";
 
-/* chat item action */
+/* alert button
+   chat item action */
 "Save" = "Uložit";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Save (and notify contacts)" = "Uložit (a informovat kontakty)";
 
 /* No comment provided by engineer. */
@@ -2619,9 +2617,6 @@
 
 /* No comment provided by engineer. */
 "Save archive" = "Uložit archiv";
-
-/* No comment provided by engineer. */
-"Save auto-accept settings" = "Uložit nastavení automatického přijímání";
 
 /* No comment provided by engineer. */
 "Save group profile" = "Uložení profilu skupiny";
@@ -2643,9 +2638,6 @@
 
 /* No comment provided by engineer. */
 "Save servers?" = "Uložit servery?";
-
-/* No comment provided by engineer. */
-"Save settings?" = "Uložit nastavení?";
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "Uložit uvítací zprávu?";
@@ -3554,7 +3546,7 @@
 "Your profile **%@** will be shared." = "Váš profil **%@** bude sdílen.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Váš profil je uložen ve vašem zařízení a sdílen pouze s vašimi kontakty.\nServery SimpleX nevidí váš profil.";
+"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Váš profil je uložen ve vašem zařízení a sdílen pouze s vašimi kontakty. Servery SimpleX nevidí váš profil.";
 
 /* No comment provided by engineer. */
 "Your profile, contacts and delivered messages are stored on your device." = "Váš profil, kontakty a doručené zprávy jsou uloženy ve vašem zařízení.";

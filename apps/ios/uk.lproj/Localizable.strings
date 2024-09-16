@@ -781,7 +781,7 @@
 /* No comment provided by engineer. */
 "Can't message member" = "Не можу надіслати повідомлення користувачеві";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Cancel" = "Скасувати";
 
 /* No comment provided by engineer. */
@@ -2204,9 +2204,6 @@
 "Full name (optional)" = "Повне ім'я (необов'язково)";
 
 /* No comment provided by engineer. */
-"Full name:" = "Повне ім'я:";
-
-/* No comment provided by engineer. */
 "Fully decentralized – visible only to members." = "Повністю децентралізована - видима лише для учасників.";
 
 /* No comment provided by engineer. */
@@ -3379,12 +3376,6 @@
 "Profile images" = "Зображення профілю";
 
 /* No comment provided by engineer. */
-"Profile name" = "Назва профілю";
-
-/* No comment provided by engineer. */
-"Profile name:" = "Ім'я профілю:";
-
-/* No comment provided by engineer. */
 "Profile password" = "Пароль до профілю";
 
 /* No comment provided by engineer. */
@@ -3715,10 +3706,11 @@
 /* No comment provided by engineer. */
 "Safer groups" = "Безпечніші групи";
 
-/* chat item action */
+/* alert button
+   chat item action */
 "Save" = "Зберегти";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Save (and notify contacts)" = "Зберегти (і повідомити контактам)";
 
 /* No comment provided by engineer. */
@@ -3735,9 +3727,6 @@
 
 /* No comment provided by engineer. */
 "Save archive" = "Зберегти архів";
-
-/* No comment provided by engineer. */
-"Save auto-accept settings" = "Зберегти налаштування автоприйому";
 
 /* No comment provided by engineer. */
 "Save group profile" = "Зберегти профіль групи";
@@ -3759,9 +3748,6 @@
 
 /* No comment provided by engineer. */
 "Save servers?" = "Зберегти сервери?";
-
-/* No comment provided by engineer. */
-"Save settings?" = "Зберегти налаштування?";
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "Зберегти вітальне повідомлення?";
@@ -5189,7 +5175,7 @@
 "Your profile **%@** will be shared." = "Ваш профіль **%@** буде опублікований.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Ваш профіль зберігається на вашому пристрої і доступний лише вашим контактам.\nСервери SimpleX не бачать ваш профіль.";
+"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Ваш профіль зберігається на вашому пристрої і доступний лише вашим контактам. Сервери SimpleX не бачать ваш профіль.";
 
 /* No comment provided by engineer. */
 "Your profile, contacts and delivered messages are stored on your device." = "Ваш профіль, контакти та доставлені повідомлення зберігаються на вашому пристрої.";

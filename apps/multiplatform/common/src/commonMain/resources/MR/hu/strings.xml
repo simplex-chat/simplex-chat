@@ -805,7 +805,7 @@
     <string name="link_a_mobile">Egy mobil eszköz társítása</string>
     <string name="settings_notifications_mode_title">Értesítési szolgáltatás</string>
     <string name="only_group_owners_can_enable_voice">Csak a csoporttulajdonosok engedélyezhetik a hangüzenetek küldését.</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Csak a kliensek tárolják a felhasználói profilokat, ismerősöket, csoportokat és a <b>2 rétegű végpontok közötti titkosítással</b> küldött üzeneteket.</string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Csak a kliensek tárolják a felhasználói profilokat, ismerősöket, csoportokat és a <b>2 rétegű végpontok közötti titkosítással</b> küldött üzeneteket.]]></string>
     <string name="invalid_migration_confirmation">Érvénytelen átköltöztetési visszaigazolás</string>
     <string name="only_group_owners_can_change_prefs">Csak a csoporttulajdonosok módosíthatják a csoportbeállításokat.</string>
     <string name="no_history">Nincsenek előzmények</string>
@@ -823,7 +823,7 @@
     <string name="feature_offered_item">ajánlott %s</string>
     <string name="button_leave_group">Csoport elhagyása</string>
     <string name="unblock_member_desc">Minden %s által írt üzenet megjelenik!</string>
-    <string name="many_people_asked_how_can_it_deliver">Sokan kérdezték: <i>Ha a SimpleX Chatnek nincs felhasználói azonosítója, hogyan lehet mégis üzeneteket küldeni?</i></string>
+    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Sokan kérdezték: <i>Ha a SimpleX Chatnek nincs felhasználói azonosítója, hogyan lehet mégis üzeneteket küldeni?</i>]]></string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Ez akkor fordulhat elő, ha:
 \n1. Az üzenetek 2 nap után, vagy a kiszolgálón 30 nap után lejártak.
 \n2. Az üzenet visszafejtése sikertelen volt, mert ön, vagy az ismerőse régebbi adatbázis biztonsági mentést használt.
@@ -1311,7 +1311,7 @@
     <string name="periodic_notifications_desc">Az új üzenetek rendszeresen letöltésre kerülnek az alkalmazás által – naponta néhány százalékot használ az akkumulátorból. Az alkalmazás nem használ push értesítéseket – az eszközről származó adatok nem kerülnek elküldésre a kiszolgálóknak.</string>
     <string name="paste_desktop_address">Számítógép címének beillesztése</string>
     <string name="description_via_contact_address_link">kapcsolattartási cím-hivatkozáson keresztül</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Az adatvédelem megőrzése érdekében a push értesítési rendszer helyett az alkalmazás a <b>SimpleX háttérszolgáltatást </b> használja - az akkumulátornak csak néhány százalékát használja naponta.</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Az adatvédelem megőrzése érdekében a push értesítési rendszer helyett az alkalmazás a <b>SimpleX háttérszolgáltatást </b> használja - az akkumulátornak csak néhány százalékát használja naponta.]]></string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Az ismerősének online kell lennie ahhoz, hogy a kapcsolat létrejöjjön.
 \nVisszavonhatja ezt az ismerőskérelmet és törölheti az ismerőst (ezt később ismét megpróbálhatja egy új hivatkozással).</string>
     <string name="restore_passphrase_not_found_desc">A jelszó nem található a Keystore-ban, ezért kézzel szükséges megadni. Ez akkor történhetett meg, ha visszaállította az alkalmazás adatait egy biztonságimentési eszközzel. Ha nem így történt, akkor lépjen kapcsolatba a fejlesztőkkel.</string>
@@ -1367,7 +1367,7 @@
     <string name="contact_sent_large_file">Ismerőse a jelenleg megengedett maximális méretű (%1$s) fájlnál nagyobbat küldött.</string>
     <string name="we_do_not_store_contacts_or_messages_on_servers">Az ismerősei és az üzenetek (kézbesítés után) nem kerülnek tárolásra a SimpleX kiszolgálókon.</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Üzenetek formázása a szövegbe szúrt speciális karakterekkel:</string>
-    <string name="you_can_also_connect_by_clicking_the_link">A hivatkozásra kattintva is kapcsolódhat. Ha megnyílik böngészőben, kattintson a<b>Megnyitás az alkalmazásban</b> gombra.</string>
+    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[A hivatkozásra kattintva is kapcsolódhat. Ha megnyílik böngészőben, kattintson a<b>Megnyitás az alkalmazásban</b> gombra.]]></string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Csevegési profilja elküldésre kerül
 \naz ismerőse számára</string>
     <string name="invite_prohibited_description">Egy olyan ismerősét próbálja meghívni, akivel inkognitóprofilt osztott meg abban a csoportban, amelyben a saját fő profilja van használatban</string>
@@ -1382,7 +1382,7 @@
     <string name="v5_1_better_messages_descr">- 5 perc hosszúságú hangüzenetek.
 \n- egyedi üzenet-eltűnési időkorlát.
 \n- előzmények szerkesztése.</string>
-    <string name="open_on_mobile_and_scan_qr_code">Válassza a <i>Társítás számítógéppel</i> menüt a mobil alkalmazásban és olvassa be a QR-kódot.</string>
+    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Válassza a <i>Társítás számítógéppel</i> menüt a mobil alkalmazásban és olvassa be a QR-kódot.]]></string>
     <string name="sender_at_ts">%s ekkor: %s</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Akkor lesz kapcsolódva, amikor az ismerősének az eszköze online lesz, várjon, vagy ellenőrizze később!</string>
     <string name="v5_4_block_group_members_descr">Kéretlen üzenetek elrejtése.</string>
@@ -1431,7 +1431,7 @@
     <string name="v5_3_simpler_incognito_mode_descr">Inkognító mód kapcsolódáskor.</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Megoszthat egy hivatkozást vagy QR-kódot - így bárki csatlakozhat a csoporthoz. Ha a csoport később törlésre kerül, akkor nem fogja elveszíteni annak tagjait.</string>
     <string name="you_joined_this_group">Csatlakozott ehhez a csoporthoz</string>
-    <string name="connect_plan_this_is_your_link_for_group_vName">Ez az ön hivatkozása a(z) <b>%1$s</b> csoporthoz!</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Ez az ön hivatkozása a(z) <b>%1$s</b> csoporthoz!]]></string>
     <string name="voice_prohibited_in_this_chat">A hangüzenetek küldése le van tiltva ebben a csevegésben.</string>
     <string name="you_control_your_chat">Ön irányítja csevegését!</string>
     <string name="verify_code_with_desktop">Kód ellenőrzése a számítógépen</string>
@@ -1569,7 +1569,7 @@
     <string name="remote_host_error_disconnected"><![CDATA[Megszakadt a kapcsolat a(z) <b>%s</b> mobil eszközzel]]></string>
     <string name="failed_to_create_user_invalid_title">Érvénytelen megjelenítendő név!</string>
     <string name="failed_to_create_user_invalid_desc">Ez a megjelenített név érvénytelen. Válasszon egy másik nevet.</string>
-    <string name="remote_host_disconnected_from">Megszakadt a kapcsolat a(z) <b>%s</b> mobil eszközzel, a(z) %s probléma miatt</string>
+    <string name="remote_host_disconnected_from"><![CDATA[Megszakadt a kapcsolat a(z) <b>%s</b> mobil eszközzel, a(z) %s probléma miatt]]></string>
     <string name="remote_ctrl_disconnected_with_reason">%s probléma miatt megszakadt a kapcsolat</string>
     <string name="remote_host_error_missing"><![CDATA[A(z) <b>%s</b> mobil eszköz nem található]]></string>
     <string name="remote_host_error_bad_state"><![CDATA[A kapcsolat a(z) <b>%s</b> mobil eszközzel rossz állapotban van]]></string>
