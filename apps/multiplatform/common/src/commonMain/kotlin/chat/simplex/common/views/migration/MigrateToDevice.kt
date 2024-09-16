@@ -268,9 +268,6 @@ private fun ModalData.OnionView(link: String, socksProxy: String?, hostMode: Hos
       toggleSocksProxy = { enable ->
         networkUseSocksProxy.value = enable
       },
-      useOnion = {
-        onionHosts.value = it
-      },
       updateSessionMode = {
         sessionMode.value = it
       }

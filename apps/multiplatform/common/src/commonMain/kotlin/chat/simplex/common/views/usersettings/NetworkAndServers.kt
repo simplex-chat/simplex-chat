@@ -159,14 +159,12 @@ fun NetworkAndServersView() {
   sessionMode: MutableState<TransportSessionMode>,
   networkProxyHostPort: SharedPreference<String?>,
   toggleSocksProxy: (Boolean) -> Unit,
-  useOnion: (OnionHosts) -> Unit,
   updateSessionMode: (TransportSessionMode) -> Unit,
 ) {
   val showModal = { it: @Composable ModalData.() -> Unit ->  ModalManager.fullscreen.showModal(content = it) }
   val showCustomModal = { it: @Composable (close: () -> Unit) -> Unit -> ModalManager.fullscreen.showCustomModal { close -> it(close) }}
   UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy)
   SettingsActionItem(painterResource(MR.images.ic_settings_ethernet), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkUseSocksProxy.value, networkProxyHostPort, onionHosts, true, it) } })
-  UseOnionHosts(onionHosts, networkUseSocksProxy, useOnion)
   if (developerTools) {
     SessionModePicker(sessionMode, showModal, updateSessionMode)
   }
@@ -257,7 +255,9 @@ fun SocksProxySettings(
     val oldCfg = controller.getNetCfg()
     val cfg = oldCfg.withOnionHosts(onionHosts.value)
 
-    if (!migration) {
+    if (migration) {
+      onionHostsSaved.value = onionHosts.value
+    } else {
       controller.setNetCfg(cfg)
     }
     if (networkUseSocksProxy && !migration) {
