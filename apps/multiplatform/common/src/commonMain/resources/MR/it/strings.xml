@@ -2069,4 +2069,13 @@
     <string name="new_message">Nuovo messaggio</string>
     <string name="error_parsing_uri_title">Link non valido</string>
     <string name="error_parsing_uri_desc">Controlla che il link SimpleX sia corretto.</string>
+    <string name="switching_profile_error_title">Errore nel cambio di profilo</string>
+    <string name="select_chat_profile">Seleziona il profilo di chat</string>
+    <string name="new_chat_share_profile">Condividi il profilo</string>
+    <string name="settings_section_title_chat_database">DATABASE DELLA CHAT</string>
+    <string name="system_mode_toast">Modalità di sistema</string>
+    <string name="migrate_from_device_remove_archive_question">Rimuovere l\'archivio?</string>
+    <string name="delete_messages_cannot_be_undone_warning">I messaggi verranno eliminati. Non è reversibile!</string>
+    <string name="migrate_from_device_uploaded_archive_will_be_removed">L\'archivio del database caricato verrà rimosso definitivamente dai server.</string>
+    <string name="switching_profile_error_message">La tua connessione è stata spostata a %s, ma si è verificato un errore imprevisto durante il reindirizzamento al profilo.</string>
 </resources>
