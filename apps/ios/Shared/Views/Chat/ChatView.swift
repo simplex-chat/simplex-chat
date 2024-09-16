@@ -745,7 +745,7 @@ struct ChatView: View {
                         } else {
                             showAlert(
                                 NSLocalizedString("Nothing to forward!", comment: "alert title"),
-                                message: forwardConfirmation.reason,
+                                message: forwardConfirmation.reason
                             ) {
                                 switch forwardConfirmation {
                                 case let .filesNotAccepted(fileIds): 
