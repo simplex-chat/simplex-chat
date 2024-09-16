@@ -174,7 +174,7 @@ private fun UserAddressLayout(
   saveAas: (AutoAcceptState, MutableState<AutoAcceptState>) -> Unit,
 ) {
   ColumnWithScrollBar {
-    AppBarTitle(stringResource(MR.strings.public_address), hostDevice(user?.remoteHostId))
+    AppBarTitle(stringResource(MR.strings.simplex_address), hostDevice(user?.remoteHostId))
     Column(
       Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF),
       horizontalAlignment = Alignment.CenterHorizontally,
@@ -230,7 +230,7 @@ private fun UserAddressLayout(
 private fun CreateAddressButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_qr_code),
-    stringResource(MR.strings.create_public_address),
+    stringResource(MR.strings.create_simplex_address),
     onClick,
     iconColor = MaterialTheme.colors.primary,
     textColor = MaterialTheme.colors.primary,

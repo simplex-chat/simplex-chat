@@ -963,6 +963,10 @@
         <target>ยอมรับภาพอัตโนมัติ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Auto-accept settings" xml:space="preserve">
+        <source>Auto-accept settings</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Back" xml:space="preserve">
         <source>Back</source>
         <target>กลับ</target>
@@ -1116,7 +1120,7 @@
       <trans-unit id="Cancel" xml:space="preserve">
         <source>Cancel</source>
         <target>ยกเลิก</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert button</note>
       </trans-unit>
       <trans-unit id="Cancel migration" xml:space="preserve">
         <source>Cancel migration</source>
@@ -1254,6 +1258,10 @@
         <source>Chat preferences</source>
         <target>ค่ากําหนดในการแชท</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Chat preferences were changed." xml:space="preserve">
+        <source>Chat preferences were changed.</source>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Chat theme" xml:space="preserve">
         <source>Chat theme</source>
@@ -2670,6 +2678,10 @@ This is your own one-time link!</source>
         <target>โหลดเซิร์ฟเวอร์ %@ ผิดพลาด</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error migrating settings" xml:space="preserve">
+        <source>Error migrating settings</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error opening chat" xml:space="preserve">
         <source>Error opening chat</source>
         <note>No comment provided by engineer.</note>
@@ -3072,11 +3084,6 @@ Error: %2$@</source>
       <trans-unit id="Full name (optional)" xml:space="preserve">
         <source>Full name (optional)</source>
         <target>ชื่อเต็ม (ไม่บังคับ)</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Full name:" xml:space="preserve">
-        <source>Full name:</source>
-        <target>ชื่อเต็ม:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fully decentralized – visible only to members." xml:space="preserve">
@@ -4696,14 +4703,6 @@ Error: %@</source>
         <source>Profile images</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Profile name" xml:space="preserve">
-        <source>Profile name</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Profile name:" xml:space="preserve">
-        <source>Profile name:</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Profile password" xml:space="preserve">
         <source>Profile password</source>
         <target>รหัสผ่านโปรไฟล์</target>
@@ -5003,6 +5002,10 @@ Enable in *Network &amp; servers* settings.</source>
         <target>ลบ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Remove archive?" xml:space="preserve">
+        <source>Remove archive?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Remove image" xml:space="preserve">
         <source>Remove image</source>
         <note>No comment provided by engineer.</note>
@@ -5181,12 +5184,13 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Save" xml:space="preserve">
         <source>Save</source>
         <target>บันทึก</target>
-        <note>chat item action</note>
+        <note>alert button
+   chat item action</note>
       </trans-unit>
       <trans-unit id="Save (and notify contacts)" xml:space="preserve">
         <source>Save (and notify contacts)</source>
         <target>บันทึก (และแจ้งผู้ติดต่อ)</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert button</note>
       </trans-unit>
       <trans-unit id="Save and notify contact" xml:space="preserve">
         <source>Save and notify contact</source>
@@ -5210,11 +5214,6 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Save archive" xml:space="preserve">
         <source>Save archive</source>
         <target>บันทึกไฟล์เก็บถาวร</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Save auto-accept settings" xml:space="preserve">
-        <source>Save auto-accept settings</source>
-        <target>บันทึกการตั้งค่าการยอมรับอัตโนมัติ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save group profile" xml:space="preserve">
@@ -5252,15 +5251,14 @@ Enable in *Network &amp; servers* settings.</source>
         <target>บันทึกเซิร์ฟเวอร์?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save settings?" xml:space="preserve">
-        <source>Save settings?</source>
-        <target>บันทึกการตั้งค่า?</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Save welcome message?" xml:space="preserve">
         <source>Save welcome message?</source>
         <target>บันทึกข้อความต้อนรับ?</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Save your profile?" xml:space="preserve">
+        <source>Save your profile?</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Saved" xml:space="preserve">
         <source>Saved</source>
@@ -5665,6 +5663,10 @@ Enable in *Network &amp; servers* settings.</source>
         <target>การตั้งค่า</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Settings were changed." xml:space="preserve">
+        <source>Settings were changed.</source>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="Shape profile images" xml:space="preserve">
         <source>Shape profile images</source>
         <note>No comment provided by engineer.</note>
@@ -5852,6 +5854,10 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Soft" xml:space="preserve">
         <source>Soft</source>
         <note>blur media</note>
+      </trans-unit>
+      <trans-unit id="Some app settings were not migrated." xml:space="preserve">
+        <source>Some app settings were not migrated.</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Some file(s) were not exported:" xml:space="preserve">
         <source>Some file(s) were not exported:</source>
@@ -6201,6 +6207,10 @@ It can happen because of some bug or when the connection is compromised.</source
       </trans-unit>
       <trans-unit id="The text you pasted is not a SimpleX link." xml:space="preserve">
         <source>The text you pasted is not a SimpleX link.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The uploaded database archive will be permanently removed from the servers." xml:space="preserve">
+        <source>The uploaded database archive will be permanently removed from the servers.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Themes" xml:space="preserve">
@@ -7194,6 +7204,10 @@ Repeat connection request?</source>
         <target>ฐานข้อมูลการแชทของคุณไม่ได้ถูก encrypt - ตั้งรหัสผ่านเพื่อ encrypt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your chat preferences" xml:space="preserve">
+        <source>Your chat preferences</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Your chat profiles" xml:space="preserve">
         <source>Your chat profiles</source>
         <target>โปรไฟล์แชทของคุณ</target>
@@ -7246,12 +7260,14 @@ Repeat connection request?</source>
         <source>Your profile **%@** will be shared.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your profile is stored on your device and shared only with your contacts.&#10;SimpleX servers cannot see your profile." xml:space="preserve">
-        <source>Your profile is stored on your device and shared only with your contacts.
-SimpleX servers cannot see your profile.</source>
-        <target>โปรไฟล์ของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณและแชร์กับผู้ติดต่อของคุณเท่านั้น
-เซิร์ฟเวอร์ SimpleX ไม่สามารถดูโปรไฟล์ของคุณได้</target>
+      <trans-unit id="Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." xml:space="preserve">
+        <source>Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.</source>
+        <target>โปรไฟล์ของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณและแชร์กับผู้ติดต่อของคุณเท่านั้น เซิร์ฟเวอร์ SimpleX ไม่สามารถดูโปรไฟล์ของคุณได้</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your profile was changed. If you save it, the updated profile will be sent to all your contacts." xml:space="preserve">
+        <source>Your profile was changed. If you save it, the updated profile will be sent to all your contacts.</source>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Your profile, contacts and delivered messages are stored on your device." xml:space="preserve">
         <source>Your profile, contacts and delivered messages are stored on your device.</source>

@@ -61,7 +61,7 @@ struct UserProfile: View {
                     }
                 }
                 if let user = chatModel.currentUser, showFullName(user) {
-                    TextField("Full name", text: $profile.fullName)
+                    TextField("Full name (optional)", text: $profile.fullName)
                 }
             } footer: {
                 Text("Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.")
@@ -85,9 +85,9 @@ struct UserProfile: View {
         .onDisappear {
             if canSaveProfile {
                 showAlert(
-                    title: NSLocalizedString("Update profile?", comment: "alert title"),
-                    message: NSLocalizedString("Your profile was changed.", comment: "alert message"),
-                    buttonTitle: NSLocalizedString("Save and notify contacts", comment: "alert button"),
+                    title: NSLocalizedString("Save your profile?", comment: "alert title"),
+                    message: NSLocalizedString("Your profile was changed. If you save it, the updated profile will be sent to all your contacts.", comment: "alert message"),
+                    buttonTitle: NSLocalizedString("Save (and notify contacts)", comment: "alert button"),
                     buttonAction: saveProfile,
                     cancelButton: true
                 )
