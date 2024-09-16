@@ -105,7 +105,7 @@ import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), Migrati
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
-import Simplex.Messaging.Client (NetworkConfig (..), ProxyClientError (..), SocksMode (SMAlways), defaultNetworkConfig)
+import Simplex.Messaging.Client (NetworkConfig (..), ProxyClientError (..), SocksMode (SMAlways), defaultNetworkConfig, textToHostMode)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -114,12 +114,12 @@ import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), EntityId, ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, XFTPServer, userProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, XFTPServer, userProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport (TransportError (..))
-import Simplex.Messaging.Transport.Client (defaultSocksProxy)
+import Simplex.Messaging.Transport.Client (defaultSocksProxyWithAuth)
 import Simplex.Messaging.Util
 import Simplex.Messaging.Version
 import Simplex.RemoteControl.Invitation (RCInvitation (..), RCSignedInvitation (..))
@@ -341,11 +341,11 @@ newChatController
               userServers user' = useServers config protocol <$> withTransaction chatStore (`getProtocolServers` user')
 
 updateNetworkConfig :: NetworkConfig -> SimpleNetCfg -> NetworkConfig
-updateNetworkConfig cfg SimpleNetCfg {socksProxy, socksMode, smpProxyMode_, smpProxyFallback_, tcpTimeout_, logTLSErrors} =
+updateNetworkConfig cfg SimpleNetCfg {socksProxy, socksMode, hostMode, requiredHostMode, smpProxyMode_, smpProxyFallback_, tcpTimeout_, logTLSErrors} =
   let cfg1 = maybe cfg (\smpProxyMode -> cfg {smpProxyMode}) smpProxyMode_
       cfg2 = maybe cfg1 (\smpProxyFallback -> cfg1 {smpProxyFallback}) smpProxyFallback_
       cfg3 = maybe cfg2 (\tcpTimeout -> cfg2 {tcpTimeout, tcpConnectTimeout = (tcpTimeout * 3) `div` 2}) tcpTimeout_
-   in cfg3 {socksProxy, socksMode, logTLSErrors}
+   in cfg3 {socksProxy, socksMode, hostMode, requiredHostMode, logTLSErrors}
 
 withChatLock :: String -> CM a -> CM a
 withChatLock name action = asks chatLock >>= \l -> withLock l name action
@@ -8052,14 +8052,16 @@ chatCommandP =
         <|> ("yes" $> TMEEnableKeepTTL)
         <|> ("no" $> TMEDisableKeepTTL)
     netCfgP = do
-      socksProxy <- "socks=" *> ("off" $> Nothing <|> "on" $> Just defaultSocksProxy <|> Just <$> strP)
+      socksProxy <- "socks=" *> ("off" $> Nothing <|> "on" $> Just defaultSocksProxyWithAuth <|> Just <$> strP)
       socksMode <- " socks-mode=" *> strP <|> pure SMAlways
+      hostMode <- " host-mode=" *> (textToHostMode . safeDecodeUtf8 <$?> A.takeTill (== ' ')) <|> pure (defaultHostMode socksProxy)
+      requiredHostMode <- " required-host-mode" *> onOffP <|> pure False
       smpProxyMode_ <- optional $ " smp-proxy=" *> strP
       smpProxyFallback_ <- optional $ " smp-proxy-fallback=" *> strP
       t_ <- optional $ " timeout=" *> A.decimal
       logTLSErrors <- " log=" *> onOffP <|> pure False
       let tcpTimeout_ = (1000000 *) <$> t_
-      pure $ SimpleNetCfg {socksProxy, socksMode, smpProxyMode_, smpProxyFallback_, tcpTimeout_, logTLSErrors}
+      pure $ SimpleNetCfg {socksProxy, socksMode, hostMode, requiredHostMode, smpProxyMode_, smpProxyFallback_, tcpTimeout_, logTLSErrors}
     dbKeyP = nonEmptyKey <$?> strP
     nonEmptyKey k@(DBEncryptionKey s) = if BA.null s then Left "empty key" else Right k
     dbEncryptionConfig currentKey newKey = DBEncryptionConfig {currentKey, newKey, keepKey = Just False}
