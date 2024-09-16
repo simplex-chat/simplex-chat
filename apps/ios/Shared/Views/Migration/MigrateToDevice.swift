@@ -571,7 +571,7 @@ struct MigrateToDevice: View {
             AlertManager.shared.showAlert(
                 Alert(
                     title: Text("Error migrating settings"),
-                    message: Text ("Not all settings were migrated. Repeat migration if you need them.") + Text("\n\n") + Text(responseError(error)))
+                    message: Text ("Some app settings were not migrated.") + Text("\n") + Text(responseError(error)))
             )
         }
         hideView()
