@@ -1074,11 +1074,20 @@ func receiveFiles(user: any UserLike, fileIds: [Int64], userApprovedRelays: Bool
     }
     let fileIds = unapprovedFileIds
     if !fileIds.isEmpty {
-        let servers: String = unknownServers.sorted().joined(separator: ", ")
+        let srvs = unknownServers
+            .map { s in
+                if let srv = parseServerAddress(s), !srv.hostnames.isEmpty {
+                    srv.hostnames[0]
+                } else {
+                    serverHost(s)
+                }
+            }
+            .sorted()
+            .joined(separator: ", ")
         showAlert(
             NSLocalizedString("Unknown servers!", comment: "alert title"),
             message: NSLocalizedString(
-                "Without Tor or VPN, your IP address will be visible to these XFTP relays: \(servers).",
+                "Without Tor or VPN, your IP address will be visible to these XFTP relays: \(srvs).",
                 comment: "alert message"
             )
         ) {
@@ -1128,13 +1137,6 @@ func apiReceiveFile(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool, in
         case let .fileNotApproved(fileId, unknownServers):
             logger.debug("apiReceiveFile fileNotApproved error")
             if !auto {
-                let srvs = unknownServers.map { s in
-                    if let srv = parseServerAddress(s), !srv.hostnames.isEmpty {
-                        srv.hostnames[0]
-                    } else {
-                        serverHost(s)
-                    }
-                }
                 return .notApproved(fileId: fileId, unknownServers: unknownServers)
             }
         default:
