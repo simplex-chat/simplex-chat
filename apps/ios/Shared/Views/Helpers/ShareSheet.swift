@@ -57,7 +57,7 @@ func showAlert(
     _ title: String,
     message: String? = nil,
     style: UIAlertController.Style = .alert,
-    actions: () -> [UIAlertAction]
+    actions: () -> [UIAlertAction] = { [alertAction("Ok")] }
 ) {
     if let topController = getTopViewController() {
         let alert = UIAlertController(title: title, message: message, preferredStyle: style)

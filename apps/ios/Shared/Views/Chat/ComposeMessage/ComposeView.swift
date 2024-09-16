@@ -959,6 +959,21 @@ struct ComposeView: View {
                     for chatItem in chatItems {
                         chatModel.addChatItem(chat.chatInfo, chatItem)
                     }
+                    if forwardedItems.count != chatItems.count {
+                        showAlert(
+                            String.localizedStringWithFormat(
+                                NSLocalizedString(
+                                    "%d messages not forwarded",
+                                    comment: "alert title"
+                                ),
+                                forwardedItems.count - chatItems.count
+                            ),
+                            message: NSLocalizedString(
+                                "Messages were deleted after you selected them.",
+                                comment: "alert message"
+                            )
+                        )
+                    }
                 }
                 return chatItems
             } else {
