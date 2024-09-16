@@ -15,6 +15,7 @@ struct ContextItemView: View {
     let contextItems: [ChatItem]
     let contextIcon: String
     let cancelContextItem: () -> Void
+    var showSender: Bool = true
 
     var body: some View {
         HStack {
@@ -24,7 +25,14 @@ struct ContextItemView: View {
                 .frame(width: 16, height: 16)
                 .foregroundColor(theme.colors.secondary)
             if let singleItem = contextItems.first, contextItems.count == 1 {
-                msgContentView(lines: 3, contextItem: singleItem)
+                if showSender, let sender = singleItem.memberDisplayName {
+                     VStack(alignment: .leading, spacing: 4) {
+                         Text(sender).font(.caption).foregroundColor(theme.colors.secondary)
+                         msgContentView(lines: 2, contextItem: singleItem)
+                     }
+                 } else {
+                     msgContentView(lines: 3, contextItem: singleItem)
+                 }
             } else {
                 Text("Forwarding \(contextItems.count) messages")
             }
