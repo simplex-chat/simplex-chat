@@ -4548,7 +4548,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           ci_ <- withStore $ \db -> do
             ci_ <- updateDirectItemStatus' db ct conn msgId (CISSndSent SSPComplete)
             forM ci_ $ \ci -> liftIO $ setDirectSndChatItemViaProxy db user ct ci (isJust proxy)
-          forM_ ci_ $ \ci -> toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
+          forM_ ci_ $ \ci -> toView $ CRChatItemStatusUpdated user [AChatItem SCTDirect SMDSnd (DirectChat ct) ci]
         SWITCH qd phase cStats -> do
           toView $ CRContactSwitch user ct (SwitchProgress qd phase cStats)
           when (phase `elem` [SPStarted, SPCompleted]) $ case qd of
@@ -6713,13 +6713,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       cis_ <- withStore' $ \db -> forM msgIds $ \msgId -> runExceptT $ updateDirectItemStatus' db ct conn msgId newStatus
       -- only send the last expired item event to view
       case reverse $ catMaybes $ rights cis_ of
-        ci : _ -> toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
+        ci : _ -> toView $ CRChatItemStatusUpdated user [AChatItem SCTDirect SMDSnd (DirectChat ct) ci]
         _ -> pure ()
 
     updateDirectItemStatus :: Contact -> Connection -> AgentMsgId -> CIStatus 'MDSnd -> CM ()
     updateDirectItemStatus ct conn msgId newStatus = do
       ci_ <- withStore $ \db -> updateDirectItemStatus' db ct conn msgId newStatus
-      forM_ ci_ $ \ci -> toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
+      forM_ ci_ $ \ci -> toView $ CRChatItemStatusUpdated user [AChatItem SCTDirect SMDSnd (DirectChat ct) ci]
 
     updateDirectItemStatus' :: DB.Connection -> Contact -> Connection -> AgentMsgId -> CIStatus 'MDSnd -> ExceptT StoreError IO (Maybe (ChatItem 'CTDirect 'MDSnd))
     updateDirectItemStatus' db ct@Contact {contactId} Connection {connId} msgId newStatus =
@@ -6755,7 +6755,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             let newStatus = membersGroupItemStatus memStatusCounts
             when (newStatus /= itemStatus) $ do
               chatItem <- withStore $ \db -> updateGroupChatItemStatus db user gInfo itemId newStatus
-              toView $ CRChatItemStatusUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) chatItem)
+              toView $ CRChatItemStatusUpdated user [AChatItem SCTGroup SMDSnd (GroupChat gInfo) chatItem]
         _ -> pure ()
 
 createContactPQSndItem :: User -> Contact -> Connection -> PQEncryption -> CM (Contact, Connection)
