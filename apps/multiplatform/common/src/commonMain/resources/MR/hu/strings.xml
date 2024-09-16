@@ -585,7 +585,7 @@
     <string name="export_theme">Téma exportálása</string>
     <string name="enter_this_device_name">Eszköznév megadása…</string>
     <string name="error">Hiba</string>
-    <string name="alert_message_group_invitation_expired">A csoport meghívó már nem érvényes, a küldője törölte.</string>
+    <string name="alert_message_group_invitation_expired">A csoport meghívó már nem érvényes, a küldője eltávolította.</string>
     <string name="group_full_name_field">A csoport teljes neve:</string>
     <string name="icon_descr_help">segítség</string>
     <string name="enabled_self_destruct_passcode">Önmegsemmisítő jelkód engedélyezése</string>
@@ -672,7 +672,7 @@
     <string name="error_creating_member_contact">Hiba az ismerőssel történő kapcsolat létrehozásában</string>
     <string name="enter_one_ICE_server_per_line">ICE-kiszolgálók (soronként egy)</string>
     <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Ha nem tud személyesen találkozni, <b>beolvashatja a QR-kódot a videohívásban</b>, vagy az ismerőse megoszthat egy meghívó hivatkozást.]]></string>
-    <string name="if_you_enter_passcode_data_removed">Ha az alkalmazás megnyitásakor megadja ezt a jelkódot, az összes alkalmazásadat véglegesen törlődik!</string>
+    <string name="if_you_enter_passcode_data_removed">Ha az alkalmazás megnyitásakor megadja ezt a jelkódot, az összes alkalmazásadat véglegesen eltávolításra kerül!</string>
     <string name="if_you_cant_meet_in_person">Ha nem tud személyesen találkozni, mutassa meg a QR-kódot egy videohívás közben, vagy ossza meg a hivatkozást.</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Ha nem tud személyesen találkozni, <b>mutassa meg a QR-kódot a videohívásban</b>, vagy ossza meg a hivatkozást.]]></string>
     <string name="network_disable_socks_info">Megerősítés esetén az üzenetküldő kiszolgálók látni fogják az IP-címét és a szolgáltatóját – azt, hogy mely kiszolgálókhoz kapcsolódik.</string>
@@ -1141,7 +1141,7 @@
     <string name="v4_3_voice_messages">Hangüzenetek</string>
     <string name="button_remove_member_question">Biztosan eltávolítja?</string>
     <string name="verify_security_code">Biztonsági kód ellenőrzése</string>
-    <string name="rcv_group_event_user_deleted">eltávolítottak</string>
+    <string name="rcv_group_event_user_deleted">eltávolította önt</string>
     <string name="simplex_address">SimpleX cím</string>
     <string name="show_dev_options">Megjelenítés:</string>
     <string name="callstate_received_answer">válasz fogadása…</string>
@@ -1313,7 +1313,7 @@
     <string name="description_via_contact_address_link">kapcsolattartási cím-hivatkozáson keresztül</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Az adatvédelem megőrzése érdekében a push értesítési rendszer helyett az alkalmazás a <b>SimpleX háttérszolgáltatást </b> használja - az akkumulátornak csak néhány százalékát használja naponta.]]></string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Az ismerősének online kell lennie ahhoz, hogy a kapcsolat létrejöjjön.
-\nVisszavonhatja ezt az ismerőskérelmet és törölheti az ismerőst (ezt később ismét megpróbálhatja egy új hivatkozással).</string>
+\nVisszavonhatja ezt az ismerőskérelmet és eltávolíthatja az ismerőst (ezt később ismét megpróbálhatja egy új hivatkozással).</string>
     <string name="restore_passphrase_not_found_desc">A jelszó nem található a Keystore-ban, ezért kézzel szükséges megadni. Ez akkor történhetett meg, ha visszaállította az alkalmazás adatait egy biztonságimentési eszközzel. Ha nem így történt, akkor lépjen kapcsolatba a fejlesztőkkel.</string>
     <string name="your_contacts_will_remain_connected">Az ismerősei továbbra is kapcsolódva maradnak.</string>
     <string name="error_xftp_test_server_auth">A kiszolgálónak engedélyre van szüksége a várólisták létrehozásához, ellenőrizze jelszavát</string>
@@ -1584,8 +1584,8 @@
     <string name="past_member_vName">(Már nem tag) %1$s</string>
     <string name="group_member_status_unknown">ismeretlen státusz</string>
     <string name="profile_update_event_member_name_changed">%1$s megváltoztatta a nevét erre: %2$s</string>
-    <string name="profile_update_event_removed_address">törölt kapcsolattartási cím</string>
-    <string name="profile_update_event_removed_picture">törölte a profilképét</string>
+    <string name="profile_update_event_removed_address">eltávolította a kapcsolattartási címet</string>
+    <string name="profile_update_event_removed_picture">eltávolította a profilképét</string>
     <string name="profile_update_event_set_new_address">új kapcsolattartási cím beállítása</string>
     <string name="profile_update_event_set_new_picture">új profilképet állított be</string>
     <string name="profile_update_event_updated_profile">frissített profil</string>
