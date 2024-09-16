@@ -119,7 +119,7 @@ fun ContextItemView(
           ContextMsgPreview(contextItem, lines = 3)
         }
       } else if (contextItems.isNotEmpty()) {
-        Text(String.format(generalGetString(MR.strings.forward_messages_n), contextItems.count()))
+        Text(String.format(generalGetString(MR.strings.compose_forward_messages_n), contextItems.count()))
       }
     }
     IconButton(onClick = cancelContextItem) {
