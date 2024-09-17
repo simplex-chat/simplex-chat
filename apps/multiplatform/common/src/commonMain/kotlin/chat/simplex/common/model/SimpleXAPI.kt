@@ -2744,11 +2744,17 @@ object ChatController {
       auto = auto
     )
 
-    result.filesAccepted.forEach {
-      chatItemSimpleUpdate(rhId, user, it)
+    if (result.filesAccepted.isNotEmpty()) {
+      val chatItem = result.filesAccepted.first()
+      chatItemSimpleUpdate(rhId, user, chatItem)
+
+      val totalFiles = result.filesAccepted.count()
+      if (totalFiles > 1) {
+        Log.d(TAG, "apiReceiveFile returned $totalFiles files")
+      }
     }
 
-    when (val fError = result.fileErrors[0]) {
+    when (val fError = result.fileErrors.firstOrNull()) {
       is FileReceiveError.ChatError -> {
         if (fError.error is ChatErrorType.FileCancelled || fError.error is ChatErrorType.FileAlreadyReceiving) {
           Log.d(TAG, "apiReceiveFile ignoring FileCancelled or FileAlreadyReceiving error")
@@ -2756,7 +2762,6 @@ object ChatController {
           Log.d(TAG, "apiReceiveFile FileNotApproved error")
         }
       }
-
       is FileReceiveError.ChatResponseError -> {
         when (val error = fError.error) {
           is CR.RcvFileAcceptedSndCancelled -> {
@@ -2772,6 +2777,7 @@ object ChatController {
           else -> apiErrorAlert("apiReceiveFile", generalGetString(MR.strings.error_receiving_file), error)
         }
       }
+      else -> {}
     }
   }
 
