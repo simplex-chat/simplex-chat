@@ -4081,6 +4081,7 @@ processAgentMessageNoConn = \case
   UP srv conns -> serverEvent srv conns NSConnected CRContactsSubscribed
   SUSPENDED -> toView CRChatSuspended
   DEL_USER agentUserId -> toView $ CRAgentUserDeleted agentUserId
+  ERRS cErrs -> errsEvent cErrs
   where
     hostEvent :: ChatResponse -> CM ()
     hostEvent = whenM (asks $ hostEvents . config) . toView
@@ -4093,6 +4094,19 @@ processAgentMessageNoConn = \case
         notifyCLI = do
           cs <- withStore' (`getConnectionsContacts` conns)
           toView $ event srv cs
+    errsEvent :: [(ConnId, AgentErrorType)] -> CM ()
+    errsEvent cErrs = do
+      vr <- chatVersionRange
+      errs <- lift $ rights <$> withStoreBatch' (\db -> map (toChatErr vr db) cErrs)
+      toView $ CRChatErrors Nothing errs
+      where
+        toChatErr :: VersionRangeChat -> DB.Connection -> (ConnId, AgentErrorType) -> IO ChatError
+        toChatErr vr db (connId, err) = do
+          getUserByAConnId db (AgentConnId connId) >>= \case
+            Nothing -> pure $ ChatErrorAgent err Nothing
+            Just user -> do
+              ce <- eitherToMaybe <$> runExceptT (getConnectionEntity db vr user (AgentConnId connId))
+              pure $ ChatErrorAgent err ce
 
 processAgentMsgSndFile :: ACorrId -> SndFileId -> AEvent 'AESndFile -> CM ()
 processAgentMsgSndFile _corrId aFileId msg = do
