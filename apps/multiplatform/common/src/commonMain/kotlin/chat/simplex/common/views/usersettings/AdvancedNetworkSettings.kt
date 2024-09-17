@@ -1,10 +1,10 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
-import SectionCustomFooter
 import SectionDividerSpaced
 import SectionItemView
 import SectionItemWithValue
+import SectionTextFooter
 import SectionView
 import SectionViewSelectableCards
 import androidx.compose.desktop.ui.tooling.preview.Preview
@@ -40,12 +40,10 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
   val currentCfg = remember { stateGetOrPut("currentCfg") { controller.getNetCfg() } }
   val currentCfgVal = currentCfg.value // used only on initialization
 
-  val onionHosts = remember { mutableStateOf(currentCfgVal.onionHosts) }
   val sessionMode = remember { mutableStateOf(currentCfgVal.sessionMode) }
   val smpProxyMode = remember { mutableStateOf(currentCfgVal.smpProxyMode) }
   val smpProxyFallback = remember { mutableStateOf(currentCfgVal.smpProxyFallback) }
 
-  val networkUseSocksProxy: MutableState<Boolean> = remember { mutableStateOf(currentCfgVal.useSocksProxy) }
   val networkTCPConnectTimeout = remember { mutableStateOf(currentCfgVal.tcpConnectTimeout) }
   val networkTCPTimeout = remember { mutableStateOf(currentCfgVal.tcpTimeout) }
   val networkTCPTimeoutPerKb = remember { mutableStateOf(currentCfgVal.tcpTimeoutPerKb) }
@@ -90,11 +88,10 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
       tcpKeepAlive = tcpKeepAlive,
       smpPingInterval = networkSMPPingInterval.value,
       smpPingCount = networkSMPPingCount.value
-    ).withOnionHosts(onionHosts.value)
+    ).withOnionHosts(currentCfg.value.onionHosts)
   }
 
   fun updateView(cfg: NetCfg) {
-    onionHosts.value = cfg.onionHosts
     sessionMode.value = cfg.sessionMode
     smpProxyMode.value = cfg.smpProxyMode
     smpProxyFallback.value = cfg.smpProxyFallback
@@ -148,10 +145,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
   ) {
     AdvancedNetworkSettingsLayout(
       currentRemoteHost = currentRemoteHost,
-      networkUseSocksProxy = networkUseSocksProxy,
       developerTools = developerTools,
-      onionHosts = onionHosts,
-      useOnion = { onionHosts.value = it; currentCfg.value = currentCfg.value.withOnionHosts(it) },
       sessionMode = sessionMode,
       smpProxyMode = smpProxyMode,
       smpProxyFallback = smpProxyFallback,
@@ -183,10 +177,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
 
 @Composable fun AdvancedNetworkSettingsLayout(
   currentRemoteHost: RemoteHostInfo?,
-  networkUseSocksProxy: State<Boolean>,
   developerTools: Boolean,
-  onionHosts: MutableState<OnionHosts>,
-  useOnion: (OnionHosts) -> Unit,
   sessionMode: MutableState<TransportSessionMode>,
   smpProxyMode: MutableState<SMPProxyMode>,
   smpProxyFallback: MutableState<SMPProxyFallback>,
@@ -223,21 +214,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
         SMPProxyFallbackPicker(smpProxyFallback, showModal, updateSMPProxyFallback, enabled = remember { derivedStateOf { smpProxyMode.value != SMPProxyMode.Never } })
         SettingsPreferenceItem(painterResource(MR.images.ic_arrow_forward), stringResource(MR.strings.private_routing_show_message_status), chatModel.controller.appPrefs.showSentViaProxy)
       }
-      SectionCustomFooter {
-        Text(stringResource(MR.strings.private_routing_explanation))
-      }
-      SectionDividerSpaced(maxTopPadding = true)
-    }
-
-    if (currentRemoteHost == null && networkUseSocksProxy.value) {
-      SectionView(stringResource(MR.strings.network_socks_proxy).uppercase()) {
-        UseOnionHosts(onionHosts, networkUseSocksProxy, showModal, useOnion)
-        SectionCustomFooter {
-          Column {
-            Text(annotatedStringResource(MR.strings.disable_onion_hosts_when_not_supported))
-          }
-        }
-      }
+      SectionTextFooter(stringResource(MR.strings.private_routing_explanation))
       SectionDividerSpaced(maxTopPadding = true)
     }
 
@@ -562,7 +539,6 @@ fun PreviewAdvancedNetworkSettingsLayout() {
   SimpleXTheme {
     AdvancedNetworkSettingsLayout(
       currentRemoteHost = null,
-      networkUseSocksProxy = remember { mutableStateOf(false) },
       developerTools = false,
       sessionMode = remember { mutableStateOf(TransportSessionMode.User) },
       smpProxyMode = remember { mutableStateOf(SMPProxyMode.Never) },
@@ -577,8 +553,6 @@ fun PreviewAdvancedNetworkSettingsLayout() {
       networkTCPKeepIdle = remember { mutableStateOf(10) },
       networkTCPKeepIntvl = remember { mutableStateOf(10) },
       networkTCPKeepCnt = remember { mutableStateOf(10) },
-      onionHosts = remember { mutableStateOf(OnionHosts.PREFER) },
-      useOnion = {},
       updateSessionMode = {},
       updateSMPProxyMode = {},
       updateSMPProxyFallback = {},
