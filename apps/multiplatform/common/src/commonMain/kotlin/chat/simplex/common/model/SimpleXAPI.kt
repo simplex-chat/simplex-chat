@@ -67,6 +67,16 @@ enum class SimplexLinkMode {
   }
 }
 
+sealed class FileReceiveError {
+  data class ChatError(val error: ChatErrorType): FileReceiveError()
+  data class ChatResponseError(val error: CR): FileReceiveError()
+}
+
+class ReceiveFilesResult(
+  val filesAccepted: MutableList<AChatItem>,
+  val fileErrors: MutableList<FileReceiveError>
+)
+
 class AppPreferences {
   // deprecated, remove in 2024
   private val runServiceInBackground = mkBoolPreference(SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND, true)
@@ -1551,16 +1561,6 @@ object ChatController {
       null
     }
   }
-
-  sealed class FileReceiveError {
-    data class ChatError(val error: ChatErrorType): FileReceiveError()
-    data class ChatResponseError(val error: CR): FileReceiveError()
-  }
-
-  class ReceiveFilesResult(
-    val filesAccepted: MutableList<AChatItem>,
-    val fileErrors: MutableList<FileReceiveError>
-  )
 
   suspend fun apiReceiveFiles(
     rh: Long?,
