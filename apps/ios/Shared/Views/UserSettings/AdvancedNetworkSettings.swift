@@ -152,15 +152,15 @@ struct AdvancedNetworkSettings: View {
                             .foregroundColor(theme.colors.secondary)
                     }
                 }
-                .onChange(of: useNetProxy) { useSocksProxy in
-                    netCfg.socksProxy = useSocksProxy && currentNetProxy.valid
+                .onChange(of: useNetProxy) { useNetProxy in
+                    netCfg.socksProxy = useNetProxy && currentNetProxy.valid
                         ? currentNetProxy.toProxyString()
                         : nil
                     netProxy = currentNetProxy
                     netProxyAuth = netProxy.username != "" || netProxy.password != ""
                 }
-                .onChange(of: netProxyAuth) { socksProxyAuth in
-                    if socksProxyAuth {
+                .onChange(of: netProxyAuth) { netProxyAuth in
+                    if netProxyAuth {
                         netProxy.auth = currentNetProxy.auth
                         netProxy.username = currentNetProxy.username
                         netProxy.password = currentNetProxy.password
@@ -170,11 +170,10 @@ struct AdvancedNetworkSettings: View {
                         netProxy.password = ""
                     }
                 }
-                .onChange(of: netProxy) { sp in
-                    let str = sp.toProxyString()
-                    if str != netCfg.socksProxy {
-                        netCfg.socksProxy = str
-                    }
+                .onChange(of: netProxy) { netProxy in
+                    netCfg.socksProxy = useNetProxy && netProxy.valid
+                        ? netProxy.toProxyString()
+                        : nil
                 }
 
                 Section {
