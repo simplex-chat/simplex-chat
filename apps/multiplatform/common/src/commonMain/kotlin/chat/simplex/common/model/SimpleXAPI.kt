@@ -3642,7 +3642,9 @@ data class NetworkProxy(
     if (host != "localhost") {
       res += if (host.contains(':')) "[${host.trim(' ', '[', ']')}]" else host.trim()
     }
-    res += ":$port"
+    if (port != 9050 || res.isEmpty()) {
+      res += ":$port"
+    }
     return res
   }
 }
