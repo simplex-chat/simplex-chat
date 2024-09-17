@@ -36,8 +36,8 @@ struct AdvancedNetworkSettings: View {
     @State private var showSettingsAlert: NetworkSettingsAlert?
     @State private var onionHosts: OnionHosts = .no
     @State private var showSaveDialog = false
-    @State private var socksProxy = getSocksProxy()
-    @State private var currentSocksProxy = getSocksProxy()
+    @State private var socksProxy = socksProxyDefault.get()
+    @State private var currentSocksProxy = socksProxyDefault.get()
     @State private var useSocksProxy = false
     @State private var socksProxyAuth = false
 
@@ -108,15 +108,33 @@ struct AdvancedNetworkSettings: View {
 
                 Section {
                     Toggle("Use SOCKS proxy", isOn: $useSocksProxy)
-                    if useSocksProxy {
+                    Group {
                         TextField("IP address", text: $socksProxy.host)
-                        TextField("Port", text: $socksProxy.port)
+                        TextField(
+                            "Port",
+                            text: Binding(
+                                get: { socksProxy.port > 0 ? "\(socksProxy.port)" : "" },
+                                set: { s in
+                                    socksProxy.port = if let port = Int(s), port > 0 {
+                                        port
+                                    } else {
+                                        0
+                                    }
+                                }
+                            )
+                        )
                         Toggle("Proxy requires password", isOn: $socksProxyAuth)
                         if socksProxyAuth {
                             TextField("Username", text: $socksProxy.username)
-                            SecureField("Password", text: $socksProxy.password)
+                            PassphraseField(
+                                key: $socksProxy.password,
+                                placeholder: "Password",
+                                valid: socksProxy.password != ""
+                            )
                         }
                     }
+                    .if(!useSocksProxy) { $0.foregroundColor(theme.colors.secondary) }
+                    .disabled(!useSocksProxy)
                 } header: {
                     HStack {
                         Text("SOCKS proxy").foregroundColor(theme.colors.secondary)
@@ -141,9 +159,16 @@ struct AdvancedNetworkSettings: View {
                     socksProxy = currentSocksProxy
                     socksProxyAuth = socksProxy.username != "" || socksProxy.password != ""
                 }
-                .onChange(of: socksProxyAuth) { _ in
-                    socksProxy.username = ""
-                    socksProxy.password = ""
+                .onChange(of: socksProxyAuth) { socksProxyAuth in
+                    if socksProxyAuth {
+                        socksProxy.auth = currentSocksProxy.auth
+                        socksProxy.username = currentSocksProxy.username
+                        socksProxy.password = currentSocksProxy.password
+                    } else {
+                        socksProxy.auth = .username
+                        socksProxy.username = ""
+                        socksProxy.password = ""
+                    }
                 }
                 .onChange(of: socksProxy) { sp in
                     let str = sp.toString()
@@ -232,7 +257,7 @@ struct AdvancedNetworkSettings: View {
             if cfgLoaded { return }
             cfgLoaded = true
             currentNetCfg = getNetCfg()
-            currentSocksProxy = getSocksProxy()
+            currentSocksProxy = socksProxyDefault.get()
             updateNetCfgView(currentNetCfg, currentSocksProxy)
         }
         .alert(item: $showSettingsAlert) { a in
@@ -279,7 +304,10 @@ struct AdvancedNetworkSettings: View {
         enableKeepAlive = netCfg.enableKeepAlive
         keepAliveOpts = netCfg.tcpKeepAlive ?? KeepAliveOpts.defaults
         useSocksProxy = netCfg.socksProxy != nil
-        socksProxyAuth = currentSocksProxy.username != "" || currentSocksProxy.password != ""
+        socksProxyAuth = switch socksProxy.auth {
+        case .username: socksProxy.username != "" || socksProxy.password != ""
+        case .isolate: false
+        }
     }
 
     private func saveNetCfg() -> Bool {
@@ -288,7 +316,7 @@ struct AdvancedNetworkSettings: View {
             currentNetCfg = netCfg
             setNetCfg(netCfg)
             currentSocksProxy = socksProxy
-            setSocksProxy(socksProxy)
+            socksProxyDefault.set(socksProxy)
             return true
         } catch let error {
             let err = responseError(error)

@@ -76,10 +76,7 @@ let DEFAULT_SYSTEM_DARK_THEME = "systemDarkTheme"
 let DEFAULT_CURRENT_THEME_IDS = "currentThemeIds"
 let DEFAULT_THEME_OVERRIDES = "themeOverrides"
 
-let DEFAULT_SOCKS_PROXY_HOST = "socksProxyHost"
-let DEFAULT_SOCKS_PROXY_PORT = "socksProxyPort"
-let DEFAULT_SOCKS_PROXY_USERNAME = "socksProxyUsername"
-let DEFAULT_SOCKS_PROXY_PASSWORD = "socksProxyPassword"
+let DEFAULT_NETWORK_PROXY = "networkProxy"
 
 let ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN = "androidCallOnLockScreen"
 
@@ -257,33 +254,39 @@ public class CodableDefault<T: Codable> {
     }
 }
 
-public struct SocksProxy: Equatable {
-    public var host: String = ""
-    public var port: String = ""
-    public var username: String = ""
-    public var password: String = ""
-    
+let socksProxyDefault: CodableDefault<SocksProxy> = CodableDefault(defaults: UserDefaults.standard, forKey: DEFAULT_NETWORK_PROXY, withDefault: SocksProxy())
+
+struct SocksProxy: Equatable, Codable {
+    var host: String = ""
+    var port: Int = 0
+    var auth: SocksAuth = .username
+    var username: String = ""
+    var password: String = ""
+
     var valid: Bool {
-        let hostOk = switch NWEndpoint.Host(host) {
-        case .ipv4: true
-        case .ipv6: true
+        switch NWEndpoint.Host(host) {
+        case .ipv4: portOk
+        case .ipv6: portOk
         default: false
         }
-        return if let portNum = Int(port) {
-            hostOk && portNum > 0 && portNum <= 65535
-        } else {
-            false
-        }
     }
-    
+
+    private var portOk: Bool {
+        port > 0 && port <= 65535
+    }
+
     func toString() -> String? {
         var res = ""
-        let usernameTrimmed = username.trimmingCharacters(in: .whitespaces)
-        let passwordTrimmed = password.trimmingCharacters(in: .whitespaces)
-        if usernameTrimmed.count > 0 || passwordTrimmed.count > 0 {
-            res += usernameTrimmed + ":" + passwordTrimmed + "@"
-        } else {
-            res += "@"
+        switch auth {
+        case .username:
+            let usernameTrimmed = username.trimmingCharacters(in: .whitespaces)
+            let passwordTrimmed = password.trimmingCharacters(in: .whitespaces)
+            if usernameTrimmed != "" || passwordTrimmed != "" {
+                res += usernameTrimmed + ":" + passwordTrimmed + "@"
+            } else {
+                res += "@"
+            }
+        case .isolate: ()
         }
         if host != "" {
             if host.contains(":") {
@@ -292,28 +295,14 @@ public struct SocksProxy: Equatable {
                 res += host.trimmingCharacters(in: .whitespaces)
             }
         }
-        if let port = Int(port.trimmingCharacters(in: .whitespaces)) {
-            res += ":\(port)"
-        }
+        res += ":\(port)"
         return res.count == 0 ? nil : res
     }
 }
 
-public func getSocksProxy() -> SocksProxy {
-    SocksProxy(
-        host: UserDefaults.standard.string(forKey: DEFAULT_SOCKS_PROXY_HOST) ?? "",
-        port: UserDefaults.standard.string(forKey: DEFAULT_SOCKS_PROXY_PORT) ?? "",
-        username: UserDefaults.standard.string(forKey: DEFAULT_SOCKS_PROXY_USERNAME) ?? "",
-        password: UserDefaults.standard.string(forKey: DEFAULT_SOCKS_PROXY_PASSWORD) ?? ""
-    )
-}
-
-public func setSocksProxy(_ proxy: SocksProxy) {
-    let def = UserDefaults.standard
-    def.set(proxy.host, forKey: DEFAULT_SOCKS_PROXY_HOST)
-    def.set(proxy.port, forKey: DEFAULT_SOCKS_PROXY_PORT)
-    def.set(proxy.username, forKey: DEFAULT_SOCKS_PROXY_USERNAME)
-    def.set(proxy.password, forKey: DEFAULT_SOCKS_PROXY_PASSWORD)
+enum SocksAuth: String, Codable {
+    case username
+    case isolate
 }
 
 struct SettingsView: View {
