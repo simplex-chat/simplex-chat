@@ -35,6 +35,7 @@ public let GROUP_DEFAULT_PRIVACY_ASK_TO_APPROVE_RELAYS = "privacyAskToApproveRel
 // replaces DEFAULT_PROFILE_IMAGE_CORNER_RADIUS
 public let GROUP_DEFAULT_PROFILE_IMAGE_CORNER_RADIUS = "profileImageCornerRadius"
 let GROUP_DEFAULT_NTF_BADGE_COUNT = "ntgBadgeCount"
+public let GROUP_DEFAULT_NETWORK_SOCKS_PROXY = "networkSocksProxy"
 let GROUP_DEFAULT_NETWORK_USE_ONION_HOSTS = "networkUseOnionHosts"
 let GROUP_DEFAULT_NETWORK_SESSION_MODE = "networkSessionMode"
 let GROUP_DEFAULT_NETWORK_SMP_PROXY_MODE = "networkSMPProxyMode"
@@ -327,6 +328,7 @@ public class Default<T> {
 }
 
 public func getNetCfg() -> NetCfg {
+    let socksProxy = groupDefaults.string(forKey: GROUP_DEFAULT_NETWORK_SOCKS_PROXY)
     let onionHosts = networkUseOnionHostsGroupDefault.get()
     let (hostMode, requiredHostMode) = onionHosts.hostMode
     let sessionMode = networkSessionModeGroupDefault.get()
@@ -349,6 +351,7 @@ public func getNetCfg() -> NetCfg {
         tcpKeepAlive = nil
     }
     return NetCfg(
+        socksProxy: socksProxy,
         hostMode: hostMode,
         requiredHostMode: requiredHostMode,
         sessionMode: sessionMode,
@@ -365,11 +368,13 @@ public func getNetCfg() -> NetCfg {
     )
 }
 
-public func setNetCfg(_ cfg: NetCfg) {
+public func setNetCfg(_ cfg: NetCfg, networkProxy: NetworkProxy?) {
     networkUseOnionHostsGroupDefault.set(OnionHosts(netCfg: cfg))
     networkSessionModeGroupDefault.set(cfg.sessionMode)
     networkSMPProxyModeGroupDefault.set(cfg.smpProxyMode)
     networkSMPProxyFallbackGroupDefault.set(cfg.smpProxyFallback)
+    let socksProxy = networkProxy?.toProxyString()
+    groupDefaults.set(socksProxy, forKey: GROUP_DEFAULT_NETWORK_SOCKS_PROXY)
     groupDefaults.set(cfg.tcpConnectTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT)
     groupDefaults.set(cfg.tcpTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT)
     groupDefaults.set(cfg.tcpTimeoutPerKb, forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB)
