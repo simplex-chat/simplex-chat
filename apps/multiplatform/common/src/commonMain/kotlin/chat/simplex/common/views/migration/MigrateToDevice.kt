@@ -5,16 +5,15 @@ import SectionItemView
 import SectionSpacer
 import SectionTextFooter
 import SectionView
-import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import chat.simplex.common.model.*
 import chat.simplex.common.model.AppPreferences.Companion.SHARED_PREFS_MIGRATION_TO_STAGE
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.getNetCfg
 import chat.simplex.common.model.ChatController.startChat
 import chat.simplex.common.model.ChatCtrl
@@ -91,7 +90,15 @@ sealed class MigrationToDeviceState {
 @Serializable
 sealed class MigrationToState {
   @Serializable object PasteOrScanLink: MigrationToState()
-  @Serializable data class Onion(val link: String, val socksProxy: String?, val hostMode: HostMode, val requiredHostMode: Boolean): MigrationToState()
+  @Serializable data class Onion(
+    val link: String,
+    // Legacy, remove in 2025
+    @SerialName("socksProxy")
+    val legacySocksProxy: String?,
+    val networkProxy: NetworkProxy?,
+    val hostMode: HostMode,
+    val requiredHostMode: Boolean
+  ): MigrationToState()
   @Serializable data class DatabaseInit(val link: String, val netCfg: NetCfg): MigrationToState()
   @Serializable data class LinkDownloading(val link: String, val ctrl: ChatCtrl, val user: User, val archivePath: String, val netCfg: NetCfg): MigrationToState()
   @Serializable data class DownloadProgress(val downloadedBytes: Long, val totalBytes: Long, val fileId: Long, val link: String, val archivePath: String, val netCfg: NetCfg, val ctrl: ChatCtrl?): MigrationToState()
@@ -175,7 +182,7 @@ private fun ModalData.SectionByState(
   when (val s = migrationState.value) {
     null -> {}
     is MigrationToState.PasteOrScanLink -> migrationState.PasteOrScanLinkView()
-    is MigrationToState.Onion -> OnionView(s.link, s.socksProxy, s.hostMode, s.requiredHostMode, migrationState)
+    is MigrationToState.Onion -> OnionView(s.link, s.legacySocksProxy, s.networkProxy, s.hostMode, s.requiredHostMode, migrationState)
     is MigrationToState.DatabaseInit -> migrationState.DatabaseInitView(s.link, tempDatabaseFile, s.netCfg)
     is MigrationToState.LinkDownloading -> migrationState.LinkDownloadingView(s.link, s.ctrl, s.user, s.archivePath, tempDatabaseFile, chatReceiver, s.netCfg)
     is MigrationToState.DownloadProgress -> DownloadProgressView(s.downloadedBytes, totalBytes = s.totalBytes)
@@ -216,21 +223,24 @@ private fun MutableState<MigrationToState?>.PasteLinkView() {
 }
 
 @Composable
-private fun ModalData.OnionView(link: String, socksProxy: String?, hostMode: HostMode, requiredHostMode: Boolean, state: MutableState<MigrationToState?>) {
+private fun ModalData.OnionView(link: String, legacyLinkSocksProxy: String?, linkNetworkProxy: NetworkProxy?, hostMode: HostMode, requiredHostMode: Boolean, state: MutableState<MigrationToState?>) {
   val onionHosts = remember { stateGetOrPut("onionHosts") {
-    getNetCfg().copy(socksProxy = socksProxy, hostMode = hostMode, requiredHostMode = requiredHostMode).onionHosts
+    getNetCfg().copy(socksProxy = linkNetworkProxy?.toProxyString() ?: legacyLinkSocksProxy, hostMode = hostMode, requiredHostMode = requiredHostMode).onionHosts
   } }
-  val networkUseSocksProxy = remember { stateGetOrPut("networkUseSocksProxy") { socksProxy != null } }
+  val networkUseSocksProxy = remember { stateGetOrPut("networkUseSocksProxy") { linkNetworkProxy != null || legacyLinkSocksProxy != null } }
   val sessionMode = remember { stateGetOrPut("sessionMode") { TransportSessionMode.User} }
-  val networkProxyHostPort = remember { stateGetOrPut("networkHostProxyPort") {
-    var proxy = (socksProxy ?: chatModel.controller.appPrefs.networkProxyHostPort.get())
-    if (proxy?.startsWith(":") == true) proxy = "localhost$proxy"
-    proxy
-  }
+  val networkProxy = remember { stateGetOrPut("networkProxy") {
+    linkNetworkProxy
+      ?: if (legacyLinkSocksProxy != null) {
+        NetworkProxy(host = legacyLinkSocksProxy.substringBefore(":").ifBlank { "localhost" }, port = legacyLinkSocksProxy.substringAfter(":").toIntOrNull() ?: 9050)
+      } else {
+        appPrefs.networkProxy.get()
+      }
+    }
   }
 
   val netCfg = rememberSaveable(stateSaver = serializableSaver()) {
-    mutableStateOf(getNetCfg().withOnionHosts(onionHosts.value).copy(socksProxy = socksProxy, sessionMode = sessionMode.value))
+    mutableStateOf(getNetCfg().withOnionHosts(onionHosts.value).copy(socksProxy = linkNetworkProxy?.toProxyString() ?: legacyLinkSocksProxy, sessionMode = sessionMode.value))
   }
 
   SectionView(stringResource(MR.strings.migrate_to_device_confirm_network_settings).uppercase()) {
@@ -241,7 +251,7 @@ private fun ModalData.OnionView(link: String, socksProxy: String?, hostMode: Hos
       click = {
         val updated = netCfg.value
           .withOnionHosts(onionHosts.value)
-          .withHostPort(if (networkUseSocksProxy.value) networkProxyHostPort.value else null, null)
+          .withProxy(if (networkUseSocksProxy.value) networkProxy.value else null, null)
           .copy(
             sessionMode = sessionMode.value
           )
@@ -255,8 +265,8 @@ private fun ModalData.OnionView(link: String, socksProxy: String?, hostMode: Hos
 
   SectionSpacer()
 
-  val networkProxyHostPortPref = SharedPreference(get = { networkProxyHostPort.value }, set = {
-    networkProxyHostPort.value = it
+  val networkProxyPref = SharedPreference(get = { networkProxy.value }, set = {
+    networkProxy.value = it
   })
   SectionView(stringResource(MR.strings.network_settings_title).uppercase()) {
     OnionRelatedLayout(
@@ -264,7 +274,7 @@ private fun ModalData.OnionView(link: String, socksProxy: String?, hostMode: Hos
       networkUseSocksProxy,
       onionHosts,
       sessionMode,
-      networkProxyHostPortPref,
+      networkProxyPref,
       toggleSocksProxy = { enable ->
         networkUseSocksProxy.value = enable
       },
@@ -477,12 +487,12 @@ private suspend fun MutableState<MigrationToState?>.checkUserLink(link: String) 
     val networkConfig = data?.networkConfig?.transformToPlatformSupported()
     // If any of iOS or Android had onion enabled, show onion screen
     if (hasOnionConfigured && networkConfig?.hostMode != null && networkConfig.requiredHostMode != null) {
-      state = MigrationToState.Onion(link.trim(), networkConfig.socksProxy, networkConfig.hostMode, networkConfig.requiredHostMode)
-      MigrationToDeviceState.save(MigrationToDeviceState.Onion(link.trim(), networkConfig.socksProxy, networkConfig.hostMode, networkConfig.requiredHostMode))
+      state = MigrationToState.Onion(link.trim(), networkConfig.legacySocksProxy, networkConfig.networkProxy, networkConfig.hostMode, networkConfig.requiredHostMode)
+      MigrationToDeviceState.save(MigrationToDeviceState.Onion(link.trim(), networkConfig.legacySocksProxy, networkConfig.hostMode, networkConfig.requiredHostMode))
     } else {
       val current = getNetCfg()
       state = MigrationToState.DatabaseInit(link.trim(), current.copy(
-        socksProxy = networkConfig?.socksProxy,
+        socksProxy = networkConfig?.legacySocksProxy,
         hostMode = networkConfig?.hostMode ?: current.hostMode,
         requiredHostMode = networkConfig?.requiredHostMode ?: current.requiredHostMode
       ))

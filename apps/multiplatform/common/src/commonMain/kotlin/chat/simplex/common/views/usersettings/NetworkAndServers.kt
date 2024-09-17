@@ -29,7 +29,6 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
-import kotlinx.serialization.Serializable
 
 @Composable
 fun NetworkAndServersView() {
@@ -38,7 +37,7 @@ fun NetworkAndServersView() {
   val netCfg = remember { chatModel.controller.getNetCfg() }
   val networkUseSocksProxy: MutableState<Boolean> = remember { mutableStateOf(netCfg.useSocksProxy) }
 
-  val proxyPort = remember { derivedStateOf { ProxyComponents.from(appPrefs.networkProxyHostPort.state.value).port } }
+  val proxyPort = remember { derivedStateOf { appPrefs.networkProxy.state.value.port } }
   NetworkAndServersLayout(
     currentRemoteHost = currentRemoteHost,
     networkUseSocksProxy = networkUseSocksProxy,
@@ -53,7 +52,7 @@ fun NetworkAndServersView() {
           confirmText = generalGetString(MR.strings.confirm_verb),
           onConfirm = {
             withBGApi {
-              var conf = controller.getNetCfg().withHostPort(controller.appPrefs.networkProxyHostPort.get())
+              var conf = controller.getNetCfg().withProxy(controller.appPrefs.networkProxy.get())
               if (conf.tcpConnectTimeout == def.tcpConnectTimeout) {
                 conf = conf.copy(tcpConnectTimeout = proxyDef.tcpConnectTimeout)
               }
@@ -123,7 +122,7 @@ fun NetworkAndServersView() {
 
         if (currentRemoteHost == null) {
           UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy)
-          SettingsActionItem(painterResource(MR.images.ic_settings_ethernet), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkUseSocksProxy.value, appPrefs.networkProxyHostPort, onionHosts, sessionMode = appPrefs.networkSessionMode.get(), false, it) }})
+          SettingsActionItem(painterResource(MR.images.ic_settings_ethernet), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkUseSocksProxy.value, appPrefs.networkProxy, onionHosts, sessionMode = appPrefs.networkSessionMode.get(), false, it) }})
           SettingsActionItem(painterResource(MR.images.ic_cable), stringResource(MR.strings.network_settings), { ModalManager.start.showCustomModal { AdvancedNetworkSettingsView(showModal, it) } })
           if (networkUseSocksProxy.value) {
             SectionTextFooter(annotatedStringResource(MR.strings.socks_proxy_setting_limitations))
@@ -157,14 +156,14 @@ fun NetworkAndServersView() {
   networkUseSocksProxy: MutableState<Boolean>,
   onionHosts: MutableState<OnionHosts>,
   sessionMode: MutableState<TransportSessionMode>,
-  networkProxyHostPort: SharedPreference<String?>,
+  networkProxy: SharedPreference<NetworkProxy>,
   toggleSocksProxy: (Boolean) -> Unit,
   updateSessionMode: (TransportSessionMode) -> Unit,
 ) {
   val showModal = { it: @Composable ModalData.() -> Unit ->  ModalManager.fullscreen.showModal(content = it) }
   val showCustomModal = { it: @Composable (close: () -> Unit) -> Unit -> ModalManager.fullscreen.showCustomModal { close -> it(close) }}
   UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy)
-  SettingsActionItem(painterResource(MR.images.ic_settings_ethernet), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkUseSocksProxy.value, networkProxyHostPort, onionHosts, sessionMode.value, true, it) } })
+  SettingsActionItem(painterResource(MR.images.ic_settings_ethernet), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkUseSocksProxy.value, networkProxy, onionHosts, sessionMode.value, true, it) } })
   if (developerTools) {
     SessionModePicker(sessionMode, showModal, updateSessionMode)
   }
@@ -202,30 +201,28 @@ fun UseSocksProxySwitch(
 @Composable
 fun SocksProxySettings(
   networkUseSocksProxy: Boolean,
-  networkProxyHostPort: SharedPreference<String?> = appPrefs.networkProxyHostPort,
+  networkProxy: SharedPreference<NetworkProxy>,
   onionHosts: MutableState<OnionHosts>,
   sessionMode: TransportSessionMode,
   migration: Boolean,
   close: () -> Unit
 ) {
-  val defaultHostPort = remember { "localhost:9050" }
-  val proxyStringSaved by remember { networkProxyHostPort.state }
-  val proxyComponentsSaved by remember(proxyStringSaved) { mutableStateOf(ProxyComponents.from(proxyStringSaved)) }
+  val networkProxySaved by remember { networkProxy.state }
   val onionHostsSaved = remember { mutableStateOf(onionHosts.value) }
 
   val usernameUnsaved = rememberSaveable(stateSaver = TextFieldValue.Saver) {
-    mutableStateOf(TextFieldValue(proxyComponentsSaved.usernamePassword.first))
+    mutableStateOf(TextFieldValue(networkProxySaved.username))
   }
   val passwordUnsaved = rememberSaveable(stateSaver = TextFieldValue.Saver) {
-    mutableStateOf(TextFieldValue(proxyComponentsSaved.usernamePassword.second))
+    mutableStateOf(TextFieldValue(networkProxySaved.password))
   }
   val hostUnsaved = rememberSaveable(stateSaver = TextFieldValue.Saver) {
-    mutableStateOf(TextFieldValue(proxyComponentsSaved.host))
+    mutableStateOf(TextFieldValue(networkProxySaved.host))
   }
   val portUnsaved = rememberSaveable(stateSaver = TextFieldValue.Saver) {
-    mutableStateOf(TextFieldValue(proxyComponentsSaved.port.toString()))
+    mutableStateOf(TextFieldValue(networkProxySaved.port.toString()))
   }
-  val proxyAuthRandomUnsaved = rememberSaveable { mutableStateOf(proxyComponentsSaved.authMode == ProxyAuthenticationMode.ISOLATE_BY_AUTH) }
+  val proxyAuthRandomUnsaved = rememberSaveable { mutableStateOf(networkProxySaved.auth == NetworkProxyAuth.ISOLATE) }
   LaunchedEffect(proxyAuthRandomUnsaved.value) {
     if (!proxyAuthRandomUnsaved.value && onionHosts.value != OnionHosts.NEVER) {
       onionHosts.value = OnionHosts.NEVER
@@ -234,24 +231,28 @@ fun SocksProxySettings(
   val proxyAuthModeUnsaved = remember(proxyAuthRandomUnsaved.value, usernameUnsaved.value.text, passwordUnsaved.value.text) {
     derivedStateOf {
       if (proxyAuthRandomUnsaved.value) {
-        ProxyAuthenticationMode.ISOLATE_BY_AUTH
-      } else if (usernameUnsaved.value.text.isBlank() && passwordUnsaved.value.text.isBlank()) {
-        ProxyAuthenticationMode.NO_AUTH
+        NetworkProxyAuth.ISOLATE
       } else {
-        ProxyAuthenticationMode.USERNAME_PASSWORD
+        NetworkProxyAuth.USERNAME
       }
     }
   }
 
   val save: (Boolean) -> Unit = { closeOnSuccess ->
-    val oldValue = networkProxyHostPort.get()
-    networkProxyHostPort.set(
-      ProxyComponents(
-        usernamePassword = usernameUnsaved.value.text to passwordUnsaved.value.text,
+    val oldValue = networkProxy.get()
+    usernameUnsaved.value = usernameUnsaved.value.copy(if (proxyAuthModeUnsaved.value == NetworkProxyAuth.USERNAME) usernameUnsaved.value.text.trim() else "")
+    passwordUnsaved.value = passwordUnsaved.value.copy(if (proxyAuthModeUnsaved.value == NetworkProxyAuth.USERNAME) passwordUnsaved.value.text.trim() else "")
+    hostUnsaved.value = hostUnsaved.value.copy(hostUnsaved.value.text.trim())
+    portUnsaved.value = portUnsaved.value.copy(portUnsaved.value.text.trim())
+
+    networkProxy.set(
+      NetworkProxy(
+        username = usernameUnsaved.value.text,
+        password = passwordUnsaved.value.text,
         host = hostUnsaved.value.text,
-        port = portUnsaved.value.text.trim().toIntOrNull() ?: 9050,
-        authMode = proxyAuthModeUnsaved.value
-      ).toProxyString()
+        port = portUnsaved.value.text.toIntOrNull() ?: 9050,
+        auth = proxyAuthModeUnsaved.value
+      )
     )
     val oldCfg = controller.getNetCfg()
     val cfg = oldCfg.withOnionHosts(onionHosts.value)
@@ -264,12 +265,6 @@ fun SocksProxySettings(
     if (networkUseSocksProxy && !migration) {
       withBGApi {
         if (controller.apiSetNetworkConfig(cfg, showAlertOnError = false)) {
-          val comp = ProxyComponents.from(networkProxyHostPort.get())
-          usernameUnsaved.value = usernameUnsaved.value.copy(comp.usernamePassword.first)
-          passwordUnsaved.value = passwordUnsaved.value.copy(comp.usernamePassword.second)
-          hostUnsaved.value = hostUnsaved.value.copy(comp.host)
-          portUnsaved.value = portUnsaved.value.copy(comp.port.toString())
-          proxyAuthRandomUnsaved.value = comp.authMode == ProxyAuthenticationMode.ISOLATE_BY_AUTH
           onionHosts.value = cfg.onionHosts
           onionHostsSaved.value = onionHosts.value
           if (closeOnSuccess) {
@@ -277,7 +272,7 @@ fun SocksProxySettings(
           }
         } else {
           controller.setNetCfg(oldCfg)
-          networkProxyHostPort.set(oldValue)
+          networkProxy.set(oldValue)
           onionHostsSaved.value = oldOnionHosts
           showWrongProxyConfigAlert()
         }
@@ -286,14 +281,15 @@ fun SocksProxySettings(
   }
   val saveDisabled =
     (
-        proxyComponentsSaved.usernamePassword == usernameUnsaved.value.text.trim() to passwordUnsaved.value.text.trim() &&
-        proxyComponentsSaved.host == hostUnsaved.value.text.trim() &&
-        proxyComponentsSaved.port.toString() == portUnsaved.value.text.trim() &&
-        proxyComponentsSaved.authMode == proxyAuthModeUnsaved.value &&
+        networkProxySaved.username == usernameUnsaved.value.text.trim() &&
+        networkProxySaved.password == passwordUnsaved.value.text.trim() &&
+        networkProxySaved.host == hostUnsaved.value.text.trim() &&
+        networkProxySaved.port.toString() == portUnsaved.value.text.trim() &&
+        networkProxySaved.auth == proxyAuthModeUnsaved.value &&
         onionHosts.value == onionHostsSaved.value
     ) ||
       remember { derivedStateOf { !validPort(portUnsaved.value.text) } }.value
-  val resetDisabled = hostUnsaved.value.text.trim() + ":" + portUnsaved.value.text.trim() == defaultHostPort && proxyAuthRandomUnsaved.value && onionHosts.value == NetCfg.defaults.onionHosts
+  val resetDisabled = hostUnsaved.value.text.trim() == "localhost" && portUnsaved.value.text.trim() == "9050" && proxyAuthRandomUnsaved.value && onionHosts.value == NetCfg.defaults.onionHosts
   ModalView(
     close = {
       if (saveDisabled) {
@@ -366,17 +362,15 @@ fun SocksProxySettings(
             )
           }
         }
-        SectionTextFooter(proxyAuthModeUnsaved.value.text(sessionMode))
+        SectionTextFooter(proxyAuthFooter(usernameUnsaved.value.text, passwordUnsaved.value.text, proxyAuthModeUnsaved.value, sessionMode))
       }
 
       SectionDividerSpaced(maxBottomPadding = false, maxTopPadding = true)
 
       SectionView {
         SectionItemView({
-          val newHost = defaultHostPort.split(":").first()
-          val newPort = defaultHostPort.split(":").last()
-          hostUnsaved.value = hostUnsaved.value.copy(newHost, TextRange(newHost.length))
-          portUnsaved.value = portUnsaved.value.copy(newPort, TextRange(newPort.length))
+          hostUnsaved.value = hostUnsaved.value.copy("localhost", TextRange(9))
+          portUnsaved.value = portUnsaved.value.copy("9050", TextRange(4))
           usernameUnsaved.value = TextFieldValue()
           passwordUnsaved.value = TextFieldValue()
           proxyAuthRandomUnsaved.value = true
@@ -396,76 +390,10 @@ fun SocksProxySettings(
   }
 }
 
-@Serializable
-private data class ProxyComponents(
-  val usernamePassword: Pair<String, String>,
-  val host: String,
-  val port: Int,
-  val authMode: ProxyAuthenticationMode
-) {
-  fun toProxyString(): String? {
-    var res = ""
-    if (authMode == ProxyAuthenticationMode.USERNAME_PASSWORD && (usernamePassword.first.isNotBlank() || usernamePassword.second.isNotBlank())) {
-      res += usernamePassword.first.trim() + ":" + usernamePassword.second.trim() + "@"
-    } else if (authMode == ProxyAuthenticationMode.USERNAME_PASSWORD || authMode == ProxyAuthenticationMode.NO_AUTH) {
-      res += "@"
-    }
-    if (host != "localhost") {
-      res += if (host.contains(':')) "[${host.trim(' ', '[', ']')}]" else host.trim()
-    }
-    if (port != 9050) {
-      res += ":$port"
-    }
-    return res.ifBlank { null }
-  }
-  companion object {
-    fun from(proxy: String?): ProxyComponents {
-      if (proxy == null) {
-        return ProxyComponents(usernamePassword = "" to "", host = "localhost", port = 9050, authMode = ProxyAuthenticationMode.ISOLATE_BY_AUTH)
-      }
-      val username = if (proxy.contains("@")) proxy.substringBefore("@").substringBefore(":") else ""
-      val password = if (proxy.contains("@")) proxy.substringBefore("@").substringAfter(":") else ""
-      val hostPort = proxy.substringAfter("@")
-      val host: String?
-      val port: Int?
-      if (hostPort.contains("[") && hostPort.contains("]")) {
-        // ipv6 with or without port
-        host = hostPort.substringBefore("]") + "]"
-        port = hostPort.substringAfter("]").trim(':').toIntOrNull()
-      } else {
-        // ipv4 with or without port
-        host = hostPort.substringBefore(":")
-        port = hostPort.substringAfter(":").toIntOrNull()
-      }
-      return ProxyComponents(
-        usernamePassword = username to password,
-        host = host.ifBlank { "localhost" },
-        port = port ?: 9050,
-        authMode = ProxyAuthenticationMode.from(proxy)
-      )
-    }
-  }
-}
-
-enum class ProxyAuthenticationMode {
-  ISOLATE_BY_AUTH,
-  NO_AUTH,
-  USERNAME_PASSWORD;
-
-  fun text(sessionMode: TransportSessionMode): String = when (this) {
-      ISOLATE_BY_AUTH -> generalGetString(if (sessionMode == TransportSessionMode.User) MR.strings.network_proxy_auth_mode_isolate_by_auth_user else MR.strings.network_proxy_auth_mode_isolate_by_auth_entity)
-      NO_AUTH -> generalGetString(MR.strings.network_proxy_auth_mode_no_auth)
-      USERNAME_PASSWORD -> generalGetString(MR.strings.network_proxy_auth_mode_username_password)
-    }
-
-  companion object {
-    fun from(proxy: String?): ProxyAuthenticationMode = when {
-      proxy.isNullOrEmpty() -> ISOLATE_BY_AUTH
-      !proxy.contains("@") -> ISOLATE_BY_AUTH
-      proxy.startsWith("@") -> NO_AUTH
-      else -> USERNAME_PASSWORD
-    }
-  }
+private fun proxyAuthFooter(username: String, password: String, auth: NetworkProxyAuth, sessionMode: TransportSessionMode): String = when {
+  auth == NetworkProxyAuth.ISOLATE -> generalGetString(if (sessionMode == TransportSessionMode.User) MR.strings.network_proxy_auth_mode_isolate_by_auth_user else MR.strings.network_proxy_auth_mode_isolate_by_auth_entity)
+  username.isBlank() && password.isBlank() -> generalGetString(MR.strings.network_proxy_auth_mode_no_auth)
+  else -> generalGetString(MR.strings.network_proxy_auth_mode_username_password)
 }
 
 private fun showUnsavedSocksHostPortAlert(confirmText: String, save: () -> Unit, close: () -> Unit) {
