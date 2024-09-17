@@ -756,7 +756,7 @@ struct ChatView: View {
                             }
                         }
                     } else {
-                        openForwardingSheet(validItems)
+                        await openForwardingSheet(validItems)
                     }
                 }
             } catch {
@@ -766,7 +766,7 @@ struct ChatView: View {
 
         func forward(_ items: [Int64]) -> UIAlertAction {
             alertAction(NSLocalizedString("Forward messages", comment: "alert action")) {
-                openForwardingSheet(items)
+                Task { await openForwardingSheet(items) }
             }
         }
 
@@ -780,11 +780,18 @@ struct ChatView: View {
             }
         }
 
-        func openForwardingSheet(_ items: [Int64]) {
+        func openForwardingSheet(_ items: [Int64]) async {
             let im = ItemsModel.shared
-            forwardedChatItems = items
-                .compactMap { id in im.reversedChatItems.first { $0.id == id } }
-                .sorted { $0.meta.itemTs == $1.meta.itemTs }
+            var items = Set(items)
+            var fci = [ChatItem]()
+            for reversedChatItem in im.reversedChatItems {
+                if items.contains(reversedChatItem.id) {
+                    items.remove(reversedChatItem.id)
+                    fci.insert(reversedChatItem, at: 0)
+                }
+                if items.isEmpty { break }
+            }
+            await MainActor.run { forwardedChatItems = fci }
         }
     }
 
