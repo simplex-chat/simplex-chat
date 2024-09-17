@@ -1561,9 +1561,6 @@ object ChatController {
 
       when (r) {
         is CR.RcvFileAccepted -> result.filesAccepted.add(r.chatItem)
-        is CR.RcvFileAcceptedSndCancelled -> result.fileErrors.add(FileReceiveError.ChatResponseError(r))
-        is CR.RcvFileCancelled -> result.fileErrors.add(FileReceiveError.ChatResponseError(r))
-        is CR.RcvFileSndCancelled -> result.fileErrors.add(FileReceiveError.ChatResponseError(r))
         else -> {
           if (!(networkErrorAlert(r))) {
             when (val maybeChatError = chatError(r)) {
