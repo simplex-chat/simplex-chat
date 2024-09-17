@@ -8,7 +8,6 @@
 
 import SwiftUI
 import SimpleXChat
-import Network
 
 private let secondsLabel =  NSLocalizedString("sec", comment: "network option")
 
@@ -37,116 +36,10 @@ struct AdvancedNetworkSettings: View {
     @State private var showSettingsAlert: NetworkSettingsAlert?
     @State private var onionHosts: OnionHosts = .no
     @State private var showSaveDialog = false
+    @State private var socksProxy = getSocksProxy()
+    @State private var currentSocksProxy = getSocksProxy()
     @State private var useSocksProxy = false
-    @State private var socksProxy = SocksProxy()
-    @State private var currentSocksProxy = SocksProxy()
-
-    struct SocksProxy: Equatable {
-        var username: String = ""
-        var password: String = ""
-        var host: String = ""
-        var port: String = ""
-        var auth: Bool = false
-        
-        var valid: Bool {
-            let hostOk = switch NWEndpoint.Host(host) {
-            case .ipv4: true
-            case .ipv6: true
-            default: false
-            }
-            return if let portNum = Int(port) {
-                hostOk && portNum > 0 && portNum <= 65535 && (!auth || username != "" || password != "")
-            } else {
-                false
-            }
-        }
-
-        func toProxyString() -> String? {
-            var res = ""
-            let usernameTrimmed = username.trimmingCharacters(in: .whitespaces)
-            let passwordTrimmed = password.trimmingCharacters(in: .whitespaces)
-            if auth && (usernameTrimmed.count > 0 || passwordTrimmed.count > 0) {
-                res += usernameTrimmed + ":" + passwordTrimmed + "@"
-            } else if auth {
-                res += "@"
-            }
-            if host != "" {
-                if host.contains(":") {
-                    res += "[\(host.trimmingCharacters(in: [" ", "[", "]"]))]"
-                } else {
-                    res += host.trimmingCharacters(in: .whitespaces)
-                }
-            }
-            if let port = Int(port.trimmingCharacters(in: .whitespaces)), port != 9050 {
-                res += ":\(port)"
-            }
-            return res.count == 0 ? nil : res
-        }
-        
-        static func from(proxy: String?) -> SocksProxy {
-            guard let proxy else {
-                return SocksProxy(username: "", password: "", host: "", port: "", auth: false)
-            }
-            var username = ""
-            var password = ""
-            if proxy.contains("@") {
-                let userPass = proxy.split(separator: "@", omittingEmptySubsequences: false)[0]
-                let split = userPass.split(separator: ":", omittingEmptySubsequences: false)
-                username = String(split[0])
-                password = split.count > 1 ? String(split[1]) : ""
-            }
-            let allSplit = proxy.split(separator: "@", omittingEmptySubsequences: false)
-            let host: String
-            let port: String
-            if allSplit.count < 2 {
-                host = ""
-                port = ""
-            } else if allSplit[1].contains("[") && allSplit[1].contains("]") {
-                // ipv6 with or without port
-                let split = allSplit[1].split(separator: "]", omittingEmptySubsequences: false)
-                host = split[0] + "]"
-                port = split[1].trimmingCharacters(in: .whitespaces)
-            } else {
-                // ipv4 with or without port
-                let split = allSplit[1].split(separator: ":", omittingEmptySubsequences: false)
-                host = String(split[0])
-                port = split.count > 1 ? String(split[1]) : ""
-            }
-            return SocksProxy(
-                username: username,
-                password: password,
-                host: host.count > 0 ? host : "",
-                port: port.count > 0 ? port : "",
-                auth: username.count > 0 || password.count > 0
-            )
-        }
-
-//        enum ProxyAuthenticationMode: StringLiteralType {
-//            case isolateByAuth
-//            case noAuth
-//            case usernamePassword
-//
-//
-//            func text(_ sessionMode: TransportSessionMode) -> LocalizedStringKey {
-//                switch (self) {
-//                case .isolateByAuth:
-//                    sessionMode == TransportSessionMode.user
-//                    ? "Use different proxy credentials for each profile."
-//                    : "Use different proxy credentials for each connection."
-//                case .noAuth: "Do not use credentials with proxy."
-//                case .usernamePassword: "Your credentials may be sent unencrypted."
-//                }
-//            }
-//
-//            static func from(_ proxy: String?) -> ProxyAuthenticationMode {
-//                guard let proxy = proxy else { return .isolateByAuth }
-//                if proxy.count == 0 { return .isolateByAuth }
-//                else if !proxy.contains("@") { return .isolateByAuth }
-//                else if proxy.hasPrefix("@") { return .noAuth }
-//                else { return .usernamePassword }
-//            }
-//        }
-    }
+    @State private var socksProxyAuth = false
 
     var body: some View {
         VStack {
@@ -218,8 +111,8 @@ struct AdvancedNetworkSettings: View {
                     if useSocksProxy {
                         TextField("IP address", text: $socksProxy.host)
                         TextField("Port", text: $socksProxy.port)
-                        Toggle("Proxy requires password", isOn: $socksProxy.auth)
-                        if socksProxy.auth {
+                        Toggle("Proxy requires password", isOn: $socksProxyAuth)
+                        if socksProxyAuth {
                             TextField("Username", text: $socksProxy.username)
                             SecureField("Password", text: $socksProxy.password)
                         }
@@ -233,7 +126,7 @@ struct AdvancedNetworkSettings: View {
                         }
                     }
                 } footer: {
-                    if socksProxy.auth {
+                    if socksProxyAuth {
                         Text("Your credentials may be sent unencrypted.")
                             .foregroundColor(theme.colors.secondary)
                     } else {
@@ -242,15 +135,20 @@ struct AdvancedNetworkSettings: View {
                     }
                 }
                 .onChange(of: useSocksProxy) { useSocksProxy in
-                    netCfg.socksProxy = useSocksProxy && socksProxy.valid ? socksProxy.toProxyString() : nil
+                    netCfg.socksProxy = useSocksProxy && currentSocksProxy.valid
+                        ? currentSocksProxy.toString()
+                        : nil
+                    socksProxy = currentSocksProxy
+                    socksProxyAuth = socksProxy.username != "" || socksProxy.password != ""
                 }
-                .onChange(of: socksProxy.auth) { _ in
+                .onChange(of: socksProxyAuth) { _ in
                     socksProxy.username = ""
                     socksProxy.password = ""
                 }
                 .onChange(of: socksProxy) { sp in
-                    if sp.valid, let string = sp.toProxyString(), string != netCfg.socksProxy {
-                        netCfg.socksProxy = string
+                    let str = sp.toString()
+                    if str != netCfg.socksProxy {
+                        netCfg.socksProxy = str
                     }
                 }
 
@@ -308,12 +206,12 @@ struct AdvancedNetworkSettings: View {
                 
                 Section {
                     Button("Reset to defaults") {
-                        updateNetCfgView(NetCfg.defaults)
+                        updateNetCfgView(NetCfg.defaults, SocksProxy())
                     }
                     .disabled(netCfg == NetCfg.defaults)
 
                     Button("Set timeouts for proxy/VPN") {
-                        updateNetCfgView(netCfg.withProxyTimeouts)
+                        updateNetCfgView(netCfg.withProxyTimeouts, socksProxy)
                     }
                     .disabled(netCfg.hasProxyTimeouts)
                     
@@ -334,7 +232,8 @@ struct AdvancedNetworkSettings: View {
             if cfgLoaded { return }
             cfgLoaded = true
             currentNetCfg = getNetCfg()
-            updateNetCfgView(currentNetCfg)
+            currentSocksProxy = getSocksProxy()
+            updateNetCfgView(currentNetCfg, currentSocksProxy)
         }
         .alert(item: $showSettingsAlert) { a in
             switch a {
@@ -358,7 +257,7 @@ struct AdvancedNetworkSettings: View {
             if netCfg == currentNetCfg {
                 dismiss()
                 cfgLoaded = false
-            } else {
+            } else if !useSocksProxy || socksProxy.valid {
                 showSaveDialog = true
             }
         })
@@ -373,13 +272,14 @@ struct AdvancedNetworkSettings: View {
         }
     }
 
-    private func updateNetCfgView(_ cfg: NetCfg) {
+    private func updateNetCfgView(_ cfg: NetCfg, _ proxy: SocksProxy) {
         netCfg = cfg
+        socksProxy = proxy
         onionHosts = OnionHosts(netCfg: netCfg)
         enableKeepAlive = netCfg.enableKeepAlive
         keepAliveOpts = netCfg.tcpKeepAlive ?? KeepAliveOpts.defaults
-        socksProxy = SocksProxy.from(proxy: netCfg.socksProxy)
         useSocksProxy = netCfg.socksProxy != nil
+        socksProxyAuth = currentSocksProxy.username != "" || currentSocksProxy.password != ""
     }
 
     private func saveNetCfg() -> Bool {
@@ -387,6 +287,8 @@ struct AdvancedNetworkSettings: View {
             try setNetworkConfig(netCfg)
             currentNetCfg = netCfg
             setNetCfg(netCfg)
+            currentSocksProxy = socksProxy
+            setSocksProxy(socksProxy)
             return true
         } catch let error {
             let err = responseError(error)

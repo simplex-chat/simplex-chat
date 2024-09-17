@@ -9,6 +9,7 @@
 import SwiftUI
 import StoreKit
 import SimpleXChat
+import Network
 
 let simplexTeamURL = URL(string: "simplex:/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D")!
 
@@ -74,6 +75,11 @@ let DEFAULT_CURRENT_THEME = "currentTheme"
 let DEFAULT_SYSTEM_DARK_THEME = "systemDarkTheme"
 let DEFAULT_CURRENT_THEME_IDS = "currentThemeIds"
 let DEFAULT_THEME_OVERRIDES = "themeOverrides"
+
+let DEFAULT_SOCKS_PROXY_HOST = "socksProxyHost"
+let DEFAULT_SOCKS_PROXY_PORT = "socksProxyPort"
+let DEFAULT_SOCKS_PROXY_USERNAME = "socksProxyUsername"
+let DEFAULT_SOCKS_PROXY_PASSWORD = "socksProxyPassword"
 
 let ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN = "androidCallOnLockScreen"
 
@@ -251,6 +257,64 @@ public class CodableDefault<T: Codable> {
     }
 }
 
+public struct SocksProxy: Equatable {
+    public var host: String = ""
+    public var port: String = ""
+    public var username: String = ""
+    public var password: String = ""
+    
+    var valid: Bool {
+        let hostOk = switch NWEndpoint.Host(host) {
+        case .ipv4: true
+        case .ipv6: true
+        default: false
+        }
+        return if let portNum = Int(port) {
+            hostOk && portNum > 0 && portNum <= 65535
+        } else {
+            false
+        }
+    }
+    
+    func toString() -> String? {
+        var res = ""
+        let usernameTrimmed = username.trimmingCharacters(in: .whitespaces)
+        let passwordTrimmed = password.trimmingCharacters(in: .whitespaces)
+        if usernameTrimmed.count > 0 || passwordTrimmed.count > 0 {
+            res += usernameTrimmed + ":" + passwordTrimmed + "@"
+        } else {
+            res += "@"
+        }
+        if host != "" {
+            if host.contains(":") {
+                res += "[\(host.trimmingCharacters(in: [" ", "[", "]"]))]"
+            } else {
+                res += host.trimmingCharacters(in: .whitespaces)
+            }
+        }
+        if let port = Int(port.trimmingCharacters(in: .whitespaces)) {
+            res += ":\(port)"
+        }
+        return res.count == 0 ? nil : res
+    }
+}
+
+public func getSocksProxy() -> SocksProxy {
+    SocksProxy(
+        host: UserDefaults.standard.string(forKey: DEFAULT_SOCKS_PROXY_HOST) ?? "",
+        port: UserDefaults.standard.string(forKey: DEFAULT_SOCKS_PROXY_PORT) ?? "",
+        username: UserDefaults.standard.string(forKey: DEFAULT_SOCKS_PROXY_USERNAME) ?? "",
+        password: UserDefaults.standard.string(forKey: DEFAULT_SOCKS_PROXY_PASSWORD) ?? ""
+    )
+}
+
+public func setSocksProxy(_ proxy: SocksProxy) {
+    let def = UserDefaults.standard
+    def.set(proxy.host, forKey: DEFAULT_SOCKS_PROXY_HOST)
+    def.set(proxy.port, forKey: DEFAULT_SOCKS_PROXY_PORT)
+    def.set(proxy.username, forKey: DEFAULT_SOCKS_PROXY_USERNAME)
+    def.set(proxy.password, forKey: DEFAULT_SOCKS_PROXY_PASSWORD)
+}
 
 struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
