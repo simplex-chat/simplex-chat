@@ -290,6 +290,7 @@ fun SocksProxySettings(
     ) ||
         !validCredential(usernameUnsaved.value.text) ||
         !validCredential(passwordUnsaved.value.text) ||
+        !validHost(hostUnsaved.value.text) ||
         !validPort(portUnsaved.value.text)
   val resetDisabled = hostUnsaved.value.text.trim() == "localhost" && portUnsaved.value.text.trim() == "9050" && proxyAuthRandomUnsaved.value && onionHosts.value == NetCfg.defaults.onionHosts
   ModalView(
@@ -316,7 +317,7 @@ fun SocksProxySettings(
             hostUnsaved,
             stringResource(MR.strings.host_verb),
             modifier = Modifier.fillMaxWidth(),
-            isValid = { true },
+            isValid = ::validHost,
             keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
             keyboardType = KeyboardType.Text,
           )
@@ -482,6 +483,9 @@ fun SessionModePicker(
     }
   )
 }
+
+private fun validHost(s: String): Boolean =
+  !s.contains('@')
 
 // https://ihateregex.io/expr/port/
 fun validPort(s: String): Boolean {
