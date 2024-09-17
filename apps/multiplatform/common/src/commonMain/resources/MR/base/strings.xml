@@ -769,7 +769,7 @@
   <string name="network_socks_proxy">SOCKS proxy</string>
   <string name="network_socks_proxy_settings">SOCKS proxy settings</string>
   <string name="network_socks_toggle_use_socks_proxy">Use SOCKS proxy</string>
-  <string name="network_proxy_auth">Proxy auth</string>
+  <string name="network_proxy_auth">Proxy authentication</string>
   <string name="network_proxy_random_credentials">Use random credentials</string>
   <string name="network_proxy_auth_mode_isolate_by_auth_user">Use different proxy credentials for each profile.</string>
   <string name="network_proxy_auth_mode_isolate_by_auth_entity">Use different proxy credentials for each connection.</string>
