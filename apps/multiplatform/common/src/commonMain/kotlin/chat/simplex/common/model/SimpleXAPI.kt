@@ -1197,7 +1197,6 @@ object ChatController {
         )
         return null
       }
-
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorChat
           && r.chatError.errorType is ChatErrorType.InvalidConnReq -> {
         AlertManager.shared.showAlertMsg(
