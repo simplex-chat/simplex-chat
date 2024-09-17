@@ -547,7 +547,7 @@
 /* No comment provided by engineer. */
 "Can't invite contacts!" = "Kontakteja ei voi kutsua!";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Cancel" = "Peruuta";
 
 /* feature offered item */
@@ -1518,9 +1518,6 @@
 
 /* No comment provided by engineer. */
 "Full name (optional)" = "Koko nimi (valinnainen)";
-
-/* No comment provided by engineer. */
-"Full name:" = "Koko nimi:";
 
 /* No comment provided by engineer. */
 "Fully re-implemented - work in background!" = "Täysin uudistettu - toimii taustalla!";
@@ -2572,10 +2569,11 @@
 /* No comment provided by engineer. */
 "Run chat" = "Käynnistä chat";
 
-/* chat item action */
+/* alert button
+   chat item action */
 "Save" = "Tallenna";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Save (and notify contacts)" = "Tallenna (ja ilmoita kontakteille)";
 
 /* No comment provided by engineer. */
@@ -2589,9 +2587,6 @@
 
 /* No comment provided by engineer. */
 "Save archive" = "Tallenna arkisto";
-
-/* No comment provided by engineer. */
-"Save auto-accept settings" = "Tallenna automaattisen hyväksynnän asetukset";
 
 /* No comment provided by engineer. */
 "Save group profile" = "Tallenna ryhmäprofiili";
@@ -2613,9 +2608,6 @@
 
 /* No comment provided by engineer. */
 "Save servers?" = "Tallenna palvelimet?";
-
-/* No comment provided by engineer. */
-"Save settings?" = "Tallenna asetukset?";
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "Tallenna tervetuloviesti?";
@@ -3512,7 +3504,7 @@
 "Your profile **%@** will be shared." = "Profiilisi **%@** jaetaan.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Profiilisi tallennetaan laitteeseesi ja jaetaan vain yhteystietojesi kanssa.\nSimpleX-palvelimet eivät näe profiiliasi.";
+"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Profiilisi tallennetaan laitteeseesi ja jaetaan vain yhteystietojesi kanssa. SimpleX-palvelimet eivät näe profiiliasi.";
 
 /* No comment provided by engineer. */
 "Your profile, contacts and delivered messages are stored on your device." = "Profiilisi, kontaktisi ja toimitetut viestit tallennetaan laitteellesi.";

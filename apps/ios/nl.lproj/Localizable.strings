@@ -781,7 +781,7 @@
 /* No comment provided by engineer. */
 "Can't message member" = "Kan geen bericht sturen naar lid";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Cancel" = "Annuleren";
 
 /* No comment provided by engineer. */
@@ -2204,9 +2204,6 @@
 "Full name (optional)" = "Volledige naam (optioneel)";
 
 /* No comment provided by engineer. */
-"Full name:" = "Volledige naam:";
-
-/* No comment provided by engineer. */
 "Fully decentralized – visible only to members." = "Volledig gedecentraliseerd – alleen zichtbaar voor leden.";
 
 /* No comment provided by engineer. */
@@ -3379,12 +3376,6 @@
 "Profile images" = "Profiel afbeeldingen";
 
 /* No comment provided by engineer. */
-"Profile name" = "Profielnaam";
-
-/* No comment provided by engineer. */
-"Profile name:" = "Profielnaam:";
-
-/* No comment provided by engineer. */
 "Profile password" = "Profiel wachtwoord";
 
 /* No comment provided by engineer. */
@@ -3715,10 +3706,11 @@
 /* No comment provided by engineer. */
 "Safer groups" = "Veiligere groepen";
 
-/* chat item action */
+/* alert button
+   chat item action */
 "Save" = "Opslaan";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Save (and notify contacts)" = "Bewaar (en informeer contacten)";
 
 /* No comment provided by engineer. */
@@ -3735,9 +3727,6 @@
 
 /* No comment provided by engineer. */
 "Save archive" = "Bewaar archief";
-
-/* No comment provided by engineer. */
-"Save auto-accept settings" = "Sla instellingen voor automatisch accepteren op";
 
 /* No comment provided by engineer. */
 "Save group profile" = "Groep profiel opslaan";
@@ -3759,9 +3748,6 @@
 
 /* No comment provided by engineer. */
 "Save servers?" = "Servers opslaan?";
-
-/* No comment provided by engineer. */
-"Save settings?" = "Instellingen opslaan?";
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "Welkom bericht opslaan?";
@@ -5189,7 +5175,7 @@
 "Your profile **%@** will be shared." = "Uw profiel **%@** wordt gedeeld.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Uw profiel wordt op uw apparaat opgeslagen en alleen gedeeld met uw contacten.\nSimpleX servers kunnen uw profiel niet zien.";
+"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Uw profiel wordt op uw apparaat opgeslagen en alleen gedeeld met uw contacten. SimpleX servers kunnen uw profiel niet zien.";
 
 /* No comment provided by engineer. */
 "Your profile, contacts and delivered messages are stored on your device." = "Uw profiel, contacten en afgeleverde berichten worden op uw apparaat opgeslagen.";

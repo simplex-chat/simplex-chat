@@ -781,7 +781,7 @@
 /* No comment provided by engineer. */
 "Can't message member" = "No se pueden enviar mensajes al miembro";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Cancel" = "Cancelar";
 
 /* No comment provided by engineer. */
@@ -2204,9 +2204,6 @@
 "Full name (optional)" = "Nombre completo (opcional)";
 
 /* No comment provided by engineer. */
-"Full name:" = "Nombre completo:";
-
-/* No comment provided by engineer. */
 "Fully decentralized – visible only to members." = "Completamente descentralizado y sólo visible para los miembros.";
 
 /* No comment provided by engineer. */
@@ -3379,12 +3376,6 @@
 "Profile images" = "Forma de los perfiles";
 
 /* No comment provided by engineer. */
-"Profile name" = "Nombre del perfil";
-
-/* No comment provided by engineer. */
-"Profile name:" = "Nombre del perfil:";
-
-/* No comment provided by engineer. */
 "Profile password" = "Contraseña del perfil";
 
 /* No comment provided by engineer. */
@@ -3715,10 +3706,11 @@
 /* No comment provided by engineer. */
 "Safer groups" = "Grupos más seguros";
 
-/* chat item action */
+/* alert button
+   chat item action */
 "Save" = "Guardar";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Save (and notify contacts)" = "Guardar (y notificar contactos)";
 
 /* No comment provided by engineer. */
@@ -3735,9 +3727,6 @@
 
 /* No comment provided by engineer. */
 "Save archive" = "Guardar archivo";
-
-/* No comment provided by engineer. */
-"Save auto-accept settings" = "Guardar configuración de auto aceptar";
 
 /* No comment provided by engineer. */
 "Save group profile" = "Guardar perfil de grupo";
@@ -3759,9 +3748,6 @@
 
 /* No comment provided by engineer. */
 "Save servers?" = "¿Guardar servidores?";
-
-/* No comment provided by engineer. */
-"Save settings?" = "¿Guardar configuración?";
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "¿Guardar mensaje de bienvenida?";
@@ -5189,7 +5175,7 @@
 "Your profile **%@** will be shared." = "El perfil **%@** será compartido.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Tu perfil es almacenado en tu dispositivo y solamente se comparte con tus contactos.\nLos servidores SimpleX no pueden ver tu perfil.";
+"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Tu perfil es almacenado en tu dispositivo y solamente se comparte con tus contactos. Los servidores SimpleX no pueden ver tu perfil.";
 
 /* No comment provided by engineer. */
 "Your profile, contacts and delivered messages are stored on your device." = "Tu perfil, contactos y mensajes se almacenan en tu dispositivo.";
