@@ -1837,4 +1837,17 @@
     <string name="smp_servers_configured">SMPサーバーの構成</string>
     <string name="servers_info_sessions_connected">接続中</string>
     <string name="xftp_servers_configured">XFTPサーバーの構成</string>
+    <string name="one_hand_ui_card_title">チャトリスト切り替え</string>
+    <string name="contact_list_header_title">連絡先</string>
+    <string name="message_servers">メッセージサーバ</string>
+    <string name="media_and_file_servers">メディア&amp;ファイルサーバ</string>
+    <string name="one_hand_ui">チャットツールバーを近づける</string>
+    <string name="invite_friends_short">招待</string>
+    <string name="create_address_button">作成</string>
+    <string name="compose_message_placeholder">メッセージ</string>
+    <string name="v6_0_reachable_chat_toolbar">チャットツールバーを近づける</string>
+    <string name="scan_paste_link">QRスキャン / リンクの貼り付け</string>
+    <string name="v6_0_reachable_chat_toolbar_descr">片手でアプリを利用できます</string>
+    <string name="action_button_add_members">招待</string>
+    <string name="paste_link">リンクの貼り付け</string>
 </resources>
