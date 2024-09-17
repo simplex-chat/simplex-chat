@@ -288,7 +288,9 @@ fun SocksProxySettings(
         networkProxySaved.auth == proxyAuthModeUnsaved.value &&
         onionHosts.value == onionHostsSaved.value
     ) ||
-      remember { derivedStateOf { !validPort(portUnsaved.value.text) } }.value
+        !validCredential(usernameUnsaved.value.text) ||
+        !validCredential(passwordUnsaved.value.text) ||
+        !validPort(portUnsaved.value.text)
   val resetDisabled = hostUnsaved.value.text.trim() == "localhost" && portUnsaved.value.text.trim() == "9050" && proxyAuthRandomUnsaved.value && onionHosts.value == NetCfg.defaults.onionHosts
   ModalView(
     close = {
@@ -348,7 +350,7 @@ fun SocksProxySettings(
               usernameUnsaved,
               stringResource(MR.strings.network_proxy_username),
               modifier = Modifier.fillMaxWidth(),
-              isValid = { !it.contains(':') && !it.contains('@') },
+              isValid = ::validCredential,
               keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
               keyboardType = KeyboardType.Text,
             )
@@ -356,7 +358,7 @@ fun SocksProxySettings(
               passwordUnsaved,
               stringResource(MR.strings.network_proxy_password),
               modifier = Modifier.fillMaxWidth(),
-              isValid = { !it.contains(':') && !it.contains('@') },
+              isValid = ::validCredential,
               keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
               keyboardType = KeyboardType.Password,
             )
@@ -486,6 +488,9 @@ fun validPort(s: String): Boolean {
   val validPort = Regex("^(6553[0-5])|(655[0-2][0-9])|(65[0-4][0-9]{2})|(6[0-4][0-9]{3})|([1-5][0-9]{4})|([0-5]{0,5})|([0-9]{1,4})$")
   return s.isNotBlank() && s.matches(validPort)
 }
+
+private fun validCredential(s: String): Boolean =
+  !s.contains(':') && !s.contains('@')
 
 fun showWrongProxyConfigAlert() {
   AlertManager.shared.showAlertMsg(
