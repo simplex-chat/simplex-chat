@@ -154,7 +154,7 @@ struct AdvancedNetworkSettings: View {
                 }
                 .onChange(of: useNetProxy) { useSocksProxy in
                     netCfg.socksProxy = useSocksProxy && currentNetProxy.valid
-                        ? currentNetProxy.toString()
+                        ? currentNetProxy.toProxyString()
                         : nil
                     netProxy = currentNetProxy
                     netProxyAuth = netProxy.username != "" || netProxy.password != ""
@@ -171,7 +171,7 @@ struct AdvancedNetworkSettings: View {
                     }
                 }
                 .onChange(of: netProxy) { sp in
-                    let str = sp.toString()
+                    let str = sp.toProxyString()
                     if str != netCfg.socksProxy {
                         netCfg.socksProxy = str
                     }

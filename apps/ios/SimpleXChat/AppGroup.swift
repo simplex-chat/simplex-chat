@@ -373,7 +373,7 @@ public func setNetCfg(_ cfg: NetCfg, networkProxy: NetworkProxy?) {
     networkSessionModeGroupDefault.set(cfg.sessionMode)
     networkSMPProxyModeGroupDefault.set(cfg.smpProxyMode)
     networkSMPProxyFallbackGroupDefault.set(cfg.smpProxyFallback)
-    let socksProxy = networkProxy?.toString()
+    let socksProxy = networkProxy?.toProxyString()
     groupDefaults.set(socksProxy, forKey: GROUP_DEFAULT_NETWORK_SOCKS_PROXY)
     groupDefaults.set(cfg.tcpConnectTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT)
     groupDefaults.set(cfg.tcpTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT)

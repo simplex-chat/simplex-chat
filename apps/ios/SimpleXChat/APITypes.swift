@@ -1524,7 +1524,7 @@ public struct NetworkProxy: Equatable, Codable {
         !s.contains(":") && !s.contains("@")
     }
 
-    public func toString() -> String? {
+    public func toProxyString() -> String? {
         if !valid { return nil }
         var res = ""
         switch auth {
@@ -1546,7 +1546,7 @@ public struct NetworkProxy: Equatable, Codable {
             }
         }
         res += ":\(port)"
-        return res.count == 0 ? nil : res
+        return res
     }
 }
 

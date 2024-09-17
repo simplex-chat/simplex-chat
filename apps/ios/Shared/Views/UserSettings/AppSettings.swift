@@ -19,8 +19,8 @@ extension AppSettings {
                 val.hostMode = .publicHost
                 val.requiredHostMode = true
             }
-            if let socksProxy = val.socksProxy {
-                val.socksProxy = networkProxy?.toString()
+            if val.socksProxy != nil {
+                val.socksProxy = networkProxy?.toProxyString()
                 setNetCfg(val, networkProxy: networkProxy)
             } else {
                 val.socksProxy = nil
