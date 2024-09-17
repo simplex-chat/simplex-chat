@@ -2159,4 +2159,15 @@
     <string name="migrate_from_device_uploaded_archive_will_be_removed">Das hochgeladene Datenbank-Archiv wird dauerhaft von den Servern entfernt.</string>
     <string name="select_chat_profile">Chat-Profil auswählen</string>
     <string name="migrate_from_device_remove_archive_question">Archiv entfernen?</string>
+    <string name="network_proxy_auth_mode_username_password">Ihre Anmeldeinformationen können unverschlüsselt versendet werden.</string>
+    <string name="network_proxy_auth_mode_no_auth">Verwenden Sie keine Anmeldeinformationen mit einem Proxy.</string>
+    <string name="switching_profile_error_message">Ihre Verbindung wurde auf %s verschoben, aber während der Weiterleitung auf das Profil trat ein unerwarteter Fehler auf.</string>
+    <string name="network_proxy_incorrect_config_desc">Stellen Sie sicher, dass die Proxy-Konfiguration richtig ist.</string>
+    <string name="network_proxy_incorrect_config_title">Fehler beim Speichern des Proxys</string>
+    <string name="network_proxy_password">Passwort</string>
+    <string name="network_proxy_auth">Proxy-Authentifizierung</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_entity">Verwenden Sie für jede Verbindung unterschiedliche Proxy-Anmeldeinformationen.</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_user">Verwenden Sie für jedes Profil unterschiedliche Proxy-Anmeldeinformationen.</string>
+    <string name="network_proxy_random_credentials">Verwenden Sie zufällige Anmeldeinformationen</string>
+    <string name="network_proxy_username">Benutzername</string>
 </resources>
