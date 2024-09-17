@@ -781,4 +781,8 @@
     <string name="file_saved">Tệp đã được lưu</string>
     <string name="file_will_be_received_when_contact_is_online">Tệp sẽ được nhận khi liên hệ của bạn hoạt động, vui lòng chờ hoặc kiểm tra lại sau!</string>
     <string name="share_text_file_status">Trạng thái tệp: %s</string>
+    <string name="wallpaper_scale_fill">Lấp đầy</string>
+    <string name="settings_section_title_chat_database">CƠ SỞ DỮ LIỆU SIMPLEX CHAT</string>
+    <string name="switching_profile_error_title">Lỗi chuyển đổi hồ sơ</string>
+    <string name="v5_2_favourites_filter_descr">Lọc các cuộc hội thoại chưa đọc và các cuộc hội thoại yêu thích.</string>
 </resources>
