@@ -243,7 +243,7 @@ struct AdvancedNetworkSettings: View {
                     Button("Save and reconnect") {
                         showSettingsAlert = .update
                     }
-                    .disabled(netCfg == currentNetCfg && (!useNetProxy || netProxy.valid))
+                    .disabled(netCfg == currentNetCfg || (useNetProxy && !netProxy.valid))
                 }
             }
         }

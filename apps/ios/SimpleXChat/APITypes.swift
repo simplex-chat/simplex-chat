@@ -2178,11 +2178,13 @@ public struct MigrationFileLinkData: Codable {
 
     public struct NetworkConfig: Codable {
         let socksProxy: String?
+        let networkProxy: NetworkProxy?
         let hostMode: HostMode?
         let requiredHostMode: Bool?
 
-        public init(socksProxy: String?, hostMode: HostMode?, requiredHostMode: Bool?) {
+        public init(socksProxy: String?, networkProxy: NetworkProxy?, hostMode: HostMode?, requiredHostMode: Bool?) {
             self.socksProxy = socksProxy
+            self.networkProxy = networkProxy
             self.hostMode = hostMode
             self.requiredHostMode = requiredHostMode
         }
@@ -2191,6 +2193,7 @@ public struct MigrationFileLinkData: Codable {
             return if let hostMode, let requiredHostMode {
                 NetworkConfig(
                     socksProxy: nil,
+                    networkProxy: nil,
                     hostMode: hostMode == .onionViaSocks ? .onionHost : hostMode,
                     requiredHostMode: requiredHostMode
                 )
