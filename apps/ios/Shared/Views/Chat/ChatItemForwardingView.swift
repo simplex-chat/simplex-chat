@@ -19,7 +19,6 @@ struct ChatItemForwardingView: View {
     @Binding var composeState: ComposeState
 
     @State private var searchText: String = ""
-    @FocusState private var searchFocused
     @State private var alert: SomeAlert?
     private let chatsToForwardTo = filterChatsToForwardTo(chats: ChatModel.shared.chats)
 
@@ -46,8 +45,6 @@ struct ChatItemForwardingView: View {
         VStack(alignment: .leading) {
             if !chatsToForwardTo.isEmpty {
                 List {
-                    searchFieldView(text: $searchText, focussed: $searchFocused, theme.colors.onBackground, theme.colors.secondary)
-                        .padding(.leading, 2)
                     let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
                     let chats = s == "" ? chatsToForwardTo : chatsToForwardTo.filter { foundChat($0, s) }
                     ForEach(chats) { chat in
@@ -55,6 +52,7 @@ struct ChatItemForwardingView: View {
                             .disabled(chatModel.deletedChats.contains(chat.chatInfo.id))
                     }
                 }
+                .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
                 .modifier(ThemedBackground(grouped: true))
             } else {
                 ZStack {
