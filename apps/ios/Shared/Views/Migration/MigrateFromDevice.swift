@@ -529,9 +529,15 @@ struct MigrateFromDevice: View {
                         }
                     case let .sndStandaloneFileComplete(_, fileTransferMeta, rcvURIs):
                         let cfg = getNetCfg()
+                        let proxy: NetworkProxy? = if cfg.socksProxy == nil {
+                            nil
+                        } else {
+                            networkProxyDefault.get()
+                        }
                         let data = MigrationFileLinkData.init(
                             networkConfig: MigrationFileLinkData.NetworkConfig(
                                 socksProxy: cfg.socksProxy,
+                                networkProxy: proxy,
                                 hostMode: cfg.hostMode,
                                 requiredHostMode: cfg.requiredHostMode
                             )

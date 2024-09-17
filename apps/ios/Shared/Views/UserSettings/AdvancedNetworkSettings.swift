@@ -36,6 +36,10 @@ struct AdvancedNetworkSettings: View {
     @State private var showSettingsAlert: NetworkSettingsAlert?
     @State private var onionHosts: OnionHosts = .no
     @State private var showSaveDialog = false
+    @State private var netProxy = networkProxyDefault.get()
+    @State private var currentNetProxy = networkProxyDefault.get()
+    @State private var useNetProxy = false
+    @State private var netProxyAuth = false
 
     var body: some View {
         VStack {
@@ -103,6 +107,76 @@ struct AdvancedNetworkSettings: View {
                 }
 
                 Section {
+                    Toggle("Use SOCKS proxy", isOn: $useNetProxy)
+                    Group {
+                        TextField("IP address", text: $netProxy.host)
+                        TextField(
+                            "Port",
+                            text: Binding(
+                                get: { netProxy.port > 0 ? "\(netProxy.port)" : "" },
+                                set: { s in
+                                    netProxy.port = if let port = Int(s), port > 0 {
+                                        port
+                                    } else {
+                                        0
+                                    }
+                                }
+                            )
+                        )
+                        Toggle("Proxy requires password", isOn: $netProxyAuth)
+                        if netProxyAuth {
+                            TextField("Username", text: $netProxy.username)
+                            PassphraseField(
+                                key: $netProxy.password,
+                                placeholder: "Password",
+                                valid: NetworkProxy.validCredential(netProxy.password)
+                            )
+                        }
+                    }
+                    .if(!useNetProxy) { $0.foregroundColor(theme.colors.secondary) }
+                    .disabled(!useNetProxy)
+                } header: {
+                    HStack {
+                        Text("SOCKS proxy").foregroundColor(theme.colors.secondary)
+                        if useNetProxy && !netProxy.valid {
+                            Spacer()
+                            Image(systemName: "exclamationmark.circle.fill").foregroundColor(.red)
+                        }
+                    }
+                } footer: {
+                    if netProxyAuth {
+                        Text("Your credentials may be sent unencrypted.")
+                            .foregroundColor(theme.colors.secondary)
+                    } else {
+                        Text("Do not use credentials with proxy.")
+                            .foregroundColor(theme.colors.secondary)
+                    }
+                }
+                .onChange(of: useNetProxy) { useNetProxy in
+                    netCfg.socksProxy = useNetProxy && currentNetProxy.valid
+                        ? currentNetProxy.toProxyString()
+                        : nil
+                    netProxy = currentNetProxy
+                    netProxyAuth = netProxy.username != "" || netProxy.password != ""
+                }
+                .onChange(of: netProxyAuth) { netProxyAuth in
+                    if netProxyAuth {
+                        netProxy.auth = currentNetProxy.auth
+                        netProxy.username = currentNetProxy.username
+                        netProxy.password = currentNetProxy.password
+                    } else {
+                        netProxy.auth = .username
+                        netProxy.username = ""
+                        netProxy.password = ""
+                    }
+                }
+                .onChange(of: netProxy) { netProxy in
+                    netCfg.socksProxy = useNetProxy && netProxy.valid
+                        ? netProxy.toProxyString()
+                        : nil
+                }
+
+                Section {
                     Picker("Use .onion hosts", selection: $onionHosts) {
                         ForEach(OnionHosts.values, id: \.self) { Text($0.text) }
                     }
@@ -156,19 +230,19 @@ struct AdvancedNetworkSettings: View {
                 
                 Section {
                     Button("Reset to defaults") {
-                        updateNetCfgView(NetCfg.defaults)
+                        updateNetCfgView(NetCfg.defaults, NetworkProxy.def)
                     }
                     .disabled(netCfg == NetCfg.defaults)
 
                     Button("Set timeouts for proxy/VPN") {
-                        updateNetCfgView(netCfg.withProxyTimeouts)
+                        updateNetCfgView(netCfg.withProxyTimeouts, netProxy)
                     }
                     .disabled(netCfg.hasProxyTimeouts)
                     
                     Button("Save and reconnect") {
                         showSettingsAlert = .update
                     }
-                    .disabled(netCfg == currentNetCfg)
+                    .disabled(netCfg == currentNetCfg || (useNetProxy && !netProxy.valid))
                 }
             }
         }
@@ -182,7 +256,8 @@ struct AdvancedNetworkSettings: View {
             if cfgLoaded { return }
             cfgLoaded = true
             currentNetCfg = getNetCfg()
-            updateNetCfgView(currentNetCfg)
+            currentNetProxy = networkProxyDefault.get()
+            updateNetCfgView(currentNetCfg, currentNetProxy)
         }
         .alert(item: $showSettingsAlert) { a in
             switch a {
@@ -206,7 +281,7 @@ struct AdvancedNetworkSettings: View {
             if netCfg == currentNetCfg {
                 dismiss()
                 cfgLoaded = false
-            } else {
+            } else if !useNetProxy || netProxy.valid {
                 showSaveDialog = true
             }
         })
@@ -221,18 +296,26 @@ struct AdvancedNetworkSettings: View {
         }
     }
 
-    private func updateNetCfgView(_ cfg: NetCfg) {
+    private func updateNetCfgView(_ cfg: NetCfg, _ proxy: NetworkProxy) {
         netCfg = cfg
+        netProxy = proxy
         onionHosts = OnionHosts(netCfg: netCfg)
         enableKeepAlive = netCfg.enableKeepAlive
         keepAliveOpts = netCfg.tcpKeepAlive ?? KeepAliveOpts.defaults
+        useNetProxy = netCfg.socksProxy != nil
+        netProxyAuth = switch netProxy.auth {
+        case .username: netProxy.username != "" || netProxy.password != ""
+        case .isolate: false
+        }
     }
 
     private func saveNetCfg() -> Bool {
         do {
             try setNetworkConfig(netCfg)
             currentNetCfg = netCfg
-            setNetCfg(netCfg)
+            setNetCfg(netCfg, networkProxy: useNetProxy ? netProxy : nil)
+            currentNetProxy = netProxy
+            networkProxyDefault.set(netProxy)
             return true
         } catch let error {
             let err = responseError(error)
