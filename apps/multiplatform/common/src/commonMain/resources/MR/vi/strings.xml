@@ -785,4 +785,11 @@
     <string name="settings_section_title_chat_database">CƠ SỞ DỮ LIỆU SIMPLEX CHAT</string>
     <string name="switching_profile_error_title">Lỗi chuyển đổi hồ sơ</string>
     <string name="v5_2_favourites_filter_descr">Lọc các cuộc hội thoại chưa đọc và các cuộc hội thoại yêu thích.</string>
+    <string name="v5_1_message_reactions_descr">Cuối cùng, chúng ta đã có chúng! 🚀</string>
+    <string name="migrate_to_device_finalize_migration">Hoàn tất quá trình di chuyển ở thiết bị khác.</string>
+    <string name="migrate_from_device_finalize_migration">Hoàn tất quá trình di chuyển</string>
+    <string name="v5_2_favourites_filter">Tìm các cuộc trò chuyện nhanh hơn</string>
+    <string name="permissions_find_in_settings_and_grant">Tìm kiếm quyền này trong phần cài đặt Android và cấp quyền theo cách thủ công.</string>
+    <string name="fix_connection_confirm">Sửa</string>
+    <string name="wallpaper_scale_fit">Kích thước phù hợp</string>
 </resources>
