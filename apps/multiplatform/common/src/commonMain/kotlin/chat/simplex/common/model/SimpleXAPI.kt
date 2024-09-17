@@ -3632,7 +3632,7 @@ data class NetworkProxy(
   val host: String = "localhost",
   val port: Int = 9050
 ) {
-  fun toProxyString(): String? {
+  fun toProxyString(): String {
     var res = ""
     if (auth == NetworkProxyAuth.USERNAME && (username.isNotBlank() || password.isNotBlank())) {
       res += username.trim() + ":" + password.trim() + "@"
