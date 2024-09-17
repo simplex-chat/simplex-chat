@@ -75,6 +75,8 @@ let DEFAULT_SYSTEM_DARK_THEME = "systemDarkTheme"
 let DEFAULT_CURRENT_THEME_IDS = "currentThemeIds"
 let DEFAULT_THEME_OVERRIDES = "themeOverrides"
 
+let DEFAULT_NETWORK_PROXY = "networkProxy"
+
 let ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN = "androidCallOnLockScreen"
 
 let defaultChatItemRoundness: Double = 0.75
@@ -251,6 +253,7 @@ public class CodableDefault<T: Codable> {
     }
 }
 
+let networkProxyDefault: CodableDefault<NetworkProxy> = CodableDefault(defaults: UserDefaults.standard, forKey: DEFAULT_NETWORK_PROXY, withDefault: NetworkProxy.def)
 
 struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
