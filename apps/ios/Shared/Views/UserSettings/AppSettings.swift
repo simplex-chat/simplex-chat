@@ -19,9 +19,15 @@ extension AppSettings {
                 val.hostMode = .publicHost
                 val.requiredHostMode = true
             }
-            val.socksProxy = nil
-            setNetCfg(val)
+            if let socksProxy = val.socksProxy {
+                val.socksProxy = networkProxy?.toString()
+                setNetCfg(val, networkProxy: networkProxy)
+            } else {
+                val.socksProxy = nil
+                setNetCfg(val, networkProxy: nil)
+            }
         }
+        if let val = networkProxy { networkProxyDefault.set(val) }
         if let val = privacyEncryptLocalFiles { privacyEncryptLocalFilesGroupDefault.set(val) }
         if let val = privacyAskToApproveRelays { privacyAskToApproveRelaysGroupDefault.set(val) }
         if let val = privacyAcceptImages {
@@ -63,6 +69,7 @@ extension AppSettings {
         let def = UserDefaults.standard
         var c = AppSettings.defaults
         c.networkConfig = getNetCfg()
+        c.networkProxy = networkProxyDefault.get()
         c.privacyEncryptLocalFiles = privacyEncryptLocalFilesGroupDefault.get()
         c.privacyAskToApproveRelays = privacyAskToApproveRelaysGroupDefault.get()
         c.privacyAcceptImages = privacyAcceptImagesGroupDefault.get()

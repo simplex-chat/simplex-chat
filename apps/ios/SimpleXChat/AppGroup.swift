@@ -368,12 +368,13 @@ public func getNetCfg() -> NetCfg {
     )
 }
 
-public func setNetCfg(_ cfg: NetCfg) {
+public func setNetCfg(_ cfg: NetCfg, networkProxy: NetworkProxy?) {
     networkUseOnionHostsGroupDefault.set(OnionHosts(netCfg: cfg))
     networkSessionModeGroupDefault.set(cfg.sessionMode)
     networkSMPProxyModeGroupDefault.set(cfg.smpProxyMode)
     networkSMPProxyFallbackGroupDefault.set(cfg.smpProxyFallback)
-    groupDefaults.set(cfg.socksProxy, forKey: GROUP_DEFAULT_NETWORK_SOCKS_PROXY)
+    let socksProxy = networkProxy?.toString()
+    groupDefaults.set(socksProxy, forKey: GROUP_DEFAULT_NETWORK_SOCKS_PROXY)
     groupDefaults.set(cfg.tcpConnectTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT)
     groupDefaults.set(cfg.tcpTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT)
     groupDefaults.set(cfg.tcpTimeoutPerKb, forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB)

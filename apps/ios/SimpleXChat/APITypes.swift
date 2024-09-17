@@ -8,6 +8,7 @@
 
 import Foundation
 import SwiftUI
+import Network
 
 public let jsonDecoder = getJSONDecoder()
 public let jsonEncoder = getJSONEncoder()
@@ -1497,6 +1498,63 @@ public struct KeepAliveOpts: Codable, Equatable {
     public static let defaults: KeepAliveOpts = KeepAliveOpts(keepIdle: 30, keepIntvl: 15, keepCnt: 4)
 }
 
+public struct NetworkProxy: Equatable, Codable {
+    public var host: String = ""
+    public var port: Int = 0
+    public var auth: NetworkProxyAuth = .username
+    public var username: String = ""
+    public var password: String = ""
+
+    public static var def: NetworkProxy {
+        NetworkProxy()
+    }
+    
+    public var valid: Bool {
+        let hostOk = switch NWEndpoint.Host(host) {
+        case .ipv4: true
+        case .ipv6: true
+        default: false
+        }
+        return hostOk &&
+                port > 0 && port <= 65535 &&
+                NetworkProxy.validCredential(username) && NetworkProxy.validCredential(password)
+    }
+    
+    public static func validCredential(_ s: String) -> Bool {
+        !s.contains(":") && !s.contains("@")
+    }
+
+    public func toString() -> String? {
+        if !valid { return nil }
+        var res = ""
+        switch auth {
+        case .username:
+            let usernameTrimmed = username.trimmingCharacters(in: .whitespaces)
+            let passwordTrimmed = password.trimmingCharacters(in: .whitespaces)
+            if usernameTrimmed != "" || passwordTrimmed != "" {
+                res += usernameTrimmed + ":" + passwordTrimmed + "@"
+            } else {
+                res += "@"
+            }
+        case .isolate: ()
+        }
+        if host != "" {
+            if host.contains(":") {
+                res += "[\(host.trimmingCharacters(in: [" ", "[", "]"]))]"
+            } else {
+                res += host.trimmingCharacters(in: .whitespaces)
+            }
+        }
+        res += ":\(port)"
+        return res.count == 0 ? nil : res
+    }
+}
+
+public enum NetworkProxyAuth: String, Codable {
+    case username
+    case isolate
+}
+
 public enum NetworkStatus: Decodable, Equatable {
     case unknown
     case connected
@@ -2152,6 +2210,7 @@ public struct MigrationFileLinkData: Codable {
 
 public struct AppSettings: Codable, Equatable {
     public var networkConfig: NetCfg? = nil
+    public var networkProxy: NetworkProxy? = nil
     public var privacyEncryptLocalFiles: Bool? = nil
     public var privacyAskToApproveRelays: Bool? = nil
     public var privacyAcceptImages: Bool? = nil
@@ -2183,6 +2242,7 @@ public struct AppSettings: Codable, Equatable {
         var empty = AppSettings()
         let def = AppSettings.defaults
         if networkConfig != def.networkConfig { empty.networkConfig = networkConfig }
+        if networkProxy != def.networkProxy { empty.networkProxy = networkProxy }
         if privacyEncryptLocalFiles != def.privacyEncryptLocalFiles { empty.privacyEncryptLocalFiles = privacyEncryptLocalFiles }
         if privacyAskToApproveRelays != def.privacyAskToApproveRelays { empty.privacyAskToApproveRelays = privacyAskToApproveRelays }
         if privacyAcceptImages != def.privacyAcceptImages { empty.privacyAcceptImages = privacyAcceptImages }
@@ -2215,6 +2275,7 @@ public struct AppSettings: Codable, Equatable {
     public static var defaults: AppSettings {
         AppSettings (
             networkConfig: NetCfg.defaults,
+            networkProxy: NetworkProxy.def,
             privacyEncryptLocalFiles: true,
             privacyAskToApproveRelays: true,
             privacyAcceptImages: true,

@@ -254,56 +254,7 @@ public class CodableDefault<T: Codable> {
     }
 }
 
-let socksProxyDefault: CodableDefault<SocksProxy> = CodableDefault(defaults: UserDefaults.standard, forKey: DEFAULT_NETWORK_PROXY, withDefault: SocksProxy())
-
-struct SocksProxy: Equatable, Codable {
-    var host: String = ""
-    var port: Int = 0
-    var auth: SocksAuth = .username
-    var username: String = ""
-    var password: String = ""
-
-    var valid: Bool {
-        switch NWEndpoint.Host(host) {
-        case .ipv4: portOk
-        case .ipv6: portOk
-        default: false
-        }
-    }
-
-    private var portOk: Bool {
-        port > 0 && port <= 65535
-    }
-
-    func toString() -> String? {
-        var res = ""
-        switch auth {
-        case .username:
-            let usernameTrimmed = username.trimmingCharacters(in: .whitespaces)
-            let passwordTrimmed = password.trimmingCharacters(in: .whitespaces)
-            if usernameTrimmed != "" || passwordTrimmed != "" {
-                res += usernameTrimmed + ":" + passwordTrimmed + "@"
-            } else {
-                res += "@"
-            }
-        case .isolate: ()
-        }
-        if host != "" {
-            if host.contains(":") {
-                res += "[\(host.trimmingCharacters(in: [" ", "[", "]"]))]"
-            } else {
-                res += host.trimmingCharacters(in: .whitespaces)
-            }
-        }
-        res += ":\(port)"
-        return res.count == 0 ? nil : res
-    }
-}
-
-enum SocksAuth: String, Codable {
-    case username
-    case isolate
-}
+let networkProxyDefault: CodableDefault<NetworkProxy> = CodableDefault(defaults: UserDefaults.standard, forKey: DEFAULT_NETWORK_PROXY, withDefault: NetworkProxy.def)
 
 struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
