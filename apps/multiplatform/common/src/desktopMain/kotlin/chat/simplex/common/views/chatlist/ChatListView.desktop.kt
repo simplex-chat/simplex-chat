@@ -35,7 +35,7 @@ actual fun ActiveCallInteractiveArea(call: Call) {
     ) {
       Box(
         Modifier
-          .padding(end = 71.dp, bottom = 92.dp)
+          .padding(end = 15.dp, bottom = 92.dp)
           .size(67.dp)
           .combinedClickable(onClick = {
             val chat = chatModel.getChat(call.contact.id)

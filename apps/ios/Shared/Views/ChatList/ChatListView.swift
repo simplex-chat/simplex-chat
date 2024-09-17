@@ -66,7 +66,7 @@ struct ChatListView: View {
                         case .address:
                             NavigationView {
                                 UserAddressView(shareViaProfile: currentUser.addressShared)
-                                    .navigationTitle("Public address")
+                                    .navigationTitle("SimpleX address")
                                     .navigationBarTitleDisplayMode(.large)
                                     .modifier(ThemedBackground(grouped: true))
                             }
@@ -78,7 +78,7 @@ struct ChatListView: View {
                             NavigationView {
                                 UserProfile()
                                     .navigationTitle("Your current profile")
-                                    .modifier(ThemedBackground())
+                                    .modifier(ThemedBackground(grouped: true))
                             }
                         case .chatPreferences:
                             NavigationView {

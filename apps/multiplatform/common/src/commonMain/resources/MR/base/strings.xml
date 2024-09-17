@@ -701,10 +701,6 @@
   <string name="is_verified">%s is verified</string>
   <string name="is_not_verified">%s is not verified</string>
 
-  <!-- user picker - UserPicker.kt -->
-  <string name="create_public_contact_address">Create public address</string>
-  <string name="your_public_contact_address">Your public address</string>
-
   <!-- settings - SettingsView.kt -->
   <string name="your_settings">Your settings</string>
   <string name="your_simplex_contact_address">Your SimpleX address</string>
@@ -773,7 +769,17 @@
   <string name="network_socks_proxy">SOCKS proxy</string>
   <string name="network_socks_proxy_settings">SOCKS proxy settings</string>
   <string name="network_socks_toggle_use_socks_proxy">Use SOCKS proxy</string>
+  <string name="network_proxy_auth">Proxy authentication</string>
+  <string name="network_proxy_random_credentials">Use random credentials</string>
+  <string name="network_proxy_auth_mode_isolate_by_auth_user">Use different proxy credentials for each profile.</string>
+  <string name="network_proxy_auth_mode_isolate_by_auth_entity">Use different proxy credentials for each connection.</string>
+  <string name="network_proxy_auth_mode_no_auth">Do not use credentials with proxy.</string>
+  <string name="network_proxy_auth_mode_username_password">Your credentials may be sent unencrypted.</string>
+  <string name="network_proxy_username">Username</string>
+  <string name="network_proxy_password">Password</string>
   <string name="network_proxy_port">port %d</string>
+  <string name="network_proxy_incorrect_config_title">Error saving proxy</string>
+  <string name="network_proxy_incorrect_config_desc">Make sure proxy configuration is correct.</string>
   <string name="host_verb">Host</string>
   <string name="port_verb">Port</string>
   <string name="network_enable_socks">Use SOCKS proxy?</string>
@@ -853,8 +859,6 @@
   <string name="shutdown_alert_desc">Notifications will stop working until you re-launch the app</string>
 
   <!-- Address Items - UserAddressView.kt -->
-  <string name="public_address">Public address</string>
-  <string name="create_public_address">Create public address</string>
   <string name="create_address">Create address</string>
   <string name="delete_address__question">Delete address?</string>
   <string name="your_contacts_will_remain_connected">Your contacts will remain connected.</string>

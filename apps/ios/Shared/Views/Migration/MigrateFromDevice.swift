@@ -177,7 +177,7 @@ struct MigrateFromDevice: View {
             case let .archiveExportedWithErrors(archivePath, errs):
                 return Alert(
                     title: Text("Chat database exported"),
-                    message: Text("You may migrate the exported database.") + Text(verbatim: "\n\n") + Text("Some file(s) were not exported:") + archiveErrorsText(errs),
+                    message: Text("You may migrate the exported database.") + Text(verbatim: "\n") + Text("Some file(s) were not exported:") + archiveErrorsText(errs),
                     dismissButton: .default(Text("Continue")) {
                         Task { await uploadArchive(path: archivePath) }
                     }
@@ -529,9 +529,15 @@ struct MigrateFromDevice: View {
                         }
                     case let .sndStandaloneFileComplete(_, fileTransferMeta, rcvURIs):
                         let cfg = getNetCfg()
+                        let proxy: NetworkProxy? = if cfg.socksProxy == nil {
+                            nil
+                        } else {
+                            networkProxyDefault.get()
+                        }
                         let data = MigrationFileLinkData.init(
                             networkConfig: MigrationFileLinkData.NetworkConfig(
                                 socksProxy: cfg.socksProxy,
+                                networkProxy: proxy,
                                 hostMode: cfg.hostMode,
                                 requiredHostMode: cfg.requiredHostMode
                             )

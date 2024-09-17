@@ -523,7 +523,7 @@
 /* No comment provided by engineer. */
 "Can't invite contacts!" = "ไม่สามารถเชิญผู้ติดต่อได้!";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Cancel" = "ยกเลิก";
 
 /* feature offered item */
@@ -1467,9 +1467,6 @@
 
 /* No comment provided by engineer. */
 "Full name (optional)" = "ชื่อเต็ม (ไม่บังคับ)";
-
-/* No comment provided by engineer. */
-"Full name:" = "ชื่อเต็ม:";
 
 /* No comment provided by engineer. */
 "Fully re-implemented - work in background!" = "ดำเนินการใหม่อย่างสมบูรณ์ - ทำงานในพื้นหลัง!";
@@ -2503,10 +2500,11 @@
 /* No comment provided by engineer. */
 "Run chat" = "เรียกใช้แชท";
 
-/* chat item action */
+/* alert button
+   chat item action */
 "Save" = "บันทึก";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Save (and notify contacts)" = "บันทึก (และแจ้งผู้ติดต่อ)";
 
 /* No comment provided by engineer. */
@@ -2520,9 +2518,6 @@
 
 /* No comment provided by engineer. */
 "Save archive" = "บันทึกไฟล์เก็บถาวร";
-
-/* No comment provided by engineer. */
-"Save auto-accept settings" = "บันทึกการตั้งค่าการยอมรับอัตโนมัติ";
 
 /* No comment provided by engineer. */
 "Save group profile" = "บันทึกโปรไฟล์กลุ่ม";
@@ -2544,9 +2539,6 @@
 
 /* No comment provided by engineer. */
 "Save servers?" = "บันทึกเซิร์ฟเวอร์?";
-
-/* No comment provided by engineer. */
-"Save settings?" = "บันทึกการตั้งค่า?";
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "บันทึกข้อความต้อนรับ?";
@@ -3413,7 +3405,7 @@
 "Your privacy" = "ความเป็นส่วนตัวของคุณ";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "โปรไฟล์ของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณและแชร์กับผู้ติดต่อของคุณเท่านั้น\nเซิร์ฟเวอร์ SimpleX ไม่สามารถดูโปรไฟล์ของคุณได้";
+"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "โปรไฟล์ของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณและแชร์กับผู้ติดต่อของคุณเท่านั้น เซิร์ฟเวอร์ SimpleX ไม่สามารถดูโปรไฟล์ของคุณได้";
 
 /* No comment provided by engineer. */
 "Your profile, contacts and delivered messages are stored on your device." = "โปรไฟล์ รายชื่อผู้ติดต่อ และข้อความที่ส่งของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณ";
