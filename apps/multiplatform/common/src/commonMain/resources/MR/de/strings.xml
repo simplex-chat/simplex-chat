@@ -1061,7 +1061,7 @@
     <string name="v4_6_audio_video_calls_descr">Bluetooth-Unterstützung und weitere Verbesserungen.</string>
     <string name="v4_6_group_moderation_descr">Administratoren können nun
 \n- Nachrichten von Gruppenmitgliedern löschen
-\n- Gruppenmitglieder deaktivieren („Beobachter“-Rolle)</string>
+\n- Gruppenmitglieder deaktivieren (Beobachter-Rolle)</string>
     <string name="v4_6_group_welcome_message">Gruppen-Begrüßungsmeldung</string>
     <string name="v4_6_reduced_battery_usage">Weiter reduzierter Batterieverbrauch</string>
     <string name="v4_6_reduced_battery_usage_descr">Weitere Verbesserungen sind bald verfügbar!</string>
@@ -2151,4 +2151,12 @@
     <string name="new_message">Neue Nachricht</string>
     <string name="error_parsing_uri_desc">Bitte überprüfen Sie, ob der SimpleX-Link korrekt ist.</string>
     <string name="error_parsing_uri_title">Ungültiger Link</string>
+    <string name="settings_section_title_chat_database">CHAT-DATENBANK</string>
+    <string name="switching_profile_error_title">Fehler beim Wechseln des Profils</string>
+    <string name="delete_messages_cannot_be_undone_warning">Die Nachrichten werden gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
+    <string name="new_chat_share_profile">Profil teilen</string>
+    <string name="system_mode_toast">System-Modus</string>
+    <string name="migrate_from_device_uploaded_archive_will_be_removed">Das hochgeladene Datenbank-Archiv wird dauerhaft von den Servern entfernt.</string>
+    <string name="select_chat_profile">Chat-Profil auswählen</string>
+    <string name="migrate_from_device_remove_archive_question">Archiv entfernen?</string>
 </resources>
