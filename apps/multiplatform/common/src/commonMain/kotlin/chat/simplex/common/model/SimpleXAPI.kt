@@ -443,7 +443,9 @@ private const val MESSAGE_TIMEOUT: Int = 15_000_000
 object ChatController {
   var ctrl: ChatCtrl? = -1
   val appPrefs: AppPreferences by lazy { AppPreferences() }
+
   val messagesChannel: Channel<APIResponse> = Channel()
+
   val chatModel = ChatModel
   private var receiverStarted = false
   var lastMsgReceivedTimestamp: Long = System.currentTimeMillis()
@@ -453,6 +455,7 @@ object ChatController {
 
   suspend fun getAgentSubsTotal(rh: Long?): Pair<SMPServerSubs, Boolean>? {
     val userId = currentUserId("getAgentSubsTotal")
+
     val r = sendCmd(rh, CC.GetAgentSubsTotal(userId), log = false)
 
     if (r is CR.AgentSubsTotal) return r.subsTotal to r.hasSession
@@ -869,7 +872,6 @@ object ChatController {
       }
     }
   }
-
   suspend fun apiCreateChatItems(rh: Long?, noteFolderId: Long, composedMessages: List<ComposedMessage>): List<AChatItem>? {
     val cmd = CC.ApiCreateChatItems(noteFolderId, composedMessages)
     val r = sendCmd(rh, cmd)
@@ -938,9 +940,8 @@ object ChatController {
   suspend fun getUserProtoServers(rh: Long?, serverProtocol: ServerProtocol): UserProtocolServers? {
     val userId = kotlin.runCatching { currentUserId("getUserProtoServers") }.getOrElse { return null }
     val r = sendCmd(rh, CC.APIGetUserProtoServers(userId, serverProtocol))
-    return if (r is CR.UserProtoServers) {
-      if (rh == null) r.servers else r.servers.copy(protoServers = r.servers.protoServers.map { it.copy(remoteHostId = rh) })
-    } else {
+    return if (r is CR.UserProtoServers) { if (rh == null) r.servers else r.servers.copy(protoServers = r.servers.protoServers.map { it.copy(remoteHostId = rh) }) }
+    else {
       Log.e(TAG, "getUserProtoServers bad response: ${r.responseType} ${r.details}")
       AlertManager.shared.showAlertMsg(
         generalGetString(if (serverProtocol == ServerProtocol.SMP) MR.strings.error_loading_smp_servers else MR.strings.error_loading_xftp_servers),
@@ -1105,14 +1106,14 @@ object ChatController {
   suspend fun apiGetContactCode(rh: Long?, contactId: Long): Pair<Contact, String>? {
     val r = sendCmd(rh, CC.APIGetContactCode(contactId))
     if (r is CR.ContactCode) return r.contact to r.connectionCode
-    Log.e(TAG, "failed to get contact code: ${r.responseType} ${r.details}")
+    Log.e(TAG,"failed to get contact code: ${r.responseType} ${r.details}")
     return null
   }
 
   suspend fun apiGetGroupMemberCode(rh: Long?, groupId: Long, groupMemberId: Long): Pair<GroupMember, String>? {
     val r = sendCmd(rh, CC.APIGetGroupMemberCode(groupId, groupMemberId))
     if (r is CR.GroupMemberCode) return r.member to r.connectionCode
-    Log.e(TAG, "failed to get group member code: ${r.responseType} ${r.details}")
+    Log.e(TAG,"failed to get group member code: ${r.responseType} ${r.details}")
     return null
   }
 
@@ -1131,11 +1132,7 @@ object ChatController {
   }
 
   suspend fun apiAddContact(rh: Long?, incognito: Boolean): Pair<Pair<String, PendingContactConnection>?, (() -> Unit)?> {
-    val userId = try {
-      currentUserId("apiAddContact")
-    } catch (e: Exception) {
-      return null to null
-    }
+    val userId = try { currentUserId("apiAddContact") } catch (e: Exception) { return null to null }
     val r = sendCmd(rh, CC.APIAddContact(userId, incognito))
     return when (r) {
       is CR.Invitation -> (r.connReqInvitation to r.connection) to null
@@ -1185,11 +1182,7 @@ object ChatController {
   }
 
   suspend fun apiConnect(rh: Long?, incognito: Boolean, connReq: String): PendingContactConnection? {
-    val userId = try {
-      currentUserId("apiConnect")
-    } catch (e: Exception) {
-      return null
-    }
+    val userId = try { currentUserId("apiConnect") } catch (e: Exception) { return null }
     val r = sendCmd(rh, CC.APIConnect(userId, incognito, connReq))
     when {
       r is CR.SentConfirmation -> return r.connection
@@ -1220,7 +1213,6 @@ object ChatController {
         )
         return null
       }
-
       else -> {
         if (!(networkErrorAlert(r))) {
           apiErrorAlert("apiConnect", generalGetString(MR.strings.connection_error), r)
@@ -1231,11 +1223,7 @@ object ChatController {
   }
 
   suspend fun apiConnectContactViaAddress(rh: Long?, incognito: Boolean, contactId: Long): Contact? {
-    val userId = try {
-      currentUserId("apiConnectContactViaAddress")
-    } catch (e: Exception) {
-      return null
-    }
+    val userId = try { currentUserId("apiConnectContactViaAddress") } catch (e: Exception) { return null }
     val r = sendCmd(rh, CC.ApiConnectContactViaAddress(userId, incognito, contactId))
     when {
       r is CR.SentInvitationToContact -> return r.contact
@@ -1329,11 +1317,7 @@ object ChatController {
   }
 
   suspend fun apiSetProfileAddress(rh: Long?, on: Boolean): User? {
-    val userId = try {
-      currentUserId("apiSetProfileAddress")
-    } catch (e: Exception) {
-      return null
-    }
+    val userId = try { currentUserId("apiSetProfileAddress") } catch (e: Exception) { return null }
     return when (val r = sendCmd(rh, CC.ApiSetProfileAddress(userId, on))) {
       is CR.UserProfileNoChange -> null
       is CR.UserProfileUpdated -> r.user.updateRemoteHostId(rh)
@@ -1391,11 +1375,7 @@ object ChatController {
   }
 
   suspend fun apiDeleteUserAddress(rh: Long?): User? {
-    val userId = try {
-      currentUserId("apiDeleteUserAddress")
-    } catch (e: Exception) {
-      return null
-    }
+    val userId = try { currentUserId("apiDeleteUserAddress") } catch (e: Exception) { return null }
     val r = sendCmd(rh, CC.ApiDeleteMyAddress(userId))
     if (r is CR.UserContactLinkDeleted) return r.user.updateRemoteHostId(rh)
     Log.e(TAG, "apiDeleteUserAddress bad response: ${r.responseType} ${r.details}")
@@ -1441,7 +1421,6 @@ object ChatController {
         )
         null
       }
-
       else -> {
         if (!(networkErrorAlert(r))) {
           apiErrorAlert("apiAcceptContactRequest", generalGetString(MR.strings.error_accepting_contact_request), r)
