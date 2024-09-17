@@ -1563,18 +1563,22 @@ object ChatController {
         is CR.RcvFileAccepted -> result.filesAccepted.add(r.chatItem)
         else -> {
           if (!(networkErrorAlert(r))) {
-            when (val maybeChatError = chatError(r)) {
-              is ChatErrorType.FileNotApproved -> {
-                if (userApprovedRelays) {
-                  result.fileErrors.add(FileReceiveError.ChatResponseError(r))
-                } else {
-                  filesToApprove.add(maybeChatError)
+            val maybeChatError = chatError(r)
+            if (maybeChatError != null) {
+              when (maybeChatError) {
+                is ChatErrorType.FileNotApproved -> {
+                  if (userApprovedRelays) {
+                    result.fileErrors.add(FileReceiveError.ChatError(maybeChatError))
+                  } else {
+                    filesToApprove.add(maybeChatError)
+                  }
+                }
+                else -> {
+                  result.fileErrors.add(FileReceiveError.ChatError(maybeChatError))
                 }
               }
-
-              else -> {
-                result.fileErrors.add(FileReceiveError.ChatResponseError(r))
-              }
+            } else {
+              result.fileErrors.add(FileReceiveError.ChatResponseError(r))
             }
           }
         }
