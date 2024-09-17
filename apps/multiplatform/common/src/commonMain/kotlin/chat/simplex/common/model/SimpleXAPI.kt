@@ -6294,6 +6294,9 @@ data class AppSettings(
       if (net.hostMode == HostMode.Onion) {
         net = net.copy(hostMode = HostMode.Public, requiredHostMode = true)
       }
+      if (net.socksProxy != null) {
+        net = net.copy(socksProxy = networkProxy?.toProxyString())
+      }
       setNetCfg(net)
     }
     networkProxy?.let { def.networkProxy.set(it) }
