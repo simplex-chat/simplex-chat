@@ -433,9 +433,7 @@ private const val MESSAGE_TIMEOUT: Int = 15_000_000
 object ChatController {
   var ctrl: ChatCtrl? = -1
   val appPrefs: AppPreferences by lazy { AppPreferences() }
-
   val messagesChannel: Channel<APIResponse> = Channel()
-
   val chatModel = ChatModel
   private var receiverStarted = false
   var lastMsgReceivedTimestamp: Long = System.currentTimeMillis()
@@ -445,7 +443,6 @@ object ChatController {
 
   suspend fun getAgentSubsTotal(rh: Long?): Pair<SMPServerSubs, Boolean>? {
     val userId = currentUserId("getAgentSubsTotal")
-
     val r = sendCmd(rh, CC.GetAgentSubsTotal(userId), log = false)
 
     if (r is CR.AgentSubsTotal) return r.subsTotal to r.hasSession
@@ -455,7 +452,6 @@ object ChatController {
 
   suspend fun getAgentServersSummary(rh: Long?): PresentedServersSummary? {
     val userId = currentUserId("getAgentServersSummary")
-
     val r = sendCmd(rh, CC.GetAgentServersSummary(userId), log = false)
 
     if (r is CR.AgentServersSummary) return r.serversSummary
@@ -863,7 +859,8 @@ object ChatController {
       }
     }
   }
-   suspend fun apiCreateChatItems(rh: Long?, noteFolderId: Long, composedMessages: List<ComposedMessage>): List<AChatItem>? {
+
+  suspend fun apiCreateChatItems(rh: Long?, noteFolderId: Long, composedMessages: List<ComposedMessage>): List<AChatItem>? {
     val cmd = CC.ApiCreateChatItems(noteFolderId, composedMessages)
     val r = sendCmd(rh, cmd)
     return when (r) {
@@ -931,8 +928,9 @@ object ChatController {
   suspend fun getUserProtoServers(rh: Long?, serverProtocol: ServerProtocol): UserProtocolServers? {
     val userId = kotlin.runCatching { currentUserId("getUserProtoServers") }.getOrElse { return null }
     val r = sendCmd(rh, CC.APIGetUserProtoServers(userId, serverProtocol))
-    return if (r is CR.UserProtoServers) { if (rh == null) r.servers else r.servers.copy(protoServers = r.servers.protoServers.map { it.copy(remoteHostId = rh) }) }
-    else {
+    return if (r is CR.UserProtoServers) {
+      if (rh == null) r.servers else r.servers.copy(protoServers = r.servers.protoServers.map { it.copy(remoteHostId = rh) })
+    } else {
       Log.e(TAG, "getUserProtoServers bad response: ${r.responseType} ${r.details}")
       AlertManager.shared.showAlertMsg(
         generalGetString(if (serverProtocol == ServerProtocol.SMP) MR.strings.error_loading_smp_servers else MR.strings.error_loading_xftp_servers),
@@ -1097,14 +1095,14 @@ object ChatController {
   suspend fun apiGetContactCode(rh: Long?, contactId: Long): Pair<Contact, String>? {
     val r = sendCmd(rh, CC.APIGetContactCode(contactId))
     if (r is CR.ContactCode) return r.contact to r.connectionCode
-    Log.e(TAG,"failed to get contact code: ${r.responseType} ${r.details}")
+    Log.e(TAG, "failed to get contact code: ${r.responseType} ${r.details}")
     return null
   }
 
   suspend fun apiGetGroupMemberCode(rh: Long?, groupId: Long, groupMemberId: Long): Pair<GroupMember, String>? {
     val r = sendCmd(rh, CC.APIGetGroupMemberCode(groupId, groupMemberId))
     if (r is CR.GroupMemberCode) return r.member to r.connectionCode
-    Log.e(TAG,"failed to get group member code: ${r.responseType} ${r.details}")
+    Log.e(TAG, "failed to get group member code: ${r.responseType} ${r.details}")
     return null
   }
 
@@ -1122,10 +1120,12 @@ object ChatController {
     }
   }
 
-
-
   suspend fun apiAddContact(rh: Long?, incognito: Boolean): Pair<Pair<String, PendingContactConnection>?, (() -> Unit)?> {
-    val userId = try { currentUserId("apiAddContact") } catch (e: Exception) { return null to null }
+    val userId = try {
+      currentUserId("apiAddContact")
+    } catch (e: Exception) {
+      return null to null
+    }
     val r = sendCmd(rh, CC.APIAddContact(userId, incognito))
     return when (r) {
       is CR.Invitation -> (r.connReqInvitation to r.connection) to null
@@ -1174,8 +1174,12 @@ object ChatController {
     return null
   }
 
-  suspend fun apiConnect(rh: Long?, incognito: Boolean, connReq: String): PendingContactConnection?  {
-    val userId = try { currentUserId("apiConnect") } catch (e: Exception) { return null }
+  suspend fun apiConnect(rh: Long?, incognito: Boolean, connReq: String): PendingContactConnection? {
+    val userId = try {
+      currentUserId("apiConnect")
+    } catch (e: Exception) {
+      return null
+    }
     val r = sendCmd(rh, CC.APIConnect(userId, incognito, connReq))
     when {
       r is CR.SentConfirmation -> return r.connection
@@ -1187,6 +1191,7 @@ object ChatController {
         )
         return null
       }
+
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorChat
           && r.chatError.errorType is ChatErrorType.InvalidConnReq -> {
         AlertManager.shared.showAlertMsg(
@@ -1195,6 +1200,7 @@ object ChatController {
         )
         return null
       }
+
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
           && r.chatError.agentError is AgentErrorType.SMP
           && r.chatError.agentError.smpErr is SMPErrorType.AUTH -> {
@@ -1204,6 +1210,7 @@ object ChatController {
         )
         return null
       }
+
       else -> {
         if (!(networkErrorAlert(r))) {
           apiErrorAlert("apiConnect", generalGetString(MR.strings.connection_error), r)
@@ -1214,7 +1221,11 @@ object ChatController {
   }
 
   suspend fun apiConnectContactViaAddress(rh: Long?, incognito: Boolean, contactId: Long): Contact? {
-    val userId = try { currentUserId("apiConnectContactViaAddress") } catch (e: Exception) { return null }
+    val userId = try {
+      currentUserId("apiConnectContactViaAddress")
+    } catch (e: Exception) {
+      return null
+    }
     val r = sendCmd(rh, CC.ApiConnectContactViaAddress(userId, incognito, contactId))
     when {
       r is CR.SentInvitationToContact -> return r.contact
@@ -1308,7 +1319,11 @@ object ChatController {
   }
 
   suspend fun apiSetProfileAddress(rh: Long?, on: Boolean): User? {
-    val userId = try { currentUserId("apiSetProfileAddress") } catch (e: Exception) { return null }
+    val userId = try {
+      currentUserId("apiSetProfileAddress")
+    } catch (e: Exception) {
+      return null
+    }
     return when (val r = sendCmd(rh, CC.ApiSetProfileAddress(userId, on))) {
       is CR.UserProfileNoChange -> null
       is CR.UserProfileUpdated -> r.user.updateRemoteHostId(rh)
@@ -1366,7 +1381,11 @@ object ChatController {
   }
 
   suspend fun apiDeleteUserAddress(rh: Long?): User? {
-    val userId = try { currentUserId("apiDeleteUserAddress") } catch (e: Exception) { return null }
+    val userId = try {
+      currentUserId("apiDeleteUserAddress")
+    } catch (e: Exception) {
+      return null
+    }
     val r = sendCmd(rh, CC.ApiDeleteMyAddress(userId))
     if (r is CR.UserContactLinkDeleted) return r.user.updateRemoteHostId(rh)
     Log.e(TAG, "apiDeleteUserAddress bad response: ${r.responseType} ${r.details}")
@@ -1412,6 +1431,7 @@ object ChatController {
         )
         null
       }
+
       else -> {
         if (!(networkErrorAlert(r))) {
           apiErrorAlert("apiAcceptContactRequest", generalGetString(MR.strings.error_accepting_contact_request), r)
@@ -1532,33 +1552,51 @@ object ChatController {
     }
   }
 
-  suspend fun apiReceiveFiles(rh: Long?, fileIds: List<Long>, userApprovedRelays: Boolean, encrypted: Boolean, inline: Boolean? = null): List<Long> {
-    val failures = mutableListOf<Long>()
-    val serversToApprove = mutableSetOf<String>()
-    val filesIdsFromNonApprovedSources = mutableListOf<Long>()
+  sealed class FileReceiveError {
+    data class ChatError(val error: ChatErrorType): FileReceiveError()
+    data class ChatResponseError(val error: CR): FileReceiveError()
+  }
+
+  class ReceiveFilesResult(
+    val filesAccepted: MutableList<AChatItem>,
+    val fileErrors: MutableList<FileReceiveError>
+  )
+
+  suspend fun apiReceiveFiles(
+    rh: Long?,
+    fileIds: List<Long>,
+    userApprovedRelays: Boolean,
+    encrypted: Boolean,
+    inline: Boolean? = null,
+    auto: Boolean = false
+  ): ReceiveFilesResult {
+    val result = ReceiveFilesResult(
+      fileErrors = mutableListOf(),
+      filesAccepted = mutableListOf()
+    )
+    val filesToApprove = mutableListOf<ChatErrorType.FileNotApproved>();
 
     fileIds.forEach { fileId ->
       val r = sendCmd(rh, CC.ReceiveFile(fileId, userApprovedRelays = userApprovedRelays, encrypt = encrypted, inline = inline))
 
       when (r) {
-        is CR.RcvFileAcceptedSndCancelled -> failures.add(fileId)
-        is CR.RcvFileCancelled -> failures.add(fileId)
-        is CR.RcvFileSndCancelled -> failures.add(fileId)
+        is CR.RcvFileAccepted -> result.filesAccepted.add(r.chatItem)
+        is CR.RcvFileAcceptedSndCancelled -> result.fileErrors.add(FileReceiveError.ChatResponseError(r))
+        is CR.RcvFileCancelled -> result.fileErrors.add(FileReceiveError.ChatResponseError(r))
+        is CR.RcvFileSndCancelled -> result.fileErrors.add(FileReceiveError.ChatResponseError(r))
         else -> {
           if (!(networkErrorAlert(r))) {
             when (val maybeChatError = chatError(r)) {
-              is ChatErrorType.FileAlreadyReceiving -> {}
               is ChatErrorType.FileNotApproved -> {
                 if (userApprovedRelays) {
-                  failures.add(fileId)
+                  result.fileErrors.add(FileReceiveError.ChatResponseError(r))
                 } else {
-                  serversToApprove.addAll(maybeChatError.unknownServers.map { serverHostname(it) })
-                  filesIdsFromNonApprovedSources.add(fileId)
+                  filesToApprove.add(maybeChatError)
                 }
               }
 
               else -> {
-                failures.add(fileId)
+                result.fileErrors.add(FileReceiveError.ChatResponseError(r))
               }
             }
           }
@@ -1566,77 +1604,39 @@ object ChatController {
       }
     }
 
-    if (serversToApprove.isNotEmpty() && filesIdsFromNonApprovedSources.isNotEmpty()) {
+    if (!auto && filesToApprove.isNotEmpty()) {
+      val srvs = mutableSetOf<String>()
+      val filesIds = mutableStateListOf<Long>()
+
+      filesToApprove.forEach { f ->
+        filesIds.add(f.fileId)
+        srvs.addAll(f.unknownServers.map { serverHostname(it) })
+      }
+
+      val serversToApprove = srvs.toList().sorted().joinToString(separator = ", ")
+
       AlertManager.shared.showAlertDialog(
         title = generalGetString(MR.strings.file_not_approved_title),
-        text = generalGetString(MR.strings.file_not_approved_descr).format(serversToApprove.sorted().joinToString(separator = ", ")),
+        text = generalGetString(MR.strings.file_not_approved_descr).format(serversToApprove),
         confirmText = generalGetString(MR.strings.download_file),
         onConfirm = {
-          val user = chatModel.currentUser.value
-          if (user != null) {
-            withBGApi {
-              failures.addAll(
-                apiReceiveFiles(
-                  rh = rh,
-                  fileIds = filesIdsFromNonApprovedSources,
-                  userApprovedRelays = true,
-                  encrypted = encrypted,
-                  inline = inline
-                )
+          withBGApi {
+            val retryResult = apiReceiveFiles(
+                rh = rh,
+                fileIds = filesIds,
+                userApprovedRelays = true,
+                encrypted = encrypted,
+                inline = inline
               )
-            }
+
+            result.fileErrors.addAll(retryResult.fileErrors)
+            result.filesAccepted.addAll(retryResult.filesAccepted)
           }
         },
       )
     }
 
-    return failures
-  }
-
-  suspend fun apiReceiveFile(rh: Long?, fileId: Long, userApprovedRelays: Boolean, encrypted: Boolean, inline: Boolean? = null, auto: Boolean = false): AChatItem? {
-    // -1 here is to override default behavior of providing current remote host id because file can be asked by local device while remote is connected
-    val r = sendCmd(rh, CC.ReceiveFile(fileId, userApprovedRelays = userApprovedRelays, encrypt = encrypted, inline = inline))
-    return when (r) {
-      is CR.RcvFileAccepted -> r.chatItem
-      is CR.RcvFileAcceptedSndCancelled -> {
-        Log.d(TAG, "apiReceiveFile error: sender cancelled file transfer")
-        if (!auto) {
-          AlertManager.shared.showAlertMsg(
-            generalGetString(MR.strings.cannot_receive_file),
-            generalGetString(MR.strings.sender_cancelled_file_transfer)
-          )
-        }
-        null
-      }
-
-      else -> {
-        if (!(networkErrorAlert(r))) {
-          val maybeChatError = chatError(r)
-          if (maybeChatError is ChatErrorType.FileCancelled || maybeChatError is ChatErrorType.FileAlreadyReceiving) {
-            Log.d(TAG, "apiReceiveFile ignoring FileCancelled or FileAlreadyReceiving error")
-          } else if (maybeChatError is ChatErrorType.FileNotApproved) {
-            Log.d(TAG, "apiReceiveFile FileNotApproved error")
-            if (!auto) {
-              val srvs = maybeChatError.unknownServers.map{ serverHostname(it) }
-              AlertManager.shared.showAlertDialog(
-                title = generalGetString(MR.strings.file_not_approved_title),
-                text = generalGetString(MR.strings.file_not_approved_descr).format(srvs.sorted().joinToString(separator = ", ")),
-                confirmText = generalGetString(MR.strings.download_file),
-                onConfirm = {
-                  val user = chatModel.currentUser.value
-                  if (user != null) {
-                    withBGApi { chatModel.controller.receiveFile(rh, user, fileId, userApprovedRelays = true) }
-                  }
-                },
-              )
-            }
-          } else if (!auto) {
-            apiErrorAlert("apiReceiveFile", generalGetString(MR.strings.error_receiving_file), r)
-          }
-        }
-        null
-      }
-    }
+    return result
   }
 
   suspend fun cancelFile(rh: Long?, user: User, fileId: Long) {
@@ -2740,16 +2740,57 @@ object ChatController {
     }
   }
 
+  suspend fun receiveFiles(rhId: Long?, user: UserLike, fileIds: List<Long>) {
+    val result = apiReceiveFiles(
+      rh = rhId,
+      fileIds = fileIds,
+      userApprovedRelays = !appPrefs.privacyAskToApproveRelays.get(),
+      encrypted = appPrefs.privacyEncryptLocalFiles.get(),
+      auto = false
+    )
+
+    result.filesAccepted.forEach {
+      chatItemSimpleUpdate(rhId, user, it)
+    }
+  }
+
   suspend fun receiveFile(rhId: Long?, user: UserLike, fileId: Long, userApprovedRelays: Boolean = false, auto: Boolean = false) {
-    val chatItem = apiReceiveFile(
-      rhId,
-      fileId,
+    val result = apiReceiveFiles(
+      rh = rhId,
+      fileIds = listOf(fileId),
       userApprovedRelays = userApprovedRelays || !appPrefs.privacyAskToApproveRelays.get(),
       encrypted = appPrefs.privacyEncryptLocalFiles.get(),
       auto = auto
     )
-    if (chatItem != null) {
-      chatItemSimpleUpdate(rhId, user, chatItem)
+
+    result.filesAccepted.forEach {
+      chatItemSimpleUpdate(rhId, user, it)
+    }
+
+    when (val fError = result.fileErrors[0]) {
+      is FileReceiveError.ChatError -> {
+        if (fError.error is ChatErrorType.FileCancelled || fError.error is ChatErrorType.FileAlreadyReceiving) {
+          Log.d(TAG, "apiReceiveFile ignoring FileCancelled or FileAlreadyReceiving error")
+        } else if (fError.error is ChatErrorType.FileNotApproved) {
+          Log.d(TAG, "apiReceiveFile FileNotApproved error")
+        }
+      }
+
+      is FileReceiveError.ChatResponseError -> {
+        when (val error = fError.error) {
+          is CR.RcvFileAcceptedSndCancelled -> {
+            Log.d(TAG, "apiReceiveFile error: sender cancelled file transfer")
+            if (!auto) {
+              AlertManager.shared.showAlertMsg(
+                generalGetString(MR.strings.cannot_receive_file),
+                generalGetString(MR.strings.sender_cancelled_file_transfer)
+              )
+            }
+          }
+
+          else -> apiErrorAlert("apiReceiveFile", generalGetString(MR.strings.error_receiving_file), error)
+        }
+      }
     }
   }
 
