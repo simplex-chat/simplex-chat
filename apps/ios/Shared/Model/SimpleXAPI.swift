@@ -1054,37 +1054,44 @@ func receiveFile(user: any UserLike, fileId: Int64, userApprovedRelays: Bool = f
 }
 
 func receiveFiles(user: any UserLike, fileIds: [Int64], userApprovedRelays: Bool = false, auto: Bool = false) async {
-    var unknownServers = Set<String>()
-    var unapprovedFileIds = [Int64]()
+    var filesAccepted = [AChatItem]()
+    var fileIdsToApprove = [Int64]()
+    var srvsToApprove = Set<String>()
+    var otherFileErrs = [ChatResponse]()
+
     for fileId in fileIds {
-        if let receiveFileResult = await apiReceiveFile(
-            fileId: fileId,
-            userApprovedRelays: userApprovedRelays || !privacyAskToApproveRelaysGroupDefault.get(),
-            encrypted: privacyEncryptLocalFilesGroupDefault.get(),
-            auto: auto
-        ) {
-            switch receiveFileResult {
-            case .accepted(let chatItem):
-                await chatItemSimpleUpdate(user, chatItem)
-            case let .notApproved(fileId, servers):
-                unknownServers.formUnion(servers)
-                unapprovedFileIds.append(fileId)
+        let r = await chatSendCmd(
+            .receiveFile(
+                fileId: fileId,
+                userApprovedRelays: userApprovedRelays || !privacyAskToApproveRelaysGroupDefault.get(),
+                encrypted: privacyEncryptLocalFilesGroupDefault.get(),
+                inline: nil
+            )
+        )
+        switch r {
+        case let .rcvFileAccepted(_, chatItem):
+            filesAccepted.append(chatItem)
+        default:
+            if let chatError = chatError(r) {
+                switch chatError {
+                case let .fileNotApproved(fileId, unknownServers):
+                    fileIdsToApprove.append(fileId)
+                    srvsToApprove.formUnion(unknownServers)
+                default:
+                    otherFileErrs.append(r)
+                }
             }
         }
     }
-    let fileIds = unapprovedFileIds
-    if !fileIds.isEmpty {
-        let srvs = unknownServers
-            .map { s in
-                if let srv = parseServerAddress(s), !srv.hostnames.isEmpty {
-                    srv.hostnames[0]
-                } else {
-                    serverHost(s)
-                }
-            }
-            .sorted()
-            .joined(separator: ", ")
-        DispatchQueue.main.async {
+    
+    for file in filesAccepted {
+        await chatItemSimpleUpdate(user, file)
+    }
+
+    if !auto {
+        // If there are not approved files, alert is shown the same way both in case of singular and plural files reception
+        if !fileIdsToApprove.isEmpty {
+            let srvs = srvsToApprove.sorted().joined(separator: ", ")
             showAlert(
                 title: NSLocalizedString("Unknown servers!", comment: "alert title"),
                 message: NSLocalizedString(
@@ -1093,6 +1100,7 @@ func receiveFiles(user: any UserLike, fileIds: [Int64], userApprovedRelays: Bool
                 ),
                 buttonTitle: NSLocalizedString("Download", comment: "alert button"),
                 buttonAction: {
+                    let fileIds = fileIdsToApprove
                     Task {
                         logger.debug("apiReceiveFile fileNotApproved alert - in Task")
                         if let user = ChatModel.shared.currentUser {
@@ -1102,54 +1110,38 @@ func receiveFiles(user: any UserLike, fileIds: [Int64], userApprovedRelays: Bool
                 },
                 cancelButton: true
             )
-        }
-    }
-}
-
-enum ReceiveFileResult {
-    case accepted(chatItem: AChatItem)
-    case notApproved(fileId: Int64, unknownServers: [String])
-}
-
-func apiReceiveFile(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool, inline: Bool? = nil, auto: Bool = false) async -> ReceiveFileResult? {
-    let r = await chatSendCmd(.receiveFile(fileId: fileId, userApprovedRelays: userApprovedRelays, encrypted: encrypted, inline: inline))
-    let am = AlertManager.shared
-    if case let .rcvFileAccepted(_, chatItem) = r { return .accepted(chatItem: chatItem) }
-    if case .rcvFileAcceptedSndCancelled = r {
-        logger.debug("apiReceiveFile error: sender cancelled file transfer")
-        if !auto {
-            am.showAlertMsg(
-                title: "Cannot receive file",
-                message: "Sender cancelled file transfer."
+        } else if otherFileErrs.count == 1 { // If there is a single other error, we differentiate on it
+            let errorResponse = otherFileErrs.first!
+            switch errorResponse {
+            case let .rcvFileAcceptedSndCancelled(_, rcvFileTransfer):
+                logger.debug("receiveFiles error: sender cancelled file transfer \(rcvFileTransfer.fileId)")
+                showAlert(
+                    NSLocalizedString("Cannot receive file", comment: "alert title"),
+                    message: NSLocalizedString("Sender cancelled file transfer.", comment: "alert message")
+                )
+            default:
+                if let chatError = chatError(errorResponse) {
+                    switch chatError {
+                    case .fileCancelled, .fileAlreadyReceiving:
+                        logger.debug("receiveFiles ignoring FileCancelled or FileAlreadyReceiving error")
+                    default:
+                        showAlert(
+                            NSLocalizedString("Error receiving file", comment: "alert title"),
+                            message: responseError(errorResponse)
+                        )
+                    }
+                }
+            }
+        } else if otherFileErrs.count > 1 { // If there are multiple other errors, we show general alert
+            showAlert(
+                NSLocalizedString("Error receiving file", comment: "alert title"),
+                message: String.localizedStringWithFormat(
+                    NSLocalizedString("Failed to receive %d files.", comment: "alert message"),
+                    otherFileErrs.count
+                )
             )
         }
-    } else if let networkErrorAlert = networkErrorAlert(r) {
-        logger.error("apiReceiveFile network error: \(String(describing: r))")
-        if !auto {
-            am.showAlert(networkErrorAlert)
-        }
-    } else {
-        switch chatError(r) {
-        case .fileCancelled:
-            logger.debug("apiReceiveFile ignoring fileCancelled error")
-        case .fileAlreadyReceiving:
-            logger.debug("apiReceiveFile ignoring fileAlreadyReceiving error")
-        case let .fileNotApproved(fileId, unknownServers):
-            logger.debug("apiReceiveFile fileNotApproved error")
-            if !auto {
-                return .notApproved(fileId: fileId, unknownServers: unknownServers)
-            }
-        default:
-            logger.error("apiReceiveFile error: \(String(describing: r))")
-            if !auto {
-                am.showAlertMsg(
-                    title: "Error receiving file",
-                    message: "Error: \(responseError(r))"
-                )
-            }
-        }
     }
-    return nil
 }
 
 func cancelFile(user: User, fileId: Int64) async {
