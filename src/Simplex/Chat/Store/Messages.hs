@@ -75,16 +75,16 @@ module Simplex.Chat.Store.Messages
     getGroupCIReactions,
     getGroupReactions,
     setGroupReaction,
-    getChatItemIdByAgentMsgId,
+    getChatItemIdsByAgentMsgId,
     getDirectChatItem,
     getDirectCIWithReactions,
     getDirectChatItemBySharedMsgId,
-    getDirectChatItemByAgentMsgId,
+    getDirectChatItemsByAgentMsgId,
     getGroupChatItem,
     getGroupCIWithReactions,
     getGroupChatItemBySharedMsgId,
     getGroupMemberCIBySharedMsgId,
-    getGroupChatItemByAgentMsgId,
+    getGroupChatItemsByAgentMsgId,
     getGroupMemberChatItemLast,
     getLocalChatItem,
     updateLocalChatItem',
@@ -1624,19 +1624,18 @@ getAllChatItems db vr user@User {userId} pagination search_ = do
           |]
           (userId, search, beforeTs, beforeTs, beforeId, count)
 
-getChatItemIdByAgentMsgId :: DB.Connection -> Int64 -> AgentMsgId -> IO (Maybe ChatItemId)
-getChatItemIdByAgentMsgId db connId msgId =
-  fmap join . maybeFirstRow fromOnly $
-    DB.query
+getChatItemIdsByAgentMsgId :: DB.Connection -> Int64 -> AgentMsgId -> IO [ChatItemId]
+getChatItemIdsByAgentMsgId db connId msgId =
+  map fromOnly
+    <$> DB.query
       db
       [sql|
         SELECT chat_item_id
         FROM chat_item_messages
-        WHERE message_id = (
+        WHERE message_id IN (
           SELECT message_id
           FROM msg_deliveries
           WHERE connection_id = ? AND agent_msg_id = ?
-          LIMIT 1
         )
       |]
       (connId, msgId)
@@ -1780,10 +1779,10 @@ getDirectChatItemBySharedMsgId db user@User {userId} contactId sharedMsgId = do
   itemId <- getDirectChatItemIdBySharedMsgId_ db userId contactId sharedMsgId
   getDirectChatItem db user contactId itemId
 
-getDirectChatItemByAgentMsgId :: DB.Connection -> User -> ContactId -> Int64 -> AgentMsgId -> IO (Maybe (CChatItem 'CTDirect))
-getDirectChatItemByAgentMsgId db user contactId connId msgId = do
-  itemId_ <- getChatItemIdByAgentMsgId db connId msgId
-  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getDirectChatItem db user contactId) itemId_
+getDirectChatItemsByAgentMsgId :: DB.Connection -> User -> ContactId -> Int64 -> AgentMsgId -> IO [CChatItem 'CTDirect]
+getDirectChatItemsByAgentMsgId db user contactId connId msgId = do
+  itemIds <- getChatItemIdsByAgentMsgId db connId msgId
+  catMaybes <$> mapM (fmap eitherToMaybe . runExceptT . getDirectChatItem db user contactId) itemIds
 
 getDirectChatItemIdBySharedMsgId_ :: DB.Connection -> UserId -> Int64 -> SharedMsgId -> ExceptT StoreError IO Int64
 getDirectChatItemIdBySharedMsgId_ db userId contactId sharedMsgId =
@@ -2036,10 +2035,10 @@ getGroupMemberCIBySharedMsgId db user@User {userId} groupId memberId sharedMsgId
         (GCUserMember, userId, groupId, memberId, sharedMsgId)
   getGroupChatItem db user groupId itemId
 
-getGroupChatItemByAgentMsgId :: DB.Connection -> User -> GroupId -> Int64 -> AgentMsgId -> IO (Maybe (CChatItem 'CTGroup))
-getGroupChatItemByAgentMsgId db user groupId connId msgId = do
-  itemId_ <- getChatItemIdByAgentMsgId db connId msgId
-  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getGroupChatItem db user groupId) itemId_
+getGroupChatItemsByAgentMsgId :: DB.Connection -> User -> GroupId -> Int64 -> AgentMsgId -> IO [CChatItem 'CTGroup]
+getGroupChatItemsByAgentMsgId db user groupId connId msgId = do
+  itemIds <- getChatItemIdsByAgentMsgId db connId msgId
+  catMaybes <$> mapM (fmap eitherToMaybe . runExceptT . getGroupChatItem db user groupId) itemIds
 
 getGroupChatItem :: DB.Connection -> User -> Int64 -> ChatItemId -> ExceptT StoreError IO (CChatItem 'CTGroup)
 getGroupChatItem db User {userId, userContactId} groupId itemId = ExceptT $ do

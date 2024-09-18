@@ -8,6 +8,7 @@
 
 import Foundation
 import SwiftUI
+import Network
 
 public let jsonDecoder = getJSONDecoder()
 public let jsonEncoder = getJSONEncoder()
@@ -604,7 +605,7 @@ public enum ChatResponse: Decodable, Error {
     case userContactLinkSubscribed
     case newChatItems(user: UserRef, chatItems: [AChatItem])
     case forwardPlan(user: UserRef, chatItemIds: [Int64], forwardConfirmation: ForwardConfirmation?)
-    case chatItemStatusUpdated(user: UserRef, chatItem: AChatItem)
+    case chatItemsStatusesUpdated(user: UserRef, chatItems: [AChatItem])
     case chatItemUpdated(user: UserRef, chatItem: AChatItem)
     case chatItemNotChanged(user: UserRef, chatItem: AChatItem)
     case chatItemReaction(user: UserRef, added: Bool, reaction: ACIReaction)
@@ -776,7 +777,7 @@ public enum ChatResponse: Decodable, Error {
             case .userContactLinkSubscribed: return "userContactLinkSubscribed"
             case .newChatItems: return "newChatItems"
             case .forwardPlan: return "forwardPlan"
-            case .chatItemStatusUpdated: return "chatItemStatusUpdated"
+            case .chatItemsStatusesUpdated: return "chatItemsStatusesUpdated"
             case .chatItemUpdated: return "chatItemUpdated"
             case .chatItemNotChanged: return "chatItemNotChanged"
             case .chatItemReaction: return "chatItemReaction"
@@ -948,7 +949,9 @@ public enum ChatResponse: Decodable, Error {
                 let itemsString = chatItems.map { chatItem in String(describing: chatItem) }.joined(separator: "\n")
                 return withUser(u, itemsString)
             case let .forwardPlan(u, chatItemIds, forwardConfirmation): return withUser(u, "items: \(chatItemIds) forwardConfirmation: \(String(describing: forwardConfirmation))")
-            case let .chatItemStatusUpdated(u, chatItem): return withUser(u, String(describing: chatItem))
+            case let .chatItemsStatusesUpdated(u, chatItems):
+                let itemsString = chatItems.map { chatItem in String(describing: chatItem) }.joined(separator: "\n")
+                return withUser(u, itemsString)
             case let .chatItemUpdated(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .chatItemNotChanged(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .chatItemReaction(u, added, reaction): return withUser(u, "added: \(added)\n\(String(describing: reaction))")
@@ -1501,6 +1504,63 @@ public struct KeepAliveOpts: Codable, Equatable {
     public var keepCnt: Int // times
 
     public static let defaults: KeepAliveOpts = KeepAliveOpts(keepIdle: 30, keepIntvl: 15, keepCnt: 4)
+}
+
+public struct NetworkProxy: Equatable, Codable {
+    public var host: String = ""
+    public var port: Int = 0
+    public var auth: NetworkProxyAuth = .username
+    public var username: String = ""
+    public var password: String = ""
+
+    public static var def: NetworkProxy {
+        NetworkProxy()
+    }
+    
+    public var valid: Bool {
+        let hostOk = switch NWEndpoint.Host(host) {
+        case .ipv4: true
+        case .ipv6: true
+        default: false
+        }
+        return hostOk &&
+                port > 0 && port <= 65535 &&
+                NetworkProxy.validCredential(username) && NetworkProxy.validCredential(password)
+    }
+    
+    public static func validCredential(_ s: String) -> Bool {
+        !s.contains(":") && !s.contains("@")
+    }
+
+    public func toProxyString() -> String? {
+        if !valid { return nil }
+        var res = ""
+        switch auth {
+        case .username:
+            let usernameTrimmed = username.trimmingCharacters(in: .whitespaces)
+            let passwordTrimmed = password.trimmingCharacters(in: .whitespaces)
+            if usernameTrimmed != "" || passwordTrimmed != "" {
+                res += usernameTrimmed + ":" + passwordTrimmed + "@"
+            } else {
+                res += "@"
+            }
+        case .isolate: ()
+        }
+        if host != "" {
+            if host.contains(":") {
+                res += "[\(host.trimmingCharacters(in: [" ", "[", "]"]))]"
+            } else {
+                res += host.trimmingCharacters(in: .whitespaces)
+            }
+        }
+        res += ":\(port)"
+        return res
+    }
+}
+
+public enum NetworkProxyAuth: String, Codable {
+    case username
+    case isolate
 }
 
 public enum NetworkStatus: Decodable, Equatable {
@@ -2163,11 +2223,13 @@ public struct MigrationFileLinkData: Codable {
 
     public struct NetworkConfig: Codable {
         let socksProxy: String?
+        let networkProxy: NetworkProxy?
         let hostMode: HostMode?
         let requiredHostMode: Bool?
 
-        public init(socksProxy: String?, hostMode: HostMode?, requiredHostMode: Bool?) {
+        public init(socksProxy: String?, networkProxy: NetworkProxy?, hostMode: HostMode?, requiredHostMode: Bool?) {
             self.socksProxy = socksProxy
+            self.networkProxy = networkProxy
             self.hostMode = hostMode
             self.requiredHostMode = requiredHostMode
         }
@@ -2176,6 +2238,7 @@ public struct MigrationFileLinkData: Codable {
             return if let hostMode, let requiredHostMode {
                 NetworkConfig(
                     socksProxy: nil,
+                    networkProxy: nil,
                     hostMode: hostMode == .onionViaSocks ? .onionHost : hostMode,
                     requiredHostMode: requiredHostMode
                 )
@@ -2195,6 +2258,7 @@ public struct MigrationFileLinkData: Codable {
 
 public struct AppSettings: Codable, Equatable {
     public var networkConfig: NetCfg? = nil
+    public var networkProxy: NetworkProxy? = nil
     public var privacyEncryptLocalFiles: Bool? = nil
     public var privacyAskToApproveRelays: Bool? = nil
     public var privacyAcceptImages: Bool? = nil
@@ -2226,6 +2290,7 @@ public struct AppSettings: Codable, Equatable {
         var empty = AppSettings()
         let def = AppSettings.defaults
         if networkConfig != def.networkConfig { empty.networkConfig = networkConfig }
+        if networkProxy != def.networkProxy { empty.networkProxy = networkProxy }
         if privacyEncryptLocalFiles != def.privacyEncryptLocalFiles { empty.privacyEncryptLocalFiles = privacyEncryptLocalFiles }
         if privacyAskToApproveRelays != def.privacyAskToApproveRelays { empty.privacyAskToApproveRelays = privacyAskToApproveRelays }
         if privacyAcceptImages != def.privacyAcceptImages { empty.privacyAcceptImages = privacyAcceptImages }
@@ -2258,6 +2323,7 @@ public struct AppSettings: Codable, Equatable {
     public static var defaults: AppSettings {
         AppSettings (
             networkConfig: NetCfg.defaults,
+            networkProxy: NetworkProxy.def,
             privacyEncryptLocalFiles: true,
             privacyAskToApproveRelays: true,
             privacyAcceptImages: true,
