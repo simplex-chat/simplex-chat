@@ -730,16 +730,14 @@ struct ChatView: View {
                                     NSLocalizedString("Forward %d message(s)?", comment: "alert title"),
                                     validItems.count
                                 ),
-                                message: forwardConfirmation.reason + "\n" + NSLocalizedString(
-                                    "Forward messages without files?", 
-                                    comment: "alert message"
-                                )
+                                message: forwardConfirmation.reason + "\n" +
+                                    NSLocalizedString("Forward messages without files?", comment: "alert message")
                             ) {
                                 switch forwardConfirmation {
                                 case let .filesNotAccepted(fileIds):
-                                    [forward(validItems), download(fileIds), alertAction("Cancel", style: .cancel)]
+                                    [forwardAction(validItems), downloadAction(fileIds), cancelAlertAction]
                                 default:
-                                    [forward(validItems), alertAction("Cancel", style: .cancel)]
+                                    [forwardAction(validItems), cancelAlertAction]
                                 }
                             }
                         } else {
@@ -748,10 +746,10 @@ struct ChatView: View {
                                 message: forwardConfirmation.reason
                             ) {
                                 switch forwardConfirmation {
-                                case let .filesNotAccepted(fileIds): 
-                                    [download(fileIds), alertAction("Cancel", style: .cancel)]
+                                case let .filesNotAccepted(fileIds):
+                                    [downloadAction(fileIds), cancelAlertAction]
                                 default:
-                                    [alertAction("Ok")]
+                                    [okAlertAction]
                                 }
                             }
                         }
@@ -764,20 +762,26 @@ struct ChatView: View {
             }
         }
 
-        func forward(_ items: [Int64]) -> UIAlertAction {
-            alertAction(NSLocalizedString("Forward messages", comment: "alert action")) {
-                Task { await openForwardingSheet(items) }
-            }
+        func forwardAction(_ items: [Int64]) -> UIAlertAction {
+            UIAlertAction(
+                title: NSLocalizedString("Forward messages", comment: "alert action"),
+                style: .default,
+                handler: { _ in Task { await openForwardingSheet(items) } }
+            )
         }
 
-        func download(_ fileIds: [Int64]) -> UIAlertAction {
-            alertAction(NSLocalizedString("Download files", comment: "alert action")) {
-                Task {
-                    if let user = ChatModel.shared.currentUser {
-                        await receiveFiles(user: user, fileIds: fileIds)
+        func downloadAction(_ fileIds: [Int64]) -> UIAlertAction {
+            UIAlertAction(
+                title: NSLocalizedString("Download files", comment: "alert action"),
+                style: .default,
+                handler: { _ in
+                    Task {
+                        if let user = ChatModel.shared.currentUser {
+                            await receiveFiles(user: user, fileIds: fileIds)
+                        }
                     }
                 }
-            }
+            )
         }
 
         func openForwardingSheet(_ items: [Int64]) async {

@@ -47,7 +47,7 @@ func showAlert(
             buttonAction()
         })
         if cancelButton {
-            alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: "alert button"), style: .cancel))
+            alert.addAction(cancelAlertAction)
         }
         topController.present(alert, animated: true)
     }
@@ -56,24 +56,15 @@ func showAlert(
 func showAlert(
     _ title: String,
     message: String? = nil,
-    style: UIAlertController.Style = .alert,
-    actions: () -> [UIAlertAction] = { [alertAction("Ok")] }
+    actions: () -> [UIAlertAction] = { [okAlertAction] }
 ) {
     if let topController = getTopViewController() {
-        let alert = UIAlertController(title: title, message: message, preferredStyle: style)
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
         for action in actions() { alert.addAction(action) }
         topController.present(alert, animated: true)
     }
 }
 
-func alertAction(
-    _ title: String,
-    style: UIAlertAction.Style = .default,
-    action: (() -> Void)? = nil
-) -> UIAlertAction {
-    .init(
-        title: NSLocalizedString(title, comment: "alert action"),
-        style: style,
-        handler: { _ in action?() }
-    )
-}
+let okAlertAction = UIAlertAction(title: NSLocalizedString("Ok", comment: "alert button"), style: .default)
+
+let cancelAlertAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: "alert button"), style: .cancel)

@@ -1617,24 +1617,26 @@ public enum ForwardConfirmation: Decodable, Hashable {
     public var reason: String {
         switch self {
         case let .filesNotAccepted(fileIds):
-            format(fileIds.count, with: "were not downloaded")
+            String.localizedStringWithFormat(
+                NSLocalizedString("%d file(s) were not downloaded.", comment: "forward confirmation reason"),
+                fileIds.count
+            )
         case let .filesInProgress(filesCount):
-            format(filesCount, with: "are still being downloaded")
+            String.localizedStringWithFormat(
+                NSLocalizedString("%d file(s) are still being downloaded.", comment: "forward confirmation reason"),
+                filesCount
+            )
         case let .filesMissing(filesCount):
-            format(filesCount, with: "were deleted")
+            String.localizedStringWithFormat(
+                NSLocalizedString("%d file(s) were deleted.", comment: "forward confirmation reason"),
+                filesCount
+            )
         case let .filesFailed(filesCount):
-            format(filesCount, with: "failed to download")
+            String.localizedStringWithFormat(
+                NSLocalizedString("%d file(s) failed to download.", comment: "forward confirmation reason"),
+                filesCount
+            )
         }
-    }
-
-    private func format(_ count: Int, with reason: String) -> String {
-        String.localizedStringWithFormat(
-            NSLocalizedString(
-                "%d file(s) \(reason).",
-                comment: "forward confirmation reason"
-            ),
-            count
-        )
     }
 }
 

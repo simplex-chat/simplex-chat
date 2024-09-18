@@ -962,16 +962,10 @@ struct ComposeView: View {
                     if forwardedItems.count != chatItems.count {
                         showAlert(
                             String.localizedStringWithFormat(
-                                NSLocalizedString(
-                                    "%d messages not forwarded",
-                                    comment: "alert title"
-                                ),
+                                NSLocalizedString("%d messages not forwarded", comment: "alert title"),
                                 forwardedItems.count - chatItems.count
                             ),
-                            message: NSLocalizedString(
-                                "Messages were deleted after you selected them.",
-                                comment: "alert message"
-                            )
+                            message: NSLocalizedString("Messages were deleted after you selected them.", comment: "alert message")
                         )
                     }
                 }
