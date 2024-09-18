@@ -129,7 +129,7 @@ actual fun ActiveCallView() {
               // Starting is delayed to make Android <= 11 working good with Bluetooth
               callAudioDeviceManager.start()
             } else {
-              callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.supportsVideo(), true)
+              callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.hasVideo, true)
             }
             CallSoundsPlayer.startConnectingCallSound(scope)
             activeCallWaitDeliveryReceipt(scope)
@@ -141,7 +141,7 @@ actual fun ActiveCallView() {
               // Starting is delayed to make Android <= 11 working good with Bluetooth
               callAudioDeviceManager.start()
             } else {
-              callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.supportsVideo(), true)
+              callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.hasVideo, true)
             }
           }
           is WCallResponse.Answer -> withBGApi {
@@ -217,7 +217,7 @@ actual fun ActiveCallView() {
     val showOverlay = when {
       call == null -> false
       !platform.androidPictureInPictureAllowed() -> true
-      !call.supportsVideo() -> true
+      !call.hasVideo -> true
       !chatModel.activeCallViewIsCollapsed.value -> true
       else -> false
     }
@@ -310,9 +310,8 @@ private fun ActiveCallOverlayLayout(
   flipCamera: () -> Unit
 ) {
   Column {
-    val supportsVideo = call.supportsVideo()
     CloseSheetBar({ chatModel.activeCallViewIsCollapsed.value = true }, true, tintColor = Color(0xFFFFFFD8)) {
-      if (supportsVideo) {
+      if (call.hasVideo) {
         Text(call.contact.chatViewName, Modifier.fillMaxWidth().padding(end = DEFAULT_PADDING), color = Color(0xFFFFFFD8), style = MaterialTheme.typography.h2, overflow = TextOverflow.Ellipsis, maxLines = 1)
       }
     }
@@ -346,7 +345,7 @@ private fun ActiveCallOverlayLayout(
         }
       }
 
-      when (supportsVideo) {
+      when (call.hasVideo) {
         true -> VideoCallInfoView(call)
         false -> {
           Spacer(Modifier.fillMaxHeight().weight(1f))
@@ -428,7 +427,7 @@ private fun ToggleSoundButton(enabled: Boolean, speaker: Boolean, toggleSound: (
 }
 
 @Composable
-fun controlButtonsBackground(): Color = if (chatModel.activeCall.value?.peerMediaSources?.hasVideo() == true) Color.Black.copy(0.1f) else Color.White.copy(0.1f)
+fun controlButtonsBackground(): Color = if (chatModel.activeCall.value?.peerMediaSources?.hasVideo == true) Color.Black.copy(0.1f) else Color.White.copy(0.1f)
 
 @Composable
 fun AudioCallInfoView(call: Call) {

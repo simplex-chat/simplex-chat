@@ -116,7 +116,7 @@ class CallActivity: ComponentActivity(), ServiceConnection {
 
   private fun hasGrantedPermissions(): Boolean {
     val grantedAudio = ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
-    val grantedCamera = !callSupportsVideo() || ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+    val grantedCamera = !callHasVideo() || ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
     return grantedAudio && grantedCamera
   }
 
@@ -124,7 +124,7 @@ class CallActivity: ComponentActivity(), ServiceConnection {
   override fun onBackPressed() {
     if (isOnLockScreenNow()) {
       super.onBackPressed()
-    } else if (!hasGrantedPermissions() && !callSupportsVideo()) {
+    } else if (!hasGrantedPermissions() && !callHasVideo()) {
       val call = m.activeCall.value
       if (call != null) {
         withBGApi { chatModel.callManager.endCall(call) }
@@ -142,7 +142,7 @@ class CallActivity: ComponentActivity(), ServiceConnection {
   override fun onUserLeaveHint() {
     super.onUserLeaveHint()
     // On Android 12+ PiP is enabled automatically when a user hides the app
-    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R && callSupportsVideo() && platform.androidPictureInPictureAllowed()) {
+    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R && callHasVideo() && platform.androidPictureInPictureAllowed()) {
       enterPictureInPictureMode()
     }
   }
@@ -198,7 +198,7 @@ class CallActivity: ComponentActivity(), ServiceConnection {
 fun getKeyguardManager(context: Context): KeyguardManager =
   context.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
 
-private fun callSupportsVideo() = m.activeCall.value?.supportsVideo() == true || m.activeCallInvitation.value?.callType?.media == CallMediaType.Video
+private fun callHasVideo() = m.activeCall.value?.hasVideo == true || m.activeCallInvitation.value?.callType?.media == CallMediaType.Video
 
 @Composable
 fun CallActivityView() {
@@ -212,7 +212,7 @@ fun CallActivityView() {
       .collect { collapsed ->
         when {
           collapsed -> {
-            if (!platform.androidPictureInPictureAllowed() || !callSupportsVideo()) {
+            if (!platform.androidPictureInPictureAllowed() || !callHasVideo()) {
               activity.moveTaskToBack(true)
               activity.startActivity(Intent(activity, MainActivity::class.java))
             } else if (!activity.isInPictureInPictureMode && activity.lifecycle.currentState == Lifecycle.State.RESUMED) {
@@ -221,7 +221,7 @@ fun CallActivityView() {
               activity.enterPictureInPictureMode()
             }
           }
-          callSupportsVideo() && !platform.androidPictureInPictureAllowed() -> {
+          callHasVideo() && !platform.androidPictureInPictureAllowed() -> {
             // PiP disabled by user
             platform.androidStartCallActivity(false)
           }
@@ -242,7 +242,7 @@ fun CallActivityView() {
     Box(Modifier.background(Color.Black)) {
       if (call != null) {
         val permissionsState = rememberMultiplePermissionsState(
-          permissions = if (callSupportsVideo()) {
+          permissions = if (callHasVideo()) {
             listOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
           } else {
             listOf(Manifest.permission.RECORD_AUDIO)
@@ -254,16 +254,16 @@ fun CallActivityView() {
             activity.startServiceAndBind()
           }
         } else {
-          CallPermissionsView(remember { m.activeCallViewIsCollapsed }.value, callSupportsVideo()) {
+          CallPermissionsView(remember { m.activeCallViewIsCollapsed }.value, callHasVideo()) {
             withBGApi { chatModel.callManager.endCall(call) }
           }
         }
         val view = LocalView.current
-        if (callSupportsVideo()) {
+        if (callHasVideo()) {
           val scope = rememberCoroutineScope()
           LaunchedEffect(Unit) {
             scope.launch {
-              activity.setPipParams(callSupportsVideo(), viewRatio = Rational(view.width, view.height))
+              activity.setPipParams(callHasVideo(), viewRatio = Rational(view.width, view.height))
               activity.trackPipAnimationHintView(view)
             }
           }

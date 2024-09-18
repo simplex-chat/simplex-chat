@@ -35,13 +35,10 @@ data class Call(
     else -> generalGetString(if (!localEncrypted) MR.strings.status_no_e2e_encryption else if (sharedKey == null) MR.strings.status_contact_has_no_e2e_encryption else MR.strings.status_e2e_encrypted)
   }
 
-  val localMedia: CallMediaType
-    get() = if (localMediaSources.camera) CallMediaType.Video else CallMediaType.Audio
+  val hasMediaStreaming: Boolean get() = callState == CallState.OfferSent || callState == CallState.Negotiated || callState == CallState.Connected
 
-  val hasMedia: Boolean get() = callState == CallState.OfferSent || callState == CallState.Negotiated || callState == CallState.Connected
-
-  fun supportsVideo(): Boolean = peerMediaSources.hasVideo() || localMedia == CallMediaType.Video
-
+  val hasVideo: Boolean
+    get() = peerMediaSources.hasVideo || localMediaSources.hasVideo
 }
 
 enum class CallState {
@@ -77,7 +74,8 @@ enum class CallState {
   val screenAudio: Boolean = false,
   val screenVideo: Boolean = false
 ) {
-  fun hasVideo() = camera || screenVideo
+  val hasVideo: Boolean
+    get() = camera || screenVideo
 }
 
 @Serializable

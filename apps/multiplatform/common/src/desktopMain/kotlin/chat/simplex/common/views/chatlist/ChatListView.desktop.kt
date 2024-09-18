@@ -55,7 +55,7 @@ actual fun ActiveCallInteractiveArea(call: Call) {
           Modifier.padding().background(SimplexGreen, CircleShape).padding(4.dp)
             .align(Alignment.TopEnd)
         ) {
-          if (call.supportsVideo()) {
+          if (call.hasVideo) {
             Icon(
               painterResource(MR.images.ic_videocam_filled),
               stringResource(MR.strings.icon_descr_video_call),

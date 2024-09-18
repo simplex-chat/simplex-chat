@@ -83,7 +83,7 @@ class CallService: Service() {
       generalGetString(MR.strings.notification_preview_somebody)
     else
       call?.contact?.profile?.displayName ?: ""
-    val text = generalGetString(if (call?.supportsVideo() == true) MR.strings.call_service_notification_video_call else MR.strings.call_service_notification_audio_call)
+    val text = generalGetString(if (call?.hasVideo == true) MR.strings.call_service_notification_video_call else MR.strings.call_service_notification_audio_call)
     val image = call?.contact?.image
     val largeIcon = if (image == null || previewMode == NotificationPreviewMode.HIDDEN.name)
       BitmapFactory.decodeResource(resources, R.drawable.icon)
