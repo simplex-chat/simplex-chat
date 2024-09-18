@@ -14,6 +14,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -42,7 +43,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock
 import java.io.File
 import java.net.URI
-import kotlin.math.sign
+import kotlin.math.*
 
 @Composable
 // staleChatId means the id that was before chatModel.chatId becomes null. It's needed for Android only to make transition from chat
@@ -925,6 +926,51 @@ private fun ContactVerifiedShield() {
 }
 
 @Composable
+private fun MemberLayout(
+  spacing: Int,
+  msgWidth: Int,
+  modifier: Modifier = Modifier,
+  name: String,
+  content: @Composable () -> Unit,
+) {
+  Layout(
+    modifier = modifier,
+    content = content
+  ) { measurables, constraints ->
+    check(measurables.size == 2) { "Expected exactly 2 children" }
+
+    // Measure the role view (the second child) that should never overflow.
+    val roleConstraints = constraints.copy(maxWidth = constraints.maxWidth)
+    val rolePlaceable = measurables[1].measure(roleConstraints)
+
+    // Measure the member view (the first child) with adjusted width based on the role view
+    val memberWidthWithoutConstraints = measurables[0].maxIntrinsicWidth(height = constraints.minHeight)
+    val memberConstraints = constraints.copy(
+      maxWidth = (if (memberWidthWithoutConstraints + spacing + rolePlaceable.width > msgWidth) constraints.maxWidth else msgWidth) - rolePlaceable.width
+    )
+    val memberPlaceable = measurables[0].measure(memberConstraints)
+
+    // Calculate the final width and height for the layout
+    val layoutWidth = min(
+      constraints.maxWidth,
+      max(msgWidth, memberPlaceable.width + spacing + rolePlaceable.width)
+    )
+    val layoutHeight = max(memberPlaceable.height, rolePlaceable.height)
+
+    layout(layoutWidth, layoutHeight) {
+      // Place member view
+      val memberY = (layoutHeight - memberPlaceable.height) / 2
+      memberPlaceable.placeRelative(x = 0, y = memberY)
+
+      // Place role view with adjusted X position
+      val roleX = max(memberPlaceable.width + spacing, msgWidth - rolePlaceable.width)
+      val roleY = (layoutHeight - rolePlaceable.height) / 2
+      rolePlaceable.placeRelative(x = roleX, y = roleY)
+    }
+  }
+}
+
+@Composable
 fun BoxWithConstraintsScope.ChatItemsList(
   remoteHostId: Long?,
   chatInfo: ChatInfo,
@@ -1040,13 +1086,20 @@ fun BoxWithConstraintsScope.ChatItemsList(
         }
 
         val revealed = remember { mutableStateOf(false) }
+        var messageWidth by remember { mutableStateOf(0) }
 
         @Composable
         fun ChatItemViewShortHand(cItem: ChatItem, range: IntRange?) {
           tryOrShowError("${cItem.id}ChatItem", error = {
             CIBrokenComposableView(if (cItem.chatDir.sent) Alignment.CenterEnd else Alignment.CenterStart)
           }) {
-            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools, showViaProxy = showViaProxy)
+            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools, showViaProxy = showViaProxy,
+              onGloballyPositioned = { size ->
+                if (messageWidth != size.width) {
+                  messageWidth = size.width
+                }
+              }
+            )
           }
         }
 
@@ -1077,22 +1130,42 @@ fun BoxWithConstraintsScope.ChatItemsList(
                   ) {
                     if (cItem.content.showMemberName) {
                       val memberNameStyle = SpanStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary)
-                      val memberNameString = if (memCount == 1 && member.memberRole > GroupMemberRole.Member) {
+                      val memberNameString = buildAnnotatedString {
+                        withStyle(memberNameStyle) { append(memberNames(member, prevMember, memCount)) }
+                      }
+                      val memberRoleString = if (memCount == 1 && member.memberRole > GroupMemberRole.Member) {
                         buildAnnotatedString {
                           withStyle(memberNameStyle.copy(fontWeight = FontWeight.Medium)) { append(member.memberRole.text) }
-                          append(" ")
-                          withStyle(memberNameStyle) { append(memberNames(member, prevMember, memCount)) }
                         }
-                      } else {
-                        buildAnnotatedString {
-                          withStyle(memberNameStyle) { append(memberNames(member, prevMember, memCount)) }
+                      } else null
+
+                      Row(Modifier
+                        .padding(start = MEMBER_IMAGE_SIZE + DEFAULT_PADDING_HALF)
+                        .fillMaxWidth()
+                      ) {
+                        if (messageWidth > 0 && memberRoleString != null) {
+                          MemberLayout(
+                            spacing = with(LocalDensity.current) { 16.dp.roundToPx() },
+                            msgWidth = with(LocalDensity.current) { messageWidth - DEFAULT_PADDING_HALF.roundToPx() },
+                            name = memberNameString.text
+                          ) {
+                            Text(
+                              memberNameString,
+                              maxLines = 1,
+                              overflow = TextOverflow.Ellipsis,
+                            )
+                            Text(
+                              memberRoleString,
+                              maxLines = 1,
+                            )
+                          }
+                        } else {
+                          Text(
+                            memberNameString,
+                            maxLines = 2,
+                          )
                         }
                       }
-                      Text(
-                        memberNameString,
-                        Modifier.padding(start = MEMBER_IMAGE_SIZE + 10.dp),
-                        maxLines = 2
-                      )
                     }
                     Box(contentAlignment = Alignment.CenterStart) {
                       androidx.compose.animation.AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {

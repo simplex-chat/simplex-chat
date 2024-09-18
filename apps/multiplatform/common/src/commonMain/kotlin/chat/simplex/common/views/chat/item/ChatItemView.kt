@@ -12,6 +12,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.*
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
 import dev.icerock.moko.resources.compose.painterResource
@@ -73,6 +74,7 @@ fun ChatItemView(
   developerTools: Boolean,
   showViaProxy: Boolean,
   preview: Boolean = false,
+  onGloballyPositioned: ((coordinates: IntSize) -> Unit)? = null
 ) {
   val uriHandler = LocalUriHandler.current
   val sent = cItem.chatDir.sent
@@ -126,8 +128,8 @@ fun ChatItemView(
       Column(
         Modifier
           .clip(RoundedCornerShape(18.dp))
-          .combinedClickable(onLongClick = { showMenu.value = true }, onClick = onClick)
-          .onRightClick { showMenu.value = true },
+          .onRightClick { showMenu.value = true }
+          .then(if (onGloballyPositioned != null) Modifier.onGloballyPositioned { onGloballyPositioned(it.size) } else Modifier)
       ) {
         @Composable
         fun framedItemView() {
