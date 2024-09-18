@@ -1054,7 +1054,6 @@ func receiveFile(user: any UserLike, fileId: Int64, userApprovedRelays: Bool = f
 }
 
 func receiveFiles(user: any UserLike, fileIds: [Int64], userApprovedRelays: Bool = false, auto: Bool = false) async {
-    var filesAccepted = [AChatItem]()
     var fileIdsToApprove = [Int64]()
     var srvsToApprove = Set<String>()
     var otherFileErrs = [ChatResponse]()
@@ -1070,7 +1069,7 @@ func receiveFiles(user: any UserLike, fileIds: [Int64], userApprovedRelays: Bool
         )
         switch r {
         case let .rcvFileAccepted(_, chatItem):
-            filesAccepted.append(chatItem)
+            await chatItemSimpleUpdate(user, chatItem)
         default:
             if let chatError = chatError(r) {
                 switch chatError {
@@ -1083,16 +1082,21 @@ func receiveFiles(user: any UserLike, fileIds: [Int64], userApprovedRelays: Bool
             }
         }
     }
-    
-    for file in filesAccepted {
-        await chatItemSimpleUpdate(user, file)
-    }
 
     if !auto {
         // If there are not approved files, alert is shown the same way both in case of singular and plural files reception
         if !fileIdsToApprove.isEmpty {
-            let srvs = srvsToApprove.sorted().joined(separator: ", ")
-            let fileIds = fileIdsToApprove
+            let srvs = srvsToApprove
+                .map { s in
+                    if let srv = parseServerAddress(s), !srv.hostnames.isEmpty {
+                        srv.hostnames[0]
+                    } else {
+                        serverHost(s)
+                    }
+                }
+                .sorted()
+                .joined(separator: ", ")
+            let fIds = fileIdsToApprove
             await MainActor.run {
                 showAlert(
                     title: NSLocalizedString("Unknown servers!", comment: "alert title"),
@@ -1105,7 +1109,7 @@ func receiveFiles(user: any UserLike, fileIds: [Int64], userApprovedRelays: Bool
                         Task {
                             logger.debug("apiReceiveFile fileNotApproved alert - in Task")
                             if let user = ChatModel.shared.currentUser {
-                                await receiveFiles(user: user, fileIds: fileIds, userApprovedRelays: true)
+                                await receiveFiles(user: user, fileIds: fIds, userApprovedRelays: true)
                             }
                         }
                     },
