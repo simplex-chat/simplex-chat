@@ -1084,6 +1084,16 @@ func receiveFiles(user: any UserLike, fileIds: [Int64], userApprovedRelays: Bool
     }
 
     if !auto {
+        let otherErrsStr = if otherFileErrs.isEmpty {
+            ""
+        } else if otherFileErrs.count == 1 {
+            "\(otherFileErrs[0])"
+        } else if otherFileErrs.count == 2 {
+            "\(otherFileErrs[0])\n\(otherFileErrs[1])"
+        } else {
+            "\(otherFileErrs[0])\n\(otherFileErrs[1])\nand \(otherFileErrs.count - 2) other error(s)"
+        }
+
         // If there are not approved files, alert is shown the same way both in case of singular and plural files reception
         if !fileIdsToApprove.isEmpty {
             let srvs = srvsToApprove
@@ -1100,9 +1110,9 @@ func receiveFiles(user: any UserLike, fileIds: [Int64], userApprovedRelays: Bool
             await MainActor.run {
                 showAlert(
                     title: NSLocalizedString("Unknown servers!", comment: "alert title"),
-                    message: NSLocalizedString(
-                        "Without Tor or VPN, your IP address will be visible to these XFTP relays: \(srvs).",
-                        comment: "alert message"
+                    message: (
+                        NSLocalizedString("Without Tor or VPN, your IP address will be visible to these XFTP relays: \(srvs).", comment: "alert message") +
+                        (otherErrsStr != "" ? "\n\n" + NSLocalizedString("Other file errors:\n\(otherErrsStr)", comment: "alert message") : "")
                     ),
                     buttonTitle: NSLocalizedString("Download", comment: "alert button"),
                     buttonAction: {
@@ -1143,14 +1153,10 @@ func receiveFiles(user: any UserLike, fileIds: [Int64], userApprovedRelays: Bool
                 }
             }
         } else if otherFileErrs.count > 1 { // If there are multiple other errors, we show general alert
-            let count = otherFileErrs.count
             await MainActor.run {
                 showAlert(
                     NSLocalizedString("Error receiving file", comment: "alert title"),
-                    message: String.localizedStringWithFormat(
-                        NSLocalizedString("Failed to receive %d files.", comment: "alert message"),
-                        count
-                    )
+                    message: NSLocalizedString("File errors:\n\(otherErrsStr)", comment: "alert message")
                 )
             }
         }
