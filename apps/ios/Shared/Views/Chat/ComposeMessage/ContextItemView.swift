@@ -34,7 +34,7 @@ struct ContextItemView: View {
                      msgContentView(lines: 3, contextItem: singleItem)
                  }
             } else {
-                Text("Forwarding \(contextItems.count) messages")
+                Text("Forwarding \(contextItems.count) message(s)").italic()
             }
             Spacer()
             Button {
