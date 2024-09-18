@@ -720,7 +720,7 @@
     <string name="large_file">Nagy fájl!</string>
     <string name="info_row_local_name">Helyi név</string>
     <string name="network_and_servers">Hálózat és kiszolgálók</string>
-    <string name="settings_notification_preview_title">Értesítés előnézet</string>
+    <string name="settings_notification_preview_title">Értesítés előnézete</string>
     <string name="v5_4_link_mobile_desktop">Társítsa össze a mobil és asztali alkalmazásokat! 🔗</string>
     <string name="conn_level_desc_indirect">közvetett (%1$s)</string>
     <string name="v4_6_reduced_battery_usage_descr">Hamarosan további fejlesztések érkeznek!</string>
@@ -930,7 +930,7 @@
     <string name="group_members_2">%s és %s</string>
     <string name="chat_preferences_you_allow">Engedélyezve</string>
     <string name="v4_5_reduced_battery_usage">Csökkentett akkumulátor-használat</string>
-    <string name="save_and_notify_contacts">Mentés és ismerősök értesítése</string>
+    <string name="save_and_notify_contacts">Mentés és az ismerősök értesítése</string>
     <string name="group_welcome_preview">Előnézet</string>
     <string name="use_chat">Csevegés használata</string>
     <string name="share_verb">Megosztás</string>
