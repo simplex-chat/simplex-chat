@@ -36,8 +36,8 @@ struct ContextItemView: View {
             } else {
                 Text(
                     chat.chatInfo.chatType == .local
-                    ? "Saving \(contextItems.count) message(s)"
-                    : "Forwarding \(contextItems.count) message(s)"
+                    ? "Saving \(contextItems.count) messages"
+                    : "Forwarding \(contextItems.count) messages"
                 )
                 .italic()
             }
