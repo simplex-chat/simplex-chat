@@ -106,7 +106,7 @@ import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), Migrati
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
-import Simplex.Messaging.Client (NetworkConfig (..), ProxyClientError (..), SocksMode (SMAlways), defaultNetworkConfig)
+import Simplex.Messaging.Client (NetworkConfig (..), ProxyClientError (..), SocksMode (SMAlways), defaultNetworkConfig, textToHostMode)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -120,7 +120,7 @@ import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport (TransportError (..))
-import Simplex.Messaging.Transport.Client (defaultSocksProxy)
+import Simplex.Messaging.Transport.Client (defaultSocksProxyWithAuth)
 import Simplex.Messaging.Util
 import Simplex.Messaging.Version
 import Simplex.RemoteControl.Invitation (RCInvitation (..), RCSignedInvitation (..))
@@ -342,11 +342,11 @@ newChatController
               userServers user' = useServers config protocol <$> withTransaction chatStore (`getProtocolServers` user')
 
 updateNetworkConfig :: NetworkConfig -> SimpleNetCfg -> NetworkConfig
-updateNetworkConfig cfg SimpleNetCfg {socksProxy, socksMode, smpProxyMode_, smpProxyFallback_, tcpTimeout_, logTLSErrors} =
+updateNetworkConfig cfg SimpleNetCfg {socksProxy, socksMode, hostMode, requiredHostMode, smpProxyMode_, smpProxyFallback_, tcpTimeout_, logTLSErrors} =
   let cfg1 = maybe cfg (\smpProxyMode -> cfg {smpProxyMode}) smpProxyMode_
       cfg2 = maybe cfg1 (\smpProxyFallback -> cfg1 {smpProxyFallback}) smpProxyFallback_
       cfg3 = maybe cfg2 (\tcpTimeout -> cfg2 {tcpTimeout, tcpConnectTimeout = (tcpTimeout * 3) `div` 2}) tcpTimeout_
-   in cfg3 {socksProxy, socksMode, logTLSErrors}
+   in cfg3 {socksProxy, socksMode, hostMode, requiredHostMode, logTLSErrors}
 
 withChatLock :: String -> CM a -> CM a
 withChatLock name action = asks chatLock >>= \l -> withLock l name action
@@ -995,7 +995,7 @@ processChatCommand' vr = \case
               Just err -> pure $ itemIdWithoutFile err
               Nothing -> case fileSource of
                 Just CryptoFile {filePath} -> do
-                  exists <- doesFileExist . maybe filePath (</> filePath) =<< chatReadVar filesFolder
+                  exists <- doesFileExist =<< lift (toFSFilePath filePath)
                   pure $ if exists then (Just itemId, Nothing) else itemIdWithoutFile FFEMissing
                 Nothing -> pure $ itemIdWithoutFile FFEMissing
             where
@@ -1079,27 +1079,28 @@ processChatCommand' vr = \case
             Just CIFFUnknown -> ciff
             Just prevCIFF -> Just prevCIFF
           forwardContent :: ChatItem c d -> MsgContent -> CM (Maybe (MsgContent, Maybe CryptoFile))
-          forwardContent ChatItem {file = Nothing} mc = pure $ Just (mc, Nothing)
-          forwardContent ChatItem {file = Just ciFile} mc = case ciFile of
-            CIFile {fileName, fileSource = Just fromCF@CryptoFile {filePath}} ->
-              chatReadVar filesFolder >>= \case
-                Nothing ->
-                  ifM (doesFileExist filePath) (pure $ Just (mc, Just fromCF)) (pure contentWithoutFile)
-                Just filesFolder -> do
-                  let fsFromPath = filesFolder </> filePath
-                  ifM
-                    (doesFileExist fsFromPath)
-                    ( do
-                        fsNewPath <- liftIO $ filesFolder `uniqueCombine` fileName
-                        liftIO $ B.writeFile fsNewPath "" -- create empty file
-                        encrypt <- chatReadVar encryptLocalFiles
-                        cfArgs <- if encrypt then Just <$> (atomically . CF.randomArgs =<< asks random) else pure Nothing
-                        let toCF = CryptoFile fsNewPath cfArgs
-                        -- to keep forwarded file in case original is deleted
-                        liftIOEither $ runExceptT $ withExceptT (ChatError . CEInternalError . show) $ copyCryptoFile (fromCF {filePath = fsFromPath} :: CryptoFile) toCF
-                        pure $ Just (mc, Just (toCF {filePath = takeFileName fsNewPath} :: CryptoFile))
-                    )
-                    (pure contentWithoutFile)
+          forwardContent ChatItem {file} mc = case file of
+            Nothing -> pure $ Just (mc, Nothing)
+            Just CIFile {fileName, fileStatus, fileSource = Just fromCF@CryptoFile {filePath}}
+              | ciFileLoaded fileStatus ->
+                  chatReadVar filesFolder >>= \case
+                    Nothing ->
+                      ifM (doesFileExist filePath) (pure $ Just (mc, Just fromCF)) (pure contentWithoutFile)
+                    Just filesFolder -> do
+                      let fsFromPath = filesFolder </> filePath
+                      ifM
+                        (doesFileExist fsFromPath)
+                        ( do
+                            fsNewPath <- liftIO $ filesFolder `uniqueCombine` fileName
+                            liftIO $ B.writeFile fsNewPath "" -- create empty file
+                            encrypt <- chatReadVar encryptLocalFiles
+                            cfArgs <- if encrypt then Just <$> (atomically . CF.randomArgs =<< asks random) else pure Nothing
+                            let toCF = CryptoFile fsNewPath cfArgs
+                            -- to keep forwarded file in case original is deleted
+                            liftIOEither $ runExceptT $ withExceptT (ChatError . CEInternalError . show) $ copyCryptoFile (fromCF {filePath = fsFromPath} :: CryptoFile) toCF
+                            pure $ Just (mc, Just (toCF {filePath = takeFileName fsNewPath} :: CryptoFile))
+                        )
+                        (pure contentWithoutFile)
             _ -> pure contentWithoutFile
             where
               contentWithoutFile = case mc of
@@ -3444,7 +3445,7 @@ callStatusItemContent user Contact {contactId} chatItemId receivedStatus = do
 -- used during file transfer for actual operations with file system
 toFSFilePath :: FilePath -> CM' FilePath
 toFSFilePath f =
-  maybe f (</> f) <$> (readTVarIO =<< asks filesFolder)
+  maybe f (</> f) <$> (chatReadVar' filesFolder)
 
 setFileToEncrypt :: RcvFileTransfer -> CM RcvFileTransfer
 setFileToEncrypt ft@RcvFileTransfer {fileId} = do
@@ -3566,7 +3567,9 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
     relaysNotApproved :: [XFTPServer] -> CM ()
     relaysNotApproved unknownSrvs = do
       aci_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
-      forM_ aci_ $ \aci -> toView $ CRChatItemUpdated user aci
+      forM_ aci_ $ \aci -> do
+        cleanupACIFile aci
+        toView $ CRChatItemUpdated user aci
       throwChatError $ CEFileNotApproved fileId unknownSrvs
 
 getNetworkConfig :: CM' NetworkConfig
@@ -4290,14 +4293,22 @@ processAgentMsgRcvFile _corrId aFileId msg = do
         RFERR e
           | e == FILE NOT_APPROVED -> do
               aci_ <- resetRcvCIFileStatus user fileId CIFSRcvAborted
+              forM_ aci_ cleanupACIFile
               agentXFTPDeleteRcvFile aFileId fileId
               forM_ aci_ $ \aci -> toView $ CRChatItemUpdated user aci
           | otherwise -> do
-              ci <- withStore $ \db -> do
+              aci_ <- withStore $ \db -> do
                 liftIO $ updateFileCancelled db user fileId (CIFSRcvError $ agentFileError e)
                 lookupChatItemByFileId db vr user fileId
+              forM_ aci_ cleanupACIFile
               agentXFTPDeleteRcvFile aFileId fileId
-              toView $ CRRcvFileError user ci e ft
+              toView $ CRRcvFileError user aci_ e ft
+
+cleanupACIFile :: AChatItem -> CM ()
+cleanupACIFile (AChatItem _ _ _ ChatItem {file = Just CIFile {fileSource = Just CryptoFile {filePath}}}) = do
+  fsFilePath <- lift $ toFSFilePath filePath
+  removeFile fsFilePath `catchChatError` \_ -> pure ()
+cleanupACIFile _ = pure ()
 
 processAgentMessageConn :: VersionRangeChat -> User -> ACorrId -> ConnId -> AEvent 'AEConn -> CM ()
 processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = do
@@ -4534,10 +4545,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           void $ continueSending connEntity conn
           sentMsgDeliveryEvent conn msgId
           checkSndInlineFTComplete conn msgId
-          ci_ <- withStore $ \db -> do
-            ci_ <- updateDirectItemStatus' db ct conn msgId (CISSndSent SSPComplete)
-            forM ci_ $ \ci -> liftIO $ setDirectSndChatItemViaProxy db user ct ci (isJust proxy)
-          forM_ ci_ $ \ci -> toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
+          cis <- withStore $ \db -> do
+            cis <- updateDirectItemsStatus' db ct conn msgId (CISSndSent SSPComplete)
+            liftIO $ forM cis $ \ci -> setDirectSndChatItemViaProxy db user ct ci (isJust proxy)
+          let acis = map ctItem cis
+          unless (null acis) $ toView $ CRChatItemsStatusesUpdated user acis
+          where
+            ctItem = AChatItem SCTDirect SMDSnd (DirectChat ct)
         SWITCH qd phase cStats -> do
           toView $ CRContactSwitch user ct (SwitchProgress qd phase cStats)
           when (phase `elem` [SPStarted, SPCompleted]) $ case qd of
@@ -4593,7 +4607,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           processConnMERR connEntity conn err
         MERRS msgIds err -> do
           -- error cannot be AUTH error here
-          updateDirectItemsStatus ct conn (L.toList msgIds) (CISSndError $ agentSndError err)
+          updateDirectItemsStatusMsgs ct conn (L.toList msgIds) (CISSndError $ agentSndError err)
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
         ERR err -> do
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
@@ -4947,7 +4961,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         continued <- continueSending connEntity conn
         sentMsgDeliveryEvent conn msgId
         checkSndInlineFTComplete conn msgId
-        updateGroupItemStatus gInfo m conn msgId GSSSent (Just $ isJust proxy)
+        updateGroupItemsStatus gInfo m conn msgId GSSSent (Just $ isJust proxy)
         when continued $ sendPendingGroupMessages user m conn
       SWITCH qd phase cStats -> do
         toView $ CRGroupMemberSwitch user gInfo m (SwitchProgress qd phase cStats)
@@ -4991,10 +5005,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         continued <- continueSending connEntity conn
         when continued $ sendPendingGroupMessages user m conn
       MWARN msgId err -> do
-        withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) (GSSWarning $ agentSndError err)
+        withStore' $ \db -> updateGroupItemsErrorStatus db msgId (groupMemberId' m) (GSSWarning $ agentSndError err)
         processConnMWARN connEntity conn err
       MERR msgId err -> do
-        withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) (GSSError $ agentSndError err)
+        withStore' $ \db -> updateGroupItemsErrorStatus db msgId (groupMemberId' m) (GSSError $ agentSndError err)
         -- group errors are silenced to reduce load on UI event log
         -- toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
         processConnMERR connEntity conn err
@@ -5002,7 +5016,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         let newStatus = GSSError $ agentSndError err
         -- error cannot be AUTH error here
         withStore' $ \db -> forM_ msgIds $ \msgId ->
-          updateGroupItemErrorStatus db msgId (groupMemberId' m) newStatus `catchAll_` pure ()
+          updateGroupItemsErrorStatus db msgId (groupMemberId' m) newStatus `catchAll_` pure ()
         toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
       ERR err -> do
         toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
@@ -5010,10 +5024,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       -- TODO add debugging output
       _ -> pure ()
       where
-        updateGroupItemErrorStatus :: DB.Connection -> AgentMsgId -> GroupMemberId -> GroupSndStatus -> IO ()
-        updateGroupItemErrorStatus db msgId groupMemberId newStatus = do
-          chatItemId_ <- getChatItemIdByAgentMsgId db connId msgId
-          forM_ chatItemId_ $ \itemId -> updateGroupMemSndStatus' db itemId groupMemberId newStatus
+        updateGroupItemsErrorStatus :: DB.Connection -> AgentMsgId -> GroupMemberId -> GroupSndStatus -> IO ()
+        updateGroupItemsErrorStatus db msgId groupMemberId newStatus = do
+          itemIds <- getChatItemIdsByAgentMsgId db connId msgId
+          forM_ itemIds $ \itemId -> updateGroupMemSndStatus' db itemId groupMemberId newStatus
 
     agentMsgDecryptError :: AgentCryptoError -> (MsgDecryptError, Word32)
     agentMsgDecryptError = \case
@@ -6685,43 +6699,42 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         withStore' $ \db -> updateSndMsgDeliveryStatus db connId agentMsgId $ MDSSndRcvd msgRcptStatus
         updateDirectItemStatus ct conn agentMsgId $ CISSndRcvd msgRcptStatus SSPComplete
 
-    -- TODO [batch send] update status of all messages in batch
-    -- - this is for when we implement identifying inactive connections
-    -- - regular messages sent in batch would all be marked as delivered by a single receipt
-    -- - repeat for directMsgReceived if same logic is applied to direct messages
-    -- - getChatItemIdByAgentMsgId to return [ChatItemId]
     groupMsgReceived :: GroupInfo -> GroupMember -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> CM ()
     groupMsgReceived gInfo m conn@Connection {connId} msgMeta msgRcpts = do
       checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta `catchChatError` \_ -> pure ()
       forM_ msgRcpts $ \MsgReceipt {agentMsgId, msgRcptStatus} -> do
         withStore' $ \db -> updateSndMsgDeliveryStatus db connId agentMsgId $ MDSSndRcvd msgRcptStatus
-        updateGroupItemStatus gInfo m conn agentMsgId (GSSRcvd msgRcptStatus) Nothing
+        updateGroupItemsStatus gInfo m conn agentMsgId (GSSRcvd msgRcptStatus) Nothing
 
-    updateDirectItemsStatus :: Contact -> Connection -> [AgentMsgId] -> CIStatus 'MDSnd -> CM ()
-    updateDirectItemsStatus ct conn msgIds newStatus = do
-      cis_ <- withStore' $ \db -> forM msgIds $ \msgId -> runExceptT $ updateDirectItemStatus' db ct conn msgId newStatus
-      -- only send the last expired item event to view
-      case reverse $ catMaybes $ rights cis_ of
-        ci : _ -> toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
-        _ -> pure ()
+    -- Searches chat items for many agent message IDs and updates their status
+    updateDirectItemsStatusMsgs :: Contact -> Connection -> [AgentMsgId] -> CIStatus 'MDSnd -> CM ()
+    updateDirectItemsStatusMsgs ct conn msgIds newStatus = do
+      cis <- withStore' $ \db -> forM msgIds $ \msgId -> runExceptT $ updateDirectItemsStatus' db ct conn msgId newStatus
+      let acis = map ctItem $ concat $ rights cis
+      unless (null acis) $ toView $ CRChatItemsStatusesUpdated user acis
+      where
+        ctItem = AChatItem SCTDirect SMDSnd (DirectChat ct)
 
     updateDirectItemStatus :: Contact -> Connection -> AgentMsgId -> CIStatus 'MDSnd -> CM ()
     updateDirectItemStatus ct conn msgId newStatus = do
-      ci_ <- withStore $ \db -> updateDirectItemStatus' db ct conn msgId newStatus
-      forM_ ci_ $ \ci -> toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
+      cis <- withStore $ \db -> updateDirectItemsStatus' db ct conn msgId newStatus
+      let acis = map ctItem cis
+      unless (null acis) $ toView $ CRChatItemsStatusesUpdated user acis
+      where
+        ctItem = AChatItem SCTDirect SMDSnd (DirectChat ct)
 
-    updateDirectItemStatus' :: DB.Connection -> Contact -> Connection -> AgentMsgId -> CIStatus 'MDSnd -> ExceptT StoreError IO (Maybe (ChatItem 'CTDirect 'MDSnd))
-    updateDirectItemStatus' db ct@Contact {contactId} Connection {connId} msgId newStatus =
-      liftIO (getDirectChatItemByAgentMsgId db user contactId connId msgId) >>= \case
-        Just (CChatItem SMDSnd ChatItem {meta = CIMeta {itemStatus = CISSndRcvd _ _}}) -> pure Nothing
-        Just (CChatItem SMDSnd ChatItem {meta = CIMeta {itemId, itemStatus}})
-          | itemStatus == newStatus -> pure Nothing
-          | otherwise -> Just <$> updateDirectChatItemStatus db user ct itemId newStatus
-        _ -> pure Nothing
-
-    updateGroupMemSndStatus :: ChatItemId -> GroupMemberId -> GroupSndStatus -> CM Bool
-    updateGroupMemSndStatus itemId groupMemberId newStatus =
-      withStore' $ \db -> updateGroupMemSndStatus' db itemId groupMemberId newStatus
+    updateDirectItemsStatus' :: DB.Connection -> Contact -> Connection -> AgentMsgId -> CIStatus 'MDSnd -> ExceptT StoreError IO [ChatItem 'CTDirect 'MDSnd]
+    updateDirectItemsStatus' db ct@Contact {contactId} Connection {connId} msgId newStatus = do
+      items <- liftIO $ getDirectChatItemsByAgentMsgId db user contactId connId msgId
+      catMaybes <$> mapM updateItem items
+      where
+        updateItem :: CChatItem 'CTDirect -> ExceptT StoreError IO (Maybe (ChatItem 'CTDirect 'MDSnd))
+        updateItem = \case
+          (CChatItem SMDSnd ChatItem {meta = CIMeta {itemStatus = CISSndRcvd _ _}}) -> pure Nothing
+          (CChatItem SMDSnd ChatItem {meta = CIMeta {itemId, itemStatus}})
+            | itemStatus == newStatus -> pure Nothing
+            | otherwise -> Just <$> updateDirectChatItemStatus db user ct itemId newStatus
+          _ -> pure Nothing
 
     updateGroupMemSndStatus' :: DB.Connection -> ChatItemId -> GroupMemberId -> GroupSndStatus -> IO Bool
     updateGroupMemSndStatus' db itemId groupMemberId newStatus =
@@ -6732,20 +6745,29 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           | otherwise -> updateGroupSndStatus db itemId groupMemberId newStatus $> True
         _ -> pure False
 
-    updateGroupItemStatus :: GroupInfo -> GroupMember -> Connection -> AgentMsgId -> GroupSndStatus -> Maybe Bool -> CM ()
-    updateGroupItemStatus gInfo@GroupInfo {groupId} GroupMember {groupMemberId} Connection {connId} msgId newMemStatus viaProxy_ =
-      withStore' (\db -> getGroupChatItemByAgentMsgId db user groupId connId msgId) >>= \case
-        Just (CChatItem SMDSnd ChatItem {meta = CIMeta {itemStatus = CISSndRcvd _ SSPComplete}}) -> pure ()
-        Just (CChatItem SMDSnd ChatItem {meta = CIMeta {itemId, itemStatus}}) -> do
-          forM_ viaProxy_ $ \viaProxy -> withStore' $ \db -> setGroupSndViaProxy db itemId groupMemberId viaProxy
-          memStatusChanged <- updateGroupMemSndStatus itemId groupMemberId newMemStatus
-          when memStatusChanged $ do
-            memStatusCounts <- withStore' (`getGroupSndStatusCounts` itemId)
-            let newStatus = membersGroupItemStatus memStatusCounts
-            when (newStatus /= itemStatus) $ do
-              chatItem <- withStore $ \db -> updateGroupChatItemStatus db user gInfo itemId newStatus
-              toView $ CRChatItemStatusUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) chatItem)
-        _ -> pure ()
+    updateGroupItemsStatus :: GroupInfo -> GroupMember -> Connection -> AgentMsgId -> GroupSndStatus -> Maybe Bool -> CM ()
+    updateGroupItemsStatus gInfo@GroupInfo {groupId} GroupMember {groupMemberId} Connection {connId} msgId newMemStatus viaProxy_ = do
+      items <- withStore' (\db -> getGroupChatItemsByAgentMsgId db user groupId connId msgId)
+      cis <- catMaybes <$> withStore (\db -> mapM (updateItem db) items)
+      let acis = map gItem cis
+      unless (null acis) $ toView $ CRChatItemsStatusesUpdated user acis
+      where
+        gItem = AChatItem SCTGroup SMDSnd (GroupChat gInfo)
+        updateItem :: DB.Connection -> CChatItem 'CTGroup -> ExceptT StoreError IO (Maybe (ChatItem 'CTGroup 'MDSnd))
+        updateItem db = \case
+          (CChatItem SMDSnd ChatItem {meta = CIMeta {itemStatus = CISSndRcvd _ SSPComplete}}) -> pure Nothing
+          (CChatItem SMDSnd ChatItem {meta = CIMeta {itemId, itemStatus}}) -> do
+            forM_ viaProxy_ $ \viaProxy -> liftIO $ setGroupSndViaProxy db itemId groupMemberId viaProxy
+            memStatusChanged <- liftIO $ updateGroupMemSndStatus' db itemId groupMemberId newMemStatus
+            if memStatusChanged
+              then do
+                memStatusCounts <- liftIO $ getGroupSndStatusCounts db itemId
+                let newStatus = membersGroupItemStatus memStatusCounts
+                if newStatus /= itemStatus
+                  then Just <$> updateGroupChatItemStatus db user gInfo itemId newStatus
+                  else pure Nothing
+              else pure Nothing
+          _ -> pure Nothing
 
 createContactPQSndItem :: User -> Contact -> Connection -> PQEncryption -> CM (Contact, Connection)
 createContactPQSndItem user ct conn@Connection {pqSndEnabled} pqSndEnabled' =
@@ -8309,14 +8331,16 @@ chatCommandP =
         <|> ("yes" $> TMEEnableKeepTTL)
         <|> ("no" $> TMEDisableKeepTTL)
     netCfgP = do
-      socksProxy <- "socks=" *> ("off" $> Nothing <|> "on" $> Just defaultSocksProxy <|> Just <$> strP)
+      socksProxy <- "socks=" *> ("off" $> Nothing <|> "on" $> Just defaultSocksProxyWithAuth <|> Just <$> strP)
       socksMode <- " socks-mode=" *> strP <|> pure SMAlways
+      hostMode <- " host-mode=" *> (textToHostMode . safeDecodeUtf8 <$?> A.takeTill (== ' ')) <|> pure (defaultHostMode socksProxy)
+      requiredHostMode <- " required-host-mode" *> onOffP <|> pure False
       smpProxyMode_ <- optional $ " smp-proxy=" *> strP
       smpProxyFallback_ <- optional $ " smp-proxy-fallback=" *> strP
       t_ <- optional $ " timeout=" *> A.decimal
       logTLSErrors <- " log=" *> onOffP <|> pure False
       let tcpTimeout_ = (1000000 *) <$> t_
-      pure $ SimpleNetCfg {socksProxy, socksMode, smpProxyMode_, smpProxyFallback_, tcpTimeout_, logTLSErrors}
+      pure $ SimpleNetCfg {socksProxy, socksMode, hostMode, requiredHostMode, smpProxyMode_, smpProxyFallback_, tcpTimeout_, logTLSErrors}
     dbKeyP = nonEmptyKey <$?> strP
     nonEmptyKey k@(DBEncryptionKey s) = if BA.null s then Left "empty key" else Right k
     dbEncryptionConfig currentKey newKey = DBEncryptionConfig {currentKey, newKey, keepKey = Just False}

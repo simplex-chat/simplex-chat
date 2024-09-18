@@ -444,8 +444,8 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                       for (apiResp in controller.messagesChannel) {
                         val msg = apiResp.resp
                         if (apiResp.remoteHostId == chatRh &&
-                          msg is CR.ChatItemStatusUpdated &&
-                          msg.chatItem.chatItem.id == cItem.id
+                          msg is CR.ChatItemsStatusesUpdated &&
+                          msg.chatItems.any { it.chatItem.id == cItem.id }
                         ) {
                           ciInfo = loadChatItemInfo() ?: return@withContext
                           initialCiInfo = ciInfo
