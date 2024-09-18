@@ -651,9 +651,15 @@ private suspend fun verify(rhId: Long?, text: String?, close: () -> Unit): Boole
 }
 
 private suspend fun connect(rhId: Long?, link: String, close: () -> Unit, cleanup: (() -> Unit)? = null) {
+  val uri = uriCreateOrNull(link)
+  if (uri == null) {
+    cleanup?.invoke()
+    showIncorrectSimplexLinkAlert()
+    return
+  }
   planAndConnect(
     rhId,
-    uriCreateOrNull(link) ?: return,
+    uri,
     close = close,
     cleanup = cleanup,
     incognito = null

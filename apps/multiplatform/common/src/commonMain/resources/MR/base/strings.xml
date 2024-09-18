@@ -2135,6 +2135,8 @@
   <string name="connect_plan_you_are_already_joining_the_group_via_this_link">You are already joining the group via this link.</string>
   <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[You are already in group <b>%1$s</b>.]]></string>
   <string name="connect_plan_connect_via_link">Connect via link?</string>
+  <string name="connect_plan_incorrect_link_title">Incorrect link</string>
+  <string name="connect_plan_incorrect_link_desc">Make sure the link was not modified before using it.</string>
 
   <!-- Errors -->
   <string name="agent_critical_error_title">Critical error</string>

@@ -563,10 +563,16 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
 }
 
 private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<String?>, cleanup: (() -> Unit)?) {
+  val uri = uriCreateOrNull(link)
+  if (uri == null) {
+    cleanup?.invoke()
+    showIncorrectSimplexLinkAlert()
+    return
+  }
   withBGApi {
     planAndConnect(
       chatModel.remoteHostId(),
-      uriCreateOrNull(link) ?: return@withBGApi,
+      uri,
       incognito = null,
       filterKnownContact = { searchChatFilteredBySimplexLink.value = it.id },
       filterKnownGroup = { searchChatFilteredBySimplexLink.value = it.id },

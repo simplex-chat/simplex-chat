@@ -494,3 +494,10 @@ fun openKnownGroup(chatModel: ChatModel, rhId: Long?, close: (() -> Unit)?, grou
     }
   }
 }
+
+fun showIncorrectSimplexLinkAlert() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.connect_plan_incorrect_link_title),
+    text = generalGetString(MR.strings.connect_plan_incorrect_link_desc)
+  )
+}
