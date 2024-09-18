@@ -118,10 +118,11 @@ private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchVal
   }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val users by remember { derivedStateOf { chatModel.users.filter { u -> u.user.activeUser || !u.user.hidden } } }
+  val content = remember { chatModel.sharedContent }.value
   val navButton: @Composable RowScope.() -> Unit = {
     when {
       showSearch -> NavigationButtonBack(hideSearchOnBack)
-      (users.size > 1 || chatModel.remoteHosts.isNotEmpty()) && remember { chatModel.sharedContent }.value !is SharedContent.Forward -> {
+      (users.size > 1 || chatModel.remoteHosts.isNotEmpty()) && content !is SharedContent.Forward && content !is SharedContent.BulkForward -> {
         val allRead = users
           .filter { u -> !u.user.activeUser && !u.user.hidden }
           .all { u -> u.unreadCount == 0 }
