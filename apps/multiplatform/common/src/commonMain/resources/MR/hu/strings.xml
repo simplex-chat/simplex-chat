@@ -52,7 +52,7 @@
     <string name="all_your_contacts_will_remain_connected_update_sent">Ismerőseivel kapcsolatban marad. A profil változtatások frissítésre kerülnek az ismerősöknél.</string>
     <string name="v4_5_transport_isolation_descr">A csevegési profil által (alap beállítás), vagy a kapcsolat által (BÉTA).</string>
     <string name="connect__a_new_random_profile_will_be_shared">Egy új véletlenszerű profil lesz megosztva.</string>
-    <string name="allow_voice_messages_only_if">A hangüzenetek küldése kizárólag abban az esetben van engedélyezve, ha az ismerőse is engedélyezi.</string>
+    <string name="allow_voice_messages_only_if">A hangüzenetek küldése csak abban az esetben van engedélyezve, ha az ismerőse is engedélyezi.</string>
     <string name="app_version_code">Az alkalmazás build száma: %s</string>
     <string name="audio_video_calls">Hang- és videóhívások</string>
     <string name="network_settings">Speciális hálózati beállítások</string>
@@ -84,7 +84,7 @@
     <string name="alert_title_msg_bad_id">Téves üzenet ID</string>
     <string name="allow_your_contacts_adding_message_reactions">Az üzenetreakciók küldése engedélyezve van az ismerősei számára.</string>
     <string name="allow_to_send_voice">A hangüzenetek küldése engedélyezve van.</string>
-    <string name="allow_message_reactions_only_if">Az üzenetreakciók küldése kizárólag abban az esetben van engedélyezve, ha az ismerőse is engedélyezi.</string>
+    <string name="allow_message_reactions_only_if">Az üzenetreakciók küldése csak abban az esetben van engedélyezve, ha az ismerőse is engedélyezi.</string>
     <string name="back">Vissza</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Kikapcsolható a beállításokban</b> – az értesítések továbbra is megjelenítésre kerülnek amíg az alkalmazás fut.]]></string>
     <string name="v4_2_group_links_desc">Az adminok hivatkozásokat hozhatnak létre a csoportokhoz való csatlakozáshoz.</string>
@@ -122,7 +122,7 @@
     <string name="turn_off_battery_optimization_button">Engedélyezés</string>
     <string name="all_your_contacts_will_remain_connected">Minden ismerősével kapcsolatban marad.</string>
     <string name="icon_descr_cancel_live_message">Élő csevegési üzenet visszavonása</string>
-    <string name="allow_irreversible_message_deletion_only_if">Az üzenetek végleges törlése kizárólag abban az esetben van engedélyezve, ha az ismerőse is engedélyezi. (24 óra)</string>
+    <string name="allow_irreversible_message_deletion_only_if">Az üzenetek végleges törlése csak abban az esetben van engedélyezve, ha az ismerőse is engedélyezi. (24 óra)</string>
     <string name="v4_6_audio_video_calls">Hang- és videóhívások</string>
     <string name="integrity_msg_bad_hash">hibás az üzenet hasító értéke</string>
     <string name="notifications_mode_service">Mindig fut</string>
@@ -154,7 +154,7 @@
     <string name="settings_section_title_icon">ALKALMAZÁS IKON</string>
     <string name="v4_3_improved_server_configuration_desc">Kiszolgáló hozzáadása QR-kód beolvasásával.</string>
     <string name="allow_to_send_disappearing">Az eltűnő üzenetek küldése engedélyezve van.</string>
-    <string name="allow_disappearing_messages_only_if">Az eltűnő üzenetek küldése kizárólag abban az esetben van engedélyezve, ha az ismerőse is engedélyezi.</string>
+    <string name="allow_disappearing_messages_only_if">Az eltűnő üzenetek küldése csak abban az esetben van engedélyezve, ha az ismerőse is engedélyezi.</string>
     <string name="icon_descr_audio_off">Hang kikapcsolva</string>
     <string name="allow_direct_messages">A közvetlen üzenetek küldése a tagok között engedélyezve van.</string>
     <string name="settings_section_title_app">Alkalmazás</string>
@@ -164,7 +164,7 @@
     <string name="la_auth_failed">Sikertelen hitelesítés</string>
     <string name="block_member_desc">Minden %s által írt új üzenet elrejtésre kerül!</string>
     <string name="app_version_name">Alkalmazás verzió: v%s</string>
-    <string name="allow_calls_only_if">A hívások kezdeményezése kizárólag abban az esetben van engedélyezve, ha az ismerőse is engedélyezi.</string>
+    <string name="allow_calls_only_if">A hívások kezdeményezése csak abban az esetben van engedélyezve, ha az ismerőse is engedélyezi.</string>
     <string name="smp_servers_add">Kiszolgáló hozzáadása</string>
     <string name="icon_descr_audio_on">Hang bekapcsolva</string>
     <string name="audio_call_no_encryption">hanghívás (nem e2e titkosított)</string>
@@ -244,7 +244,7 @@
     <string name="rcv_direct_event_contact_deleted">törölt ismerős</string>
     <string name="delete_member_message__question">Csoporttag üzenetének törlése?</string>
     <string name="chat_is_running">A csevegés fut</string>
-    <string name="share_one_time_link">Egyszer használatos meghívóhivatkozás létrehozása</string>
+    <string name="share_one_time_link">Egyszer használatos meghívó-hivatkozás létrehozása</string>
     <string name="delete_link">Törlés</string>
     <string name="notifications_mode_periodic_desc">Új üzenetek ellenőrzése 10 percenként, legfeljebb 1 percen keresztül</string>
     <string name="delete_database">Adatbázis törlése</string>
@@ -533,7 +533,7 @@
     <string name="v5_4_better_groups_descr">Gyorsabb csatlakozás és megbízhatóbb üzenetkézbesítés.</string>
     <string name="enable_lock">Zárolás engedélyezése</string>
     <string name="settings_section_title_help">SEGÍTSÉG</string>
-    <string name="group_is_decentralized">Teljesen decentralizált - kizárólag tagok számára látható.</string>
+    <string name="group_is_decentralized">Teljesen decentralizált - csak a tagok számára látható.</string>
     <string name="file_with_path">Fájl: %s</string>
     <string name="icon_descr_hang_up">Hívás befejezése</string>
     <string name="error_deleting_link_for_group">Hiba a csoporthivatkozás törlésekor</string>
@@ -632,7 +632,7 @@
     <string name="v5_2_favourites_filter">Csevegési üzenetek gyorsabb megtalálása</string>
     <string name="import_theme">Téma importálása</string>
     <string name="import_theme_error">Hiba a téma importálásakor</string>
-    <string name="notification_display_mode_hidden_desc">Ismerős és üzenet elrejtése</string>
+    <string name="notification_display_mode_hidden_desc">Ismerős nevének és az üzenet tartalmának elrejtése</string>
     <string name="incompatible_database_version">Nem kompatibilis adatbázis verzió</string>
     <string name="how_simplex_works">Hogyan működik a SimpleX</string>
     <string name="desktop_incompatible_version">Nem kompatibilis verzió</string>
@@ -671,14 +671,14 @@
     <string name="hide_dev_options">Elrejt:</string>
     <string name="error_creating_member_contact">Hiba az ismerőssel történő kapcsolat létrehozásában</string>
     <string name="enter_one_ICE_server_per_line">ICE-kiszolgálók (soronként egy)</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Ha nem tud személyesen találkozni, <b>beolvashatja a QR-kódot a videohívásban</b>, vagy az ismerőse megoszthat egy meghívóhivatkozást.</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Ha nem tud személyesen találkozni, <b>beolvashatja a QR-kódot a videohívásban</b>, vagy az ismerőse megoszthat egy meghívó-hivatkozást.</string>
     <string name="if_you_enter_passcode_data_removed">Ha az alkalmazás megnyitásakor megadja ezt a jelkódot, az összes alkalmazásadat véglegesen eltávolításra kerül!</string>
     <string name="if_you_cant_meet_in_person">Ha nem tud személyesen találkozni, mutassa meg a QR-kódot egy videohívás közben, vagy ossza meg a hivatkozást.</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Ha nem tud személyesen találkozni, <b>mutassa meg a QR-kódot a videohívásban</b>, vagy ossza meg a hivatkozást.]]></string>
     <string name="network_disable_socks_info">Megerősítés esetén az üzenetküldő kiszolgálók látni fogják az IP-címét és a szolgáltatóját – azt, hogy mely kiszolgálókhoz kapcsolódik.</string>
     <string name="image_will_be_received_when_contact_completes_uploading">A kép akkor érkezik meg, amikor a küldője befejezte annak feltöltését.</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 asztali számítógép: a megjelenített QR-kód beolvasása az alkalmazásból, a <b>QR kód beolvasásával</b>.]]></string>
-    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">A kapott SimpleX Chat-meghívóhivatkozását megnyithatja a böngészőjében:</string>
+    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">A kapott SimpleX Chat-meghívó-hivatkozását megnyithatja a böngészőjében:</string>
     <string name="if_you_enter_self_destruct_code">Ha az alkalmazás megnyitásakor megadja az önmegsemmisítő jelkódot:</string>
     <string name="found_desktop">Megtalált számítógép</string>
     <string name="desktop_devices">Számítógépek</string>
@@ -792,7 +792,7 @@
     <string name="no_contacts_to_add">Nincs hozzáadandó ismerős</string>
     <string name="v4_5_message_draft">Üzenetvázlat</string>
     <string name="display_name_invited_to_connect">meghívta, hogy csatlakozzon</string>
-    <string name="add_contact">Egyszer használatos meghívóhivatkozás</string>
+    <string name="add_contact">Egyszer használatos meghívó-hivatkozás</string>
     <string name="notifications">Értesítések</string>
     <string name="images_limit_desc">Egyszerre csak 10 kép küldhető el</string>
     <string name="feature_offered_item_with_param">ajánlott %s: %2s</string>
@@ -839,7 +839,7 @@
     <string name="users_delete_data_only">Csak helyi profiladatok</string>
     <string name="description_via_one_time_link_incognito">inkognitó egy egyszer használatos hivatkozáson keresztül</string>
     <string name="share_text_moderated_at">Moderálva lett ekkor: %s</string>
-    <string name="one_time_link">Egyszer használatos meghívóhivatkozás</string>
+    <string name="one_time_link">Egyszer használatos meghívó-hivatkozás</string>
     <string name="invalid_name">Érvénytelen név!</string>
     <string name="email_invite_subject">Beszélgessünk a SimpleX Chatben</string>
     <string name="info_row_moderated_at">Moderálva ekkor:</string>
@@ -953,7 +953,7 @@
     <string name="theme_simplex">SimpleX</string>
     <string name="send_link_previews">Hivatkozás előnézete</string>
     <string name="rcv_conn_event_verification_code_reset">a biztonsági kód megváltozott</string>
-    <string name="notification_preview_mode_contact_desc">Kizárólag ismerős megjelenítése</string>
+    <string name="notification_preview_mode_contact_desc">Csak az ismerős nevének megjelenítése</string>
     <string name="icon_descr_speaker_on">Hangszóró bekapcsolva</string>
     <string name="restart_the_app_to_use_imported_chat_database">Importált csevegési adatbázis használatához indítsa újra az alkalmazást.</string>
     <string name="icon_descr_sent_msg_status_unauthorized_send">jogosulatlan küldés</string>
@@ -983,7 +983,7 @@
     <string name="your_ice_servers">ICE kiszolgálók</string>
     <string name="you_accepted_connection">Kapcsolat létrehozása</string>
     <string name="reject_contact_button">Elutasítás</string>
-    <string name="notification_preview_mode_message_desc">Ismerős és üzenet megjelenítése</string>
+    <string name="notification_preview_mode_message_desc">Ismerős nevének és az üzenet tartalmának megjelenítése</string>
     <string name="settings_section_title_settings">BEÁLLÍTÁSOK</string>
     <string name="save_profile_password">Felhasználói fiók jelszavának mentése</string>
     <string name="stop_snd_file__title">Fájlküldés megállítása?</string>
@@ -1414,7 +1414,7 @@
     <string name="open_port_in_firewall_desc">Ha engedélyezni szeretné a mobilalkalmazás társítását a számítógéphez, akkor nyissa meg ezt a portot a tűzfalában, ha engedélyezte azt</string>
     <string name="your_profile_is_stored_on_your_device">Profilja, ismerősei és az elküldött üzenetei az eszközön kerülnek tárolásra.</string>
     <string name="system_restricted_background_warn">Az értesítések engedélyezéséhez válassza ki az <b>Alkalmazás akkumulátor-használata</b> / <b>Korlátlan</b> módot az alkalmazás beállításaiban.</string>
-    <string name="this_string_is_not_a_connection_link">Ez a karakterlánc nem egy meghívóhivatkozás!</string>
+    <string name="this_string_is_not_a_connection_link">Ez a karakterlánc nem egy meghívó-hivatkozás!</string>
     <string name="to_start_a_new_chat_help_header">Új csevegés kezdése</string>
     <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">A kapcsolódás már folyamatban van ezen az egyszer használatos hivatkozáson keresztül!</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Nem veszíti el az ismerőseit, ha később törli a címét.</string>
@@ -1520,14 +1520,14 @@
     <string name="recent_history_is_sent_to_new_members">Legfeljebb az utolsó 100 üzenet kerül elküldésre az új tagok számára.</string>
     <string name="code_you_scanned_is_not_simplex_link_qr_code">A beolvasott QR-kód nem egy SimpleX QR-kód hivatkozás.</string>
     <string name="the_text_you_pasted_is_not_a_link">A beillesztett szöveg nem egy SimpleX-hivatkozás.</string>
-    <string name="you_can_view_invitation_link_again">A meghívóhivatkozását újra megtekintheti a kapcsolat részleteinél.</string>
+    <string name="you_can_view_invitation_link_again">A meghívó-hivatkozását újra megtekintheti a kapcsolat részleteinél.</string>
     <string name="start_chat_question">Csevegés indítása?</string>
     <string name="recent_history">Látható előzmények</string>
     <string name="la_app_passcode">Alkalmazás jelkód</string>
     <string name="add_contact_tab">Ismerős hozzáadása</string>
     <string name="tap_to_scan">Koppintson a beolvasáshoz</string>
     <string name="tap_to_paste_link">Koppintson a hivatkozás beillesztéséhez</string>
-    <string name="add_contact_button_to_create_link_or_connect_via_link"><b>Ismerős hozzáadása</b>: új meghívóhivatkozás létrehozásához, vagy egy kapott hivatkozáson keresztül történő kapcsolódáshoz.</string>
+    <string name="add_contact_button_to_create_link_or_connect_via_link"><b>Ismerős hozzáadása</b>: új meghívó-hivatkozás létrehozásához, vagy egy kapott hivatkozáson keresztül történő kapcsolódáshoz.</string>
     <string name="create_group_button_to_create_new_group"><![CDATA[<b>Csoport létrehozása</b>: új csoport létrehozásához.]]></string>
     <string name="chat_is_stopped_you_should_transfer_database">A csevegés leállt. Ha már használta ezt az adatbázist egy másik eszközön, úgy visszaállítás szükséges a csevegés megkezdése előtt.</string>
     <string name="recent_history_is_not_sent_to_new_members">Az előzmények nem kerülnek elküldésre az új tagok számára.</string>
@@ -1538,7 +1538,7 @@
     <string name="or_show_this_qr_code">Vagy mutassa meg ezt a kódot</string>
     <string name="enable_camera_access">Kamera hozzáférés engedélyezése</string>
     <string name="keep_unused_invitation_question">Fel nem használt meghívó megtartása?</string>
-    <string name="share_this_1_time_link">Egyszer használatos meghívóhivatkozás megosztása</string>
+    <string name="share_this_1_time_link">Egyszer használatos meghívó-hivatkozás megosztása</string>
     <string name="new_chat">Új csevegés</string>
     <string name="loading_chats">Csevegések betöltése…</string>
     <string name="creating_link">Hivatkozás létrehozása…</string>
@@ -1602,7 +1602,7 @@
     <string name="v5_5_join_group_conversation">Csatlakozás csoportos beszélgetésekhez</string>
     <string name="v5_5_simpler_connect_ui">Hivatkozás beillesztése a kapcsolódáshoz!</string>
     <string name="v5_5_private_notes">Privát jegyzetek</string>
-    <string name="v5_5_simpler_connect_ui_descr">A keresősáv elfogadja a meghívóhivatkozásokat.</string>
+    <string name="v5_5_simpler_connect_ui_descr">A keresősáv elfogadja a meghívó-hivatkozásokat.</string>
     <string name="v5_5_private_notes_descr">Titkosított fájlokkal és médiatartalmakkal.</string>
     <string name="v5_5_message_delivery_descr">Csökkentett akkumulátor-használattal.</string>
     <string name="v5_5_new_interface_languages">Magyar és török felhasználói felület</string>
@@ -2073,7 +2073,7 @@
     <string name="system_mode_toast">Rendszerbeállítások használata</string>
     <string name="select_chat_profile">Csevegési profil kiválasztása</string>
     <string name="network_proxy_auth_mode_no_auth">Ne használja a hitelesítő adatokat proxyval.</string>
-    <string name="network_proxy_auth_mode_isolate_by_auth_user">Különböző proxy hitelesítő adatok használata az egyes profilokhoz.</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_user">Különböző proxy hitelesítő adatok használata minden egyes profilhoz.</string>
     <string name="network_proxy_auth_mode_isolate_by_auth_entity">Különböző proxy hitelesítő adatok használata minden egyes kapcsolathoz.</string>
     <string name="network_proxy_password">Jelszó</string>
     <string name="network_proxy_username">Felhasználónév</string>
