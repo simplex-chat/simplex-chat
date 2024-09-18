@@ -72,18 +72,6 @@ struct SelectedItemsBottomToolbar: View {
                 .disabled(!moderateEnabled || allButtonsDisabled)
                 .opacity(canModerate ? 1 : 0)
 
-
-//                Spacer()
-//                Button {
-//                    shareItems()
-//                } label: {
-//                    Image(systemName: "square.and.arrow.up")
-//                        .resizable()
-//                        .frame(width: 20, height: 20, alignment: .center)
-//                        .foregroundColor(allButtonsDisabled ? theme.colors.secondary : theme.colors.primary)
-//                }
-//                .disabled(allButtonsDisabled)
-
                 Spacer()
                 Button {
                     forwardItems()
