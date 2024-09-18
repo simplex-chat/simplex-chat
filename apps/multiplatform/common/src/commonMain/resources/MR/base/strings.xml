@@ -419,7 +419,8 @@
   <string name="files_and_media_prohibited">Files and media prohibited!</string>
   <string name="only_owners_can_enable_files_and_media">Only group owners can enable files and media.</string>
   <string name="compose_send_direct_message_to_connect">Send direct message to connect</string>
-  <string name="compose_forward_messages_n">Forward %1$s messages</string>
+  <string name="compose_forward_messages_n">Forwarding %1$s messages</string>
+  <string name="compose_save_messages_n">Saving %1$s messages</string>
   <string name="simplex_links_not_allowed">SimpleX links not allowed</string>
   <string name="files_and_media_not_allowed">Files and media not allowed</string>
   <string name="voice_messages_not_allowed">Voice messages not allowed</string>

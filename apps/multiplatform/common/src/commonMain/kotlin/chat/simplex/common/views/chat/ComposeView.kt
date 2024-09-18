@@ -823,13 +823,13 @@ fun ComposeView(
   fun contextItemView() {
     when (val contextItem = composeState.value.contextItem) {
       ComposeContextItem.NoContextItem -> {}
-      is ComposeContextItem.QuotedItem -> ContextItemView(listOf(contextItem.chatItem), painterResource(MR.images.ic_reply)) {
+      is ComposeContextItem.QuotedItem -> ContextItemView(listOf(contextItem.chatItem), painterResource(MR.images.ic_reply), chatType = chat.chatInfo.chatType) {
         composeState.value = composeState.value.copy(contextItem = ComposeContextItem.NoContextItem)
       }
-      is ComposeContextItem.EditingItem -> ContextItemView(listOf(contextItem.chatItem), painterResource(MR.images.ic_edit_filled)) {
+      is ComposeContextItem.EditingItem -> ContextItemView(listOf(contextItem.chatItem), painterResource(MR.images.ic_edit_filled),  chatType = chat.chatInfo.chatType) {
         clearState()
       }
-      is ComposeContextItem.ForwardingItems -> ContextItemView(contextItem.chatItems, painterResource(MR.images.ic_forward), showSender = false) {
+      is ComposeContextItem.ForwardingItems -> ContextItemView(contextItem.chatItems, painterResource(MR.images.ic_forward), showSender = false,  chatType = chat.chatInfo.chatType) {
         composeState.value = composeState.value.copy(contextItem = ComposeContextItem.NoContextItem)
       }
     }
