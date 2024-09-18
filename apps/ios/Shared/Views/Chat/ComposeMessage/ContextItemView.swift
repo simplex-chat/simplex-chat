@@ -34,7 +34,12 @@ struct ContextItemView: View {
                      msgContentView(lines: 3, contextItem: singleItem)
                  }
             } else {
-                Text("Forwarding \(contextItems.count) message(s)").italic()
+                Text(
+                    chat.chatInfo.chatType == .local
+                    ? "Saving \(contextItems.count) message(s)"
+                    : "Forwarding \(contextItems.count) message(s)"
+                )
+                .italic()
             }
             Spacer()
             Button {
