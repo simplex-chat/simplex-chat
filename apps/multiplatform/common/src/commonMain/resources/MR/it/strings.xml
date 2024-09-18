@@ -2078,4 +2078,14 @@
     <string name="delete_messages_cannot_be_undone_warning">I messaggi verranno eliminati. Non è reversibile!</string>
     <string name="migrate_from_device_uploaded_archive_will_be_removed">L\'archivio del database caricato verrà rimosso definitivamente dai server.</string>
     <string name="switching_profile_error_message">La tua connessione è stata spostata a %s, ma si è verificato un errore imprevisto durante il reindirizzamento al profilo.</string>
+    <string name="network_proxy_auth_mode_no_auth">Non usare credenziali con proxy.</string>
+    <string name="network_proxy_incorrect_config_desc">Assicurati che la configurazione del proxy sia corretta.</string>
+    <string name="network_proxy_auth">Autenticazione del proxy</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_entity">Usa diverse credenziali del proxy per ogni connessione.</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_user">Usa diverse credenziali del proxy per ogni profilo.</string>
+    <string name="network_proxy_random_credentials">Usa credenziali casuali</string>
+    <string name="network_proxy_auth_mode_username_password">Le credenziali potrebbero essere inviate in chiaro.</string>
+    <string name="network_proxy_incorrect_config_title">Errore di salvataggio del proxy</string>
+    <string name="network_proxy_password">Password</string>
+    <string name="network_proxy_username">Nome utente</string>
 </resources>
