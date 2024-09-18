@@ -68,18 +68,12 @@ localOrPeerMediaSourcesChanged = (call) => {
 };
 // override function in call.ts to adapt UI to enabled media sources
 inactiveCallMediaSourcesChanged = (inactiveCallMediaSources) => {
-    const mic = inactiveCallMediaSources.get(CallMediaSource.Mic);
-    const camera = inactiveCallMediaSources.get(CallMediaSource.Camera);
-    const screenVideo = inactiveCallMediaSources.get(CallMediaSource.ScreenVideo);
-    if (mic != undefined) {
-        enableMicIcon(mic);
-    }
-    if (camera != undefined) {
-        enableCameraIcon(camera);
-    }
-    if (screenVideo != undefined) {
-        enableScreenIcon(screenVideo);
-    }
+    const mic = inactiveCallMediaSources.mic;
+    const camera = inactiveCallMediaSources.camera;
+    const screenVideo = inactiveCallMediaSources.screenVideo;
+    enableMicIcon(mic);
+    enableCameraIcon(camera);
+    enableScreenIcon(screenVideo);
     const className = camera ? CallMediaType.Video : CallMediaType.Audio;
     document.getElementById("info-block").className = className;
     document.getElementById("media-sources").innerText = inactiveCallMediaSourcesStatus(inactiveCallMediaSources);
@@ -122,17 +116,17 @@ function mediaSourcesStatus(call) {
 }
 function inactiveCallMediaSourcesStatus(inactiveCallMediaSources) {
     let status = "local";
-    const mic = inactiveCallMediaSources.get(CallMediaSource.Mic);
-    const camera = inactiveCallMediaSources.get(CallMediaSource.Camera);
-    const screenAudio = inactiveCallMediaSources.get(CallMediaSource.ScreenAudio);
-    const screenVideo = inactiveCallMediaSources.get(CallMediaSource.ScreenVideo);
-    if (mic == true)
+    const mic = inactiveCallMediaSources.mic;
+    const camera = inactiveCallMediaSources.camera;
+    const screenAudio = inactiveCallMediaSources.screenAudio;
+    const screenVideo = inactiveCallMediaSources.screenVideo;
+    if (mic)
         status += " mic";
-    if (camera == true)
+    if (camera)
         status += " cam";
-    if (screenAudio == true)
+    if (screenAudio)
         status += " scrA";
-    if (screenVideo == true)
+    if (screenVideo)
         status += " scrV";
     return status;
 }
