@@ -1564,16 +1564,15 @@ object ChatController {
           inline = null
         )
       )
-      when (r) {
-        is CR.RcvFileAccepted -> filesAccepted.add(r.chatItem)
-        else -> {
-          val maybeChatError = chatError(r)
-          if (maybeChatError is ChatErrorType.FileNotApproved) {
-            filesIdsToApprove.add(maybeChatError.fileId)
-            srvsToApprove.addAll(maybeChatError.unknownServers.map { serverHostname(it) })
-          } else {
-            otherFileErrs.add(r)
-          }
+      if (r is CR.RcvFileAccepted) {
+        filesAccepted.add(r.chatItem)
+      } else {
+        val maybeChatError = chatError(r)
+        if (maybeChatError is ChatErrorType.FileNotApproved) {
+          filesIdsToApprove.add(maybeChatError.fileId)
+          srvsToApprove.addAll(maybeChatError.unknownServers.map { serverHostname(it) })
+        } else {
+          otherFileErrs.add(r)
         }
       }
     }
