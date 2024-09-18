@@ -331,7 +331,7 @@ private fun ActiveCallOverlayLayout(
             devices.map { Triple(it, it.icon, if (it.name != null) generalGetString(it.name!!) else it.productName.toString()) },
             currentDevice,
             fontSize = 18.sp,
-            iconPadding = 10.dp,
+            iconPadding = size / 5,
             boxSize = size,
             listIconSize = 30.dp,
             iconColor = Color(0xFFFFFFD8),
@@ -369,13 +369,13 @@ private fun ActiveCallOverlayLayout(
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
           ToggleAudioButton(call, enabled, toggleAudio, size = size)
           SelectSoundDevice(size = size)
-          ControlButton(painterResource(MR.images.ic_call_end_filled), MR.strings.icon_descr_hang_up, enabled = enabled, dismiss, background = Color.Red, size = size)
+          ControlButton(painterResource(MR.images.ic_call_end_filled), MR.strings.icon_descr_hang_up, enabled = enabled, dismiss, background = Color.Red, iconPadding = 10.dp, size = size)
           if (call.localMediaSources.camera) {
             ControlButton(painterResource(MR.images.ic_flip_camera_android_filled), MR.strings.icon_descr_flip_camera, enabled, flipCamera, size = size)
             ControlButton(painterResource(MR.images.ic_videocam_filled), MR.strings.icon_descr_video_off, enabled, toggleVideo, size = size)
           } else {
             Spacer(Modifier.size(size))
-            ControlButton(painterResource(MR.images.ic_videocam_off), MR.strings.icon_descr_video_on, enabled, toggleVideo, iconPadding = 12.dp, size = size)
+            ControlButton(painterResource(MR.images.ic_videocam_off), MR.strings.icon_descr_video_on, enabled, toggleVideo, size = size)
           }
         }
       }
@@ -384,7 +384,7 @@ private fun ActiveCallOverlayLayout(
 }
 
 @Composable
-private fun ControlButton(icon: Painter, iconText: StringResource, enabled: Boolean = true, action: () -> Unit, background: Color = controlButtonsBackground(), size: Dp, iconPadding: Dp = 10.dp) {
+private fun ControlButton(icon: Painter, iconText: StringResource, enabled: Boolean = true, action: () -> Unit, background: Color = controlButtonsBackground(), size: Dp, iconPadding: Dp = size / 5) {
   ControlButtonWrap(enabled, action, background, size) {
     Icon(icon, stringResource(iconText), tint = if (enabled) Color(0xFFFFFFD8) else MaterialTheme.colors.secondary, modifier = Modifier.padding(iconPadding).fillMaxSize())
   }
@@ -428,7 +428,7 @@ private fun ToggleSoundButton(enabled: Boolean, speaker: Boolean, toggleSound: (
 }
 
 @Composable
-fun controlButtonsBackground(): Color = MaterialTheme.colors.secondary.copy(0.2f)
+fun controlButtonsBackground(): Color = if (chatModel.activeCall.value?.peerMediaSources?.hasVideo() == true) Color.Black.copy(0.1f) else Color.White.copy(0.1f)
 
 @Composable
 fun AudioCallInfoView(call: Call) {

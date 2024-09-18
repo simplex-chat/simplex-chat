@@ -104,6 +104,8 @@ fun <T> ExposedDropDownSettingWithIcon(
   ExposedDropdownMenuBox(
     expanded = expanded.value,
     onExpandedChange = {
+      println("LALAL click2 $it")
+
       expanded.value = !expanded.value && enabled.value
     }
   ) {
@@ -112,9 +114,7 @@ fun <T> ExposedDropDownSettingWithIcon(
         .background(background, CircleShape)
         .size(boxSize)
         .clickable(
-          onClick = {
-            expanded.value = !expanded.value && enabled.value
-          },
+          onClick = {},
           role = Role.Button,
           interactionSource = remember { MutableInteractionSource() },
           indication = rememberRipple(bounded = false, radius = boxSize / 2, color = background.lighter(0.1f)),
