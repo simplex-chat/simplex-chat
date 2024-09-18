@@ -1553,8 +1553,7 @@ object ChatController {
   }
 
   suspend fun receiveFiles(rhId: Long?, user: UserLike, fileIds: List<Long>, userApprovedRelays: Boolean = false, auto: Boolean = false) {
-    val filesAccepted = mutableListOf<AChatItem>()
-    val fileIdsToApprove = mutableStateListOf<Long>()
+    val fileIdsToApprove = mutableListOf<Long>()
     val srvsToApprove = mutableSetOf<String>()
     val otherFileErrs = mutableListOf<CR>()
 
@@ -1568,7 +1567,7 @@ object ChatController {
         )
       )
       if (r is CR.RcvFileAccepted) {
-        filesAccepted.add(r.chatItem)
+        chatItemSimpleUpdate(rhId, user, r.chatItem)
       } else {
         val maybeChatError = chatError(r)
         if (maybeChatError is ChatErrorType.FileNotApproved) {
@@ -1580,16 +1579,12 @@ object ChatController {
       }
     }
 
-    filesAccepted.forEach {
-      chatItemSimpleUpdate(rhId, user, it)
-    }
-
     if (!auto) {
       // If there are not approved files, alert is shown the same way both in case of singular and plural files reception
       if (fileIdsToApprove.isNotEmpty()) {
         showFilesToApproveAlert(
-          srvsToApprove = srvsToApprove.toList(),
-          otherFileErrs = otherFileErrs.toList(),
+          srvsToApprove = srvsToApprove,
+          otherFileErrs = otherFileErrs,
           approveFiles = {
             withBGApi {
               receiveFiles(
@@ -1601,7 +1596,7 @@ object ChatController {
             }
           }
         )
-      } else if (otherFileErrs.count() == 1) { // If there is a single other error, we differentiate on it
+      } else if (otherFileErrs.size == 1) { // If there is a single other error, we differentiate on it
         when (val errCR = otherFileErrs.first()) {
           is CR.RcvFileAcceptedSndCancelled -> {
             Log.d(TAG, "receiveFiles error: sender cancelled file transfer")
@@ -1619,11 +1614,11 @@ object ChatController {
             }
           }
         }
-      } else if (otherFileErrs.count() > 1) { // If there are multiple other errors, we show general alert
+      } else if (otherFileErrs.size > 1) { // If there are multiple other errors, we show general alert
         val errsStr = otherFileErrs.map { json.encodeToString(it) }.joinToString(separator = "\n")
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.error_receiving_file),
-          text = String.format(generalGetString(MR.strings.n_file_errors), otherFileErrs.count(), errsStr),
+          text = String.format(generalGetString(MR.strings.n_file_errors), otherFileErrs.size, errsStr),
           shareText = true
         )
       }
@@ -1631,14 +1626,14 @@ object ChatController {
   }
 
   private fun showFilesToApproveAlert(
-    srvsToApprove: List<String>,
+    srvsToApprove: Set<String>,
     otherFileErrs: List<CR>,
     approveFiles: (() -> Unit)
   ) {
     val srvsToApproveStr = srvsToApprove.sorted().joinToString(separator = ", ")
     val alertText =
       generalGetString(MR.strings.file_not_approved_descr).format(srvsToApproveStr) +
-          (if (otherFileErrs.isNotEmpty()) "\n" + generalGetString(MR.strings.n_other_file_errors).format(otherFileErrs.count()) else "")
+          (if (otherFileErrs.isNotEmpty()) "\n" + generalGetString(MR.strings.n_other_file_errors).format(otherFileErrs.size) else "")
 
     AlertManager.shared.showAlert {
       AlertDialog(
