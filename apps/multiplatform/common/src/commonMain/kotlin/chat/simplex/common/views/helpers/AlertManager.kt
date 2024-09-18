@@ -277,7 +277,7 @@ class AlertManager {
   }
 }
 
-fun alertTitle(title: String): (@Composable () -> Unit) {
+private fun alertTitle(title: String): (@Composable () -> Unit) {
   return {
     Text(
       title,
@@ -289,7 +289,7 @@ fun alertTitle(title: String): (@Composable () -> Unit) {
 }
 
 @Composable
-fun AlertContent(
+private fun AlertContent(
   text: String?,
   hostDevice: Pair<Long?, String>?,
   extraPadding: Boolean = false,
@@ -333,7 +333,7 @@ fun AlertContent(
 }
 
 @Composable
-fun AlertContent(text: AnnotatedString?, hostDevice: Pair<Long?, String>?, extraPadding: Boolean = false, content: @Composable (() -> Unit)) {
+private fun AlertContent(text: AnnotatedString?, hostDevice: Pair<Long?, String>?, extraPadding: Boolean = false, content: @Composable (() -> Unit)) {
   BoxWithConstraints {
     Column(
       Modifier
