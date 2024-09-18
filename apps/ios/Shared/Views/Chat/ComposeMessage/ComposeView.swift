@@ -757,57 +757,27 @@ struct ComposeView: View {
                 sent = await send(.text(msgText), quoted: quoted, live: live, ttl: ttl)
             case .linkPreview:
                 sent = await send(checkLinkPreview(), quoted: quoted, live: live, ttl: ttl)
-            case let .mediaPreviews(mediaPreviews):
-                var composedMessages = [ComposedMessage]()
-                for (previewImage, uploadContent) in mediaPreviews {
-                    try? await Task.sleep(nanoseconds: 100_000000) // Sleep to allow `progressByTimeout` update be rendered
-                    let cm: ComposedMessage? = switch uploadContent {
-                    case let .simpleImage(image):
-                        saveImage(image).map { cryptoFile in
-                            ComposedMessage(
-                                fileSource: cryptoFile,
-                                msgContent: .image(text: "", image: previewImage)
-                            )
+            case let .mediaPreviews(media):
+                let last = media.count - 1
+                var msgs: [ComposedMessage] = []
+                if last >= 0 {
+                    for i in 0..<last {
+                        if i > 0 {
+                            // Sleep to allow `progressByTimeout` update be rendered
+                            try? await Task.sleep(nanoseconds: 100_000000)
                         }
-                    case let .animatedImage(image):
-                        saveAnimImage(image).map { cryptoFile in
-                            ComposedMessage(
-                                fileSource: cryptoFile,
-                                msgContent: .image(text: "", image: previewImage)
-                            )
+                        if let (fileSource, msgContent) = mediaContent(media[i], text: "") {
+                            msgs.append(ComposedMessage(fileSource: fileSource, msgContent: msgContent))
                         }
-                    case let .video(_, url, duration):
-                        moveTempFileFromURL(url).map { cryptoFile in
-                            ChatModel.shared.filesToDelete.remove(url)
-                            return ComposedMessage(
-                                fileSource: cryptoFile,
-                                msgContent: .video(text: "", image: previewImage, duration: duration)
-                            )
-                        }
-                    case .none:
-                        nil
                     }
-                    if let cm { composedMessages.append(cm) }
+                    if let (fileSource, msgContent) = mediaContent(media[last], text: msgText) {
+                        msgs.append(ComposedMessage(fileSource: fileSource, quotedItemId: quoted, msgContent: msgContent))
+                    }
                 }
-                if let last = composedMessages.popLast() {
-                    // Add compose text and quote to the last media message
-                    composedMessages.append(
-                        ComposedMessage(
-                            fileSource: last.fileSource,
-                            quotedItemId: quoted,
-                            msgContent: last.msgContent.with(text: msgText)
-                        )
-                    )
-                } else {
-                    // If all media messages have failed - send only text and quote
-                    composedMessages.append(
-                        ComposedMessage(
-                            quotedItemId: quoted,
-                            msgContent: .text(msgText)
-                        )
-                    )
+                if msgs.isEmpty {
+                    msgs = [ComposedMessage(quotedItemId: quoted, msgContent: .text(msgText))]
                 }
-                sent = await send(composedMessages, live: live, ttl: ttl).last
+                sent = await send(msgs, live: live, ttl: ttl).last
 
             case let .voicePreview(recordingFileName, duration):
                 stopPlayback.toggle()
@@ -830,6 +800,20 @@ struct ComposeView: View {
         }
         return sent
 
+        func mediaContent(_ media: (String, UploadContent?), text: String) -> (CryptoFile?, MsgContent)? {
+            let (previewImage, uploadContent) = media
+            return switch uploadContent {
+            case let .simpleImage(image):
+                (saveImage(image), .image(text: text, image: previewImage))
+            case let .animatedImage(image):
+                (saveAnimImage(image), .image(text: text, image: previewImage))
+            case let .video(_, url, duration):
+                (moveTempFileFromURL(url), .video(text: text, image: previewImage, duration: duration))
+            case .none:
+                nil
+            }
+        }
+        
         func sending() async {
             await MainActor.run { composeState.inProgress = true }
         }

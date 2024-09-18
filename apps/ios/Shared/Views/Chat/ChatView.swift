@@ -42,7 +42,7 @@ struct ChatView: View {
     @State private var showGroupLinkSheet: Bool = false
     @State private var groupLink: String?
     @State private var groupLinkMemberRole: GroupMemberRole = .member
-    @State private var forwardedChatItems: [ChatItem]?
+    @State private var forwardedChatItems: [ChatItem] = []
     @State private var selectedChatItems: Set<Int64>? = nil
     @State private var showDeleteSelectedMessages: Bool = false
     @State private var allowToDeleteSelectedMessagesForAll: Bool = false
@@ -137,14 +137,20 @@ struct ChatView: View {
                 }
             }
         }
-        .sheet(item: $forwardedChatItems) {
-            if composeState.forwarding { selectedChatItems = nil }
-        } content: { items in
+        .sheet(isPresented: Binding(
+            get: { !forwardedChatItems.isEmpty },
+            set: { isPresented in
+                if !isPresented {
+                    forwardedChatItems = []
+                    selectedChatItems = nil
+                }
+            }
+        )) {
             if #available(iOS 16.0, *) {
-                ChatItemForwardingView(chatItems: items, fromChatInfo: chat.chatInfo, composeState: $composeState)
+                ChatItemForwardingView(chatItems: forwardedChatItems, fromChatInfo: chat.chatInfo, composeState: $composeState)
                     .presentationDetents([.fraction(0.8)])
             } else {
-                ChatItemForwardingView(chatItems: items, fromChatInfo: chat.chatInfo, composeState: $composeState)
+                ChatItemForwardingView(chatItems: forwardedChatItems, fromChatInfo: chat.chatInfo, composeState: $composeState)
             }
         }
         .onAppear {
@@ -863,7 +869,7 @@ struct ChatView: View {
         @State private var msgWidth: CGFloat = 0
         
         @Binding var selectedChatItems: Set<Int64>?
-        @Binding var forwardedChatItems: [ChatItem]?
+        @Binding var forwardedChatItems: [ChatItem]
 
         @State private var allowMenu: Bool = true
         @State private var markedRead = false

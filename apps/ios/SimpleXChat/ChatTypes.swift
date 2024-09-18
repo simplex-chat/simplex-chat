@@ -2659,12 +2659,6 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     }
 }
 
-extension [ChatItem]: Identifiable {
-    public var id: [Int64] {
-        map { $0.id }
-    }
-}
-
 public enum CIMergeCategory: Hashable {
     case memberConnected
     case rcvGroupEvent
@@ -3626,18 +3620,6 @@ public enum MsgContent: Equatable, Hashable {
         case .video: true
         case .file: true
         default: false
-        }
-    }
-
-    public func with(text: String) -> MsgContent {
-        switch self {
-        case .text: .text(text)
-        case let .link(_, preview): .link(text: text, preview: preview)
-        case let .image(_, image): .image(text: text, image: image)
-        case let .video(_, image, duration): .video(text: text, image: image, duration: duration)
-        case let .voice(_, duration): .voice(text: text, duration: duration)
-        case .file: .file(text)
-        case let .unknown(type, _): .unknown(type: type, text: text)
         }
     }
 
