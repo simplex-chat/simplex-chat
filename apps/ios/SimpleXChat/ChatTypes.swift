@@ -2862,6 +2862,13 @@ public enum CIStatus: Decodable, Hashable {
             )
         }
     }
+
+    public var isSndRcvd: Bool {
+        switch self {
+        case .sndRcvd: return true
+        default: return false
+        }
+    }
 }
 
 public enum SndError: Decodable, Hashable {
@@ -3155,6 +3162,13 @@ public enum CIContent: Decodable, ItemContent, Hashable {
         case .rcvModerated: return true
         case .rcvBlocked: return true
         case .invalidJSON: return true
+        default: return false
+        }
+    }
+
+    public var isSndCall: Bool {
+        switch self {
+        case .sndCall: return true
         default: return false
         }
     }

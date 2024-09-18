@@ -28,6 +28,7 @@ data LockScreenCalls = LSCDisable | LSCShow | LSCAccept deriving (Show)
 data AppSettings = AppSettings
   { appPlatform :: Maybe AppPlatform,
     networkConfig :: Maybe NetworkConfig,
+    networkProxy :: Maybe NetworkProxy,
     privacyEncryptLocalFiles :: Maybe Bool,
     privacyAskToApproveRelays :: Maybe Bool,
     privacyAcceptImages :: Maybe Bool,
@@ -57,11 +58,24 @@ data AppSettings = AppSettings
   }
   deriving (Show)
 
+data NetworkProxy = NetworkProxy
+  { host :: Text,
+    port :: Int,
+    auth :: NetworkProxyAuth,
+    username :: Text,
+    password :: Text
+  }
+  deriving (Show)
+
+data NetworkProxyAuth = NPAUsername | NPAIsolate
+  deriving (Show)
+
 defaultAppSettings :: AppSettings
 defaultAppSettings =
   AppSettings
     { appPlatform = Nothing,
       networkConfig = Just defaultNetworkConfig,
+      networkProxy = Nothing,
       privacyEncryptLocalFiles = Just True,
       privacyAskToApproveRelays = Just True,
       privacyAcceptImages = Just True,
@@ -95,6 +109,7 @@ defaultParseAppSettings =
   AppSettings
     { appPlatform = Nothing,
       networkConfig = Nothing,
+      networkProxy = Nothing,
       privacyEncryptLocalFiles = Nothing,
       privacyAskToApproveRelays = Nothing,
       privacyAcceptImages = Nothing,
@@ -128,6 +143,7 @@ combineAppSettings platformDefaults storedSettings =
   AppSettings
     { appPlatform = p appPlatform,
       networkConfig = p networkConfig,
+      networkProxy = p networkProxy,
       privacyEncryptLocalFiles = p privacyEncryptLocalFiles,
       privacyAskToApproveRelays = p privacyAskToApproveRelays,
       privacyAcceptImages = p privacyAcceptImages,
@@ -167,12 +183,17 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "NPM") ''NotificationPreviewMode)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "LSC") ''LockScreenCalls)
 
+$(JQ.deriveJSON (enumJSON $ dropPrefix "NPA") ''NetworkProxyAuth)
+
+$(JQ.deriveJSON defaultJSON ''NetworkProxy)
+
 $(JQ.deriveToJSON defaultJSON ''AppSettings)
 
 instance FromJSON AppSettings where
   parseJSON (J.Object v) = do
     appPlatform <- p "appPlatform"
     networkConfig <- p "networkConfig"
+    networkProxy <- p "networkProxy"
     privacyEncryptLocalFiles <- p "privacyEncryptLocalFiles"
     privacyAskToApproveRelays <- p "privacyAskToApproveRelays"
     privacyAcceptImages <- p "privacyAcceptImages"
@@ -203,6 +224,7 @@ instance FromJSON AppSettings where
       AppSettings
         { appPlatform,
           networkConfig,
+          networkProxy,
           privacyEncryptLocalFiles,
           privacyAskToApproveRelays,
           privacyAcceptImages,

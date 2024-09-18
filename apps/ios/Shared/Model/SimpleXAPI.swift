@@ -1862,23 +1862,25 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
             }
         }
-    case let .chatItemStatusUpdated(user, aChatItem):
-        let cInfo = aChatItem.chatInfo
-        let cItem = aChatItem.chatItem
-        if !cItem.isDeletedContent && active(user) {
-            await MainActor.run { m.updateChatItem(cInfo, cItem, status: cItem.meta.itemStatus) }
-        }
-        if let endTask = m.messageDelivery[cItem.id] {
-            switch cItem.meta.itemStatus {
-            case .sndNew: ()
-            case .sndSent: endTask()
-            case .sndRcvd: endTask()
-            case .sndErrorAuth: endTask()
-            case .sndError: endTask()
-            case .sndWarning: endTask()
-            case .rcvNew: ()
-            case .rcvRead: ()
-            case .invalid: ()
+    case let .chatItemsStatusesUpdated(user, chatItems):
+        for chatItem in chatItems {
+            let cInfo = chatItem.chatInfo
+            let cItem = chatItem.chatItem
+            if !cItem.isDeletedContent && active(user) {
+                await MainActor.run { m.updateChatItem(cInfo, cItem, status: cItem.meta.itemStatus) }
+            }
+            if let endTask = m.messageDelivery[cItem.id] {
+                switch cItem.meta.itemStatus {
+                case .sndNew: ()
+                case .sndSent: endTask()
+                case .sndRcvd: endTask()
+                case .sndErrorAuth: endTask()
+                case .sndError: endTask()
+                case .sndWarning: endTask()
+                case .rcvNew: ()
+                case .rcvRead: ()
+                case .invalid: ()
+                }
             }
         }
     case let .chatItemUpdated(user, aChatItem):
