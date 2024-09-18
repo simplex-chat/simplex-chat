@@ -1603,23 +1603,20 @@ object ChatController {
           },
         )
       } else if (otherFileErrs.count() == 1) { // If there is a single other error, we differentiate on it
-        val errCR = otherFileErrs.firstOrNull()
-        if (errCR != null) {
-          when (errCR) {
-            is CR.RcvFileAcceptedSndCancelled -> {
-              Log.d(TAG, "receiveFiles error: sender cancelled file transfer")
-              AlertManager.shared.showAlertMsg(
-                generalGetString(MR.strings.cannot_receive_file),
-                generalGetString(MR.strings.sender_cancelled_file_transfer)
-              )
-            }
-            else -> {
-              val maybeChatError = chatError(errCR)
-              if (maybeChatError is ChatErrorType.FileCancelled || maybeChatError is ChatErrorType.FileAlreadyReceiving) {
-                Log.d(TAG, "receiveFiles ignoring FileCancelled or FileAlreadyReceiving error")
-              } else {
-                apiErrorAlert("receiveFiles", generalGetString(MR.strings.error_receiving_file), errCR)
-              }
+        when (val errCR = otherFileErrs.first()) {
+          is CR.RcvFileAcceptedSndCancelled -> {
+            Log.d(TAG, "receiveFiles error: sender cancelled file transfer")
+            AlertManager.shared.showAlertMsg(
+              generalGetString(MR.strings.cannot_receive_file),
+              generalGetString(MR.strings.sender_cancelled_file_transfer)
+            )
+          }
+          else -> {
+            val maybeChatError = chatError(errCR)
+            if (maybeChatError is ChatErrorType.FileCancelled || maybeChatError is ChatErrorType.FileAlreadyReceiving) {
+              Log.d(TAG, "receiveFiles ignoring FileCancelled or FileAlreadyReceiving error")
+            } else {
+              apiErrorAlert("receiveFiles", generalGetString(MR.strings.error_receiving_file), errCR)
             }
           }
         }
