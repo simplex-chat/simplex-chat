@@ -724,22 +724,22 @@ struct ChatView: View {
         Task {
             do {
                 if let selectedChatItems {
-                    let (validItems, forwardConfirmation) = try await apiPlanForwardChatItems(
+                    let (validItems, confirmation) = try await apiPlanForwardChatItems(
                         type: chat.chatInfo.chatType,
                         id: chat.chatInfo.apiId,
                         itemIds: Array(selectedChatItems)
                     )
-                    if let forwardConfirmation {
+                    if let confirmation {
                         if validItems.count > 0 {
                             showAlert(
                                 String.localizedStringWithFormat(
                                     NSLocalizedString("Forward %d message(s)?", comment: "alert title"),
                                     validItems.count
                                 ),
-                                message: forwardConfirmation.reason + "\n" +
+                                message: forwardConfirmationText(confirmation) + "\n" +
                                     NSLocalizedString("Forward messages without files?", comment: "alert message")
                             ) {
-                                switch forwardConfirmation {
+                                switch confirmation {
                                 case let .filesNotAccepted(fileIds):
                                     [forwardAction(validItems), downloadAction(fileIds), cancelAlertAction]
                                 default:
@@ -749,9 +749,9 @@ struct ChatView: View {
                         } else {
                             showAlert(
                                 NSLocalizedString("Nothing to forward!", comment: "alert title"),
-                                message: forwardConfirmation.reason
+                                message: forwardConfirmationText(confirmation)
                             ) {
-                                switch forwardConfirmation {
+                                switch confirmation {
                                 case let .filesNotAccepted(fileIds):
                                     [downloadAction(fileIds), cancelAlertAction]
                                 default:
@@ -768,6 +768,31 @@ struct ChatView: View {
             }
         }
 
+        func forwardConfirmationText(_ fc: ForwardConfirmation) -> String {
+            switch fc {
+            case let .filesNotAccepted(fileIds):
+                String.localizedStringWithFormat(
+                    NSLocalizedString("%d file(s) were not downloaded.", comment: "forward confirmation reason"),
+                    fileIds.count
+                )
+            case let .filesInProgress(filesCount):
+                String.localizedStringWithFormat(
+                    NSLocalizedString("%d file(s) are still being downloaded.", comment: "forward confirmation reason"),
+                    filesCount
+                )
+            case let .filesMissing(filesCount):
+                String.localizedStringWithFormat(
+                    NSLocalizedString("%d file(s) were deleted.", comment: "forward confirmation reason"),
+                    filesCount
+                )
+            case let .filesFailed(filesCount):
+                String.localizedStringWithFormat(
+                    NSLocalizedString("%d file(s) failed to download.", comment: "forward confirmation reason"),
+                    filesCount
+                )
+            }
+        }
+        
         func forwardAction(_ items: [Int64]) -> UIAlertAction {
             UIAlertAction(
                 title: NSLocalizedString("Forward messages", comment: "alert action"),

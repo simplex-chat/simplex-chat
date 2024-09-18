@@ -1606,38 +1606,6 @@ public enum ForwardConfirmation: Decodable, Hashable {
     case filesInProgress(filesCount: Int)
     case filesMissing(filesCount: Int)
     case filesFailed(filesCount: Int)
-
-    public var fileIds: [Int64]? {
-        switch self {
-        case let .filesNotAccepted(fileIds): fileIds
-        default: nil
-        }
-    }
-
-    public var reason: String {
-        switch self {
-        case let .filesNotAccepted(fileIds):
-            String.localizedStringWithFormat(
-                NSLocalizedString("%d file(s) were not downloaded.", comment: "forward confirmation reason"),
-                fileIds.count
-            )
-        case let .filesInProgress(filesCount):
-            String.localizedStringWithFormat(
-                NSLocalizedString("%d file(s) are still being downloaded.", comment: "forward confirmation reason"),
-                filesCount
-            )
-        case let .filesMissing(filesCount):
-            String.localizedStringWithFormat(
-                NSLocalizedString("%d file(s) were deleted.", comment: "forward confirmation reason"),
-                filesCount
-            )
-        case let .filesFailed(filesCount):
-            String.localizedStringWithFormat(
-                NSLocalizedString("%d file(s) failed to download.", comment: "forward confirmation reason"),
-                filesCount
-            )
-        }
-    }
 }
 
 public struct ConnNetworkStatus: Decodable {
