@@ -308,6 +308,7 @@ fun ActiveProfilePicker(
         switchingProfile.value = true
         withApi {
           try {
+            appPreferences.incognito.set(false)
             var updatedConn: PendingContactConnection? = null;
 
             if (contactConnection != null) {
@@ -361,6 +362,7 @@ fun ActiveProfilePicker(
         switchingProfile.value = true
         withApi {
           try {
+            appPreferences.incognito.set(true)
             val conn = controller.apiSetConnectionIncognito(rhId, contactConnection.pccConnId, true)
             if (conn != null) {
               withChats {
