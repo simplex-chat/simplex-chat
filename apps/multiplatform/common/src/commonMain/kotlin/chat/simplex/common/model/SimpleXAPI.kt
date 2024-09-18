@@ -1561,7 +1561,7 @@ object ChatController {
       val r = sendCmd(
         rhId, CC.ReceiveFile(
           fileId,
-          userApprovedRelays = userApprovedRelays,
+          userApprovedRelays = userApprovedRelays || !appPrefs.privacyAskToApproveRelays.get(),
           encrypt = appPrefs.privacyEncryptLocalFiles.get(),
           inline = null
         )
@@ -1675,7 +1675,7 @@ object ChatController {
       rhId = rhId,
       user = user,
       fileIds = listOf(fileId),
-      userApprovedRelays = userApprovedRelays || !appPrefs.privacyAskToApproveRelays.get(),
+      userApprovedRelays = userApprovedRelays,
       auto = auto
     )
   }
