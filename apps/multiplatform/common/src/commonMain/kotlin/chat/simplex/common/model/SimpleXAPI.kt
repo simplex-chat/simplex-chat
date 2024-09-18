@@ -1554,7 +1554,7 @@ object ChatController {
 
   suspend fun receiveFiles(rhId: Long?, user: UserLike, fileIds: List<Long>, userApprovedRelays: Boolean = false, auto: Boolean = false) {
     val filesAccepted = mutableListOf<AChatItem>()
-    val filesIdsToApprove = mutableStateListOf<Long>()
+    val fileIdsToApprove = mutableStateListOf<Long>()
     val srvsToApprove = mutableSetOf<String>()
     val otherFileErrs = mutableListOf<CR>()
 
@@ -1572,7 +1572,7 @@ object ChatController {
       } else {
         val maybeChatError = chatError(r)
         if (maybeChatError is ChatErrorType.FileNotApproved) {
-          filesIdsToApprove.add(maybeChatError.fileId)
+          fileIdsToApprove.add(maybeChatError.fileId)
           srvsToApprove.addAll(maybeChatError.unknownServers.map { serverHostname(it) })
         } else {
           otherFileErrs.add(r)
@@ -1586,7 +1586,7 @@ object ChatController {
 
     if (!auto) {
       // If there are not approved files, alert is shown the same way both in case of singular and plural files reception
-      if (filesIdsToApprove.isNotEmpty()) {
+      if (fileIdsToApprove.isNotEmpty()) {
         showFilesToApproveAlert(
           srvsToApprove = srvsToApprove.toList(),
           otherFileErrs = otherFileErrs.toList(),
@@ -1595,7 +1595,7 @@ object ChatController {
               receiveFiles(
                 rhId = rhId,
                 user = user,
-                fileIds = filesIdsToApprove,
+                fileIds = fileIdsToApprove,
                 userApprovedRelays = true
               )
             }
