@@ -67,12 +67,6 @@ enum class SimplexLinkMode {
   }
 }
 
-class ReceiveFilesResult(
-  val filesAccepted: MutableList<AChatItem>,
-  val filesToApprove: MutableList<ChatErrorType.FileNotApproved>,
-  val fileErrors: MutableList<CR>
-)
-
 class AppPreferences {
   // deprecated, remove in 2024
   private val runServiceInBackground = mkBoolPreference(SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND, true)
