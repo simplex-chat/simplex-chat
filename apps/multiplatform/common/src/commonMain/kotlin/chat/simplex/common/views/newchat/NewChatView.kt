@@ -68,7 +68,7 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRC
        * Otherwise, it will be called here AFTER [AddContactLearnMore] is launched and will clear the value too soon.
        * It will be dropped automatically when connection established or when user goes away from this screen.
        **/
-      if (chatModel.showingInvitation.value != null && ModalManager.start.openModalCount() == 1) {
+      if (chatModel.showingInvitation.value != null && ModalManager.start.openModalCount() <= 1) {
         val conn = contactConnection.value
         if (chatModel.showingInvitation.value?.connChatUsed == false && conn != null) {
           AlertManager.shared.showAlertDialog(
