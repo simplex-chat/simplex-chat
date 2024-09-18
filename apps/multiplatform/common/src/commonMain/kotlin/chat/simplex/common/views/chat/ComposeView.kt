@@ -364,7 +364,6 @@ fun ComposeView(
         is SharedContent.File -> listOf(shared.uri.toString())
         is SharedContent.Text -> emptyList()
         is SharedContent.Forward -> emptyList()
-        is SharedContent.BulkForward -> emptyList()
       }
       // When sharing a file and pasting it in SimpleX itself, the file shouldn't be deleted before sending or before leaving the chat after sharing
       chatModel.filesToDelete.removeAll { file ->
@@ -853,15 +852,9 @@ fun ComposeView(
       is SharedContent.Media -> composeState.processPickedMedia(shared.uris, shared.text)
       is SharedContent.File -> composeState.processPickedFile(shared.uri, shared.text)
       is SharedContent.Forward -> composeState.value = composeState.value.copy(
-        contextItem = ComposeContextItem.ForwardingItems(listOf(shared.chatItem), shared.fromChatInfo),
+        contextItem = ComposeContextItem.ForwardingItems(shared.chatItems, shared.fromChatInfo),
         preview = if (composeState.value.preview is ComposePreview.CLinkPreview) composeState.value.preview else ComposePreview.NoPreview
       )
-      is SharedContent.BulkForward -> {
-        composeState.value = composeState.value.copy(
-          contextItem = ComposeContextItem.ForwardingItems(shared.chatItems, shared.fromChatInfo),
-          preview = ComposePreview.NoPreview
-        )
-      }
       null -> {}
     }
     chatModel.sharedContent.value = null

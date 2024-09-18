@@ -58,16 +58,8 @@ fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
         hasSimplexLink = hasSimplexLink(sharedContent.text)
       }
       is SharedContent.Forward -> {
-        val mc = sharedContent.chatItem.content.msgContent
-        if (mc != null) {
-          isMediaOrFileAttachment = mc.isMediaOrFileAttachment
-          isVoice = mc.isVoice
-          hasSimplexLink = hasSimplexLink(mc.text)
-        }
-      }
-      is SharedContent.BulkForward -> {
-        sharedContent.chatItems.forEach {
-          val mc = it.content.msgContent
+        sharedContent.chatItems.forEach { ci ->
+          val mc = ci.content.msgContent
           if (mc != null) {
             isMediaOrFileAttachment = isMediaOrFileAttachment || mc.isMediaOrFileAttachment
             isVoice = isVoice || mc.isVoice
@@ -118,11 +110,10 @@ private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchVal
   }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val users by remember { derivedStateOf { chatModel.users.filter { u -> u.user.activeUser || !u.user.hidden } } }
-  val content = remember { chatModel.sharedContent }.value
   val navButton: @Composable RowScope.() -> Unit = {
     when {
       showSearch -> NavigationButtonBack(hideSearchOnBack)
-      (users.size > 1 || chatModel.remoteHosts.isNotEmpty()) && content !is SharedContent.Forward && content !is SharedContent.BulkForward -> {
+      (users.size > 1 || chatModel.remoteHosts.isNotEmpty()) && remember { chatModel.sharedContent }.value !is SharedContent.Forward -> {
         val allRead = users
           .filter { u -> !u.user.activeUser && !u.user.hidden }
           .all { u -> u.unreadCount == 0 }
@@ -186,12 +177,11 @@ private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchVal
     title = {
       Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
-          when (chatModel.sharedContent.value) {
+          when (val v = chatModel.sharedContent.value) {
             is SharedContent.Text -> stringResource(MR.strings.share_message)
             is SharedContent.Media -> stringResource(MR.strings.share_image)
             is SharedContent.File -> stringResource(MR.strings.share_file)
-            is SharedContent.Forward -> stringResource(MR.strings.forward_message)
-            is SharedContent.BulkForward -> stringResource(MR.strings.forward_multiple)
+            is SharedContent.Forward -> if (v.chatItems.size > 1) stringResource(MR.strings.forward_multiple) else stringResource(MR.strings.forward_message)
             null -> stringResource(MR.strings.share_message)
           },
           color = MaterialTheme.colors.onBackground,

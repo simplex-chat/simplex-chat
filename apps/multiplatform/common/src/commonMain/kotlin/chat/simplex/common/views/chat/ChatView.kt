@@ -371,9 +371,9 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                 openDirectChat(chatRh, contactId, chatModel)
               }
             },
-            forwardItem = { cItem, cInfo ->
+            forwardItem = { cInfo, cItem ->
               chatModel.chatId.value = null
-              chatModel.sharedContent.value = SharedContent.Forward(cInfo, cItem)
+              chatModel.sharedContent.value = SharedContent.Forward(listOf(cItem), cInfo)
             },
             updateContactStats = { contact ->
               withBGApi {
@@ -1797,7 +1797,7 @@ private fun ViewConfiguration.bigTouchSlop(slop: Float = 50f) = object: ViewConf
 
 private fun forwardContent(chatItemsIds: List<Long>, chatInfo: ChatInfo) {
   chatModel.chatId.value = null
-  chatModel.sharedContent.value = SharedContent.BulkForward(
+  chatModel.sharedContent.value = SharedContent.Forward(
     chatModel.chatItems.value.filter { chatItemsIds.contains(it.id) },
     chatInfo
   )
