@@ -277,7 +277,7 @@ class AlertManager {
   }
 }
 
-private fun alertTitle(title: String): (@Composable () -> Unit) {
+private fun alertTitle(title: String): (@Composable () -> Unit)? {
   return {
     Text(
       title,
