@@ -1623,7 +1623,7 @@ object ChatController {
         val errsStr = otherFileErrs.map { json.encodeToString(it) }.joinToString(separator = "\n")
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.error_receiving_file),
-          text = String.format(generalGetString(MR.strings.n_file_errors), otherFileErrs.count()) + "\n" + errsStr,
+          text = String.format(generalGetString(MR.strings.n_file_errors), otherFileErrs.count(), errsStr),
           shareText = true
         )
       }
@@ -1653,11 +1653,17 @@ object ChatController {
             belowTextContent = {
               if (otherFileErrs.isNotEmpty()) {
                 val clipboard = LocalClipboardManager.current
-                SimpleButton(
-                  text = generalGetString(MR.strings.copy_error),
-                  icon = painterResource(MR.images.ic_content_copy),
-                  click = { clipboard.setText(AnnotatedString(otherFileErrs.map { json.encodeToString(it) }.joinToString(separator = "\n"))) }
-                )
+                SimpleButtonFrame(click = {
+                  clipboard.setText(AnnotatedString(otherFileErrs.map { json.encodeToString(it) }.joinToString(separator = "\n")))
+                }) {
+                  Icon(
+                    painterResource(MR.images.ic_content_copy),
+                    contentDescription = null,
+                    tint = MaterialTheme.colors.primary,
+                    modifier = Modifier.padding(end = 8.dp)
+                  )
+                  Text(generalGetString(MR.strings.copy_error), color = MaterialTheme.colors.primary)
+                }
               }
             }
           ) {
