@@ -792,4 +792,23 @@
     <string name="permissions_find_in_settings_and_grant">Tìm kiếm quyền này trong phần cài đặt Android và cấp quyền theo cách thủ công.</string>
     <string name="fix_connection_confirm">Sửa</string>
     <string name="wallpaper_scale_fit">Kích thước phù hợp</string>
+    <string name="forward_chat_item">Chuyển tiếp</string>
+    <string name="forwarded_from_chat_item_info_title">Đã được chuyển tiếp từ</string>
+    <string name="forwarded_description">đã được chuyển tiếp</string>
+    <string name="snd_error_proxy_relay">Máy chủ chuyển tiếp: %1$s
+\nLỗi máy chủ đích: %2$s</string>
+    <string name="snd_error_proxy">Máy chủ chuyển tiếp: %1$s
+\nLỗi: %2$s</string>
+    <string name="v5_7_forward">Chuyển tiếp và lưu tin nhắn</string>
+    <string name="fix_connection_not_supported_by_group_member">Chức năng sửa không hỗ trợ bởi thành viên nhóm</string>
+    <string name="for_everybody">Cho tất cả mọi người</string>
+    <string name="forwarded_chat_item_info_tab">Đã được chuyển tiếp</string>
+    <string name="network_proxy_auth_mode_no_auth">Không sử dụng thông tin đăng nhập với proxy.</string>
+    <string name="fix_connection">Sửa kết nối</string>
+    <string name="fix_connection_question">Sửa kết nối?</string>
+    <string name="fix_connection_not_supported_by_contact">Chức năng sửa không hỗ trợ bởi liên hệ</string>
+    <string name="v5_2_fix_encryption_descr">Sửa mã hóa sau khi hồi phục dữ liệu dự phòng.</string>
+    <string name="network_proxy_incorrect_config_title">Lỗi lưu proxy</string>
+    <string name="icon_descr_flip_camera">Đổi máy ảnh</string>
+    <string name="appearance_font_size">Kích thước font</string>
 </resources>
