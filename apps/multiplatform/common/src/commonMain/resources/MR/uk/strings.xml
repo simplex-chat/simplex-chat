@@ -2076,4 +2076,14 @@
     <string name="migrate_from_device_uploaded_archive_will_be_removed">Завантажений архів бази даних буде остаточно видалено з серверів.</string>
     <string name="switching_profile_error_message">Ваше з\'єднання було перенесено на %s, але виникла несподівана помилка під час перенаправлення на профіль.</string>
     <string name="system_mode_toast">Режим системи</string>
+    <string name="network_proxy_auth_mode_no_auth">Не використовуйте облікові дані з проксі.</string>
+    <string name="network_proxy_auth">Аутентифікація проксі</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_entity">Використовуйте різні облікові дані проксі для кожного з\'єднання.</string>
+    <string name="network_proxy_random_credentials">Використовувати випадкові облікові дані</string>
+    <string name="network_proxy_auth_mode_username_password">Ваші облікові дані можуть бути надіслані в незашифрованому вигляді.</string>
+    <string name="network_proxy_incorrect_config_title">Помилка під час збереження проксі</string>
+    <string name="network_proxy_incorrect_config_desc">Переконайтеся, що конфігурація проксі правильна.</string>
+    <string name="network_proxy_password">Пароль</string>
+    <string name="network_proxy_username">Ім\'я користувача</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_user">Використовуйте різні облікові дані проксі для кожного профілю.</string>
 </resources>
