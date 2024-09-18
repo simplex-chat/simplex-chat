@@ -1549,6 +1549,99 @@ object ChatController {
     }
   }
 
+  suspend fun receiveFiles(rhId: Long?, user: UserLike, fileIds: List<Long>, userApprovedRelays: Boolean = false, auto: Boolean = false) {
+    val filesAccepted = mutableListOf<AChatItem>()
+    val filesIdsToApprove = mutableStateListOf<Long>()
+    val srvsToApprove = mutableSetOf<String>()
+    val otherFileErrs = mutableListOf<CR>()
+
+    for (fileId in fileIds) {
+      val r = sendCmd(
+        rhId, CC.ReceiveFile(
+          fileId,
+          userApprovedRelays = userApprovedRelays,
+          encrypt = appPrefs.privacyEncryptLocalFiles.get(),
+          inline = null
+        )
+      )
+      when (r) {
+        is CR.RcvFileAccepted -> filesAccepted.add(r.chatItem)
+        else -> {
+          val maybeChatError = chatError(r)
+          if (maybeChatError is ChatErrorType.FileNotApproved) {
+            filesIdsToApprove.add(maybeChatError.fileId)
+            srvsToApprove.addAll(maybeChatError.unknownServers.map { serverHostname(it) })
+          } else {
+            otherFileErrs.add(r)
+          }
+        }
+      }
+    }
+
+    filesAccepted.forEach {
+      chatItemSimpleUpdate(rhId, user, it)
+    }
+
+    if (!auto) {
+      // If there are not approved files, alert is shown the same way both in case of singular and plural files reception
+      if (filesIdsToApprove.isNotEmpty()) {
+        val srvsToApproveStr = srvsToApprove.toList().sorted().joinToString(separator = ", ")
+
+        AlertManager.shared.showAlertDialog(
+          title = generalGetString(MR.strings.file_not_approved_title),
+          text = generalGetString(MR.strings.file_not_approved_descr).format(srvsToApproveStr),
+          confirmText = generalGetString(MR.strings.download_file),
+          onConfirm = {
+            withBGApi {
+              receiveFiles(
+                rhId = rhId,
+                user = user,
+                fileIds = filesIdsToApprove,
+                userApprovedRelays = true
+              )
+            }
+          },
+        )
+      } else if (otherFileErrs.count() == 1) { // If there is a single other error, we differentiate on it
+        val errCR = otherFileErrs.firstOrNull()
+        if (errCR != null) {
+          when (errCR) {
+            is CR.RcvFileAcceptedSndCancelled -> {
+              Log.d(TAG, "receiveFiles error: sender cancelled file transfer")
+              AlertManager.shared.showAlertMsg(
+                generalGetString(MR.strings.cannot_receive_file),
+                generalGetString(MR.strings.sender_cancelled_file_transfer)
+              )
+            }
+            else -> {
+              val maybeChatError = chatError(errCR)
+              if (maybeChatError is ChatErrorType.FileCancelled || maybeChatError is ChatErrorType.FileAlreadyReceiving) {
+                Log.d(TAG, "receiveFiles ignoring FileCancelled or FileAlreadyReceiving error")
+              } else {
+                apiErrorAlert("receiveFiles", generalGetString(MR.strings.error_receiving_file), errCR)
+              }
+            }
+          }
+        }
+      } else if (otherFileErrs.count() > 1) { // If there are multiple other errors, we show general alert
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.error_receiving_file),
+          String.format(generalGetString(MR.strings.failed_to_receive_n_files), otherFileErrs.count())
+        )
+      }
+    }
+  }
+
+  suspend fun receiveFile(rhId: Long?, user: UserLike, fileId: Long, userApprovedRelays: Boolean = false, auto: Boolean = false) {
+    receiveFiles(
+      rhId = rhId,
+      user = user,
+      fileIds = listOf(fileId),
+      userApprovedRelays = userApprovedRelays || !appPrefs.privacyAskToApproveRelays.get(),
+      auto = auto
+    )
+  }
+
   suspend fun cancelFile(rh: Long?, user: User, fileId: Long) {
     val chatItem = apiCancelFile(rh, fileId)
     if (chatItem != null) {
@@ -2649,99 +2742,6 @@ object ChatController {
     } else {
       Log.d(TAG, "processReceivedMsg: ignoring ${r.responseType}, not in call with the contact ${contact.id}")
     }
-  }
-
-  suspend fun receiveFiles(rhId: Long?, user: UserLike, fileIds: List<Long>, userApprovedRelays: Boolean = false, auto: Boolean = false) {
-    val filesAccepted = mutableListOf<AChatItem>()
-    val filesIdsToApprove = mutableStateListOf<Long>()
-    val srvsToApprove = mutableSetOf<String>()
-    val otherFileErrs = mutableListOf<CR>()
-
-    for (fileId in fileIds) {
-      val r = sendCmd(
-        rhId, CC.ReceiveFile(
-          fileId,
-          userApprovedRelays = userApprovedRelays,
-          encrypt = appPrefs.privacyEncryptLocalFiles.get(),
-          inline = null
-        )
-      )
-      when (r) {
-        is CR.RcvFileAccepted -> filesAccepted.add(r.chatItem)
-        else -> {
-          val maybeChatError = chatError(r)
-          if (maybeChatError is ChatErrorType.FileNotApproved) {
-            filesIdsToApprove.add(maybeChatError.fileId)
-            srvsToApprove.addAll(maybeChatError.unknownServers.map { serverHostname(it) })
-          } else {
-            otherFileErrs.add(r)
-          }
-        }
-      }
-    }
-
-    filesAccepted.forEach {
-      chatItemSimpleUpdate(rhId, user, it)
-    }
-
-    if (!auto) {
-      // If there are not approved files, alert is shown the same way both in case of singular and plural files reception
-      if (filesIdsToApprove.isNotEmpty()) {
-        val srvsToApproveStr = srvsToApprove.toList().sorted().joinToString(separator = ", ")
-
-        AlertManager.shared.showAlertDialog(
-          title = generalGetString(MR.strings.file_not_approved_title),
-          text = generalGetString(MR.strings.file_not_approved_descr).format(srvsToApproveStr),
-          confirmText = generalGetString(MR.strings.download_file),
-          onConfirm = {
-            withBGApi {
-              receiveFiles(
-                rhId = rhId,
-                user = user,
-                fileIds = filesIdsToApprove,
-                userApprovedRelays = true
-              )
-            }
-          },
-        )
-      } else if (otherFileErrs.count() == 1) { // If there is a single other error, we differentiate on it
-        val errCR = otherFileErrs.firstOrNull()
-        if (errCR != null) {
-          when (errCR) {
-            is CR.RcvFileAcceptedSndCancelled -> {
-              Log.d(TAG, "receiveFiles error: sender cancelled file transfer")
-              AlertManager.shared.showAlertMsg(
-                generalGetString(MR.strings.cannot_receive_file),
-                generalGetString(MR.strings.sender_cancelled_file_transfer)
-              )
-            }
-            else -> {
-              val maybeChatError = chatError(errCR)
-              if (maybeChatError is ChatErrorType.FileCancelled || maybeChatError is ChatErrorType.FileAlreadyReceiving) {
-                Log.d(TAG, "receiveFiles ignoring FileCancelled or FileAlreadyReceiving error")
-              } else {
-                apiErrorAlert("receiveFiles", generalGetString(MR.strings.error_receiving_file), errCR)
-              }
-            }
-          }
-        }
-      } else if (otherFileErrs.count() > 1) { // If there are multiple other errors, we show general alert
-        AlertManager.shared.showAlertMsg(
-          generalGetString(MR.strings.error_receiving_file),
-          String.format(generalGetString(MR.strings.failed_to_receive_n_files), otherFileErrs.count())
-        )
-      }
-    }
-  }
-
-  suspend fun receiveFile(rhId: Long?, user: UserLike, fileId: Long, userApprovedRelays: Boolean = false, auto: Boolean = false) {
-    receiveFiles(
-      rhId = rhId,
-      user = user,
-      fileIds = listOf(fileId),
-      userApprovedRelays = userApprovedRelays || !appPrefs.privacyAskToApproveRelays.get(),
-      auto = auto
-    )
   }
 
   suspend fun leaveGroup(rh: Long?, groupId: Long) {
