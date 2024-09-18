@@ -1623,7 +1623,8 @@ object ChatController {
         val errsStr = otherFileErrs.map { json.encodeToString(it) }.joinToString(separator = "\n")
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.error_receiving_file),
-          text = String.format(generalGetString(MR.strings.n_file_errors), otherFileErrs.count()) + "\n" + errsStr
+          text = String.format(generalGetString(MR.strings.n_file_errors), otherFileErrs.count()) + "\n" + errsStr,
+          shareText = true
         )
       }
     }
