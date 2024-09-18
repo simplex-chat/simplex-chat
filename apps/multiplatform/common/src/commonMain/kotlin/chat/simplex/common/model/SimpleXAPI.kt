@@ -135,7 +135,22 @@ class AppPreferences {
   val terminalAlwaysVisible = mkBoolPreference(SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE, false)
   val networkUseSocksProxy = mkBoolPreference(SHARED_PREFS_NETWORK_USE_SOCKS_PROXY, false)
   val networkShowSubscriptionPercentage = mkBoolPreference(SHARED_PREFS_NETWORK_SHOW_SUBSCRIPTION_PERCENTAGE, false)
-  val networkProxyHostPort = mkStrPreference(SHARED_PREFS_NETWORK_PROXY_HOST_PORT, "localhost:9050")
+  private val _networkProxy = mkStrPreference(SHARED_PREFS_NETWORK_PROXY_HOST_PORT, json.encodeToString(NetworkProxy()))
+  val networkProxy: SharedPreference<NetworkProxy> = SharedPreference(
+    get = fun(): NetworkProxy {
+      val value = _networkProxy.get() ?: return NetworkProxy()
+      return try {
+        if (value.startsWith("{")) {
+          json.decodeFromString(value)
+        } else {
+          NetworkProxy(host = value.substringBefore(":").ifBlank { "localhost" }, port = value.substringAfter(":").toIntOrNull() ?: 9050)
+        }
+      } catch (e: Throwable) {
+        NetworkProxy()
+      }
+    },
+    set = fun(proxy: NetworkProxy) { _networkProxy.set(json.encodeToString(proxy)) }
+  )
   private val _networkSessionMode = mkStrPreference(SHARED_PREFS_NETWORK_SESSION_MODE, TransportSessionMode.default.name)
   val networkSessionMode: SharedPreference<TransportSessionMode> = SharedPreference(
     get = fun(): TransportSessionMode {
@@ -537,7 +552,7 @@ object ChatController {
   suspend fun startChatWithTemporaryDatabase(ctrl: ChatCtrl, netCfg: NetCfg): User? {
     Log.d(TAG, "startChatWithTemporaryDatabase")
     val migrationActiveUser = apiGetActiveUser(null, ctrl) ?: apiCreateActiveUser(null, Profile(displayName = "Temp", fullName = ""), ctrl = ctrl)
-    if (!apiSetNetworkConfig(netCfg, ctrl)) {
+    if (!apiSetNetworkConfig(netCfg, ctrl = ctrl)) {
       Log.e(TAG, "Error setting network config, stopping migration")
       return null
     }
@@ -990,16 +1005,18 @@ object ChatController {
     throw Exception("failed to set chat item TTL: ${r.responseType} ${r.details}")
   }
 
-  suspend fun apiSetNetworkConfig(cfg: NetCfg, ctrl: ChatCtrl? = null): Boolean {
+  suspend fun apiSetNetworkConfig(cfg: NetCfg, showAlertOnError: Boolean = true, ctrl: ChatCtrl? = null): Boolean {
     val r = sendCmd(null, CC.APISetNetworkConfig(cfg), ctrl)
     return when (r) {
       is CR.CmdOk -> true
       else -> {
         Log.e(TAG, "apiSetNetworkConfig bad response: ${r.responseType} ${r.details}")
-        AlertManager.shared.showAlertMsg(
-          generalGetString(MR.strings.error_setting_network_config),
-          "${r.responseType}: ${r.details}"
-        )
+        if (showAlertOnError) {
+          AlertManager.shared.showAlertMsg(
+            generalGetString(MR.strings.error_setting_network_config),
+            "${r.responseType}: ${r.details}"
+          )
+        }
         false
       }
     }
@@ -2191,15 +2208,16 @@ object ChatController {
           }
         }
       }
-      is CR.ChatItemStatusUpdated -> {
-        val cInfo = r.chatItem.chatInfo
-        val cItem = r.chatItem.chatItem
-        if (!cItem.isDeletedContent && active(r.user)) {
-          withChats {
-            updateChatItem(cInfo, cItem, status = cItem.meta.itemStatus)
+      is CR.ChatItemsStatusesUpdated ->
+        r.chatItems.forEach { chatItem ->
+          val cInfo = chatItem.chatInfo
+          val cItem = chatItem.chatItem
+          if (!cItem.isDeletedContent && active(r.user)) {
+            withChats {
+              updateChatItem(cInfo, cItem, status = cItem.meta.itemStatus)
+            }
           }
         }
-      }
       is CR.ChatItemUpdated ->
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
       is CR.ChatItemReaction -> {
@@ -2847,13 +2865,9 @@ object ChatController {
 
   fun getNetCfg(): NetCfg {
     val useSocksProxy = appPrefs.networkUseSocksProxy.get()
-    val proxyHostPort  = appPrefs.networkProxyHostPort.get()
+    val networkProxy  = appPrefs.networkProxy.get()
     val socksProxy = if (useSocksProxy) {
-      if (proxyHostPort?.startsWith("localhost:") == true) {
-        proxyHostPort.removePrefix("localhost")
-      } else {
-        proxyHostPort ?: ":9050"
-      }
+      networkProxy.toProxyString()
     } else {
       null
     }
@@ -2895,7 +2909,7 @@ object ChatController {
   }
 
   /**
-   * [AppPreferences.networkProxyHostPort] is not changed here, use appPrefs to set it
+   * [AppPreferences.networkProxy] is not changed here, use appPrefs to set it
    * */
   fun setNetCfg(cfg: NetCfg) {
     appPrefs.networkUseSocksProxy.set(cfg.useSocksProxy)
@@ -3644,13 +3658,8 @@ data class NetCfg(
   val useSocksProxy: Boolean get() = socksProxy != null
   val enableKeepAlive: Boolean get() = tcpKeepAlive != null
 
-  fun withHostPort(hostPort: String?, default: String? = ":9050"): NetCfg {
-    val socksProxy = if (hostPort?.startsWith("localhost:") == true) {
-      hostPort.removePrefix("localhost")
-    } else {
-      hostPort ?: default
-    }
-    return copy(socksProxy = socksProxy)
+  fun withProxy(proxy: NetworkProxy?, default: String? = ":9050"): NetCfg {
+    return copy(socksProxy = proxy?.toProxyString() ?: default)
   }
 
   companion object {
@@ -3690,6 +3699,39 @@ data class NetCfg(
     OnionHosts.REQUIRED ->
       this.copy(hostMode = HostMode.OnionViaSocks, requiredHostMode = true)
   }
+}
+
+@Serializable
+data class NetworkProxy(
+  val username: String = "",
+  val password: String = "",
+  val auth: NetworkProxyAuth = NetworkProxyAuth.ISOLATE,
+  val host: String = "localhost",
+  val port: Int = 9050
+) {
+  fun toProxyString(): String {
+    var res = ""
+    if (auth == NetworkProxyAuth.USERNAME && (username.isNotBlank() || password.isNotBlank())) {
+      res += username.trim() + ":" + password.trim() + "@"
+    } else if (auth == NetworkProxyAuth.USERNAME) {
+      res += "@"
+    }
+    if (host != "localhost") {
+      res += if (host.contains(':')) "[${host.trim(' ', '[', ']')}]" else host.trim()
+    }
+    if (port != 9050 || res.isEmpty()) {
+      res += ":$port"
+    }
+    return res
+  }
+}
+
+@Serializable
+enum class NetworkProxyAuth {
+  @SerialName("isolate")
+  ISOLATE,
+  @SerialName("username")
+  USERNAME,
 }
 
 enum class OnionHosts {
@@ -4907,7 +4949,7 @@ sealed class CR {
   @Serializable @SerialName("groupEmpty") class GroupEmpty(val user: UserRef, val group: GroupInfo): CR()
   @Serializable @SerialName("userContactLinkSubscribed") class UserContactLinkSubscribed: CR()
   @Serializable @SerialName("newChatItems") class NewChatItems(val user: UserRef, val chatItems: List<AChatItem>): CR()
-  @Serializable @SerialName("chatItemStatusUpdated") class ChatItemStatusUpdated(val user: UserRef, val chatItem: AChatItem): CR()
+  @Serializable @SerialName("chatItemsStatusesUpdated") class ChatItemsStatusesUpdated(val user: UserRef, val chatItems: List<AChatItem>): CR()
   @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val user: UserRef, val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemNotChanged") class ChatItemNotChanged(val user: UserRef, val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemReaction") class ChatItemReaction(val user: UserRef, val added: Boolean, val reaction: ACIReaction): CR()
@@ -5085,7 +5127,7 @@ sealed class CR {
     is GroupEmpty -> "groupEmpty"
     is UserContactLinkSubscribed -> "userContactLinkSubscribed"
     is NewChatItems -> "newChatItems"
-    is ChatItemStatusUpdated -> "chatItemStatusUpdated"
+    is ChatItemsStatusesUpdated -> "chatItemsStatusesUpdated"
     is ChatItemUpdated -> "chatItemUpdated"
     is ChatItemNotChanged -> "chatItemNotChanged"
     is ChatItemReaction -> "chatItemReaction"
@@ -5255,7 +5297,7 @@ sealed class CR {
     is GroupEmpty -> withUser(user, json.encodeToString(group))
     is UserContactLinkSubscribed -> noDetails()
     is NewChatItems -> withUser(user, chatItems.joinToString("\n") { json.encodeToString(it) })
-    is ChatItemStatusUpdated -> withUser(user, json.encodeToString(chatItem))
+    is ChatItemsStatusesUpdated -> withUser(user, chatItems.joinToString("\n") { json.encodeToString(it) })
     is ChatItemUpdated -> withUser(user, json.encodeToString(chatItem))
     is ChatItemNotChanged -> withUser(user, json.encodeToString(chatItem))
     is ChatItemReaction -> withUser(user, "added: $added\n${json.encodeToString(reaction)}")
@@ -6262,6 +6304,7 @@ enum class NotificationsMode() {
 @Serializable
 data class AppSettings(
   var networkConfig: NetCfg? = null,
+  var networkProxy: NetworkProxy? = null,
   var privacyEncryptLocalFiles: Boolean? = null,
   var privacyAskToApproveRelays: Boolean? = null,
   var privacyAcceptImages: Boolean? = null,
@@ -6293,6 +6336,7 @@ data class AppSettings(
     val empty = AppSettings()
     val def = defaults
     if (networkConfig != def.networkConfig) { empty.networkConfig = networkConfig }
+    if (networkProxy != def.networkProxy) { empty.networkProxy = networkProxy }
     if (privacyEncryptLocalFiles != def.privacyEncryptLocalFiles) { empty.privacyEncryptLocalFiles = privacyEncryptLocalFiles }
     if (privacyAskToApproveRelays != def.privacyAskToApproveRelays) { empty.privacyAskToApproveRelays = privacyAskToApproveRelays }
     if (privacyAcceptImages != def.privacyAcceptImages) { empty.privacyAcceptImages = privacyAcceptImages }
@@ -6330,8 +6374,12 @@ data class AppSettings(
       if (net.hostMode == HostMode.Onion) {
         net = net.copy(hostMode = HostMode.Public, requiredHostMode = true)
       }
+      if (net.socksProxy != null) {
+        net = net.copy(socksProxy = networkProxy?.toProxyString())
+      }
       setNetCfg(net)
     }
+    networkProxy?.let { def.networkProxy.set(it) }
     privacyEncryptLocalFiles?.let { def.privacyEncryptLocalFiles.set(it) }
     privacyAskToApproveRelays?.let { def.privacyAskToApproveRelays.set(it) }
     privacyAcceptImages?.let { def.privacyAcceptImages.set(it) }
@@ -6364,6 +6412,7 @@ data class AppSettings(
     val defaults: AppSettings
       get() = AppSettings(
         networkConfig = NetCfg.defaults,
+        networkProxy = null,
         privacyEncryptLocalFiles = true,
         privacyAskToApproveRelays = true,
         privacyAcceptImages = true,
@@ -6397,6 +6446,7 @@ data class AppSettings(
         val def = appPreferences
         return defaults.copy(
           networkConfig = getNetCfg(),
+          networkProxy = def.networkProxy.get(),
           privacyEncryptLocalFiles = def.privacyEncryptLocalFiles.get(),
           privacyAskToApproveRelays = def.privacyAskToApproveRelays.get(),
           privacyAcceptImages = def.privacyAcceptImages.get(),

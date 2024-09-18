@@ -134,7 +134,14 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRChatItems u _ chatItems -> ttyUser u $ concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True ts tz <> viewItemReactions item) chatItems
   CRChatItemInfo u ci ciInfo -> ttyUser u $ viewChatItemInfo ci ciInfo tz
   CRChatItemId u itemId -> ttyUser u [plain $ maybe "no item" show itemId]
-  CRChatItemStatusUpdated u ci -> ttyUser u $ viewChatItemStatusUpdated ci ts tz testView showReceipts
+  CRChatItemsStatusesUpdated u chatItems
+    | length chatItems <= 20 ->
+        concatMap
+          (\ci -> ttyUser u $ viewChatItemStatusUpdated ci ts tz testView showReceipts)
+          chatItems
+    | testView && showReceipts ->
+        ttyUser u [sShow (length chatItems) <> " message statuses updated"]
+    | otherwise -> []
   CRChatItemUpdated u (AChatItem _ _ chat item) -> ttyUser u $ unmuted u chat item $ viewItemUpdate chat item liveItems ts tz
   CRChatItemNotChanged u ci -> ttyUser u $ viewItemNotChanged ci
   CRChatItemsDeleted u deletions byUser timed -> case deletions of
