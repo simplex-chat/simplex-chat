@@ -1,18 +1,21 @@
 package chat.simplex.common.model
 
 import SectionItemView
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.*
 import chat.simplex.common.views.helpers.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatController.getNetCfg
 import chat.simplex.common.model.ChatController.setNetCfg
 import chat.simplex.common.model.ChatModel.changingActiveUserMutex
@@ -1584,13 +1587,10 @@ object ChatController {
     if (!auto) {
       // If there are not approved files, alert is shown the same way both in case of singular and plural files reception
       if (filesIdsToApprove.isNotEmpty()) {
-        val srvsToApproveStr = srvsToApprove.toList().sorted().joinToString(separator = ", ")
-
-        AlertManager.shared.showAlertDialog(
-          title = generalGetString(MR.strings.file_not_approved_title),
-          text = generalGetString(MR.strings.file_not_approved_descr).format(srvsToApproveStr),
-          confirmText = generalGetString(MR.strings.download_file),
-          onConfirm = {
+        showFilesToApproveAlert(
+          srvsToApprove = srvsToApprove.toList(),
+          otherFileErrs = otherFileErrs.toList(),
+          approveFiles = {
             withBGApi {
               receiveFiles(
                 rhId = rhId,
@@ -1599,7 +1599,7 @@ object ChatController {
                 userApprovedRelays = true
               )
             }
-          },
+          }
         )
       } else if (otherFileErrs.count() == 1) { // If there is a single other error, we differentiate on it
         when (val errCR = otherFileErrs.first()) {
@@ -1620,11 +1620,66 @@ object ChatController {
           }
         }
       } else if (otherFileErrs.count() > 1) { // If there are multiple other errors, we show general alert
+        val errsStr = otherFileErrs.map { json.encodeToString(it) }.joinToString(separator = "\n")
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.error_receiving_file),
-          String.format(generalGetString(MR.strings.failed_to_receive_n_files), otherFileErrs.count())
+          text = String.format(generalGetString(MR.strings.n_file_errors), otherFileErrs.count()) + "\n" + errsStr
         )
       }
+    }
+  }
+
+  private fun showFilesToApproveAlert(
+    srvsToApprove: List<String>,
+    otherFileErrs: List<CR>,
+    approveFiles: (() -> Unit)
+  ) {
+    val srvsToApproveStr = srvsToApprove.sorted().joinToString(separator = ", ")
+    val alertText =
+      generalGetString(MR.strings.file_not_approved_descr).format(srvsToApproveStr) +
+          (if (otherFileErrs.isNotEmpty()) "\n" + generalGetString(MR.strings.n_other_file_errors).format(otherFileErrs.count()) else "")
+
+    AlertManager.shared.showAlert {
+      AlertDialog(
+        onDismissRequest = { AlertManager.shared.hideAlert() },
+        title = alertTitle(generalGetString(MR.strings.file_not_approved_title)),
+        buttons = {
+          AlertContent(
+            alertText,
+            hostDevice = null,
+            extraPadding = true,
+            textAlign = TextAlign.Center,
+            belowTextContent = {
+              if (otherFileErrs.isNotEmpty()) {
+                val clipboard = LocalClipboardManager.current
+                SimpleButton(
+                  text = generalGetString(MR.strings.copy_error),
+                  icon = painterResource(MR.images.ic_content_copy),
+                  click = { clipboard.setText(AnnotatedString(otherFileErrs.map { json.encodeToString(it) }.joinToString(separator = "\n"))) }
+                )
+              }
+            }
+          ) {
+            Row(
+              Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING),
+              horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+              val focusRequester = remember { FocusRequester() }
+              LaunchedEffect(Unit) {
+                // Wait before focusing to prevent auto-confirming if a user used Enter key on hardware keyboard
+                delay(200)
+                focusRequester.requestFocus()
+              }
+              TextButton(onClick = AlertManager.shared::hideAlert) { Text(generalGetString(MR.strings.cancel_verb)) }
+              TextButton(onClick = {
+                approveFiles.invoke()
+                AlertManager.shared.hideAlert()
+              }, Modifier.focusRequester(focusRequester)) { Text(generalGetString(MR.strings.download_file)) }
+            }
+          }
+        },
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
+      )
     }
   }
 
