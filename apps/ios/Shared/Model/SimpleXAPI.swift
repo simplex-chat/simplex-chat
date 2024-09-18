@@ -1092,54 +1092,63 @@ func receiveFiles(user: any UserLike, fileIds: [Int64], userApprovedRelays: Bool
         // If there are not approved files, alert is shown the same way both in case of singular and plural files reception
         if !fileIdsToApprove.isEmpty {
             let srvs = srvsToApprove.sorted().joined(separator: ", ")
-            showAlert(
-                title: NSLocalizedString("Unknown servers!", comment: "alert title"),
-                message: NSLocalizedString(
-                    "Without Tor or VPN, your IP address will be visible to these XFTP relays: \(srvs).",
-                    comment: "alert message"
-                ),
-                buttonTitle: NSLocalizedString("Download", comment: "alert button"),
-                buttonAction: {
-                    let fileIds = fileIdsToApprove
-                    Task {
-                        logger.debug("apiReceiveFile fileNotApproved alert - in Task")
-                        if let user = ChatModel.shared.currentUser {
-                            await receiveFiles(user: user, fileIds: fileIds, userApprovedRelays: true)
+            let fileIds = fileIdsToApprove
+            await MainActor.run {
+                showAlert(
+                    title: NSLocalizedString("Unknown servers!", comment: "alert title"),
+                    message: NSLocalizedString(
+                        "Without Tor or VPN, your IP address will be visible to these XFTP relays: \(srvs).",
+                        comment: "alert message"
+                    ),
+                    buttonTitle: NSLocalizedString("Download", comment: "alert button"),
+                    buttonAction: {
+                        Task {
+                            logger.debug("apiReceiveFile fileNotApproved alert - in Task")
+                            if let user = ChatModel.shared.currentUser {
+                                await receiveFiles(user: user, fileIds: fileIds, userApprovedRelays: true)
+                            }
                         }
-                    }
-                },
-                cancelButton: true
-            )
+                    },
+                    cancelButton: true
+                )
+            }
         } else if otherFileErrs.count == 1 { // If there is a single other error, we differentiate on it
             let errorResponse = otherFileErrs.first!
             switch errorResponse {
             case let .rcvFileAcceptedSndCancelled(_, rcvFileTransfer):
                 logger.debug("receiveFiles error: sender cancelled file transfer \(rcvFileTransfer.fileId)")
-                showAlert(
-                    NSLocalizedString("Cannot receive file", comment: "alert title"),
-                    message: NSLocalizedString("Sender cancelled file transfer.", comment: "alert message")
-                )
+                await MainActor.run {
+                    showAlert(
+                        NSLocalizedString("Cannot receive file", comment: "alert title"),
+                        message: NSLocalizedString("Sender cancelled file transfer.", comment: "alert message")
+                    )
+                }
             default:
                 if let chatError = chatError(errorResponse) {
                     switch chatError {
                     case .fileCancelled, .fileAlreadyReceiving:
                         logger.debug("receiveFiles ignoring FileCancelled or FileAlreadyReceiving error")
                     default:
-                        showAlert(
-                            NSLocalizedString("Error receiving file", comment: "alert title"),
-                            message: responseError(errorResponse)
-                        )
+                        await MainActor.run {
+                            showAlert(
+                                NSLocalizedString("Error receiving file", comment: "alert title"),
+                                message: responseError(errorResponse)
+                            )
+                        }
                     }
                 }
             }
         } else if otherFileErrs.count > 1 { // If there are multiple other errors, we show general alert
-            showAlert(
-                NSLocalizedString("Error receiving file", comment: "alert title"),
-                message: String.localizedStringWithFormat(
-                    NSLocalizedString("Failed to receive %d files.", comment: "alert message"),
-                    otherFileErrs.count
+            let count = otherFileErrs.count
+            await MainActor.run {
+                showAlert(
+                    NSLocalizedString("Error receiving file", comment: "alert title"),
+                    message: String.localizedStringWithFormat(
+                        NSLocalizedString("Failed to receive %d files.", comment: "alert message"),
+                        count
+                    )
                 )
-            )
+            }
         }
     }
 }
