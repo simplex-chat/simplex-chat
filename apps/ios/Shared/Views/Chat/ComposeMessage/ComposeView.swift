@@ -900,21 +900,15 @@ struct ComposeView: View {
             ).first
         }
 
-        func send(_ composedMessages: [ComposedMessage], live: Bool, ttl: Int?) async -> [ChatItem] {
+        func send(_ msgs: [ComposedMessage], live: Bool, ttl: Int?) async -> [ChatItem] {
             if let chatItems = chat.chatInfo.chatType == .local
-                ? await apiCreateChatItems(
-                    noteFolderId: chat.chatInfo.apiId,
-                    composedMessages: composedMessages.map {
-                        // Exclude quotes for local items
-                        ComposedMessage(fileSource: $0.fileSource, msgContent: $0.msgContent)
-                    }
-                )
+                ? await apiCreateChatItems(noteFolderId: chat.chatInfo.apiId, composedMessages: msgs)
                 : await apiSendMessages(
                     type: chat.chatInfo.chatType,
                     id: chat.chatInfo.apiId,
                     live: live,
                     ttl: ttl,
-                    composedMessages: composedMessages
+                    composedMessages: msgs
                 ) {
                 await MainActor.run {
                     chatModel.removeLiveDummy(animated: false)
@@ -924,9 +918,11 @@ struct ComposeView: View {
                 }
                 return chatItems
             }
-            composedMessages
-                .compactMap { $0.fileSource }
-                .forEach { removeFile($0.filePath) }
+            for msg in msgs {
+                if let file = msg.fileSource {
+                    removeFile(file.filePath)
+                }
+            }
             return []
         }
 
