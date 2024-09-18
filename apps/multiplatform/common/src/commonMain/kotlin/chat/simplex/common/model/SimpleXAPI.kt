@@ -1635,53 +1635,38 @@ object ChatController {
       generalGetString(MR.strings.file_not_approved_descr).format(srvsToApproveStr) +
           (if (otherFileErrs.isNotEmpty()) "\n" + generalGetString(MR.strings.n_other_file_errors).format(otherFileErrs.size) else "")
 
-    AlertManager.shared.showAlert {
-      AlertDialog(
-        onDismissRequest = { AlertManager.shared.hideAlert() },
-        title = alertTitle(generalGetString(MR.strings.file_not_approved_title)),
-        buttons = {
-          AlertContent(
-            alertText,
-            hostDevice = null,
-            extraPadding = true,
-            textAlign = TextAlign.Center,
-            belowTextContent = {
-              if (otherFileErrs.isNotEmpty()) {
-                val clipboard = LocalClipboardManager.current
-                SimpleButtonFrame(click = {
-                  clipboard.setText(AnnotatedString(otherFileErrs.map { json.encodeToString(it) }.joinToString(separator = "\n")))
-                }) {
-                  Icon(
-                    painterResource(MR.images.ic_content_copy),
-                    contentDescription = null,
-                    tint = MaterialTheme.colors.primary,
-                    modifier = Modifier.padding(end = 8.dp)
-                  )
-                  Text(generalGetString(MR.strings.copy_error), color = MaterialTheme.colors.primary)
-                }
-              }
-            }
-          ) {
-            Row(
-              Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING),
-              horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-              val focusRequester = remember { FocusRequester() }
-              LaunchedEffect(Unit) {
-                // Wait before focusing to prevent auto-confirming if a user used Enter key on hardware keyboard
-                delay(200)
-                focusRequester.requestFocus()
-              }
-              TextButton(onClick = AlertManager.shared::hideAlert) { Text(generalGetString(MR.strings.cancel_verb)) }
-              TextButton(onClick = {
-                approveFiles.invoke()
-                AlertManager.shared.hideAlert()
-              }, Modifier.focusRequester(focusRequester)) { Text(generalGetString(MR.strings.download_file)) }
-            }
-          }
-        },
-        shape = RoundedCornerShape(corner = CornerSize(25.dp))
-      )
+    AlertManager.shared.showAlertDialogButtonsColumn(generalGetString(MR.strings.file_not_approved_title), alertText, belowTextContent = {
+      if (otherFileErrs.isNotEmpty()) {
+        val clipboard = LocalClipboardManager.current
+        SimpleButtonFrame(click = {
+          clipboard.setText(AnnotatedString(otherFileErrs.map { json.encodeToString(it) }.joinToString(separator = "\n")))
+        }) {
+          Icon(
+            painterResource(MR.images.ic_content_copy),
+            contentDescription = null,
+            tint = MaterialTheme.colors.primary,
+            modifier = Modifier.padding(end = 8.dp)
+          )
+          Text(generalGetString(MR.strings.copy_error), color = MaterialTheme.colors.primary)
+        }
+      }
+    }) {
+      Row(
+        Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING),
+        horizontalArrangement = Arrangement.SpaceBetween
+      ) {
+        val focusRequester = remember { FocusRequester() }
+        LaunchedEffect(Unit) {
+          // Wait before focusing to prevent auto-confirming if a user used Enter key on hardware keyboard
+          delay(200)
+          focusRequester.requestFocus()
+        }
+        TextButton(onClick = AlertManager.shared::hideAlert) { Text(generalGetString(MR.strings.cancel_verb)) }
+        TextButton(onClick = {
+          approveFiles.invoke()
+          AlertManager.shared.hideAlert()
+        }, Modifier.focusRequester(focusRequester)) { Text(generalGetString(MR.strings.download_file)) }
+      }
     }
   }
 
