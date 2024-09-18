@@ -327,9 +327,9 @@
         <target>)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Add contact**: to create a new invitation link, or connect via a link you received." xml:space="preserve">
+      <trans-unit id="**Add contact**: to create a new invitation link, or connect via a link you received." xml:space="preserve" approved="no">
         <source>**Add contact**: to create a new invitation link, or connect via a link you received.</source>
-        <target>**Ismerős hozzáadása**: új meghívó hivatkozás létrehozásához, vagy egy kapott hivatkozáson keresztül történő kapcsolódáshoz.</target>
+        <target state="translated">**Ismerős hozzáadása**: új meghívó-hivatkozás létrehozásához, vagy egy kapott hivatkozáson keresztül történő kapcsolódáshoz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Add new contact**: to create your one-time QR Code for your contact." xml:space="preserve">
@@ -542,14 +542,14 @@
         <target>Címváltoztatás megszakítása??</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="About SimpleX" xml:space="preserve">
+      <trans-unit id="About SimpleX" xml:space="preserve" approved="no">
         <source>About SimpleX</source>
-        <target>A SimpleX-ről</target>
+        <target state="translated">A SimpleXről</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="About SimpleX Chat" xml:space="preserve">
+      <trans-unit id="About SimpleX Chat" xml:space="preserve" approved="no">
         <source>About SimpleX Chat</source>
-        <target>A SimpleX Chat-ről</target>
+        <target state="translated">A SimpleX Chatről</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="About SimpleX address" xml:space="preserve" approved="no">
@@ -635,9 +635,9 @@
         <target>Hozzáadás egy másik eszközhöz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add welcome message" xml:space="preserve">
+      <trans-unit id="Add welcome message" xml:space="preserve" approved="no">
         <source>Add welcome message</source>
-        <target>Üdvözlő üzenet hozzáadása</target>
+        <target state="translated">Üdvözlőüzenet hozzáadása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Additional accent" xml:space="preserve">
@@ -2699,14 +2699,14 @@ Ez az ön egyszer használatos hivatkozása!</target>
         <target>Eszköznév megadása…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enter welcome message…" xml:space="preserve">
+      <trans-unit id="Enter welcome message…" xml:space="preserve" approved="no">
         <source>Enter welcome message…</source>
-        <target>Üdvözlő üzenet megadása…</target>
+        <target state="translated">Üdvözlőüzenet megadása…</target>
         <note>placeholder</note>
       </trans-unit>
-      <trans-unit id="Enter welcome message… (optional)" xml:space="preserve">
+      <trans-unit id="Enter welcome message… (optional)" xml:space="preserve" approved="no">
         <source>Enter welcome message… (optional)</source>
-        <target>Üdvözlő üzenet megadása… (opcionális)</target>
+        <target state="translated">Üdvözlőüzenet megadása… (opcionális)</target>
         <note>placeholder</note>
       </trans-unit>
       <trans-unit id="Enter your name…" xml:space="preserve">
@@ -3389,19 +3389,19 @@ Hiba: %2$@</target>
         <target>Csoportkép</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group invitation" xml:space="preserve">
+      <trans-unit id="Group invitation" xml:space="preserve" approved="no">
         <source>Group invitation</source>
-        <target>Csoportos meghívó</target>
+        <target state="translated">Csoportmeghívó</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group invitation expired" xml:space="preserve">
+      <trans-unit id="Group invitation expired" xml:space="preserve" approved="no">
         <source>Group invitation expired</source>
-        <target>A csoport meghívó lejárt</target>
+        <target state="translated">A csoportmeghívó lejárt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group invitation is no longer valid, it was removed by sender." xml:space="preserve" approved="no">
         <source>Group invitation is no longer valid, it was removed by sender.</source>
-        <target state="translated">A csoport meghívó már nem érvényes, a küldője eltávolította.</target>
+        <target state="translated">A csoportmeghívó már nem érvényes, a küldője eltávolította.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group link" xml:space="preserve">
@@ -3474,9 +3474,9 @@ Hiba: %2$@</target>
         <target>A csoport profilja a tagok eszközein tárolódik, nem a kiszolgálókon.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group welcome message" xml:space="preserve">
+      <trans-unit id="Group welcome message" xml:space="preserve" approved="no">
         <source>Group welcome message</source>
-        <target>Csoport üdvözlő üzenete</target>
+        <target state="translated">A csoport üdvözlőüzenete</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group will be deleted for all members - this cannot be undone!" xml:space="preserve">
@@ -4613,9 +4613,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Régi adatbázis-archívum</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="One-time invitation link" xml:space="preserve">
+      <trans-unit id="One-time invitation link" xml:space="preserve" approved="no">
         <source>One-time invitation link</source>
-        <target>Egyszer használatos meghívó hivatkozás</target>
+        <target state="translated">Egyszer használatos meghívó-hivatkozás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Onion hosts will be **required** for connection.&#10;Requires compatible VPN." xml:space="preserve">
@@ -5650,9 +5650,9 @@ Engedélyezze a Beállítások / Hálózat és kiszolgálók menüben.</target>
         <target>Kiszolgálók mentése?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save welcome message?" xml:space="preserve">
+      <trans-unit id="Save welcome message?" xml:space="preserve" approved="no">
         <source>Save welcome message?</source>
-        <target>Üdvözlőszöveg mentése?</target>
+        <target state="translated">Üdvözlőüzenet mentése?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save your profile?" xml:space="preserve" approved="no">
@@ -5720,9 +5720,9 @@ Engedélyezze a Beállítások / Hálózat és kiszolgálók menüben.</target>
         <target>Keresés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Search bar accepts invitation links." xml:space="preserve">
+      <trans-unit id="Search bar accepts invitation links." xml:space="preserve" approved="no">
         <source>Search bar accepts invitation links.</source>
-        <target>A keresősáv elfogadja a meghívó hivatkozásokat.</target>
+        <target state="translated">A keresősáv elfogadja a meghívó-hivatkozásokat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Search or paste SimpleX link" xml:space="preserve">
@@ -6145,9 +6145,9 @@ Engedélyezze a Beállítások / Hálózat és kiszolgálók menüben.</target>
         <target state="translated">Profil megosztása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share this 1-time invite link" xml:space="preserve">
+      <trans-unit id="Share this 1-time invite link" xml:space="preserve" approved="no">
         <source>Share this 1-time invite link</source>
-        <target>Egyszer használatos meghívó hivatkozás megosztása</target>
+        <target state="translated">Egyszer használatos meghívó-hivatkozás megosztása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share to SimpleX" xml:space="preserve">
@@ -7321,14 +7321,14 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
         <target>Üdvözöllek %@!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Welcome message" xml:space="preserve">
+      <trans-unit id="Welcome message" xml:space="preserve" approved="no">
         <source>Welcome message</source>
-        <target>Üdvözlő üzenet</target>
+        <target state="translated">Üdvözlőüzenet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Welcome message is too long" xml:space="preserve">
+      <trans-unit id="Welcome message is too long" xml:space="preserve" approved="no">
         <source>Welcome message is too long</source>
-        <target>Az üdvözlő üzenet túl hosszú</target>
+        <target state="translated">Az üdvözlőüzenet túl hosszú</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="What's new" xml:space="preserve">
@@ -7376,9 +7376,9 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
         <target state="translated">Titkosított fájlokkal és médiatartalmakkal.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="With optional welcome message." xml:space="preserve">
+      <trans-unit id="With optional welcome message." xml:space="preserve" approved="no">
         <source>With optional welcome message.</source>
-        <target>Opcionális üdvözlő üzenettel.</target>
+        <target state="translated">Opcionális üdvözlőüzenettel.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="With reduced battery usage." xml:space="preserve" approved="no">
@@ -7593,9 +7593,9 @@ Csatlakozáskérés megismétlése?</target>
         <target>Üzenetek formázása a szövegbe szúrt speciális karakterekkel:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can view invitation link again in connection details." xml:space="preserve">
+      <trans-unit id="You can view invitation link again in connection details." xml:space="preserve" approved="no">
         <source>You can view invitation link again in connection details.</source>
-        <target>A meghívó hivatkozást újra megtekintheti a kapcsolat részleteinél.</target>
+        <target state="translated">A meghívó-hivatkozást újra megtekintheti a kapcsolat részleteinél.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can't send messages!" xml:space="preserve">
@@ -7670,14 +7670,14 @@ Kapcsolatkérés megismétlése?</target>
         <target>Hangüzeneteket küldéséhez engedélyeznie kell azok küldését az ismerősök számára.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You rejected group invitation" xml:space="preserve">
+      <trans-unit id="You rejected group invitation" xml:space="preserve" approved="no">
         <source>You rejected group invitation</source>
-        <target>Csoport meghívó elutasítva</target>
+        <target state="translated">Csoportmeghívó elutasítva</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You sent group invitation" xml:space="preserve">
+      <trans-unit id="You sent group invitation" xml:space="preserve" approved="no">
         <source>You sent group invitation</source>
-        <target>Csoport meghívó elküldve</target>
+        <target state="translated">Csoportmeghívó elküldve</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will be connected to group when the group host's device is online, please wait or check later!" xml:space="preserve">
@@ -8080,9 +8080,9 @@ Kapcsolatkérés megismétlése?</target>
         <target>kapcsolódás (bejelentve)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="connecting (introduction invitation)" xml:space="preserve">
+      <trans-unit id="connecting (introduction invitation)" xml:space="preserve" approved="no">
         <source>connecting (introduction invitation)</source>
-        <target>kapcsolódás (bemutatkozó meghívó)</target>
+        <target state="translated">kapcsolódás (bemutatkozó-meghívó)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connecting call" xml:space="preserve">
