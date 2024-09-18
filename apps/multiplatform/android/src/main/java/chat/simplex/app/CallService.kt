@@ -105,9 +105,11 @@ class CallService: Service() {
         0
       }
     } else if (Build.VERSION.SDK_INT >= 30) {
-      // since audio call can be transformed to video call, it's important to include camera type too in order to have camera working in the following situation:
-      // user turned the camera on, disabled picture-in-picture, went to background and entered the app again: without camera type the video will be frozen forever
-      ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
+      if (call.supportsVideo()) {
+        ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
+      } else {
+        ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+      }
     } else if (Build.VERSION.SDK_INT >= 29) {
       ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
     } else {
