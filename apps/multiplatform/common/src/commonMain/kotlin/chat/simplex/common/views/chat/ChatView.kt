@@ -1447,26 +1447,26 @@ private fun DownloadFilesButton(
   modifier: Modifier = Modifier,
   contentPadding: PaddingValues = ButtonDefaults.TextButtonContentPadding
 ) {
-  TextButton(
-    contentPadding = contentPadding,
-    modifier = modifier,
-    onClick = {
-      AlertManager.shared.hideAlert()
-      withBGApi {
-        val failures = controller.apiReceiveFiles(
-          rh = rhId,
-          fileIds = forwardConfirmation.fileIds,
-          userApprovedRelays = !appPrefs.privacyAskToApproveRelays.get(),
-          encrypted = appPrefs.privacyEncryptLocalFiles.get(),
-        )
+  val user = chatModel.currentUser.value
 
-        if (failures.isNotEmpty()) {
-          Log.e(TAG, "${failures.count()} files failed to download.")
+  if (user != null) {
+    TextButton(
+      contentPadding = contentPadding,
+      modifier = modifier,
+      onClick = {
+        AlertManager.shared.hideAlert()
+
+        withBGApi {
+          controller.receiveFiles(
+            rhId = rhId,
+            fileIds = forwardConfirmation.fileIds,
+            user = user
+          )
         }
       }
+    ) {
+      Text(stringResource(MR.strings.forward_files_not_accepted_receive_files), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
     }
-  ) {
-    Text(stringResource(MR.strings.forward_files_not_accepted_receive_files), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
   }
 }
 
