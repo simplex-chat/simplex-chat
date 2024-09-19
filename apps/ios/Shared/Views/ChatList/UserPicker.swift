@@ -20,7 +20,7 @@ struct UserPicker: View {
 
     var body: some View {
         if #available(iOS 16.0, *) {
-            let v = viewBody.presentationDetents([.height(420)])
+            let v = viewBody.presentationDetents([.height(440)])
             if #available(iOS 16.4, *) {
                 v.scrollBounceBehavior(.basedOnSize)
             } else {
@@ -30,20 +30,31 @@ struct UserPicker: View {
             viewBody
         }
     }
+    
+    // TODO: Sort users by last accessed
+    private var users: [User] {
+        var users: [User] = m.users
+            .map { $0.user }
+            .filter { u in !u.hidden && !(u == m.currentUser) }
+        if let cu = m.currentUser {
+            return [cu] + users
+        } else {
+            return users
+        }
+    }
 
     @ViewBuilder
     private var viewBody: some View {
         VStack(spacing: 0) {
-            let users: [UserInfo] = m.users.filter { u in !u.user.hidden }
             let s = ScrollView(.horizontal) {
                 HStack {
                     ForEach(users.reversed()) { u in
-                        ProfilePreview(profileOf: u.user)
+                        ProfilePreview(profileOf: u)
                             .padding(.vertical, 10)
                             .padding(.leading, 6)
                             .padding(.trailing, 12)
                             .frame(
-                                minWidth: u.user == m.currentUser ? frameWidth.map { $0 - 64 } : nil,
+                                minWidth: u == m.currentUser ? frameWidth.map { $0 - 28 } : nil,
                                 alignment: .leading
                             )
                             .background(Color(.secondarySystemGroupedBackground))
@@ -123,7 +134,6 @@ struct UserPicker: View {
                 }
             }
         }
-//        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .onAppear {
             // This check prevents the call of listUsers after the app is suspended, and the database is closed.
             if case .active = scenePhase {
