@@ -59,6 +59,25 @@ struct UserPicker: View {
                             )
                             .background(Color(.secondarySystemGroupedBackground))
                             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .onTapGesture {
+                                Task {
+                                    do {
+                                        try await changeActiveUserAsync_(u.userId, viewPwd: nil)
+                                        await MainActor.run {
+                                            switchingProfile = false
+                                            dismiss()
+                                        }
+                                    } catch {
+                                        await MainActor.run {
+                                            switchingProfile = false
+                                            AlertManager.shared.showAlertMsg(
+                                                title: "Error switching profile!",
+                                                message: "Error: \(responseError(error))"
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                     }
                 }
                 .padding([.horizontal, .top], 16)
