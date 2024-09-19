@@ -20,7 +20,7 @@ struct UserPicker: View {
 
     var body: some View {
         if #available(iOS 16.0, *) {
-            let v = viewBody.presentationDetents([.height(440)])
+            let v = viewBody.presentationDetents([.height(420)])
             if #available(iOS 16.4, *) {
                 v.scrollBounceBehavior(.basedOnSize)
             } else {
@@ -50,19 +50,18 @@ struct UserPicker: View {
                 HStack {
                     ForEach(users.reversed()) { u in
                         ProfilePreview(profileOf: u)
-                            .padding(.vertical, 10)
-                            .padding(.leading, 6)
+                            .padding(.vertical, 12)
+                            .padding(.leading, 8)
                             .padding(.trailing, 12)
                             .frame(
-                                minWidth: u == m.currentUser ? frameWidth.map { $0 - 28 } : nil,
+                                minWidth: u == m.currentUser ? frameWidth.map { $0 - 32 } : nil,
                                 alignment: .leading
                             )
                             .background(Color(.secondarySystemGroupedBackground))
                             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                     }
                 }
-                .padding(.top, 14)
-                .padding(.horizontal, 14)
+                .padding([.horizontal, .top], 16)
                 .padding(.bottom, 8)
                 .scaleEffect(x: -1, anchor: .center)
             }
@@ -77,6 +76,7 @@ struct UserPicker: View {
                 .overlay(DetermineWidth())
                 .onPreferenceChange(DetermineWidth.Key.self) { frameWidth = $0 }
                 .scaleEffect(x: -1, anchor: .center)
+                .zIndex(1) // Position above list
             }
             List {
                 Section {
@@ -133,6 +133,7 @@ struct UserPicker: View {
                     }
                 }
             }
+            .padding(.top, -24)
         }
         .onAppear {
             // This check prevents the call of listUsers after the app is suspended, and the database is closed.
