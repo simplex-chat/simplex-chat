@@ -14,6 +14,7 @@ struct UserPicker: View {
     @Environment(\.colorScheme) private var colorScheme: ColorScheme
     @Environment(\.dismiss) private var dismiss: DismissAction
     @Binding var activeSheet: UserPickerSheet?
+    @State private var currentUser: Int64?
     @State private var switchingProfile = false
 
     var body: some View {
@@ -32,7 +33,35 @@ struct UserPicker: View {
     private var viewBody: some View {
         let otherUsers = m.users.filter { u in !u.user.hidden && u.user.userId != m.currentUser?.userId }
         return List {
-            Section(header: Text("You").foregroundColor(theme.colors.secondary)) {
+            let users: [UserInfo] = m.users.filter { u in !u.user.hidden }
+            TabView(selection: $currentUser) {
+                ForEach(users) { u in
+                    openSheetOnTap(label: {
+                        ZStack {
+                            let v = ProfilePreview(profileOf: u.user)
+                                .foregroundColor(.primary)
+                                .padding(.leading, -4)
+                            if #available(iOS 16.0, *) {
+                                v
+                            } else {
+                                v.padding(.vertical, 4)
+                            }
+                        }
+                    }) {
+                        activeSheet = .currentProfile
+                    }
+                    .tag(u.user.userId)
+                    .padding(16)
+                    .background(.background)
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+            .listRowBackground(Color.clear)
+
+            Section {
                 if let user = m.currentUser {
                     openSheetOnTap(label: {
                         ZStack {
@@ -57,22 +86,22 @@ struct UserPicker: View {
                         activeSheet = .chatPreferences
                     }
                 }
-            }
-
-            Section {
-                if otherUsers.isEmpty {
+//            }
+//
+//            Section {
+//                if otherUsers.isEmpty {
                     openSheetOnTap(title: "Your chat profiles", icon: "person.crop.rectangle.stack") {
                         activeSheet = .chatProfiles
                     }
-                } else {
-                    let v = userPickerRow(otherUsers, size: 44)
-                        .padding(.leading, -11)
-                    if #available(iOS 16.0, *) {
-                        v
-                    } else {
-                        v.padding(.vertical, 4)
-                    }
-                }
+//                } else {
+//                    let v = userPickerRow(otherUsers, size: 44)
+//                        .padding(.leading, -11)
+//                    if #available(iOS 16.0, *) {
+//                        v
+//                    } else {
+//                        v.padding(.vertical, 4)
+//                    }
+//                }
 
                 openSheetOnTap(title: "Use from desktop", icon: "desktopcomputer") {
                     activeSheet = .useFromDesktop
@@ -106,10 +135,14 @@ struct UserPicker: View {
         .onAppear {
             // This check prevents the call of listUsers after the app is suspended, and the database is closed.
             if case .active = scenePhase {
+                currentUser = m.currentUser?.userId
                 Task {
                     do {
                         let users = try await listUsersAsync()
-                        await MainActor.run { m.users = users }
+                        await MainActor.run {
+                            m.users = users
+                            currentUser = m.currentUser?.userId
+                        }
                     } catch {
                         logger.error("Error loading users \(responseError(error))")
                     }
