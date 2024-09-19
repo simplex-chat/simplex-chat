@@ -1610,9 +1610,9 @@ Ez az ön egyszer használatos hivatkozása!</target>
         <target>Kapcsolódás a kiszolgálóhoz…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connecting server… (error: %@)" xml:space="preserve">
+      <trans-unit id="Connecting server… (error: %@)" xml:space="preserve" approved="no">
         <source>Connecting to server… (error: %@)</source>
-        <target>Kapcsolódás a kiszolgálóhoz... (hiba: %@)</target>
+        <target state="translated">Kapcsolódás a kiszolgálóhoz… (hiba: %@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting to contact, please wait or check later!" xml:space="preserve">
@@ -7271,9 +7271,9 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
         <target>Hangüzenet…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Waiting for desktop..." xml:space="preserve">
+      <trans-unit id="Waiting for desktop..." xml:space="preserve" approved="no">
         <source>Waiting for desktop...</source>
-        <target>Várakozás az asztali kliensre...</target>
+        <target state="translated">Várakozás az asztali kliensre…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Waiting for file" xml:space="preserve" approved="no">
