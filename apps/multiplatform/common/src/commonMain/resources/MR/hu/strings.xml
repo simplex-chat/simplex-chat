@@ -901,7 +901,7 @@
     <string name="rcv_group_event_open_chat">Megnyitás</string>
     <string name="network_option_protocol_timeout">Protokoll időtúllépés</string>
     <string name="secret_text">titkos</string>
-    <string name="settings_notification_preview_mode_title">Előnézet megjelenítése</string>
+    <string name="settings_notification_preview_mode_title">Üzenetek előnézetének megjelenítése</string>
     <string name="callstate_waiting_for_confirmation">várakozás a visszaigazolásra…</string>
     <string name="stop_file__action">Fájl megállítása</string>
     <string name="description_via_group_link">a csoporthivatkozáson keresztül</string>
