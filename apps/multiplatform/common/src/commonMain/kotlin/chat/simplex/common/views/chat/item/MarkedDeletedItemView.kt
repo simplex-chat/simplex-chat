@@ -18,9 +18,10 @@ import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.datetime.Clock
+import java.sql.Timestamp
 
 @Composable
-fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, revealed: MutableState<Boolean>, showViaProxy: Boolean) {
+fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, revealed: MutableState<Boolean>, showViaProxy: Boolean, showTimestamp: Boolean) {
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
   Surface(
@@ -35,7 +36,7 @@ fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, revealed: Mutabl
       Box(Modifier.weight(1f, false)) {
         MergedMarkedDeletedText(ci, revealed)
       }
-      CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy)
+      CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
     }
   }
 }
@@ -113,7 +114,8 @@ fun PreviewMarkedDeletedItemView() {
     DeletedItemView(
       ChatItem.getSampleData(itemDeleted = CIDeleted.Deleted(Clock.System.now())),
       null,
-      showViaProxy = false
+      showViaProxy = false,
+      showTimestamp = true
     )
   }
 }

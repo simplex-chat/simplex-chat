@@ -13,6 +13,7 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.TAG
 import chat.simplex.common.ui.theme.isInDarkTheme
 import chat.simplex.res.MR
 import kotlinx.datetime.Clock
@@ -35,7 +36,8 @@ fun CIMetaView(
   },
   showStatus: Boolean = true,
   showEdited: Boolean = true,
-  showViaProxy: Boolean
+  showTimestamp: Boolean,
+  showViaProxy: Boolean,
 ) {
   Row(Modifier.padding(start = 3.dp), verticalAlignment = Alignment.CenterVertically) {
     if (chatItem.isDeletedContent) {
@@ -54,7 +56,8 @@ fun CIMetaView(
         paleMetaColor,
         showStatus = showStatus,
         showEdited = showEdited,
-        showViaProxy = showViaProxy
+        showViaProxy = showViaProxy,
+        showTimestamp = showTimestamp
       )
     }
   }
@@ -70,7 +73,8 @@ private fun CIMetaText(
   paleColor: Color,
   showStatus: Boolean = true,
   showEdited: Boolean = true,
-  showViaProxy: Boolean
+  showTimestamp: Boolean,
+  showViaProxy: Boolean,
 ) {
   if (showEdited && meta.itemEdited) {
     StatusIconText(painterResource(MR.images.ic_edit), color)
@@ -106,7 +110,10 @@ private fun CIMetaText(
     StatusIconText(painterResource(if (encrypted) MR.images.ic_lock else MR.images.ic_lock_open_right), color)
     Spacer(Modifier.width(4.dp))
   }
-  Text(meta.timestampText, color = color, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+
+  if (showTimestamp) {
+    Text(meta.timestampText, color = color, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+  }
 }
 
 // the conditions in this function should match CIMetaText
@@ -117,7 +124,8 @@ fun reserveSpaceForMeta(
   secondaryColor: Color,
   showStatus: Boolean = true,
   showEdited: Boolean = true,
-  showViaProxy: Boolean = false
+  showViaProxy: Boolean = false,
+  showTimestamp: Boolean
 ): String {
   val iconSpace = "    "
   var res = ""
@@ -138,7 +146,12 @@ fun reserveSpaceForMeta(
   if (encrypted != null) {
     res += iconSpace
   }
-  return res + meta.timestampText
+  if (showTimestamp) {
+    res += meta.timestampText
+  } else {
+    res += iconSpace
+  }
+  return res
 }
 
 @Composable
@@ -154,7 +167,8 @@ fun PreviewCIMetaView() {
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello"
     ),
     null,
-    showViaProxy = false
+    showViaProxy = false,
+    showTimestamp = true
   )
 }
 
@@ -167,7 +181,8 @@ fun PreviewCIMetaViewUnread() {
       status = CIStatus.RcvNew()
     ),
     null,
-    showViaProxy = false
+    showViaProxy = false,
+    showTimestamp = true
   )
 }
 
@@ -180,7 +195,8 @@ fun PreviewCIMetaViewSendFailed() {
       status = CIStatus.CISSndError(SndError.Other("CMD SYNTAX"))
     ),
     null,
-    showViaProxy = false
+    showViaProxy = false,
+    showTimestamp = true
   )
 }
 
@@ -192,7 +208,8 @@ fun PreviewCIMetaViewSendNoAuth() {
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello", status = CIStatus.SndErrorAuth()
     ),
     null,
-    showViaProxy = false
+    showViaProxy = false,
+    showTimestamp = true
   )
 }
 
@@ -204,7 +221,8 @@ fun PreviewCIMetaViewSendSent() {
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello", status = CIStatus.SndSent(SndCIStatusProgress.Complete)
     ),
     null,
-    showViaProxy = false
+    showViaProxy = false,
+    showTimestamp = true
   )
 }
 
@@ -217,7 +235,8 @@ fun PreviewCIMetaViewEdited() {
       itemEdited = true
     ),
     null,
-    showViaProxy = false
+    showViaProxy = false,
+    showTimestamp = true
   )
 }
 
@@ -231,7 +250,8 @@ fun PreviewCIMetaViewEditedUnread() {
       status= CIStatus.RcvNew()
     ),
     null,
-    showViaProxy = false
+    showViaProxy = false,
+    showTimestamp = true
   )
 }
 
@@ -245,7 +265,8 @@ fun PreviewCIMetaViewEditedSent() {
       status= CIStatus.SndSent(SndCIStatusProgress.Complete)
     ),
     null,
-    showViaProxy = false
+    showViaProxy = false,
+    showTimestamp = true
   )
 }
 
@@ -255,6 +276,7 @@ fun PreviewCIMetaViewDeletedContent() {
   CIMetaView(
     chatItem = ChatItem.getDeletedContentSampleData(),
     null,
-    showViaProxy = false
+    showViaProxy = false,
+    showTimestamp = true
   )
 }

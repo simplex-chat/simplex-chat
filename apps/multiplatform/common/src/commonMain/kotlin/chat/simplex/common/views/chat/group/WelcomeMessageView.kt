@@ -159,7 +159,8 @@ private fun TextPreview(text: String, linkMode: SimplexLinkMode, markdown: Boole
         toggleSecrets = false,
         modifier = Modifier.fillMaxHeight().padding(horizontal = DEFAULT_PADDING),
         linkMode = linkMode, uriHandler = uriHandler,
-        style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground, lineHeight = 22.sp)
+        style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground, lineHeight = 22.sp),
+        showTimestamp = true
       )
     }
   }
