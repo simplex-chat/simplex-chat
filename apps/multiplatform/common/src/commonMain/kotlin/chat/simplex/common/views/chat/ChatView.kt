@@ -42,7 +42,10 @@ import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock
 import java.io.File
 import java.net.URI
+import kotlin.math.abs
 import kotlin.math.sign
+
+class ItemSeparation(val timestamp: Boolean, val largeGap: Boolean)
 
 @Composable
 // staleChatId means the id that was before chatModel.chatId becomes null. It's needed for Android only to make transition from chat
@@ -1042,18 +1045,21 @@ fun BoxWithConstraintsScope.ChatItemsList(
         val revealed = remember { mutableStateOf(false) }
 
         @Composable
-        fun ChatItemViewShortHand(cItem: ChatItem, range: IntRange?) {
+        fun ChatItemViewShortHand(cItem: ChatItem, showTimestamp: Boolean, range: IntRange?) {
           tryOrShowError("${cItem.id}ChatItem", error = {
             CIBrokenComposableView(if (cItem.chatDir.sent) Alignment.CenterEnd else Alignment.CenterStart)
           }) {
-            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools, showViaProxy = showViaProxy)
+            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
           }
         }
 
         @Composable
         fun ChatItemView(cItem: ChatItem, range: IntRange?, prevItem: ChatItem?) {
           val sent = cItem.chatDir.sent
-          Box(Modifier.padding(bottom = 4.dp)) {
+          val (_, nextItem) = chatModel.getNextChatItem(cItem)
+          val itemSeparation = getItemSeparation(cItem, nextItem)
+
+          Box(Modifier.padding(bottom = if (itemSeparation.largeGap) 8.dp else 2.dp )) {
             val voiceWithTransparentBack = cItem.content.msgContent is MsgContent.MCVoice && cItem.content.text.isEmpty() && cItem.quotedItem == null && cItem.meta.itemForwarded == null
             val selectionVisible = selectedChatItems.value != null && cItem.canBeDeletedForSelf
             val selectionOffset by animateDpAsState(if (selectionVisible && !sent) 4.dp + 22.dp * fontSizeMultiplier else 0.dp)
@@ -1105,7 +1111,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                         Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
                           MemberImage(member)
                         }
-                        ChatItemViewShortHand(cItem, range)
+                        ChatItemViewShortHand(cItem, itemSeparation.timestamp, range)
                       }
                     }
                   }
@@ -1119,7 +1125,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                         .padding(start = 8.dp + MEMBER_IMAGE_SIZE + 4.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp)
                         .then(swipeableOrSelectionModifier)
                     ) {
-                      ChatItemViewShortHand(cItem, range)
+                      ChatItemViewShortHand(cItem, itemSeparation.timestamp, range)
                     }
                   }
                 }
@@ -1133,7 +1139,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                       .padding(start = if (voiceWithTransparentBack) 12.dp else 104.dp, end = 12.dp)
                       .then(if (selectionVisible) Modifier else swipeableModifier)
                   ) {
-                    ChatItemViewShortHand(cItem, range)
+                    ChatItemViewShortHand(cItem, itemSeparation.timestamp, range)
                   }
                 }
               }
@@ -1148,7 +1154,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                     end = if (sent || voiceWithTransparentBack) 12.dp else 76.dp,
                   ).then(if (!selectionVisible || !sent) swipeableOrSelectionModifier else Modifier)
                 ) {
-                  ChatItemViewShortHand(cItem, range)
+                  ChatItemViewShortHand(cItem, itemSeparation.timestamp, range)
                 }
               }
             }
@@ -1710,6 +1716,22 @@ private fun ViewConfiguration.bigTouchSlop(slop: Float = 50f) = object: ViewConf
     get() =
       this@bigTouchSlop.doubleTapMinTimeMillis
   override val touchSlop: Float get() = slop
+}
+
+private fun getItemSeparation(chatItem: ChatItem, nextItem: ChatItem?): ItemSeparation {
+  if (nextItem == null) {
+    return  ItemSeparation(
+      timestamp = true,
+      largeGap = true
+    )
+  }
+
+  val largeGap = !chatItem.chatDir.sameDirection(nextItem.chatDir) || (abs(nextItem.meta.createdAt.epochSeconds - chatItem.meta.createdAt.epochSeconds) >= 60)
+
+  return ItemSeparation(
+    timestamp = largeGap || chatItem.meta.timestampText != nextItem.meta.timestampText,
+    largeGap = largeGap
+  )
 }
 
 @Preview/*(

@@ -59,6 +59,7 @@ fun ContextItemView(
       inlineContent = inlineContent,
       linkMode = SimplexLinkMode.DESCRIPTION,
       modifier = Modifier.fillMaxWidth(),
+      showTimestamp = true,
     )
   }
 

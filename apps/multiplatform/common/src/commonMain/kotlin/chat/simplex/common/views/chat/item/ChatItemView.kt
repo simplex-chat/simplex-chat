@@ -72,6 +72,7 @@ fun ChatItemView(
   showItemDetails: (ChatInfo, ChatItem) -> Unit,
   developerTools: Boolean,
   showViaProxy: Boolean,
+  showTimestamp: Boolean,
   preview: Boolean = false,
 ) {
   val uriHandler = LocalUriHandler.current
@@ -131,7 +132,7 @@ fun ChatItemView(
       ) {
         @Composable
         fun framedItemView() {
-          FramedItemView(cInfo, cItem, uriHandler, imageProvider, linkMode = linkMode, showViaProxy = showViaProxy, showMenu, receiveFile, onLinkLongClick, scrollToItem)
+          FramedItemView(cInfo, cItem, uriHandler, imageProvider, linkMode = linkMode, showViaProxy = showViaProxy, showMenu, showTimestamp = showTimestamp, receiveFile, onLinkLongClick, scrollToItem)
         }
 
         fun deleteMessageQuestionText(): String {
@@ -354,14 +355,14 @@ fun ChatItemView(
         fun ContentItem() {
           val mc = cItem.content.msgContent
           if (cItem.meta.itemDeleted != null && (!revealed.value || cItem.isDeletedContent)) {
-            MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy)
+            MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
             MarkedDeletedItemDropdownMenu()
           } else {
             if (cItem.quotedItem == null && cItem.meta.itemForwarded == null && cItem.meta.itemDeleted == null && !cItem.meta.isLive) {
               if (mc is MsgContent.MCText && isShortEmoji(cItem.content.text)) {
-                EmojiItemView(cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy)
+                EmojiItemView(cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
               } else if (mc is MsgContent.MCVoice && cItem.content.text.isEmpty()) {
-                CIVoiceView(mc.duration, cItem.file, cItem.meta.itemEdited, cItem.chatDir.sent, hasText = false, cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy, longClick = { onLinkLongClick("") }, receiveFile = receiveFile)
+                CIVoiceView(mc.duration, cItem.file, cItem.meta.itemEdited, cItem.chatDir.sent, hasText = false, cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp, longClick = { onLinkLongClick("") }, receiveFile = receiveFile)
               } else {
                 framedItemView()
               }
@@ -373,7 +374,7 @@ fun ChatItemView(
         }
 
         @Composable fun LegacyDeletedItem() {
-          DeletedItemView(cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy)
+          DeletedItemView(cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
           DefaultDropdownMenu(showMenu) {
             ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
             DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
@@ -385,7 +386,7 @@ fun ChatItemView(
         }
 
         @Composable fun CallItem(status: CICallStatus, duration: Int) {
-          CICallItemView(cInfo, cItem, status, duration, acceptCall, cInfo.timedMessagesTTL)
+          CICallItemView(cInfo, cItem, status, duration, showTimestamp = showTimestamp, acceptCall, cInfo.timedMessagesTTL)
           DeleteItemMenu()
         }
 
@@ -430,7 +431,7 @@ fun ChatItemView(
 
         @Composable
         fun DeletedItem() {
-          MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy)
+          MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
           DefaultDropdownMenu(showMenu) {
             ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
             DeleteItemAction(cItem, revealed, showMenu, questionText = generalGetString(MR.strings.delete_message_cannot_be_undone_warning), deleteMessage, deleteMessages)
@@ -473,7 +474,7 @@ fun ChatItemView(
           is CIContent.SndCall -> CallItem(c.status, c.duration)
           is CIContent.RcvCall -> CallItem(c.status, c.duration)
           is CIContent.RcvIntegrityError -> if (developerTools) {
-            IntegrityErrorItemView(c.msgError, cItem, cInfo.timedMessagesTTL)
+            IntegrityErrorItemView(c.msgError, cItem, showTimestamp, cInfo.timedMessagesTTL)
             DeleteItemMenu()
           } else {
             Box(Modifier.size(0.dp)) {}
@@ -483,11 +484,11 @@ fun ChatItemView(
             DeleteItemMenu()
           }
           is CIContent.RcvGroupInvitation -> {
-            CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito, timedMessagesTTL = cInfo.timedMessagesTTL)
+            CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito, showTimestamp = showTimestamp, timedMessagesTTL = cInfo.timedMessagesTTL)
             DeleteItemMenu()
           }
           is CIContent.SndGroupInvitation -> {
-            CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito, timedMessagesTTL = cInfo.timedMessagesTTL)
+            CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito, showTimestamp = showTimestamp, timedMessagesTTL = cInfo.timedMessagesTTL)
             DeleteItemMenu()
           }
           is CIContent.RcvDirectEventContent -> {
@@ -927,6 +928,7 @@ fun PreviewChatItemView(
     showItemDetails = { _, _ -> },
     developerTools = false,
     showViaProxy = false,
+    showTimestamp = true,
     preview = true,
   )
 }
@@ -967,6 +969,7 @@ fun PreviewChatItemViewDeletedContent() {
       developerTools = false,
       showViaProxy = false,
       preview = true,
+      showTimestamp = true
     )
   }
 }
