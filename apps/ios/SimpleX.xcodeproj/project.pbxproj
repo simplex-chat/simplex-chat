@@ -204,6 +204,7 @@
 		CE38A29C2C3FCD72005ED185 /* SwiftyGif in Frameworks */ = {isa = PBXBuildFile; productRef = CE38A29B2C3FCD72005ED185 /* SwiftyGif */; };
 		CE75480A2C622630009579B7 /* SwipeLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7548092C622630009579B7 /* SwipeLabel.swift */; };
 		CE984D4B2C36C5D500E3AEFF /* ChatItemClipShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE984D4A2C36C5D500E3AEFF /* ChatItemClipShape.swift */; };
+		CEA034032C9C0F1800B587E7 /* TranslateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEA034022C9C0F1800B587E7 /* TranslateView.swift */; };
 		CEDE70222C48FD9500233B1F /* SEChatState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEDE70212C48FD9500233B1F /* SEChatState.swift */; };
 		CEE723AA2C3BD3D70009AE93 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE723A92C3BD3D70009AE93 /* ShareViewController.swift */; };
 		CEE723B12C3BD3D70009AE93 /* SimpleX SE.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = CEE723A72C3BD3D70009AE93 /* SimpleX SE.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -543,6 +544,7 @@
 		CE3097FA2C4C0C9F00180898 /* ErrorAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorAlert.swift; sourceTree = "<group>"; };
 		CE7548092C622630009579B7 /* SwipeLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeLabel.swift; sourceTree = "<group>"; };
 		CE984D4A2C36C5D500E3AEFF /* ChatItemClipShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatItemClipShape.swift; sourceTree = "<group>"; };
+		CEA034022C9C0F1800B587E7 /* TranslateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslateView.swift; sourceTree = "<group>"; };
 		CEDE70212C48FD9500233B1F /* SEChatState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SEChatState.swift; sourceTree = "<group>"; };
 		CEE723A72C3BD3D70009AE93 /* SimpleX SE.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "SimpleX SE.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CEE723A92C3BD3D70009AE93 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
@@ -727,6 +729,7 @@
 				5CBE6C132944CC12002D9531 /* ScanCodeView.swift */,
 				64C06EB42A0A4A7C00792D4D /* ChatItemInfoView.swift */,
 				648679AA2BC96A74006456E7 /* ChatItemForwardingView.swift */,
+				CEA034022C9C0F1800B587E7 /* TranslateView.swift */,
 				8CE848A22C5A0FA000D5C7C8 /* SelectableChatItemToolbars.swift */,
 			);
 			path = Chat;
@@ -1393,6 +1396,7 @@
 				5CB634A829E437960066AD6B /* PasscodeEntry.swift in Sources */,
 				5CFA59C42860BC6200863A68 /* MigrateToAppGroupView.swift in Sources */,
 				648010AB281ADD15009009B9 /* CIFileView.swift in Sources */,
+				CEA034032C9C0F1800B587E7 /* TranslateView.swift in Sources */,
 				644EFFE2292D089800525D5B /* FramedCIVoiceView.swift in Sources */,
 				5C4B3B0A285FB130003915F2 /* DatabaseView.swift in Sources */,
 				5CB2084F28DA4B4800D024EC /* RTCServers.swift in Sources */,
