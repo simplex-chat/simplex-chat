@@ -228,7 +228,7 @@
     <string name="display_name_connection_established">kapcsolat létrehozva</string>
     <string name="status_contact_has_no_e2e_encryption">az ismerősnek nincs e2e titkosítása</string>
     <string name="chat_preferences_contact_allows">Ismerős engedélyezi</string>
-    <string name="notification_preview_somebody">Rejtett:</string>
+    <string name="notification_preview_somebody">Rejtett név:</string>
     <string name="connect_to_desktop">Társítás számítógéppel</string>
     <string name="icon_descr_context">Környezeti ikon</string>
     <string name="connect_via_link">Kapcsolódás egy hivatkozáson keresztül</string>
@@ -614,7 +614,7 @@
     <string name="error_with_info">Hiba: %s</string>
     <string name="v4_4_disappearing_messages">Eltűnő üzenetek</string>
     <string name="auth_enable_simplex_lock">SimpleX-zár bekapcsolása</string>
-    <string name="error_synchronizing_connection">Hiba a kapcsolat szinkronizálása közben</string>
+    <string name="error_synchronizing_connection">Hiba a kapcsolat szinkronizálásakor</string>
     <string name="error_creating_address">Hiba a cím létrehozásakor</string>
     <string name="feature_enabled">engedélyezve</string>
     <string name="error_loading_details">Hiba a részletek betöltésekor</string>
@@ -1466,7 +1466,7 @@
     <string name="group_invitation_tap_to_join_incognito">Koppintson az inkognitóban való kapcsolódáshoz</string>
     <string name="set_password_to_export">Jelmondat beállítása az exportáláshoz</string>
     <string name="receipts_groups_override_disabled">A kézbesítési jelentések le vannak tiltva %d csoportban</string>
-    <string name="non_fatal_errors_occured_during_import">Néhány nem végzetes hiba történt az importálás közben:</string>
+    <string name="non_fatal_errors_occured_during_import">Néhány nem végzetes hiba történt az importáláskor:</string>
     <string name="v4_5_italian_interface_descr">Köszönet a felhasználóknak - hozzájárulás a Weblate-en!</string>
     <string name="relay_server_if_necessary">Az átjátszó kiszolgáló csak szükség esetén kerül használatra. Egy másik fél megfigyelheti az IP-címet.</string>
     <string name="v5_0_app_passcode_descr">Rendszerhitelesítés helyetti beállítás.</string>
@@ -1496,7 +1496,7 @@
     <string name="alert_text_msg_bad_id">A következő üzenet azonosítója hibás (kisebb vagy egyenlő az előzővel).
 \nEz valamilyen hiba, vagy sérült kapcsolat esetén fordulhat elő.</string>
     <string name="this_device_name_shared_with_mobile">Az eszköz neve megosztásra kerül a társított mobil klienssel.</string>
-    <string name="v4_4_live_messages_desc">A címzettek a beírás közben látják a frissítéseket.</string>
+    <string name="v4_4_live_messages_desc">A címzettek a beírás közben látják a szövegváltozásokat.</string>
     <string name="store_passphrase_securely">Tárolja el biztonságosan jelmondatát, mert ha elveszíti azt, NEM tudja megváltoztatni.</string>
     <string name="passphrase_will_be_saved_in_settings">A jelmondat a beállítások között egyszerű szövegként kerül tárolásra, miután megváltoztatta vagy újraindította az alkalmazást.</string>
     <string name="smp_servers_per_user">A jelenlegi csevegési profilhoz tartozó új kapcsolatok kiszolgálói</string>
@@ -1554,7 +1554,7 @@
     <string name="remote_ctrl_error_busy">Számítógép elfoglalt</string>
     <string name="remote_ctrl_error_inactive">Számítógép inaktív</string>
     <string name="restart_chat_button">Csevegés újraindítása</string>
-    <string name="remote_ctrl_error_timeout">Időtúllépés a számítógépről való kapcsolódás közben</string>
+    <string name="remote_ctrl_error_timeout">Időtúllépés a számítógéphez való csatlakozáskor</string>
     <string name="remote_ctrl_error_disconnected">Számítógép kliens kapcsolata megszakadt</string>
     <string name="remote_host_was_disconnected_title">A kapcsolat megszakadt</string>
     <string name="remote_ctrl_was_disconnected_title">A kapcsolat megszakadt</string>
@@ -1573,7 +1573,7 @@
     <string name="remote_ctrl_disconnected_with_reason">%s probléma miatt megszakadt a kapcsolat</string>
     <string name="remote_host_error_missing"><![CDATA[A(z) <b>%s</b> mobil eszköz nem található]]></string>
     <string name="remote_host_error_bad_state"><![CDATA[A kapcsolat a(z) <b>%s</b> mobil eszközzel rossz állapotban van]]></string>
-    <string name="remote_host_error_timeout"><![CDATA[Időtúllépés a(z) <b>%s</b> mobil eszközhöz való csatlakozás közben]]></string>
+    <string name="remote_host_error_timeout">Időtúllépés a(z) <b>%s</b> mobil eszközhöz való csatlakozáskor</string>
     <string name="group_member_status_unknown_short">ismeretlen</string>
     <string name="possible_slow_function_title">Lassú funkció</string>
     <string name="show_slow_api_calls">Lassú API-hívások megjelenítése</string>
@@ -1619,7 +1619,7 @@
     <string name="unblock_for_all">Letiltás feloldása mindenki számára</string>
     <string name="unblock_for_all_question">Mindenki számára feloldja a tag letiltását?</string>
     <string name="snd_group_event_member_blocked">ön letiltotta őt: %s</string>
-    <string name="error_blocking_member_for_all">Hiba a tag mindenki számára való letiltása közben</string>
+    <string name="error_blocking_member_for_all">Hiba a tag mindenki számára való letiltásakor</string>
     <string name="message_too_large">Az üzenet túl nagy</string>
     <string name="welcome_message_is_too_long">Az üdvözlőüzenet túl hosszú</string>
     <string name="database_migration_in_progress">Az adatbázis átköltöztetése folyamatban van.
@@ -1627,7 +1627,7 @@
     <string name="call_service_notification_audio_call">Hanghívás</string>
     <string name="call_service_notification_end_call">A hívás befejeződött</string>
     <string name="call_service_notification_video_call">Videóhívás</string>
-    <string name="unable_to_open_browser_title">Hiba a böngésző megnyitása közben</string>
+    <string name="unable_to_open_browser_title">Hiba a böngésző megnyitásakor</string>
     <string name="unable_to_open_browser_desc">A hívásokhoz egy alapértelmezett webböngésző szükséges. Állítson be egy alapértelmezett webböngészőt az eszközön, és osszon meg további információkat a SimpleX Chat fejlesztőivel.</string>
     <string name="migrate_to_device_confirm_network_settings">Hálózati beállítások megerősítése</string>
     <string name="migrate_from_device_error_exporting_archive">Hiba a csevegési adatbázis exportálásakor</string>
@@ -2022,7 +2022,7 @@
     <string name="cant_call_member_send_message_alert_text">Üzenet küldése a hívások engedélyezéséhez.</string>
     <string name="you_need_to_allow_calls">Engedélyeznie kell a hívásokat az ismerőse számára, hogy fel tudják hívni egymást.</string>
     <string name="you_can_still_view_conversation_with_contact">A(z) %1$s nevű ismerősével folytatott beszélgetéseit továbbra is megtekintheti a csevegések listájában.</string>
-    <string name="compose_message_placeholder">Üzenet...</string>
+    <string name="compose_message_placeholder">Üzenet…</string>
     <string name="select_verb">Kiválasztás</string>
     <string name="moderate_messages_will_be_marked_warning">Az üzenetek minden tag számára moderáltként lesznek megjelölve.</string>
     <string name="selected_chat_items_nothing_selected">Nincs kiválasztva semmi</string>
@@ -2063,8 +2063,8 @@
     <string name="new_message">Új üzenet</string>
     <string name="error_parsing_uri_title">Érvénytelen hivatkozás</string>
     <string name="error_parsing_uri_desc">Ellenőrizze, hogy a SimpleX-hivatkozás helyes-e.</string>
-    <string name="switching_profile_error_title">Hiba a profilváltás közben</string>
-    <string name="switching_profile_error_message">A kapcsolata át lett helyezve ide: %s, de egy váratlan hiba történt a profilra való átirányítás közben.</string>
+    <string name="switching_profile_error_title">Hiba a profilváltáskor</string>
+    <string name="switching_profile_error_message">A kapcsolata át lett helyezve ide: %s, de egy váratlan hiba történt a profilra való átirányításkor.</string>
     <string name="delete_messages_cannot_be_undone_warning">Az üzenetek törlésre kerülnek - ez a művelet nem vonható vissza!</string>
     <string name="migrate_from_device_remove_archive_question">Archívum eltávolítása?</string>
     <string name="migrate_from_device_uploaded_archive_will_be_removed">A feltöltött adatbázis-archívum véglegesen eltávolításra kerül a kiszolgálókról.</string>
@@ -2078,8 +2078,25 @@
     <string name="network_proxy_password">Jelszó</string>
     <string name="network_proxy_username">Felhasználónév</string>
     <string name="network_proxy_auth_mode_username_password">A hitelesítőadatai titkosítatlanul is elküldhetőek.</string>
-    <string name="network_proxy_incorrect_config_title">Hiba a proxy mentése közben</string>
+    <string name="network_proxy_incorrect_config_title">Hiba a proxy mentésekor</string>
     <string name="network_proxy_incorrect_config_desc">Győződjön meg arról, hogy a proxy konfigurációja helyes.</string>
     <string name="network_proxy_auth">Proxyhitelesítés</string>
     <string name="network_proxy_random_credentials">Véletlenszerű hitelesítő adatok használata</string>
+    <string name="n_other_file_errors">%1$d egyéb fájlhiba.</string>
+    <string name="forward_alert_title_nothing_to_forward">Nincs mit továbbítani!</string>
+    <string name="forward_files_in_progress_desc">%1$d fájl letöltése még folyamatban van.</string>
+    <string name="forward_files_failed_to_receive_desc">%1$d fájlt nem sikerült letölteni.</string>
+    <string name="forward_files_not_accepted_desc">%1$d fájl nem lett letöltve.</string>
+    <string name="forward_files_not_accepted_receive_files">Letöltés</string>
+    <string name="forward_files_missing_desc">%1$d fájl törölve lett.</string>
+    <string name="compose_forward_messages_n">%1$s üzenet továbbítása</string>
+    <string name="forward_multiple">Üzenetek továbbítása…</string>
+    <string name="n_file_errors">%1$d fájlhiba:
+\n%2$s</string>
+    <string name="forward_files_messages_deleted_after_selection_title">%1$s üzenet nem lett továbbítva</string>
+    <string name="forward_alert_title_messages_to_forward">%1$s üzenet továbbítása?</string>
+    <string name="forward_alert_forward_messages_without_files">Üzenetek továbbítása fájlok nélkül?</string>
+    <string name="forward_files_messages_deleted_after_selection_desc">Az üzeneteket törölték miután kiválasztotta őket.</string>
+    <string name="compose_save_messages_n">%1$s üzenet mentése</string>
+    <string name="error_forwarding_messages">Hiba az üzenetek továbbításakor</string>
 </resources>
