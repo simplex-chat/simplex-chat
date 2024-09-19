@@ -34,29 +34,34 @@ struct UserPicker: View {
         let otherUsers = m.users.filter { u in !u.user.hidden && u.user.userId != m.currentUser?.userId }
         return List {
             let users: [UserInfo] = m.users.filter { u in !u.user.hidden }
-            TabView(selection: $currentUser) {
-                ForEach(users) { u in
-                    openSheetOnTap(label: {
-                        ZStack {
-                            let v = ProfilePreview(profileOf: u.user)
-                                .foregroundColor(.primary)
-                                .padding(.leading, -4)
-                            if #available(iOS 16.0, *) {
-                                v
-                            } else {
-                                v.padding(.vertical, 4)
+            GeometryReader { proxy in
+                PagedScrollView {
+                    HStack {
+                        ForEach(users) { u in
+                            openSheetOnTap(label: {
+                                ZStack {
+                                    let v = ProfilePreview(profileOf: u.user)
+                                        .foregroundColor(.primary)
+                                        .padding(.leading, -4)
+                                    if #available(iOS 16.0, *) {
+                                        v
+                                    } else {
+                                        v.padding(.vertical, 4)
+                                    }
+                                }
+                            }) {
+                                activeSheet = .currentProfile
                             }
+                            //                        .tag(u.user.userId)
+                            .padding(16)
+                            .background(Color(.secondarySystemGroupedBackground))
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .frame(width: proxy.size.width - 56)
                         }
-                    }) {
-                        activeSheet = .currentProfile
                     }
-                    .tag(u.user.userId)
-                    .padding(16)
-                    .background(.background)
-                    .frame(maxWidth: .infinity)
                 }
-            }
-            .tabViewStyle(.page(indexDisplayMode: .never))
+            }.frame(height: 44 + 32)
+//            .tabViewStyle(.page(indexDisplayMode: .never))
             .listRowSeparator(.hidden)
             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
             .listRowBackground(Color.clear)
