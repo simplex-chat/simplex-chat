@@ -969,7 +969,7 @@ private fun MemberLayout(
     // Measure the member view (the first child) with adjusted width based on the role view
     val memberWidthWithoutConstraints = measurables[0].maxIntrinsicWidth(height = constraints.minHeight)
     val memberConstraints = constraints.copy(
-      maxWidth = (if (memberWidthWithoutConstraints + spacing + rolePlaceable.width > msgWidth) constraints.maxWidth else msgWidth) - rolePlaceable.width
+      maxWidth = (if (memberWidthWithoutConstraints + spacing + rolePlaceable.width > msgWidth) constraints.maxWidth else msgWidth) - rolePlaceable.width - spacing
     )
     val memberPlaceable = measurables[0].measure(memberConstraints)
 
@@ -1163,13 +1163,13 @@ fun BoxWithConstraintsScope.ChatItemsList(
                       } else null
 
                       Row(Modifier
-                        .padding(start = MEMBER_IMAGE_SIZE + DEFAULT_PADDING_HALF)
+                        .padding(start = MEMBER_IMAGE_SIZE + 4.dp)
                         .fillMaxWidth()
                       ) {
                         if (messageWidth > 0 && memberRoleString != null) {
                           MemberLayout(
                             spacing = with(LocalDensity.current) { 16.dp.roundToPx() },
-                            msgWidth = with(LocalDensity.current) { messageWidth - DEFAULT_PADDING_HALF.roundToPx() },
+                            msgWidth = messageWidth,
                           ) {
                             Text(
                               memberNameString,
