@@ -1163,7 +1163,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                       } else null
 
                       Row(Modifier
-                        .padding(start = MEMBER_IMAGE_SIZE + 4.dp)
+                        .padding(start = MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier + 4.dp)
                         .fillMaxWidth()
                       ) {
                         if (messageWidth > 0 && memberRoleString != null) {
