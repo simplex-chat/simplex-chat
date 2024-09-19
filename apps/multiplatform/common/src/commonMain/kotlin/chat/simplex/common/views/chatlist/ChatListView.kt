@@ -478,7 +478,7 @@ private fun ToggleFilterEnabledButton() {
 @Composable
 expect fun ActiveCallInteractiveArea(call: Call)
 
-fun connectIfOpenedViaUri(rhId: Long?, uri: URI, chatModel: ChatModel) {
+fun connectIfOpenedViaUri(rhId: Long?, uri: String, chatModel: ChatModel) {
   Log.d(TAG, "connectIfOpenedViaUri: opened via link")
   if (chatModel.currentUser.value == null) {
     chatModel.appOpenUrl.value = rhId to uri
@@ -563,16 +563,10 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
 }
 
 private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<String?>, cleanup: (() -> Unit)?) {
-  val uri = uriCreateOrNull(link)
-  if (uri == null) {
-    cleanup?.invoke()
-    showIncorrectSimplexLinkAlert()
-    return
-  }
   withBGApi {
     planAndConnect(
       chatModel.remoteHostId(),
-      uri,
+      link,
       incognito = null,
       filterKnownContact = { searchChatFilteredBySimplexLink.value = it.id },
       filterKnownGroup = { searchChatFilteredBySimplexLink.value = it.id },
