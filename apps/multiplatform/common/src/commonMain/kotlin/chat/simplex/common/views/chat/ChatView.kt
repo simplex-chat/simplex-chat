@@ -954,7 +954,6 @@ private fun MemberLayout(
   spacing: Int,
   msgWidth: Int,
   modifier: Modifier = Modifier,
-  name: String,
   content: @Composable () -> Unit,
 ) {
   Layout(
@@ -1171,7 +1170,6 @@ fun BoxWithConstraintsScope.ChatItemsList(
                           MemberLayout(
                             spacing = with(LocalDensity.current) { 16.dp.roundToPx() },
                             msgWidth = with(LocalDensity.current) { messageWidth - DEFAULT_PADDING_HALF.roundToPx() },
-                            name = memberNameString.text
                           ) {
                             Text(
                               memberNameString,
