@@ -13,6 +13,7 @@ import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.runtime.*
 import androidx.compose.ui.text.*
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.ui.theme.*
@@ -124,7 +125,7 @@ fun ContextItemView(
           ContextMsgPreview(contextItem, lines = 3)
         }
       } else if (contextItems.isNotEmpty()) {
-        Text(String.format(generalGetString(if (chatType == ChatType.Local) MR.strings.compose_save_messages_n else MR.strings.compose_forward_messages_n), contextItems.count()))
+        Text(String.format(generalGetString(if (chatType == ChatType.Local) MR.strings.compose_save_messages_n else MR.strings.compose_forward_messages_n), contextItems.count()), fontStyle = FontStyle.Italic)
       }
     }
     IconButton(onClick = cancelContextItem) {
