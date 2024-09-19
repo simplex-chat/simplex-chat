@@ -2088,4 +2088,21 @@
     <string name="network_proxy_incorrect_config_title">Errore di salvataggio del proxy</string>
     <string name="network_proxy_password">Password</string>
     <string name="network_proxy_username">Nome utente</string>
+    <string name="forward_files_in_progress_desc">%1$d file è/sono ancora in scaricamento.</string>
+    <string name="forward_files_messages_deleted_after_selection_title">%1$s messaggi non inoltrati</string>
+    <string name="n_other_file_errors">%1$d altro/i errore/i di file.</string>
+    <string name="error_forwarding_messages">Errore nell\'inoltro dei messaggi</string>
+    <string name="n_file_errors">%1$d errore/i di file:
+\n%2$s</string>
+    <string name="forward_alert_title_messages_to_forward">Inoltrare %1$s messaggio/i?</string>
+    <string name="forward_alert_forward_messages_without_files">Inoltrare i messaggi senza file?</string>
+    <string name="forward_files_messages_deleted_after_selection_desc">I messaggi sono stati eliminati dopo che li hai selezionati.</string>
+    <string name="forward_alert_title_nothing_to_forward">Niente da inoltrare!</string>
+    <string name="forward_files_failed_to_receive_desc">%1$d file ha/hanno fallito lo scaricamento.</string>
+    <string name="forward_files_missing_desc">%1$d file è/sono stato/i eliminato/i.</string>
+    <string name="forward_files_not_accepted_desc">%1$d file non è/sono stato/i scaricato/i.</string>
+    <string name="forward_files_not_accepted_receive_files">Scarica</string>
+    <string name="compose_forward_messages_n">Inoltro di %1$s messaggi</string>
+    <string name="forward_multiple">Inoltra messaggi…</string>
+    <string name="compose_save_messages_n">Salvataggio di %1$s messaggi</string>
 </resources>
