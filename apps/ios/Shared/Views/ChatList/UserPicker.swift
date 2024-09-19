@@ -46,55 +46,49 @@ struct UserPicker: View {
     @ViewBuilder
     private var viewBody: some View {
         VStack(spacing: 0) {
-            let s = ScrollView(.horizontal) {
-                HStack {
-                    ForEach(users.reversed()) { u in
-                        ProfilePreview(profileOf: u)
-                            .padding(.vertical, 12)
-                            .padding(.leading, 8)
-                            .padding(.trailing, 12)
-                            .frame(
-                                minWidth: u == m.currentUser ? frameWidth.map { $0 - 32 } : nil,
-                                alignment: .leading
-                            )
-                            .background(Color(.secondarySystemGroupedBackground))
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                            .onTapGesture {
-                                Task {
-                                    do {
-                                        try await changeActiveUserAsync_(u.userId, viewPwd: nil)
-                                        await MainActor.run {
-                                            switchingProfile = false
-                                            dismiss()
-                                        }
-                                    } catch {
-                                        await MainActor.run {
-                                            switchingProfile = false
-                                            AlertManager.shared.showAlertMsg(
-                                                title: "Error switching profile!",
-                                                message: "Error: \(responseError(error))"
-                                            )
+            if !users.isEmpty {
+                StickyScrollView {
+                    HStack {
+                        ForEach(users) { u in
+                            ProfilePreview(profileOf: u)
+                                .padding(.vertical, 12)
+                                .padding(.leading, 8)
+                                .padding(.trailing, 12)
+                                .frame(
+                                    minWidth: frameWidth,
+                                    //minWidth: u == m.currentUser ? frameWidth.map { $0 - 32 } : nil,
+                                    alignment: .leading
+                                )
+                                .background(Color(.secondarySystemGroupedBackground))
+                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                .onTapGesture {
+                                    Task {
+                                        do {
+                                            try await changeActiveUserAsync_(u.userId, viewPwd: nil)
+                                            await MainActor.run {
+                                                switchingProfile = false
+                                                dismiss()
+                                            }
+                                        } catch {
+                                            await MainActor.run {
+                                                switchingProfile = false
+                                                AlertManager.shared.showAlertMsg(
+                                                    title: "Error switching profile!",
+                                                    message: "Error: \(responseError(error))"
+                                                )
+                                            }
                                         }
                                     }
                                 }
-                            }
+                        }
                     }
+                    .padding([.horizontal, .top], 16)
+                    .padding(.bottom, 8)
                 }
-                .padding([.horizontal, .top], 16)
-                .padding(.bottom, 8)
-                .scaleEffect(x: -1, anchor: .center)
-            }
-            if !users.isEmpty {
-                Group {
-                    if #available(iOS 16.4, *) {
-                        s.scrollIndicators(.hidden).scrollBounceBehavior(.basedOnSize)
-                    } else {
-                        s
-                    }
-                }
+                .frame(height: 92)
+                .border(.red)
                 .overlay(DetermineWidth())
                 .onPreferenceChange(DetermineWidth.Key.self) { frameWidth = $0 }
-                .scaleEffect(x: -1, anchor: .center)
                 .zIndex(1) // Position above list
             }
             List {
