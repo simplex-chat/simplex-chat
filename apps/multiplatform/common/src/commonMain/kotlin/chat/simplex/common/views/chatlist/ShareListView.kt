@@ -58,11 +58,13 @@ fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
         hasSimplexLink = hasSimplexLink(sharedContent.text)
       }
       is SharedContent.Forward -> {
-        val mc = sharedContent.chatItem.content.msgContent
-        if (mc != null) {
-          isMediaOrFileAttachment = mc.isMediaOrFileAttachment
-          isVoice = mc.isVoice
-          hasSimplexLink = hasSimplexLink(mc.text)
+        sharedContent.chatItems.forEach { ci ->
+          val mc = ci.content.msgContent
+          if (mc != null) {
+            isMediaOrFileAttachment = isMediaOrFileAttachment || mc.isMediaOrFileAttachment
+            isVoice = isVoice || mc.isVoice
+            hasSimplexLink = hasSimplexLink || hasSimplexLink(mc.text)
+          }
         }
       }
       null -> {}
@@ -175,11 +177,11 @@ private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchVal
     title = {
       Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
-          when (chatModel.sharedContent.value) {
+          when (val v = chatModel.sharedContent.value) {
             is SharedContent.Text -> stringResource(MR.strings.share_message)
             is SharedContent.Media -> stringResource(MR.strings.share_image)
             is SharedContent.File -> stringResource(MR.strings.share_file)
-            is SharedContent.Forward -> stringResource(MR.strings.forward_message)
+            is SharedContent.Forward -> if (v.chatItems.size > 1) stringResource(MR.strings.forward_multiple) else stringResource(MR.strings.forward_message)
             null -> stringResource(MR.strings.share_message)
           },
           color = MaterialTheme.colors.onBackground,

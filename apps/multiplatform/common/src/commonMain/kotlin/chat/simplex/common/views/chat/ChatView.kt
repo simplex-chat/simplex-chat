@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.*
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
@@ -172,7 +173,30 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                         })
                       }
                     }
-                  }
+                  },
+                  forwardItems = {
+                    val itemIds = selectedChatItems.value
+
+                    if (itemIds != null) {
+                      withBGApi {
+                        val chatItemIds = itemIds.toList()
+                        val forwardPlan = controller.apiPlanForwardChatItems(
+                          rh = chatRh,
+                          fromChatType = chatInfo.chatType,
+                          fromChatId = chatInfo.apiId,
+                          chatItemIds = chatItemIds
+                        )
+
+                        if (forwardPlan != null) {
+                          if (forwardPlan.chatItemIds.count() < chatItemIds.count() || forwardPlan.forwardConfirmation != null) {
+                            handleForwardConfirmation(chatRh, forwardPlan, chatInfo)
+                          } else {
+                            forwardContent(forwardPlan.chatItemIds, chatInfo)
+                          }
+                        }
+                      }
+                    }
+                  },
                 )
               }
             },
@@ -347,9 +371,9 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                 openDirectChat(chatRh, contactId, chatModel)
               }
             },
-            forwardItem = { cItem, cInfo ->
+            forwardItem = { cInfo, cItem ->
               chatModel.chatId.value = null
-              chatModel.sharedContent.value = SharedContent.Forward(cInfo, cItem)
+              chatModel.sharedContent.value = SharedContent.Forward(listOf(cItem), cInfo)
             },
             updateContactStats = { contact ->
               withBGApi {
@@ -1416,6 +1440,65 @@ private fun TopEndFloatingButton(
   }
 }
 
+@Composable
+private fun DownloadFilesButton(
+  forwardConfirmation: ForwardConfirmation.FilesNotAccepted,
+  rhId: Long?,
+  modifier: Modifier = Modifier,
+  contentPadding: PaddingValues = ButtonDefaults.TextButtonContentPadding
+) {
+  val user = chatModel.currentUser.value
+
+  if (user != null) {
+    TextButton(
+      contentPadding = contentPadding,
+      modifier = modifier,
+      onClick = {
+        AlertManager.shared.hideAlert()
+
+        withBGApi {
+          controller.receiveFiles(
+            rhId = rhId,
+            fileIds = forwardConfirmation.fileIds,
+            user = user
+          )
+        }
+      }
+    ) {
+      Text(stringResource(MR.strings.forward_files_not_accepted_receive_files), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+    }
+  }
+}
+
+@Composable
+private fun ForwardButton(
+  forwardPlan: CR.ForwardPlan,
+  chatInfo: ChatInfo,
+  modifier: Modifier = Modifier,
+  contentPadding: PaddingValues = ButtonDefaults.TextButtonContentPadding
+) {
+  TextButton(
+    onClick = {
+      forwardContent(forwardPlan.chatItemIds, chatInfo)
+      AlertManager.shared.hideAlert()
+    },
+    modifier = modifier,
+    contentPadding = contentPadding
+  ) {
+    Text(stringResource(MR.strings.forward_chat_item), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+  }
+}
+
+@Composable
+private fun ButtonRow(horizontalArrangement: Arrangement.Horizontal, content: @Composable() (RowScope.() -> Unit)) {
+  Row(
+    Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING),
+    horizontalArrangement = horizontalArrangement
+  ) {
+    content()
+  }
+}
+
 val chatViewScrollState = MutableStateFlow(false)
 
 fun addGroupMembers(groupInfo: GroupInfo, rhId: Long?, view: Any? = null, close: (() -> Unit)? = null) {
@@ -1710,6 +1793,83 @@ private fun ViewConfiguration.bigTouchSlop(slop: Float = 50f) = object: ViewConf
     get() =
       this@bigTouchSlop.doubleTapMinTimeMillis
   override val touchSlop: Float get() = slop
+}
+
+private fun forwardContent(chatItemsIds: List<Long>, chatInfo: ChatInfo) {
+  chatModel.chatId.value = null
+  chatModel.sharedContent.value = SharedContent.Forward(
+    chatModel.chatItems.value.filter { chatItemsIds.contains(it.id) },
+    chatInfo
+  )
+}
+
+private fun forwardConfirmationAlertDescription(forwardConfirmation: ForwardConfirmation): String {
+  return when (forwardConfirmation) {
+    is ForwardConfirmation.FilesNotAccepted -> String.format(generalGetString(MR.strings.forward_files_not_accepted_desc), forwardConfirmation.fileIds.count())
+    is ForwardConfirmation.FilesInProgress -> String.format(generalGetString(MR.strings.forward_files_in_progress_desc), forwardConfirmation.filesCount)
+    is ForwardConfirmation.FilesFailed -> String.format(generalGetString(MR.strings.forward_files_failed_to_receive_desc), forwardConfirmation.filesCount)
+    is ForwardConfirmation.FilesMissing -> String.format(generalGetString(MR.strings.forward_files_missing_desc), forwardConfirmation.filesCount)
+  }
+}
+
+private fun handleForwardConfirmation(
+  rhId: Long?,
+  forwardPlan: CR.ForwardPlan,
+  chatInfo: ChatInfo
+) {
+  var alertDescription = if (forwardPlan.forwardConfirmation != null) forwardConfirmationAlertDescription(forwardPlan.forwardConfirmation) else ""
+
+  if (forwardPlan.chatItemIds.isNotEmpty()) {
+    alertDescription += "\n${generalGetString(MR.strings.forward_alert_forward_messages_without_files)}"
+  }
+
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = if (forwardPlan.chatItemIds.isNotEmpty())
+      String.format(generalGetString(MR.strings.forward_alert_title_messages_to_forward), forwardPlan.chatItemIds.count()) else
+        generalGetString(MR.strings.forward_alert_title_nothing_to_forward),
+    text = alertDescription,
+    buttons = {
+      if (forwardPlan.chatItemIds.isNotEmpty()) {
+        when (val confirmation = forwardPlan.forwardConfirmation) {
+          is ForwardConfirmation.FilesNotAccepted -> {
+            val fillMaxWidthModifier = Modifier.fillMaxWidth()
+            val contentPadding = PaddingValues(vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)
+            Column {
+              ForwardButton(forwardPlan, chatInfo, fillMaxWidthModifier, contentPadding)
+              DownloadFilesButton(confirmation, rhId, fillMaxWidthModifier, contentPadding)
+              TextButton(onClick = { AlertManager.shared.hideAlert() }, modifier = fillMaxWidthModifier, contentPadding = contentPadding) {
+                Text(stringResource(MR.strings.cancel_verb), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+              }
+            }
+          }
+          else -> {
+            ButtonRow(Arrangement.SpaceBetween) {
+              TextButton(onClick = { AlertManager.shared.hideAlert() }) {
+                Text(stringResource(MR.strings.cancel_verb), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+              }
+              ForwardButton(forwardPlan, chatInfo)
+            }
+          }
+        }
+      } else {
+        when (val confirmation = forwardPlan.forwardConfirmation) {
+          is ForwardConfirmation.FilesNotAccepted -> {
+            ButtonRow(Arrangement.SpaceBetween) {
+              TextButton(onClick = { AlertManager.shared.hideAlert() }) {
+                Text(stringResource(MR.strings.cancel_verb), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+              }
+              DownloadFilesButton(confirmation, rhId)
+            }
+          }
+          else -> ButtonRow(Arrangement.Center) {
+            TextButton(onClick = { AlertManager.shared.hideAlert() }) {
+              Text(stringResource(MR.strings.ok), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+            }
+          }
+        }
+      }
+    }
+  )
 }
 
 @Preview/*(
