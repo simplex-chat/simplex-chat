@@ -14,7 +14,7 @@ struct ChatItemForwardingView: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss
 
-    var ci: ChatItem
+    var chatItems: [ChatItem]
     var fromChatInfo: ChatInfo
     @Binding var composeState: ComposeState
 
@@ -73,11 +73,14 @@ struct ChatItemForwardingView: View {
     }
 
     @ViewBuilder private func forwardListChatView(_ chat: Chat) -> some View {
-        let prohibited = chat.prohibitedByPref(
-            hasSimplexLink: hasSimplexLink(ci.content.msgContent?.text),
-            isMediaOrFileAttachment: ci.content.msgContent?.isMediaOrFileAttachment ?? false,
-            isVoice: ci.content.msgContent?.isVoice ?? false
-        )
+        let prohibited = chatItems.map { ci in
+            chat.prohibitedByPref(
+                hasSimplexLink: hasSimplexLink(ci.content.msgContent?.text),
+                isMediaOrFileAttachment: ci.content.msgContent?.isMediaOrFileAttachment ?? false,
+                isVoice: ci.content.msgContent?.isVoice ?? false
+            )
+        }.contains(true)
+
         Button {
             if prohibited {
                 alert = SomeAlert(
@@ -93,10 +96,10 @@ struct ChatItemForwardingView: View {
                     composeState = ComposeState(
                         message: composeState.message,
                         preview: composeState.linkPreview != nil ? composeState.preview : .noPreview,
-                        contextItem: .forwardingItem(chatItem: ci, fromChatInfo: fromChatInfo)
+                        contextItem: .forwardingItems(chatItems: chatItems, fromChatInfo: fromChatInfo)
                     )
                 } else {
-                    composeState = ComposeState.init(forwardingItem: ci, fromChatInfo: fromChatInfo)
+                    composeState = ComposeState.init(forwardingItems: chatItems, fromChatInfo: fromChatInfo)
                     ItemsModel.shared.loadOpenChat(chat.id)
                 }
             }
@@ -123,7 +126,7 @@ struct ChatItemForwardingView: View {
 
 #Preview {
     ChatItemForwardingView(
-        ci: ChatItem.getSample(1, .directSnd, .now, "hello"),
+        chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")],
         fromChatInfo: .direct(contact: Contact.sampleData),
         composeState: Binding.constant(ComposeState(message: "hello"))
     ).environmentObject(CurrentColors.toAppTheme())
