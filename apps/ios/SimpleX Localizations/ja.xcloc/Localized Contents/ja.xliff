@@ -5855,7 +5855,7 @@ Enable in *Network &amp; servers* settings.</source>
       </trans-unit>
       <trans-unit id="Skipped messages" xml:space="preserve">
         <source>Skipped messages</source>
-        <target>飛ばしたメッセージ</target>
+        <target>スキップしたメッセージ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Small groups (max 20)" xml:space="preserve">
@@ -7135,7 +7135,7 @@ Repeat connection request?</source>
       </trans-unit>
       <trans-unit id="You will be required to authenticate when you start or resume the app after 30 seconds in background." xml:space="preserve">
         <source>You will be required to authenticate when you start or resume the app after 30 seconds in background.</source>
-        <target>起動時、または非アクティブ状態で30秒が経った後に戻ると、認証する必要となります。</target>
+        <target>起動時、またはバックグラウンド状態で30秒経ってから戻ってきた時には、認証が必要です。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will connect to all group members." xml:space="preserve">

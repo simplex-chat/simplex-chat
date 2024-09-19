@@ -2921,7 +2921,7 @@
 "Skip" = "スキップ";
 
 /* No comment provided by engineer. */
-"Skipped messages" = "飛ばしたメッセージ";
+"Skipped messages" = "スキップしたメッセージ";
 
 /* No comment provided by engineer. */
 "Small groups (max 20)" = "小グループ（最大20名）";
@@ -3503,7 +3503,7 @@
 "You will be connected when your contact's device is online, please wait or check later!" = "連絡先がオンラインになったら、接続されます。後でチェックするか、しばらくお待ちください！";
 
 /* No comment provided by engineer. */
-"You will be required to authenticate when you start or resume the app after 30 seconds in background." = "起動時、または非アクティブ状態で30秒が経った後に戻ると、認証する必要となります。";
+"You will be required to authenticate when you start or resume the app after 30 seconds in background." = "起動時、またはバックグラウンド状態で30秒経ってから戻ってきた時には、認証が必要です。";
 
 /* No comment provided by engineer. */
 "You will still receive calls and notifications from muted profiles when they are active." = "ミュートされたプロフィールがアクティブな場合でも、そのプロフィールからの通話や通知は引き続き受信します。";

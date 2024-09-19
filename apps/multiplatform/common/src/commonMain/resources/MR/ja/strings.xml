@@ -685,7 +685,7 @@
     <string name="enter_passphrase_notification_desc">通知を受けるには、データベースのパスフレーズを入力してください。</string>
     <string name="simplex_service_notification_title">SimpleX Chat サービス</string>
     <string name="auth_simplex_lock_turned_on">SimpleXロック：オン</string>
-    <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">起動時、または非アクティブ状態で30秒が経った後に戻ると、認証する必要となります。</string>
+    <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">起動時、またはバックグラウンド状態で30秒経ってから戻ってきた時には、認証が必要です。</string>
     <string name="share_verb">共有する</string>
     <string name="icon_descr_sent_msg_status_unauthorized_send">非認証の送信</string>
     <string name="this_text_is_available_in_settings">このテキストは設定にあります。</string>
@@ -754,7 +754,7 @@
     <string name="webrtc_ice_servers">WebRTC ICEサーバ</string>
     <string name="your_ice_servers">あなたのICEサーバ</string>
     <string name="settings_section_title_settings">設定</string>
-    <string name="alert_title_skipped_messages">飛ばしたメッセージ</string>
+    <string name="alert_title_skipped_messages">スキップしたメッセージ</string>
     <string name="settings_section_title_you">あなた</string>
     <string name="settings_section_title_themes">テーマ</string>
     <string name="run_chat_section">チャット起動</string>
