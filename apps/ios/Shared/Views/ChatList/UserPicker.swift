@@ -16,6 +16,7 @@ struct UserPicker: View {
     @Binding var activeSheet: UserPickerSheet?
     @State private var currentUser: Int64?
     @State private var switchingProfile = false
+    @State private var frameWidth: CGFloat?
 
     var body: some View {
         if #available(iOS 16.0, *) {
@@ -29,114 +30,100 @@ struct UserPicker: View {
             viewBody
         }
     }
-    
+
+    @ViewBuilder
     private var viewBody: some View {
-        let otherUsers = m.users.filter { u in !u.user.hidden && u.user.userId != m.currentUser?.userId }
-        return List {
+        VStack(spacing: 0) {
             let users: [UserInfo] = m.users.filter { u in !u.user.hidden }
-            GeometryReader { proxy in
-                PagedScrollView {
-                    HStack {
-                        ForEach(users) { u in
-                            openSheetOnTap(label: {
-                                ZStack {
-                                    let v = ProfilePreview(profileOf: u.user)
-                                        .foregroundColor(.primary)
-                                        .padding(.leading, -4)
-                                    if #available(iOS 16.0, *) {
-                                        v
-                                    } else {
-                                        v.padding(.vertical, 4)
-                                    }
-                                }
-                            }) {
-                                activeSheet = .currentProfile
-                            }
-                            //                        .tag(u.user.userId)
-                            .padding(16)
+            let s = ScrollView(.horizontal) {
+                HStack {
+                    ForEach(users.reversed()) { u in
+                        ProfilePreview(profileOf: u.user)
+                            .padding(.vertical, 10)
+                            .padding(.leading, 6)
+                            .padding(.trailing, 12)
+                            .frame(
+                                minWidth: u.user == m.currentUser ? frameWidth.map { $0 - 64 } : nil,
+                                alignment: .leading
+                            )
                             .background(Color(.secondarySystemGroupedBackground))
-                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                            .frame(width: proxy.size.width - 56)
-                        }
+                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                     }
                 }
-            }.frame(height: 44 + 32)
-//            .tabViewStyle(.page(indexDisplayMode: .never))
-            .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-            .listRowBackground(Color.clear)
-
-            Section {
-                if let user = m.currentUser {
-                    openSheetOnTap(label: {
-                        ZStack {
-                            let v = ProfilePreview(profileOf: user)
-                                .foregroundColor(.primary)
-                                .padding(.leading, -8)
-                            if #available(iOS 16.0, *) {
-                                v
-                            } else {
-                                v.padding(.vertical, 4)
+                .padding(.top, 14)
+                .padding(.horizontal, 14)
+                .padding(.bottom, 8)
+                .scaleEffect(x: -1, anchor: .center)
+            }
+            if !users.isEmpty {
+                Group {
+                    if #available(iOS 16.4, *) {
+                        s.scrollIndicators(.hidden).scrollBounceBehavior(.basedOnSize)
+                    } else {
+                        s
+                    }
+                }
+                .overlay(DetermineWidth())
+                .onPreferenceChange(DetermineWidth.Key.self) { frameWidth = $0 }
+                .scaleEffect(x: -1, anchor: .center)
+            }
+            List {
+                Section {
+                    if let user = m.currentUser {
+                        openSheetOnTap(label: {
+                            ZStack {
+                                let v = ProfilePreview(profileOf: user)
+                                    .foregroundColor(.primary)
+                                    .padding(.leading, -8)
+                                if #available(iOS 16.0, *) {
+                                    v
+                                } else {
+                                    v.padding(.vertical, 4)
+                                }
                             }
+                        }) {
+                            activeSheet = .currentProfile
                         }
-                    }) {
-                        activeSheet = .currentProfile
+                        openSheetOnTap(title: m.userAddress == nil ? "Create SimpleX address" : "Your SimpleX address", icon: "qrcode") {
+                            activeSheet = .address
+                        }
+                        openSheetOnTap(title: "Chat preferences", icon: "switch.2") {
+                            activeSheet = .chatPreferences
+                        }
                     }
-
-                    openSheetOnTap(title: m.userAddress == nil ? "Create SimpleX address" : "Your SimpleX address", icon: "qrcode") {
-                        activeSheet = .address
-                    }
-                    
-                    openSheetOnTap(title: "Chat preferences", icon: "switch.2") {
-                        activeSheet = .chatPreferences
-                    }
-                }
-//            }
-//
-//            Section {
-//                if otherUsers.isEmpty {
                     openSheetOnTap(title: "Your chat profiles", icon: "person.crop.rectangle.stack") {
                         activeSheet = .chatProfiles
                     }
-//                } else {
-//                    let v = userPickerRow(otherUsers, size: 44)
-//                        .padding(.leading, -11)
-//                    if #available(iOS 16.0, *) {
-//                        v
-//                    } else {
-//                        v.padding(.vertical, 4)
-//                    }
-//                }
-
-                openSheetOnTap(title: "Use from desktop", icon: "desktopcomputer") {
-                    activeSheet = .useFromDesktop
-                }
-
-                ZStack(alignment: .trailing) {
-                    openSheetOnTap(title: "Settings", icon: "gearshape") {
-                        activeSheet = .settings
+                    openSheetOnTap(title: "Use from desktop", icon: "desktopcomputer") {
+                        activeSheet = .useFromDesktop
                     }
-                    Label {} icon: {
-                        Image(systemName: colorScheme == .light ? "sun.max" : "moon.fill")
-                            .resizable()
-                            .symbolRenderingMode(.monochrome)
-                            .foregroundColor(theme.colors.secondary)
-                            .frame(maxWidth: 20, maxHeight: 20)
-                    }
-                    .onTapGesture {
-                        if (colorScheme == .light) {
-                            ThemeManager.applyTheme(systemDarkThemeDefault.get())
-                        } else {
-                            ThemeManager.applyTheme(DefaultTheme.LIGHT.themeName)
+
+                    ZStack(alignment: .trailing) {
+                        openSheetOnTap(title: "Settings", icon: "gearshape") {
+                            activeSheet = .settings
                         }
-                    }
-                    .onLongPressGesture {
-                        ThemeManager.applyTheme(DefaultTheme.SYSTEM_THEME_NAME)
+                        Label {} icon: {
+                            Image(systemName: colorScheme == .light ? "sun.max" : "moon.fill")
+                                .resizable()
+                                .symbolRenderingMode(.monochrome)
+                                .foregroundColor(theme.colors.secondary)
+                                .frame(maxWidth: 20, maxHeight: 20)
+                        }
+                        .onTapGesture {
+                            if (colorScheme == .light) {
+                                ThemeManager.applyTheme(systemDarkThemeDefault.get())
+                            } else {
+                                ThemeManager.applyTheme(DefaultTheme.LIGHT.themeName)
+                            }
+                        }
+                        .onLongPressGesture {
+                            ThemeManager.applyTheme(DefaultTheme.SYSTEM_THEME_NAME)
+                        }
                     }
                 }
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+//        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .onAppear {
             // This check prevents the call of listUsers after the app is suspended, and the database is closed.
             if case .active = scenePhase {
