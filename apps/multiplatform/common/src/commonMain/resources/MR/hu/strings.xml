@@ -228,7 +228,7 @@
     <string name="display_name_connection_established">kapcsolat létrehozva</string>
     <string name="status_contact_has_no_e2e_encryption">az ismerősnek nincs e2e titkosítása</string>
     <string name="chat_preferences_contact_allows">Ismerős engedélyezi</string>
-    <string name="notification_preview_somebody">Ismerős elrejtve:</string>
+    <string name="notification_preview_somebody">Rejtett:</string>
     <string name="connect_to_desktop">Társítás számítógéppel</string>
     <string name="icon_descr_context">Környezeti ikon</string>
     <string name="connect_via_link">Kapcsolódás egy hivatkozáson keresztül</string>
