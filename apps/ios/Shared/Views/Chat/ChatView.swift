@@ -42,6 +42,7 @@ struct ChatView: View {
     @State private var showGroupLinkSheet: Bool = false
     @State private var groupLink: String?
     @State private var groupLinkMemberRole: GroupMemberRole = .member
+    @State private var forwardedChatItems: [ChatItem] = []
     @State private var selectedChatItems: Set<Int64>? = nil
     @State private var showDeleteSelectedMessages: Bool = false
     @State private var allowToDeleteSelectedMessagesForAll: Bool = false
@@ -98,7 +99,8 @@ struct ChatView: View {
                             if case let .group(groupInfo) = chat.chatInfo {
                                 showModerateSelectedMessagesAlert(groupInfo)
                             }
-                        }
+                        },
+                        forwardItems: forwardSelectedMessages
                     )
                 }
             }
@@ -133,6 +135,22 @@ struct ChatView: View {
                 if case let .group(groupInfo) = chat.chatInfo {
                     GroupMemberInfoView(groupInfo: groupInfo, groupMember: member, navigation: true)
                 }
+            }
+        }
+        .sheet(isPresented: Binding(
+            get: { !forwardedChatItems.isEmpty },
+            set: { isPresented in
+                if !isPresented {
+                    forwardedChatItems = []
+                    selectedChatItems = nil
+                }
+            }
+        )) {
+            if #available(iOS 16.0, *) {
+                ChatItemForwardingView(chatItems: forwardedChatItems, fromChatInfo: chat.chatInfo, composeState: $composeState)
+                    .presentationDetents([.fraction(0.8)])
+            } else {
+                ChatItemForwardingView(chatItems: forwardedChatItems, fromChatInfo: chat.chatInfo, composeState: $composeState)
             }
         }
         .onAppear {
@@ -411,7 +429,8 @@ struct ChatView: View {
                     composeState: $composeState,
                     selectedMember: $selectedMember,
                     revealedChatItem: $revealedChatItem,
-                    selectedChatItems: $selectedChatItems
+                    selectedChatItems: $selectedChatItems,
+                    forwardedChatItems: $forwardedChatItems
                 )
                 .id(ci.id) // Required to trigger `onAppear` on iOS15
             } loadPage: {
@@ -701,6 +720,116 @@ struct ChatView: View {
         }
     }
 
+    private func forwardSelectedMessages() {
+        Task {
+            do {
+                if let selectedChatItems {
+                    let (validItems, confirmation) = try await apiPlanForwardChatItems(
+                        type: chat.chatInfo.chatType,
+                        id: chat.chatInfo.apiId,
+                        itemIds: Array(selectedChatItems)
+                    )
+                    if let confirmation {
+                        if validItems.count > 0 {
+                            showAlert(
+                                String.localizedStringWithFormat(
+                                    NSLocalizedString("Forward %d message(s)?", comment: "alert title"),
+                                    validItems.count
+                                ),
+                                message: forwardConfirmationText(confirmation) + "\n" +
+                                    NSLocalizedString("Forward messages without files?", comment: "alert message")
+                            ) {
+                                switch confirmation {
+                                case let .filesNotAccepted(fileIds):
+                                    [forwardAction(validItems), downloadAction(fileIds), cancelAlertAction]
+                                default:
+                                    [forwardAction(validItems), cancelAlertAction]
+                                }
+                            }
+                        } else {
+                            showAlert(
+                                NSLocalizedString("Nothing to forward!", comment: "alert title"),
+                                message: forwardConfirmationText(confirmation)
+                            ) {
+                                switch confirmation {
+                                case let .filesNotAccepted(fileIds):
+                                    [downloadAction(fileIds), cancelAlertAction]
+                                default:
+                                    [okAlertAction]
+                                }
+                            }
+                        }
+                    } else {
+                        await openForwardingSheet(validItems)
+                    }
+                }
+            } catch {
+                logger.error("Plan forward chat items failed: \(error.localizedDescription)")
+            }
+        }
+
+        func forwardConfirmationText(_ fc: ForwardConfirmation) -> String {
+            switch fc {
+            case let .filesNotAccepted(fileIds):
+                String.localizedStringWithFormat(
+                    NSLocalizedString("%d file(s) were not downloaded.", comment: "forward confirmation reason"),
+                    fileIds.count
+                )
+            case let .filesInProgress(filesCount):
+                String.localizedStringWithFormat(
+                    NSLocalizedString("%d file(s) are still being downloaded.", comment: "forward confirmation reason"),
+                    filesCount
+                )
+            case let .filesMissing(filesCount):
+                String.localizedStringWithFormat(
+                    NSLocalizedString("%d file(s) were deleted.", comment: "forward confirmation reason"),
+                    filesCount
+                )
+            case let .filesFailed(filesCount):
+                String.localizedStringWithFormat(
+                    NSLocalizedString("%d file(s) failed to download.", comment: "forward confirmation reason"),
+                    filesCount
+                )
+            }
+        }
+        
+        func forwardAction(_ items: [Int64]) -> UIAlertAction {
+            UIAlertAction(
+                title: NSLocalizedString("Forward messages", comment: "alert action"),
+                style: .default,
+                handler: { _ in Task { await openForwardingSheet(items) } }
+            )
+        }
+
+        func downloadAction(_ fileIds: [Int64]) -> UIAlertAction {
+            UIAlertAction(
+                title: NSLocalizedString("Download files", comment: "alert action"),
+                style: .default,
+                handler: { _ in
+                    Task {
+                        if let user = ChatModel.shared.currentUser {
+                            await receiveFiles(user: user, fileIds: fileIds)
+                        }
+                    }
+                }
+            )
+        }
+
+        func openForwardingSheet(_ items: [Int64]) async {
+            let im = ItemsModel.shared
+            var items = Set(items)
+            var fci = [ChatItem]()
+            for reversedChatItem in im.reversedChatItems {
+                if items.contains(reversedChatItem.id) {
+                    items.remove(reversedChatItem.id)
+                    fci.insert(reversedChatItem, at: 0)
+                }
+                if items.isEmpty { break }
+            }
+            await MainActor.run { forwardedChatItems = fci }
+        }
+    }
+
     private func loadChatItems(_ cInfo: ChatInfo) {
         Task {
             if loadingItems || firstPage { return }
@@ -762,11 +891,11 @@ struct ChatView: View {
         @State private var showDeleteMessages = false
         @State private var showChatItemInfoSheet: Bool = false
         @State private var chatItemInfo: ChatItemInfo?
-        @State private var showForwardingSheet: Bool = false
         @State private var showTranslationSheet: Bool = false
         @State private var msgWidth: CGFloat = 0
         
         @Binding var selectedChatItems: Set<Int64>?
+        @Binding var forwardedChatItems: [ChatItem]
 
         @State private var allowMenu: Bool = true
         @State private var markedRead = false
@@ -1080,14 +1209,6 @@ struct ChatView: View {
                 }) {
                     ChatItemInfoView(ci: ci, chatItemInfo: $chatItemInfo)
                 }
-                .sheet(isPresented: $showForwardingSheet) {
-                    if #available(iOS 16.0, *) {
-                        ChatItemForwardingView(ci: ci, fromChatInfo: chat.chatInfo, composeState: $composeState)
-                            .presentationDetents([.fraction(0.8)])
-                    } else {
-                        ChatItemForwardingView(ci: ci, fromChatInfo: chat.chatInfo, composeState: $composeState)
-                    }
-                }
                 .sheet(isPresented: $showTranslationSheet) {
                     if #available(iOS 18.0, *) {
                         TranslateView(source: ci.text).presentationDetents([.medium, .large])
@@ -1236,7 +1357,7 @@ struct ChatView: View {
 
         var forwardButton: Button<some View> {
             Button {
-                showForwardingSheet = true
+                forwardedChatItems = [chatItem]
             } label: {
                 Label(
                     NSLocalizedString("Forward", comment: "chat item action"),
