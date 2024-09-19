@@ -811,4 +811,22 @@
     <string name="network_proxy_incorrect_config_title">Lỗi lưu proxy</string>
     <string name="icon_descr_flip_camera">Đổi máy ảnh</string>
     <string name="appearance_font_size">Kích thước font</string>
+    <string name="n_other_file_errors">%1$d lỗi tệp khác.</string>
+    <string name="error_forwarding_messages">Lỗi chuyển tiếp tin nhắn</string>
+    <string name="forward_files_failed_to_receive_desc">%1$d tệp tải không thành công.</string>
+    <string name="forward_files_missing_desc">%1$d tệp đã bị xóa.</string>
+    <string name="forward_files_not_accepted_desc">%1$d tệp đã không được tải xuống.</string>
+    <string name="forward_files_not_accepted_receive_files">Tải xuống</string>
+    <string name="forward_alert_title_messages_to_forward">Chuyển tiếp %1$s tin nhắn?</string>
+    <string name="forward_multiple">Chuyển tiếp tin nhắn…</string>
+    <string name="n_file_errors">%1$d lỗi tệp:
+\n%2$s</string>
+    <string name="forward_files_in_progress_desc">%1$d tệp đang được tải xuống.</string>
+    <string name="forward_files_messages_deleted_after_selection_title">%1$s tin nhắn không được chuyển tiếp</string>
+    <string name="compose_forward_messages_n">Đang chuyển tiếp %1$s tin nhắn</string>
+    <string name="proxy_destination_error_failed_to_connect">Máy chủ chuyển tiếp %1$s không thể kết nối tới máy chủ đích %2$s. Vui lòng thử lại sau.</string>
+    <string name="smp_proxy_error_broker_host">Địa chỉ máy chủ chuyển tiếp không tương thích với cài đặt mạng: %1$s.</string>
+    <string name="smp_proxy_error_broker_version">Phiên bản máy chủ chuyển tiếp không tương thích với cài đặt mạng: %1$s.</string>
+    <string name="section_title_for_console">CHO CONSOLE</string>
+    <string name="forward_message">Chuyển tiếp tin nhắn…</string>
 </resources>
