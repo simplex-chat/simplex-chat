@@ -17,8 +17,13 @@ struct UserPicker: View {
     @State private var currentUser: Int64?
     @State private var switchingProfile = false
     @State private var frameWidth: CGFloat?
-
-    private let profilePadding: Double = 12
+    
+    // Inset grouped list dimensions
+    private let rowVerticalPadding: Double = 11
+    private let rowHorizontalPadding: Double = 16
+    private let sectionSpacing: Double = 35
+    private let sectionHorizontalPadding: Double = 16
+    private let sectionShape = RoundedRectangle(cornerRadius: 10, style: .continuous)
 
     var body: some View {
         if #available(iOS 16.0, *) {
@@ -38,16 +43,17 @@ struct UserPicker: View {
         VStack(spacing: 0) {
             if !m.users.isEmpty {
                 StickyScrollView { width in
-                    HStack(spacing: profilePadding) {
+                    HStack(spacing: rowHorizontalPadding) {
                         ForEach(m.users) { u in
                             userView(u, size: 44)
-                                .padding(profilePadding)
+                                .padding(.vertical, rowVerticalPadding)
+                                .padding(.horizontal, rowHorizontalPadding)
                                 .frame(
                                     minWidth: u.user == m.currentUser ? width.map { max(0, $0 - 64) } : nil,
                                     alignment: .leading
                                 )
                                 .background(Color(.secondarySystemGroupedBackground))
-                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                .clipShape(sectionShape)
                                 .onTapGesture {
                                     Task {
                                         do {
@@ -69,11 +75,10 @@ struct UserPicker: View {
                                 }
                         }
                     }
-                    .padding([.horizontal, .top], 16)
-                    .padding(.bottom, 8)
+                    .padding(.top, sectionSpacing)
+                    .padding(.horizontal, sectionHorizontalPadding)
                 }
-                .frame(height: 92)
-                .zIndex(1) // Position above list
+                .frame(height: sectionSpacing + rowVerticalPadding + 44 + rowVerticalPadding)
             }
             List {
                 Section {
@@ -86,7 +91,15 @@ struct UserPicker: View {
                         }) {
                             activeSheet = .currentProfile
                         }
-                        .listRowInsets(EdgeInsets(top: profilePadding, leading: profilePadding, bottom: profilePadding, trailing: profilePadding))
+                        // Row insets set manually to ensure consistency with `userView` padding in all versions of iOS
+                        .listRowInsets(
+                            EdgeInsets(
+                                top: rowVerticalPadding,
+                                leading: rowHorizontalPadding,
+                                bottom: rowVerticalPadding,
+                                trailing: rowHorizontalPadding
+                            )
+                        )
                         openSheetOnTap(title: m.userAddress == nil ? "Create SimpleX address" : "Your SimpleX address", icon: "qrcode") {
                             activeSheet = .address
                         }
@@ -125,7 +138,6 @@ struct UserPicker: View {
                     }
                 }
             }
-            .padding(.top, -24)
         }
         .onAppear {
             // This check prevents the call of listUsers after the app is suspended, and the database is closed.
