@@ -1105,26 +1105,26 @@ fun BoxWithConstraintsScope.ChatItemsList(
                     @Composable
                     fun MemberNameAndRole() {
                       Row(Modifier.padding(bottom = 2.dp).graphicsLayer { translationX = selectionOffset.toPx() }, horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(
+                          memberNames(member, prevMember, memCount),
+                          Modifier
+                            .padding(start = MEMBER_IMAGE_SIZE + DEFAULT_PADDING_HALF)
+                            .weight(1f, false),
+                          fontSize = 13.5.sp,
+                          color = MaterialTheme.colors.secondary,
+                          overflow = TextOverflow.Ellipsis,
+                          maxLines = 1
+                        )
                         if (memCount == 1 && member.memberRole > GroupMemberRole.Member) {
                           Text(
-                            memberNames(member, prevMember, memCount),
-                            Modifier
-                              .padding(start = MEMBER_IMAGE_SIZE + DEFAULT_PADDING_HALF)
-                              .weight(1f, false),
+                            member.memberRole.text,
+                            Modifier.padding(start = DEFAULT_PADDING_HALF * 1.5f, end = DEFAULT_PADDING_HALF),
                             fontSize = 13.5.sp,
+                            fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colors.secondary,
-                            overflow = TextOverflow.Ellipsis,
                             maxLines = 1
                           )
                         }
-                        Text(
-                          member.memberRole.text,
-                          Modifier.padding(start = DEFAULT_PADDING_HALF, end = 2.dp),
-                          fontSize = 13.5.sp,
-                          fontWeight = FontWeight.Medium,
-                          color = MaterialTheme.colors.secondary,
-                          maxLines = 1
-                        )
                       }
                     }
 
