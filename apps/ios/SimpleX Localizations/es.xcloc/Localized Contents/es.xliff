@@ -1980,9 +1980,9 @@ This is your own one-time link!</source>
         <target>Base de datos y contraseña</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve">
+      <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve" approved="no">
         <source>Database passphrase is different from saved in the keychain.</source>
-        <target>La contraseña es distinta a la almacenada en Keychain.</target>
+        <target state="translated">La contraseña es diferente a la almacenada en Keychain.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database passphrase is required to open chat." xml:space="preserve">
@@ -2459,9 +2459,9 @@ This is your own one-time link!</source>
         <target>No activar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Don't show again" xml:space="preserve">
+      <trans-unit id="Don't show again" xml:space="preserve" approved="no">
         <source>Don't show again</source>
-        <target>No mostrar de nuevo</target>
+        <target state="translated">No volver a mostrar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Downgrade and open chat" xml:space="preserve">
@@ -5885,9 +5885,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Enviar confirmaciones de entrega a</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send direct message to connect" xml:space="preserve">
+      <trans-unit id="Send direct message to connect" xml:space="preserve" approved="no">
         <source>Send direct message to connect</source>
-        <target>Envia un mensaje para conectar</target>
+        <target state="translated">Envía un mensaje para conectar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send disappearing message" xml:space="preserve">
@@ -7939,9 +7939,9 @@ Repeat connection request?</source>
         <target>Tu servidor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your server address" xml:space="preserve">
+      <trans-unit id="Your server address" xml:space="preserve" approved="no">
         <source>Your server address</source>
-        <target>Dirección de tu servidor</target>
+        <target state="translated">Dirección del servidor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your settings" xml:space="preserve">
@@ -9063,9 +9063,9 @@ last received msg: %2$@</source>
         <target>Error en base de datos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve">
+      <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve" approved="no">
         <source>Database passphrase is different from saved in the keychain.</source>
-        <target>La contraseña de la base de datos es distinta a la almacenada en keychain.</target>
+        <target state="translated">La contraseña de la base de datos es diferente a la almacenada en keychain.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database passphrase is required to open chat." xml:space="preserve">
