@@ -7,6 +7,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.*
 import android.content.pm.ActivityInfo
+import android.content.pm.PackageManager
 import android.media.*
 import android.os.Build
 import android.os.PowerManager
@@ -36,6 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.*
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewClientCompat
@@ -256,7 +258,13 @@ private fun ActiveCallOverlay(call: Call, chatModel: ChatModel, callAudioDeviceM
     dismiss = { withBGApi { chatModel.callManager.endCall(call) } },
     toggleAudio = { chatModel.callCommand.add(WCallCommand.Media(CallMediaSource.Mic, enable = !call.localMediaSources.mic)) },
     selectDevice = { callAudioDeviceManager.selectDevice(it.id) },
-    toggleVideo = { chatModel.callCommand.add(WCallCommand.Media(CallMediaSource.Camera, enable = !call.localMediaSources.camera)) },
+    toggleVideo = {
+      if (ContextCompat.checkSelfPermission(androidAppContext, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+        chatModel.callCommand.add(WCallCommand.Media(CallMediaSource.Camera, enable = !call.localMediaSources.camera))
+      } else {
+        updateActiveCall(call) { it.copy(wantsToEnableCamera = true) }
+      }
+    },
     toggleSound = {
       val enableSpeaker = callAudioDeviceManager.currentDevice.value?.type == AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
       val preferredInternalDevice = callAudioDeviceManager.devices.value.firstOrNull { it.type == if (enableSpeaker) AudioDeviceInfo.TYPE_BUILTIN_SPEAKER else AudioDeviceInfo.TYPE_BUILTIN_EARPIECE }
@@ -570,38 +578,39 @@ fun CallPermissionsView(pipActive: Boolean, hasVideo: Boolean, cancel: () -> Uni
       }
     }
   } else {
-    ColumnWithScrollBar(Modifier.fillMaxSize()) {
-      Spacer(Modifier.height(AppBarHeight * fontSizeSqrtMultiplier))
-
-      AppBarTitle(stringResource(MR.strings.permissions_required))
-      Spacer(Modifier.weight(1f))
-
-      val onClick = {
-        if (permissionsState.shouldShowRationale) {
-          context.showAllowPermissionInSettingsAlert()
-        } else {
-          permissionsState.launchMultiplePermissionRequestWithFallback(buttonEnabled, context::showAllowPermissionInSettingsAlert)
+    ModalView(background = Color.Black, showClose = false, close = {}) {
+      ColumnWithScrollBar(Modifier.fillMaxSize()) {
+        AppBarTitle(stringResource(MR.strings.permissions_required))
+        Spacer(Modifier.weight(1f))
+        val onClick = {
+          if (permissionsState.shouldShowRationale) {
+            context.showAllowPermissionInSettingsAlert()
+          } else {
+            permissionsState.launchMultiplePermissionRequestWithFallback(buttonEnabled, context::showAllowPermissionInSettingsAlert)
+          }
         }
-      }
-      Text(stringResource(MR.strings.permissions_grant), Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING), textAlign = TextAlign.Center, color = Color(0xFFFFFFD8))
-      SectionSpacer()
-      SectionView {
-        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-          val text = if (hasVideo && audioPermission.status is PermissionStatus.Denied && cameraPermission.status is PermissionStatus.Denied) {
-            stringResource(MR.strings.permissions_camera_and_record_audio)
-          } else if (audioPermission.status is PermissionStatus.Denied) {
-            stringResource(MR.strings.permissions_record_audio)
-          } else if (hasVideo && cameraPermission.status is PermissionStatus.Denied) {
-            stringResource(MR.strings.permissions_camera)
-          } else ""
-          GrantPermissionButton(text, buttonEnabled.value, onClick)
+        Text(stringResource(MR.strings.permissions_grant), Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING), textAlign = TextAlign.Center, color = Color(0xFFFFFFD8))
+        SectionSpacer()
+        SectionView {
+          Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            val text = if (hasVideo && audioPermission.status is PermissionStatus.Denied && cameraPermission.status is PermissionStatus.Denied) {
+              stringResource(MR.strings.permissions_camera_and_record_audio)
+            } else if (audioPermission.status is PermissionStatus.Denied) {
+              stringResource(MR.strings.permissions_record_audio)
+            } else if (hasVideo && cameraPermission.status is PermissionStatus.Denied) {
+              stringResource(MR.strings.permissions_camera)
+            } else null
+            if (text != null) {
+              GrantPermissionButton(text, buttonEnabled.value, onClick)
+            }
+          }
         }
-      }
 
-      Spacer(Modifier.weight(1f))
-      Box(Modifier.fillMaxWidth().padding(bottom = if (hasVideo) 0.dp else DEFAULT_BOTTOM_PADDING), contentAlignment = Alignment.Center) {
-        SimpleButtonFrame(cancel, Modifier.height(64.dp)) {
-          Text(stringResource(MR.strings.call_service_notification_end_call), fontSize = 20.sp, color = Color(0xFFFFFFD8))
+        Spacer(Modifier.weight(1f))
+        Box(Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
+          SimpleButtonFrame(cancel, Modifier.height(60.dp)) {
+            Text(stringResource(MR.strings.call_service_notification_end_call), fontSize = 20.sp, color = Color(0xFFFFFFD8))
+          }
         }
       }
     }

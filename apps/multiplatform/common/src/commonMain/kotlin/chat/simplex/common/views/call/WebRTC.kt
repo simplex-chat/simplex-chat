@@ -24,9 +24,13 @@ data class Call(
   var localCamera: VideoCamera = VideoCamera.User,
   val connectionInfo: ConnectionInfo? = null,
   var connectedAt: Instant? = null,
+
+  // When a user has audio call, and then he wants to enable camera but didn't grant permissions for using camera yet,
+  // we show permissions view without enabling camera before permissions are granted. After they are granted, enabling camera
+  val wantsToEnableCamera: Boolean = false
 ) {
   val encrypted: Boolean get() = localEncrypted && sharedKey != null
-  val localEncrypted: Boolean get() = localCapabilities?.encryption ?: false
+  private val localEncrypted: Boolean get() = localCapabilities?.encryption ?: false
 
   val encryptionStatus: String get() = when(callState) {
     CallState.WaitCapabilities -> ""

@@ -19,7 +19,18 @@ body {
   object-fit: cover;
   margin: 16px;
   border-radius: 16px;
-  bottom: 60px;
+  bottom: 80px;
+  right: 0;
+}
+
+#remote-video-stream.collapsed-pip {
+  position: absolute;
+  max-width: 50%;
+  max-height: 50%;
+  object-fit: cover;
+  margin: 8px;
+  border-radius: 8px;
+  bottom: 0;
   right: 0;
 }
 

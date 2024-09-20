@@ -155,7 +155,9 @@ const processCommand = (function () {
         const localCamera = (_b = notConnectedCall === null || notConnectedCall === void 0 ? void 0 : notConnectedCall.localCamera) !== null && _b !== void 0 ? _b : VideoCamera.User;
         let localStream;
         try {
-            localStream = await getLocalMediaStream(inactiveCallMediaSources.mic, inactiveCallMediaSources.camera, localCamera);
+            localStream = (notConnectedCall === null || notConnectedCall === void 0 ? void 0 : notConnectedCall.localStream)
+                ? notConnectedCall.localStream
+                : await getLocalMediaStream(inactiveCallMediaSources.mic, inactiveCallMediaSources.camera, localCamera);
         }
         catch (e) {
             console.log("Error while getting local media stream", e);
@@ -193,9 +195,9 @@ const processCommand = (function () {
                 screenVideo: false,
             },
             aesKey,
+            layout: LayoutType.Default,
             cameraTrackWasSetBefore: mediaType == CallMediaType.Video,
         };
-        notConnectedCall = undefined;
         localOrPeerMediaSourcesChanged(call);
         await setupMediaStreams(call);
         let connectionTimeout = setTimeout(connectionHandler, answerTimeout);
@@ -272,9 +274,13 @@ const processCommand = (function () {
                     if (activeCall)
                         endCall();
                     let localStream = null;
-                    // This request for local media stream is made to prompt for camera/mic permissions on call start
                     try {
                         localStream = await getLocalMediaStream(true, command.media == CallMediaType.Video && !isDesktop, VideoCamera.User);
+                        const videos = getVideoElements();
+                        if (videos) {
+                            videos.local.srcObject = localStream;
+                            videos.local.play().catch((e) => console.log(e));
+                        }
                     }
                     catch (e) {
                         // Will be shown on the next stage of call estabilishing, can work without any streams
@@ -287,7 +293,6 @@ const processCommand = (function () {
                     notConnectedCall = {
                         localCamera: VideoCamera.User,
                         localStream: localStream,
-                        localScreenStream: null,
                     };
                     const encryption = supportsInsertableStreams(useWorker);
                     resp = { type: "capabilities", capabilities: { encryption } };
@@ -467,7 +472,10 @@ const processCommand = (function () {
                     resp = { type: "ok" };
                     break;
                 case "layout":
-                    changeLayout(command.layout);
+                    if (activeCall) {
+                        activeCall.layout = command.layout;
+                        changeLayout(command.layout);
+                    }
                     resp = { type: "ok" };
                     break;
                 case "end":
@@ -585,7 +593,10 @@ const processCommand = (function () {
             }
         }
         console.log("LALAL TRANS AFTER SIZE", pc.getTransceivers().length);
-        videos.local.srcObject = call.localStream;
+        // src can be set to notConnectedCall.localStream which is the same as call.localStream
+        if (!videos.local.srcObject) {
+            videos.local.srcObject = call.localStream;
+        }
         // Without doing it manually Firefox shows black screen but video can be played in Picture-in-Picture
         videos.local.play().catch((e) => console.log(e));
     }
@@ -704,6 +715,7 @@ const processCommand = (function () {
             call.localMediaSources.camera = true;
             call.cameraTrackWasSetBefore = true;
             localOrPeerMediaSourcesChanged(call);
+            changeLayout(call.layout);
         }
         catch (e) {
             console.log("Start sending camera error", e);
@@ -756,7 +768,6 @@ const processCommand = (function () {
             // videos.localScreen.pause()
             // videos.localScreen.srcObject = call.localScreenStream
             videos.localScreen.play().catch((e) => console.log(e));
-            videos.localScreen.style.visibility = "visible";
         }
         else {
             pc.getTransceivers().forEach((elem) => {
@@ -769,13 +780,13 @@ const processCommand = (function () {
                 t.stop();
             for (const t of call.localScreenStream.getTracks())
                 call.localScreenStream.removeTrack(t);
-            videos.localScreen.style.visibility = "hidden";
         }
         if (allowSendScreenAudio) {
             call.localMediaSources.screenAudio = !call.localMediaSources.screenAudio;
         }
         call.localMediaSources.screenVideo = !call.localMediaSources.screenVideo;
         localOrPeerMediaSourcesChanged(call);
+        changeLayout(call.layout);
     };
     async function replaceMedia(call, source, enable, camera) {
         const videos = getVideoElements();
@@ -809,6 +820,7 @@ const processCommand = (function () {
         call.localMediaSources.mic = call.localStream.getAudioTracks().length > 0;
         call.localMediaSources.camera = call.localStream.getVideoTracks().length > 0;
         localOrPeerMediaSourcesChanged(call);
+        changeLayout(call.layout);
         return true;
     }
     function replaceTracks(pc, source, tracks) {
@@ -843,8 +855,9 @@ const processCommand = (function () {
             }
         }
         else {
-            (_f = notConnectedCall.localStream) === null || _f === void 0 ? void 0 : _f.getVideoTracks().forEach((elem) => elem.stop());
-            (_g = notConnectedCall.localStream) === null || _g === void 0 ? void 0 : _g.getVideoTracks().forEach((elem) => { var _a; return (_a = notConnectedCall === null || notConnectedCall === void 0 ? void 0 : notConnectedCall.localStream) === null || _a === void 0 ? void 0 : _a.removeTrack(elem); });
+            (_f = notConnectedCall.localStream) === null || _f === void 0 ? void 0 : _f.getTracks().forEach((elem) => elem.stop());
+            (_g = notConnectedCall.localStream) === null || _g === void 0 ? void 0 : _g.getTracks().forEach((elem) => { var _a; return (_a = notConnectedCall === null || notConnectedCall === void 0 ? void 0 : notConnectedCall.localStream) === null || _a === void 0 ? void 0 : _a.removeTrack(elem); });
+            notConnectedCall.localStream = null;
             videos.local.srcObject = null;
         }
     }
@@ -921,7 +934,6 @@ const processCommand = (function () {
             };
             sources.camera = !mute;
             activeCall.peerMediaSources = sources;
-            videos.remote.style.visibility = !mute ? "visible" : "hidden";
             sendMessageToNative({ resp: resp });
             if (!mute)
                 videos.remote.play().catch((e) => console.log(e));
@@ -948,18 +960,13 @@ const processCommand = (function () {
             };
             sources.screenVideo = !mute;
             activeCall.peerMediaSources = sources;
-            videos.remoteScreen.style.visibility = !mute ? "visible" : "hidden";
             sendMessageToNative({ resp: resp });
             if (!mute)
                 videos.remoteScreen.play().catch((e) => console.log(e));
         }
-        if (activeCall.peerMediaSources.screenVideo) {
-            videos.remote.className = "collapsed";
-        }
-        else {
-            videos.remote.className = "inline";
-        }
         localOrPeerMediaSourcesChanged(activeCall);
+        // Make sure that remote camera and remote screen video in their places and shown/hidden based on layout type currently in use
+        changeLayout(activeCall.layout);
     }
     async function getLocalMediaStream(mic, camera, facingMode) {
         if (!mic && !camera)
@@ -1019,22 +1026,6 @@ const processCommand = (function () {
         videos.remote.srcObject = null;
         videos.remoteScreen.srcObject = null;
     }
-    function getVideoElements() {
-        const local = document.getElementById("local-video-stream");
-        const localScreen = document.getElementById("local-screen-video-stream");
-        const remote = document.getElementById("remote-video-stream");
-        const remoteScreen = document.getElementById("remote-screen-video-stream");
-        if (!(local &&
-            localScreen &&
-            remote &&
-            remoteScreen &&
-            local instanceof HTMLMediaElement &&
-            localScreen instanceof HTMLMediaElement &&
-            remote instanceof HTMLMediaElement &&
-            remoteScreen instanceof HTMLMediaElement))
-            return;
-        return { local, localScreen, remote, remoteScreen };
-    }
     // function setupVideoElement(video: HTMLElement) {
     //   // TODO use display: none
     //   video.style.opacity = "0"
@@ -1072,6 +1063,7 @@ const processCommand = (function () {
         }
         if (changedSource) {
             localOrPeerMediaSourcesChanged(activeCall);
+            changeLayout(activeCall.layout);
             return true;
         }
         else {
@@ -1102,26 +1094,64 @@ function togglePeerMedia(s, media) {
     return res;
 }
 function changeLayout(layout) {
-    const local = document.getElementById("local-video-stream");
-    const remote = document.getElementById("remote-video-stream");
+    const videos = getVideoElements();
+    const localSources = activeCall === null || activeCall === void 0 ? void 0 : activeCall.localMediaSources;
+    const peerSources = activeCall === null || activeCall === void 0 ? void 0 : activeCall.peerMediaSources;
+    if (!videos || !peerSources || !localSources)
+        return;
     switch (layout) {
         case LayoutType.Default:
-            local.className = "inline";
-            remote.className = "inline";
-            local.style.visibility = "visible";
-            remote.style.visibility = "visible";
+            videos.local.className = "inline";
+            videos.remote.className = peerSources.screenVideo ? "collapsed" : "inline";
+            videos.local.style.visibility = "visible";
+            videos.remote.style.visibility = peerSources.camera ? "visible" : "hidden";
+            videos.remoteScreen.style.visibility = peerSources.screenVideo ? "visible" : "hidden";
             break;
         case LayoutType.LocalVideo:
-            local.className = "fullscreen";
-            local.style.visibility = "visible";
-            remote.style.visibility = "hidden";
+            videos.local.className = "fullscreen";
+            videos.local.style.visibility = "visible";
+            videos.remote.style.visibility = "hidden";
+            videos.remoteScreen.style.visibility = "hidden";
             break;
         case LayoutType.RemoteVideo:
-            remote.className = "fullscreen";
-            local.style.visibility = "hidden";
-            remote.style.visibility = "visible";
+            if (peerSources.screenVideo && peerSources.camera) {
+                videos.remoteScreen.className = "fullscreen";
+                videos.remoteScreen.style.visibility = "visible";
+                videos.remote.style.visibility = "visible";
+                videos.remote.className = "collapsed-pip";
+            }
+            else if (peerSources.screenVideo) {
+                videos.remoteScreen.className = "fullscreen";
+                videos.remoteScreen.style.visibility = "visible";
+                videos.remote.style.visibility = "hidden";
+                videos.remote.className = "inline";
+            }
+            else if (peerSources.camera) {
+                videos.remote.className = "fullscreen";
+                videos.remote.style.visibility = "visible";
+                videos.remoteScreen.style.visibility = "hidden";
+                videos.remoteScreen.className = "inline";
+            }
+            videos.local.style.visibility = "hidden";
             break;
     }
+    videos.localScreen.style.visibility = localSources.screenVideo ? "visible" : "hidden";
+}
+function getVideoElements() {
+    const local = document.getElementById("local-video-stream");
+    const localScreen = document.getElementById("local-screen-video-stream");
+    const remote = document.getElementById("remote-video-stream");
+    const remoteScreen = document.getElementById("remote-screen-video-stream");
+    if (!(local &&
+        localScreen &&
+        remote &&
+        remoteScreen &&
+        local instanceof HTMLMediaElement &&
+        localScreen instanceof HTMLMediaElement &&
+        remote instanceof HTMLMediaElement &&
+        remoteScreen instanceof HTMLMediaElement))
+        return;
+    return { local, localScreen, remote, remoteScreen };
 }
 function desktopShowPermissionsAlert(mediaType) {
     if (!isDesktop)
@@ -1130,7 +1160,7 @@ function desktopShowPermissionsAlert(mediaType) {
         window.alert("Permissions denied. Please, allow access to mic to make the call working and hit unmute button. Don't reload the page.");
     }
     else {
-        window.alert("Permissions denied. Please, allow access to mic and camera to make the call working and hit unmute button. Don't reload the page.");
+        window.alert("Permissions denied. Please, allow access to mic and camera to make the call working and hit unmute/camera button. Don't reload the page.");
     }
 }
 // Cryptography function - it is loaded both in the main window and in worker context (if the worker is used)

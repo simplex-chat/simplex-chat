@@ -287,7 +287,14 @@ class SimplexApp: Application(), LifecycleEventObserver {
         // Blend status bar color to the animated color
         val colors = CurrentColors.value.colors
         val baseBackgroundColor = if (toolbarOnTop) colors.background.mixWith(colors.onBackground, 0.97f) else colors.background
-        window.statusBarColor = baseBackgroundColor.mixWith(drawerShadingColor.copy(1f), 1 - drawerShadingColor.alpha).toArgb()
+        var statusBar = baseBackgroundColor.mixWith(drawerShadingColor.copy(1f), 1 - drawerShadingColor.alpha).toArgb()
+
+        // SimplexGreen while in call
+        if (window.statusBarColor == SimplexGreen.toArgb()) {
+          statusBarColorAfterCall.intValue = statusBar
+          statusBar = SimplexGreen.toArgb()
+        }
+        window.statusBarColor = statusBar
         val navBar = navBarColor.toArgb()
 
         if (window.navigationBarColor != navBar) {

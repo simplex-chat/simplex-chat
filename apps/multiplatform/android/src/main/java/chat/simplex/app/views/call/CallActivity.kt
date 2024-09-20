@@ -248,14 +248,29 @@ fun CallActivityView() {
             listOf(Manifest.permission.RECORD_AUDIO)
           }
         )
-        if (permissionsState.allPermissionsGranted) {
+        // callState == connected is needed in a situation when a peer enabled camera in audio call while a user didn't grant camera permission yet,
+        // so no need to hide active call view in this case
+        if (permissionsState.allPermissionsGranted || call.callState == CallState.Connected) {
           ActiveCallView()
           LaunchedEffect(Unit) {
             activity.startServiceAndBind()
           }
-        } else {
-          CallPermissionsView(remember { m.activeCallViewIsCollapsed }.value, callHasVideo()) {
+        }
+        if ((!permissionsState.allPermissionsGranted && call.callState != CallState.Connected) || call.wantsToEnableCamera) {
+          CallPermissionsView(remember { m.activeCallViewIsCollapsed }.value, callHasVideo() || call.wantsToEnableCamera) {
             withBGApi { chatModel.callManager.endCall(call) }
+          }
+          val cameraAndMicPermissions = rememberMultiplePermissionsState(permissions = listOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO))
+          DisposableEffect(cameraAndMicPermissions.allPermissionsGranted) {
+            onDispose {
+              if (call.wantsToEnableCamera && cameraAndMicPermissions.allPermissionsGranted) {
+                val activeCall = chatModel.activeCall.value
+                if (activeCall != null && activeCall.contact.apiId == call.contact.apiId) {
+                  chatModel.activeCall.value = activeCall.copy(wantsToEnableCamera = false)
+                  chatModel.callCommand.add(WCallCommand.Media(CallMediaSource.Camera, enable = true))
+                }
+              }
+            }
           }
         }
         val view = LocalView.current

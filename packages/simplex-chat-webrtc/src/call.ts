@@ -208,6 +208,13 @@ interface ConnectionInfo {
   remoteCandidate?: RTCIceCandidate
 }
 
+interface VideoElements {
+  local: HTMLMediaElement
+  localScreen: HTMLMediaElement
+  remote: HTMLMediaElement
+  remoteScreen: HTMLMediaElement
+}
+
 // for debugging
 // var sendMessageToNative = ({resp}: WVApiMessage) => console.log(JSON.stringify({command: resp}))
 var sendMessageToNative = (msg: WVApiMessage) => console.log(JSON.stringify(msg))
@@ -248,6 +255,7 @@ interface Call {
   aesKey?: string
   worker?: Worker
   key?: CryptoKey
+  layout: LayoutType
   // controls whether transceiver's track was replaced already or set initially (in video call)
   cameraTrackWasSetBefore: boolean
 }
@@ -255,7 +263,6 @@ interface Call {
 interface NotConnectedCall {
   localCamera: VideoCamera
   localStream: MediaStream | null
-  localScreenStream: MediaStream | null
 }
 
 function localMedia(call: Call): CallMediaType {
@@ -402,7 +409,9 @@ const processCommand = (function () {
     const localCamera = notConnectedCall?.localCamera ?? VideoCamera.User
     let localStream: MediaStream
     try {
-      localStream = await getLocalMediaStream(inactiveCallMediaSources.mic, inactiveCallMediaSources.camera, localCamera)
+      localStream = notConnectedCall?.localStream
+        ? notConnectedCall.localStream
+        : await getLocalMediaStream(inactiveCallMediaSources.mic, inactiveCallMediaSources.camera, localCamera)
     } catch (e) {
       console.log("Error while getting local media stream", e)
       if (isDesktop) {
@@ -438,9 +447,9 @@ const processCommand = (function () {
         screenVideo: false,
       },
       aesKey,
+      layout: LayoutType.Default,
       cameraTrackWasSetBefore: mediaType == CallMediaType.Video,
     }
-    notConnectedCall = undefined
     localOrPeerMediaSourcesChanged(call)
     await setupMediaStreams(call)
     let connectionTimeout: number | undefined = setTimeout(connectionHandler, answerTimeout)
@@ -521,9 +530,13 @@ const processCommand = (function () {
           if (activeCall) endCall()
 
           let localStream: MediaStream | null = null
-          // This request for local media stream is made to prompt for camera/mic permissions on call start
           try {
             localStream = await getLocalMediaStream(true, command.media == CallMediaType.Video && !isDesktop, VideoCamera.User)
+            const videos = getVideoElements()
+            if (videos) {
+              videos.local.srcObject = localStream
+              videos.local.play().catch((e) => console.log(e))
+            }
           } catch (e) {
             // Will be shown on the next stage of call estabilishing, can work without any streams
             //desktopShowPermissionsAlert(command.media)
@@ -535,7 +548,6 @@ const processCommand = (function () {
           notConnectedCall = {
             localCamera: VideoCamera.User,
             localStream: localStream,
-            localScreenStream: null,
           }
           const encryption = supportsInsertableStreams(useWorker)
           resp = {type: "capabilities", capabilities: {encryption}}
@@ -712,7 +724,10 @@ const processCommand = (function () {
           resp = {type: "ok"}
           break
         case "layout":
-          changeLayout(command.layout)
+          if (activeCall) {
+            activeCall.layout = command.layout
+            changeLayout(command.layout)
+          }
           resp = {type: "ok"}
           break
         case "end":
@@ -834,7 +849,10 @@ const processCommand = (function () {
 
     console.log("LALAL TRANS AFTER SIZE", pc.getTransceivers().length)
 
-    videos.local.srcObject = call.localStream
+    // src can be set to notConnectedCall.localStream which is the same as call.localStream
+    if (!videos.local.srcObject) {
+      videos.local.srcObject = call.localStream
+    }
     // Without doing it manually Firefox shows black screen but video can be played in Picture-in-Picture
     videos.local.play().catch((e) => console.log(e))
   }
@@ -968,6 +986,7 @@ const processCommand = (function () {
       call.localMediaSources.camera = true
       call.cameraTrackWasSetBefore = true
       localOrPeerMediaSourcesChanged(call)
+      changeLayout(call.layout)
     } catch (e: any) {
       console.log("Start sending camera error", e)
       desktopShowPermissionsAlert(CallMediaType.Video)
@@ -1020,7 +1039,6 @@ const processCommand = (function () {
       // videos.localScreen.pause()
       // videos.localScreen.srcObject = call.localScreenStream
       videos.localScreen.play().catch((e) => console.log(e))
-      videos.localScreen.style.visibility = "visible"
     } else {
       pc.getTransceivers().forEach((elem) => {
         const source = mediaSourceFromTransceiverMid(elem.mid)
@@ -1030,7 +1048,6 @@ const processCommand = (function () {
       })
       for (const t of call.localScreenStream.getTracks()) t.stop()
       for (const t of call.localScreenStream.getTracks()) call.localScreenStream.removeTrack(t)
-      videos.localScreen.style.visibility = "hidden"
     }
 
     if (allowSendScreenAudio) {
@@ -1038,6 +1055,7 @@ const processCommand = (function () {
     }
     call.localMediaSources.screenVideo = !call.localMediaSources.screenVideo
     localOrPeerMediaSourcesChanged(call)
+    changeLayout(call.layout)
   }
 
   async function replaceMedia(call: Call, source: CallMediaSource, enable: boolean, camera: VideoCamera): Promise<boolean> {
@@ -1078,6 +1096,7 @@ const processCommand = (function () {
     call.localMediaSources.mic = call.localStream.getAudioTracks().length > 0
     call.localMediaSources.camera = call.localStream.getVideoTracks().length > 0
     localOrPeerMediaSourcesChanged(call)
+    changeLayout(call.layout)
 
     return true
   }
@@ -1115,8 +1134,9 @@ const processCommand = (function () {
         console.log("Error while enabling camera in not connected call", e)
       }
     } else {
-      notConnectedCall.localStream?.getVideoTracks().forEach((elem) => elem.stop())
-      notConnectedCall.localStream?.getVideoTracks().forEach((elem) => notConnectedCall?.localStream?.removeTrack(elem))
+      notConnectedCall.localStream?.getTracks().forEach((elem) => elem.stop())
+      notConnectedCall.localStream?.getTracks().forEach((elem) => notConnectedCall?.localStream?.removeTrack(elem))
+      notConnectedCall.localStream = null
       videos.local.srcObject = null
     }
   }
@@ -1198,7 +1218,6 @@ const processCommand = (function () {
       }
       sources.camera = !mute
       activeCall.peerMediaSources = sources
-      videos.remote.style.visibility = !mute ? "visible" : "hidden"
       sendMessageToNative({resp: resp})
       if (!mute) videos.remote.play().catch((e) => console.log(e))
     } else if (source == CallMediaSource.ScreenAudio && activeCall.peerMediaSources.screenAudio == mute) {
@@ -1221,16 +1240,12 @@ const processCommand = (function () {
       }
       sources.screenVideo = !mute
       activeCall.peerMediaSources = sources
-      videos.remoteScreen.style.visibility = !mute ? "visible" : "hidden"
       sendMessageToNative({resp: resp})
       if (!mute) videos.remoteScreen.play().catch((e) => console.log(e))
     }
-    if (activeCall.peerMediaSources.screenVideo) {
-      videos.remote.className = "collapsed"
-    } else {
-      videos.remote.className = "inline"
-    }
     localOrPeerMediaSourcesChanged(activeCall)
+    // Make sure that remote camera and remote screen video in their places and shown/hidden based on layout type currently in use
+    changeLayout(activeCall.layout)
   }
 
   async function getLocalMediaStream(mic: boolean, camera: boolean, facingMode: VideoCamera): Promise<MediaStream> {
@@ -1282,13 +1297,6 @@ const processCommand = (function () {
     )
   }
 
-  interface VideoElements {
-    local: HTMLMediaElement
-    localScreen: HTMLMediaElement
-    remote: HTMLMediaElement
-    remoteScreen: HTMLMediaElement
-  }
-
   function shutdownCameraAndMic() {
     if (activeCall?.localStream) {
       activeCall.localStream.getTracks().forEach((track) => track.stop())
@@ -1302,27 +1310,6 @@ const processCommand = (function () {
     videos.localScreen.srcObject = null
     videos.remote.srcObject = null
     videos.remoteScreen.srcObject = null
-  }
-
-  function getVideoElements(): VideoElements | undefined {
-    const local = document.getElementById("local-video-stream")
-    const localScreen = document.getElementById("local-screen-video-stream")
-    const remote = document.getElementById("remote-video-stream")
-    const remoteScreen = document.getElementById("remote-screen-video-stream")
-    if (
-      !(
-        local &&
-        localScreen &&
-        remote &&
-        remoteScreen &&
-        local instanceof HTMLMediaElement &&
-        localScreen instanceof HTMLMediaElement &&
-        remote instanceof HTMLMediaElement &&
-        remoteScreen instanceof HTMLMediaElement
-      )
-    )
-      return
-    return {local, localScreen, remote, remoteScreen}
   }
 
   // function setupVideoElement(video: HTMLElement) {
@@ -1363,6 +1350,7 @@ const processCommand = (function () {
     }
     if (changedSource) {
       localOrPeerMediaSourcesChanged(activeCall)
+      changeLayout(activeCall.layout)
       return true
     } else {
       console.log("Enable media error")
@@ -1396,26 +1384,66 @@ function togglePeerMedia(s: MediaStream, media: CallMediaType): boolean {
 }
 
 function changeLayout(layout: LayoutType) {
-  const local = document.getElementById("local-video-stream")!
-  const remote = document.getElementById("remote-video-stream")!
+  const videos = getVideoElements()
+  const localSources = activeCall?.localMediaSources
+  const peerSources = activeCall?.peerMediaSources
+  if (!videos || !peerSources || !localSources) return
   switch (layout) {
     case LayoutType.Default:
-      local.className = "inline"
-      remote.className = "inline"
-      local.style.visibility = "visible"
-      remote.style.visibility = "visible"
+      videos.local.className = "inline"
+      videos.remote.className = peerSources.screenVideo ? "collapsed" : "inline"
+      videos.local.style.visibility = "visible"
+      videos.remote.style.visibility = peerSources.camera ? "visible" : "hidden"
+      videos.remoteScreen.style.visibility = peerSources.screenVideo ? "visible" : "hidden"
       break
     case LayoutType.LocalVideo:
-      local.className = "fullscreen"
-      local.style.visibility = "visible"
-      remote.style.visibility = "hidden"
+      videos.local.className = "fullscreen"
+      videos.local.style.visibility = "visible"
+      videos.remote.style.visibility = "hidden"
+      videos.remoteScreen.style.visibility = "hidden"
       break
     case LayoutType.RemoteVideo:
-      remote.className = "fullscreen"
-      local.style.visibility = "hidden"
-      remote.style.visibility = "visible"
+      if (peerSources.screenVideo && peerSources.camera) {
+        videos.remoteScreen.className = "fullscreen"
+        videos.remoteScreen.style.visibility = "visible"
+        videos.remote.style.visibility = "visible"
+        videos.remote.className = "collapsed-pip"
+      } else if (peerSources.screenVideo) {
+        videos.remoteScreen.className = "fullscreen"
+        videos.remoteScreen.style.visibility = "visible"
+        videos.remote.style.visibility = "hidden"
+        videos.remote.className = "inline"
+      } else if (peerSources.camera) {
+        videos.remote.className = "fullscreen"
+        videos.remote.style.visibility = "visible"
+        videos.remoteScreen.style.visibility = "hidden"
+        videos.remoteScreen.className = "inline"
+      }
+      videos.local.style.visibility = "hidden"
       break
   }
+  videos.localScreen.style.visibility = localSources.screenVideo ? "visible" : "hidden"
+}
+
+function getVideoElements(): VideoElements | undefined {
+  const local = document.getElementById("local-video-stream")
+  const localScreen = document.getElementById("local-screen-video-stream")
+  const remote = document.getElementById("remote-video-stream")
+  const remoteScreen = document.getElementById("remote-screen-video-stream")
+  if (
+    !(
+      local &&
+      localScreen &&
+      remote &&
+      remoteScreen &&
+      local instanceof HTMLMediaElement &&
+      localScreen instanceof HTMLMediaElement &&
+      remote instanceof HTMLMediaElement &&
+      remoteScreen instanceof HTMLMediaElement
+    )
+  )
+    return
+  return {local, localScreen, remote, remoteScreen}
 }
 
 function desktopShowPermissionsAlert(mediaType: CallMediaType) {
@@ -1425,7 +1453,7 @@ function desktopShowPermissionsAlert(mediaType: CallMediaType) {
     window.alert("Permissions denied. Please, allow access to mic to make the call working and hit unmute button. Don't reload the page.")
   } else {
     window.alert(
-      "Permissions denied. Please, allow access to mic and camera to make the call working and hit unmute button. Don't reload the page."
+      "Permissions denied. Please, allow access to mic and camera to make the call working and hit unmute/camera button. Don't reload the page."
     )
   }
 }
