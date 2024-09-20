@@ -2423,6 +2423,15 @@ data class CITimed(
   val deleteAt: Instant?
 )
 
+fun getDateText(t: Instant): String {
+  val tz = TimeZone.currentSystemDefault()
+  val time = t.toLocalDateTime(tz)
+  val weekday = time.toJavaLocalDateTime().format(DateTimeFormatter.ofPattern("EEE", Locale.getDefault()))
+  val dayMonth =  time.toJavaLocalDateTime().format(DateTimeFormatter.ofPattern("d MMM", Locale.getDefault()))
+
+  return String.format("%s, %s", weekday, dayMonth)
+}
+
 fun getTimestampText(t: Instant, shortFormat: Boolean = false): String {
   val tz = TimeZone.currentSystemDefault()
   val now: LocalDateTime = Clock.System.now().toLocalDateTime(tz)

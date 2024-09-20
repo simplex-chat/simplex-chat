@@ -40,13 +40,14 @@ import chat.simplex.common.views.newchat.ContactConnectionInfoView
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlinx.datetime.Clock
+import kotlinx.datetime.*
 import java.io.File
 import java.net.URI
+import java.time.format.DateTimeFormatter
 import kotlin.math.abs
 import kotlin.math.sign
 
-class ItemSeparation(val timestamp: Boolean, val largeGap: Boolean)
+class ItemSeparation(val timestamp: Boolean, val largeGap: Boolean, val date: Instant?)
 
 @Composable
 // staleChatId means the id that was before chatModel.chatId becomes null. It's needed for Android only to make transition from chat
@@ -1078,10 +1079,9 @@ fun BoxWithConstraintsScope.ChatItemsList(
         }
 
         @Composable
-        fun ChatItemView(cItem: ChatItem, range: IntRange?, prevItem: ChatItem?) {
+        fun ChatItemView(cItem: ChatItem, range: IntRange?, prevItem: ChatItem?, itemSeparation: ItemSeparation) {
           val sent = cItem.chatDir.sent
           val (_, nextItem) = chatModel.getNextChatItem(cItem)
-          val itemSeparation = getItemSeparation(cItem, nextItem)
 
           Box(Modifier.padding(bottom = if (itemSeparation.largeGap) 8.dp else 2.dp )) {
             val voiceWithTransparentBack = cItem.content.msgContent is MsgContent.MCVoice && cItem.content.text.isEmpty() && cItem.quotedItem == null && cItem.meta.itemForwarded == null
@@ -1196,15 +1196,27 @@ fun BoxWithConstraintsScope.ChatItemsList(
         if (ciCategory != null && ciCategory == nextItem?.mergeCategory) {
           // memberConnected events and deleted items are aggregated at the last chat item in a row, see ChatItemView
         } else {
+          val itemSeparation = getItemSeparation(cItem, nextItem)
+
           val (prevHidden, prevItem) = chatModel.getPrevShownChatItem(currIndex, ciCategory)
           val range = chatViewItemsRange(currIndex, prevHidden)
           if (revealed.value && range != null) {
             reversedChatItems.subList(range.first, range.last + 1).forEachIndexed { index, ci ->
               val prev = if (index + range.first == prevHidden) prevItem else reversedChatItems[index + range.first + 1]
-              ChatItemView(ci, null, prev)
+              ChatItemView(ci, null, prev, itemSeparation)
             }
           } else {
-            ChatItemView(cItem, range, prevItem)
+            ChatItemView(cItem, range, prevItem, itemSeparation)
+          }
+
+          if (itemSeparation.date != null) {
+            Row(
+              Modifier.padding(DEFAULT_PADDING_HALF).fillMaxWidth(),
+              horizontalArrangement = Arrangement.Center,
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              DateSeparator(itemSeparation.date)
+            }
           }
         }
 
@@ -1503,6 +1515,16 @@ private fun ButtonRow(horizontalArrangement: Arrangement.Horizontal, content: @C
   ) {
     content()
   }
+}
+
+@Composable
+fun DateSeparator(date: Instant) {
+  Text(
+    text = getDateText(date),
+    fontSize = 16.sp,
+    fontWeight = FontWeight.Medium,
+    color = MaterialTheme.colors.secondary
+  )
 }
 
 val chatViewScrollState = MutableStateFlow(false)
@@ -1882,7 +1904,8 @@ private fun getItemSeparation(chatItem: ChatItem, nextItem: ChatItem?): ItemSepa
   if (nextItem == null) {
     return  ItemSeparation(
       timestamp = true,
-      largeGap = true
+      largeGap = true,
+      date = null,
     )
   }
 
@@ -1890,7 +1913,8 @@ private fun getItemSeparation(chatItem: ChatItem, nextItem: ChatItem?): ItemSepa
 
   return ItemSeparation(
     timestamp = largeGap || chatItem.meta.timestampText != nextItem.meta.timestampText,
-    largeGap = largeGap
+    largeGap = largeGap,
+    date = if (getDateText(chatItem.meta.itemTs) != getDateText(nextItem.meta.itemTs)) nextItem.meta.itemTs else null
   )
 }
 
