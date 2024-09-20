@@ -1901,8 +1901,8 @@ private fun getItemSeparation(chatItem: ChatItem, nextItem: ChatItem?): ItemSepa
   if (nextItem == null) {
     return  ItemSeparation(
       timestamp = true,
-      largeGap = true,
-      date = null,
+      largeGap = false,
+      date = chatItem.meta.itemTs,
     )
   }
 
