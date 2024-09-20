@@ -480,11 +480,10 @@ inline fun <reified T> serializableSaver(): Saver<T, *> = Saver(
 )
 
 fun UriHandler.openVerifiedSimplexUri(uri: String) {
-  val URI = try { URI.create(uri) } catch (e: Exception) { null }
-  if (URI != null) {
-    connectIfOpenedViaUri(chatModel.remoteHostId(), URI, ChatModel)
-  }
+  connectIfOpenedViaUri(chatModel.remoteHostId(), uri, ChatModel)
 }
+
+fun uriCreateOrNull(uri: String) = try { URI.create(uri) } catch (e: Exception) { null }
 
 fun UriHandler.openUriCatching(uri: String) {
   try {

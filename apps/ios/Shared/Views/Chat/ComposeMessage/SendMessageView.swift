@@ -227,6 +227,7 @@ struct SendMessageView: View {
            !composeState.editing {
             if case .noContextItem = composeState.contextItem,
                !composeState.voicePreview,
+               !composeState.manyMediaPreviews,
                let send = sendLiveMessage,
                let update = updateLiveMessage {
                 Button {
