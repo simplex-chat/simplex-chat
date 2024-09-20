@@ -2358,7 +2358,8 @@ data class CIMeta (
   val deletable: Boolean,
   val editable: Boolean
 ) {
-  val timestampText: String get() = getTimestampText(itemTs)
+  val timestampText: String get() = getTimestampText(itemTs, true)
+
   val recent: Boolean get() = updatedAt + 10.toDuration(DurationUnit.SECONDS) > Clock.System.now()
   val isLive: Boolean get() = itemLive == true
   val disappearing: Boolean get() = !isRcvNew && itemTimed?.deleteAt != null
@@ -2422,7 +2423,7 @@ data class CITimed(
   val deleteAt: Instant?
 )
 
-fun getTimestampText(t: Instant): String {
+fun getTimestampText(t: Instant, shortFormat: Boolean = false): String {
   val tz = TimeZone.currentSystemDefault()
   val now: LocalDateTime = Clock.System.now().toLocalDateTime(tz)
   val time: LocalDateTime = t.toLocalDateTime(tz)
@@ -2430,7 +2431,7 @@ fun getTimestampText(t: Instant): String {
   val recent = now.date == time.date ||
       (period.years == 0 && period.months == 0 && period.days == 1 && now.hour < 12 && time.hour >= 18 )
   val dateFormatter =
-    if (recent) {
+    if (recent || shortFormat) {
       DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
     } else {
       DateTimeFormatter.ofPattern(
