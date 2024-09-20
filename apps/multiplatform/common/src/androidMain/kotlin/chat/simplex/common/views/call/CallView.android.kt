@@ -435,7 +435,7 @@ private fun ToggleSoundButton(enabled: Boolean, speaker: Boolean, toggleSound: (
 }
 
 @Composable
-fun controlButtonsBackground(): Color = if (chatModel.activeCall.value?.peerMediaSources?.hasVideo == true) Color.Black.copy(0.1f) else Color.White.copy(0.1f)
+fun controlButtonsBackground(): Color = if (chatModel.activeCall.value?.peerMediaSources?.hasVideo == true) Color.Black.copy(0.2f) else Color.White.copy(0.2f)
 
 @Composable
 fun AudioCallInfoView(call: Call) {
