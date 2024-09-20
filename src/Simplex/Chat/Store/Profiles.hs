@@ -106,10 +106,11 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, 
     let showNtfs = True
         sendRcptsContacts = True
         sendRcptsSmallGroups = True
+    activeAt <- getCurrentTime
     DB.execute
       db
-      "INSERT INTO users (agent_user_id, local_display_name, active_user, contact_id, show_ntfs, send_rcpts_contacts, send_rcpts_small_groups, created_at, updated_at) VALUES (?,?,?,0,?,?,?,?,?)"
-      (auId, displayName, activeUser, showNtfs, sendRcptsContacts, sendRcptsSmallGroups, currentTs, currentTs)
+      "INSERT INTO users (agent_user_id, local_display_name, active_user, active_at, contact_id, show_ntfs, send_rcpts_contacts, send_rcpts_small_groups, created_at, updated_at) VALUES (?,?,?,?,0,?,?,?,?,?)"
+      (auId, displayName, activeUser, activeAt, showNtfs, sendRcptsContacts, sendRcptsSmallGroups, currentTs, currentTs)
     userId <- insertedRowId db
     DB.execute
       db
@@ -126,7 +127,7 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, 
       (profileId, displayName, userId, True, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure $ toUser $ (userId, auId, contactId, profileId, activeUser, displayName, fullName, image, Nothing, userPreferences) :. (showNtfs, sendRcptsContacts, sendRcptsSmallGroups, Nothing, Nothing, Nothing, Nothing)
+    pure $ toUser $ (userId, auId, contactId, profileId, activeUser, activeAt, displayName, fullName, image, Nothing, userPreferences) :. (showNtfs, sendRcptsContacts, sendRcptsSmallGroups, Nothing, Nothing, Nothing, Nothing)
 
 getUsersInfo :: DB.Connection -> IO [UserInfo]
 getUsersInfo db = getUsers db >>= mapM getUserInfo
@@ -161,14 +162,14 @@ getUsers :: DB.Connection -> IO [User]
 getUsers db =
   map toUser <$> DB.query_ db userQuery
 
-setActiveUser :: DB.Connection -> UserId -> IO ()
-setActiveUser db userId = do
+setActiveUser :: DB.Connection -> UserId -> UTCTime -> IO ()
+setActiveUser db userId activeAt = do
   DB.execute_ db "UPDATE users SET active_user = 0"
-  DB.execute db "UPDATE users SET active_user = 1 WHERE user_id = ?" (Only userId)
+  DB.execute db "UPDATE users SET active_user = 1, active_at = ? WHERE user_id = ?" (activeAt, userId)
 
-getSetActiveUser :: DB.Connection -> UserId -> ExceptT StoreError IO User
-getSetActiveUser db userId = do
-  liftIO $ setActiveUser db userId
+getSetActiveUser :: DB.Connection -> UserId -> UTCTime -> ExceptT StoreError IO User
+getSetActiveUser db userId activeAt = do
+  liftIO $ setActiveUser db userId activeAt
   getUser db userId
 
 getUser :: DB.Connection -> UserId -> ExceptT StoreError IO User

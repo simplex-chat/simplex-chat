@@ -75,8 +75,9 @@ getSelectActiveUser st = do
     selectUser = \case
       [] -> pure Nothing
       [user@User {userId}] -> do
-        withTransaction st (`setActiveUser` userId)
-        pure $ Just user
+        activeAt <- getCurrentTime
+        withTransaction st $ \db -> setActiveUser db userId activeAt
+        pure $ Just user {activeUser = True, activeAt}
       users -> do
         putStrLn "Select user profile:"
         forM_ (zip [1 :: Int ..] users) $ \(n, user) -> putStrLn $ show n <> ": " <> userStr user
@@ -90,8 +91,9 @@ getSelectActiveUser st = do
                 | n <= 0 || n > length users -> putStrLn "invalid user number" >> loop
                 | otherwise -> do
                     let user@User {userId} = users !! (n - 1)
-                    withTransaction st (`setActiveUser` userId)
-                    pure $ Just user
+                    activeAt <- getCurrentTime
+                    withTransaction st $ \db -> setActiveUser db userId activeAt
+                    pure $ Just user {activeUser = True, activeAt}
 
 createActiveUser :: ChatController -> IO User
 createActiveUser cc = do
