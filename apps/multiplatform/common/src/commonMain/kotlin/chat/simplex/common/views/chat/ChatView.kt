@@ -1163,13 +1163,13 @@ fun BoxWithConstraintsScope.ChatItemsList(
                       } else null
 
                       Row(Modifier
-                        .padding(start = MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier + 4.dp)
+                        .padding(start = MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier + 10.dp)
                         .fillMaxWidth()
                       ) {
                         if (messageWidth > 0 && memberRoleString != null) {
                           MemberLayout(
                             spacing = with(LocalDensity.current) { 16.dp.roundToPx() },
-                            msgWidth = messageWidth,
+                            msgWidth = with(LocalDensity.current) { messageWidth - 14.dp.roundToPx() }
                           ) {
                             Text(
                               memberNameString,
