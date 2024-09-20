@@ -47,7 +47,7 @@ import java.net.URI
 import kotlin.math.abs
 import kotlin.math.sign
 
-class ItemSeparation(val timestamp: Boolean, val largeGap: Boolean, val date: Instant?)
+data class ItemSeparation(val timestamp: Boolean, val largeGap: Boolean, val date: Instant?)
 
 @Composable
 // staleChatId means the id that was before chatModel.chatId becomes null. It's needed for Android only to make transition from chat
@@ -1194,9 +1194,8 @@ fun BoxWithConstraintsScope.ChatItemsList(
         if (ciCategory != null && ciCategory == nextItem?.mergeCategory) {
           // memberConnected events and deleted items are aggregated at the last chat item in a row, see ChatItemView
         } else {
-          val itemSeparation = getItemSeparation(cItem, nextItem)
-
           val (prevHidden, prevItem) = chatModel.getPrevShownChatItem(currIndex, ciCategory)
+          val itemSeparation = getItemSeparation(cItem, prevItem)
           val range = chatViewItemsRange(currIndex, prevHidden)
           if (revealed.value && range != null) {
             reversedChatItems.subList(range.first, range.last + 1).forEachIndexed { index, ci ->
@@ -1915,7 +1914,7 @@ private fun getItemSeparation(chatItem: ChatItem, nextItem: ChatItem?): ItemSepa
   return ItemSeparation(
     timestamp = largeGap || chatItem.meta.timestampText != nextItem.meta.timestampText,
     largeGap = largeGap,
-    date = if (getTimestampDateText(chatItem.meta.itemTs) != getTimestampDateText(nextItem.meta.itemTs)) nextItem.meta.itemTs else null
+    date = if (getTimestampDateText(chatItem.meta.itemTs) != getTimestampDateText(nextItem.meta.itemTs)) chatItem.meta.itemTs else null
   )
 }
 
