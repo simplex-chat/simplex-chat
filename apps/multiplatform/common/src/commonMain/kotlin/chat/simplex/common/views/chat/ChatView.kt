@@ -1898,7 +1898,7 @@ private fun handleForwardConfirmation(
   )
 }
 
-private fun getItemSeparation(chatItem: ChatItem, previousItem: ChatItem?): ItemSeparation {
+private fun getItemSeparation(chatItem: ChatItem, nextItem: ChatItem?): ItemSeparation {
   if (nextItem == null) {
     return  ItemSeparation(
       timestamp = true,
