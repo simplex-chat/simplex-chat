@@ -2335,10 +2335,6 @@ sealed class CIDirection {
     is LocalSnd -> true
     is LocalRcv -> false
   }
-
-  fun sameDirection(dir: CIDirection): Boolean {
-    return if (dir is GroupRcv && this is GroupRcv) this.groupMember.groupMemberId == dir.groupMember.groupMemberId else this.sent == dir.sent
-  }
 }
 
 @Serializable

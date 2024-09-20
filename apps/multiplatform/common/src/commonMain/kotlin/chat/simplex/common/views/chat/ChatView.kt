@@ -24,6 +24,7 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.CIDirection.GroupRcv
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.withChats
@@ -1906,7 +1907,10 @@ private fun getItemSeparation(chatItem: ChatItem, nextItem: ChatItem?): ItemSepa
     )
   }
 
-  val largeGap = !chatItem.chatDir.sameDirection(nextItem.chatDir) || (abs(nextItem.meta.createdAt.epochSeconds - chatItem.meta.createdAt.epochSeconds) >= 60)
+  val sameMemberAndDirection = if (nextItem.chatDir is GroupRcv && chatItem.chatDir is GroupRcv) {
+    chatItem.chatDir.groupMember.groupMemberId == nextItem.chatDir.groupMember.groupMemberId
+  } else chatItem.chatDir.sent == nextItem.chatDir.sent
+  val largeGap = !sameMemberAndDirection || (abs(nextItem.meta.createdAt.epochSeconds - chatItem.meta.createdAt.epochSeconds) >= 60)
 
   return ItemSeparation(
     timestamp = largeGap || chatItem.meta.timestampText != nextItem.meta.timestampText,
