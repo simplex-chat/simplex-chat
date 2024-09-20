@@ -39,7 +39,7 @@ struct UserPicker: View {
                     HStack {
                         ForEach(m.users) { u in
                             userView(u, size: 44)
-                                .padding(.vertical, 6)
+                                .padding(.vertical, 7)
                                 .padding(.leading, 5)
                                 .padding(.trailing, 9)
                                 .frame(
