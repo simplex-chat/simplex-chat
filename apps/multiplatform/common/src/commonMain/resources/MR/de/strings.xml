@@ -2170,4 +2170,21 @@
     <string name="network_proxy_auth_mode_isolate_by_auth_user">Verwenden Sie für jedes Profil unterschiedliche Proxy-Anmeldeinformationen.</string>
     <string name="network_proxy_random_credentials">Verwenden Sie zufällige Anmeldeinformationen</string>
     <string name="network_proxy_username">Benutzername</string>
+    <string name="n_file_errors">%1$d Datei-Fehler:
+\n%2$s</string>
+    <string name="forward_files_in_progress_desc">%1$d Datei(en) wird/werden immer noch heruntergeladen.</string>
+    <string name="forward_files_failed_to_receive_desc">Bei %1$d Datei(en) ist das Herunterladen fehlgeschlagen.</string>
+    <string name="error_forwarding_messages">Fehler beim Weiterleiten der Nachrichten</string>
+    <string name="forward_files_messages_deleted_after_selection_desc">Die Nachrichten wurden gelöscht, nachdem Sie sie ausgewählt hatten.</string>
+    <string name="forward_alert_title_nothing_to_forward">Es gibt nichts zum Weiterleiten!</string>
+    <string name="n_other_file_errors">%1$d andere(r) Datei-Fehler.</string>
+    <string name="forward_alert_title_messages_to_forward">%1$s Nachricht(en) weiterleiten?</string>
+    <string name="forward_files_missing_desc">%1$d Datei(en) wurde(n) gelöscht.</string>
+    <string name="forward_files_not_accepted_desc">%1$d Datei(en) wurde(n) nicht heruntergeladen.</string>
+    <string name="forward_alert_forward_messages_without_files">Nachrichten ohne Dateien weiterleiten?</string>
+    <string name="forward_files_messages_deleted_after_selection_title">%1$s Nachrichten wurden nicht weitergeleitet</string>
+    <string name="forward_files_not_accepted_receive_files">Herunterladen</string>
+    <string name="compose_forward_messages_n">Es wird/werden %1$s Nachricht(en) weitergeleitet</string>
+    <string name="forward_multiple">Nachrichten werden weitergeleitet…</string>
+    <string name="compose_save_messages_n">Es wird/werden %1$s Nachricht(en) gesichert</string>
 </resources>
