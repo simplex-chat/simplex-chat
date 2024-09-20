@@ -830,7 +830,7 @@
     <string name="chat_help_tap_button">Pulsa el botón</string>
     <string name="to_start_a_new_chat_help_header">Para iniciar un chat nuevo</string>
     <string name="switch_receiving_address">Cambiar servidor de recepción</string>
-    <string name="group_is_decentralized">Completamente descentralizado y sólo visible para los miembros.</string>
+    <string name="group_is_decentralized">Totalmente descentralizado. Visible sólo para los miembros.</string>
     <string name="to_connect_via_link_title">Para conectarte mediante enlace</string>
     <string name="smp_servers_test_failed">¡Error en prueba del servidor!</string>
     <string name="smp_servers_test_some_failed">Algunos servidores no superaron la prueba:</string>
@@ -1347,7 +1347,7 @@
     <string name="connect_via_link_incognito">Conectar en incógnito</string>
     <string name="turn_off_battery_optimization_button">Permitir</string>
     <string name="turn_off_system_restriction_button">Abrir configuración</string>
-    <string name="connect__a_new_random_profile_will_be_shared">Se compartirá un perfil nuevo aleatorio.</string>
+    <string name="connect__a_new_random_profile_will_be_shared">Compartirás un perfil nuevo aleatorio.</string>
     <string name="paste_the_link_you_received_to_connect_with_your_contact">Pega el enlace recibido para conectar con tu contacto…</string>
     <string name="connect__your_profile_will_be_shared">El perfil %1$s será compartido.</string>
     <string name="disable_notifications_button">Desactivar notificaciones</string>
@@ -1450,7 +1450,7 @@
     <string name="bad_desktop_address">Dirección ordenador incorrecta</string>
     <string name="devices">Dispositivo</string>
     <string name="non_content_uri_alert_title">Ruta archivo no valida.</string>
-    <string name="disconnect_desktop_question">¿Desconectar ordenador?</string>
+    <string name="disconnect_desktop_question">¿Desconectar del ordenador?</string>
     <string name="block_member_desc">¡Los mensajes nuevos de %s estarán ocultos!</string>
     <string name="desktop_app_version_is_incompatible">La versión de aplicación del ordenador %s no es compatible con esta aplicación.</string>
     <string name="blocked_item_description">bloqueado</string>
@@ -2079,7 +2079,7 @@
     <string name="system_mode_toast">Modo de sistema</string>
     <string name="forward_alert_forward_messages_without_files">¿Reenviar mensajes sin los archivos?</string>
     <string name="network_proxy_incorrect_config_desc">Asegúrate de que la configuración del proxy es correcta.</string>
-    <string name="forward_files_missing_desc">%1$d archivo(s) ha(n) sido borrado(s).</string>
+    <string name="forward_files_missing_desc">%1$d archivo(s) ha(n) sido eliminado(s).</string>
     <string name="n_file_errors">%1$d error(es) de archivo
 \n%2$s</string>
     <string name="forward_files_failed_to_receive_desc">La descarga ha fallado para %1$d archivo(s).</string>
@@ -2099,7 +2099,7 @@
     <string name="network_proxy_random_credentials">Credenciales aleatorias</string>
     <string name="network_proxy_username">Nombre de usuario</string>
     <string name="network_proxy_auth_mode_username_password">Tus credenciales podrían ser enviadas sin cifrar.</string>
-    <string name="migrate_from_device_remove_archive_question">¿Eliminar los archivos?</string>
+    <string name="migrate_from_device_remove_archive_question">¿Eliminar archivo?</string>
     <string name="migrate_from_device_uploaded_archive_will_be_removed">El archivo de bases de datos subido será eliminado permanentemente de los servidores.</string>
     <string name="delete_messages_cannot_be_undone_warning">Los mensajes serán eliminados. ¡No podrá deshacerse!</string>
     <string name="switching_profile_error_title">Error al cambiar perfil</string>
