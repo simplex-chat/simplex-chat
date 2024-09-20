@@ -1102,32 +1102,34 @@ fun BoxWithConstraintsScope.ChatItemsList(
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                     horizontalAlignment = Alignment.Start
                   ) {
-                    DependentLayout(Modifier, CHAT_BUBBLE_LAYOUT_ID) {
-                      if (cItem.content.showMemberName) {
-                        Row(Modifier.padding(bottom = 2.dp).graphicsLayer { translationX = selectionOffset.toPx() }, horizontalArrangement = Arrangement.SpaceBetween) {
-                          if (memCount == 1 && member.memberRole > GroupMemberRole.Member) {
-                            Text(
-                              memberNames(member, prevMember, memCount),
-                              Modifier
-                                .padding(start = MEMBER_IMAGE_SIZE + DEFAULT_PADDING_HALF)
-                                .weight(1f, false),
-                              fontSize = 13.5.sp,
-                              color = MaterialTheme.colors.secondary,
-                              overflow = TextOverflow.Ellipsis,
-                              maxLines = 1
-                            )
-                          }
+                    @Composable
+                    fun MemberNameAndRole() {
+                      Row(Modifier.padding(bottom = 2.dp).graphicsLayer { translationX = selectionOffset.toPx() }, horizontalArrangement = Arrangement.SpaceBetween) {
+                        if (memCount == 1 && member.memberRole > GroupMemberRole.Member) {
                           Text(
-                            member.memberRole.text,
-                            Modifier.padding(start = DEFAULT_PADDING_HALF, end = 2.dp),
+                            memberNames(member, prevMember, memCount),
+                            Modifier
+                              .padding(start = MEMBER_IMAGE_SIZE + DEFAULT_PADDING_HALF)
+                              .weight(1f, false),
                             fontSize = 13.5.sp,
-                            fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colors.secondary,
+                            overflow = TextOverflow.Ellipsis,
                             maxLines = 1
                           )
                         }
+                        Text(
+                          member.memberRole.text,
+                          Modifier.padding(start = DEFAULT_PADDING_HALF, end = 2.dp),
+                          fontSize = 13.5.sp,
+                          fontWeight = FontWeight.Medium,
+                          color = MaterialTheme.colors.secondary,
+                          maxLines = 1
+                        )
                       }
+                    }
 
+                    @Composable
+                    fun Item() {
                       Box(Modifier.layoutId(CHAT_BUBBLE_LAYOUT_ID), contentAlignment = Alignment.CenterStart) {
                         androidx.compose.animation.AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                           SelectedChatItem(Modifier, cItem.id, selectedChatItems)
@@ -1140,6 +1142,14 @@ fun BoxWithConstraintsScope.ChatItemsList(
                           ChatItemViewShortHand(cItem, range, false)
                         }
                       }
+                    }
+                    if (cItem.content.showMemberName) {
+                      DependentLayout(Modifier, CHAT_BUBBLE_LAYOUT_ID) {
+                        MemberNameAndRole()
+                        Item()
+                      }
+                    } else {
+                      Item()
                     }
                   }
                 } else {
