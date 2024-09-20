@@ -1034,25 +1034,6 @@ fun BoxWithConstraintsScope.ChatItemsList(
         // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view
         LocalViewConfiguration provides LocalViewConfiguration.current.bigTouchSlop()
       ) {
-        val dismissState = rememberDismissState(initialValue = DismissValue.Default) {
-          if (it == DismissValue.DismissedToStart) {
-            scope.launch {
-              if ((cItem.content is CIContent.SndMsgContent || cItem.content is CIContent.RcvMsgContent) && chatInfo !is ChatInfo.Local) {
-                if (composeState.value.editing) {
-                  composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
-                } else if (cItem.id != ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-                  composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
-                }
-              }
-            }
-          }
-          false
-        }
-        val swipeableModifier = SwipeToDismissModifier(
-          state = dismissState,
-          directions = setOf(DismissDirection.EndToStart),
-          swipeDistance = with(LocalDensity.current) { 30.dp.toPx() },
-        )
         val provider = {
           providerForGallery(i, chatModel.chatItems.value, cItem.id) { indexInReversed ->
             scope.launch {
@@ -1077,6 +1058,25 @@ fun BoxWithConstraintsScope.ChatItemsList(
 
         @Composable
         fun ChatItemView(cItem: ChatItem, range: IntRange?, prevItem: ChatItem?) {
+          val dismissState = rememberDismissState(initialValue = DismissValue.Default) {
+            if (it == DismissValue.DismissedToStart) {
+              scope.launch {
+                if ((cItem.content is CIContent.SndMsgContent || cItem.content is CIContent.RcvMsgContent) && chatInfo !is ChatInfo.Local) {
+                  if (composeState.value.editing) {
+                    composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
+                  } else if (cItem.id != ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
+                    composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
+                  }
+                }
+              }
+            }
+            false
+          }
+          val swipeableModifier = SwipeToDismissModifier(
+            state = dismissState,
+            directions = setOf(DismissDirection.EndToStart),
+            swipeDistance = with(LocalDensity.current) { 30.dp.toPx() },
+          )
           val sent = cItem.chatDir.sent
           Box(Modifier.padding(bottom = 4.dp)) {
             val voiceWithTransparentBack = cItem.content.msgContent is MsgContent.MCVoice && cItem.content.text.isEmpty() && cItem.quotedItem == null && cItem.meta.itemForwarded == null
