@@ -27,7 +27,7 @@ struct UserPicker: View {
 
     var body: some View {
         if #available(iOS 16.0, *) {
-            let v = viewBody.presentationDetents([.height(420)])
+            let v = viewBody.presentationDetents([.height(442)])
             if #available(iOS 16.4, *) {
                 v.scrollBounceBehavior(.basedOnSize)
             } else {
