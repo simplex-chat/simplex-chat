@@ -32,11 +32,14 @@ struct SelectedItemsBottomToolbar: View {
     var deleteItems: (Bool) -> Void
     var moderateItems: () -> Void
     //var shareItems: () -> Void
+    var forwardItems: () -> Void
     @State var deleteEnabled: Bool = false
     @State var deleteForEveryoneEnabled: Bool = false
 
     @State var canModerate: Bool = false
     @State var moderateEnabled: Bool = false
+
+    @State var forwardEnabled: Bool = false
 
     @State var allButtonsDisabled = false
 
@@ -50,6 +53,7 @@ struct SelectedItemsBottomToolbar: View {
                 } label: {
                     Image(systemName: "trash")
                         .resizable()
+                        .scaledToFit()
                         .frame(width: 20, height: 20, alignment: .center)
                         .foregroundColor(!deleteEnabled || allButtonsDisabled ? theme.colors.secondary: .red)
                 }
@@ -61,24 +65,24 @@ struct SelectedItemsBottomToolbar: View {
                 } label: {
                     Image(systemName: "flag")
                         .resizable()
+                        .scaledToFit()
                         .frame(width: 20, height: 20, alignment: .center)
                         .foregroundColor(!moderateEnabled || allButtonsDisabled ? theme.colors.secondary : .red)
                 }
                 .disabled(!moderateEnabled || allButtonsDisabled)
                 .opacity(canModerate ? 1 : 0)
 
-
                 Spacer()
                 Button {
-                    //shareItems()
+                    forwardItems()
                 } label: {
-                    Image(systemName: "square.and.arrow.up")
+                    Image(systemName: "arrowshape.turn.up.forward")
                         .resizable()
+                        .scaledToFit()
                         .frame(width: 20, height: 20, alignment: .center)
-                        .foregroundColor(allButtonsDisabled ? theme.colors.secondary : theme.colors.primary)
+                        .foregroundColor(!forwardEnabled || allButtonsDisabled ? theme.colors.secondary : theme.colors.primary)
                 }
-                .disabled(allButtonsDisabled)
-                .opacity(0)
+                .disabled(!forwardEnabled || allButtonsDisabled)
             }
             .frame(maxHeight: .infinity)
             .padding([.leading, .trailing], 12)
@@ -106,15 +110,16 @@ struct SelectedItemsBottomToolbar: View {
         if let selected = selectedItems {
             let me: Bool
             let onlyOwnGroupItems: Bool
-            (deleteEnabled, deleteForEveryoneEnabled, me, onlyOwnGroupItems, selectedChatItems) = chatItems.reduce((true, true, true, true, [])) { (r, ci) in
+            (deleteEnabled, deleteForEveryoneEnabled, me, onlyOwnGroupItems, forwardEnabled, selectedChatItems) = chatItems.reduce((true, true, true, true, true, [])) { (r, ci) in
                 if selected.contains(ci.id) {
-                    var (de, dee, me, onlyOwnGroupItems, sel) = r
+                    var (de, dee, me, onlyOwnGroupItems, fe, sel) = r
                     de = de && ci.canBeDeletedForSelf
                     dee = dee && ci.meta.deletable && !ci.localNote
                     onlyOwnGroupItems = onlyOwnGroupItems && ci.chatDir == .groupSnd
                     me = me && ci.content.msgContent != nil && ci.memberToModerate(chatInfo) != nil
+                    fe = fe && ci.content.msgContent != nil && ci.meta.itemDeleted == nil && !ci.isLiveDummy
                     sel.insert(ci.id) // we are collecting new selected items here to account for any changes in chat items list
-                    return (de, dee, me, onlyOwnGroupItems, sel)
+                    return (de, dee, me, onlyOwnGroupItems, fe, sel)
                 } else {
                     return r
                 }

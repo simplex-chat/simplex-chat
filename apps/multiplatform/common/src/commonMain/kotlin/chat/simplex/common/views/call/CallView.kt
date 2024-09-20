@@ -15,10 +15,11 @@ fun activeCallWaitDeliveryReceipt(scope: CoroutineScope) = scope.launch(Dispatch
     if (call == null || call.callState > CallState.InvitationSent) break
     val msg = apiResp.resp
     if (apiResp.remoteHostId == call.remoteHostId &&
-      msg is CR.ChatItemStatusUpdated &&
-      msg.chatItem.chatInfo.id == call.contact.id &&
-      msg.chatItem.chatItem.content is CIContent.SndCall &&
-      msg.chatItem.chatItem.meta.itemStatus is CIStatus.SndRcvd) {
+      msg is CR.ChatItemsStatusesUpdated &&
+      msg.chatItems.any {
+        it.chatInfo.id == call.contact.id && it.chatItem.content is CIContent.SndCall && it.chatItem.meta.itemStatus is CIStatus.SndRcvd
+      }
+    ) {
       CallSoundsPlayer.startInCallSound(scope)
       break
     }

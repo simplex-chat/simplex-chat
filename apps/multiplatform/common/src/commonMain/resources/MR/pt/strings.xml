@@ -949,4 +949,23 @@
     <string name="servers_info_details">Detalhes</string>
     <string name="you_can_share_this_address_with_your_contacts">Você pode partilhar o seu endereço com os seus contactos para permitir que se conectem com %s.</string>
     <string name="you_can_share_your_address">Você pode partilhar o seu endereço como uma ligação ou código QR - qualquer pessoa pode conectar-se a si.</string>
+    <string name="turn_off_battery_optimization_button">Permitir</string>
+    <string name="block_member_desc">Todas as novas mensagens de %s serão ocultadas!</string>
+    <string name="only_you_can_make_calls">Somente você pode fazer ligações.</string>
+    <string name="chat_theme_apply_to_all_modes">Todos os modos de cores</string>
+    <string name="feature_roles_admins">administradores</string>
+    <string name="snd_conn_event_ratchet_sync_started">"aceitando criptografia para  %s…"</string>
+    <string name="add_contact_tab">Adicionar contato</string>
+    <string name="network_smp_proxy_fallback_allow_downgrade">Permitir downgrade</string>
+    <string name="clear_note_folder_warning">Todas as mensagens serão deletadas - isso não poderá ser desfeito!</string>
+    <string name="v5_2_more_things">Mais algumas coisas</string>
+    <string name="allow_to_send_files">Permitir envio de arquivos e mídias.</string>
+    <string name="v5_6_safer_groups_descr">Administradores podem bloquear um membro para todos.</string>
+    <string name="conn_event_ratchet_sync_started">Aceitando criptografia</string>
+    <string name="wallpaper_advanced_settings">Configurações avançadas</string>
+    <string name="feature_roles_all_members">todos os membros</string>
+    <string name="acknowledgement_errors">Erros de reconhecimento</string>
+    <string name="abort_switch_receiving_address_desc">Mudança de endereço será cancelada. Antigo endereço de recebimento será usado.</string>
+    <string name="allow_calls_question">Permitir ligações?</string>
+    <string name="servers_info_subscriptions_connections_subscribed">Conexões ativas</string>
 </resources>
