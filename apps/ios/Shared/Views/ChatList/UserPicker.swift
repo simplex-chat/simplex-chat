@@ -53,7 +53,7 @@ struct UserPicker: View {
                         }
                         .padding(.vertical, rowVerticalPadding)
                         .padding(.horizontal, rowHorizontalPadding)
-                        .frame(minWidth: width.map { max(0, $0 - 64) }, alignment: .leading)
+                        .frame(width: width.map { max(0, $0 - 64) }, alignment: .leading)
                         .background(Color(.secondarySystemGroupedBackground))
                         .clipShape(sectionShape)
                         .onTapGesture { activeSheet = .currentProfile }
