@@ -2429,7 +2429,7 @@ fun getDateText(t: Instant): String {
   val weekday = time.toJavaLocalDateTime().format(DateTimeFormatter.ofPattern("EEE", Locale.getDefault()))
   val dayMonth =  time.toJavaLocalDateTime().format(DateTimeFormatter.ofPattern("d MMM", Locale.getDefault()))
 
-  return String.format("%s, %s", weekday, dayMonth)
+  return "$weekday, $dayMonth"
 }
 
 fun getTimestampText(t: Instant, shortFormat: Boolean = false): String {
