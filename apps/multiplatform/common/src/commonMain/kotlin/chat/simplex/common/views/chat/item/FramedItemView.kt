@@ -304,6 +304,7 @@ fun CIMarkdownText(
 }
 
 const val CHAT_IMAGE_LAYOUT_ID = "chatImage"
+const val CHAT_BUBBLE_LAYOUT_ID = "chatBubble"
 /**
  * Equal to [androidx.compose.ui.unit.Constraints.MaxFocusMask], which is 0x3FFFF - 1
  * Other values make a crash `java.lang.IllegalArgumentException: Can't represent a width of 123456 and height of 9909 in Constraints`
@@ -311,23 +312,23 @@ const val CHAT_IMAGE_LAYOUT_ID = "chatImage"
  * */
 const val MAX_SAFE_WIDTH = 0x3FFFF - 1
 
+/**
+ * Limiting max value for height + width in order to not crash the app, see [androidx.compose.ui.unit.Constraints.createConstraints]
+ * */
+private fun maxSafeHeight(width: Int) = when { // width bits + height bits should be <= 31
+  width < 0x1FFF /*MaxNonFocusMask*/ -> 0x3FFFF - 1 /* MaxFocusMask */ // 13 bits width + 18 bits height
+  width < 0x7FFF /*MinNonFocusMask*/ -> 0xFFFF - 1 /* MinFocusMask */ // 15 bits width + 16 bits height
+  width < 0xFFFF /*MinFocusMask*/ -> 0x7FFF - 1 /* MinFocusMask */ // 16 bits width + 15 bits height
+  width < 0x3FFFF /*MaxFocusMask*/ -> 0x1FFF - 1 /* MaxNonFocusMask */ // 18 bits width + 13 bits height
+  else -> 0x1FFF // shouldn't happen since width is limited already
+}
+
 @Composable
 fun PriorityLayout(
   modifier: Modifier = Modifier,
   priorityLayoutId: String,
   content: @Composable () -> Unit
 ) {
-  /**
-   * Limiting max value for height + width in order to not crash the app, see [androidx.compose.ui.unit.Constraints.createConstraints]
-   * */
-  fun maxSafeHeight(width: Int) = when { // width bits + height bits should be <= 31
-    width < 0x1FFF /*MaxNonFocusMask*/ -> 0x3FFFF - 1 /* MaxFocusMask */ // 13 bits width + 18 bits height
-    width < 0x7FFF /*MinNonFocusMask*/ -> 0xFFFF - 1 /* MinFocusMask */ // 15 bits width + 16 bits height
-    width < 0xFFFF /*MinFocusMask*/ -> 0x7FFF - 1 /* MinFocusMask */ // 16 bits width + 15 bits height
-    width < 0x3FFFF /*MaxFocusMask*/ -> 0x1FFF - 1 /* MaxNonFocusMask */ // 18 bits width + 13 bits height
-    else -> 0x1FFF // shouldn't happen since width is limited already
-  }
-
   Layout(
     content = content,
     modifier = modifier
@@ -342,6 +343,36 @@ fun PriorityLayout(
         it.measure(constraints.copy(maxWidth = imagePlaceable?.width ?: min(MAX_SAFE_WIDTH, constraints.maxWidth))) }
     // Limit width for every other element to width of important element and height for a sum of all elements.
     val width = imagePlaceable?.measuredWidth ?: min(MAX_SAFE_WIDTH, placeables.maxOf { it.width })
+    val height = minOf(maxSafeHeight(width), placeables.sumOf { it.height })
+    layout(width, height) {
+      var y = 0
+      placeables.forEach {
+        it.place(0, y)
+        y += it.measuredHeight
+      }
+    }
+  }
+}
+
+@Composable
+fun DependentLayout(
+  modifier: Modifier = Modifier,
+  mainLayoutId: String,
+  content: @Composable () -> Unit
+) {
+  Layout(
+    content = content,
+    modifier = modifier
+  ) { measureable, constraints ->
+    // Find important element which should tell what min width it needs to draw itself.
+    // Expecting only one such element. Can be less than one but not more
+    val mainPlaceable = measureable.firstOrNull { it.layoutId == mainLayoutId }?.measure(constraints)
+    val placeables: List<Placeable> = measureable.map {
+      if (it.layoutId == mainLayoutId)
+        mainPlaceable!!
+      else
+        it.measure(constraints.copy(minWidth = mainPlaceable?.width ?: 0)) }
+    val width = mainPlaceable?.measuredWidth ?: min(MAX_SAFE_WIDTH, placeables.maxOf { it.width })
     val height = minOf(maxSafeHeight(width), placeables.sumOf { it.height })
     layout(width, height) {
       var y = 0

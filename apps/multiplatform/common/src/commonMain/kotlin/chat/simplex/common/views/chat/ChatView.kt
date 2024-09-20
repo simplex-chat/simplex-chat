@@ -14,6 +14,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.platform.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -1066,11 +1067,11 @@ fun BoxWithConstraintsScope.ChatItemsList(
         val revealed = remember { mutableStateOf(false) }
 
         @Composable
-        fun ChatItemViewShortHand(cItem: ChatItem, range: IntRange?) {
+        fun ChatItemViewShortHand(cItem: ChatItem, range: IntRange?, fillMaxWidth: Boolean = true) {
           tryOrShowError("${cItem.id}ChatItem", error = {
             CIBrokenComposableView(if (cItem.chatDir.sent) Alignment.CenterEnd else Alignment.CenterStart)
           }) {
-            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools, showViaProxy = showViaProxy)
+            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools, showViaProxy = showViaProxy)
           }
         }
 
@@ -1095,41 +1096,49 @@ fun BoxWithConstraintsScope.ChatItemsList(
                   Column(
                     Modifier
                       .padding(top = 8.dp)
-                      .padding(start = 8.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp),
+                      .padding(start = 8.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp)
+                      .fillMaxWidth()
+                      .then(swipeableModifier),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                     horizontalAlignment = Alignment.Start
                   ) {
-                    if (cItem.content.showMemberName) {
-                      val memberNameStyle = SpanStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary)
-                      val memberNameString = if (memCount == 1 && member.memberRole > GroupMemberRole.Member) {
-                        buildAnnotatedString {
-                          withStyle(memberNameStyle.copy(fontWeight = FontWeight.Medium)) { append(member.memberRole.text) }
-                          append(" ")
-                          withStyle(memberNameStyle) { append(memberNames(member, prevMember, memCount)) }
-                        }
-                      } else {
-                        buildAnnotatedString {
-                          withStyle(memberNameStyle) { append(memberNames(member, prevMember, memCount)) }
+                    DependentLayout(Modifier, CHAT_BUBBLE_LAYOUT_ID) {
+                      if (cItem.content.showMemberName) {
+                        Row(Modifier.padding(bottom = 2.dp).graphicsLayer { translationX = selectionOffset.toPx() }, horizontalArrangement = Arrangement.SpaceBetween) {
+                          if (memCount == 1 && member.memberRole > GroupMemberRole.Member) {
+                            Text(
+                              memberNames(member, prevMember, memCount),
+                              Modifier
+                                .padding(start = MEMBER_IMAGE_SIZE + DEFAULT_PADDING_HALF)
+                                .weight(1f, false),
+                              fontSize = 13.5.sp,
+                              color = MaterialTheme.colors.secondary,
+                              overflow = TextOverflow.Ellipsis,
+                              maxLines = 1
+                            )
+                          }
+                          Text(
+                            member.memberRole.text,
+                            Modifier.padding(start = DEFAULT_PADDING_HALF, end = 2.dp),
+                            fontSize = 13.5.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colors.secondary,
+                            maxLines = 1
+                          )
                         }
                       }
-                      Text(
-                        memberNameString,
-                        Modifier.padding(start = MEMBER_IMAGE_SIZE + 10.dp),
-                        maxLines = 2
-                      )
-                    }
-                    Box(contentAlignment = Alignment.CenterStart) {
-                      androidx.compose.animation.AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
-                        SelectedChatItem(Modifier, cItem.id, selectedChatItems)
-                      }
-                      Row(
-                        swipeableOrSelectionModifier,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                      ) {
-                        Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
-                          MemberImage(member)
+
+                      Box(Modifier.layoutId(CHAT_BUBBLE_LAYOUT_ID), contentAlignment = Alignment.CenterStart) {
+                        androidx.compose.animation.AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
+                          SelectedChatItem(Modifier, cItem.id, selectedChatItems)
                         }
-                        ChatItemViewShortHand(cItem, range)
+                        Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() },
+                          horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                          Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
+                            MemberImage(member)
+                          }
+                          ChatItemViewShortHand(cItem, range, false)
+                        }
                       }
                     }
                   }
