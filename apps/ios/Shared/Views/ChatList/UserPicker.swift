@@ -18,6 +18,8 @@ struct UserPicker: View {
     @State private var switchingProfile = false
     @State private var frameWidth: CGFloat?
 
+    private let profilePadding: Double = 12
+
     var body: some View {
         if #available(iOS 16.0, *) {
             let v = viewBody.presentationDetents([.height(420)])
@@ -36,12 +38,10 @@ struct UserPicker: View {
         VStack(spacing: 0) {
             if !m.users.isEmpty {
                 StickyScrollView { width in
-                    HStack {
+                    HStack(spacing: profilePadding) {
                         ForEach(m.users) { u in
                             userView(u, size: 44)
-                                .padding(.vertical, 7)
-                                .padding(.leading, 5)
-                                .padding(.trailing, 9)
+                                .padding(profilePadding)
                                 .frame(
                                     minWidth: u.user == m.currentUser ? width.map { max(0, $0 - 64) } : nil,
                                     alignment: .leading
@@ -80,18 +80,13 @@ struct UserPicker: View {
                     if let user = m.currentUser {
                         openSheetOnTap(label: {
                             ZStack {
-                                let v = ProfilePreview(profileOf: user)
+                                ProfilePreview(profileOf: user)
                                     .foregroundColor(.primary)
-                                    .padding(.leading, -8)
-                                if #available(iOS 16.0, *) {
-                                    v
-                                } else {
-                                    v.padding(.vertical, 4)
-                                }
                             }
                         }) {
                             activeSheet = .currentProfile
                         }
+                        .listRowInsets(EdgeInsets(top: profilePadding, leading: profilePadding, bottom: profilePadding, trailing: profilePadding))
                         openSheetOnTap(title: m.userAddress == nil ? "Create SimpleX address" : "Your SimpleX address", icon: "qrcode") {
                             activeSheet = .address
                         }
@@ -152,54 +147,14 @@ struct UserPicker: View {
         .modifier(ThemedBackground(grouped: true))
         .disabled(switchingProfile)
     }
-        
-//    private func userPickerRow(_ users: [UserInfo], size: CGFloat) -> some View {
-//        HStack(spacing: 6) {
-//            let s = ScrollView(.horizontal) {
-//                HStack(spacing: 27) {
-//                    ForEach(users) { u in
-//                        if !u.user.hidden && u.user.userId != m.currentUser?.userId {
-//                            userView(u, size: size)
-//                        }
-//                    }
-//                }
-//                .padding(.leading, 4)
-//                .padding(.trailing, 22)
-//            }
-//            ZStack(alignment: .trailing) {
-//                if #available(iOS 16.0, *) {
-//                    s.scrollIndicators(.hidden)
-//                } else {
-//                    s
-//                }
-//                LinearGradient(
-//                    colors: [.clear, .black],
-//                    startPoint: .leading,
-//                    endPoint: .trailing
-//                )
-//                .frame(width: size, height: size + 3)
-//                .blendMode(.destinationOut)
-//                .allowsHitTesting(false)
-//            }
-//            .compositingGroup()
-//            .padding(.top, -3) // to fit unread badge
-//            Spacer()
-//            Image(systemName: "chevron.right")
-//                .foregroundColor(theme.colors.secondary)
-//                .padding(.trailing, 4)
-//                .onTapGesture {
-//                    activeSheet = .chatProfiles
-//                }
-//        }
-//    }
-//
+
     private func userView(_ u: UserInfo, size: CGFloat) -> some View {
         HStack {
             ZStack(alignment: .topTrailing) {
                 ProfileImage(imageStr: u.user.image, size: size, color: Color(uiColor: .tertiarySystemGroupedBackground))
-                    .padding(3)
+                    .padding(.trailing, 6)
                 if (u.unreadCount > 0) {
-                    unreadBadge(u)
+                    unreadBadge(u).offset(x: 3, y: -3)
                 }
             }
             profileName(u.user)
