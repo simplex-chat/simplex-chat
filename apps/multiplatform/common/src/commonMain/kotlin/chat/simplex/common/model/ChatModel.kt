@@ -2427,9 +2427,12 @@ fun getDateText(t: Instant): String {
   val tz = TimeZone.currentSystemDefault()
   val time = t.toLocalDateTime(tz)
   val weekday = time.toJavaLocalDateTime().format(DateTimeFormatter.ofPattern("EEE", Locale.getDefault()))
-  val dayMonth =  time.toJavaLocalDateTime().format(DateTimeFormatter.ofPattern("d MMM", Locale.getDefault()))
+  val dayMonthYear =  time.toJavaLocalDateTime().format(DateTimeFormatter.ofPattern(
+    if (Clock.System.now().toLocalDateTime(tz).year == time.year) "d MMM" else "d MMM YYYY",
+    Locale.getDefault())
+  )
 
-  return "$weekday, $dayMonth"
+  return "$weekday, $dayMonthYear"
 }
 
 fun getTimestampText(t: Instant, shortFormat: Boolean = false): String {
