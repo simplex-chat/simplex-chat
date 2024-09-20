@@ -4109,16 +4109,13 @@ processAgentMessageNoConn = \case
     errsEvent :: [(ConnId, AgentErrorType)] -> CM ()
     errsEvent cErrs = do
       vr <- chatVersionRange
-      errs <- lift $ rights <$> withStoreBatch' (\db -> map (toChatErr vr db) cErrs)
+      errs <- lift $ rights <$> withStoreBatch' (\db -> map (getChatErr vr db) cErrs)
       toView $ CRChatErrors Nothing errs
       where
-        toChatErr :: VersionRangeChat -> DB.Connection -> (ConnId, AgentErrorType) -> IO ChatError
-        toChatErr vr db (connId, err) = do
-          getUserByAConnId db (AgentConnId connId) >>= \case
-            Nothing -> pure $ ChatErrorAgent err Nothing
-            Just user -> do
-              ce <- eitherToMaybe <$> runExceptT (getConnectionEntity db vr user (AgentConnId connId))
-              pure $ ChatErrorAgent err ce
+        getChatErr :: VersionRangeChat -> DB.Connection -> (ConnId, AgentErrorType) -> IO ChatError
+        getChatErr vr db (connId, err) =
+          let acId = AgentConnId connId
+           in ChatErrorAgent err <$> (getUserByAConnId db acId $>>= \user -> eitherToMaybe <$> runExceptT (getConnectionEntity db vr user acId))
 
 processAgentMsgSndFile :: ACorrId -> SndFileId -> AEvent 'AESndFile -> CM ()
 processAgentMsgSndFile _corrId aFileId msg = do
