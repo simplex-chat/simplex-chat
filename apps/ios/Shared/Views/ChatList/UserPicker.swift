@@ -16,8 +16,8 @@ struct UserPicker: View {
     @Binding var activeSheet: UserPickerSheet?
     @State private var currentUser: Int64?
     @State private var switchingProfile = false
-    @State private var frameWidth: CGFloat?
-    
+    @State private var frameWidth: CGFloat = 0
+
     // Inset grouped list dimensions
     private let rowVerticalPadding: Double = 16
     private let rowHorizontalPadding: Double = 16
@@ -42,29 +42,34 @@ struct UserPicker: View {
     private var viewBody: some View {
         let otherUsers: [UserInfo] = m.users
             .filter { u in !u.user.hidden && u.user.userId != m.currentUser?.userId }
+        let reducedWidth = max(frameWidth - 64, 0)
         VStack(spacing: 0) {
             if let user = m.currentUser {
-                StickyScrollView { width in
+                StickyScrollView {
                     HStack(spacing: rowHorizontalPadding) {
                         HStack {
                             ProfileImage(imageStr: user.image, size: 44, color: Color(uiColor: .tertiarySystemGroupedBackground))
                                 .padding(.trailing, 6)
-                            profileName(user, bold: true)
+                            profileName(user, bold: true).lineLimit(1)
                         }
                         .padding(.vertical, rowVerticalPadding)
                         .padding(.horizontal, rowHorizontalPadding)
-                        .frame(width: width.map { max(0, $0 - 64) }, alignment: .leading)
+                        .frame(width: reducedWidth, alignment: .leading)
                         .background(Color(.secondarySystemGroupedBackground))
                         .clipShape(sectionShape)
                         .onTapGesture { activeSheet = .currentProfile }
                         ForEach(otherUsers) { u in
                             userView(u, size: 44)
+                                .frame(maxWidth: reducedWidth)
+                                .fixedSize()
                         }
                     }
                     .padding(.top, sectionSpacing)
                     .padding(.horizontal, sectionHorizontalPadding)
                 }
                 .frame(height: sectionSpacing + rowVerticalPadding + 44 + rowVerticalPadding)
+                .overlay(DetermineWidth())
+                .onPreferenceChange(DetermineWidth.Key.self) { frameWidth = $0 }
             }
             List {
                 Section {
@@ -155,7 +160,7 @@ struct UserPicker: View {
                     unreadBadge(u).offset(x: 3, y: -3)
                 }
             }
-            profileName(u.user, bold: false)
+            profileName(u.user, bold: false).lineLimit(1)
         }
         .padding(.vertical, rowVerticalPadding)
         .padding(.horizontal, rowHorizontalPadding)
