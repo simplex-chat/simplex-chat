@@ -908,7 +908,7 @@
     <string name="network_option_ping_interval">PING időköze</string>
     <string name="send_disappearing_message">Eltűnő üzenet küldése</string>
     <string name="self_destruct_passcode">Önmegsemmisítési jelkód</string>
-    <string name="save_and_update_group_profile">Mentés és csoportprofil frissítése</string>
+    <string name="save_and_update_group_profile">Mentés és a csoportprofil frissítése</string>
     <string name="your_privacy">Adatvédelem</string>
     <string name="your_simplex_contact_address">Profil SimpleX-címe</string>
     <string name="alert_text_fragment_please_report_to_developers">Jelentse a fejlesztőknek.</string>
@@ -1205,7 +1205,7 @@
     <string name="send_receipts">Kézbesítési jelentések küldése</string>
     <string name="icon_descr_address">SimpleX-cím</string>
     <string name="chat_help_tap_button">Koppintson a</string>
-    <string name="save_and_notify_contact">Mentés és ismerős értesítése</string>
+    <string name="save_and_notify_contact">Mentés és az ismerős értesítése</string>
     <string name="icon_descr_call_rejected">Elutasított hívás</string>
     <string name="network_socks_proxy_settings">SOCKS proxy beállítások</string>
     <string name="image_descr_qr_code">QR-kód</string>
@@ -1253,7 +1253,7 @@
     <string name="smp_servers_use_server">Kiszolgáló használata</string>
     <string name="share_text_received_at">Fogadva ekkor: %s</string>
     <string name="la_notice_title_simplex_lock">SimpleX-zár</string>
-    <string name="save_and_notify_group_members">Mentés és csoporttagok értesítése</string>
+    <string name="save_and_notify_group_members">Mentés és a csoporttagok értesítése</string>
     <string name="reset_verb">Visszaállítás</string>
     <string name="only_your_contact_can_add_message_reactions">Csak az ismerőse tud üzenetreakciókat küldeni.</string>
     <string name="voice_messages">Hangüzenetek</string>
@@ -2037,7 +2037,7 @@
     <string name="v6_0_connection_servers_status">Ellenőrízze a hálózatát</string>
     <string name="media_and_file_servers">Média- és fájlkiszolgálók</string>
     <string name="v6_0_delete_many_messages_descr">Legfeljebb 20 üzenet törlése egyszerre.</string>
-    <string name="v6_0_private_routing_descr">Védi az IP-címét és a kapcsolatokat.</string>
+    <string name="v6_0_private_routing_descr">Védi az IP-címét és a kapcsolatait.</string>
     <string name="v6_0_reachable_chat_toolbar">Könnyen elérhető eszköztár</string>
     <string name="message_servers">Üzenetkiszolgálók</string>
     <string name="network_socks_proxy">SOCKS proxy</string>
