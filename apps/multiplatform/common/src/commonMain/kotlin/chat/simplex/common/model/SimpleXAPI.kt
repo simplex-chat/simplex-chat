@@ -1,18 +1,19 @@
 package chat.simplex.common.model
 
 import SectionItemView
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.*
 import chat.simplex.common.views.helpers.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatController.getNetCfg
 import chat.simplex.common.model.ChatController.setNetCfg
 import chat.simplex.common.model.ChatModel.changingActiveUserMutex
@@ -905,7 +906,15 @@ object ChatController {
     return processSendMessageCmd(rh, cmd)?.map { it.chatItem }
   }
 
-
+  suspend fun apiPlanForwardChatItems(rh: Long?, fromChatType: ChatType, fromChatId: Long, chatItemIds: List<Long>): CR.ForwardPlan? {
+    return when (val r = sendCmd(rh, CC.ApiPlanForwardChatItems(fromChatType, fromChatId, chatItemIds))) {
+      is CR.ForwardPlan -> r
+      else -> {
+        apiErrorAlert("apiPlanForwardChatItems", generalGetString(MR.strings.error_forwarding_messages), r)
+        null
+      }
+    }
+  }
 
   suspend fun apiUpdateChatItem(rh: Long?, type: ChatType, id: Long, itemId: Long, mc: MsgContent, live: Boolean = false): AChatItem? {
     val r = sendCmd(rh, CC.ApiUpdateChatItem(type, id, itemId, mc, live))
@@ -1541,50 +1550,132 @@ object ChatController {
     }
   }
 
-  suspend fun apiReceiveFile(rh: Long?, fileId: Long, userApprovedRelays: Boolean, encrypted: Boolean, inline: Boolean? = null, auto: Boolean = false): AChatItem? {
-    // -1 here is to override default behavior of providing current remote host id because file can be asked by local device while remote is connected
-    val r = sendCmd(rh, CC.ReceiveFile(fileId, userApprovedRelays = userApprovedRelays, encrypt = encrypted, inline = inline))
-    return when (r) {
-      is CR.RcvFileAccepted -> r.chatItem
-      is CR.RcvFileAcceptedSndCancelled -> {
-        Log.d(TAG, "apiReceiveFile error: sender cancelled file transfer")
-        if (!auto) {
-          AlertManager.shared.showAlertMsg(
-            generalGetString(MR.strings.cannot_receive_file),
-            generalGetString(MR.strings.sender_cancelled_file_transfer)
-          )
-        }
-        null
-      }
+  suspend fun receiveFiles(rhId: Long?, user: UserLike, fileIds: List<Long>, userApprovedRelays: Boolean = false, auto: Boolean = false) {
+    val fileIdsToApprove = mutableListOf<Long>()
+    val srvsToApprove = mutableSetOf<String>()
+    val otherFileErrs = mutableListOf<CR>()
 
-      else -> {
-        if (!(networkErrorAlert(r))) {
-          val maybeChatError = chatError(r)
-          if (maybeChatError is ChatErrorType.FileCancelled || maybeChatError is ChatErrorType.FileAlreadyReceiving) {
-            Log.d(TAG, "apiReceiveFile ignoring FileCancelled or FileAlreadyReceiving error")
-          } else if (maybeChatError is ChatErrorType.FileNotApproved) {
-            Log.d(TAG, "apiReceiveFile FileNotApproved error")
-            if (!auto) {
-              val srvs = maybeChatError.unknownServers.map{ serverHostname(it) }
-              AlertManager.shared.showAlertDialog(
-                title = generalGetString(MR.strings.file_not_approved_title),
-                text = generalGetString(MR.strings.file_not_approved_descr).format(srvs.sorted().joinToString(separator = ", ")),
-                confirmText = generalGetString(MR.strings.download_file),
-                onConfirm = {
-                  val user = chatModel.currentUser.value
-                  if (user != null) {
-                    withBGApi { chatModel.controller.receiveFile(rh, user, fileId, userApprovedRelays = true) }
-                  }
-                },
-              )
-            }
-          } else if (!auto) {
-            apiErrorAlert("apiReceiveFile", generalGetString(MR.strings.error_receiving_file), r)
-          }
+    for (fileId in fileIds) {
+      val r = sendCmd(
+        rhId, CC.ReceiveFile(
+          fileId,
+          userApprovedRelays = userApprovedRelays || !appPrefs.privacyAskToApproveRelays.get(),
+          encrypt = appPrefs.privacyEncryptLocalFiles.get(),
+          inline = null
+        )
+      )
+      if (r is CR.RcvFileAccepted) {
+        chatItemSimpleUpdate(rhId, user, r.chatItem)
+      } else {
+        val maybeChatError = chatError(r)
+        if (maybeChatError is ChatErrorType.FileNotApproved) {
+          fileIdsToApprove.add(maybeChatError.fileId)
+          srvsToApprove.addAll(maybeChatError.unknownServers.map { serverHostname(it) })
+        } else {
+          otherFileErrs.add(r)
         }
-        null
       }
     }
+
+    if (!auto) {
+      // If there are not approved files, alert is shown the same way both in case of singular and plural files reception
+      if (fileIdsToApprove.isNotEmpty()) {
+        showFilesToApproveAlert(
+          srvsToApprove = srvsToApprove,
+          otherFileErrs = otherFileErrs,
+          approveFiles = {
+            withBGApi {
+              receiveFiles(
+                rhId = rhId,
+                user = user,
+                fileIds = fileIdsToApprove,
+                userApprovedRelays = true
+              )
+            }
+          }
+        )
+      } else if (otherFileErrs.size == 1) { // If there is a single other error, we differentiate on it
+        when (val errCR = otherFileErrs.first()) {
+          is CR.RcvFileAcceptedSndCancelled -> {
+            Log.d(TAG, "receiveFiles error: sender cancelled file transfer")
+            AlertManager.shared.showAlertMsg(
+              generalGetString(MR.strings.cannot_receive_file),
+              generalGetString(MR.strings.sender_cancelled_file_transfer)
+            )
+          }
+          else -> {
+            val maybeChatError = chatError(errCR)
+            if (maybeChatError is ChatErrorType.FileCancelled || maybeChatError is ChatErrorType.FileAlreadyReceiving) {
+              Log.d(TAG, "receiveFiles ignoring FileCancelled or FileAlreadyReceiving error")
+            } else {
+              apiErrorAlert("receiveFiles", generalGetString(MR.strings.error_receiving_file), errCR)
+            }
+          }
+        }
+      } else if (otherFileErrs.size > 1) { // If there are multiple other errors, we show general alert
+        val errsStr = otherFileErrs.map { json.encodeToString(it) }.joinToString(separator = "\n")
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.error_receiving_file),
+          text = String.format(generalGetString(MR.strings.n_file_errors), otherFileErrs.size, errsStr),
+          shareText = true
+        )
+      }
+    }
+  }
+
+  private fun showFilesToApproveAlert(
+    srvsToApprove: Set<String>,
+    otherFileErrs: List<CR>,
+    approveFiles: (() -> Unit)
+  ) {
+    val srvsToApproveStr = srvsToApprove.sorted().joinToString(separator = ", ")
+    val alertText =
+      generalGetString(MR.strings.file_not_approved_descr).format(srvsToApproveStr) +
+          (if (otherFileErrs.isNotEmpty()) "\n" + generalGetString(MR.strings.n_other_file_errors).format(otherFileErrs.size) else "")
+
+    AlertManager.shared.showAlertDialogButtonsColumn(generalGetString(MR.strings.file_not_approved_title), alertText, belowTextContent = {
+      if (otherFileErrs.isNotEmpty()) {
+        val clipboard = LocalClipboardManager.current
+        SimpleButtonFrame(click = {
+          clipboard.setText(AnnotatedString(otherFileErrs.map { json.encodeToString(it) }.joinToString(separator = "\n")))
+        }) {
+          Icon(
+            painterResource(MR.images.ic_content_copy),
+            contentDescription = null,
+            tint = MaterialTheme.colors.primary,
+            modifier = Modifier.padding(end = 8.dp)
+          )
+          Text(generalGetString(MR.strings.copy_error), color = MaterialTheme.colors.primary)
+        }
+      }
+    }) {
+      Row(
+        Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING),
+        horizontalArrangement = Arrangement.SpaceBetween
+      ) {
+        val focusRequester = remember { FocusRequester() }
+        LaunchedEffect(Unit) {
+          // Wait before focusing to prevent auto-confirming if a user used Enter key on hardware keyboard
+          delay(200)
+          focusRequester.requestFocus()
+        }
+        TextButton(onClick = AlertManager.shared::hideAlert) { Text(generalGetString(MR.strings.cancel_verb)) }
+        TextButton(onClick = {
+          approveFiles.invoke()
+          AlertManager.shared.hideAlert()
+        }, Modifier.focusRequester(focusRequester)) { Text(generalGetString(MR.strings.download_file)) }
+      }
+    }
+  }
+
+  suspend fun receiveFile(rhId: Long?, user: UserLike, fileId: Long, userApprovedRelays: Boolean = false, auto: Boolean = false) {
+    receiveFiles(
+      rhId = rhId,
+      user = user,
+      fileIds = listOf(fileId),
+      userApprovedRelays = userApprovedRelays,
+      auto = auto
+    )
   }
 
   suspend fun cancelFile(rh: Long?, user: User, fileId: Long) {
@@ -2689,19 +2780,6 @@ object ChatController {
     }
   }
 
-  suspend fun receiveFile(rhId: Long?, user: UserLike, fileId: Long, userApprovedRelays: Boolean = false, auto: Boolean = false) {
-    val chatItem = apiReceiveFile(
-      rhId,
-      fileId,
-      userApprovedRelays = userApprovedRelays || !appPrefs.privacyAskToApproveRelays.get(),
-      encrypted = appPrefs.privacyEncryptLocalFiles.get(),
-      auto = auto
-    )
-    if (chatItem != null) {
-      chatItemSimpleUpdate(rhId, user, chatItem)
-    }
-  }
-
   suspend fun leaveGroup(rh: Long?, groupId: Long) {
     val groupInfo = apiLeaveGroup(rh, groupId)
     if (groupInfo != null) {
@@ -2914,6 +2992,7 @@ sealed class CC {
   class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemIds: List<Long>, val mode: CIDeleteMode): CC()
   class ApiDeleteMemberChatItem(val groupId: Long, val itemIds: List<Long>): CC()
   class ApiChatItemReaction(val type: ChatType, val id: Long, val itemId: Long, val add: Boolean, val reaction: MsgReaction): CC()
+  class ApiPlanForwardChatItems(val fromChatType: ChatType, val fromChatId: Long, val chatItemIds: List<Long>): CC()
   class ApiForwardChatItems(val toChatType: ChatType, val toChatId: Long, val fromChatType: ChatType, val fromChatId: Long, val itemIds: List<Long>, val ttl: Int?): CC()
   class ApiNewGroup(val userId: Long, val incognito: Boolean, val groupProfile: GroupProfile): CC()
   class ApiAddMember(val groupId: Long, val contactId: Long, val memberRole: GroupMemberRole): CC()
@@ -3072,6 +3151,9 @@ sealed class CC {
       val ttlStr = if (ttl != null) "$ttl" else "default"
       "/_forward ${chatRef(toChatType, toChatId)} ${chatRef(fromChatType, fromChatId)} ${itemIds.joinToString(",")} ttl=${ttlStr}"
     }
+    is ApiPlanForwardChatItems -> {
+      "/_forward plan ${chatRef(fromChatType, fromChatId)} ${chatItemIds.joinToString(",")}"
+    }
     is ApiNewGroup -> "/_group $userId incognito=${onOff(incognito)} ${json.encodeToString(groupProfile)}"
     is ApiAddMember -> "/_add #$groupId $contactId ${memberRole.memberRole}"
     is ApiJoinGroup -> "/_join #$groupId"
@@ -3216,6 +3298,7 @@ sealed class CC {
     is ApiDeleteMemberChatItem -> "apiDeleteMemberChatItem"
     is ApiChatItemReaction -> "apiChatItemReaction"
     is ApiForwardChatItems -> "apiForwardChatItems"
+    is ApiPlanForwardChatItems -> "apiPlanForwardChatItems"
     is ApiNewGroup -> "apiNewGroup"
     is ApiAddMember -> "apiAddMember"
     is ApiJoinGroup -> "apiJoinGroup"
@@ -4878,6 +4961,7 @@ sealed class CR {
   @Serializable @SerialName("chatItemNotChanged") class ChatItemNotChanged(val user: UserRef, val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemReaction") class ChatItemReaction(val user: UserRef, val added: Boolean, val reaction: ACIReaction): CR()
   @Serializable @SerialName("chatItemsDeleted") class ChatItemsDeleted(val user: UserRef, val chatItemDeletions: List<ChatItemDeletion>, val byUser: Boolean): CR()
+  @Serializable @SerialName("forwardPlan") class ForwardPlan(val user: UserRef, val itemsCount: Int, val chatItemIds: List<Long>, val forwardConfirmation: ForwardConfirmation? = null): CR()
   // group events
   @Serializable @SerialName("groupCreated") class GroupCreated(val user: UserRef, val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("sentGroupInvitation") class SentGroupInvitation(val user: UserRef, val groupInfo: GroupInfo, val contact: Contact, val member: GroupMember): CR()
@@ -5055,6 +5139,7 @@ sealed class CR {
     is ChatItemNotChanged -> "chatItemNotChanged"
     is ChatItemReaction -> "chatItemReaction"
     is ChatItemsDeleted -> "chatItemsDeleted"
+    is ForwardPlan -> "forwardPlan"
     is GroupCreated -> "groupCreated"
     is SentGroupInvitation -> "sentGroupInvitation"
     is UserAcceptedGroupSent -> "userAcceptedGroupSent"
@@ -5224,6 +5309,7 @@ sealed class CR {
     is ChatItemNotChanged -> withUser(user, json.encodeToString(chatItem))
     is ChatItemReaction -> withUser(user, "added: $added\n${json.encodeToString(reaction)}")
     is ChatItemsDeleted -> withUser(user, "${chatItemDeletions.map { (deletedChatItem, toChatItem) -> "deletedChatItem: ${json.encodeToString(deletedChatItem)}\ntoChatItem: ${json.encodeToString(toChatItem)}" }} \nbyUser: $byUser")
+    is ForwardPlan -> withUser(user, "itemsCount: $itemsCount\nchatItemIds: ${json.encodeToString(chatItemIds)}\nforwardConfirmation: ${json.encodeToString(forwardConfirmation)}")
     is GroupCreated -> withUser(user, json.encodeToString(groupInfo))
     is SentGroupInvitation -> withUser(user, "groupInfo: $groupInfo\ncontact: $contact\nmember: $member")
     is UserAcceptedGroupSent -> json.encodeToString(groupInfo)

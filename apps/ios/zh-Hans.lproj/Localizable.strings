@@ -796,7 +796,7 @@
 /* No comment provided by engineer. */
 "Cannot forward message" = "无法转发消息";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Cannot receive file" = "无法接收文件";
 
 /* snd error text */
@@ -1629,7 +1629,8 @@
 /* No comment provided by engineer. */
 "Downgrade and open chat" = "降级并打开聊天";
 
-/* chat item action */
+/* alert button
+   chat item action */
 "Download" = "下载";
 
 /* No comment provided by engineer. */
@@ -1938,7 +1939,7 @@
 /* No comment provided by engineer. */
 "Error opening chat" = "打开聊天时出错";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error receiving file" = "接收文件错误";
 
 /* No comment provided by engineer. */
@@ -3081,7 +3082,7 @@
 /* feature offered item */
 "offered %@: %@" = "已提供 %1$@：%2$@";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Ok" = "好的";
 
 /* No comment provided by engineer. */
@@ -3520,7 +3521,7 @@
 "Receiving via" = "接收通过";
 
 /* No comment provided by engineer. */
-"Recent history and improved [directory bot](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)." = "最近的历史记录和改进的 [目录机器人]（simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion）.";
+"Recent history and improved [directory bot](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)." = "最近的历史记录和改进的 [目录机器人]（simplex：/contact#/？v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion）.";
 
 /* No comment provided by engineer. */
 "Recipient(s) can't see who this message is from." = "收件人看不到这条消息来自何人。";
@@ -3905,7 +3906,7 @@
 /* No comment provided by engineer. */
 "Send up to 100 last messages to new members." = "给新成员发送最多 100 条历史消息。";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Sender cancelled file transfer." = "发送人已取消文件传输。";
 
 /* No comment provided by engineer. */
@@ -4574,7 +4575,7 @@
 /* No comment provided by engineer. */
 "unknown servers" = "未知服务器";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Unknown servers!" = "未知服务器！";
 
 /* No comment provided by engineer. */
@@ -4880,7 +4881,7 @@
 /* No comment provided by engineer. */
 "Without Tor or VPN, your IP address will be visible to file servers." = "如果没有 Tor 或 VPN，您的 IP 地址将对文件服务器可见。";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." = "如果没有 Tor 或 VPN，您的 IP 地址将对以下 XFTP 中继可见：%@。";
 
 /* No comment provided by engineer. */

@@ -709,7 +709,7 @@
 /* No comment provided by engineer. */
 "Cannot access keychain to save database password" = "Няма достъп до Keychain за запазване на паролата за базата данни";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Cannot receive file" = "Файлът не може да бъде получен";
 
 /* No comment provided by engineer. */
@@ -1395,7 +1395,8 @@
 /* No comment provided by engineer. */
 "Downgrade and open chat" = "Понижи версията и отвори чата";
 
-/* chat item action */
+/* alert button
+   chat item action */
 "Download" = "Изтегли";
 
 /* No comment provided by engineer. */
@@ -1683,7 +1684,7 @@
 /* No comment provided by engineer. */
 "Error opening chat" = "Грешка при отваряне на чата";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error receiving file" = "Грешка при получаване на файл";
 
 /* No comment provided by engineer. */
@@ -2685,7 +2686,7 @@
 /* feature offered item */
 "offered %@: %@" = "предлага %1$@: %2$@";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Ok" = "Ок";
 
 /* No comment provided by engineer. */
@@ -3365,7 +3366,7 @@
 /* No comment provided by engineer. */
 "Send up to 100 last messages to new members." = "Изпращане до последните 100 съобщения на нови членове.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Sender cancelled file transfer." = "Подателят отмени прехвърлянето на файла.";
 
 /* No comment provided by engineer. */
