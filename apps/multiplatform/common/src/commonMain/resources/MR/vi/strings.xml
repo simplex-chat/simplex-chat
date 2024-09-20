@@ -829,4 +829,14 @@
     <string name="smp_proxy_error_broker_version">Phiên bản máy chủ chuyển tiếp không tương thích với cài đặt mạng: %1$s.</string>
     <string name="section_title_for_console">CHO CONSOLE</string>
     <string name="forward_message">Chuyển tiếp tin nhắn…</string>
+    <string name="v4_6_reduced_battery_usage">Giảm thiểu sử dụng pin hơn nữa</string>
+    <string name="forward_alert_forward_messages_without_files">Chuyển tiếp tin nhắn mà không có tệp?</string>
+    <string name="wallpaper_preview_hello_alice">Chào buổi chiều!</string>
+    <string name="v4_4_french_interface">Giao diện tiếng Pháp</string>
+    <string name="found_desktop">Đã tìm thấy máy tính</string>
+    <string name="simplex_link_mode_full">Liên kết đầy đủ</string>
+    <string name="from_gallery_button">Từ Thư viện</string>
+    <string name="full_name__field">Tên đầy đủ:</string>
+    <string name="group_is_decentralized">Tuyệt đối phi tập trung - chỉ hiển thị cho thành viên.</string>
+    <string name="wallpaper_preview_hello_bob">Chào buổi sáng!</string>
 </resources>
