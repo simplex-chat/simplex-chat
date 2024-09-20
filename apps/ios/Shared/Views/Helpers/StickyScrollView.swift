@@ -9,7 +9,7 @@
 import SwiftUI
 
 struct StickyScrollView<Content: View>: UIViewRepresentable {
-    @ViewBuilder let content: () -> Content
+    @ViewBuilder let content: (Double?) -> Content
 
     func makeUIView(context: Context) -> UIScrollView {
         let hc = context.coordinator.hostingController
@@ -17,22 +17,18 @@ struct StickyScrollView<Content: View>: UIViewRepresentable {
         sv.showsHorizontalScrollIndicator = false
         sv.addSubview(hc.view)
         sv.delegate = context.coordinator
-        hc.view.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            hc.view.leadingAnchor.constraint(equalTo: sv.leadingAnchor),
-            hc.view.trailingAnchor.constraint(equalTo: sv.trailingAnchor),
-            hc.view.topAnchor.constraint(equalTo: sv.topAnchor),
-            hc.view.bottomAnchor.constraint(equalTo: sv.bottomAnchor)
-        ])
         return sv
     }
 
     func updateUIView(_ scrollView: UIScrollView, context: Context) {
-        context.coordinator.hostingController.rootView = content()
+        context.coordinator.hostingController.rootView = content(scrollView.frame.width)
+        let size = context.coordinator.hostingController.view.intrinsicContentSize
+        context.coordinator.hostingController.view.frame.size = size
+        scrollView.contentSize = size
     }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(content: content())
+        Coordinator(content: content(nil))
     }
 
     class Coordinator: NSObject, UIScrollViewDelegate {

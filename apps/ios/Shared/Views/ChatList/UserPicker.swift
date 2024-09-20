@@ -47,7 +47,7 @@ struct UserPicker: View {
     private var viewBody: some View {
         VStack(spacing: 0) {
             if !users.isEmpty {
-                StickyScrollView {
+                StickyScrollView { width in
                     HStack {
                         ForEach(users) { u in
                             ProfilePreview(profileOf: u)
@@ -55,8 +55,7 @@ struct UserPicker: View {
                                 .padding(.leading, 8)
                                 .padding(.trailing, 12)
                                 .frame(
-                                    minWidth: nil,
-//                                    minWidth: u == m.currentUser ? frameWidth.map { $0 - 32 } : nil,
+                                    minWidth: u == m.currentUser ? width.map { max(0, $0 - 64) } : nil,
                                     alignment: .leading
                                 )
                                 .background(Color(.secondarySystemGroupedBackground))
@@ -86,8 +85,8 @@ struct UserPicker: View {
                     .padding(.bottom, 8)
                 }
                 .frame(height: 92)
-                .overlay(DetermineWidth())
-                .onPreferenceChange(DetermineWidth.Key.self) { frameWidth = $0 }
+//                .overlay(DetermineWidth())
+//                .onPreferenceChange(DetermineWidth.Key.self) { frameWidth = $0 }
                 .zIndex(1) // Position above list
             }
             List {
