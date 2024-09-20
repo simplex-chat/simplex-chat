@@ -1081,8 +1081,6 @@ fun BoxWithConstraintsScope.ChatItemsList(
         @Composable
         fun ChatItemView(cItem: ChatItem, range: IntRange?, prevItem: ChatItem?, itemSeparation: ItemSeparation) {
           val sent = cItem.chatDir.sent
-          val (_, nextItem) = chatModel.getNextChatItem(cItem)
-
           Box(Modifier.padding(bottom = if (itemSeparation.largeGap) 8.dp else 2.dp )) {
             val voiceWithTransparentBack = cItem.content.msgContent is MsgContent.MCVoice && cItem.content.text.isEmpty() && cItem.quotedItem == null && cItem.meta.itemForwarded == null
             val selectionVisible = selectedChatItems.value != null && cItem.canBeDeletedForSelf
