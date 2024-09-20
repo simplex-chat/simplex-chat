@@ -556,7 +556,7 @@
 /* No comment provided by engineer. */
 "Cannot access keychain to save database password" = "Ei pääsyä avainnippuun tietokannan salasanan tallentamiseksi";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Cannot receive file" = "Tiedostoa ei voi vastaanottaa";
 
 /* No comment provided by engineer. */
@@ -1356,7 +1356,7 @@
 /* No comment provided by engineer. */
 "Error loading %@ servers" = "Virhe %@-palvelimien lataamisessa";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error receiving file" = "Virhe tiedoston vastaanottamisessa";
 
 /* No comment provided by engineer. */
@@ -2160,7 +2160,7 @@
 /* feature offered item */
 "offered %@: %@" = "tarjottu %1$@: %2$@";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Ok" = "Ok";
 
 /* No comment provided by engineer. */
@@ -2699,7 +2699,7 @@
 /* No comment provided by engineer. */
 "Send them from gallery or custom keyboards." = "Lähetä ne galleriasta tai mukautetuista näppäimistöistä.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Sender cancelled file transfer." = "Lähettäjä peruutti tiedoston siirron.";
 
 /* No comment provided by engineer. */
