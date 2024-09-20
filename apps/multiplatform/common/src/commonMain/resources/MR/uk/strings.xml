@@ -776,7 +776,7 @@
     <string name="v4_5_italian_interface_descr">Дякуємо користувачам – приєднуйтеся через Weblate!</string>
     <string name="v4_6_group_moderation_descr">Тепер адміністратори можуть:
 \n- видаляти повідомлення учасників.
-\n- вимикати учасників (роль спостерігач)</string>
+\n- вимикати учасників (роль спостерігача).</string>
     <string name="v4_6_group_welcome_message_descr">Встановіть повідомлення, яке показується новим учасникам!</string>
     <string name="v4_6_reduced_battery_usage">Додатково зменшено використання батареї</string>
     <string name="v4_6_reduced_battery_usage_descr">Більше поліпшень незабаром!</string>
@@ -2067,4 +2067,23 @@
     <string name="reset_all_hints">Скинути всі підказки</string>
     <string name="app_check_for_updates_update_available">Доступно оновлення: %s</string>
     <string name="app_check_for_updates_canceled">Завантаження оновлення скасовано</string>
+    <string name="settings_section_title_chat_database">БАЗА ДАНИХ ЧАТУ</string>
+    <string name="select_chat_profile">Вибрати профіль чату</string>
+    <string name="switching_profile_error_title">Помилка при зміні профілю</string>
+    <string name="delete_messages_cannot_be_undone_warning">Повідомлення будуть видалені — це не можна скасувати!</string>
+    <string name="migrate_from_device_remove_archive_question">Видалити архів?</string>
+    <string name="new_chat_share_profile">Поділитися профілем</string>
+    <string name="migrate_from_device_uploaded_archive_will_be_removed">Завантажений архів бази даних буде остаточно видалено з серверів.</string>
+    <string name="switching_profile_error_message">Ваше з\'єднання було перенесено на %s, але виникла несподівана помилка під час перенаправлення на профіль.</string>
+    <string name="system_mode_toast">Режим системи</string>
+    <string name="network_proxy_auth_mode_no_auth">Не використовуйте облікові дані з проксі.</string>
+    <string name="network_proxy_auth">Аутентифікація проксі</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_entity">Використовуйте різні облікові дані проксі для кожного з\'єднання.</string>
+    <string name="network_proxy_random_credentials">Використовувати випадкові облікові дані</string>
+    <string name="network_proxy_auth_mode_username_password">Ваші облікові дані можуть бути надіслані в незашифрованому вигляді.</string>
+    <string name="network_proxy_incorrect_config_title">Помилка під час збереження проксі</string>
+    <string name="network_proxy_incorrect_config_desc">Переконайтеся, що конфігурація проксі правильна.</string>
+    <string name="network_proxy_password">Пароль</string>
+    <string name="network_proxy_username">Ім\'я користувача</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_user">Використовуйте різні облікові дані проксі для кожного профілю.</string>
 </resources>
