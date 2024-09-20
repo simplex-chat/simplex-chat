@@ -30,32 +30,20 @@ struct UserPicker: View {
             viewBody
         }
     }
-    
-    // TODO: Sort users by last accessed
-    private var users: [User] {
-        var users: [User] = m.users
-            .map { $0.user }
-            .filter { u in !u.hidden && !(u == m.currentUser) }
-        if let cu = m.currentUser {
-            return [cu] + users
-        } else {
-            return users
-        }
-    }
 
     @ViewBuilder
     private var viewBody: some View {
         VStack(spacing: 0) {
-            if !users.isEmpty {
+            if !m.users.isEmpty {
                 StickyScrollView { width in
                     HStack {
-                        ForEach(users) { u in
-                            ProfilePreview(profileOf: u)
-                                .padding(.vertical, 12)
-                                .padding(.leading, 8)
-                                .padding(.trailing, 12)
+                        ForEach(m.users) { u in
+                            userView(u, size: 44)
+                                .padding(.vertical, 6)
+                                .padding(.leading, 5)
+                                .padding(.trailing, 9)
                                 .frame(
-                                    minWidth: u == m.currentUser ? width.map { max(0, $0 - 64) } : nil,
+                                    minWidth: u.user == m.currentUser ? width.map { max(0, $0 - 64) } : nil,
                                     alignment: .leading
                                 )
                                 .background(Color(.secondarySystemGroupedBackground))
@@ -63,7 +51,7 @@ struct UserPicker: View {
                                 .onTapGesture {
                                     Task {
                                         do {
-                                            try await changeActiveUserAsync_(u.userId, viewPwd: nil)
+                                            try await changeActiveUserAsync_(u.user.userId, viewPwd: nil)
                                             await MainActor.run {
                                                 switchingProfile = false
                                                 dismiss()
@@ -205,36 +193,38 @@ struct UserPicker: View {
 //        }
 //    }
 //
-//    private func userView(_ u: UserInfo, size: CGFloat) -> some View {
-//        ZStack(alignment: .topTrailing) {
-//            ProfileImage(imageStr: u.user.image, size: size, color: Color(uiColor: .tertiarySystemGroupedBackground))
-//                .padding([.top, .trailing], 3)
-//            if (u.unreadCount > 0) {
-//                unreadBadge(u)
-//            }
-//        }
-//        .frame(width: size)
-//        .onTapGesture {
-//            switchingProfile = true
-//            Task {
-//                do {
-//                    try await changeActiveUserAsync_(u.user.userId, viewPwd: nil)
-//                    await MainActor.run {
-//                        switchingProfile = false
-//                        dismiss()
-//                    }
-//                } catch {
-//                    await MainActor.run {
-//                        switchingProfile = false
-//                        AlertManager.shared.showAlertMsg(
-//                            title: "Error switching profile!",
-//                            message: "Error: \(responseError(error))"
-//                        )
-//                    }
-//                }
-//            }
-//        }
-//    }
+    private func userView(_ u: UserInfo, size: CGFloat) -> some View {
+        HStack {
+            ZStack(alignment: .topTrailing) {
+                ProfileImage(imageStr: u.user.image, size: size, color: Color(uiColor: .tertiarySystemGroupedBackground))
+                    .padding(3)
+                if (u.unreadCount > 0) {
+                    unreadBadge(u)
+                }
+            }
+            profileName(u.user)
+        }
+        .onTapGesture {
+            switchingProfile = true
+            Task {
+                do {
+                    try await changeActiveUserAsync_(u.user.userId, viewPwd: nil)
+                    await MainActor.run {
+                        switchingProfile = false
+                        dismiss()
+                    }
+                } catch {
+                    await MainActor.run {
+                        switchingProfile = false
+                        AlertManager.shared.showAlertMsg(
+                            title: "Error switching profile!",
+                            message: "Error: \(responseError(error))"
+                        )
+                    }
+                }
+            }
+        }
+    }
     
     private func openSheetOnTap(title: LocalizedStringKey, icon: String, action: @escaping () -> Void) -> some View {
         openSheetOnTap(label: {
