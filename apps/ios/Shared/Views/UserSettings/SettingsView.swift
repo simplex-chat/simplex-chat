@@ -507,7 +507,7 @@ struct ProfilePreview: View {
         HStack {
             ProfileImage(imageStr: profileOf.image, size: 44, color: color)
                 .padding(.trailing, 6)
-            profileName().lineLimit(1).fixedSize()
+            profileName().lineLimit(1)
         }
     }
     

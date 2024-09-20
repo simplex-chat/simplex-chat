@@ -85,8 +85,6 @@ struct UserPicker: View {
                     .padding(.bottom, 8)
                 }
                 .frame(height: 92)
-//                .overlay(DetermineWidth())
-//                .onPreferenceChange(DetermineWidth.Key.self) { frameWidth = $0 }
                 .zIndex(1) // Position above list
             }
             List {
