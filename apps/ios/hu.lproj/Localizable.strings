@@ -4932,6 +4932,9 @@
 /* No comment provided by engineer. */
 "Without Tor or VPN, your IP address will be visible to file servers." = "Tor vagy VPN nélkül az IP-címe látható lesz a fájlkiszolgálók számára.";
 
+/* alert message */
+"Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." = "A megosztást az Adatvédelem és biztonság / SimpleX zár menüben engedélyezheti.";
+
 /* No comment provided by engineer. */
 "Wrong database passphrase" = "Hibás adatbázis jelmondat";
 

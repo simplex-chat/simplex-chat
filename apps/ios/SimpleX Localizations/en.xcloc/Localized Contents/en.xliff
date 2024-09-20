@@ -3166,11 +3166,11 @@ This is your own one-time link!</target>
         <target>File error</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="File errors:&#10;(otherErrsStr)" xml:space="preserve">
+      <trans-unit id="File errors:&#10;%@" xml:space="preserve">
         <source>File errors:
-(otherErrsStr)</source>
+%@</source>
         <target>File errors:
-(otherErrsStr)</target>
+%@</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="File not found - most likely file was deleted or cancelled." xml:space="preserve">
@@ -4870,11 +4870,11 @@ Requires compatible VPN.</target>
         <target>Other %@ servers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Other file errors:&#10;(otherErrsStr)" xml:space="preserve">
+      <trans-unit id="Other file errors:&#10;%@" xml:space="preserve">
         <source>Other file errors:
-(otherErrsStr)</source>
+%@</source>
         <target>Other file errors:
-(otherErrsStr)</target>
+%@</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="PING count" xml:space="preserve">
@@ -7511,9 +7511,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>Without Tor or VPN, your IP address will be visible to file servers.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Without Tor or VPN, your IP address will be visible to these XFTP relays: (srvs)." xml:space="preserve">
-        <source>Without Tor or VPN, your IP address will be visible to these XFTP relays: (srvs).</source>
-        <target>Without Tor or VPN, your IP address will be visible to these XFTP relays: (srvs).</target>
+      <trans-unit id="Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." xml:space="preserve">
+        <source>Without Tor or VPN, your IP address will be visible to these XFTP relays: %@.</source>
+        <target>Without Tor or VPN, your IP address will be visible to these XFTP relays: %@.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Wrong database passphrase" xml:space="preserve">

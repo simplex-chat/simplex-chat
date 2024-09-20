@@ -4881,6 +4881,9 @@
 /* No comment provided by engineer. */
 "Without Tor or VPN, your IP address will be visible to file servers." = "Без Tor або VPN ваша IP-адреса буде видимою для файлових серверів.";
 
+/* alert message */
+"Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." = "Без Tor або VPN ваша IP-адреса буде видимою для цих XFTP-ретрансляторів: %@.";
+
 /* No comment provided by engineer. */
 "Wrong database passphrase" = "Неправильний пароль до бази даних";
 

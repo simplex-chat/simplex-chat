@@ -3151,9 +3151,9 @@ Il s'agit de votre propre lien unique !</target>
         <target>Erreur de fichier</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="File errors:&#10;(otherErrsStr)" xml:space="preserve">
+      <trans-unit id="File errors:&#10;%@" xml:space="preserve">
         <source>File errors:
-(otherErrsStr)</source>
+%@</source>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="File not found - most likely file was deleted or cancelled." xml:space="preserve">
@@ -4845,9 +4845,9 @@ Nécessite l'activation d'un VPN.</target>
         <target>Autres serveurs %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Other file errors:&#10;(otherErrsStr)" xml:space="preserve">
+      <trans-unit id="Other file errors:&#10;%@" xml:space="preserve">
         <source>Other file errors:
-(otherErrsStr)</source>
+%@</source>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="PING count" xml:space="preserve">
@@ -7469,8 +7469,9 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
         <target>Sans Tor ou un VPN, votre adresse IP sera visible par les serveurs de fichiers.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Without Tor or VPN, your IP address will be visible to these XFTP relays: (srvs)." xml:space="preserve">
-        <source>Without Tor or VPN, your IP address will be visible to these XFTP relays: (srvs).</source>
+      <trans-unit id="Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." xml:space="preserve">
+        <source>Without Tor or VPN, your IP address will be visible to these XFTP relays: %@.</source>
+        <target>Sans Tor ni VPN, votre adresse IP sera visible par ces relais XFTP : %@.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Wrong database passphrase" xml:space="preserve">

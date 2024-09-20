@@ -4932,6 +4932,9 @@
 /* No comment provided by engineer. */
 "Without Tor or VPN, your IP address will be visible to file servers." = "Senza Tor o VPN, il tuo indirizzo IP sarà visibile ai server di file.";
 
+/* alert message */
+"Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." = "Senza Tor o VPN, il tuo indirizzo IP sarà visibile a questi relay XFTP: %@.";
+
 /* No comment provided by engineer. */
 "Wrong database passphrase" = "Password del database sbagliata";
 

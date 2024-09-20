@@ -4881,6 +4881,9 @@
 /* No comment provided by engineer. */
 "Without Tor or VPN, your IP address will be visible to file servers." = "如果没有 Tor 或 VPN，您的 IP 地址将对文件服务器可见。";
 
+/* alert message */
+"Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." = "如果没有 Tor 或 VPN，您的 IP 地址将对以下 XFTP 中继可见：%@。";
+
 /* No comment provided by engineer. */
 "Wrong database passphrase" = "数据库密码错误";
 

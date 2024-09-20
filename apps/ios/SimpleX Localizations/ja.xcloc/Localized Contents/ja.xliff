@@ -2976,9 +2976,9 @@ This is your own one-time link!</source>
         <source>File error</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="File errors:&#10;(otherErrsStr)" xml:space="preserve">
+      <trans-unit id="File errors:&#10;%@" xml:space="preserve">
         <source>File errors:
-(otherErrsStr)</source>
+%@</source>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="File not found - most likely file was deleted or cancelled." xml:space="preserve">
@@ -4563,9 +4563,9 @@ VPN を有効にする必要があります。</target>
         <source>Other %@ servers</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Other file errors:&#10;(otherErrsStr)" xml:space="preserve">
+      <trans-unit id="Other file errors:&#10;%@" xml:space="preserve">
         <source>Other file errors:
-(otherErrsStr)</source>
+%@</source>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="PING count" xml:space="preserve">
@@ -6992,8 +6992,8 @@ To connect, please ask your contact to create another connection link and check 
         <source>Without Tor or VPN, your IP address will be visible to file servers.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Without Tor or VPN, your IP address will be visible to these XFTP relays: (srvs)." xml:space="preserve">
-        <source>Without Tor or VPN, your IP address will be visible to these XFTP relays: (srvs).</source>
+      <trans-unit id="Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." xml:space="preserve">
+        <source>Without Tor or VPN, your IP address will be visible to these XFTP relays: %@.</source>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Wrong database passphrase" xml:space="preserve">

@@ -3159,9 +3159,9 @@ Questo è il tuo link una tantum!</target>
         <target>Errore del file</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="File errors:&#10;(otherErrsStr)" xml:space="preserve">
+      <trans-unit id="File errors:&#10;%@" xml:space="preserve">
         <source>File errors:
-(otherErrsStr)</source>
+%@</source>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="File not found - most likely file was deleted or cancelled." xml:space="preserve">
@@ -4854,9 +4854,9 @@ Richiede l'attivazione della VPN.</target>
         <target>Altri %@ server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Other file errors:&#10;(otherErrsStr)" xml:space="preserve">
+      <trans-unit id="Other file errors:&#10;%@" xml:space="preserve">
         <source>Other file errors:
-(otherErrsStr)</source>
+%@</source>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="PING count" xml:space="preserve">
@@ -7486,8 +7486,9 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
         <target>Senza Tor o VPN, il tuo indirizzo IP sarà visibile ai server di file.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Without Tor or VPN, your IP address will be visible to these XFTP relays: (srvs)." xml:space="preserve">
-        <source>Without Tor or VPN, your IP address will be visible to these XFTP relays: (srvs).</source>
+      <trans-unit id="Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." xml:space="preserve">
+        <source>Without Tor or VPN, your IP address will be visible to these XFTP relays: %@.</source>
+        <target>Senza Tor o VPN, il tuo indirizzo IP sarà visibile a questi relay XFTP: %@.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Wrong database passphrase" xml:space="preserve">

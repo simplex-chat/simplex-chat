@@ -4263,6 +4263,9 @@
 /* No comment provided by engineer. */
 "Without Tor or VPN, your IP address will be visible to file servers." = "Tor veya VPN olmadan, IP adresiniz dosya sunucularına görülebilir.";
 
+/* alert message */
+"Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." = "Tor veya VPN olmadan, IP adresiniz bu XFTP aktarıcıları tarafından görülebilir: %@.";
+
 /* No comment provided by engineer. */
 "Wrong database passphrase" = "Yanlış veritabanı parolası";
 
