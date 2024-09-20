@@ -19,7 +19,7 @@ struct UserPicker: View {
     @State private var frameWidth: CGFloat?
     
     // Inset grouped list dimensions
-    private let rowVerticalPadding: Double = 11
+    private let rowVerticalPadding: Double = 16
     private let rowHorizontalPadding: Double = 16
     private let sectionSpacing: Double = 35
     private let sectionHorizontalPadding: Double = 16
@@ -40,39 +40,25 @@ struct UserPicker: View {
 
     @ViewBuilder
     private var viewBody: some View {
+        let otherUsers: [UserInfo] = m.users
+            .filter { u in !u.user.hidden && u.user.userId != m.currentUser?.userId }
         VStack(spacing: 0) {
-            if !m.users.isEmpty {
+            if let user = m.currentUser {
                 StickyScrollView { width in
                     HStack(spacing: rowHorizontalPadding) {
-                        ForEach(m.users) { u in
+                        HStack {
+                            ProfileImage(imageStr: user.image, size: 44, color: Color(uiColor: .tertiarySystemGroupedBackground))
+                                .padding(.trailing, 6)
+                            profileName(user, bold: true)
+                        }
+                        .padding(.vertical, rowVerticalPadding)
+                        .padding(.horizontal, rowHorizontalPadding)
+                        .frame(minWidth: width.map { max(0, $0 - 64) }, alignment: .leading)
+                        .background(Color(.secondarySystemGroupedBackground))
+                        .clipShape(sectionShape)
+                        .onTapGesture { activeSheet = .currentProfile }
+                        ForEach(otherUsers) { u in
                             userView(u, size: 44)
-                                .padding(.vertical, rowVerticalPadding)
-                                .padding(.horizontal, rowHorizontalPadding)
-                                .frame(
-                                    minWidth: u.user == m.currentUser ? width.map { max(0, $0 - 64) } : nil,
-                                    alignment: .leading
-                                )
-                                .background(Color(.secondarySystemGroupedBackground))
-                                .clipShape(sectionShape)
-                                .onTapGesture {
-                                    Task {
-                                        do {
-                                            try await changeActiveUserAsync_(u.user.userId, viewPwd: nil)
-                                            await MainActor.run {
-                                                switchingProfile = false
-                                                dismiss()
-                                            }
-                                        } catch {
-                                            await MainActor.run {
-                                                switchingProfile = false
-                                                AlertManager.shared.showAlertMsg(
-                                                    title: "Error switching profile!",
-                                                    message: "Error: \(responseError(error))"
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
                         }
                     }
                     .padding(.top, sectionSpacing)
@@ -169,8 +155,12 @@ struct UserPicker: View {
                     unreadBadge(u).offset(x: 3, y: -3)
                 }
             }
-            profileName(u.user)
+            profileName(u.user, bold: false)
         }
+        .padding(.vertical, rowVerticalPadding)
+        .padding(.horizontal, rowHorizontalPadding)
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(sectionShape)
         .onTapGesture {
             switchingProfile = true
             Task {
