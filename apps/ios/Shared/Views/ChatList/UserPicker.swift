@@ -167,76 +167,76 @@ struct UserPicker: View {
         .disabled(switchingProfile)
     }
         
-    private func userPickerRow(_ users: [UserInfo], size: CGFloat) -> some View {
-        HStack(spacing: 6) {
-            let s = ScrollView(.horizontal) {
-                HStack(spacing: 27) {
-                    ForEach(users) { u in
-                        if !u.user.hidden && u.user.userId != m.currentUser?.userId {
-                            userView(u, size: size)
-                        }
-                    }
-                }
-                .padding(.leading, 4)
-                .padding(.trailing, 22)
-            }
-            ZStack(alignment: .trailing) {
-                if #available(iOS 16.0, *) {
-                    s.scrollIndicators(.hidden)
-                } else {
-                    s
-                }
-                LinearGradient(
-                    colors: [.clear, .black],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-                .frame(width: size, height: size + 3)
-                .blendMode(.destinationOut)
-                .allowsHitTesting(false)
-            }
-            .compositingGroup()
-            .padding(.top, -3) // to fit unread badge
-            Spacer()
-            Image(systemName: "chevron.right")
-                .foregroundColor(theme.colors.secondary)
-                .padding(.trailing, 4)
-                .onTapGesture {
-                    activeSheet = .chatProfiles
-                }
-        }
-    }
-
-    private func userView(_ u: UserInfo, size: CGFloat) -> some View {
-        ZStack(alignment: .topTrailing) {
-            ProfileImage(imageStr: u.user.image, size: size, color: Color(uiColor: .tertiarySystemGroupedBackground))
-                .padding([.top, .trailing], 3)
-            if (u.unreadCount > 0) {
-                unreadBadge(u)
-            }
-        }
-        .frame(width: size)
-        .onTapGesture {
-            switchingProfile = true
-            Task {
-                do {
-                    try await changeActiveUserAsync_(u.user.userId, viewPwd: nil)
-                    await MainActor.run {
-                        switchingProfile = false
-                        dismiss()
-                    }
-                } catch {
-                    await MainActor.run {
-                        switchingProfile = false
-                        AlertManager.shared.showAlertMsg(
-                            title: "Error switching profile!",
-                            message: "Error: \(responseError(error))"
-                        )
-                    }
-                }
-            }
-        }
-    }
+//    private func userPickerRow(_ users: [UserInfo], size: CGFloat) -> some View {
+//        HStack(spacing: 6) {
+//            let s = ScrollView(.horizontal) {
+//                HStack(spacing: 27) {
+//                    ForEach(users) { u in
+//                        if !u.user.hidden && u.user.userId != m.currentUser?.userId {
+//                            userView(u, size: size)
+//                        }
+//                    }
+//                }
+//                .padding(.leading, 4)
+//                .padding(.trailing, 22)
+//            }
+//            ZStack(alignment: .trailing) {
+//                if #available(iOS 16.0, *) {
+//                    s.scrollIndicators(.hidden)
+//                } else {
+//                    s
+//                }
+//                LinearGradient(
+//                    colors: [.clear, .black],
+//                    startPoint: .leading,
+//                    endPoint: .trailing
+//                )
+//                .frame(width: size, height: size + 3)
+//                .blendMode(.destinationOut)
+//                .allowsHitTesting(false)
+//            }
+//            .compositingGroup()
+//            .padding(.top, -3) // to fit unread badge
+//            Spacer()
+//            Image(systemName: "chevron.right")
+//                .foregroundColor(theme.colors.secondary)
+//                .padding(.trailing, 4)
+//                .onTapGesture {
+//                    activeSheet = .chatProfiles
+//                }
+//        }
+//    }
+//
+//    private func userView(_ u: UserInfo, size: CGFloat) -> some View {
+//        ZStack(alignment: .topTrailing) {
+//            ProfileImage(imageStr: u.user.image, size: size, color: Color(uiColor: .tertiarySystemGroupedBackground))
+//                .padding([.top, .trailing], 3)
+//            if (u.unreadCount > 0) {
+//                unreadBadge(u)
+//            }
+//        }
+//        .frame(width: size)
+//        .onTapGesture {
+//            switchingProfile = true
+//            Task {
+//                do {
+//                    try await changeActiveUserAsync_(u.user.userId, viewPwd: nil)
+//                    await MainActor.run {
+//                        switchingProfile = false
+//                        dismiss()
+//                    }
+//                } catch {
+//                    await MainActor.run {
+//                        switchingProfile = false
+//                        AlertManager.shared.showAlertMsg(
+//                            title: "Error switching profile!",
+//                            message: "Error: \(responseError(error))"
+//                        )
+//                    }
+//                }
+//            }
+//        }
+//    }
     
     private func openSheetOnTap(title: LocalizedStringKey, icon: String, action: @escaping () -> Void) -> some View {
         openSheetOnTap(label: {

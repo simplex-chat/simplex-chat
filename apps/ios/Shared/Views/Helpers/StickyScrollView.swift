@@ -13,6 +13,7 @@ struct StickyScrollView<Content: View>: UIViewRepresentable {
 
     func makeUIView(context: Context) -> UIScrollView {
         let hc = context.coordinator.hostingController
+        hc.view.backgroundColor = .clear
         let sv = UIScrollView()
         sv.showsHorizontalScrollIndicator = false
         sv.addSubview(hc.view)
@@ -21,10 +22,10 @@ struct StickyScrollView<Content: View>: UIViewRepresentable {
     }
 
     func updateUIView(_ scrollView: UIScrollView, context: Context) {
-        context.coordinator.hostingController.rootView = content(scrollView.frame.width)
-        let size = context.coordinator.hostingController.view.intrinsicContentSize
-        context.coordinator.hostingController.view.frame.size = size
-        scrollView.contentSize = size
+        let hc = context.coordinator.hostingController
+        hc.rootView = content(scrollView.frame.width)
+        hc.view.frame.size = hc.view.intrinsicContentSize
+        scrollView.contentSize = hc.view.intrinsicContentSize
     }
 
     func makeCoordinator() -> Coordinator {
