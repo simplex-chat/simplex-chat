@@ -83,7 +83,7 @@
     <string name="database_passphrase_will_be_updated">La contraseña de cifrado de la base de datos será actualizada.</string>
     <string name="info_row_database_id">ID base de datos</string>
     <string name="direct_messages_are_prohibited_in_chat">Los mensajes directos entre miembros del grupo no están permitidos.</string>
-    <string name="passphrase_is_different">La contraseña de la base de datos es distinta a la almacenada en Keystore.</string>
+    <string name="passphrase_is_different">La contraseña de la base de datos es diferente a la almacenada en Keystore.</string>
     <string name="database_will_be_encrypted_and_passphrase_stored">La base de datos será cifrada y la contraseña se guardará en Keystore.</string>
     <string name="delete_contact_question">¿Eliminar contacto\?</string>
     <string name="delete_message__question">¿Eliminar mensaje\?</string>
@@ -949,7 +949,7 @@
     <string name="your_chat_profiles">Mis perfiles</string>
     <string name="your_simplex_contact_address">Mi dirección SimpleX</string>
     <string name="smp_servers_your_server">Tu servidor</string>
-    <string name="smp_servers_your_server_address">Dirección de tu servidor</string>
+    <string name="smp_servers_your_server_address">Dirección del servidor</string>
     <string name="your_current_profile">Tu perfil actual</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Tu perfil es almacenado en tu dispositivo y solamente se comparte con tus contactos. Los servidores SimpleX no pueden ver tu perfil.</string>
     <string name="language_system">Sistema</string>
@@ -971,7 +971,7 @@
     <string name="button_welcome_message">Mensaje de bienvenida</string>
     <string name="group_welcome_title">Mensaje de bienvenida</string>
     <string name="make_profile_private">¡Hacer perfil privado!</string>
-    <string name="dont_show_again">No mostrar de nuevo</string>
+    <string name="dont_show_again">No volver a mostrar</string>
     <string name="muted_when_inactive">¡Silenciado cuando está inactivo!</string>
     <string name="v4_6_group_moderation">Moderación de grupos</string>
     <string name="v4_6_hidden_chat_profiles">Perfiles ocultos</string>
@@ -1383,7 +1383,7 @@
     <string name="v5_3_new_desktop_app">Nueva aplicación para ordenador!</string>
     <string name="v5_3_new_interface_languages">6 idiomas nuevos para el interfaz</string>
     <string name="v5_3_encrypt_local_files_descr">Cifrado de los nuevos archivos locales (excepto vídeos).</string>
-    <string name="compose_send_direct_message_to_connect">Enviar mensaje directo para conectar</string>
+    <string name="compose_send_direct_message_to_connect">Envía un mensaje para conectar</string>
     <string name="v5_3_discover_join_groups">Descubre y únete a grupos</string>
     <string name="v5_3_simpler_incognito_mode">Modo incógnito simplificado</string>
     <string name="v5_3_new_interface_languages_descr">Árabe, Búlgaro, Finlandés, Hebreo, Tailandés y Ucraniano - gracias a los usuarios y Weblate.</string>
@@ -2070,4 +2070,40 @@
     <string name="new_message">Nuevo mensaje</string>
     <string name="error_parsing_uri_title">Enlace no válido</string>
     <string name="error_parsing_uri_desc">Por favor, comprueba que el enlace SimpleX es correcto.</string>
+    <string name="forward_files_in_progress_desc">%1$d archivo(s) se está(n) descargando todavía.</string>
+    <string name="n_other_file_errors">%1$d otro(s) error(es) de archivo.</string>
+    <string name="settings_section_title_chat_database">BASE DE DATOS</string>
+    <string name="error_forwarding_messages">Error en reenvío de mensajes</string>
+    <string name="forward_alert_title_messages_to_forward">¿Reenviar %1$s mensaje(s)?</string>
+    <string name="forward_multiple">Reenviar mensajes…</string>
+    <string name="system_mode_toast">Modo de sistema</string>
+    <string name="forward_alert_forward_messages_without_files">¿Reenviar mensajes sin los archivos?</string>
+    <string name="network_proxy_incorrect_config_desc">Asegúrate de que la configuración del proxy es correcta.</string>
+    <string name="forward_files_missing_desc">%1$d archivo(s) ha(n) sido borrado(s).</string>
+    <string name="n_file_errors">%1$d error(es) de archivo
+\n%2$s</string>
+    <string name="forward_files_failed_to_receive_desc">La descarga ha fallado para %1$d archivo(s).</string>
+    <string name="forward_files_not_accepted_desc">%1$d archivo(s) no se ha(n) descargado.</string>
+    <string name="forward_files_messages_deleted_after_selection_title">%1$s mensajes no enviados</string>
+    <string name="forward_files_not_accepted_receive_files">Descargar</string>
+    <string name="compose_forward_messages_n">Reenviando %1$s mensajes</string>
+    <string name="forward_files_messages_deleted_after_selection_desc">Los mensajes han sido borrados después de seleccionarlos.</string>
+    <string name="forward_alert_title_nothing_to_forward">¡Nada para reenviar!</string>
+    <string name="compose_save_messages_n">Guardando %1$s mensajes</string>
+    <string name="network_proxy_auth_mode_no_auth">No uses credenciales con proxy.</string>
+    <string name="network_proxy_incorrect_config_title">Error guardando proxy</string>
+    <string name="network_proxy_password">Contraseña</string>
+    <string name="network_proxy_auth">Autenticación proxy</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_entity">Credenciales proxy diferentes para cada conexión.</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_user">Credenciales proxy diferentes para cada perfil.</string>
+    <string name="network_proxy_random_credentials">Credenciales aleatorias</string>
+    <string name="network_proxy_username">Nombre de usuario</string>
+    <string name="network_proxy_auth_mode_username_password">Tus credenciales podrían ser enviadas sin cifrar.</string>
+    <string name="migrate_from_device_remove_archive_question">¿Eliminar los archivos?</string>
+    <string name="migrate_from_device_uploaded_archive_will_be_removed">El archivo de bases de datos subido será eliminado permanentemente de los servidores.</string>
+    <string name="delete_messages_cannot_be_undone_warning">Los mensajes serán eliminados. ¡No podrá deshacerse!</string>
+    <string name="switching_profile_error_title">Error al cambiar perfil</string>
+    <string name="select_chat_profile">Selecciona perfil de chat</string>
+    <string name="new_chat_share_profile">Comparte perfil</string>
+    <string name="switching_profile_error_message">Tu conexión ha sido trasladada a %s pero ha ocurrido un error inesperado al redirigirte al perfil.</string>
 </resources>
