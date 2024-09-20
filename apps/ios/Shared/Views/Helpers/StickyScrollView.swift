@@ -13,26 +13,22 @@ struct StickyScrollView<Content: View>: UIViewRepresentable {
 
     func makeUIView(context: Context) -> UIScrollView {
         let hc = context.coordinator.hostingController
-        let scrollView = UIScrollView()
-        scrollView.addSubview(hc.view)
-        scrollView.delegate = context.coordinator
+        let sv = UIScrollView()
+        sv.showsHorizontalScrollIndicator = false
+        sv.addSubview(hc.view)
+        sv.delegate = context.coordinator
         hc.view.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            hc.view.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
-            hc.view.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
-            hc.view.topAnchor.constraint(equalTo: scrollView.topAnchor),
-            hc.view.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor)
+            hc.view.leadingAnchor.constraint(equalTo: sv.leadingAnchor),
+            hc.view.trailingAnchor.constraint(equalTo: sv.trailingAnchor),
+            hc.view.topAnchor.constraint(equalTo: sv.topAnchor),
+            hc.view.bottomAnchor.constraint(equalTo: sv.bottomAnchor)
         ])
-        return scrollView
+        return sv
     }
 
     func updateUIView(_ scrollView: UIScrollView, context: Context) {
         context.coordinator.hostingController.rootView = content()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            scrollView.setNeedsUpdateConstraints()
-            scrollView.setNeedsLayout()
-            scrollView.setNeedsDisplay()
-        }
     }
 
     func makeCoordinator() -> Coordinator {
