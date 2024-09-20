@@ -27,7 +27,7 @@ struct UserPicker: View {
 
     var body: some View {
         if #available(iOS 16.0, *) {
-            let v = viewBody.presentationDetents([.height(442)])
+            let v = viewBody.presentationDetents([.height(420)])
             if #available(iOS 16.4, *) {
                 v.scrollBounceBehavior(.basedOnSize)
             } else {
@@ -69,23 +69,23 @@ struct UserPicker: View {
             List {
                 Section {
                     if let user = m.currentUser {
-                        openSheetOnTap(label: {
-                            ZStack {
-                                ProfilePreview(profileOf: user)
-                                    .foregroundColor(.primary)
-                            }
-                        }) {
-                            activeSheet = .currentProfile
-                        }
-                        // Row insets set manually to ensure consistency with `userView` padding in all versions of iOS
-                        .listRowInsets(
-                            EdgeInsets(
-                                top: rowVerticalPadding,
-                                leading: rowHorizontalPadding,
-                                bottom: rowVerticalPadding,
-                                trailing: rowHorizontalPadding
-                            )
-                        )
+//                        openSheetOnTap(label: {
+//                            ZStack {
+//                                ProfilePreview(profileOf: user)
+//                                    .foregroundColor(.primary)
+//                            }
+//                        }) {
+//                            activeSheet = .currentProfile
+//                        }
+//                        // Row insets set manually to ensure consistency with `userView` padding in all versions of iOS
+//                        .listRowInsets(
+//                            EdgeInsets(
+//                                top: rowVerticalPadding,
+//                                leading: rowHorizontalPadding,
+//                                bottom: rowVerticalPadding,
+//                                trailing: rowHorizontalPadding
+//                            )
+//                        )
                         openSheetOnTap(title: m.userAddress == nil ? "Create SimpleX address" : "Your SimpleX address", icon: "qrcode") {
                             activeSheet = .address
                         }
