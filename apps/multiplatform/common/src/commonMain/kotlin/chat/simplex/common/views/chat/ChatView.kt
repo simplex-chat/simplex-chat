@@ -43,7 +43,6 @@ import kotlinx.coroutines.flow.*
 import kotlinx.datetime.*
 import java.io.File
 import java.net.URI
-import java.time.format.DateTimeFormatter
 import kotlin.math.abs
 import kotlin.math.sign
 
@@ -1518,8 +1517,8 @@ private fun ButtonRow(horizontalArrangement: Arrangement.Horizontal, content: @C
 @Composable
 fun DateSeparator(date: Instant) {
   Text(
-    text = getDateText(date),
-    fontSize = 16.sp,
+    text = getTimestampDateText(date),
+    fontSize = 14.sp,
     fontWeight = FontWeight.Medium,
     color = MaterialTheme.colors.secondary
   )
@@ -1912,7 +1911,7 @@ private fun getItemSeparation(chatItem: ChatItem, nextItem: ChatItem?): ItemSepa
   return ItemSeparation(
     timestamp = largeGap || chatItem.meta.timestampText != nextItem.meta.timestampText,
     largeGap = largeGap,
-    date = if (getDateText(chatItem.meta.itemTs) != getDateText(nextItem.meta.itemTs)) nextItem.meta.itemTs else null
+    date = if (getTimestampDateText(chatItem.meta.itemTs) != getTimestampDateText(nextItem.meta.itemTs)) nextItem.meta.itemTs else null
   )
 }
 

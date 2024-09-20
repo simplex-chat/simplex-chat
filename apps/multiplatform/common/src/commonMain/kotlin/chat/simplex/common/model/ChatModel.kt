@@ -2423,11 +2423,11 @@ data class CITimed(
   val deleteAt: Instant?
 )
 
-fun getDateText(t: Instant): String {
+fun getTimestampDateText(t: Instant): String {
   val tz = TimeZone.currentSystemDefault()
-  val time = t.toLocalDateTime(tz)
-  val weekday = time.toJavaLocalDateTime().format(DateTimeFormatter.ofPattern("EEE", Locale.getDefault()))
-  val dayMonthYear =  time.toJavaLocalDateTime().format(DateTimeFormatter.ofPattern(
+  val time = t.toLocalDateTime(tz).toJavaLocalDateTime()
+  val weekday = time.format(DateTimeFormatter.ofPattern("EEE", Locale.getDefault()))
+  val dayMonthYear =  time.format(DateTimeFormatter.ofPattern(
     if (Clock.System.now().toLocalDateTime(tz).year == time.year) "d MMM" else "d MMM YYYY",
     Locale.getDefault())
   )
