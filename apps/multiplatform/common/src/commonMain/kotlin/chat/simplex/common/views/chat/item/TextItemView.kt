@@ -71,7 +71,7 @@ fun MarkdownText (
   inlineContent: Pair<AnnotatedString.Builder.() -> Unit, Map<String, InlineTextContent>>? = null,
   onLinkLongClick: (link: String) -> Unit = {},
   showViaProxy: Boolean = false,
-  showTimestamp: Boolean
+  showTimestamp: Boolean = true
 ) {
   val textLayoutDirection = remember (text) {
     if (isRtl(text.subSequence(0, kotlin.math.min(50, text.length)))) LayoutDirection.Rtl else LayoutDirection.Ltr

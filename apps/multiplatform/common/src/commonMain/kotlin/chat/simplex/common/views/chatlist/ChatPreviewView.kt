@@ -45,7 +45,6 @@ fun ChatPreviewView(
   linkMode: SimplexLinkMode,
   inProgress: Boolean,
   progressByTimeout: Boolean,
-  showTimestamp: Boolean
 ) {
   val cInfo = chat.chatInfo
 
@@ -202,8 +201,7 @@ fun ChatPreviewView(
             lineHeight = 21.sp
           ),
           inlineContent = inlineTextContent,
-          modifier = Modifier.fillMaxWidth(),
-          showTimestamp = showTimestamp,
+          modifier = Modifier.fillMaxWidth()
         )
       }
     } else {
@@ -258,7 +256,7 @@ fun ChatPreviewView(
         }
       }
       is MsgContent.MCVoice -> SmallContentPreviewVoice() {
-        CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = false, ci, cInfo.timedMessagesTTL, showViaProxy = false, showTimestamp = showTimestamp, smallView = true, longClick = {}) {
+        CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = false, ci, cInfo.timedMessagesTTL, showViaProxy = false, showTimestamp = true, smallView = true, longClick = {}) {
           val user = chatModel.currentUser.value ?: return@CIVoiceView
           withBGApi { chatModel.controller.receiveFile(chat.remoteHostId, user, it) }
         }
@@ -503,6 +501,6 @@ private data class ActiveVoicePreview(
 @Composable
 fun PreviewChatPreviewView() {
   SimpleXTheme {
-    ChatPreviewView(Chat.sampleData, true, null, null, "", contactNetworkStatus = NetworkStatus.Connected(), disabled = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, showTimestamp = true, progressByTimeout = false)
+    ChatPreviewView(Chat.sampleData, true, null, null, "", contactNetworkStatus = NetworkStatus.Connected(), disabled = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false)
   }
 }

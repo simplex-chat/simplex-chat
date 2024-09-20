@@ -57,8 +57,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
         senderBold = true,
         toggleSecrets = true,
         linkMode = SimplexLinkMode.DESCRIPTION, uriHandler = uriHandler,
-        onLinkLongClick = { showMenu.value = true },
-        showTimestamp = true
+        onLinkLongClick = { showMenu.value = true }
       )
     } else {
       Text(
