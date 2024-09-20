@@ -27,7 +27,7 @@ struct UserPicker: View {
 
     var body: some View {
         if #available(iOS 16.0, *) {
-            let v = viewBody.presentationDetents([.height(420)])
+            let v = viewBody.presentationDetents([.height(400)])
             if #available(iOS 16.4, *) {
                 v.scrollBounceBehavior(.basedOnSize)
             } else {
@@ -60,7 +60,7 @@ struct UserPicker: View {
                         .onTapGesture { activeSheet = .currentProfile }
                         ForEach(otherUsers) { u in
                             userView(u, size: 44)
-                                .frame(maxWidth: reducedWidth)
+                                .frame(maxWidth: (reducedWidth + 32) * 0.618)
                                 .fixedSize()
                         }
                     }
@@ -73,30 +73,11 @@ struct UserPicker: View {
             }
             List {
                 Section {
-                    if let user = m.currentUser {
-//                        openSheetOnTap(label: {
-//                            ZStack {
-//                                ProfilePreview(profileOf: user)
-//                                    .foregroundColor(.primary)
-//                            }
-//                        }) {
-//                            activeSheet = .currentProfile
-//                        }
-//                        // Row insets set manually to ensure consistency with `userView` padding in all versions of iOS
-//                        .listRowInsets(
-//                            EdgeInsets(
-//                                top: rowVerticalPadding,
-//                                leading: rowHorizontalPadding,
-//                                bottom: rowVerticalPadding,
-//                                trailing: rowHorizontalPadding
-//                            )
-//                        )
-                        openSheetOnTap(title: m.userAddress == nil ? "Create SimpleX address" : "Your SimpleX address", icon: "qrcode") {
-                            activeSheet = .address
-                        }
-                        openSheetOnTap(title: "Chat preferences", icon: "switch.2") {
-                            activeSheet = .chatPreferences
-                        }
+                    openSheetOnTap(title: m.userAddress == nil ? "Create SimpleX address" : "Your SimpleX address", icon: "qrcode") {
+                        activeSheet = .address
+                    }
+                    openSheetOnTap(title: "Chat preferences", icon: "switch.2") {
+                        activeSheet = .chatPreferences
                     }
                     openSheetOnTap(title: "Your chat profiles", icon: "person.crop.rectangle.stack") {
                         activeSheet = .chatProfiles
