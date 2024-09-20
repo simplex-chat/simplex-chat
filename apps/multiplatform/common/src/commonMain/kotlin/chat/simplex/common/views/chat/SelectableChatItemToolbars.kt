@@ -7,6 +7,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -51,17 +52,29 @@ fun SelectedItemsBottomToolbar(
   selectedChatItems: MutableState<Set<Long>?>,
   deleteItems: (Boolean) -> Unit, // Boolean - delete for everyone is possible
   moderateItems: () -> Unit,
-//  shareItems: () -> Unit,
+  forwardItems: () -> Unit,
 ) {
   val deleteEnabled = remember { mutableStateOf(false) }
   val deleteForEveryoneEnabled = remember { mutableStateOf(false) }
   val canModerate = remember { mutableStateOf(false) }
   val moderateEnabled = remember { mutableStateOf(false) }
+  val forwardEnabled = remember { mutableStateOf(false) }
   val allButtonsDisabled = remember { mutableStateOf(false) }
   Box {
     // It's hard to measure exact height of ComposeView with different fontSizes. Better to depend on actual ComposeView, even empty
     ComposeView(chatModel = chatModel, Chat.sampleData, remember { mutableStateOf(ComposeState(useLinkPreviews = false)) }, remember { mutableStateOf(null) }, {})
-    Row(Modifier.matchParentSize().background(MaterialTheme.colors.background), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+    Row(
+      Modifier
+        .matchParentSize()
+        .background(MaterialTheme.colors.background)
+        .pointerInput(Unit) {
+          detectGesture {
+            true
+          }
+        },
+      horizontalArrangement = Arrangement.SpaceBetween,
+      verticalAlignment = Alignment.CenterVertically
+    ) {
       IconButton({ deleteItems(deleteForEveryoneEnabled.value) }, enabled = deleteEnabled.value && !allButtonsDisabled.value) {
         Icon(
           painterResource(MR.images.ic_delete),
@@ -80,18 +93,18 @@ fun SelectedItemsBottomToolbar(
         )
       }
 
-      IconButton({ /*shareItems()*/ }, Modifier.alpha(0f), enabled = false/*!allButtonsDisabled.value*/) {
+      IconButton({ forwardItems() }, enabled = forwardEnabled.value && !allButtonsDisabled.value) {
         Icon(
-          painterResource(MR.images.ic_share),
+          painterResource(MR.images.ic_forward),
           null,
           Modifier.size(22.dp),
-          tint = if (allButtonsDisabled.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
+          tint = if (!forwardEnabled.value || allButtonsDisabled.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
         )
       }
     }
   }
   LaunchedEffect(chatInfo, chatItems, selectedChatItems.value) {
-    recheckItems(chatInfo, chatItems, selectedChatItems, deleteEnabled, deleteForEveryoneEnabled, canModerate, moderateEnabled, allButtonsDisabled)
+    recheckItems(chatInfo, chatItems, selectedChatItems, deleteEnabled, deleteForEveryoneEnabled, canModerate, moderateEnabled, forwardEnabled, allButtonsDisabled)
   }
 }
 
@@ -102,6 +115,7 @@ private fun recheckItems(chatInfo: ChatInfo,
   deleteForEveryoneEnabled: MutableState<Boolean>,
   canModerate: MutableState<Boolean>,
   moderateEnabled: MutableState<Boolean>,
+  forwardEnabled: MutableState<Boolean>,
   allButtonsDisabled: MutableState<Boolean>
 ) {
   val count = selectedChatItems.value?.size ?: 0
@@ -112,6 +126,7 @@ private fun recheckItems(chatInfo: ChatInfo,
   var rDeleteForEveryoneEnabled = true
   var rModerateEnabled = true
   var rOnlyOwnGroupItems = true
+  var rForwardEnabled = true
   val rSelectedChatItems = mutableSetOf<Long>()
   for (ci in chatItems) {
     if (selected.contains(ci.id)) {
@@ -119,6 +134,7 @@ private fun recheckItems(chatInfo: ChatInfo,
       rDeleteForEveryoneEnabled = rDeleteForEveryoneEnabled && ci.meta.deletable && !ci.localNote
       rOnlyOwnGroupItems = rOnlyOwnGroupItems && ci.chatDir is CIDirection.GroupSnd
       rModerateEnabled = rModerateEnabled && ci.content.msgContent != null && ci.memberToModerate(chatInfo) != null
+      rForwardEnabled = rForwardEnabled && ci.content.msgContent != null && ci.meta.itemDeleted == null && !ci.isLiveDummy
       rSelectedChatItems.add(ci.id) // we are collecting new selected items here to account for any changes in chat items list
     }
   }
@@ -126,6 +142,7 @@ private fun recheckItems(chatInfo: ChatInfo,
   deleteEnabled.value = rDeleteEnabled
   deleteForEveryoneEnabled.value = rDeleteForEveryoneEnabled
   moderateEnabled.value = rModerateEnabled
+  forwardEnabled.value = rForwardEnabled
   selectedChatItems.value = rSelectedChatItems
 }
 

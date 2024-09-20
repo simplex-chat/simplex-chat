@@ -320,7 +320,8 @@ class ShareModel: ObservableObject {
                 }
                 await ch.completeFile()
                 if await !ch.isRunning { break }
-            case let .chatItemStatusUpdated(_, ci):
+            case let .chatItemsStatusesUpdated(_, chatItems):
+                guard let ci = chatItems.last else { continue }
                 guard isMessage(for: ci) else { continue }
                 if let (title, message) = ci.chatItem.meta.itemStatus.statusInfo {
                     // `title` and `message` already localized and interpolated

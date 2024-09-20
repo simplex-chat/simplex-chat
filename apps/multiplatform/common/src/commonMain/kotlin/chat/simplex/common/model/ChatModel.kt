@@ -82,7 +82,7 @@ object ChatModel {
   val desktopOnboardingRandomPassword = mutableStateOf(false)
 
   // set when app is opened via contact or invitation URI (rhId, uri)
-  val appOpenUrl = mutableStateOf<Pair<Long?, URI>?>(null)
+  val appOpenUrl = mutableStateOf<Pair<Long?, String>?>(null)
 
   // Needed to check for bottom nav bar and to apply or not navigation bar color on Android
   val newChatSheetVisible = mutableStateOf(false)
@@ -1403,6 +1403,14 @@ class Group (
   val groupInfo: GroupInfo,
   var members: List<GroupMember>
 )
+
+@Serializable
+sealed class ForwardConfirmation {
+  @Serializable @SerialName("filesNotAccepted") data class FilesNotAccepted(val fileIds: List<Long>) : ForwardConfirmation()
+  @Serializable @SerialName("filesInProgress") data class FilesInProgress(val filesCount: Int) : ForwardConfirmation()
+  @Serializable @SerialName("filesMissing") data class FilesMissing(val filesCount: Int) : ForwardConfirmation()
+  @Serializable @SerialName("filesFailed") data class FilesFailed(val filesCount: Int) : ForwardConfirmation()
+}
 
 @Serializable
 data class GroupInfo (

@@ -532,7 +532,7 @@
 /* No comment provided by engineer. */
 "Cannot access keychain to save database password" = "ไม่สามารถเข้าถึง keychain เพื่อบันทึกรหัสผ่านฐานข้อมูล";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Cannot receive file" = "ไม่สามารถรับไฟล์ได้";
 
 /* No comment provided by engineer. */
@@ -1308,7 +1308,7 @@
 /* No comment provided by engineer. */
 "Error loading %@ servers" = "โหลดเซิร์ฟเวอร์ %@ ผิดพลาด";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error receiving file" = "เกิดข้อผิดพลาดในการรับไฟล์";
 
 /* No comment provided by engineer. */
@@ -2097,7 +2097,7 @@
 /* feature offered item */
 "offered %@: %@" = "เสนอแล้ว %1$@: %2$@";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Ok" = "ตกลง";
 
 /* No comment provided by engineer. */
@@ -2630,7 +2630,7 @@
 /* No comment provided by engineer. */
 "Send them from gallery or custom keyboards." = "ส่งจากแกลเลอรีหรือแป้นพิมพ์แบบกำหนดเอง";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Sender cancelled file transfer." = "ผู้ส่งยกเลิกการโอนไฟล์";
 
 /* No comment provided by engineer. */

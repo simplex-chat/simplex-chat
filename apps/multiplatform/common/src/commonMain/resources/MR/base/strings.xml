@@ -125,6 +125,7 @@
   <string name="proxy_destination_error_broker_version">Destination server version of %1$s is incompatible with forwarding server %2$s.</string>
   <string name="please_try_later">Please try later.</string>
   <string name="error_sending_message">Error sending message</string>
+  <string name="error_forwarding_messages">Error forwarding messages</string>
   <string name="error_creating_message">Error creating message</string>
   <string name="error_loading_details">Error loading details</string>
   <string name="error_adding_members">Error adding member(s)</string>
@@ -133,7 +134,9 @@
   <string name="sender_cancelled_file_transfer">Sender cancelled file transfer.</string>
   <string name="file_not_approved_title">Unknown servers!</string>
   <string name="file_not_approved_descr">Without Tor or VPN, your IP address will be visible to these XFTP relays:\n%1$s.</string>
+  <string name="n_other_file_errors">%1$d other file error(s).</string>
   <string name="error_receiving_file">Error receiving file</string>
+  <string name="n_file_errors">%1$d file error(s):\n%2$s</string>
   <string name="error_creating_address">Error creating address</string>
   <string name="contact_already_exists">Contact already exists</string>
   <string name="you_are_already_connected_to_vName_via_this_link">You are already connected to %1$s.</string>
@@ -378,12 +381,23 @@
   <string name="no_selected_chat">No selected chat</string>
   <string name="selected_chat_items_nothing_selected">Nothing selected</string>
   <string name="selected_chat_items_selected_n">Selected %d</string>
+  <string name="forward_alert_title_messages_to_forward">Forward %1$s message(s)?</string>
+  <string name="forward_alert_title_nothing_to_forward">Nothing to forward!</string>
+  <string name="forward_alert_forward_messages_without_files">Forward messages without files?</string>
+  <string name="forward_files_messages_deleted_after_selection_desc">Messages were deleted after you selected them.</string>
+  <string name="forward_files_not_accepted_desc">%1$d file(s) were not downloaded.</string>
+  <string name="forward_files_in_progress_desc">%1$d file(s) are still being downloaded.</string>
+  <string name="forward_files_failed_to_receive_desc">%1$d file(s) failed to download.</string>
+  <string name="forward_files_missing_desc">%1$d file(s) were deleted.</string>
+  <string name="forward_files_not_accepted_receive_files">Download</string>
+  <string name="forward_files_messages_deleted_after_selection_title">%1$s messages not forwarded</string>
 
   <!-- ShareListView.kt -->
   <string name="share_message">Share message…</string>
   <string name="share_image">Share media…</string>
   <string name="share_file">Share file…</string>
   <string name="forward_message">Forward message…</string>
+  <string name="forward_multiple">Forward messages…</string>
   <string name="cannot_share_message_alert_title">Cannot send message</string>
   <string name="cannot_share_message_alert_text">Selected chat preferences prohibit this message.</string>
 
@@ -405,6 +419,8 @@
   <string name="files_and_media_prohibited">Files and media prohibited!</string>
   <string name="only_owners_can_enable_files_and_media">Only group owners can enable files and media.</string>
   <string name="compose_send_direct_message_to_connect">Send direct message to connect</string>
+  <string name="compose_forward_messages_n">Forwarding %1$s messages</string>
+  <string name="compose_save_messages_n">Saving %1$s messages</string>
   <string name="simplex_links_not_allowed">SimpleX links not allowed</string>
   <string name="files_and_media_not_allowed">Files and media not allowed</string>
   <string name="voice_messages_not_allowed">Voice messages not allowed</string>
@@ -769,7 +785,17 @@
   <string name="network_socks_proxy">SOCKS proxy</string>
   <string name="network_socks_proxy_settings">SOCKS proxy settings</string>
   <string name="network_socks_toggle_use_socks_proxy">Use SOCKS proxy</string>
+  <string name="network_proxy_auth">Proxy authentication</string>
+  <string name="network_proxy_random_credentials">Use random credentials</string>
+  <string name="network_proxy_auth_mode_isolate_by_auth_user">Use different proxy credentials for each profile.</string>
+  <string name="network_proxy_auth_mode_isolate_by_auth_entity">Use different proxy credentials for each connection.</string>
+  <string name="network_proxy_auth_mode_no_auth">Do not use credentials with proxy.</string>
+  <string name="network_proxy_auth_mode_username_password">Your credentials may be sent unencrypted.</string>
+  <string name="network_proxy_username">Username</string>
+  <string name="network_proxy_password">Password</string>
   <string name="network_proxy_port">port %d</string>
+  <string name="network_proxy_incorrect_config_title">Error saving proxy</string>
+  <string name="network_proxy_incorrect_config_desc">Make sure proxy configuration is correct.</string>
   <string name="host_verb">Host</string>
   <string name="port_verb">Port</string>
   <string name="network_enable_socks">Use SOCKS proxy?</string>

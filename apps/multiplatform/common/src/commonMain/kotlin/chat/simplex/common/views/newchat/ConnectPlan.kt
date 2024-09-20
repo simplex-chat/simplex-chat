@@ -20,7 +20,7 @@ enum class ConnectionLinkType {
 
 suspend fun planAndConnect(
   rhId: Long?,
-  uri: URI,
+  uri: String,
   incognito: Boolean?,
   close: (() -> Unit)?,
   cleanup: (() -> Unit)? = null,
@@ -29,7 +29,7 @@ suspend fun planAndConnect(
 ) {
   val connectionPlan = chatModel.controller.apiConnectPlan(rhId, uri.toString())
   if (connectionPlan != null) {
-    val link = strHasSingleSimplexLink(uri.toString().trim())
+    val link = strHasSingleSimplexLink(uri.trim())
     val linkText = if (link?.format is Format.SimplexLink)
       "<br><br><u>${link.simplexLinkText(link.format.linkType, link.format.smpHosts)}</u>"
     else
@@ -323,13 +323,13 @@ suspend fun planAndConnect(
 suspend fun connectViaUri(
   chatModel: ChatModel,
   rhId: Long?,
-  uri: URI,
+  uri: String,
   incognito: Boolean,
   connectionPlan: ConnectionPlan?,
   close: (() -> Unit)?,
   cleanup: (() -> Unit)?,
 ) {
-  val pcc = chatModel.controller.apiConnect(rhId, incognito, uri.toString())
+  val pcc = chatModel.controller.apiConnect(rhId, incognito, uri)
   val connLinkType = if (connectionPlan != null) planToConnectionLinkType(connectionPlan) else ConnectionLinkType.INVITATION
   if (pcc != null) {
     withChats {
@@ -361,7 +361,7 @@ fun planToConnectionLinkType(connectionPlan: ConnectionPlan): ConnectionLinkType
 fun askCurrentOrIncognitoProfileAlert(
   chatModel: ChatModel,
   rhId: Long?,
-  uri: URI,
+  uri: String,
   connectionPlan: ConnectionPlan?,
   close: (() -> Unit)?,
   title: String,
@@ -417,7 +417,7 @@ fun openKnownContact(chatModel: ChatModel, rhId: Long?, close: (() -> Unit)?, co
 fun ownGroupLinkConfirmConnect(
   chatModel: ChatModel,
   rhId: Long?,
-  uri: URI,
+  uri: String,
   linkText: String,
   incognito: Boolean?,
   connectionPlan: ConnectionPlan?,

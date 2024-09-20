@@ -34,6 +34,9 @@ var useWorker = false;
 var isDesktop = false;
 var localizedState = "";
 var localizedDescription = "";
+// When one side of a call sends candidates tot fast (until local & remote descriptions are set), that candidates
+// will be stored here and then set when the call will be ready to process them
+let afterCallInitializedCandidates = [];
 const processCommand = (function () {
     const defaultIceServers = [
         { urls: ["stuns:stun.simplex.im:443"] },
@@ -234,6 +237,8 @@ const processCommand = (function () {
                     const pc = activeCall.connection;
                     const offer = await pc.createOffer();
                     await pc.setLocalDescription(offer);
+                    addIceCandidates(pc, afterCallInitializedCandidates);
+                    afterCallInitializedCandidates = [];
                     // for debugging, returning the command for callee to use
                     // resp = {
                     //   type: "offer",
@@ -272,6 +277,8 @@ const processCommand = (function () {
                         const answer = await pc.createAnswer();
                         await pc.setLocalDescription(answer);
                         addIceCandidates(pc, remoteIceCandidates);
+                        addIceCandidates(pc, afterCallInitializedCandidates);
+                        afterCallInitializedCandidates = [];
                         // same as command for caller to use
                         resp = {
                             type: "answer",
@@ -297,17 +304,20 @@ const processCommand = (function () {
                         // console.log("answer remoteIceCandidates", JSON.stringify(remoteIceCandidates))
                         await pc.setRemoteDescription(new RTCSessionDescription(answer));
                         addIceCandidates(pc, remoteIceCandidates);
+                        addIceCandidates(pc, afterCallInitializedCandidates);
+                        afterCallInitializedCandidates = [];
                         resp = { type: "ok" };
                     }
                     break;
                 case "ice":
+                    const remoteIceCandidates = parse(command.iceCandidates);
                     if (pc) {
-                        const remoteIceCandidates = parse(command.iceCandidates);
                         addIceCandidates(pc, remoteIceCandidates);
                         resp = { type: "ok" };
                     }
                     else {
-                        resp = { type: "error", message: "ice: call not started" };
+                        afterCallInitializedCandidates.push(...remoteIceCandidates);
+                        resp = { type: "error", message: "ice: call not started yet, will add candidates later" };
                     }
                     break;
                 case "media":
