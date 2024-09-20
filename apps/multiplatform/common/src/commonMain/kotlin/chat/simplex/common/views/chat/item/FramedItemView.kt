@@ -371,7 +371,7 @@ fun DependentLayout(
       if (it.layoutId == mainLayoutId)
         mainPlaceable!!
       else
-        it.measure(constraints.copy(minWidth = mainPlaceable?.width ?: 0)) }
+        it.measure(constraints.copy(minWidth = mainPlaceable?.width ?: 0, maxWidth = min(MAX_SAFE_WIDTH, constraints.maxWidth))) }
     val width = mainPlaceable?.measuredWidth ?: min(MAX_SAFE_WIDTH, placeables.maxOf { it.width })
     val height = minOf(maxSafeHeight(width), placeables.sumOf { it.height })
     layout(width, height) {
