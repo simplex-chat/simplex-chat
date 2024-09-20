@@ -796,7 +796,7 @@
 /* No comment provided by engineer. */
 "Cannot forward message" = "Impossible de transférer le message";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Cannot receive file" = "Impossible de recevoir le fichier";
 
 /* snd error text */
@@ -1629,7 +1629,8 @@
 /* No comment provided by engineer. */
 "Downgrade and open chat" = "Rétrograder et ouvrir le chat";
 
-/* chat item action */
+/* alert button
+   chat item action */
 "Download" = "Télécharger";
 
 /* No comment provided by engineer. */
@@ -1938,7 +1939,7 @@
 /* No comment provided by engineer. */
 "Error opening chat" = "Erreur lors de l'ouverture du chat";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error receiving file" = "Erreur lors de la réception du fichier";
 
 /* No comment provided by engineer. */
@@ -3081,7 +3082,7 @@
 /* feature offered item */
 "offered %@: %@" = "propose %1$@ : %2$@";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Ok" = "Ok";
 
 /* No comment provided by engineer. */
@@ -3905,7 +3906,7 @@
 /* No comment provided by engineer. */
 "Send up to 100 last messages to new members." = "Envoi des 100 derniers messages aux nouveaux membres.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Sender cancelled file transfer." = "L'expéditeur a annulé le transfert de fichiers.";
 
 /* No comment provided by engineer. */
@@ -4574,7 +4575,7 @@
 /* No comment provided by engineer. */
 "unknown servers" = "relais inconnus";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Unknown servers!" = "Serveurs inconnus !";
 
 /* No comment provided by engineer. */
@@ -4879,9 +4880,6 @@
 
 /* No comment provided by engineer. */
 "Without Tor or VPN, your IP address will be visible to file servers." = "Sans Tor ou un VPN, votre adresse IP sera visible par les serveurs de fichiers.";
-
-/* No comment provided by engineer. */
-"Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." = "Sans Tor ni VPN, votre adresse IP sera visible par ces relais XFTP : %@.";
 
 /* No comment provided by engineer. */
 "Wrong database passphrase" = "Mauvaise phrase secrète pour la base de données";

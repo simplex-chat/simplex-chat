@@ -796,7 +796,7 @@
 /* No comment provided by engineer. */
 "Cannot forward message" = "Неможливо переслати повідомлення";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Cannot receive file" = "Не вдається отримати файл";
 
 /* snd error text */
@@ -1629,7 +1629,8 @@
 /* No comment provided by engineer. */
 "Downgrade and open chat" = "Пониження та відкритий чат";
 
-/* chat item action */
+/* alert button
+   chat item action */
 "Download" = "Завантажити";
 
 /* No comment provided by engineer. */
@@ -1938,7 +1939,7 @@
 /* No comment provided by engineer. */
 "Error opening chat" = "Помилка відкриття чату";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error receiving file" = "Помилка отримання файлу";
 
 /* No comment provided by engineer. */
@@ -3081,7 +3082,7 @@
 /* feature offered item */
 "offered %@: %@" = "запропонував %1$@: %2$@";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Ok" = "Гаразд";
 
 /* No comment provided by engineer. */
@@ -3905,7 +3906,7 @@
 /* No comment provided by engineer. */
 "Send up to 100 last messages to new members." = "Надішліть до 100 останніх повідомлень новим користувачам.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Sender cancelled file transfer." = "Відправник скасував передачу файлу.";
 
 /* No comment provided by engineer. */
@@ -4574,7 +4575,7 @@
 /* No comment provided by engineer. */
 "unknown servers" = "невідомі реле";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Unknown servers!" = "Невідомі сервери!";
 
 /* No comment provided by engineer. */
@@ -4879,9 +4880,6 @@
 
 /* No comment provided by engineer. */
 "Without Tor or VPN, your IP address will be visible to file servers." = "Без Tor або VPN ваша IP-адреса буде видимою для файлових серверів.";
-
-/* No comment provided by engineer. */
-"Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." = "Без Tor або VPN ваша IP-адреса буде видимою для цих XFTP-ретрансляторів: %@.";
 
 /* No comment provided by engineer. */
 "Wrong database passphrase" = "Неправильний пароль до бази даних";

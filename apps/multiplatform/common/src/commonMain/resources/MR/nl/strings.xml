@@ -90,7 +90,7 @@
     <string name="settings_section_title_icon">APP ICON</string>
     <string name="app_version_title">App versie</string>
     <string name="app_version_name">App versie: v%s</string>
-    <string name="network_session_mode_user_description">Er wordt een aparte TCP-verbinding (en SOCKS-referentie) gebruikt <b> voor elk chatprofiel dat je in de app hebt </b>.</string>
+    <string name="network_session_mode_user_description"><![CDATA[Er wordt een aparte TCP-verbinding (en SOCKS-referentie) gebruikt <b> voor elk chatprofiel dat je in de app hebt </b>.]]></string>
     <string name="audio_call_no_encryption">audio oproep (niet e2e versleuteld)</string>
     <string name="notifications_mode_service_desc">Achtergrondservice is altijd actief, meldingen worden weergegeven zodra de berichten beschikbaar zijn.</string>
     <string name="icon_descr_call_ended">Oproep beëindigd</string>
