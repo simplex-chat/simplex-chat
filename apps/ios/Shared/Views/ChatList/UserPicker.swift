@@ -55,8 +55,8 @@ struct UserPicker: View {
                                 .padding(.leading, 8)
                                 .padding(.trailing, 12)
                                 .frame(
-                                    minWidth: frameWidth,
-                                    //minWidth: u == m.currentUser ? frameWidth.map { $0 - 32 } : nil,
+                                    minWidth: nil,
+//                                    minWidth: u == m.currentUser ? frameWidth.map { $0 - 32 } : nil,
                                     alignment: .leading
                                 )
                                 .background(Color(.secondarySystemGroupedBackground))
@@ -86,7 +86,6 @@ struct UserPicker: View {
                     .padding(.bottom, 8)
                 }
                 .frame(height: 92)
-                .border(.red)
                 .overlay(DetermineWidth())
                 .onPreferenceChange(DetermineWidth.Key.self) { frameWidth = $0 }
                 .zIndex(1) // Position above list

@@ -12,31 +12,40 @@ struct StickyScrollView<Content: View>: UIViewRepresentable {
     @ViewBuilder let content: () -> Content
 
     func makeUIView(context: Context) -> UIScrollView {
+        let hc = context.coordinator.hostingController
         let scrollView = UIScrollView()
-        let hostingController = UIHostingController(rootView: content())
-        
-        scrollView.addSubview(hostingController.view)
+        scrollView.addSubview(hc.view)
         scrollView.delegate = context.coordinator
-        scrollView.showsHorizontalScrollIndicator = false
-        hostingController.view.translatesAutoresizingMaskIntoConstraints = false
+        hc.view.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            hostingController.view.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
-            hostingController.view.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
-            hostingController.view.topAnchor.constraint(equalTo: scrollView.topAnchor),
-            hostingController.view.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor)
+            hc.view.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
+            hc.view.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
+            hc.view.topAnchor.constraint(equalTo: scrollView.topAnchor),
+            hc.view.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor)
         ])
         return scrollView
     }
 
-    func updateUIView(_ uiView: UIScrollView, context: Context) { 
-        // TODO: Update the width from calculated by the pref key
+    func updateUIView(_ scrollView: UIScrollView, context: Context) {
+        context.coordinator.hostingController.rootView = content()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            scrollView.setNeedsUpdateConstraints()
+            scrollView.setNeedsLayout()
+            scrollView.setNeedsDisplay()
+        }
     }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator()
+        Coordinator(content: content())
     }
 
     class Coordinator: NSObject, UIScrollViewDelegate {
+        let hostingController: UIHostingController<Content>
+
+        init(content: Content) {
+            self.hostingController = UIHostingController(rootView: content)
+        }
+
         func scrollViewWillEndDragging(
             _ scrollView: UIScrollView,
             withVelocity velocity: CGPoint,
