@@ -1111,8 +1111,8 @@ func receiveFiles(user: any UserLike, fileIds: [Int64], userApprovedRelays: Bool
                 showAlert(
                     title: NSLocalizedString("Unknown servers!", comment: "alert title"),
                     message: (
-                        NSLocalizedString("Without Tor or VPN, your IP address will be visible to these XFTP relays: \(srvs).", comment: "alert message") +
-                        (otherErrsStr != "" ? "\n\n" + NSLocalizedString("Other file errors:\n\(otherErrsStr)", comment: "alert message") : "")
+                        String.localizedStringWithFormat(NSLocalizedString("Without Tor or VPN, your IP address will be visible to these XFTP relays: %@.", comment: "alert message"), srvs) +
+                        (otherErrsStr != "" ? "\n\n" + String.localizedStringWithFormat(NSLocalizedString("Other file errors:\n%@", comment: "alert message"), otherErrsStr) : "")
                     ),
                     buttonTitle: NSLocalizedString("Download", comment: "alert button"),
                     buttonAction: {
@@ -1156,7 +1156,7 @@ func receiveFiles(user: any UserLike, fileIds: [Int64], userApprovedRelays: Bool
             await MainActor.run {
                 showAlert(
                     NSLocalizedString("Error receiving file", comment: "alert title"),
-                    message: NSLocalizedString("File errors:\n\(otherErrsStr)", comment: "alert message")
+                    message: String.localizedStringWithFormat(NSLocalizedString("File errors:\n%@", comment: "alert message"), otherErrsStr)
                 )
             }
         }

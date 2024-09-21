@@ -796,7 +796,7 @@
 /* No comment provided by engineer. */
 "Cannot forward message" = "Невозможно переслать сообщение";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Cannot receive file" = "Невозможно получить файл";
 
 /* snd error text */
@@ -1629,7 +1629,8 @@
 /* No comment provided by engineer. */
 "Downgrade and open chat" = "Откатить версию и открыть чат";
 
-/* chat item action */
+/* alert button
+   chat item action */
 "Download" = "Загрузить";
 
 /* No comment provided by engineer. */
@@ -1938,7 +1939,7 @@
 /* No comment provided by engineer. */
 "Error opening chat" = "Ошибка доступа к чату";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error receiving file" = "Ошибка при получении файла";
 
 /* No comment provided by engineer. */
@@ -3081,7 +3082,7 @@
 /* feature offered item */
 "offered %@: %@" = "предложил(a) %1$@: %2$@";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Ok" = "Ок";
 
 /* No comment provided by engineer. */
@@ -3905,7 +3906,7 @@
 /* No comment provided by engineer. */
 "Send up to 100 last messages to new members." = "Отправить до 100 последних сообщений новым членам.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Sender cancelled file transfer." = "Отправитель отменил передачу файла.";
 
 /* No comment provided by engineer. */
@@ -4574,7 +4575,7 @@
 /* No comment provided by engineer. */
 "unknown servers" = "неизвестные серверы";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Unknown servers!" = "Неизвестные серверы!";
 
 /* No comment provided by engineer. */
@@ -4880,7 +4881,7 @@
 /* No comment provided by engineer. */
 "Without Tor or VPN, your IP address will be visible to file servers." = "Без Тора или ВПН, Ваш IP адрес будет доступен серверам файлов.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." = "Без Тора или ВПН, Ваш IP адрес будет доступен этим серверам файлов: %@.";
 
 /* No comment provided by engineer. */
