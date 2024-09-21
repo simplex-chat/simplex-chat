@@ -2765,9 +2765,10 @@ public struct CITimed: Decodable, Hashable {
 
 let msgTimeFormat = Date.FormatStyle.dateTime.hour().minute()
 let msgDateFormat = Date.FormatStyle.dateTime.day(.twoDigits).month(.twoDigits)
+let msgDateYearFormat = Date.FormatStyle.dateTime.day(.twoDigits).month(.twoDigits).year(.twoDigits)
 
 public func formatTimestampText(_ date: Date) -> Text {
-    Text(verbatim: date.formatted(recent(date) ? msgTimeFormat : msgDateFormat))
+    Text(verbatim: date.formatted(recent(date) ? msgTimeFormat : Calendar.current.isDate(date, equalTo: .now, toGranularity: .year) ? msgDateFormat : msgDateYearFormat))
 }
 
 public func formatTimestampMeta(_ date: Date) -> String {
