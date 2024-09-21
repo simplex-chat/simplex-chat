@@ -17,6 +17,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
     public var profile: LocalProfile
     public var fullPreferences: FullPreferences
     public var activeUser: Bool
+    public var activeOrder: Int64
 
     public var displayName: String { get { profile.displayName } }
     public var fullName: String { get { profile.fullName } }
@@ -49,6 +50,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
         profile: LocalProfile.sampleData,
         fullPreferences: FullPreferences.sampleData,
         activeUser: true,
+        activeOrder: 0,
         showNtfs: true,
         sendRcptsContacts: true,
         sendRcptsSmallGroups: false
