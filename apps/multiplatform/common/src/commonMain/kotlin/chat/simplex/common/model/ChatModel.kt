@@ -806,6 +806,7 @@ data class User(
   val profile: LocalProfile,
   val fullPreferences: FullChatPreferences,
   override val activeUser: Boolean,
+  val activeOrder: Long,
   override val showNtfs: Boolean,
   val sendRcptsContacts: Boolean,
   val sendRcptsSmallGroups: Boolean,
