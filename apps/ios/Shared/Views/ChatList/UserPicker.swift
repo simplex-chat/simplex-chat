@@ -19,10 +19,11 @@ struct UserPicker: View {
     @State private var frameWidth: CGFloat = 0
 
     // Inset grouped list dimensions
-    private let rowVerticalPadding: Double = 16
-    private let rowHorizontalPadding: Double = 16
-    private let sectionSpacing: Double = 35
-    private var sectionHorizontalPadding: Double { frameWidth > 375 ? 20 : 16 }
+    private let imageSize: CGFloat = 44
+    private let rowPadding: CGFloat = 16
+    private let sectionSpacing: CGFloat = 35
+    private var sectionHorizontalPadding: CGFloat { frameWidth > 375 ? 20 : 16 }
+    private var stackSpacing: CGFloat { frameWidth > 375 ? 16 : 12 }
     private let sectionShape = RoundedRectangle(cornerRadius: 10, style: .continuous)
 
     var body: some View {
@@ -42,31 +43,31 @@ struct UserPicker: View {
     private var viewBody: some View {
         let otherUsers: [UserInfo] = m.users
             .filter { u in !u.user.hidden && u.user.userId != m.currentUser?.userId }
-        let reducedWidth = max(frameWidth - 64, 0)
+        let sectionWidth = max(frameWidth - sectionSpacing * 2, 0)
+        let currentUserWidth = max(frameWidth - sectionSpacing - rowPadding - stackSpacing - imageSize, 0)
         VStack(spacing: 0) {
             if let user = m.currentUser {
                 StickyScrollView {
-                    HStack(spacing: rowHorizontalPadding) {
+                    HStack(spacing: rowPadding) {
                         HStack {
-                            ProfileImage(imageStr: user.image, size: 44, color: Color(uiColor: .tertiarySystemGroupedBackground))
+                            ProfileImage(imageStr: user.image, size: imageSize, color: Color(uiColor: .tertiarySystemGroupedBackground))
                                 .padding(.trailing, 6)
                             profileName(user, bold: true).lineLimit(1)
                         }
-                        .padding(.vertical, rowVerticalPadding)
-                        .padding(.horizontal, rowHorizontalPadding)
-                        .frame(width: reducedWidth, alignment: .leading)
+                        .padding(rowPadding)
+                        .frame(width: currentUserWidth, alignment: .leading)
                         .background(Color(.secondarySystemGroupedBackground))
                         .clipShape(sectionShape)
                         .onTapGesture { activeSheet = .currentProfile }
                         ForEach(otherUsers) { u in
-                            userView(u, size: 44)
-                                .frame(maxWidth: (reducedWidth + 32) * 0.618)
+                            userView(u, size: imageSize)
+                                .frame(maxWidth: sectionWidth * 0.618)
                                 .fixedSize()
                         }
                     }
                     .padding(.horizontal, sectionHorizontalPadding)
                 }
-                .frame(height: rowVerticalPadding + 44 + rowVerticalPadding)
+                .frame(height: 2 * rowPadding + imageSize)
                 .padding(.top, sectionSpacing)
                 .overlay(DetermineWidth())
                 .onPreferenceChange(DetermineWidth.Key.self) { frameWidth = $0 }
@@ -143,8 +144,7 @@ struct UserPicker: View {
             }
             profileName(u.user, bold: false).lineLimit(1)
         }
-        .padding(.vertical, rowVerticalPadding)
-        .padding(.horizontal, rowHorizontalPadding)
+        .padding(rowPadding)
         .background(Color(.secondarySystemGroupedBackground))
         .clipShape(sectionShape)
         .onTapGesture {
