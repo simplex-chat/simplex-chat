@@ -1070,18 +1070,20 @@ fun BoxWithConstraintsScope.ChatItemsList(
         val revealed = remember { mutableStateOf(false) }
 
         @Composable
-        fun ChatItemViewShortHand(cItem: ChatItem, showTimestamp: Boolean, range: IntRange?) {
+        fun ChatItemViewShortHand(cItem: ChatItem, itemSeparation: ItemSeparation, range: IntRange?) {
           tryOrShowError("${cItem.id}ChatItem", error = {
             CIBrokenComposableView(if (cItem.chatDir.sent) Alignment.CenterEnd else Alignment.CenterStart)
           }) {
-            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+            Column(modifier = Modifier.padding(bottom = if (itemSeparation.largeGap) 8.dp else 2.dp )) {
+              ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools, showViaProxy = showViaProxy, showTimestamp = itemSeparation.timestamp)
+            }
           }
         }
 
         @Composable
         fun ChatItemView(cItem: ChatItem, range: IntRange?, prevItem: ChatItem?, itemSeparation: ItemSeparation) {
           val sent = cItem.chatDir.sent
-          Box(Modifier.padding(bottom = if (itemSeparation.largeGap) 8.dp else 2.dp )) {
+          Box {
             val voiceWithTransparentBack = cItem.content.msgContent is MsgContent.MCVoice && cItem.content.text.isEmpty() && cItem.quotedItem == null && cItem.meta.itemForwarded == null
             val selectionVisible = selectedChatItems.value != null && cItem.canBeDeletedForSelf
             val selectionOffset by animateDpAsState(if (selectionVisible && !sent) 4.dp + 22.dp * fontSizeMultiplier else 0.dp)
@@ -1133,7 +1135,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                         Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
                           MemberImage(member)
                         }
-                        ChatItemViewShortHand(cItem, itemSeparation.timestamp, range)
+                        ChatItemViewShortHand(cItem, itemSeparation, range)
                       }
                     }
                   }
@@ -1147,7 +1149,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                         .padding(start = 8.dp + MEMBER_IMAGE_SIZE + 4.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp)
                         .then(swipeableOrSelectionModifier)
                     ) {
-                      ChatItemViewShortHand(cItem, itemSeparation.timestamp, range)
+                      ChatItemViewShortHand(cItem, itemSeparation, range)
                     }
                   }
                 }
@@ -1161,7 +1163,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                       .padding(start = if (voiceWithTransparentBack) 12.dp else 104.dp, end = 12.dp)
                       .then(if (selectionVisible) Modifier else swipeableModifier)
                   ) {
-                    ChatItemViewShortHand(cItem, itemSeparation.timestamp, range)
+                    ChatItemViewShortHand(cItem, itemSeparation, range)
                   }
                 }
               }
@@ -1176,7 +1178,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                     end = if (sent || voiceWithTransparentBack) 12.dp else 76.dp,
                   ).then(if (!selectionVisible || !sent) swipeableOrSelectionModifier else Modifier)
                 ) {
-                  ChatItemViewShortHand(cItem, itemSeparation.timestamp, range)
+                  ChatItemViewShortHand(cItem, itemSeparation, range)
                 }
               }
             }
