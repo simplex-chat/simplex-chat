@@ -43,6 +43,7 @@ struct UserPicker: View {
     private var viewBody: some View {
         let otherUsers: [UserInfo] = m.users
             .filter { u in !u.user.hidden && u.user.userId != m.currentUser?.userId }
+            .sorted(using: KeyPathComparator<UserInfo>(\.user.activeOrder, order: .reverse))
         let sectionWidth = max(frameWidth - sectionHorizontalPadding * 2, 0)
         let currentUserWidth = max(frameWidth - sectionHorizontalPadding - rowPadding * 2 - imageSpacing - imageSize, 0)
         VStack(spacing: 0) {
