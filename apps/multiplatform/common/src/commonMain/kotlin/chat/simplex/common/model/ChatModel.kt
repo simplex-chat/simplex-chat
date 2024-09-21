@@ -834,6 +834,7 @@ data class User(
       profile = LocalProfile.sampleData,
       fullPreferences = FullChatPreferences.sampleData,
       activeUser = true,
+      activeOrder = 0,
       showNtfs = true,
       sendRcptsContacts = true,
       sendRcptsSmallGroups = false,
