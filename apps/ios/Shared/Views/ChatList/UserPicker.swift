@@ -149,19 +149,17 @@ struct UserPicker: View {
         .clipShape(sectionShape)
         .onTapGesture {
             switchingProfile = true
+            dismiss()
             Task {
                 do {
                     try await changeActiveUserAsync_(u.user.userId, viewPwd: nil)
-                    await MainActor.run {
-                        switchingProfile = false
-                        dismiss()
-                    }
+                    await MainActor.run { switchingProfile = false }
                 } catch {
                     await MainActor.run {
                         switchingProfile = false
-                        AlertManager.shared.showAlertMsg(
-                            title: "Error switching profile!",
-                            message: "Error: \(responseError(error))"
+                        showAlert(
+                            NSLocalizedString("Error switching profile!", comment: "alertTitle"),
+                            message: String.localizedStringWithFormat(NSLocalizedString("Error: %@", comment: "alert message"), responseError(error))
                         )
                     }
                 }
