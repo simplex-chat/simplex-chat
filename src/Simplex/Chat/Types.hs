@@ -113,7 +113,7 @@ data User = User
     profile :: LocalProfile,
     fullPreferences :: FullPreferences,
     activeUser :: Bool,
-    activeAt :: UTCTime,
+    activeOrder :: Int64,
     viewPwdHash :: Maybe UserPwdHash,
     showNtfs :: Bool,
     sendRcptsContacts :: Bool,

@@ -593,9 +593,7 @@ processChatCommand' vr = \case
     user_ <- chatReadVar currentUser
     user' <- privateGetUser userId'
     validateUserPassword_ user_ user' viewPwd_
-    activeAt <- liftIO getCurrentTime
-    withFastStore' $ \db -> setActiveUser db userId' activeAt
-    let user'' = user' {activeUser = True, activeAt}
+    user'' <- withFastStore' (`setActiveUser` user')
     chatWriteVar currentUser $ Just user''
     pure $ CRActiveUser user''
   SetActiveUser uName viewPwd_ -> do

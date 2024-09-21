@@ -36,7 +36,7 @@ CREATE TABLE users(
   send_rcpts_small_groups INTEGER NOT NULL DEFAULT 0,
   user_member_profile_updated_at TEXT,
   ui_themes TEXT,
-  active_at TEXT NOT NULL DEFAULT('1970-01-01 00:00:00'), -- 1 for active user
+  active_order INTEGER NOT NULL DEFAULT 0, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE RESTRICT
