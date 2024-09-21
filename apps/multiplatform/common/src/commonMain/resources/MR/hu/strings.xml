@@ -980,7 +980,7 @@
     <string name="ask_your_contact_to_enable_voice">Ismerős felkérése, hogy engedélyezze a hangüzenetek küldését.</string>
     <string name="description_you_shared_one_time_link">egyszer használható hivatkozást osztott meg</string>
     <string name="simplex_link_mode_browser_warning">A hivatkozás megnyitása a böngészőben gyengítheti az adatvédelmet és a biztonságot. A megbízhatatlan SimpleX-hivatkozások pirossal vannak kiemelve.</string>
-    <string name="your_ice_servers">ICE kiszolgálók</string>
+    <string name="your_ice_servers">Saját ICE-kiszolgálói</string>
     <string name="you_accepted_connection">Kapcsolat létrehozása</string>
     <string name="reject_contact_button">Elutasítás</string>
     <string name="notification_preview_mode_message_desc">Ismerős nevének és az üzenet tartalmának megjelenítése</string>
@@ -1100,18 +1100,18 @@
     <string name="settings_section_title_socks">SOCKS PROXY</string>
     <string name="save_servers_button">Mentés</string>
     <string name="settings_restart_app">Újraindítás</string>
-    <string name="smp_servers">SMP kiszolgálók</string>
+    <string name="smp_servers">SMP-kiszolgálók</string>
     <string name="video_descr">Videó</string>
     <string name="save_auto_accept_settings">Automatikus elfogadási beállítások mentése</string>
     <string name="sync_connection_force_confirm">Újraegyzetetés</string>
     <string name="icon_descr_waiting_for_video">Várakozás a videóra</string>
-    <string name="your_XFTP_servers">XFTP kiszolgálók</string>
+    <string name="your_XFTP_servers">Saját XFTP-kiszolgálók</string>
     <string name="icon_descr_video_off">Videó kikapcsolva</string>
     <string name="v4_5_private_filenames">Privát fájlnevek</string>
     <string name="save_settings_question">Beállítások mentése?</string>
     <string name="la_mode_passcode">Jelkód</string>
     <string name="unknown_error">Ismeretlen hiba</string>
-    <string name="smp_servers_your_server_address">Saját kiszolgáló cím</string>
+    <string name="smp_servers_your_server_address">Saját kiszolgálójának címe</string>
     <string name="auth_open_chat_console">Csevegés konzol megnyitása</string>
     <string name="remove_member_button">Eltávolítás</string>
     <string name="set_database_passphrase">Adatbázis jelmondat beállítása</string>
@@ -1119,7 +1119,7 @@
     <string name="unblock_member_question">Tag feloldása?</string>
     <string name="sender_may_have_deleted_the_connection_request">A küldő törölhette a kapcsolatkérést.</string>
     <string name="wrong_passphrase">Hibás adatbázis jelmondat</string>
-    <string name="your_SMP_servers">SMP kiszolgálók</string>
+    <string name="your_SMP_servers">Saját SMP-kiszolgálók</string>
     <string name="send_receipts_disabled_alert_title">A kézbesítési jelentések le vannak tiltva</string>
     <string name="open_database_folder">Adatbázis mappa megnyitása</string>
     <string name="description_via_one_time_link">egyszer használható hivatkozáson keresztül</string>
@@ -1211,11 +1211,11 @@
     <string name="image_descr_qr_code">QR-kód</string>
     <string name="renegotiate_encryption">Titkosítás újraegyeztetése</string>
     <string name="remove_passphrase">Eltávolítás</string>
-    <string name="network_use_onion_hosts">Tor .onion kiszolgálók használata</string>
+    <string name="network_use_onion_hosts">Onion kiszolgálók használata</string>
     <string name="reveal_verb">Felfedés</string>
     <string name="la_lock_mode">Zárolási mód</string>
     <string name="revoke_file__action">Fájl visszavonása</string>
-    <string name="xftp_servers">XFTP kiszolgálók</string>
+    <string name="xftp_servers">XFTP-kiszolgálók</string>
     <string name="prohibit_sending_files">A fájlok- és a médiatartalmak küldése le van tiltva.</string>
     <string name="share_file">Fájl megosztása…</string>
     <string name="save_verb">Mentés</string>
@@ -1230,7 +1230,7 @@
     <string name="icon_descr_speaker_off">Hangszóró kikapcsolva</string>
     <string name="custom_time_unit_weeks">hét</string>
     <string name="show_call_on_lock_screen">Megjelenítés</string>
-    <string name="webrtc_ice_servers">WebRTC ICE kiszolgálók</string>
+    <string name="webrtc_ice_servers">WebRTC ICE-kiszolgálók</string>
     <string name="revoke_file__title">Fájl visszavonása?</string>
     <string name="button_send_direct_message">Közvetlen üzenet küldése</string>
     <string name="reject">Elutasítás</string>
@@ -1239,7 +1239,7 @@
     <string name="simplex_link_mode_browser">Böngészőn keresztül</string>
     <string name="v4_6_hidden_chat_profiles_descr">Csevegési profiljok védelme jelszóval!</string>
     <string name="only_your_contact_can_send_disappearing">Csak az ismerőse tud eltűnő üzeneteket küldeni.</string>
-    <string name="your_ICE_servers">ICE kiszolgálók</string>
+    <string name="your_ICE_servers">Saját ICE-kiszolgálói</string>
     <string name="scan_qr_code_from_desktop">QR-kód beolvasása számítógépről</string>
     <string name="image_descr_simplex_logo">SimpleX logó</string>
     <string name="unblock_member_confirmation">Feloldás</string>
@@ -1846,7 +1846,7 @@
     <string name="message_queue_info">Üzenet várakoztatási információ</string>
     <string name="message_queue_info_none">nincs</string>
     <string name="info_row_debug_delivery">Kézbesítési hibák felderítése</string>
-    <string name="message_queue_info_server_info">kiszolgáló várakoztatási infó: %1$s
+    <string name="message_queue_info_server_info">a kiszolgáló várakoztatási információi: %1$s
 \nutoljára kézbesített üzenet: %2$s</string>
     <string name="file_error_auth">Hibás kulcs vagy ismeretlen fájltöredék cím - valószínűleg a fájl törlődött.</string>
     <string name="temporary_file_error">Ideiglenesfájl-hiba</string>
