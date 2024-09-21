@@ -74,30 +74,18 @@ struct UserPicker: View {
             }
             List {
                 Section {
-                    openSheetOnTap(title: m.userAddress == nil ? "Create SimpleX address" : "Your SimpleX address", icon: "qrcode") {
-                        activeSheet = .address
-                    }
-                    openSheetOnTap(title: "Chat preferences", icon: "switch.2") {
-                        activeSheet = .chatPreferences
-                    }
-                    openSheetOnTap(title: "Your chat profiles", icon: "person.crop.rectangle.stack") {
-                        activeSheet = .chatProfiles
-                    }
-                    openSheetOnTap(title: "Use from desktop", icon: "desktopcomputer") {
-                        activeSheet = .useFromDesktop
-                    }
+                    openSheetOnTap("qrcode", title: m.userAddress == nil ? "Create SimpleX address" : "Your SimpleX address", sheet: .address)
+                    openSheetOnTap("switch.2", title: "Chat preferences", sheet: .chatPreferences)
+                    openSheetOnTap("person.crop.rectangle.stack", title: "Your chat profiles", sheet: .chatProfiles)
+                    openSheetOnTap("desktopcomputer", title: "Use from desktop", sheet: .useFromDesktop)
 
                     ZStack(alignment: .trailing) {
-                        openSheetOnTap(title: "Settings", icon: "gearshape") {
-                            activeSheet = .settings
-                        }
-                        Label {} icon: {
-                            Image(systemName: colorScheme == .light ? "sun.max" : "moon.fill")
-                                .resizable()
-                                .symbolRenderingMode(.monochrome)
-                                .foregroundColor(theme.colors.secondary)
-                                .frame(maxWidth: 20, maxHeight: 20)
-                        }
+                        openSheetOnTap("gearshape", title: "Settings", sheet: .settings)
+                        Image(systemName: colorScheme == .light ? "sun.max" : "moon.fill")
+                        .resizable()
+                        .symbolRenderingMode(.monochrome)
+                        .foregroundColor(theme.colors.secondary)
+                        .frame(maxWidth: 20, maxHeight: 20)
                         .onTapGesture {
                             if (colorScheme == .light) {
                                 ThemeManager.applyTheme(systemDarkThemeDefault.get())
@@ -167,21 +155,14 @@ struct UserPicker: View {
         }
     }
     
-    private func openSheetOnTap(title: LocalizedStringKey, icon: String, action: @escaping () -> Void) -> some View {
-        openSheetOnTap(label: {
-            ZStack(alignment: .leading) {
-                Image(systemName: icon).frame(maxWidth: 24, maxHeight: 24, alignment: .center)
-                    .symbolRenderingMode(.monochrome)
-                    .foregroundColor(theme.colors.secondary)
-                Text(title)
-                    .foregroundColor(.primary)
-                    .padding(.leading, 36)
+    private func openSheetOnTap(_ icon: String, title: LocalizedStringKey, sheet: UserPickerSheet) -> some View {
+        Button {
+            activeSheet = sheet
+        } label: {
+            settingsRow(icon, color: theme.colors.secondary) {
+                Text(title).foregroundColor(.primary)
             }
-        }, action: action)
-    }
-    
-    private func openSheetOnTap<V: View>(label: () -> V, action: @escaping () -> Void) -> some View {
-        Button(action: action, label: label)
+        }
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
     }
