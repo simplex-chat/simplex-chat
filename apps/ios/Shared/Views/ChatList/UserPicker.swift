@@ -52,7 +52,7 @@ struct UserPicker: View {
                         HStack {
                             ProfileImage(imageStr: user.image, size: imageSize, color: Color(uiColor: .tertiarySystemGroupedBackground))
                                 .padding(.trailing, 6)
-                            profileName(user, bold: true).lineLimit(1)
+                            profileName(user).lineLimit(1)
                         }
                         .padding(rowPadding)
                         .frame(width: otherUsers.isEmpty ? sectionWidth : currentUserWidth, alignment: .leading)
@@ -130,7 +130,7 @@ struct UserPicker: View {
                 }
             }
             .padding(.trailing, 6)
-            profileName(u.user, bold: false).lineLimit(1)
+            Text(u.user.displayName).font(.title2).lineLimit(1)
         }
         .padding(rowPadding)
         .background(Color(.secondarySystemGroupedBackground))

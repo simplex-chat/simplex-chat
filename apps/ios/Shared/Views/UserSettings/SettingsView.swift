@@ -507,14 +507,13 @@ struct ProfilePreview: View {
         HStack {
             ProfileImage(imageStr: profileOf.image, size: 44, color: color)
                 .padding(.trailing, 6)
-            profileName(profileOf, bold: true).lineLimit(1)
+            profileName(profileOf).lineLimit(1)
         }
     }
 }
 
-func profileName(_ profileOf: NamedChat, bold: Bool) -> Text {
-    var t = Text(profileOf.displayName).font(.title2)
-    if bold { t = t.fontWeight(.semibold) }
+func profileName(_ profileOf: NamedChat) -> Text {
+    var t = Text(profileOf.displayName).fontWeight(.semibold).font(.title2)
     if profileOf.fullName != "" && profileOf.fullName != profileOf.displayName {
         t = t + Text(" (" + profileOf.fullName + ")")
 //                        .font(.callout)
