@@ -332,7 +332,7 @@ fun ChatPreviewView(
           chatPreviewTitle()
         }
         Spacer(Modifier.width(8.sp.toDp()))
-        val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.chatTs)
+        val ts = getTimestampText(chat.chatItems.lastOrNull()?.meta?.itemTs ?: chat.chatInfo.chatTs)
         ChatListTimestampView(ts)
       }
       Row(Modifier.heightIn(min = 46.sp.toDp()).fillMaxWidth()) {
