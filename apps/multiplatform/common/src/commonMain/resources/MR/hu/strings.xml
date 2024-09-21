@@ -1386,7 +1386,7 @@
     <string name="sender_at_ts">%s ekkor: %s</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Akkor lesz kapcsolódva, amikor az ismerősének az eszköze online lesz, várjon, vagy ellenőrizze később!</string>
     <string name="v5_4_block_group_members_descr">Kéretlen üzenetek elrejtése.</string>
-    <string name="disable_onion_hosts_when_not_supported"><![CDATA[Állítsa a <i>Használja az .onion kiszolgálókat</i> NEM értékre, ha a SOCKS proxy nem támogatja őket.]]></string>
+    <string name="disable_onion_hosts_when_not_supported">Állítsa az <i>Onion kiszolgálók használatát</i> „Nem” értékre, ha a SOCKS proxy nem támogatja őket.</string>
     <string name="you_can_share_your_address">Megoszthatja a címét egy hivatkozásként vagy egy QR-kódként – így bárki kapcsolódhat önhöz.</string>
     <string name="you_can_create_it_later">Létrehozás később</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Profilja az eszközön van tárolva és csak az ismerőseivel kerül megosztásra. A SimpleX-kiszolgálók nem láthatják a profilját.</string>
