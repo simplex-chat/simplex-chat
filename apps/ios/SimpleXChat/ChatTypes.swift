@@ -50,6 +50,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
         profile: LocalProfile.sampleData,
         fullPreferences: FullPreferences.sampleData,
         activeUser: true,
+        activeOrder: 0,
         showNtfs: true,
         sendRcptsContacts: true,
         sendRcptsSmallGroups: false
