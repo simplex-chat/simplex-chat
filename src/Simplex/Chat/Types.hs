@@ -113,6 +113,7 @@ data User = User
     profile :: LocalProfile,
     fullPreferences :: FullPreferences,
     activeUser :: Bool,
+    activeOrder :: Int64,
     viewPwdHash :: Maybe UserPwdHash,
     showNtfs :: Bool,
     sendRcptsContacts :: Bool,

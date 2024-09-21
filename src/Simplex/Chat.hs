@@ -593,8 +593,7 @@ processChatCommand' vr = \case
     user_ <- chatReadVar currentUser
     user' <- privateGetUser userId'
     validateUserPassword_ user_ user' viewPwd_
-    withFastStore' (`setActiveUser` userId')
-    let user'' = user' {activeUser = True}
+    user'' <- withFastStore' (`setActiveUser` user')
     chatWriteVar currentUser $ Just user''
     pure $ CRActiveUser user''
   SetActiveUser uName viewPwd_ -> do
@@ -2945,8 +2944,8 @@ processChatCommand' vr = \case
           msgs_ <- sendDirectContactMessages user ct $ L.map XMsgNew msgContainers
           let itemsData = prepareSndItemsData msgs_ cmrs ciFiles_ quotedItems_
           when (length itemsData /= length cmrs) $ logError "sendContactContentMessages: cmrs and itemsData length mismatch"
-          (errs, cis) <- partitionEithers <$> saveSndChatItems user (CDDirectSnd ct) itemsData timed_ live
-          unless (null errs) $ toView $ CRChatErrors (Just user) errs
+          r@(_, cis) <- partitionEithers <$> saveSndChatItems user (CDDirectSnd ct) itemsData timed_ live
+          processSendErrs user r
           forM_ (timed_ >>= timedDeleteAt') $ \deleteAt ->
             forM_ cis $ \ci ->
               startProximateTimedItemThread user (ChatRef CTDirect contactId, chatItemId' ci) deleteAt
@@ -3010,8 +3009,8 @@ processChatCommand' vr = \case
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo) itemsData timed_ live
           when (length itemsData /= length cmrs) $ logError "sendGroupContentMessages: cmrs and cis_ length mismatch"
           createMemberSndStatuses cis_ msgs_ gsr
-          let (errs, cis) = partitionEithers cis_
-          unless (null errs) $ toView $ CRChatErrors (Just user) errs
+          let r@(_, cis) = partitionEithers cis_
+          processSendErrs user r
           forM_ (timed_ >>= timedDeleteAt') $ \deleteAt ->
             forM_ cis $ \ci ->
               startProximateTimedItemThread user (ChatRef CTGroup groupId, chatItemId' ci) deleteAt
@@ -3103,6 +3102,18 @@ processChatCommand' vr = \case
         | (msg_, (ComposedMessage {msgContent}, itemForwarded), f, q) <-
             zipWith4 (,,,) msgs_ (L.toList cmrs') (L.toList ciFiles_) (L.toList quotedItems_)
       ]
+    processSendErrs :: User -> ([ChatError], [ChatItem c d]) -> CM ()
+    processSendErrs user = \case
+      -- no errors
+      ([], _) -> pure ()
+      -- at least one item is successfully created
+      (errs, _ci : _) -> toView $ CRChatErrors (Just user) errs
+      -- single error
+      ([err], []) -> throwError err
+      -- multiple errors
+      (errs@(err : _), []) -> do
+        toView $ CRChatErrors (Just user) errs
+        throwError err
     getCommandDirectChatItems :: User -> Int64 -> NonEmpty ChatItemId -> CM (Contact, [CChatItem 'CTDirect])
     getCommandDirectChatItems user ctId itemIds = do
       ct <- withFastStore $ \db -> getContact db vr user ctId
@@ -4081,6 +4092,7 @@ processAgentMessageNoConn = \case
   UP srv conns -> serverEvent srv conns NSConnected CRContactsSubscribed
   SUSPENDED -> toView CRChatSuspended
   DEL_USER agentUserId -> toView $ CRAgentUserDeleted agentUserId
+  ERRS cErrs -> errsEvent cErrs
   where
     hostEvent :: ChatResponse -> CM ()
     hostEvent = whenM (asks $ hostEvents . config) . toView
@@ -4093,6 +4105,16 @@ processAgentMessageNoConn = \case
         notifyCLI = do
           cs <- withStore' (`getConnectionsContacts` conns)
           toView $ event srv cs
+    errsEvent :: [(ConnId, AgentErrorType)] -> CM ()
+    errsEvent cErrs = do
+      vr <- chatVersionRange
+      errs <- lift $ rights <$> withStoreBatch' (\db -> map (getChatErr vr db) cErrs)
+      toView $ CRChatErrors Nothing errs
+      where
+        getChatErr :: VersionRangeChat -> DB.Connection -> (ConnId, AgentErrorType) -> IO ChatError
+        getChatErr vr db (connId, err) =
+          let acId = AgentConnId connId
+           in ChatErrorAgent err <$> (getUserByAConnId db acId $>>= \user -> eitherToMaybe <$> runExceptT (getConnectionEntity db vr user acId))
 
 processAgentMsgSndFile :: ACorrId -> SndFileId -> AEvent 'AESndFile -> CM ()
 processAgentMsgSndFile _corrId aFileId msg = do
@@ -4545,10 +4567,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           void $ continueSending connEntity conn
           sentMsgDeliveryEvent conn msgId
           checkSndInlineFTComplete conn msgId
-          ci_ <- withStore $ \db -> do
-            ci_ <- updateDirectItemStatus' db ct conn msgId (CISSndSent SSPComplete)
-            forM ci_ $ \ci -> liftIO $ setDirectSndChatItemViaProxy db user ct ci (isJust proxy)
-          forM_ ci_ $ \ci -> toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
+          cis <- withStore $ \db -> do
+            cis <- updateDirectItemsStatus' db ct conn msgId (CISSndSent SSPComplete)
+            liftIO $ forM cis $ \ci -> setDirectSndChatItemViaProxy db user ct ci (isJust proxy)
+          let acis = map ctItem cis
+          unless (null acis) $ toView $ CRChatItemsStatusesUpdated user acis
+          where
+            ctItem = AChatItem SCTDirect SMDSnd (DirectChat ct)
         SWITCH qd phase cStats -> do
           toView $ CRContactSwitch user ct (SwitchProgress qd phase cStats)
           when (phase `elem` [SPStarted, SPCompleted]) $ case qd of
@@ -4604,7 +4629,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           processConnMERR connEntity conn err
         MERRS msgIds err -> do
           -- error cannot be AUTH error here
-          updateDirectItemsStatus ct conn (L.toList msgIds) (CISSndError $ agentSndError err)
+          updateDirectItemsStatusMsgs ct conn (L.toList msgIds) (CISSndError $ agentSndError err)
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
         ERR err -> do
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
@@ -4958,7 +4983,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         continued <- continueSending connEntity conn
         sentMsgDeliveryEvent conn msgId
         checkSndInlineFTComplete conn msgId
-        updateGroupItemStatus gInfo m conn msgId GSSSent (Just $ isJust proxy)
+        updateGroupItemsStatus gInfo m conn msgId GSSSent (Just $ isJust proxy)
         when continued $ sendPendingGroupMessages user m conn
       SWITCH qd phase cStats -> do
         toView $ CRGroupMemberSwitch user gInfo m (SwitchProgress qd phase cStats)
@@ -5002,10 +5027,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         continued <- continueSending connEntity conn
         when continued $ sendPendingGroupMessages user m conn
       MWARN msgId err -> do
-        withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) (GSSWarning $ agentSndError err)
+        withStore' $ \db -> updateGroupItemsErrorStatus db msgId (groupMemberId' m) (GSSWarning $ agentSndError err)
         processConnMWARN connEntity conn err
       MERR msgId err -> do
-        withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) (GSSError $ agentSndError err)
+        withStore' $ \db -> updateGroupItemsErrorStatus db msgId (groupMemberId' m) (GSSError $ agentSndError err)
         -- group errors are silenced to reduce load on UI event log
         -- toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
         processConnMERR connEntity conn err
@@ -5013,7 +5038,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         let newStatus = GSSError $ agentSndError err
         -- error cannot be AUTH error here
         withStore' $ \db -> forM_ msgIds $ \msgId ->
-          updateGroupItemErrorStatus db msgId (groupMemberId' m) newStatus `catchAll_` pure ()
+          updateGroupItemsErrorStatus db msgId (groupMemberId' m) newStatus `catchAll_` pure ()
         toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
       ERR err -> do
         toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
@@ -5021,10 +5046,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       -- TODO add debugging output
       _ -> pure ()
       where
-        updateGroupItemErrorStatus :: DB.Connection -> AgentMsgId -> GroupMemberId -> GroupSndStatus -> IO ()
-        updateGroupItemErrorStatus db msgId groupMemberId newStatus = do
-          chatItemId_ <- getChatItemIdByAgentMsgId db connId msgId
-          forM_ chatItemId_ $ \itemId -> updateGroupMemSndStatus' db itemId groupMemberId newStatus
+        updateGroupItemsErrorStatus :: DB.Connection -> AgentMsgId -> GroupMemberId -> GroupSndStatus -> IO ()
+        updateGroupItemsErrorStatus db msgId groupMemberId newStatus = do
+          itemIds <- getChatItemIdsByAgentMsgId db connId msgId
+          forM_ itemIds $ \itemId -> updateGroupMemSndStatus' db itemId groupMemberId newStatus
 
     agentMsgDecryptError :: AgentCryptoError -> (MsgDecryptError, Word32)
     agentMsgDecryptError = \case
@@ -6696,43 +6721,42 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         withStore' $ \db -> updateSndMsgDeliveryStatus db connId agentMsgId $ MDSSndRcvd msgRcptStatus
         updateDirectItemStatus ct conn agentMsgId $ CISSndRcvd msgRcptStatus SSPComplete
 
-    -- TODO [batch send] update status of all messages in batch
-    -- - this is for when we implement identifying inactive connections
-    -- - regular messages sent in batch would all be marked as delivered by a single receipt
-    -- - repeat for directMsgReceived if same logic is applied to direct messages
-    -- - getChatItemIdByAgentMsgId to return [ChatItemId]
     groupMsgReceived :: GroupInfo -> GroupMember -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> CM ()
     groupMsgReceived gInfo m conn@Connection {connId} msgMeta msgRcpts = do
       checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta `catchChatError` \_ -> pure ()
       forM_ msgRcpts $ \MsgReceipt {agentMsgId, msgRcptStatus} -> do
         withStore' $ \db -> updateSndMsgDeliveryStatus db connId agentMsgId $ MDSSndRcvd msgRcptStatus
-        updateGroupItemStatus gInfo m conn agentMsgId (GSSRcvd msgRcptStatus) Nothing
+        updateGroupItemsStatus gInfo m conn agentMsgId (GSSRcvd msgRcptStatus) Nothing
 
-    updateDirectItemsStatus :: Contact -> Connection -> [AgentMsgId] -> CIStatus 'MDSnd -> CM ()
-    updateDirectItemsStatus ct conn msgIds newStatus = do
-      cis_ <- withStore' $ \db -> forM msgIds $ \msgId -> runExceptT $ updateDirectItemStatus' db ct conn msgId newStatus
-      -- only send the last expired item event to view
-      case reverse $ catMaybes $ rights cis_ of
-        ci : _ -> toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
-        _ -> pure ()
+    -- Searches chat items for many agent message IDs and updates their status
+    updateDirectItemsStatusMsgs :: Contact -> Connection -> [AgentMsgId] -> CIStatus 'MDSnd -> CM ()
+    updateDirectItemsStatusMsgs ct conn msgIds newStatus = do
+      cis <- withStore' $ \db -> forM msgIds $ \msgId -> runExceptT $ updateDirectItemsStatus' db ct conn msgId newStatus
+      let acis = map ctItem $ concat $ rights cis
+      unless (null acis) $ toView $ CRChatItemsStatusesUpdated user acis
+      where
+        ctItem = AChatItem SCTDirect SMDSnd (DirectChat ct)
 
     updateDirectItemStatus :: Contact -> Connection -> AgentMsgId -> CIStatus 'MDSnd -> CM ()
     updateDirectItemStatus ct conn msgId newStatus = do
-      ci_ <- withStore $ \db -> updateDirectItemStatus' db ct conn msgId newStatus
-      forM_ ci_ $ \ci -> toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
+      cis <- withStore $ \db -> updateDirectItemsStatus' db ct conn msgId newStatus
+      let acis = map ctItem cis
+      unless (null acis) $ toView $ CRChatItemsStatusesUpdated user acis
+      where
+        ctItem = AChatItem SCTDirect SMDSnd (DirectChat ct)
 
-    updateDirectItemStatus' :: DB.Connection -> Contact -> Connection -> AgentMsgId -> CIStatus 'MDSnd -> ExceptT StoreError IO (Maybe (ChatItem 'CTDirect 'MDSnd))
-    updateDirectItemStatus' db ct@Contact {contactId} Connection {connId} msgId newStatus =
-      liftIO (getDirectChatItemByAgentMsgId db user contactId connId msgId) >>= \case
-        Just (CChatItem SMDSnd ChatItem {meta = CIMeta {itemStatus = CISSndRcvd _ _}}) -> pure Nothing
-        Just (CChatItem SMDSnd ChatItem {meta = CIMeta {itemId, itemStatus}})
-          | itemStatus == newStatus -> pure Nothing
-          | otherwise -> Just <$> updateDirectChatItemStatus db user ct itemId newStatus
-        _ -> pure Nothing
-
-    updateGroupMemSndStatus :: ChatItemId -> GroupMemberId -> GroupSndStatus -> CM Bool
-    updateGroupMemSndStatus itemId groupMemberId newStatus =
-      withStore' $ \db -> updateGroupMemSndStatus' db itemId groupMemberId newStatus
+    updateDirectItemsStatus' :: DB.Connection -> Contact -> Connection -> AgentMsgId -> CIStatus 'MDSnd -> ExceptT StoreError IO [ChatItem 'CTDirect 'MDSnd]
+    updateDirectItemsStatus' db ct@Contact {contactId} Connection {connId} msgId newStatus = do
+      items <- liftIO $ getDirectChatItemsByAgentMsgId db user contactId connId msgId
+      catMaybes <$> mapM updateItem items
+      where
+        updateItem :: CChatItem 'CTDirect -> ExceptT StoreError IO (Maybe (ChatItem 'CTDirect 'MDSnd))
+        updateItem = \case
+          (CChatItem SMDSnd ChatItem {meta = CIMeta {itemStatus = CISSndRcvd _ _}}) -> pure Nothing
+          (CChatItem SMDSnd ChatItem {meta = CIMeta {itemId, itemStatus}})
+            | itemStatus == newStatus -> pure Nothing
+            | otherwise -> Just <$> updateDirectChatItemStatus db user ct itemId newStatus
+          _ -> pure Nothing
 
     updateGroupMemSndStatus' :: DB.Connection -> ChatItemId -> GroupMemberId -> GroupSndStatus -> IO Bool
     updateGroupMemSndStatus' db itemId groupMemberId newStatus =
@@ -6743,20 +6767,29 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           | otherwise -> updateGroupSndStatus db itemId groupMemberId newStatus $> True
         _ -> pure False
 
-    updateGroupItemStatus :: GroupInfo -> GroupMember -> Connection -> AgentMsgId -> GroupSndStatus -> Maybe Bool -> CM ()
-    updateGroupItemStatus gInfo@GroupInfo {groupId} GroupMember {groupMemberId} Connection {connId} msgId newMemStatus viaProxy_ =
-      withStore' (\db -> getGroupChatItemByAgentMsgId db user groupId connId msgId) >>= \case
-        Just (CChatItem SMDSnd ChatItem {meta = CIMeta {itemStatus = CISSndRcvd _ SSPComplete}}) -> pure ()
-        Just (CChatItem SMDSnd ChatItem {meta = CIMeta {itemId, itemStatus}}) -> do
-          forM_ viaProxy_ $ \viaProxy -> withStore' $ \db -> setGroupSndViaProxy db itemId groupMemberId viaProxy
-          memStatusChanged <- updateGroupMemSndStatus itemId groupMemberId newMemStatus
-          when memStatusChanged $ do
-            memStatusCounts <- withStore' (`getGroupSndStatusCounts` itemId)
-            let newStatus = membersGroupItemStatus memStatusCounts
-            when (newStatus /= itemStatus) $ do
-              chatItem <- withStore $ \db -> updateGroupChatItemStatus db user gInfo itemId newStatus
-              toView $ CRChatItemStatusUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) chatItem)
-        _ -> pure ()
+    updateGroupItemsStatus :: GroupInfo -> GroupMember -> Connection -> AgentMsgId -> GroupSndStatus -> Maybe Bool -> CM ()
+    updateGroupItemsStatus gInfo@GroupInfo {groupId} GroupMember {groupMemberId} Connection {connId} msgId newMemStatus viaProxy_ = do
+      items <- withStore' (\db -> getGroupChatItemsByAgentMsgId db user groupId connId msgId)
+      cis <- catMaybes <$> withStore (\db -> mapM (updateItem db) items)
+      let acis = map gItem cis
+      unless (null acis) $ toView $ CRChatItemsStatusesUpdated user acis
+      where
+        gItem = AChatItem SCTGroup SMDSnd (GroupChat gInfo)
+        updateItem :: DB.Connection -> CChatItem 'CTGroup -> ExceptT StoreError IO (Maybe (ChatItem 'CTGroup 'MDSnd))
+        updateItem db = \case
+          (CChatItem SMDSnd ChatItem {meta = CIMeta {itemStatus = CISSndRcvd _ SSPComplete}}) -> pure Nothing
+          (CChatItem SMDSnd ChatItem {meta = CIMeta {itemId, itemStatus}}) -> do
+            forM_ viaProxy_ $ \viaProxy -> liftIO $ setGroupSndViaProxy db itemId groupMemberId viaProxy
+            memStatusChanged <- liftIO $ updateGroupMemSndStatus' db itemId groupMemberId newMemStatus
+            if memStatusChanged
+              then do
+                memStatusCounts <- liftIO $ getGroupSndStatusCounts db itemId
+                let newStatus = membersGroupItemStatus memStatusCounts
+                if newStatus /= itemStatus
+                  then Just <$> updateGroupChatItemStatus db user gInfo itemId newStatus
+                  else pure Nothing
+              else pure Nothing
+          _ -> pure Nothing
 
 createContactPQSndItem :: User -> Contact -> Connection -> PQEncryption -> CM (Contact, Connection)
 createContactPQSndItem user ct conn@Connection {pqSndEnabled} pqSndEnabled' =

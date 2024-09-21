@@ -571,7 +571,7 @@
 /* No comment provided by engineer. */
 "Cannot access keychain to save database password" = "Nelze získat přístup ke klíčence pro uložení hesla databáze";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Cannot receive file" = "Nelze přijmout soubor";
 
 /* No comment provided by engineer. */
@@ -1380,7 +1380,7 @@
 /* No comment provided by engineer. */
 "Error loading %@ servers" = "Chyba načítání %@ serverů";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error receiving file" = "Chyba při příjmu souboru";
 
 /* No comment provided by engineer. */
@@ -2187,7 +2187,7 @@
 /* feature offered item */
 "offered %@: %@" = "nabídl %1$@: %2$@";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Ok" = "Ok";
 
 /* No comment provided by engineer. */
@@ -2735,7 +2735,7 @@
 /* No comment provided by engineer. */
 "Send them from gallery or custom keyboards." = "Odeslat je z galerie nebo vlastní klávesnice.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Sender cancelled file transfer." = "Odesílatel zrušil přenos souboru.";
 
 /* No comment provided by engineer. */
