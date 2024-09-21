@@ -162,20 +162,24 @@
         <target>%d giorni</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d file(s) are still being downloaded." xml:space="preserve">
+      <trans-unit id="%d file(s) are still being downloaded." xml:space="preserve" approved="no">
         <source>%d file(s) are still being downloaded.</source>
+        <target state="translated">%d file è/sono ancora in scaricamento.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
-      <trans-unit id="%d file(s) failed to download." xml:space="preserve">
+      <trans-unit id="%d file(s) failed to download." xml:space="preserve" approved="no">
         <source>%d file(s) failed to download.</source>
+        <target state="translated">%d file ha/hanno fallito lo scaricamento.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
-      <trans-unit id="%d file(s) were deleted." xml:space="preserve">
+      <trans-unit id="%d file(s) were deleted." xml:space="preserve" approved="no">
         <source>%d file(s) were deleted.</source>
+        <target state="translated">%d file è/sono stato/i eliminato/i.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
-      <trans-unit id="%d file(s) were not downloaded." xml:space="preserve">
+      <trans-unit id="%d file(s) were not downloaded." xml:space="preserve" approved="no">
         <source>%d file(s) were not downloaded.</source>
+        <target state="translated">%d file non è/sono stato/i scaricato/i.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
       <trans-unit id="%d hours" xml:space="preserve">
@@ -183,8 +187,9 @@
         <target>%d ore</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d messages not forwarded" xml:space="preserve">
+      <trans-unit id="%d messages not forwarded" xml:space="preserve" approved="no">
         <source>%d messages not forwarded</source>
+        <target state="translated">%d messaggi non inoltrati</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="%d min" xml:space="preserve">
@@ -2449,8 +2454,9 @@ Questo è il tuo link una tantum!</target>
         <target>Non inviare la cronologia ai nuovi membri.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Do not use credentials with proxy." xml:space="preserve">
+      <trans-unit id="Do not use credentials with proxy." xml:space="preserve" approved="no">
         <source>Do not use credentials with proxy.</source>
+        <target state="translated">Non usare credenziali con proxy.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Don't create address" xml:space="preserve">
@@ -2494,8 +2500,9 @@ Questo è il tuo link una tantum!</target>
         <target>Scarica file</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Download files" xml:space="preserve">
+      <trans-unit id="Download files" xml:space="preserve" approved="no">
         <source>Download files</source>
+        <target state="translated">Scarica i file</target>
         <note>alert action</note>
       </trans-unit>
       <trans-unit id="Downloaded" xml:space="preserve">
@@ -3159,9 +3166,11 @@ Questo è il tuo link una tantum!</target>
         <target>Errore del file</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="File errors:&#10;%@" xml:space="preserve">
+      <trans-unit id="File errors:&#10;%@" xml:space="preserve" approved="no">
         <source>File errors:
 %@</source>
+        <target state="translated">Errori di file:
+%@</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="File not found - most likely file was deleted or cancelled." xml:space="preserve">
@@ -3299,8 +3308,9 @@ Questo è il tuo link una tantum!</target>
         <target>Inoltra</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Forward %d message(s)?" xml:space="preserve">
+      <trans-unit id="Forward %d message(s)?" xml:space="preserve" approved="no">
         <source>Forward %d message(s)?</source>
+        <target state="translated">Inoltrare %d messaggio/i?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Forward and save messages" xml:space="preserve">
@@ -3308,12 +3318,14 @@ Questo è il tuo link una tantum!</target>
         <target>Inoltra e salva i messaggi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Forward messages" xml:space="preserve">
+      <trans-unit id="Forward messages" xml:space="preserve" approved="no">
         <source>Forward messages</source>
+        <target state="translated">Inoltra i messaggi</target>
         <note>alert action</note>
       </trans-unit>
-      <trans-unit id="Forward messages without files?" xml:space="preserve">
+      <trans-unit id="Forward messages without files?" xml:space="preserve" approved="no">
         <source>Forward messages without files?</source>
+        <target state="translated">Inoltrare i messaggi senza file?</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Forwarded" xml:space="preserve">
@@ -3326,8 +3338,9 @@ Questo è il tuo link una tantum!</target>
         <target>Inoltrato da</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Forwarding %lld messages" xml:space="preserve">
+      <trans-unit id="Forwarding %lld messages" xml:space="preserve" approved="no">
         <source>Forwarding %lld messages</source>
+        <target state="translated">Inoltro di %lld messaggi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Forwarding server %@ failed to connect to destination server %@. Please try later." xml:space="preserve">
@@ -3624,8 +3637,9 @@ Errore: %2$@</target>
         <target>Server ICE (uno per riga)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="IP address" xml:space="preserve">
+      <trans-unit id="IP address" xml:space="preserve" approved="no">
         <source>IP address</source>
+        <target state="translated">Indirizzo IP</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you can't meet in person, show QR code in a video call, or share the link." xml:space="preserve">
@@ -4328,8 +4342,9 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Messaggi inviati</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Messages were deleted after you selected them." xml:space="preserve">
+      <trans-unit id="Messages were deleted after you selected them." xml:space="preserve" approved="no">
         <source>Messages were deleted after you selected them.</source>
+        <target state="translated">I messaggi sono stati eliminati dopo che li hai selezionati.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve">
@@ -4627,8 +4642,9 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Nessuna selezione</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Nothing to forward!" xml:space="preserve">
+      <trans-unit id="Nothing to forward!" xml:space="preserve" approved="no">
         <source>Nothing to forward!</source>
+        <target state="translated">Niente da inoltrare!</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Notifications" xml:space="preserve">
@@ -4854,9 +4870,11 @@ Richiede l'attivazione della VPN.</target>
         <target>Altri %@ server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Other file errors:&#10;%@" xml:space="preserve">
+      <trans-unit id="Other file errors:&#10;%@" xml:space="preserve" approved="no">
         <source>Other file errors:
 %@</source>
+        <target state="translated">Altri errori di file:
+%@</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="PING count" xml:space="preserve">
@@ -4894,8 +4912,9 @@ Richiede l'attivazione della VPN.</target>
         <target>Codice di accesso impostato!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Password" xml:space="preserve">
+      <trans-unit id="Password" xml:space="preserve" approved="no">
         <source>Password</source>
+        <target state="translated">Password</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Password to show" xml:space="preserve">
@@ -5047,8 +5066,9 @@ Errore: %@</target>
         <target>Interfaccia polacca</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Port" xml:space="preserve">
+      <trans-unit id="Port" xml:space="preserve" approved="no">
         <source>Port</source>
+        <target state="translated">Porta</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve">
@@ -5238,8 +5258,9 @@ Attivalo nelle impostazioni *Rete e server*.</target>
         <target>Server via proxy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Proxy requires password" xml:space="preserve">
+      <trans-unit id="Proxy requires password" xml:space="preserve" approved="no">
         <source>Proxy requires password</source>
+        <target state="translated">Il proxy richiede una password</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Push notifications" xml:space="preserve">
@@ -5648,8 +5669,9 @@ Attivalo nelle impostazioni *Rete e server*.</target>
         <target>Server SMP</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SOCKS proxy" xml:space="preserve">
+      <trans-unit id="SOCKS proxy" xml:space="preserve" approved="no">
         <source>SOCKS proxy</source>
+        <target state="translated">Proxy SOCKS</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Safely receive files" xml:space="preserve">
@@ -5763,8 +5785,9 @@ Attivalo nelle impostazioni *Rete e server*.</target>
         <target>Messaggio salvato</target>
         <note>message info title</note>
       </trans-unit>
-      <trans-unit id="Saving %lld messages" xml:space="preserve">
+      <trans-unit id="Saving %lld messages" xml:space="preserve" approved="no">
         <source>Saving %lld messages</source>
+        <target state="translated">Salvataggio di %lld messaggi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Scale" xml:space="preserve">
@@ -7173,8 +7196,9 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
         <target>Usa gli host .onion</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use SOCKS proxy" xml:space="preserve">
+      <trans-unit id="Use SOCKS proxy" xml:space="preserve" approved="no">
         <source>Use SOCKS proxy</source>
+        <target state="translated">Usa proxy SOCKS</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use SimpleX Chat servers?" xml:space="preserve">
@@ -7252,8 +7276,9 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
         <target>Selezione utente</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Username" xml:space="preserve">
+      <trans-unit id="Username" xml:space="preserve" approved="no">
         <source>Username</source>
+        <target state="translated">Nome utente</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Using SimpleX Chat servers." xml:space="preserve">
@@ -7900,8 +7925,9 @@ Ripetere la richiesta di connessione?</target>
         <target>I tuoi contatti resteranno connessi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your credentials may be sent unencrypted." xml:space="preserve">
+      <trans-unit id="Your credentials may be sent unencrypted." xml:space="preserve" approved="no">
         <source>Your credentials may be sent unencrypted.</source>
+        <target state="translated">Le credenziali potrebbero essere inviate in chiaro.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your current chat database will be DELETED and REPLACED with the imported one." xml:space="preserve">
