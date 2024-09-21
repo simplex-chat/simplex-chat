@@ -23,7 +23,6 @@ struct UserPicker: View {
     private let rowPadding: CGFloat = 16
     private let sectionSpacing: CGFloat = 35
     private var sectionHorizontalPadding: CGFloat { frameWidth > 375 ? 20 : 16 }
-    private var imageSpacing: CGFloat { frameWidth > 375 ? 16 : 12 }
     private let sectionShape = RoundedRectangle(cornerRadius: 10, style: .continuous)
 
     var body: some View {
@@ -45,7 +44,7 @@ struct UserPicker: View {
             .filter { u in !u.user.hidden && u.user.userId != m.currentUser?.userId }
             .sorted(using: KeyPathComparator<UserInfo>(\.user.activeOrder, order: .reverse))
         let sectionWidth = max(frameWidth - sectionHorizontalPadding * 2, 0)
-        let currentUserWidth = max(frameWidth - sectionHorizontalPadding - rowPadding * 2 - imageSpacing - imageSize, 0)
+        let currentUserWidth = max(frameWidth - sectionHorizontalPadding - rowPadding * 2 - 14 - imageSize, 0)
         VStack(spacing: 0) {
             if let user = m.currentUser {
                 StickyScrollView {
@@ -138,11 +137,11 @@ struct UserPicker: View {
         HStack {
             ZStack(alignment: .topTrailing) {
                 ProfileImage(imageStr: u.user.image, size: size, color: Color(uiColor: .tertiarySystemGroupedBackground))
-                    .padding(.trailing, 6)
                 if (u.unreadCount > 0) {
-                    unreadBadge(u).offset(x: 3, y: -3)
+                    unreadBadge(u).offset(x: 4, y: -4)
                 }
             }
+            .padding(.trailing, 6)
             profileName(u.user, bold: false).lineLimit(1)
         }
         .padding(rowPadding)
