@@ -2768,7 +2768,13 @@ let msgDateFormat = Date.FormatStyle.dateTime.day(.twoDigits).month(.twoDigits)
 let msgDateYearFormat = Date.FormatStyle.dateTime.day(.twoDigits).month(.twoDigits).year(.twoDigits)
 
 public func formatTimestampText(_ date: Date) -> Text {
-    Text(verbatim: date.formatted(recent(date) ? msgTimeFormat : Calendar.current.isDate(date, equalTo: .now, toGranularity: .year) ? msgDateFormat : msgDateYearFormat))
+    Text(verbatim: date.formatted(
+        recent(date)
+        ? msgTimeFormat
+        : Calendar.current.isDate(date, equalTo: .now, toGranularity: .year)
+        ? msgDateFormat
+        : msgDateYearFormat
+    ))
 }
 
 public func formatTimestampMeta(_ date: Date) -> String {
