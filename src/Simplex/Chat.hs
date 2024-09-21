@@ -593,8 +593,7 @@ processChatCommand' vr = \case
     user_ <- chatReadVar currentUser
     user' <- privateGetUser userId'
     validateUserPassword_ user_ user' viewPwd_
-    withFastStore' (`setActiveUser` userId')
-    let user'' = user' {activeUser = True}
+    user'' <- withFastStore' (`setActiveUser` user')
     chatWriteVar currentUser $ Just user''
     pure $ CRActiveUser user''
   SetActiveUser uName viewPwd_ -> do
@@ -4093,6 +4092,7 @@ processAgentMessageNoConn = \case
   UP srv conns -> serverEvent srv conns NSConnected CRContactsSubscribed
   SUSPENDED -> toView CRChatSuspended
   DEL_USER agentUserId -> toView $ CRAgentUserDeleted agentUserId
+  ERRS cErrs -> errsEvent cErrs
   where
     hostEvent :: ChatResponse -> CM ()
     hostEvent = whenM (asks $ hostEvents . config) . toView
@@ -4105,6 +4105,16 @@ processAgentMessageNoConn = \case
         notifyCLI = do
           cs <- withStore' (`getConnectionsContacts` conns)
           toView $ event srv cs
+    errsEvent :: [(ConnId, AgentErrorType)] -> CM ()
+    errsEvent cErrs = do
+      vr <- chatVersionRange
+      errs <- lift $ rights <$> withStoreBatch' (\db -> map (getChatErr vr db) cErrs)
+      toView $ CRChatErrors Nothing errs
+      where
+        getChatErr :: VersionRangeChat -> DB.Connection -> (ConnId, AgentErrorType) -> IO ChatError
+        getChatErr vr db (connId, err) =
+          let acId = AgentConnId connId
+           in ChatErrorAgent err <$> (getUserByAConnId db acId $>>= \user -> eitherToMaybe <$> runExceptT (getConnectionEntity db vr user acId))
 
 processAgentMsgSndFile :: ACorrId -> SndFileId -> AEvent 'AESndFile -> CM ()
 processAgentMsgSndFile _corrId aFileId msg = do
