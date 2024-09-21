@@ -457,6 +457,7 @@ fun UserPickerInactiveUserBadge(userInfo: UserInfo, stopped: Boolean, size: Dp =
   }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun DevicePickerRow(
   localDeviceActive: Boolean,
@@ -465,13 +466,13 @@ private fun DevicePickerRow(
   onRemoteHostClick: (rh: RemoteHostInfo, connecting: MutableState<Boolean>) -> Unit,
   onRemoteHostActionButtonClick: (rh: RemoteHostInfo) -> Unit,
 ) {
-  Row(
+  FlowRow(
     Modifier
       .fillMaxWidth()
       .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
       .padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING, top = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
     horizontalArrangement = Arrangement.spacedBy(12.dp),
-    verticalAlignment = Alignment.CenterVertically
+    verticalArrangement = Arrangement.spacedBy(12.dp)
   ) {
     val activeHost = remoteHosts.firstOrNull { h -> h.activeHost }
 
