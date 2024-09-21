@@ -22,7 +22,7 @@ struct UserPicker: View {
     private let rowVerticalPadding: Double = 16
     private let rowHorizontalPadding: Double = 16
     private let sectionSpacing: Double = 35
-    private let sectionHorizontalPadding: Double = 16
+    private var sectionHorizontalPadding: Double { frameWidth > 375 ? 20 : 16 }
     private let sectionShape = RoundedRectangle(cornerRadius: 10, style: .continuous)
 
     var body: some View {
@@ -64,10 +64,10 @@ struct UserPicker: View {
                                 .fixedSize()
                         }
                     }
-                    .padding(.top, sectionSpacing)
                     .padding(.horizontal, sectionHorizontalPadding)
                 }
-                .frame(height: sectionSpacing + rowVerticalPadding + 44 + rowVerticalPadding)
+                .frame(height: rowVerticalPadding + 44 + rowVerticalPadding)
+                .padding(.top, sectionSpacing)
                 .overlay(DetermineWidth())
                 .onPreferenceChange(DetermineWidth.Key.self) { frameWidth = $0 }
             }
