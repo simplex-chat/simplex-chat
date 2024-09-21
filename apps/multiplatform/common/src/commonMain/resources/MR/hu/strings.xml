@@ -38,15 +38,15 @@
     <string name="feature_cancelled_item">%s visszavonva</string>
     <string name="smp_servers_preset_add">Előre beállított kiszolgálók hozzáadása</string>
     <string name="calls_prohibited_with_this_contact">A hívások kezdeményezése le van tiltva ebben a csevegésben.</string>
-    <string name="network_session_mode_entity_description"><b>Minden egyes kapcsolathoz és csoporttaghoz</b> külön TCP-kapcsolat (és SOCKS hitelesítő adat) lesz használva.
-\n<b>Figyelem:</b> ha sok kapcsolata van, az akkumulátor-használat és az adatforgalom jelentősen megnövekedhet, és néhány kapcsolódási kísérlet sikertelen lehet.</string>
+    <string name="network_session_mode_entity_description"><b>Minden egyes kapcsolathoz és csoporttaghoz</b> külön TCP-kapcsolat (és SOCKS hitelesítő adat) lesz használva. 
+\n<b>Megjegyzés:</b> ha sok kapcsolata van, az akkumulátor-használat és az adatforgalom jelentősen megnövekedhet, és néhány kapcsolódási kísérlet sikertelen lehet.</string>
     <string name="icon_descr_cancel_link_preview">hivatkozás előnézetének visszavonása</string>
     <string name="network_session_mode_user_description"><![CDATA[<b>Minden egyes kapcsolathoz és csoporttaghoz</b> külön TCP-kapcsolat (és SOCKS hitelesítő adat) lesz használva.]]></string>
     <string name="both_you_and_your_contact_can_send_disappearing">Mindkét fél küldhet eltűnő üzeneteket.</string>
     <string name="keychain_is_storing_securely">Az Android Keystore-t a jelmondat biztonságos tárolására használják - lehetővé teszi az értesítési szolgáltatás működését.</string>
     <string name="alert_title_msg_bad_hash">Hibás az üzenet hasító értéke</string>
     <string name="color_background">Háttér</string>
-    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Figyelem:</b> az üzenet- és fájl átjátszók SOCKS proxy által vannak kapcsolatban. A hívások és URL hivatkozás előnézetek közvetlen kapcsolatot használnak.]]></string>
+    <string name="socks_proxy_setting_limitations"><b>Megjegyzés:</b> az üzenet- és fájl átjátszók SOCKS proxy által vannak kapcsolatban. A hívások és URL hivatkozás-előnézetek közvetlen kapcsolatot használnak.</string>
     <string name="full_backup">Alkalmazásadatok biztonsági mentése</string>
     <string name="database_initialization_error_title">Az adatbázis inicializálása sikertelen</string>
     <string name="all_your_contacts_will_remain_connected_update_sent">Ismerőseivel kapcsolatban marad. A profil változtatások frissítésre kerülnek az ismerősöknél.</string>
@@ -93,7 +93,7 @@
     <string name="invite_prohibited">Ismerősök meghívása le van tiltva!</string>
     <string name="integrity_msg_bad_id">téves üzenet ID</string>
     <string name="v4_2_auto_accept_contact_requests">Kapcsolatkérések automatikus elfogadása</string>
-    <string name="impossible_to_recover_passphrase"><![CDATA[<b>Figyelem:</b> NEM fogja tudni helyreállítani, vagy megváltoztatni a jelmondatot abban az esetben, ha elveszíti.]]></string>
+    <string name="impossible_to_recover_passphrase"><b>Megjegyzés:</b> NEM fogja tudni helyreállítani, vagy megváltoztatni a jelmondatot abban az esetben, ha elveszíti.</string>
     <string name="callstatus_calling">hívás…</string>
     <string name="color_secondary_variant">További másodlagos</string>
     <string name="smp_servers_add_to_another_device">Hozzáadás egy másik eszközhöz</string>
@@ -675,7 +675,7 @@
     <string name="if_you_enter_passcode_data_removed">Ha az alkalmazás megnyitásakor megadja ezt a jelkódot, az összes alkalmazásadat véglegesen eltávolításra kerül!</string>
     <string name="if_you_cant_meet_in_person">Ha nem tud személyesen találkozni, mutassa meg a QR-kódot egy videohívás közben, vagy ossza meg a hivatkozást.</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Ha nem tud személyesen találkozni, <b>mutassa meg a QR-kódot a videohívásban</b>, vagy ossza meg a hivatkozást.]]></string>
-    <string name="network_disable_socks_info">Megerősítés esetén az üzenetküldő kiszolgálók látni fogják az IP-címét és a szolgáltatóját – azt, hogy mely kiszolgálókhoz kapcsolódik.</string>
+    <string name="network_disable_socks_info">Megerősítés esetén az üzenetküldő-kiszolgálók látni fogják az IP-címét és a szolgáltatóját – azt, hogy mely kiszolgálókhoz kapcsolódik.</string>
     <string name="image_will_be_received_when_contact_completes_uploading">A kép akkor érkezik meg, amikor a küldője befejezte annak feltöltését.</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 asztali számítógép: a megjelenített QR-kód beolvasása az alkalmazásból, a <b>QR kód beolvasásával</b>.]]></string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">A kapott SimpleX Chat-meghívó-hivatkozását megnyithatja a böngészőjében:</string>
@@ -1308,10 +1308,10 @@
 \nA kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapcsolattartási hivatkozást, és ellenőrizze, hogy a hálózati kapcsolat stabil-e.</string>
     <string name="video_call_no_encryption">videóhívás (nem e2e titkosított)</string>
     <string name="smp_servers_use_server_for_new_conn">Alkalmazás új kapcsolatokhoz</string>
-    <string name="periodic_notifications_desc">Az új üzenetek rendszeresen letöltésre kerülnek az alkalmazás által – naponta néhány százalékot használ az akkumulátorból. Az alkalmazás nem használ push értesítéseket – az eszközről származó adatok nem kerülnek elküldésre a kiszolgálóknak.</string>
+    <string name="periodic_notifications_desc">Az új üzenetek rendszeresen letöltésre kerülnek az alkalmazás által – naponta néhány százalékot használ az akkumulátorból. Az alkalmazás nem használ push-értesítéseket – az eszközről származó adatok nem kerülnek elküldésre a kiszolgálóknak.</string>
     <string name="paste_desktop_address">Számítógép címének beillesztése</string>
     <string name="description_via_contact_address_link">kapcsolattartási cím-hivatkozáson keresztül</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Az adatvédelem megőrzése érdekében a push értesítési rendszer helyett az alkalmazás a <b>SimpleX háttérszolgáltatást </b> használja - az akkumulátornak csak néhány százalékát használja naponta.]]></string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Az adatvédelem megőrzése érdekében a push-értesítési rendszer helyett az alkalmazás a <b>SimpleX-háttérszolgáltatást</b> használja - az akkumulátornak csak néhány százalékát használja naponta.</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Az ismerősének online kell lennie ahhoz, hogy a kapcsolat létrejöjjön.
 \nVisszavonhatja ezt az ismerőskérelmet és eltávolíthatja az ismerőst (ezt később ismét megpróbálhatja egy új hivatkozással).</string>
     <string name="restore_passphrase_not_found_desc">A jelszó nem található a Keystore-ban, ezért kézzel szükséges megadni. Ez akkor történhetett meg, ha visszaállította az alkalmazás adatait egy biztonságimentési eszközzel. Ha nem így történt, akkor lépjen kapcsolatba a fejlesztőkkel.</string>
@@ -1378,7 +1378,7 @@
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Akkor lesz kapcsolódva, ha a kapcsolatkérése elfogadásra kerül, várjon, vagy ellenőrizze később!</string>
     <string name="voice_messages_are_prohibited">A hangüzenetek küldése le van tiltva ebben a csoportban.</string>
     <string name="system_restricted_background_in_call_warn"><![CDATA[A háttérben való hívásokhoz válassza ki az <b>Alkalmazás akkumulátor-használata</b> / <b>Korlátlan</b> módot az alkalmazás beállításaiban.]]></string>
-    <string name="v5_4_link_mobile_desktop_descr">Biztonságos kvantumrezisztens protokollon keresztül.</string>
+    <string name="v5_4_link_mobile_desktop_descr">Biztonságos kvantumrezisztens-protokollon keresztül.</string>
     <string name="v5_1_better_messages_descr">- 5 perc hosszúságú hangüzenetek.
 \n- egyedi üzenet-eltűnési időkorlát.
 \n- előzmények szerkesztése.</string>
@@ -1689,14 +1689,14 @@
     <string name="migrate_to_device_title">Átköltöztetés ide</string>
     <string name="migrate_from_device_title">Eszköz átköltöztetése</string>
     <string name="migrate_from_device_to_another_device">Átköltöztetés egy másik eszközre</string>
-    <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Figyelem</b>: az archívum törlésre kerül.]]></string>
+    <string name="migrate_from_device_archive_will_be_deleted"><b>Figyelmeztetés:</b> az archívum törlésre kerül.</string>
     <string name="migrate_from_another_device">Átköltöztetés egy másik eszközről</string>
     <string name="v5_6_quantum_resistant_encryption">Kvantumrezisztens titkosítás</string>
     <string name="migrate_from_device_try_again">Megpróbálhatja még egyszer.</string>
     <string name="migrate_from_device_migration_complete">Átköltöztetés befejezve</string>
     <string name="v5_6_app_data_migration_descr">Átköltöztetés egy másik eszközre QR-kód használatával.</string>
     <string name="migrate_to_device_migrating">Átköltöztetés</string>
-    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>Figyelem:</b> ha két eszközön is ugyanazt az adatbázist használja, akkor biztonsági védelemként megszakítja az ismerőseitől érkező üzenetek visszafejtését.]]></string>
+    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><b>Megjegyzés:</b> ha két eszközön is ugyanazt az adatbázist használja, akkor biztonsági védelemként megszakítja az ismerőseitől érkező üzenetek visszafejtését.</string>
     <string name="migrate_to_device_try_again">Megpróbálhatja még egyszer.</string>
     <string name="invalid_file_link">Hibás hivatkozás</string>
     <string name="conn_event_enabled_pq">végpontok közötti kvantumrezisztens titkosítás</string>
@@ -1765,7 +1765,7 @@
     <string name="snd_error_expired">Hálózati problémák - az üzenet többszöri elküldési kísérlet után lejárt.</string>
     <string name="srv_error_version">A kiszolgáló verziója nem kompatibilis a hálózati beállításokkal.</string>
     <string name="snd_error_auth">Hibás kulcs vagy ismeretlen kapcsolat - valószínűleg ez a kapcsolat törlődött.</string>
-    <string name="snd_error_proxy_relay">Továbbító kiszolgáló: %1$s
+    <string name="snd_error_proxy_relay">Továbbító-kiszolgáló: %1$s
 \nCélkiszolgáló hiba: %2$s</string>
     <string name="ci_status_other_error">Hiba: %1$s</string>
     <string name="snd_error_quota">Kapacitás túllépés - a címzett nem kapta meg a korábban elküldött üzeneteket.</string>
