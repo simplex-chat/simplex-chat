@@ -2443,13 +2443,20 @@ fun getTimestampText(t: Instant, shortFormat: Boolean = false): String {
     if (recent || shortFormat) {
       DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
     } else {
+      val dayMonthFormat = when (Locale.getDefault().country) {
+        "US" -> "M/dd"
+        "DE" -> "dd.MM"
+        "RU" -> "dd.MM"
+        else -> "dd/MM"
+      }
+      val dayMonthYearFormat = when (Locale.getDefault().country) {
+        "US" -> "M/dd/yy"
+        "DE" -> "dd.MM.yy"
+        "RU" -> "dd.MM.yy"
+        else -> "dd/MM/yy"
+      }
       DateTimeFormatter.ofPattern(
-        when (Locale.getDefault().country) {
-          "US" -> "M/dd"
-          "DE" -> "dd.MM"
-          "RU" -> "dd.MM"
-          else -> "dd/MM"
-        }
+       if (now.year == time.year) dayMonthFormat else dayMonthYearFormat
       )
 //      DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT)
     }
