@@ -1197,7 +1197,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
           // memberConnected events and deleted items are aggregated at the last chat item in a row, see ChatItemView
         } else {
           val (prevHidden, prevItem) = chatModel.getPrevShownChatItem(currIndex, ciCategory)
-          val itemSeparation = getItemSeparation(cItem, prevItem)
+          val itemSeparation = getItemSeparation(cItem, prevItem, nextItem)
           val range = chatViewItemsRange(currIndex, prevHidden)
           if (revealed.value && range != null) {
             reversedChatItems.subList(range.first, range.last + 1).forEachIndexed { index, ci ->
@@ -1899,12 +1899,20 @@ private fun handleForwardConfirmation(
   )
 }
 
-private fun getItemSeparation(chatItem: ChatItem, nextItem: ChatItem?): ItemSeparation {
-  if (nextItem == null) {
+private fun getItemSeparation(chatItem: ChatItem, prevItem: ChatItem?, nextItem: ChatItem?): ItemSeparation {
+  if (prevItem == null) {
     return  ItemSeparation(
       timestamp = true,
       largeGap = false,
       date = chatItem.meta.itemTs,
+    )
+  }
+
+  if (nextItem == null) {
+    return  ItemSeparation(
+      timestamp = true,
+      largeGap = false,
+      date = if (getTimestampDateText(chatItem.meta.itemTs) != getTimestampDateText(prevItem.meta.itemTs)) chatItem.meta.itemTs else null
     )
   }
 
@@ -1913,10 +1921,12 @@ private fun getItemSeparation(chatItem: ChatItem, nextItem: ChatItem?): ItemSepa
   } else chatItem.chatDir.sent == nextItem.chatDir.sent
   val largeGap = !sameMemberAndDirection || (abs(nextItem.meta.createdAt.epochSeconds - chatItem.meta.createdAt.epochSeconds) >= 60)
 
+  Log.e(TAG, "getItemSeparation: next: ${nextItem.text} prev: ${prevItem.text} curr: ${chatItem.text}")
+
   return ItemSeparation(
-    timestamp = largeGap || chatItem.meta.timestampText != nextItem.meta.timestampText,
+    timestamp = largeGap || nextItem.meta.timestampText != chatItem.meta.timestampText,
     largeGap = largeGap,
-    date = if (getTimestampDateText(chatItem.meta.itemTs) != getTimestampDateText(nextItem.meta.itemTs)) chatItem.meta.itemTs else null
+    date = if (getTimestampDateText(chatItem.meta.itemTs) != getTimestampDateText(prevItem.meta.itemTs)) chatItem.meta.itemTs else null
   )
 }
 
