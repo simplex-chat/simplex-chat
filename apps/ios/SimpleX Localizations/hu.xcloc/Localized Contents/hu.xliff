@@ -3622,9 +3622,9 @@ Hiba: %2$@</target>
         <target>Hogyan használja</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="How to use your servers" xml:space="preserve">
+      <trans-unit id="How to use your servers" xml:space="preserve" approved="no">
         <source>How to use your servers</source>
-        <target>Kiszolgálók használata</target>
+        <target state="translated">Saját kiszolgálók használata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Hungarian interface" xml:space="preserve">
@@ -7862,12 +7862,12 @@ Kapcsolatkérés megismétlése?</target>
       </trans-unit>
       <trans-unit id="Your ICE servers" xml:space="preserve" approved="no">
         <source>Your ICE servers</source>
-        <target state="translated">ICE-kiszolgálók</target>
+        <target state="translated">Saját ICE-kiszolgálói</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your SMP servers" xml:space="preserve" approved="no">
         <source>Your SMP servers</source>
-        <target state="translated">SMP-kiszolgálók</target>
+        <target state="translated">Saját SMP-kiszolgálói</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your SimpleX address" xml:space="preserve">
@@ -7877,7 +7877,7 @@ Kapcsolatkérés megismétlése?</target>
       </trans-unit>
       <trans-unit id="Your XFTP servers" xml:space="preserve" approved="no">
         <source>Your XFTP servers</source>
-        <target state="translated">XFTP-kiszolgálók</target>
+        <target state="translated">Saját XFTP-kiszolgálói</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your calls" xml:space="preserve">
@@ -7980,9 +7980,9 @@ Kapcsolatkérés megismétlése?</target>
         <target>Véletlenszerű profil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your server" xml:space="preserve">
+      <trans-unit id="Your server" xml:space="preserve" approved="no">
         <source>Your server</source>
-        <target>Saját kiszolgáló</target>
+        <target state="translated">Saját kiszolgálója</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your server address" xml:space="preserve" approved="no">
