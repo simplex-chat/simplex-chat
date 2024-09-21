@@ -116,7 +116,7 @@
     <string name="app_passcode_replaced_with_self_destruct">Az alkalmazás jelkód helyettesítésre kerül egy önmegsemmisítő jelkóddal.</string>
     <string name="v5_3_new_interface_languages_descr">Arab, bulgár, finn, héber, thai és ukrán - köszönet a felhasználóknak és a Weblate-nek.</string>
     <string name="allow_voice_messages_question">Hangüzenetek engedélyezése?</string>
-    <string name="always_use_relay">Mindig használjon átjátszó kiszolgálót</string>
+    <string name="always_use_relay">Mindig használjon átjátszó-kiszolgálót</string>
     <string name="chat_preferences_always">mindig</string>
     <string name="call_already_ended">A hívás már befejeződött!</string>
     <string name="turn_off_battery_optimization_button">Engedélyezés</string>
@@ -288,7 +288,7 @@
     <string name="delete_chat_profile_question">Csevegési profil törlése?</string>
     <string name="create_group">Titkos csoport létrehozása</string>
     <string name="connected_to_desktop">Kapcsolódva a számítógéphez</string>
-    <string name="configure_ICE_servers">ICE kiszolgálók beállítása</string>
+    <string name="configure_ICE_servers">ICE-kiszolgálók beállítása</string>
     <string name="button_delete_group">Csoport törlése</string>
     <string name="clear_verification">Hitelesítés törlése</string>
     <string name="group_member_status_creator">készítő</string>
@@ -475,11 +475,11 @@
     <string name="v5_3_encrypt_local_files">A tárolt fájlok- és a médiatartalmak titkosítása</string>
     <string name="error_setting_address">Hiba a cím beállításakor</string>
     <string name="group_invitation_expired">A csoportmeghívó lejárt</string>
-    <string name="error_saving_ICE_servers">Hiba az ICE kiszolgálók mentésekor</string>
+    <string name="error_saving_ICE_servers">Hiba az ICE-kiszolgálók mentésekor</string>
     <string name="error_alert_title">Hiba</string>
     <string name="icon_descr_server_status_error">Hiba</string>
-    <string name="error_loading_xftp_servers">Hiba az XFTP kiszolgálók betöltésekor</string>
-    <string name="error_loading_smp_servers">Hiba az SMP kiszolgálók betöltésekor</string>
+    <string name="error_loading_xftp_servers">Hiba az XFTP-kiszolgálók betöltésekor</string>
+    <string name="error_loading_smp_servers">Hiba az SMP-kiszolgálók betöltésekor</string>
     <string name="error_setting_network_config">Hiba a hálózat konfigurációjának frissítésekor</string>
     <string name="network_option_enable_tcp_keep_alive">TCP életben tartása</string>
     <string name="icon_descr_flip_camera">Kamera váltás</string>
@@ -487,7 +487,7 @@
 \nCsatlakozzon hozzám a SimpleX Chaten keresztül: %s</string>
     <string name="display_name_cannot_contain_whitespace">A megjelenített név nem tartalmazhat szóközöket.</string>
     <string name="info_row_group">Csoport</string>
-    <string name="enter_welcome_message_optional">Üdvözlőüzenet megadása… (opcionális)</string>
+    <string name="enter_welcome_message_optional">Üdvözlőüzenet megadása… (nem kötelező)</string>
     <string name="error_exporting_chat_database">Hiba a csevegési adatbázis exportálásakor</string>
     <string name="error_saving_file">Hiba a fájl mentésekor</string>
     <string name="encrypt_local_files">Helyi fájlok titkosítása</string>
@@ -507,7 +507,7 @@
     <string name="error_updating_user_privacy">Hiba a felhasználói beállítások frissítésekor</string>
     <string name="encrypt_database">Titkosít</string>
     <string name="alert_title_no_group">Csoport nem található!</string>
-    <string name="error_saving_smp_servers">Hiba az SMP kiszolgálók mentésekor</string>
+    <string name="error_saving_smp_servers">Hiba az SMP-kiszolgálók mentésekor</string>
     <string name="downgrade_and_open_chat">Visszafejlesztés és a csevegés megnyitása</string>
     <string name="icon_descr_group_inactive">A csoport inaktív</string>
     <string name="v5_0_large_files_support_descr">Gyors és nem kell várni, amíg a feladó online lesz!</string>
@@ -573,7 +573,7 @@
     <string name="error_deleting_pending_contact_connection">Hiba a függőben lévő ismerős kapcsolatának törlésekor</string>
     <string name="error_importing_database">Hiba a csevegési adatbázis importálásakor</string>
     <string name="error_enabling_delivery_receipts">Hiba a kézbesítési jelentések engedélyezésekor!</string>
-    <string name="error_saving_xftp_servers">Hiba az XFTP kiszolgálók mentésekor</string>
+    <string name="error_saving_xftp_servers">Hiba az XFTP-kiszolgálók mentésekor</string>
     <string name="group_members_can_send_dms">A csoport tagjai küldhetnek egymásnak közvetlen üzeneteket.</string>
     <string name="error_removing_member">Hiba a tag eltávolításakor</string>
     <string name="callstate_ended">befejeződött</string>
@@ -704,7 +704,7 @@
     <string name="no_info_on_delivery">Nincs kézbesítési információ</string>
     <string name="moderated_description">moderált</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">A tag eltávolítása a csoportból - ez a művelet nem vonható vissza!</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Győződjön meg arról, hogy az XFTP kiszolgáló címei megfelelő formátumúak, sorszeparáltak és nincsenek duplikálva.</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Győződjön meg arról, hogy az XFTP-kiszolgáló címei megfelelő formátumúak, sorszeparáltak és nincsenek duplikálva.</string>
     <string name="no_contacts_selected">Nincs kiválasztva ismerős</string>
     <string name="no_received_app_files">Nincsenek fogadott, vagy küldött fájlok</string>
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 mobil: koppintson a <b>Megnyitás mobil alkalmazásban</b>, majd koppintson a <b>Kapcsolódás</b> gombra az alkalmazásban.]]></string>
@@ -745,8 +745,8 @@
     <string name="thousand_abbreviation">k</string>
     <string name="chat_item_ttl_none">soha</string>
     <string name="new_desktop"><![CDATA[<i>(új)</i>]]></string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">Győződjön meg arról, hogy az SMP kiszolgáló címei megfelelő formátumúak, sorszeparáltak és nincsenek duplikálva.</string>
-    <string name="network_use_onion_hosts_no_desc">Onion kiszolgálók nem lesznek használva.</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">Győződjön meg arról, hogy az SMP-kiszolgáló címei megfelelő formátumúak, sorszeparáltak és nincsenek duplikálva.</string>
+    <string name="network_use_onion_hosts_no_desc">Az onion-kiszolgálók nem lesznek használva.</string>
     <string name="custom_time_unit_minutes">perc</string>
     <string name="learn_more">Tudjon meg többet</string>
     <string name="notification_new_contact_request">Új kapcsolatkérés</string>
@@ -774,8 +774,8 @@
     <string name="message_deletion_prohibited">Az üzenetek végleges törlése le van tiltva ebben a csevegésben.</string>
     <string name="v4_3_voice_messages_desc">Max 40 másodperc, azonnal fogadható.</string>
     <string name="description_via_contact_address_link_incognito">inkognitó a kapcsolattartási cím-hivatkozáson keresztül</string>
-    <string name="network_use_onion_hosts_required_desc">A kapcsolódáshoz Onion kiszolgálókra lesz szükség.
-\nFigyelem: .onion cím nélkül nem fog tudni kapcsolódni a kiszolgálókhoz.</string>
+    <string name="network_use_onion_hosts_required_desc">A kapcsolódáshoz Onion-kiszolgálókra lesz szükség.
+\nMegjegyzés: .onion cím nélkül nem fog tudni kapcsolódni a kiszolgálókhoz.</string>
     <string name="v4_5_italian_interface">Olasz kezelőfelület</string>
     <string name="system_restricted_background_in_call_title">Nincsenek háttérhívások</string>
     <string name="messages_section_title">Üzenetek</string>
@@ -786,7 +786,7 @@
     <string name="ok">Rendben</string>
     <string name="no_filtered_chats">Nincsenek szűrt csevegések</string>
     <string name="invalid_data">érvénytelen adat</string>
-    <string name="ensure_ICE_server_address_are_correct_format_and_unique">Győződjön meg arról, hogy a WebRTC ICE kiszolgáló címei megfelelő formátumúak, sorszeparáltak és nincsenek duplikálva.</string>
+    <string name="ensure_ICE_server_address_are_correct_format_and_unique">Győződjön meg arról, hogy a WebRTC ICE-kiszolgáló címei megfelelő formátumúak, sorszeparáltak és nincsenek duplikálva.</string>
     <string name="only_owners_can_enable_files_and_media">Csak a csoporttulajdonosok engedélyezhetik a fájlok- és a médiatartalmak küldését.</string>
     <string name="loading_remote_file_title">A fájl betöltése</string>
     <string name="no_contacts_to_add">Nincs hozzáadandó ismerős</string>
@@ -830,7 +830,7 @@
 \n3. A kapcsolat sérült.</string>
     <string name="group_member_role_observer">megfigyelő</string>
     <string name="description_via_group_link_incognito">inkognitó a csoporthivatkozáson keresztül</string>
-    <string name="network_use_onion_hosts_prefer_desc">Onion kiszolgálók használata, ha azok rendelkezésre állnak.</string>
+    <string name="network_use_onion_hosts_prefer_desc">Onion-kiszolgálók használata, ha azok rendelkezésre állnak.</string>
     <string name="invite_friends">Ismerősök meghívása</string>
     <string name="color_surface">Menük és figyelmeztetések</string>
     <string name="icon_descr_add_members">Tagok meghívása</string>
@@ -1246,9 +1246,9 @@
     <string name="unmute_chat">Némítás feloldása</string>
     <string name="open_simplex_chat_to_accept_call">SimpleX Chat megnyitása a hívás fogadásához</string>
     <string name="stop_rcv_file__title">Fájlfogadás megállítása?</string>
-    <string name="v5_4_more_things_descr">- opcionális értesítés a törölt ismerősök számára
+    <string name="v5_4_more_things_descr">- értesíti az ismerősöket a törlésről (nem kötelező)
 \n- profil nevek szóközökkel
-\n- és továbbiak!</string>
+\n- és még sok más!</string>
     <string name="v5_0_polish_interface">Lengyel kezelőfelület</string>
     <string name="smp_servers_use_server">Kiszolgáló használata</string>
     <string name="share_text_received_at">Fogadva ekkor: %s</string>
@@ -1386,7 +1386,7 @@
     <string name="sender_at_ts">%s ekkor: %s</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Akkor lesz kapcsolódva, amikor az ismerősének az eszköze online lesz, várjon, vagy ellenőrizze később!</string>
     <string name="v5_4_block_group_members_descr">Kéretlen üzenetek elrejtése.</string>
-    <string name="disable_onion_hosts_when_not_supported">Állítsa az <i>Onion kiszolgálók használatát</i> „Nem” értékre, ha a SOCKS proxy nem támogatja őket.</string>
+    <string name="disable_onion_hosts_when_not_supported">Állítsa az <i>Onion kiszolgálók használata</i> opciót „Nemre”, ha a SOCKS proxy nem támogatja őket.</string>
     <string name="you_can_share_your_address">Megoszthatja a címét egy hivatkozásként vagy egy QR-kódként – így bárki kapcsolódhat önhöz.</string>
     <string name="you_can_create_it_later">Létrehozás később</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Profilja az eszközön van tárolva és csak az ismerőseivel kerül megosztásra. A SimpleX-kiszolgálók nem láthatják a profilját.</string>
@@ -1425,7 +1425,7 @@
     <string name="verify_code_on_mobile">Kód ellenőrzése a mobilon</string>
     <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Csatlakozott ehhez a csoporthoz. Kapcsolódás a meghívó csoporttaghoz.</string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Kapcsolatba léphet <font color="#0088ff">a SimpleX Chat fejlesztőivel, ahol bármiről kérdezhet és értesülhet az újdonságokról</font>.]]></string>
-    <string name="v4_2_auto_accept_contact_requests_desc">Opcionális üdvözlőüzenettel.</string>
+    <string name="v4_2_auto_accept_contact_requests_desc">Nem kötelező üdvözlőüzenettel.</string>
     <string name="unknown_database_error_with_info">Ismeretlen adatbázis hiba: %s</string>
     <string name="you_can_hide_or_mute_user_profile">Elrejtheti vagy lenémíthatja a felhasználó profiljait - koppintson (vagy asztali alkalmazásban kattintson) hosszan a profilra a felugró menühöz.</string>
     <string name="v5_3_simpler_incognito_mode_descr">Inkognító mód kapcsolódáskor.</string>
@@ -1468,7 +1468,7 @@
     <string name="receipts_groups_override_disabled">A kézbesítési jelentések le vannak tiltva %d csoportban</string>
     <string name="non_fatal_errors_occured_during_import">Néhány nem végzetes hiba történt az importáláskor:</string>
     <string name="v4_5_italian_interface_descr">Köszönet a felhasználóknak - hozzájárulás a Weblate-en!</string>
-    <string name="relay_server_if_necessary">Az átjátszó kiszolgáló csak szükség esetén kerül használatra. Egy másik fél megfigyelheti az IP-címet.</string>
+    <string name="relay_server_if_necessary">Az átjátszó-kiszolgáló csak szükség esetén kerül használatra. Egy másik fél megfigyelheti az IP-címet.</string>
     <string name="v5_0_app_passcode_descr">Rendszerhitelesítés helyetti beállítás.</string>
     <string name="switch_receiving_address_desc">A fogadó cím egy másik kiszolgálóra változik. A címváltoztatás a feladó online állapotba kerülése után fejeződik be.</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">A csevegés megállítása a csevegő adatbázis exportálásához, importálásához, vagy törléséhez. A csevegés megállítása alatt nem tud üzeneteket fogadni és küldeni.</string>
@@ -1477,7 +1477,7 @@
     <string name="save_passphrase_in_settings">Jelmondat mentése a beállításokban</string>
     <string name="send_receipts_disabled_alert_msg">Ennek a csoportnak több mint %1$d tagja van, a kézbesítési jelentések nem kerülnek elküldésre.</string>
     <string name="v5_2_message_delivery_receipts_descr">A második jelölés, amit kihagytunk! ✅</string>
-    <string name="relay_server_protects_ip">Az átjátszó kiszolgáló megvédi az IP-címet, de megfigyelheti a hívás időtartamát.</string>
+    <string name="relay_server_protects_ip">Az átjátszó-kiszolgáló megvédi az IP-címet, de megfigyelheti a hívás időtartamát.</string>
     <string name="read_more_in_github">További információ a GitHub tárolónkban.</string>
     <string name="v4_5_message_draft_descr">Az utolsó üzenet tervezetének megőrzése a mellékletekkel együtt.</string>
     <string name="saved_ICE_servers_will_be_removed">A mentett WebRTC ICE-kiszolgálók eltávolításra kerülnek.</string>
@@ -1979,17 +1979,17 @@
     <string name="app_check_for_updates_notice_disable">Letiltás</string>
     <string name="app_check_for_updates_disabled">Letiltva</string>
     <string name="app_check_for_updates_stable">Stabil</string>
-    <string name="smp_proxy_error_connecting">Hiba a(z) %1$s továbbító kiszolgálóhoz való kapcsolódáskor. Próbálja meg később.</string>
+    <string name="smp_proxy_error_connecting">Hiba a(z) %1$s továbbító-kiszolgálóhoz való kapcsolódáskor. Próbálja meg később.</string>
     <string name="proxy_destination_error_broker_version">A(z) %1$s célkiszolgáló verziója nem kompatibilis a(z) %2$s továbbító kiszolgálóval.</string>
-    <string name="proxy_destination_error_failed_to_connect">A(z) %1$s továbbító kiszolgáló nem tudott csatlakozni a(z) %2$s célkiszolgálóhoz. Próbálja meg később.</string>
-    <string name="proxy_destination_error_broker_host">A(z) %1$s célkiszolgáló címe nem kompatibilis a(z) %2$s továbbító kiszolgáló beállításaival.</string>
+    <string name="proxy_destination_error_failed_to_connect">A(z) %1$s továbbító-kiszolgáló nem tudott csatlakozni a(z) %2$s célkiszolgálóhoz. Próbálja meg később.</string>
+    <string name="proxy_destination_error_broker_host">A(z) %1$s célkiszolgáló címe nem kompatibilis a(z) %2$s továbbító-kiszolgáló beállításaival.</string>
     <string name="privacy_media_blur_radius">Média elhomályosítása</string>
     <string name="privacy_media_blur_radius_medium">Közepes</string>
     <string name="privacy_media_blur_radius_off">Kikapcsolva</string>
     <string name="privacy_media_blur_radius_soft">Enyhe</string>
     <string name="privacy_media_blur_radius_strong">Erős</string>
-    <string name="smp_proxy_error_broker_host">A továbbító kiszolgáló címe nem kompatibilis a hálózati beállításokkal: %1$s.</string>
-    <string name="smp_proxy_error_broker_version">A továbbító kiszolgáló verziója nem kompatibilis a hálózati beállításokkal: %1$s.</string>
+    <string name="smp_proxy_error_broker_host">A továbbító-kiszolgáló címe nem kompatibilis a hálózati beállításokkal: %1$s.</string>
+    <string name="smp_proxy_error_broker_version">A továbbító-kiszolgáló verziója nem kompatibilis a hálózati beállításokkal: %1$s.</string>
     <string name="info_view_call_button">hívás</string>
     <string name="delete_contact_cannot_undo_warning">Az ismerős törlésre fog kerülni - ez a művelet nem vonható vissza!</string>
     <string name="only_delete_conversation">Csak a beszélgetés törlése</string>
