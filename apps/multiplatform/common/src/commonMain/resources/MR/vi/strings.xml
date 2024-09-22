@@ -858,4 +858,30 @@
     <string name="alert_message_group_invitation_expired">Lời mới nhóm không còn có hiệu lực, nó đã bị xóa bởi người gửi.</string>
     <string name="permissions_grant">Cho phép thực hiện cuộc gọi</string>
     <string name="permissions_grant_in_settings">Cấp quyền trong cài đặt</string>
+    <string name="hide_notification">Ẩn</string>
+    <string name="icon_descr_hang_up">Ngắt kết nối</string>
+    <string name="notification_preview_mode_hidden">Ẩn</string>
+    <string name="hidden_profile_password">Mật khẩu hồ sơ ẩn</string>
+    <string name="group_profile_is_stored_on_members_devices">Hồ sơ nhóm được lưu trữ tại thiết bị của thành viên, không lưu trữ trên máy chủ.</string>
+    <string name="snd_group_event_group_profile_updated">hồ sơ nhóm đã được cập nhật</string>
+    <string name="icon_descr_help">trợ giúp</string>
+    <string name="hide_dev_options">Ẩn:</string>
+    <string name="email_invite_body">Xin chào!
+\nKết nối với tôi qua SimpleX Chat: %s</string>
+    <string name="hide_profile">Ẩn hồ sơ</string>
+    <string name="settings_section_title_help">TRỢ GIÚP</string>
+    <string name="delete_group_for_all_members_cannot_undo_warning">Nhóm sẽ bị xóa cho tất cả các thành viên - điều này không thể hoàn tác!</string>
+    <string name="delete_group_for_self_cannot_undo_warning">Nhóm sẽ bị xóa cho bạn - điều này không thể hoàn tác!</string>
+    <string name="group_preferences">Tùy chọn nhóm</string>
+    <string name="recent_history_is_not_sent_to_new_members">Lịch sử không được gửi đến các thành viên mới.</string>
+    <string name="v4_3_improved_privacy_and_security_desc">Ẩn màn hình ứng dụng trong danh sách các ứng dụng gần đây.</string>
+    <string name="v4_6_group_moderation">Quản trị nhóm</string>
+    <string name="v4_6_group_welcome_message">Lời chào nhóm</string>
+    <string name="audio_device_wired_headphones">Tai nghe</string>
+    <string name="notification_display_mode_hidden_desc">Ẩn liên hệ và tin nhắn</string>
+    <string name="hide_verb">Ẩn</string>
+    <string name="user_hide">Ẩn</string>
+    <string name="edit_history">Lịch sử</string>
+    <string name="alert_title_no_group">Không tìm thấy nhóm!</string>
+    <string name="v4_6_hidden_chat_profiles">Hồ sơ trò chuyện ẩn</string>
 </resources>
