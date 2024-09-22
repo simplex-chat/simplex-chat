@@ -1901,7 +1901,7 @@ private fun handleForwardConfirmation(
 
 private fun getItemSeparation(chatItem: ChatItem, prevItem: ChatItem?, nextItem: ChatItem?): ItemSeparation {
   if (prevItem == null) {
-    return  ItemSeparation(
+    return ItemSeparation(
       timestamp = true,
       largeGap = false,
       date = chatItem.meta.itemTs,
@@ -1909,19 +1909,16 @@ private fun getItemSeparation(chatItem: ChatItem, prevItem: ChatItem?, nextItem:
   }
 
   if (nextItem == null) {
-    return  ItemSeparation(
+    return ItemSeparation(
       timestamp = true,
       largeGap = false,
       date = if (getTimestampDateText(chatItem.meta.itemTs) != getTimestampDateText(prevItem.meta.itemTs)) chatItem.meta.itemTs else null
     )
   }
-
   val sameMemberAndDirection = if (nextItem.chatDir is GroupRcv && chatItem.chatDir is GroupRcv) {
     chatItem.chatDir.groupMember.groupMemberId == nextItem.chatDir.groupMember.groupMemberId
   } else chatItem.chatDir.sent == nextItem.chatDir.sent
   val largeGap = !sameMemberAndDirection || (abs(nextItem.meta.createdAt.epochSeconds - chatItem.meta.createdAt.epochSeconds) >= 60)
-
-  Log.e(TAG, "getItemSeparation: next: ${nextItem.text} prev: ${prevItem.text} curr: ${chatItem.text}")
 
   return ItemSeparation(
     timestamp = largeGap || nextItem.meta.timestampText != chatItem.meta.timestampText,
