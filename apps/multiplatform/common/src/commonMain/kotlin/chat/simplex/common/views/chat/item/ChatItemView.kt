@@ -51,6 +51,7 @@ fun ChatItemView(
   revealed: MutableState<Boolean>,
   range: IntRange?,
   selectedChatItems: MutableState<Set<Long>?>,
+  fillMaxWidth: Boolean = true,
   selectChatItem: () -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
@@ -84,7 +85,7 @@ fun ChatItemView(
   val live = composeState.value.liveMessage != null
 
   Box(
-    modifier = Modifier.fillMaxWidth(),
+    modifier = if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier,
     contentAlignment = alignment,
   ) {
     val info = cItem.meta.itemStatus.statusInto
