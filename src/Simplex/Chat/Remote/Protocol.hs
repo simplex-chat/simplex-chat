@@ -44,6 +44,7 @@ import Simplex.Messaging.Crypto.Lazy (LazyByteString)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON, pattern SingleFieldJSONTag, pattern TaggedObjectJSONData, pattern TaggedObjectJSONTag)
 import qualified Simplex.Messaging.TMap as TM
+import Simplex.Messaging.Transport (TSbChainKeys)
 import Simplex.Messaging.Transport.Buffer (getBuffered)
 import Simplex.Messaging.Transport.HTTP2 (HTTP2Body (..), HTTP2BodyChunk, getBodyChunk)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client, HTTP2Response (..), closeHTTP2Client, sendRequestDirect)
@@ -78,12 +79,9 @@ $(deriveJSON (taggedObjectJSON $ dropPrefix "RR") ''RemoteResponse)
 
 mkRemoteHostClient :: HTTP2Client -> HostSessKeys -> SessionCode -> FilePath -> HostAppInfo -> CM RemoteHostClient
 mkRemoteHostClient httpClient sessionKeys sessionCode storePath HostAppInfo {encoding, deviceName, encryptFiles} = do
-  sndCounter <- newTVarIO 0
-  rcvCounter <- newTVarIO 0
-  skippedKeys <- liftIO TM.emptyIO
   let HostSessKeys {chainKeys, idPrivKey, sessPrivKey} = sessionKeys
       signatures = RSSign {idPrivKey, sessPrivKey}
-      encryption = RemoteCrypto {sessionCode, sndCounter, rcvCounter, chainKeys, skippedKeys, signatures}
+  encryption <- liftIO $ mkRemoteCrypto sessionCode chainKeys signatures
   pure
     RemoteHostClient
       { hostEncoding = encoding,
@@ -95,11 +93,15 @@ mkRemoteHostClient httpClient sessionKeys sessionCode storePath HostAppInfo {enc
       }
 
 mkCtrlRemoteCrypto :: CtrlSessKeys -> SessionCode -> CM RemoteCrypto
-mkCtrlRemoteCrypto CtrlSessKeys {chainKeys, idPubKey, sessPubKey} sessionCode = do
+mkCtrlRemoteCrypto CtrlSessKeys {chainKeys, idPubKey, sessPubKey} sessionCode =
+  let signatures = RSVerify {idPubKey, sessPubKey}
+   in liftIO $ mkRemoteCrypto sessionCode chainKeys signatures
+
+mkRemoteCrypto :: SessionCode -> TSbChainKeys -> RemoteSignatures -> IO RemoteCrypto
+mkRemoteCrypto sessionCode chainKeys signatures = do
   sndCounter <- newTVarIO 0
   rcvCounter <- newTVarIO 0
   skippedKeys <- liftIO TM.emptyIO
-  let signatures = RSVerify {idPubKey, sessPubKey}
   pure RemoteCrypto {sessionCode, sndCounter, rcvCounter, chainKeys, skippedKeys, signatures}
 
 closeRemoteHostClient :: RemoteHostClient -> IO ()
