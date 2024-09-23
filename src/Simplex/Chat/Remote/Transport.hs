@@ -16,7 +16,6 @@ import Simplex.FileTransfer.Transport (ReceiveFileError (..), receiveSbFile, sen
 import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.Lazy as LC
 import Simplex.Messaging.Encoding
-import Simplex.Messaging.Transport (TSbChainKeys (..))
 import Simplex.Messaging.Util (liftError', liftEitherWith)
 import Simplex.RemoteControl.Types (RCErrorType (..))
 import UnliftIO
@@ -24,9 +23,8 @@ import UnliftIO.Directory (getFileSize)
 
 type EncryptedFile = ((Handle, Word32), LC.SbState)
 
-prepareEncryptedFile :: RemoteCrypto -> (Handle, Word32) -> ExceptT RemoteProtocolError IO EncryptedFile
-prepareEncryptedFile RemoteCrypto {chainKeys = TSbChainKeys {sndKey}} f = do
-  (sk, nonce) <- atomically $ stateTVar sndKey C.sbcHkdf
+prepareEncryptedFile :: C.SbKeyNonce -> (Handle, Word32) -> ExceptT RemoteProtocolError IO EncryptedFile
+prepareEncryptedFile (sk, nonce) f = do
   sbState <- liftEitherWith (const $ PRERemoteControl RCEEncrypt) $ LC.sbInit sk nonce
   pure (f, sbState)
 
@@ -39,13 +37,12 @@ sendEncryptedFile ((h, sz), sbState) send = do
 -- prepareToDecryptFile RemoteCrypto {chainKeys = TSbChainKeys {rcvKey}} getChunk fileSize fileDigest toPath = do
 
 
-receiveEncryptedFile :: RemoteCrypto -> (Int -> IO ByteString) -> Word32 -> FileDigest -> FilePath -> ExceptT RemoteProtocolError IO ()
-receiveEncryptedFile RemoteCrypto {chainKeys = TSbChainKeys {rcvKey}} getChunk fileSize fileDigest toPath = do
+receiveEncryptedFile :: C.SbKeyNonce -> (Int -> IO ByteString) -> Word32 -> FileDigest -> FilePath -> ExceptT RemoteProtocolError IO ()
+receiveEncryptedFile (sk, nonce) getChunk fileSize fileDigest toPath = do
   c <- liftIO $ getChunk 1
   unless (c == "\x01") $ throwError RPENoFile
   size <- liftError' RPEInvalidBody $ smpDecode <$> getChunk 4
   unless (size == fileSize + fromIntegral C.authTagSize) $ throwError RPEFileSize
-  (sk, nonce) <- atomically $ stateTVar rcvKey C.sbcHkdf
   sbState <- liftEitherWith (const $ PRERemoteControl RCEDecrypt) $ LC.sbInit sk nonce
   liftError' fErr $ withFile toPath WriteMode $ \h -> receiveSbFile getChunk h sbState fileSize
   digest <- liftIO $ LC.sha512Hash <$> LB.readFile toPath

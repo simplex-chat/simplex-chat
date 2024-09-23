@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
@@ -11,20 +12,22 @@
 module Simplex.Chat.Remote.Types where
 
 import Control.Concurrent.Async (Async)
-import Control.Concurrent.STM (TVar)
+import Control.Concurrent.STM
 import Control.Exception (Exception)
+import Control.Monad (when)
 import qualified Data.Aeson.TH as J
 import Data.ByteString (ByteString)
 import Data.Int (Int64)
 import Data.Text (Text)
-import Data.Word (Word16)
+import Data.Word (Word16, Word32)
 import Simplex.Chat.Remote.AppVersion
 import Simplex.Chat.Types (verificationCode)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
-import Simplex.Messaging.Transport (TLS (..), TSbChainKeys)
+import Simplex.Messaging.Transport (TLS (..), TSbChainKeys (..))
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
+import qualified Simplex.Messaging.TMap as TM
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Types
 
@@ -38,11 +41,44 @@ data RemoteHostClient = RemoteHostClient
   }
 
 data RemoteCrypto = RemoteCrypto
-  { counter :: TVar Int64,
-    sessionCode :: ByteString,
+  { sessionCode :: ByteString,
+    sndCounter :: TVar Word32,
+    rcvCounter :: TVar Word32,
     chainKeys :: TSbChainKeys,
+    skippedKeys :: TM.TMap Word32 (C.SbKeyNonce, C.SbKeyNonce),
     signatures :: RemoteSignatures
   }
+
+getRemoteSndKeys :: RemoteCrypto -> STM (Word32, C.SbKeyNonce, C.SbKeyNonce)
+getRemoteSndKeys RemoteCrypto {sndCounter, chainKeys = TSbChainKeys {sndKey}} = do
+  corrId <- stateTVar sndCounter $ \c -> let !c' = c + 1 in (c', c')
+  cmdKN <- stateTVar sndKey C.sbcHkdf
+  fileKN <- stateTVar sndKey C.sbcHkdf
+  pure (corrId, cmdKN, fileKN)
+
+getRemoteRcvKeys :: RemoteCrypto -> Word32 -> STM (Either RemoteProtocolError (C.SbKeyNonce, C.SbKeyNonce))
+getRemoteRcvKeys RemoteCrypto {rcvCounter, chainKeys = TSbChainKeys {rcvKey}, skippedKeys} !corrId =
+  readTVar rcvCounter >>= getRcvKeys
+  where
+    getRcvKeys prevCorrId
+      | prevCorrId > corrId =
+          let err = PREEarlierId $ prevCorrId - corrId
+           in maybe (Left err) Right <$> TM.lookupDelete corrId skippedKeys
+      | prevCorrId == corrId =
+          pure $ Left PREDuplicateId
+      | prevCorrId + maxSkip < corrId =
+          pure $ Left $ RPEManySkippedIds (corrId - prevCorrId)
+      | otherwise = do -- prevCorrId < corrId
+          writeTVar rcvCounter corrId
+          skipKeys (prevCorrId + 1)
+          Right <$> getKeys
+    maxSkip = 256
+    getKeys = (,) <$> stateTVar rcvKey C.sbcHkdf <*> stateTVar rcvKey C.sbcHkdf
+    skipKeys !cId =
+      when (cId < corrId) $ do
+        keys <- getKeys
+        TM.insert cId keys skippedKeys
+        skipKeys (cId + 1)
 
 data RemoteSignatures
   = RSSign
@@ -107,6 +143,9 @@ data RemoteProtocolError
   | RPENoFile
   | RPEFileSize
   | RPEFileDigest
+  | RPEManySkippedIds Word32
+  | PREEarlierId Word32
+  | PREDuplicateId
   | -- | Wrong response received for the command sent
     RPEUnexpectedResponse {response :: Text}
   | -- | A file already exists in the destination position
