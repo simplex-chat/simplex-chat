@@ -29,7 +29,7 @@ struct SwiftUISheet<SheetContent: View>: ViewModifier {
         let sheetHeight = height + safeAreaInset
         ZStack {
             content
-            Color.black.opacity(0.35 * relativeOffset)
+            Color.black.opacity(0.3 * relativeOffset)
                 .ignoresSafeArea()
                 .onTapGesture { isPresented = false }
             sheetContent()

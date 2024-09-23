@@ -114,7 +114,7 @@ struct UserPicker: View {
     }
 
     private var listDivider: some View {
-        Divider().padding(.leading, 48)
+        Divider().padding(.leading, 52)
     }
 
     private func userView(_ u: UserInfo, size: CGFloat) -> some View {
