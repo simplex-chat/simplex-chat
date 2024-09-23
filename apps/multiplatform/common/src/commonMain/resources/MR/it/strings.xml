@@ -413,7 +413,7 @@
     <string name="icon_descr_group_inactive">Gruppo inattivo</string>
     <string name="rcv_conn_event_switch_queue_phase_completed">indirizzo cambiato per te</string>
     <string name="rcv_group_event_changed_member_role">ha cambiato il ruolo di %s in %s</string>
-    <string name="rcv_group_event_changed_your_role">cambiato il tuo ruolo in %s</string>
+    <string name="rcv_group_event_changed_your_role">ha cambiato il tuo ruolo in %s</string>
     <string name="rcv_conn_event_switch_queue_phase_changing">cambio indirizzo…</string>
     <string name="snd_conn_event_switch_queue_phase_changing_for_member">cambio indirizzo per %s…</string>
     <string name="rcv_group_event_member_connected">si è connesso/a</string>
