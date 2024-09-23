@@ -584,9 +584,11 @@ handleGetFile encryption User {userId} RemoteFile {userId = commandUserId, fileI
   liftRC (tryRemoteError $ getFileInfo path) >>= \case
     Left e -> lift $ reply (RRProtocolError e) $ \_ -> pure ()
     Right (fileSize, fileDigest) ->
-      ExceptT . withFile path ReadMode $ \h -> runExceptT $ do
-        encFile <- liftRC $ prepareEncryptedFile encryption (h, fileSize)
-        lift $ reply RRFile {fileSize, fileDigest} $ sendEncryptedFile encFile
+      ExceptT . withFile path ReadMode $ \h -> do
+        reply RRFile {fileSize, fileDigest} $ \send -> void . runExceptT $ do
+          encFile <- prepareEncryptedFile encryption (h, fileSize)
+          liftIO $ sendEncryptedFile encFile send
+        pure $ Right ()
 
 listRemoteCtrls :: CM [RemoteCtrlInfo]
 listRemoteCtrls = do

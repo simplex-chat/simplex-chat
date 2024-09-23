@@ -13,7 +13,6 @@ module Simplex.Chat.Remote.Types where
 import Control.Concurrent.Async (Async)
 import Control.Concurrent.STM (TVar)
 import Control.Exception (Exception)
-import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson.TH as J
 import Data.ByteString (ByteString)
 import Data.Int (Int64)
@@ -23,9 +22,8 @@ import Simplex.Chat.Remote.AppVersion
 import Simplex.Chat.Types (verificationCode)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile)
-import Simplex.Messaging.Crypto.SNTRUP761 (KEMHybridSecret)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
-import Simplex.Messaging.Transport (TLS (..))
+import Simplex.Messaging.Transport (TLS (..), TSbChainKeys)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Types
@@ -40,10 +38,9 @@ data RemoteHostClient = RemoteHostClient
   }
 
 data RemoteCrypto = RemoteCrypto
-  { drg :: TVar ChaChaDRG,
-    counter :: TVar Int64,
+  { counter :: TVar Int64,
     sessionCode :: ByteString,
-    hybridKey :: KEMHybridSecret,
+    chainKeys :: TSbChainKeys,
     signatures :: RemoteSignatures
   }
 

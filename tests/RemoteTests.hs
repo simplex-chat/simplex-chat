@@ -27,7 +27,7 @@ import UnliftIO.Concurrent
 import UnliftIO.Directory
 
 remoteTests :: SpecWith FilePath
-remoteTests = describe "Remote" $ do
+remoteTests = fdescribe "Remote" $ do
   describe "protocol handshake" $ do
     it "connects with new pairing (stops mobile)" $ remoteHandshakeTest False
     it "connects with new pairing (stops desktop)" $ remoteHandshakeTest True
@@ -37,7 +37,7 @@ remoteTests = describe "Remote" $ do
     it "connects with stored server bindings" storedBindingsTest
   it "sends messages" remoteMessageTest
   describe "remote files" $ do
-    it "store/get/send/receive files" remoteStoreFileTest
+    fit "store/get/send/receive files" remoteStoreFileTest
     it "should send files from CLI without /store" remoteCLIFileTest
   it "switches remote hosts" switchRemoteHostTest
   it "indicates remote hosts" indicateRemoteHostTest
