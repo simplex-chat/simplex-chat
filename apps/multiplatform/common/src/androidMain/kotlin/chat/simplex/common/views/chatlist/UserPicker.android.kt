@@ -21,92 +21,46 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
-import chat.simplex.res.MR
-import dev.icerock.moko.resources.compose.painterResource
-import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 
 @Composable
-actual fun UserPickerInactiveUsersSection(
+actual fun UserPickerUsersSection(
   users: List<UserInfo>,
   stopped: Boolean,
-  onShowAllProfilesClicked: () -> Unit,
   onUserClicked: (user: User) -> Unit,
 ) {
   val scrollState = rememberScrollState()
+  val screenWidthDp = windowWidth()
 
   if (users.isNotEmpty()) {
     SectionItemView(
       padding = PaddingValues(
-        start = 16.dp,
         top = if (windowOrientation() == WindowOrientation.PORTRAIT) DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL else DEFAULT_PADDING_HALF,
         bottom = DEFAULT_PADDING_HALF),
       disabled = stopped
     ) {
       Box {
         Row(
-          modifier = Modifier.padding(end = DEFAULT_PADDING + 30.dp).horizontalScroll(scrollState)
+          modifier = Modifier.horizontalScroll(scrollState),
         ) {
-          users.forEach { u ->
-            UserPickerInactiveUserBadge(u, stopped) {
-              onUserClicked(it)
-              withBGApi {
-                delay(500)
-                scrollState.scrollTo(0)
+          Spacer(Modifier.width(DEFAULT_PADDING))
+          Row(horizontalArrangement = Arrangement.spacedBy(DEFAULT_PADDING_HALF)) {
+            users.forEach { u ->
+              UserPickerUserBox(u, stopped, modifier = Modifier.userBoxWidth(u.user, users.size, screenWidthDp)) {
+                onUserClicked(it)
+                withBGApi {
+                  delay(500)
+                  scrollState.scrollTo(0)
+                }
               }
             }
-            Spacer(Modifier.width(20.dp))
           }
-          Spacer(Modifier.width(60.dp))
-        }
-        Row(
-          horizontalArrangement = Arrangement.End,
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(end = DEFAULT_PADDING + 30.dp)
-            .height(60.dp)
-        ) {
-          Canvas(modifier = Modifier.size(60.dp)) {
-            drawRect(
-              brush = Brush.horizontalGradient(
-                colors = listOf(
-                  Color.Transparent,
-                  CurrentColors.value.colors.surface,
-                )
-              ),
-            )
-          }
-        }
-        Row(
-          horizontalArrangement = Arrangement.End,
-          verticalAlignment = Alignment.CenterVertically,
-          modifier = Modifier
-            .height(60.dp)
-            .fillMaxWidth()
-            .padding(end = DEFAULT_PADDING)
-        ) {
-          IconButton(
-            onClick = onShowAllProfilesClicked,
-            enabled = !stopped
-          ) {
-            Icon(
-              painterResource(MR.images.ic_chevron_right),
-              stringResource(MR.strings.your_chat_profiles),
-              tint = MaterialTheme.colors.secondary,
-              modifier = Modifier.size(34.dp)
-            )
-          }
+          Spacer(Modifier.width(DEFAULT_PADDING))
         }
       }
     }
-  } else {
-    UserPickerOptionRow(
-      painterResource(MR.images.ic_manage_accounts),
-      stringResource(MR.strings.your_chat_profiles),
-      onShowAllProfilesClicked
-    )
   }
 }
 
@@ -150,7 +104,7 @@ actual fun PlatformUserPicker(modifier: Modifier, pickerState: MutableStateFlow<
             isLight = colors.isLight,
             drawerShadingColor = shadingColor,
             toolbarOnTop = !appPrefs.oneHandUI.get(),
-            navBarColor = colors.surface
+            navBarColor = colors.background.mixWith(colors.onBackground, 0.97f)
           )
         } else if (ModalManager.start.modalCount.value == 0) {
           platform.androidSetDrawerStatusAndNavBarColor(
@@ -220,3 +174,13 @@ private fun Modifier.draggableBottomDrawerModifier(
   orientation = Orientation.Vertical,
   resistance = null
 )
+
+private fun Modifier.userBoxWidth(user: User, totalUsers: Int, windowWidth: Dp): Modifier {
+  if (totalUsers == 1) {
+    return this.width(windowWidth - DEFAULT_PADDING * 2)
+  } else if (user.activeUser) {
+    return this.width(windowWidth - DEFAULT_PADDING - (DEFAULT_PADDING_HALF * 3) - 44.dp)
+  } else {
+    return this.widthIn(max = windowWidth * 0.618f)
+  }
+}
