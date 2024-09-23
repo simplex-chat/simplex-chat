@@ -33,10 +33,6 @@ sendEncryptedFile ((h, sz), sbState) send = do
   send $ byteString $ smpEncode ('\x01', sz + fromIntegral C.authTagSize)
   sendEncFile h send sbState sz
 
--- prepareToDecryptFile :: RemoteCrypto -> (Int -> IO ByteString) -> Word32 -> FileDigest -> FilePath -> ExceptT RemoteProtocolError IO ()
--- prepareToDecryptFile RemoteCrypto {chainKeys = TSbChainKeys {rcvKey}} getChunk fileSize fileDigest toPath = do
-
-
 receiveEncryptedFile :: C.SbKeyNonce -> (Int -> IO ByteString) -> Word32 -> FileDigest -> FilePath -> ExceptT RemoteProtocolError IO ()
 receiveEncryptedFile (sk, nonce) getChunk fileSize fileDigest toPath = do
   c <- liftIO $ getChunk 1
