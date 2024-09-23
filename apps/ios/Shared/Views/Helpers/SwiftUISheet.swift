@@ -42,9 +42,13 @@ struct SwiftUISheet<SheetContent: View>: ViewModifier {
                         .onChanged {
                             relativeOffset = min(max(relativeOffset - $0.translation.height / sheetHeight, 0), 1)
                         }
-                        .onEnded {
-                            isPresented = relativeOffset + $0.predictedEndTranslation.height / sheetHeight > 0.5
-                            animate(with: $0.velocity.height)
+                        .onEnded { _ in
+                            let ip = relativeOffset > 0.6
+                            if ip == isPresented {
+                                animate()
+                            } else {
+                                isPresented = ip
+                            }
                         }
                 )
                 .frame(maxHeight: .infinity, alignment: .bottom)
@@ -60,9 +64,14 @@ struct SwiftUISheet<SheetContent: View>: ViewModifier {
         } else { 0 }
     }
 
-    private func animate(with releaseVelocity: CGFloat? = nil) {
-        // TODO: Tune animation speed depending on drag gesture's final velocity
-        withAnimation { relativeOffset = isPresented ? 1 : 0 }
+    private func animate() {
+        let newOffset: Double = isPresented ? 1 : 0
+        let distance: Double = abs(newOffset - relativeOffset)
+        if distance != 0 {
+            withAnimation(
+                .easeOut(duration: max(0.1, distance * 0.3))
+            ) { relativeOffset = isPresented ? 1 : 0 }
+        }
     }
 
     struct ClipShape: Shape {
