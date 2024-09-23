@@ -60,7 +60,7 @@ struct ChatListView: View {
         }
         .modifier(
             SwiftUISheet(height: 400, isPresented: $userPickerShown) {
-                UserPicker(activeSheet: $activeUserPickerSheet)
+                UserPicker(userPickerShown: $userPickerShown, activeSheet: $activeUserPickerSheet)
             }
         )
         .sheet(item: $activeUserPickerSheet) { sheet in

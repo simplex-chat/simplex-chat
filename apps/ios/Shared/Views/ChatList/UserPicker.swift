@@ -12,7 +12,7 @@ struct UserPicker: View {
     @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
     @Environment(\.scenePhase) private var scenePhase: ScenePhase
     @Environment(\.colorScheme) private var colorScheme: ColorScheme
-    @Environment(\.dismiss) private var dismiss: DismissAction
+    @Binding var userPickerShown: Bool
     @Binding var activeSheet: UserPickerSheet?
     @State private var currentUser: Int64?
     @State private var switchingProfile = false
@@ -133,7 +133,7 @@ struct UserPicker: View {
         .clipShape(sectionShape)
         .onTapGesture {
             switchingProfile = true
-            dismiss()
+            userPickerShown = false
             Task {
                 do {
                     try await changeActiveUserAsync_(u.user.userId, viewPwd: nil)
@@ -181,6 +181,7 @@ struct UserPicker_Previews: PreviewProvider {
         let m = ChatModel()
         m.users = [UserInfo.sampleData, UserInfo.sampleData]
         return UserPicker(
+            userPickerShown: .constant(true),
             activeSheet: $activeSheet
         )
         .environmentObject(m)

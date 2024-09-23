@@ -57,13 +57,6 @@ struct SwiftUISheet<SheetContent: View>: ViewModifier {
         .onChange(of: isPresented) { _ in animate() }
     }
 
-    private var bottomSafeAreaInset: Double {
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let window = windowScene.windows.first {
-            window.safeAreaInsets.bottom
-        } else { 0 }
-    }
-
     private func animate() {
         let newOffset: Double = isPresented ? 1 : 0
         let distance: Double = abs(newOffset - relativeOffset)
