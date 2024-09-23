@@ -586,11 +586,10 @@ handleGetFile User {userId} RemoteFile {userId = commandUserId, fileId, sent, fi
   liftRC (tryRemoteError $ getFileInfo path) >>= \case
     Left e -> lift $ reply (RRProtocolError e) $ \_ _ -> pure ()
     Right (fileSize, fileDigest) ->
-      ExceptT . withFile path ReadMode $ \h -> do
+      lift . withFile path ReadMode $ \h -> do
         reply RRFile {fileSize, fileDigest} $ \sfKN send -> void . runExceptT $ do
           encFile <- prepareEncryptedFile sfKN (h, fileSize)
           liftIO $ sendEncryptedFile encFile send
-        pure $ Right ()
 
 listRemoteCtrls :: CM [RemoteCtrlInfo]
 listRemoteCtrls = do
