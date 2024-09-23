@@ -8145,9 +8145,9 @@ Ripetere la richiesta di connessione?</target>
         <target>ha cambiato il ruolo di %1$@ in %2$@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="changed your role to %@" xml:space="preserve">
+      <trans-unit id="changed your role to %@" xml:space="preserve" approved="no">
         <source>changed your role to %@</source>
-        <target>cambiato il tuo ruolo in %@</target>
+        <target state="translated">ha cambiato il tuo ruolo in %@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="changing address for %@…" xml:space="preserve">
