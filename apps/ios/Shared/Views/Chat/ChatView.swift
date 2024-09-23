@@ -622,7 +622,11 @@ struct ChatView: View {
             Text(String.localizedStringWithFormat(
                 NSLocalizedString("%@, %@", comment: "format for date separator in chat"),
                 date.formatted(.dateTime.weekday(.abbreviated)),
-                date.formatted(.dateTime.day().month(.abbreviated))
+                date.formatted(
+                    Calendar.current.isDate(date, equalTo: .now, toGranularity: .year)
+                    ? .dateTime.day().month(.abbreviated)
+                    : .dateTime.day().month(.abbreviated).year()
+                )
             ))
             .font(.callout)
             .fontWeight(.medium)

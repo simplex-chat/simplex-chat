@@ -35,11 +35,16 @@ struct ChatPreviewView: View {
             }
             .padding(.leading, 4)
 
+            let chatTs = if let cItem {
+                cItem.meta.itemTs
+            } else {
+                chat.chatInfo.chatTs
+            }
             VStack(spacing: 0) {
                 HStack(alignment: .top) {
                     chatPreviewTitle()
                     Spacer()
-                    (cItem?.timestampText ?? formatTimestampText(chat.chatInfo.chatTs))
+                    (formatTimestampText(chatTs))
                         .font(.subheadline)
                         .frame(minWidth: 60, alignment: .trailing)
                         .foregroundColor(theme.colors.secondary)

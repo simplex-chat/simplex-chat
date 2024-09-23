@@ -35,7 +35,8 @@ CREATE TABLE users(
   send_rcpts_contacts INTEGER NOT NULL DEFAULT 0,
   send_rcpts_small_groups INTEGER NOT NULL DEFAULT 0,
   user_member_profile_updated_at TEXT,
-  ui_themes TEXT, -- 1 for active user
+  ui_themes TEXT,
+  active_order INTEGER NOT NULL DEFAULT 0, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE RESTRICT

@@ -593,8 +593,7 @@ processChatCommand' vr = \case
     user_ <- chatReadVar currentUser
     user' <- privateGetUser userId'
     validateUserPassword_ user_ user' viewPwd_
-    withFastStore' (`setActiveUser` userId')
-    let user'' = user' {activeUser = True}
+    user'' <- withFastStore' (`setActiveUser` user')
     chatWriteVar currentUser $ Just user''
     pure $ CRActiveUser user''
   SetActiveUser uName viewPwd_ -> do
