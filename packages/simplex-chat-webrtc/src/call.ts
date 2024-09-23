@@ -770,6 +770,18 @@ const processCommand = (function () {
     await setupEncryptionWorker(call)
     setupRemoteStream(call)
 
+    if ((window as any).safari && (navigator as any).userActivation && (navigator as any).userActivation.isActive == false) {
+      videos.remote.muted = true
+      // Safari requires to wait until user makes any action with webpage and only after that to unmute a video.
+      // If not muting it initially, the video will just not show up at all
+      let interval = window.setInterval(() => {
+        if ((navigator as any).userActivation.isActive) {
+          videos.remote.muted = false
+          console.log("LALAL UNMUTED remote in Safari after user action ")
+          window.clearInterval(interval)
+        }
+      }, 500)
+    }
     videos.localScreen.srcObject = call.localScreenStream
     videos.remote.srcObject = call.remoteStream
     videos.remoteScreen.srcObject = call.remoteScreenStream
@@ -791,7 +803,9 @@ const processCommand = (function () {
           console.log(JSON.stringify({message: data}))
           const transceiverMid: string = data.transceiverMid
           const mute: boolean = data.mute
-          onMediaMuteUnmute(transceiverMid, mute)
+          if (transceiverMid && mute != undefined) {
+            onMediaMuteUnmute(transceiverMid, mute)
+          }
         }
       }
     }
@@ -861,9 +875,10 @@ const processCommand = (function () {
     if (call.aesKey && call.key) {
       const pc = call.connection
       console.log("set up encryption for sending")
+      let mid = 0
       for (const transceiver of pc.getTransceivers()) {
         const sender = transceiver.sender as RTCRtpSenderWithEncryption
-        const source = mediaSourceFromTransceiverMid(transceiver.mid)
+        const source = mediaSourceFromTransceiverMid(mid.toString())
         setupPeerTransform(
           TransformOperation.Encrypt,
           sender,
@@ -871,8 +886,9 @@ const processCommand = (function () {
           call.aesKey,
           call.key,
           source == CallMediaSource.Camera || source == CallMediaSource.ScreenVideo ? CallMediaType.Video : CallMediaType.Audio,
-          transceiver.mid
+          mid.toString()
         )
+        mid++
       }
     }
   }
@@ -948,10 +964,13 @@ const processCommand = (function () {
       const selectedCodec = codecs[selectedCodecIndex]
       codecs.splice(selectedCodecIndex, 1)
       codecs.unshift(selectedCodec)
+      // On this stage transceiver.mid may not be set so using a sequence starting from 0 to decide which track.kind is inside
+      let mid = 0
       for (const t of call.connection.getTransceivers()) {
         // Firefox doesn't have this function implemented:
         // https://bugzilla.mozilla.org/show_bug.cgi?id=1396922
-        if (t.sender.track?.kind === "video" && t.setCodecPreferences) {
+        const source = mediaSourceFromTransceiverMid(mid.toString())
+        if ((source == CallMediaSource.Camera || source == CallMediaSource.ScreenVideo) && t.setCodecPreferences) {
           try {
             t.setCodecPreferences(codecs)
           } catch (error) {
@@ -959,6 +978,7 @@ const processCommand = (function () {
             console.log("Failed to set codec preferences, trying without any preferences: " + error)
           }
         }
+        mid++
       }
     }
   }

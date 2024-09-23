@@ -518,6 +518,18 @@ const processCommand = (function () {
             throw Error("no video elements");
         await setupEncryptionWorker(call);
         setupRemoteStream(call);
+        if (window.safari && navigator.userActivation && navigator.userActivation.isActive == false) {
+            videos.remote.muted = true;
+            // Safari requires to wait until user makes any action with webpage and only after that to unmute a video.
+            // If not muting it initially, the video will just not show up at all
+            let interval = window.setInterval(() => {
+                if (navigator.userActivation.isActive) {
+                    videos.remote.muted = false;
+                    console.log("LALAL UNMUTED remote in Safari after user action ");
+                    window.clearInterval(interval);
+                }
+            }, 500);
+        }
         videos.localScreen.srcObject = call.localScreenStream;
         videos.remote.srcObject = call.remoteStream;
         videos.remoteScreen.srcObject = call.remoteScreenStream;
@@ -539,7 +551,9 @@ const processCommand = (function () {
                     console.log(JSON.stringify({ message: data }));
                     const transceiverMid = data.transceiverMid;
                     const mute = data.mute;
-                    onMediaMuteUnmute(transceiverMid, mute);
+                    if (transceiverMid && mute != undefined) {
+                        onMediaMuteUnmute(transceiverMid, mute);
+                    }
                 };
             }
         }
@@ -604,10 +618,12 @@ const processCommand = (function () {
         if (call.aesKey && call.key) {
             const pc = call.connection;
             console.log("set up encryption for sending");
+            let mid = 0;
             for (const transceiver of pc.getTransceivers()) {
                 const sender = transceiver.sender;
-                const source = mediaSourceFromTransceiverMid(transceiver.mid);
-                setupPeerTransform(TransformOperation.Encrypt, sender, call.worker, call.aesKey, call.key, source == CallMediaSource.Camera || source == CallMediaSource.ScreenVideo ? CallMediaType.Video : CallMediaType.Audio, transceiver.mid);
+                const source = mediaSourceFromTransceiverMid(mid.toString());
+                setupPeerTransform(TransformOperation.Encrypt, sender, call.worker, call.aesKey, call.key, source == CallMediaSource.Camera || source == CallMediaSource.ScreenVideo ? CallMediaType.Video : CallMediaType.Audio, mid.toString());
+                mid++;
             }
         }
     }
@@ -664,7 +680,6 @@ const processCommand = (function () {
         // which is 10 bytes for key frames and 3 bytes for delta frames.
         // For opus (where encodedFrame.type is not set) this is the TOC byte from
         //   https://tools.ietf.org/html/rfc6716#section-3.1
-        var _a;
         // Using RTCRtpReceiver instead of RTCRtpSender, see these lines:
         // -    if (!is_recv_codec && !is_send_codec) {
         // +    if (!is_recv_codec) {
@@ -676,10 +691,13 @@ const processCommand = (function () {
             const selectedCodec = codecs[selectedCodecIndex];
             codecs.splice(selectedCodecIndex, 1);
             codecs.unshift(selectedCodec);
+            // On this stage transceiver.mid may not be set so using a sequence starting from 0 to decide which track.kind is inside
+            let mid = 0;
             for (const t of call.connection.getTransceivers()) {
                 // Firefox doesn't have this function implemented:
                 // https://bugzilla.mozilla.org/show_bug.cgi?id=1396922
-                if (((_a = t.sender.track) === null || _a === void 0 ? void 0 : _a.kind) === "video" && t.setCodecPreferences) {
+                const source = mediaSourceFromTransceiverMid(mid.toString());
+                if ((source == CallMediaSource.Camera || source == CallMediaSource.ScreenVideo) && t.setCodecPreferences) {
                     try {
                         t.setCodecPreferences(codecs);
                     }
@@ -688,6 +706,7 @@ const processCommand = (function () {
                         console.log("Failed to set codec preferences, trying without any preferences: " + error);
                     }
                 }
+                mid++;
             }
         }
     }
