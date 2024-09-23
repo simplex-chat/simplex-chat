@@ -58,43 +58,48 @@ struct ChatListView: View {
                 destination: chatView
             ) { chatListView }
         }
-        .sheet(isPresented: $userPickerShown) {
-            UserPicker(activeSheet: $activeUserPickerSheet)
-                .sheet(item: $activeUserPickerSheet) { sheet in
-                    if let currentUser = chatModel.currentUser {
-                        switch sheet {
-                        case .address:
-                            NavigationView {
-                                UserAddressView(shareViaProfile: currentUser.addressShared)
-                                    .navigationTitle("SimpleX address")
-                                    .navigationBarTitleDisplayMode(.large)
-                                    .modifier(ThemedBackground(grouped: true))
-                            }
-                        case .chatProfiles:
-                            NavigationView {
-                                UserProfilesView()
-                            }
-                        case .currentProfile:
-                            NavigationView {
-                                UserProfile()
-                                    .navigationTitle("Your current profile")
-                                    .modifier(ThemedBackground(grouped: true))
-                            }
-                        case .chatPreferences:
-                            NavigationView {
-                                PreferencesView(profile: currentUser.profile, preferences: currentUser.fullPreferences, currentPreferences: currentUser.fullPreferences)
-                                    .navigationTitle("Your preferences")
-                                    .navigationBarTitleDisplayMode(.large)
-                                    .modifier(ThemedBackground(grouped: true))
-                            }
-                        case .useFromDesktop:
-                            ConnectDesktopView(viaSettings: false)
-                        case .settings:
-                            SettingsView(showSettings: $showSettings)
-                                .navigationBarTitleDisplayMode(.large)
-                        }
+        .modifier(
+            SwiftUISheet(height: 400, isPresented: $userPickerShown) {
+                UserPicker(activeSheet: $activeUserPickerSheet)
+            }
+        )
+        .sheet(item: $activeUserPickerSheet) { sheet in
+            if let currentUser = chatModel.currentUser {
+                switch sheet {
+                case .address:
+                    NavigationView {
+                        UserAddressView(shareViaProfile: currentUser.addressShared)
+                            .navigationTitle("SimpleX address")
+                            .navigationBarTitleDisplayMode(.large)
+                            .modifier(ThemedBackground(grouped: true))
                     }
+                case .chatProfiles:
+                    NavigationView {
+                        UserProfilesView()
+                    }
+                case .currentProfile:
+                    NavigationView {
+                        UserProfile()
+                            .navigationTitle("Your current profile")
+                            .modifier(ThemedBackground(grouped: true))
+                    }
+                case .chatPreferences:
+                    NavigationView {
+                        PreferencesView(profile: currentUser.profile, preferences: currentUser.fullPreferences, currentPreferences: currentUser.fullPreferences)
+                            .navigationTitle("Your preferences")
+                            .navigationBarTitleDisplayMode(.large)
+                            .modifier(ThemedBackground(grouped: true))
+                    }
+                case .useFromDesktop:
+                    ConnectDesktopView(viaSettings: false)
+                case .settings:
+                    SettingsView(showSettings: $showSettings)
+                        .navigationBarTitleDisplayMode(.large)
                 }
+            }
+        }
+        .onChange(of: activeUserPickerSheet) {
+            if $0 != nil { userPickerShown = false }
         }
     }
 

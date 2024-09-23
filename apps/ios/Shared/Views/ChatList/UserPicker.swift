@@ -21,31 +21,18 @@ struct UserPicker: View {
     // Inset grouped list dimensions
     private let imageSize: CGFloat = 44
     private let rowPadding: CGFloat = 16
+    private let rowVerticalPadding: CGFloat = 10
     private let sectionSpacing: CGFloat = 35
     private var sectionHorizontalPadding: CGFloat { frameWidth > 375 ? 20 : 16 }
     private let sectionShape = RoundedRectangle(cornerRadius: 10, style: .continuous)
 
     var body: some View {
-        if #available(iOS 16.0, *) {
-            let v = viewBody.presentationDetents([.height(400)])
-            if #available(iOS 16.4, *) {
-                v.scrollBounceBehavior(.basedOnSize)
-            } else {
-                v
-            }
-        } else {
-            viewBody
-        }
-    }
-
-    @ViewBuilder
-    private var viewBody: some View {
         let otherUsers: [UserInfo] = m.users
             .filter { u in !u.user.hidden && u.user.userId != m.currentUser?.userId }
             .sorted(using: KeyPathComparator<UserInfo>(\.user.activeOrder, order: .reverse))
         let sectionWidth = max(frameWidth - sectionHorizontalPadding * 2, 0)
         let currentUserWidth = max(frameWidth - sectionHorizontalPadding - rowPadding * 2 - 14 - imageSize, 0)
-        VStack(spacing: 0) {
+        VStack(spacing: sectionSpacing) {
             if let user = m.currentUser {
                 StickyScrollView {
                     HStack(spacing: rowPadding) {
@@ -56,7 +43,7 @@ struct UserPicker: View {
                         }
                         .padding(rowPadding)
                         .frame(width: otherUsers.isEmpty ? sectionWidth : currentUserWidth, alignment: .leading)
-                        .background(Color(.secondarySystemGroupedBackground))
+                        .background(elevatedSecondarySystemGroupedBackground(colorScheme))
                         .clipShape(sectionShape)
                         .onTapGesture { activeSheet = .currentProfile }
                         ForEach(otherUsers) { u in
@@ -72,20 +59,23 @@ struct UserPicker: View {
                 .overlay(DetermineWidth())
                 .onPreferenceChange(DetermineWidth.Key.self) { frameWidth = $0 }
             }
-            List {
-                Section {
-                    openSheetOnTap("qrcode", title: m.userAddress == nil ? "Create SimpleX address" : "Your SimpleX address", sheet: .address)
-                    openSheetOnTap("switch.2", title: "Chat preferences", sheet: .chatPreferences)
-                    openSheetOnTap("person.crop.rectangle.stack", title: "Your chat profiles", sheet: .chatProfiles)
-                    openSheetOnTap("desktopcomputer", title: "Use from desktop", sheet: .useFromDesktop)
-
-                    ZStack(alignment: .trailing) {
-                        openSheetOnTap("gearshape", title: "Settings", sheet: .settings)
-                        Image(systemName: colorScheme == .light ? "sun.max" : "moon.fill")
+            VStack(spacing: 0) {
+                openSheetOnTap("qrcode", title: m.userAddress == nil ? "Create SimpleX address" : "Your SimpleX address", sheet: .address)
+                listDivider
+                openSheetOnTap("switch.2", title: "Chat preferences", sheet: .chatPreferences)
+                listDivider
+                openSheetOnTap("person.crop.rectangle.stack", title: "Your chat profiles", sheet: .chatProfiles)
+                listDivider
+                openSheetOnTap("desktopcomputer", title: "Use from desktop", sheet: .useFromDesktop)
+                listDivider
+                ZStack(alignment: .trailing) {
+                    openSheetOnTap("gearshape", title: "Settings", sheet: .settings)
+                    Image(systemName: colorScheme == .light ? "sun.max" : "moon.fill")
                         .resizable()
                         .symbolRenderingMode(.monochrome)
                         .foregroundColor(theme.colors.secondary)
                         .frame(maxWidth: 20, maxHeight: 20)
+                        .padding(.horizontal, rowPadding)
                         .onTapGesture {
                             if (colorScheme == .light) {
                                 ThemeManager.applyTheme(systemDarkThemeDefault.get())
@@ -96,9 +86,11 @@ struct UserPicker: View {
                         .onLongPressGesture {
                             ThemeManager.applyTheme(DefaultTheme.SYSTEM_THEME_NAME)
                         }
-                    }
                 }
             }
+            .background(elevatedSecondarySystemGroupedBackground(colorScheme))
+            .clipShape(sectionShape)
+            .padding(.horizontal, sectionHorizontalPadding)
         }
         .onAppear {
             // This check prevents the call of listUsers after the app is suspended, and the database is closed.
@@ -121,6 +113,10 @@ struct UserPicker: View {
         .disabled(switchingProfile)
     }
 
+    private var listDivider: some View {
+        Divider().padding(.leading, 48)
+    }
+
     private func userView(_ u: UserInfo, size: CGFloat) -> some View {
         HStack {
             ZStack(alignment: .topTrailing) {
@@ -133,7 +129,7 @@ struct UserPicker: View {
             Text(u.user.displayName).font(.title2).lineLimit(1)
         }
         .padding(rowPadding)
-        .background(Color(.secondarySystemGroupedBackground))
+        .background(elevatedSecondarySystemGroupedBackground(colorScheme))
         .clipShape(sectionShape)
         .onTapGesture {
             switchingProfile = true
@@ -156,15 +152,14 @@ struct UserPicker: View {
     }
     
     private func openSheetOnTap(_ icon: String, title: LocalizedStringKey, sheet: UserPickerSheet) -> some View {
-        Button {
-            activeSheet = sheet
-        } label: {
-            settingsRow(icon, color: theme.colors.secondary) {
-                Text(title).foregroundColor(.primary)
-            }
+        settingsRow(icon, color: theme.colors.secondary) {
+            Text(title).foregroundColor(.primary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, rowPadding)
+        .padding(.vertical, rowVerticalPadding)
         .contentShape(Rectangle())
+        .onTapGesture { activeSheet = sheet }
     }
     
     private func unreadBadge(_ u: UserInfo) -> some View {
