@@ -40,7 +40,7 @@ import kotlinx.coroutines.flow.*
 import kotlin.math.max
 
 val USER_PICKER_ROW_PADDING = 16.dp
-val USER_PICKER_SECTION_SPACING = 33.dp
+val USER_PICKER_SECTION_SPACING = 32.dp
 val USER_PICKER_IMAGE_SIZE = 44.dp
 
 @Composable
@@ -261,7 +261,7 @@ fun UserPicker(
     if (appPlatform.isDesktop || windowOrientation() == WindowOrientation.PORTRAIT) {
       Column {
         FirstSection()
-        Spacer(Modifier.padding(USER_PICKER_SECTION_SPACING - DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL))
+        Spacer(Modifier.padding(USER_PICKER_SECTION_SPACING - DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL - 3.dp))
         SecondSection()
         GlobalSettingsSection(
           chatModel = chatModel,
@@ -436,9 +436,6 @@ fun UserPickerUserBox(
   modifier: Modifier = Modifier,
   onClick: (user: User) -> Unit,
 ) {
-  val percent = remember { appPreferences.profileImageCornerRadius.state }
-  val r1 = max(0f, percent.value)
-
   Row(
     modifier = modifier
       .userPickerBoxModifier()
@@ -479,7 +476,8 @@ private fun Modifier.userPickerBoxModifier(): Modifier {
     else -> r.toInt()
   }
 
-  return this.clip(RoundedCornerShape(CornerSize(cornerSize)))
+  val shape = RoundedCornerShape(CornerSize(cornerSize))
+  return this.clip(shape).border(1.dp, MaterialTheme.colors.secondaryVariant, shape)
 }
 
 @OptIn(ExperimentalLayoutApi::class)
