@@ -342,9 +342,9 @@
         <target>(új)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="(this device v%@)" xml:space="preserve">
+      <trans-unit id="(this device v%@)" xml:space="preserve" approved="no">
         <source>(this device v%@)</source>
-        <target>(ez az eszköz: v%@)</target>
+        <target state="translated">(ez a készülék: v%@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=")" xml:space="preserve">
@@ -367,9 +367,9 @@
         <target>**Csoport létrehozása**: új csoport létrehozásához.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." xml:space="preserve">
+      <trans-unit id="**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." xml:space="preserve" approved="no">
         <source>**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have.</source>
-        <target>**Privátabb**: 20 percenként ellenőrzi az új üzeneteket. Az eszköztoken megosztásra kerül a SimpleX Chat-kiszolgálóval, de az nem, hogy hány ismerőse vagy üzenete van.</target>
+        <target state="translated">**Privátabb**: 20 percenként ellenőrzi az új üzeneteket. A készüléktoken megosztásra kerül a SimpleX Chat-kiszolgálóval, de az nem, hogy hány ismerőse vagy üzenete van.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." xml:space="preserve">
@@ -379,7 +379,7 @@
       </trans-unit>
       <trans-unit id="**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." xml:space="preserve" approved="no">
         <source>**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection.</source>
-        <target state="translated">**Megjegyzés:** ha két eszközön is ugyanazt az adatbázist használja, akkor biztonsági védelemként megszakítja az ismerőseitől érkező üzenetek visszafejtését.</target>
+        <target state="translated">**Megjegyzés:** ha két készüléken is ugyanazt az adatbázist használja, akkor biztonsági védelemként megszakítja az ismerőseitől érkező üzenetek visszafejtését.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Please note**: you will NOT be able to recover or change passphrase if you lose it." xml:space="preserve" approved="no">
@@ -387,9 +387,9 @@
         <target state="translated">**Megjegyzés:** NEM tudja visszaállítani vagy megváltoztatni jelmondatát, ha elveszíti azt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." xml:space="preserve">
+      <trans-unit id="**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." xml:space="preserve" approved="no">
         <source>**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from.</source>
-        <target>**Javasolt**: az eszköztoken és az értesítések elküldésre kerülnek a SimpleX Chat értesítési kiszolgálóra, kivéve az üzenet tartalma, mérete vagy az, hogy kitől származik.</target>
+        <target state="translated">**Javasolt**: a készüléktoken és az értesítések elküldésre kerülnek a SimpleX Chat értesítési kiszolgálóra, kivéve az üzenet tartalma, mérete vagy az, hogy kitől származik.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Warning**: Instant push notifications require passphrase saved in Keychain." xml:space="preserve" approved="no">
@@ -655,9 +655,9 @@
         <target>Kiszolgáló hozzáadása QR-kód beolvasásával.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add to another device" xml:space="preserve">
+      <trans-unit id="Add to another device" xml:space="preserve" approved="no">
         <source>Add to another device</source>
-        <target>Hozzáadás egy másik eszközhöz</target>
+        <target state="translated">Hozzáadás egy másik készülékhez</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add welcome message" xml:space="preserve">
@@ -765,9 +765,9 @@
         <target state="translated">Az ismerőseivel kapcsolatban marad. A profil változtatások frissítésre kerülnek az ismerősöknél.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." xml:space="preserve">
+      <trans-unit id="All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." xml:space="preserve" approved="no">
         <source>All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays.</source>
-        <target>Minden ismerőse, a beszélgetései és a fájljai biztonságosan titkosításra kerülnek, melyek részletekben feltöltődnek a beállított XFTP átjátszókra.</target>
+        <target state="translated">Minden ismerőse, a beszélgetései és a fájljai biztonságosan titkosításra kerülnek, melyek részletekben feltöltődnek a beállított XFTP-közvetítő-kiszolgálóra.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow" xml:space="preserve">
@@ -900,9 +900,9 @@
         <target>Mindig használjon privát útválasztást.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Always use relay" xml:space="preserve">
+      <trans-unit id="Always use relay" xml:space="preserve" approved="no">
         <source>Always use relay</source>
-        <target>Mindig használjon átjátszó kiszolgálót</target>
+        <target state="translated">Mindig használjon közvetítő-kiszolgálót</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="An empty chat profile with the provided name is created, and the app opens as usual." xml:space="preserve">
@@ -1356,9 +1356,9 @@
         <target>A csevegés leállt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." xml:space="preserve">
+      <trans-unit id="Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." xml:space="preserve" approved="no">
         <source>Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat.</source>
-        <target>A csevegés leállt. Ha már használta ezt az adatbázist egy másik eszközön, úgy visszaállítás szükséges a csevegés megkezdése előtt.</target>
+        <target state="translated">A csevegés leállt. Ha már használta ezt az adatbázist egy másik készüléken, úgy visszaállítás szükséges a csevegés megkezdése előtt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat list" xml:space="preserve">
@@ -1401,9 +1401,9 @@
         <target>Kínai és spanyol kezelőfelület</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Choose _Migrate from another device_ on the new device and scan QR code." xml:space="preserve">
+      <trans-unit id="Choose _Migrate from another device_ on the new device and scan QR code." xml:space="preserve" approved="no">
         <source>Choose _Migrate from another device_ on the new device and scan QR code.</source>
-        <target>Válassza az _Átköltöztetés egy másik eszközről_ opciót az új eszközön és olvassa be a QR-kódot.</target>
+        <target state="translated">Válassza az _Átköltöztetés egy másik készülékről_ opciót az új készüléken és olvassa be a QR-kódot.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Choose file" xml:space="preserve">
@@ -2119,9 +2119,9 @@ Ez az ön egyszer használható hivatkozása!</target>
         <target>Adatbázis törlése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete database from this device" xml:space="preserve">
+      <trans-unit id="Delete database from this device" xml:space="preserve" approved="no">
         <source>Delete database from this device</source>
-        <target>Adatbázis törlése erről az eszközről</target>
+        <target state="translated">Adatbázis törlése erről a készülékről</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete file" xml:space="preserve">
@@ -2329,9 +2329,9 @@ Ez az ön egyszer használható hivatkozása!</target>
         <target>Fejlesztői eszközök</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Device" xml:space="preserve">
+      <trans-unit id="Device" xml:space="preserve" approved="no">
         <source>Device</source>
-        <target>Eszköz</target>
+        <target state="translated">Készülék</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Device authentication is disabled. Turning off SimpleX Lock." xml:space="preserve">
@@ -2339,9 +2339,9 @@ Ez az ön egyszer használható hivatkozása!</target>
         <target>A készüléken nincs beállítva a képernyőzár. A SimpleX-zár ki van kapcsolva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." xml:space="preserve">
+      <trans-unit id="Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." xml:space="preserve" approved="no">
         <source>Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication.</source>
-        <target>A készüléken nincs beállítva a képernyőzár. A SimpleX-zár az „Adatvédelem és biztonság” menüben kapcsolható be, miután beállította a képernyőzárat az eszközén.</target>
+        <target state="translated">A készüléken nincs beállítva a képernyőzár. A SimpleX-zár az „Adatvédelem és biztonság” menüben kapcsolható be, miután beállította a képernyőzárat a készülékén.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Different names, avatars and transport isolation." xml:space="preserve">
@@ -2730,9 +2730,9 @@ Ez az ön egyszer használható hivatkozása!</target>
         <target>Kiszolgáló megadása kézzel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enter this device name…" xml:space="preserve">
+      <trans-unit id="Enter this device name…" xml:space="preserve" approved="no">
         <source>Enter this device name…</source>
-        <target>Eszköznév megadása…</target>
+        <target state="translated">Adja meg ennek a készüléknek a nevét…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter welcome message…" xml:space="preserve">
@@ -3253,9 +3253,9 @@ Ez az ön egyszer használható hivatkozása!</target>
         <target>Átköltöztetés véglegesítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Finalize migration on another device." xml:space="preserve">
+      <trans-unit id="Finalize migration on another device." xml:space="preserve" approved="no">
         <source>Finalize migration on another device.</source>
-        <target>Átköltöztetés véglegesítése egy másik eszközön.</target>
+        <target state="translated">Átköltöztetés véglegesítése egy másik készüléken.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Finally, we have them! 🚀" xml:space="preserve">
@@ -3532,9 +3532,9 @@ Hiba: %2$@</target>
         <target>Csoportprofil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group profile is stored on members' devices, not on the servers." xml:space="preserve">
+      <trans-unit id="Group profile is stored on members' devices, not on the servers." xml:space="preserve" approved="no">
         <source>Group profile is stored on members' devices, not on the servers.</source>
-        <target>A csoport profilja a tagok eszközein tárolódik, nem a kiszolgálókon.</target>
+        <target state="translated">A csoport profilja a tagok készülékein tárolódik, nem a kiszolgálókon.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group welcome message" xml:space="preserve">
@@ -4357,14 +4357,14 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Az üzeneteket, fájlokat és hívásokat **végpontok közötti kvantumrezisztens titkosítással**, sérülés utáni titkosság-védelemmel és -helyreállítással, továbbá visszautasítással védi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrate device" xml:space="preserve">
+      <trans-unit id="Migrate device" xml:space="preserve" approved="no">
         <source>Migrate device</source>
-        <target>Eszköz átköltöztetése</target>
+        <target state="translated">Készülék átköltöztetése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrate from another device" xml:space="preserve">
+      <trans-unit id="Migrate from another device" xml:space="preserve" approved="no">
         <source>Migrate from another device</source>
-        <target>Átköltöztetés egy másik eszközről</target>
+        <target state="translated">Átköltöztetés egy másik készülékről</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migrate here" xml:space="preserve">
@@ -4372,14 +4372,14 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Átköltöztetés ide</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrate to another device" xml:space="preserve">
+      <trans-unit id="Migrate to another device" xml:space="preserve" approved="no">
         <source>Migrate to another device</source>
-        <target>Átköltöztetés egy másik eszközre</target>
+        <target state="translated">Átköltöztetés egy másik készülékre</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrate to another device via QR code." xml:space="preserve">
+      <trans-unit id="Migrate to another device via QR code." xml:space="preserve" approved="no">
         <source>Migrate to another device via QR code.</source>
-        <target>Átköltöztetés egy másik eszközre QR-kód használatával.</target>
+        <target state="translated">Átköltöztetés egy másik készülékre QR-kód használatával.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migrating" xml:space="preserve">
@@ -4587,9 +4587,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Nincs kézbesítési információ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No device token!" xml:space="preserve">
+      <trans-unit id="No device token!" xml:space="preserve" approved="no">
         <source>No device token!</source>
-        <target>Nincs eszköztoken!</target>
+        <target state="translated">Nincs kiszüléktoken!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No direct connection yet, message is forwarded by admin." xml:space="preserve">
@@ -4715,9 +4715,9 @@ VPN engedélyezése szükséges.</target>
         <target state="translated">Onion-kiszolgálók nem lesznek használva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." xml:space="preserve">
+      <trans-unit id="Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." xml:space="preserve" approved="no">
         <source>Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**.</source>
-        <target>Csak a klienseszközök tárolják a felhasználói profilokat, névjegyeket, csoportokat és a **2 rétegű végpontok közötti titkosítással** küldött üzeneteket.</target>
+        <target state="translated">Csak a készülékek kliensei tárolják a felhasználói profilokat, névjegyeket, csoportokat és a **2 rétegű végpontok közötti titkosítással** küldött üzeneteket.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only delete conversation" xml:space="preserve">
@@ -4815,9 +4815,9 @@ VPN engedélyezése szükséges.</target>
         <target>Csoport megnyitása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open migration to another device" xml:space="preserve">
+      <trans-unit id="Open migration to another device" xml:space="preserve" approved="no">
         <source>Open migration to another device</source>
-        <target>Átköltöztetés megkezdése egy másik eszközre</target>
+        <target state="translated">Átköltöztetés megkezdése egy másik készülékre</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Open server settings" xml:space="preserve">
@@ -5009,9 +5009,9 @@ Minden további problémát osszon meg a fejlesztőkkel.</target>
         <target state="translated">Ellenőrizze a saját- és az ismerőse beállításait.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please confirm that network settings are correct for this device." xml:space="preserve">
+      <trans-unit id="Please confirm that network settings are correct for this device." xml:space="preserve" approved="no">
         <source>Please confirm that network settings are correct for this device.</source>
-        <target>Ellenőrizze, hogy a hálózati beállítások megfelelőek-e ehhez az eszközhöz.</target>
+        <target state="translated">Ellenőrizze, hogy a hálózati beállítások megfelelőek-e ehhez a készülékhez.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please contact developers.&#10;Error: %@" xml:space="preserve">
@@ -5226,11 +5226,11 @@ Hiba: %@</target>
         <target>Alkalmazás képernyőjének védelme</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protect your IP address from the messaging relays chosen by your contacts.&#10;Enable in *Network &amp; servers* settings." xml:space="preserve">
+      <trans-unit id="Protect your IP address from the messaging relays chosen by your contacts.&#10;Enable in *Network &amp; servers* settings." xml:space="preserve" approved="no">
         <source>Protect your IP address from the messaging relays chosen by your contacts.
 Enable in *Network &amp; servers* settings.</source>
-        <target>Védje IP-címét az ismerősei által kiválasztott üzenetküldő átjátszókkal szemben.
-Engedélyezze a Beállítások / Hálózat és kiszolgálók menüben.</target>
+        <target state="translated">Védje IP-címét az ismerősei által kiválasztott üzenet-közvetítő-kiszolgálókkal szemben.
+Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protect your chat profiles with a password!" xml:space="preserve" approved="no">
@@ -5471,12 +5471,12 @@ Engedélyezze a Beállítások / Hálózat és kiszolgálók menüben.</target>
       </trans-unit>
       <trans-unit id="Relay server is only used if necessary. Another party can observe your IP address." xml:space="preserve" approved="no">
         <source>Relay server is only used if necessary. Another party can observe your IP address.</source>
-        <target state="translated">Az átjátszó-kiszolgáló csak szükség esetén kerül használatra. Egy másik fél megfigyelheti az IP-címet.</target>
+        <target state="translated">A közvetítő-kiszolgáló csak szükség esetén kerül használatra. Egy másik fél megfigyelheti az IP-címet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Relay server protects your IP address, but it can observe the duration of the call." xml:space="preserve" approved="no">
         <source>Relay server protects your IP address, but it can observe the duration of the call.</source>
-        <target state="translated">Az átjátszó-kiszolgáló megvédi az IP-címet, de megfigyelheti a hívás időtartamát.</target>
+        <target state="translated">A közvetítő-kiszolgáló megvédi az IP-címet, de megfigyelheti a hívás időtartamát.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Remove" xml:space="preserve">
@@ -6842,9 +6842,9 @@ Ez valamilyen hiba, vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target>Ez a csevegés végpontok közötti kvantumrezisztens tikosítással védett.</target>
         <note>E2EE info chat item</note>
       </trans-unit>
-      <trans-unit id="This device name" xml:space="preserve">
+      <trans-unit id="This device name" xml:space="preserve" approved="no">
         <source>This device name</source>
-        <target>Ennek az eszköznek a neve</target>
+        <target state="translated">Ennek a készüléknek a neve</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This display name is invalid. Please choose another name." xml:space="preserve">
@@ -6872,9 +6872,9 @@ Ez valamilyen hiba, vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target>Ez az ön egyszer használható hivatkozása!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This link was used with another mobile device, please create a new link on the desktop." xml:space="preserve">
+      <trans-unit id="This link was used with another mobile device, please create a new link on the desktop." xml:space="preserve" approved="no">
         <source>This link was used with another mobile device, please create a new link on the desktop.</source>
-        <target>Ezt a hivatkozást egy másik mobileszközön már használták, hozzon létre egy új hivatkozást az asztali számítógépén.</target>
+        <target state="translated">Ezt a hivatkozást egy másik mobilkészüléken már használták, hozzon létre egy új hivatkozást az asztali számítógépén.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This setting applies to messages in your current chat profile **%@**." xml:space="preserve">
@@ -6922,11 +6922,11 @@ Ez valamilyen hiba, vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target state="translated">Az IP-cím védelmének érdekében a privát útválasztás az SMP-kiszolgálókat használja az üzenetek kézbesítéséhez.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To protect your information, turn on SimpleX Lock.&#10;You will be prompted to complete authentication before this feature is enabled." xml:space="preserve">
+      <trans-unit id="To protect your information, turn on SimpleX Lock.&#10;You will be prompted to complete authentication before this feature is enabled." xml:space="preserve" approved="no">
         <source>To protect your information, turn on SimpleX Lock.
 You will be prompted to complete authentication before this feature is enabled.</source>
-        <target>A biztonsága érdekében kapcsolja be a SimpleX-zár funkciót.
-A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beállítására az eszközén.</target>
+        <target state="translated">A biztonsága érdekében kapcsolja be a SimpleX-zár funkciót.
+A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beállítására a készülékén.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To record voice message please grant permission to use Microphone." xml:space="preserve">
@@ -6944,9 +6944,9 @@ A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beáll
         <target state="translated">Az azonnali push-értesítések támogatásához a csevegési adatbázis migrálása szükséges.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To verify end-to-end encryption with your contact compare (or scan) the code on your devices." xml:space="preserve">
+      <trans-unit id="To verify end-to-end encryption with your contact compare (or scan) the code on your devices." xml:space="preserve" approved="no">
         <source>To verify end-to-end encryption with your contact compare (or scan) the code on your devices.</source>
-        <target>A végpontok közötti titkosítás ellenőrzéséhez hasonlítsa össze (vagy olvassa be a QR-kódot) az ismerőse eszközén lévő kóddal.</target>
+        <target state="translated">A végpontok közötti titkosítás ellenőrzéséhez hasonlítsa össze (vagy olvassa be a QR-kódot) az ismerőse készülékén lévő kóddal.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Toggle chat list:" xml:space="preserve">
@@ -7421,9 +7421,9 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
         <target>Háttérkép háttérszíne</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Warning: starting chat on multiple devices is not supported and will cause message delivery failures" xml:space="preserve">
+      <trans-unit id="Warning: starting chat on multiple devices is not supported and will cause message delivery failures" xml:space="preserve" approved="no">
         <source>Warning: starting chat on multiple devices is not supported and will cause message delivery failures</source>
-        <target>Figyelmeztetés: a csevegés elindítása egyszerre több eszközön nem támogatott, továbbá üzenetkézbesítési hibákat okozhat</target>
+        <target state="translated">Figyelmeztetés: a csevegés elindítása egyszerre több készüléken nem támogatott, továbbá üzenetkézbesítési hibákat okozhat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Warning: you may lose some data!" xml:space="preserve">
@@ -7513,7 +7513,7 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
       </trans-unit>
       <trans-unit id="Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." xml:space="preserve" approved="no">
         <source>Without Tor or VPN, your IP address will be visible to these XFTP relays: %@.</source>
-        <target state="translated">Tor vagy VPN nélkül az IP-címe látható lesz a következő XFTP átjátszók számára: %@.</target>
+        <target state="translated">Tor vagy VPN nélkül az IP-címe látható lesz a következő XFTP-közvetítő-kiszolgálók számára: %@.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Wrong database passphrase" xml:space="preserve">
@@ -7546,9 +7546,9 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
         <target>Ön</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You **must not** use the same database on two devices." xml:space="preserve">
+      <trans-unit id="You **must not** use the same database on two devices." xml:space="preserve" approved="no">
         <source>You **must not** use the same database on two devices.</source>
-        <target>**Nem szabad** ugyanazt az adatbázist használni egyszerre két eszközön.</target>
+        <target state="translated">**Nem szabad** ugyanazt az adatbázist használni egyszerre két készüléken.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You accepted connection" xml:space="preserve">
@@ -7623,9 +7623,9 @@ Csatlakozáskérés megismétlése?</target>
         <target>Ön nem kapcsolódik ezekhez a kiszolgálókhoz. A privát útválasztás az üzenetek kézbesítésére szolgál.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can accept calls from lock screen, without device and app authentication." xml:space="preserve">
+      <trans-unit id="You can accept calls from lock screen, without device and app authentication." xml:space="preserve" approved="no">
         <source>You can accept calls from lock screen, without device and app authentication.</source>
-        <target>Hívásokat fogadhat a lezárási képernyőről, eszköz- és alkalmazáshitelesítés nélkül.</target>
+        <target state="translated">Hívásokat fogadhat a lezárási képernyőről, készülék- és alkalmazás-hitelesítés nélkül.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can change it in Appearance settings." xml:space="preserve">
@@ -7745,9 +7745,9 @@ Repeat connection request?</source>
 Kapcsolatkérés megismétlése?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You have to enter passphrase every time the app starts - it is not stored on the device." xml:space="preserve">
+      <trans-unit id="You have to enter passphrase every time the app starts - it is not stored on the device." xml:space="preserve" approved="no">
         <source>You have to enter passphrase every time the app starts - it is not stored on the device.</source>
-        <target>A jelmondatot minden alkalommal meg kell adnia, amikor az alkalmazás elindul - nem az eszközön kerül tárolásra.</target>
+        <target state="translated">A jelmondatot minden alkalommal meg kell adnia, amikor az alkalmazás elindul - nem a készüléken kerül tárolásra.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You invited a contact" xml:space="preserve">
@@ -7775,9 +7775,9 @@ Kapcsolatkérés megismétlése?</target>
         <target>Az exportált archívumot elmentheti.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." xml:space="preserve">
+      <trans-unit id="You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." xml:space="preserve" approved="no">
         <source>You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts.</source>
-        <target>A csevegési adatbázis legfrissebb verzióját CSAK egy eszközön kell használnia, ellenkező esetben előfordulhat, hogy az üzeneteket nem fogja megkapni valamennyi ismerőstől.</target>
+        <target state="translated">A csevegési adatbázis legfrissebb verzióját CSAK egy készüléken kell használnia, ellenkező esetben előfordulhat, hogy az üzeneteket nem fogja megkapni valamennyi ismerősétől.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You need to allow your contact to call to be able to call them." xml:space="preserve">
@@ -7800,14 +7800,14 @@ Kapcsolatkérés megismétlése?</target>
         <target>Csoportmeghívó elküldve</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You will be connected to group when the group host's device is online, please wait or check later!" xml:space="preserve">
+      <trans-unit id="You will be connected to group when the group host's device is online, please wait or check later!" xml:space="preserve" approved="no">
         <source>You will be connected to group when the group host's device is online, please wait or check later!</source>
-        <target>Akkor lesz kapcsolódva a csoporthoz, amikor a csoport tulajdonosának eszköze online lesz, várjon, vagy ellenőrizze később!</target>
+        <target state="translated">Akkor lesz kapcsolódva a csoporthoz, amikor a csoport tulajdonosának készüléke online lesz, várjon, vagy ellenőrizze később!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You will be connected when group link host's device is online, please wait or check later!" xml:space="preserve">
+      <trans-unit id="You will be connected when group link host's device is online, please wait or check later!" xml:space="preserve" approved="no">
         <source>You will be connected when group link host's device is online, please wait or check later!</source>
-        <target>Akkor lesz kapcsolódva, amikor a csoporthivatkozás tulajdonosának eszköze online lesz, várjon, vagy ellenőrizze később!</target>
+        <target state="translated">Akkor lesz kapcsolódva, amikor a csoporthivatkozás tulajdonosának készüléke online lesz, várjon, vagy ellenőrizze később!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will be connected when your connection request is accepted, please wait or check later!" xml:space="preserve">
@@ -7817,7 +7817,7 @@ Kapcsolatkérés megismétlése?</target>
       </trans-unit>
       <trans-unit id="You will be connected when your contact's device is online, please wait or check later!" xml:space="preserve" approved="no">
         <source>You will be connected when your contact's device is online, please wait or check later!</source>
-        <target state="translated">Akkor lesz kapcsolódva, amikor az ismerősének az eszköze online lesz, várjon, vagy ellenőrizze később!</target>
+        <target state="translated">Akkor lesz kapcsolódva, amikor az ismerősének készüléke online lesz, várjon, vagy ellenőrizze később!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will be required to authenticate when you start or resume the app after 30 seconds in background." xml:space="preserve">
@@ -7962,7 +7962,7 @@ Kapcsolatkérés megismétlése?</target>
       </trans-unit>
       <trans-unit id="Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." xml:space="preserve" approved="no">
         <source>Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.</source>
-        <target state="translated">A profilja az eszközön van tárolva és csak az ismerőseivel kerül megosztásra. A SimpleX-kiszolgálók nem láthatják a profilját.</target>
+        <target state="translated">A profilja a készüléken van tárolva és csak az ismerőseivel kerül megosztásra. A SimpleX-kiszolgálók nem láthatják a profilját.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile was changed. If you save it, the updated profile will be sent to all your contacts." xml:space="preserve">
@@ -7972,7 +7972,7 @@ Kapcsolatkérés megismétlése?</target>
       </trans-unit>
       <trans-unit id="Your profile, contacts and delivered messages are stored on your device." xml:space="preserve" approved="no">
         <source>Your profile, contacts and delivered messages are stored on your device.</source>
-        <target state="translated">A profilja, az ismerősei és az elküldött üzenetei az eszközön kerülnek tárolásra.</target>
+        <target state="translated">A profilja, az ismerősei és az elküldött üzenetei a készüléken kerülnek tárolásra.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your random profile" xml:space="preserve">
@@ -8851,9 +8851,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>egyszer használható hivatkozáson keresztül</target>
         <note>chat list item description</note>
       </trans-unit>
-      <trans-unit id="via relay" xml:space="preserve">
+      <trans-unit id="via relay" xml:space="preserve" approved="no">
         <source>via relay</source>
-        <target>átjátszón keresztül</target>
+        <target state="translated">közvetítő-kiszolgálón keresztül</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="video" xml:space="preserve">
