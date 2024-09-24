@@ -160,7 +160,6 @@ fun reserveSpaceForMeta(
     res += meta.timestampText
   } else if (hasIcon) {
     res += iconSpace
-    println("reserved: ${res.length} meta: ${meta}")
   }
   return res
 }
