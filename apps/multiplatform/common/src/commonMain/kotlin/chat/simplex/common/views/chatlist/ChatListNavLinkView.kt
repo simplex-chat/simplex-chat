@@ -907,7 +907,7 @@ fun PreviewChatListNavLinkDirect() {
           disabled = false,
           linkMode = SimplexLinkMode.DESCRIPTION,
           inProgress = false,
-          progressByTimeout = false,
+          progressByTimeout = false
         )
       },
       click = {},
@@ -952,7 +952,7 @@ fun PreviewChatListNavLinkGroup() {
           disabled = false,
           linkMode = SimplexLinkMode.DESCRIPTION,
           inProgress = false,
-          progressByTimeout = false,
+          progressByTimeout = false
         )
       },
       click = {},

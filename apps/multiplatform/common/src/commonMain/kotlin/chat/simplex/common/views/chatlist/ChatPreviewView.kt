@@ -44,7 +44,7 @@ fun ChatPreviewView(
   disabled: Boolean,
   linkMode: SimplexLinkMode,
   inProgress: Boolean,
-  progressByTimeout: Boolean,
+  progressByTimeout: Boolean
 ) {
   val cInfo = chat.chatInfo
 
@@ -201,7 +201,7 @@ fun ChatPreviewView(
             lineHeight = 21.sp
           ),
           inlineContent = inlineTextContent,
-          modifier = Modifier.fillMaxWidth()
+          modifier = Modifier.fillMaxWidth(),
         )
       }
     } else {

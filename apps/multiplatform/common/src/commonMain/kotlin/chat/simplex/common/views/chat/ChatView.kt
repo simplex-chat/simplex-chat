@@ -12,10 +12,8 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.platform.*
 import dev.icerock.moko.resources.compose.painterResource
@@ -1142,10 +1140,8 @@ fun BoxWithConstraintsScope.ChatItemsList(
                         androidx.compose.animation.AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                           SelectedChatItem(Modifier, cItem.id, selectedChatItems)
                         }
-                        Row(
-                          Modifier.graphicsLayer { translationX = selectionOffset.toPx() },
-                          horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
+                        Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() },
+                          horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                           Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
                             MemberImage(member)
                           }

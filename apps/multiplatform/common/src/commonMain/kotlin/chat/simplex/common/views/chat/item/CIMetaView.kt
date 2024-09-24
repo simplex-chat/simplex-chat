@@ -13,7 +13,6 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.TAG
 import chat.simplex.common.ui.theme.isInDarkTheme
 import chat.simplex.res.MR
 import kotlinx.datetime.Clock
