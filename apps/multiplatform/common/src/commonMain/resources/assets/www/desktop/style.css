@@ -111,19 +111,32 @@ body {
 #manage-call {
   position: absolute;
   width: fit-content;
-  top: 90%;
+  bottom: 15px;
   left: 50%;
   transform: translate(-50%, 0);
   display: grid;
   grid-auto-flow: column;
-  grid-column-gap: 30px;
+  grid-column-gap: 15px;
 }
 
 #manage-call button {
   border: none;
   cursor: pointer;
   appearance: none;
-  background-color: inherit;
+  background-color: #ffffff33;
+  border-radius: 50%;
+  padding: 13px;
+  width: 61px;
+  height: 61px;
+}
+
+#manage-call img {
+  width: 35px;
+  height: 35px;
+}
+
+#manage-call button .video {
+  background: #00000033;
 }
 
 #progress {

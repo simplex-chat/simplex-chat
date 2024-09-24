@@ -85,7 +85,6 @@ private fun GreenLine(call: Call) {
   DisposableEffect(Unit) {
     statusBarColorAfterCall.intValue = window.statusBarColor
     window.statusBarColor = SimplexGreen.toArgb()
-    println("LALAL SET COLOR AS GREEN")
     onDispose {
       window.statusBarColor = statusBarColorAfterCall.intValue
     }

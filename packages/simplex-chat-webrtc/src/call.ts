@@ -262,7 +262,8 @@ interface Call {
 
 interface NotConnectedCall {
   localCamera: VideoCamera
-  localStream: MediaStream | null
+  localStream: MediaStream
+  layout: LayoutType
 }
 
 function localMedia(call: Call): CallMediaType {
@@ -447,8 +448,8 @@ const processCommand = (function () {
         screenVideo: false,
       },
       aesKey,
-      layout: LayoutType.Default,
-      cameraTrackWasSetBefore: mediaType == CallMediaType.Video,
+      layout: notConnectedCall?.layout ?? LayoutType.Default,
+      cameraTrackWasSetBefore: localStream.getVideoTracks().length > 0,
     }
     localOrPeerMediaSourcesChanged(call)
     await setupMediaStreams(call)
@@ -538,6 +539,7 @@ const processCommand = (function () {
               videos.local.play().catch((e) => console.log(e))
             }
           } catch (e) {
+            localStream = new MediaStream()
             // Will be shown on the next stage of call estabilishing, can work without any streams
             //desktopShowPermissionsAlert(command.media)
           }
@@ -548,6 +550,7 @@ const processCommand = (function () {
           notConnectedCall = {
             localCamera: VideoCamera.User,
             localStream: localStream,
+            layout: LayoutType.Default,
           }
           const encryption = supportsInsertableStreams(useWorker)
           resp = {type: "capabilities", capabilities: {encryption}}
@@ -680,7 +683,7 @@ const processCommand = (function () {
                 break
             }
             inactiveCallMediaSourcesChanged(inactiveCallMediaSources)
-            recreateLocalStreamWhileNotConnected()
+            recreateLocalStreamWhileNotConnected(notConnectedCall?.localCamera ?? VideoCamera.User)
             resp = {type: "ok"}
           } else if (!activeCall.cameraTrackWasSetBefore && command.source == CallMediaSource.Camera && command.enable) {
             await startSendingCamera(activeCall, activeCall.localCamera)
@@ -705,8 +708,7 @@ const processCommand = (function () {
         case "camera":
           if (!activeCall || !pc) {
             if (notConnectedCall) {
-              notConnectedCall.localCamera = command.camera
-              recreateLocalStreamWhileNotConnected()
+              recreateLocalStreamWhileNotConnected(command.camera)
             }
             resp = {type: "ok"}
           } else {
@@ -726,8 +728,10 @@ const processCommand = (function () {
         case "layout":
           if (activeCall) {
             activeCall.layout = command.layout
-            changeLayout(command.layout)
+          } else if (notConnectedCall) {
+            notConnectedCall.layout = command.layout
           }
+          changeLayout(command.layout)
           resp = {type: "ok"}
           break
         case "end":
@@ -1085,8 +1089,8 @@ const processCommand = (function () {
     let localStream: MediaStream
     try {
       localStream = await getLocalMediaStream(
-        source == CallMediaSource.Mic ? enable : call.localMediaSources.mic,
-        source == CallMediaSource.Camera ? enable : call.localMediaSources.camera,
+        source == CallMediaSource.Mic ? enable : false,
+        source == CallMediaSource.Camera ? enable : false,
         camera
       )
     } catch (e: any) {
@@ -1094,7 +1098,7 @@ const processCommand = (function () {
       desktopShowPermissionsAlert(source == CallMediaSource.Mic ? CallMediaType.Audio : CallMediaType.Video)
       return false
     }
-    for (const t of call.localStream.getTracks()) {
+    for (const t of source == CallMediaSource.Mic ? call.localStream.getAudioTracks() : call.localStream.getVideoTracks()) {
       t.stop()
       call.localStream.removeTrack(t)
     }
@@ -1136,28 +1140,37 @@ const processCommand = (function () {
     }
   }
 
-  async function recreateLocalStreamWhileNotConnected() {
+  async function recreateLocalStreamWhileNotConnected(newCamera: VideoCamera) {
     const videos = getVideoElements()
-    if (!notConnectedCall || !videos) return
+    const localStream = notConnectedCall?.localStream
+    const oldCamera = notConnectedCall?.localCamera
+    if (!localStream || !oldCamera || !videos) return
 
-    if (inactiveCallMediaSources.mic || inactiveCallMediaSources.camera) {
-      try {
-        notConnectedCall.localStream?.getTracks()?.forEach((elem) => elem.stop())
-        notConnectedCall.localStream?.getTracks()?.forEach((elem) => notConnectedCall?.localStream?.removeTrack(elem))
-        notConnectedCall.localStream = await getLocalMediaStream(
-          inactiveCallMediaSources.mic,
-          inactiveCallMediaSources.camera,
-          notConnectedCall?.localCamera ?? VideoCamera.User
-        )
-        videos.local.srcObject = notConnectedCall.localStream
-      } catch (e) {
-        console.log("Error while enabling camera in not connected call", e)
-      }
-    } else {
-      notConnectedCall.localStream?.getTracks().forEach((elem) => elem.stop())
-      notConnectedCall.localStream?.getTracks().forEach((elem) => notConnectedCall?.localStream?.removeTrack(elem))
-      notConnectedCall.localStream = null
-      videos.local.srcObject = null
+    if (!inactiveCallMediaSources.mic) {
+      localStream.getAudioTracks().forEach((elem) => elem.stop())
+      localStream.getAudioTracks().forEach((elem) => localStream.removeTrack(elem))
+    }
+    if (!inactiveCallMediaSources.camera || oldCamera != newCamera) {
+      localStream.getVideoTracks().forEach((elem) => elem.stop())
+      localStream.getVideoTracks().forEach((elem) => localStream.removeTrack(elem))
+    }
+    await getLocalMediaStream(
+      inactiveCallMediaSources.mic && localStream.getAudioTracks().length == 0,
+      inactiveCallMediaSources.camera && (localStream.getVideoTracks().length == 0 || oldCamera != newCamera),
+      newCamera
+    )
+      .then((stream) => {
+        stream.getTracks().forEach((elem) => {
+          localStream.addTrack(elem)
+          stream.removeTrack(elem)
+        })
+        if (notConnectedCall && localStream.getVideoTracks().length > 0) {
+          notConnectedCall.localCamera = newCamera
+        }
+      })
+      .catch((e) => console.log("Error while enabling camera in not connected call", e))
+    if (!videos.local.srcObject && localStream.getTracks().length > 0) {
+      videos.local.srcObject = localStream
     }
   }
 
@@ -1352,10 +1365,10 @@ const processCommand = (function () {
           (t.kind == CallMediaType.Video && mediaSourceFromTransceiverMid(transceiver.mid) == CallMediaSource.Camera)
         ) {
           if (enable) {
-            t.enabled = true
             transceiver.sender.replaceTrack(t)
           } else {
-            t.enabled = false
+            t.stop()
+            s.removeTrack(t)
             transceiver.sender.replaceTrack(null)
           }
           if (source == CallMediaSource.Mic) {
@@ -1405,9 +1418,9 @@ function togglePeerMedia(s: MediaStream, media: CallMediaType): boolean {
 
 function changeLayout(layout: LayoutType) {
   const videos = getVideoElements()
-  const localSources = activeCall?.localMediaSources
-  const peerSources = activeCall?.peerMediaSources
-  if (!videos || !peerSources || !localSources) return
+  const localSources = activeCall?.localMediaSources ?? inactiveCallMediaSources
+  const peerSources = activeCall?.peerMediaSources ?? {mic: false, camera: false, screenAudio: false, screenVideo: false}
+  if (!videos || !localSources || !peerSources) return
   switch (layout) {
     case LayoutType.Default:
       videos.local.className = "inline"
@@ -1438,6 +1451,8 @@ function changeLayout(layout: LayoutType) {
         videos.remote.style.visibility = "visible"
         videos.remoteScreen.style.visibility = "hidden"
         videos.remoteScreen.className = "inline"
+      } else {
+        videos.remote.style.visibility = "hidden"
       }
       videos.local.style.visibility = "hidden"
       break

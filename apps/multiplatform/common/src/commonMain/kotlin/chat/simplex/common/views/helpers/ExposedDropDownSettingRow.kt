@@ -91,7 +91,7 @@ fun <T> ExposedDropDownSettingWithIcon(
   values: List<Triple<T, ImageResource, String>>,
   selection: State<T>,
   fontSize: TextUnit = 16.sp,
-  iconPadding: Dp = 10.dp,
+  iconPaddingPercent: Float = 20f,
   listIconSize: Dp = 30.dp,
   boxSize: Dp = 60.dp,
   iconColor: Color = MenuTextColor,
@@ -104,8 +104,6 @@ fun <T> ExposedDropDownSettingWithIcon(
   ExposedDropdownMenuBox(
     expanded = expanded.value,
     onExpandedChange = {
-      println("LALAL click2 $it")
-
       expanded.value = !expanded.value && enabled.value
     }
   ) {
@@ -123,7 +121,7 @@ fun <T> ExposedDropDownSettingWithIcon(
       contentAlignment = Alignment.Center
     ) {
       val choice = values.first { it.first == selection.value }
-      Icon(painterResource(choice.second), choice.third, Modifier.padding(iconPadding).fillMaxSize(), tint = iconColor)
+      Icon(painterResource(choice.second), choice.third, Modifier.padding(boxSize * iconPaddingPercent).fillMaxSize(), tint = iconColor)
     }
     DefaultExposedDropdownMenu(
       modifier = Modifier.widthIn(min = minWidth),

@@ -34,29 +34,25 @@ function endCallManually() {
 }
 
 function toggleMicManually() {
-  if (activeCall?.localStream) {
-    const apiCall: WVAPICall = {
-      command: {type: "media", source: CallMediaSource.Mic, enable: !activeCall.localMediaSources.mic},
-    }
-    processCommand(apiCall)
+  const enable = activeCall ? !activeCall.localMediaSources.mic : !inactiveCallMediaSources.mic
+  const apiCall: WVAPICall = {
+    command: {type: "media", source: CallMediaSource.Mic, enable: enable},
   }
+  processCommand(apiCall)
 }
 
 function toggleSpeakerManually() {
-  if (activeCall?.remoteStream) {
-    document.getElementById("toggle-speaker")!!.innerHTML = togglePeerMedia(activeCall.remoteStream, CallMediaType.Audio)
-      ? '<img src="/desktop/images/ic_volume_up.svg" />'
-      : '<img src="/desktop/images/ic_volume_down.svg" />'
+  if (activeCall?.remoteStream && activeCall.peerMediaSources.mic) {
+    enableSpeakerIcon(togglePeerMedia(activeCall.remoteStream, CallMediaType.Audio), !activeCall.peerMediaSources.mic)
   }
 }
 
 function toggleCameraManually() {
-  if (activeCall) {
-    const apiCall: WVAPICall = {
-      command: {type: "media", source: CallMediaSource.Camera, enable: activeCall.localMediaSources.camera != true},
-    }
-    processCommand(apiCall)
+  const enable = activeCall ? !activeCall.localMediaSources.camera : !inactiveCallMediaSources.camera
+  const apiCall: WVAPICall = {
+    command: {type: "media", source: CallMediaSource.Camera, enable: enable},
   }
+  processCommand(apiCall)
 }
 
 async function toggleScreenManually() {
@@ -78,6 +74,7 @@ localOrPeerMediaSourcesChanged = (call: Call) => {
   }
 
   document.getElementById("media-sources")!.innerText = mediaSourcesStatus(call)
+  document.getElementById("manage-call")!.className = localMedia(call) == CallMediaType.Video ? CallMediaType.Video : ""
 }
 
 // override function in call.ts to adapt UI to enabled media sources
@@ -112,6 +109,15 @@ function enableScreenIcon(enabled: boolean) {
     : '<img src="/desktop/images/ic_screen_share.svg" />'
 }
 
+function enableSpeakerIcon(enabled: boolean, muted: boolean) {
+  document.getElementById("toggle-speaker")!!.innerHTML = muted
+    ? '<img src="/desktop/images/ic_volume_off.svg" />'
+    : enabled
+    ? '<img src="/desktop/images/ic_volume_up.svg" />'
+    : '<img src="/desktop/images/ic_volume_down.svg" />'
+  document.getElementById("toggle-speaker")!!.style.opacity = muted ? "0.7" : "1"
+}
+
 function mediaSourcesStatus(call: Call): string {
   let status = "local"
   if (call.localMediaSources.mic) status += " mic"
@@ -142,17 +148,22 @@ function inactiveCallMediaSourcesStatus(inactiveCallMediaSources: CallMediaSourc
 }
 
 function reactOnMessageFromServer(msg: WVApiMessage) {
+  // screen is not allowed to be enabled before connection estabilished
+  if (msg.command?.type == "capabilities" || msg.command?.type == "offer") {
+    document.getElementById("toggle-screen")!!.style.opacity = "0.7"
+  } else if (activeCall) {
+    document.getElementById("toggle-screen")!!.style.opacity = "1"
+  }
   switch (msg.command?.type) {
     case "capabilities":
-      document.getElementById("info-block")!!.className = msg.command.media
-      break
     case "offer":
     case "start":
+      document.getElementById("info-block")!!.className = msg.command.media
       document.getElementById("toggle-mic")!!.style.display = "inline-block"
       document.getElementById("toggle-speaker")!!.style.display = "inline-block"
       document.getElementById("toggle-camera")!!.style.display = "inline-block"
       document.getElementById("toggle-screen")!!.style.display = "inline-block"
-      document.getElementById("info-block")!!.className = msg.command.media
+      enableSpeakerIcon(true, true)
       break
     case "description":
       updateCallInfoView(msg.command.state, msg.command.description)
@@ -176,6 +187,10 @@ function reactOnMessageToServer(msg: WVApiMessage) {
           : "audio"
       document.getElementById("info-block")!!.className = className
       document.getElementById("audio-call-icon")!.style.display = className == CallMediaType.Audio ? "block" : "none"
+      enableSpeakerIcon(
+        activeCall.remoteStream.getAudioTracks().every((elem) => elem.enabled),
+        !activeCall.peerMediaSources.mic
+      )
       break
   }
 }

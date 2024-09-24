@@ -29,27 +29,23 @@ function endCallManually() {
     sendMessageToNative({ resp: { type: "end" } });
 }
 function toggleMicManually() {
-    if (activeCall === null || activeCall === void 0 ? void 0 : activeCall.localStream) {
-        const apiCall = {
-            command: { type: "media", source: CallMediaSource.Mic, enable: !activeCall.localMediaSources.mic },
-        };
-        processCommand(apiCall);
-    }
+    const enable = activeCall ? !activeCall.localMediaSources.mic : !inactiveCallMediaSources.mic;
+    const apiCall = {
+        command: { type: "media", source: CallMediaSource.Mic, enable: enable },
+    };
+    processCommand(apiCall);
 }
 function toggleSpeakerManually() {
-    if (activeCall === null || activeCall === void 0 ? void 0 : activeCall.remoteStream) {
-        document.getElementById("toggle-speaker").innerHTML = togglePeerMedia(activeCall.remoteStream, CallMediaType.Audio)
-            ? '<img src="/desktop/images/ic_volume_up.svg" />'
-            : '<img src="/desktop/images/ic_volume_down.svg" />';
+    if ((activeCall === null || activeCall === void 0 ? void 0 : activeCall.remoteStream) && activeCall.peerMediaSources.mic) {
+        enableSpeakerIcon(togglePeerMedia(activeCall.remoteStream, CallMediaType.Audio), !activeCall.peerMediaSources.mic);
     }
 }
 function toggleCameraManually() {
-    if (activeCall) {
-        const apiCall = {
-            command: { type: "media", source: CallMediaSource.Camera, enable: activeCall.localMediaSources.camera != true },
-        };
-        processCommand(apiCall);
-    }
+    const enable = activeCall ? !activeCall.localMediaSources.camera : !inactiveCallMediaSources.camera;
+    const apiCall = {
+        command: { type: "media", source: CallMediaSource.Camera, enable: enable },
+    };
+    processCommand(apiCall);
 }
 async function toggleScreenManually() {
     await toggleScreenShare();
@@ -65,6 +61,7 @@ localOrPeerMediaSourcesChanged = (call) => {
         document.getElementById("audio-call-icon").style.display = className == CallMediaType.Audio ? "block" : "none";
     }
     document.getElementById("media-sources").innerText = mediaSourcesStatus(call);
+    document.getElementById("manage-call").className = localMedia(call) == CallMediaType.Video ? CallMediaType.Video : "";
 };
 // override function in call.ts to adapt UI to enabled media sources
 inactiveCallMediaSourcesChanged = (inactiveCallMediaSources) => {
@@ -92,6 +89,14 @@ function enableScreenIcon(enabled) {
     document.getElementById("toggle-screen").innerHTML = enabled
         ? '<img src="/desktop/images/ic_stop_screen_share.svg" />'
         : '<img src="/desktop/images/ic_screen_share.svg" />';
+}
+function enableSpeakerIcon(enabled, muted) {
+    document.getElementById("toggle-speaker").innerHTML = muted
+        ? '<img src="/desktop/images/ic_volume_off.svg" />'
+        : enabled
+            ? '<img src="/desktop/images/ic_volume_up.svg" />'
+            : '<img src="/desktop/images/ic_volume_down.svg" />';
+    document.getElementById("toggle-speaker").style.opacity = muted ? "0.7" : "1";
 }
 function mediaSourcesStatus(call) {
     let status = "local";
@@ -131,18 +136,24 @@ function inactiveCallMediaSourcesStatus(inactiveCallMediaSources) {
     return status;
 }
 function reactOnMessageFromServer(msg) {
-    var _a;
-    switch ((_a = msg.command) === null || _a === void 0 ? void 0 : _a.type) {
+    var _a, _b, _c;
+    // screen is not allowed to be enabled before connection estabilished
+    if (((_a = msg.command) === null || _a === void 0 ? void 0 : _a.type) == "capabilities" || ((_b = msg.command) === null || _b === void 0 ? void 0 : _b.type) == "offer") {
+        document.getElementById("toggle-screen").style.opacity = "0.7";
+    }
+    else if (activeCall) {
+        document.getElementById("toggle-screen").style.opacity = "1";
+    }
+    switch ((_c = msg.command) === null || _c === void 0 ? void 0 : _c.type) {
         case "capabilities":
-            document.getElementById("info-block").className = msg.command.media;
-            break;
         case "offer":
         case "start":
+            document.getElementById("info-block").className = msg.command.media;
             document.getElementById("toggle-mic").style.display = "inline-block";
             document.getElementById("toggle-speaker").style.display = "inline-block";
             document.getElementById("toggle-camera").style.display = "inline-block";
             document.getElementById("toggle-screen").style.display = "inline-block";
-            document.getElementById("info-block").className = msg.command.media;
+            enableSpeakerIcon(true, true);
             break;
         case "description":
             updateCallInfoView(msg.command.state, msg.command.description);
@@ -165,6 +176,7 @@ function reactOnMessageToServer(msg) {
                 : "audio";
             document.getElementById("info-block").className = className;
             document.getElementById("audio-call-icon").style.display = className == CallMediaType.Audio ? "block" : "none";
+            enableSpeakerIcon(activeCall.remoteStream.getAudioTracks().every((elem) => elem.enabled), !activeCall.peerMediaSources.mic);
             break;
     }
 }

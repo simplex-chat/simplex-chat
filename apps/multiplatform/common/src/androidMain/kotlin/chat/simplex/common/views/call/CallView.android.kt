@@ -219,7 +219,6 @@ actual fun ActiveCallView() {
     val showOverlay = when {
       call == null -> false
       !platform.androidPictureInPictureAllowed() -> true
-      !call.hasVideo -> true
       !chatModel.activeCallViewIsCollapsed.value -> true
       else -> false
     }
@@ -332,13 +331,13 @@ private fun ActiveCallOverlayLayout(
           devices.none { it.id == currentDevice.value?.id }
         ) {
           val isSpeaker = currentDevice.value?.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
-          ToggleSoundButton(enabled, isSpeaker, toggleSound, size = size)
+          ToggleSoundButton(enabled, isSpeaker, !call.peerMediaSources.mic, toggleSound, size = size)
         } else {
           ExposedDropDownSettingWithIcon(
-            devices.map { Triple(it, it.icon, if (it.name != null) generalGetString(it.name!!) else it.productName.toString()) },
+            devices.map { Triple(it, if (call.peerMediaSources.mic) it.icon else MR.images.ic_volume_off, if (it.name != null) generalGetString(it.name!!) else it.productName.toString()) },
             currentDevice,
             fontSize = 18.sp,
-            iconPadding = size / 5,
+            iconPaddingPercent = 0.2f,
             boxSize = size,
             listIconSize = 30.dp,
             iconColor = Color(0xFFFFFFD8),
@@ -371,18 +370,20 @@ private fun ActiveCallOverlayLayout(
         DisabledBackgroundCallsButton()
       }
 
-      BoxWithConstraints(Modifier.padding(start = 6.dp, end = 6.dp, bottom = DEFAULT_PADDING)) {
-        val size = ((maxWidth - 4 * DEFAULT_PADDING_HALF) / 5).coerceAtMost(60.dp)
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-          ToggleAudioButton(call, enabled, toggleAudio, size = size)
+      BoxWithConstraints(Modifier.padding(start = 6.dp, end = 6.dp, bottom = DEFAULT_PADDING).align(Alignment.CenterHorizontally)) {
+        val size = ((maxWidth - DEFAULT_PADDING_HALF * 4) / 5).coerceIn(0.dp, 60.dp)
+        // limiting max width for tablets/wide screens, will be displayed in the center
+        val padding = ((min(420.dp, maxWidth) - size * 5) / 4).coerceAtLeast(0.dp)
+        Row(horizontalArrangement = Arrangement.spacedBy(padding), verticalAlignment = Alignment.CenterVertically) {
+          ToggleMicButton(call, enabled, toggleAudio, size = size)
           SelectSoundDevice(size = size)
-          ControlButton(painterResource(MR.images.ic_call_end_filled), MR.strings.icon_descr_hang_up, enabled = enabled, dismiss, background = Color.Red, iconPadding = 10.dp, size = size)
+          ControlButton(painterResource(MR.images.ic_call_end_filled), MR.strings.icon_descr_hang_up, enabled = enabled, dismiss, background = Color.Red, size = size, iconPaddingPercent = 0.166f)
           if (call.localMediaSources.camera) {
-            ControlButton(painterResource(MR.images.ic_flip_camera_android_filled), MR.strings.icon_descr_flip_camera, enabled, flipCamera, size = size)
-            ControlButton(painterResource(MR.images.ic_videocam_filled), MR.strings.icon_descr_video_off, enabled, toggleVideo, size = size)
+            ControlButton(painterResource(MR.images.ic_flip_camera_android_filled), MR.strings.icon_descr_flip_camera, enabled, flipCamera, size = size, iconPaddingPercent = 0.2f)
+            ControlButton(painterResource(MR.images.ic_videocam_filled), MR.strings.icon_descr_video_off, enabled, toggleVideo, size = size, iconPaddingPercent = 0.2f)
           } else {
             Spacer(Modifier.size(size))
-            ControlButton(painterResource(MR.images.ic_videocam_off), MR.strings.icon_descr_video_on, enabled, toggleVideo, size = size)
+            ControlButton(painterResource(MR.images.ic_videocam_off), MR.strings.icon_descr_video_on, enabled, toggleVideo, size = size, iconPaddingPercent = 0.2f)
           }
         }
       }
@@ -391,9 +392,9 @@ private fun ActiveCallOverlayLayout(
 }
 
 @Composable
-private fun ControlButton(icon: Painter, iconText: StringResource, enabled: Boolean = true, action: () -> Unit, background: Color = controlButtonsBackground(), size: Dp, iconPadding: Dp = size / 5) {
+private fun ControlButton(icon: Painter, iconText: StringResource, enabled: Boolean = true, action: () -> Unit, background: Color = controlButtonsBackground(), size: Dp, iconPaddingPercent: Float/* = 0.2f*/) {
   ControlButtonWrap(enabled, action, background, size) {
-    Icon(icon, stringResource(iconText), tint = if (enabled) Color(0xFFFFFFD8) else MaterialTheme.colors.secondary, modifier = Modifier.padding(iconPadding).fillMaxSize())
+    Icon(icon, stringResource(iconText), tint = if (enabled) Color(0xFFFFFFD8) else MaterialTheme.colors.secondary, modifier = Modifier.padding(size * iconPaddingPercent).fillMaxSize())
   }
 }
 
@@ -417,20 +418,20 @@ private fun ControlButtonWrap(enabled: Boolean = true, action: () -> Unit, backg
 }
 
 @Composable
-private fun ToggleAudioButton(call: Call, enabled: Boolean = true, toggleAudio: () -> Unit, size: Dp) {
+private fun ToggleMicButton(call: Call, enabled: Boolean = true, toggleAudio: () -> Unit, size: Dp) {
   if (call.localMediaSources.mic) {
-    ControlButton(painterResource(MR.images.ic_mic), MR.strings.icon_descr_audio_off, enabled, toggleAudio, size = size)
+    ControlButton(painterResource(MR.images.ic_mic), MR.strings.icon_descr_audio_off, enabled, toggleAudio, size = size, iconPaddingPercent = 0.2f)
   } else {
-    ControlButton(painterResource(MR.images.ic_mic_off), MR.strings.icon_descr_audio_on, enabled, toggleAudio, size = size)
+    ControlButton(painterResource(MR.images.ic_mic_off), MR.strings.icon_descr_audio_on, enabled, toggleAudio, size = size, iconPaddingPercent = 0.2f)
   }
 }
 
 @Composable
-private fun ToggleSoundButton(enabled: Boolean, speaker: Boolean, toggleSound: () -> Unit, size: Dp) {
-  if (speaker) {
-    ControlButton(painterResource(MR.images.ic_volume_up), MR.strings.icon_descr_speaker_off, enabled, toggleSound, size = size)
-  } else {
-    ControlButton(painterResource(MR.images.ic_volume_down), MR.strings.icon_descr_speaker_on, enabled, toggleSound, size = size)
+private fun ToggleSoundButton(enabled: Boolean, speaker: Boolean, muted: Boolean, toggleSound: () -> Unit, size: Dp) {
+  when {
+    muted -> ControlButton(painterResource(MR.images.ic_volume_off), MR.strings.icon_descr_sound_muted, enabled, toggleSound, size = size, iconPaddingPercent = 0.2f)
+    speaker -> ControlButton(painterResource(MR.images.ic_volume_up), MR.strings.icon_descr_speaker_off, enabled, toggleSound, size = size, iconPaddingPercent = 0.2f)
+    else -> ControlButton(painterResource(MR.images.ic_volume_down), MR.strings.icon_descr_speaker_on, enabled, toggleSound, size = size, iconPaddingPercent = 0.2f)
   }
 }
 

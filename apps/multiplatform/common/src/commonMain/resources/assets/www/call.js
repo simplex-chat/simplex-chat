@@ -139,7 +139,7 @@ const processCommand = (function () {
         });
     }
     async function initializeCall(config, mediaType, aesKey) {
-        var _a, _b;
+        var _a, _b, _c;
         let pc;
         try {
             pc = new RTCPeerConnection(config.peerConnectionConfig);
@@ -195,8 +195,8 @@ const processCommand = (function () {
                 screenVideo: false,
             },
             aesKey,
-            layout: LayoutType.Default,
-            cameraTrackWasSetBefore: mediaType == CallMediaType.Video,
+            layout: (_c = notConnectedCall === null || notConnectedCall === void 0 ? void 0 : notConnectedCall.layout) !== null && _c !== void 0 ? _c : LayoutType.Default,
+            cameraTrackWasSetBefore: localStream.getVideoTracks().length > 0,
         };
         localOrPeerMediaSourcesChanged(call);
         await setupMediaStreams(call);
@@ -264,6 +264,7 @@ const processCommand = (function () {
         return JSON.parse(LZString.decompressFromBase64(s));
     }
     async function processCommand(body) {
+        var _a;
         const { corrId, command } = body;
         const pc = activeCall === null || activeCall === void 0 ? void 0 : activeCall.connection;
         let resp;
@@ -283,6 +284,7 @@ const processCommand = (function () {
                         }
                     }
                     catch (e) {
+                        localStream = new MediaStream();
                         // Will be shown on the next stage of call estabilishing, can work without any streams
                         //desktopShowPermissionsAlert(command.media)
                     }
@@ -293,6 +295,7 @@ const processCommand = (function () {
                     notConnectedCall = {
                         localCamera: VideoCamera.User,
                         localStream: localStream,
+                        layout: LayoutType.Default,
                     };
                     const encryption = supportsInsertableStreams(useWorker);
                     resp = { type: "capabilities", capabilities: { encryption } };
@@ -423,7 +426,7 @@ const processCommand = (function () {
                                 break;
                         }
                         inactiveCallMediaSourcesChanged(inactiveCallMediaSources);
-                        recreateLocalStreamWhileNotConnected();
+                        recreateLocalStreamWhileNotConnected((_a = notConnectedCall === null || notConnectedCall === void 0 ? void 0 : notConnectedCall.localCamera) !== null && _a !== void 0 ? _a : VideoCamera.User);
                         resp = { type: "ok" };
                     }
                     else if (!activeCall.cameraTrackWasSetBefore && command.source == CallMediaSource.Camera && command.enable) {
@@ -451,8 +454,7 @@ const processCommand = (function () {
                 case "camera":
                     if (!activeCall || !pc) {
                         if (notConnectedCall) {
-                            notConnectedCall.localCamera = command.camera;
-                            recreateLocalStreamWhileNotConnected();
+                            recreateLocalStreamWhileNotConnected(command.camera);
                         }
                         resp = { type: "ok" };
                     }
@@ -474,8 +476,11 @@ const processCommand = (function () {
                 case "layout":
                     if (activeCall) {
                         activeCall.layout = command.layout;
-                        changeLayout(command.layout);
                     }
+                    else if (notConnectedCall) {
+                        notConnectedCall.layout = command.layout;
+                    }
+                    changeLayout(command.layout);
                     resp = { type: "ok" };
                     break;
                 case "end":
@@ -814,14 +819,14 @@ const processCommand = (function () {
         const pc = call.connection;
         let localStream;
         try {
-            localStream = await getLocalMediaStream(source == CallMediaSource.Mic ? enable : call.localMediaSources.mic, source == CallMediaSource.Camera ? enable : call.localMediaSources.camera, camera);
+            localStream = await getLocalMediaStream(source == CallMediaSource.Mic ? enable : false, source == CallMediaSource.Camera ? enable : false, camera);
         }
         catch (e) {
             console.log("Replace media error", e);
             desktopShowPermissionsAlert(source == CallMediaSource.Mic ? CallMediaType.Audio : CallMediaType.Video);
             return false;
         }
-        for (const t of call.localStream.getTracks()) {
+        for (const t of source == CallMediaSource.Mic ? call.localStream.getAudioTracks() : call.localStream.getVideoTracks()) {
             t.stop();
             call.localStream.removeTrack(t);
         }
@@ -857,27 +862,33 @@ const processCommand = (function () {
             }
         }
     }
-    async function recreateLocalStreamWhileNotConnected() {
-        var _a, _b, _c, _d, _e, _f, _g;
+    async function recreateLocalStreamWhileNotConnected(newCamera) {
         const videos = getVideoElements();
-        if (!notConnectedCall || !videos)
+        const localStream = notConnectedCall === null || notConnectedCall === void 0 ? void 0 : notConnectedCall.localStream;
+        const oldCamera = notConnectedCall === null || notConnectedCall === void 0 ? void 0 : notConnectedCall.localCamera;
+        if (!localStream || !oldCamera || !videos)
             return;
-        if (inactiveCallMediaSources.mic || inactiveCallMediaSources.camera) {
-            try {
-                (_b = (_a = notConnectedCall.localStream) === null || _a === void 0 ? void 0 : _a.getTracks()) === null || _b === void 0 ? void 0 : _b.forEach((elem) => elem.stop());
-                (_d = (_c = notConnectedCall.localStream) === null || _c === void 0 ? void 0 : _c.getTracks()) === null || _d === void 0 ? void 0 : _d.forEach((elem) => { var _a; return (_a = notConnectedCall === null || notConnectedCall === void 0 ? void 0 : notConnectedCall.localStream) === null || _a === void 0 ? void 0 : _a.removeTrack(elem); });
-                notConnectedCall.localStream = await getLocalMediaStream(inactiveCallMediaSources.mic, inactiveCallMediaSources.camera, (_e = notConnectedCall === null || notConnectedCall === void 0 ? void 0 : notConnectedCall.localCamera) !== null && _e !== void 0 ? _e : VideoCamera.User);
-                videos.local.srcObject = notConnectedCall.localStream;
-            }
-            catch (e) {
-                console.log("Error while enabling camera in not connected call", e);
-            }
+        if (!inactiveCallMediaSources.mic) {
+            localStream.getAudioTracks().forEach((elem) => elem.stop());
+            localStream.getAudioTracks().forEach((elem) => localStream.removeTrack(elem));
         }
-        else {
-            (_f = notConnectedCall.localStream) === null || _f === void 0 ? void 0 : _f.getTracks().forEach((elem) => elem.stop());
-            (_g = notConnectedCall.localStream) === null || _g === void 0 ? void 0 : _g.getTracks().forEach((elem) => { var _a; return (_a = notConnectedCall === null || notConnectedCall === void 0 ? void 0 : notConnectedCall.localStream) === null || _a === void 0 ? void 0 : _a.removeTrack(elem); });
-            notConnectedCall.localStream = null;
-            videos.local.srcObject = null;
+        if (!inactiveCallMediaSources.camera || oldCamera != newCamera) {
+            localStream.getVideoTracks().forEach((elem) => elem.stop());
+            localStream.getVideoTracks().forEach((elem) => localStream.removeTrack(elem));
+        }
+        await getLocalMediaStream(inactiveCallMediaSources.mic && localStream.getAudioTracks().length == 0, inactiveCallMediaSources.camera && (localStream.getVideoTracks().length == 0 || oldCamera != newCamera), newCamera)
+            .then((stream) => {
+            stream.getTracks().forEach((elem) => {
+                localStream.addTrack(elem);
+                stream.removeTrack(elem);
+            });
+            if (notConnectedCall && localStream.getVideoTracks().length > 0) {
+                notConnectedCall.localCamera = newCamera;
+            }
+        })
+            .catch((e) => console.log("Error while enabling camera in not connected call", e));
+        if (!videos.local.srcObject && localStream.getTracks().length > 0) {
+            videos.local.srcObject = localStream;
         }
     }
     function mediaSourceFromTransceiverMid(mid) {
@@ -1062,11 +1073,11 @@ const processCommand = (function () {
                 if ((t.kind == CallMediaType.Audio && mediaSourceFromTransceiverMid(transceiver.mid) == CallMediaSource.Mic) ||
                     (t.kind == CallMediaType.Video && mediaSourceFromTransceiverMid(transceiver.mid) == CallMediaSource.Camera)) {
                     if (enable) {
-                        t.enabled = true;
                         transceiver.sender.replaceTrack(t);
                     }
                     else {
-                        t.enabled = false;
+                        t.stop();
+                        s.removeTrack(t);
                         transceiver.sender.replaceTrack(null);
                     }
                     if (source == CallMediaSource.Mic) {
@@ -1113,10 +1124,11 @@ function togglePeerMedia(s, media) {
     return res;
 }
 function changeLayout(layout) {
+    var _a, _b;
     const videos = getVideoElements();
-    const localSources = activeCall === null || activeCall === void 0 ? void 0 : activeCall.localMediaSources;
-    const peerSources = activeCall === null || activeCall === void 0 ? void 0 : activeCall.peerMediaSources;
-    if (!videos || !peerSources || !localSources)
+    const localSources = (_a = activeCall === null || activeCall === void 0 ? void 0 : activeCall.localMediaSources) !== null && _a !== void 0 ? _a : inactiveCallMediaSources;
+    const peerSources = (_b = activeCall === null || activeCall === void 0 ? void 0 : activeCall.peerMediaSources) !== null && _b !== void 0 ? _b : { mic: false, camera: false, screenAudio: false, screenVideo: false };
+    if (!videos || !localSources || !peerSources)
         return;
     switch (layout) {
         case LayoutType.Default:
@@ -1150,6 +1162,9 @@ function changeLayout(layout) {
                 videos.remote.style.visibility = "visible";
                 videos.remoteScreen.style.visibility = "hidden";
                 videos.remoteScreen.className = "inline";
+            }
+            else {
+                videos.remote.style.visibility = "hidden";
             }
             videos.local.style.visibility = "hidden";
             break;
