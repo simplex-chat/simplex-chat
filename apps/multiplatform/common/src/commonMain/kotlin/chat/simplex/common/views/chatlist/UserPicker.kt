@@ -37,6 +37,7 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlin.math.max
 
 val USER_PICKER_ROW_PADDING = 16.dp
 val USER_PICKER_SECTION_SPACING = 33.dp
@@ -431,12 +432,16 @@ fun UserPickerOptionRow(icon: Painter, text: String, click: (() -> Unit)? = null
 fun UserPickerUserBox(
   userInfo: UserInfo,
   stopped: Boolean,
-  size: Dp = 44.dp,
+  size: Dp = USER_PICKER_IMAGE_SIZE,
   modifier: Modifier = Modifier,
   onClick: (user: User) -> Unit,
 ) {
+  val percent = remember { appPreferences.profileImageCornerRadius.state }
+  val r1 = max(0f, percent.value)
+
   Row(
     modifier = modifier
+      .userPickerBoxModifier()
       .clickable (
         onClick = { onClick(userInfo.user) },
         enabled = !stopped
@@ -461,6 +466,20 @@ fun UserPickerUserBox(
       overflow = TextOverflow.Ellipsis,
     )
   }
+}
+
+@Composable
+private fun Modifier.userPickerBoxModifier(): Modifier {
+  val percent = remember { appPreferences.profileImageCornerRadius.state }
+  val r = max(0f, percent.value)
+
+  val cornerSize = when {
+    r >= 50 -> 50
+    r <= 0 -> 0
+    else -> r.toInt()
+  }
+
+  return this.clip(RoundedCornerShape(CornerSize(cornerSize)))
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -625,7 +644,6 @@ private fun BoxScope.unreadBadge(unreadCount: Int, userMuted: Boolean) {
       .align(Alignment.TopEnd)
   )
 }
-
 
 private suspend fun closePicker(userPickerState: MutableStateFlow<AnimatedViewState>) {
   delay(500)
