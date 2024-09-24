@@ -12,8 +12,10 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.platform.*
 import dev.icerock.moko.resources.compose.painterResource
@@ -1140,12 +1142,16 @@ fun BoxWithConstraintsScope.ChatItemsList(
                         androidx.compose.animation.AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                           SelectedChatItem(Modifier, cItem.id, selectedChatItems)
                         }
-                        Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() },
-                          horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(
+                          Modifier.graphicsLayer { translationX = selectionOffset.toPx() },
+                          horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
                           Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
                             MemberImage(member)
                           }
-                          ChatItemViewShortHand(cItem, itemSeparation, range, false)
+                          Box(modifier = Modifier.padding(top = 2.dp)) {
+                            ChatItemViewShortHand(cItem, itemSeparation, range, false)
+                          }
                         }
                       }
                     }
@@ -1445,7 +1451,9 @@ val MEMBER_IMAGE_SIZE: Dp = 38.dp
 
 @Composable
 fun MemberImage(member: GroupMember) {
-  MemberProfileImage(MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier, member, backgroundColor = MaterialTheme.colors.background)
+  Box(Modifier.padding(horizontal = 3.dp)) {
+    ProfileImageForActiveCall((MEMBER_IMAGE_SIZE - 6.dp) * fontSizeSqrtMultiplier, member.image, backgroundColor = MaterialTheme.colors.background)
+  }
 }
 
 @Composable
