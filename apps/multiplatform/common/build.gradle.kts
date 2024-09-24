@@ -61,8 +61,8 @@ kotlin {
     val androidMain by getting {
       kotlin.srcDir("build/generated/moko/androidMain/src")
       dependencies {
-        implementation("androidx.activity:activity-compose:1.8.2")
-        val workVersion = "2.9.0"
+        implementation("androidx.activity:activity-compose:1.9.1")
+        val workVersion = "2.9.1"
         implementation("androidx.work:work-runtime-ktx:$workVersion")
         implementation("com.google.accompanist:accompanist-insets:0.30.1")
 
@@ -78,22 +78,22 @@ kotlin {
         //Camera Permission
         implementation("com.google.accompanist:accompanist-permissions:0.34.0")
 
-        implementation("androidx.webkit:webkit:1.10.0")
+        implementation("androidx.webkit:webkit:1.11.0")
 
         // GIFs support
         implementation("io.coil-kt:coil-compose:2.6.0")
         implementation("io.coil-kt:coil-gif:2.6.0")
 
-        implementation("com.jakewharton:process-phoenix:2.2.0")
+        implementation("com.jakewharton:process-phoenix:3.0.0")
 
-        val cameraXVersion = "1.3.2"
+        val cameraXVersion = "1.3.4"
         implementation("androidx.camera:camera-core:${cameraXVersion}")
         implementation("androidx.camera:camera-camera2:${cameraXVersion}")
         implementation("androidx.camera:camera-lifecycle:${cameraXVersion}")
         implementation("androidx.camera:camera-view:${cameraXVersion}")
 
         // Calls lifecycle listener
-        implementation("androidx.lifecycle:lifecycle-process:2.4.1")
+        implementation("androidx.lifecycle:lifecycle-process:2.8.4")
       }
     }
     val desktopMain by getting {
@@ -102,7 +102,7 @@ kotlin {
         implementation("com.github.Dansoftowner:jSystemThemeDetector:3.8")
         implementation("com.sshtools:two-slices:0.9.0-SNAPSHOT")
         implementation("org.slf4j:slf4j-simple:2.0.12")
-        implementation("uk.co.caprica:vlcj:4.8.2")
+        implementation("uk.co.caprica:vlcj:4.8.3")
         implementation("com.github.NanoHttpd.nanohttpd:nanohttpd:efb2ebf85a")
         implementation("com.github.NanoHttpd.nanohttpd:nanohttpd-websocket:efb2ebf85a")
         implementation("com.squareup.okhttp3:okhttp:4.12.0")
@@ -119,8 +119,8 @@ android {
   defaultConfig {
     minSdk = 26
   }
-  testOptions.targetSdk = 33
-  lint.targetSdk = 33
+  testOptions.targetSdk = 34
+  lint.targetSdk = 34
   val isAndroid = gradle.startParameter.taskNames.find {
     val lower = it.lowercase()
     lower.contains("release") || lower.startsWith("assemble") || lower.startsWith("install")

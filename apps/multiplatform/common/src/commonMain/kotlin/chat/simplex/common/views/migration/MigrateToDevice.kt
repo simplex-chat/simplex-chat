@@ -199,10 +199,8 @@ private fun MutableState<MigrationToState?>.PasteOrScanLinkView() {
     SectionSpacer()
   }
 
-  if (appPlatform.isDesktop || appPreferences.developerTools.get()) {
-    SectionView(stringResource(if (appPlatform.isAndroid) MR.strings.or_paste_archive_link else MR.strings.paste_archive_link).uppercase()) {
-      PasteLinkView()
-    }
+  SectionView(stringResource(if (appPlatform.isAndroid) MR.strings.or_paste_archive_link else MR.strings.paste_archive_link).uppercase()) {
+    PasteLinkView()
   }
 }
 
@@ -561,7 +559,7 @@ private fun MutableState<MigrationToState?>.startDownloading(
               )
               state = MigrationToState.DownloadFailed(totalBytes, link, archivePath, netCfg)
             } else {
-              Log.d(TAG, "unsupported error: ${msg.responseType}")
+              Log.d(TAG, "unsupported error: ${msg.responseType}, ${json.encodeToString(msg.chatError)}")
             }
           }
           else -> Log.d(TAG, "unsupported event: ${msg.responseType}")

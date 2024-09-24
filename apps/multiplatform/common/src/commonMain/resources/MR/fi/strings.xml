@@ -757,7 +757,7 @@
     <string name="v4_6_reduced_battery_usage_descr">Lisää parannuksia on tulossa pian!</string>
     <string name="v4_6_group_moderation_descr">Nyt järjestelmänvalvojat voivat:
 \n- poistaa jäsenten viestit.
-\n- poista jäsenet käytöstä (\"tarkkailija\" rooli)</string>
+\n- poista jäsenet käytöstä ("tarkkailija" rooli)</string>
     <string name="save_and_notify_group_members">Tallenna ja ilmoita ryhmän jäsenille</string>
     <string name="stop_chat_confirmation">Lopeta</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">Pysäytä keskustelut viedäksesi, tuodaksesi tai poistaaksesi keskustelujen tietokannan. Et voi vastaanottaa ja lähettää viestejä, kun keskustelut on pysäytetty.</string>
@@ -1108,8 +1108,8 @@
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Viestintä- ja sovellusalusta, joka suojaa yksityisyyttäsi ja tietoturvaasi.</string>
     <string name="icon_descr_video_call">videopuhelu</string>
     <string name="group_info_section_title_num_members"> %1$s  JÄSENET</string>
-    <string name="member_role_will_be_changed_with_notification">Rooli muuttuu muotoon \"%s\". Kaikille ryhmän jäsenille ilmoitetaan asiasta.</string>
-    <string name="member_role_will_be_changed_with_invitation">Rooli muuttuu muotoon \"%s\". Jäsen saa uuden kutsun.</string>
+    <string name="member_role_will_be_changed_with_notification">Rooli muuttuu muotoon "%s". Kaikille ryhmän jäsenille ilmoitetaan asiasta.</string>
+    <string name="member_role_will_be_changed_with_invitation">Rooli muuttuu muotoon "%s". Jäsen saa uuden kutsun.</string>
     <string name="voice_prohibited_in_this_chat">Ääniviestit ovat kiellettyjä tässä keskustelussa.</string>
     <string name="v4_3_voice_messages">Ääniviestit</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Yritetään muodostaa yhteys palvelimeen, jota käytetään viestien vastaanottamiseen tältä kontaktilta.</string>

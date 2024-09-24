@@ -6,6 +6,8 @@ import android.net.LocalServerSocket
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.fragment.app.FragmentActivity
+import androidx.work.Configuration
+import androidx.work.WorkManager
 import java.io.*
 import java.lang.ref.WeakReference
 import java.util.*
@@ -71,4 +73,17 @@ fun initHaskell() {
   pipeStdOutToSocket(socketName)
 
   initHS()
+}
+
+fun Context.getWorkManagerInstance(): WorkManager {
+  // https://github.com/OneSignal/OneSignal-Android-SDK/pull/2052/files
+  // https://github.com/OneSignal/OneSignal-Android-SDK/issues/1672
+  if (!WorkManager.isInitialized()) {
+    try {
+      WorkManager.initialize(this, Configuration.Builder().build())
+    } catch (e: IllegalStateException) {
+      Log.e(TAG, "Error initializing WorkManager: ${e.stackTraceToString()}")
+    }
+  }
+  return WorkManager.getInstance(this)
 }

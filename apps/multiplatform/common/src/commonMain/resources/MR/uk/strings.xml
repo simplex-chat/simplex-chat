@@ -726,8 +726,8 @@
     <string name="share_text_disappears_at">Зникає о: %s</string>
     <string name="item_info_current">(поточне)</string>
     <string name="button_remove_member">Вилучити учасника</string>
-    <string name="member_role_will_be_changed_with_notification">Роль буде змінено на \"%s\". Всі учасники групи будуть сповіщені.</string>
-    <string name="member_role_will_be_changed_with_invitation">Роль буде змінено на \"%s\". Учасник отримає нове запрошення.</string>
+    <string name="member_role_will_be_changed_with_notification">Роль буде змінено на "%s". Всі учасники групи будуть сповіщені.</string>
+    <string name="member_role_will_be_changed_with_invitation">Роль буде змінено на "%s". Учасник отримає нове запрошення.</string>
     <string name="info_row_group">Група</string>
     <string name="group_welcome_title">Ласкаво просимо</string>
     <string name="group_profile_is_stored_on_members_devices">Профіль групи зберігається на пристроях учасників, а не на серверах.</string>

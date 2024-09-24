@@ -1327,7 +1327,7 @@
     <string name="enable_receipts_all">启用</string>
     <string name="send_receipts_disabled_alert_msg">该群组成员超过 %1$d ，未发送送达回执。</string>
     <string name="fix_connection_question">修复连接？</string>
-    <string name="v5_2_message_delivery_receipts_descr">我们错过的第二个\"√\"！✅</string>
+    <string name="v5_2_message_delivery_receipts_descr">我们错过的第二个"√"！✅</string>
     <string name="setup_database_passphrase">设定数据库密码</string>
     <string name="receipts_groups_title_disable">为群组禁用回执吗？</string>
     <string name="rcv_group_event_3_members_connected">%s、%s 和 %s 已连接</string>
