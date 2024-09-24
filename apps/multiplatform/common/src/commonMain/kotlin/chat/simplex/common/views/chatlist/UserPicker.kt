@@ -181,8 +181,8 @@ fun UserPicker(
       UserPickerUsersSection(
         users = users,
         onUserClicked = { user ->
-          userPickerState.value = AnimatedViewState.HIDING
           if (!user.activeUser) {
+            userPickerState.value = AnimatedViewState.HIDING
             withBGApi {
               controller.showProgressIfNeeded {
                 ModalManager.closeAllModalsEverywhere()
@@ -191,6 +191,9 @@ fun UserPicker(
             }
           } else {
             showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }()
+            withBGApi {
+              closePicker(userPickerState)
+            }
           }
         },
         stopped = stopped
