@@ -129,9 +129,14 @@ fun reserveSpaceForMeta(
 ): String {
   val iconSpace = "    "
   var res = ""
-  if (showEdited && meta.itemEdited) res += iconSpace
+  var hasIcon = false;
+  if (showEdited && meta.itemEdited) {
+    res += iconSpace
+    hasIcon = true
+  }
   if (meta.itemTimed != null) {
     res += iconSpace
+    hasIcon = true
     val ttl = meta.itemTimed.ttl
     if (ttl != chatTTL) {
       res += shortTimeText(ttl)
@@ -139,19 +144,23 @@ fun reserveSpaceForMeta(
   }
   if (showViaProxy && meta.sentViaProxy == true) {
     res += iconSpace
+    hasIcon = true
   }
   if (showStatus && (meta.statusIcon(secondaryColor) != null || !meta.disappearing)) {
     res += iconSpace
+    if (meta.statusIcon(secondaryColor) != null) {
+      hasIcon = true
+    }
   }
   if (encrypted != null) {
     res += iconSpace
+    hasIcon = true
   }
   if (showTimestamp) {
     res += meta.timestampText
-  } else {
-    if (showStatus && (meta.statusIcon(secondaryColor) != null)) {
-      res += iconSpace
-    }
+  } else if (hasIcon) {
+    res += iconSpace
+    println("reserved: ${res.length} meta: ${meta}")
   }
   return res
 }
