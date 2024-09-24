@@ -44,7 +44,7 @@ struct StickyScrollView<Content: View>: UIViewRepresentable {
             withVelocity velocity: CGPoint,
             targetContentOffset: UnsafeMutablePointer<CGPoint>
         ) {
-            if targetContentOffset.pointee.x < 64 {
+            if targetContentOffset.pointee.x < 32 {
                 targetContentOffset.pointee.x = 0
             }
         }
