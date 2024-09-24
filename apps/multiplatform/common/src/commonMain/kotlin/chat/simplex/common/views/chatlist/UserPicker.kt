@@ -272,6 +272,7 @@ fun UserPicker(
     } else {
       Column {
         FirstSection()
+        Spacer(Modifier.padding(USER_PICKER_SECTION_SPACING - DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL - 3.dp))
         Row {
           Box(Modifier.weight(1f)) {
             Column {
