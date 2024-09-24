@@ -37,8 +37,8 @@ actual fun UserPickerUsersSection(
   if (users.isNotEmpty()) {
     SectionItemView(
       padding = PaddingValues(
-        top = if (windowOrientation() == WindowOrientation.PORTRAIT) DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL else DEFAULT_PADDING_HALF,
-        bottom = DEFAULT_PADDING_HALF),
+        top = if (windowOrientation() == WindowOrientation.PORTRAIT) DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL else 0.dp
+      ),
       disabled = stopped
     ) {
       Box {
@@ -46,7 +46,7 @@ actual fun UserPickerUsersSection(
           modifier = Modifier.horizontalScroll(scrollState),
         ) {
           Spacer(Modifier.width(DEFAULT_PADDING))
-          Row(horizontalArrangement = Arrangement.spacedBy(DEFAULT_PADDING_HALF)) {
+          Row(horizontalArrangement = Arrangement.spacedBy(USER_PICKER_ROW_PADDING)) {
             users.forEach { u ->
               UserPickerUserBox(u, stopped, modifier = Modifier.userBoxWidth(u.user, users.size, screenWidthDp)) {
                 onUserClicked(it)
@@ -176,11 +176,11 @@ private fun Modifier.draggableBottomDrawerModifier(
 )
 
 private fun Modifier.userBoxWidth(user: User, totalUsers: Int, windowWidth: Dp): Modifier {
-  if (totalUsers == 1) {
-    return this.width(windowWidth - DEFAULT_PADDING * 2)
+  return if (totalUsers == 1) {
+    this.width(windowWidth - DEFAULT_PADDING * 2)
   } else if (user.activeUser) {
-    return this.width(windowWidth - DEFAULT_PADDING - (DEFAULT_PADDING_HALF * 3) - 44.dp)
+    this.width(windowWidth - DEFAULT_PADDING - (USER_PICKER_ROW_PADDING * 3) - USER_PICKER_IMAGE_SIZE)
   } else {
-    return this.widthIn(max = windowWidth * 0.618f)
+    this.widthIn(max = windowWidth * 0.618f)
   }
 }

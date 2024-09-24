@@ -38,6 +38,10 @@ import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
+val USER_PICKER_ROW_PADDING = 16.dp
+val USER_PICKER_SECTION_SPACING = 33.dp
+val USER_PICKER_IMAGE_SIZE = 44.dp
+
 @Composable
 fun UserPicker(
   chatModel: ChatModel,
@@ -141,7 +145,7 @@ fun UserPicker(
       .fillMaxWidth()
       .then(if (newChat.isVisible()) Modifier.shadow(8.dp, clip = true) else Modifier)
       .background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f))
-      .padding(vertical = DEFAULT_PADDING),
+      .padding(vertical = USER_PICKER_SECTION_SPACING),
     pickerState = userPickerState
   ) {
     val showCustomModal: (@Composable() (ModalData.(ChatModel, () -> Unit) -> Unit)) -> () -> Unit = { modalView ->
@@ -253,7 +257,7 @@ fun UserPicker(
     if (appPlatform.isDesktop || windowOrientation() == WindowOrientation.PORTRAIT) {
       Column {
         FirstSection()
-        Divider(Modifier.padding(DEFAULT_PADDING))
+        Spacer(Modifier.padding(USER_PICKER_SECTION_SPACING - DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL))
         SecondSection()
         GlobalSettingsSection(
           chatModel = chatModel,
@@ -326,7 +330,7 @@ private fun GlobalSettingsSection(
         SettingsView(chatModel, setPerformLA, close)
       }
     },
-    padding = PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING + 2.dp)
+    padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)
   ) {
     val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
     Icon(painterResource(MR.images.ic_settings), text, tint = MaterialTheme.colors.secondary)
@@ -413,7 +417,7 @@ fun UserProfileRow(u: User, enabled: Boolean = chatModel.chatRunning.value == tr
 
 @Composable
 fun UserPickerOptionRow(icon: Painter, text: String, click: (() -> Unit)? = null, disabled: Boolean = false) {
-  SectionItemView(click, disabled = disabled, extraPadding = true) {
+  SectionItemView(click, disabled = disabled, extraPadding = false) {
     Icon(icon, text, tint = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.secondary)
     TextIconSpaced()
     Text(text = text, color = if (disabled) MaterialTheme.colors.secondary else Color.Unspecified)
@@ -435,9 +439,9 @@ fun UserPickerUserBox(
         enabled = !stopped
       )
       .background(MaterialTheme.colors.surface)
-      .padding(DEFAULT_PADDING_HALF),
+      .padding(USER_PICKER_ROW_PADDING),
     verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.spacedBy(DEFAULT_PADDING_HALF)
+    horizontalArrangement = Arrangement.spacedBy(USER_PICKER_ROW_PADDING)
   ) {
     Box {
       ProfileImageForActiveCall(size = size, image = userInfo.user.profile.image, color = MaterialTheme.colors.secondaryVariant)
