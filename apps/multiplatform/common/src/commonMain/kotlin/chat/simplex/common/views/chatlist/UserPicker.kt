@@ -22,6 +22,7 @@ import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
@@ -457,6 +458,7 @@ fun UserPickerInactiveUserBadge(userInfo: UserInfo, stopped: Boolean, size: Dp =
   }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun DevicePickerRow(
   localDeviceActive: Boolean,
@@ -465,13 +467,13 @@ private fun DevicePickerRow(
   onRemoteHostClick: (rh: RemoteHostInfo, connecting: MutableState<Boolean>) -> Unit,
   onRemoteHostActionButtonClick: (rh: RemoteHostInfo) -> Unit,
 ) {
-  Row(
+  FlowRow(
     Modifier
       .fillMaxWidth()
       .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
       .padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING, top = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
     horizontalArrangement = Arrangement.spacedBy(12.dp),
-    verticalAlignment = Alignment.CenterVertically
+    verticalArrangement = Arrangement.spacedBy(12.dp)
   ) {
     val activeHost = remoteHosts.firstOrNull { h -> h.activeHost }
 
@@ -554,7 +556,8 @@ fun DevicePill(
     verticalAlignment = Alignment.CenterVertically
   ) {
     Row(
-      Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
+      Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+      verticalAlignment = Alignment.CenterVertically
     ) {
       Icon(
         icon,
@@ -567,6 +570,9 @@ fun DevicePill(
         text,
         color = MaterialTheme.colors.onSurface,
         fontSize = 12.sp,
+        overflow = TextOverflow.Ellipsis,
+        maxLines = 1,
+        modifier = if (onActionButtonClick != null && actionButtonVisible) Modifier.widthIn(max = 300.dp * fontSizeSqrtMultiplier) else Modifier
       )
       if (onActionButtonClick != null && actionButtonVisible) {
         val interactionSource = remember { MutableInteractionSource() }
