@@ -1222,7 +1222,12 @@ fun BoxWithConstraintsScope.ChatItemsList(
           // memberConnected events and deleted items are aggregated at the last chat item in a row, see ChatItemView
         } else {
           val (prevHidden, prevItem) = chatModel.getPrevShownChatItem(currIndex, ciCategory)
-          val itemSeparation = getItemSeparation(cItem, prevItem, nextItem)
+
+          val itemSeparation = getItemSeparation(cItem, nextItem)
+          if (itemSeparation.date != null) {
+            DateSeparator(itemSeparation.date)
+          }
+
           val range = chatViewItemsRange(currIndex, prevHidden)
           if (revealed.value && range != null) {
             reversedChatItems.subList(range.first, range.last + 1).forEachIndexed { index, ci ->
@@ -1233,16 +1238,11 @@ fun BoxWithConstraintsScope.ChatItemsList(
             ChatItemView(cItem, range, prevItem, itemSeparation)
           }
 
-          if (itemSeparation.date != null) {
-            Row(
-              Modifier.padding(DEFAULT_PADDING_HALF).fillMaxWidth(),
-              horizontalArrangement = Arrangement.Center,
-              verticalAlignment = Alignment.CenterVertically
-            ) {
-              DateSeparator(itemSeparation.date)
-            }
+          if (i == reversedChatItems.lastIndex) {
+            DateSeparator(cItem.meta.itemTs)
           }
         }
+
 
         if (cItem.isRcvNew && chatInfo.id == ChatModel.chatId.value) {
           LaunchedEffect(cItem.id) {
@@ -1545,12 +1545,18 @@ private fun ButtonRow(horizontalArrangement: Arrangement.Horizontal, content: @C
 
 @Composable
 fun DateSeparator(date: Instant) {
-  Text(
-    text = getTimestampDateText(date),
-    fontSize = 14.sp,
-    fontWeight = FontWeight.Medium,
-    color = MaterialTheme.colors.secondary
-  )
+  Column (
+    Modifier.padding(DEFAULT_PADDING_HALF).fillMaxWidth(),
+    verticalArrangement = Arrangement.Center,
+    horizontalAlignment = Alignment.CenterHorizontally
+  ) {
+    Text(
+      text = getTimestampDateText(date),
+      fontSize = 14.sp,
+      fontWeight = FontWeight.Medium,
+      color = MaterialTheme.colors.secondary
+    )
+  }
 }
 
 val chatViewScrollState = MutableStateFlow(false)
@@ -1926,22 +1932,11 @@ private fun handleForwardConfirmation(
   )
 }
 
-private fun getItemSeparation(chatItem: ChatItem, prevItem: ChatItem?, nextItem: ChatItem?): ItemSeparation {
-  if (prevItem == null) {
-    return ItemSeparation(
-      timestamp = true,
-      largeGap = false,
-      date = chatItem.meta.itemTs,
-    )
+private fun getItemSeparation(chatItem: ChatItem, nextItem: ChatItem?): ItemSeparation {
+  if (nextItem == null) {
+    return ItemSeparation(timestamp = true, largeGap = true, date = null)
   }
 
-  if (nextItem == null) {
-    return ItemSeparation(
-      timestamp = true,
-      largeGap = false,
-      date = if (getTimestampDateText(chatItem.meta.itemTs) != getTimestampDateText(prevItem.meta.itemTs)) chatItem.meta.itemTs else null
-    )
-  }
   val sameMemberAndDirection = if (nextItem.chatDir is GroupRcv && chatItem.chatDir is GroupRcv) {
     chatItem.chatDir.groupMember.groupMemberId == nextItem.chatDir.groupMember.groupMemberId
   } else chatItem.chatDir.sent == nextItem.chatDir.sent
@@ -1950,7 +1945,7 @@ private fun getItemSeparation(chatItem: ChatItem, prevItem: ChatItem?, nextItem:
   return ItemSeparation(
     timestamp = largeGap || nextItem.meta.timestampText != chatItem.meta.timestampText,
     largeGap = largeGap,
-    date = if (getTimestampDateText(chatItem.meta.itemTs) != getTimestampDateText(prevItem.meta.itemTs)) chatItem.meta.itemTs else null
+    date = if (getTimestampDateText(chatItem.meta.itemTs) == getTimestampDateText(nextItem.meta.itemTs)) null else nextItem.meta.itemTs
   )
 }
 
