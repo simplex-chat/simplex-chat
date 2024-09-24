@@ -22,6 +22,7 @@ import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
@@ -555,7 +556,8 @@ fun DevicePill(
     verticalAlignment = Alignment.CenterVertically
   ) {
     Row(
-      Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
+      Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+      verticalAlignment = Alignment.CenterVertically
     ) {
       Icon(
         icon,
@@ -568,6 +570,9 @@ fun DevicePill(
         text,
         color = MaterialTheme.colors.onSurface,
         fontSize = 12.sp,
+        overflow = TextOverflow.Ellipsis,
+        maxLines = 1,
+        modifier = if (onActionButtonClick != null && actionButtonVisible) Modifier.widthIn(max = 300.dp * fontSizeSqrtMultiplier) else Modifier
       )
       if (onActionButtonClick != null && actionButtonVisible) {
         val interactionSource = remember { MutableInteractionSource() }
