@@ -216,7 +216,7 @@ fun startServer(onResponse: (WVAPIMessage) -> Unit): NanoWSD {
       return when {
         session.headers["upgrade"] == "websocket" -> super.handle(session)
         session.uri.contains("/simplex/call/") -> resourcesToResponse("/desktop/call.html")
-        else -> resourcesToResponse(URI.create(session.uri).path)
+        else -> resourcesToResponse(uriCreateOrNull(session.uri)?.path ?: return newFixedLengthResponse("Error parsing URL"))
       }
     }
   }

@@ -665,9 +665,8 @@ private fun updateMemberRoleDialog(
 
 fun connectViaMemberAddressAlert(rhId: Long?, connReqUri: String) {
   try {
-    val uri = URI(connReqUri)
     withBGApi {
-      planAndConnect(rhId, uri, incognito = null, close = { ModalManager.closeAllModalsEverywhere() })
+      planAndConnect(rhId, connReqUri, incognito = null, close = { ModalManager.closeAllModalsEverywhere() })
     }
   } catch (e: RuntimeException) {
     AlertManager.shared.showAlertMsg(

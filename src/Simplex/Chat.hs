@@ -593,8 +593,7 @@ processChatCommand' vr = \case
     user_ <- chatReadVar currentUser
     user' <- privateGetUser userId'
     validateUserPassword_ user_ user' viewPwd_
-    withFastStore' (`setActiveUser` userId')
-    let user'' = user' {activeUser = True}
+    user'' <- withFastStore' (`setActiveUser` user')
     chatWriteVar currentUser $ Just user''
     pure $ CRActiveUser user''
   SetActiveUser uName viewPwd_ -> do
@@ -2945,8 +2944,8 @@ processChatCommand' vr = \case
           msgs_ <- sendDirectContactMessages user ct $ L.map XMsgNew msgContainers
           let itemsData = prepareSndItemsData msgs_ cmrs ciFiles_ quotedItems_
           when (length itemsData /= length cmrs) $ logError "sendContactContentMessages: cmrs and itemsData length mismatch"
-          (errs, cis) <- partitionEithers <$> saveSndChatItems user (CDDirectSnd ct) itemsData timed_ live
-          unless (null errs) $ toView $ CRChatErrors (Just user) errs
+          r@(_, cis) <- partitionEithers <$> saveSndChatItems user (CDDirectSnd ct) itemsData timed_ live
+          processSendErrs user r
           forM_ (timed_ >>= timedDeleteAt') $ \deleteAt ->
             forM_ cis $ \ci ->
               startProximateTimedItemThread user (ChatRef CTDirect contactId, chatItemId' ci) deleteAt
@@ -3010,8 +3009,8 @@ processChatCommand' vr = \case
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo) itemsData timed_ live
           when (length itemsData /= length cmrs) $ logError "sendGroupContentMessages: cmrs and cis_ length mismatch"
           createMemberSndStatuses cis_ msgs_ gsr
-          let (errs, cis) = partitionEithers cis_
-          unless (null errs) $ toView $ CRChatErrors (Just user) errs
+          let r@(_, cis) = partitionEithers cis_
+          processSendErrs user r
           forM_ (timed_ >>= timedDeleteAt') $ \deleteAt ->
             forM_ cis $ \ci ->
               startProximateTimedItemThread user (ChatRef CTGroup groupId, chatItemId' ci) deleteAt
@@ -3103,6 +3102,18 @@ processChatCommand' vr = \case
         | (msg_, (ComposedMessage {msgContent}, itemForwarded), f, q) <-
             zipWith4 (,,,) msgs_ (L.toList cmrs') (L.toList ciFiles_) (L.toList quotedItems_)
       ]
+    processSendErrs :: User -> ([ChatError], [ChatItem c d]) -> CM ()
+    processSendErrs user = \case
+      -- no errors
+      ([], _) -> pure ()
+      -- at least one item is successfully created
+      (errs, _ci : _) -> toView $ CRChatErrors (Just user) errs
+      -- single error
+      ([err], []) -> throwError err
+      -- multiple errors
+      (errs@(err : _), []) -> do
+        toView $ CRChatErrors (Just user) errs
+        throwError err
     getCommandDirectChatItems :: User -> Int64 -> NonEmpty ChatItemId -> CM (Contact, [CChatItem 'CTDirect])
     getCommandDirectChatItems user ctId itemIds = do
       ct <- withFastStore $ \db -> getContact db vr user ctId
@@ -4081,6 +4092,7 @@ processAgentMessageNoConn = \case
   UP srv conns -> serverEvent srv conns NSConnected CRContactsSubscribed
   SUSPENDED -> toView CRChatSuspended
   DEL_USER agentUserId -> toView $ CRAgentUserDeleted agentUserId
+  ERRS cErrs -> errsEvent cErrs
   where
     hostEvent :: ChatResponse -> CM ()
     hostEvent = whenM (asks $ hostEvents . config) . toView
@@ -4093,6 +4105,16 @@ processAgentMessageNoConn = \case
         notifyCLI = do
           cs <- withStore' (`getConnectionsContacts` conns)
           toView $ event srv cs
+    errsEvent :: [(ConnId, AgentErrorType)] -> CM ()
+    errsEvent cErrs = do
+      vr <- chatVersionRange
+      errs <- lift $ rights <$> withStoreBatch' (\db -> map (getChatErr vr db) cErrs)
+      toView $ CRChatErrors Nothing errs
+      where
+        getChatErr :: VersionRangeChat -> DB.Connection -> (ConnId, AgentErrorType) -> IO ChatError
+        getChatErr vr db (connId, err) =
+          let acId = AgentConnId connId
+           in ChatErrorAgent err <$> (getUserByAConnId db acId $>>= \user -> eitherToMaybe <$> runExceptT (getConnectionEntity db vr user acId))
 
 processAgentMsgSndFile :: ACorrId -> SndFileId -> AEvent 'AESndFile -> CM ()
 processAgentMsgSndFile _corrId aFileId msg = do

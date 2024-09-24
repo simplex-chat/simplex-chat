@@ -14,6 +14,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.platform.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -21,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.*
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
@@ -172,7 +174,30 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                         })
                       }
                     }
-                  }
+                  },
+                  forwardItems = {
+                    val itemIds = selectedChatItems.value
+
+                    if (itemIds != null) {
+                      withBGApi {
+                        val chatItemIds = itemIds.toList()
+                        val forwardPlan = controller.apiPlanForwardChatItems(
+                          rh = chatRh,
+                          fromChatType = chatInfo.chatType,
+                          fromChatId = chatInfo.apiId,
+                          chatItemIds = chatItemIds
+                        )
+
+                        if (forwardPlan != null) {
+                          if (forwardPlan.chatItemIds.count() < chatItemIds.count() || forwardPlan.forwardConfirmation != null) {
+                            handleForwardConfirmation(chatRh, forwardPlan, chatInfo)
+                          } else {
+                            forwardContent(forwardPlan.chatItemIds, chatInfo)
+                          }
+                        }
+                      }
+                    }
+                  },
                 )
               }
             },
@@ -347,9 +372,9 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                 openDirectChat(chatRh, contactId, chatModel)
               }
             },
-            forwardItem = { cItem, cInfo ->
+            forwardItem = { cInfo, cItem ->
               chatModel.chatId.value = null
-              chatModel.sharedContent.value = SharedContent.Forward(cInfo, cItem)
+              chatModel.sharedContent.value = SharedContent.Forward(listOf(cItem), cInfo)
             },
             updateContactStats = { contact ->
               withBGApi {
@@ -1009,25 +1034,6 @@ fun BoxWithConstraintsScope.ChatItemsList(
         // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view
         LocalViewConfiguration provides LocalViewConfiguration.current.bigTouchSlop()
       ) {
-        val dismissState = rememberDismissState(initialValue = DismissValue.Default) {
-          if (it == DismissValue.DismissedToStart) {
-            scope.launch {
-              if ((cItem.content is CIContent.SndMsgContent || cItem.content is CIContent.RcvMsgContent) && chatInfo !is ChatInfo.Local) {
-                if (composeState.value.editing) {
-                  composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
-                } else if (cItem.id != ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-                  composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
-                }
-              }
-            }
-          }
-          false
-        }
-        val swipeableModifier = SwipeToDismissModifier(
-          state = dismissState,
-          directions = setOf(DismissDirection.EndToStart),
-          swipeDistance = with(LocalDensity.current) { 30.dp.toPx() },
-        )
         val provider = {
           providerForGallery(i, chatModel.chatItems.value, cItem.id) { indexInReversed ->
             scope.launch {
@@ -1042,16 +1048,35 @@ fun BoxWithConstraintsScope.ChatItemsList(
         val revealed = remember { mutableStateOf(false) }
 
         @Composable
-        fun ChatItemViewShortHand(cItem: ChatItem, range: IntRange?) {
+        fun ChatItemViewShortHand(cItem: ChatItem, range: IntRange?, fillMaxWidth: Boolean = true) {
           tryOrShowError("${cItem.id}ChatItem", error = {
             CIBrokenComposableView(if (cItem.chatDir.sent) Alignment.CenterEnd else Alignment.CenterStart)
           }) {
-            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools, showViaProxy = showViaProxy)
+            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools, showViaProxy = showViaProxy)
           }
         }
 
         @Composable
         fun ChatItemView(cItem: ChatItem, range: IntRange?, prevItem: ChatItem?) {
+          val dismissState = rememberDismissState(initialValue = DismissValue.Default) {
+            if (it == DismissValue.DismissedToStart) {
+              scope.launch {
+                if ((cItem.content is CIContent.SndMsgContent || cItem.content is CIContent.RcvMsgContent) && chatInfo !is ChatInfo.Local) {
+                  if (composeState.value.editing) {
+                    composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
+                  } else if (cItem.id != ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
+                    composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
+                  }
+                }
+              }
+            }
+            false
+          }
+          val swipeableModifier = SwipeToDismissModifier(
+            state = dismissState,
+            directions = setOf(DismissDirection.EndToStart),
+            swipeDistance = with(LocalDensity.current) { 30.dp.toPx() },
+          )
           val sent = cItem.chatDir.sent
           Box(Modifier.padding(bottom = 4.dp)) {
             val voiceWithTransparentBack = cItem.content.msgContent is MsgContent.MCVoice && cItem.content.text.isEmpty() && cItem.quotedItem == null && cItem.meta.itemForwarded == null
@@ -1071,42 +1096,60 @@ fun BoxWithConstraintsScope.ChatItemsList(
                   Column(
                     Modifier
                       .padding(top = 8.dp)
-                      .padding(start = 8.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp),
+                      .padding(start = 8.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp)
+                      .fillMaxWidth()
+                      .then(swipeableModifier),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                     horizontalAlignment = Alignment.Start
                   ) {
-                    if (cItem.content.showMemberName) {
-                      val memberNameStyle = SpanStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary)
-                      val memberNameString = if (memCount == 1 && member.memberRole > GroupMemberRole.Member) {
-                        buildAnnotatedString {
-                          withStyle(memberNameStyle.copy(fontWeight = FontWeight.Medium)) { append(member.memberRole.text) }
-                          append(" ")
-                          withStyle(memberNameStyle) { append(memberNames(member, prevMember, memCount)) }
-                        }
-                      } else {
-                        buildAnnotatedString {
-                          withStyle(memberNameStyle) { append(memberNames(member, prevMember, memCount)) }
+                    @Composable
+                    fun MemberNameAndRole() {
+                      Row(Modifier.padding(bottom = 2.dp).graphicsLayer { translationX = selectionOffset.toPx() }, horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(
+                          memberNames(member, prevMember, memCount),
+                          Modifier
+                            .padding(start = MEMBER_IMAGE_SIZE + DEFAULT_PADDING_HALF)
+                            .weight(1f, false),
+                          fontSize = 13.5.sp,
+                          color = MaterialTheme.colors.secondary,
+                          overflow = TextOverflow.Ellipsis,
+                          maxLines = 1
+                        )
+                        if (memCount == 1 && member.memberRole > GroupMemberRole.Member) {
+                          Text(
+                            member.memberRole.text,
+                            Modifier.padding(start = DEFAULT_PADDING_HALF * 1.5f, end = DEFAULT_PADDING_HALF),
+                            fontSize = 13.5.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colors.secondary,
+                            maxLines = 1
+                          )
                         }
                       }
-                      Text(
-                        memberNameString,
-                        Modifier.padding(start = MEMBER_IMAGE_SIZE + 10.dp),
-                        maxLines = 2
-                      )
                     }
-                    Box(contentAlignment = Alignment.CenterStart) {
-                      androidx.compose.animation.AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
-                        SelectedChatItem(Modifier, cItem.id, selectedChatItems)
-                      }
-                      Row(
-                        swipeableOrSelectionModifier,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                      ) {
-                        Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
-                          MemberImage(member)
+
+                    @Composable
+                    fun Item() {
+                      Box(Modifier.layoutId(CHAT_BUBBLE_LAYOUT_ID), contentAlignment = Alignment.CenterStart) {
+                        androidx.compose.animation.AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
+                          SelectedChatItem(Modifier, cItem.id, selectedChatItems)
                         }
-                        ChatItemViewShortHand(cItem, range)
+                        Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() },
+                          horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                          Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
+                            MemberImage(member)
+                          }
+                          ChatItemViewShortHand(cItem, range, false)
+                        }
                       }
+                    }
+                    if (cItem.content.showMemberName) {
+                      DependentLayout(Modifier, CHAT_BUBBLE_LAYOUT_ID) {
+                        MemberNameAndRole()
+                        Item()
+                      }
+                    } else {
+                      Item()
                     }
                   }
                 } else {
@@ -1416,6 +1459,65 @@ private fun TopEndFloatingButton(
   }
 }
 
+@Composable
+private fun DownloadFilesButton(
+  forwardConfirmation: ForwardConfirmation.FilesNotAccepted,
+  rhId: Long?,
+  modifier: Modifier = Modifier,
+  contentPadding: PaddingValues = ButtonDefaults.TextButtonContentPadding
+) {
+  val user = chatModel.currentUser.value
+
+  if (user != null) {
+    TextButton(
+      contentPadding = contentPadding,
+      modifier = modifier,
+      onClick = {
+        AlertManager.shared.hideAlert()
+
+        withBGApi {
+          controller.receiveFiles(
+            rhId = rhId,
+            fileIds = forwardConfirmation.fileIds,
+            user = user
+          )
+        }
+      }
+    ) {
+      Text(stringResource(MR.strings.forward_files_not_accepted_receive_files), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+    }
+  }
+}
+
+@Composable
+private fun ForwardButton(
+  forwardPlan: CR.ForwardPlan,
+  chatInfo: ChatInfo,
+  modifier: Modifier = Modifier,
+  contentPadding: PaddingValues = ButtonDefaults.TextButtonContentPadding
+) {
+  TextButton(
+    onClick = {
+      forwardContent(forwardPlan.chatItemIds, chatInfo)
+      AlertManager.shared.hideAlert()
+    },
+    modifier = modifier,
+    contentPadding = contentPadding
+  ) {
+    Text(stringResource(MR.strings.forward_chat_item), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+  }
+}
+
+@Composable
+private fun ButtonRow(horizontalArrangement: Arrangement.Horizontal, content: @Composable() (RowScope.() -> Unit)) {
+  Row(
+    Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING),
+    horizontalArrangement = horizontalArrangement
+  ) {
+    content()
+  }
+}
+
 val chatViewScrollState = MutableStateFlow(false)
 
 fun addGroupMembers(groupInfo: GroupInfo, rhId: Long?, view: Any? = null, close: (() -> Unit)? = null) {
@@ -1710,6 +1812,83 @@ private fun ViewConfiguration.bigTouchSlop(slop: Float = 50f) = object: ViewConf
     get() =
       this@bigTouchSlop.doubleTapMinTimeMillis
   override val touchSlop: Float get() = slop
+}
+
+private fun forwardContent(chatItemsIds: List<Long>, chatInfo: ChatInfo) {
+  chatModel.chatId.value = null
+  chatModel.sharedContent.value = SharedContent.Forward(
+    chatModel.chatItems.value.filter { chatItemsIds.contains(it.id) },
+    chatInfo
+  )
+}
+
+private fun forwardConfirmationAlertDescription(forwardConfirmation: ForwardConfirmation): String {
+  return when (forwardConfirmation) {
+    is ForwardConfirmation.FilesNotAccepted -> String.format(generalGetString(MR.strings.forward_files_not_accepted_desc), forwardConfirmation.fileIds.count())
+    is ForwardConfirmation.FilesInProgress -> String.format(generalGetString(MR.strings.forward_files_in_progress_desc), forwardConfirmation.filesCount)
+    is ForwardConfirmation.FilesFailed -> String.format(generalGetString(MR.strings.forward_files_failed_to_receive_desc), forwardConfirmation.filesCount)
+    is ForwardConfirmation.FilesMissing -> String.format(generalGetString(MR.strings.forward_files_missing_desc), forwardConfirmation.filesCount)
+  }
+}
+
+private fun handleForwardConfirmation(
+  rhId: Long?,
+  forwardPlan: CR.ForwardPlan,
+  chatInfo: ChatInfo
+) {
+  var alertDescription = if (forwardPlan.forwardConfirmation != null) forwardConfirmationAlertDescription(forwardPlan.forwardConfirmation) else ""
+
+  if (forwardPlan.chatItemIds.isNotEmpty()) {
+    alertDescription += "\n${generalGetString(MR.strings.forward_alert_forward_messages_without_files)}"
+  }
+
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = if (forwardPlan.chatItemIds.isNotEmpty())
+      String.format(generalGetString(MR.strings.forward_alert_title_messages_to_forward), forwardPlan.chatItemIds.count()) else
+        generalGetString(MR.strings.forward_alert_title_nothing_to_forward),
+    text = alertDescription,
+    buttons = {
+      if (forwardPlan.chatItemIds.isNotEmpty()) {
+        when (val confirmation = forwardPlan.forwardConfirmation) {
+          is ForwardConfirmation.FilesNotAccepted -> {
+            val fillMaxWidthModifier = Modifier.fillMaxWidth()
+            val contentPadding = PaddingValues(vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)
+            Column {
+              ForwardButton(forwardPlan, chatInfo, fillMaxWidthModifier, contentPadding)
+              DownloadFilesButton(confirmation, rhId, fillMaxWidthModifier, contentPadding)
+              TextButton(onClick = { AlertManager.shared.hideAlert() }, modifier = fillMaxWidthModifier, contentPadding = contentPadding) {
+                Text(stringResource(MR.strings.cancel_verb), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+              }
+            }
+          }
+          else -> {
+            ButtonRow(Arrangement.SpaceBetween) {
+              TextButton(onClick = { AlertManager.shared.hideAlert() }) {
+                Text(stringResource(MR.strings.cancel_verb), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+              }
+              ForwardButton(forwardPlan, chatInfo)
+            }
+          }
+        }
+      } else {
+        when (val confirmation = forwardPlan.forwardConfirmation) {
+          is ForwardConfirmation.FilesNotAccepted -> {
+            ButtonRow(Arrangement.SpaceBetween) {
+              TextButton(onClick = { AlertManager.shared.hideAlert() }) {
+                Text(stringResource(MR.strings.cancel_verb), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+              }
+              DownloadFilesButton(confirmation, rhId)
+            }
+          }
+          else -> ButtonRow(Arrangement.Center) {
+            TextButton(onClick = { AlertManager.shared.hideAlert() }) {
+              Text(stringResource(MR.strings.ok), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+            }
+          }
+        }
+      }
+    }
+  )
 }
 
 @Preview/*(
