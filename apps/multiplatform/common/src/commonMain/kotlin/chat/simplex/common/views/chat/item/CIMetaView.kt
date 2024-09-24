@@ -149,7 +149,9 @@ fun reserveSpaceForMeta(
   if (showTimestamp) {
     res += meta.timestampText
   } else {
-    res += iconSpace
+    if (showStatus && (meta.statusIcon(secondaryColor) != null)) {
+      res += iconSpace
+    }
   }
   return res
 }
