@@ -1265,8 +1265,8 @@
     <string name="you_can_share_your_address">يمكنك مشاركة عنوانك كرابط أو رمز QR - يمكن لأي شخص الاتصال بك.</string>
     <string name="you_can_create_it_later">يمكنك إنشاؤه لاحقًا</string>
     <string name="invite_prohibited_description">أنت تحاول دعوة جهة اتصال قمت بمشاركة ملف تعريف متخفي معها إلى المجموعة التي تستخدم فيها ملفك الشخصي الرئيسي</string>
-    <string name="user_unmute">إلغاء الكتم</string>
-    <string name="unmute_chat">إلغاء الكتم</string>
+    <string name="user_unmute">ألغِ الكتم</string>
+    <string name="unmute_chat">ألغِ الكتم</string>
     <string name="you_accepted_connection">لقد قبلت الاتصال</string>
     <string name="unhide_profile">إلغاء إخفاء ملف تعريف</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">يجب أن تكون جهة الاتصال متصلة بالإنترنت حتى يكتمل الاتصال.
