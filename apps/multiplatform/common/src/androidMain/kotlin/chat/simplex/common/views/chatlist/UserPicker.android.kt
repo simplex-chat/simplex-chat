@@ -44,9 +44,7 @@ actual fun UserPickerUsersSection(
 
   if (users.isNotEmpty()) {
     SectionItemView(
-      padding = PaddingValues(
-        top = if (windowOrientation() == WindowOrientation.PORTRAIT) DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL else 0.dp
-      ),
+      padding = PaddingValues(),
       disabled = stopped
     ) {
       Box {

@@ -156,7 +156,7 @@ fun UserPicker(
 
     @Composable
     fun FirstSection() {
-      Column(modifier = Modifier.padding(bottom = if (appPlatform.isDesktop) USER_PICKER_SECTION_SPACING - DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL - 3.dp else USER_PICKER_SECTION_SPACING)) {
+      Column(modifier = Modifier.padding(bottom = USER_PICKER_SECTION_SPACING - DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL - 3.dp)) {
         if (remoteHosts.isNotEmpty()) {
           val currentRemoteHost = remember { chatModel.currentRemoteHost }.value
           val localDeviceActive = currentRemoteHost == null && chatModel.localUserCreated.value == true
