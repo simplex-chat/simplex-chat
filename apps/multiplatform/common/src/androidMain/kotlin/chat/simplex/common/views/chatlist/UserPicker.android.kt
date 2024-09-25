@@ -238,6 +238,6 @@ private fun Modifier.userBoxWidth(user: User, totalUsers: Int, windowWidth: Dp):
   } else if (user.activeUser) {
     this.width(windowWidth - DEFAULT_PADDING - (USER_PICKER_ROW_PADDING * 3) - USER_PICKER_IMAGE_SIZE)
   } else {
-    this.widthIn(max = windowWidth * 0.618f)
+    this.widthIn(max = (windowWidth - (DEFAULT_PADDING * 2)) * 0.618f)
   }
 }
