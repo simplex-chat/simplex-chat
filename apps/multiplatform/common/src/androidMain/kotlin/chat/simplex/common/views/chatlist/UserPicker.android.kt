@@ -117,7 +117,7 @@ private fun Modifier.userPickerBoxModifier(): Modifier {
   }
 
   val shape = RoundedCornerShape(CornerSize(cornerSize))
-  return this.clip(shape).border(1.dp, MaterialTheme.colors.secondaryVariant, shape)
+  return this.clip(shape).border(1.dp, MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.9f), shape)
 }
 
 
