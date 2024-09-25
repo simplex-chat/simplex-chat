@@ -581,7 +581,7 @@ fun BoxScope.unreadBadge(unreadCount: Int, userMuted: Boolean, hasPadding: Boole
     fontSize = 10.sp,
     style = TextStyle(textAlign = TextAlign.Center),
     modifier = Modifier
-      .offset(y = if (hasPadding) 3.sp.toDp() else -4.sp.toDp(), x = if (hasPadding) 0.dp else 2.sp.toDp())
+      .offset(y = if (hasPadding) 3.sp.toDp() else -4.sp.toDp(), x = if (hasPadding) 0.dp else 4.sp.toDp())
       .background(if (userMuted) MaterialTheme.colors.primaryVariant else MaterialTheme.colors.secondary, shape = CircleShape)
       .badgeLayout()
       .padding(horizontal = 2.sp.toDp())
