@@ -91,6 +91,7 @@ struct UserPicker: View {
             .background(elevatedSecondarySystemGroupedBackground(colorScheme))
             .clipShape(sectionShape)
             .padding(.horizontal, sectionHorizontalPadding)
+            .padding(.bottom, sectionSpacing)
         }
         .onAppear {
             // This check prevents the call of listUsers after the app is suspended, and the database is closed.
