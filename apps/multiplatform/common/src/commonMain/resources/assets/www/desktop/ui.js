@@ -171,9 +171,7 @@ function reactOnMessageToServer(msg) {
         return;
     switch ((_a = msg.resp) === null || _a === void 0 ? void 0 : _a.type) {
         case "peerMedia":
-            const className = localMedia(activeCall) == CallMediaType.Video || activeCall.peerMediaSources.camera || activeCall.peerMediaSources.screenVideo
-                ? "video"
-                : "audio";
+            const className = localMedia(activeCall) == CallMediaType.Video || peerMedia(activeCall) == CallMediaType.Video ? "video" : "audio";
             document.getElementById("info-block").className = className;
             document.getElementById("audio-call-icon").style.display = className == CallMediaType.Audio ? "block" : "none";
             enableSpeakerIcon(activeCall.remoteStream.getAudioTracks().every((elem) => elem.enabled), !activeCall.peerMediaSources.mic);

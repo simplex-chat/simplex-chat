@@ -197,6 +197,7 @@ const processCommand = (function () {
             aesKey,
             layout: (_c = notConnectedCall === null || notConnectedCall === void 0 ? void 0 : notConnectedCall.layout) !== null && _c !== void 0 ? _c : LayoutType.Default,
             cameraTrackWasSetBefore: localStream.getVideoTracks().length > 0,
+            peerHasOldVersion: false,
         };
         localOrPeerMediaSourcesChanged(call);
         await setupMediaStreams(call);
@@ -363,6 +364,7 @@ const processCommand = (function () {
                         pc.getTransceivers().forEach((elem) => (elem.direction = "sendrecv"));
                         // setting media streams after remote description in order to have all transceivers ready (so ordering will be preserved)
                         console.log("LALAL TRANSCE", pc.getTransceivers(), pc.getTransceivers().map((elem) => { var _a, _b; return "" + elem.mid + " " + ((_a = elem.sender.track) === null || _a === void 0 ? void 0 : _a.kind) + " " + ((_b = elem.sender.track) === null || _b === void 0 ? void 0 : _b.label); }));
+                        adaptToOldVersion(pc.getTransceivers().length <= 2, activeCall);
                         let answer = await pc.createAnswer();
                         await pc.setLocalDescription(answer);
                         addIceCandidates(pc, remoteIceCandidates);
@@ -392,6 +394,7 @@ const processCommand = (function () {
                         const remoteIceCandidates = parse(command.iceCandidates);
                         // console.log("answer remoteIceCandidates", JSON.stringify(remoteIceCandidates))
                         await pc.setRemoteDescription(new RTCSessionDescription(answer));
+                        adaptToOldVersion(pc.getTransceivers()[2].currentDirection == "sendonly", activeCall);
                         addIceCandidates(pc, remoteIceCandidates);
                         addIceCandidates(pc, afterCallInitializedCandidates);
                         afterCallInitializedCandidates = [];
@@ -428,6 +431,9 @@ const processCommand = (function () {
                         inactiveCallMediaSourcesChanged(inactiveCallMediaSources);
                         recreateLocalStreamWhileNotConnected((_a = notConnectedCall === null || notConnectedCall === void 0 ? void 0 : notConnectedCall.localCamera) !== null && _a !== void 0 ? _a : VideoCamera.User);
                         resp = { type: "ok" };
+                    }
+                    else if (activeCall.peerHasOldVersion && command.source == CallMediaSource.Camera && !activeCall.peerMediaSources.camera) {
+                        resp = { type: "error", message: "media: cannot enable camera since the peer has an old version" };
                     }
                     else if (!activeCall.cameraTrackWasSetBefore && command.source == CallMediaSource.Camera && command.enable) {
                         await startSendingCamera(activeCall, activeCall.localCamera);
@@ -606,6 +612,28 @@ const processCommand = (function () {
         }
         // Without doing it manually Firefox shows black screen but video can be played in Picture-in-Picture
         videos.local.play().catch((e) => console.log(e));
+        setupLocalVideoRatio(videos.local);
+    }
+    function setupLocalVideoRatio(local) {
+        const ratio = isDesktop ? 1.33 : 1 / 1.33;
+        const currentRect = local.getBoundingClientRect();
+        // better to get percents from here than to hardcode values from styles (the styles can be changed)
+        const screenWidth = currentRect.left + currentRect.width;
+        const percents = currentRect.width / screenWidth;
+        local.style.width = `${percents * 100}%`;
+        local.style.height = `${(percents / ratio) * 100}vw`;
+        local.addEventListener("loadedmetadata", function () {
+            console.log("Local video videoWidth: " + local.videoWidth + "px,  videoHeight: " + local.videoHeight + "px");
+            if (local.videoWidth == 0 || local.videoHeight == 0)
+                return;
+            local.style.height = `${(percents / (local.videoWidth / local.videoHeight)) * 100}vw`;
+        });
+        local.onresize = function () {
+            console.log("Local video size changed to " + local.videoWidth + "x" + local.videoHeight);
+            if (local.videoWidth == 0 || local.videoHeight == 0)
+                return;
+            local.style.height = `${(percents / (local.videoWidth / local.videoHeight)) * 100}vw`;
+        };
     }
     function setupEncryptionForLocalStream(call) {
         if (call.aesKey && call.key) {
@@ -640,6 +668,9 @@ const processCommand = (function () {
                             else {
                                 call.remoteStream.addTrack(track);
                             }
+                            if (!call.aesKey || !call.key) {
+                                setupOnMutedCallback(event.transceiver.mid, track);
+                            }
                         }
                     }
                 }
@@ -651,6 +682,9 @@ const processCommand = (function () {
                     }
                     else {
                         call.remoteStream.addTrack(track);
+                    }
+                    if (!call.aesKey || !call.key) {
+                        setupOnMutedCallback(event.transceiver.mid, track);
                     }
                 }
                 console.log(`ontrack success`);
@@ -711,6 +745,10 @@ const processCommand = (function () {
         const pc = call.connection;
         // Taking the first video transceiver and use it for sending video from camera. Following tracks are for other purposes
         const tc = pc.getTransceivers().find((tc) => tc.receiver.track.kind == "video" && tc.direction == "sendrecv");
+        if (!tc) {
+            console.log("No camera transceiver. Probably, calling to an old version");
+            return;
+        }
         console.log(pc.getTransceivers().map((elem) => { var _a, _b; return "" + ((_a = elem.sender.track) === null || _a === void 0 ? void 0 : _a.kind) + " " + ((_b = elem.receiver.track) === null || _b === void 0 ? void 0 : _b.kind) + " " + elem.direction; }));
         let localStream;
         try {
@@ -921,6 +959,29 @@ const processCommand = (function () {
             console.log(`no ${operation}`);
         }
     }
+    function setupOnMutedCallback(transceiverMid, track) {
+        let wasMuted = true;
+        let timeout = 0;
+        const muteAfterTimeout = () => {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                if (!wasMuted) {
+                    wasMuted = true;
+                    onMediaMuteUnmute(transceiverMid, wasMuted);
+                }
+            }, 2000);
+        };
+        track.onmute = (_) => {
+            console.log("LALAL MUTE", transceiverMid);
+            muteAfterTimeout();
+        };
+        track.onunmute = (_) => {
+            console.log("LALAL UNMUTE", transceiverMid);
+            clearTimeout(timeout);
+            wasMuted = false;
+            onMediaMuteUnmute(transceiverMid, false);
+        };
+    }
     function onMediaMuteUnmute(transceiverMid, mute) {
         const videos = getVideoElements();
         if (!videos)
@@ -1090,6 +1151,27 @@ const processCommand = (function () {
             return false;
         }
     }
+    function adaptToOldVersion(peerHasOldVersion, activeCall) {
+        activeCall.peerHasOldVersion = peerHasOldVersion;
+        if (peerHasOldVersion) {
+            console.log("The peer has an old version.", "Tracks size:", activeCall.remoteStream.getAudioTracks().length, activeCall.remoteStream.getVideoTracks().length);
+            onMediaMuteUnmute("0", false);
+            if (activeCall.remoteStream.getVideoTracks().length > 0) {
+                onMediaMuteUnmute("1", false);
+            }
+            if (activeCall.localMediaSources.camera && !activeCall.peerMediaSources.camera) {
+                console.log("Stopping video track for the old version");
+                activeCall.localStream.getVideoTracks().forEach((elem) => {
+                    elem.stop();
+                    activeCall.localStream.removeTrack(elem);
+                });
+                activeCall.localMediaSources.camera = false;
+                sendMessageToNative({ resp: { type: "ok" }, command: { type: "media", source: CallMediaSource.Camera, enable: false } });
+                localOrPeerMediaSourcesChanged(activeCall);
+                changeLayout(activeCall.layout);
+            }
+        }
+    }
     return processCommand;
 })();
 function toggleRemoteVideoFitFill() {
@@ -1168,7 +1250,7 @@ function getVideoElements() {
         localScreen &&
         remote &&
         remoteScreen &&
-        local instanceof HTMLMediaElement &&
+        local instanceof HTMLVideoElement &&
         localScreen instanceof HTMLMediaElement &&
         remote instanceof HTMLMediaElement &&
         remoteScreen instanceof HTMLMediaElement))

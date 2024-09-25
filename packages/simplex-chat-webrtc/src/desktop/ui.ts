@@ -181,10 +181,7 @@ function reactOnMessageToServer(msg: WVApiMessage) {
 
   switch (msg.resp?.type) {
     case "peerMedia":
-      const className =
-        localMedia(activeCall) == CallMediaType.Video || activeCall.peerMediaSources.camera || activeCall.peerMediaSources.screenVideo
-          ? "video"
-          : "audio"
+      const className = localMedia(activeCall) == CallMediaType.Video || peerMedia(activeCall) == CallMediaType.Video ? "video" : "audio"
       document.getElementById("info-block")!!.className = className
       document.getElementById("audio-call-icon")!.style.display = className == CallMediaType.Audio ? "block" : "none"
       enableSpeakerIcon(
