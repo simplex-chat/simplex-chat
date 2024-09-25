@@ -39,10 +39,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.math.max
 
-val USER_PICKER_ROW_PADDING = 16.dp
-val USER_PICKER_SECTION_SPACING = 32.dp
-val USER_PICKER_IMAGE_SIZE = 44.dp
-val USER_PICKER_AVATAR_PADDING_MARGIN = USER_PICKER_IMAGE_SIZE / 12
+private val USER_PICKER_SECTION_SPACING = 32.dp
 
 @Composable
 fun UserPicker(
@@ -159,47 +156,49 @@ fun UserPicker(
 
     @Composable
     fun FirstSection() {
-      if (remoteHosts.isNotEmpty()) {
-        val currentRemoteHost = remember { chatModel.currentRemoteHost }.value
-        val localDeviceActive = currentRemoteHost == null && chatModel.localUserCreated.value == true
+      Column(modifier = Modifier.padding(bottom = if (appPlatform.isDesktop) USER_PICKER_SECTION_SPACING - DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL - 3.dp else USER_PICKER_SECTION_SPACING)) {
+        if (remoteHosts.isNotEmpty()) {
+          val currentRemoteHost = remember { chatModel.currentRemoteHost }.value
+          val localDeviceActive = currentRemoteHost == null && chatModel.localUserCreated.value == true
 
-        DevicePickerRow(
-          localDeviceActive = localDeviceActive,
-          remoteHosts = remoteHosts,
-          onRemoteHostClick = { h, connecting ->
-            userPickerState.value = AnimatedViewState.HIDING
-            switchToRemoteHost(h, connecting)
-          },
-          onLocalDeviceClick = {
-            userPickerState.value = AnimatedViewState.HIDING
-            switchToLocalDevice()
-          },
-          onRemoteHostActionButtonClick = { h ->
-            userPickerState.value = AnimatedViewState.HIDING
-            stopRemoteHostAndReloadHosts(h, true)
-          }
-        )
-      }
-      UserPickerUsersSection(
-        users = users,
-        onUserClicked = { user ->
-          if (!user.activeUser) {
-            userPickerState.value = AnimatedViewState.HIDING
-            withBGApi {
-              controller.showProgressIfNeeded {
-                ModalManager.closeAllModalsEverywhere()
-                chatModel.controller.changeActiveUser(user.remoteHostId, user.userId, null)
+          DevicePickerRow(
+            localDeviceActive = localDeviceActive,
+            remoteHosts = remoteHosts,
+            onRemoteHostClick = { h, connecting ->
+              userPickerState.value = AnimatedViewState.HIDING
+              switchToRemoteHost(h, connecting)
+            },
+            onLocalDeviceClick = {
+              userPickerState.value = AnimatedViewState.HIDING
+              switchToLocalDevice()
+            },
+            onRemoteHostActionButtonClick = { h ->
+              userPickerState.value = AnimatedViewState.HIDING
+              stopRemoteHostAndReloadHosts(h, true)
+            }
+          )
+        }
+        UserPickerUsersSection(
+          users = users,
+          onUserClicked = { user ->
+            if (!user.activeUser) {
+              userPickerState.value = AnimatedViewState.HIDING
+              withBGApi {
+                controller.showProgressIfNeeded {
+                  ModalManager.closeAllModalsEverywhere()
+                  chatModel.controller.changeActiveUser(user.remoteHostId, user.userId, null)
+                }
+              }
+            } else {
+              showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }()
+              withBGApi {
+                closePicker(userPickerState)
               }
             }
-          } else {
-            showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }()
-            withBGApi {
-              closePicker(userPickerState)
-            }
-          }
-        },
-        stopped = stopped
-      )
+          },
+          stopped = stopped
+        )
+      }
     }
 
     @Composable
@@ -262,7 +261,6 @@ fun UserPicker(
     if (appPlatform.isDesktop || windowOrientation() == WindowOrientation.PORTRAIT) {
       Column {
         FirstSection()
-        Spacer(Modifier.padding(USER_PICKER_SECTION_SPACING - DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL - 3.dp))
         SecondSection()
         GlobalSettingsSection(
           chatModel = chatModel,
@@ -273,7 +271,6 @@ fun UserPicker(
     } else {
       Column {
         FirstSection()
-        Spacer(Modifier.padding(USER_PICKER_SECTION_SPACING - DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL - 3.dp))
         Row {
           Box(Modifier.weight(1f)) {
             Column {
@@ -430,58 +427,6 @@ fun UserPickerOptionRow(icon: Painter, text: String, click: (() -> Unit)? = null
   }
 }
 
-@Composable
-fun UserPickerUserBox(
-  userInfo: UserInfo,
-  stopped: Boolean,
-  size: Dp = USER_PICKER_IMAGE_SIZE,
-  modifier: Modifier = Modifier,
-  onClick: (user: User) -> Unit,
-) {
-  Row(
-    modifier = modifier
-      .userPickerBoxModifier()
-      .clickable (
-        onClick = { onClick(userInfo.user) },
-        enabled = !stopped
-      )
-      .background(MaterialTheme.colors.surface)
-      .padding(USER_PICKER_ROW_PADDING - USER_PICKER_AVATAR_PADDING_MARGIN),
-    verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.spacedBy(USER_PICKER_ROW_PADDING - USER_PICKER_AVATAR_PADDING_MARGIN)
-  ) {
-    Box {
-      ProfileImage(size = size + USER_PICKER_AVATAR_PADDING_MARGIN, image = userInfo.user.profile.image, color = MaterialTheme.colors.secondaryVariant)
-
-      if (userInfo.unreadCount > 0 && !userInfo.user.activeUser) {
-        unreadBadge(userInfo.unreadCount, userInfo.user.showNtfs)
-      }
-    }
-    val user = userInfo.user
-    Text(
-      user.displayName,
-      fontWeight = if (user.activeUser) FontWeight.Bold else FontWeight.Normal,
-      maxLines = 1,
-      overflow = TextOverflow.Ellipsis,
-    )
-  }
-}
-
-@Composable
-private fun Modifier.userPickerBoxModifier(): Modifier {
-  val percent = remember { appPreferences.profileImageCornerRadius.state }
-  val r = max(0f, percent.value)
-
-  val cornerSize = when {
-    r >= 50 -> 50
-    r <= 0 -> 0
-    else -> r.toInt()
-  }
-
-  val shape = RoundedCornerShape(CornerSize(cornerSize))
-  return this.clip(shape).border(1.dp, MaterialTheme.colors.secondaryVariant, shape)
-}
-
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun DevicePickerRow(
@@ -495,7 +440,7 @@ private fun DevicePickerRow(
     Modifier
       .fillMaxWidth()
       .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
-      .padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING, top = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
+      .padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = USER_PICKER_SECTION_SPACING - 55.dp / 12),
     horizontalArrangement = Arrangement.spacedBy(12.dp),
     verticalArrangement = Arrangement.spacedBy(12.dp)
   ) {
@@ -629,14 +574,14 @@ fun HostDisconnectButton(onClick: (() -> Unit)?) {
 }
 
 @Composable
-fun BoxScope.unreadBadge(unreadCount: Int, userMuted: Boolean) {
+fun BoxScope.unreadBadge(unreadCount: Int, userMuted: Boolean, hasPadding: Boolean) {
   Text(
     if (unreadCount > 0) unreadCountStr(unreadCount) else "",
     color = Color.White,
     fontSize = 10.sp,
     style = TextStyle(textAlign = TextAlign.Center),
     modifier = Modifier
-      .offset(y = 3.sp.toDp())
+      .offset(y = if (hasPadding) 3.sp.toDp() else 0.dp )
       .background(if (userMuted) MaterialTheme.colors.primaryVariant else MaterialTheme.colors.secondary, shape = CircleShape)
       .badgeLayout()
       .padding(horizontal = 2.sp.toDp())

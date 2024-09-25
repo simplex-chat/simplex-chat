@@ -5,14 +5,19 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.DrawerDefaults.ScrimOpacity
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.User
@@ -24,6 +29,9 @@ import chat.simplex.common.views.onboarding.OnboardingStage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+
+private val USER_PICKER_IMAGE_SIZE = 44.dp
+private val USER_PICKER_ROW_PADDING = 16.dp
 
 @Composable
 actual fun UserPickerUsersSection(
@@ -63,6 +71,57 @@ actual fun UserPickerUsersSection(
     }
   }
 }
+@Composable
+fun UserPickerUserBox(
+  userInfo: UserInfo,
+  stopped: Boolean,
+  modifier: Modifier = Modifier,
+  onClick: (user: User) -> Unit,
+) {
+  Row(
+    modifier = modifier
+      .userPickerBoxModifier()
+      .clickable (
+        onClick = { onClick(userInfo.user) },
+        enabled = !stopped
+      )
+      .background(MaterialTheme.colors.surface)
+      .padding(USER_PICKER_ROW_PADDING),
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(USER_PICKER_ROW_PADDING)
+  ) {
+    Box {
+      ProfileImageForActiveCall(size = USER_PICKER_IMAGE_SIZE, image = userInfo.user.profile.image, color = MaterialTheme.colors.secondaryVariant)
+
+      if (userInfo.unreadCount > 0 && !userInfo.user.activeUser) {
+        unreadBadge(userInfo.unreadCount, userInfo.user.showNtfs, false)
+      }
+    }
+    val user = userInfo.user
+    Text(
+      user.displayName,
+      fontWeight = if (user.activeUser) FontWeight.Bold else FontWeight.Normal,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis,
+    )
+  }
+}
+
+@Composable
+private fun Modifier.userPickerBoxModifier(): Modifier {
+  val percent = remember { appPreferences.profileImageCornerRadius.state }
+  val r = kotlin.math.max(0f, percent.value)
+
+  val cornerSize = when {
+    r >= 50 -> 50
+    r <= 0 -> 0
+    else -> r.toInt()
+  }
+
+  val shape = RoundedCornerShape(CornerSize(cornerSize))
+  return this.clip(shape).border(1.dp, MaterialTheme.colors.secondaryVariant, shape)
+}
+
 
 private fun calculateFraction(pos: Float) =
   (pos / 1f).coerceIn(0f, 1f)
