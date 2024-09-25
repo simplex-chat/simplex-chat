@@ -42,6 +42,7 @@ import kotlin.math.max
 val USER_PICKER_ROW_PADDING = 16.dp
 val USER_PICKER_SECTION_SPACING = 32.dp
 val USER_PICKER_IMAGE_SIZE = 44.dp
+val USER_PICKER_AVATAR_PADDING_MARGIN = USER_PICKER_IMAGE_SIZE / 12
 
 @Composable
 fun UserPicker(
@@ -445,12 +446,12 @@ fun UserPickerUserBox(
         enabled = !stopped
       )
       .background(MaterialTheme.colors.surface)
-      .padding(USER_PICKER_ROW_PADDING),
+      .padding(USER_PICKER_ROW_PADDING - USER_PICKER_AVATAR_PADDING_MARGIN),
     verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.spacedBy(USER_PICKER_ROW_PADDING)
+    horizontalArrangement = Arrangement.spacedBy(USER_PICKER_ROW_PADDING - USER_PICKER_AVATAR_PADDING_MARGIN)
   ) {
     Box {
-      ProfileImageForActiveCall(size = size, image = userInfo.user.profile.image, color = MaterialTheme.colors.secondaryVariant)
+      ProfileImage(size = size + USER_PICKER_AVATAR_PADDING_MARGIN, image = userInfo.user.profile.image, color = MaterialTheme.colors.secondaryVariant)
 
       if (userInfo.unreadCount > 0 && !userInfo.user.activeUser) {
         unreadBadge(userInfo.unreadCount, userInfo.user.showNtfs)
@@ -628,7 +629,7 @@ fun HostDisconnectButton(onClick: (() -> Unit)?) {
 }
 
 @Composable
-private fun BoxScope.unreadBadge(unreadCount: Int, userMuted: Boolean) {
+fun BoxScope.unreadBadge(unreadCount: Int, userMuted: Boolean) {
   Text(
     if (unreadCount > 0) unreadCountStr(unreadCount) else "",
     color = Color.White,
