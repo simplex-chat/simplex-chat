@@ -35,7 +35,7 @@ actual fun UserPickerUsersSection(
 
     Column(Modifier
       .padding(horizontal = horizontalPadding)
-      .height((55.dp + 12.sp.toDp()) * rowsToDisplay + (if (rowsToDisplay > 1) DEFAULT_PADDING else 0.dp))
+      .height((55.dp + 16.sp.toDp()) * rowsToDisplay + (if (rowsToDisplay > 1) DEFAULT_PADDING else 0.dp))
     ) {
       ColumnWithScrollBar(
         verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING)
@@ -66,7 +66,7 @@ actual fun UserPickerUsersSection(
 
                 Text(
                   user.displayName,
-                  fontSize = 10.sp,
+                  fontSize = 12.sp,
                   fontWeight = if (user.activeUser) FontWeight.Bold else FontWeight.Normal,
                   maxLines = 1,
                   overflow = TextOverflow.Ellipsis,
