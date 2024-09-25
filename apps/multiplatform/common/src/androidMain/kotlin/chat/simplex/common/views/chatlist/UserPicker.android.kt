@@ -83,7 +83,7 @@ fun UserPickerUserBox(
         onClick = { onClick(userInfo.user) },
         enabled = !stopped
       )
-      .background(MaterialTheme.colors.surface)
+      .background(MaterialTheme.colors.background)
       .padding(USER_PICKER_ROW_PADDING),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(USER_PICKER_ROW_PADDING)
