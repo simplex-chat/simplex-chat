@@ -116,7 +116,7 @@ body {
   transform: translate(-50%, 0);
   display: grid;
   grid-auto-flow: column;
-  grid-column-gap: 15px;
+  grid-column-gap: 38px;
 }
 
 #manage-call button {
