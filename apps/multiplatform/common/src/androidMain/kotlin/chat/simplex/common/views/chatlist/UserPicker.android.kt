@@ -117,7 +117,7 @@ private fun Modifier.userPickerBoxModifier(): Modifier {
   }
 
   val shape = RoundedCornerShape(CornerSize(cornerSize))
-  return this.clip(shape).border(1.dp, MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.925f), shape)
+  return this.clip(shape).border(1.dp, MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 1 - userPickerAlpha() - 0.02f), shape)
 }
 
 
@@ -161,7 +161,7 @@ actual fun PlatformUserPicker(modifier: Modifier, pickerState: MutableStateFlow<
             isLight = colors.isLight,
             drawerShadingColor = shadingColor,
             toolbarOnTop = !appPrefs.oneHandUI.get(),
-            navBarColor = colors.background.mixWith(colors.onBackground, userPickerAlpha())
+            navBarColor = colors.background.mixWith(colors.onBackground, 1 - userPickerAlpha())
           )
         } else if (ModalManager.start.modalCount.value == 0) {
           platform.androidSetDrawerStatusAndNavBarColor(
