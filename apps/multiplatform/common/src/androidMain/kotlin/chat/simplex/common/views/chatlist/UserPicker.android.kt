@@ -161,7 +161,7 @@ actual fun PlatformUserPicker(modifier: Modifier, pickerState: MutableStateFlow<
             isLight = colors.isLight,
             drawerShadingColor = shadingColor,
             toolbarOnTop = !appPrefs.oneHandUI.get(),
-            navBarColor = colors.background.mixWith(colors.onBackground, 0.97f)
+            navBarColor = colors.background.mixWith(colors.onBackground, 0.94f)
           )
         } else if (ModalManager.start.modalCount.value == 0) {
           platform.androidSetDrawerStatusAndNavBarColor(
