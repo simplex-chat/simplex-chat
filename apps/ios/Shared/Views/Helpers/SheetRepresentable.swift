@@ -10,17 +10,31 @@ import SwiftUI
 
 private let sheetAnimationDuration: Double = 0.3
 
+struct Sheet<SheetContent: View>: ViewModifier {
+    @Binding var isPresented: Bool
+    @ViewBuilder let sheetContent: () -> SheetContent
+
+    func body(content: Content) -> some View {
+        ZStack {
+            content
+            SheetRepresentable(isPresented: $isPresented, content: sheetContent())
+                .allowsHitTesting(isPresented)
+                .ignoresSafeArea()
+        }
+    }
+}
+
 struct SheetRepresentable<Content: View>: UIViewControllerRepresentable {
     @Binding var isPresented: Bool
-    @ViewBuilder let content: () -> Content
+    let content:  Content
 
     func makeUIViewController(context: Context) -> Controller<Content> {
-        Controller(content: content(), representer: self)
+        Controller(content: content, representer: self)
     }
 
     func updateUIViewController(_ sheetController: Controller<Content>, context: Context) {
         sheetController.animate(isPresented: isPresented)
-        sheetController.hostingController.rootView = content()
+        sheetController.hostingController.rootView = content
     }
 
     class Controller<C: View>: UIViewController {
@@ -55,14 +69,7 @@ struct SheetRepresentable<Content: View>: UIViewControllerRepresentable {
             addChild(hostingController)
             hostingController.didMove(toParent: self)
             if let sheet = hostingController.view {
-                sheet.backgroundColor = UIColor { traits in
-                    let elevated = switch traits.userInterfaceStyle {
-                    case .dark: elevatedSystemGroupedBackground(.dark)
-                    default: elevatedSystemGroupedBackground(.light)
-                    }
-                    return elevated.cgColor.map { UIColor(cgColor: $0) }
-                    ?? .secondarySystemBackground
-                }
+                sheet.clipsToBounds = true
                 sheet.layer.cornerRadius = 10
                 sheet.layer.maskedCorners = [.layerMaxXMinYCorner, .layerMinXMinYCorner]
                 sheet.addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(pan(gesture:))))
@@ -117,63 +124,3 @@ struct SheetRepresentable<Content: View>: UIViewControllerRepresentable {
         }
     }
 }
-
-// MARK: Sheet Colors
-
-func elevatedSystemGroupedBackground(_ colorScheme: ColorScheme) -> Color {
-    switch colorScheme {
-    case .dark: Color(0xFF1C1C1E)
-    default:    Color(0xFFF2F2F7)
-    }
-}
-
-func elevatedSecondarySystemGroupedBackground(_ colorScheme: ColorScheme) -> Color {
-    switch colorScheme {
-    case .dark: Color(0xFF2C2C2E)
-    default:    Color(0xFFFFFFFF)
-    }
-}
-
-/// # Extracting Sheet Colors Programatically
-///
-/// System colors are returned dynamically, depending on the context:
-///
-///     struct ColorResolverView: View {
-///         @Environment(\.self) var environment
-///         let colors: [Color]
-///
-///         var body: some View {
-///             HStack {
-///                 column.environment(\.colorScheme, .dark)
-///                 column.environment(\.colorScheme, .light)
-///             }
-///         }
-///
-///         var column: some View {
-///             VStack {
-///                 ForEach(colors, id: \.self) {
-///                     Text("\($0.resolve(in: environment))")
-///                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-///                         .background($0)
-///                 }
-///             }
-///           }
-///     }
-///
-/// Place `ColorResolverView` inside a sheet to acquire elevated color versions:
-///
-///     struct ContentView: View {
-///         var body: some View {
-///             EmptyView()
-///             .sheet(isPresented: .constant(true)) {
-///                 ColorResolverView(
-///                     colors: [
-///                         Color(.systemGroupedBackground),
-///                         Color(.secondarySystemGroupedBackground)
-///                     ]
-///                 )
-///             }
-///         }
-///     }
-
-

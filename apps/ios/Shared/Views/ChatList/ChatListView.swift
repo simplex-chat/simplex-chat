@@ -59,12 +59,12 @@ struct ChatListView: View {
                     destination: chatView
                 ) { chatListView }
             }
-            SheetRepresentable(isPresented: $userPickerShown) {
+        }
+        .modifier(
+            Sheet(isPresented: $userPickerShown) {
                 UserPicker(userPickerShown: $userPickerShown, activeSheet: $activeUserPickerSheet)
             }
-            .allowsHitTesting(userPickerShown)
-            .ignoresSafeArea()
-        }
+        )
         .sheet(item: $activeUserPickerSheet) { sheet in
             if let currentUser = chatModel.currentUser {
                 switch sheet {

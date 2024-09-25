@@ -17,6 +17,7 @@ struct UserPicker: View {
     @State private var currentUser: Int64?
     @State private var switchingProfile = false
     @State private var frameWidth: CGFloat = 0
+    @State private var resetScroll = ResetScrollAction()
 
     // Inset grouped list dimensions
     private let imageSize: CGFloat = 44
@@ -34,7 +35,7 @@ struct UserPicker: View {
         let currentUserWidth = max(frameWidth - sectionHorizontalPadding - rowPadding * 2 - 14 - imageSize, 0)
         VStack(spacing: sectionSpacing) {
             if let user = m.currentUser {
-                StickyScrollView {
+                StickyScrollView(resetScroll: $resetScroll) {
                     HStack(spacing: rowPadding) {
                         HStack {
                             ProfileImage(imageStr: user.image, size: imageSize, color: Color(uiColor: .tertiarySystemGroupedBackground))
@@ -43,7 +44,7 @@ struct UserPicker: View {
                         }
                         .padding(rowPadding)
                         .frame(width: otherUsers.isEmpty ? sectionWidth : currentUserWidth, alignment: .leading)
-                        .background(elevatedSecondarySystemGroupedBackground(colorScheme))
+                        .background(elevatedSecondarySystemGroupedBackground)
                         .clipShape(sectionShape)
                         .onTapGesture { activeSheet = .currentProfile }
                         ForEach(otherUsers) { u in
@@ -88,7 +89,7 @@ struct UserPicker: View {
                         }
                 }
             }
-            .background(elevatedSecondarySystemGroupedBackground(colorScheme))
+            .background(elevatedSecondarySystemGroupedBackground)
             .clipShape(sectionShape)
             .padding(.horizontal, sectionHorizontalPadding)
             .padding(.bottom, sectionSpacing)
@@ -110,8 +111,18 @@ struct UserPicker: View {
                 }
             }
         }
-//        .modifier(ThemedBackground(grouped: true))
+        .onChange(of: userPickerShown) {
+            if !$0 { resetScroll() }
+        }
+        .modifier(ThemedBackground(grouped: true))
         .disabled(switchingProfile)
+    }
+
+    var elevatedSecondarySystemGroupedBackground: Color {
+        switch colorScheme {
+        case .dark: Color(0xFF2C2C2E)
+        default:    Color(0xFFFFFFFF)
+        }
     }
 
     private var listDivider: some View {
@@ -130,11 +141,10 @@ struct UserPicker: View {
             Text(u.user.displayName).font(.title2).lineLimit(1)
         }
         .padding(rowPadding)
-        .background(elevatedSecondarySystemGroupedBackground(colorScheme))
+        .background(elevatedSecondarySystemGroupedBackground)
         .clipShape(sectionShape)
         .onTapGesture {
             switchingProfile = true
-
             Task {
                 do {
                     try await changeActiveUserAsync_(u.user.userId, viewPwd: nil)
