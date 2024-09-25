@@ -91,7 +91,7 @@ fun <T> ExposedDropDownSettingWithIcon(
   values: List<Triple<T, ImageResource, String>>,
   selection: State<T>,
   fontSize: TextUnit = 16.sp,
-  iconPaddingPercent: Float = 20f,
+  iconPaddingPercent: Float = 0.2f,
   listIconSize: Dp = 30.dp,
   boxSize: Dp = 60.dp,
   iconColor: Color = MenuTextColor,
