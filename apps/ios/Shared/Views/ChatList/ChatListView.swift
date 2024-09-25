@@ -47,18 +47,16 @@ struct ChatListView: View {
     }
 
     private var viewBody: some View {
-        ZStack {
-            ZStack(alignment: oneHandUI ? .bottomLeading : .topLeading) {
-                NavStackCompat(
-                    isActive: Binding(
-                        get: { chatModel.chatId != nil },
-                        set: { active in
-                            if !active { chatModel.chatId = nil }
-                        }
-                    ),
-                    destination: chatView
-                ) { chatListView }
-            }
+        ZStack(alignment: oneHandUI ? .bottomLeading : .topLeading) {
+            NavStackCompat(
+                isActive: Binding(
+                    get: { chatModel.chatId != nil },
+                    set: { active in
+                        if !active { chatModel.chatId = nil }
+                    }
+                ),
+                destination: chatView
+            ) { chatListView }
         }
         .modifier(
             Sheet(isPresented: $userPickerShown) {

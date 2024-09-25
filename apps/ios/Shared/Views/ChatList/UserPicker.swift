@@ -166,14 +166,17 @@ struct UserPicker: View {
     }
     
     private func openSheetOnTap(_ icon: String, title: LocalizedStringKey, sheet: UserPickerSheet) -> some View {
-        settingsRow(icon, color: theme.colors.secondary) {
-            Text(title).foregroundColor(.primary)
+        Button {
+            activeSheet = sheet
+        } label: {
+            settingsRow(icon, color: theme.colors.secondary) {
+                Text(title).foregroundColor(.primary)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, rowPadding)
         .padding(.vertical, rowVerticalPadding)
         .contentShape(Rectangle())
-        .onTapGesture { activeSheet = sheet }
     }
     
     private func unreadBadge(_ u: UserInfo) -> some View {
