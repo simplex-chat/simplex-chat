@@ -23,13 +23,13 @@ struct SheetRepresentable<Content: View>: UIViewControllerRepresentable {
         sheetController.hostingController.rootView = content()
     }
 
-    class Controller<Content: View>: UIViewController {
-        let hostingController: UIHostingController<Content>
+    class Controller<C: View>: UIViewController {
+        let hostingController: UIHostingController<C>
         private let animator = UIViewPropertyAnimator(duration: sheetAnimationDuration, curve: .easeInOut)
-        private let representer: SheetRepresentable<Content>
+        private let representer: SheetRepresentable<C>
         private var retainedFraction: CGFloat = 0
 
-        init(content: Content, representer: SheetRepresentable<Content>) {
+        init(content: C, representer: SheetRepresentable<C>) {
             self.representer = representer
             self.hostingController = UIHostingController(rootView: content)
             super.init(nibName: nil, bundle: nil)
