@@ -143,7 +143,7 @@ fun UserPicker(
       .height(IntrinsicSize.Min)
       .fillMaxWidth()
       .then(if (newChat.isVisible()) Modifier.shadow(8.dp, clip = true) else Modifier)
-      .background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.94f))
+      .background(CurrentColors.value.colors.background.mixWith(CurrentColors.value.colors.onBackground, alpha = userPickerAlpha()))
       .padding(top = USER_PICKER_SECTION_SPACING, bottom = USER_PICKER_SECTION_SPACING - DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
     pickerState = userPickerState
   ) {
@@ -290,6 +290,15 @@ fun UserPicker(
         }
       }
     }
+  }
+}
+
+fun userPickerAlpha(): Float {
+  return when (CurrentColors.value.base) {
+    DefaultTheme.LIGHT -> 0.95f
+    DefaultTheme.DARK -> 0.95f
+    DefaultTheme.BLACK -> 0.925f
+    DefaultTheme.SIMPLEX -> 0.97f
   }
 }
 
