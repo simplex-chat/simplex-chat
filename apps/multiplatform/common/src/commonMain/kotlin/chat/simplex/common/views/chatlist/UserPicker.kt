@@ -143,7 +143,7 @@ fun UserPicker(
       .height(IntrinsicSize.Min)
       .fillMaxWidth()
       .then(if (newChat.isVisible()) Modifier.shadow(8.dp, clip = true) else Modifier)
-      .background(CurrentColors.value.colors.background.mixWith(CurrentColors.value.colors.onBackground, alpha = 1 - userPickerAlpha()))
+      .background(if (appPlatform.isAndroid) CurrentColors.value.colors.background.mixWith(CurrentColors.value.colors.onBackground, alpha = 1 - userPickerAlpha()) else MaterialTheme.colors.surface)
       .padding(top = USER_PICKER_SECTION_SPACING, bottom = USER_PICKER_SECTION_SPACING - DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
     pickerState = userPickerState
   ) {
