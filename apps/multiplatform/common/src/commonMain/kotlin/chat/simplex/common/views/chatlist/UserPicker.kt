@@ -144,7 +144,7 @@ fun UserPicker(
       .fillMaxWidth()
       .then(if (newChat.isVisible()) Modifier.shadow(8.dp, clip = true) else Modifier)
       .background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f))
-      .padding(vertical = USER_PICKER_SECTION_SPACING),
+      .padding(top = USER_PICKER_SECTION_SPACING, bottom = USER_PICKER_SECTION_SPACING - DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
     pickerState = userPickerState
   ) {
     val showCustomModal: (@Composable() (ModalData.(ChatModel, () -> Unit) -> Unit)) -> () -> Unit = { modalView ->
