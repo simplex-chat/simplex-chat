@@ -774,18 +774,6 @@ const processCommand = (function () {
     await setupEncryptionWorker(call)
     setupRemoteStream(call)
 
-    if ((window as any).safari && (navigator as any).userActivation && (navigator as any).userActivation.isActive == false) {
-      videos.remote.muted = true
-      // Safari requires to wait until user makes any action with webpage and only after that to unmute a video.
-      // If not muting it initially, the video will just not show up at all
-      let interval = window.setInterval(() => {
-        if ((navigator as any).userActivation.isActive) {
-          videos.remote.muted = false
-          console.log("LALAL UNMUTED remote in Safari after user action ")
-          window.clearInterval(interval)
-        }
-      }, 500)
-    }
     videos.localScreen.srcObject = call.localScreenStream
     videos.remote.srcObject = call.remoteStream
     videos.remoteScreen.srcObject = call.remoteScreenStream
