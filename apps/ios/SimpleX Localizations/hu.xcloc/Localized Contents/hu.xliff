@@ -3662,9 +3662,9 @@ Hiba: %2$@</target>
         <target>Ha most kell használnia a csevegést, koppintson a ** Csináld később** elemre (az alkalmazás újraindításakor felajánlásra kerül az adatbázis áttelepítése).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Ignore" xml:space="preserve">
+      <trans-unit id="Ignore" xml:space="preserve" approved="no">
         <source>Ignore</source>
-        <target>Figyelmen kívül hagyás</target>
+        <target state="translated">Mellőzés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Image will be received when your contact completes uploading it." xml:space="preserve">
@@ -6555,9 +6555,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>Feliratkozási hibák</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Subscriptions ignored" xml:space="preserve">
+      <trans-unit id="Subscriptions ignored" xml:space="preserve" approved="no">
         <source>Subscriptions ignored</source>
-        <target>Elutasított feliratkozások</target>
+        <target state="translated">Mellőzött feliratkozások</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Support SimpleX Chat" xml:space="preserve">
