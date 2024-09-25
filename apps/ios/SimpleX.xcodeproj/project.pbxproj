@@ -211,7 +211,7 @@
 		CEE723F02C3D25C70009AE93 /* ShareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE723EF2C3D25C70009AE93 /* ShareView.swift */; };
 		CEE723F22C3D25ED0009AE93 /* ShareModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE723F12C3D25ED0009AE93 /* ShareModel.swift */; };
 		CEEA861D2C2ABCB50084E1EA /* ReverseList.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEEA861C2C2ABCB50084E1EA /* ReverseList.swift */; };
-		CEFB2EDF2CA1BCC7004B1ECE /* SwiftUISheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFB2EDE2CA1BCC7004B1ECE /* SwiftUISheet.swift */; };
+		CEFB2EDF2CA1BCC7004B1ECE /* SheetRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFB2EDE2CA1BCC7004B1ECE /* SheetRepresentable.swift */; };
 		D7197A1829AE89660055C05A /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = D7197A1729AE89660055C05A /* WebRTC */; };
 		D72A9088294BD7A70047C86D /* NativeTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D72A9087294BD7A70047C86D /* NativeTextEditor.swift */; };
 		D741547829AF89AF0022400A /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D741547729AF89AF0022400A /* StoreKit.framework */; };
@@ -554,7 +554,7 @@
 		CEE723EF2C3D25C70009AE93 /* ShareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareView.swift; sourceTree = "<group>"; };
 		CEE723F12C3D25ED0009AE93 /* ShareModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareModel.swift; sourceTree = "<group>"; };
 		CEEA861C2C2ABCB50084E1EA /* ReverseList.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReverseList.swift; sourceTree = "<group>"; };
-		CEFB2EDE2CA1BCC7004B1ECE /* SwiftUISheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftUISheet.swift; sourceTree = "<group>"; };
+		CEFB2EDE2CA1BCC7004B1ECE /* SheetRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetRepresentable.swift; sourceTree = "<group>"; };
 		D72A9087294BD7A70047C86D /* NativeTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeTextEditor.swift; sourceTree = "<group>"; };
 		D741547729AF89AF0022400A /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS16.1.sdk/System/Library/Frameworks/StoreKit.framework; sourceTree = DEVELOPER_DIR; };
 		D741547929AF90B00022400A /* PushKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PushKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS16.1.sdk/System/Library/Frameworks/PushKit.framework; sourceTree = DEVELOPER_DIR; };
@@ -801,7 +801,7 @@
 				CE7548092C622630009579B7 /* SwipeLabel.swift */,
 				CE176F1F2C87014C00145DBC /* InvertedForegroundStyle.swift */,
 				CEDB245A2C9CD71800FBC5F6 /* StickyScrollView.swift */,
-				CEFB2EDE2CA1BCC7004B1ECE /* SwiftUISheet.swift */,
+				CEFB2EDE2CA1BCC7004B1ECE /* SheetRepresentable.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -1452,7 +1452,7 @@
 				5CB634B129E5EFEA0066AD6B /* PasscodeView.swift in Sources */,
 				8C69FE7D2B8C7D2700267E38 /* AppSettings.swift in Sources */,
 				5C2E260F27A30FDC00F70299 /* ChatView.swift in Sources */,
-				CEFB2EDF2CA1BCC7004B1ECE /* SwiftUISheet.swift in Sources */,
+				CEFB2EDF2CA1BCC7004B1ECE /* SheetRepresentable.swift in Sources */,
 				5C2E260B27A30CFA00F70299 /* ChatListView.swift in Sources */,
 				6442E0BA287F169300CEC0F9 /* AddGroupView.swift in Sources */,
 				5CF937232B2503D000E1D781 /* NSESubscriber.swift in Sources */,

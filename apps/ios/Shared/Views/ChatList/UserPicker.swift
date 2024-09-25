@@ -109,7 +109,7 @@ struct UserPicker: View {
                 }
             }
         }
-        .modifier(ThemedBackground(grouped: true))
+//        .modifier(ThemedBackground(grouped: true))
         .disabled(switchingProfile)
     }
 
@@ -133,11 +133,14 @@ struct UserPicker: View {
         .clipShape(sectionShape)
         .onTapGesture {
             switchingProfile = true
-            userPickerShown = false
+
             Task {
                 do {
                     try await changeActiveUserAsync_(u.user.userId, viewPwd: nil)
-                    await MainActor.run { switchingProfile = false }
+                    await MainActor.run {
+                        switchingProfile = false
+                        userPickerShown = false
+                    }
                 } catch {
                     await MainActor.run {
                         switchingProfile = false

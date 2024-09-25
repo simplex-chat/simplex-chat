@@ -47,22 +47,24 @@ struct ChatListView: View {
     }
 
     private var viewBody: some View {
-        ZStack(alignment: oneHandUI ? .bottomLeading : .topLeading) {
-            NavStackCompat(
-                isActive: Binding(
-                    get: { chatModel.chatId != nil },
-                    set: { active in
-                        if !active { chatModel.chatId = nil }
-                    }
-                ),
-                destination: chatView
-            ) { chatListView }
-        }
-        .modifier(
-            SwiftUISheet(height: 400, isPresented: $userPickerShown) {
+        ZStack {
+            ZStack(alignment: oneHandUI ? .bottomLeading : .topLeading) {
+                NavStackCompat(
+                    isActive: Binding(
+                        get: { chatModel.chatId != nil },
+                        set: { active in
+                            if !active { chatModel.chatId = nil }
+                        }
+                    ),
+                    destination: chatView
+                ) { chatListView }
+            }
+            SheetRepresentable(isPresented: $userPickerShown) {
                 UserPicker(userPickerShown: $userPickerShown, activeSheet: $activeUserPickerSheet)
             }
-        )
+            .allowsHitTesting(userPickerShown)
+            .ignoresSafeArea()
+        }
         .sheet(item: $activeUserPickerSheet) { sheet in
             if let currentUser = chatModel.currentUser {
                 switch sheet {
