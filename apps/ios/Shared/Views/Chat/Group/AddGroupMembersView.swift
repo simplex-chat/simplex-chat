@@ -136,7 +136,7 @@ struct AddGroupMembersViewCommon: View {
     // when there are no items inside `ForEach(memebers)` loop
     private let dummyContact: Contact = {
         var dummy = Contact.sampleData
-        dummy.contactId = Int64.max
+        dummy.contactId = -1
         return dummy
     }()
 
