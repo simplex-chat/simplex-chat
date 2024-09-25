@@ -645,7 +645,7 @@
     <string name="hide_verb">Elrejt</string>
     <string name="gallery_image_button">Kép</string>
     <string name="v4_3_improved_privacy_and_security">Fejlesztett adatvédelem és biztonság</string>
-    <string name="ignore">Figyelmen kívül hagyás</string>
+    <string name="ignore">Mellőzés</string>
     <string name="icon_descr_image_snd_complete">Kép elküldve</string>
     <string name="notification_preview_mode_hidden">Rejtett</string>
     <string name="host_verb">Kiszolgáló</string>
@@ -1959,7 +1959,7 @@
     <string name="servers_info_subscriptions_section_header">Üzenetjelentés</string>
     <string name="subscribed">Feliratkozva</string>
     <string name="subscription_errors">Feliratkozási hibák</string>
-    <string name="subscription_results_ignored">Elutasított feliratkozások</string>
+    <string name="subscription_results_ignored">Mellőzött feliratkozások</string>
     <string name="subscription_percentage">Százalék megjelenítése</string>
     <string name="app_check_for_updates_download_completed_title">Alkalmazásfrissítés letöltve</string>
     <string name="app_check_for_updates">Frissítések keresése</string>
