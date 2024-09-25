@@ -1443,13 +1443,11 @@ private fun showMemberImage(member: GroupMember, prevItem: ChatItem?): Boolean =
     else -> false
   }
 
-val MEMBER_IMAGE_SIZE: Dp = 38.dp
+val MEMBER_IMAGE_SIZE: Dp = 37.dp
 
 @Composable
 fun MemberImage(member: GroupMember) {
-  Box(Modifier.padding(horizontal = 3.dp)) {
-    ProfileImageForActiveCall((MEMBER_IMAGE_SIZE - 6.dp) * fontSizeSqrtMultiplier, member.image, backgroundColor = MaterialTheme.colors.background)
-  }
+  MemberProfileImage(MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier, member, backgroundColor = MaterialTheme.colors.background)
 }
 
 @Composable

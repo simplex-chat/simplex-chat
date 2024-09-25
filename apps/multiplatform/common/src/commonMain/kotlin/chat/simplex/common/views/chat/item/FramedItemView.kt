@@ -296,7 +296,7 @@ fun CIMarkdownText(
   showViaProxy: Boolean,
   showTimestamp: Boolean,
 ) {
-  Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
+  Box(Modifier.padding(vertical = 7.dp, horizontal = 12.dp)) {
     val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
     MarkdownText(
       text, if (text.isEmpty()) emptyList() else ci.formattedText, toggleSecrets = true,
