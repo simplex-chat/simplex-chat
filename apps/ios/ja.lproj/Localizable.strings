@@ -628,7 +628,7 @@
 /* No comment provided by engineer. */
 "Cannot access keychain to save database password" = "データベースのパスワードを保存するためのキーチェーンにアクセスできません";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Cannot receive file" = "ファイル受信ができません";
 
 /* No comment provided by engineer. */
@@ -1431,7 +1431,7 @@
 /* No comment provided by engineer. */
 "Error loading %@ servers" = "%@ サーバーのロード中にエラーが発生";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error receiving file" = "ファイル受信にエラー発生";
 
 /* No comment provided by engineer. */
@@ -2235,7 +2235,7 @@
 /* feature offered item */
 "offered %@: %@" = "提供された %1$@: %2$@";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Ok" = "OK";
 
 /* No comment provided by engineer. */
@@ -2771,7 +2771,7 @@
 /* No comment provided by engineer. */
 "Send them from gallery or custom keyboards." = "ギャラリーまたはカスタム キーボードから送信します。";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Sender cancelled file transfer." = "送信者がファイル転送をキャンセルしました。";
 
 /* No comment provided by engineer. */

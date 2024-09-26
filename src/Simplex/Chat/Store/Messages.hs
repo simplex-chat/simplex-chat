@@ -1580,7 +1580,7 @@ getAllChatItems db vr user@User {userId} pagination search_ = do
       CPLast count -> liftIO $ getAllChatItemsLast_ count
       CPAfter afterId count -> liftIO . getAllChatItemsAfter_ afterId count . aChatItemTs =<< getAChatItem_ afterId
       CPBefore beforeId count -> liftIO . getAllChatItemsBefore_ beforeId count . aChatItemTs =<< getAChatItem_ beforeId
-  mapM (uncurry (getAChatItem db vr user) >=> liftIO . getACIReactions db) itemRefs
+  mapM (uncurry (getAChatItem db vr user)) itemRefs
   where
     search = fromMaybe "" search_
     getAChatItem_ itemId = do
@@ -2279,20 +2279,22 @@ getChatRefViaItemId db User {userId} itemId = do
       (_, _) -> Left $ SEBadChatItem itemId Nothing
 
 getAChatItem :: DB.Connection -> VersionRangeChat -> User -> ChatRef -> ChatItemId -> ExceptT StoreError IO AChatItem
-getAChatItem db vr user chatRef itemId = case chatRef of
-  ChatRef CTDirect contactId -> do
-    ct <- getContact db vr user contactId
-    (CChatItem msgDir ci) <- getDirectChatItem db user contactId itemId
-    pure $ AChatItem SCTDirect msgDir (DirectChat ct) ci
-  ChatRef CTGroup groupId -> do
-    gInfo <- getGroupInfo db vr user groupId
-    (CChatItem msgDir ci) <- getGroupChatItem db user groupId itemId
-    pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) ci
-  ChatRef CTLocal folderId -> do
-    nf <- getNoteFolder db user folderId
-    CChatItem msgDir ci <- getLocalChatItem db user folderId itemId
-    pure $ AChatItem SCTLocal msgDir (LocalChat nf) ci
-  _ -> throwError $ SEChatItemNotFound itemId
+getAChatItem db vr user chatRef itemId = do
+  aci <- case chatRef of
+    ChatRef CTDirect contactId -> do
+      ct <- getContact db vr user contactId
+      (CChatItem msgDir ci) <- getDirectChatItem db user contactId itemId
+      pure $ AChatItem SCTDirect msgDir (DirectChat ct) ci
+    ChatRef CTGroup groupId -> do
+      gInfo <- getGroupInfo db vr user groupId
+      (CChatItem msgDir ci) <- getGroupChatItem db user groupId itemId
+      pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) ci
+    ChatRef CTLocal folderId -> do
+      nf <- getNoteFolder db user folderId
+      CChatItem msgDir ci <- getLocalChatItem db user folderId itemId
+      pure $ AChatItem SCTLocal msgDir (LocalChat nf) ci
+    _ -> throwError $ SEChatItemNotFound itemId
+  liftIO $ getACIReactions db aci
 
 getAChatItemBySharedMsgId :: ChatTypeQuotable c => DB.Connection -> User -> ChatDirection c 'MDRcv -> SharedMsgId -> ExceptT StoreError IO AChatItem
 getAChatItemBySharedMsgId db user cd sharedMsgId = case cd of

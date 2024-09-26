@@ -781,4 +781,52 @@
     <string name="file_saved">Tệp đã được lưu</string>
     <string name="file_will_be_received_when_contact_is_online">Tệp sẽ được nhận khi liên hệ của bạn hoạt động, vui lòng chờ hoặc kiểm tra lại sau!</string>
     <string name="share_text_file_status">Trạng thái tệp: %s</string>
+    <string name="wallpaper_scale_fill">Lấp đầy</string>
+    <string name="settings_section_title_chat_database">CƠ SỞ DỮ LIỆU SIMPLEX CHAT</string>
+    <string name="switching_profile_error_title">Lỗi chuyển đổi hồ sơ</string>
+    <string name="v5_2_favourites_filter_descr">Lọc các cuộc hội thoại chưa đọc và các cuộc hội thoại yêu thích.</string>
+    <string name="v5_1_message_reactions_descr">Cuối cùng, chúng ta đã có chúng! 🚀</string>
+    <string name="migrate_to_device_finalize_migration">Hoàn tất quá trình di chuyển ở thiết bị khác.</string>
+    <string name="migrate_from_device_finalize_migration">Hoàn tất quá trình di chuyển</string>
+    <string name="v5_2_favourites_filter">Tìm các cuộc trò chuyện nhanh hơn</string>
+    <string name="permissions_find_in_settings_and_grant">Tìm kiếm quyền này trong phần cài đặt Android và cấp quyền theo cách thủ công.</string>
+    <string name="fix_connection_confirm">Sửa</string>
+    <string name="wallpaper_scale_fit">Kích thước phù hợp</string>
+    <string name="forward_chat_item">Chuyển tiếp</string>
+    <string name="forwarded_from_chat_item_info_title">Đã được chuyển tiếp từ</string>
+    <string name="forwarded_description">đã được chuyển tiếp</string>
+    <string name="snd_error_proxy_relay">Máy chủ chuyển tiếp: %1$s
+\nLỗi máy chủ đích: %2$s</string>
+    <string name="snd_error_proxy">Máy chủ chuyển tiếp: %1$s
+\nLỗi: %2$s</string>
+    <string name="v5_7_forward">Chuyển tiếp và lưu tin nhắn</string>
+    <string name="fix_connection_not_supported_by_group_member">Chức năng sửa không hỗ trợ bởi thành viên nhóm</string>
+    <string name="for_everybody">Cho tất cả mọi người</string>
+    <string name="forwarded_chat_item_info_tab">Đã được chuyển tiếp</string>
+    <string name="network_proxy_auth_mode_no_auth">Không sử dụng thông tin đăng nhập với proxy.</string>
+    <string name="fix_connection">Sửa kết nối</string>
+    <string name="fix_connection_question">Sửa kết nối?</string>
+    <string name="fix_connection_not_supported_by_contact">Chức năng sửa không hỗ trợ bởi liên hệ</string>
+    <string name="v5_2_fix_encryption_descr">Sửa mã hóa sau khi hồi phục dữ liệu dự phòng.</string>
+    <string name="network_proxy_incorrect_config_title">Lỗi lưu proxy</string>
+    <string name="icon_descr_flip_camera">Đổi máy ảnh</string>
+    <string name="appearance_font_size">Kích thước font</string>
+    <string name="n_other_file_errors">%1$d lỗi tệp khác.</string>
+    <string name="error_forwarding_messages">Lỗi chuyển tiếp tin nhắn</string>
+    <string name="forward_files_failed_to_receive_desc">%1$d tệp tải không thành công.</string>
+    <string name="forward_files_missing_desc">%1$d tệp đã bị xóa.</string>
+    <string name="forward_files_not_accepted_desc">%1$d tệp đã không được tải xuống.</string>
+    <string name="forward_files_not_accepted_receive_files">Tải xuống</string>
+    <string name="forward_alert_title_messages_to_forward">Chuyển tiếp %1$s tin nhắn?</string>
+    <string name="forward_multiple">Chuyển tiếp tin nhắn…</string>
+    <string name="n_file_errors">%1$d lỗi tệp:
+\n%2$s</string>
+    <string name="forward_files_in_progress_desc">%1$d tệp đang được tải xuống.</string>
+    <string name="forward_files_messages_deleted_after_selection_title">%1$s tin nhắn không được chuyển tiếp</string>
+    <string name="compose_forward_messages_n">Đang chuyển tiếp %1$s tin nhắn</string>
+    <string name="proxy_destination_error_failed_to_connect">Máy chủ chuyển tiếp %1$s không thể kết nối tới máy chủ đích %2$s. Vui lòng thử lại sau.</string>
+    <string name="smp_proxy_error_broker_host">Địa chỉ máy chủ chuyển tiếp không tương thích với cài đặt mạng: %1$s.</string>
+    <string name="smp_proxy_error_broker_version">Phiên bản máy chủ chuyển tiếp không tương thích với cài đặt mạng: %1$s.</string>
+    <string name="section_title_for_console">CHO CONSOLE</string>
+    <string name="forward_message">Chuyển tiếp tin nhắn…</string>
 </resources>
