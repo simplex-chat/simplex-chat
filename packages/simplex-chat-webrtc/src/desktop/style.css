@@ -178,7 +178,6 @@ body {
 #info-block {
   position: absolute;
   color: white;
-  line-height: 10px;
   opacity: 0.8;
   width: 200px;
   font-family: Arial, Helvetica, sans-serif;
