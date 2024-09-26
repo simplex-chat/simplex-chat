@@ -75,9 +75,17 @@ private fun CIMetaText(
   showTimestamp: Boolean,
   showViaProxy: Boolean,
 ) {
+  var space: Int? = null
+  @Composable
+  fun appendSpace() {
+    space?.let {
+      Spacer(Modifier.width(it.dp))
+      space = null
+    }
+  }
+
   if (showEdited && meta.itemEdited) {
     StatusIconText(painterResource(MR.images.ic_edit), color)
-    Spacer(Modifier.width(3.dp))
   }
   if (meta.disappearing) {
     StatusIconText(painterResource(MR.images.ic_timer), color)
@@ -85,12 +93,14 @@ private fun CIMetaText(
     if (ttl != chatTTL) {
       Text(shortTimeText(ttl), color = color, fontSize = 12.sp)
     }
-    Spacer(Modifier.width(4.dp))
+    space = 4
   }
   if (showViaProxy && meta.sentViaProxy == true) {
+    appendSpace()
     Icon(painterResource(MR.images.ic_arrow_forward), null, Modifier.height(17.dp), tint = MaterialTheme.colors.secondary)
   }
   if (showStatus) {
+    appendSpace()
     val statusIcon = meta.statusIcon(MaterialTheme.colors.primary, color, paleColor)
     if (statusIcon != null) {
       val (icon, statusColor) = statusIcon
@@ -99,18 +109,20 @@ private fun CIMetaText(
       } else {
         StatusIconText(painterResource(icon), statusColor)
       }
-      Spacer(Modifier.width(4.dp))
+      space = 4
     } else if (!meta.disappearing) {
       StatusIconText(painterResource(MR.images.ic_circle_filled), Color.Transparent)
-      Spacer(Modifier.width(4.dp))
+      space = 4
     }
   }
   if (encrypted != null) {
+    appendSpace()
     StatusIconText(painterResource(if (encrypted) MR.images.ic_lock else MR.images.ic_lock_open_right), color)
-    Spacer(Modifier.width(4.dp))
+    space = 4
   }
 
   if (showTimestamp) {
+    appendSpace()
     Text(meta.timestampText, color = color, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
   }
 }
@@ -127,38 +139,50 @@ fun reserveSpaceForMeta(
   showTimestamp: Boolean
 ): String {
   val iconSpace = "    "
+  val whiteSpace = " "
   var res = ""
-  var hasIcon = false;
+  var space: String? = null
+
+  fun appendSpace() {
+    if (space != null) {
+      res += space
+      space = null
+    }
+  }
+
   if (showEdited && meta.itemEdited) {
     res += iconSpace
-    hasIcon = true
   }
   if (meta.itemTimed != null) {
     res += iconSpace
-    hasIcon = true
     val ttl = meta.itemTimed.ttl
     if (ttl != chatTTL) {
       res += shortTimeText(ttl)
     }
+    space = whiteSpace
   }
   if (showViaProxy && meta.sentViaProxy == true) {
+    appendSpace()
     res += iconSpace
-    hasIcon = true
   }
-  if (showStatus && (meta.statusIcon(secondaryColor) != null || !meta.disappearing)) {
-    res += iconSpace
+  if (showStatus) {
+    appendSpace()
     if (meta.statusIcon(secondaryColor) != null) {
-      hasIcon = true
+      res += iconSpace
+      space = whiteSpace
+    } else if (!meta.disappearing) {
+      space = iconSpace + whiteSpace
     }
   }
+
   if (encrypted != null) {
+    appendSpace()
     res += iconSpace
-    hasIcon = true
+    space = whiteSpace
   }
   if (showTimestamp) {
+    appendSpace()
     res += meta.timestampText
-  } else if (hasIcon) {
-    res += iconSpace
   }
   return res
 }
