@@ -44,9 +44,8 @@ struct UserPicker: View {
                         }
                         .padding(rowPadding)
                         .frame(width: otherUsers.isEmpty ? sectionWidth : currentUserWidth, alignment: .leading)
-                        .background(elevatedSecondarySystemGroupedBackground)
+                        .modifier(ListRow { activeSheet = .currentProfile })
                         .clipShape(sectionShape)
-                        .onTapGesture { activeSheet = .currentProfile }
                         ForEach(otherUsers) { u in
                             userView(u, size: imageSize)
                                 .frame(maxWidth: sectionWidth * 0.618)
@@ -73,11 +72,12 @@ struct UserPicker: View {
                     openSheetOnTap("gearshape", title: "Settings", sheet: .settings)
                     Image(systemName: colorScheme == .light ? "sun.max" : "moon.fill")
                         .resizable()
+                        .scaledToFit()
                         .symbolRenderingMode(.monochrome)
                         .foregroundColor(theme.colors.secondary)
-                        .frame(maxWidth: 20, maxHeight: 20)
+                        .frame(maxWidth: 20, maxHeight: .infinity)
                         .padding(.horizontal, rowPadding)
-                        .contentShape(Rectangle())
+                        .background(Color(.systemBackground).opacity(0.01))
                         .onTapGesture {
                             if (colorScheme == .light) {
                                 ThemeManager.applyTheme(systemDarkThemeDefault.get())
@@ -90,7 +90,6 @@ struct UserPicker: View {
                         }
                 }
             }
-            .background(elevatedSecondarySystemGroupedBackground)
             .clipShape(sectionShape)
             .padding(.horizontal, sectionHorizontalPadding)
             .padding(.bottom, sectionSpacing)
@@ -119,13 +118,6 @@ struct UserPicker: View {
         .disabled(switchingProfile)
     }
 
-    var elevatedSecondarySystemGroupedBackground: Color {
-        switch colorScheme {
-        case .dark: Color(0xFF2C2C2E)
-        default:    Color(0xFFFFFFFF)
-        }
-    }
-
     private var listDivider: some View {
         Divider().padding(.leading, 52)
     }
@@ -142,9 +134,7 @@ struct UserPicker: View {
             Text(u.user.displayName).font(.title2).lineLimit(1)
         }
         .padding(rowPadding)
-        .background(elevatedSecondarySystemGroupedBackground)
-        .clipShape(sectionShape)
-        .onTapGesture {
+        .modifier(ListRow {
             switchingProfile = true
             Task {
                 do {
@@ -163,7 +153,8 @@ struct UserPicker: View {
                     }
                 }
             }
-        }
+        })
+        .clipShape(sectionShape)
     }
 
     private func openSheetOnTap(_ icon: String, title: LocalizedStringKey, sheet: UserPickerSheet) -> some View {
@@ -189,14 +180,23 @@ struct UserPicker: View {
 }
 
 struct ListRow: ViewModifier {
+    @Environment(\.colorScheme) private var colorScheme: ColorScheme
     @State private var touchDown = false
     let action: () -> Void
 
     func body(content: Content) -> some View {
         ZStack {
-            Color(touchDown ? .systemGray4 : .clear)
+            elevatedSecondarySystemGroupedBackground
+            Color(.systemGray4).opacity(touchDown ? 1 : 0)
             content
             TouchOverlay(touchDown: $touchDown, action: action)
+        }
+    }
+
+    var elevatedSecondarySystemGroupedBackground: Color {
+        switch colorScheme {
+        case .dark: Color(0xFF2C2C2E)
+        default:    Color(0xFFFFFFFF)
         }
     }
 
@@ -222,17 +222,31 @@ struct ListRow: ViewModifier {
 
         class TouchView: UIView, UIGestureRecognizerDelegate {
             var representer: TouchOverlay?
+            var startLocation: CGPoint?
 
             @objc
             func longPress(gesture: UILongPressGestureRecognizer) {
                 switch gesture.state {
                 case .began:
+                    startLocation = gesture.location(in: nil)
                     representer?.touchDown = true
                 case .ended:
-                    representer?.touchDown = false
                     if hitTest(gesture.location(in: self), with: nil) == self {
+                        withAnimation(.easeOut(duration: 0.2)) { representer?.touchDown = false }
                         representer?.action()
+                    } else {
+                        representer?.touchDown = false
                     }
+                case .changed:
+                    if let startLocation {
+                        let location = gesture.location(in: nil)
+                        let dx = location.x - startLocation.x
+                        let dy = location.y - startLocation.y
+                        if sqrt(pow(dx, 2) + pow(dy, 2)) > 10 { gesture.state = .failed }
+                    }
+
+                case .cancelled, .failed:
+                    representer?.touchDown = false
                 default: break
                 }
             }
