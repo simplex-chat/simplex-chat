@@ -75,15 +75,6 @@ private fun CIMetaText(
   showTimestamp: Boolean,
   showViaProxy: Boolean,
 ) {
-  var space: Int? = null
-  @Composable
-  fun appendSpace() {
-    space?.let {
-      Spacer(Modifier.width(it.dp))
-      space = null
-    }
-  }
-
   if (showEdited && meta.itemEdited) {
     StatusIconText(painterResource(MR.images.ic_edit), color)
   }
@@ -93,14 +84,13 @@ private fun CIMetaText(
     if (ttl != chatTTL) {
       Text(shortTimeText(ttl), color = color, fontSize = 12.sp)
     }
-    space = 4
   }
   if (showViaProxy && meta.sentViaProxy == true) {
-    appendSpace()
+    Spacer(Modifier.width(4.dp))
     Icon(painterResource(MR.images.ic_arrow_forward), null, Modifier.height(17.dp), tint = MaterialTheme.colors.secondary)
   }
   if (showStatus) {
-    appendSpace()
+    Spacer(Modifier.width(4.dp))
     val statusIcon = meta.statusIcon(MaterialTheme.colors.primary, color, paleColor)
     if (statusIcon != null) {
       val (icon, statusColor) = statusIcon
@@ -109,20 +99,17 @@ private fun CIMetaText(
       } else {
         StatusIconText(painterResource(icon), statusColor)
       }
-      space = 4
     } else if (!meta.disappearing) {
       StatusIconText(painterResource(MR.images.ic_circle_filled), Color.Transparent)
-      space = 4
     }
   }
   if (encrypted != null) {
-    appendSpace()
+    Spacer(Modifier.width(4.dp))
     StatusIconText(painterResource(if (encrypted) MR.images.ic_lock else MR.images.ic_lock_open_right), color)
-    space = 4
   }
 
   if (showTimestamp) {
-    appendSpace()
+    Spacer(Modifier.width(4.dp))
     Text(meta.timestampText, color = color, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
   }
 }
