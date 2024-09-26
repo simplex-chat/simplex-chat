@@ -994,7 +994,6 @@ const processCommand = (function () {
         if (source == CallMediaSource.Mic && activeCall.peerMediaSources.mic == mute) {
             const resp = {
                 type: "peerMedia",
-                media: CallMediaType.Audio,
                 source: source,
                 enabled: !mute,
             };
@@ -1007,7 +1006,6 @@ const processCommand = (function () {
         else if (source == CallMediaSource.Camera && activeCall.peerMediaSources.camera == mute) {
             const resp = {
                 type: "peerMedia",
-                media: CallMediaType.Video,
                 source: source,
                 enabled: !mute,
             };
@@ -1020,7 +1018,6 @@ const processCommand = (function () {
         else if (source == CallMediaSource.ScreenAudio && activeCall.peerMediaSources.screenAudio == mute) {
             const resp = {
                 type: "peerMedia",
-                media: CallMediaType.Audio,
                 source: source,
                 enabled: !mute,
             };
@@ -1033,7 +1030,6 @@ const processCommand = (function () {
         else if (source == CallMediaSource.ScreenVideo && activeCall.peerMediaSources.screenVideo == mute) {
             const resp = {
                 type: "peerMedia",
-                media: CallMediaType.Video,
                 source: source,
                 enabled: !mute,
             };

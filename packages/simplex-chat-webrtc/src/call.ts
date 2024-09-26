@@ -180,7 +180,6 @@ interface WRCallConnected extends IWCallResponse {
 
 interface WRPeerMedia extends IWCallResponse {
   type: "peerMedia"
-  media: CallMediaType
   source: CallMediaSource
   enabled: boolean
 }
@@ -1284,7 +1283,6 @@ const processCommand = (function () {
     if (source == CallMediaSource.Mic && activeCall.peerMediaSources.mic == mute) {
       const resp: WRPeerMedia = {
         type: "peerMedia",
-        media: CallMediaType.Audio,
         source: source,
         enabled: !mute,
       }
@@ -1295,7 +1293,6 @@ const processCommand = (function () {
     } else if (source == CallMediaSource.Camera && activeCall.peerMediaSources.camera == mute) {
       const resp: WRPeerMedia = {
         type: "peerMedia",
-        media: CallMediaType.Video,
         source: source,
         enabled: !mute,
       }
@@ -1306,7 +1303,6 @@ const processCommand = (function () {
     } else if (source == CallMediaSource.ScreenAudio && activeCall.peerMediaSources.screenAudio == mute) {
       const resp: WRPeerMedia = {
         type: "peerMedia",
-        media: CallMediaType.Audio,
         source: source,
         enabled: !mute,
       }
@@ -1317,7 +1313,6 @@ const processCommand = (function () {
     } else if (source == CallMediaSource.ScreenVideo && activeCall.peerMediaSources.screenVideo == mute) {
       const resp: WRPeerMedia = {
         type: "peerMedia",
-        media: CallMediaType.Video,
         source: source,
         enabled: !mute,
       }
