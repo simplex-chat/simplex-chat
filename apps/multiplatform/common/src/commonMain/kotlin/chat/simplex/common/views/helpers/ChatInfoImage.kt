@@ -137,9 +137,10 @@ fun ProfileImageForActiveCall(
   size: Dp,
   image: String? = null,
   color: Color = MaterialTheme.colors.secondaryVariant,
-) {
+  backgroundColor: Color? = null,
+  ) {
   if (image == null) {
-    Box(Modifier.requiredSize(size).clip(CircleShape)) {
+    Box(Modifier.requiredSize(size).clip(CircleShape).then(if (backgroundColor != null) Modifier.background(backgroundColor) else Modifier)) {
       Icon(
         AccountCircleFilled,
         contentDescription = stringResource(MR.strings.icon_descr_profile_image_placeholder),

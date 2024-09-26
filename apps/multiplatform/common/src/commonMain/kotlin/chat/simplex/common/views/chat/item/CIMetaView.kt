@@ -35,7 +35,8 @@ fun CIMetaView(
   },
   showStatus: Boolean = true,
   showEdited: Boolean = true,
-  showViaProxy: Boolean
+  showTimestamp: Boolean,
+  showViaProxy: Boolean,
 ) {
   Row(Modifier.padding(start = 3.dp), verticalAlignment = Alignment.CenterVertically) {
     if (chatItem.isDeletedContent) {
@@ -54,7 +55,8 @@ fun CIMetaView(
         paleMetaColor,
         showStatus = showStatus,
         showEdited = showEdited,
-        showViaProxy = showViaProxy
+        showViaProxy = showViaProxy,
+        showTimestamp = showTimestamp
       )
     }
   }
@@ -70,11 +72,11 @@ private fun CIMetaText(
   paleColor: Color,
   showStatus: Boolean = true,
   showEdited: Boolean = true,
-  showViaProxy: Boolean
+  showTimestamp: Boolean,
+  showViaProxy: Boolean,
 ) {
   if (showEdited && meta.itemEdited) {
     StatusIconText(painterResource(MR.images.ic_edit), color)
-    Spacer(Modifier.width(3.dp))
   }
   if (meta.disappearing) {
     StatusIconText(painterResource(MR.images.ic_timer), color)
@@ -82,12 +84,13 @@ private fun CIMetaText(
     if (ttl != chatTTL) {
       Text(shortTimeText(ttl), color = color, fontSize = 12.sp)
     }
-    Spacer(Modifier.width(4.dp))
   }
   if (showViaProxy && meta.sentViaProxy == true) {
+    Spacer(Modifier.width(4.dp))
     Icon(painterResource(MR.images.ic_arrow_forward), null, Modifier.height(17.dp), tint = MaterialTheme.colors.secondary)
   }
   if (showStatus) {
+    Spacer(Modifier.width(4.dp))
     val statusIcon = meta.statusIcon(MaterialTheme.colors.primary, color, paleColor)
     if (statusIcon != null) {
       val (icon, statusColor) = statusIcon
@@ -96,17 +99,19 @@ private fun CIMetaText(
       } else {
         StatusIconText(painterResource(icon), statusColor)
       }
-      Spacer(Modifier.width(4.dp))
     } else if (!meta.disappearing) {
       StatusIconText(painterResource(MR.images.ic_circle_filled), Color.Transparent)
-      Spacer(Modifier.width(4.dp))
     }
   }
   if (encrypted != null) {
-    StatusIconText(painterResource(if (encrypted) MR.images.ic_lock else MR.images.ic_lock_open_right), color)
     Spacer(Modifier.width(4.dp))
+    StatusIconText(painterResource(if (encrypted) MR.images.ic_lock else MR.images.ic_lock_open_right), color)
   }
-  Text(meta.timestampText, color = color, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+
+  if (showTimestamp) {
+    Spacer(Modifier.width(4.dp))
+    Text(meta.timestampText, color = color, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+  }
 }
 
 // the conditions in this function should match CIMetaText
@@ -117,28 +122,56 @@ fun reserveSpaceForMeta(
   secondaryColor: Color,
   showStatus: Boolean = true,
   showEdited: Boolean = true,
-  showViaProxy: Boolean = false
+  showViaProxy: Boolean = false,
+  showTimestamp: Boolean
 ): String {
   val iconSpace = "    "
-  var res = ""
-  if (showEdited && meta.itemEdited) res += iconSpace
+  val whiteSpace = " "
+  var res = iconSpace
+  var space: String? = null
+
+  fun appendSpace() {
+    if (space != null) {
+      res += space
+      space = null
+    }
+  }
+
+  if (showEdited && meta.itemEdited) {
+    res += iconSpace
+  }
   if (meta.itemTimed != null) {
     res += iconSpace
     val ttl = meta.itemTimed.ttl
     if (ttl != chatTTL) {
       res += shortTimeText(ttl)
     }
+    space = whiteSpace
   }
   if (showViaProxy && meta.sentViaProxy == true) {
+    appendSpace()
     res += iconSpace
   }
-  if (showStatus && (meta.statusIcon(secondaryColor) != null || !meta.disappearing)) {
-    res += iconSpace
+  if (showStatus) {
+    appendSpace()
+    if (meta.statusIcon(secondaryColor) != null) {
+      res += iconSpace
+    } else if (!meta.disappearing) {
+      res += iconSpace
+    }
+    space = whiteSpace
   }
+
   if (encrypted != null) {
+    appendSpace()
     res += iconSpace
+    space = whiteSpace
   }
-  return res + meta.timestampText
+  if (showTimestamp) {
+    appendSpace()
+    res += meta.timestampText
+  }
+  return res
 }
 
 @Composable
@@ -154,7 +187,8 @@ fun PreviewCIMetaView() {
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello"
     ),
     null,
-    showViaProxy = false
+    showViaProxy = false,
+    showTimestamp = true
   )
 }
 
@@ -167,7 +201,8 @@ fun PreviewCIMetaViewUnread() {
       status = CIStatus.RcvNew()
     ),
     null,
-    showViaProxy = false
+    showViaProxy = false,
+    showTimestamp = true
   )
 }
 
@@ -180,7 +215,8 @@ fun PreviewCIMetaViewSendFailed() {
       status = CIStatus.CISSndError(SndError.Other("CMD SYNTAX"))
     ),
     null,
-    showViaProxy = false
+    showViaProxy = false,
+    showTimestamp = true
   )
 }
 
@@ -192,7 +228,8 @@ fun PreviewCIMetaViewSendNoAuth() {
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello", status = CIStatus.SndErrorAuth()
     ),
     null,
-    showViaProxy = false
+    showViaProxy = false,
+    showTimestamp = true
   )
 }
 
@@ -204,7 +241,8 @@ fun PreviewCIMetaViewSendSent() {
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello", status = CIStatus.SndSent(SndCIStatusProgress.Complete)
     ),
     null,
-    showViaProxy = false
+    showViaProxy = false,
+    showTimestamp = true
   )
 }
 
@@ -217,7 +255,8 @@ fun PreviewCIMetaViewEdited() {
       itemEdited = true
     ),
     null,
-    showViaProxy = false
+    showViaProxy = false,
+    showTimestamp = true
   )
 }
 
@@ -231,7 +270,8 @@ fun PreviewCIMetaViewEditedUnread() {
       status= CIStatus.RcvNew()
     ),
     null,
-    showViaProxy = false
+    showViaProxy = false,
+    showTimestamp = true
   )
 }
 
@@ -245,7 +285,8 @@ fun PreviewCIMetaViewEditedSent() {
       status= CIStatus.SndSent(SndCIStatusProgress.Complete)
     ),
     null,
-    showViaProxy = false
+    showViaProxy = false,
+    showTimestamp = true
   )
 }
 
@@ -255,6 +296,7 @@ fun PreviewCIMetaViewDeletedContent() {
   CIMetaView(
     chatItem = ChatItem.getDeletedContentSampleData(),
     null,
-    showViaProxy = false
+    showViaProxy = false,
+    showTimestamp = true
   )
 }
