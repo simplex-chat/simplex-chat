@@ -1082,6 +1082,27 @@ fun BoxWithConstraintsScope.ChatItemsList(
             swipeDistance = with(LocalDensity.current) { 30.dp.toPx() },
           )
           val sent = cItem.chatDir.sent
+
+          @Composable
+          fun ChatItemBox(
+            modifier: Modifier = Modifier,
+            content: @Composable () -> Unit = { }) {
+            Box(
+              modifier = modifier.padding(
+                bottom = if (itemSeparation.largeGap) {
+                  if (i == 0) {
+                    8.dp
+                  } else {
+                    4.dp
+                  }
+                } else 1.dp, top = if (previousItemSeparation?.largeGap == true) 4.dp else 1.dp
+              ),
+              contentAlignment = Alignment.CenterStart
+            ) {
+              content()
+            }
+          }
+
           Box {
             val voiceWithTransparentBack = cItem.content.msgContent is MsgContent.MCVoice && cItem.content.text.isEmpty() && cItem.quotedItem == null && cItem.meta.itemForwarded == null
             val selectionVisible = selectedChatItems.value != null && cItem.canBeDeletedForSelf
@@ -1134,7 +1155,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
 
                     @Composable
                     fun Item() {
-                      Box(Modifier.layoutId(CHAT_BUBBLE_LAYOUT_ID).chatItemGap(i, itemSeparation, previousItemSeparation), contentAlignment = Alignment.CenterStart) {
+                      ChatItemBox(Modifier.layoutId(CHAT_BUBBLE_LAYOUT_ID)) {
                         androidx.compose.animation.AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                           SelectedChatItem(Modifier, cItem.id, selectedChatItems)
                         }
@@ -1159,7 +1180,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                     }
                   }
                 } else {
-                  Box(contentAlignment = Alignment.CenterStart, modifier = Modifier.chatItemGap(i, itemSeparation, previousItemSeparation)) {
+                  ChatItemBox {
                     AnimatedVisibility (selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                       SelectedChatItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
                     }
@@ -1173,7 +1194,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                   }
                 }
               } else {
-                Box(contentAlignment = Alignment.CenterStart, modifier = Modifier.chatItemGap(i, itemSeparation, previousItemSeparation)) {
+                ChatItemBox {
                   AnimatedVisibility (selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                     SelectedChatItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
                   }
@@ -1187,7 +1208,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                 }
               }
             } else { // direct message
-              Box(contentAlignment = Alignment.CenterStart, modifier = Modifier.chatItemGap(i, itemSeparation, previousItemSeparation)) {
+              ChatItemBox {
                 AnimatedVisibility (selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                   SelectedChatItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
                 }
@@ -1546,18 +1567,6 @@ private fun DateSeparator(date: Instant) {
     fontWeight = FontWeight.Medium,
     textAlign = TextAlign.Center,
     color = MaterialTheme.colors.secondary
-  )
-}
-
-private fun Modifier.chatItemGap(index: Int, itemSeparation: ItemSeparation, previousItemSeparation: ItemSeparation?): Modifier {
-  return this.padding(
-    bottom = if (itemSeparation.largeGap) {
-      if (index == 0) {
-        8.dp
-      } else {
-        4.dp
-      }
-    } else 1.dp, top = if (previousItemSeparation?.largeGap == true) 4.dp else 1.dp
   )
 }
 
