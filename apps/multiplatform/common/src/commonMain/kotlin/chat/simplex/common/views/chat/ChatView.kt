@@ -1560,7 +1560,7 @@ private fun ButtonRow(horizontalArrangement: Arrangement.Horizontal, content: @C
 private fun DateSeparator(date: Instant) {
   Text(
     text = getTimestampDateText(date),
-    Modifier.padding(DEFAULT_PADDING_HALF).fillMaxWidth(),
+    Modifier.padding(DEFAULT_PADDING).fillMaxWidth(),
     fontSize = 14.sp,
     fontWeight = FontWeight.Medium,
     textAlign = TextAlign.Center,
