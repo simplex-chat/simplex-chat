@@ -1075,6 +1075,7 @@
   <string name="icon_descr_audio_on">Audio on</string>
   <string name="icon_descr_speaker_off">Speaker off</string>
   <string name="icon_descr_speaker_on">Speaker on</string>
+  <string name="icon_descr_sound_muted">Sound muted</string>
   <string name="icon_descr_flip_camera">Flip camera</string>
 
   <!-- Call items -->

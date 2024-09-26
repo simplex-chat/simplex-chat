@@ -47,7 +47,7 @@ class PostSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
       Log.d(TAG, "Added audio devices2: ${devices.value.map { it.type }}")
 
       if (devices.value.size - oldDevices.size > 0) {
-        selectLastExternalDeviceOrDefault(chatModel.activeCall.value?.supportsVideo() == true, false)
+        selectLastExternalDeviceOrDefault(chatModel.activeCall.value?.hasVideo == true, false)
       }
     }
 
@@ -116,14 +116,14 @@ class PreSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
       Log.d(TAG, "Added audio devices: ${addedDevices.map { it.type }}")
       super.onAudioDevicesAdded(addedDevices)
       devices.value = am.getDevices(AudioManager.GET_DEVICES_OUTPUTS).filter { it.hasSupportedType() }.excludeSameType().excludeEarpieceIfWired()
-      selectLastExternalDeviceOrDefault(chatModel.activeCall.value?.supportsVideo() == true, false)
+      selectLastExternalDeviceOrDefault(chatModel.activeCall.value?.hasVideo == true, false)
     }
 
     override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>) {
       Log.d(TAG, "Removed audio devices: ${removedDevices.map { it.type }}")
       super.onAudioDevicesRemoved(removedDevices)
       devices.value = am.getDevices(AudioManager.GET_DEVICES_OUTPUTS).filter { it.hasSupportedType() }.excludeSameType().excludeEarpieceIfWired()
-      selectLastExternalDeviceOrDefault(chatModel.activeCall.value?.supportsVideo() == true, true)
+      selectLastExternalDeviceOrDefault(chatModel.activeCall.value?.hasVideo == true, true)
     }
   }
 
