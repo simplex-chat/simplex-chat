@@ -70,6 +70,7 @@ struct SheetRepresentable<Content: View>: UIViewControllerRepresentable {
             addChild(hostingController)
             hostingController.didMove(toParent: self)
             if let sheet = hostingController.view {
+                sheet.isHidden = true
                 sheet.clipsToBounds = true
                 sheet.layer.cornerRadius = 10
                 sheet.layer.maskedCorners = [.layerMaxXMinYCorner, .layerMinXMinYCorner]
@@ -77,20 +78,21 @@ struct SheetRepresentable<Content: View>: UIViewControllerRepresentable {
                 sheet.translatesAutoresizingMaskIntoConstraints = false
                 view.addSubview(sheet)
                 NSLayoutConstraint.activate([
-                    hostingController.view.topAnchor.constraint(equalTo: view.bottomAnchor),
                     hostingController.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-                    hostingController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor)
+                    hostingController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                    hostingController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
                 ])
                 animator.pausesOnCompletion = true
                 animator.scrubsLinearly = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-                    if let self {
-                        self.animator.addAnimations {
-                            sheet.transform = CGAffineTransform(translationX: 0, y: -self.sheetHeight)
-                            self.view.backgroundColor = .black.withAlphaComponent(0.3)
-                        }
-                    }
-                }
+            }
+        }
+
+        override func viewDidAppear(_ animated: Bool) {
+            hostingController.view.transform = CGAffineTransform(translationX: 0, y: self.sheetHeight)
+            hostingController.view.isHidden = false
+            self.animator.addAnimations {
+                self.hostingController.view.transform = .identity
+                self.view.backgroundColor = .black.withAlphaComponent(0.3)
             }
         }
 
@@ -108,7 +110,7 @@ struct SheetRepresentable<Content: View>: UIViewControllerRepresentable {
                 animator.isReversed = (velocity - (animator.fractionComplete - 0.5) * 100).sign == .plus
                 let defaultVelocity = sheetHeight / sheetAnimationDuration
                 let fractionRemaining = 1 - animator.fractionComplete
-                let durationFactor = min(fractionRemaining / (abs(velocity) / defaultVelocity), 1)
+                let durationFactor = min(max(fractionRemaining / (abs(velocity) / defaultVelocity), 0.2), 1)
                 animator.continueAnimation(withTimingParameters: nil, durationFactor: durationFactor)
                 DispatchQueue.main.asyncAfter(deadline: .now() + sheetAnimationDuration) {
                     self.representer.isPresented = !self.animator.isReversed
