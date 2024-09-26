@@ -127,7 +127,7 @@ fun reserveSpaceForMeta(
 ): String {
   val iconSpace = "    "
   val whiteSpace = " "
-  var res = ""
+  var res = iconSpace
   var space: String? = null
 
   fun appendSpace() {
@@ -156,10 +156,10 @@ fun reserveSpaceForMeta(
     appendSpace()
     if (meta.statusIcon(secondaryColor) != null) {
       res += iconSpace
-      space = whiteSpace
     } else if (!meta.disappearing) {
-      space = iconSpace + whiteSpace
+      res += iconSpace
     }
+    space = whiteSpace
   }
 
   if (encrypted != null) {
