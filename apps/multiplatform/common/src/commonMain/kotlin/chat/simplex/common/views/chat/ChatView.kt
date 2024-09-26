@@ -1052,18 +1052,18 @@ fun BoxWithConstraintsScope.ChatItemsList(
         val revealed = remember { mutableStateOf(false) }
 
         @Composable
-        fun ChatItemViewShortHand(cItem: ChatItem, itemSeparation: ItemSeparation, range: IntRange?, fillMaxWidth: Boolean = true) {
+        fun ChatItemViewShortHand(cItem: ChatItem, itemSeparation: ItemSeparation, previousItemSeparation: ItemSeparation?, range: IntRange?, fillMaxWidth: Boolean = true) {
           tryOrShowError("${cItem.id}ChatItem", error = {
             CIBrokenComposableView(if (cItem.chatDir.sent) Alignment.CenterEnd else Alignment.CenterStart)
           }) {
-            Column(modifier = Modifier.padding(bottom = if (itemSeparation.largeGap) 8.dp else 2.dp)) {
+            Column(modifier = Modifier.padding(bottom = if (itemSeparation.largeGap) 4.dp else 2.dp, top = if (previousItemSeparation?.largeGap == true) 4.dp else 0.dp)) {
               ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools, showViaProxy = showViaProxy, showTimestamp = itemSeparation.timestamp)
             }
           }
         }
 
         @Composable
-        fun ChatItemView(cItem: ChatItem, range: IntRange?, prevItem: ChatItem?, itemSeparation: ItemSeparation) {
+        fun ChatItemView(cItem: ChatItem, range: IntRange?, prevItem: ChatItem?, itemSeparation: ItemSeparation, previousItemSeparation: ItemSeparation?) {
           val dismissState = rememberDismissState(initialValue = DismissValue.Default) {
             if (it == DismissValue.DismissedToStart) {
               scope.launch {
@@ -1146,7 +1146,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                             MemberImage(member)
                           }
                           Box(modifier = Modifier.padding(top = 2.dp)) {
-                            ChatItemViewShortHand(cItem, itemSeparation, range, false)
+                            ChatItemViewShortHand(cItem, itemSeparation, previousItemSeparation, range, false)
                           }
                         }
                       }
@@ -1170,7 +1170,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                         .padding(start = 8.dp + MEMBER_IMAGE_SIZE + 4.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp)
                         .then(swipeableOrSelectionModifier)
                     ) {
-                      ChatItemViewShortHand(cItem, itemSeparation, range)
+                      ChatItemViewShortHand(cItem, itemSeparation, previousItemSeparation, range)
                     }
                   }
                 }
@@ -1184,7 +1184,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                       .padding(start = if (voiceWithTransparentBack) 12.dp else 104.dp, end = 12.dp)
                       .then(if (selectionVisible) Modifier else swipeableModifier)
                   ) {
-                    ChatItemViewShortHand(cItem, itemSeparation, range)
+                    ChatItemViewShortHand(cItem, itemSeparation, previousItemSeparation, range)
                   }
                 }
               }
@@ -1199,7 +1199,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                     end = if (sent || voiceWithTransparentBack) 12.dp else 76.dp,
                   ).then(if (!selectionVisible || !sent) swipeableOrSelectionModifier else Modifier)
                 ) {
-                  ChatItemViewShortHand(cItem, itemSeparation, range)
+                  ChatItemViewShortHand(cItem, itemSeparation, previousItemSeparation, range)
                 }
               }
             }
@@ -1220,6 +1220,8 @@ fun BoxWithConstraintsScope.ChatItemsList(
           val (prevHidden, prevItem) = chatModel.getPrevShownChatItem(currIndex, ciCategory)
 
           val itemSeparation = getItemSeparation(cItem, nextItem)
+          val previousItemSeparation = if (prevItem != null) getItemSeparation(prevItem, cItem) else null
+
           if (itemSeparation.date != null) {
             DateSeparator(itemSeparation.date)
           }
@@ -1228,10 +1230,10 @@ fun BoxWithConstraintsScope.ChatItemsList(
           if (revealed.value && range != null) {
             reversedChatItems.subList(range.first, range.last + 1).forEachIndexed { index, ci ->
               val prev = if (index + range.first == prevHidden) prevItem else reversedChatItems[index + range.first + 1]
-              ChatItemView(ci, null, prev, itemSeparation)
+              ChatItemView(ci, null, prev, itemSeparation, previousItemSeparation)
             }
           } else {
-            ChatItemView(cItem, range, prevItem, itemSeparation)
+            ChatItemView(cItem, range, prevItem, itemSeparation, previousItemSeparation)
           }
 
           if (i == reversedChatItems.lastIndex) {
