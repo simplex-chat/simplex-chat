@@ -1169,6 +1169,7 @@ const processCommand = (function () {
     if (!videos.local.srcObject && localStream.getTracks().length > 0) {
       videos.local.srcObject = localStream
     }
+    videos.local.play().catch((e) => console.log(e))
   }
 
   function mediaSourceFromTransceiverMid(mid: string | null) {
