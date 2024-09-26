@@ -42,6 +42,7 @@ body {
 }
 
 #local-video-stream.inline {
+  background-color: black;
   position: absolute;
   width: 20%;
   max-width: 20%;
