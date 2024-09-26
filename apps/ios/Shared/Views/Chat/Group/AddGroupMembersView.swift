@@ -105,8 +105,10 @@ struct AddGroupMembersViewCommon: View {
                             .padding(.leading, 2)
                         let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
                         let members = s == "" ? membersToAdd : membersToAdd.filter { $0.chatViewName.localizedLowercase.contains(s) }
-                        ForEach(members) { contact in
-                            contactCheckView(contact)
+                        ForEach(members + [dummyContact]) { contact in
+                            if contact.contactId != dummyContact.contactId {
+                                contactCheckView(contact)
+                            }
                         }
                     }
                 }
@@ -129,6 +131,14 @@ struct AddGroupMembersViewCommon: View {
         }
         .modifier(ThemedBackground(grouped: true))
     }
+
+    // Resolves keyboard losing focus bug in iOS16 and iOS17,
+    // when there are no items inside `ForEach(memebers)` loop
+    private let dummyContact: Contact = {
+        var dummy = Contact.sampleData
+        dummy.contactId = -1
+        return dummy
+    }()
 
     private func inviteMembersButton() -> some View {
         Button {
