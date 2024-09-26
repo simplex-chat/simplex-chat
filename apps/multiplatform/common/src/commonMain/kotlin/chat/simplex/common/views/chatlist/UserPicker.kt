@@ -37,7 +37,6 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlin.math.max
 
 private val USER_PICKER_SECTION_SPACING = 32.dp
 
@@ -143,7 +142,7 @@ fun UserPicker(
       .height(IntrinsicSize.Min)
       .fillMaxWidth()
       .then(if (newChat.isVisible()) Modifier.shadow(8.dp, clip = true) else Modifier)
-      .background(if (appPlatform.isAndroid) CurrentColors.value.colors.background.mixWith(CurrentColors.value.colors.onBackground, alpha = 1 - userPickerAlpha()) else MaterialTheme.colors.surface)
+      .background(if (appPlatform.isAndroid) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, alpha = 1 - userPickerAlpha()) else MaterialTheme.colors.surface)
       .padding(bottom = USER_PICKER_SECTION_SPACING - DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
     pickerState = userPickerState
   ) {
@@ -152,7 +151,7 @@ fun UserPicker(
         ModalManager.start.showCustomModal { close -> modalView(chatModel, close) }
       }
     }
-    val stopped = chatModel.chatRunning.value == false
+    val stopped = remember { chatModel.chatRunning }.value == false
     val onUserClicked: (user: User) -> Unit = { user ->
       if (!user.activeUser) {
         userPickerState.value = AnimatedViewState.HIDING
@@ -277,7 +276,8 @@ fun UserPicker(
                   content = { UserProfilesView(chatModel, search, profileHidden) })
               }
             }
-          }
+          },
+          disabled = stopped
         )
       }
     }
@@ -287,7 +287,6 @@ fun UserPicker(
         FirstSection()
         SecondSection()
         GlobalSettingsSection(
-          chatModel = chatModel,
           userPickerState = userPickerState,
           setPerformLA = setPerformLA,
         )
@@ -305,7 +304,6 @@ fun UserPicker(
           Box(Modifier.weight(1f)) {
             Column {
               GlobalSettingsSection(
-                chatModel = chatModel,
                 userPickerState = userPickerState,
                 setPerformLA = setPerformLA,
               )
@@ -328,11 +326,10 @@ fun userPickerAlpha(): Float {
 
 @Composable
 private fun GlobalSettingsSection(
-  chatModel: ChatModel,
   userPickerState: MutableStateFlow<AnimatedViewState>,
   setPerformLA: (Boolean) -> Unit,
 ) {
-  val stopped = chatModel.chatRunning.value == false
+  val stopped = remember { chatModel.chatRunning }.value == false
 
   if (appPlatform.isAndroid) {
     val text = generalGetString(MR.strings.settings_section_title_use_from_desktop).lowercase().capitalize(Locale.current)
@@ -381,7 +378,7 @@ private fun GlobalSettingsSection(
 fun UserProfilePickerItem(
   u: User,
   unreadCount: Int = 0,
-  enabled: Boolean = chatModel.chatRunning.value == true || chatModel.connectedToRemote,
+  enabled: Boolean = remember { chatModel.chatRunning }.value == true || chatModel.connectedToRemote,
   onLongClick: () -> Unit = {},
   openSettings: () -> Unit = {},
   onClick: () -> Unit
@@ -430,7 +427,7 @@ fun UserProfilePickerItem(
 }
 
 @Composable
-fun UserProfileRow(u: User, enabled: Boolean = chatModel.chatRunning.value == true || chatModel.connectedToRemote) {
+fun UserProfileRow(u: User, enabled: Boolean = remember { chatModel.chatRunning }.value == true || chatModel.connectedToRemote) {
   Row(
     Modifier
       .widthIn(max = windowWidth() * 0.7f)
