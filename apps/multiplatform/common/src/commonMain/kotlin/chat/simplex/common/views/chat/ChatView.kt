@@ -1538,19 +1538,15 @@ private fun ButtonRow(horizontalArrangement: Arrangement.Horizontal, content: @C
 }
 
 @Composable
-fun DateSeparator(date: Instant) {
-  Column (
+private fun DateSeparator(date: Instant) {
+  Text(
+    text = getTimestampDateText(date),
     Modifier.padding(DEFAULT_PADDING_HALF).fillMaxWidth(),
-    verticalArrangement = Arrangement.Center,
-    horizontalAlignment = Alignment.CenterHorizontally
-  ) {
-    Text(
-      text = getTimestampDateText(date),
-      fontSize = 14.sp,
-      fontWeight = FontWeight.Medium,
-      color = MaterialTheme.colors.secondary
-    )
-  }
+    fontSize = 14.sp,
+    fontWeight = FontWeight.Medium,
+    textAlign = TextAlign.Center,
+    color = MaterialTheme.colors.secondary
+  )
 }
 
 val chatViewScrollState = MutableStateFlow(false)
