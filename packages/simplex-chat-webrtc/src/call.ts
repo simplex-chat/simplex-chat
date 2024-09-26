@@ -1212,12 +1212,12 @@ const processCommand = (function () {
 
   function setupMuteUnmuteListener(transceiver: RTCRtpTransceiver, track: MediaStreamTrack) {
     // console.log("Setting up mute/unmute listener in the call without encryption for mid = ", transceiver.mid)
-    let statsInterval: number = 0
     let inboundStatsId = ""
-    let lastPacketsReceived = 0
+    // for some reason even for disabled tracks one packet arrives (seeing this on screenVideo track)
+    let lastPacketsReceived = 1
     // muted initially
     let mutedSeconds = 4
-    statsInterval = setInterval(async () => {
+    let statsInterval = setInterval(async () => {
       const stats: RTCStatsReport = await transceiver.receiver.getStats()
       if (!inboundStatsId) {
         stats.forEach((elem) => {
@@ -1228,7 +1228,7 @@ const processCommand = (function () {
       }
       if (inboundStatsId) {
         const packets = (stats as any).get(inboundStatsId)?.packetsReceived
-        if (packets == lastPacketsReceived) {
+        if (packets <= lastPacketsReceived) {
           mutedSeconds++
           if (mutedSeconds == 3) {
             onMediaMuteUnmute(transceiver.mid, true)

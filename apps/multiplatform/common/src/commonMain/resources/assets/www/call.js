@@ -930,12 +930,12 @@ const processCommand = (function () {
     }
     function setupMuteUnmuteListener(transceiver, track) {
         // console.log("Setting up mute/unmute listener in the call without encryption for mid = ", transceiver.mid)
-        let statsInterval = 0;
         let inboundStatsId = "";
-        let lastPacketsReceived = 0;
+        // for some reason even for disabled tracks one packet arrives (seeing this on screenVideo track)
+        let lastPacketsReceived = 1;
         // muted initially
         let mutedSeconds = 4;
-        statsInterval = setInterval(async () => {
+        let statsInterval = setInterval(async () => {
             var _a;
             const stats = await transceiver.receiver.getStats();
             if (!inboundStatsId) {
@@ -947,7 +947,7 @@ const processCommand = (function () {
             }
             if (inboundStatsId) {
                 const packets = (_a = stats.get(inboundStatsId)) === null || _a === void 0 ? void 0 : _a.packetsReceived;
-                if (packets == lastPacketsReceived) {
+                if (packets <= lastPacketsReceived) {
                     mutedSeconds++;
                     if (mutedSeconds == 3) {
                         onMediaMuteUnmute(transceiver.mid, true);
