@@ -42,6 +42,7 @@ struct SheetRepresentable<Content: View>: UIViewControllerRepresentable {
         private let animator = UIViewPropertyAnimator(duration: sheetAnimationDuration, curve: .easeInOut)
         private let representer: SheetRepresentable<C>
         private var retainedFraction: CGFloat = 0
+        private var sheetHeight: Double { hostingController.view.frame.height }
 
         init(content: C, representer: SheetRepresentable<C>) {
             self.representer = representer
@@ -83,9 +84,11 @@ struct SheetRepresentable<Content: View>: UIViewControllerRepresentable {
                 animator.pausesOnCompletion = true
                 animator.scrubsLinearly = true
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-                    self?.animator.addAnimations {
-                        sheet.transform = CGAffineTransform(translationX: 0, y: -sheet.frame.height)
-                        self?.view.backgroundColor = .black.withAlphaComponent(0.3)
+                    if let self {
+                        self.animator.addAnimations {
+                            sheet.transform = CGAffineTransform(translationX: 0, y: -self.sheetHeight)
+                            self.view.backgroundColor = .black.withAlphaComponent(0.3)
+                        }
                     }
                 }
             }
@@ -99,11 +102,11 @@ struct SheetRepresentable<Content: View>: UIViewControllerRepresentable {
                 animator.pauseAnimation()
                 retainedFraction = animator.fractionComplete
             case .changed:
-                animator.fractionComplete = retainedFraction - gesture.translation(in: view).y / hostingController.view.frame.height
+                animator.fractionComplete = retainedFraction - gesture.translation(in: view).y / sheetHeight
             case .ended, .cancelled:
                 let velocity = gesture.velocity(in: view).y
-                animator.isReversed = velocity.sign == .plus
-                let defaultVelocity = hostingController.view.frame.height / sheetAnimationDuration
+                animator.isReversed = (velocity - (animator.fractionComplete - 0.5) * 100).sign == .plus
+                let defaultVelocity = sheetHeight / sheetAnimationDuration
                 let fractionRemaining = 1 - animator.fractionComplete
                 let durationFactor = min(fractionRemaining / (abs(velocity) / defaultVelocity), 1)
                 animator.continueAnimation(withTimingParameters: nil, durationFactor: durationFactor)
@@ -118,7 +121,9 @@ struct SheetRepresentable<Content: View>: UIViewControllerRepresentable {
         func tap(gesture: UITapGestureRecognizer) {
             switch gesture.state {
             case .ended:
-                representer.isPresented = false
+                if gesture.location(in: view).y < view.frame.height - sheetHeight {
+                    representer.isPresented = false
+                }
             default: break
             }
         }

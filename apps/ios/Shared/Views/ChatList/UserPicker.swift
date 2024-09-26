@@ -77,6 +77,7 @@ struct UserPicker: View {
                         .foregroundColor(theme.colors.secondary)
                         .frame(maxWidth: 20, maxHeight: 20)
                         .padding(.horizontal, rowPadding)
+                        .contentShape(Rectangle())
                         .onTapGesture {
                             if (colorScheme == .light) {
                                 ThemeManager.applyTheme(systemDarkThemeDefault.get())
@@ -164,19 +165,15 @@ struct UserPicker: View {
             }
         }
     }
-    
+
     private func openSheetOnTap(_ icon: String, title: LocalizedStringKey, sheet: UserPickerSheet) -> some View {
-        Button {
-            activeSheet = sheet
-        } label: {
-            settingsRow(icon, color: theme.colors.secondary) {
-                Text(title).foregroundColor(.primary)
-            }
+        settingsRow(icon, color: theme.colors.secondary) {
+            Text(title).foregroundColor(.primary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, rowPadding)
         .padding(.vertical, rowVerticalPadding)
-        .contentShape(Rectangle())
+        .modifier(ListRow { activeSheet = sheet })
     }
     
     private func unreadBadge(_ u: UserInfo) -> some View {
@@ -190,6 +187,64 @@ struct UserPicker: View {
             .cornerRadius(dynamicSize(userFont).unreadCorner)
     }
 }
+
+struct ListRow: ViewModifier {
+    @State private var touchDown = false
+    let action: () -> Void
+
+    func body(content: Content) -> some View {
+        ZStack {
+            Color(touchDown ? .systemGray4 : .clear)
+            content
+            TouchOverlay(touchDown: $touchDown, action: action)
+        }
+    }
+
+    struct TouchOverlay: UIViewRepresentable {
+        @Binding var touchDown: Bool
+        let action: () -> Void
+
+        func makeUIView(context: Context) -> TouchView {
+            let touchView = TouchView()
+            let gesture = UILongPressGestureRecognizer(
+                target: touchView,
+                action: #selector(touchView.longPress(gesture:))
+            )
+            gesture.delegate = touchView
+            gesture.minimumPressDuration = 0.05
+            touchView.addGestureRecognizer(gesture)
+            return touchView
+        }
+
+        func updateUIView(_ touchView: TouchView, context: Context) {
+            touchView.representer = self
+        }
+
+        class TouchView: UIView, UIGestureRecognizerDelegate {
+            var representer: TouchOverlay?
+
+            @objc
+            func longPress(gesture: UILongPressGestureRecognizer) {
+                switch gesture.state {
+                case .began:
+                    representer?.touchDown = true
+                case .ended:
+                    representer?.touchDown = false
+                    if hitTest(gesture.location(in: self), with: nil) == self {
+                        representer?.action()
+                    }
+                default: break
+                }
+            }
+
+            func gestureRecognizer(
+                _: UIGestureRecognizer,
+                shouldRecognizeSimultaneouslyWith: UIGestureRecognizer
+            ) -> Bool { true }
+        }
+    }
+}
+
 
 struct UserPicker_Previews: PreviewProvider {
     static var previews: some View {
