@@ -899,8 +899,7 @@ const processCommand = (function () {
           call.worker,
           call.aesKey,
           call.key,
-          source == CallMediaSource.Camera || source == CallMediaSource.ScreenVideo ? CallMediaType.Video : CallMediaType.Audio,
-          mid.toString()
+          source == CallMediaSource.Camera || source == CallMediaSource.ScreenVideo ? CallMediaType.Video : CallMediaType.Audio
         )
         mid++
       }
@@ -922,12 +921,10 @@ const processCommand = (function () {
             call.worker,
             call.aesKey,
             call.key,
-            event.receiver.track.kind == "video" ? CallMediaType.Video : CallMediaType.Audio,
-            event.transceiver.mid
+            event.receiver.track.kind == "video" ? CallMediaType.Video : CallMediaType.Audio
           )
-        } else {
-          setupMuteUnmuteListener(event.transceiver, track)
         }
+        setupMuteUnmuteListener(event.transceiver, track)
 
         const mediaSource = mediaSourceFromTransceiverMid(event.transceiver.mid)
         if (mediaSource == CallMediaSource.ScreenAudio || mediaSource == CallMediaSource.ScreenVideo) {
@@ -1193,27 +1190,19 @@ const processCommand = (function () {
     worker: Worker | undefined,
     aesKey: string,
     key: CryptoKey,
-    media: CallMediaType,
-    transceiverMid: string | null
+    media: CallMediaType
   ) {
-    console.log("Setting peer transform to mid = " + transceiverMid)
     if (worker && "RTCRtpScriptTransform" in window) {
       console.log(`${operation} with worker & RTCRtpScriptTransform`)
-      peer.transform = new RTCRtpScriptTransform(worker, {operation, aesKey, media, transceiverMid})
+      peer.transform = new RTCRtpScriptTransform(worker, {operation, aesKey, media})
     } else if ("createEncodedStreams" in peer) {
       const {readable, writable} = peer.createEncodedStreams()
       if (worker) {
         console.log(`${operation} with worker`)
-        worker.postMessage({operation, readable, writable, aesKey, media, transceiverMid}, [
-          readable,
-          writable,
-        ] as unknown as Transferable[])
+        worker.postMessage({operation, readable, writable, aesKey, media}, [readable, writable] as unknown as Transferable[])
       } else {
         console.log(`${operation} without worker`)
-        const onMediaMuteUnmuteConst = (mute: boolean) => {
-          onMediaMuteUnmute(transceiverMid, mute)
-        }
-        const transform = callCrypto.transformFrame[operation](key, onMediaMuteUnmuteConst)
+        const transform = callCrypto.transformFrame[operation](key)
         readable.pipeThrough(new TransformStream({transform})).pipeTo(writable)
       }
     } else {
@@ -1551,10 +1540,7 @@ function desktopShowPermissionsAlert(mediaType: CallMediaType) {
   }
 }
 
-type TransformFrameFunc = (
-  key: CryptoKey,
-  onMediaMuteUnmute: (mute: boolean) => void
-) => (frame: RTCEncodedVideoFrame, controller: TransformStreamDefaultController) => Promise<void>
+type TransformFrameFunc = (key: CryptoKey) => (frame: RTCEncodedVideoFrame, controller: TransformStreamDefaultController) => Promise<void>
 
 interface CallCrypto {
   transformFrame: {[x in TransformOperation]: TransformFrameFunc}
@@ -1595,25 +1581,7 @@ function callCryptoFunction(): CallCrypto {
     }
   }
 
-  function decryptFrame(
-    key: CryptoKey,
-    onMediaMuteUnmute: (mute: boolean) => void
-  ): (frame: RTCEncodedVideoFrame, controller: TransformStreamDefaultController) => Promise<void> {
-    let wasMuted = true
-    let timeout: number = 0
-    const resetTimeout = () => {
-      if (wasMuted) {
-        wasMuted = false
-        onMediaMuteUnmute(wasMuted)
-      }
-      clearTimeout(timeout)
-      timeout = setTimeout(() => {
-        if (!wasMuted) {
-          wasMuted = true
-          onMediaMuteUnmute(wasMuted)
-        }
-      }, 3000)
-    }
+  function decryptFrame(key: CryptoKey): (frame: RTCEncodedVideoFrame, controller: TransformStreamDefaultController) => Promise<void> {
     return async (frame, controller) => {
       const data = new Uint8Array(frame.data)
       const n = initialPlainTextRequired[frame.type] || 1
@@ -1626,8 +1594,6 @@ function callCryptoFunction(): CallCrypto {
           : new Uint8Array(0)
         frame.data = concatN(initial, plaintext).buffer
         controller.enqueue(frame)
-
-        resetTimeout()
       } catch (e) {
         console.log(`decryption error ${e}`)
         throw e
@@ -1748,7 +1714,6 @@ function workerFunction() {
     readable: ReadableStream<RTCEncodedVideoFrame>
     writable: WritableStream<RTCEncodedVideoFrame>
     aesKey: string
-    transceiverMid: string | null
   }
 
   // encryption with createEncodedStreams support
@@ -1760,9 +1725,9 @@ function workerFunction() {
   if ("RTCTransformEvent" in self) {
     self.addEventListener("rtctransform", async ({transformer}: any) => {
       try {
-        const {operation, aesKey, transceiverMid} = transformer.options
+        const {operation, aesKey} = transformer.options
         const {readable, writable} = transformer
-        await setupTransform({operation, aesKey, transceiverMid, readable, writable})
+        await setupTransform({operation, aesKey, readable, writable})
         self.postMessage({result: "setupTransform success"})
       } catch (e) {
         self.postMessage({message: `setupTransform error: ${(e as Error).message}`})
@@ -1770,12 +1735,9 @@ function workerFunction() {
     })
   }
 
-  async function setupTransform({operation, aesKey, transceiverMid, readable, writable}: Transform): Promise<void> {
+  async function setupTransform({operation, aesKey, readable, writable}: Transform): Promise<void> {
     const key = await callCrypto.decodeAesKey(aesKey)
-    const onMediaMuteUnmute = (mute: boolean) => {
-      self.postMessage({transceiverMid: transceiverMid, mute: mute})
-    }
-    const transform = callCrypto.transformFrame[operation](key, onMediaMuteUnmute)
+    const transform = callCrypto.transformFrame[operation](key)
     readable.pipeThrough(new TransformStream({transform})).pipeTo(writable)
   }
 }

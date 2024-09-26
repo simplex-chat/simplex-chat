@@ -643,7 +643,7 @@ const processCommand = (function () {
             for (const transceiver of pc.getTransceivers()) {
                 const sender = transceiver.sender;
                 const source = mediaSourceFromTransceiverMid(mid.toString());
-                setupPeerTransform(TransformOperation.Encrypt, sender, call.worker, call.aesKey, call.key, source == CallMediaSource.Camera || source == CallMediaSource.ScreenVideo ? CallMediaType.Video : CallMediaType.Audio, mid.toString());
+                setupPeerTransform(TransformOperation.Encrypt, sender, call.worker, call.aesKey, call.key, source == CallMediaSource.Camera || source == CallMediaSource.ScreenVideo ? CallMediaType.Video : CallMediaType.Audio);
                 mid++;
             }
         }
@@ -657,11 +657,9 @@ const processCommand = (function () {
             try {
                 if (call.aesKey && call.key) {
                     console.log("set up decryption for receiving");
-                    setupPeerTransform(TransformOperation.Decrypt, event.receiver, call.worker, call.aesKey, call.key, event.receiver.track.kind == "video" ? CallMediaType.Video : CallMediaType.Audio, event.transceiver.mid);
+                    setupPeerTransform(TransformOperation.Decrypt, event.receiver, call.worker, call.aesKey, call.key, event.receiver.track.kind == "video" ? CallMediaType.Video : CallMediaType.Audio);
                 }
-                else {
-                    setupMuteUnmuteListener(event.transceiver, track);
-                }
+                setupMuteUnmuteListener(event.transceiver, track);
                 const mediaSource = mediaSourceFromTransceiverMid(event.transceiver.mid);
                 if (mediaSource == CallMediaSource.ScreenAudio || mediaSource == CallMediaSource.ScreenVideo) {
                     call.remoteScreenStream.addTrack(track);
@@ -909,27 +907,20 @@ const processCommand = (function () {
                 return CallMediaSource.Unknown;
         }
     }
-    function setupPeerTransform(operation, peer, worker, aesKey, key, media, transceiverMid) {
-        console.log("Setting peer transform to mid = " + transceiverMid);
+    function setupPeerTransform(operation, peer, worker, aesKey, key, media) {
         if (worker && "RTCRtpScriptTransform" in window) {
             console.log(`${operation} with worker & RTCRtpScriptTransform`);
-            peer.transform = new RTCRtpScriptTransform(worker, { operation, aesKey, media, transceiverMid });
+            peer.transform = new RTCRtpScriptTransform(worker, { operation, aesKey, media });
         }
         else if ("createEncodedStreams" in peer) {
             const { readable, writable } = peer.createEncodedStreams();
             if (worker) {
                 console.log(`${operation} with worker`);
-                worker.postMessage({ operation, readable, writable, aesKey, media, transceiverMid }, [
-                    readable,
-                    writable,
-                ]);
+                worker.postMessage({ operation, readable, writable, aesKey, media }, [readable, writable]);
             }
             else {
                 console.log(`${operation} without worker`);
-                const onMediaMuteUnmuteConst = (mute) => {
-                    onMediaMuteUnmute(transceiverMid, mute);
-                };
-                const transform = callCrypto.transformFrame[operation](key, onMediaMuteUnmuteConst);
+                const transform = callCrypto.transformFrame[operation](key);
                 readable.pipeThrough(new TransformStream({ transform })).pipeTo(writable);
             }
         }
@@ -1284,22 +1275,7 @@ function callCryptoFunction() {
             }
         };
     }
-    function decryptFrame(key, onMediaMuteUnmute) {
-        let wasMuted = true;
-        let timeout = 0;
-        const resetTimeout = () => {
-            if (wasMuted) {
-                wasMuted = false;
-                onMediaMuteUnmute(wasMuted);
-            }
-            clearTimeout(timeout);
-            timeout = setTimeout(() => {
-                if (!wasMuted) {
-                    wasMuted = true;
-                    onMediaMuteUnmute(wasMuted);
-                }
-            }, 3000);
-        };
+    function decryptFrame(key) {
         return async (frame, controller) => {
             const data = new Uint8Array(frame.data);
             const n = initialPlainTextRequired[frame.type] || 1;
@@ -1312,7 +1288,6 @@ function callCryptoFunction() {
                     : new Uint8Array(0);
                 frame.data = concatN(initial, plaintext).buffer;
                 controller.enqueue(frame);
-                resetTimeout();
             }
             catch (e) {
                 console.log(`decryption error ${e}`);
@@ -1418,9 +1393,9 @@ function workerFunction() {
     if ("RTCTransformEvent" in self) {
         self.addEventListener("rtctransform", async ({ transformer }) => {
             try {
-                const { operation, aesKey, transceiverMid } = transformer.options;
+                const { operation, aesKey } = transformer.options;
                 const { readable, writable } = transformer;
-                await setupTransform({ operation, aesKey, transceiverMid, readable, writable });
+                await setupTransform({ operation, aesKey, readable, writable });
                 self.postMessage({ result: "setupTransform success" });
             }
             catch (e) {
@@ -1428,12 +1403,9 @@ function workerFunction() {
             }
         });
     }
-    async function setupTransform({ operation, aesKey, transceiverMid, readable, writable }) {
+    async function setupTransform({ operation, aesKey, readable, writable }) {
         const key = await callCrypto.decodeAesKey(aesKey);
-        const onMediaMuteUnmute = (mute) => {
-            self.postMessage({ transceiverMid: transceiverMid, mute: mute });
-        };
-        const transform = callCrypto.transformFrame[operation](key, onMediaMuteUnmute);
+        const transform = callCrypto.transformFrame[operation](key);
         readable.pipeThrough(new TransformStream({ transform })).pipeTo(writable);
     }
 }
