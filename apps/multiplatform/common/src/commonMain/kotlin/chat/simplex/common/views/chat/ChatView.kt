@@ -1056,14 +1056,12 @@ fun BoxWithConstraintsScope.ChatItemsList(
           tryOrShowError("${cItem.id}ChatItem", error = {
             CIBrokenComposableView(if (cItem.chatDir.sent) Alignment.CenterEnd else Alignment.CenterStart)
           }) {
-            Column(modifier = Modifier.padding(bottom = if (itemSeparation.largeGap) 8.dp else 2.dp)) {
-              ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools, showViaProxy = showViaProxy, showTimestamp = itemSeparation.timestamp)
-            }
+            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools, showViaProxy = showViaProxy, showTimestamp = itemSeparation.timestamp)
           }
         }
 
         @Composable
-        fun ChatItemView(cItem: ChatItem, range: IntRange?, prevItem: ChatItem?, itemSeparation: ItemSeparation) {
+        fun ChatItemView(cItem: ChatItem, range: IntRange?, prevItem: ChatItem?, itemSeparation: ItemSeparation, previousItemSeparation: ItemSeparation?) {
           val dismissState = rememberDismissState(initialValue = DismissValue.Default) {
             if (it == DismissValue.DismissedToStart) {
               scope.launch {
@@ -1136,7 +1134,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
 
                     @Composable
                     fun Item() {
-                      Box(Modifier.layoutId(CHAT_BUBBLE_LAYOUT_ID), contentAlignment = Alignment.CenterStart) {
+                      Box(Modifier.layoutId(CHAT_BUBBLE_LAYOUT_ID).chatItemGap(i, itemSeparation, previousItemSeparation), contentAlignment = Alignment.CenterStart) {
                         androidx.compose.animation.AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                           SelectedChatItem(Modifier, cItem.id, selectedChatItems)
                         }
@@ -1161,7 +1159,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                     }
                   }
                 } else {
-                  Box(contentAlignment = Alignment.CenterStart) {
+                  Box(contentAlignment = Alignment.CenterStart, modifier = Modifier.chatItemGap(i, itemSeparation, previousItemSeparation)) {
                     AnimatedVisibility (selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                       SelectedChatItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
                     }
@@ -1175,7 +1173,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                   }
                 }
               } else {
-                Box(contentAlignment = Alignment.CenterStart) {
+                Box(contentAlignment = Alignment.CenterStart, modifier = Modifier.chatItemGap(i, itemSeparation, previousItemSeparation)) {
                   AnimatedVisibility (selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                     SelectedChatItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
                   }
@@ -1189,7 +1187,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                 }
               }
             } else { // direct message
-              Box(contentAlignment = Alignment.CenterStart) {
+              Box(contentAlignment = Alignment.CenterStart, modifier = Modifier.chatItemGap(i, itemSeparation, previousItemSeparation)) {
                 AnimatedVisibility (selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                   SelectedChatItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
                 }
@@ -1220,6 +1218,8 @@ fun BoxWithConstraintsScope.ChatItemsList(
           val (prevHidden, prevItem) = chatModel.getPrevShownChatItem(currIndex, ciCategory)
 
           val itemSeparation = getItemSeparation(cItem, nextItem)
+          val previousItemSeparation = if (prevItem != null) getItemSeparation(prevItem, cItem) else null
+
           if (itemSeparation.date != null) {
             DateSeparator(itemSeparation.date)
           }
@@ -1228,10 +1228,10 @@ fun BoxWithConstraintsScope.ChatItemsList(
           if (revealed.value && range != null) {
             reversedChatItems.subList(range.first, range.last + 1).forEachIndexed { index, ci ->
               val prev = if (index + range.first == prevHidden) prevItem else reversedChatItems[index + range.first + 1]
-              ChatItemView(ci, null, prev, itemSeparation)
+              ChatItemView(ci, null, prev, itemSeparation, previousItemSeparation)
             }
           } else {
-            ChatItemView(cItem, range, prevItem, itemSeparation)
+            ChatItemView(cItem, range, prevItem, itemSeparation, previousItemSeparation)
           }
 
           if (i == reversedChatItems.lastIndex) {
@@ -1546,6 +1546,18 @@ private fun DateSeparator(date: Instant) {
     fontWeight = FontWeight.Medium,
     textAlign = TextAlign.Center,
     color = MaterialTheme.colors.secondary
+  )
+}
+
+private fun Modifier.chatItemGap(index: Int, itemSeparation: ItemSeparation, previousItemSeparation: ItemSeparation?): Modifier {
+  return this.padding(
+    bottom = if (itemSeparation.largeGap) {
+      if (index == 0) {
+        8.dp
+      } else {
+        4.dp
+      }
+    } else 1.dp, top = if (previousItemSeparation?.largeGap == true) 4.dp else 1.dp
   )
 }
 
