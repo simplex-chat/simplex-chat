@@ -2105,4 +2105,5 @@
     <string name="compose_forward_messages_n">Inoltro di %1$s messaggi</string>
     <string name="forward_multiple">Inoltra messaggi…</string>
     <string name="compose_save_messages_n">Salvataggio di %1$s messaggi</string>
+    <string name="icon_descr_sound_muted">Audio silenziato</string>
 </resources>
