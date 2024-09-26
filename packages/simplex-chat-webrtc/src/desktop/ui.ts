@@ -73,7 +73,7 @@ localOrPeerMediaSourcesChanged = (call: Call) => {
     document.getElementById("audio-call-icon")!.style.display = className == CallMediaType.Audio ? "block" : "none"
   }
 
-  document.getElementById("media-sources")!.innerText = mediaSourcesStatus(call)
+  // document.getElementById("media-sources")!.innerText = mediaSourcesStatus(call)
   document.getElementById("manage-call")!.className = localMedia(call) == CallMediaType.Video ? CallMediaType.Video : ""
 }
 
@@ -88,7 +88,7 @@ inactiveCallMediaSourcesChanged = (inactiveCallMediaSources: CallMediaSources) =
 
   const className = camera ? CallMediaType.Video : CallMediaType.Audio
   document.getElementById("info-block")!.className = className
-  document.getElementById("media-sources")!.innerText = inactiveCallMediaSourcesStatus(inactiveCallMediaSources)
+  // document.getElementById("media-sources")!.innerText = inactiveCallMediaSourcesStatus(inactiveCallMediaSources)
 }
 
 function enableMicIcon(enabled: boolean) {

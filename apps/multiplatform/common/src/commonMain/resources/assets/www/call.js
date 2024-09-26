@@ -170,7 +170,6 @@ const processCommand = (function () {
                 throw e;
             }
         }
-        console.log("LALAL LOCAL STREAM", localStream.getTracks().length, JSON.stringify(inactiveCallMediaSources));
         const localScreenStream = new MediaStream();
         // Will become video when any video tracks will be added
         const iceCandidates = getIceCandidates(pc, config);
@@ -363,7 +362,11 @@ const processCommand = (function () {
                         // enable using the same transceivers for sending media too, so total number of transceivers will be: audio, camera, screen audio, screen video
                         pc.getTransceivers().forEach((elem) => (elem.direction = "sendrecv"));
                         // setting media streams after remote description in order to have all transceivers ready (so ordering will be preserved)
-                        console.log("LALAL TRANSCE", pc.getTransceivers(), pc.getTransceivers().map((elem) => { var _a, _b; return "" + elem.mid + " " + ((_a = elem.sender.track) === null || _a === void 0 ? void 0 : _a.kind) + " " + ((_b = elem.sender.track) === null || _b === void 0 ? void 0 : _b.label); }));
+                        // console.log(
+                        //   "Transceivers",
+                        //   pc.getTransceivers(),
+                        //   pc.getTransceivers().map((elem) => "" + elem.mid + " " + elem.sender.track?.kind + " " + elem.sender.track?.label)
+                        // )
                         adaptToOldVersion(pc.getTransceivers().length <= 2, activeCall);
                         let answer = await pc.createAnswer();
                         await pc.setLocalDescription(answer);
@@ -502,7 +505,6 @@ const processCommand = (function () {
         }
         const apiResp = { corrId, resp, command };
         sendMessageToNative(apiResp);
-        console.log("LALAL SEND TO NATIVE", JSON.stringify(apiResp));
         return apiResp;
     }
     function endCall() {
@@ -567,7 +569,6 @@ const processCommand = (function () {
         const transceivers = call.connection.getTransceivers();
         const audioTracks = localStream.getAudioTracks();
         const videoTracks = localStream.getVideoTracks();
-        console.log("LALAL TRANS SIZE", transceivers.length);
         if (incomingCall) {
             // incoming call, no transceivers yet. But they should be added in order: mic, camera, screen audio, screen video
             // mid = 0
@@ -605,7 +606,6 @@ const processCommand = (function () {
                 }
             }
         }
-        console.log("LALAL TRANS AFTER SIZE", pc.getTransceivers().length);
         // src can be set to notConnectedCall.localStream which is the same as call.localStream
         if (!videos.local.srcObject) {
             videos.local.srcObject = call.localStream;
@@ -653,14 +653,14 @@ const processCommand = (function () {
         const pc = call.connection;
         pc.ontrack = (event) => {
             const track = event.track;
-            console.log("LALAL ON TRACK ", event);
+            //console.log("On track", event)
             try {
                 if (call.aesKey && call.key) {
                     console.log("set up decryption for receiving");
                     setupPeerTransform(TransformOperation.Decrypt, event.receiver, call.worker, call.aesKey, call.key, event.receiver.track.kind == "video" ? CallMediaType.Video : CallMediaType.Audio, event.transceiver.mid);
                 }
                 else {
-                    setupOnMutedCallback(event.transceiver, track);
+                    setupMuteUnmuteListener(event.transceiver, track);
                 }
                 const mediaSource = mediaSourceFromTransceiverMid(event.transceiver.mid);
                 if (mediaSource == CallMediaSource.ScreenAudio || mediaSource == CallMediaSource.ScreenVideo) {
@@ -720,7 +720,7 @@ const processCommand = (function () {
         }
     }
     async function startSendingCamera(call, camera) {
-        console.log("LALAL STARTING SENDING VIDEO");
+        console.log("Starting sending video...");
         const videos = getVideoElements();
         if (!videos)
             throw Error("no video elements");
@@ -736,13 +736,9 @@ const processCommand = (function () {
         try {
             localStream = await getLocalMediaStream(call.localMediaSources.mic, true, camera);
             for (const t of localStream.getVideoTracks()) {
-                console.log("LALAL TC", tc, pc.getTransceivers());
                 call.localStream.addTrack(t);
                 tc === null || tc === void 0 ? void 0 : tc.sender.replaceTrack(t);
                 localStream.removeTrack(t);
-                // when adding track a `sender` will be created on that track automatically
-                //pc.addTrack(t, call.localStream)
-                console.log("LALAL ADDED VIDEO TRACK " + t);
             }
             call.localMediaSources.camera = true;
             call.cameraTrackWasSetBefore = true;
@@ -754,11 +750,8 @@ const processCommand = (function () {
             desktopShowPermissionsAlert(CallMediaType.Video);
             return;
         }
-        const sender = tc === null || tc === void 0 ? void 0 : tc.sender;
-        console.log("LALAL SENDER " + sender + " " + (sender === null || sender === void 0 ? void 0 : sender.getParameters()));
         // Without doing it manually Firefox shows black screen but video can be played in Picture-in-Picture
         videos.local.play().catch((e) => console.log(e));
-        console.log("LALAL SENDING VIDEO");
     }
     toggleScreenShare = async function () {
         const call = activeCall;
@@ -786,15 +779,15 @@ const processCommand = (function () {
                 const screenVideoTrack = call.localScreenStream.getTracks().find((elem) => elem.kind == "video");
                 if (source == CallMediaSource.ScreenAudio && screenAudioTrack) {
                     elem.sender.replaceTrack(screenAudioTrack);
-                    console.log("LALAL REPLACED AUDIO SCREEN TRACK");
+                    console.log("Replaced audio screen track");
                 }
                 else if (source == CallMediaSource.ScreenVideo && screenVideoTrack) {
                     elem.sender.replaceTrack(screenVideoTrack);
                     screenVideoTrack.onended = () => {
-                        console.log("LALAL ENDED SCREEN TRACK");
+                        console.log("Ended screen video track");
                         toggleScreenShare();
                     };
-                    console.log("LALAL REPLACED VIDEO SCREEN TRACK");
+                    console.log("Replaced screen video track");
                 }
             });
             // videos.localScreen.pause()
@@ -863,11 +856,11 @@ const processCommand = (function () {
         if (sender) {
             if (tracks.length > 0)
                 for (const t of tracks) {
-                    console.log("LALAL MEDIA REPLACE TRACK");
+                    console.log("Replaced media track");
                     sender.replaceTrack(t);
                 }
             else {
-                console.log("LALAL MEDIA REPLACE TRACK2");
+                console.log("Media track set to null");
                 sender.replaceTrack(null);
             }
         }
@@ -916,7 +909,7 @@ const processCommand = (function () {
         }
     }
     function setupPeerTransform(operation, peer, worker, aesKey, key, media, transceiverMid) {
-        console.log("LALAL MEDIA " + media + " " + transceiverMid);
+        console.log("Setting peer transform to mid = " + transceiverMid);
         if (worker && "RTCRtpScriptTransform" in window) {
             console.log(`${operation} with worker & RTCRtpScriptTransform`);
             peer.transform = new RTCRtpScriptTransform(worker, { operation, aesKey, media, transceiverMid });
@@ -943,8 +936,8 @@ const processCommand = (function () {
             console.log(`no ${operation}`);
         }
     }
-    function setupOnMutedCallback(transceiver, track) {
-        console.log("LALAL SETUP CALLBACK", transceiver.mid);
+    function setupMuteUnmuteListener(transceiver, track) {
+        // console.log("Setting up mute/unmute listener in the call without encryption for mid = ", transceiver.mid)
         let statsInterval = 0;
         let inboundStatsId = "";
         let lastPacketsReceived = 0;
@@ -952,7 +945,6 @@ const processCommand = (function () {
         let mutedSeconds = 4;
         statsInterval = setInterval(async () => {
             var _a;
-            console.log("LALAL CHECKING STATS", transceiver.mid);
             const stats = await transceiver.receiver.getStats();
             if (!inboundStatsId) {
                 stats.forEach((elem) => {
@@ -989,7 +981,7 @@ const processCommand = (function () {
         if (!activeCall)
             return;
         const source = mediaSourceFromTransceiverMid(transceiverMid);
-        console.log("LALAL ON MUTE/UNMUTE", mute, source, transceiverMid);
+        console.log(`Mute/unmute ${source} track = ${mute} with mid = ${transceiverMid}`);
         const sources = activeCall.peerMediaSources;
         if (source == CallMediaSource.Mic && activeCall.peerMediaSources.mic == mute) {
             const resp = {
@@ -1284,7 +1276,6 @@ function callCryptoFunction() {
                     : new Uint8Array(0);
                 frame.data = concatN(initial, ciphertext, iv).buffer;
                 controller.enqueue(frame);
-                // console.log("LALAL ENCRYPT", frame.data.byteLength)
             }
             catch (e) {
                 console.log(`encryption error ${e}`);
@@ -1308,7 +1299,6 @@ function callCryptoFunction() {
                 }
             }, 3000);
         };
-        // let lastBytes: number[] = []
         return async (frame, controller) => {
             const data = new Uint8Array(frame.data);
             const n = initialPlainTextRequired[frame.type] || 1;
@@ -1322,24 +1312,6 @@ function callCryptoFunction() {
                 frame.data = concatN(initial, plaintext).buffer;
                 controller.enqueue(frame);
                 resetTimeout();
-                // Check by bytes if track was disabled (not set to null)
-                // lastBytes.push(frame.data.byteLength)
-                // const sliced = lastBytes.slice(-20, lastBytes.length)
-                // const average = sliced.reduce((prev, value) => value + prev, 0) / Math.max(1, sliced.length)
-                // if (lastBytes.length > 20) {
-                //   lastBytes = sliced
-                // }
-                // if (frame.type) {
-                //   console.log("LALAL DECRYPT", frame.type, frame.data.byteLength, average)
-                // }
-                // // frame.type is undefined for audio stream, but defined for video
-                // if (frame.type && wasMuted && average > 200) {
-                //   wasMuted = false
-                //   onMediaMuteUnmute(false)
-                // } else if (frame.type && !wasMuted && average < 200) {
-                //   wasMuted = true
-                //   onMediaMuteUnmute(true)
-                // }
             }
             catch (e) {
                 console.log(`decryption error ${e}`);

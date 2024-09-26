@@ -60,7 +60,7 @@ localOrPeerMediaSourcesChanged = (call) => {
     if (call.connection.iceConnectionState == "connected") {
         document.getElementById("audio-call-icon").style.display = className == CallMediaType.Audio ? "block" : "none";
     }
-    document.getElementById("media-sources").innerText = mediaSourcesStatus(call);
+    // document.getElementById("media-sources")!.innerText = mediaSourcesStatus(call)
     document.getElementById("manage-call").className = localMedia(call) == CallMediaType.Video ? CallMediaType.Video : "";
 };
 // override function in call.ts to adapt UI to enabled media sources
@@ -73,7 +73,7 @@ inactiveCallMediaSourcesChanged = (inactiveCallMediaSources) => {
     enableScreenIcon(screenVideo);
     const className = camera ? CallMediaType.Video : CallMediaType.Audio;
     document.getElementById("info-block").className = className;
-    document.getElementById("media-sources").innerText = inactiveCallMediaSourcesStatus(inactiveCallMediaSources);
+    // document.getElementById("media-sources")!.innerText = inactiveCallMediaSourcesStatus(inactiveCallMediaSources)
 };
 function enableMicIcon(enabled) {
     document.getElementById("toggle-mic").innerHTML = enabled

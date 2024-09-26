@@ -423,7 +423,6 @@ const processCommand = (function () {
         throw e
       }
     }
-    console.log("LALAL LOCAL STREAM", localStream.getTracks().length, JSON.stringify(inactiveCallMediaSources))
     const localScreenStream = new MediaStream()
     // Will become video when any video tracks will be added
     const iceCandidates = getIceCandidates(pc, config)
@@ -619,11 +618,11 @@ const processCommand = (function () {
             // enable using the same transceivers for sending media too, so total number of transceivers will be: audio, camera, screen audio, screen video
             pc.getTransceivers().forEach((elem) => (elem.direction = "sendrecv"))
             // setting media streams after remote description in order to have all transceivers ready (so ordering will be preserved)
-            console.log(
-              "LALAL TRANSCE",
-              pc.getTransceivers(),
-              pc.getTransceivers().map((elem) => "" + elem.mid + " " + elem.sender.track?.kind + " " + elem.sender.track?.label)
-            )
+            // console.log(
+            //   "Transceivers",
+            //   pc.getTransceivers(),
+            //   pc.getTransceivers().map((elem) => "" + elem.mid + " " + elem.sender.track?.kind + " " + elem.sender.track?.label)
+            // )
             adaptToOldVersion(pc.getTransceivers().length <= 2, activeCall)
             let answer = await pc.createAnswer()
             await pc.setLocalDescription(answer)
@@ -751,7 +750,6 @@ const processCommand = (function () {
     }
     const apiResp = {corrId, resp, command}
     sendMessageToNative(apiResp)
-    console.log("LALAL SEND TO NATIVE", JSON.stringify(apiResp))
     return apiResp
   }
 
@@ -818,8 +816,6 @@ const processCommand = (function () {
     const audioTracks = localStream.getAudioTracks()
     const videoTracks = localStream.getVideoTracks()
 
-    console.log("LALAL TRANS SIZE", transceivers.length)
-
     if (incomingCall) {
       // incoming call, no transceivers yet. But they should be added in order: mic, camera, screen audio, screen video
       // mid = 0
@@ -857,8 +853,6 @@ const processCommand = (function () {
         }
       }
     }
-
-    console.log("LALAL TRANS AFTER SIZE", pc.getTransceivers().length)
 
     // src can be set to notConnectedCall.localStream which is the same as call.localStream
     if (!videos.local.srcObject) {
@@ -918,7 +912,7 @@ const processCommand = (function () {
     const pc = call.connection
     pc.ontrack = (event) => {
       const track = event.track
-      console.log("LALAL ON TRACK ", event)
+      //console.log("On track", event)
       try {
         if (call.aesKey && call.key) {
           console.log("set up decryption for receiving")
@@ -932,7 +926,7 @@ const processCommand = (function () {
             event.transceiver.mid
           )
         } else {
-          setupOnMutedCallback(event.transceiver, track)
+          setupMuteUnmuteListener(event.transceiver, track)
         }
 
         const mediaSource = mediaSourceFromTransceiverMid(event.transceiver.mid)
@@ -993,7 +987,7 @@ const processCommand = (function () {
   }
 
   async function startSendingCamera(call: Call, camera: VideoCamera): Promise<void> {
-    console.log("LALAL STARTING SENDING VIDEO")
+    console.log("Starting sending video...")
     const videos = getVideoElements()
     if (!videos) throw Error("no video elements")
     const pc = call.connection
@@ -1008,13 +1002,9 @@ const processCommand = (function () {
     try {
       localStream = await getLocalMediaStream(call.localMediaSources.mic, true, camera)
       for (const t of localStream.getVideoTracks()) {
-        console.log("LALAL TC", tc, pc.getTransceivers())
         call.localStream.addTrack(t)
         tc?.sender.replaceTrack(t)
         localStream.removeTrack(t)
-        // when adding track a `sender` will be created on that track automatically
-        //pc.addTrack(t, call.localStream)
-        console.log("LALAL ADDED VIDEO TRACK " + t)
       }
       call.localMediaSources.camera = true
       call.cameraTrackWasSetBefore = true
@@ -1026,12 +1016,8 @@ const processCommand = (function () {
       return
     }
 
-    const sender = tc?.sender
-    console.log("LALAL SENDER " + sender + " " + sender?.getParameters())
-
     // Without doing it manually Firefox shows black screen but video can be played in Picture-in-Picture
     videos.local.play().catch((e) => console.log(e))
-    console.log("LALAL SENDING VIDEO")
   }
 
   toggleScreenShare = async function () {
@@ -1059,14 +1045,14 @@ const processCommand = (function () {
         const screenVideoTrack = call.localScreenStream.getTracks().find((elem) => elem.kind == "video")
         if (source == CallMediaSource.ScreenAudio && screenAudioTrack) {
           elem.sender.replaceTrack(screenAudioTrack)
-          console.log("LALAL REPLACED AUDIO SCREEN TRACK")
+          console.log("Replaced audio screen track")
         } else if (source == CallMediaSource.ScreenVideo && screenVideoTrack) {
           elem.sender.replaceTrack(screenVideoTrack)
           screenVideoTrack.onended = () => {
-            console.log("LALAL ENDED SCREEN TRACK")
+            console.log("Ended screen video track")
             toggleScreenShare()
           }
-          console.log("LALAL REPLACED VIDEO SCREEN TRACK")
+          console.log("Replaced screen video track")
         }
       })
       // videos.localScreen.pause()
@@ -1141,11 +1127,11 @@ const processCommand = (function () {
     if (sender) {
       if (tracks.length > 0)
         for (const t of tracks) {
-          console.log("LALAL MEDIA REPLACE TRACK")
+          console.log("Replaced media track")
           sender.replaceTrack(t)
         }
       else {
-        console.log("LALAL MEDIA REPLACE TRACK2")
+        console.log("Media track set to null")
         sender.replaceTrack(null)
       }
     }
@@ -1209,7 +1195,7 @@ const processCommand = (function () {
     media: CallMediaType,
     transceiverMid: string | null
   ) {
-    console.log("LALAL MEDIA " + media + " " + transceiverMid)
+    console.log("Setting peer transform to mid = " + transceiverMid)
     if (worker && "RTCRtpScriptTransform" in window) {
       console.log(`${operation} with worker & RTCRtpScriptTransform`)
       peer.transform = new RTCRtpScriptTransform(worker, {operation, aesKey, media, transceiverMid})
@@ -1234,15 +1220,14 @@ const processCommand = (function () {
     }
   }
 
-  function setupOnMutedCallback(transceiver: RTCRtpTransceiver, track: MediaStreamTrack) {
-    console.log("LALAL SETUP CALLBACK", transceiver.mid)
+  function setupMuteUnmuteListener(transceiver: RTCRtpTransceiver, track: MediaStreamTrack) {
+    // console.log("Setting up mute/unmute listener in the call without encryption for mid = ", transceiver.mid)
     let statsInterval: number = 0
     let inboundStatsId = ""
     let lastPacketsReceived = 0
     // muted initially
     let mutedSeconds = 4
     statsInterval = setInterval(async () => {
-      console.log("LALAL CHECKING STATS", transceiver.mid)
       const stats: RTCStatsReport = await transceiver.receiver.getStats()
       if (!inboundStatsId) {
         stats.forEach((elem) => {
@@ -1278,7 +1263,7 @@ const processCommand = (function () {
     if (!activeCall) return
 
     const source = mediaSourceFromTransceiverMid(transceiverMid)
-    console.log("LALAL ON MUTE/UNMUTE", mute, source, transceiverMid)
+    console.log(`Mute/unmute ${source} track = ${mute} with mid = ${transceiverMid}`)
     const sources = activeCall.peerMediaSources
     if (source == CallMediaSource.Mic && activeCall.peerMediaSources.mic == mute) {
       const resp: WRPeerMedia = {
@@ -1602,7 +1587,6 @@ function callCryptoFunction(): CallCrypto {
           : new Uint8Array(0)
         frame.data = concatN(initial, ciphertext, iv).buffer
         controller.enqueue(frame)
-        // console.log("LALAL ENCRYPT", frame.data.byteLength)
       } catch (e) {
         console.log(`encryption error ${e}`)
         throw e
@@ -1629,7 +1613,6 @@ function callCryptoFunction(): CallCrypto {
         }
       }, 3000)
     }
-    // let lastBytes: number[] = []
     return async (frame, controller) => {
       const data = new Uint8Array(frame.data)
       const n = initialPlainTextRequired[frame.type] || 1
@@ -1644,25 +1627,6 @@ function callCryptoFunction(): CallCrypto {
         controller.enqueue(frame)
 
         resetTimeout()
-
-        // Check by bytes if track was disabled (not set to null)
-        // lastBytes.push(frame.data.byteLength)
-        // const sliced = lastBytes.slice(-20, lastBytes.length)
-        // const average = sliced.reduce((prev, value) => value + prev, 0) / Math.max(1, sliced.length)
-        // if (lastBytes.length > 20) {
-        //   lastBytes = sliced
-        // }
-        // if (frame.type) {
-        //   console.log("LALAL DECRYPT", frame.type, frame.data.byteLength, average)
-        // }
-        // // frame.type is undefined for audio stream, but defined for video
-        // if (frame.type && wasMuted && average > 200) {
-        //   wasMuted = false
-        //   onMediaMuteUnmute(false)
-        // } else if (frame.type && !wasMuted && average < 200) {
-        //   wasMuted = true
-        //   onMediaMuteUnmute(true)
-        // }
       } catch (e) {
         console.log(`decryption error ${e}`)
         throw e

@@ -39,10 +39,8 @@ data class Call(
     else -> generalGetString(if (!localEncrypted) MR.strings.status_no_e2e_encryption else if (sharedKey == null) MR.strings.status_contact_has_no_e2e_encryption else MR.strings.status_e2e_encrypted)
   }
 
-  val hasMediaStreaming: Boolean get() = callState == CallState.OfferSent || callState == CallState.Negotiated || callState == CallState.Connected
-
   val hasVideo: Boolean
-    get() = peerMediaSources.hasVideo || localMediaSources.hasVideo
+    get() = localMediaSources.hasVideo || peerMediaSources.hasVideo
 }
 
 enum class CallState {
