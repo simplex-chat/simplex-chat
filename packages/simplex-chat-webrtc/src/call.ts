@@ -723,7 +723,6 @@ const processCommand = (function () {
             } else {
               resp = {type: "error", message: "camera: cannot replace media source"}
             }
-            resp = {type: "ok"}
           }
           break
         case "description":
@@ -753,6 +752,7 @@ const processCommand = (function () {
     }
     const apiResp = {corrId, resp, command}
     sendMessageToNative(apiResp)
+    console.log("LALAL SEND TO NATIVE", JSON.stringify(apiResp))
     return apiResp
   }
 
@@ -918,6 +918,7 @@ const processCommand = (function () {
     // Pull tracks from remote stream as they arrive add them to remoteStream video
     const pc = call.connection
     pc.ontrack = (event) => {
+      const track = event.track
       console.log("LALAL ON TRACK ", event)
       try {
         if (call.aesKey && call.key) {
@@ -931,33 +932,15 @@ const processCommand = (function () {
             event.receiver.track.kind == "video" ? CallMediaType.Video : CallMediaType.Audio,
             event.transceiver.mid
           )
+        } else {
+          setupOnMutedCallback(event.transceiver, track)
         }
 
-        if (event.streams.length > 0) {
-          for (const stream of event.streams) {
-            for (const track of stream.getTracks()) {
-              const mediaSource = mediaSourceFromTransceiverMid(event.transceiver.mid)
-              if (mediaSource == CallMediaSource.ScreenAudio || mediaSource == CallMediaSource.ScreenVideo) {
-                call.remoteScreenStream.addTrack(track)
-              } else {
-                call.remoteStream.addTrack(track)
-              }
-              if (!call.aesKey || !call.key) {
-                setupOnMutedCallback(event.transceiver.mid, track)
-              }
-            }
-          }
+        const mediaSource = mediaSourceFromTransceiverMid(event.transceiver.mid)
+        if (mediaSource == CallMediaSource.ScreenAudio || mediaSource == CallMediaSource.ScreenVideo) {
+          call.remoteScreenStream.addTrack(track)
         } else {
-          const track = event.track
-          const mediaSource = mediaSourceFromTransceiverMid(event.transceiver.mid)
-          if (mediaSource == CallMediaSource.ScreenAudio || mediaSource == CallMediaSource.ScreenVideo) {
-            call.remoteScreenStream.addTrack(track)
-          } else {
-            call.remoteStream.addTrack(track)
-          }
-          if (!call.aesKey || !call.key) {
-            setupOnMutedCallback(event.transceiver.mid, track)
-          }
+          call.remoteStream.addTrack(track)
         }
         console.log(`ontrack success`)
       } catch (e) {
@@ -1113,6 +1096,13 @@ const processCommand = (function () {
     const videos = getVideoElements()
     if (!videos) throw Error("no video elements")
     const pc = call.connection
+    // disabling track first, then asking for a new one.
+    // doing it vice versa gives an error like "too many cameras were open" on some Android devices or webViews
+    // which means the second camera will never be opened
+    for (const t of source == CallMediaSource.Mic ? call.localStream.getAudioTracks() : call.localStream.getVideoTracks()) {
+      t.stop()
+      call.localStream.removeTrack(t)
+    }
     let localStream: MediaStream
     try {
       localStream = await getLocalMediaStream(
@@ -1125,10 +1115,6 @@ const processCommand = (function () {
       desktopShowPermissionsAlert(source == CallMediaSource.Mic ? CallMediaType.Audio : CallMediaType.Video)
       return false
     }
-    for (const t of source == CallMediaSource.Mic ? call.localStream.getAudioTracks() : call.localStream.getVideoTracks()) {
-      t.stop()
-      call.localStream.removeTrack(t)
-    }
     for (const t of localStream.getTracks()) {
       call.localStream.addTrack(t)
       localStream.removeTrack(t)
@@ -1137,7 +1123,6 @@ const processCommand = (function () {
 
     const audioTracks = call.localStream.getAudioTracks()
     const videoTracks = call.localStream.getVideoTracks()
-    console.log("LALAL MEDIA " + audioTracks.length + " " + videoTracks.length)
 
     replaceTracks(pc, CallMediaSource.Mic, audioTracks)
     replaceTracks(pc, CallMediaSource.Camera, videoTracks)
@@ -1250,27 +1235,41 @@ const processCommand = (function () {
     }
   }
 
-  function setupOnMutedCallback(transceiverMid: string | null, track: MediaStreamTrack) {
-    let wasMuted = true
-    let timeout: number = 0
-    const muteAfterTimeout = () => {
-      clearTimeout(timeout)
-      timeout = setTimeout(() => {
-        if (!wasMuted) {
-          wasMuted = true
-          onMediaMuteUnmute(transceiverMid, wasMuted)
+  function setupOnMutedCallback(transceiver: RTCRtpTransceiver, track: MediaStreamTrack) {
+    console.log("LALAL SETUP CALLBACK", transceiver.mid)
+    let statsInterval: number = 0
+    let inboundStatsId = ""
+    let lastPacketsReceived = 0
+    // muted initially
+    let mutedSeconds = 4
+    statsInterval = setInterval(async () => {
+      console.log("LALAL CHECKING STATS", transceiver.mid)
+      const stats: RTCStatsReport = await transceiver.receiver.getStats()
+      if (!inboundStatsId) {
+        stats.forEach((elem) => {
+          if (elem.type == "inbound-rtp") {
+            inboundStatsId = elem.id
+          }
+        })
+      }
+      if (inboundStatsId) {
+        const packets = (stats as any).get(inboundStatsId)?.packetsReceived
+        if (packets == lastPacketsReceived) {
+          mutedSeconds++
+          if (mutedSeconds == 3) {
+            onMediaMuteUnmute(transceiver.mid, true)
+          }
+        } else {
+          if (mutedSeconds >= 3) {
+            onMediaMuteUnmute(transceiver.mid, false)
+          }
+          lastPacketsReceived = packets
+          mutedSeconds = 0
         }
-      }, 2000)
-    }
-    track.onmute = (_) => {
-      console.log("LALAL MUTE", transceiverMid)
-      muteAfterTimeout()
-    }
-    track.onunmute = (_) => {
-      console.log("LALAL UNMUTE", transceiverMid)
-      clearTimeout(timeout)
-      wasMuted = false
-      onMediaMuteUnmute(transceiverMid, false)
+      }
+    }, 1000)
+    track.onended = (_) => {
+      clearInterval(statsInterval)
     }
   }
 

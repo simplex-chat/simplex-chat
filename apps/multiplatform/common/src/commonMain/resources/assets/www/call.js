@@ -471,7 +471,6 @@ const processCommand = (function () {
                         else {
                             resp = { type: "error", message: "camera: cannot replace media source" };
                         }
-                        resp = { type: "ok" };
                     }
                     break;
                 case "description":
@@ -503,6 +502,7 @@ const processCommand = (function () {
         }
         const apiResp = { corrId, resp, command };
         sendMessageToNative(apiResp);
+        console.log("LALAL SEND TO NATIVE", JSON.stringify(apiResp));
         return apiResp;
     }
     function endCall() {
@@ -652,40 +652,22 @@ const processCommand = (function () {
         // Pull tracks from remote stream as they arrive add them to remoteStream video
         const pc = call.connection;
         pc.ontrack = (event) => {
+            const track = event.track;
             console.log("LALAL ON TRACK ", event);
             try {
                 if (call.aesKey && call.key) {
                     console.log("set up decryption for receiving");
                     setupPeerTransform(TransformOperation.Decrypt, event.receiver, call.worker, call.aesKey, call.key, event.receiver.track.kind == "video" ? CallMediaType.Video : CallMediaType.Audio, event.transceiver.mid);
                 }
-                if (event.streams.length > 0) {
-                    for (const stream of event.streams) {
-                        for (const track of stream.getTracks()) {
-                            const mediaSource = mediaSourceFromTransceiverMid(event.transceiver.mid);
-                            if (mediaSource == CallMediaSource.ScreenAudio || mediaSource == CallMediaSource.ScreenVideo) {
-                                call.remoteScreenStream.addTrack(track);
-                            }
-                            else {
-                                call.remoteStream.addTrack(track);
-                            }
-                            if (!call.aesKey || !call.key) {
-                                setupOnMutedCallback(event.transceiver.mid, track);
-                            }
-                        }
-                    }
+                else {
+                    setupOnMutedCallback(event.transceiver, track);
+                }
+                const mediaSource = mediaSourceFromTransceiverMid(event.transceiver.mid);
+                if (mediaSource == CallMediaSource.ScreenAudio || mediaSource == CallMediaSource.ScreenVideo) {
+                    call.remoteScreenStream.addTrack(track);
                 }
                 else {
-                    const track = event.track;
-                    const mediaSource = mediaSourceFromTransceiverMid(event.transceiver.mid);
-                    if (mediaSource == CallMediaSource.ScreenAudio || mediaSource == CallMediaSource.ScreenVideo) {
-                        call.remoteScreenStream.addTrack(track);
-                    }
-                    else {
-                        call.remoteStream.addTrack(track);
-                    }
-                    if (!call.aesKey || !call.key) {
-                        setupOnMutedCallback(event.transceiver.mid, track);
-                    }
+                    call.remoteStream.addTrack(track);
                 }
                 console.log(`ontrack success`);
             }
@@ -843,6 +825,13 @@ const processCommand = (function () {
         if (!videos)
             throw Error("no video elements");
         const pc = call.connection;
+        // disabling track first, then asking for a new one.
+        // doing it vice versa gives an error like "too many cameras were open" on some Android devices or webViews
+        // which means the second camera will never be opened
+        for (const t of source == CallMediaSource.Mic ? call.localStream.getAudioTracks() : call.localStream.getVideoTracks()) {
+            t.stop();
+            call.localStream.removeTrack(t);
+        }
         let localStream;
         try {
             localStream = await getLocalMediaStream(source == CallMediaSource.Mic ? enable : false, source == CallMediaSource.Camera ? enable : false, camera);
@@ -852,10 +841,6 @@ const processCommand = (function () {
             desktopShowPermissionsAlert(source == CallMediaSource.Mic ? CallMediaType.Audio : CallMediaType.Video);
             return false;
         }
-        for (const t of source == CallMediaSource.Mic ? call.localStream.getAudioTracks() : call.localStream.getVideoTracks()) {
-            t.stop();
-            call.localStream.removeTrack(t);
-        }
         for (const t of localStream.getTracks()) {
             call.localStream.addTrack(t);
             localStream.removeTrack(t);
@@ -863,7 +848,6 @@ const processCommand = (function () {
         call.localCamera = camera;
         const audioTracks = call.localStream.getAudioTracks();
         const videoTracks = call.localStream.getVideoTracks();
-        console.log("LALAL MEDIA " + audioTracks.length + " " + videoTracks.length);
         replaceTracks(pc, CallMediaSource.Mic, audioTracks);
         replaceTracks(pc, CallMediaSource.Camera, videoTracks);
         videos.local.play().catch((e) => console.log("replace media: local play", JSON.stringify(e)));
@@ -959,27 +943,43 @@ const processCommand = (function () {
             console.log(`no ${operation}`);
         }
     }
-    function setupOnMutedCallback(transceiverMid, track) {
-        let wasMuted = true;
-        let timeout = 0;
-        const muteAfterTimeout = () => {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => {
-                if (!wasMuted) {
-                    wasMuted = true;
-                    onMediaMuteUnmute(transceiverMid, wasMuted);
+    function setupOnMutedCallback(transceiver, track) {
+        console.log("LALAL SETUP CALLBACK", transceiver.mid);
+        let statsInterval = 0;
+        let inboundStatsId = "";
+        let lastPacketsReceived = 0;
+        // muted initially
+        let mutedSeconds = 4;
+        statsInterval = setInterval(async () => {
+            var _a;
+            console.log("LALAL CHECKING STATS", transceiver.mid);
+            const stats = await transceiver.receiver.getStats();
+            if (!inboundStatsId) {
+                stats.forEach((elem) => {
+                    if (elem.type == "inbound-rtp") {
+                        inboundStatsId = elem.id;
+                    }
+                });
+            }
+            if (inboundStatsId) {
+                const packets = (_a = stats.get(inboundStatsId)) === null || _a === void 0 ? void 0 : _a.packetsReceived;
+                if (packets == lastPacketsReceived) {
+                    mutedSeconds++;
+                    if (mutedSeconds == 3) {
+                        onMediaMuteUnmute(transceiver.mid, true);
+                    }
                 }
-            }, 2000);
-        };
-        track.onmute = (_) => {
-            console.log("LALAL MUTE", transceiverMid);
-            muteAfterTimeout();
-        };
-        track.onunmute = (_) => {
-            console.log("LALAL UNMUTE", transceiverMid);
-            clearTimeout(timeout);
-            wasMuted = false;
-            onMediaMuteUnmute(transceiverMid, false);
+                else {
+                    if (mutedSeconds >= 3) {
+                        onMediaMuteUnmute(transceiver.mid, false);
+                    }
+                    lastPacketsReceived = packets;
+                    mutedSeconds = 0;
+                }
+            }
+        }, 1000);
+        track.onended = (_) => {
+            clearInterval(statsInterval);
         };
     }
     function onMediaMuteUnmute(transceiverMid, mute) {

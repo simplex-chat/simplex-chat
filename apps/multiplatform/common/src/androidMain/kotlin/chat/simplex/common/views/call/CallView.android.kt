@@ -226,6 +226,11 @@ actual fun ActiveCallView() {
       ActiveCallOverlay(call, chatModel, callAudioDeviceManager)
     }
   }
+  KeyChangeEffect(call?.hasVideo) {
+    if (call != null) {
+      callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.hasVideo, true)
+    }
+  }
   val context = LocalContext.current
   DisposableEffect(Unit) {
     val activity = context as? Activity ?: return@DisposableEffect onDispose {}
