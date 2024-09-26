@@ -2106,4 +2106,5 @@
     <string name="select_chat_profile">Selecciona perfil de chat</string>
     <string name="new_chat_share_profile">Comparte perfil</string>
     <string name="switching_profile_error_message">Tu conexión ha sido trasladada a %s pero ha ocurrido un error inesperado al redirigirte al perfil.</string>
+    <string name="icon_descr_sound_muted">Sonido silenciado</string>
 </resources>
