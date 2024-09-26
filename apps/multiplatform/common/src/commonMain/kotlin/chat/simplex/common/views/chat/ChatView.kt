@@ -1084,9 +1084,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
           val sent = cItem.chatDir.sent
 
           @Composable
-          fun ChatItemBox(
-            modifier: Modifier = Modifier,
-            content: @Composable () -> Unit = { }) {
+          fun ChatItemBox(modifier: Modifier = Modifier, content: @Composable () -> Unit = { }) {
             Box(
               modifier = modifier.padding(
                 bottom = if (itemSeparation.largeGap) {
