@@ -127,7 +127,7 @@ fun reserveSpaceForMeta(
 ): String {
   val iconSpace = "    "
   val whiteSpace = " "
-  var res = iconSpace
+  var res = if (showTimestamp) "" else iconSpace
   var space: String? = null
 
   fun appendSpace() {
