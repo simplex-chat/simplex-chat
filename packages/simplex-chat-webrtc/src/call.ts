@@ -629,7 +629,6 @@ const processCommand = (function () {
             addIceCandidates(pc, remoteIceCandidates)
             addIceCandidates(pc, afterCallInitializedCandidates)
             afterCallInitializedCandidates = []
-            startPlayingRemoteStreamsInSafari()
             // same as command for caller to use
             resp = {
               type: "answer",
@@ -656,7 +655,6 @@ const processCommand = (function () {
             addIceCandidates(pc, remoteIceCandidates)
             addIceCandidates(pc, afterCallInitializedCandidates)
             afterCallInitializedCandidates = []
-            startPlayingRemoteStreamsInSafari()
             resp = {type: "ok"}
           }
           break
@@ -942,15 +940,6 @@ const processCommand = (function () {
         console.log(`ontrack error: ${(e as Error).message}`)
       }
     }
-  }
-
-  async function startPlayingRemoteStreamsInSafari() {
-    const videos = getVideoElements()
-    if (!(window as any).safari || !videos) return
-
-    // For example, exception can be: NotAllowedError: play() failed because the user didn't interact with the document first
-    await videos.remote.play().catch((e) => console.log(e))
-    await videos.remoteScreen.play().catch((e) => console.log(e))
   }
 
   function setupCodecPreferences(call: Call) {
