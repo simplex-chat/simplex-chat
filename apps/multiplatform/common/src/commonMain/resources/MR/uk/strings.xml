@@ -2103,4 +2103,5 @@
     <string name="compose_forward_messages_n">Пересилаю %1$s повідомлень</string>
     <string name="forward_files_messages_deleted_after_selection_desc">Повідомлення були видалені після того, як ви їх вибрали.</string>
     <string name="error_forwarding_messages">Помилка при пересиланні повідомлень</string>
+    <string name="icon_descr_sound_muted">Звук вимкнено</string>
 </resources>
