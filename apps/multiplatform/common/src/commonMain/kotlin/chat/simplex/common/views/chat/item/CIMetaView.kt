@@ -125,8 +125,8 @@ fun reserveSpaceForMeta(
   showViaProxy: Boolean = false,
   showTimestamp: Boolean
 ): String {
-  val iconSpace = "    "
-  val whiteSpace = " "
+  val iconSpace = "\u00A0\u00A0\u00A0\u00A0"
+  val whiteSpace = "\u00A0"
   var res = if (showTimestamp) "" else iconSpace
   var space: String? = null
 
