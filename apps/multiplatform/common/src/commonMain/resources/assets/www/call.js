@@ -530,10 +530,10 @@ const processCommand = (function () {
         if (!videos)
             throw Error("no video elements");
         await setupEncryptionWorker(call);
+        setupRemoteStream(call);
         videos.localScreen.srcObject = call.localScreenStream;
         videos.remote.srcObject = call.remoteStream;
         videos.remoteScreen.srcObject = call.remoteScreenStream;
-        setupRemoteStream(call);
         // videos.localScreen.play()
         // For example, exception can be: NotAllowedError: play() failed because the user didn't interact with the document first
         videos.remote.play().catch((e) => console.log(e));
@@ -661,14 +661,11 @@ const processCommand = (function () {
                 }
                 setupMuteUnmuteListener(event.transceiver, track);
                 const mediaSource = mediaSourceFromTransceiverMid(event.transceiver.mid);
-                const videos = getVideoElements();
                 if (mediaSource == CallMediaSource.ScreenAudio || mediaSource == CallMediaSource.ScreenVideo) {
                     call.remoteScreenStream.addTrack(track);
-                    videos === null || videos === void 0 ? void 0 : videos.remoteScreen.play().catch((e) => console.log(e));
                 }
                 else {
                     call.remoteStream.addTrack(track);
-                    videos === null || videos === void 0 ? void 0 : videos.remote.play().catch((e) => console.log(e));
                 }
                 console.log(`ontrack success`);
             }
