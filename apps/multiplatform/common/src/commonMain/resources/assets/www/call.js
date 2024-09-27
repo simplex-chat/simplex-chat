@@ -62,6 +62,14 @@ const allowSendScreenAudio = false;
 // When one side of a call sends candidates tot fast (until local & remote descriptions are set), that candidates
 // will be stored here and then set when the call will be ready to process them
 let afterCallInitializedCandidates = [];
+let numberOfTimes = 0;
+setInterval(() => {
+    const active = navigator.userActivation.isActive;
+    if (active) {
+        numberOfTimes++;
+        console.log("LALAL ACTIVATED", numberOfTimes);
+    }
+}, 10);
 const processCommand = (function () {
     const defaultIceServers = [
         { urls: ["stuns:stun.simplex.im:443"] },
@@ -266,6 +274,7 @@ const processCommand = (function () {
     async function processCommand(body) {
         var _a;
         const { corrId, command } = body;
+        const videos = getVideoElements();
         const pc = activeCall === null || activeCall === void 0 ? void 0 : activeCall.connection;
         let resp;
         try {
@@ -276,17 +285,18 @@ const processCommand = (function () {
                         endCall();
                     let localStream = null;
                     try {
+                        console.log("LALAL ASKING STREAM");
                         localStream = await getLocalMediaStream(true, command.media == CallMediaType.Video && !isDesktop, VideoCamera.User);
-                        const videos = getVideoElements();
-                        if (videos) {
-                            videos.local.srcObject = localStream;
-                            videos.local.play().catch((e) => console.log(e));
-                        }
+                        console.log("LALAL GOT STREAM", localStream, localStream.getTracks().length);
                     }
                     catch (e) {
+                        console.log("Error getting stream", e);
                         localStream = new MediaStream();
                         // Will be shown on the next stage of call estabilishing, can work without any streams
                         //desktopShowPermissionsAlert(command.media)
+                    }
+                    if (videos) {
+                        videos.local.srcObject = localStream;
                     }
                     // Specify defaults that can be changed via UI before call estabilished. It's only used before activeCall instance appears
                     inactiveCallMediaSources.mic = localStream != null && localStream.getAudioTracks().length > 0;
@@ -373,7 +383,6 @@ const processCommand = (function () {
                         addIceCandidates(pc, remoteIceCandidates);
                         addIceCandidates(pc, afterCallInitializedCandidates);
                         afterCallInitializedCandidates = [];
-                        startPlayingRemoteStreamsInSafari();
                         // same as command for caller to use
                         resp = {
                             type: "answer",
@@ -402,7 +411,6 @@ const processCommand = (function () {
                         addIceCandidates(pc, remoteIceCandidates);
                         addIceCandidates(pc, afterCallInitializedCandidates);
                         afterCallInitializedCandidates = [];
-                        startPlayingRemoteStreamsInSafari();
                         resp = { type: "ok" };
                     }
                     break;
@@ -532,7 +540,6 @@ const processCommand = (function () {
         if (!videos)
             throw Error("no video elements");
         await setupEncryptionWorker(call);
-        videos.localScreen.srcObject = call.localScreenStream;
         videos.remote.srcObject = call.remoteStream;
         videos.remoteScreen.srcObject = call.remoteScreenStream;
         setupRemoteStream(call);
@@ -613,7 +620,7 @@ const processCommand = (function () {
             videos.local.srcObject = call.localStream;
         }
         // Without doing it manually Firefox shows black screen but video can be played in Picture-in-Picture
-        videos.local.play().catch((e) => console.log(e));
+        // videos.local.play().catch((e) => console.log(e))
         setupLocalVideoRatio(videos.local);
     }
     function setupLocalVideoRatio(local) {
@@ -678,14 +685,6 @@ const processCommand = (function () {
                 console.log(`ontrack error: ${e.message}`);
             }
         };
-    }
-    async function startPlayingRemoteStreamsInSafari() {
-        const videos = getVideoElements();
-        if (!window.safari || !videos)
-            return;
-        // For example, exception can be: NotAllowedError: play() failed because the user didn't interact with the document first
-        await videos.remote.play().catch((e) => console.log(e));
-        await videos.remoteScreen.play().catch((e) => console.log(e));
     }
     function setupCodecPreferences(call) {
         // We assume VP8 encoding in the decode/encode stages to get the initial
@@ -762,7 +761,7 @@ const processCommand = (function () {
             return;
         }
         // Without doing it manually Firefox shows black screen but video can be played in Picture-in-Picture
-        videos.local.play().catch((e) => console.log(e));
+        // videos.local.play().catch((e) => console.log(e))
     }
     toggleScreenShare = async function () {
         const call = activeCall;
@@ -803,7 +802,7 @@ const processCommand = (function () {
             });
             // videos.localScreen.pause()
             // videos.localScreen.srcObject = call.localScreenStream
-            videos.localScreen.play().catch((e) => console.log(e));
+            // videos.localScreen.play().catch((e) => console.log(e))
         }
         else {
             pc.getTransceivers().forEach((elem) => {
@@ -854,7 +853,7 @@ const processCommand = (function () {
         const videoTracks = call.localStream.getVideoTracks();
         replaceTracks(pc, CallMediaSource.Mic, audioTracks);
         replaceTracks(pc, CallMediaSource.Camera, videoTracks);
-        videos.local.play().catch((e) => console.log("replace media: local play", JSON.stringify(e)));
+        // videos.local.play().catch((e) => console.log("replace media: local play", JSON.stringify(e)))
         call.localMediaSources.mic = call.localStream.getAudioTracks().length > 0;
         call.localMediaSources.camera = call.localStream.getVideoTracks().length > 0;
         localOrPeerMediaSourcesChanged(call);
@@ -904,7 +903,7 @@ const processCommand = (function () {
         if (!videos.local.srcObject && localStream.getTracks().length > 0) {
             videos.local.srcObject = localStream;
         }
-        videos.local.play().catch((e) => console.log(e));
+        // videos.local.play().catch((e) => console.log(e))
     }
     function mediaSourceFromTransceiverMid(mid) {
         switch (mid) {
