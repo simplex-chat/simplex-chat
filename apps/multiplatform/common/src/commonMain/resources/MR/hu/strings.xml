@@ -2099,4 +2099,5 @@
     <string name="forward_files_messages_deleted_after_selection_desc">Az üzeneteket törölték miután kiválasztotta őket.</string>
     <string name="compose_save_messages_n">%1$s üzenet mentése</string>
     <string name="error_forwarding_messages">Hiba az üzenetek továbbításakor</string>
+    <string name="icon_descr_sound_muted">Hang elnémítva</string>
 </resources>
