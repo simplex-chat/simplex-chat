@@ -22,7 +22,7 @@ struct UserPicker: View {
     // Inset grouped list dimensions
     private let imageSize: CGFloat = 44
     private let rowPadding: CGFloat = 16
-    private let rowVerticalPadding: CGFloat = 10
+    private let rowVerticalPadding: CGFloat = 11
     private let sectionSpacing: CGFloat = 35
     private var sectionHorizontalPadding: CGFloat { frameWidth > 375 ? 20 : 16 }
     private let sectionShape = RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -208,7 +208,7 @@ struct ListRow: ViewModifier {
                 action: #selector(touchView.longPress(gesture:))
             )
             gesture.delegate = touchView
-            gesture.minimumPressDuration = 0.05
+            gesture.minimumPressDuration = 0
             touchView.addGestureRecognizer(gesture)
             return touchView
         }
@@ -219,17 +219,25 @@ struct ListRow: ViewModifier {
 
         class TouchView: UIView, UIGestureRecognizerDelegate {
             var representer: TouchOverlay?
-            var startLocation: CGPoint?
+            private var startLocation: CGPoint?
+            private var task: Task<Void, Never>?
 
             @objc
             func longPress(gesture: UILongPressGestureRecognizer) {
                 switch gesture.state {
                 case .began:
                     startLocation = gesture.location(in: nil)
-                    representer?.touchDown = true
+                    task = Task {
+                        do {
+                            try await Task.sleep(nanoseconds: 100_000000)
+                            await MainActor.run { representer?.touchDown = true }
+                        } catch { }
+                    }
                 case .ended:
+                    task?.cancel()
                     if hitTest(gesture.location(in: self), with: nil) == self {
-                        withAnimation(.easeOut(duration: 0.2)) { representer?.touchDown = false }
+                        representer?.touchDown = true
+                        withAnimation(.easeIn(duration: 0.05)) { representer?.touchDown = false }
                         representer?.action()
                     } else {
                         representer?.touchDown = false
@@ -241,8 +249,8 @@ struct ListRow: ViewModifier {
                         let dy = location.y - startLocation.y
                         if sqrt(pow(dx, 2) + pow(dy, 2)) > 10 { gesture.state = .failed }
                     }
-
                 case .cancelled, .failed:
+                    task?.cancel()
                     representer?.touchDown = false
                 default: break
                 }

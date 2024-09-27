@@ -8,7 +8,7 @@
 
 import SwiftUI
 
-private let sheetAnimationDuration: Double = 0.3
+private let sheetAnimationDuration: Double = 0.25
 
 struct Sheet<SheetContent: View>: ViewModifier {
     @Binding var isPresented: Bool
