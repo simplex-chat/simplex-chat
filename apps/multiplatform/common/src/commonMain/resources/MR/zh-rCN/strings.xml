@@ -2104,4 +2104,5 @@
     <string name="forward_multiple">转发消息…</string>
     <string name="compose_forward_messages_n">转发 %1$s 条消息</string>
     <string name="compose_save_messages_n">保存 %1$s 条消息</string>
+    <string name="icon_descr_sound_muted">已静音</string>
 </resources>
