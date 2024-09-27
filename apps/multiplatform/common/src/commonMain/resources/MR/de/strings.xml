@@ -2187,4 +2187,5 @@
     <string name="compose_forward_messages_n">Es wird/werden %1$s Nachricht(en) weitergeleitet</string>
     <string name="forward_multiple">Nachrichten werden weitergeleitet…</string>
     <string name="compose_save_messages_n">Es wird/werden %1$s Nachricht(en) gesichert</string>
+    <string name="icon_descr_sound_muted">Ton stummgeschaltet</string>
 </resources>
