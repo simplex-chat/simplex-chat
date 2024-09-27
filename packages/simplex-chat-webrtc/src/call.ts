@@ -293,16 +293,6 @@ const allowSendScreenAudio = false
 // will be stored here and then set when the call will be ready to process them
 let afterCallInitializedCandidates: RTCIceCandidateInit[] = []
 
-let numberOfTimes = 0
-
-setInterval(() => {
-  const active = (navigator as any).userActivation.isActive
-  if (active) {
-    numberOfTimes++
-    console.log("LALAL ACTIVATED", numberOfTimes)
-  }
-}, 10)
-
 const processCommand = (function () {
   type RTCRtpSenderWithEncryption = RTCRtpSender & {
     createEncodedStreams: () => TransformStream
@@ -532,7 +522,6 @@ const processCommand = (function () {
 
   async function processCommand(body: WVAPICall): Promise<WVApiMessage> {
     const {corrId, command} = body
-    const videos = getVideoElements()
     const pc = activeCall?.connection
     let resp: WCallResponse
     try {
@@ -543,17 +532,16 @@ const processCommand = (function () {
 
           let localStream: MediaStream | null = null
           try {
-            console.log("LALAL ASKING STREAM")
             localStream = await getLocalMediaStream(true, command.media == CallMediaType.Video && !isDesktop, VideoCamera.User)
-            console.log("LALAL GOT STREAM", localStream, localStream.getTracks().length)
+            const videos = getVideoElements()
+            if (videos) {
+              videos.local.srcObject = localStream
+              videos.local.play().catch((e) => console.log(e))
+            }
           } catch (e) {
-            console.log("Error getting stream", e)
             localStream = new MediaStream()
             // Will be shown on the next stage of call estabilishing, can work without any streams
             //desktopShowPermissionsAlert(command.media)
-          }
-          if (videos) {
-            videos.local.srcObject = localStream
           }
           // Specify defaults that can be changed via UI before call estabilished. It's only used before activeCall instance appears
           inactiveCallMediaSources.mic = localStream != null && localStream.getAudioTracks().length > 0
@@ -641,6 +629,7 @@ const processCommand = (function () {
             addIceCandidates(pc, remoteIceCandidates)
             addIceCandidates(pc, afterCallInitializedCandidates)
             afterCallInitializedCandidates = []
+            startPlayingRemoteStreamsInSafari()
             // same as command for caller to use
             resp = {
               type: "answer",
@@ -667,6 +656,7 @@ const processCommand = (function () {
             addIceCandidates(pc, remoteIceCandidates)
             addIceCandidates(pc, afterCallInitializedCandidates)
             afterCallInitializedCandidates = []
+            startPlayingRemoteStreamsInSafari()
             resp = {type: "ok"}
           }
           break
@@ -788,6 +778,7 @@ const processCommand = (function () {
     if (!videos) throw Error("no video elements")
     await setupEncryptionWorker(call)
 
+    videos.localScreen.srcObject = call.localScreenStream
     videos.remote.srcObject = call.remoteStream
     videos.remoteScreen.srcObject = call.remoteScreenStream
     setupRemoteStream(call)
@@ -870,7 +861,7 @@ const processCommand = (function () {
       videos.local.srcObject = call.localStream
     }
     // Without doing it manually Firefox shows black screen but video can be played in Picture-in-Picture
-    // videos.local.play().catch((e) => console.log(e))
+    videos.local.play().catch((e) => console.log(e))
     setupLocalVideoRatio(videos.local)
   }
 
@@ -953,6 +944,15 @@ const processCommand = (function () {
     }
   }
 
+  async function startPlayingRemoteStreamsInSafari() {
+    const videos = getVideoElements()
+    if (!(window as any).safari || !videos) return
+
+    // For example, exception can be: NotAllowedError: play() failed because the user didn't interact with the document first
+    await videos.remote.play().catch((e) => console.log(e))
+    await videos.remoteScreen.play().catch((e) => console.log(e))
+  }
+
   function setupCodecPreferences(call: Call) {
     // We assume VP8 encoding in the decode/encode stages to get the initial
     // bytes to pass as plaintext so we enforce that here.
@@ -1028,7 +1028,7 @@ const processCommand = (function () {
     }
 
     // Without doing it manually Firefox shows black screen but video can be played in Picture-in-Picture
-    // videos.local.play().catch((e) => console.log(e))
+    videos.local.play().catch((e) => console.log(e))
   }
 
   toggleScreenShare = async function () {
@@ -1068,7 +1068,7 @@ const processCommand = (function () {
       })
       // videos.localScreen.pause()
       // videos.localScreen.srcObject = call.localScreenStream
-      // videos.localScreen.play().catch((e) => console.log(e))
+      videos.localScreen.play().catch((e) => console.log(e))
     } else {
       pc.getTransceivers().forEach((elem) => {
         const source = mediaSourceFromTransceiverMid(elem.mid)
@@ -1123,7 +1123,7 @@ const processCommand = (function () {
     replaceTracks(pc, CallMediaSource.Mic, audioTracks)
     replaceTracks(pc, CallMediaSource.Camera, videoTracks)
 
-    // videos.local.play().catch((e) => console.log("replace media: local play", JSON.stringify(e)))
+    videos.local.play().catch((e) => console.log("replace media: local play", JSON.stringify(e)))
 
     call.localMediaSources.mic = call.localStream.getAudioTracks().length > 0
     call.localMediaSources.camera = call.localStream.getVideoTracks().length > 0
@@ -1180,7 +1180,7 @@ const processCommand = (function () {
     if (!videos.local.srcObject && localStream.getTracks().length > 0) {
       videos.local.srcObject = localStream
     }
-    // videos.local.play().catch((e) => console.log(e))
+    videos.local.play().catch((e) => console.log(e))
   }
 
   function mediaSourceFromTransceiverMid(mid: string | null) {
