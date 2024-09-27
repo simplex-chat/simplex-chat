@@ -186,6 +186,7 @@ const processCommand = (function () {
             localStream,
             localScreenStream,
             remoteStream,
+            remoteTracks: new Map(),
             remoteScreenStream,
             peerMediaSources: {
                 mic: false,
@@ -548,14 +549,6 @@ const processCommand = (function () {
                 call.worker = new Worker(URL.createObjectURL(new Blob([workerCode], { type: "text/javascript" })));
                 call.worker.onerror = ({ error, filename, lineno, message }) => console.log({ error, filename, lineno, message });
                 // call.worker.onmessage = ({data}) => console.log(JSON.stringify({message: data}))
-                call.worker.onmessage = ({ data }) => {
-                    console.log(JSON.stringify({ message: data }));
-                    const transceiverMid = data.transceiverMid;
-                    const mute = data.mute;
-                    if (transceiverMid && mute != undefined) {
-                        onMediaMuteUnmute(transceiverMid, mute);
-                    }
-                };
             }
         }
     }
@@ -661,12 +654,7 @@ const processCommand = (function () {
                 }
                 setupMuteUnmuteListener(event.transceiver, track);
                 const mediaSource = mediaSourceFromTransceiverMid(event.transceiver.mid);
-                if (mediaSource == CallMediaSource.ScreenAudio || mediaSource == CallMediaSource.ScreenVideo) {
-                    call.remoteScreenStream.addTrack(track);
-                }
-                else {
-                    call.remoteStream.addTrack(track);
-                }
+                call.remoteTracks.set(mediaSource, track);
                 console.log(`ontrack success`);
             }
             catch (e) {
@@ -1023,9 +1011,25 @@ const processCommand = (function () {
             if (!mute)
                 videos.remoteScreen.play().catch((e) => console.log(e));
         }
+        if (!mute)
+            addRemoteTracksWhenUnmuted(source, activeCall);
         localOrPeerMediaSourcesChanged(activeCall);
         // Make sure that remote camera and remote screen video in their places and shown/hidden based on layout type currently in use
         changeLayout(activeCall.layout);
+    }
+    /*
+      When new remote tracks are coming, they don't get added to remote streams. They are stored in a map and once any of them "unmuted",
+      that track is added to the stream. Such workaround needed because Safari doesn't play one stream
+      if another one is not playing too, eg. no audio if only audio is playing while video track is present too but muted.
+      But we have possibility to have only one currently active track, even no active track at all.
+    */
+    function addRemoteTracksWhenUnmuted(source, call) {
+        const track = call.remoteTracks.get(source);
+        if (track) {
+            const stream = source == CallMediaSource.Mic || source == CallMediaSource.Camera ? call.remoteStream : call.remoteScreenStream;
+            stream.addTrack(track);
+            call.remoteTracks.delete(source);
+        }
     }
     async function getLocalMediaStream(mic, camera, facingMode) {
         if (!mic && !camera)
@@ -1136,7 +1140,7 @@ const processCommand = (function () {
         if (peerHasOldVersion) {
             console.log("The peer has an old version.", "Tracks size:", activeCall.remoteStream.getAudioTracks().length, activeCall.remoteStream.getVideoTracks().length);
             onMediaMuteUnmute("0", false);
-            if (activeCall.remoteStream.getVideoTracks().length > 0) {
+            if (activeCall.remoteStream.getVideoTracks().length > 0 || activeCall.remoteTracks.get(CallMediaSource.Camera)) {
                 onMediaMuteUnmute("1", false);
             }
             if (activeCall.localMediaSources.camera && !activeCall.peerMediaSources.camera) {
