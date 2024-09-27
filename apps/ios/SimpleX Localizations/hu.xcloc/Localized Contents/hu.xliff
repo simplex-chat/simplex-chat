@@ -252,9 +252,9 @@
         <target>%lld üzenet letiltva</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld messages blocked by admin" xml:space="preserve">
+      <trans-unit id="%lld messages blocked by admin" xml:space="preserve" approved="no">
         <source>%lld messages blocked by admin</source>
-        <target>%lld üzenet letiltva az admin által</target>
+        <target state="translated">%lld üzenetet letiltott az admin</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld messages marked deleted" xml:space="preserve">
@@ -262,9 +262,9 @@
         <target>%lld törlésre megjelölt üzenet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld messages moderated by %@" xml:space="preserve">
+      <trans-unit id="%lld messages moderated by %@" xml:space="preserve" approved="no">
         <source>%lld messages moderated by %@</source>
-        <target>%lld üzenet moderálva lett %@ által</target>
+        <target state="translated">%@ %lld üzenetet moderált</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld minutes" xml:space="preserve">
@@ -1130,9 +1130,9 @@
         <target>Tag letiltása?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Blocked by admin" xml:space="preserve">
+      <trans-unit id="Blocked by admin" xml:space="preserve" approved="no">
         <source>Blocked by admin</source>
-        <target>Letiltva az admin által</target>
+        <target state="translated">Az admin letiltotta</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Blur for better privacy." xml:space="preserve">
@@ -1175,9 +1175,9 @@
         <target>Bolgár, finn, thai és ukrán – köszönet a felhasználóknak és a [Weblate-nek](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
+      <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve" approved="no">
         <source>By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</source>
-        <target>Csevegési profil (alapértelmezett) vagy [kapcsolat alapján] (https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BÉTA).</target>
+        <target state="translated">A csevegési profillal (alapértelmezett), vagy a [kapcsolattal] (https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BÉTA).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Call already ended!" xml:space="preserve">
@@ -1840,9 +1840,9 @@ Ez az ön egyszer használható hivatkozása!</target>
         <target>Profil létrehozása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create queue" xml:space="preserve">
+      <trans-unit id="Create queue" xml:space="preserve" approved="no">
         <source>Create queue</source>
-        <target>Várólista létrehozása</target>
+        <target state="translated">Sorbaállítás létrehozása</target>
         <note>server test step</note>
       </trans-unit>
       <trans-unit id="Create secret group" xml:space="preserve">
@@ -2214,9 +2214,9 @@ Ez az ön egyszer használható hivatkozása!</target>
         <target>Profil törlése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete queue" xml:space="preserve">
+      <trans-unit id="Delete queue" xml:space="preserve" approved="no">
         <source>Delete queue</source>
-        <target>Várólista törlése</target>
+        <target state="translated">Sorbaállítás törlése</target>
         <note>server test step</note>
       </trans-unit>
       <trans-unit id="Delete up to 20 messages at once." xml:space="preserve">
@@ -3081,9 +3081,9 @@ Ez az ön egyszer használható hivatkozása!</target>
         <note>file error text
    snd error text</note>
       </trans-unit>
-      <trans-unit id="Error: URL is invalid" xml:space="preserve">
+      <trans-unit id="Error: URL is invalid" xml:space="preserve" approved="no">
         <source>Error: URL is invalid</source>
-        <target>Hiba: az URL érvénytelen</target>
+        <target state="translated">Hiba: a webcím érvénytelen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error: no database file" xml:space="preserve">
@@ -3156,9 +3156,9 @@ Ez az ön egyszer használható hivatkozása!</target>
         <target>Gyorsabb csatlakozás és megbízhatóbb üzenetkézbesítés.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Favorite" xml:space="preserve">
+      <trans-unit id="Favorite" xml:space="preserve" approved="no">
         <source>Favorite</source>
-        <target>Kedvenc</target>
+        <target state="translated">Csillag</target>
         <note>swipe action</note>
       </trans-unit>
       <trans-unit id="File error" xml:space="preserve">
@@ -3243,9 +3243,9 @@ Ez az ön egyszer használható hivatkozása!</target>
         <target>A fájlok- és a médiatartalmak küldése le van tiltva!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Filter unread and favorite chats." xml:space="preserve">
+      <trans-unit id="Filter unread and favorite chats." xml:space="preserve" approved="no">
         <source>Filter unread and favorite chats.</source>
-        <target>Olvasatlan és kedvenc csevegésekre való szűrés.</target>
+        <target state="translated">Olvasatlan és csillagozott csevegésekre való szűrés.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Finalize migration" xml:space="preserve">
@@ -4257,9 +4257,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Az üzenet később is kézbesíthető, ha a tag aktívvá válik.</target>
         <note>item status description</note>
       </trans-unit>
-      <trans-unit id="Message queue info" xml:space="preserve">
+      <trans-unit id="Message queue info" xml:space="preserve" approved="no">
         <source>Message queue info</source>
-        <target>Üzenet-várakoztatási információ</target>
+        <target state="translated">Üzenet-sorbaállítási információ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message reactions" xml:space="preserve">
@@ -5589,9 +5589,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>Alkalmazás témájának visszaállítása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reset to defaults" xml:space="preserve">
+      <trans-unit id="Reset to defaults" xml:space="preserve" approved="no">
         <source>Reset to defaults</source>
-        <target>Visszaállítás alaphelyzetbe</target>
+        <target state="translated">Visszaállítás alapértelmezettre</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reset to user theme" xml:space="preserve">
@@ -5845,9 +5845,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>Másodlagos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Secure queue" xml:space="preserve">
+      <trans-unit id="Secure queue" xml:space="preserve" approved="no">
         <source>Secure queue</source>
-        <target>Biztonságos várólista</target>
+        <target state="translated">Biztonságos sorbaállítás</target>
         <note>server test step</note>
       </trans-unit>
       <trans-unit id="Secured" xml:space="preserve">
@@ -6105,9 +6105,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>A kiszolgáló címe nem kompatibilis a hálózati beállításokkal: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
+      <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve" approved="no">
         <source>Server requires authorization to create queues, check password</source>
-        <target>A kiszolgálónak engedélyre van szüksége a várólisták létrehozásához, ellenőrizze jelszavát</target>
+        <target state="translated">A kiszolgálónak engedélyre van szüksége a sorbaállítás létrehozásához, ellenőrizze jelszavát</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Server requires authorization to upload, check password" xml:space="preserve">
@@ -6907,9 +6907,9 @@ Ez valamilyen hiba, vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target>Új kapcsolat létrehozásához</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." xml:space="preserve">
+      <trans-unit id="To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." xml:space="preserve" approved="no">
         <source>To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts.</source>
-        <target>Az adatvédelem érdekében, a más csevegési platformokon megszokott felhasználói azonosítók helyett, a SimpleX üzenetsorokhoz rendel azonosítókat, minden egyes ismerőshöz egy különbözőt.</target>
+        <target state="translated">Az adatvédelem érdekében, a más csevegési platformokon megszokott felhasználói azonosítók helyett, a SimpleX csak az üzenetek sorbaállításához használ azonosítókat, minden egyes ismerőshöz egy-egy különbözőt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To protect timezone, image/voice files use UTC." xml:space="preserve">
@@ -7039,9 +7039,9 @@ A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beáll
         <target>Váratlan átköltöztetési állapot</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unfav." xml:space="preserve">
+      <trans-unit id="Unfav." xml:space="preserve" approved="no">
         <source>Unfav.</source>
-        <target>Nem kedvelt.</target>
+        <target state="translated">Csillagozás megszüntetése</target>
         <note>swipe action</note>
       </trans-unit>
       <trans-unit id="Unhide" xml:space="preserve">
@@ -7116,9 +7116,9 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
         <target>Alkalmazás feloldása</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Unmute" xml:space="preserve">
+      <trans-unit id="Unmute" xml:space="preserve" approved="no">
         <source>Unmute</source>
-        <target>Némítás feloldása</target>
+        <target state="translated">Némítás megszüntetése</target>
         <note>swipe action</note>
       </trans-unit>
       <trans-unit id="Unread" xml:space="preserve">
@@ -8470,9 +8470,9 @@ Kapcsolatkérés megismétlése?</target>
         <target>érvénytelen csevegés</target>
         <note>invalid chat data</note>
       </trans-unit>
-      <trans-unit id="invalid chat data" xml:space="preserve">
+      <trans-unit id="invalid chat data" xml:space="preserve" approved="no">
         <source>invalid chat data</source>
-        <target>érvénytelen csevegés adat</target>
+        <target state="translated">érvénytelen csevegésadat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="invalid data" xml:space="preserve">
@@ -8751,7 +8751,7 @@ Kapcsolatkérés megismétlése?</target>
         <source>server queue info: %1$@
 
 last received msg: %2$@</source>
-        <target state="translated">a kiszolgáló üzenet-várakotatási információi: %1$@
+        <target state="translated">a kiszolgáló üzenet-sorbaállítási információi: %1$@
 
 utoljára fogadott üzenet: %2$@</target>
         <note>queue info</note>
@@ -8806,9 +8806,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target state="translated">ismeretlen állapot</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="unmute" xml:space="preserve">
+      <trans-unit id="unmute" xml:space="preserve" approved="no">
         <source>unmute</source>
-        <target>némítás feloldása</target>
+        <target state="translated">némítás megszüntetése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="unprotected" xml:space="preserve">
