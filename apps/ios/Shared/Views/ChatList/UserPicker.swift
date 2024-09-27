@@ -61,15 +61,11 @@ struct UserPicker: View {
             }
             VStack(spacing: 0) {
                 openSheetOnTap("qrcode", title: m.userAddress == nil ? "Create SimpleX address" : "Your SimpleX address", sheet: .address)
-                listDivider
                 openSheetOnTap("switch.2", title: "Chat preferences", sheet: .chatPreferences)
-                listDivider
                 openSheetOnTap("person.crop.rectangle.stack", title: "Your chat profiles", sheet: .chatProfiles)
-                listDivider
                 openSheetOnTap("desktopcomputer", title: "Use from desktop", sheet: .useFromDesktop)
-                listDivider
                 ZStack(alignment: .trailing) {
-                    openSheetOnTap("gearshape", title: "Settings", sheet: .settings)
+                    openSheetOnTap("gearshape", title: "Settings", sheet: .settings, showDivider: false)
                     Image(systemName: colorScheme == .light ? "sun.max" : "moon.fill")
                         .resizable()
                         .scaledToFit()
@@ -118,10 +114,6 @@ struct UserPicker: View {
         .disabled(switchingProfile)
     }
 
-    private var listDivider: some View {
-        Divider().padding(.leading, 52)
-    }
-
     private func userView(_ u: UserInfo, size: CGFloat) -> some View {
         HStack {
             ZStack(alignment: .topTrailing) {
@@ -157,14 +149,19 @@ struct UserPicker: View {
         .clipShape(sectionShape)
     }
 
-    private func openSheetOnTap(_ icon: String, title: LocalizedStringKey, sheet: UserPickerSheet) -> some View {
-        settingsRow(icon, color: theme.colors.secondary) {
-            Text(title).foregroundColor(.primary)
+    private func openSheetOnTap(_ icon: String, title: LocalizedStringKey, sheet: UserPickerSheet, showDivider: Bool = true) -> some View {
+        ZStack(alignment: .bottom) {
+            settingsRow(icon, color: theme.colors.secondary) {
+                Text(title).foregroundColor(.primary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, rowPadding)
+            .padding(.vertical, rowVerticalPadding)
+            .modifier(ListRow { activeSheet = sheet })
+            if showDivider {
+                Divider().padding(.leading, 52)
+            }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, rowPadding)
-        .padding(.vertical, rowVerticalPadding)
-        .modifier(ListRow { activeSheet = sheet })
     }
     
     private func unreadBadge(_ u: UserInfo) -> some View {
