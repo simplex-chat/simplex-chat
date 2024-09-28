@@ -2103,4 +2103,5 @@
     <string name="network_proxy_password">كلمة المرور</string>
     <string name="network_proxy_auth">استيثاق الوكيل</string>
     <string name="delete_messages_cannot_be_undone_warning">سيتم حذف الرسائل - لا يمكن التراجع عن هذا!</string>
+    <string name="icon_descr_sound_muted">الصوت مكتوم</string>
 </resources>
