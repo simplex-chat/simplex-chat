@@ -16,6 +16,8 @@ import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.desc.desc
 import kotlinx.coroutines.*
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.util.*
 import java.util.concurrent.Executors
 
@@ -34,6 +36,12 @@ catch (e: Exception) {
   /* On Mac this code can produce exception */
   false
 }
+
+private val settingsTmpDir = File(desktopPlatform.configPath, "tmp")
+  .also {
+    it.deleteRecursively()
+    it.mkdirs()
+  }
 
 private val settingsFile =
   File(desktopPlatform.configPath + File.separator + "settings.properties")
@@ -64,8 +72,16 @@ private val settingsThemesProps =
 
 private val settingsWriterThread = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 
-actual val settings: Settings = PropertiesSettings(settingsProps) { CoroutineScope(settingsWriterThread).launch { settingsFile.writer().use { settingsProps.store(it, "") } } }
-actual val settingsThemes: Settings = PropertiesSettings(settingsThemesProps) { CoroutineScope(settingsWriterThread).launch { settingsThemesFile.writer().use { settingsThemesProps.store(it, "") } } }
+actual val settings: Settings = PropertiesSettings(settingsProps) { CoroutineScope(settingsWriterThread).launch {
+  createTmpFileAndDelete(settingsTmpDir) { tmpFile ->
+    tmpFile.writer().use { settingsProps.store(it, "") }
+    Files.move(tmpFile.toPath(), settingsFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+  } } }
+actual val settingsThemes: Settings = PropertiesSettings(settingsThemesProps) { CoroutineScope(settingsWriterThread).launch {
+  createTmpFileAndDelete(settingsTmpDir) { tmpFile ->
+    tmpFile.writer().use { settingsThemesProps.store(it, "") }
+    Files.move(tmpFile.toPath(), settingsThemesFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+  } } }
 
 actual fun windowOrientation(): WindowOrientation =
   if (simplexWindowState.windowState.size.width > simplexWindowState.windowState.size.height) {
