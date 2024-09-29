@@ -12,6 +12,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.layoutId
@@ -1336,6 +1337,8 @@ fun BoxWithConstraintsScope.FloatingButtons(
   var firstVisibleIndex by remember { mutableStateOf(listState.firstVisibleItemIndex) }
   var lastIndexOfVisibleItems by remember { mutableStateOf(listState.layoutInfo.visibleItemsInfo.lastIndex) }
   var firstItemIsVisible by remember { mutableStateOf(firstVisibleIndex == 0) }
+  var nearBottomIndex by remember { mutableStateOf<Int>(-1) }
+  var isNearBottom by remember { mutableStateOf<Boolean>(true) }
 
   LaunchedEffect(listState) {
     snapshotFlow { listState.firstVisibleItemIndex }
@@ -1343,6 +1346,24 @@ fun BoxWithConstraintsScope.FloatingButtons(
       .collect {
         firstVisibleIndex = it
         firstItemIsVisible = firstVisibleIndex == 0
+      }
+  }
+  LaunchedEffect(listState) {
+    snapshotFlow { listState.layoutInfo.visibleItemsInfo }
+      .collect { visibleItemsInfo ->
+        if (visibleItemsInfo.find { it.index == 0 } != null) {
+          var elapsedOffset = 0
+
+          for (it in visibleItemsInfo) {
+            if (elapsedOffset >= 800) {
+              nearBottomIndex = it.index
+              break;
+            }
+            elapsedOffset += it.size
+          }
+        }
+
+        isNearBottom = (visibleItemsInfo.firstOrNull()?.index ?: 0) < nearBottomIndex
       }
   }
 
@@ -1399,6 +1420,29 @@ fun BoxWithConstraintsScope.FloatingButtons(
     showButtonWithCounter,
     onClick = { scope.launch { listState.animateScrollBy(height) } },
     onLongClick = { showDropDown.value = true }
+  )
+
+
+  val lastVisibleItem by remember {
+    derivedStateOf {
+      if (lastIndexOfVisibleItems >= 0) {
+        val topVisibleItemIndex = chatItems.value.lastIndex - firstVisibleIndex - lastIndexOfVisibleItems
+        chatItems.value[topVisibleItemIndex]
+      } else {
+        null
+      }
+    }
+  }
+
+  val firstVisibleItemScrollOffset by remember {
+    derivedStateOf { listState.firstVisibleItemScrollOffset }
+  }
+
+  TopCenterFloatingButton(
+    Modifier.padding(top = 10.dp).align(Alignment.TopCenter),
+    lastVisibleItem,
+    isNearBottom,
+    firstVisibleItemScrollOffset
   )
 
   Box {
@@ -1498,6 +1542,79 @@ private fun TopEndFloatingButton(
 }
 
 @Composable
+private fun TopCenterFloatingButton(
+  modifier: Modifier,
+  lastVisibleItem: ChatItem?,
+  isNearBottom: Boolean,
+  firstVisibleItemScrollOffset: Int
+) {
+  val coroutineScope = rememberCoroutineScope()
+  var hideDateWhenNotScrolling: Job? by remember { mutableStateOf(null) }
+  val firstVisibleItemDate = remember { mutableStateOf<Instant?>(null) }
+
+
+  val showDate = remember { mutableStateOf(false) }
+  fun setDateVisibility(isVisible: Boolean) {
+    if (isVisible) {
+      val date = firstVisibleItemDate.value
+      val now = Clock.System.now()
+      if (!isNearBottom && !showDate.value && date != null && getTimestampDateText(date) != getTimestampDateText(now)) {
+        showDate.value = true
+      }
+    } else if (showDate.value) {
+      showDate.value = false
+    }
+  }
+
+  KeyChangeEffect(firstVisibleItemScrollOffset) {
+    hideDateWhenNotScrolling?.cancel()
+
+    hideDateWhenNotScrolling = coroutineScope.launch {
+      delay(1000)
+      setDateVisibility(false)
+      hideDateWhenNotScrolling = null
+    }
+  }
+
+  LaunchedEffect(lastVisibleItem) {
+    snapshotFlow { lastVisibleItem?.meta?.itemTs }
+      .distinctUntilChanged()
+      .filterNotNull()
+      .collect {
+        val timeZone = TimeZone.currentSystemDefault()
+        firstVisibleItemDate.value = it.toLocalDateTime(timeZone).date.atStartOfDayIn(timeZone)
+        setDateVisibility(true)
+      }
+  }
+
+  AnimatedVisibility(
+    modifier = modifier,
+    visible = showDate.value,
+    enter = fadeIn(tween(durationMillis = 350)),
+    exit = fadeOut(tween(durationMillis = 350))
+  ) {
+    val date = firstVisibleItemDate.value
+    Column {
+      Text(
+        text = if (date != null) getTimestampDateText(date) else "",
+        Modifier
+          .background(
+            color = MaterialTheme.appColors.receivedMessage,
+            RoundedCornerShape(25.dp)
+          )
+          .padding(vertical = 4.dp, horizontal = 8.dp)
+          .clip(RoundedCornerShape(25.dp)),
+        fontSize = 14.sp,
+        fontWeight = FontWeight.Medium,
+        textAlign = TextAlign.Center,
+        color = MaterialTheme.colors.secondary
+      )
+    }
+  }
+
+}
+
+@Composable
 private fun DownloadFilesButton(
   forwardConfirmation: ForwardConfirmation.FilesNotAccepted,
   rhId: Long?,
@@ -1560,7 +1677,7 @@ private fun ButtonRow(horizontalArrangement: Arrangement.Horizontal, content: @C
 private fun DateSeparator(date: Instant) {
   Text(
     text = getTimestampDateText(date),
-    Modifier.padding(DEFAULT_PADDING).fillMaxWidth(),
+    Modifier.padding(DEFAULT_PADDING_HALF).fillMaxWidth(),
     fontSize = 14.sp,
     fontWeight = FontWeight.Medium,
     textAlign = TextAlign.Center,
