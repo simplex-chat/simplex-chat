@@ -1337,8 +1337,8 @@ fun BoxWithConstraintsScope.FloatingButtons(
   var firstVisibleIndex by remember { mutableStateOf(listState.firstVisibleItemIndex) }
   var lastIndexOfVisibleItems by remember { mutableStateOf(listState.layoutInfo.visibleItemsInfo.lastIndex) }
   var firstItemIsVisible by remember { mutableStateOf(firstVisibleIndex == 0) }
-  var nearBottomIndex by remember { mutableStateOf<Int>(-1) }
-  var isNearBottom by remember { mutableStateOf<Boolean>(true) }
+  var nearBottomIndex by remember { mutableStateOf(-1) }
+  var isNearBottom by remember { mutableStateOf(true) }
 
   LaunchedEffect(listState) {
     snapshotFlow { listState.firstVisibleItemIndex }
@@ -1362,7 +1362,7 @@ fun BoxWithConstraintsScope.FloatingButtons(
             elapsedOffset += it.size
           }
         }
-        
+
         isNearBottom = (visibleItemsInfo.firstOrNull()?.index ?: 0) <= nearBottomIndex
       }
   }
