@@ -1599,7 +1599,7 @@ private fun TopCenterFloatingButton(
         text = if (date != null) getTimestampDateText(date) else "",
         Modifier
           .background(
-            color = MaterialTheme.appColors.receivedMessage,
+            color = MaterialTheme.colors.secondaryVariant,
             RoundedCornerShape(25.dp)
           )
           .padding(vertical = 4.dp, horizontal = 8.dp)
