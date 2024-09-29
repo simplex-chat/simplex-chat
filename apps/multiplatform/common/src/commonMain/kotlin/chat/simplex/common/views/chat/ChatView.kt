@@ -1426,8 +1426,8 @@ fun BoxWithConstraintsScope.FloatingButtons(
   val lastVisibleItem by remember {
     derivedStateOf {
       if (lastIndexOfVisibleItems >= 0) {
-        val topVisibleItemIndex = chatItems.value.lastIndex - firstVisibleIndex - lastIndexOfVisibleItems
-        chatItems.value[topVisibleItemIndex]
+        val lastVisibleChatItemIndex = chatItems.value.lastIndex - firstVisibleIndex - lastIndexOfVisibleItems
+        chatItems.value[lastVisibleChatItemIndex]
       } else {
         null
       }
