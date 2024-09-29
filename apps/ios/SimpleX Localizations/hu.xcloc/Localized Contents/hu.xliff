@@ -97,9 +97,9 @@
         <target>%@ és %@ kapcsolódott</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ at %@:" xml:space="preserve">
+      <trans-unit id="%@ at %@:" xml:space="preserve" approved="no">
         <source>%1$@ at %2$@:</source>
-        <target>%1$@ ekkor: %2$@</target>
+        <target state="translated">%1$@ ekkor: %2$@:</target>
         <note>copied message info, &lt;sender&gt; at &lt;time&gt;</note>
       </trans-unit>
       <trans-unit id="%@ connected" xml:space="preserve">
@@ -518,11 +518,11 @@
         <target>: </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="&lt;p&gt;Hi!&lt;/p&gt;&#10;&lt;p&gt;&lt;a href=&quot;%@&quot;&gt;Connect to me via SimpleX Chat&lt;/a&gt;&lt;/p&gt;" xml:space="preserve">
+      <trans-unit id="&lt;p&gt;Hi!&lt;/p&gt;&#10;&lt;p&gt;&lt;a href=&quot;%@&quot;&gt;Connect to me via SimpleX Chat&lt;/a&gt;&lt;/p&gt;" xml:space="preserve" approved="no">
         <source>&lt;p&gt;Hi!&lt;/p&gt;
 &lt;p&gt;&lt;a href="%@"&gt;Connect to me via SimpleX Chat&lt;/a&gt;&lt;/p&gt;</source>
-        <target>&lt;p&gt;Üdvözlöm!&lt;/p&gt;
-&lt;p&gt;&lt;a href=„%@”&gt;Csatlakozzon hozzám a SimpleX Chaten keresztül&lt;/a&gt;&lt;/p&gt;</target>
+        <target state="translated">&lt;p&gt;Üdvözlöm!&lt;/p&gt;
+&lt;p&gt;&lt;a href="%@"&gt;Csatlakozzon hozzám a SimpleX Chaten keresztül&lt;/a&gt;&lt;/p&gt;</target>
         <note>email text</note>
       </trans-unit>
       <trans-unit id="A few more things" xml:space="preserve">
@@ -705,9 +705,9 @@
         <target>Speciális hálózati beállítások</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Advanced settings" xml:space="preserve">
+      <trans-unit id="Advanced settings" xml:space="preserve" approved="no">
         <source>Advanced settings</source>
-        <target>Haladó beállítások</target>
+        <target state="translated">Speciális beállítások</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All app data is deleted." xml:space="preserve">
@@ -1235,9 +1235,9 @@
         <target>Átköltöztetés visszavonása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Cannot access keychain to save database password" xml:space="preserve">
+      <trans-unit id="Cannot access keychain to save database password" xml:space="preserve" approved="no">
         <source>Cannot access keychain to save database password</source>
-        <target>Nem lehet hozzáférni a kulcstartóhoz az adatbázis jelszavának mentéséhez</target>
+        <target state="translated">Nem lehet hozzáférni a kulcstartóhoz az adatbázisjelszó mentéséhez</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cannot forward message" xml:space="preserve">
@@ -1265,9 +1265,9 @@
         <target>Változtatás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change database passphrase?" xml:space="preserve">
+      <trans-unit id="Change database passphrase?" xml:space="preserve" approved="no">
         <source>Change database passphrase?</source>
-        <target>Adatbázis jelmondat megváltoztatása?</target>
+        <target state="translated">Adatbázis-jelmondat megváltoztatása?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change lock mode" xml:space="preserve">
@@ -1925,19 +1925,19 @@ Ez az ön egyszer használható hivatkozása!</target>
         <target>Sötét mód színei</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database ID" xml:space="preserve">
+      <trans-unit id="Database ID" xml:space="preserve" approved="no">
         <source>Database ID</source>
-        <target>Adatbázis ID</target>
+        <target state="translated">Adatbázis-azonosító</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database ID: %d" xml:space="preserve">
+      <trans-unit id="Database ID: %d" xml:space="preserve" approved="no">
         <source>Database ID: %d</source>
-        <target>Adatbázis azonosító: %d</target>
+        <target state="translated">Adatbázis-azonosító: %d</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Database IDs and Transport isolation option." xml:space="preserve">
+      <trans-unit id="Database IDs and Transport isolation option." xml:space="preserve" approved="no">
         <source>Database IDs and Transport isolation option.</source>
-        <target>Adatbázis azonosítók és átviteli izolációs beállítások.</target>
+        <target state="translated">Adatbázis-azonosítók és átviteli izolációs beállítások.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database downgrade" xml:space="preserve">
@@ -1950,23 +1950,23 @@ Ez az ön egyszer használható hivatkozása!</target>
         <target>Adatbázis titkosítva!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database encryption passphrase will be updated and stored in the keychain.&#10;" xml:space="preserve">
+      <trans-unit id="Database encryption passphrase will be updated and stored in the keychain.&#10;" xml:space="preserve" approved="no">
         <source>Database encryption passphrase will be updated and stored in the keychain.
 </source>
-        <target>Az adatbázis titkosítási jelmondata frissül és tárolódik a kulcstartóban.
+        <target state="translated">Az adatbázis titkosítási jelmondata frissítve lesz és a kulcstartóban kerül tárolásra.
 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database encryption passphrase will be updated.&#10;" xml:space="preserve">
+      <trans-unit id="Database encryption passphrase will be updated.&#10;" xml:space="preserve" approved="no">
         <source>Database encryption passphrase will be updated.
 </source>
-        <target>Adatbázis titkosítási jelmondat frissítve lesz.
+        <target state="translated">Az datbázis titkosítási jelmondata frissítve lesz.
 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database error" xml:space="preserve">
+      <trans-unit id="Database error" xml:space="preserve" approved="no">
         <source>Database error</source>
-        <target>Adatbázis hiba</target>
+        <target state="translated">Adatbázishiba</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database is encrypted using a random passphrase, you can change it." xml:space="preserve" approved="no">
@@ -1974,19 +1974,19 @@ Ez az ön egyszer használható hivatkozása!</target>
         <target state="translated">Az adatbázis egy véletlenszerű jelmondattal van titkosítva, ami megváltoztatható.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database is encrypted using a random passphrase. Please change it before exporting." xml:space="preserve">
+      <trans-unit id="Database is encrypted using a random passphrase. Please change it before exporting." xml:space="preserve" approved="no">
         <source>Database is encrypted using a random passphrase. Please change it before exporting.</source>
-        <target>Az adatbázis egy véletlenszerű jelmondattal van titkosítva. Exportálás előtti módosítás szükséges.</target>
+        <target state="translated">Az adatbázis egy véletlenszerű jelmondattal van titkosítva. Exportálás előtt változtassa meg.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database passphrase" xml:space="preserve">
+      <trans-unit id="Database passphrase" xml:space="preserve" approved="no">
         <source>Database passphrase</source>
-        <target>Adatbázis jelmondat</target>
+        <target state="translated">Adatbázis-jelmondat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database passphrase &amp; export" xml:space="preserve">
+      <trans-unit id="Database passphrase &amp; export" xml:space="preserve" approved="no">
         <source>Database passphrase &amp; export</source>
-        <target>Adatbázis jelmondat és exportálás</target>
+        <target state="translated">Adatbázis-jelmondat és -exportálás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve">
@@ -2004,10 +2004,10 @@ Ez az ön egyszer használható hivatkozása!</target>
         <target>Adatbázis fejlesztése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database will be encrypted and the passphrase stored in the keychain.&#10;" xml:space="preserve">
+      <trans-unit id="Database will be encrypted and the passphrase stored in the keychain.&#10;" xml:space="preserve" approved="no">
         <source>Database will be encrypted and the passphrase stored in the keychain.
 </source>
-        <target>Az adatbázis titkosítva lesz, a jelmondat pedig a kulcstartóban lesz tárolva.
+        <target state="translated">Az adatbázis titkosítva lesz, a jelmondat pedig a kulcstartóban kerül tárolásra.
 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -2018,9 +2018,9 @@ Ez az ön egyszer használható hivatkozása!</target>
 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database will be migrated when the app restarts" xml:space="preserve">
+      <trans-unit id="Database will be migrated when the app restarts" xml:space="preserve" approved="no">
         <source>Database will be migrated when the app restarts</source>
-        <target>Az adatbázis az alkalmazás újraindításakor migrálásra kerül</target>
+        <target state="translated">Az adatbázis az alkalmazás újraindításakor átköltöztetésre kerül</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Debug delivery" xml:space="preserve">
@@ -2444,9 +2444,9 @@ Ez az ön egyszer használható hivatkozása!</target>
         <target>Ne használjon privát útválasztást.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Do it later" xml:space="preserve">
+      <trans-unit id="Do it later" xml:space="preserve" approved="no">
         <source>Do it later</source>
-        <target>Későbbre halaszt</target>
+        <target state="translated">Befejezés később</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Do not send history to new members." xml:space="preserve">
@@ -2660,14 +2660,14 @@ Ez az ön egyszer használható hivatkozása!</target>
         <target>Titkosított üzenet: az alkalmazás leállt</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Encrypted message: database error" xml:space="preserve">
+      <trans-unit id="Encrypted message: database error" xml:space="preserve" approved="no">
         <source>Encrypted message: database error</source>
-        <target>Titkosított üzenet: adatbázis hiba</target>
+        <target state="translated">Titkosított üzenet: adatbázishiba</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Encrypted message: database migration error" xml:space="preserve">
+      <trans-unit id="Encrypted message: database migration error" xml:space="preserve" approved="no">
         <source>Encrypted message: database migration error</source>
-        <target>Titkosított üzenet: adatbázis-átköltöztetés hiba</target>
+        <target state="translated">Titkosított üzenet: adatbázis-átköltöztetési hiba</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Encrypted message: keychain error" xml:space="preserve">
@@ -2780,9 +2780,9 @@ Ez az ön egyszer használható hivatkozása!</target>
         <target>Hiba a cím megváltoztatásakor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error changing connection profile" xml:space="preserve">
+      <trans-unit id="Error changing connection profile" xml:space="preserve" approved="no">
         <source>Error changing connection profile</source>
-        <target>Hiba a kapcsolati profilra való váltás közben</target>
+        <target state="translated">Hiba a kapcsolati profilra való váltáskor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error changing role" xml:space="preserve">
@@ -2795,9 +2795,9 @@ Ez az ön egyszer használható hivatkozása!</target>
         <target>Hiba a beállítás megváltoztatásakor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error changing to incognito!" xml:space="preserve">
+      <trans-unit id="Error changing to incognito!" xml:space="preserve" approved="no">
         <source>Error changing to incognito!</source>
-        <target>Hiba az inkognitó-profilra való váltás közben!</target>
+        <target state="translated">Hiba az inkognitó-profilra való váltáskor!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error connecting to forwarding server %@. Please try later." xml:space="preserve">
@@ -2920,9 +2920,9 @@ Ez az ön egyszer használható hivatkozása!</target>
         <target state="translated">Hiba a(z) %@ -kiszolgálók betöltésekor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error migrating settings" xml:space="preserve">
+      <trans-unit id="Error migrating settings" xml:space="preserve" approved="no">
         <source>Error migrating settings</source>
-        <target>Hiba a beallítások átköltöztetése közben</target>
+        <target state="translated">Hiba a beallítások átköltöztetésekor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error opening chat" xml:space="preserve">
@@ -2957,7 +2957,7 @@ Ez az ön egyszer használható hivatkozása!</target>
       </trans-unit>
       <trans-unit id="Error saving %@ servers" xml:space="preserve" approved="no">
         <source>Error saving %@ servers</source>
-        <target state="translated">Hiba történt a(z) %@ -kiszolgálók mentése közben</target>
+        <target state="translated">Hiba történt a(z) %@ -kiszolgálók mentésekor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error saving ICE servers" xml:space="preserve" approved="no">
@@ -2970,9 +2970,9 @@ Ez az ön egyszer használható hivatkozása!</target>
         <target>Hiba a csoportprofil mentésekor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error saving passcode" xml:space="preserve">
+      <trans-unit id="Error saving passcode" xml:space="preserve" approved="no">
         <source>Error saving passcode</source>
-        <target>Hiba a jelkód mentése közben</target>
+        <target state="translated">Hiba a jelkód mentésekor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error saving passphrase to keychain" xml:space="preserve">
@@ -2990,9 +2990,9 @@ Ez az ön egyszer használható hivatkozása!</target>
         <target>Hiba a felhasználó jelszavának mentésekor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error scanning code: %@" xml:space="preserve">
+      <trans-unit id="Error scanning code: %@" xml:space="preserve" approved="no">
         <source>Error scanning code: %@</source>
-        <target>Hiba a kód beolvasása közben: %@</target>
+        <target state="translated">Hiba a kód beolvasásakor: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error sending email" xml:space="preserve">
@@ -3025,9 +3025,9 @@ Ez az ön egyszer használható hivatkozása!</target>
         <target>Hiba a csevegés megállításakor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error switching profile" xml:space="preserve">
+      <trans-unit id="Error switching profile" xml:space="preserve" approved="no">
         <source>Error switching profile</source>
-        <target>Hiba a profilváltás közben</target>
+        <target state="translated">Hiba a profilváltáskor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error switching profile!" xml:space="preserve">
@@ -3035,9 +3035,9 @@ Ez az ön egyszer használható hivatkozása!</target>
         <target>Hiba a profil váltásakor!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error synchronizing connection" xml:space="preserve">
+      <trans-unit id="Error synchronizing connection" xml:space="preserve" approved="no">
         <source>Error synchronizing connection</source>
-        <target>Hiba a kapcsolat szinkronizálása közben</target>
+        <target state="translated">Hiba a kapcsolat szinkronizálásakor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error updating group link" xml:space="preserve">
@@ -3086,9 +3086,9 @@ Ez az ön egyszer használható hivatkozása!</target>
         <target state="translated">Hiba: a webcím érvénytelen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error: no database file" xml:space="preserve">
+      <trans-unit id="Error: no database file" xml:space="preserve" approved="no">
         <source>Error: no database file</source>
-        <target>Hiba: nincs adatbázis fájl</target>
+        <target state="translated">Hiba: nincs adatbázisfájl</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Errors" xml:space="preserve">
@@ -3136,9 +3136,9 @@ Ez az ön egyszer használható hivatkozása!</target>
         <target>Az exportált fájl nem létezik</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Exporting database archive…" xml:space="preserve">
+      <trans-unit id="Exporting database archive…" xml:space="preserve" approved="no">
         <source>Exporting database archive…</source>
-        <target>Adatbázis archívum exportálása…</target>
+        <target state="translated">Adatbázis-archívum exportálása…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Failed to remove passphrase" xml:space="preserve">
@@ -3657,9 +3657,9 @@ Hiba: %2$@</target>
         <target>Ha az alkalmazás megnyitásakor megadja az önmegsemmisítő jelkódot:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." xml:space="preserve">
+      <trans-unit id="If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." xml:space="preserve" approved="no">
         <source>If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app).</source>
-        <target>Ha most kell használnia a csevegést, koppintson a ** Csináld később** elemre (az alkalmazás újraindításakor felajánlásra kerül az adatbázis áttelepítése).</target>
+        <target state="translated">Ha most kell használnia a csevegést, koppintson alább az **Befejezés később** lehetőségre (az alkalmazás újraindításakor felajánlásra kerül az adatbázis átköltöztetése).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Ignore" xml:space="preserve" approved="no">
@@ -3782,9 +3782,9 @@ Hiba: %2$@</target>
         <target>Bejövő videóhívás</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Incompatible database version" xml:space="preserve">
+      <trans-unit id="Incompatible database version" xml:space="preserve" approved="no">
         <source>Incompatible database version</source>
-        <target>Nem kompatibilis adatbázis verzió</target>
+        <target state="translated">Nem kompatibilis adatbázis-verzió</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incompatible version" xml:space="preserve">
@@ -4387,9 +4387,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Átköltöztetés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrating database archive…" xml:space="preserve">
+      <trans-unit id="Migrating database archive…" xml:space="preserve" approved="no">
         <source>Migrating database archive…</source>
-        <target>Adatbázis archívum migrálása…</target>
+        <target state="translated">Adatbázis-archívum átköltöztetése…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migration complete" xml:space="preserve">
@@ -4699,8 +4699,8 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
       <trans-unit id="Onion hosts will be **required** for connection.&#10;Requires compatible VPN." xml:space="preserve" approved="no">
         <source>Onion hosts will be **required** for connection.
 Requires compatible VPN.</source>
-        <target state="translated">A kapcsolódáshoz Onion-kiszolgálókra lesz szükség.
-VPN engedélyezése szükséges.</target>
+        <target state="translated">Az onion-kiszolgálók **szükségesek** a kapcsolódáshoz.
+Kompatibilis VPN szükséges.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Onion hosts will be used when available.&#10;Requires compatible VPN." xml:space="preserve" approved="no">
@@ -5398,9 +5398,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>A címzett(ek) nem látja(k), hogy kitől származik ez az üzenet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Recipients see updates as you type them." xml:space="preserve">
+      <trans-unit id="Recipients see updates as you type them." xml:space="preserve" approved="no">
         <source>Recipients see updates as you type them.</source>
-        <target>A címzettek a beírás közben látják a frissítéseket.</target>
+        <target state="translated">A címzettek a beírás közben látják a szövegváltozásokat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reconnect" xml:space="preserve">
@@ -6430,14 +6430,14 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>Néhány fájl nem került exportálásra:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Some non-fatal errors occurred during import - you may see Chat console for more details." xml:space="preserve">
+      <trans-unit id="Some non-fatal errors occurred during import - you may see Chat console for more details." xml:space="preserve" approved="no">
         <source>Some non-fatal errors occurred during import - you may see Chat console for more details.</source>
-        <target>Néhány nem végzetes hiba történt az importálás közben – további részletekért a csevegési konzolban olvashat.</target>
+        <target state="translated">Néhány nem végzetes hiba történt az importáláskor – további részleteket a csevegési konzolban olvashat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Some non-fatal errors occurred during import:" xml:space="preserve">
+      <trans-unit id="Some non-fatal errors occurred during import:" xml:space="preserve" approved="no">
         <source>Some non-fatal errors occurred during import:</source>
-        <target>Néhány nem végzetes hiba történt az importálás közben:</target>
+        <target state="translated">Néhány nem végzetes hiba történt az importáláskor:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Somebody" xml:space="preserve">
@@ -6495,9 +6495,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>Csevegés megállítása az adatbázis-műveletek engedélyezéséhez</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." xml:space="preserve">
+      <trans-unit id="Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." xml:space="preserve" approved="no">
         <source>Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped.</source>
-        <target>A csevegés megállítása a csevegő adatbázis exportálásához, importálásához vagy törléséhez. A csevegés megállítása alatt nem tud üzeneteket fogadni és küldeni.</target>
+        <target state="translated">A csevegés megállítása a csevegési adatbázis exportálásához, importálásához vagy törléséhez. A csevegés megállítása alatt nem tud üzeneteket fogadni és küldeni.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Stop chat?" xml:space="preserve">
@@ -6727,9 +6727,9 @@ Ez valamilyen hiba, vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target>Ismerőse, akivel megosztotta ezt a hivatkozást, NEM fog tudni kapcsolódni!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The created archive is available via app Settings / Database / Old database archive." xml:space="preserve">
+      <trans-unit id="The created archive is available via app Settings / Database / Old database archive." xml:space="preserve" approved="no">
         <source>The created archive is available via app Settings / Database / Old database archive.</source>
-        <target>A létrehozott archívum a Beállítások / Adatbázis / Régi adatbázis-archívum menüben érhető el.</target>
+        <target state="translated">A létrehozott archívum a „Beállítások / Adatbázis / Régi adatbázis-archívum” menüben érhető el.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The encryption is working and the new encryption agreement is not required. It may result in connection errors!" xml:space="preserve">
@@ -6767,9 +6767,9 @@ Ez valamilyen hiba, vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target>A privát üzenetküldés következő generációja</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The old database was not removed during the migration, it can be deleted." xml:space="preserve">
+      <trans-unit id="The old database was not removed during the migration, it can be deleted." xml:space="preserve" approved="no">
         <source>The old database was not removed during the migration, it can be deleted.</source>
-        <target>A régi adatbázis nem került eltávolításra az átköltöztetés közben, így törölhető.</target>
+        <target state="translated">A régi adatbázis nem került eltávolításra az átköltöztetéskor, így törölhető.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The profile is only shared with your contacts." xml:space="preserve" approved="no">
@@ -6941,7 +6941,7 @@ A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beáll
       </trans-unit>
       <trans-unit id="To support instant push notifications the chat database has to be migrated." xml:space="preserve" approved="no">
         <source>To support instant push notifications the chat database has to be migrated.</source>
-        <target state="translated">Az azonnali push-értesítések támogatásához a csevegési adatbázis migrálása szükséges.</target>
+        <target state="translated">Az azonnali push-értesítések támogatásához a csevegési adatbázis átköltöztetése szükséges.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To verify end-to-end encryption with your contact compare (or scan) the code on your devices." xml:space="preserve" approved="no">
@@ -7136,9 +7136,9 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
         <target>Frissítés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Update database passphrase" xml:space="preserve">
+      <trans-unit id="Update database passphrase" xml:space="preserve" approved="no">
         <source>Update database passphrase</source>
-        <target>Adatbázis jelmondat megváltoztatása</target>
+        <target state="translated">Adatbázis-jelmondat megváltoztatása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Update network settings?" xml:space="preserve">
@@ -7306,9 +7306,9 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
         <target>Kapcsolatok ellenőrzése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Verify database passphrase" xml:space="preserve">
+      <trans-unit id="Verify database passphrase" xml:space="preserve" approved="no">
         <source>Verify database passphrase</source>
-        <target>Adatbázis jelmondatának ellenőrzése</target>
+        <target state="translated">Az adatbázis jelmondatának ellenőrzése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Verify passphrase" xml:space="preserve">
@@ -7516,9 +7516,9 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
         <target state="translated">Tor vagy VPN nélkül az IP-címe látható lesz a következő XFTP-közvetítő-kiszolgálók számára: %@.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Wrong database passphrase" xml:space="preserve">
+      <trans-unit id="Wrong database passphrase" xml:space="preserve" approved="no">
         <source>Wrong database passphrase</source>
-        <target>Hibás adatbázis jelmondat</target>
+        <target state="translated">Hibás adatbázis-jelmondat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Wrong key or unknown connection - most likely this connection is deleted." xml:space="preserve">
@@ -7693,9 +7693,9 @@ Csatlakozáskérés megismétlése?</target>
         <target>Megoszthatja a címét egy hivatkozásként vagy QR-kódként – így bárki kapcsolódhat önhöz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can start chat via app Settings / Database or by restarting the app" xml:space="preserve">
+      <trans-unit id="You can start chat via app Settings / Database or by restarting the app" xml:space="preserve" approved="no">
         <source>You can start chat via app Settings / Database or by restarting the app</source>
-        <target>A csevegést az alkalmazás Beállítások / Adatbázis menüben vagy az alkalmazás újraindításával indíthatja el</target>
+        <target state="translated">A csevegést az alkalmazás „Beállítások / Adatbázis” menüben vagy az alkalmazás újraindításával indíthatja el</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can still view conversation with %@ in the list of chats." xml:space="preserve">
@@ -7905,9 +7905,9 @@ Kapcsolatkérés megismétlése?</target>
         <target>Csevegési profilok</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile." xml:space="preserve">
+      <trans-unit id="Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile." xml:space="preserve" approved="no">
         <source>Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile.</source>
-        <target>A kapcsolata át lett helyezve ide: %@, de egy váratlan hiba történt a profilra való átirányítás közben.</target>
+        <target state="translated">A kapcsolata át lett helyezve ide: %@, de egy váratlan hiba történt a profilra való átirányításkor.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve" approved="no">
@@ -9104,9 +9104,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>Adatbázis titkosítva!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database error" xml:space="preserve">
+      <trans-unit id="Database error" xml:space="preserve" approved="no">
         <source>Database error</source>
-        <target>Adatbázis hiba</target>
+        <target state="translated">Adatbázishiba</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve">
@@ -9114,9 +9114,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>Az adatbázis jelmondata eltér a kulcstartóban lévőtől.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database passphrase is required to open chat." xml:space="preserve">
+      <trans-unit id="Database passphrase is required to open chat." xml:space="preserve" approved="no">
         <source>Database passphrase is required to open chat.</source>
-        <target>Adatbázis jelmondat szükséges a csevegés megnyitásához.</target>
+        <target state="translated">Adatbázis-jelmondat szükséges a csevegés megnyitásához.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database upgrade required" xml:space="preserve">
@@ -9144,9 +9144,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>Fájlhiba</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Incompatible database version" xml:space="preserve">
+      <trans-unit id="Incompatible database version" xml:space="preserve" approved="no">
         <source>Incompatible database version</source>
-        <target>Nem kompatibilis adatbázis verzió</target>
+        <target state="translated">Nem kompatibilis adatbázis-verzió</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invalid migration confirmation" xml:space="preserve">
@@ -9234,9 +9234,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>Várjon</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Wrong database passphrase" xml:space="preserve">
+      <trans-unit id="Wrong database passphrase" xml:space="preserve" approved="no">
         <source>Wrong database passphrase</source>
-        <target>Hibás adatbázis jelmondat</target>
+        <target state="translated">Hibás adatbázis-jelmondat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can allow sharing in Privacy &amp; Security / SimpleX Lock settings." xml:space="preserve">
