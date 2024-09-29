@@ -1611,7 +1611,6 @@ private fun TopCenterFloatingButton(
       )
     }
   }
-
 }
 
 @Composable
