@@ -1362,8 +1362,8 @@ fun BoxWithConstraintsScope.FloatingButtons(
             elapsedOffset += it.size
           }
         }
-
-        isNearBottom = (visibleItemsInfo.firstOrNull()?.index ?: 0) < nearBottomIndex
+        
+        isNearBottom = (visibleItemsInfo.firstOrNull()?.index ?: 0) <= nearBottomIndex
       }
   }
 
