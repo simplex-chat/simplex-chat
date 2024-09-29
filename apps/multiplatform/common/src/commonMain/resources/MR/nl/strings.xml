@@ -2103,4 +2103,5 @@
     <string name="network_proxy_incorrect_config_title">Fout bij opslaan proxy</string>
     <string name="network_proxy_incorrect_config_desc">Zorg ervoor dat de proxyconfiguratie correct is.</string>
     <string name="network_proxy_password">Wachtwoord</string>
+    <string name="icon_descr_sound_muted">Geluid gedempt</string>
 </resources>
