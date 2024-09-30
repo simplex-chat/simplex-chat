@@ -1511,7 +1511,7 @@ private fun FloatingDate(
 ) {
   var nearBottomIndex by remember { mutableStateOf(-1) }
   var isNearBottom by remember { mutableStateOf(true) }
-  val lastVisibleItemDate by remember(listState.layoutInfo.visibleItemsInfo.lastIndex, listState.firstVisibleItemIndex, chatModel.chatItems) {
+  val lastVisibleItemDate = remember(listState.layoutInfo.visibleItemsInfo.lastIndex, listState.firstVisibleItemIndex, chatModel.chatItems) {
     derivedStateOf {
       if (listState.layoutInfo.visibleItemsInfo.lastIndex >= 0 && listState.firstVisibleItemIndex >= 0) {
         val lastVisibleChatItemIndex = chatModel.chatItems.value.lastIndex - listState.firstVisibleItemIndex - listState.layoutInfo.visibleItemsInfo.lastIndex
@@ -1560,7 +1560,8 @@ private fun FloatingDate(
   fun setDateVisibility(isVisible: Boolean) {
     if (isVisible) {
       val now = Clock.System.now()
-      if (!isNearBottom && !showDate.value && lastVisibleItemDate != null && getTimestampDateText(lastVisibleItemDate!!) != getTimestampDateText(now)) {
+      val date = lastVisibleItemDate.value
+      if (!isNearBottom && !showDate.value && date != null && getTimestampDateText(date) != getTimestampDateText(now)) {
         showDate.value = true
       }
     } else if (showDate.value) {
@@ -1588,9 +1589,10 @@ private fun FloatingDate(
     enter = fadeIn(tween(durationMillis = 350)),
     exit = fadeOut(tween(durationMillis = 350))
   ) {
+    val date = lastVisibleItemDate.value
     Column {
       Text(
-        text = lastVisibleItemDate?.let { getTimestampDateText(it) } ?: "",
+        text = if (date != null) getTimestampDateText(date) else "",
         Modifier
           .background(
             color = MaterialTheme.colors.secondaryVariant,
