@@ -76,6 +76,8 @@ const processCommand = (function () {
                 iceCandidatePoolSize: 10,
                 encodedInsertableStreams,
                 iceTransportPolicy: relay ? "relay" : "all",
+                // needed for Android WebView >= 69 && <= 72 where default was "plan-b" which is incompatible with transceivers
+                sdpSemantics: "unified-plan",
             },
             iceCandidates: {
                 delay: 750,
@@ -186,6 +188,7 @@ const processCommand = (function () {
             localStream,
             localScreenStream,
             remoteStream,
+            remoteTracks: new Map(),
             remoteScreenStream,
             peerMediaSources: {
                 mic: false,
@@ -201,7 +204,12 @@ const processCommand = (function () {
         localOrPeerMediaSourcesChanged(call);
         await setupMediaStreams(call);
         let connectionTimeout = setTimeout(connectionHandler, answerTimeout);
-        pc.addEventListener("connectionstatechange", connectionStateChange);
+        if (pc.connectionState) {
+            pc.addEventListener("connectionstatechange", connectionStateChange);
+        }
+        else {
+            pc.addEventListener("iceconnectionstatechange", connectionStateChange);
+        }
         return call;
         async function connectionStateChange() {
             // "failed" means the second party did not answer in time (15 sec timeout in Chrome WebView)
@@ -210,26 +218,38 @@ const processCommand = (function () {
                 connectionHandler();
         }
         async function connectionHandler() {
+            var _a;
             sendMessageToNative({
                 resp: {
                     type: "connection",
                     state: {
-                        connectionState: pc.connectionState,
+                        connectionState: (_a = pc.connectionState) !== null && _a !== void 0 ? _a : (pc.iceConnectionState != "completed" && pc.iceConnectionState != "checking"
+                            ? pc.iceConnectionState
+                            : pc.iceConnectionState == "completed"
+                                ? "connected"
+                                : "connecting") /* webView 69-70 doesn't have connectionState yet */,
                         iceConnectionState: pc.iceConnectionState,
                         iceGatheringState: pc.iceGatheringState,
                         signalingState: pc.signalingState,
                     },
                 },
             });
-            if (pc.connectionState == "disconnected" || pc.connectionState == "failed") {
+            if (pc.connectionState == "disconnected" ||
+                pc.connectionState == "failed" ||
+                (!pc.connectionState && (pc.iceConnectionState == "disconnected" || pc.iceConnectionState == "failed"))) {
                 clearConnectionTimeout();
-                pc.removeEventListener("connectionstatechange", connectionStateChange);
+                if (pc.connectionState) {
+                    pc.removeEventListener("connectionstatechange", connectionStateChange);
+                }
+                else {
+                    pc.removeEventListener("iceconnectionstatechange", connectionStateChange);
+                }
                 if (activeCall) {
                     setTimeout(() => sendMessageToNative({ resp: { type: "ended" } }), 0);
                 }
                 endCall();
             }
-            else if (pc.connectionState == "connected") {
+            else if (pc.connectionState == "connected" || (!pc.connectionState && pc.iceConnectionState == "connected")) {
                 clearConnectionTimeout();
                 const stats = (await pc.getStats());
                 for (const stat of stats.values()) {
@@ -276,7 +296,7 @@ const processCommand = (function () {
                         endCall();
                     let localStream = null;
                     try {
-                        localStream = await getLocalMediaStream(true, command.media == CallMediaType.Video && !isDesktop, VideoCamera.User);
+                        localStream = await getLocalMediaStream(true, command.media == CallMediaType.Video, VideoCamera.User);
                         const videos = getVideoElements();
                         if (videos) {
                             videos.local.srcObject = localStream;
@@ -305,7 +325,7 @@ const processCommand = (function () {
                     if (activeCall)
                         endCall();
                     inactiveCallMediaSources.mic = true;
-                    inactiveCallMediaSources.camera = command.media == CallMediaType.Video && !isDesktop;
+                    inactiveCallMediaSources.camera = command.media == CallMediaType.Video;
                     inactiveCallMediaSourcesChanged(inactiveCallMediaSources);
                     const { media, iceServers, relay } = command;
                     const encryption = supportsInsertableStreams(useWorker);
@@ -354,7 +374,7 @@ const processCommand = (function () {
                         activeCall = await initializeCall(getCallConfig(!!aesKey, iceServers, relay), media, aesKey);
                         const pc = activeCall.connection;
                         // console.log("offer remoteIceCandidates", JSON.stringify(remoteIceCandidates))
-                        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+                        await pc.setRemoteDescription(new RTCSessionDescription(!webView69Or70() ? offer : adaptSdpToOldWebView(offer)));
                         // setting up local stream only after setRemoteDescription in order to have transceivers set
                         await setupLocalStream(false, activeCall);
                         setupEncryptionForLocalStream(activeCall);
@@ -396,7 +416,7 @@ const processCommand = (function () {
                         const answer = parse(command.answer);
                         const remoteIceCandidates = parse(command.iceCandidates);
                         // console.log("answer remoteIceCandidates", JSON.stringify(remoteIceCandidates))
-                        await pc.setRemoteDescription(new RTCSessionDescription(answer));
+                        await pc.setRemoteDescription(new RTCSessionDescription(!webView69Or70() ? answer : adaptSdpToOldWebView(answer)));
                         adaptToOldVersion(pc.getTransceivers()[2].currentDirection == "sendonly", activeCall);
                         addIceCandidates(pc, remoteIceCandidates);
                         addIceCandidates(pc, afterCallInitializedCandidates);
@@ -548,14 +568,6 @@ const processCommand = (function () {
                 call.worker = new Worker(URL.createObjectURL(new Blob([workerCode], { type: "text/javascript" })));
                 call.worker.onerror = ({ error, filename, lineno, message }) => console.log({ error, filename, lineno, message });
                 // call.worker.onmessage = ({data}) => console.log(JSON.stringify({message: data}))
-                call.worker.onmessage = ({ data }) => {
-                    console.log(JSON.stringify({ message: data }));
-                    const transceiverMid = data.transceiverMid;
-                    const mute = data.mute;
-                    if (transceiverMid && mute != undefined) {
-                        onMediaMuteUnmute(transceiverMid, mute);
-                    }
-                };
             }
         }
     }
@@ -661,12 +673,7 @@ const processCommand = (function () {
                 }
                 setupMuteUnmuteListener(event.transceiver, track);
                 const mediaSource = mediaSourceFromTransceiverMid(event.transceiver.mid);
-                if (mediaSource == CallMediaSource.ScreenAudio || mediaSource == CallMediaSource.ScreenVideo) {
-                    call.remoteScreenStream.addTrack(track);
-                }
-                else {
-                    call.remoteStream.addTrack(track);
-                }
+                call.remoteTracks.set(mediaSource, track);
                 console.log(`ontrack success`);
             }
             catch (e) {
@@ -946,6 +953,7 @@ const processCommand = (function () {
                 });
             }
             if (inboundStatsId) {
+                // even though MSDN site says `packetsReceived` is available in WebView 80+, in reality it's available even in 69
                 const packets = (_a = stats.get(inboundStatsId)) === null || _a === void 0 ? void 0 : _a.packetsReceived;
                 if (packets <= lastPacketsReceived) {
                     mutedSeconds++;
@@ -1023,9 +1031,25 @@ const processCommand = (function () {
             if (!mute)
                 videos.remoteScreen.play().catch((e) => console.log(e));
         }
+        if (!mute)
+            addRemoteTracksWhenUnmuted(source, activeCall);
         localOrPeerMediaSourcesChanged(activeCall);
         // Make sure that remote camera and remote screen video in their places and shown/hidden based on layout type currently in use
         changeLayout(activeCall.layout);
+    }
+    /*
+      When new remote tracks are coming, they don't get added to remote streams. They are stored in a map and once any of them "unmuted",
+      that track is added to the stream. Such workaround needed because Safari doesn't play one stream
+      if another one is not playing too, eg. no audio if only audio is playing while video track is present too but muted.
+      But we have possibility to have only one currently active track, even no active track at all.
+    */
+    function addRemoteTracksWhenUnmuted(source, call) {
+        const track = call.remoteTracks.get(source);
+        if (track) {
+            const stream = source == CallMediaSource.Mic || source == CallMediaSource.Camera ? call.remoteStream : call.remoteScreenStream;
+            stream.addTrack(track);
+            call.remoteTracks.delete(source);
+        }
     }
     async function getLocalMediaStream(mic, camera, facingMode) {
         if (!mic && !camera)
@@ -1136,7 +1160,7 @@ const processCommand = (function () {
         if (peerHasOldVersion) {
             console.log("The peer has an old version.", "Tracks size:", activeCall.remoteStream.getAudioTracks().length, activeCall.remoteStream.getVideoTracks().length);
             onMediaMuteUnmute("0", false);
-            if (activeCall.remoteStream.getVideoTracks().length > 0) {
+            if (activeCall.remoteStream.getVideoTracks().length > 0 || activeCall.remoteTracks.get(CallMediaSource.Camera)) {
                 onMediaMuteUnmute("1", false);
             }
             if (activeCall.localMediaSources.camera && !activeCall.peerMediaSources.camera) {
@@ -1151,6 +1175,22 @@ const processCommand = (function () {
                 changeLayout(activeCall.layout);
             }
         }
+    }
+    function webView69Or70() {
+        return !isDesktop && (navigator.userAgent.includes("Chrome/69.") || navigator.userAgent.includes("Chrome/70."));
+    }
+    // Adding `a=extmap-allow-mixed` causes exception on old WebViews
+    // https://groups.google.com/a/chromium.org/g/blink-dev/c/7z3uvp0-ZAc/m/8Z7qpp71BgAJ
+    function adaptSdpToOldWebView(desc) {
+        var _a;
+        const res = [];
+        (_a = desc.sdp) === null || _a === void 0 ? void 0 : _a.split("\n").forEach((line) => {
+            // Chrome has a bug related to SDP parser in old web view versions
+            if (!line.includes("a=extmap-allow-mixed")) {
+                res.push(line);
+            }
+        });
+        return { sdp: res.join("\n"), type: desc.type };
     }
     return processCommand;
 })();

@@ -218,12 +218,12 @@
 		D741547A29AF90B00022400A /* PushKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D741547929AF90B00022400A /* PushKit.framework */; };
 		D77B92DC2952372200A5A1CC /* SwiftyGif in Frameworks */ = {isa = PBXBuildFile; productRef = D77B92DB2952372200A5A1CC /* SwiftyGif */; };
 		D7F0E33929964E7E0068AF69 /* LZString in Frameworks */ = {isa = PBXBuildFile; productRef = D7F0E33829964E7E0068AF69 /* LZString */; };
+		E51B923B2CAB2B8800C212F2 /* libHSsimplex-chat-6.1.0.5-HWShuJBYoppEOt1hLB8GPU.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E51B92362CAB2B8800C212F2 /* libHSsimplex-chat-6.1.0.5-HWShuJBYoppEOt1hLB8GPU.a */; };
+		E51B923C2CAB2B8800C212F2 /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E51B92372CAB2B8800C212F2 /* libgmp.a */; };
+		E51B923D2CAB2B8800C212F2 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E51B92382CAB2B8800C212F2 /* libffi.a */; };
+		E51B923E2CAB2B8800C212F2 /* libHSsimplex-chat-6.1.0.5-HWShuJBYoppEOt1hLB8GPU-ghc9.6.3.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E51B92392CAB2B8800C212F2 /* libHSsimplex-chat-6.1.0.5-HWShuJBYoppEOt1hLB8GPU-ghc9.6.3.a */; };
+		E51B923F2CAB2B8800C212F2 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E51B923A2CAB2B8800C212F2 /* libgmpxx.a */; };
 		E51CC1E62C62085600DB91FE /* OneHandUICard.swift in Sources */ = {isa = PBXBuildFile; fileRef = E51CC1E52C62085600DB91FE /* OneHandUICard.swift */; };
-		E5D826852CA5F56100A9B74D /* libHSsimplex-chat-6.1.0.4-5C0H3SCWHuhICcJbTCMAKi-ghc9.6.3.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E5D826802CA5F56100A9B74D /* libHSsimplex-chat-6.1.0.4-5C0H3SCWHuhICcJbTCMAKi-ghc9.6.3.a */; };
-		E5D826862CA5F56100A9B74D /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E5D826812CA5F56100A9B74D /* libffi.a */; };
-		E5D826872CA5F56100A9B74D /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E5D826822CA5F56100A9B74D /* libgmp.a */; };
-		E5D826882CA5F56100A9B74D /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E5D826832CA5F56100A9B74D /* libgmpxx.a */; };
-		E5D826892CA5F56100A9B74D /* libHSsimplex-chat-6.1.0.4-5C0H3SCWHuhICcJbTCMAKi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E5D826842CA5F56100A9B74D /* libHSsimplex-chat-6.1.0.4-5C0H3SCWHuhICcJbTCMAKi.a */; };
 		E5DCF8DB2C56FAC1007928CC /* SimpleXChat.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CE2BA682845308900EC33A6 /* SimpleXChat.framework */; };
 		E5DCF9712C590272007928CC /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = E5DCF96F2C590272007928CC /* Localizable.strings */; };
 		E5DCF9842C5902CE007928CC /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = E5DCF9822C5902CE007928CC /* Localizable.strings */; };
@@ -559,12 +559,12 @@
 		D741547729AF89AF0022400A /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS16.1.sdk/System/Library/Frameworks/StoreKit.framework; sourceTree = DEVELOPER_DIR; };
 		D741547929AF90B00022400A /* PushKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PushKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS16.1.sdk/System/Library/Frameworks/PushKit.framework; sourceTree = DEVELOPER_DIR; };
 		D7AA2C3429A936B400737B40 /* MediaEncryption.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; name = MediaEncryption.playground; path = Shared/MediaEncryption.playground; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
+		E51B92362CAB2B8800C212F2 /* libHSsimplex-chat-6.1.0.5-HWShuJBYoppEOt1hLB8GPU.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-6.1.0.5-HWShuJBYoppEOt1hLB8GPU.a"; sourceTree = "<group>"; };
+		E51B92372CAB2B8800C212F2 /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
+		E51B92382CAB2B8800C212F2 /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
+		E51B92392CAB2B8800C212F2 /* libHSsimplex-chat-6.1.0.5-HWShuJBYoppEOt1hLB8GPU-ghc9.6.3.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-6.1.0.5-HWShuJBYoppEOt1hLB8GPU-ghc9.6.3.a"; sourceTree = "<group>"; };
+		E51B923A2CAB2B8800C212F2 /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
 		E51CC1E52C62085600DB91FE /* OneHandUICard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneHandUICard.swift; sourceTree = "<group>"; };
-		E5D826802CA5F56100A9B74D /* libHSsimplex-chat-6.1.0.4-5C0H3SCWHuhICcJbTCMAKi-ghc9.6.3.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-6.1.0.4-5C0H3SCWHuhICcJbTCMAKi-ghc9.6.3.a"; sourceTree = "<group>"; };
-		E5D826812CA5F56100A9B74D /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
-		E5D826822CA5F56100A9B74D /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
-		E5D826832CA5F56100A9B74D /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
-		E5D826842CA5F56100A9B74D /* libHSsimplex-chat-6.1.0.4-5C0H3SCWHuhICcJbTCMAKi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-6.1.0.4-5C0H3SCWHuhICcJbTCMAKi.a"; sourceTree = "<group>"; };
 		E5DCF9702C590272007928CC /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		E5DCF9722C590274007928CC /* bg */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = bg; path = bg.lproj/Localizable.strings; sourceTree = "<group>"; };
 		E5DCF9732C590275007928CC /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
@@ -655,14 +655,14 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E5D826852CA5F56100A9B74D /* libHSsimplex-chat-6.1.0.4-5C0H3SCWHuhICcJbTCMAKi-ghc9.6.3.a in Frameworks */,
+				E51B923B2CAB2B8800C212F2 /* libHSsimplex-chat-6.1.0.5-HWShuJBYoppEOt1hLB8GPU.a in Frameworks */,
+				E51B923D2CAB2B8800C212F2 /* libffi.a in Frameworks */,
+				E51B923C2CAB2B8800C212F2 /* libgmp.a in Frameworks */,
 				5CE2BA93284534B000EC33A6 /* libiconv.tbd in Frameworks */,
-				E5D826892CA5F56100A9B74D /* libHSsimplex-chat-6.1.0.4-5C0H3SCWHuhICcJbTCMAKi.a in Frameworks */,
+				E51B923F2CAB2B8800C212F2 /* libgmpxx.a in Frameworks */,
 				5CE2BA94284534BB00EC33A6 /* libz.tbd in Frameworks */,
-				E5D826862CA5F56100A9B74D /* libffi.a in Frameworks */,
-				E5D826872CA5F56100A9B74D /* libgmp.a in Frameworks */,
 				CE38A29C2C3FCD72005ED185 /* SwiftyGif in Frameworks */,
-				E5D826882CA5F56100A9B74D /* libgmpxx.a in Frameworks */,
+				E51B923E2CAB2B8800C212F2 /* libHSsimplex-chat-6.1.0.5-HWShuJBYoppEOt1hLB8GPU-ghc9.6.3.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -739,11 +739,11 @@
 		5C764E5C279C70B7000C6508 /* Libraries */ = {
 			isa = PBXGroup;
 			children = (
-				E5D826812CA5F56100A9B74D /* libffi.a */,
-				E5D826822CA5F56100A9B74D /* libgmp.a */,
-				E5D826832CA5F56100A9B74D /* libgmpxx.a */,
-				E5D826802CA5F56100A9B74D /* libHSsimplex-chat-6.1.0.4-5C0H3SCWHuhICcJbTCMAKi-ghc9.6.3.a */,
-				E5D826842CA5F56100A9B74D /* libHSsimplex-chat-6.1.0.4-5C0H3SCWHuhICcJbTCMAKi.a */,
+				E51B92382CAB2B8800C212F2 /* libffi.a */,
+				E51B92372CAB2B8800C212F2 /* libgmp.a */,
+				E51B923A2CAB2B8800C212F2 /* libgmpxx.a */,
+				E51B92392CAB2B8800C212F2 /* libHSsimplex-chat-6.1.0.5-HWShuJBYoppEOt1hLB8GPU-ghc9.6.3.a */,
+				E51B92362CAB2B8800C212F2 /* libHSsimplex-chat-6.1.0.5-HWShuJBYoppEOt1hLB8GPU.a */,
 			);
 			path = Libraries;
 			sourceTree = "<group>";

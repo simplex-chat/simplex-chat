@@ -12,6 +12,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.layoutId
@@ -779,30 +780,16 @@ fun ChatInfoToolbar(
   if (chatInfo is ChatInfo.Direct && chatInfo.contact.mergedPreferences.calls.enabled.forUser) {
     if (activeCall == null) {
       barButtons.add {
-        if (appPlatform.isAndroid) {
-          IconButton({
-            showMenu.value = false
-            startCall(CallMediaType.Audio)
-          }, enabled = chatInfo.contact.ready && chatInfo.contact.active
-          ) {
-            Icon(
-              painterResource(MR.images.ic_call_500),
-              stringResource(MR.strings.icon_descr_audio_call).capitalize(Locale.current),
-              tint = if (chatInfo.contact.ready && chatInfo.contact.active) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
-            )
-          }
-        } else {
-          IconButton({
-            showMenu.value = false
-            startCall(CallMediaType.Video)
-          }, enabled = chatInfo.contact.ready && chatInfo.contact.active
-          ) {
-            Icon(
-              painterResource(MR.images.ic_videocam),
-              stringResource(MR.strings.icon_descr_video_call).capitalize(Locale.current),
-              tint = if (chatInfo.contact.ready && chatInfo.contact.active) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
-            )
-          }
+        IconButton({
+          showMenu.value = false
+          startCall(CallMediaType.Audio)
+        }, enabled = chatInfo.contact.ready && chatInfo.contact.active
+        ) {
+          Icon(
+            painterResource(MR.images.ic_call_500),
+            stringResource(MR.strings.icon_descr_audio_call).capitalize(Locale.current),
+            tint = if (chatInfo.contact.ready && chatInfo.contact.active) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+          )
         }
       }
     } else if (activeCall?.contact?.id == chatInfo.id && appPlatform.isDesktop) {
@@ -836,17 +823,10 @@ fun ChatInfoToolbar(
     }
     if (chatInfo.contact.ready && chatInfo.contact.active && activeCall == null) {
       menuItems.add {
-        if (appPlatform.isAndroid) {
-          ItemAction(stringResource(MR.strings.icon_descr_video_call).capitalize(Locale.current), painterResource(MR.images.ic_videocam), onClick = {
-            showMenu.value = false
-            startCall(CallMediaType.Video)
-          })
-        } else {
-          ItemAction(stringResource(MR.strings.icon_descr_audio_call).capitalize(Locale.current), painterResource(MR.images.ic_call_500), onClick = {
-            showMenu.value = false
-            startCall(CallMediaType.Audio)
-          })
-        }
+        ItemAction(stringResource(MR.strings.icon_descr_video_call).capitalize(Locale.current), painterResource(MR.images.ic_videocam), onClick = {
+          showMenu.value = false
+          startCall(CallMediaType.Video)
+        })
       }
     }
   } else if (chatInfo is ChatInfo.Group && chatInfo.groupInfo.canAddMembers) {
@@ -1271,6 +1251,12 @@ fun BoxWithConstraintsScope.ChatItemsList(
     }
   }
   FloatingButtons(chatModel.chatItems, unreadCount, remoteHostId, chatInfo, searchValue, markRead, setFloatingButton, listState)
+
+  FloatingDate(
+    Modifier.padding(top = 10.dp).align(Alignment.TopCenter),
+    listState,
+  )
+
   LaunchedEffect(Unit) {
     snapshotFlow { listState.isScrollInProgress }
       .collect {
@@ -1498,6 +1484,108 @@ private fun TopEndFloatingButton(
 }
 
 @Composable
+private fun FloatingDate(
+  modifier: Modifier,
+  listState: LazyListState,
+) {
+  var nearBottomIndex by remember { mutableStateOf(-1) }
+  var isNearBottom by remember { mutableStateOf(true) }
+  val lastVisibleItemDate = remember {
+    derivedStateOf {
+      if (listState.layoutInfo.visibleItemsInfo.lastIndex >= 0 && listState.firstVisibleItemIndex >= 0) {
+        val lastVisibleChatItemIndex = chatModel.chatItems.value.lastIndex - listState.firstVisibleItemIndex - listState.layoutInfo.visibleItemsInfo.lastIndex
+        val item = chatModel.chatItems.value.getOrNull(lastVisibleChatItemIndex)
+        val timeZone = TimeZone.currentSystemDefault()
+        item?.meta?.itemTs?.toLocalDateTime(timeZone)?.date?.atStartOfDayIn(timeZone)
+      } else {
+        null
+      }
+    }
+  }
+  val showDate = remember { mutableStateOf(false) }
+  LaunchedEffect(Unit) {
+    launch {
+      snapshotFlow { chatModel.chatId.value }
+        .distinctUntilChanged()
+        .collect {
+          showDate.value = false
+          isNearBottom = true
+          nearBottomIndex = -1
+        }
+    }
+  }
+
+  LaunchedEffect(Unit) {
+    snapshotFlow { listState.layoutInfo.visibleItemsInfo }
+      .collect { visibleItemsInfo ->
+        if (visibleItemsInfo.find { it.index == 0 } != null) {
+          var elapsedOffset = 0
+
+          for (it in visibleItemsInfo) {
+            if (elapsedOffset >= listState.layoutInfo.viewportSize.height / 2.5) {
+              nearBottomIndex = it.index
+              break;
+            }
+            elapsedOffset += it.size
+          }
+        }
+
+        isNearBottom = if (nearBottomIndex == -1) true else (visibleItemsInfo.firstOrNull()?.index ?: 0) <= nearBottomIndex
+      }
+  }
+
+  fun setDateVisibility(isVisible: Boolean) {
+    if (isVisible) {
+      val now = Clock.System.now()
+      val date = lastVisibleItemDate.value
+      if (!isNearBottom && !showDate.value && date != null && getTimestampDateText(date) != getTimestampDateText(now)) {
+        showDate.value = true
+      }
+    } else if (showDate.value) {
+      showDate.value = false
+    }
+  }
+
+  LaunchedEffect(Unit) {
+    var hideDateWhenNotScrolling: Job = Job()
+    snapshotFlow { listState.firstVisibleItemScrollOffset }
+      .collect {
+        setDateVisibility(true)
+        hideDateWhenNotScrolling.cancel()
+        hideDateWhenNotScrolling = launch {
+          delay(1000)
+          setDateVisibility(false)
+        }
+      }
+  }
+
+  AnimatedVisibility(
+    modifier = modifier,
+    visible = showDate.value,
+    enter = fadeIn(tween(durationMillis = 350)),
+    exit = fadeOut(tween(durationMillis = 350))
+  ) {
+    val date = lastVisibleItemDate.value
+    Column {
+      Text(
+        text = if (date != null) getTimestampDateText(date) else "",
+        Modifier
+          .background(
+            color = MaterialTheme.colors.secondaryVariant,
+            RoundedCornerShape(25.dp)
+          )
+          .padding(vertical = 4.dp, horizontal = 8.dp)
+          .clip(RoundedCornerShape(25.dp)),
+        fontSize = 14.sp,
+        fontWeight = FontWeight.Medium,
+        textAlign = TextAlign.Center,
+        color = MaterialTheme.colors.secondary
+      )
+    }
+  }
+}
+
+@Composable
 private fun DownloadFilesButton(
   forwardConfirmation: ForwardConfirmation.FilesNotAccepted,
   rhId: Long?,
@@ -1560,7 +1648,7 @@ private fun ButtonRow(horizontalArrangement: Arrangement.Horizontal, content: @C
 private fun DateSeparator(date: Instant) {
   Text(
     text = getTimestampDateText(date),
-    Modifier.padding(DEFAULT_PADDING).fillMaxWidth(),
+    Modifier.padding(vertical = DEFAULT_PADDING_HALF + 4.dp, horizontal = DEFAULT_PADDING_HALF).fillMaxWidth(),
     fontSize = 14.sp,
     fontWeight = FontWeight.Medium,
     textAlign = TextAlign.Center,
