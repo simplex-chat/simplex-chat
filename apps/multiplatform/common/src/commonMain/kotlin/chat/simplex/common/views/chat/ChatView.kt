@@ -1523,8 +1523,6 @@ private fun FloatingDate(
       }
     }
   }
-  val coroutineScope = rememberCoroutineScope()
-  var hideDateWhenNotScrolling: Job? by remember { mutableStateOf(null) }
   val showDate = remember { mutableStateOf(false) }
   LaunchedEffect(Unit) {
     launch {
@@ -1570,15 +1568,14 @@ private fun FloatingDate(
   }
 
   LaunchedEffect(Unit) {
+    var hideDateWhenNotScrolling: Job = Job()
     snapshotFlow { listState.firstVisibleItemScrollOffset }
       .collect {
         setDateVisibility(true)
-        hideDateWhenNotScrolling?.cancel()
-
-        hideDateWhenNotScrolling = coroutineScope.launch {
+        hideDateWhenNotScrolling.cancel()
+        hideDateWhenNotScrolling = launch {
           delay(1000)
           setDateVisibility(false)
-          hideDateWhenNotScrolling = null
         }
       }
   }
