@@ -1573,9 +1573,9 @@ private fun FloatingDate(
       .collect {
         setDateVisibility(true)
         hideDateWhenNotScrolling?.cancel()
+        delay(1000)
 
         hideDateWhenNotScrolling = coroutineScope.launch {
-          delay(1000)
           setDateVisibility(false)
           hideDateWhenNotScrolling = null
         }
