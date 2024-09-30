@@ -2820,6 +2820,20 @@ public enum CIStatus: Decodable, Hashable {
         case .invalid: return "invalid"
         }
     }
+    
+    public var sent: Bool {
+        switch self {
+        case .sndNew: true
+        case .sndSent: true
+        case .sndRcvd: true
+        case .sndErrorAuth: true
+        case .sndError: true
+        case .sndWarning: true
+        case .rcvNew: false
+        case .rcvRead: false
+        case .invalid: false
+        }
+    }
 
     public func statusIcon(_ metaColor: Color, _ paleMetaColor: Color, _ primaryColor: Color = .accentColor) -> (Image, Color)? {
         switch self {
