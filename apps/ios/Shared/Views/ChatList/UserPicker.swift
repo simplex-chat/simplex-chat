@@ -229,7 +229,7 @@ struct ListRow: ViewModifier {
                     startLocation = gesture.location(in: nil)
                     task = Task {
                         do {
-                            try await Task.sleep(nanoseconds: 100_000000)
+                            try await Task.sleep(nanoseconds: 200_000000)
                             await MainActor.run { representer?.touchDown = true }
                         } catch { }
                     }

@@ -20,6 +20,53 @@ enum UserPickerSheet: Identifiable {
     var id: Self { self }
 }
 
+struct UserPickerSheetView: View {
+    let sheet: UserPickerSheet
+    @State private var loaded = false
+    @EnvironmentObject var chatModel: ChatModel
+
+    var body: some View {
+        Group {
+            if loaded, let currentUser = chatModel.currentUser {
+                switch sheet {
+                case .address:
+                    NavigationView {
+                        UserAddressView(shareViaProfile: currentUser.addressShared)
+                            .navigationTitle("SimpleX address")
+                            .navigationBarTitleDisplayMode(.large)
+                            .modifier(ThemedBackground(grouped: true))
+                    }
+                case .chatProfiles:
+                    NavigationView {
+                        UserProfilesView()
+                    }
+                case .currentProfile:
+                    NavigationView {
+                        UserProfile()
+                            .navigationTitle("Your current profile")
+                            .modifier(ThemedBackground(grouped: true))
+                    }
+                case .chatPreferences:
+                    NavigationView {
+                        PreferencesView(profile: currentUser.profile, preferences: currentUser.fullPreferences, currentPreferences: currentUser.fullPreferences)
+                            .navigationTitle("Your preferences")
+                            .navigationBarTitleDisplayMode(.large)
+                            .modifier(ThemedBackground(grouped: true))
+                    }
+                case .useFromDesktop:
+                    ConnectDesktopView(viaSettings: false)
+                case .settings:
+                    SettingsView(showSettings: .constant(true)) // TODO: Bind show settings
+                        .navigationBarTitleDisplayMode(.large)
+                }
+            }
+        }
+        .task {
+            withAnimation(.easeOut(duration: 0.1)) { loaded = true }
+        }
+    }
+}
+
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -63,40 +110,41 @@ struct ChatListView: View {
                 UserPicker(userPickerShown: $userPickerShown, activeSheet: $activeUserPickerSheet)
             }
         )
-        .sheet(item: $activeUserPickerSheet) { sheet in
-            if let currentUser = chatModel.currentUser {
-                switch sheet {
-                case .address:
-                    NavigationView {
-                        UserAddressView(shareViaProfile: currentUser.addressShared)
-                            .navigationTitle("SimpleX address")
-                            .navigationBarTitleDisplayMode(.large)
-                            .modifier(ThemedBackground(grouped: true))
-                    }
-                case .chatProfiles:
-                    NavigationView {
-                        UserProfilesView()
-                    }
-                case .currentProfile:
-                    NavigationView {
-                        UserProfile()
-                            .navigationTitle("Your current profile")
-                            .modifier(ThemedBackground(grouped: true))
-                    }
-                case .chatPreferences:
-                    NavigationView {
-                        PreferencesView(profile: currentUser.profile, preferences: currentUser.fullPreferences, currentPreferences: currentUser.fullPreferences)
-                            .navigationTitle("Your preferences")
-                            .navigationBarTitleDisplayMode(.large)
-                            .modifier(ThemedBackground(grouped: true))
-                    }
-                case .useFromDesktop:
-                    ConnectDesktopView(viaSettings: false)
-                case .settings:
-                    SettingsView(showSettings: $showSettings)
-                        .navigationBarTitleDisplayMode(.large)
-                }
-            }
+        .sheet(item: $activeUserPickerSheet) {
+            UserPickerSheetView(sheet: $0)
+//            if let currentUser = chatModel.currentUser {
+//                switch sheet {
+//                case .address:
+//                    NavigationView {
+//                        UserAddressView(shareViaProfile: currentUser.addressShared)
+//                            .navigationTitle("SimpleX address")
+//                            .navigationBarTitleDisplayMode(.large)
+//                            .modifier(ThemedBackground(grouped: true))
+//                    }
+//                case .chatProfiles:
+//                    NavigationView {
+//                        UserProfilesView()
+//                    }
+//                case .currentProfile:
+//                    NavigationView {
+//                        UserProfile()
+//                            .navigationTitle("Your current profile")
+//                            .modifier(ThemedBackground(grouped: true))
+//                    }
+//                case .chatPreferences:
+//                    NavigationView {
+//                        PreferencesView(profile: currentUser.profile, preferences: currentUser.fullPreferences, currentPreferences: currentUser.fullPreferences)
+//                            .navigationTitle("Your preferences")
+//                            .navigationBarTitleDisplayMode(.large)
+//                            .modifier(ThemedBackground(grouped: true))
+//                    }
+//                case .useFromDesktop:
+//                    ConnectDesktopView(viaSettings: false)
+//                case .settings:
+//                    SettingsView(showSettings: $showSettings)
+//                        .navigationBarTitleDisplayMode(.large)
+//                }
+//            }
         }
         .onChange(of: activeUserPickerSheet) {
             if $0 != nil {
