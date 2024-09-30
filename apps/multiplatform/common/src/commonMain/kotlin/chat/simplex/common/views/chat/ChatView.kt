@@ -1272,6 +1272,12 @@ fun BoxWithConstraintsScope.ChatItemsList(
     }
   }
   FloatingButtons(chatModel.chatItems, unreadCount, remoteHostId, chatInfo, searchValue, markRead, setFloatingButton, listState)
+
+  FloatingDate(
+    Modifier.padding(top = 10.dp).align(Alignment.TopCenter),
+    listState,
+  )
+
   LaunchedEffect(Unit) {
     snapshotFlow { listState.isScrollInProgress }
       .collect {
@@ -1337,8 +1343,6 @@ fun BoxWithConstraintsScope.FloatingButtons(
   var firstVisibleIndex by remember { mutableStateOf(listState.firstVisibleItemIndex) }
   var lastIndexOfVisibleItems by remember { mutableStateOf(listState.layoutInfo.visibleItemsInfo.lastIndex) }
   var firstItemIsVisible by remember { mutableStateOf(firstVisibleIndex == 0) }
-  var nearBottomIndex by remember { mutableStateOf(-1) }
-  var isNearBottom by remember { mutableStateOf(true) }
 
   LaunchedEffect(listState) {
     snapshotFlow { listState.firstVisibleItemIndex }
@@ -1346,24 +1350,6 @@ fun BoxWithConstraintsScope.FloatingButtons(
       .collect {
         firstVisibleIndex = it
         firstItemIsVisible = firstVisibleIndex == 0
-      }
-  }
-  LaunchedEffect(listState) {
-    snapshotFlow { listState.layoutInfo.visibleItemsInfo }
-      .collect { visibleItemsInfo ->
-        if (visibleItemsInfo.find { it.index == 0 } != null) {
-          var elapsedOffset = 0
-
-          for (it in visibleItemsInfo) {
-            if (elapsedOffset >= 800) {
-              nearBottomIndex = it.index
-              break;
-            }
-            elapsedOffset += it.size
-          }
-        }
-
-        isNearBottom = (visibleItemsInfo.firstOrNull()?.index ?: 0) <= nearBottomIndex
       }
   }
 
@@ -1420,29 +1406,6 @@ fun BoxWithConstraintsScope.FloatingButtons(
     showButtonWithCounter,
     onClick = { scope.launch { listState.animateScrollBy(height) } },
     onLongClick = { showDropDown.value = true }
-  )
-
-
-  val lastVisibleItem by remember {
-    derivedStateOf {
-      if (lastIndexOfVisibleItems >= 0 && firstVisibleIndex >= 0) {
-        val lastVisibleChatItemIndex = chatItems.value.lastIndex - firstVisibleIndex - lastIndexOfVisibleItems
-        chatItems.value.getOrNull(lastVisibleChatItemIndex)
-      } else {
-        null
-      }
-    }
-  }
-
-  val firstVisibleItemScrollOffset by remember {
-    derivedStateOf { listState.firstVisibleItemScrollOffset }
-  }
-
-  TopCenterFloatingButton(
-    Modifier.padding(top = 10.dp).align(Alignment.TopCenter),
-    lastVisibleItem,
-    isNearBottom,
-    firstVisibleItemScrollOffset
   )
 
   Box {
@@ -1542,18 +1505,50 @@ private fun TopEndFloatingButton(
 }
 
 @Composable
-private fun TopCenterFloatingButton(
+private fun FloatingDate(
   modifier: Modifier,
-  lastVisibleItem: ChatItem?,
-  isNearBottom: Boolean,
-  firstVisibleItemScrollOffset: Int
+  listState: LazyListState,
 ) {
+  var nearBottomIndex by remember { mutableStateOf(-1) }
+  var isNearBottom by remember { mutableStateOf(true) }
+
+  val lastVisibleItem by remember(listState.layoutInfo.visibleItemsInfo.lastIndex, listState.firstVisibleItemIndex, chatModel.chatItems) {
+    derivedStateOf {
+      if (listState.layoutInfo.visibleItemsInfo.lastIndex >= 0 && listState.firstVisibleItemIndex >= 0) {
+        val lastVisibleChatItemIndex = chatModel.chatItems.value.lastIndex - listState.firstVisibleItemIndex - listState.layoutInfo.visibleItemsInfo.lastIndex
+        chatModel.chatItems.value.getOrNull(lastVisibleChatItemIndex)
+      } else {
+        null
+      }
+    }
+  }
+  val firstVisibleItemScrollOffset by remember {
+    derivedStateOf { listState.firstVisibleItemScrollOffset }
+  }
   val coroutineScope = rememberCoroutineScope()
   var hideDateWhenNotScrolling: Job? by remember { mutableStateOf(null) }
   val firstVisibleItemDate = remember { mutableStateOf<Instant?>(null) }
-
-
   val showDate = remember { mutableStateOf(false) }
+
+  LaunchedEffect(listState) {
+    snapshotFlow { listState.layoutInfo.visibleItemsInfo }
+      .collect { visibleItemsInfo ->
+        if (visibleItemsInfo.find { it.index == 0 } != null) {
+          var elapsedOffset = 0
+
+          for (it in visibleItemsInfo) {
+            if (elapsedOffset >= 800) {
+              nearBottomIndex = it.index
+              break;
+            }
+            elapsedOffset += it.size
+          }
+        }
+
+        isNearBottom = (visibleItemsInfo.firstOrNull()?.index ?: 0) <= nearBottomIndex
+      }
+  }
+
   fun setDateVisibility(isVisible: Boolean) {
     if (isVisible) {
       val date = firstVisibleItemDate.value
