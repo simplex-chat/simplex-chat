@@ -40,7 +40,6 @@ struct SheetRepresentable<Content: View>: UIViewControllerRepresentable {
 
     func updateUIViewController(_ sheetController: Controller<Content>, context: Context) {
         sheetController.animate(isPresented: isPresented)
-        sheetController.hostingController.rootView = content
     }
 
     class Controller<C: View>: UIViewController {

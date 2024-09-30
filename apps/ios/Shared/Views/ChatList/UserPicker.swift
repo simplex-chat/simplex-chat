@@ -234,14 +234,11 @@ struct ListRow: ViewModifier {
                         } catch { }
                     }
                 case .ended:
-                    task?.cancel()
                     if hitTest(gesture.location(in: self), with: nil) == self {
-                        representer?.touchDown = true
-                        withAnimation(.easeIn(duration: 0.05)) { representer?.touchDown = false }
                         representer?.action()
-                    } else {
-                        representer?.touchDown = false
                     }
+                    task?.cancel()
+                    representer?.touchDown = false
                 case .changed:
                     if let startLocation {
                         let location = gesture.location(in: nil)
