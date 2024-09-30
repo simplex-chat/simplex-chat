@@ -22,8 +22,9 @@ enum UserPickerSheet: Identifiable {
 
 struct UserPickerSheetView: View {
     let sheet: UserPickerSheet
-    @State private var loaded = false
     @EnvironmentObject var chatModel: ChatModel
+    @Binding var showSettings: Bool
+    @State private var loaded = false
 
     var body: some View {
         Group {
@@ -56,7 +57,7 @@ struct UserPickerSheetView: View {
                 case .useFromDesktop:
                     ConnectDesktopView(viaSettings: false)
                 case .settings:
-                    SettingsView(showSettings: .constant(true)) // TODO: Bind show settings
+                    SettingsView(showSettings: $showSettings)
                         .navigationBarTitleDisplayMode(.large)
                 }
             }
@@ -111,40 +112,7 @@ struct ChatListView: View {
             }
         )
         .sheet(item: $activeUserPickerSheet) {
-            UserPickerSheetView(sheet: $0)
-//            if let currentUser = chatModel.currentUser {
-//                switch sheet {
-//                case .address:
-//                    NavigationView {
-//                        UserAddressView(shareViaProfile: currentUser.addressShared)
-//                            .navigationTitle("SimpleX address")
-//                            .navigationBarTitleDisplayMode(.large)
-//                            .modifier(ThemedBackground(grouped: true))
-//                    }
-//                case .chatProfiles:
-//                    NavigationView {
-//                        UserProfilesView()
-//                    }
-//                case .currentProfile:
-//                    NavigationView {
-//                        UserProfile()
-//                            .navigationTitle("Your current profile")
-//                            .modifier(ThemedBackground(grouped: true))
-//                    }
-//                case .chatPreferences:
-//                    NavigationView {
-//                        PreferencesView(profile: currentUser.profile, preferences: currentUser.fullPreferences, currentPreferences: currentUser.fullPreferences)
-//                            .navigationTitle("Your preferences")
-//                            .navigationBarTitleDisplayMode(.large)
-//                            .modifier(ThemedBackground(grouped: true))
-//                    }
-//                case .useFromDesktop:
-//                    ConnectDesktopView(viaSettings: false)
-//                case .settings:
-//                    SettingsView(showSettings: $showSettings)
-//                        .navigationBarTitleDisplayMode(.large)
-//                }
-//            }
+            UserPickerSheetView(sheet: $0, showSettings: $showSettings)
         }
         .onChange(of: activeUserPickerSheet) {
             if $0 != nil {
