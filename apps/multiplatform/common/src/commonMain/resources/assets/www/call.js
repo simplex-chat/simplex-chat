@@ -527,20 +527,6 @@ const processCommand = (function () {
         sendMessageToNative(apiResp);
         return apiResp;
     }
-    function webView69Or70() {
-        return !isDesktop && navigator.userAgent.includes("Chrome/69.");
-    }
-    function adaptSdpToOldWebView(desc) {
-        var _a;
-        const res = [];
-        (_a = desc.sdp) === null || _a === void 0 ? void 0 : _a.split("\n").forEach((line) => {
-            // Chrome has a bug related to SDP parser in old web view versions
-            if (!line.includes("a=extmap-allow-mixed")) {
-                res.push(line);
-            }
-        });
-        return { sdp: res.join("\n"), type: desc.type };
-    }
     function endCall() {
         var _a;
         try {
@@ -1189,6 +1175,20 @@ const processCommand = (function () {
                 changeLayout(activeCall.layout);
             }
         }
+    }
+    function webView69Or70() {
+        return !isDesktop && navigator.userAgent.includes("Chrome/69.");
+    }
+    function adaptSdpToOldWebView(desc) {
+        var _a;
+        const res = [];
+        (_a = desc.sdp) === null || _a === void 0 ? void 0 : _a.split("\n").forEach((line) => {
+            // Chrome has a bug related to SDP parser in old web view versions
+            if (!line.includes("a=extmap-allow-mixed")) {
+                res.push(line);
+            }
+        });
+        return { sdp: res.join("\n"), type: desc.type };
     }
     return processCommand;
 })();
