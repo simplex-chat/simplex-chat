@@ -1473,7 +1473,7 @@ const processCommand = (function () {
   }
 
   function webView69Or70(): boolean {
-    return !isDesktop && navigator.userAgent.includes("Chrome/69.")
+    return !isDesktop && (navigator.userAgent.includes("Chrome/69.") || navigator.userAgent.includes("Chrome/70."))
   }
 
   function adaptSdpToOldWebView(desc: RTCSessionDescriptionInit): RTCSessionDescriptionInit {
