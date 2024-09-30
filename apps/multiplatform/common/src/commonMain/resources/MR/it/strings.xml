@@ -2106,4 +2106,6 @@
     <string name="forward_multiple">Inoltra messaggi…</string>
     <string name="compose_save_messages_n">Salvataggio di %1$s messaggi</string>
     <string name="icon_descr_sound_muted">Audio silenziato</string>
+    <string name="error_initializing_web_view_wrong_arch">Errore di inizializzazione di WebView. Assicurati di avere WebView installato e che la sua architettura supportata sia arm64.
+\nErrore: %s</string>
 </resources>
