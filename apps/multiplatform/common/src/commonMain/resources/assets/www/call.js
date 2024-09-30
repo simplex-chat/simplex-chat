@@ -1179,6 +1179,8 @@ const processCommand = (function () {
     function webView69Or70() {
         return !isDesktop && (navigator.userAgent.includes("Chrome/69.") || navigator.userAgent.includes("Chrome/70."));
     }
+    // Adding `a=extmap-allow-mixed` causes exception on old WebViews
+    // https://groups.google.com/a/chromium.org/g/blink-dev/c/7z3uvp0-ZAc/m/8Z7qpp71BgAJ
     function adaptSdpToOldWebView(desc) {
         var _a;
         const res = [];
