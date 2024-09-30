@@ -162,24 +162,24 @@
         <target>%d dagen</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d file(s) are still being downloaded." xml:space="preserve" approved="no">
+      <trans-unit id="%d file(s) are still being downloaded." xml:space="preserve">
         <source>%d file(s) are still being downloaded.</source>
-        <target state="translated">%d bestand(en) worden nog gedownload.</target>
+        <target>%d bestand(en) worden nog gedownload.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
-      <trans-unit id="%d file(s) failed to download." xml:space="preserve" approved="no">
+      <trans-unit id="%d file(s) failed to download." xml:space="preserve">
         <source>%d file(s) failed to download.</source>
-        <target state="translated">%d bestand(en) konden niet worden gedownload.</target>
+        <target>%d bestand(en) konden niet worden gedownload.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
-      <trans-unit id="%d file(s) were deleted." xml:space="preserve" approved="no">
+      <trans-unit id="%d file(s) were deleted." xml:space="preserve">
         <source>%d file(s) were deleted.</source>
-        <target state="translated">%d bestand(en) zijn verwijderd.</target>
+        <target>%d bestand(en) zijn verwijderd.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
-      <trans-unit id="%d file(s) were not downloaded." xml:space="preserve" approved="no">
+      <trans-unit id="%d file(s) were not downloaded." xml:space="preserve">
         <source>%d file(s) were not downloaded.</source>
-        <target state="translated">%d bestand(en) zijn niet gedownload.</target>
+        <target>%d bestand(en) zijn niet gedownload.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
       <trans-unit id="%d hours" xml:space="preserve">
@@ -187,9 +187,9 @@
         <target>%d uren</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d messages not forwarded" xml:space="preserve" approved="no">
+      <trans-unit id="%d messages not forwarded" xml:space="preserve">
         <source>%d messages not forwarded</source>
-        <target state="translated">%d berichten niet doorgestuurd</target>
+        <target>%d berichten niet doorgestuurd</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="%d min" xml:space="preserve">
@@ -753,7 +753,7 @@
       <trans-unit id="All profiles" xml:space="preserve">
         <source>All profiles</source>
         <target>Alle profielen</target>
-        <note>No comment provided by engineer.</note>
+        <note>profile dropdown</note>
       </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
         <source>All your contacts will remain connected.</source>
@@ -1476,9 +1476,9 @@
         <target>Vergelijk beveiligingscodes met je contacten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Completed" xml:space="preserve" approved="no">
+      <trans-unit id="Completed" xml:space="preserve">
         <source>Completed</source>
-        <target state="translated">Voltooid</target>
+        <target>Voltooid</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Configure ICE servers" xml:space="preserve">
@@ -2454,9 +2454,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Stuur geen geschiedenis naar nieuwe leden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Do not use credentials with proxy." xml:space="preserve" approved="no">
+      <trans-unit id="Do not use credentials with proxy." xml:space="preserve">
         <source>Do not use credentials with proxy.</source>
-        <target state="translated">Gebruik geen inloggegevens met proxy.</target>
+        <target>Gebruik geen inloggegevens met proxy.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Don't create address" xml:space="preserve">
@@ -2500,9 +2500,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Download bestand</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Download files" xml:space="preserve" approved="no">
+      <trans-unit id="Download files" xml:space="preserve">
         <source>Download files</source>
-        <target state="translated">‐Bestanden downloaden</target>
+        <target>‐Bestanden downloaden</target>
         <note>alert action</note>
       </trans-unit>
       <trans-unit id="Downloaded" xml:space="preserve">
@@ -3033,7 +3033,7 @@ Dit is uw eigen eenmalige link!</target>
       <trans-unit id="Error switching profile!" xml:space="preserve">
         <source>Error switching profile!</source>
         <target>Fout bij wisselen van profiel!</target>
-        <note>No comment provided by engineer.</note>
+        <note>alertTitle</note>
       </trans-unit>
       <trans-unit id="Error synchronizing connection" xml:space="preserve">
         <source>Error synchronizing connection</source>
@@ -3078,8 +3078,7 @@ Dit is uw eigen eenmalige link!</target>
       <trans-unit id="Error: %@" xml:space="preserve">
         <source>Error: %@</source>
         <target>Fout: %@</target>
-        <note>file error text
-   snd error text</note>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Error: URL is invalid" xml:space="preserve">
         <source>Error: URL is invalid</source>
@@ -3166,10 +3165,10 @@ Dit is uw eigen eenmalige link!</target>
         <target>Bestandsfout</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="File errors:&#10;%@" xml:space="preserve" approved="no">
+      <trans-unit id="File errors:&#10;%@" xml:space="preserve">
         <source>File errors:
 %@</source>
-        <target state="translated">Bestandsfouten:
+        <target>Bestandsfouten:
 %@</target>
         <note>alert message</note>
       </trans-unit>
@@ -3308,9 +3307,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Doorsturen</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Forward %d message(s)?" xml:space="preserve" approved="no">
+      <trans-unit id="Forward %d message(s)?" xml:space="preserve">
         <source>Forward %d message(s)?</source>
-        <target state="translated">%d bericht(en) doorsturen?</target>
+        <target>%d bericht(en) doorsturen?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Forward and save messages" xml:space="preserve">
@@ -3318,14 +3317,14 @@ Dit is uw eigen eenmalige link!</target>
         <target>Berichten doorsturen en opslaan</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Forward messages" xml:space="preserve" approved="no">
+      <trans-unit id="Forward messages" xml:space="preserve">
         <source>Forward messages</source>
-        <target state="translated">Berichten doorsturen</target>
+        <target>Berichten doorsturen</target>
         <note>alert action</note>
       </trans-unit>
-      <trans-unit id="Forward messages without files?" xml:space="preserve" approved="no">
+      <trans-unit id="Forward messages without files?" xml:space="preserve">
         <source>Forward messages without files?</source>
-        <target state="translated">Berichten doorsturen zonder bestanden?</target>
+        <target>Berichten doorsturen zonder bestanden?</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Forwarded" xml:space="preserve">
@@ -3338,9 +3337,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Doorgestuurd vanuit</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Forwarding %lld messages" xml:space="preserve" approved="no">
+      <trans-unit id="Forwarding %lld messages" xml:space="preserve">
         <source>Forwarding %lld messages</source>
-        <target state="translated">%lld berichten doorsturen</target>
+        <target>%lld berichten doorsturen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Forwarding server %@ failed to connect to destination server %@. Please try later." xml:space="preserve">
@@ -3637,9 +3636,9 @@ Fout: %2$@</target>
         <target>ICE servers (één per lijn)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="IP address" xml:space="preserve" approved="no">
+      <trans-unit id="IP address" xml:space="preserve">
         <source>IP address</source>
-        <target state="translated">IP-adres</target>
+        <target>IP-adres</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you can't meet in person, show QR code in a video call, or share the link." xml:space="preserve">
@@ -4342,9 +4341,9 @@ Dit is jouw link voor groep %@!</target>
         <target>Berichten verzonden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Messages were deleted after you selected them." xml:space="preserve" approved="no">
+      <trans-unit id="Messages were deleted after you selected them." xml:space="preserve">
         <source>Messages were deleted after you selected them.</source>
-        <target state="translated">Berichten zijn verwijderd nadat u ze had geselecteerd.</target>
+        <target>Berichten zijn verwijderd nadat u ze had geselecteerd.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve">
@@ -4642,9 +4641,9 @@ Dit is jouw link voor groep %@!</target>
         <target>Niets geselecteerd</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Nothing to forward!" xml:space="preserve" approved="no">
+      <trans-unit id="Nothing to forward!" xml:space="preserve">
         <source>Nothing to forward!</source>
-        <target state="translated">Niets om door te sturen!</target>
+        <target>Niets om door te sturen!</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Notifications" xml:space="preserve">
@@ -4870,10 +4869,10 @@ Vereist het inschakelen van VPN.</target>
         <target>Andere %@ servers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Other file errors:&#10;%@" xml:space="preserve" approved="no">
+      <trans-unit id="Other file errors:&#10;%@" xml:space="preserve">
         <source>Other file errors:
 %@</source>
-        <target state="translated">Andere bestandsfouten:
+        <target>Andere bestandsfouten:
 %@</target>
         <note>alert message</note>
       </trans-unit>
@@ -4912,9 +4911,9 @@ Vereist het inschakelen van VPN.</target>
         <target>Toegangscode ingesteld!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Password" xml:space="preserve" approved="no">
+      <trans-unit id="Password" xml:space="preserve">
         <source>Password</source>
-        <target state="translated">Wachtwoord</target>
+        <target>Wachtwoord</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Password to show" xml:space="preserve">
@@ -5066,9 +5065,9 @@ Fout: %@</target>
         <target>Poolse interface</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Port" xml:space="preserve" approved="no">
+      <trans-unit id="Port" xml:space="preserve">
         <source>Port</source>
-        <target state="translated">Poort</target>
+        <target>Poort</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve">
@@ -5258,9 +5257,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Proxied servers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Proxy requires password" xml:space="preserve" approved="no">
+      <trans-unit id="Proxy requires password" xml:space="preserve">
         <source>Proxy requires password</source>
-        <target state="translated">Proxy vereist wachtwoord</target>
+        <target>Proxy vereist wachtwoord</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Push notifications" xml:space="preserve">
@@ -5669,9 +5668,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>SMP server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SOCKS proxy" xml:space="preserve" approved="no">
+      <trans-unit id="SOCKS proxy" xml:space="preserve">
         <source>SOCKS proxy</source>
-        <target state="translated">SOCKS proxy</target>
+        <target>SOCKS proxy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Safely receive files" xml:space="preserve">
@@ -5785,9 +5784,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Opgeslagen bericht</target>
         <note>message info title</note>
       </trans-unit>
-      <trans-unit id="Saving %lld messages" xml:space="preserve" approved="no">
+      <trans-unit id="Saving %lld messages" xml:space="preserve">
         <source>Saving %lld messages</source>
-        <target state="translated">%lld berichten opslaan</target>
+        <target>%lld berichten opslaan</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Scale" xml:space="preserve">
@@ -6545,19 +6544,19 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Indienen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Subscribed" xml:space="preserve" approved="no">
+      <trans-unit id="Subscribed" xml:space="preserve">
         <source>Subscribed</source>
-        <target state="translated">Subscribed</target>
+        <target>Subscribed</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Subscription errors" xml:space="preserve" approved="no">
+      <trans-unit id="Subscription errors" xml:space="preserve">
         <source>Subscription errors</source>
-        <target state="translated">Subscription fouten</target>
+        <target>Subscription fouten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Subscriptions ignored" xml:space="preserve" approved="no">
+      <trans-unit id="Subscriptions ignored" xml:space="preserve">
         <source>Subscriptions ignored</source>
-        <target state="translated">Subscriptions genegeerd</target>
+        <target>Subscriptions genegeerd</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Support SimpleX Chat" xml:space="preserve">
@@ -7195,9 +7194,9 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>Gebruik .onion-hosts</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use SOCKS proxy" xml:space="preserve" approved="no">
+      <trans-unit id="Use SOCKS proxy" xml:space="preserve">
         <source>Use SOCKS proxy</source>
-        <target state="translated">Gebruik SOCKS proxy</target>
+        <target>Gebruik SOCKS proxy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use SimpleX Chat servers?" xml:space="preserve">
@@ -7275,9 +7274,9 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>Gebruikersselectie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Username" xml:space="preserve" approved="no">
+      <trans-unit id="Username" xml:space="preserve">
         <source>Username</source>
-        <target state="translated">Gebruikersnaam</target>
+        <target>Gebruikersnaam</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Using SimpleX Chat servers." xml:space="preserve">
@@ -7538,11 +7537,6 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
       <trans-unit id="XFTP server" xml:space="preserve">
         <source>XFTP server</source>
         <target>XFTP server</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="You" xml:space="preserve">
-        <source>You</source>
-        <target>Jij</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You **must not** use the same database on two devices." xml:space="preserve">
@@ -7924,9 +7918,9 @@ Verbindingsverzoek herhalen?</target>
         <target>Uw contacten blijven verbonden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your credentials may be sent unencrypted." xml:space="preserve" approved="no">
+      <trans-unit id="Your credentials may be sent unencrypted." xml:space="preserve">
         <source>Your credentials may be sent unencrypted.</source>
-        <target state="translated">Uw inloggegevens worden mogelijk niet-versleuteld verzonden.</target>
+        <target>Uw inloggegevens worden mogelijk niet-versleuteld verzonden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your current chat database will be DELETED and REPLACED with the imported one." xml:space="preserve">

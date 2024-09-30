@@ -2068,7 +2068,7 @@
     <string name="app_check_for_updates_button_remind_later">Me lembre mais tarde</string>
     <string name="app_check_for_updates_notice_desc">Para ser notificado sobre os novos lançamentos, habilite a checagem periódica de versões Estáveis e Beta.</string>
     <string name="one_hand_ui">Barra de ferramentas de conversa acessível</string>
-    <string name="forward_files_failed_to_receive_desc">Falha ao baixar os arquivos.</string>
+    <string name="forward_files_failed_to_receive_desc">Falha no baixar de %1$d arquivo(s).</string>
     <string name="forward_files_messages_deleted_after_selection_title">%1$s mensagens não encaminhadas.</string>
     <string name="settings_section_title_chat_database">DADOS DO BATE-PAPO</string>
     <string name="network_proxy_random_credentials">Utilize credenciais aleatórias</string>
@@ -2083,7 +2083,7 @@
     <string name="forward_alert_forward_messages_without_files">Encaminhar mensagens sem arquivos?</string>
     <string name="forward_files_messages_deleted_after_selection_desc">As mensagens foram excluidas após vocês selecioná-las.</string>
     <string name="forward_alert_title_nothing_to_forward">Nada para encaminhar!</string>
-    <string name="forward_files_in_progress_desc">Os arquivos ainda estão sendo baixados.</string>
+    <string name="forward_files_in_progress_desc">%1$d arquivo(s) ainda estão sendo baixados.</string>
     <string name="forward_files_missing_desc">%1$d arquivos foram excluidos.</string>
     <string name="forward_files_not_accepted_desc">%1$d arquivos não foram baixados.</string>
     <string name="forward_files_not_accepted_receive_files">Baixar</string>

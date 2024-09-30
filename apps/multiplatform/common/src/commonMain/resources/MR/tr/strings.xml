@@ -825,7 +825,7 @@
     <string name="mark_read">Okundu olarak işaretle</string>
     <string name="mark_unread">Okunmadı olarak işaretle</string>
     <string name="chat_console">Sohbet konsolu</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>Pil ömrü için iyi</b>. Uygulama mesajları 10 dakikada bir kontrol eder. Aramaları veya acil mesajları kaçırabilirsiniz.</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Pil ömrü için iyi</b>. Uygulama mesajları 10 dakikada bir kontrol eder. Aramaları veya acil mesajları kaçırabilirsiniz.]]></string>
     <string name="v4_4_verify_connection_security_desc">Güvenlik kodlarını kişilerinizle karşılaştırın.</string>
     <string name="notifications_mode_service_desc">Arka plan hizmeti her zaman çalışır - mesajlar gelir gelmez bildirim gönderilir.</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Pil için en iyisi</b>. Sadece uygulama çalışırken bildirim alırsınız (arka plan hizmeti YOK).]]></string>

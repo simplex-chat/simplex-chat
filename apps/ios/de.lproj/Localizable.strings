@@ -175,8 +175,23 @@
 /* time interval */
 "%d days" = "%d Tage";
 
+/* forward confirmation reason */
+"%d file(s) are still being downloaded." = "%d Datei(en) wird/werden immer noch heruntergeladen.";
+
+/* forward confirmation reason */
+"%d file(s) failed to download." = "Bei %d Datei(en) ist das Herunterladen fehlgeschlagen.";
+
+/* forward confirmation reason */
+"%d file(s) were deleted." = "%d Datei(en) wurde(n) gelöscht.";
+
+/* forward confirmation reason */
+"%d file(s) were not downloaded." = "%d Datei(en) wurde(n) nicht heruntergeladen.";
+
 /* time interval */
 "%d hours" = "%d Stunden";
+
+/* alert title */
+"%d messages not forwarded" = "%d Nachrichten wurden nicht weitergeleitet";
 
 /* time interval */
 "%d min" = "%d min";
@@ -457,7 +472,7 @@
 /* No comment provided by engineer. */
 "All new messages from %@ will be hidden!" = "Von %@ werden alle neuen Nachrichten ausgeblendet!";
 
-/* No comment provided by engineer. */
+/* profile dropdown */
 "All profiles" = "Alle Profile";
 
 /* No comment provided by engineer. */
@@ -1188,7 +1203,7 @@
 "Core version: v%@" = "Core Version: v%@";
 
 /* No comment provided by engineer. */
-"Corner" = "Ecke";
+"Corner" = "Ecken-Abrundung";
 
 /* No comment provided by engineer. */
 "Correct name to %@?" = "Richtiger Name für %@?";
@@ -1624,6 +1639,9 @@
 "Do NOT send messages directly, even if your or destination server does not support private routing." = "Nachrichten werden nicht direkt versendet, selbst wenn Ihr oder der Zielserver kein privates Routing unterstützt.";
 
 /* No comment provided by engineer. */
+"Do not use credentials with proxy." = "Verwenden Sie keine Anmeldeinformationen mit einem Proxy.";
+
+/* No comment provided by engineer. */
 "Do NOT use private routing." = "Sie nutzen KEIN privates Routing.";
 
 /* No comment provided by engineer. */
@@ -1653,6 +1671,9 @@
 
 /* server test step */
 "Download file" = "Datei herunterladen";
+
+/* alert action */
+"Download files" = "Dateien herunterladen";
 
 /* No comment provided by engineer. */
 "Downloaded" = "Heruntergeladen";
@@ -2020,7 +2041,7 @@
 /* No comment provided by engineer. */
 "Error switching profile" = "Fehler beim Wechseln des Profils";
 
-/* No comment provided by engineer. */
+/* alertTitle */
 "Error switching profile!" = "Fehler beim Umschalten des Profils!";
 
 /* No comment provided by engineer. */
@@ -2047,8 +2068,7 @@
 /* No comment provided by engineer. */
 "Error: " = "Fehler: ";
 
-/* file error text
-   snd error text */
+/* alert message */
 "Error: %@" = "Fehler: %@";
 
 /* No comment provided by engineer. */
@@ -2107,6 +2127,9 @@
 
 /* No comment provided by engineer. */
 "File error" = "Datei-Fehler";
+
+/* alert message */
+"File errors:\n%@" = "Datei-Fehler:\n%@";
 
 /* file error text */
 "File not found - most likely file was deleted or cancelled." = "Datei nicht gefunden - höchstwahrscheinlich wurde die Datei gelöscht oder der Transfer abgebrochen.";
@@ -2189,8 +2212,17 @@
 /* chat item action */
 "Forward" = "Weiterleiten";
 
+/* alert title */
+"Forward %d message(s)?" = "%d Nachricht(en) weiterleiten?";
+
 /* No comment provided by engineer. */
 "Forward and save messages" = "Nachrichten weiterleiten und speichern";
+
+/* alert action */
+"Forward messages" = "Nachrichten weiterleiten";
+
+/* alert message */
+"Forward messages without files?" = "Nachrichten ohne Dateien weiterleiten?";
 
 /* No comment provided by engineer. */
 "forwarded" = "weitergeleitet";
@@ -2200,6 +2232,9 @@
 
 /* No comment provided by engineer. */
 "Forwarded from" = "Weitergeleitet aus";
+
+/* No comment provided by engineer. */
+"Forwarding %lld messages" = "%lld Nachricht(en) wird/werden weitergeleitet";
 
 /* No comment provided by engineer. */
 "Forwarding server %@ failed to connect to destination server %@. Please try later." = "Weiterleitungsserver %@ konnte sich nicht mit dem Zielserver %@ verbinden. Bitte versuchen Sie es später erneut.";
@@ -2589,6 +2624,9 @@
 "iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications." = "Für die sichere Speicherung des Passworts nach dem Neustart der App und dem Wechsel des Passworts wird der iOS Schlüsselbund verwendet - dies erlaubt den Empfang von Push-Benachrichtigungen.";
 
 /* No comment provided by engineer. */
+"IP address" = "IP-Adresse";
+
+/* No comment provided by engineer. */
 "Irreversible message deletion" = "Unwiederbringliches löschen einer Nachricht";
 
 /* No comment provided by engineer. */
@@ -2873,6 +2911,9 @@
 /* No comment provided by engineer. */
 "Messages sent" = "Gesendete Nachrichten";
 
+/* alert message */
+"Messages were deleted after you selected them." = "Die Nachrichten wurden gelöscht, nachdem Sie sie ausgewählt hatten.";
+
 /* No comment provided by engineer. */
 "Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." = "Nachrichten, Dateien und Anrufe sind durch **Ende-zu-Ende-Verschlüsselung** mit Perfect Forward Secrecy, Ablehnung und Einbruchs-Wiederherstellung geschützt.";
 
@@ -3083,6 +3124,9 @@
 /* No comment provided by engineer. */
 "Nothing selected" = "Nichts ausgewählt";
 
+/* alert title */
+"Nothing to forward!" = "Es gibt nichts zum Weiterleiten!";
+
 /* No comment provided by engineer. */
 "Notifications" = "Benachrichtigungen";
 
@@ -3235,6 +3279,9 @@
 /* No comment provided by engineer. */
 "other errors" = "Andere Fehler";
 
+/* alert message */
+"Other file errors:\n%@" = "Andere(r) Datei-Fehler:\n%@";
+
 /* member role */
 "owner" = "Eigentümer";
 
@@ -3255,6 +3302,9 @@
 
 /* No comment provided by engineer. */
 "Passcode set!" = "Zugangscode eingestellt!";
+
+/* No comment provided by engineer. */
+"Password" = "Passwort";
 
 /* No comment provided by engineer. */
 "Password to show" = "Passwort anzeigen";
@@ -3351,6 +3401,9 @@
 
 /* No comment provided by engineer. */
 "Polish interface" = "Polnische Bedienoberfläche";
+
+/* No comment provided by engineer. */
+"Port" = "Port";
 
 /* server test error */
 "Possibly, certificate fingerprint in server address is incorrect" = "Der Fingerabdruck des Zertifikats in der Serveradresse ist wahrscheinlich ungültig";
@@ -3462,6 +3515,9 @@
 
 /* No comment provided by engineer. */
 "Proxied servers" = "Proxy-Server";
+
+/* No comment provided by engineer. */
+"Proxy requires password" = "Der Proxy benötigt ein Passwort";
 
 /* No comment provided by engineer. */
 "Push notifications" = "Push-Benachrichtigungen";
@@ -3803,6 +3859,9 @@
 
 /* No comment provided by engineer. */
 "Saved WebRTC ICE servers will be removed" = "Gespeicherte WebRTC ICE-Server werden entfernt";
+
+/* No comment provided by engineer. */
+"Saving %lld messages" = "Es wird/werden %lld Nachricht(en) gesichert";
 
 /* No comment provided by engineer. */
 "Scale" = "Skalieren";
@@ -4209,6 +4268,9 @@
 /* No comment provided by engineer. */
 "SMP server" = "SMP-Server";
 
+/* No comment provided by engineer. */
+"SOCKS proxy" = "SOCKS-Proxy";
+
 /* blur media */
 "Soft" = "Weich";
 
@@ -4315,7 +4377,7 @@
 "System authentication" = "System-Authentifizierung";
 
 /* No comment provided by engineer. */
-"Tail" = "Sprechblase";
+"Tail" = "Sprechblasen-Format";
 
 /* No comment provided by engineer. */
 "Take picture" = "Machen Sie ein Foto";
@@ -4744,6 +4806,9 @@
 "Use SimpleX Chat servers?" = "Verwenden Sie SimpleX-Chat-Server?";
 
 /* No comment provided by engineer. */
+"Use SOCKS proxy" = "SOCKS-Proxy nutzen";
+
+/* No comment provided by engineer. */
 "Use the app while in the call." = "Die App kann während eines Anrufs genutzt werden.";
 
 /* No comment provided by engineer. */
@@ -4754,6 +4819,9 @@
 
 /* No comment provided by engineer. */
 "User selection" = "Benutzer-Auswahl";
+
+/* No comment provided by engineer. */
+"Username" = "Benutzername";
 
 /* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "Verwendung von SimpleX-Chat-Servern.";
@@ -4955,9 +5023,6 @@
 
 /* No comment provided by engineer. */
 "you" = "Profil";
-
-/* No comment provided by engineer. */
-"You" = "Profil";
 
 /* No comment provided by engineer. */
 "You **must not** use the same database on two devices." = "Sie dürfen die selbe Datenbank **nicht** auf zwei Geräten nutzen.";
@@ -5210,6 +5275,9 @@
 
 /* No comment provided by engineer. */
 "Your contacts will remain connected." = "Ihre Kontakte bleiben weiterhin verbunden.";
+
+/* No comment provided by engineer. */
+"Your credentials may be sent unencrypted." = "Ihre Anmeldeinformationen können unverschlüsselt versendet werden.";
 
 /* No comment provided by engineer. */
 "Your current chat database will be DELETED and REPLACED with the imported one." = "Ihre aktuelle Chat-Datenbank wird GELÖSCHT und durch die Importierte ERSETZT.";
