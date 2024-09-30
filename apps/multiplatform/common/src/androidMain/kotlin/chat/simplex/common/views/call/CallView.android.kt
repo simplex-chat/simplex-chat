@@ -737,7 +737,11 @@ fun WebRTCView(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIM
           }
         } catch (e: Exception) {
           Log.e(TAG, "Error initializing WebView: ${e.stackTraceToString()}")
-          AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error), generalGetString(MR.strings.error_initializing_web_view).format(e.stackTraceToString()))
+          if (e.stackTraceToString().contains("/lib64")) {
+            AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error), generalGetString(MR.strings.error_initializing_web_view_wrong_arch).format(e.stackTraceToString()))
+          } else {
+            AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error), generalGetString(MR.strings.error_initializing_web_view).format(e.stackTraceToString()))
+          }
           return@AndroidView View(androidAppContext)
         }
       }
