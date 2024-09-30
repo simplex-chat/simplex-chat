@@ -8,7 +8,13 @@
 
 import SwiftUI
 
-private let sheetAnimationDuration: Double = 0.25
+private let sheetAnimationDuration: Double = 0.35
+
+// Refrence: https://easings.net/
+private let easeOutCubic = UICubicTimingParameters(
+    controlPoint1: CGPoint(x: 0.215, y: 0.61),
+    controlPoint2: CGPoint(x: 0.355, y: 1)
+)
 
 struct Sheet<SheetContent: View>: ViewModifier {
     @Binding var isPresented: Bool
@@ -39,7 +45,10 @@ struct SheetRepresentable<Content: View>: UIViewControllerRepresentable {
 
     class Controller<C: View>: UIViewController {
         let hostingController: UIHostingController<C>
-        private let animator = UIViewPropertyAnimator(duration: sheetAnimationDuration, curve: .easeInOut)
+        private let animator = UIViewPropertyAnimator(
+            duration: sheetAnimationDuration,
+            timingParameters: easeOutCubic
+        )
         private let representer: SheetRepresentable<C>
         private var retainedFraction: CGFloat = 0
         private var sheetHeight: Double { hostingController.view.frame.height }
@@ -58,7 +67,10 @@ struct SheetRepresentable<Content: View>: UIViewControllerRepresentable {
             if isPresented || !sheetDismissed {
                 animator.pauseAnimation()
                 animator.isReversed = !isPresented
-                animator.continueAnimation(withTimingParameters: nil, durationFactor: 1)
+                animator.continueAnimation(
+                    withTimingParameters: easeOutCubic,
+                    durationFactor: 1
+                )
             }
         }
 
@@ -92,7 +104,12 @@ struct SheetRepresentable<Content: View>: UIViewControllerRepresentable {
             hostingController.view.isHidden = false
             self.animator.addAnimations {
                 self.hostingController.view.transform = .identity
-                self.view.backgroundColor = .black.withAlphaComponent(0.3)
+                self.view.backgroundColor = UIColor {
+                    switch $0.userInterfaceStyle {
+                    case .dark: .black.withAlphaComponent(0.290)
+                    default:    .black.withAlphaComponent(0.121)
+                    }
+                }
             }
         }
 
@@ -110,8 +127,8 @@ struct SheetRepresentable<Content: View>: UIViewControllerRepresentable {
                 animator.isReversed = (velocity - (animator.fractionComplete - 0.5) * 100).sign == .plus
                 let defaultVelocity = sheetHeight / sheetAnimationDuration
                 let fractionRemaining = 1 - animator.fractionComplete
-                let durationFactor = min(max(fractionRemaining / (abs(velocity) / defaultVelocity), 0.2), 1)
-                animator.continueAnimation(withTimingParameters: nil, durationFactor: durationFactor)
+                let durationFactor = min(max(fractionRemaining / (abs(velocity) / defaultVelocity), 0.5), 1)
+                animator.continueAnimation(withTimingParameters: nil, durationFactor: durationFactor * fractionRemaining)
                 DispatchQueue.main.asyncAfter(deadline: .now() + sheetAnimationDuration) {
                     self.representer.isPresented = !self.animator.isReversed
                 }
