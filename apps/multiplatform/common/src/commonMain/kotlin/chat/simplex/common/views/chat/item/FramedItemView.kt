@@ -190,7 +190,7 @@ fun FramedItemView(
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
   Box(Modifier
-    .clip(RoundedCornerShape(18.dp))
+    .chatItemBox()
     .background(
       when {
         transparentBackground -> Color.Transparent

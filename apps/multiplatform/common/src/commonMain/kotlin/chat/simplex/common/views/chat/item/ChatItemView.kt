@@ -3,6 +3,7 @@ package chat.simplex.common.views.chat.item
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -26,9 +27,11 @@ import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.datetime.Clock
+import kotlin.math.max
 
 // TODO refactor so that FramedItemView can show all CIContent items if they're deleted (see Swift code)
 
+private val msgRectMaxRadius = 18.dp
 val chatEventStyle = SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Light, color = CurrentColors.value.colors.secondary)
 
 fun chatEventText(ci: ChatItem): AnnotatedString =
@@ -127,7 +130,7 @@ fun ChatItemView(
     Column(horizontalAlignment = if (cItem.chatDir.sent) Alignment.End else Alignment.Start) {
       Column(
         Modifier
-          .clip(RoundedCornerShape(18.dp))
+          .chatItemBox()
           .combinedClickable(onLongClick = { showMenu.value = true }, onClick = onClick)
           .onRightClick { showMenu.value = true },
       ) {
@@ -793,6 +796,20 @@ fun ItemAction(text: String, color: Color = Color.Unspecified, onClick: () -> Un
       color = finalColor
     )
   }
+}
+
+@Composable
+fun Modifier.chatItemBox(): Modifier {
+  val chatItemRoundness = remember { appPreferences.chatItemRoundness.state }
+
+  val cornerRoundness = when {
+    chatItemRoundness.value >= 1 -> 1f
+    chatItemRoundness.value <= 0 -> 0f
+    else -> chatItemRoundness.value
+  }
+
+  val shape = RoundedCornerShape(CornerSize(msgRectMaxRadius * cornerRoundness))
+  return this.clip(shape)
 }
 
 fun cancelFileAlertDialog(fileId: Long, cancelFile: (Long) -> Unit, cancelAction: CancelAction) {

@@ -85,6 +85,35 @@ object AppearanceScope {
   }
 
   @Composable
+  fun MessageShapeSection() {
+    SectionView(stringResource(MR.strings.settings_section_title_message_shape).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+      Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(60.dp)
+          .background(colors.surface, RoundedCornerShape(percent = 22))
+          .clip(RoundedCornerShape(percent = 22)),
+          contentAlignment = Alignment.Center
+        ) {
+          Text(stringResource(MR.strings.settings_message_shape_corner), color = colors.onBackground)
+        }
+        Spacer(Modifier.width(10.dp))
+        Slider(
+          remember { appPreferences.chatItemRoundness.state }.value,
+          valueRange = 0f..1f,
+          steps = 20,
+          onValueChange = {
+            appPreferences.chatItemRoundness.set(it)
+            saveThemeToDatabase(null)
+          },
+          colors = SliderDefaults.colors(
+            activeTickColor = Color.Transparent,
+            inactiveTickColor = Color.Transparent,
+          )
+        )
+      }
+    }
+  }
+
+  @Composable
   fun FontScaleSection() {
     val localFontScale = remember { mutableStateOf(appPrefs.fontScale.get()) }
     SectionView(stringResource(MR.strings.appearance_font_size).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
