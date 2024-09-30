@@ -1511,22 +1511,20 @@ private fun FloatingDate(
 ) {
   var nearBottomIndex by remember { mutableStateOf(-1) }
   var isNearBottom by remember { mutableStateOf(true) }
-  val lastVisibleItem by remember(listState.layoutInfo.visibleItemsInfo.lastIndex, listState.firstVisibleItemIndex, chatModel.chatItems) {
+  val lastVisibleItemDate by remember(listState.layoutInfo.visibleItemsInfo.lastIndex, listState.firstVisibleItemIndex, chatModel.chatItems) {
     derivedStateOf {
       if (listState.layoutInfo.visibleItemsInfo.lastIndex >= 0 && listState.firstVisibleItemIndex >= 0) {
         val lastVisibleChatItemIndex = chatModel.chatItems.value.lastIndex - listState.firstVisibleItemIndex - listState.layoutInfo.visibleItemsInfo.lastIndex
-        chatModel.chatItems.value.getOrNull(lastVisibleChatItemIndex)
+        val item = chatModel.chatItems.value.getOrNull(lastVisibleChatItemIndex)
+        val timeZone = TimeZone.currentSystemDefault()
+        item?.meta?.itemTs?.toLocalDateTime(timeZone)?.date?.atStartOfDayIn(timeZone)
       } else {
         null
       }
     }
   }
-  val firstVisibleItemScrollOffset by remember {
-    derivedStateOf { listState.firstVisibleItemScrollOffset }
-  }
   val coroutineScope = rememberCoroutineScope()
   var hideDateWhenNotScrolling: Job? by remember { mutableStateOf(null) }
-  val firstVisibleItemDate = remember { mutableStateOf<Instant?>(null) }
   val showDate = remember { mutableStateOf(false) }
   LaunchedEffect(Unit) {
     launch {
@@ -1535,13 +1533,12 @@ private fun FloatingDate(
         .collect {
           showDate.value = false
           isNearBottom = true
-          firstVisibleItemDate.value = null
           nearBottomIndex = -1
         }
     }
   }
 
-  LaunchedEffect(listState) {
+  LaunchedEffect(Unit) {
     snapshotFlow { listState.layoutInfo.visibleItemsInfo }
       .collect { visibleItemsInfo ->
         if (visibleItemsInfo.find { it.index == 0 } != null) {
@@ -1562,9 +1559,8 @@ private fun FloatingDate(
 
   fun setDateVisibility(isVisible: Boolean) {
     if (isVisible) {
-      val date = firstVisibleItemDate.value
       val now = Clock.System.now()
-      if (!isNearBottom && !showDate.value && date != null && getTimestampDateText(date) != getTimestampDateText(now)) {
+      if (!isNearBottom && !showDate.value && lastVisibleItemDate != null && getTimestampDateText(lastVisibleItemDate!!) != getTimestampDateText(now)) {
         showDate.value = true
       }
     } else if (showDate.value) {
@@ -1572,51 +1568,43 @@ private fun FloatingDate(
     }
   }
 
-  KeyChangeEffect(firstVisibleItemScrollOffset) {
-    hideDateWhenNotScrolling?.cancel()
-
-    hideDateWhenNotScrolling = coroutineScope.launch {
-      delay(1000)
-      setDateVisibility(false)
-      hideDateWhenNotScrolling = null
-    }
-  }
-
-  LaunchedEffect(lastVisibleItem) {
-    snapshotFlow { lastVisibleItem?.meta?.itemTs }
-      .distinctUntilChanged()
-      .filterNotNull()
+  LaunchedEffect(Unit) {
+    snapshotFlow { listState.firstVisibleItemScrollOffset }
       .collect {
-        val timeZone = TimeZone.currentSystemDefault()
-        firstVisibleItemDate.value = it.toLocalDateTime(timeZone).date.atStartOfDayIn(timeZone)
         setDateVisibility(true)
+        hideDateWhenNotScrolling?.cancel()
+
+        hideDateWhenNotScrolling = coroutineScope.launch {
+          delay(1000)
+          setDateVisibility(false)
+          hideDateWhenNotScrolling = null
+        }
       }
   }
 
-    AnimatedVisibility(
-      modifier = modifier,
-      visible = showDate.value,
-      enter = fadeIn(tween(durationMillis = 350)),
-      exit = fadeOut(tween(durationMillis = 350))
-    ) {
-      val date = firstVisibleItemDate.value
-      Column {
-        Text(
-          text = if (date != null) getTimestampDateText(date) else "",
-          Modifier
-            .background(
-              color = MaterialTheme.colors.secondaryVariant,
-              RoundedCornerShape(25.dp)
-            )
-            .padding(vertical = 4.dp, horizontal = 8.dp)
-            .clip(RoundedCornerShape(25.dp)),
-          fontSize = 14.sp,
-          fontWeight = FontWeight.Medium,
-          textAlign = TextAlign.Center,
-          color = MaterialTheme.colors.secondary
-        )
-      }
+  AnimatedVisibility(
+    modifier = modifier,
+    visible = showDate.value,
+    enter = fadeIn(tween(durationMillis = 350)),
+    exit = fadeOut(tween(durationMillis = 350))
+  ) {
+    Column {
+      Text(
+        text = lastVisibleItemDate?.let { getTimestampDateText(it) } ?: "",
+        Modifier
+          .background(
+            color = MaterialTheme.colors.secondaryVariant,
+            RoundedCornerShape(25.dp)
+          )
+          .padding(vertical = 4.dp, horizontal = 8.dp)
+          .clip(RoundedCornerShape(25.dp)),
+        fontSize = 14.sp,
+        fontWeight = FontWeight.Medium,
+        textAlign = TextAlign.Center,
+        color = MaterialTheme.colors.secondary
+      )
     }
+  }
 }
 
 @Composable
