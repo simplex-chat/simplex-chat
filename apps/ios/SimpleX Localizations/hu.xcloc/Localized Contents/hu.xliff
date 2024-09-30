@@ -4922,9 +4922,9 @@ VPN engedélyezése szükséges.</target>
         <target>Jelszó megjelenítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Past member %@" xml:space="preserve">
+      <trans-unit id="Past member %@" xml:space="preserve" approved="no">
         <source>Past member %@</source>
-        <target>(már nem tag) %@</target>
+        <target state="translated">%@ (már nem tag)</target>
         <note>past/unknown group member</note>
       </trans-unit>
       <trans-unit id="Paste desktop address" xml:space="preserve">
