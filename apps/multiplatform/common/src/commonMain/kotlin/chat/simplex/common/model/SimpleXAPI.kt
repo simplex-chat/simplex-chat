@@ -2525,7 +2525,7 @@ object ChatController {
         // TODO askConfirmation?
         // TODO check encryption is compatible
         withCall(r, r.contact) { call ->
-          chatModel.activeCall.value = call.copy(callState = CallState.OfferReceived, peerMedia = r.callType.media, sharedKey = r.sharedKey)
+          chatModel.activeCall.value = call.copy(callState = CallState.OfferReceived, sharedKey = r.sharedKey)
           val useRelay = appPrefs.webrtcPolicyRelay.get()
           val iceServers = getIceServers()
           Log.d(TAG, ".callOffer iceServers $iceServers")
@@ -3653,6 +3653,7 @@ data class NetCfg(
   val sessionMode: TransportSessionMode = TransportSessionMode.User,
   val smpProxyMode: SMPProxyMode = SMPProxyMode.Unknown,
   val smpProxyFallback: SMPProxyFallback = SMPProxyFallback.AllowProtected,
+  val smpWebPort: Boolean = false,
   val tcpConnectTimeout: Long, // microseconds
   val tcpTimeout: Long, // microseconds
   val tcpTimeoutPerKb: Long, // microseconds

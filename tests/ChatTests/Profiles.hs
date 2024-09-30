@@ -1689,7 +1689,7 @@ testChangePCCUserDiffSrv tmp = do
   where
     serverCfg' =
       smpServerCfg
-        { transports = [("7003", transport @TLS), ("7002", transport @TLS)],
+        { transports = [("7003", transport @TLS, False), ("7002", transport @TLS, False)],
           msgQueueQuota = 2
         }
 

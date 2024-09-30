@@ -17,6 +17,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
     public var profile: LocalProfile
     public var fullPreferences: FullPreferences
     public var activeUser: Bool
+    public var activeOrder: Int64
 
     public var displayName: String { get { profile.displayName } }
     public var fullName: String { get { profile.fullName } }
@@ -49,6 +50,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
         profile: LocalProfile.sampleData,
         fullPreferences: FullPreferences.sampleData,
         activeUser: true,
+        activeOrder: 0,
         showNtfs: true,
         sendRcptsContacts: true,
         sendRcptsSmallGroups: false
@@ -2763,9 +2765,16 @@ public struct CITimed: Decodable, Hashable {
 
 let msgTimeFormat = Date.FormatStyle.dateTime.hour().minute()
 let msgDateFormat = Date.FormatStyle.dateTime.day(.twoDigits).month(.twoDigits)
+let msgDateYearFormat = Date.FormatStyle.dateTime.day(.twoDigits).month(.twoDigits).year(.twoDigits)
 
 public func formatTimestampText(_ date: Date) -> Text {
-    Text(verbatim: date.formatted(recent(date) ? msgTimeFormat : msgDateFormat))
+    Text(verbatim: date.formatted(
+        recent(date)
+        ? msgTimeFormat
+        : Calendar.current.isDate(date, equalTo: .now, toGranularity: .year)
+        ? msgDateFormat
+        : msgDateYearFormat
+    ))
 }
 
 public func formatTimestampMeta(_ date: Date) -> String {
@@ -2809,6 +2818,20 @@ public enum CIStatus: Decodable, Hashable {
         case .rcvNew: return "rcvNew"
         case .rcvRead: return "rcvRead"
         case .invalid: return "invalid"
+        }
+    }
+    
+    public var sent: Bool {
+        switch self {
+        case .sndNew: true
+        case .sndSent: true
+        case .sndRcvd: true
+        case .sndErrorAuth: true
+        case .sndError: true
+        case .sndWarning: true
+        case .rcvNew: false
+        case .rcvRead: false
+        case .invalid: false
         }
     }
 

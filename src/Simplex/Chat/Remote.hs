@@ -54,6 +54,7 @@ import Simplex.Chat.Util (encryptFile, liftIOEither)
 import Simplex.FileTransfer.Description (FileDigest (..))
 import Simplex.Messaging.Agent
 import Simplex.Messaging.Agent.Protocol (AgentErrorType (RCP))
+import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
@@ -72,11 +73,11 @@ import UnliftIO.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExis
 
 -- when acting as host
 minRemoteCtrlVersion :: AppVersion
-minRemoteCtrlVersion = AppVersion [6, 1, 0, 2]
+minRemoteCtrlVersion = AppVersion [6, 1, 0, 4]
 
 -- when acting as controller
 minRemoteHostVersion :: AppVersion
-minRemoteHostVersion = AppVersion [6, 1, 0, 2]
+minRemoteHostVersion = AppVersion [6, 1, 0, 4]
 
 currentAppVersion :: AppVersion
 currentAppVersion = AppVersion SC.version
@@ -497,31 +498,32 @@ handleRemoteCommand :: (ByteString -> CM' ChatResponse) -> RemoteCrypto -> TBQue
 handleRemoteCommand execChatCommand encryption remoteOutputQ HTTP2Request {request, reqBody, sendResponse} = do
   logDebug "handleRemoteCommand"
   liftIO (tryRemoteError' parseRequest) >>= \case
-    Right (getNext, rc) -> do
+    Right (rfKN, getNext, rc) -> do
       chatReadVar' currentUser >>= \case
         Nothing -> replyError $ ChatError CENoActiveUser
-        Just user -> processCommand user getNext rc `catchChatError'` replyError
+        Just user -> processCommand user rfKN getNext rc `catchChatError'` replyError
     Left e -> reply $ RRProtocolError e
   where
-    parseRequest :: ExceptT RemoteProtocolError IO (GetChunk, RemoteCommand)
+    parseRequest :: ExceptT RemoteProtocolError IO (C.SbKeyNonce, GetChunk, RemoteCommand)
     parseRequest = do
-      (header, getNext) <- parseDecryptHTTP2Body encryption request reqBody
-      (getNext,) <$> liftEitherWith RPEInvalidJSON (J.eitherDecode header)
+      (rfKN, header, getNext) <- parseDecryptHTTP2Body encryption request reqBody
+      (rfKN,getNext,) <$> liftEitherWith RPEInvalidJSON (J.eitherDecode header)
     replyError = reply . RRChatResponse . CRChatCmdError Nothing
-    processCommand :: User -> GetChunk -> RemoteCommand -> CM ()
-    processCommand user getNext = \case
+    processCommand :: User -> C.SbKeyNonce -> GetChunk -> RemoteCommand -> CM ()
+    processCommand user rfKN getNext = \case
       RCSend {command} -> lift $ handleSend execChatCommand command >>= reply
       RCRecv {wait = time} -> lift $ liftIO (handleRecv time remoteOutputQ) >>= reply
-      RCStoreFile {fileName, fileSize, fileDigest} -> lift $ handleStoreFile encryption fileName fileSize fileDigest getNext >>= reply
-      RCGetFile {file} -> handleGetFile encryption user file replyWith
+      RCStoreFile {fileName, fileSize, fileDigest} -> lift $ handleStoreFile rfKN fileName fileSize fileDigest getNext >>= reply
+      RCGetFile {file} -> handleGetFile user file replyWith
     reply :: RemoteResponse -> CM' ()
-    reply = (`replyWith` \_ -> pure ())
+    reply = (`replyWith` \_ _ -> pure ())
     replyWith :: Respond
-    replyWith rr attach =
-      liftIO (tryRemoteError' . encryptEncodeHTTP2Body encryption $ J.encode rr) >>= \case
+    replyWith rr attach = do
+      (corrId, cmdKN, sfKN) <- atomically $ getRemoteSndKeys encryption
+      liftIO (tryRemoteError' . encryptEncodeHTTP2Body corrId cmdKN encryption $ J.encode rr) >>= \case
         Right resp -> liftIO . sendResponse . responseStreaming N.status200 [] $ \send flush -> do
           send resp
-          attach send
+          attach sfKN send
           flush
         Left e -> toView' . CRChatError Nothing . ChatErrorRemoteCtrl $ RCEProtocolError e
 
@@ -532,7 +534,7 @@ type GetChunk = Int -> IO ByteString
 
 type SendChunk = Builder -> IO ()
 
-type Respond = RemoteResponse -> (SendChunk -> IO ()) -> CM' ()
+type Respond = RemoteResponse -> (C.SbKeyNonce -> SendChunk -> IO ()) -> CM' ()
 
 liftRC :: ExceptT RemoteProtocolError IO a -> CM a
 liftRC = liftError (ChatErrorRemoteCtrl . RCEProtocolError)
@@ -559,8 +561,8 @@ handleRecv time events = do
 
 -- TODO this command could remember stored files and return IDs to allow removing files that are not needed.
 -- Also, there should be some process removing unused files uploaded to remote host (possibly, all unused files).
-handleStoreFile :: RemoteCrypto -> FilePath -> Word32 -> FileDigest -> GetChunk -> CM' RemoteResponse
-handleStoreFile encryption fileName fileSize fileDigest getChunk =
+handleStoreFile :: C.SbKeyNonce -> FilePath -> Word32 -> FileDigest -> GetChunk -> CM' RemoteResponse
+handleStoreFile rfKN fileName fileSize fileDigest getChunk =
   either RRProtocolError RRFileStored <$> (chatReadVar' filesFolder >>= storeFile)
   where
     storeFile :: Maybe FilePath -> CM' (Either RemoteProtocolError FilePath)
@@ -570,11 +572,11 @@ handleStoreFile encryption fileName fileSize fileDigest getChunk =
     storeFileTo :: FilePath -> CM' (Either RemoteProtocolError FilePath)
     storeFileTo dir = liftIO . tryRemoteError' $ do
       filePath <- liftIO $ dir `uniqueCombine` fileName
-      receiveEncryptedFile encryption getChunk fileSize fileDigest filePath
+      receiveEncryptedFile rfKN getChunk fileSize fileDigest filePath
       pure filePath
 
-handleGetFile :: RemoteCrypto -> User -> RemoteFile -> Respond -> CM ()
-handleGetFile encryption User {userId} RemoteFile {userId = commandUserId, fileId, sent, fileSource = cf'@CryptoFile {filePath}} reply = do
+handleGetFile :: User -> RemoteFile -> Respond -> CM ()
+handleGetFile User {userId} RemoteFile {userId = commandUserId, fileId, sent, fileSource = cf'@CryptoFile {filePath}} reply = do
   logDebug $ "GetFile: " <> tshow filePath
   unless (userId == commandUserId) $ throwChatError $ CEDifferentActiveUser {commandUserId, activeUserId = userId}
   path <- maybe filePath (</> filePath) <$> chatReadVar filesFolder
@@ -582,11 +584,12 @@ handleGetFile encryption User {userId} RemoteFile {userId = commandUserId, fileI
     cf <- getLocalCryptoFile db commandUserId fileId sent
     unless (cf == cf') $ throwError $ SEFileNotFound fileId
   liftRC (tryRemoteError $ getFileInfo path) >>= \case
-    Left e -> lift $ reply (RRProtocolError e) $ \_ -> pure ()
+    Left e -> lift $ reply (RRProtocolError e) $ \_ _ -> pure ()
     Right (fileSize, fileDigest) ->
-      ExceptT . withFile path ReadMode $ \h -> runExceptT $ do
-        encFile <- liftRC $ prepareEncryptedFile encryption (h, fileSize)
-        lift $ reply RRFile {fileSize, fileDigest} $ sendEncryptedFile encFile
+      lift . withFile path ReadMode $ \h -> do
+        reply RRFile {fileSize, fileDigest} $ \sfKN send -> void . runExceptT $ do
+          encFile <- prepareEncryptedFile sfKN (h, fileSize)
+          liftIO $ sendEncryptedFile encFile send
 
 listRemoteCtrls :: CM [RemoteCtrlInfo]
 listRemoteCtrls = do

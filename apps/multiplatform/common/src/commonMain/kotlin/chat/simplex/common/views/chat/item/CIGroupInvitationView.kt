@@ -26,6 +26,7 @@ fun CIGroupInvitationView(
   ci: ChatItem,
   groupInvitation: CIGroupInvitation,
   memberRole: GroupMemberRole,
+  showTimestamp: Boolean,
   chatIncognito: Boolean = false,
   joinGroup: (Long, () -> Unit) -> Unit,
   timedMessagesTTL: Int?
@@ -118,7 +119,7 @@ fun CIGroupInvitationView(
               Text(
                 buildAnnotatedString {
                   append(generalGetString(if (chatIncognito) MR.strings.group_invitation_tap_to_join_incognito else MR.strings.group_invitation_tap_to_join))
-                  withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, timedMessagesTTL, encrypted = null, showStatus = false, showEdited = false, secondaryColor = secondaryColor)) }
+                  withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, timedMessagesTTL, encrypted = null, showStatus = false, showEdited = false, secondaryColor = secondaryColor, showTimestamp = showTimestamp)) }
                 },
                 color = if (inProgress.value)
                   MaterialTheme.colors.secondary
@@ -129,7 +130,7 @@ fun CIGroupInvitationView(
               Text(
                 buildAnnotatedString {
                   append(groupInvitationStr())
-                  withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, timedMessagesTTL, encrypted = null, showStatus = false, showEdited = false, secondaryColor = secondaryColor)) }
+                  withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, timedMessagesTTL, encrypted = null, showStatus = false, showEdited = false, secondaryColor = secondaryColor, showTimestamp = showTimestamp)) }
                 }
               )
             }
@@ -145,7 +146,7 @@ fun CIGroupInvitationView(
         }
       }
 
-      CIMetaView(ci, timedMessagesTTL, showStatus = false, showEdited = false, showViaProxy = false)
+      CIMetaView(ci, timedMessagesTTL, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = showTimestamp)
     }
   }
 }
@@ -162,7 +163,8 @@ fun PendingCIGroupInvitationViewPreview() {
       groupInvitation = CIGroupInvitation.getSample(),
       memberRole = GroupMemberRole.Admin,
       joinGroup = { _, _ -> },
-      timedMessagesTTL = null
+      timedMessagesTTL = null,
+      showTimestamp = true,
     )
   }
 }
@@ -179,8 +181,9 @@ fun CIGroupInvitationViewAcceptedPreview() {
       groupInvitation = CIGroupInvitation.getSample(status = CIGroupInvitationStatus.Accepted),
       memberRole = GroupMemberRole.Admin,
       joinGroup = { _, _ -> },
-      timedMessagesTTL = null
-    )
+      timedMessagesTTL = null,
+      showTimestamp = true,
+      )
   }
 }
 
@@ -196,7 +199,8 @@ fun CIGroupInvitationViewLongNamePreview() {
       ),
       memberRole = GroupMemberRole.Admin,
       joinGroup = { _, _ -> },
-      timedMessagesTTL = null
-    )
+      timedMessagesTTL = null,
+      showTimestamp = true,
+      )
   }
 }

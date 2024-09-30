@@ -256,7 +256,7 @@ fun ChatPreviewView(
         }
       }
       is MsgContent.MCVoice -> SmallContentPreviewVoice() {
-        CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = false, ci, cInfo.timedMessagesTTL, showViaProxy = false, smallView = true, longClick = {}) {
+        CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = false, ci, cInfo.timedMessagesTTL, showViaProxy = false, showTimestamp = true, smallView = true, longClick = {}) {
           val user = chatModel.currentUser.value ?: return@CIVoiceView
           withBGApi { chatModel.controller.receiveFile(chat.remoteHostId, user, it) }
         }
@@ -332,7 +332,7 @@ fun ChatPreviewView(
           chatPreviewTitle()
         }
         Spacer(Modifier.width(8.sp.toDp()))
-        val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.chatTs)
+        val ts = getTimestampText(chat.chatItems.lastOrNull()?.meta?.itemTs ?: chat.chatInfo.chatTs)
         ChatListTimestampView(ts)
       }
       Row(Modifier.heightIn(min = 46.sp.toDp()).fillMaxWidth()) {

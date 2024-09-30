@@ -6419,7 +6419,7 @@ testGroupMemberInactive tmp = do
   where
     serverCfg' =
       smpServerCfg
-        { transports = [("7003", transport @TLS)],
+        { transports = [("7003", transport @TLS, False)],
           msgQueueQuota = 2
         }
     fastRetryInterval = defaultReconnectInterval {initialInterval = 50_000} -- same as in agent tests
