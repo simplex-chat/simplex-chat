@@ -1511,7 +1511,7 @@ private fun FloatingDate(
 ) {
   var nearBottomIndex by remember { mutableStateOf(-1) }
   var isNearBottom by remember { mutableStateOf(true) }
-  val lastVisibleItemDate = remember(listState.layoutInfo.visibleItemsInfo.lastIndex, listState.firstVisibleItemIndex, chatModel.chatItems) {
+  val lastVisibleItemDate = remember {
     derivedStateOf {
       if (listState.layoutInfo.visibleItemsInfo.lastIndex >= 0 && listState.firstVisibleItemIndex >= 0) {
         val lastVisibleChatItemIndex = chatModel.chatItems.value.lastIndex - listState.firstVisibleItemIndex - listState.layoutInfo.visibleItemsInfo.lastIndex
