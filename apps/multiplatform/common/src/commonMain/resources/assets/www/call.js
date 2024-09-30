@@ -277,7 +277,7 @@ const processCommand = (function () {
                         endCall();
                     let localStream = null;
                     try {
-                        localStream = await getLocalMediaStream(true, command.media == CallMediaType.Video && !isDesktop, VideoCamera.User);
+                        localStream = await getLocalMediaStream(true, command.media == CallMediaType.Video, VideoCamera.User);
                         const videos = getVideoElements();
                         if (videos) {
                             videos.local.srcObject = localStream;
@@ -306,7 +306,7 @@ const processCommand = (function () {
                     if (activeCall)
                         endCall();
                     inactiveCallMediaSources.mic = true;
-                    inactiveCallMediaSources.camera = command.media == CallMediaType.Video && !isDesktop;
+                    inactiveCallMediaSources.camera = command.media == CallMediaType.Video;
                     inactiveCallMediaSourcesChanged(inactiveCallMediaSources);
                     const { media, iceServers, relay } = command;
                     const encryption = supportsInsertableStreams(useWorker);
