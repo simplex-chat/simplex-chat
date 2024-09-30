@@ -17,7 +17,7 @@ data class Call(
   val callUUID: String?,
   val callState: CallState,
   val initialCallType: CallMediaType,
-  val localMediaSources: CallMediaSources = CallMediaSources(mic = true, camera = initialCallType == CallMediaType.Video && appPlatform.isAndroid),
+  val localMediaSources: CallMediaSources = CallMediaSources(mic = true, camera = initialCallType == CallMediaType.Video),
   val localCapabilities: CallCapabilities? = null,
   val peerMediaSources: CallMediaSources = CallMediaSources(),
   val sharedKey: String? = null,
