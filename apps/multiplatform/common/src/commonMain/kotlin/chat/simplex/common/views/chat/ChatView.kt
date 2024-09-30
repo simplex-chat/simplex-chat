@@ -1545,7 +1545,7 @@ private fun FloatingDate(
           var elapsedOffset = 0
 
           for (it in visibleItemsInfo) {
-            if (elapsedOffset >= 800) {
+            if (elapsedOffset >= listState.layoutInfo.viewportSize.height / 2.5) {
               nearBottomIndex = it.index
               break;
             }
