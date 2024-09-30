@@ -48,7 +48,7 @@
     <string name="color_background">Háttér</string>
     <string name="socks_proxy_setting_limitations"><b>Megjegyzés:</b> az üzenet- és fájlközvetítő-kiszolgálók SOCKS proxyn keresztül kapcsolódnak. A hívások és a hivatkozások előnézetének elküldése közvetlen kapcsolatot használnak.</string>
     <string name="full_backup">Alkalmazásadatok biztonsági mentése</string>
-    <string name="database_initialization_error_title">Az adatbázis inicializálása sikertelen</string>
+    <string name="database_initialization_error_title">Az adatbázis előkészítése sikertelen</string>
     <string name="all_your_contacts_will_remain_connected_update_sent">Az ismerőseivel kapcsolatban marad. A profil változtatások frissítésre kerülnek az ismerősöknél.</string>
     <string name="v4_5_transport_isolation_descr">A csevegési profillal (alapértelmezett), vagy a kapcsolattal (BÉTA).</string>
     <string name="connect__a_new_random_profile_will_be_shared">Egy új véletlenszerű profil lesz megosztva.</string>
@@ -1581,7 +1581,7 @@
     <string name="developer_options_section">Fejlesztői beállítások</string>
     <string name="possible_slow_function_desc">A funkció végrehajtása túl sokáig tart: %1$d másodperc: %2$s</string>
     <string name="remote_host_error_busy">A(z) <b>%s</b> hordozható eszköz elfoglalt</string>
-    <string name="past_member_vName">(Már nem tag) %1$s</string>
+    <string name="past_member_vName">%1$s (már nem tag)</string>
     <string name="group_member_status_unknown">ismeretlen állapot</string>
     <string name="profile_update_event_member_name_changed">%1$s megváltoztatta a nevét erre: %2$s</string>
     <string name="profile_update_event_removed_address">eltávolította a kapcsolattartási címet</string>
@@ -1840,7 +1840,7 @@
     <string name="v5_8_private_routing">Privát üzenet útválasztás 🚀</string>
     <string name="v5_8_safe_files">Fájlok biztonságos fogadása</string>
     <string name="v5_8_message_delivery_descr">Csökkentett akkumulátor-használattal.</string>
-    <string name="error_initializing_web_view">Hiba a WebView inicializálásában. Frissítse rendszerét az új verzióra. Lépjen kapcsolatba a fejlesztőkkel.
+    <string name="error_initializing_web_view">Hiba a WebView előkészítésekor. Frissítse rendszerét az új verzióra. Lépjen kapcsolatba a fejlesztőkkel.
 \nHiba: %s</string>
     <string name="chat_theme_reset_to_user_theme">Felhasználó által létrehozott téma visszaállítása</string>
     <string name="message_queue_info">Üzenet-sorbaállítási információ</string>
@@ -2100,4 +2100,6 @@
     <string name="compose_save_messages_n">%1$s üzenet mentése</string>
     <string name="error_forwarding_messages">Hiba az üzenetek továbbításakor</string>
     <string name="icon_descr_sound_muted">Hang elnémítva</string>
+    <string name="error_initializing_web_view_wrong_arch">Hiba a WebView előkészítésekor. Győződjön meg arról, hogy a WebView telepítve van-e, és támogatja-e az arm64 architektúrát.
+\nHiba: %s</string>
 </resources>
