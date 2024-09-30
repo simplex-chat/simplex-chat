@@ -220,6 +220,7 @@ class AppPreferences {
   val themeOverrides = mkThemeOverridesPreference()
   val profileImageCornerRadius = mkFloatPreference(SHARED_PREFS_PROFILE_IMAGE_CORNER_RADIUS, 22.5f)
   val chatItemRoundness = mkFloatPreference(SHARED_PREFS_CHAT_ITEM_ROUNDNESS, 0.75f)
+  val chatItemTail = mkBoolPreference(SHARED_PREFS_CHAT_ITEM_TAIL, true)
   val fontScale = mkFloatPreference(SHARED_PREFS_FONT_SCALE, 1f)
   val densityScale = mkFloatPreference(SHARED_PREFS_DENSITY_SCALE, 1f)
 
@@ -424,6 +425,7 @@ class AppPreferences {
     private const val SHARED_PREFS_THEME_OVERRIDES = "ThemeOverrides"
     private const val SHARED_PREFS_PROFILE_IMAGE_CORNER_RADIUS = "ProfileImageCornerRadius"
     private const val SHARED_PREFS_CHAT_ITEM_ROUNDNESS = "ChatItemRoundness"
+    private const val SHARED_PREFS_CHAT_ITEM_TAIL = "ChatItemTail"
     private const val SHARED_PREFS_FONT_SCALE = "FontScale"
     private const val SHARED_PREFS_DENSITY_SCALE = "DensityScale"
     private const val SHARED_PREFS_WHATS_NEW_VERSION = "WhatsNewVersion"
@@ -6337,6 +6339,7 @@ data class AppSettings(
   var iosCallKitCallsInRecents: Boolean? = null,
   var uiProfileImageCornerRadius: Float? = null,
   var uiChatItemRoundness: Float? = null,
+  var uiChatItemTail: Boolean? = null,
   var uiColorScheme: String? = null,
   var uiDarkColorScheme: String? = null,
   var uiCurrentThemeIds: Map<String, String>? = null,
@@ -6370,6 +6373,7 @@ data class AppSettings(
     if (iosCallKitCallsInRecents != def.iosCallKitCallsInRecents) { empty.iosCallKitCallsInRecents = iosCallKitCallsInRecents }
     if (uiProfileImageCornerRadius != def.uiProfileImageCornerRadius) { empty.uiProfileImageCornerRadius = uiProfileImageCornerRadius }
     if (uiChatItemRoundness != def.uiChatItemRoundness) { empty.uiChatItemRoundness = uiChatItemRoundness }
+    if (uiChatItemTail != def.uiChatItemTail) { empty.uiChatItemTail = uiChatItemTail }
     if (uiColorScheme != def.uiColorScheme) { empty.uiColorScheme = uiColorScheme }
     if (uiDarkColorScheme != def.uiDarkColorScheme) { empty.uiDarkColorScheme = uiDarkColorScheme }
     if (uiCurrentThemeIds != def.uiCurrentThemeIds) { empty.uiCurrentThemeIds = uiCurrentThemeIds }
@@ -6414,6 +6418,7 @@ data class AppSettings(
     iosCallKitCallsInRecents?.let { def.iosCallKitCallsInRecents.set(it) }
     uiProfileImageCornerRadius?.let { def.profileImageCornerRadius.set(it) }
     uiChatItemRoundness?.let { def.chatItemRoundness.set(it) }
+    uiChatItemTail?.let { def.chatItemTail.set(it) }
     uiColorScheme?.let { def.currentTheme.set(it) }
     uiDarkColorScheme?.let { def.systemDarkTheme.set(it) }
     uiCurrentThemeIds?.let { def.currentThemeIds.set(it) }
@@ -6448,6 +6453,7 @@ data class AppSettings(
         iosCallKitCallsInRecents = false,
         uiProfileImageCornerRadius = 22.5f,
         uiChatItemRoundness = 0.75f,
+        uiChatItemTail = true,
         uiColorScheme = DefaultTheme.SYSTEM_THEME_NAME,
         uiDarkColorScheme = DefaultTheme.SIMPLEX.themeName,
         uiCurrentThemeIds = null,
@@ -6483,6 +6489,7 @@ data class AppSettings(
           iosCallKitCallsInRecents = def.iosCallKitCallsInRecents.get(),
           uiProfileImageCornerRadius = def.profileImageCornerRadius.get(),
           uiChatItemRoundness = def.chatItemRoundness.get(),
+          uiChatItemTail = def.chatItemTail.get(),
           uiColorScheme = def.currentTheme.get() ?: DefaultTheme.SYSTEM_THEME_NAME,
           uiDarkColorScheme = def.systemDarkTheme.get() ?: DefaultTheme.SIMPLEX.themeName,
           uiCurrentThemeIds = def.currentThemeIds.get(),

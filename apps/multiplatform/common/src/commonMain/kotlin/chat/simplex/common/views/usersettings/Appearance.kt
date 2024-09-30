@@ -86,15 +86,9 @@ object AppearanceScope {
 
   @Composable
   fun MessageShapeSection() {
-    SectionView(stringResource(MR.strings.settings_section_title_message_shape).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
-      Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(60.dp)
-          .background(colors.surface, RoundedCornerShape(percent = 22))
-          .clip(RoundedCornerShape(percent = 22)),
-          contentAlignment = Alignment.Center
-        ) {
-          Text(stringResource(MR.strings.settings_message_shape_corner), color = colors.onBackground)
-        }
+    SectionView(stringResource(MR.strings.settings_section_title_message_shape).uppercase(), contentPadding = PaddingValues()) {
+      Row(modifier = Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING + 4.dp ) ,verticalAlignment = Alignment.CenterVertically) {
+        Text(stringResource(MR.strings.settings_message_shape_corner), color = colors.onBackground)
         Spacer(Modifier.width(10.dp))
         Slider(
           remember { appPreferences.chatItemRoundness.state }.value,
@@ -110,6 +104,7 @@ object AppearanceScope {
           )
         )
       }
+      SettingsPreferenceItem(icon = null, stringResource(MR.strings.settings_message_shape_tail), appPreferences.chatItemTail)
     }
   }
 
