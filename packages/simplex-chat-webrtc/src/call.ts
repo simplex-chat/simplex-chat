@@ -311,8 +311,12 @@ const processCommand = (function () {
     encodedInsertableStreams: boolean
   }
 
+  type RTCConfigurationWithSdpSemantics = RTCConfiguration & {
+    sdpSemantics: string
+  }
+
   interface CallConfig {
-    peerConnectionConfig: RTCConfigurationWithEncryption
+    peerConnectionConfig: RTCConfigurationWithEncryption & RTCConfigurationWithSdpSemantics
     iceCandidates: {
       delay: number
       extrasInterval: number
@@ -334,6 +338,8 @@ const processCommand = (function () {
         iceCandidatePoolSize: 10,
         encodedInsertableStreams,
         iceTransportPolicy: relay ? "relay" : "all",
+        // needed for Android WebView >= 69 && <= 72 where default was "plan-b" which is incompatible with transceivers
+        sdpSemantics: "unified-plan",
       },
       iceCandidates: {
         delay: 750,
@@ -458,7 +464,11 @@ const processCommand = (function () {
     localOrPeerMediaSourcesChanged(call)
     await setupMediaStreams(call)
     let connectionTimeout: number | undefined = setTimeout(connectionHandler, answerTimeout)
-    pc.addEventListener("connectionstatechange", connectionStateChange)
+    if (pc.connectionState) {
+      pc.addEventListener("connectionstatechange", connectionStateChange)
+    } else {
+      pc.addEventListener("iceconnectionstatechange", connectionStateChange)
+    }
     return call
 
     async function connectionStateChange() {
@@ -472,21 +482,35 @@ const processCommand = (function () {
         resp: {
           type: "connection",
           state: {
-            connectionState: pc.connectionState,
+            connectionState:
+              pc.connectionState ??
+              (pc.iceConnectionState != "completed" && pc.iceConnectionState != "checking"
+                ? pc.iceConnectionState
+                : pc.iceConnectionState == "completed"
+                ? "connected"
+                : "connecting") /* webView 69-70 doesn't have connectionState yet */,
             iceConnectionState: pc.iceConnectionState,
             iceGatheringState: pc.iceGatheringState,
             signalingState: pc.signalingState,
           },
         },
       })
-      if (pc.connectionState == "disconnected" || pc.connectionState == "failed") {
+      if (
+        pc.connectionState == "disconnected" ||
+        pc.connectionState == "failed" ||
+        (!pc.connectionState && (pc.iceConnectionState == "disconnected" || pc.iceConnectionState == "failed"))
+      ) {
         clearConnectionTimeout()
-        pc.removeEventListener("connectionstatechange", connectionStateChange)
+        if (pc.connectionState) {
+          pc.removeEventListener("connectionstatechange", connectionStateChange)
+        } else {
+          pc.removeEventListener("iceconnectionstatechange", connectionStateChange)
+        }
         if (activeCall) {
           setTimeout(() => sendMessageToNative({resp: {type: "ended"}}), 0)
         }
         endCall()
-      } else if (pc.connectionState == "connected") {
+      } else if (pc.connectionState == "connected" || (!pc.connectionState && pc.iceConnectionState == "connected")) {
         clearConnectionTimeout()
         const stats = (await pc.getStats()) as Map<string, any>
         for (const stat of stats.values()) {
@@ -613,7 +637,7 @@ const processCommand = (function () {
             activeCall = await initializeCall(getCallConfig(!!aesKey, iceServers, relay), media, aesKey)
             const pc = activeCall.connection
             // console.log("offer remoteIceCandidates", JSON.stringify(remoteIceCandidates))
-            await pc.setRemoteDescription(new RTCSessionDescription(offer))
+            await pc.setRemoteDescription(new RTCSessionDescription(!webView69Or70() ? offer : adaptSdpToOldWebView(offer)))
             // setting up local stream only after setRemoteDescription in order to have transceivers set
             await setupLocalStream(false, activeCall)
             setupEncryptionForLocalStream(activeCall)
@@ -654,7 +678,7 @@ const processCommand = (function () {
             const remoteIceCandidates: RTCIceCandidateInit[] = parse(command.iceCandidates)
             // console.log("answer remoteIceCandidates", JSON.stringify(remoteIceCandidates))
 
-            await pc.setRemoteDescription(new RTCSessionDescription(answer))
+            await pc.setRemoteDescription(new RTCSessionDescription(!webView69Or70() ? answer : adaptSdpToOldWebView(answer)))
             adaptToOldVersion(pc.getTransceivers()[2].currentDirection == "sendonly", activeCall!)
             addIceCandidates(pc, remoteIceCandidates)
             addIceCandidates(pc, afterCallInitializedCandidates)
@@ -1219,6 +1243,7 @@ const processCommand = (function () {
         })
       }
       if (inboundStatsId) {
+        // even though MSDN site says `packetsReceived` is available in WebView 80+, in reality it's available even in 69
         const packets = (stats as any).get(inboundStatsId)?.packetsReceived
         if (packets <= lastPacketsReceived) {
           mutedSeconds++
@@ -1445,6 +1470,23 @@ const processCommand = (function () {
         changeLayout(activeCall.layout)
       }
     }
+  }
+
+  function webView69Or70(): boolean {
+    return !isDesktop && (navigator.userAgent.includes("Chrome/69.") || navigator.userAgent.includes("Chrome/70."))
+  }
+
+  // Adding `a=extmap-allow-mixed` causes exception on old WebViews
+  // https://groups.google.com/a/chromium.org/g/blink-dev/c/7z3uvp0-ZAc/m/8Z7qpp71BgAJ
+  function adaptSdpToOldWebView(desc: RTCSessionDescriptionInit): RTCSessionDescriptionInit {
+    const res: string[] = []
+    desc.sdp?.split("\n").forEach((line) => {
+      // Chrome has a bug related to SDP parser in old web view versions
+      if (!line.includes("a=extmap-allow-mixed")) {
+        res.push(line)
+      }
+    })
+    return {sdp: res.join("\n"), type: desc.type}
   }
 
   return processCommand

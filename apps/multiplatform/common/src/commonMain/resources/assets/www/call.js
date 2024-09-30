@@ -76,6 +76,8 @@ const processCommand = (function () {
                 iceCandidatePoolSize: 10,
                 encodedInsertableStreams,
                 iceTransportPolicy: relay ? "relay" : "all",
+                // needed for Android WebView >= 69 && <= 72 where default was "plan-b" which is incompatible with transceivers
+                sdpSemantics: "unified-plan",
             },
             iceCandidates: {
                 delay: 750,
@@ -202,7 +204,12 @@ const processCommand = (function () {
         localOrPeerMediaSourcesChanged(call);
         await setupMediaStreams(call);
         let connectionTimeout = setTimeout(connectionHandler, answerTimeout);
-        pc.addEventListener("connectionstatechange", connectionStateChange);
+        if (pc.connectionState) {
+            pc.addEventListener("connectionstatechange", connectionStateChange);
+        }
+        else {
+            pc.addEventListener("iceconnectionstatechange", connectionStateChange);
+        }
         return call;
         async function connectionStateChange() {
             // "failed" means the second party did not answer in time (15 sec timeout in Chrome WebView)
@@ -211,26 +218,38 @@ const processCommand = (function () {
                 connectionHandler();
         }
         async function connectionHandler() {
+            var _a;
             sendMessageToNative({
                 resp: {
                     type: "connection",
                     state: {
-                        connectionState: pc.connectionState,
+                        connectionState: (_a = pc.connectionState) !== null && _a !== void 0 ? _a : (pc.iceConnectionState != "completed" && pc.iceConnectionState != "checking"
+                            ? pc.iceConnectionState
+                            : pc.iceConnectionState == "completed"
+                                ? "connected"
+                                : "connecting") /* webView 69-70 doesn't have connectionState yet */,
                         iceConnectionState: pc.iceConnectionState,
                         iceGatheringState: pc.iceGatheringState,
                         signalingState: pc.signalingState,
                     },
                 },
             });
-            if (pc.connectionState == "disconnected" || pc.connectionState == "failed") {
+            if (pc.connectionState == "disconnected" ||
+                pc.connectionState == "failed" ||
+                (!pc.connectionState && (pc.iceConnectionState == "disconnected" || pc.iceConnectionState == "failed"))) {
                 clearConnectionTimeout();
-                pc.removeEventListener("connectionstatechange", connectionStateChange);
+                if (pc.connectionState) {
+                    pc.removeEventListener("connectionstatechange", connectionStateChange);
+                }
+                else {
+                    pc.removeEventListener("iceconnectionstatechange", connectionStateChange);
+                }
                 if (activeCall) {
                     setTimeout(() => sendMessageToNative({ resp: { type: "ended" } }), 0);
                 }
                 endCall();
             }
-            else if (pc.connectionState == "connected") {
+            else if (pc.connectionState == "connected" || (!pc.connectionState && pc.iceConnectionState == "connected")) {
                 clearConnectionTimeout();
                 const stats = (await pc.getStats());
                 for (const stat of stats.values()) {
@@ -355,7 +374,7 @@ const processCommand = (function () {
                         activeCall = await initializeCall(getCallConfig(!!aesKey, iceServers, relay), media, aesKey);
                         const pc = activeCall.connection;
                         // console.log("offer remoteIceCandidates", JSON.stringify(remoteIceCandidates))
-                        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+                        await pc.setRemoteDescription(new RTCSessionDescription(!webView69Or70() ? offer : adaptSdpToOldWebView(offer)));
                         // setting up local stream only after setRemoteDescription in order to have transceivers set
                         await setupLocalStream(false, activeCall);
                         setupEncryptionForLocalStream(activeCall);
@@ -397,7 +416,7 @@ const processCommand = (function () {
                         const answer = parse(command.answer);
                         const remoteIceCandidates = parse(command.iceCandidates);
                         // console.log("answer remoteIceCandidates", JSON.stringify(remoteIceCandidates))
-                        await pc.setRemoteDescription(new RTCSessionDescription(answer));
+                        await pc.setRemoteDescription(new RTCSessionDescription(!webView69Or70() ? answer : adaptSdpToOldWebView(answer)));
                         adaptToOldVersion(pc.getTransceivers()[2].currentDirection == "sendonly", activeCall);
                         addIceCandidates(pc, remoteIceCandidates);
                         addIceCandidates(pc, afterCallInitializedCandidates);
@@ -934,6 +953,7 @@ const processCommand = (function () {
                 });
             }
             if (inboundStatsId) {
+                // even though MSDN site says `packetsReceived` is available in WebView 80+, in reality it's available even in 69
                 const packets = (_a = stats.get(inboundStatsId)) === null || _a === void 0 ? void 0 : _a.packetsReceived;
                 if (packets <= lastPacketsReceived) {
                     mutedSeconds++;
@@ -1155,6 +1175,22 @@ const processCommand = (function () {
                 changeLayout(activeCall.layout);
             }
         }
+    }
+    function webView69Or70() {
+        return !isDesktop && (navigator.userAgent.includes("Chrome/69.") || navigator.userAgent.includes("Chrome/70."));
+    }
+    // Adding `a=extmap-allow-mixed` causes exception on old WebViews
+    // https://groups.google.com/a/chromium.org/g/blink-dev/c/7z3uvp0-ZAc/m/8Z7qpp71BgAJ
+    function adaptSdpToOldWebView(desc) {
+        var _a;
+        const res = [];
+        (_a = desc.sdp) === null || _a === void 0 ? void 0 : _a.split("\n").forEach((line) => {
+            // Chrome has a bug related to SDP parser in old web view versions
+            if (!line.includes("a=extmap-allow-mixed")) {
+                res.push(line);
+            }
+        });
+        return { sdp: res.join("\n"), type: desc.type };
     }
     return processCommand;
 })();
