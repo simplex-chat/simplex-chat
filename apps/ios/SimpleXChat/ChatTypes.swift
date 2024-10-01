@@ -2265,7 +2265,7 @@ public enum ConnectionEntity: Decodable, Hashable {
             return contact?.activeConn?.agentConnId
         case let .rcvGroupMsgConnection(_, groupMember):
             return groupMember.activeConn?.agentConnId
-        case let .userContactConnection(UserContact):
+        case let .userContactConnection(userContact):
             return nil // TODO add connId to UserContact
         default:
             return nil
