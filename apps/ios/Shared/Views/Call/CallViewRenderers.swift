@@ -10,34 +10,30 @@ import AVKit
 
 struct CallViewRemote: UIViewRepresentable {
     var client: WebRTCClient
-    var activeCall: Binding<WebRTCClient.Call?>
     @State var enablePip: (Bool) -> Void = {_ in }
     @Binding var activeCallViewIsCollapsed: Bool
     @Binding var pipShown: Bool
 
-    init(client: WebRTCClient, activeCall: Binding<WebRTCClient.Call?>, activeCallViewIsCollapsed: Binding<Bool>, pipShown: Binding<Bool>) {
+    init(client: WebRTCClient, activeCallViewIsCollapsed: Binding<Bool>, pipShown: Binding<Bool>) {
         self.client = client
-        self.activeCall = activeCall
         self._activeCallViewIsCollapsed = activeCallViewIsCollapsed
         self._pipShown = pipShown
     }
 
     func makeUIView(context: Context) -> UIView {
         let view = UIView()
-        if let call = activeCall.wrappedValue {
-            let remoteRenderer = RTCMTLVideoView(frame: view.frame)
-            remoteRenderer.videoContentMode = .scaleAspectFill
-            client.addRemoteRenderer(call, remoteRenderer)
-            addSubviewAndResize(remoteRenderer, into: view)
+        let remoteRenderer = RTCMTLVideoView(frame: view.frame)
+        remoteRenderer.videoContentMode = .scaleAspectFill
+        client.addRemoteRenderer(remoteRenderer)
+        addSubviewAndResize(remoteRenderer, into: view)
 
-            if AVPictureInPictureController.isPictureInPictureSupported() {
-                makeViewWithRTCRenderer(call, remoteRenderer, view, context)
-            }
+        if AVPictureInPictureController.isPictureInPictureSupported() {
+            makeViewWithRTCRenderer(remoteRenderer, view, context)
         }
         return view
     }
     
-    func makeViewWithRTCRenderer(_ call: WebRTCClient.Call, _ remoteRenderer: RTCMTLVideoView, _ view: UIView, _ context: Context) {
+    func makeViewWithRTCRenderer(_ remoteRenderer: RTCMTLVideoView, _ view: UIView, _ context: Context) {
         let pipRemoteRenderer = RTCMTLVideoView(frame: view.frame)
         pipRemoteRenderer.videoContentMode = .scaleAspectFill
         
@@ -55,7 +51,7 @@ struct CallViewRemote: UIViewRepresentable {
         context.coordinator.pipController = pipController
         context.coordinator.willShowHide = { show in
             if show {
-                client.addRemoteRenderer(call, pipRemoteRenderer)
+                client.addRemoteRenderer(pipRemoteRenderer)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     activeCallViewIsCollapsed = true
                 }
@@ -69,7 +65,7 @@ struct CallViewRemote: UIViewRepresentable {
             if show {
                 remoteRenderer.isHidden = true
             } else {
-                client.removeRemoteRenderer(call, pipRemoteRenderer)
+                client.removeRemoteRenderer(pipRemoteRenderer)
                 remoteRenderer.isHidden = false
             }
             pipShown = show
@@ -148,29 +144,25 @@ struct CallViewRemote: UIViewRepresentable {
 
 struct CallViewLocal: UIViewRepresentable {
     var client: WebRTCClient
-    var activeCall: Binding<WebRTCClient.Call?>
     var localRendererAspectRatio: Binding<CGFloat?>
     @State var pipStateChanged: (Bool) -> Void = {_ in }
     @Binding var pipShown: Bool
 
-    init(client: WebRTCClient, activeCall: Binding<WebRTCClient.Call?>, localRendererAspectRatio: Binding<CGFloat?>, pipShown: Binding<Bool>) {
+    init(client: WebRTCClient, localRendererAspectRatio: Binding<CGFloat?>, pipShown: Binding<Bool>) {
         self.client = client
-        self.activeCall = activeCall
         self.localRendererAspectRatio = localRendererAspectRatio
         self._pipShown = pipShown
     }
 
     func makeUIView(context: Context) -> UIView {
         let view = UIView()
-        if let call = activeCall.wrappedValue {
-            let localRenderer = RTCEAGLVideoView(frame: .zero)
-            client.addLocalRenderer(call, localRenderer)
-            client.startCaptureLocalVideo(call)
-            addSubviewAndResize(localRenderer, into: view)
-            DispatchQueue.main.async {
-                pipStateChanged = { shown in
-                    localRenderer.isHidden = shown
-                }
+        let localRenderer = RTCEAGLVideoView(frame: .zero)
+        client.addLocalRenderer(localRenderer)
+        client.startCaptureLocalVideo()
+        addSubviewAndResize(localRenderer, into: view)
+        DispatchQueue.main.async {
+            pipStateChanged = { shown in
+                localRenderer.isHidden = shown
             }
         }
         return view

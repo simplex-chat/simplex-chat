@@ -19,48 +19,52 @@ class Call: ObservableObject, Equatable {
     var direction: CallDirection
     var contact: Contact
     var callUUID: String?
-    var localMedia: CallMediaType
+    var initialCallType: CallMediaType
+    @Published var localMediaSources: CallMediaSources
     @Published var callState: CallState
     @Published var localCapabilities: CallCapabilities?
-    @Published var peerMedia: CallMediaType?
+    @Published var peerMediaSources: CallMediaSources = CallMediaSources()
     @Published var sharedKey: String?
-    @Published var audioEnabled = true
     @Published var speakerEnabled = false
-    @Published var videoEnabled: Bool
     @Published var connectionInfo: ConnectionInfo?
     @Published var connectedAt: Date? = nil
+
+    // When a user has audio call, and then he wants to enable camera but didn't grant permissions for using camera yet,
+    // we show permissions view without enabling camera before permissions are granted. After they are granted, enabling camera
+    var wantsToEnableCamera: Bool = false
 
     init(
         direction: CallDirection,
         contact: Contact,
         callUUID: String?,
         callState: CallState,
-        localMedia: CallMediaType,
+        initialCallType: CallMediaType,
         sharedKey: String? = nil
     ) {
         self.direction = direction
         self.contact = contact
         self.callUUID = callUUID
         self.callState = callState
-        self.localMedia = localMedia
+        self.initialCallType = initialCallType
         self.sharedKey = sharedKey
-        self.videoEnabled = localMedia == .video
+        self.localMediaSources = CallMediaSources(mic: true, camera: initialCallType == .video)
     }
 
     var encrypted: Bool { get { localEncrypted && sharedKey != nil } }
-    var localEncrypted: Bool { get { localCapabilities?.encryption ?? false } }
+    private var localEncrypted: Bool { get { localCapabilities?.encryption ?? false } }
     var encryptionStatus: LocalizedStringKey {
         get {
             switch callState {
             case .waitCapabilities: return ""
             case .invitationSent: return localEncrypted ? "e2e encrypted" : "no e2e encryption"
             case .invitationAccepted: return sharedKey == nil ? "contact has no e2e encryption" : "contact has e2e encryption"
-            default: return !localEncrypted ? "no e2e encryption" : sharedKey == nil ? "contact has no e2e encryption" : "e2e encrypted" 
+            default: return !localEncrypted ? "no e2e encryption" : sharedKey == nil ? "contact has no e2e encryption" : "e2e encrypted"
             }
         }
     }
+    var localMedia: CallMediaType { get { localMediaSources.hasVideo ? .video : .audio } }
     var hasMedia: Bool { get { callState == .offerSent || callState == .negotiated || callState == .connected } }
-    var supportsVideo: Bool { get { peerMedia == .video || localMedia == .video } }
+    var hasVideo: Bool { get { localMediaSources.hasVideo || peerMediaSources.hasVideo } }
 }
 
 enum CallDirection {
@@ -105,18 +109,28 @@ struct WVAPIMessage: Equatable, Decodable, Encodable {
     var command: WCallCommand?
 }
 
+struct CallMediaSources: Equatable, Codable {
+  var mic: Bool = false
+  var camera: Bool = false
+  var screenAudio: Bool = false
+  var screenVideo: Bool = false
+
+  var hasVideo: Bool { get { camera || screenVideo } }
+}
+
 enum WCallCommand: Equatable, Encodable, Decodable {
     case capabilities(media: CallMediaType)
     case start(media: CallMediaType, aesKey: String? = nil, iceServers: [RTCIceServer]? = nil, relay: Bool? = nil)
     case offer(offer: String, iceCandidates: String, media: CallMediaType, aesKey: String? = nil, iceServers: [RTCIceServer]? = nil, relay: Bool? = nil)
     case answer(answer: String, iceCandidates: String)
     case ice(iceCandidates: String)
-    case media(media: CallMediaType, enable: Bool)
+    case media(source: CallMediaSource, enable: Bool)
     case end
 
     enum CodingKeys: String, CodingKey {
         case type
         case media
+        case source
         case aesKey
         case offer
         case answer
@@ -167,9 +181,9 @@ enum WCallCommand: Equatable, Encodable, Decodable {
         case let .ice(iceCandidates):
             try container.encode("ice", forKey: .type)
             try container.encode(iceCandidates, forKey: .iceCandidates)
-        case let .media(media, enable):
+        case let .media(source, enable):
             try container.encode("media", forKey: .type)
-            try container.encode(media, forKey: .media)
+            try container.encode(source, forKey: .media)
             try container.encode(enable, forKey: .enable)
         case .end:
             try container.encode("end", forKey: .type)
@@ -205,9 +219,9 @@ enum WCallCommand: Equatable, Encodable, Decodable {
             let iceCandidates = try container.decode(String.self, forKey: CodingKeys.iceCandidates)
             self = .ice(iceCandidates: iceCandidates)
         case "media":
-            let media = try container.decode(CallMediaType.self, forKey: CodingKeys.media)
+            let source = try container.decode(CallMediaSource.self, forKey: CodingKeys.source)
             let enable = try container.decode(Bool.self, forKey: CodingKeys.enable)
-            self = .media(media: media, enable: enable)
+            self = .media(source: source, enable: enable)
         case "end":
             self = .end
         default:
@@ -224,6 +238,7 @@ enum WCallResponse: Equatable, Decodable {
     case ice(iceCandidates: String)
     case connection(state: ConnectionState)
     case connected(connectionInfo: ConnectionInfo)
+    case peerMedia(source: CallMediaSource, enabled: Bool)
     case ended
     case ok
     case error(message: String)
@@ -238,6 +253,8 @@ enum WCallResponse: Equatable, Decodable {
         case state
         case connectionInfo
         case message
+        case source
+        case enabled
     }
 
     var respType: String {
@@ -249,6 +266,7 @@ enum WCallResponse: Equatable, Decodable {
             case .ice: return "ice"
             case .connection: return "connection"
             case .connected: return "connected"
+            case .peerMedia: return "peerMedia"
             case .ended: return "ended"
             case .ok: return "ok"
             case .error: return "error"
@@ -283,6 +301,10 @@ enum WCallResponse: Equatable, Decodable {
             case "connected":
                 let connectionInfo = try container.decode(ConnectionInfo.self, forKey: CodingKeys.connectionInfo)
                 self = .connected(connectionInfo: connectionInfo)
+            case "peerMedia":
+                let source = try container.decode(CallMediaSource.self, forKey: CodingKeys.source)
+                let enabled = try container.decode(Bool.self, forKey: CodingKeys.enabled)
+                self = .peerMedia(source: source, enabled: enabled)
             case "ended":
                 self = .ended
             case "ok":
@@ -324,6 +346,10 @@ extension WCallResponse: Encodable {
         case let .connected(connectionInfo):
             try container.encode("connected", forKey: .type)
             try container.encode(connectionInfo, forKey: .connectionInfo)
+        case let .peerMedia(source, enabled):
+            try container.encode("peerMedia", forKey: .type)
+            try container.encode(source, forKey: .source)
+            try container.encode(enabled, forKey: .enabled)
         case .ended:
             try container.encode("ended", forKey: .type)
         case .ok:
@@ -376,7 +402,7 @@ actor WebRTCCommandProcessor {
     func shouldRunCommand(_ client: WebRTCClient, _ c: WCallCommand) -> Bool {
         switch c {
         case .capabilities, .start, .offer, .end: true
-        default: client.activeCall.wrappedValue != nil
+        default: client.activeCall != nil
         }
     }
 }
