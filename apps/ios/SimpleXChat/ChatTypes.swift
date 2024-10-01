@@ -1734,7 +1734,6 @@ public struct UserContact: Decodable, Hashable {
 public struct UserContactRequest: Decodable, NamedChat, Hashable {
     var contactRequestId: Int64
     public var userContactLinkId: Int64
-    public var agentContactConnId: String
     public var cReqChatVRange: VersionRange
     var localDisplayName: ContactName
     var profile: Profile
@@ -1753,7 +1752,6 @@ public struct UserContactRequest: Decodable, NamedChat, Hashable {
     public static let sampleData = UserContactRequest(
         contactRequestId: 1,
         userContactLinkId: 1,
-        agentContactConnId: "abc",
         cReqChatVRange: VersionRange(minVersion: 1, maxVersion: 1),
         localDisplayName: "alice",
         profile: Profile.sampleData,
