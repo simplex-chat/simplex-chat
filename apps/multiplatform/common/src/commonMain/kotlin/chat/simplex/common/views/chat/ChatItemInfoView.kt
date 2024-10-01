@@ -49,20 +49,22 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
   @Composable
   fun TextBubble(text: String, formattedText: List<FormattedText>?, sender: String?, showMenu: MutableState<Boolean>) {
-    if (text != "") {
-      MarkdownText(
-        text, if (text.isEmpty()) emptyList() else formattedText,
-        sender = sender,
-        senderBold = true,
-        toggleSecrets = true,
-        linkMode = SimplexLinkMode.DESCRIPTION, uriHandler = uriHandler,
-        onLinkLongClick = { showMenu.value = true }
-      )
-    } else {
-      Text(
-        generalGetString(MR.strings.item_info_no_text),
-        style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary, lineHeight = 22.sp, fontStyle = FontStyle.Italic)
-      )
+    Column(modifier = Modifier.chatItemBoxOffset()) {
+      if (text != "") {
+        MarkdownText(
+          text, if (text.isEmpty()) emptyList() else formattedText,
+          sender = sender,
+          senderBold = true,
+          toggleSecrets = true,
+          linkMode = SimplexLinkMode.DESCRIPTION, uriHandler = uriHandler,
+          onLinkLongClick = { showMenu.value = true }
+        )
+      } else {
+        Text(
+          generalGetString(MR.strings.item_info_no_text),
+          style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary, lineHeight = 22.sp, fontStyle = FontStyle.Italic)
+        )
+      }
     }
   }
 

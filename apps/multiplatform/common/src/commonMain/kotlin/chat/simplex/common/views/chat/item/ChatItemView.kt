@@ -11,8 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.*
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.*
@@ -21,6 +20,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
+import androidx.compose.ui.unit.min
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
@@ -29,11 +29,17 @@ import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.datetime.Clock
-import kotlin.math.max
+import org.ddogleg.struct.Tuple3
+import kotlin.math.*
 
 // TODO refactor so that FramedItemView can show all CIContent items if they're deleted (see Swift code)
 
 private val msgRectMaxRadius = 18.dp
+private val msgBubbleMaxRadius = msgRectMaxRadius * 1.2f
+private val msgTailWidthDp = 9.dp
+private val msgTailMinHeightDp = msgTailWidthDp * 1.254f // ~56deg
+private val msgTailMaxHeightDp = msgTailWidthDp * 1.732f // 60deg
+
 val chatEventStyle = SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Light, color = CurrentColors.value.colors.secondary)
 
 fun chatEventText(ci: ChatItem): AnnotatedString =
@@ -800,26 +806,90 @@ fun ItemAction(text: String, color: Color = Color.Unspecified, onClick: () -> Un
   }
 }
 
-fun chatItemShape(cornerRoundness: Float, density: Density): GenericShape {
+fun chatItemShape(roundness: Float, density: Density, tailVisible: Boolean, sent: Boolean = false): GenericShape {
   return GenericShape { size, _ ->
-    val radiusPx = with(density) { (msgRectMaxRadius * cornerRoundness).toPx() }
-    val rect = RoundRect(0f, 0f, size.width, size.height, CornerRadius(radiusPx, radiusPx))
+    val msgTailWidth = with(density) { msgTailWidthDp.toPx() }
+    val width = if (sent && tailVisible) size.width - msgTailWidth else size.width
+    val height = size.height
+    val msgTailMaxHeight = with(density) { msgTailMaxHeightDp.toPx() }
+    val msgTailMinHeight = with(density) { msgTailMinHeightDp.toPx() }
+    val msgBubbleMaxRadius = with(density) { msgBubbleMaxRadius.toPx() }
+    val rxMax = min(msgBubbleMaxRadius, width / 2)
+    val ryMax = min(msgBubbleMaxRadius, height / 2)
+    val rx = roundness * rxMax
+    val ry = roundness * ryMax
+    val tailHeight = min(
+      msgTailMinHeight + roundness * (msgTailMaxHeight - msgTailMinHeight),
+      height / 2
+    )
+    moveTo(rx, 0f)
+    lineTo(width - rx, 0f) // Top Line
+    if (roundness > 0) {
+      quadraticBezierTo(width, 0f, width, ry) // Top-right corner
+    }
+    if (height > 2 * ry) {
+      lineTo(width, height - ry) // Right side
+    }
+    if (roundness > 0) {
+      quadraticBezierTo(width, height, width - rx, height) // Bottom-right corner
+    }
+    if (tailVisible) {
+      lineTo(0f, height) // Bottom line
+      if (roundness > 0) {
+        val d = tailHeight - msgTailWidth * msgTailWidth / tailHeight
+        val controlPoint = Offset(msgTailWidth, height - tailHeight + d * sqrt(roundness))
+        quadraticBezierTo(controlPoint.x, controlPoint.y, msgTailWidth, height - tailHeight)
+      } else {
+        lineTo(msgTailWidth, height - tailHeight)
+      }
 
-    this.addRoundRect(rect)
+      if (height > ry + tailHeight) {
+        lineTo(msgTailWidth, ry)
+      }
+    } else {
+      lineTo(rx, height) // Bottom line
+      if (roundness > 0) {
+        quadraticBezierTo(0f, height, 0f, height - ry) // Bottom-left corner
+      }
+      if (height > 2 * ry) {
+        lineTo(0f, ry) // Left side
+      }
+    }
+    if (roundness > 0) {
+      quadraticBezierTo(if (tailVisible) msgTailWidth else 0f, 0f, rx, 0f) // Top-left corner
+    }
+
+    if (sent) {
+      val matrix = Matrix().apply {
+        scale(-1f, 1f)
+      }
+      this.transform(matrix)
+      this.translate(Offset(size.width, 0f))
+    }
   }
 }
 
 @Composable
-fun Modifier.chatItemBox(): Modifier {
+fun Modifier.chatItemBox(chatItem: ChatItem? = null ): Modifier {
   val chatItemRoundness = remember { appPreferences.chatItemRoundness.state }
+  val chatItemTail = remember { appPreferences.chatItemTail.state }
+  val showTail = if (chatItem != null) chatItemTail.value else false
 
   val cornerRoundness = when {
     chatItemRoundness.value >= 1 -> 1f
     chatItemRoundness.value <= 0 -> 0f
     else -> chatItemRoundness.value
   }
+  return this
+    .clip(chatItemShape(cornerRoundness, LocalDensity.current, showTail, chatItem?.chatDir?.sent == true))
+}
 
-  return this.clip(chatItemShape(cornerRoundness, LocalDensity.current))
+@Composable
+fun Modifier.chatItemBoxOffset(direction: CIDirection? = null): Modifier {
+  val chatItemTail = remember { appPreferences.chatItemTail.state }
+  val showTail = if (direction != null) chatItemTail.value else false
+
+  return if (showTail) this.padding(if (direction?.sent == true) PaddingValues(start = msgTailWidthDp) else PaddingValues(start = msgTailWidthDp)) else this
 }
 
 fun cancelFileAlertDialog(fileId: Long, cancelFile: (Long) -> Unit, cancelAction: CancelAction) {

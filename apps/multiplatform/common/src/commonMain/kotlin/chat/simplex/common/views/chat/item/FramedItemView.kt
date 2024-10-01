@@ -190,7 +190,7 @@ fun FramedItemView(
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
   Box(Modifier
-    .chatItemBox()
+    .chatItemBox(ci)
     .background(
       when {
         transparentBackground -> Color.Transparent
@@ -200,7 +200,7 @@ fun FramedItemView(
     )) {
     var metaColor = MaterialTheme.colors.secondary
     Box(contentAlignment = Alignment.BottomEnd) {
-      Column(Modifier.width(IntrinsicSize.Max)) {
+      Column(Modifier.width(IntrinsicSize.Max).chatItemBoxOffset(ci.chatDir)) {
         PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
           if (ci.meta.itemDeleted != null) {
             when (ci.meta.itemDeleted) {
