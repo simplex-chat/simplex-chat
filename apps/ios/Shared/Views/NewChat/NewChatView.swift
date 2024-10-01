@@ -693,6 +693,7 @@ struct ScannerInView: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .foregroundColor(Color.clear)
                         switch cameraAuthorizationStatus {
+                        case .authorized, nil: EmptyView()
                         case .restricted: Text("Camera not available")
                         case .denied:  Label("Enable camera access", systemImage: "camera")
                         default: Label("Tap to scan", systemImage: "qrcode")
@@ -712,19 +713,24 @@ struct ScannerInView: View {
                 .disabled(cameraAuthorizationStatus == .restricted)
             }
         }
-        .onAppear {
+        .task {
             let status = AVCaptureDevice.authorizationStatus(for: .video)
             cameraAuthorizationStatus = status
             if showQRCodeScanner {
                 switch status {
-                case .notDetermined: askCameraAuthorization()
+                case .notDetermined: await askCameraAuthorizationAsync()
                 case .restricted: showQRCodeScanner = false
                 case .denied: showQRCodeScanner = false
                 case .authorized: ()
-                @unknown default: askCameraAuthorization()
+                @unknown default: await askCameraAuthorizationAsync()
                 }
             }
         }
+    }
+
+    func askCameraAuthorizationAsync() async {
+        await AVCaptureDevice.requestAccess(for: .video)
+        cameraAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
     }
 
     func askCameraAuthorization(_ cb: (() -> Void)? = nil) {
