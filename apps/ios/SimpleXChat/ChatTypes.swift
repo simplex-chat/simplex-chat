@@ -1734,6 +1734,7 @@ public struct UserContact: Decodable, Hashable {
 public struct UserContactRequest: Decodable, NamedChat, Hashable {
     var contactRequestId: Int64
     public var userContactLinkId: Int64
+    public var agentContactConnId: String
     public var cReqChatVRange: VersionRange
     var localDisplayName: ContactName
     var profile: Profile
@@ -1752,6 +1753,7 @@ public struct UserContactRequest: Decodable, NamedChat, Hashable {
     public static let sampleData = UserContactRequest(
         contactRequestId: 1,
         userContactLinkId: 1,
+        agentContactConnId: "abc",
         cReqChatVRange: VersionRange(minVersion: 1, maxVersion: 1),
         localDisplayName: "alice",
         profile: Profile.sampleData,
@@ -2259,6 +2261,19 @@ public enum ConnectionEntity: Decodable, Hashable {
         }
     }
 
+    public var ntfConnId: String? {
+        switch self {
+        case let .rcvDirectMsgConnection(contact):
+            return contact?.activeConn?.agentConnId
+        case let .rcvGroupMsgConnection(_, groupMember):
+            return groupMember.activeConn?.agentConnId
+        case let .userContactConnection(UserContact):
+            return nil // TODO add connId to UserContact
+        default:
+            return nil
+        }
+    }
+
     public var ntfsEnabled: Bool {
         switch self {
         case let .rcvDirectMsgConnection(contact): return contact?.chatSettings.enableNtfs == .all
@@ -2289,6 +2304,17 @@ public struct AChatItem: Decodable, Hashable {
             return groupMember.id
         }
         return chatInfo.id
+    }
+
+    public var ntfConnId: String? {
+        switch chatItem.chatDir {
+        case .directRcv:
+            return chatInfo.contact?.activeConn?.agentConnId
+        case let .groupRcv(groupMember):
+            return groupMember.activeConn?.agentConnId
+        default:
+            return nil
+        }
     }
 }
 

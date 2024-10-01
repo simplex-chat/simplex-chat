@@ -64,10 +64,10 @@ class NSEThreads {
         }
     }
 
-    func processNotification(_ id: ChatId, _ ntf: NSENotification) async -> Void {
+    func processNotification(_ connId: String, _ ntf: NSENotification) async -> Void {
         var waitTime: Int64 = 5_000_000000
         while waitTime > 0 {
-            if let (_, nse) = rcvEntityThread(id),
+            if let (_, nse) = rcvEntityThread(connId),
                nse.shouldProcessNtf && nse.processReceivedNtf(ntf) {
                 break
             } else {
@@ -77,9 +77,9 @@ class NSEThreads {
         }
     }
 
-    private func rcvEntityThread(_ id: ChatId) -> (UUID, NotificationService)? {
+    private func rcvEntityThread(_ connId: String) -> (UUID, NotificationService)? {
         NSEThreads.queue.sync {
-            activeThreads.first(where: { (_, nse) in nse.receiveEntityId == id })
+            activeThreads.first(where: { (_, nse) in nse.receiveConnId == connId })
         }
     }
 
@@ -118,8 +118,9 @@ class NotificationService: UNNotificationServiceExtension {
     // chat does not need to be suspended but NSE state still needs to be set to "suspended".
     var threadId: UUID? = NSEThreads.shared.newThread()
     var notificationInfo: NtfMessages?
-    var receiveEntityId: String?
+    var receiveConnId: String?
     var expectedMessage: String?
+    var getNextAttempts: Int = 0
     // return true if the message is taken - it prevents sending it to another NotificationService instance for processing
     var shouldProcessNtf = false
     var appSubscriber: AppSubscriber?
@@ -198,9 +199,9 @@ class NotificationService: UNNotificationServiceExtension {
                         ? .nse(createConnectionEventNtf(ntfInfo.user, connEntity))
                         : .empty
                     )
-                    if let id = connEntity.id, ntfInfo.msgTs != nil {
+                    if let ntfConnId = connEntity.ntfConnId, ntfInfo.msgTs != nil {
                         notificationInfo = ntfInfo
-                        receiveEntityId = id
+                        receiveConnId = ntfConnId
                         expectedMessage = ntfInfo.ntfMessage_.flatMap { $0.msgId }
                         shouldProcessNtf = true
                         return
@@ -233,6 +234,14 @@ class NotificationService: UNNotificationServiceExtension {
                 logger.debug("NotificationService processNtf: unexpected msgInfo, let other instance to process it, stopping this one")
                 self.deliverBestAttemptNtf()
                 return false
+            } else if getNextAttempts < 3, let receiveConnId = receiveConnId {
+                logger.debug("NotificationService processNtf: unexpected msgInfo, get next message")
+                getNextAttempts += 1
+                let ntfInfo = apiGetNextNtfMessage(connId: receiveConnId)
+                if ntfInfo == nil {
+                    logger.debug("NotificationService processNtf: no next message, deliver best attempt")
+                    self.deliverBestAttemptNtf()
+                }
             } else {
                 logger.debug("NotificationService processNtf: unknown message, let other instance to process it")
                 return false
@@ -541,9 +550,10 @@ func receiveMessages() async {
     func receiveMsg() async {
         if let msg = await chatRecvMsg() {
             logger.debug("NotificationService receiveMsg: message")
-            if let (id, ntf) = await receivedMsgNtf(msg) {
+            if let (connId, ntf) = await receivedMsgNtf(msg),
+               let connId = connId {
                 logger.debug("NotificationService receiveMsg: notification")
-                await NSEThreads.shared.processNotification(id, ntf)
+                await NSEThreads.shared.processNotification(connId, ntf)
             }
         }
     }
@@ -564,15 +574,15 @@ func chatRecvMsg() async -> ChatResponse? {
 private let isInChina = SKStorefront().countryCode == "CHN"
 private func useCallKit() -> Bool { !isInChina && callKitEnabledGroupDefault.get() }
 
-func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotification)? {
+func receivedMsgNtf(_ res: ChatResponse) async -> (String?, NSENotification)? {
     logger.debug("NotificationService receivedMsgNtf: \(res.responseType)")
     switch res {
     case let .contactConnected(user, contact, _):
-        return (contact.id, .nse(createContactConnectedNtf(user, contact)))
+        return (contact.activeConn?.agentConnId, .nse(createContactConnectedNtf(user, contact)))
 //        case let .contactConnecting(contact):
 //            TODO profile update
     case let .receivedContactRequest(user, contactRequest):
-        return (UserContact(contactRequest: contactRequest).id, .nse(createContactRequestNtf(user, contactRequest)))
+        return (contactRequest.agentContactConnId, .nse(createContactRequestNtf(user, contactRequest)))
     case let .newChatItems(user, chatItems):
         // Received items are created one at a time
         if let chatItem = chatItems.first {
@@ -585,7 +595,7 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotification)? {
                 cItem = autoReceiveFile(file) ?? cItem
             }
             let ntf: NSENotification = cInfo.ntfsEnabled ? .nse(createMessageReceivedNtf(user, cInfo, cItem)) : .empty
-            return cItem.showNotification ? (chatItem.chatId, ntf) : nil
+            return cItem.showNotification ? (chatItem.ntfConnId, ntf) : nil
         } else {
             return nil
         }
@@ -603,11 +613,11 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotification)? {
     case let .callInvitation(invitation):
         // Do not post it without CallKit support, iOS will stop launching the app without showing CallKit
         return (
-            invitation.contact.id,
+            invitation.contact.activeConn?.agentConnId,
             useCallKit() ? .callkit(invitation) : .nse(createCallInvitationNtf(invitation))
         )
     case let .ntfMessage(_, connEntity, ntfMessage):
-        return if let id = connEntity.id { (id, .msgInfo(ntfMessage)) } else { nil }
+        return if let ntfConnId = connEntity.ntfConnId { (ntfConnId, .msgInfo(ntfMessage)) } else { nil }
     case .chatSuspended:
         chatSuspended()
         return nil
@@ -700,6 +710,20 @@ func apiGetNtfMessage(nonce: String, encNtfInfo: String) -> NtfMessages? {
     } else {
         logger.debug("apiGetNtfMessage ignored response: \(r.responseType) \(String.init(describing: r))")
     }
+    return nil
+}
+
+func apiGetNextNtfMessage(connId: String) -> NtfMsgInfo? {
+    guard apiGetActiveUser() != nil else {
+        logger.debug("no active user")
+        return nil
+    }
+    let r = sendSimpleXCmd(.apiGetNextNtfMessage(connId: connId))
+    if case let .nextNtfMessage(ntfMessage_) = r {
+        logger.debug("apiGetNextNtfMessage response ntfMessage_: \(ntfMessage_ == nil ? 0 : 1)")
+        return ntfMessage_
+    }
+    logger.debug("apiGetNextNtfMessage error: \(responseError(r))")
     return nil
 }
 
