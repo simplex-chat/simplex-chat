@@ -449,6 +449,9 @@ CREATE TABLE IF NOT EXISTS "protocol_servers"(
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now')),
   protocol TEXT NOT NULL DEFAULT 'smp',
+  server_operator_id INTEGER REFERENCES server_operators ON DELETE SET NULL,
+  role_storage INTEGER NOT NULL DEFAULT 1,
+  role_proxy INTEGER NOT NULL DEFAULT 1,
   UNIQUE(user_id, host, port)
 );
 CREATE TABLE xftp_file_descriptions(
@@ -588,6 +591,16 @@ CREATE TABLE note_folders(
   unread_chat INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE app_settings(app_settings TEXT NOT NULL);
+CREATE TABLE server_operators(
+  server_operator_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  preset INTEGER NOT NULL DEFAULT 0,
+  reserved INTEGER NOT NULL DEFAULT 0,
+  deleted INTEGER NOT NULL DEFAULT 0,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  role_storage INTEGER NOT NULL DEFAULT 1,
+  role_proxy INTEGER NOT NULL DEFAULT 1
+);
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -884,4 +897,7 @@ CREATE INDEX idx_chat_items_fwd_from_contact_id ON chat_items(
 CREATE INDEX idx_chat_items_fwd_from_group_id ON chat_items(fwd_from_group_id);
 CREATE INDEX idx_chat_items_fwd_from_chat_item_id ON chat_items(
   fwd_from_chat_item_id
+);
+CREATE INDEX idx_protocol_servers_operators ON protocol_servers(
+  server_operator_id
 );

@@ -48,6 +48,7 @@ import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
+import Simplex.Messaging.Agent.Env.SQLite (OperatorId, ServerRoles)
 import Simplex.Messaging.Agent.Protocol (ACorrId, AEventTag (..), AEvtTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
@@ -1661,6 +1662,15 @@ instance ToJSON ChatVersionRange where
   toJSON (ChatVersionRange vr) = strToJSON vr
   toEncoding (ChatVersionRange vr) = strToJEncoding vr
 
+data ServerOperator = ServerOperator
+  { operatorId :: Maybe OperatorId, -- it is Maybe to use this type to create new operators from the UI
+    name :: Text,
+    preset :: Bool,
+    enabled :: Bool,
+    roles :: ServerRoles
+  }
+  deriving (Show)
+
 $(JQ.deriveJSON defaultJSON ''UserContact)
 
 $(JQ.deriveJSON defaultJSON ''Profile)
@@ -1754,3 +1764,5 @@ $(JQ.deriveJSON defaultJSON ''Contact)
 $(JQ.deriveJSON defaultJSON ''ContactRef)
 
 $(JQ.deriveJSON defaultJSON ''NoteFolder)
+
+$(JQ.deriveJSON defaultJSON ''ServerOperator)

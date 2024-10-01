@@ -576,7 +576,7 @@ data ChatResponse
   | CRChatItemInfo {user :: User, chatItem :: AChatItem, chatItemInfo :: ChatItemInfo}
   | CRChatItemId User (Maybe ChatItemId)
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
-  | CRUserProtoServers {user :: User, servers :: AUserProtoServers}
+  | CRUserProtoServers {user :: User, servers :: AUserProtoServers, operators :: [ServerOperator]}
   | CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure}
   | CRChatItemTTL {user :: User, chatItemTTL :: Maybe Int64}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
@@ -939,7 +939,8 @@ instance ToJSON AgentQueueId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-data ProtoServersConfig p = ProtoServersConfig {servers :: [ServerCfg p]}
+-- operators = Nothing is used to avoid updating operators to support CLI.
+data ProtoServersConfig p = ProtoServersConfig {operators :: Maybe [ServerOperator], servers :: [ServerCfg p]}
   deriving (Show)
 
 data AProtoServersConfig = forall p. ProtocolTypeI p => APSC (SProtocolType p) (ProtoServersConfig p)

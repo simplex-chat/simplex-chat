@@ -48,6 +48,8 @@ module Simplex.Chat.Store.Profiles
     updateUserAddressAutoAccept,
     getProtocolServers,
     overwriteProtocolServers,
+    getServerOperators,
+    updateServerOperators,
     createCall,
     deleteCalls,
     getCalls,
@@ -83,7 +85,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..))
+import Simplex.Messaging.Agent.Env.SQLite (OperatorId, ServerCfg (..), ServerRoles (..))
 import Simplex.Messaging.Agent.Protocol (ACorrId, ConnId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
@@ -521,17 +523,18 @@ getProtocolServers db User {userId} =
     <$> DB.query
       db
       [sql|
-        SELECT host, port, key_hash, basic_auth, preset, tested, enabled
+        SELECT host, port, key_hash, basic_auth, server_operator_id, preset, tested, enabled, role_storage, role_proxy
         FROM protocol_servers
         WHERE user_id = ? AND protocol = ?;
       |]
       (userId, decodeLatin1 $ strEncode protocol)
   where
     protocol = protocolTypeI @p
-    toServerCfg :: (NonEmpty TransportHost, String, C.KeyHash, Maybe Text, Bool, Maybe Bool, Bool) -> ServerCfg p
-    toServerCfg (host, port, keyHash, auth_, preset, tested, enabled) =
+    toServerCfg :: (NonEmpty TransportHost, String, C.KeyHash, Maybe Text, Maybe OperatorId, Bool, Maybe Bool, Bool, Bool, Bool) -> ServerCfg p
+    toServerCfg (host, port, keyHash, auth_, operator, preset, tested, enabled, storage, proxy) =
       let server = ProtoServerWithAuth (ProtocolServer protocol host port keyHash) (BasicAuth . encodeUtf8 <$> auth_)
-       in ServerCfg {server, preset, tested, enabled}
+          roles = ServerRoles {storage, proxy}
+       in ServerCfg {server, operator, preset, tested, enabled, roles}
 
 overwriteProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> [ServerCfg p] -> ExceptT StoreError IO ()
 overwriteProtocolServers db User {userId} servers =
@@ -551,6 +554,44 @@ overwriteProtocolServers db User {userId} servers =
     pure $ Right ()
   where
     protocol = decodeLatin1 $ strEncode $ protocolTypeI @p
+
+getServerOperators :: DB.Connection -> IO [ServerOperator]
+getServerOperators db =
+  map toOperator
+    <$> DB.query_
+      db
+      [sql|
+        SELECT server_operator_id, name, preset, enabled, role_storage, role_proxy
+        FROM protocol_servers
+        WHERE reserved = 0 AND deleted = 0;
+      |]
+  where
+    toOperator (operatorId, name, preset, enabled, storage, proxy) =
+      let roles = ServerRoles {storage, proxy}
+       in ServerOperator {operatorId, name, preset, enabled, roles}
+
+updateServerOperators :: DB.Connection -> [ServerOperator] -> IO ()
+updateServerOperators db operators = do
+  DB.execute_ db "DELETE FROM server_operators WHERE preset = 0"
+  forM_ operators $ \ServerOperator {operatorId, name, preset, enabled, roles = ServerRoles {storage, proxy}} ->
+    case operatorId of
+      Just opId | preset ->
+        DB.execute
+          db
+          [sql|
+            UPDATE server_operators
+            SET enabled = ?, role_storage = ?, role_proxy = ?
+            WHERE server_operator_id = ?
+          |]
+          (enabled, storage, proxy, opId)
+      _ ->
+        DB.execute
+          db
+          [sql|
+            INSERT INTO server_operators (server_operator_id, name, preset, enabled, role_storage, role_proxy)
+            VALUES (?,?,?,?,?,?)
+          |]
+          (operatorId, name, preset, enabled, storage, proxy)
 
 createCall :: DB.Connection -> User -> Call -> UTCTime -> IO ()
 createCall db user@User {userId} Call {contactId, callId, callUUID, chatItemId, callState} callTs = do

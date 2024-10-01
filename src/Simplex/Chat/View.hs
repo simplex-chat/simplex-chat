@@ -19,7 +19,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace, toUpper)
 import Data.Function (on)
 import Data.Int (Int64)
-import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
+import Data.List (foldl', groupBy, intercalate, intersperse, partition, sortOn)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -95,7 +95,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRChats chats -> viewChats ts tz chats
   CRApiChat u chat -> ttyUser u $ if testView then testViewChat chat else [viewJSON chat]
   CRApiParsedMarkdown ft -> [viewJSON ft]
-  CRUserProtoServers u userServers -> ttyUser u $ viewUserServers userServers testView
+  CRUserProtoServers u userServers operators  -> ttyUser u $ viewUserServers userServers operators testView
   CRServerTestResult u srv testFailure -> ttyUser u $ viewServerTestResult srv testFailure
   CRChatItemTTL u ttl -> ttyUser u $ viewChatItemTTL ttl
   CRNetworkConfig cfg -> viewNetworkConfig cfg
@@ -1208,8 +1208,8 @@ viewUserPrivacy User {userId} User {userId = userId', localDisplayName = n', sho
     "profile is " <> if isJust viewPwdHash then "hidden" else "visible"
   ]
 
-viewUserServers :: AUserProtoServers -> Bool -> [StyledString]
-viewUserServers (AUPS UserProtoServers {serverProtocol = p, protoServers, presetServers}) testView =
+viewUserServers :: AUserProtoServers -> [ServerOperator] -> Bool -> [StyledString]
+viewUserServers (AUPS UserProtoServers {serverProtocol = p, protoServers, presetServers}) operators testView =
   customServers
     <> if testView
       then []
@@ -1227,8 +1227,8 @@ viewUserServers (AUPS UserProtoServers {serverProtocol = p, protoServers, preset
     pName = protocolName p
     customServers =
       if null protoServers
-        then ("no " <> pName <> " servers saved, using presets: ") : viewServers presetServers
-        else viewServers protoServers
+        then ("no " <> pName <> " servers saved, using presets: ") : viewServers operators presetServers
+        else viewServers operators protoServers
 
 protocolName :: ProtocolTypeI p => SProtocolType p -> StyledString
 protocolName = plain . map toUpper . T.unpack . decodeLatin1 . strEncode
@@ -1325,8 +1325,11 @@ viewConnectionStats ConnectionStats {rcvQueuesInfo, sndQueuesInfo} =
   ["receiving messages via: " <> viewRcvQueuesInfo rcvQueuesInfo | not $ null rcvQueuesInfo]
     <> ["sending messages via: " <> viewSndQueuesInfo sndQueuesInfo | not $ null sndQueuesInfo]
 
-viewServers :: ProtocolTypeI p => NonEmpty (ServerCfg p) -> [StyledString]
-viewServers = map (plain . B.unpack . strEncode . (\ServerCfg {server} -> server)) . L.toList
+viewServers :: ProtocolTypeI p => [ServerOperator] -> NonEmpty (ServerCfg p) -> [StyledString]
+viewServers operators = map (plain . (\ServerCfg {server, operator} -> B.unpack (strEncode server) <> viewOperator operator)) . L.toList
+  where
+    ops :: Map (Maybe Int64) Text = foldl' (\m ServerOperator {operatorId, name} -> M.insert operatorId name m) M.empty operators
+    viewOperator = maybe "" $ \op -> " (operator " <> maybe (show op) T.unpack (M.lookup (Just op) ops) <> ")"
 
 viewRcvQueuesInfo :: [RcvQueueInfo] -> StyledString
 viewRcvQueuesInfo = plain . intercalate ", " . map showQueueInfo

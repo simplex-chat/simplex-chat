@@ -98,7 +98,7 @@ import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.FileTransfer.Types (FileErrorType (..), RcvFileId, SndFileId)
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Client (SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, getFastNetworkConfig, ipAddressProtected, withLockMap)
-import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), ServerCfg (..), createAgentStore, defaultAgentConfig, enabledServerCfg, presetServerCfg)
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), OperatorId, ServerCfg (..), allRoles, createAgentStore, defaultAgentConfig, enabledServerCfg, presetServerCfg)
 import Simplex.Messaging.Agent.Lock (withLock)
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
@@ -153,7 +153,7 @@ defaultChatConfig =
           { smp = _defaultSMPServers,
             useSMP = 4,
             ntf = _defaultNtfServers,
-            xftp = L.map (presetServerCfg True) defaultXFTPServers,
+            xftp = L.map (presetServerCfg True allRoles operatorSimpleXChat) defaultXFTPServers,
             useXFTP = L.length defaultXFTPServers,
             netCfg = defaultNetworkConfig
           },
@@ -182,7 +182,7 @@ _defaultSMPServers :: NonEmpty (ServerCfg 'PSMP)
 _defaultSMPServers =
   L.fromList $
     map
-      (presetServerCfg True)
+      (presetServerCfg True allRoles operatorSimpleXChat)
       [ "smp://0YuTwO05YJWS8rkjn9eLJDjQhFKvIYd8d4xG8X1blIU=@smp8.simplex.im,beccx4yfxxbvyhqypaavemqurytl6hozr47wfc7uuecacjqdvwpw2xid.onion",
         "smp://SkIkI6EPd2D63F4xFKfHk7I1UGZVNn6k1QWZ5rcyr6w=@smp9.simplex.im,jssqzccmrcws6bhmn77vgmhfjmhwlyr3u7puw4erkyoosywgl67slqqd.onion",
         "smp://6iIcWT_dF2zN_w5xzZEY7HI2Prbh3ldP07YTyDexPjE=@smp10.simplex.im,rb2pbttocvnbrngnwziclp2f4ckjq65kebafws6g4hy22cdaiv5dwjqd.onion",
@@ -196,11 +196,14 @@ _defaultSMPServers =
         "smp://N_McQS3F9TGoh4ER0QstUf55kGnNSd-wXfNPZ7HukcM=@smp19.simplex.im,i53bbtoqhlc365k6kxzwdp5w3cdt433s7bwh3y32rcbml2vztiyyz5id.onion"
       ]
       <> map
-        (presetServerCfg False)
+        (presetServerCfg False allRoles operatorSimpleXChat)
         [ "smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im,o5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion",
           "smp://hpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg=@smp5.simplex.im,jjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion",
           "smp://PQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo=@smp6.simplex.im,bylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion"
         ]
+
+operatorSimpleXChat :: Maybe OperatorId
+operatorSimpleXChat = Just 1
 
 _defaultNtfServers :: [NtfServer]
 _defaultNtfServers =
@@ -1462,13 +1465,17 @@ processChatCommand' vr = \case
     pure CRNtfMessages {user_, connEntity_, msgTs = msgTs', ntfMessage_ = ntfMsgInfo <$> msg}
   APIGetUserProtoServers userId (AProtocolType p) -> withUserId userId $ \user -> withServerProtocol p $ do
     cfg@ChatConfig {defaultServers} <- asks config
-    servers <- withFastStore' (`getProtocolServers` user)
-    pure $ CRUserProtoServers user $ AUPS $ UserProtoServers p (useServers cfg p servers) (cfgServers p defaultServers)
+    srvs <- withFastStore' (`getProtocolServers` user)
+    operators <- withFastStore' getServerOperators
+    let servers = AUPS $ UserProtoServers p (useServers cfg p srvs) (cfgServers p defaultServers)
+    pure $ CRUserProtoServers {user, servers, operators} 
   GetUserProtoServers aProtocol -> withUser $ \User {userId} ->
     processChatCommand $ APIGetUserProtoServers userId aProtocol
-  APISetUserProtoServers userId (APSC p (ProtoServersConfig servers))
+  APISetUserProtoServers userId (APSC p (ProtoServersConfig operators servers))
     | null servers || any (\ServerCfg {enabled} -> enabled) servers -> withUserId userId $ \user -> withServerProtocol p $ do
-        withFastStore $ \db -> overwriteProtocolServers db user servers
+        withFastStore $ \db -> do
+          liftIO $ mapM_ (updateServerOperators db) operators
+          overwriteProtocolServers db user servers
         cfg <- asks config
         lift $ withAgent' $ \a -> setProtocolServers a (aUserId user) $ useServers cfg p servers
         ok user
@@ -8024,10 +8031,10 @@ chatCommandP =
       "/xftp test " *> (TestProtoServer . AProtoServerWithAuth SPXFTP <$> strP),
       "/ntf test " *> (TestProtoServer . AProtoServerWithAuth SPNTF <$> strP),
       "/_servers " *> (APISetUserProtoServers <$> A.decimal <* A.space <*> srvCfgP),
-      "/smp " *> (SetUserProtoServers . APSC SPSMP . ProtoServersConfig . map enabledServerCfg <$> protocolServersP),
-      "/smp default" $> SetUserProtoServers (APSC SPSMP $ ProtoServersConfig []),
-      "/xftp " *> (SetUserProtoServers . APSC SPXFTP . ProtoServersConfig . map enabledServerCfg <$> protocolServersP),
-      "/xftp default" $> SetUserProtoServers (APSC SPXFTP $ ProtoServersConfig []),
+      "/smp " *> (SetUserProtoServers . APSC SPSMP . ProtoServersConfig Nothing . map enabledServerCfg <$> protocolServersP),
+      "/smp default" $> SetUserProtoServers (APSC SPSMP $ ProtoServersConfig Nothing []),
+      "/xftp " *> (SetUserProtoServers . APSC SPXFTP . ProtoServersConfig Nothing . map enabledServerCfg <$> protocolServersP),
+      "/xftp default" $> SetUserProtoServers (APSC SPXFTP $ ProtoServersConfig Nothing []),
       "/_servers " *> (APIGetUserProtoServers <$> A.decimal <* A.space <*> strP),
       "/smp" $> GetUserProtoServers (AProtocolType SPSMP),
       "/xftp" $> GetUserProtoServers (AProtocolType SPXFTP),
