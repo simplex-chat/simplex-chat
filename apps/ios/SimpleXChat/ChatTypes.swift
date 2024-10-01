@@ -2305,17 +2305,6 @@ public struct AChatItem: Decodable, Hashable {
         }
         return chatInfo.id
     }
-
-    public var ntfConnId: String? {
-        switch chatItem.chatDir {
-        case .directRcv:
-            return chatInfo.contact?.activeConn?.agentConnId
-        case let .groupRcv(groupMember):
-            return groupMember.activeConn?.agentConnId
-        default:
-            return nil
-        }
-    }
 }
 
 public struct ACIReaction: Decodable, Hashable {
