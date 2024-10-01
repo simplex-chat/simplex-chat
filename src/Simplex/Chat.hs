@@ -1460,9 +1460,9 @@ processChatCommand' vr = \case
       pure user_ $>>= \user ->
         withStore (\db -> Just <$> getConnectionEntity db vr user agentConnId) `catchChatError` (\e -> toView (CRChatError (Just user) e) $> Nothing)
     pure CRNtfMessages {user_, connEntity_, msgTs = msgTs', ntfMessage_ = ntfMsgInfo <$> msg}
-  APIGetNextNtfMessage (AgentConnId connId) -> withUser $ \_ -> do
+  ApiGetConnNtfMessage (AgentConnId connId) -> withUser $ \_ -> do
     msg <- withAgent $ \a -> getConnectionMessage a connId
-    pure $ CRNextNtfMessage (ntfMsgInfo <$> msg)
+    pure $ CRConnNtfMessage (ntfMsgInfo <$> msg)
   APIGetUserProtoServers userId (AProtocolType p) -> withUserId userId $ \user -> withServerProtocol p $ do
     cfg@ChatConfig {defaultServers} <- asks config
     servers <- withFastStore' (`getProtocolServers` user)
@@ -8015,7 +8015,7 @@ chatCommandP =
       "/_ntf verify " *> (APIVerifyToken <$> strP <* A.space <*> strP <* A.space <*> strP),
       "/_ntf delete " *> (APIDeleteToken <$> strP),
       "/_ntf message " *> (APIGetNtfMessage <$> strP <* A.space <*> strP),
-      "/_ntf next message " *> (APIGetNextNtfMessage <$> strP),
+      "/_ntf conn message " *> (ApiGetConnNtfMessage <$> strP),
       "/_add #" *> (APIAddMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_join #" *> (APIJoinGroup <$> A.decimal),
       "/_member role #" *> (APIMemberRole <$> A.decimal <* A.space <*> A.decimal <*> memberRole),

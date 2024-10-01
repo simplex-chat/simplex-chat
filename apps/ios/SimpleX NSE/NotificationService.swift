@@ -239,7 +239,7 @@ class NotificationService: UNNotificationServiceExtension {
             } else if getNextAttempts < 3, let receiveConnId = receiveConnId {
                 logger.debug("NotificationService processNtf: unexpected msgInfo, get next message")
                 getNextAttempts += 1
-                let ntfInfo = apiGetNextNtfMessage(connId: receiveConnId)
+                let ntfInfo = apiGetConnNtfMessage(connId: receiveConnId)
                 if ntfInfo == nil {
                     logger.debug("NotificationService processNtf: no next message, deliver best attempt")
                     self.deliverBestAttemptNtf()
@@ -714,17 +714,17 @@ func apiGetNtfMessage(nonce: String, encNtfInfo: String) -> NtfMessages? {
     return nil
 }
 
-func apiGetNextNtfMessage(connId: String) -> NtfMsgInfo? {
+func apiGetConnNtfMessage(connId: String) -> NtfMsgInfo? {
     guard apiGetActiveUser() != nil else {
         logger.debug("no active user")
         return nil
     }
-    let r = sendSimpleXCmd(.apiGetNextNtfMessage(connId: connId))
-    if case let .nextNtfMessage(ntfMessage_) = r {
-        logger.debug("apiGetNextNtfMessage response ntfMessage_: \(ntfMessage_ == nil ? 0 : 1)")
+    let r = sendSimpleXCmd(.apiGetConnNtfMessage(connId: connId))
+    if case let .connNtfMessage(ntfMessage_) = r {
+        logger.debug("apiGetConnNtfMessage response ntfMessage_: \(ntfMessage_ == nil ? 0 : 1)")
         return ntfMessage_
     }
-    logger.debug("apiGetNextNtfMessage error: \(responseError(r))")
+    logger.debug("apiGetConnNtfMessage error: \(responseError(r))")
     return nil
 }
 

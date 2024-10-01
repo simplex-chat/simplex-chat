@@ -331,7 +331,7 @@ data ChatCommand
   | APIVerifyToken DeviceToken C.CbNonce ByteString
   | APIDeleteToken DeviceToken
   | APIGetNtfMessage {nonce :: C.CbNonce, encNtfInfo :: ByteString}
-  | APIGetNextNtfMessage {connId :: AgentConnId}
+  | ApiGetConnNtfMessage {connId :: AgentConnId}
   | APIAddMember GroupId ContactId GroupMemberRole
   | APIJoinGroup GroupId
   | APIMemberRole GroupId GroupMemberId GroupMemberRole
@@ -746,7 +746,7 @@ data ChatResponse
   | CRNtfTokenStatus {status :: NtfTknStatus}
   | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode, ntfServer :: NtfServer}
   | CRNtfMessages {user_ :: Maybe User, connEntity_ :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessage_ :: Maybe NtfMsgInfo}
-  | CRNextNtfMessage {ntfMessage_ :: Maybe NtfMsgInfo}
+  | CRConnNtfMessage {ntfMessage_ :: Maybe NtfMsgInfo}
   | CRNtfMessage {user :: User, connEntity :: ConnectionEntity, ntfMessage :: NtfMsgInfo}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
