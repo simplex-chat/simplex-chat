@@ -18,6 +18,17 @@ enum UserPickerSheet: Identifiable {
     case settings
 
     var id: Self { self }
+
+    var navigationTitle: LocalizedStringKey {
+        switch self {
+        case .address: "SimpleX address"
+        case .chatPreferences: "Your preferences"
+        case .chatProfiles: "Your chat profiles"
+        case .currentProfile: "Your current profile"
+        case .useFromDesktop: "Connect to desktop"
+        case .settings: "Your settings"
+        }
+    }
 }
 
 struct UserPickerSheetView: View {
@@ -27,43 +38,38 @@ struct UserPickerSheetView: View {
     @State private var loaded = false
 
     var body: some View {
-        Group {
-            if loaded, let currentUser = chatModel.currentUser {
-                switch sheet {
-                case .address:
-                    NavigationView {
+        NavigationView {
+            ZStack {
+                if loaded, let currentUser = chatModel.currentUser {
+                    switch sheet {
+                    case .address:
                         UserAddressView(shareViaProfile: currentUser.addressShared)
-                            .navigationTitle("SimpleX address")
-                            .navigationBarTitleDisplayMode(.large)
-                            .modifier(ThemedBackground(grouped: true))
-                    }
-                case .chatProfiles:
-                    NavigationView {
+                    case .chatPreferences:
+                        PreferencesView(
+                            profile: currentUser.profile,
+                            preferences: currentUser.fullPreferences,
+                            currentPreferences: currentUser.fullPreferences
+                        )
+                    case .chatProfiles:
                         UserProfilesView()
-                    }
-                case .currentProfile:
-                    NavigationView {
+                    case .currentProfile:
                         UserProfile()
-                            .navigationTitle("Your current profile")
-                            .modifier(ThemedBackground(grouped: true))
+                    case .useFromDesktop:
+                        ConnectDesktopView()
+                    case .settings:
+                        SettingsView(showSettings: $showSettings, withNavigation: false)
                     }
-                case .chatPreferences:
-                    NavigationView {
-                        PreferencesView(profile: currentUser.profile, preferences: currentUser.fullPreferences, currentPreferences: currentUser.fullPreferences)
-                            .navigationTitle("Your preferences")
-                            .navigationBarTitleDisplayMode(.large)
-                            .modifier(ThemedBackground(grouped: true))
-                    }
-                case .useFromDesktop:
-                    ConnectDesktopView(viaSettings: false)
-                case .settings:
-                    SettingsView(showSettings: $showSettings)
-                        .navigationBarTitleDisplayMode(.large)
                 }
             }
+            .navigationTitle(sheet.navigationTitle)
+            .navigationBarTitleDisplayMode(.large)
+            .modifier(ThemedBackground(grouped: true))
         }
         .task {
-            withAnimation(.easeOut(duration: 0.1)) { loaded = true }
+            withAnimation(
+                .easeOut(duration: 0.1),
+                { loaded = true }
+            )
         }
     }
 }
