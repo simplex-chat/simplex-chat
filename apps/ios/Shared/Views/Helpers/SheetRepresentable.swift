@@ -93,20 +93,23 @@ struct SheetRepresentable<Content: View>: UIViewControllerRepresentable {
                     hostingController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
                     hostingController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
                 ])
-                animator.pausesOnCompletion = true
-                animator.scrubsLinearly = true
             }
         }
 
         override func viewDidAppear(_ animated: Bool) {
-            hostingController.view.transform = CGAffineTransform(translationX: 0, y: self.sheetHeight)
-            hostingController.view.isHidden = false
-            self.animator.addAnimations {
-                self.hostingController.view.transform = .identity
-                self.view.backgroundColor = UIColor {
-                    switch $0.userInterfaceStyle {
-                    case .dark: .black.withAlphaComponent(0.290)
-                    default:    .black.withAlphaComponent(0.121)
+            // Ensures animations are only setup once
+            // on some iOS version `viewDidAppear` can get called on each state change.
+            if hostingController.view.isHidden {
+                hostingController.view.transform = CGAffineTransform(translationX: 0, y: self.sheetHeight)
+                hostingController.view.isHidden = false
+                animator.pausesOnCompletion = true
+                animator.addAnimations {
+                    self.hostingController.view.transform = .identity
+                    self.view.backgroundColor = UIColor {
+                        switch $0.userInterfaceStyle {
+                        case .dark: .black.withAlphaComponent(0.290)
+                        default:    .black.withAlphaComponent(0.121)
+                        }
                     }
                 }
             }
