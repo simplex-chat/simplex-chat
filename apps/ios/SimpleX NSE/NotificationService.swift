@@ -121,7 +121,7 @@ class NotificationService: UNNotificationServiceExtension {
     var receiveEntityId: String?
     var receiveConnId: String?
     var expectedMessage: String?
-    var getNextAttempts: Int = 0
+    var allowedMessages: Int = 3
     // return true if the message is taken - it prevents sending it to another NotificationService instance for processing
     var shouldProcessNtf = false
     var appSubscriber: AppSubscriber?
@@ -236,9 +236,9 @@ class NotificationService: UNNotificationServiceExtension {
                 logger.debug("NotificationService processNtf: unexpected msgInfo, let other instance to process it, stopping this one")
                 self.deliverBestAttemptNtf()
                 return false
-            } else if getNextAttempts < 3, let receiveConnId = receiveConnId {
+            } else if allowedMessages > 0, let receiveConnId = receiveConnId {
                 logger.debug("NotificationService processNtf: unexpected msgInfo, get next message")
-                getNextAttempts += 1
+                allowedMessages -= 1
                 let ntfInfo = apiGetConnNtfMessage(connId: receiveConnId)
                 if ntfInfo == nil {
                     logger.debug("NotificationService processNtf: no next message, deliver best attempt")
