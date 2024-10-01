@@ -3,14 +3,16 @@ package chat.simplex.common.views.chat.item
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CornerSize
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.*
@@ -798,6 +800,15 @@ fun ItemAction(text: String, color: Color = Color.Unspecified, onClick: () -> Un
   }
 }
 
+fun chatItemShape(cornerRoundness: Float, density: Density): GenericShape {
+  return GenericShape { size, _ ->
+    val radiusPx = with(density) { (msgRectMaxRadius * cornerRoundness).toPx() }
+    val rect = RoundRect(0f, 0f, size.width, size.height, CornerRadius(radiusPx, radiusPx))
+
+    this.addRoundRect(rect)
+  }
+}
+
 @Composable
 fun Modifier.chatItemBox(): Modifier {
   val chatItemRoundness = remember { appPreferences.chatItemRoundness.state }
@@ -808,8 +819,7 @@ fun Modifier.chatItemBox(): Modifier {
     else -> chatItemRoundness.value
   }
 
-  val shape = RoundedCornerShape(CornerSize(msgRectMaxRadius * cornerRoundness))
-  return this.clip(shape)
+  return this.clip(chatItemShape(cornerRoundness, LocalDensity.current))
 }
 
 fun cancelFileAlertDialog(fileId: Long, cancelFile: (Long) -> Unit, cancelAction: CancelAction) {
