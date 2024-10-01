@@ -200,10 +200,10 @@ class NotificationService: UNNotificationServiceExtension {
                         ? .nse(createConnectionEventNtf(ntfInfo.user, connEntity))
                         : .empty
                     )
-                    if let id = connEntity.id, let ntfConnId = connEntity.ntfConnId, ntfInfo.msgTs != nil {
+                    if let id = connEntity.id, ntfInfo.msgTs != nil {
                         notificationInfo = ntfInfo
                         receiveEntityId = id
-                        receiveConnId = ntfConnId
+                        receiveConnId = connEntity.conn.agentConnId
                         expectedMessage = ntfInfo.ntfMessage_.flatMap { $0.msgId }
                         shouldProcessNtf = true
                         return
