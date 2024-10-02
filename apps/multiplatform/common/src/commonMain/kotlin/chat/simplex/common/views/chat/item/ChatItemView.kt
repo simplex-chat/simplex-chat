@@ -107,9 +107,13 @@ fun ChatItemView(
       }
     } else { {} }
 
+    val chatItemTail = remember { appPreferences.chatItemTail.state }
+    val style = shapeStyle(cItem, chatItemTail.value, itemSeparation.largeGap)
+    val tailPaddingAdjustment = if (style is ShapeStyle.Bubble && style.tailVisible) msgTailWidthDp else 0.dp
+
     @Composable
     fun ChatItemReactions() {
-      Row(verticalAlignment = Alignment.CenterVertically) {
+      Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = if (sent) 0.dp else tailPaddingAdjustment, end = if (sent) tailPaddingAdjustment else 0.dp)) {
         cItem.reactions.forEach { r ->
           var modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp).clip(RoundedCornerShape(8.dp))
           if (cInfo.featureEnabled(ChatFeature.Reactions) && (cItem.allowAddReaction || r.userReacted)) {
