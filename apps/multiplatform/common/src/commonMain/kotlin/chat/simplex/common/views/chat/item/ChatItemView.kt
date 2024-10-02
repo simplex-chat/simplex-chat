@@ -892,7 +892,7 @@ fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVisible: Bo
     is CIContent.RcvBlocked,
     is CIContent.InvalidJSON -> {
       val content = chatItem.content.msgContent
-      val tail = if (content != null && content.isImageOrVideo && content.text.isEmpty()) {
+      val tail = if (content != null && ((content.isImageOrVideo && content.text.isEmpty()) || (content is MsgContent.MCText && isShortEmoji(content.text)))) {
         false
       } else {
         tailVisible
