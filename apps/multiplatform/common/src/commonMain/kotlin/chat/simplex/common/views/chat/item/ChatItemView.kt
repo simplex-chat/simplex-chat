@@ -9,7 +9,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
@@ -20,7 +19,6 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
-import androidx.compose.ui.unit.min
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
@@ -29,7 +27,6 @@ import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.datetime.Clock
-import org.ddogleg.struct.Tuple3
 import kotlin.math.*
 
 // TODO refactor so that FramedItemView can show all CIContent items if they're deleted (see Swift code)
@@ -918,15 +915,15 @@ private fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVis
 @Composable
 fun chatItemPadding(
   chatItem: ChatItem,
-  tailVisible: Boolean,
+  canHavePadding: Boolean,
   endPadding: Boolean
 ): Dp {
-  if (!tailVisible) {
+  if (!canHavePadding) {
     return 0.dp
   }
 
   val chatItemTail = remember { appPreferences.chatItemTail.state }
-  return when (val style = shapeStyle(chatItem, chatItemTail.value, tailVisible)) {
+  return when (val style = shapeStyle(chatItem, chatItemTail.value, canHavePadding)) {
     is ShapeStyle.Bubble -> {
       if (style.tailVisible) {
         if (style.startPadding && !endPadding || !style.startPadding && endPadding) {

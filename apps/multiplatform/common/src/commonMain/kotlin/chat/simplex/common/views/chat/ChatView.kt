@@ -1137,12 +1137,11 @@ fun BoxWithConstraintsScope.ChatItemsList(
                         androidx.compose.animation.AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                           SelectedChatItem(Modifier, cItem.id, selectedChatItems)
                         }
-                        Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() },
-                          horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
                           Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
                             MemberImage(member)
                           }
-                          Box(modifier = Modifier.padding(top = 2.dp)) {
+                          Box(modifier = Modifier.padding(top = 2.dp, start = chatItemPadding(cItem, !itemSeparation.largeGap, endPadding = false))) {
                             ChatItemViewShortHand(cItem, itemSeparation, range, false)
                           }
                         }
@@ -1164,7 +1163,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                     }
                     Row(
                       Modifier
-                        .padding(start = 8.dp + MEMBER_IMAGE_SIZE + 4.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp)
+                        .padding(start = 8.dp + MEMBER_IMAGE_SIZE + chatItemPadding(cItem, !itemSeparation.largeGap, endPadding = false), end = if (voiceWithTransparentBack) 12.dp else 66.dp)
                         .then(swipeableOrSelectionModifier)
                     ) {
                       ChatItemViewShortHand(cItem, itemSeparation, range)
@@ -1178,7 +1177,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                   }
                   Box(
                     Modifier
-                      .padding(start = if (voiceWithTransparentBack) 12.dp else 104.dp, end = 12.dp)
+                      .padding(start = if (voiceWithTransparentBack) 12.dp else 104.dp, end = 9.dp + chatItemPadding(cItem, !itemSeparation.largeGap, endPadding = true))
                       .then(if (selectionVisible) Modifier else swipeableModifier)
                   ) {
                     ChatItemViewShortHand(cItem, itemSeparation, range)
