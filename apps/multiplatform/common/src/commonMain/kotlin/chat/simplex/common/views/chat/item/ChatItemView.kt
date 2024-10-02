@@ -27,6 +27,7 @@ import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.datetime.Clock
+import org.ddogleg.struct.Tuple2
 import kotlin.math.*
 
 // TODO refactor so that FramedItemView can show all CIContent items if they're deleted (see Swift code)
@@ -806,20 +807,19 @@ fun ItemAction(text: String, color: Color = Color.Unspecified, onClick: () -> Un
 
 fun chatItemShape(roundness: Float, density: Density, tailVisible: Boolean, sent: Boolean = false): GenericShape {
   return GenericShape { size, _ ->
-    val msgTailWidth = with(density) { msgTailWidthDp.toPx() }
+    val (msgTailWidth, msgBubbleMaxRadius) = with(density) { Pair(msgTailWidthDp.toPx(), msgBubbleMaxRadius.toPx()  ) }
     val width = if (sent && tailVisible) size.width - msgTailWidth else size.width
     val height = size.height
-    val msgTailMaxHeight = with(density) { msgTailMaxHeightDp.toPx() }
-    val msgTailMinHeight = with(density) { msgTailMinHeightDp.toPx() }
-    val msgBubbleMaxRadius = with(density) { msgBubbleMaxRadius.toPx() }
     val rxMax = min(msgBubbleMaxRadius, width / 2)
     val ryMax = min(msgBubbleMaxRadius, height / 2)
     val rx = roundness * rxMax
     val ry = roundness * ryMax
-    val tailHeight = min(
-      msgTailMinHeight + roundness * (msgTailMaxHeight - msgTailMinHeight),
-      height / 2
-    )
+    val tailHeight = with(density) {
+      min(
+        msgTailMinHeightDp.toPx() + roundness * (msgTailMaxHeightDp.toPx() - msgTailMinHeightDp.toPx()),
+        height / 2
+      )
+    }
     moveTo(rx, 0f)
     lineTo(width - rx, 0f) // Top Line
     if (roundness > 0) {
@@ -929,8 +929,7 @@ fun Modifier.chatItemBox(chatItem: ChatItem? = null, tailVisible: Boolean = fals
     is ShapeStyle.RoundRect -> RoundedCornerShape(style.radius * cornerRoundness)
   }
 
-  return this
-    .clip(shape)
+  return this.clip(shape)
 }
 
 fun cancelFileAlertDialog(fileId: Long, cancelFile: (Long) -> Unit, cancelAction: CancelAction) {
