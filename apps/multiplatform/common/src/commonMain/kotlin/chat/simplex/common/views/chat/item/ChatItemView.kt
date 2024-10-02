@@ -85,6 +85,7 @@ fun ChatItemView(
   developerTools: Boolean,
   showViaProxy: Boolean,
   showTimestamp: Boolean,
+  itemSeparation: ItemSeparation,
   preview: Boolean = false,
 ) {
   val uriHandler = LocalUriHandler.current
@@ -138,13 +139,13 @@ fun ChatItemView(
     Column(horizontalAlignment = if (cItem.chatDir.sent) Alignment.End else Alignment.Start) {
       Column(
         Modifier
-          .chatItemBox(cItem)
+          .chatItemBox(cItem, itemSeparation.largeGap)
           .combinedClickable(onLongClick = { showMenu.value = true }, onClick = onClick)
           .onRightClick { showMenu.value = true },
       ) {
         @Composable
         fun framedItemView() {
-          FramedItemView(cInfo, cItem, uriHandler, imageProvider, linkMode = linkMode, showViaProxy = showViaProxy, showMenu, showTimestamp = showTimestamp, receiveFile, onLinkLongClick, scrollToItem)
+          FramedItemView(cInfo, cItem, uriHandler, imageProvider, linkMode = linkMode, showViaProxy = showViaProxy, showMenu, showTimestamp = showTimestamp, tailVisible = itemSeparation.largeGap, receiveFile, onLinkLongClick, scrollToItem)
         }
 
         fun deleteMessageQuestionText(): String {
@@ -915,10 +916,10 @@ private fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVis
 }
 
 @Composable
-fun Modifier.chatItemBox(chatItem: ChatItem? = null ): Modifier {
+fun Modifier.chatItemBox(chatItem: ChatItem? = null, tailVisible: Boolean = false): Modifier {
   val chatItemRoundness = remember { appPreferences.chatItemRoundness.state }
   val chatItemTail = remember { appPreferences.chatItemTail.state }
-  val style = shapeStyle(chatItem, chatItemTail.value, true )
+  val style = shapeStyle(chatItem, chatItemTail.value, tailVisible )
 
   val cornerRoundness = when {
     chatItemRoundness.value >= 1 -> 1f
@@ -1079,6 +1080,7 @@ fun PreviewChatItemView(
     showViaProxy = false,
     showTimestamp = true,
     preview = true,
+    itemSeparation = ItemSeparation(timestamp = true, largeGap = true, null)
   )
 }
 
@@ -1118,7 +1120,8 @@ fun PreviewChatItemViewDeletedContent() {
       developerTools = false,
       showViaProxy = false,
       preview = true,
-      showTimestamp = true
+      showTimestamp = true,
+      itemSeparation = ItemSeparation(timestamp = true, largeGap = true, null)
     )
   }
 }

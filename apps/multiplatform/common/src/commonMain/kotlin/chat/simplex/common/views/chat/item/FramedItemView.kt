@@ -36,6 +36,7 @@ fun FramedItemView(
   showViaProxy: Boolean,
   showMenu: MutableState<Boolean>,
   showTimestamp: Boolean,
+  tailVisible: Boolean = false,
   receiveFile: (Long) -> Unit,
   onLinkLongClick: (link: String) -> Unit = {},
   scrollToItem: (Long) -> Unit = {},
@@ -190,7 +191,7 @@ fun FramedItemView(
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
   Box(Modifier
-    .chatItemBox(ci)
+    .chatItemBox(ci, tailVisible)
     .background(
       when {
         transparentBackground -> Color.Transparent
