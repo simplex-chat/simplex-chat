@@ -882,6 +882,7 @@ fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVisible: Bo
     is CIContent.RcvMsgContent,
     is CIContent.RcvDecryptionError,
     is CIContent.SndDeleted,
+    is CIContent.RcvDeleted,
     is CIContent.RcvIntegrityError,
     is CIContent.SndModerated,
     is CIContent.RcvModerated,
