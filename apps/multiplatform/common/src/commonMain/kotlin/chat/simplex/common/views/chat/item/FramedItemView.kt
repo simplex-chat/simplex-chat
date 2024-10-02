@@ -201,7 +201,7 @@ fun FramedItemView(
     )) {
     var metaColor = MaterialTheme.colors.secondary
     Box(contentAlignment = Alignment.BottomEnd) {
-      Column(Modifier.width(IntrinsicSize.Max).chatItemBoxOffset(ci.chatDir)) {
+      Column(Modifier.width(IntrinsicSize.Max).padding(start = chatItemPadding(ci, tailVisible, sent), end = chatItemPadding(ci, tailVisible, endPadding = true))) {
         PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
           if (ci.meta.itemDeleted != null) {
             when (ci.meta.itemDeleted) {
@@ -280,7 +280,13 @@ fun FramedItemView(
           }
         }
       }
-      Box(Modifier.padding(bottom = 6.dp, end = 12.dp)) {
+
+      Box(Modifier
+        .padding(
+          bottom = 6.dp,
+          end = 12.dp + chatItemPadding(ci, tailVisible, endPadding = true),
+        )
+      ) {
         CIMetaView(ci, chatTTL, metaColor, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
       }
     }

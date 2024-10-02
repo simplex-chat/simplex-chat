@@ -1190,10 +1190,11 @@ fun BoxWithConstraintsScope.ChatItemsList(
                 AnimatedVisibility (selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                   SelectedChatItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
                 }
+
                 Box(
                   Modifier.padding(
-                    start = if (sent && !voiceWithTransparentBack) 76.dp else 12.dp,
-                    end = if (sent || voiceWithTransparentBack) 12.dp else 76.dp,
+                    start = if (sent && !voiceWithTransparentBack) 76.dp else 18.dp - chatItemPadding(cItem, itemSeparation.largeGap, endPadding = false),
+                    end = if (sent || voiceWithTransparentBack) 18.dp - chatItemPadding(cItem, itemSeparation.largeGap, endPadding = true) else 76.dp,
                   ).then(if (!selectionVisible || !sent) swipeableOrSelectionModifier else Modifier)
                 ) {
                   ChatItemViewShortHand(cItem, itemSeparation, range)

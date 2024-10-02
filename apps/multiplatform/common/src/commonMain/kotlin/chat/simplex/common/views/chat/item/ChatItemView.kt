@@ -871,7 +871,7 @@ fun chatItemShape(roundness: Float, density: Density, tailVisible: Boolean, sent
 }
 
 sealed class ShapeStyle {
-  data class Bubble(val tailVisible: Boolean) : ShapeStyle()
+  data class Bubble(val tailVisible: Boolean, val startPadding: Boolean) : ShapeStyle()
   data class RoundRect(val radius: Dp) : ShapeStyle()
 }
 
@@ -898,7 +898,7 @@ private fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVis
       }
 
       if (tailEnabled) {
-        return ShapeStyle.Bubble(tail)
+        return ShapeStyle.Bubble(tail, !chatItem.chatDir.sent)
       } else {
         return ShapeStyle.RoundRect(msgRectMaxRadius)
       }
@@ -912,6 +912,33 @@ private fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVis
     else -> {
       return ShapeStyle.RoundRect(8.dp)
     }
+  }
+}
+
+@Composable
+fun chatItemPadding(
+  chatItem: ChatItem,
+  tailVisible: Boolean,
+  endPadding: Boolean
+): Dp {
+  if (!tailVisible) {
+    return 0.dp
+  }
+
+  val chatItemTail = remember { appPreferences.chatItemTail.state }
+  return when (val style = shapeStyle(chatItem, chatItemTail.value, tailVisible)) {
+    is ShapeStyle.Bubble -> {
+      if (style.tailVisible) {
+        if (style.startPadding && !endPadding || !style.startPadding && endPadding) {
+          msgTailWidthDp
+        } else {
+          0.dp
+        }
+      } else {
+        0.dp
+      }
+    }
+    is ShapeStyle.RoundRect -> 0.dp
   }
 }
 
@@ -934,14 +961,6 @@ fun Modifier.chatItemBox(chatItem: ChatItem? = null, tailVisible: Boolean = fals
 
   return this
     .clip(shape)
-}
-
-@Composable
-fun Modifier.chatItemBoxOffset(direction: CIDirection? = null): Modifier {
-  val chatItemTail = remember { appPreferences.chatItemTail.state }
-  val showTail = if (direction != null) chatItemTail.value else false
-
-  return if (showTail) this.padding(if (direction?.sent == true) PaddingValues(start = msgTailWidthDp) else PaddingValues(start = msgTailWidthDp)) else this
 }
 
 fun cancelFileAlertDialog(fileId: Long, cancelFile: (Long) -> Unit, cancelAction: CancelAction) {

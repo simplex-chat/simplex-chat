@@ -49,7 +49,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
   @Composable
   fun TextBubble(text: String, formattedText: List<FormattedText>?, sender: String?, showMenu: MutableState<Boolean>) {
-    Column(modifier = Modifier.chatItemBoxOffset()) {
+    Column {
       if (text != "") {
         MarkdownText(
           text, if (text.isEmpty()) emptyList() else formattedText,
