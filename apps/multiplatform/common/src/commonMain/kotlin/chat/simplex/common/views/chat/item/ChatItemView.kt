@@ -877,7 +877,7 @@ sealed class ShapeStyle {
 
 private fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVisible: Boolean): ShapeStyle {
   if (chatItem == null) {
-    return ShapeStyle.RoundRect(msgBubbleMaxRadius)
+    return ShapeStyle.RoundRect(msgRectMaxRadius)
   }
 
   return when (chatItem.content) {
@@ -910,7 +910,7 @@ private fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVis
     }
 
     else -> {
-      return ShapeStyle.RoundRect(0.dp)
+      return ShapeStyle.RoundRect(8.dp)
     }
   }
 }
