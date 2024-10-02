@@ -137,10 +137,12 @@ struct AddGroupView: View {
             createInvalidNameAlert(mkValidName(profile.displayName), $profile.displayName)
         }
         .onChange(of: chosenImage) { image in
-            if let image = image {
-                profile.image = resizeImageToStrSize(cropToSquare(image), maxDataSize: 12500)
-            } else {
-                profile.image = nil
+            Task {
+                var resized: String?
+                if let image {
+                    resized = await resizeImageToStrSize(cropToSquare(image), maxDataSize: 12500)
+                }
+                await MainActor.run { profile.image = resized }
             }
         }
         .modifier(ThemedBackground(grouped: true))

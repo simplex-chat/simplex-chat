@@ -110,10 +110,12 @@ struct GroupProfileView: View {
             }
         }
         .onChange(of: chosenImage) { image in
-            if let image = image {
-                groupProfile.image = resizeImageToStrSize(cropToSquare(image), maxDataSize: 12500)
-            } else {
-                groupProfile.image = nil
+            Task {
+                var resized: String?
+                if let image {
+                    resized = await resizeImageToStrSize(cropToSquare(image), maxDataSize: 12500)
+                }
+                await MainActor.run { groupProfile.image = resized }
             }
         }
         .onAppear {
