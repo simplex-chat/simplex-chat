@@ -526,7 +526,7 @@ final class ChatModel: ObservableObject {
     }
 
     func updateCurrentUserUiThemes(uiThemes: ThemeModeOverrides?) {
-        guard var current = currentUser else { return }
+        guard var current = currentUser, current.uiThemes != uiThemes else { return }
         current.uiThemes = uiThemes
         let i = users.firstIndex(where: { $0.user.userId == current.userId })
         if let i {
