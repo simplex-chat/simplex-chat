@@ -277,7 +277,7 @@ export interface APISendMessage extends IChatCommand {
   type: "apiSendMessage"
   chatType: ChatType
   chatId: number
-  message: ComposedMessage[]
+  messages: ComposedMessage[]
 }
 
 export interface ComposedMessage {
@@ -709,7 +709,7 @@ export function cmdString(cmd: ChatCommand): string {
     case "apiGetChat":
       return `/_get chat ${cmd.chatType}${cmd.chatId}${paginationStr(cmd.pagination)}`
     case "apiSendMessage":
-      return `/_send ${cmd.chatType}${cmd.chatId} json ${JSON.stringify(cmd.message)}`
+      return `/_send ${cmd.chatType}${cmd.chatId} json ${JSON.stringify(cmd.messages)}`
     case "apiUpdateChatItem":
       return `/_update item ${cmd.chatType}${cmd.chatId} ${cmd.chatItemId} json ${JSON.stringify(cmd.msgContent)}`
     case "apiDeleteChatItem":

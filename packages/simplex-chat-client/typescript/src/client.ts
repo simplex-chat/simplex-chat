@@ -160,14 +160,14 @@ export class ChatClient {
     throw new ChatCommandError("error loading chat", r)
   }
 
-  async apiSendMessage(chatType: ChatType, chatId: number, message: CC.ComposedMessage[]): Promise<CR.AChatItem[]> {
-    const r = await this.sendChatCommand({type: "apiSendMessage", chatType, chatId, message})
+  async apiSendMessages(chatType: ChatType, chatId: number, messages: CC.ComposedMessage[]): Promise<CR.AChatItem[]> {
+    const r = await this.sendChatCommand({type: "apiSendMessage", chatType, chatId, messages})
     if (r.type === "newChatItems") return r.chatItems
     throw new ChatCommandError("unexpected response", r)
   }
 
-  apiSendTextMessage(chatType: ChatType, chatId: number, text: string): Promise<CR.AChatItem[]> {
-    return this.apiSendMessage(chatType, chatId, [{msgContent: {type: "text", text}}])
+  async apiSendTextMessage(chatType: ChatType, chatId: number, text: string): Promise<CR.AChatItem[]> {
+    return this.apiSendMessages(chatType, chatId, [{msgContent: {type: "text", text}}])
   }
 
   async apiUpdateChatItem(chatType: ChatType, chatId: number, chatItemId: CC.ChatItemId, msgContent: CC.MsgContent): Promise<CR.ChatItem> {
