@@ -201,7 +201,11 @@ fun FramedItemView(
     )) {
     var metaColor = MaterialTheme.colors.secondary
     Box(contentAlignment = Alignment.BottomEnd) {
-      Column(Modifier.width(IntrinsicSize.Max).padding(start = chatItemPadding(ci, tailVisible, sent), end = chatItemPadding(ci, tailVisible, endPadding = true))) {
+      val chatItemTail = remember { appPreferences.chatItemTail.state }
+      val style = shapeStyle(ci, chatItemTail.value, tailVisible)
+      val tailPaddingAdjustment = if (style is ShapeStyle.Bubble && style.tailVisible) msgTailWidthDp else 0.dp
+
+      Column(Modifier.width(IntrinsicSize.Max).padding(start = tailPaddingAdjustment, end = if (sent) tailPaddingAdjustment else 0.dp)) {
         PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
           if (ci.meta.itemDeleted != null) {
             when (ci.meta.itemDeleted) {
@@ -284,7 +288,7 @@ fun FramedItemView(
       Box(Modifier
         .padding(
           bottom = 6.dp,
-          end = 12.dp + chatItemPadding(ci, tailVisible, endPadding = true),
+          end = 12.dp + if (sent) tailPaddingAdjustment else 0.dp,
         )
       ) {
         CIMetaView(ci, chatTTL, metaColor, showViaProxy = showViaProxy, showTimestamp = showTimestamp)

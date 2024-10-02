@@ -913,33 +913,6 @@ fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVisible: Bo
 }
 
 @Composable
-fun chatItemPadding(
-  chatItem: ChatItem,
-  canHavePadding: Boolean,
-  endPadding: Boolean
-): Dp {
-  if (!canHavePadding) {
-    return 0.dp
-  }
-
-  val chatItemTail = remember { appPreferences.chatItemTail.state }
-  return when (val style = shapeStyle(chatItem, chatItemTail.value, canHavePadding)) {
-    is ShapeStyle.Bubble -> {
-      if (style.tailVisible) {
-        if (style.startPadding && !endPadding || !style.startPadding && endPadding) {
-          msgTailWidthDp
-        } else {
-          0.dp
-        }
-      } else {
-        0.dp
-      }
-    }
-    is ShapeStyle.RoundRect -> 0.dp
-  }
-}
-
-@Composable
 fun Modifier.chatItemBox(chatItem: ChatItem? = null, tailVisible: Boolean = false): Modifier {
   val chatItemRoundness = remember { appPreferences.chatItemRoundness.state }
   val chatItemTail = remember { appPreferences.chatItemTail.state }
