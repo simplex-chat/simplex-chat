@@ -3215,6 +3215,12 @@ sealed class MsgContent {
       else -> false
     }
 
+  val isImageOrVideo: Boolean get() = when (this) {
+    is MCImage -> true
+    is MCVideo -> true
+    else -> false
+  }
+
   val cmdString: String get() =
     if (this is MCUnknown) "json $json" else "json ${json.encodeToString(this)}"
 }

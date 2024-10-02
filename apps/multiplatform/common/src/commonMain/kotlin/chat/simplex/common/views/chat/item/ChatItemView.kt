@@ -138,7 +138,7 @@ fun ChatItemView(
     Column(horizontalAlignment = if (cItem.chatDir.sent) Alignment.End else Alignment.Start) {
       Column(
         Modifier
-          .chatItemBox()
+          .chatItemBox(cItem)
           .combinedClickable(onLongClick = { showMenu.value = true }, onClick = onClick)
           .onRightClick { showMenu.value = true },
       ) {
@@ -869,19 +869,70 @@ fun chatItemShape(roundness: Float, density: Density, tailVisible: Boolean, sent
   }
 }
 
+sealed class ShapeStyle {
+  data class Bubble(val tailVisible: Boolean) : ShapeStyle()
+  data class RoundRect(val radius: Dp) : ShapeStyle()
+}
+
+private fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVisible: Boolean): ShapeStyle {
+  if (chatItem == null) {
+    return ShapeStyle.RoundRect(msgBubbleMaxRadius)
+  }
+
+  return when (chatItem.content) {
+    is CIContent.SndMsgContent,
+    is CIContent.RcvMsgContent,
+    is CIContent.RcvDecryptionError,
+    is CIContent.SndDeleted,
+    is CIContent.RcvIntegrityError,
+    is CIContent.SndModerated,
+    is CIContent.RcvModerated,
+    is CIContent.RcvBlocked,
+    is CIContent.InvalidJSON -> {
+      val content = chatItem.content.msgContent
+      val tail = if (content != null && content.isImageOrVideo && content.text.isEmpty()) {
+        false
+      } else {
+        tailVisible
+      }
+
+      if (tailEnabled) {
+        return ShapeStyle.Bubble(tail)
+      } else {
+        return ShapeStyle.RoundRect(msgRectMaxRadius)
+      }
+    }
+
+    is CIContent.RcvGroupInvitation,
+    is CIContent.SndGroupInvitation -> {
+      return ShapeStyle.RoundRect(msgRectMaxRadius)
+    }
+
+    else -> {
+      return ShapeStyle.RoundRect(0.dp)
+    }
+  }
+}
+
 @Composable
 fun Modifier.chatItemBox(chatItem: ChatItem? = null ): Modifier {
   val chatItemRoundness = remember { appPreferences.chatItemRoundness.state }
   val chatItemTail = remember { appPreferences.chatItemTail.state }
-  val showTail = if (chatItem != null) chatItemTail.value else false
+  val style = shapeStyle(chatItem, chatItemTail.value, true )
 
   val cornerRoundness = when {
     chatItemRoundness.value >= 1 -> 1f
     chatItemRoundness.value <= 0 -> 0f
     else -> chatItemRoundness.value
   }
+
+  val shape = when (style) {
+    is ShapeStyle.Bubble -> chatItemShape(cornerRoundness, LocalDensity.current, style.tailVisible, chatItem?.chatDir?.sent == true)
+    is ShapeStyle.RoundRect -> RoundedCornerShape(style.radius * cornerRoundness)
+  }
+
   return this
-    .clip(chatItemShape(cornerRoundness, LocalDensity.current, showTail, chatItem?.chatDir?.sent == true))
+    .clip(shape)
 }
 
 @Composable
