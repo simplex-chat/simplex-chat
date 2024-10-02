@@ -74,7 +74,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
     Column {
       Box(
-        Modifier.chatItemBox().background(itemColor).padding(bottom = 3.dp)
+        Modifier.chatItemShape().background(itemColor).padding(bottom = 3.dp)
           .combinedClickable(onLongClick = { showMenu.value = true }, onClick = {})
           .onRightClick { showMenu.value = true }
       ) {
@@ -121,7 +121,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
     Column {
       Box(
-        Modifier.chatItemBox().background(quoteColor).padding(bottom = 3.dp)
+        Modifier.chatItemShape().background(quoteColor).padding(bottom = 3.dp)
           .combinedClickable(onLongClick = { showMenu.value = true }, onClick = {})
           .onRightClick { showMenu.value = true }
       ) {

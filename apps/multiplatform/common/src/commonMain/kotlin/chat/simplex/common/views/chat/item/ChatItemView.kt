@@ -27,7 +27,6 @@ import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.datetime.Clock
-import org.ddogleg.struct.Tuple2
 import kotlin.math.*
 
 // TODO refactor so that FramedItemView can show all CIContent items if they're deleted (see Swift code)
@@ -137,7 +136,7 @@ fun ChatItemView(
     Column(horizontalAlignment = if (cItem.chatDir.sent) Alignment.End else Alignment.Start) {
       Column(
         Modifier
-          .chatItemBox(cItem, itemSeparation.largeGap)
+          .chatItemShape(cItem, itemSeparation.largeGap)
           .combinedClickable(onLongClick = { showMenu.value = true }, onClick = onClick)
           .onRightClick { showMenu.value = true },
       ) {
@@ -914,7 +913,7 @@ fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVisible: Bo
 }
 
 @Composable
-fun Modifier.chatItemBox(chatItem: ChatItem? = null, tailVisible: Boolean = false): Modifier {
+fun Modifier.chatItemShape(chatItem: ChatItem? = null, tailVisible: Boolean = false): Modifier {
   val chatItemRoundness = remember { appPreferences.chatItemRoundness.state }
   val chatItemTail = remember { appPreferences.chatItemTail.state }
   val style = shapeStyle(chatItem, chatItemTail.value, tailVisible )

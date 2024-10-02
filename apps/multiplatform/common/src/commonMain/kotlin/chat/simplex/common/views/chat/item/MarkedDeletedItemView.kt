@@ -1,6 +1,5 @@
 package chat.simplex.common.views.chat.item
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,7 +27,7 @@ fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, revealed: Mutabl
   Surface(
     color = if (sent) sentColor else receivedColor,
     contentColor = LocalContentColor.current,
-    modifier = Modifier.chatItemBox(ci, tailVisible)
+    modifier = Modifier.chatItemShape(ci, tailVisible)
   ) {
     val chatItemTail = remember { appPreferences.chatItemTail.state }
     val style = shapeStyle(ci, chatItemTail.value, tailVisible)
