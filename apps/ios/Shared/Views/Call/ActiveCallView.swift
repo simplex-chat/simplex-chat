@@ -30,11 +30,11 @@ struct ActiveCallView: View {
                     GeometryReader { g in
                         let width = g.size.width * 0.3
                         ZStack(alignment: .topTrailing) {
-                            if client.activeCall != nil {
+                            if client.activeCall?.remoteVideoTrack != nil && ChatModel.shared.activeCall?.peerMediaSources.camera == true {
                                 CallViewRemote(client: client, activeCallViewIsCollapsed: $m.activeCallViewIsCollapsed, pipShown: $pipShown)
                             }
 
-                            if client.activeCall != nil || client.notConnectedCall != nil {
+                            if client.activeCall?.localVideoTrack != nil || client.notConnectedCall?.localCameraAndTrack != nil {
                                 CallViewLocal(client: client, localRendererAspectRatio: $localRendererAspectRatio, pipShown: $pipShown)
                                     .cornerRadius(10)
                                     .frame(width: width, height: width / (localRendererAspectRatio ?? 1))
@@ -192,6 +192,7 @@ struct ActiveCallView: View {
                     case .camera: call.peerMediaSources.camera = enabled
                     case .screenAudio: call.peerMediaSources.screenAudio = enabled
                     case .screenVideo: call.peerMediaSources.screenVideo = enabled
+                    case .unknown: ()
                 }
             case .ended:
                 closeCallView(client)
@@ -281,7 +282,7 @@ struct ActiveCallOverlay: View {
             Spacer()
 
             HStack {
-                toggleAudioButton()
+                toggleMicButton()
                 Spacer()
 
                 // Check if the only input is microphone. And in this case show toggle button,
@@ -307,7 +308,7 @@ struct ActiveCallOverlay: View {
                     Color.clear.frame(width: 40, height: 40)
                 }
                 Spacer()
-                toggleVideoButton()
+                toggleCameraButton()
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 16)
@@ -383,7 +384,7 @@ struct ActiveCallOverlay: View {
         .foregroundColor(.red)
     }
 
-    private func toggleAudioButton() -> some View {
+    private func toggleMicButton() -> some View {
         controlButton(call, call.localMediaSources.mic ? "mic.fill" : "mic.slash") {
             Task {
                 client.setAudioEnabled(!call.localMediaSources.mic)
@@ -395,7 +396,7 @@ struct ActiveCallOverlay: View {
     }
 
     private func toggleSpeakerButton() -> some View {
-        controlButton(call, call.speakerEnabled ? "speaker.wave.2.fill" : "speaker.wave.1.fill") {
+        controlButton(call, !call.peerMediaSources.mic ? "speaker.slash" : call.speakerEnabled ? "speaker.wave.2.fill" : "speaker.wave.1.fill") {
             Task {
                 let speakerEnabled = AVAudioSession.sharedInstance().currentRoute.outputs.first?.portType == .builtInSpeaker
                 client.setSpeakerEnabledAndConfigureSession(!speakerEnabled)
@@ -410,10 +411,10 @@ struct ActiveCallOverlay: View {
         }
     }
 
-    private func toggleVideoButton() -> some View {
+    private func toggleCameraButton() -> some View {
         controlButton(call, call.localMediaSources.camera ? "video.fill" : "video.slash") {
             Task {
-                client.setVideoEnabled(!call.localMediaSources.camera)
+                client.setCameraEnabled(!call.localMediaSources.camera)
                 DispatchQueue.main.async {
                     call.localMediaSources.camera = !call.localMediaSources.camera
                 }

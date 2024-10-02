@@ -85,6 +85,7 @@ public enum CallMediaSource: String, Codable, Equatable {
   case camera = "camera"
   case screenAudio = "screenAudio"
   case screenVideo = "screenVideo"
+  case unknown = "unknown"
 }
 
 public enum VideoCamera: String, Codable, Equatable {

@@ -24,15 +24,21 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         var connection: RTCPeerConnection
         var iceCandidates: IceCandidates
         var localCamera: RTCVideoCapturer?
+        var localAudioTrack: RTCAudioTrack?
         var localVideoTrack: RTCVideoTrack?
+        var remoteAudioTrack: RTCAudioTrack?
         var remoteVideoTrack: RTCVideoTrack?
+        var remoteScreenAudioTrack: RTCAudioTrack?
+        var remoteScreenVideoTrack: RTCVideoTrack?
         var device: AVCaptureDevice.Position
         var aesKey: String?
         var frameEncryptor: RTCFrameEncryptor?
         var frameDecryptor: RTCFrameDecryptor?
+        var peerHasOldVersion: Bool
     }
 
     struct NotConnectedCall {
+        var audioTrack: RTCAudioTrack?
         var localCameraAndTrack: (RTCVideoCapturer, RTCVideoTrack)?
         var device: AVCaptureDevice.Position = .front
     }
@@ -81,16 +87,18 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
     func initializeCall(_ iceServers: [WebRTC.RTCIceServer]?, _ mediaType: CallMediaType, _ aesKey: String?, _ relay: Bool?) -> Call {
         let connection = createPeerConnection(iceServers ?? getWebRTCIceServers() ?? defaultIceServers, relay)
         connection.delegate = self
-        createAudioSender(connection)
-        var remoteVideoTrack: RTCVideoTrack? = nil
         var localCamera: RTCVideoCapturer? = nil
+        var localAudioTrack: RTCAudioTrack? = nil
         var localVideoTrack: RTCVideoTrack? = nil
         if let localCameraAndTrack = notConnectedCall?.localCameraAndTrack {
             (localCamera, localVideoTrack) = localCameraAndTrack
-            remoteVideoTrack = createVideoSender(localVideoTrack!, connection)
         } else if mediaType == .video {
-            (localCamera, localVideoTrack) = createVideoTrack()
-            remoteVideoTrack = createVideoSender(localVideoTrack!, connection)
+            (localCamera, localVideoTrack) = createVideoTrackAndStartCapture(notConnectedCall?.device ?? .front)
+        }
+        if let audioTrack = notConnectedCall?.audioTrack {
+            localAudioTrack = audioTrack
+        } else if notConnectedCall == nil {
+            localAudioTrack = createAudioTrack()
         }
         var frameEncryptor: RTCFrameEncryptor? = nil
         var frameDecryptor: RTCFrameDecryptor? = nil
@@ -98,24 +106,23 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
             let encryptor = RTCFrameEncryptor.init(sizeChange: Int32(WebRTCClient.ivTagBytes))
             encryptor.delegate = self
             frameEncryptor = encryptor
-            connection.senders.forEach { $0.setRtcFrameEncryptor(encryptor) }
 
             let decryptor = RTCFrameDecryptor.init(sizeChange: -Int32(WebRTCClient.ivTagBytes))
             decryptor.delegate = self
             frameDecryptor = decryptor
-            // Has no video receiver in outgoing call if applied here, see [peerConnection(_ connection: RTCPeerConnection, didChange newState]
-            // connection.receivers.forEach { $0.setRtcFrameDecryptor(decryptor) }
         }
+        notConnectedCall = nil
         return Call(
             connection: connection,
             iceCandidates: IceCandidates(),
             localCamera: localCamera,
+            localAudioTrack: localAudioTrack,
             localVideoTrack: localVideoTrack,
-            remoteVideoTrack: remoteVideoTrack,
             device: notConnectedCall?.device ?? .front,
             aesKey: aesKey,
             frameEncryptor: frameEncryptor,
-            frameDecryptor: frameDecryptor
+            frameDecryptor: frameDecryptor,
+            peerHasOldVersion: false
         )
     }
 
@@ -159,8 +166,10 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         let pc = activeCall?.connection
         switch command {
         case let .capabilities(media):
-            let localCameraAndTrack = media == .video ? createVideoTrack() : nil
-            notConnectedCall = NotConnectedCall(localCameraAndTrack: localCameraAndTrack, device: .front)
+            var localCameraAndTrack: (RTCVideoCapturer, RTCVideoTrack)? = media == .video
+            ? createVideoTrackAndStartCapture(.front)
+            : nil
+            notConnectedCall = NotConnectedCall(audioTrack: createAudioTrack(), localCameraAndTrack: localCameraAndTrack, device: .front)
             resp = .capabilities(capabilities: CallCapabilities(encryption: WebRTCClient.enableEncryption))
         case let .start(media: media, aesKey, iceServers, relay):
             logger.debug("starting incoming call - create webrtc session")
@@ -168,8 +177,10 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
             let encryption = WebRTCClient.enableEncryption
             let call = initializeCall(iceServers?.toWebRTCIceServers(), media, encryption ? aesKey : nil, relay)
             activeCall = call
+            setupLocalTracks(true, call)
             let (offer, error) = await call.connection.offer()
             if let offer = offer {
+                setupEncryptionForLocalTracks(call)
                 resp = .offer(
                     offer: compressToBase64(input: encodeJSON(CustomRTCSessionDescription(type: offer.type.toSdpType(), sdp: offer.sdp))),
                     iceCandidates: compressToBase64(input: encodeJSON(await self.getInitialIceCandidates())),
@@ -191,6 +202,12 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
                 let pc = call.connection
                 if let type = offer.type, let sdp = offer.sdp {
                     if (try? await pc.setRemoteDescription(RTCSessionDescription(type: type.toWebRTCSdpType(), sdp: sdp))) != nil {
+                        setupLocalTracks(false, call)
+                        setupEncryptionForLocalTracks(call)
+                        pc.transceivers.forEach { transceiver in
+                            transceiver.setDirection(.sendRecv, error: nil)
+                        }
+                        adaptToOldVersion(pc.transceivers.count <= 2)
                         let (answer, error) = await pc.answer()
                         if let answer = answer {
                             self.addIceCandidates(pc, remoteIceCandidates)
@@ -219,6 +236,9 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
                       let type = answer.type, let sdp = answer.sdp,
                       let pc = pc {
                 if (try? await pc.setRemoteDescription(RTCSessionDescription(type: type.toWebRTCSdpType(), sdp: sdp))) != nil {
+                    var currentDirection: RTCRtpTransceiverDirection = .sendOnly
+                    pc.transceivers[2].currentDirection(&currentDirection)
+                    adaptToOldVersion(currentDirection == .sendOnly)
                     addIceCandidates(pc, remoteIceCandidates)
                     resp = .ok
                 } else {
@@ -277,24 +297,180 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         )
     }
 
+    func setupMuteUnmuteListener(_ transceiver: RTCRtpTransceiver, _ track: RTCMediaStreamTrack) {
+        // logger.log("Setting up mute/unmute listener in the call without encryption for mid = \(transceiver.mid)")
+        Task {
+            // for some reason even for disabled tracks one packet arrives (seeing this on screenVideo track)
+            var lastPacketsReceived = 1
+            // muted initially
+            var mutedSeconds = 4
+            while let call = self.activeCall, transceiver.receiver.track?.readyState == .live {
+                let stats: RTCStatisticsReport = await call.connection.statistics(for: transceiver.receiver)
+                let stat = stats.statistics.values.first(where: { stat in stat.type == "inbound-rtp"})
+                if let stat {
+                    //logger.debug("Stat \(stat.debugDescription)")
+                    let packets = stat.values["packetsReceived"] as! Int
+                    if packets <= lastPacketsReceived {
+                        mutedSeconds += 1
+                        if mutedSeconds == 3 {
+                            await MainActor.run {
+                                self.onMediaMuteUnmute(transceiver.mid, true)
+                            }
+                        }
+                    } else {
+                        if mutedSeconds >= 3 {
+                            await MainActor.run {
+                                self.onMediaMuteUnmute(transceiver.mid, false)
+                            }
+                        }
+                        lastPacketsReceived = packets
+                        mutedSeconds = 0
+                    }
+                }
+                try? await Task.sleep(nanoseconds: 1000_000000)
+            }
+        }
+    }
+
+    func onMediaMuteUnmute(_ transceiverMid: String?, _ mute: Bool) {
+        guard let activeCall = ChatModel.shared.activeCall else { return }
+        let source = mediaSourceFromTransceiverMid(transceiverMid)
+        logger.log("Mute/unmute \(source.rawValue) track = \(mute) with mid = \(transceiverMid ?? "nil")")
+        if source == .mic && activeCall.peerMediaSources.mic == mute {
+            activeCall.peerMediaSources.mic = !mute
+        } else if (source == .camera && activeCall.peerMediaSources.camera == mute) {
+            activeCall.peerMediaSources.camera = !mute
+        } else if (source == .screenAudio && activeCall.peerMediaSources.screenAudio == mute) {
+            activeCall.peerMediaSources.screenAudio = !mute
+        } else if (source == .screenVideo && activeCall.peerMediaSources.screenVideo == mute) {
+            activeCall.peerMediaSources.screenVideo = !mute
+        }
+    }
+
     func enableMedia(_ source: CallMediaSource, _ enable: Bool) {
         logger.debug("WebRTCClient: enabling media \(source.rawValue) \(enable)")
-        source == .camera ? setVideoEnabled(enable) : setAudioEnabled(enable)
+        source == .camera ? setCameraEnabled(enable) : setAudioEnabled(enable)
+    }
+
+    func adaptToOldVersion(_ peerHasOldVersion: Bool) {
+        activeCall?.peerHasOldVersion = peerHasOldVersion
+        if peerHasOldVersion {
+            logger.debug("The peer has an old version. Remote audio track is nil = \(self.activeCall?.remoteAudioTrack == nil), video = \(self.activeCall?.remoteVideoTrack == nil)")
+            onMediaMuteUnmute("0", false)
+            if activeCall?.remoteVideoTrack != nil {
+                onMediaMuteUnmute("1", false)
+            }
+            if ChatModel.shared.activeCall?.localMediaSources.camera == true && ChatModel.shared.activeCall?.peerMediaSources.camera == false {
+                logger.debug("Stopping video track for the old version")
+                //activeCall?.localVideoTrack?.
+                activeCall?.connection.senders[1].track = nil
+                ChatModel.shared.activeCall?.localMediaSources.camera = false
+                (activeCall?.localCamera as? RTCCameraVideoCapturer)?.stopCapture()
+                activeCall?.localCamera = nil
+                activeCall?.localVideoTrack = nil
+                //localOrPeerMediaSourcesChanged(activeCall)
+            }
+        }
     }
 
     func addLocalRenderer(_ renderer: RTCEAGLVideoView) {
-        if let localVideoTrack = activeCall?.localVideoTrack {
-            localVideoTrack.add(renderer)
-        } else if let localVideoTrack = notConnectedCall?.localCameraAndTrack?.1 {
-            localVideoTrack.add(renderer)
+        if let activeCall {
+            if let track = activeCall.localVideoTrack {
+                track.add(renderer)
+            }
+        } else if let notConnectedCall {
+            if let track = notConnectedCall.localCameraAndTrack?.1 {
+                track.add(renderer)
+            }
         }
         // To get width and height of a frame, see videoView(videoView:, didChangeVideoSize)
         renderer.delegate = self
     }
 
+    func removeLocalRenderer(_ renderer: RTCEAGLVideoView) {
+        if let activeCall {
+            if let track = activeCall.localVideoTrack {
+                track.remove(renderer)
+            }
+        } else if let notConnectedCall {
+            if let track = notConnectedCall.localCameraAndTrack?.1 {
+                track.remove(renderer)
+            }
+        }
+        renderer.delegate = nil
+    }
+
     func videoView(_ videoView: RTCVideoRenderer, didChangeVideoSize size: CGSize) {
         guard size.height > 0 else { return }
         localRendererAspectRatio.wrappedValue = size.width / size.height
+    }
+
+    func setupLocalTracks(_ incomingCall: Bool, _ call: Call) {
+        let pc = call.connection
+        let transceivers = call.connection.transceivers
+        let audioTrack = call.localAudioTrack
+        let videoTrack = call.localVideoTrack
+
+        if (incomingCall) {
+            // incoming call, no transceivers yet. But they should be added in order: mic, camera, screen audio, screen video
+            // mid = 0
+            let audioTransceiver = pc.addTransceiver(of: .audio)
+            if audioTrack != nil {
+                audioTransceiver?.sender.track = audioTrack
+            }
+            // mid = 1
+            let videoTransceiver = pc.addTransceiver(of: .video)
+            if videoTrack != nil {
+                videoTransceiver?.sender.track = videoTrack
+            }
+            // mid = 2, screenAudio
+            pc.addTransceiver(of: .audio)
+            // mid = 3, screenVideo
+            pc.addTransceiver(of: .video)
+        } else {
+            // new version
+            if (transceivers.count > 2) {
+                // Outgoing call. All transceivers are ready. Don't addTrack() because it will create new transceivers, replace existing (nil) tracks
+                transceivers
+                    .first(where: { elem in mediaSourceFromTransceiverMid(elem.mid) == .mic })?
+                    .sender.track = audioTrack
+                transceivers
+                    .first(where: { elem in mediaSourceFromTransceiverMid(elem.mid) == .camera })?
+                    .sender.track = videoTrack
+            } else {
+                // old version, only two transceivers
+                if let audioTrack {
+                    pc.add(audioTrack, streamIds: ["micCamera"])
+                }
+                if let videoTrack {
+                    pc.add(videoTrack, streamIds: ["micCamera"])
+                }
+            }
+        }
+
+        //setupLocalVideoRatio(videos.local)
+    }
+
+    func mediaSourceFromTransceiverMid(_ mid: String?) -> CallMediaSource {
+        switch mid {
+        case "0":
+            return .mic
+        case "1":
+            return .camera
+        case "2":
+            return .screenAudio
+        case "3":
+            return .screenVideo
+        default:
+            return .unknown
+        }
+    }
+
+    // Should be called after local description set
+    func setupEncryptionForLocalTracks(_ call: Call) {
+        if let encryptor = call.frameEncryptor {
+            call.connection.senders.forEach { $0.setRtcFrameEncryptor(encryptor) }
+        }
     }
 
     func frameDecryptor(_ decryptor: RTCFrameDecryptor, mediaType: RTCRtpMediaType, withFrame encrypted: Data) -> Data? {
@@ -344,8 +520,8 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         activeCall?.remoteVideoTrack?.remove(renderer)
     }
 
-    func startCaptureLocalVideo() {
-        let device = activeCall?.device ?? notConnectedCall?.device
+    func startCaptureLocalVideo(_ device: AVCaptureDevice.Position?, _ capturer: RTCVideoCapturer?) {
+        logger.debug("LALAL START CAMERA")
 #if targetEnvironment(simulator)
         guard
             let capturer = (activeCall?.localCamera ?? notConnectedCall?.localCameraAndTrack?.0) as? RTCFileVideoCapturer
@@ -358,10 +534,10 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         capturer.startCapturing(fromFileNamed: "sounds/video.mp4")
 #else
         guard
-            let capturer = (activeCall?.localCamera ?? notConnectedCall?.localCameraAndTrack?.0) as? RTCCameraVideoCapturer,
+            let capturer = capturer as? RTCCameraVideoCapturer,
             let camera = (RTCCameraVideoCapturer.captureDevices().first { $0.position == device })
         else {
-            logger.error("Unable to find a camera")
+            logger.error("Unable to find a camera or local track")
             return
         }
 
@@ -387,18 +563,6 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
 #endif
     }
 
-    private func createAudioSender(_ connection: RTCPeerConnection) {
-        let streamId = "stream"
-        let audioTrack = createAudioTrack()
-        connection.add(audioTrack, streamIds: [streamId])
-    }
-
-    private func createVideoSender(_ localVideoTrack: RTCVideoTrack, _ connection: RTCPeerConnection) -> RTCVideoTrack? {
-        let streamId = "stream"
-        connection.add(localVideoTrack, streamIds: [streamId])
-        return connection.transceivers.first { $0.mediaType == .video }?.receiver.track as? RTCVideoTrack
-    }
-
     private func createAudioTrack() -> RTCAudioTrack {
         let audioConstrains = RTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil)
         let audioSource = WebRTCClient.factory.audioSource(with: audioConstrains)
@@ -406,7 +570,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         return audioTrack
     }
 
-    private func createVideoTrack() -> (RTCVideoCapturer, RTCVideoTrack) {
+    private func createVideoTrackAndStartCapture(_ device: AVCaptureDevice.Position) -> (RTCVideoCapturer, RTCVideoTrack) {
         let localVideoSource = WebRTCClient.factory.videoSource()
 
         #if targetEnvironment(simulator)
@@ -416,6 +580,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         #endif
 
         let localVideoTrack = WebRTCClient.factory.videoTrack(with: localVideoSource, trackId: "video0")
+        startCaptureLocalVideo(device, localCamera)
         return (localCamera, localVideoTrack)
     }
 
@@ -507,11 +672,30 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
         logger.debug("Connection should negotiate")
     }
 
+    func peerConnection(_ peerConnection: RTCPeerConnection, didStartReceivingOn transceiver: RTCRtpTransceiver) {
+        if let track = transceiver.receiver.track {
+            DispatchQueue.main.async {
+                // Doesn't work for outgoing video call (audio in video call works ok still, same as incoming call)
+//                if let decryptor = self.activeCall?.frameDecryptor {
+//                    transceiver.receiver.setRtcFrameDecryptor(decryptor)
+//                }
+                let source = self.mediaSourceFromTransceiverMid(transceiver.mid)
+                switch source {
+                case .mic: self.activeCall?.remoteAudioTrack = track as? RTCAudioTrack
+                case .camera: self.activeCall?.remoteVideoTrack = track as? RTCVideoTrack
+                case .screenAudio: self.activeCall?.remoteScreenAudioTrack = track as? RTCAudioTrack
+                case .screenVideo: self.activeCall?.remoteScreenVideoTrack = track as? RTCVideoTrack
+                case .unknown: ()
+                }
+            }
+            self.setupMuteUnmuteListener(transceiver, track)
+        }
+    }
+
     func peerConnection(_ connection: RTCPeerConnection, didChange newState: RTCIceConnectionState) {
         debugPrint("Connection new connection state: \(newState.toString() ?? "" + newState.rawValue.description) \(connection.receivers)")
 
-        guard let call = activeCall,
-              let connectionStateString = newState.toString(),
+        guard let connectionStateString = newState.toString(),
               let iceConnectionStateString = connection.iceConnectionState.toString(),
               let iceGatheringStateString = connection.iceGatheringState.toString(),
               let signalingStateString = connection.signalingState.toString()
@@ -539,7 +723,7 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
                 setSpeakerEnabledAndConfigureSession(enableSpeaker)
             case .connected: sendConnectedEvent(connection)
             case .disconnected, .failed: endCall()
-            default: do {}
+            default: ()
             }
         }
     }
@@ -606,10 +790,6 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
 }
 
 extension WebRTCClient {
-    func setAudioEnabled(_ enabled: Bool) {
-        setTrackEnabled(RTCAudioTrack.self, enabled)
-    }
-
     func setSpeakerEnabledAndConfigureSession( _ enabled: Bool) {
         logger.debug("WebRTCClient: configuring session with speaker enabled \(enabled)")
         audioQueue.async { [weak self] in
@@ -664,8 +844,42 @@ extension WebRTCClient {
         }
     }
 
-    func setVideoEnabled(_ enabled: Bool) {
-        setTrackEnabled(RTCVideoTrack.self, enabled)
+    func setAudioEnabled(_ enabled: Bool) {
+        if var activeCall {
+            activeCall.localAudioTrack = enabled ? createAudioTrack() : nil
+            activeCall.connection.transceivers.first(where: { t in mediaSourceFromTransceiverMid(t.mid) == .mic })?.sender.track = activeCall.localAudioTrack
+        } else if var notConnectedCall {
+            notConnectedCall.audioTrack = enabled ? createAudioTrack() : nil
+        }
+    }
+
+    func setCameraEnabled(_ enabled: Bool) {
+        if let call = activeCall {
+            if enabled {
+                if call.localVideoTrack == nil {
+                    let device = activeCall?.device ?? notConnectedCall?.device ?? .front
+                    let (camera, track) = createVideoTrackAndStartCapture(device)
+                    activeCall?.localCamera = camera
+                    activeCall?.localVideoTrack = track
+                }
+            } else {
+                (call.localCamera as? RTCCameraVideoCapturer)?.stopCapture()
+                activeCall?.localCamera = nil
+                activeCall?.localVideoTrack = nil
+            }
+            call.connection.transceivers
+                .first(where: { t in mediaSourceFromTransceiverMid(t.mid) == .camera })?
+                .sender.track = activeCall?.localVideoTrack
+        } else if let call = notConnectedCall {
+            if enabled {
+                if call.localCameraAndTrack == nil {
+                    let device = activeCall?.device ?? notConnectedCall?.device ?? .front
+                    notConnectedCall?.localCameraAndTrack = createVideoTrackAndStartCapture(device)
+                }
+            } else {
+                (call.localCameraAndTrack?.0 as? RTCCameraVideoCapturer)?.stopCapture()
+            }
+        }
     }
 
     func flipCamera() {
@@ -675,13 +889,10 @@ extension WebRTCClient {
         } else {
             notConnectedCall?.device = device == .front ? .back : .front
         }
-        startCaptureLocalVideo()
-    }
-
-    private func setTrackEnabled<T: RTCMediaStreamTrack>(_ type: T.Type, _ enabled: Bool) {
-        activeCall?.connection.transceivers
-        .compactMap { $0.sender.track as? T }
-        .forEach { $0.isEnabled = enabled }
+        startCaptureLocalVideo(
+            activeCall?.device ?? notConnectedCall?.device,
+            (activeCall?.localCamera ?? notConnectedCall?.localCameraAndTrack?.0) as? RTCCameraVideoCapturer
+        )
     }
 }
 

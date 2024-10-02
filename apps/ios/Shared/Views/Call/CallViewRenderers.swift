@@ -24,6 +24,7 @@ struct CallViewRemote: UIViewRepresentable {
         let view = UIView()
         let remoteRenderer = RTCMTLVideoView(frame: view.frame)
         remoteRenderer.videoContentMode = .scaleAspectFill
+        context.coordinator.renderer = remoteRenderer
         client.addRemoteRenderer(remoteRenderer)
         addSubviewAndResize(remoteRenderer, into: view)
 
@@ -84,7 +85,7 @@ struct CallViewRemote: UIViewRepresentable {
     }
     
     func makeCoordinator() -> Coordinator {
-        Coordinator()
+        Coordinator(client)
     }
 
     func updateUIView(_ view: UIView, context: Context) {
@@ -98,10 +99,16 @@ struct CallViewRemote: UIViewRepresentable {
     
     // MARK: - Coordinator
     class Coordinator: NSObject, AVPictureInPictureControllerDelegate {
+        var renderer: RTCMTLVideoView?
+        var client: WebRTCClient
         var pipController: AVPictureInPictureController? = nil
         var willShowHide: (Bool) -> Void = { _ in }
         var didShowHide: (Bool) -> Void = { _ in }
-        
+
+        required init(_ client: WebRTCClient) {
+            self.client = client
+        }
+
         func pictureInPictureControllerWillStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
             willShowHide(true)
         }
@@ -128,6 +135,9 @@ struct CallViewRemote: UIViewRepresentable {
             pipController?.contentSource = nil
             pipController?.delegate = nil
             pipController = nil
+            if let renderer {
+                client.removeRemoteRenderer(renderer)
+            }
         }
     }
     
@@ -157,8 +167,8 @@ struct CallViewLocal: UIViewRepresentable {
     func makeUIView(context: Context) -> UIView {
         let view = UIView()
         let localRenderer = RTCEAGLVideoView(frame: .zero)
+        context.coordinator.renderer = localRenderer
         client.addLocalRenderer(localRenderer)
-        client.startCaptureLocalVideo()
         addSubviewAndResize(localRenderer, into: view)
         DispatchQueue.main.async {
             pipStateChanged = { shown in
@@ -168,9 +178,29 @@ struct CallViewLocal: UIViewRepresentable {
         return view
     }
 
+    func makeCoordinator() -> Coordinator {
+        Coordinator(client)
+    }
+
     func updateUIView(_ view: UIView, context: Context) {
         logger.debug("CallView.updateUIView local")
         pipStateChanged(pipShown)
+    }
+
+    // MARK: - Coordinator
+    class Coordinator: NSObject, AVPictureInPictureControllerDelegate {
+        var renderer: RTCEAGLVideoView?
+        var client: WebRTCClient
+
+        required init(_ client: WebRTCClient) {
+            self.client = client
+        }
+
+        deinit {
+            if let renderer {
+                client.removeLocalRenderer(renderer)
+            }
+        }
     }
 }
 
