@@ -24,10 +24,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.chat.item.ItemAction
+import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.group.MemberProfileImage
-import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
@@ -49,22 +50,20 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
   @Composable
   fun TextBubble(text: String, formattedText: List<FormattedText>?, sender: String?, showMenu: MutableState<Boolean>) {
-    Column {
-      if (text != "") {
-        MarkdownText(
-          text, if (text.isEmpty()) emptyList() else formattedText,
-          sender = sender,
-          senderBold = true,
-          toggleSecrets = true,
-          linkMode = SimplexLinkMode.DESCRIPTION, uriHandler = uriHandler,
-          onLinkLongClick = { showMenu.value = true }
-        )
-      } else {
-        Text(
-          generalGetString(MR.strings.item_info_no_text),
-          style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary, lineHeight = 22.sp, fontStyle = FontStyle.Italic)
-        )
-      }
+    if (text != "") {
+      MarkdownText(
+        text, if (text.isEmpty()) emptyList() else formattedText,
+        sender = sender,
+        senderBold = true,
+        toggleSecrets = true,
+        linkMode = SimplexLinkMode.DESCRIPTION, uriHandler = uriHandler,
+        onLinkLongClick = { showMenu.value = true }
+      )
+    } else {
+      Text(
+        generalGetString(MR.strings.item_info_no_text),
+        style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary, lineHeight = 22.sp, fontStyle = FontStyle.Italic)
+      )
     }
   }
 
