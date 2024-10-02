@@ -35,6 +35,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.ThemeManager.colorFromReadableHex
 import chat.simplex.common.ui.theme.ThemeManager.toReadableHex
 import chat.simplex.common.views.chat.item.PreviewChatItemView
+import chat.simplex.common.views.chat.item.msgTailWidthDp
 import chat.simplex.res.MR
 import com.godaddy.android.colorpicker.ClassicColorPicker
 import com.godaddy.android.colorpicker.HsvColor
@@ -193,7 +194,9 @@ object AppearanceScope {
       .padding(DEFAULT_PADDING_HALF)
     ) {
       if (withMessages) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        val chatItemTail = remember { appPreferences.chatItemTail.state }
+
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = if (chatItemTail.value) Modifier else Modifier.padding(horizontal = msgTailWidthDp)) {
           val alice = remember { ChatItem.getSampleData(1, CIDirection.DirectRcv(), Clock.System.now(), generalGetString(MR.strings.wallpaper_preview_hello_bob)) }
           PreviewChatItemView(alice)
           PreviewChatItemView(

@@ -1095,7 +1095,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                 } else {
                   msgTailWidthDp
                 }
-              } else 4.dp
+              } else msgTailWidthDp
               if (cItem.chatDir is CIDirection.GroupRcv) {
                 val member = cItem.chatDir.groupMember
                 val (prevMember, memCount) =
