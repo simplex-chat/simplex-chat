@@ -891,11 +891,24 @@ fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVisible: Bo
     is CIContent.RcvModerated,
     is CIContent.RcvBlocked,
     is CIContent.InvalidJSON -> {
-      val content = chatItem.content.msgContent
-      val tail = if (content != null && ((content.isImageOrVideo && content.text.isEmpty()) || (content is MsgContent.MCText && isShortEmoji(content.text)))) {
-        false
-      } else {
-        tailVisible
+      val tail = when (val content = chatItem.content.msgContent) {
+        is MsgContent.MCImage,
+        is MsgContent.MCVideo,
+        is MsgContent.MCVoice -> {
+          if (content.text.isEmpty()) {
+            false
+          } else {
+            tailVisible
+          }
+        }
+        is MsgContent.MCText -> {
+          if (isShortEmoji(content.text)) {
+            false
+          } else {
+            tailVisible
+          }
+        }
+        else -> tailVisible
       }
 
       if (tailEnabled) {
