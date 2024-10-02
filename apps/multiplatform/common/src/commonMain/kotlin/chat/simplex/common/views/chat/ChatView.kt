@@ -1082,11 +1082,20 @@ fun BoxWithConstraintsScope.ChatItemsList(
           }
 
           Box {
+            val chatItemTail = remember { appPreferences.chatItemTail.state }
+            val style = shapeStyle(cItem, chatItemTail.value, itemSeparation.largeGap)
             val voiceWithTransparentBack = cItem.content.msgContent is MsgContent.MCVoice && cItem.content.text.isEmpty() && cItem.quotedItem == null && cItem.meta.itemForwarded == null
             val selectionVisible = selectedChatItems.value != null && cItem.canBeDeletedForSelf
             val selectionOffset by animateDpAsState(if (selectionVisible && !sent) 4.dp + 22.dp * fontSizeMultiplier else 0.dp)
             val swipeableOrSelectionModifier = (if (selectionVisible) Modifier else swipeableModifier).graphicsLayer { translationX = selectionOffset.toPx() }
             if (chatInfo is ChatInfo.Group) {
+              val edgePadding = if (style is ShapeStyle.Bubble) {
+                if (style.tailVisible) {
+                  0.dp
+                } else {
+                  msgTailWidthDp
+                }
+              } else 4.dp
               if (cItem.chatDir is CIDirection.GroupRcv) {
                 val member = cItem.chatDir.groupMember
                 val (prevMember, memCount) =
@@ -1141,7 +1150,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                           Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
                             MemberImage(member)
                           }
-                          Box(modifier = Modifier.padding(top = 2.dp, start = chatItemPadding(cItem, !itemSeparation.largeGap, endPadding = false))) {
+                          Box(modifier = Modifier.padding(top = 2.dp, start = edgePadding)) {
                             ChatItemViewShortHand(cItem, itemSeparation, range, false)
                           }
                         }
@@ -1163,7 +1172,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                     }
                     Row(
                       Modifier
-                        .padding(start = 8.dp + MEMBER_IMAGE_SIZE + chatItemPadding(cItem, !itemSeparation.largeGap, endPadding = false), end = if (voiceWithTransparentBack) 12.dp else 66.dp)
+                        .padding(start = 8.dp + MEMBER_IMAGE_SIZE + edgePadding, end = if (voiceWithTransparentBack) 12.dp else 66.dp)
                         .then(swipeableOrSelectionModifier)
                     ) {
                       ChatItemViewShortHand(cItem, itemSeparation, range)
@@ -1177,7 +1186,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                   }
                   Box(
                     Modifier
-                      .padding(start = if (voiceWithTransparentBack) 12.dp else 104.dp, end = 9.dp + chatItemPadding(cItem, !itemSeparation.largeGap, endPadding = true))
+                      .padding(start = if (voiceWithTransparentBack) 12.dp else 104.dp, end = 9.dp + edgePadding)
                       .then(if (selectionVisible) Modifier else swipeableModifier)
                   ) {
                     ChatItemViewShortHand(cItem, itemSeparation, range)

@@ -33,7 +33,7 @@ import kotlin.math.*
 
 private val msgRectMaxRadius = 18.dp
 private val msgBubbleMaxRadius = msgRectMaxRadius * 1.2f
-private val msgTailWidthDp = 9.dp
+val msgTailWidthDp = 9.dp
 private val msgTailMinHeightDp = msgTailWidthDp * 1.254f // ~56deg
 private val msgTailMaxHeightDp = msgTailWidthDp * 1.732f // 60deg
 
@@ -872,7 +872,7 @@ sealed class ShapeStyle {
   data class RoundRect(val radius: Dp) : ShapeStyle()
 }
 
-private fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVisible: Boolean): ShapeStyle {
+fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVisible: Boolean): ShapeStyle {
   if (chatItem == null) {
     return ShapeStyle.RoundRect(msgRectMaxRadius)
   }
