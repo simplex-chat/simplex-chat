@@ -24,11 +24,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.chat.item.ItemAction
-import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.group.MemberProfileImage
+import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
