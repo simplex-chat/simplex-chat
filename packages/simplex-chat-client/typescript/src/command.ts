@@ -277,7 +277,7 @@ export interface APISendMessage extends IChatCommand {
   type: "apiSendMessage"
   chatType: ChatType
   chatId: number
-  message: ComposedMessage
+  message: ComposedMessage[]
 }
 
 export interface ComposedMessage {
