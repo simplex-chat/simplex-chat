@@ -41,8 +41,6 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         var audioTrack: RTCAudioTrack?
         var localCameraAndTrack: (RTCVideoCapturer, RTCVideoTrack)?
         var device: AVCaptureDevice.Position = .front
-        var cameraRenderers: [RTCVideoRenderer] = []
-        var screenRenderers: [RTCVideoRenderer] = []
     }
 
     actor IceCandidates {
@@ -65,6 +63,9 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
     var activeCall: Call?
     var notConnectedCall: NotConnectedCall?
     private var localRendererAspectRatio: Binding<CGFloat?>
+
+    var cameraRenderers: [RTCVideoRenderer] = []
+    var screenRenderers: [RTCVideoRenderer] = []
 
     @available(*, unavailable)
     override init() {
@@ -517,34 +518,34 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
     }
 
     func addRemoteCameraRenderer(_ renderer: RTCVideoRenderer) {
-        if activeCall != nil {
+        if activeCall?.remoteVideoTrack != nil {
             activeCall?.remoteVideoTrack?.add(renderer)
-        } else if notConnectedCall != nil {
-            notConnectedCall?.cameraRenderers.append(renderer)
+        } else {
+            cameraRenderers.append(renderer)
         }
     }
 
     func removeRemoteCameraRenderer(_ renderer: RTCVideoRenderer) {
-        if activeCall != nil {
+        if activeCall?.remoteVideoTrack != nil {
             activeCall?.remoteVideoTrack?.remove(renderer)
-        } else if notConnectedCall != nil {
-            notConnectedCall?.cameraRenderers.removeAll(where: { $0.isEqual(renderer) })
+        } else {
+            cameraRenderers.removeAll(where: { $0.isEqual(renderer) })
         }
     }
 
     func addRemoteScreenRenderer(_ renderer: RTCVideoRenderer) {
-        if activeCall != nil {
+        if activeCall?.remoteScreenVideoTrack != nil {
             activeCall?.remoteScreenVideoTrack?.add(renderer)
-        } else if notConnectedCall != nil {
-            notConnectedCall?.screenRenderers.append(renderer)
+        } else {
+            screenRenderers.append(renderer)
         }
     }
 
     func removeRemoteScreenRenderer(_ renderer: RTCVideoRenderer) {
-        if activeCall != nil {
+        if activeCall?.remoteScreenVideoTrack != nil {
             activeCall?.remoteScreenVideoTrack?.remove(renderer)
-        } else if notConnectedCall != nil {
-            notConnectedCall?.screenRenderers.removeAll(where: { $0.isEqual(renderer) })
+        } else {
+            screenRenderers.removeAll(where: { $0.isEqual(renderer) })
         }
     }
 
@@ -711,17 +712,17 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
                 case .mic: self.activeCall?.remoteAudioTrack = track as? RTCAudioTrack
                 case .camera:
                     self.activeCall?.remoteVideoTrack = track as? RTCVideoTrack
-                    self.notConnectedCall?.cameraRenderers.forEach({ renderer in
-                        (track as? RTCVideoTrack)?.add(renderer)
+                    self.cameraRenderers.forEach({ renderer in
+                        self.activeCall?.remoteVideoTrack?.add(renderer)
                     })
-                    self.notConnectedCall?.cameraRenderers.removeAll()
+                    self.cameraRenderers.removeAll()
                 case .screenAudio: self.activeCall?.remoteScreenAudioTrack = track as? RTCAudioTrack
                 case .screenVideo:
                     self.activeCall?.remoteScreenVideoTrack = track as? RTCVideoTrack
-                    self.notConnectedCall?.screenRenderers.forEach({ renderer in
-                        (track as? RTCVideoTrack)?.add(renderer)
+                    self.screenRenderers.forEach({ renderer in
+                        self.activeCall?.remoteScreenVideoTrack?.add(renderer)
                     })
-                    self.notConnectedCall?.screenRenderers.removeAll()
+                    self.screenRenderers.removeAll()
                 case .unknown: ()
                 }
             }
