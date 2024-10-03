@@ -892,7 +892,7 @@ fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVisible: Bo
     return ShapeStyle.RoundRect(msgRectMaxRadius)
   }
 
-  return when (chatItem.content) {
+  when (chatItem.content) {
     is CIContent.SndMsgContent,
     is CIContent.RcvMsgContent,
     is CIContent.RcvDecryptionError,
@@ -913,6 +913,7 @@ fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVisible: Bo
             tailVisible
           }
         }
+
         is MsgContent.MCText -> {
           if (isShortEmoji(content.text)) {
             false
@@ -920,13 +921,14 @@ fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVisible: Bo
             tailVisible
           }
         }
+
         else -> tailVisible
       }
 
-      if (tailEnabled) {
-        return ShapeStyle.Bubble(tail, !chatItem.chatDir.sent)
+      return if (tailEnabled) {
+        ShapeStyle.Bubble(tail, !chatItem.chatDir.sent)
       } else {
-        return ShapeStyle.RoundRect(msgRectMaxRadius)
+        ShapeStyle.RoundRect(msgRectMaxRadius)
       }
     }
 
