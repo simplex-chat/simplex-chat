@@ -27,7 +27,7 @@ fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, revealed: Mutabl
   Surface(
     color = if (sent) sentColor else receivedColor,
     contentColor = LocalContentColor.current,
-    modifier = Modifier.chatItemShape(ci, tailVisible)
+    modifier = Modifier.clipChatItem(ci, tailVisible)
   ) {
     val chatItemTail = remember { appPreferences.chatItemTail.state }
     val style = shapeStyle(ci, chatItemTail.value, tailVisible)

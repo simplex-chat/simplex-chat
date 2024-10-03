@@ -140,7 +140,7 @@ fun ChatItemView(
     Column(horizontalAlignment = if (cItem.chatDir.sent) Alignment.End else Alignment.Start) {
       Column(
         Modifier
-          .chatItemShape(cItem, itemSeparation.largeGap)
+          .clipChatItem(cItem, itemSeparation.largeGap)
           .combinedClickable(onLongClick = { showMenu.value = true }, onClick = onClick)
           .onRightClick { showMenu.value = true },
       ) {
@@ -946,7 +946,7 @@ fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVisible: Bo
 }
 
 @Composable
-fun Modifier.chatItemShape(chatItem: ChatItem? = null, tailVisible: Boolean = false): Modifier {
+fun Modifier.clipChatItem(chatItem: ChatItem? = null, tailVisible: Boolean = false): Modifier {
   val chatItemRoundness = remember { appPreferences.chatItemRoundness.state }
   val chatItemTail = remember { appPreferences.chatItemTail.state }
   val style = shapeStyle(chatItem, chatItemTail.value, tailVisible )
