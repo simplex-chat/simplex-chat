@@ -820,6 +820,21 @@ fun Modifier.chatItemOffset(cItem: ChatItem, tailVisible: Boolean, inverted: Boo
   return this.offset(x = if (inverted) (-1f * offset) else offset)
 }
 
+@Composable
+fun Modifier.clipChatItem(chatItem: ChatItem? = null, tailVisible: Boolean = false, revealed: Boolean = false): Modifier {
+  val chatItemRoundness = remember { appPreferences.chatItemRoundness.state }
+  val chatItemTail = remember { appPreferences.chatItemTail.state }
+  val style = shapeStyle(chatItem, chatItemTail.value, tailVisible, revealed)
+  val cornerRoundness = chatItemRoundness.value.coerceIn(0f, 1f)
+
+  val shape = when (style) {
+    is ShapeStyle.Bubble -> chatItemShape(cornerRoundness, LocalDensity.current, style.tailVisible, chatItem?.chatDir?.sent == true)
+    is ShapeStyle.RoundRect -> RoundedCornerShape(style.radius * cornerRoundness)
+  }
+
+  return this.clip(shape)
+}
+
 private fun chatItemShape(roundness: Float, density: Density, tailVisible: Boolean, sent: Boolean = false): GenericShape {
   return GenericShape { size, _ ->
     val (msgTailWidth, msgBubbleMaxRadius) = with(density) { Pair(msgTailWidthDp.toPx(), msgBubbleMaxRadius.toPx()  ) }
@@ -943,21 +958,6 @@ fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVisible: Bo
         return ShapeStyle.RoundRect(8.dp)
       }
     }
-}
-
-@Composable
-fun Modifier.clipChatItem(chatItem: ChatItem? = null, tailVisible: Boolean = false, revealed: Boolean = false): Modifier {
-  val chatItemRoundness = remember { appPreferences.chatItemRoundness.state }
-  val chatItemTail = remember { appPreferences.chatItemTail.state }
-  val style = shapeStyle(chatItem, chatItemTail.value, tailVisible, revealed)
-  val cornerRoundness = chatItemRoundness.value.coerceIn(0f, 1f)
-
-  val shape = when (style) {
-    is ShapeStyle.Bubble -> chatItemShape(cornerRoundness, LocalDensity.current, style.tailVisible, chatItem?.chatDir?.sent == true)
-    is ShapeStyle.RoundRect -> RoundedCornerShape(style.radius * cornerRoundness)
-  }
-
-  return this.clip(shape)
 }
 
 fun cancelFileAlertDialog(fileId: Long, cancelFile: (Long) -> Unit, cancelAction: CancelAction) {
