@@ -60,6 +60,7 @@ struct UserPickerSheetView: View {
                         SettingsView(showSettings: $showSettings, withNavigation: false)
                     }
                 }
+                Color.clear // Required for list background to be rendered during loading
             }
             .navigationTitle(sheet.navigationTitle)
             .navigationBarTitleDisplayMode(.large)
