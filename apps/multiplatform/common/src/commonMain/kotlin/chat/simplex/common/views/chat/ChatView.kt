@@ -1081,6 +1081,14 @@ fun BoxWithConstraintsScope.ChatItemsList(
             }
           }
 
+          @Composable fun adjustTailPaddingOffset(originalPadding: Dp, start: Boolean): Dp {
+            val chatItemTail = remember { appPreferences.chatItemTail.state }
+            val style = shapeStyle(cItem, chatItemTail.value, itemSeparation.largeGap, true)
+            val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
+
+            return originalPadding + (if (tailRendered) 0.dp else if (start) msgTailWidthDp * 2 else msgTailWidthDp)
+          }
+
           Box {
             val voiceWithTransparentBack = cItem.content.msgContent is MsgContent.MCVoice && cItem.content.text.isEmpty() && cItem.quotedItem == null && cItem.meta.itemForwarded == null
             val selectionVisible = selectedChatItems.value != null && cItem.canBeDeletedForSelf
@@ -1099,7 +1107,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                   Column(
                     Modifier
                       .padding(top = 8.dp)
-                      .padding(start = 8.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp)
+                      .padding(start = 8.dp, end = if (voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
                       .fillMaxWidth()
                       .then(swipeableModifier),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -1163,7 +1171,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                     }
                     Row(
                       Modifier
-                        .padding(start = 8.dp + (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + 4.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp)
+                        .padding(start = 8.dp + (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + 4.dp, end = if (voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
                         .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
                         .then(swipeableOrSelectionModifier)
                     ) {
@@ -1178,7 +1186,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                   }
                   Box(
                     Modifier
-                      .padding(start = if (voiceWithTransparentBack) 12.dp else 104.dp, end = 12.dp)
+                      .padding(start = if (voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(104.dp, start = true), end = 12.dp)
                       .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
                       .then(if (selectionVisible) Modifier else swipeableModifier)
                   ) {
@@ -1194,8 +1202,8 @@ fun BoxWithConstraintsScope.ChatItemsList(
 
                 Box(
                   Modifier.padding(
-                    start = if (sent && !voiceWithTransparentBack) 76.dp else 12.dp,
-                    end = if (sent || voiceWithTransparentBack) 12.dp else 76.dp,
+                    start = if (sent && !voiceWithTransparentBack) adjustTailPaddingOffset(76.dp, start = true) else 12.dp,
+                    end = if (sent || voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(76.dp, start = false),
                   )
                     .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
                     .then(if (!selectionVisible || !sent) swipeableOrSelectionModifier else Modifier)
