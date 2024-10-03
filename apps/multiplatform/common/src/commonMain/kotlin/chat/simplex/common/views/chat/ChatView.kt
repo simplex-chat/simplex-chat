@@ -1081,7 +1081,8 @@ fun BoxWithConstraintsScope.ChatItemsList(
             }
           }
 
-          @Composable fun adjustTailPaddingOffset(originalPadding: Dp, start: Boolean): Dp {
+          @Composable
+          fun adjustTailPaddingOffset(originalPadding: Dp, start: Boolean): Dp {
             val chatItemTail = remember { appPreferences.chatItemTail.state }
             val style = shapeStyle(cItem, chatItemTail.value, itemSeparation.largeGap, true)
             val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
@@ -1127,9 +1128,13 @@ fun BoxWithConstraintsScope.ChatItemsList(
                           maxLines = 1
                         )
                         if (memCount == 1 && member.memberRole > GroupMemberRole.Member) {
+                          val chatItemTail = remember { appPreferences.chatItemTail.state }
+                          val style = shapeStyle(cItem, chatItemTail.value, itemSeparation.largeGap, true)
+                          val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
+
                           Text(
                             member.memberRole.text,
-                            Modifier.padding(start = DEFAULT_PADDING_HALF * 1.5f, end = DEFAULT_PADDING_HALF).chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value),
+                            Modifier.padding(start = DEFAULT_PADDING_HALF * 1.5f, end = DEFAULT_PADDING_HALF + if (tailRendered) msgTailWidthDp else 0.dp),
                             fontSize = 13.5.sp,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colors.secondary,
