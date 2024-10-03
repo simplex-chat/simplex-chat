@@ -107,13 +107,9 @@ fun ChatItemView(
       }
     } else { {} }
 
-    val chatItemTail = remember { appPreferences.chatItemTail.state }
-    val style = shapeStyle(cItem, chatItemTail.value, itemSeparation.largeGap)
-    val tailPaddingAdjustment = if (style is ShapeStyle.Bubble && style.tailVisible) msgTailWidthDp else 0.dp
-
     @Composable
     fun ChatItemReactions() {
-      Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = if (sent) 0.dp else tailPaddingAdjustment, end = if (sent) tailPaddingAdjustment else 0.dp)) {
+      Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.chatItemOffset(cItem, itemSeparation.largeGap, inverted = true)) {
         cItem.reactions.forEach { r ->
           var modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp).clip(RoundedCornerShape(8.dp))
           if (cInfo.featureEnabled(ChatFeature.Reactions) && (cItem.allowAddReaction || r.userReacted)) {
@@ -809,7 +805,7 @@ fun ItemAction(text: String, color: Color = Color.Unspecified, onClick: () -> Un
 }
 
 @Composable
-fun Modifier.chatItemOffset(cItem: ChatItem, tailVisible: Boolean, content: Boolean = false): Modifier {
+fun Modifier.chatItemOffset(cItem: ChatItem, tailVisible: Boolean, inverted: Boolean = false): Modifier {
   val chatItemTail = remember { appPreferences.chatItemTail.state }
   val style = shapeStyle(cItem, chatItemTail.value, tailVisible)
 
@@ -821,7 +817,7 @@ fun Modifier.chatItemOffset(cItem: ChatItem, tailVisible: Boolean, content: Bool
     }
   } else 0.dp
 
-  return this.offset(x = if (content) -1*offset else offset)
+  return this.offset(x = if (inverted) (-1f * offset) else offset)
 }
 
 private fun chatItemShape(roundness: Float, density: Density, tailVisible: Boolean, sent: Boolean = false): GenericShape {
