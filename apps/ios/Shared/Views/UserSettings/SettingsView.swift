@@ -262,10 +262,13 @@ struct SettingsView: View {
     @EnvironmentObject var theme: AppTheme
     @Binding var showSettings: Bool
     @State private var showProgress: Bool = false
+    var withNavigation = true
 
     var body: some View {
         ZStack {
-            NavigationView {
+            if withNavigation {
+                NavigationView { settingsView() }
+            } else {
                 settingsView()
             }
             if showProgress {
