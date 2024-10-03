@@ -109,7 +109,7 @@ fun ChatItemView(
 
     @Composable
     fun ChatItemReactions() {
-      Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.chatItemOffset(cItem, itemSeparation.largeGap, inverted = true)) {
+      Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.chatItemOffset(cItem, itemSeparation.largeGap, inverted = true, revealed = true)) {
         cItem.reactions.forEach { r ->
           var modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp).clip(RoundedCornerShape(8.dp))
           if (cInfo.featureEnabled(ChatFeature.Reactions) && (cItem.allowAddReaction || r.userReacted)) {
@@ -136,7 +136,7 @@ fun ChatItemView(
     Column(horizontalAlignment = if (cItem.chatDir.sent) Alignment.End else Alignment.Start) {
       Column(
         Modifier
-          .clipChatItem(cItem, itemSeparation.largeGap)
+          .clipChatItem(cItem, itemSeparation.largeGap, revealed.value)
           .combinedClickable(onLongClick = { showMenu.value = true }, onClick = onClick)
           .onRightClick { showMenu.value = true },
       ) {
@@ -365,7 +365,7 @@ fun ChatItemView(
         fun ContentItem() {
           val mc = cItem.content.msgContent
           if (cItem.meta.itemDeleted != null && (!revealed.value || cItem.isDeletedContent)) {
-            MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy, showTimestamp = showTimestamp, tailVisible = itemSeparation.largeGap)
+            MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
             MarkedDeletedItemDropdownMenu()
           } else {
             if (cItem.quotedItem == null && cItem.meta.itemForwarded == null && cItem.meta.itemDeleted == null && !cItem.meta.isLive) {
@@ -441,7 +441,7 @@ fun ChatItemView(
 
         @Composable
         fun DeletedItem() {
-          MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy, showTimestamp = showTimestamp, tailVisible = itemSeparation.largeGap)
+          MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
           DefaultDropdownMenu(showMenu) {
             ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
             DeleteItemAction(cItem, revealed, showMenu, questionText = generalGetString(MR.strings.delete_message_cannot_be_undone_warning), deleteMessage, deleteMessages)
@@ -805,9 +805,9 @@ fun ItemAction(text: String, color: Color = Color.Unspecified, onClick: () -> Un
 }
 
 @Composable
-fun Modifier.chatItemOffset(cItem: ChatItem, tailVisible: Boolean, inverted: Boolean = false): Modifier {
+fun Modifier.chatItemOffset(cItem: ChatItem, tailVisible: Boolean, inverted: Boolean = false, revealed: Boolean): Modifier {
   val chatItemTail = remember { appPreferences.chatItemTail.state }
-  val style = shapeStyle(cItem, chatItemTail.value, tailVisible)
+  val style = shapeStyle(cItem, chatItemTail.value, tailVisible, revealed)
 
   val offset = if (style is ShapeStyle.Bubble) {
     if (style.tailVisible) {
@@ -887,67 +887,69 @@ sealed class ShapeStyle {
   data class RoundRect(val radius: Dp) : ShapeStyle()
 }
 
-fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVisible: Boolean): ShapeStyle {
+fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVisible: Boolean, revealed: Boolean): ShapeStyle {
   if (chatItem == null) {
     return ShapeStyle.RoundRect(msgRectMaxRadius)
   }
 
-  when (chatItem.content) {
-    is CIContent.SndMsgContent,
-    is CIContent.RcvMsgContent,
-    is CIContent.RcvDecryptionError,
-    is CIContent.SndDeleted,
-    is CIContent.RcvDeleted,
-    is CIContent.RcvIntegrityError,
-    is CIContent.SndModerated,
-    is CIContent.RcvModerated,
-    is CIContent.RcvBlocked,
-    is CIContent.InvalidJSON -> {
-      val tail = when (val content = chatItem.content.msgContent) {
-        is MsgContent.MCImage,
-        is MsgContent.MCVideo,
-        is MsgContent.MCVoice -> {
-          if (content.text.isEmpty()) {
-            false
-          } else {
-            tailVisible
-          }
+    when (chatItem.content) {
+      is CIContent.SndMsgContent,
+      is CIContent.RcvMsgContent,
+      is CIContent.RcvDecryptionError,
+      is CIContent.SndDeleted,
+      is CIContent.RcvDeleted,
+      is CIContent.RcvIntegrityError,
+      is CIContent.SndModerated,
+      is CIContent.RcvModerated,
+      is CIContent.RcvBlocked,
+      is CIContent.InvalidJSON -> {
+        if (chatItem.meta.itemDeleted != null && (!revealed || chatItem.isDeletedContent)) {
+          return ShapeStyle.RoundRect(msgRectMaxRadius)
         }
 
-        is MsgContent.MCText -> {
-          if (isShortEmoji(content.text)) {
-            false
-          } else {
-            tailVisible
+        val tail = when (val content = chatItem.content.msgContent) {
+          is MsgContent.MCImage,
+          is MsgContent.MCVideo,
+          is MsgContent.MCVoice -> {
+            if (content.text.isEmpty()) {
+              false
+            } else {
+              tailVisible
+            }
           }
+          is MsgContent.MCText -> {
+            if (isShortEmoji(content.text)) {
+              false
+            } else {
+              tailVisible
+            }
+          }
+          else -> tailVisible
         }
 
-        else -> tailVisible
+        return if (tailEnabled) {
+          ShapeStyle.Bubble(tail, !chatItem.chatDir.sent)
+        } else {
+          ShapeStyle.RoundRect(msgRectMaxRadius)
+        }
       }
 
-      return if (tailEnabled) {
-        ShapeStyle.Bubble(tail, !chatItem.chatDir.sent)
-      } else {
-        ShapeStyle.RoundRect(msgRectMaxRadius)
+      is CIContent.RcvGroupInvitation,
+      is CIContent.SndGroupInvitation -> {
+        return ShapeStyle.RoundRect(msgRectMaxRadius)
+      }
+
+      else -> {
+        return ShapeStyle.RoundRect(8.dp)
       }
     }
-
-    is CIContent.RcvGroupInvitation,
-    is CIContent.SndGroupInvitation -> {
-      return ShapeStyle.RoundRect(msgRectMaxRadius)
-    }
-
-    else -> {
-      return ShapeStyle.RoundRect(8.dp)
-    }
-  }
 }
 
 @Composable
-fun Modifier.clipChatItem(chatItem: ChatItem? = null, tailVisible: Boolean = false): Modifier {
+fun Modifier.clipChatItem(chatItem: ChatItem? = null, tailVisible: Boolean = false, revealed: Boolean = false): Modifier {
   val chatItemRoundness = remember { appPreferences.chatItemRoundness.state }
   val chatItemTail = remember { appPreferences.chatItemTail.state }
-  val style = shapeStyle(chatItem, chatItemTail.value, tailVisible )
+  val style = shapeStyle(chatItem, chatItemTail.value, tailVisible, revealed)
   val cornerRoundness = chatItemRoundness.value.coerceIn(0f, 1f)
 
   val shape = when (style) {

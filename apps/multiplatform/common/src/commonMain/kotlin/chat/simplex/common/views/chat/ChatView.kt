@@ -1121,7 +1121,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                         if (memCount == 1 && member.memberRole > GroupMemberRole.Member) {
                           Text(
                             member.memberRole.text,
-                            Modifier.padding(start = DEFAULT_PADDING_HALF * 1.5f, end = DEFAULT_PADDING_HALF).chatItemOffset(cItem, itemSeparation.largeGap),
+                            Modifier.padding(start = DEFAULT_PADDING_HALF * 1.5f, end = DEFAULT_PADDING_HALF).chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value),
                             fontSize = 13.5.sp,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colors.secondary,
@@ -1141,7 +1141,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                           Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
                             MemberImage(member)
                           }
-                          Box(modifier = Modifier.padding(top = 2.dp, start = 4.dp).chatItemOffset(cItem, itemSeparation.largeGap)) {
+                          Box(modifier = Modifier.padding(top = 2.dp, start = 4.dp).chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)) {
                             ChatItemViewShortHand(cItem, itemSeparation, range, false)
                           }
                         }
@@ -1164,7 +1164,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                     Row(
                       Modifier
                         .padding(start = 8.dp + MEMBER_IMAGE_SIZE + 4.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp)
-                        .chatItemOffset(cItem, itemSeparation.largeGap)
+                        .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
                         .then(swipeableOrSelectionModifier)
                     ) {
                       ChatItemViewShortHand(cItem, itemSeparation, range)
@@ -1179,7 +1179,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                   Box(
                     Modifier
                       .padding(start = if (voiceWithTransparentBack) 12.dp else 104.dp, end = 12.dp)
-                      .chatItemOffset(cItem, itemSeparation.largeGap)
+                      .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
                       .then(if (selectionVisible) Modifier else swipeableModifier)
                   ) {
                     ChatItemViewShortHand(cItem, itemSeparation, range)
@@ -1197,7 +1197,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                     start = if (sent && !voiceWithTransparentBack) 76.dp else 12.dp,
                     end = if (sent || voiceWithTransparentBack) 12.dp else 76.dp,
                   )
-                    .chatItemOffset(cItem, itemSeparation.largeGap)
+                    .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
                     .then(if (!selectionVisible || !sent) swipeableOrSelectionModifier else Modifier)
                 ) {
                   ChatItemViewShortHand(cItem, itemSeparation, range)

@@ -7,12 +7,12 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.getChatItemIndexOrNull
-import chat.simplex.common.platform.appPreferences
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
@@ -20,26 +20,17 @@ import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.datetime.Clock
 
 @Composable
-fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, revealed: MutableState<Boolean>, showViaProxy: Boolean, showTimestamp: Boolean, tailVisible: Boolean) {
+fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, revealed: MutableState<Boolean>, showViaProxy: Boolean, showTimestamp: Boolean) {
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
   val sent = ci.chatDir.sent
   Surface(
+    shape = RoundedCornerShape(18.dp),
     color = if (sent) sentColor else receivedColor,
     contentColor = LocalContentColor.current,
-    modifier = Modifier.clipChatItem(ci, tailVisible)
   ) {
-    val chatItemTail = remember { appPreferences.chatItemTail.state }
-    val style = shapeStyle(ci, chatItemTail.value, tailVisible)
-    val tailPaddingAdjustment = if (style is ShapeStyle.Bubble && style.tailVisible) msgTailWidthDp else 0.dp
-
     Row(
-      Modifier.padding(
-        start = 12.dp + tailPaddingAdjustment,
-        end = 12.dp + if (sent) tailPaddingAdjustment else 0.dp,
-        top = 6.dp,
-        bottom = 6.dp
-      ),
+      Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
       verticalAlignment = Alignment.CenterVertically
     ) {
       Box(Modifier.weight(1f, false)) {

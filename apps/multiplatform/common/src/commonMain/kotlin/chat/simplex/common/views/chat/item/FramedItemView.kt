@@ -189,7 +189,7 @@ fun FramedItemView(
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
   Box(Modifier
-    .clipChatItem(ci, tailVisible)
+    .clipChatItem(ci, tailVisible, revealed = true)
     .background(
       when {
         transparentBackground -> Color.Transparent
@@ -200,7 +200,7 @@ fun FramedItemView(
     var metaColor = MaterialTheme.colors.secondary
     Box(contentAlignment = Alignment.BottomEnd) {
       val chatItemTail = remember { appPreferences.chatItemTail.state }
-      val style = shapeStyle(ci, chatItemTail.value, tailVisible)
+      val style = shapeStyle(ci, chatItemTail.value, tailVisible, revealed = true)
       val tailPaddingAdjustment = if (style is ShapeStyle.Bubble && style.tailVisible) msgTailWidthDp else 0.dp
 
       Column(Modifier.width(IntrinsicSize.Max).padding(start = tailPaddingAdjustment, end = if (sent) tailPaddingAdjustment else 0.dp)) {
