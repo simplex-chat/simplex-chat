@@ -18,6 +18,7 @@ struct ActiveCallView: View {
     @Environment(\.scenePhase) var scenePhase
     @State private var client: WebRTCClient? = nil
     @State private var localRendererAspectRatio: CGFloat? = nil
+    @State var remoteContentMode: UIView.ContentMode = .scaleAspectFill
     @Binding var canConnectCall: Bool
     @State var prevColorScheme: ColorScheme = .dark
     @State var pipShown = false
@@ -30,21 +31,31 @@ struct ActiveCallView: View {
                     GeometryReader { g in
                         let width = g.size.width * 0.3
                         ZStack(alignment: .topTrailing) {
-                            if client.activeCall?.remoteVideoTrack != nil && ChatModel.shared.activeCall?.peerMediaSources.camera == true {
-                                CallViewRemote(client: client, activeCallViewIsCollapsed: $m.activeCallViewIsCollapsed, pipShown: $pipShown)
+                            ZStack(alignment: .center) {
+                                // For some reason, when the view in GeometryReader and ZStack is visible, it steals clicks on a back button, so showing something on top like this with background color helps (.clear color doesn't work)
                             }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .background(Color.primary.opacity(0.000001))
 
-                            if client.activeCall?.localVideoTrack != nil || client.notConnectedCall?.localCameraAndTrack != nil {
-                                CallViewLocal(client: client, localRendererAspectRatio: $localRendererAspectRatio, pipShown: $pipShown)
-                                    .cornerRadius(10)
-                                    .frame(width: width, height: width / (localRendererAspectRatio ?? 1))
-                                    .padding([.top, .trailing], 17)
-                                ZStack(alignment: .center) {
-                                    // For some reason, when the view in GeometryReader and ZStack is visible, it steals clicks on a back button, so showing something on top like this with background color helps (.clear color doesn't work)
+                            CallViewRemote(client: client, call: call, activeCallViewIsCollapsed: $m.activeCallViewIsCollapsed, contentMode: $remoteContentMode, pipShown: $pipShown)
+                                .onTapGesture {
+                                    remoteContentMode = remoteContentMode == .scaleAspectFill ? .scaleAspectFit : .scaleAspectFill
                                 }
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                .background(Color.primary.opacity(0.000001))
+
+                            Group {
+                                let localVideoTrack = client.activeCall?.localVideoTrack ?? client.notConnectedCall?.localCameraAndTrack?.1
+                                if localVideoTrack != nil {
+                                    CallViewLocal(client: client, localRendererAspectRatio: $localRendererAspectRatio, pipShown: $pipShown)
+                                        .onDisappear {
+                                            localRendererAspectRatio = nil
+                                        }
+                                } else {
+                                    Rectangle().fill(.black)
+                                }
                             }
+                            .cornerRadius(10)
+                            .frame(width: width, height: localRendererAspectRatio == nil ? (g.size.width < g.size.height ? width * 1.33 : width / 1.33) : width / (localRendererAspectRatio ?? 1))
+                            .padding([.top, .trailing], 17)
                         }
                     }
                 }
@@ -168,6 +179,9 @@ struct ActiveCallView: View {
                 }
                 if state.connectionState == "closed" {
                     closeCallView(client)
+                    if let callUUID = m.activeCall?.callUUID {
+                        CallController.shared.endCall(callUUID: callUUID)
+                    }
                     m.activeCall = nil
                     m.activeCallViewIsCollapsed = false
                 }
@@ -258,7 +272,10 @@ struct ActiveCallOverlay: View {
                 videoCallInfoView(call)
                 .foregroundColor(.white)
                 .opacity(0.8)
-                .padding()
+                .padding(.horizontal)
+                // Fixed vertical padding required for preserving position of buttons row when changing audio-to-video and back in landscape orientation.
+                // Otherwise, bigger padding is added by SwiftUI when switching call types
+                .padding(.vertical, 10)
             case false:
                 ZStack(alignment: .topLeading) {
                     Button {
@@ -274,7 +291,8 @@ struct ActiveCallOverlay: View {
                     }
                     .foregroundColor(.white)
                     .opacity(0.8)
-                    .padding()
+                    .padding(.horizontal)
+                    .padding(.vertical, 10)
                     .frame(maxHeight: .infinity)
                 }
             }
@@ -291,13 +309,8 @@ struct ActiveCallOverlay: View {
                 // There is no way to get available outputs, only inputs
                 if deviceManager.availableInputs.allSatisfy({ $0.portType == .builtInMic }) {
                     toggleSpeakerButton()
-                        .frame(width: 40, height: 40)
-                } else if call.hasMedia {
-                    AudioDevicePicker()
-                        .scaleEffect(2)
-                        .frame(maxWidth: 40, maxHeight: 40)
                 } else {
-                    Color.clear.frame(width: 40, height: 40)
+                    audioDevicePickerButton()
                 }
                 Spacer()
                 endCallButton()
@@ -305,14 +318,14 @@ struct ActiveCallOverlay: View {
                 if call.localMediaSources.camera {
                     flipCameraButton()
                 } else {
-                    Color.clear.frame(width: 40, height: 40)
+                    Color.clear.frame(width: 60, height: 60)
                 }
                 Spacer()
                 toggleCameraButton()
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 16)
-            .frame(maxWidth: .infinity, alignment: .center)
+            .frame(maxWidth: 440, alignment: .center)
         }
         .frame(maxWidth: .infinity)
         .onAppear {
@@ -374,18 +387,20 @@ struct ActiveCallOverlay: View {
 
     private func endCallButton() -> some View {
         let cc = CallController.shared
-        return callButton("phone.down.fill", width: 60, height: 60) {
+        return callButton("phone.down.fill", padding: 8) {
             if let uuid = call.callUUID {
                 cc.endCall(callUUID: uuid)
             } else {
                 cc.endCall(call: call) {}
             }
         }
-        .foregroundColor(.red)
+        .foregroundColor(.white.opacity(0.8))
+        .background(.red)
+        .clipShape(.circle)
     }
 
     private func toggleMicButton() -> some View {
-        controlButton(call, call.localMediaSources.mic ? "mic.fill" : "mic.slash") {
+        controlButton(call, call.localMediaSources.mic ? "mic.fill" : "mic.slash", padding: 12) {
             Task {
                 client.setAudioEnabled(!call.localMediaSources.mic)
                 DispatchQueue.main.async {
@@ -396,7 +411,7 @@ struct ActiveCallOverlay: View {
     }
 
     private func toggleSpeakerButton() -> some View {
-        controlButton(call, !call.peerMediaSources.mic ? "speaker.slash" : call.speakerEnabled ? "speaker.wave.2.fill" : "speaker.wave.1.fill") {
+        controlButton(call, !call.peerMediaSources.mic ? "speaker.slash" : call.speakerEnabled ? "speaker.wave.2.fill" : "speaker.wave.1.fill", padding: !call.peerMediaSources.mic ? 14 : call.speakerEnabled ? 13 : 15) {
             Task {
                 let speakerEnabled = AVAudioSession.sharedInstance().currentRoute.outputs.first?.portType == .builtInSpeaker
                 client.setSpeakerEnabledAndConfigureSession(!speakerEnabled)
@@ -412,7 +427,7 @@ struct ActiveCallOverlay: View {
     }
 
     private func toggleCameraButton() -> some View {
-        controlButton(call, call.localMediaSources.camera ? "video.fill" : "video.slash") {
+        controlButton(call, call.localMediaSources.camera ? "video.fill" : "video.slash", padding: call.localMediaSources.camera ? 14 : 12) {
             Task {
                 client.setCameraEnabled(!call.localMediaSources.camera)
                 DispatchQueue.main.async {
@@ -423,27 +438,39 @@ struct ActiveCallOverlay: View {
     }
 
     @ViewBuilder private func flipCameraButton() -> some View {
-        controlButton(call, "arrow.triangle.2.circlepath") {
+        controlButton(call, "arrow.triangle.2.circlepath", padding: 10) {
                 Task {
                     client.flipCamera()
                 }
         }
     }
 
-    @ViewBuilder private func controlButton(_ call: Call, _ imageName: String, _ perform: @escaping () -> Void) -> some View {
-        callButton(imageName, width: 50, height: 38, perform)
-            .foregroundColor(.white)
-            .opacity(0.85)
+    @ViewBuilder private func controlButton(_ call: Call, _ imageName: String, padding: CGFloat, _ perform: @escaping () -> Void) -> some View {
+        callButton(imageName, padding: padding, perform)
+            .foregroundColor(.white.opacity(0.8))
+            .background(call.peerMediaSources.hasVideo ? Color.black.opacity(0.2) : Color.white.opacity(0.2))
+            .clipShape(.circle)
     }
 
-    private func callButton(_ imageName: String, width: CGFloat, height: CGFloat, _ perform: @escaping () -> Void) -> some View {
+    @ViewBuilder private func audioDevicePickerButton() -> some View {
+        AudioDevicePicker()
+            .opacity(0.8)
+            .scaleEffect(2)
+            .padding(10)
+            .frame(width: 60, height: 60)
+            .background(call.peerMediaSources.hasVideo ? Color.black.opacity(0.2) : Color.white.opacity(0.2))
+            .clipShape(.circle)
+    }
+
+    private func callButton(_ imageName: String, padding: CGFloat, _ perform: @escaping () -> Void) -> some View {
         Button {
             perform()
         } label: {
             Image(systemName: imageName)
                 .resizable()
                 .scaledToFit()
-                .frame(maxWidth: width, maxHeight: height)
+                .padding(padding)
+                .frame(width: 60, height: 60)
         }
     }
 }
