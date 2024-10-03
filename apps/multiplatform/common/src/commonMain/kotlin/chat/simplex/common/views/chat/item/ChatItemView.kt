@@ -808,7 +808,23 @@ fun ItemAction(text: String, color: Color = Color.Unspecified, onClick: () -> Un
   }
 }
 
-fun chatItemShape(roundness: Float, density: Density, tailVisible: Boolean, sent: Boolean = false): GenericShape {
+@Composable
+fun Modifier.chatItemOffset(cItem: ChatItem, tailVisible: Boolean, content: Boolean = false): Modifier {
+  val chatItemTail = remember { appPreferences.chatItemTail.state }
+  val style = shapeStyle(cItem, chatItemTail.value, tailVisible)
+
+  val offset = if (style is ShapeStyle.Bubble) {
+    if (style.tailVisible) {
+      if (cItem.chatDir.sent) msgTailWidthDp else -msgTailWidthDp
+    } else {
+      0.dp
+    }
+  } else 0.dp
+
+  return this.offset(x = if (content) -1*offset else offset)
+}
+
+private fun chatItemShape(roundness: Float, density: Density, tailVisible: Boolean, sent: Boolean = false): GenericShape {
   return GenericShape { size, _ ->
     val (msgTailWidth, msgBubbleMaxRadius) = with(density) { Pair(msgTailWidthDp.toPx(), msgBubbleMaxRadius.toPx()  ) }
     val width = if (sent && tailVisible) size.width - msgTailWidth else size.width
@@ -934,12 +950,7 @@ fun Modifier.chatItemShape(chatItem: ChatItem? = null, tailVisible: Boolean = fa
   val chatItemRoundness = remember { appPreferences.chatItemRoundness.state }
   val chatItemTail = remember { appPreferences.chatItemTail.state }
   val style = shapeStyle(chatItem, chatItemTail.value, tailVisible )
-
-  val cornerRoundness = when {
-    chatItemRoundness.value >= 1 -> 1f
-    chatItemRoundness.value <= 0 -> 0f
-    else -> chatItemRoundness.value
-  }
+  val cornerRoundness = chatItemRoundness.value.coerceIn(0f, 1f)
 
   val shape = when (style) {
     is ShapeStyle.Bubble -> chatItemShape(cornerRoundness, LocalDensity.current, style.tailVisible, chatItem?.chatDir?.sent == true)

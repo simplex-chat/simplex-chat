@@ -1082,22 +1082,11 @@ fun BoxWithConstraintsScope.ChatItemsList(
           }
 
           Box {
-            val chatItemTail = remember { appPreferences.chatItemTail.state }
-            val style = shapeStyle(cItem, chatItemTail.value, itemSeparation.largeGap)
             val voiceWithTransparentBack = cItem.content.msgContent is MsgContent.MCVoice && cItem.content.text.isEmpty() && cItem.quotedItem == null && cItem.meta.itemForwarded == null
             val selectionVisible = selectedChatItems.value != null && cItem.canBeDeletedForSelf
             val selectionOffset by animateDpAsState(if (selectionVisible && !sent) 4.dp + 22.dp * fontSizeMultiplier else 0.dp)
             val swipeableOrSelectionModifier = (if (selectionVisible) Modifier else swipeableModifier).graphicsLayer { translationX = selectionOffset.toPx() }
-            val offset = if (style is ShapeStyle.Bubble) {
-              if (style.tailVisible) {
-                if (sent) msgTailWidthDp else -msgTailWidthDp
-              } else {
-                0.dp
-              }
-            } else 0.dp
-
             if (chatInfo is ChatInfo.Group) {
-
               if (cItem.chatDir is CIDirection.GroupRcv) {
                 val member = cItem.chatDir.groupMember
                 val (prevMember, memCount) =
@@ -1132,7 +1121,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                         if (memCount == 1 && member.memberRole > GroupMemberRole.Member) {
                           Text(
                             member.memberRole.text,
-                            Modifier.padding(start = DEFAULT_PADDING_HALF * 1.5f, end = DEFAULT_PADDING_HALF).offset(x = offset),
+                            Modifier.padding(start = DEFAULT_PADDING_HALF * 1.5f, end = DEFAULT_PADDING_HALF).chatItemOffset(cItem, itemSeparation.largeGap),
                             fontSize = 13.5.sp,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colors.secondary,
@@ -1152,7 +1141,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                           Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
                             MemberImage(member)
                           }
-                          Box(modifier = Modifier.padding(top = 2.dp, start = 4.dp).offset(x = offset)) {
+                          Box(modifier = Modifier.padding(top = 2.dp, start = 4.dp).chatItemOffset(cItem, itemSeparation.largeGap)) {
                             ChatItemViewShortHand(cItem, itemSeparation, range, false)
                           }
                         }
@@ -1175,7 +1164,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                     Row(
                       Modifier
                         .padding(start = 8.dp + MEMBER_IMAGE_SIZE + 4.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp)
-                        .offset(x = offset)
+                        .chatItemOffset(cItem, itemSeparation.largeGap)
                         .then(swipeableOrSelectionModifier)
                     ) {
                       ChatItemViewShortHand(cItem, itemSeparation, range)
@@ -1190,7 +1179,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                   Box(
                     Modifier
                       .padding(start = if (voiceWithTransparentBack) 12.dp else 104.dp, end = 12.dp)
-                      .offset(x = offset)
+                      .chatItemOffset(cItem, itemSeparation.largeGap)
                       .then(if (selectionVisible) Modifier else swipeableModifier)
                   ) {
                     ChatItemViewShortHand(cItem, itemSeparation, range)
@@ -1208,7 +1197,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                     start = if (sent && !voiceWithTransparentBack) 76.dp else 12.dp,
                     end = if (sent || voiceWithTransparentBack) 12.dp else 76.dp,
                   )
-                    .offset(x = offset)
+                    .chatItemOffset(cItem, itemSeparation.largeGap)
                     .then(if (!selectionVisible || !sent) swipeableOrSelectionModifier else Modifier)
                 ) {
                   ChatItemViewShortHand(cItem, itemSeparation, range)
