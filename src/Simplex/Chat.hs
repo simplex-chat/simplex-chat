@@ -1452,14 +1452,13 @@ processChatCommand' vr = \case
   APIVerifyToken token nonce code -> withUser $ \_ -> withAgent (\a -> verifyNtfToken a token nonce code) >> ok_
   APIDeleteToken token -> withUser $ \_ -> withAgent (`deleteNtfToken` token) >> ok_
   APIGetNtfMessage nonce encNtfInfo -> withUser $ \_ -> do
-    (NotificationInfo {ntfConnId, ntfMsgMeta}, msg) <- withAgent $ \a -> getNotificationMessage a nonce encNtfInfo
-    let msgTs' = systemToUTCTime . (\SMP.NMsgMeta {msgTs} -> msgTs) <$> ntfMsgMeta
-        agentConnId = AgentConnId ntfConnId
+    (NotificationInfo {ntfConnId, ntfMsgMeta = nMsgMeta}, msg) <- withAgent $ \a -> getNotificationMessage a nonce encNtfInfo
+    let agentConnId = AgentConnId ntfConnId
     user_ <- withStore' (`getUserByAConnId` agentConnId)
     connEntity_ <-
       pure user_ $>>= \user ->
         withStore (\db -> Just <$> getConnectionEntity db vr user agentConnId) `catchChatError` (\e -> toView (CRChatError (Just user) e) $> Nothing)
-    pure CRNtfMessages {user_, connEntity_, msgTs = msgTs', ntfMessage_ = ntfMsgInfo <$> msg}
+    pure CRNtfMessages {user_, connEntity_, ntfMsgMeta_ = toNtfMsgMeta <$> nMsgMeta, ntfMessage_ = ntfMsgInfo <$> msg}
   ApiGetConnNtfMessage (AgentConnId connId) -> withUser $ \_ -> do
     msg <- withAgent $ \a -> getConnectionMessage a connId
     pure $ CRConnNtfMessage (ntfMsgInfo <$> msg)

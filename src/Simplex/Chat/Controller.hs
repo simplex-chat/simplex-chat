@@ -84,7 +84,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), CorrId, NtfServer, ProtocolType (..), ProtocolTypeI, QueueId, SMPMsgMeta (..), SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServer, userProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), CorrId, NtfServer, ProtocolType (..), ProtocolTypeI, QueueId, SMPMsgMeta (..), NMsgMeta (..), SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServer, userProtocol)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, simplexMQVersion)
 import Simplex.Messaging.Transport.Client (SocksProxyWithAuth, TransportHost)
@@ -745,7 +745,7 @@ data ChatResponse
   | CRUserContactLinkSubError {chatError :: ChatError} -- TODO delete
   | CRNtfTokenStatus {status :: NtfTknStatus}
   | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode, ntfServer :: NtfServer}
-  | CRNtfMessages {user_ :: Maybe User, connEntity_ :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessage_ :: Maybe NtfMsgInfo}
+  | CRNtfMessages {user_ :: Maybe User, connEntity_ :: Maybe ConnectionEntity, ntfMsgMeta_ :: Maybe NtfMsgMeta, ntfMessage_ :: Maybe NtfMsgInfo}
   | CRConnNtfMessage {ntfMessage_ :: Maybe NtfMsgInfo}
   | CRNtfMessage {user :: User, connEntity :: ConnectionEntity, ntfMessage :: NtfMsgInfo}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
@@ -1051,6 +1051,15 @@ instance FromJSON ComposedMessage where
   parseJSON invalid =
     JT.prependFailure "bad ComposedMessage, " (JT.typeMismatch "Object" invalid)
 
+-- Decrypted ntf meta of the expected message (the one notification was sent for)
+data NtfMsgMeta = NtfMsgMeta {msgId :: Text, msgTs :: UTCTime}
+  deriving (Show)
+
+toNtfMsgMeta :: NMsgMeta -> NtfMsgMeta
+toNtfMsgMeta NMsgMeta {msgId, msgTs} = NtfMsgMeta {msgId = decodeLatin1 $ strEncode msgId, msgTs = systemToUTCTime msgTs}
+
+-- Info of the first message retrieved by agent using GET
+-- (may differ from the expected message due to, for example, coalescing or loss of notifications)
 data NtfMsgInfo = NtfMsgInfo {msgId :: Text, msgTs :: UTCTime}
   deriving (Show)
 
@@ -1503,6 +1512,8 @@ $(JQ.deriveJSON defaultJSON ''PendingSubStatus)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "AE") ''ArchiveError)
 
 $(JQ.deriveJSON defaultJSON ''UserProfileUpdateSummary)
+
+$(JQ.deriveJSON defaultJSON ''NtfMsgMeta)
 
 $(JQ.deriveJSON defaultJSON ''NtfMsgInfo)
 
