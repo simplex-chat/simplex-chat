@@ -2280,6 +2280,11 @@ public enum ConnectionEntity: Decodable, Hashable {
     }
 }
 
+public struct NtfMsgMeta: Decodable, Hashable {
+    public var msgId: String
+    public var msgTs: Date
+}
+
 public struct NtfMsgInfo: Decodable, Hashable {
     public var msgId: String
     public var msgTs: Date
