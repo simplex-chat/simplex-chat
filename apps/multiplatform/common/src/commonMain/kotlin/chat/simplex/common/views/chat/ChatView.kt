@@ -1111,7 +1111,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                         Text(
                           memberNames(member, prevMember, memCount),
                           Modifier
-                            .padding(start = MEMBER_IMAGE_SIZE + DEFAULT_PADDING_HALF)
+                            .padding(start = (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + DEFAULT_PADDING_HALF)
                             .weight(1f, false),
                           fontSize = 13.5.sp,
                           color = MaterialTheme.colors.secondary,
@@ -1163,7 +1163,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                     }
                     Row(
                       Modifier
-                        .padding(start = 8.dp + MEMBER_IMAGE_SIZE + 4.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp)
+                        .padding(start = 8.dp + (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + 4.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp)
                         .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
                         .then(swipeableOrSelectionModifier)
                     ) {
