@@ -206,7 +206,7 @@ class NotificationService: UNNotificationServiceExtension {
                         receiveConnId = connEntity.conn.agentConnId
                         let expectedMsgId = ntfInfo.ntfMsgMeta_.flatMap { $0.msgId }
                         let gotMsgId = ntfInfo.ntfMessage_.flatMap { $0.msgId }
-                        logger.debug("### NotificationService: receiveNtfMessages: expectedMsgId = \(expectedMsgId ?? "nil", privacy: .private), gotMsgId = \(gotMsgId ?? "nil", privacy: .private)")
+                        logger.debug("NotificationService: receiveNtfMessages: expectedMsgId = \(expectedMsgId ?? "nil", privacy: .private), gotMsgId = \(gotMsgId ?? "nil", privacy: .private)")
                         expectedMessage = expectedMsgId
                         shouldProcessNtf = true
                         return
@@ -232,30 +232,30 @@ class NotificationService: UNNotificationServiceExtension {
         if case let .msgInfo(info) = ntf {
             if info.msgId == expectedMessage {
                 expectedMessage = nil
-                logger.debug("### NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): expected")
+                logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): expected")
                 self.deliverBestAttemptNtf()
                 return true
             } else if let msgTs = info.msgTs_, msgTs > expectedMsgTs {
-                logger.debug("### NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): unexpected msgInfo, let other instance to process it, stopping this one")
+                logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): unexpected msgInfo, let other instance to process it, stopping this one")
                 self.deliverBestAttemptNtf()
                 return false
             } else if allowedGetNextAttempts > 0, let receiveConnId = receiveConnId {
-                logger.debug("### NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): unexpected msgInfo, get next message")
+                logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): unexpected msgInfo, get next message")
                 allowedGetNextAttempts -= 1
                 if let ntfInfo = apiGetConnNtfMessage(connId: receiveConnId) {
-                    logger.debug("### NotificationService processNtf, on apiGetConnNtfMessage: msgInfo msgId = \(info.msgId, privacy: .private), ntfInfo msgId = \(ntfInfo.msgId, privacy: .private)")
+                    logger.debug("NotificationService processNtf, on apiGetConnNtfMessage: msgInfo msgId = \(info.msgId, privacy: .private), ntfInfo msgId = \(ntfInfo.msgId, privacy: .private)")
                     return true
                 } else {
-                    logger.debug("### NotificationService processNtf, on apiGetConnNtfMessage: msgInfo msgId = \(info.msgId, privacy: .private): no next message, deliver best attempt")
+                    logger.debug("NotificationService processNtf, on apiGetConnNtfMessage: msgInfo msgId = \(info.msgId, privacy: .private): no next message, deliver best attempt")
                     self.deliverBestAttemptNtf()
                     return false
                 }
             } else {
-                logger.debug("### NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): unknown message, let other instance to process it")
+                logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): unknown message, let other instance to process it")
                 return false
             }
         } else if ntfInfo.user.showNotifications {
-            logger.debug("### NotificationService processNtf: setting best attempt")
+            logger.debug("NotificationService processNtf: setting best attempt")
             self.setBestAttemptNtf(ntf)
             if ntf.isCallInvitation {
                 self.deliverBestAttemptNtf()
