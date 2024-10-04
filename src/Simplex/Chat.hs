@@ -54,7 +54,6 @@ import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDay, nominalDiffTimeToSeconds)
-import Data.Time.Clock.System (systemToUTCTime)
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Data.Word (Word32)
@@ -4345,7 +4344,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     END -> case entity of
       RcvDirectMsgConnection _ (Just ct) -> toView $ CRContactAnotherClient user ct
       _ -> toView $ CRSubscriptionEnd user entity
-    MSGNTF smpMsgInfo -> toView $ CRNtfMessage user entity $ ntfMsgInfo smpMsgInfo
+    MSGNTF msgId msgTs_ -> toView $ CRNtfMessage user entity $ ntfMsgAckInfo msgId msgTs_
     _ -> case entity of
       RcvDirectMsgConnection conn contact_ ->
         processDirectMessage agentMessage entity conn contact_

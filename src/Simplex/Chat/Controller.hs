@@ -84,7 +84,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), CorrId, NtfServer, ProtocolType (..), ProtocolTypeI, QueueId, SMPMsgMeta (..), NMsgMeta (..), SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServer, userProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), CorrId, MsgId, NMsgMeta (..), NtfServer, ProtocolType (..), ProtocolTypeI, QueueId, SMPMsgMeta (..), SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServer, userProtocol)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, simplexMQVersion)
 import Simplex.Messaging.Transport.Client (SocksProxyWithAuth, TransportHost)
@@ -747,7 +747,7 @@ data ChatResponse
   | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode, ntfServer :: NtfServer}
   | CRNtfMessages {user_ :: Maybe User, connEntity_ :: Maybe ConnectionEntity, ntfMsgMeta_ :: Maybe NtfMsgMeta, ntfMessage_ :: Maybe NtfMsgInfo}
   | CRConnNtfMessage {ntfMessage_ :: Maybe NtfMsgInfo}
-  | CRNtfMessage {user :: User, connEntity :: ConnectionEntity, ntfMessage :: NtfMsgInfo}
+  | CRNtfMessage {user :: User, connEntity :: ConnectionEntity, ntfMessage :: NtfMsgAckInfo}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
   | CRCurrentRemoteHost {remoteHost_ :: Maybe RemoteHostInfo}
@@ -1065,6 +1065,13 @@ data NtfMsgInfo = NtfMsgInfo {msgId :: Text, msgTs :: UTCTime}
 
 ntfMsgInfo :: SMPMsgMeta -> NtfMsgInfo
 ntfMsgInfo SMPMsgMeta {msgId, msgTs} = NtfMsgInfo {msgId = decodeLatin1 $ strEncode msgId, msgTs = systemToUTCTime msgTs}
+
+-- Acknowledged message info - used to correlate with expected message
+data NtfMsgAckInfo = NtfMsgAckInfo {msgId :: Text, msgTs_ :: Maybe UTCTime}
+  deriving (Show)
+
+ntfMsgAckInfo :: MsgId -> Maybe UTCTime -> NtfMsgAckInfo
+ntfMsgAckInfo msgId msgTs_ = NtfMsgAckInfo {msgId = decodeLatin1 $ strEncode msgId, msgTs_}
 
 crNtfToken :: (DeviceToken, NtfTknStatus, NotificationsMode, NtfServer) -> ChatResponse
 crNtfToken (token, status, ntfMode, ntfServer) = CRNtfToken {token, status, ntfMode, ntfServer}
@@ -1516,6 +1523,8 @@ $(JQ.deriveJSON defaultJSON ''UserProfileUpdateSummary)
 $(JQ.deriveJSON defaultJSON ''NtfMsgMeta)
 
 $(JQ.deriveJSON defaultJSON ''NtfMsgInfo)
+
+$(JQ.deriveJSON defaultJSON ''NtfMsgAckInfo)
 
 $(JQ.deriveJSON defaultJSON ''SwitchProgress)
 
