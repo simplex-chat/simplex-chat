@@ -835,65 +835,62 @@ fun Modifier.clipChatItem(chatItem: ChatItem? = null, tailVisible: Boolean = fal
   return this.clip(shape)
 }
 
-private fun chatItemShape(roundness: Float, density: Density, tailVisible: Boolean, sent: Boolean = false): GenericShape {
-  return GenericShape { size, _ ->
-    val (msgTailWidth, msgBubbleMaxRadius) = with(density) { Pair(msgTailWidthDp.toPx(), msgBubbleMaxRadius.toPx()  ) }
-    val width = if (sent && tailVisible) size.width - msgTailWidth else size.width
-    val height = size.height
-    val rxMax = min(msgBubbleMaxRadius, width / 2)
-    val ryMax = min(msgBubbleMaxRadius, height / 2)
-    val rx = roundness * rxMax
-    val ry = roundness * ryMax
-    val tailHeight = with(density) {
-      min(
-        msgTailMinHeightDp.toPx() + roundness * (msgTailMaxHeightDp.toPx() - msgTailMinHeightDp.toPx()),
-        height / 2
-      )
-    }
-    moveTo(rx, 0f)
-    lineTo(width - rx, 0f) // Top Line
+private fun chatItemShape(roundness: Float, density: Density, tailVisible: Boolean, sent: Boolean = false): GenericShape = GenericShape { size, _ ->
+  val (msgTailWidth, msgBubbleMaxRadius) = with(density) { Pair(msgTailWidthDp.toPx(), msgBubbleMaxRadius.toPx()) }
+  val width = if (sent && tailVisible) size.width - msgTailWidth else size.width
+  val height = size.height
+  val rxMax = min(msgBubbleMaxRadius, width / 2)
+  val ryMax = min(msgBubbleMaxRadius, height / 2)
+  val rx = roundness * rxMax
+  val ry = roundness * ryMax
+  val tailHeight = with(density) {
+    min(
+      msgTailMinHeightDp.toPx() + roundness * (msgTailMaxHeightDp.toPx() - msgTailMinHeightDp.toPx()),
+      height / 2
+    )
+  }
+  moveTo(rx, 0f)
+  lineTo(width - rx, 0f) // Top Line
+  if (roundness > 0) {
+    quadraticBezierTo(width, 0f, width, ry) // Top-right corner
+  }
+  if (height > 2 * ry) {
+    lineTo(width, height - ry) // Right side
+  }
+  if (roundness > 0) {
+    quadraticBezierTo(width, height, width - rx, height) // Bottom-right corner
+  }
+  if (tailVisible) {
+    lineTo(0f, height) // Bottom line
     if (roundness > 0) {
-      quadraticBezierTo(width, 0f, width, ry) // Top-right corner
+      val d = tailHeight - msgTailWidth * msgTailWidth / tailHeight
+      val controlPoint = Offset(msgTailWidth, height - tailHeight + d * sqrt(roundness))
+      quadraticBezierTo(controlPoint.x, controlPoint.y, msgTailWidth, height - tailHeight)
+    } else {
+      lineTo(msgTailWidth, height - tailHeight)
+    }
+
+    if (height > ry + tailHeight) {
+      lineTo(msgTailWidth, ry)
+    }
+  } else {
+    lineTo(rx, height) // Bottom line
+    if (roundness > 0) {
+      quadraticBezierTo(0f, height, 0f, height - ry) // Bottom-left corner
     }
     if (height > 2 * ry) {
-      lineTo(width, height - ry) // Right side
+      lineTo(0f, ry) // Left side
     }
-    if (roundness > 0) {
-      quadraticBezierTo(width, height, width - rx, height) // Bottom-right corner
-    }
-    if (tailVisible) {
-      lineTo(0f, height) // Bottom line
-      if (roundness > 0) {
-        val d = tailHeight - msgTailWidth * msgTailWidth / tailHeight
-        val controlPoint = Offset(msgTailWidth, height - tailHeight + d * sqrt(roundness))
-        quadraticBezierTo(controlPoint.x, controlPoint.y, msgTailWidth, height - tailHeight)
-      } else {
-        lineTo(msgTailWidth, height - tailHeight)
-      }
+  }
+  if (roundness > 0) {
+    quadraticBezierTo(if (tailVisible) msgTailWidth else 0f, 0f, rx, 0f) // Top-left corner
+  }
 
-      if (height > ry + tailHeight) {
-        lineTo(msgTailWidth, ry)
-      }
-    } else {
-      lineTo(rx, height) // Bottom line
-      if (roundness > 0) {
-        quadraticBezierTo(0f, height, 0f, height - ry) // Bottom-left corner
-      }
-      if (height > 2 * ry) {
-        lineTo(0f, ry) // Left side
-      }
-    }
-    if (roundness > 0) {
-      quadraticBezierTo(if (tailVisible) msgTailWidth else 0f, 0f, rx, 0f) // Top-left corner
-    }
-
-    if (sent) {
-      val matrix = Matrix().apply {
-        scale(-1f, 1f)
-      }
-      this.transform(matrix)
-      this.translate(Offset(size.width, 0f))
-    }
+  if (sent) {
+    val matrix = Matrix()
+    matrix.scale(-1f, 1f)
+    this.transform(matrix)
+    this.translate(Offset(size.width, 0f))
   }
 }
 
@@ -907,57 +904,51 @@ fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVisible: Bo
     return ShapeStyle.RoundRect(msgRectMaxRadius)
   }
 
-    when (chatItem.content) {
-      is CIContent.SndMsgContent,
-      is CIContent.RcvMsgContent,
-      is CIContent.RcvDecryptionError,
-      is CIContent.SndDeleted,
-      is CIContent.RcvDeleted,
-      is CIContent.RcvIntegrityError,
-      is CIContent.SndModerated,
-      is CIContent.RcvModerated,
-      is CIContent.RcvBlocked,
-      is CIContent.InvalidJSON -> {
-        if (chatItem.meta.itemDeleted != null && (!revealed || chatItem.isDeletedContent)) {
-          return ShapeStyle.RoundRect(msgRectMaxRadius)
-        }
-
-        val tail = when (val content = chatItem.content.msgContent) {
-          is MsgContent.MCImage,
-          is MsgContent.MCVideo,
-          is MsgContent.MCVoice -> {
-            if (content.text.isEmpty()) {
-              false
-            } else {
-              tailVisible
-            }
-          }
-          is MsgContent.MCText -> {
-            if (isShortEmoji(content.text)) {
-              false
-            } else {
-              tailVisible
-            }
-          }
-          else -> tailVisible
-        }
-
-        return if (tailEnabled) {
-          ShapeStyle.Bubble(tail, !chatItem.chatDir.sent)
-        } else {
-          ShapeStyle.RoundRect(msgRectMaxRadius)
-        }
-      }
-
-      is CIContent.RcvGroupInvitation,
-      is CIContent.SndGroupInvitation -> {
+  when (chatItem.content) {
+    is CIContent.SndMsgContent,
+    is CIContent.RcvMsgContent,
+    is CIContent.RcvDecryptionError,
+    is CIContent.SndDeleted,
+    is CIContent.RcvDeleted,
+    is CIContent.RcvIntegrityError,
+    is CIContent.SndModerated,
+    is CIContent.RcvModerated,
+    is CIContent.RcvBlocked,
+    is CIContent.InvalidJSON -> {
+      if (chatItem.meta.itemDeleted != null && (!revealed || chatItem.isDeletedContent)) {
         return ShapeStyle.RoundRect(msgRectMaxRadius)
       }
 
-      else -> {
-        return ShapeStyle.RoundRect(8.dp)
+      val tail = when (val content = chatItem.content.msgContent) {
+        is MsgContent.MCImage,
+        is MsgContent.MCVideo,
+        is MsgContent.MCVoice -> {
+          if (content.text.isEmpty()) {
+            false
+          } else {
+            tailVisible
+          }
+        }
+        is MsgContent.MCText -> {
+          if (isShortEmoji(content.text)) {
+            false
+          } else {
+            tailVisible
+          }
+        }
+        else -> tailVisible
+      }
+      return if (tailEnabled) {
+        ShapeStyle.Bubble(tail, !chatItem.chatDir.sent)
+      } else {
+        ShapeStyle.RoundRect(msgRectMaxRadius)
       }
     }
+
+    is CIContent.RcvGroupInvitation,
+    is CIContent.SndGroupInvitation -> return ShapeStyle.RoundRect(msgRectMaxRadius)
+    else -> return ShapeStyle.RoundRect(8.dp)
+  }
 }
 
 fun cancelFileAlertDialog(fileId: Long, cancelFile: (Long) -> Unit, cancelAction: CancelAction) {
