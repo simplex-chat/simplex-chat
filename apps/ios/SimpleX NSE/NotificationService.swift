@@ -26,7 +26,7 @@ enum NSENotification {
     case nse(UNMutableNotificationContent)
     case callkit(RcvCallInvitation)
     case empty
-    case msgInfo(NtfMsgInfo)
+    case msgInfo(NtfMsgAckInfo)
 
     var isCallInvitation: Bool {
         switch self {
@@ -234,7 +234,7 @@ class NotificationService: UNNotificationServiceExtension {
                 logger.debug("### NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .public): expected")
                 self.deliverBestAttemptNtf()
                 return true
-            } else if info.msgTs > expectedMsgTs {
+            } else if let msgTs = info.msgTs_, msgTs > expectedMsgTs {
                 logger.debug("### NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .public): unexpected msgInfo, let other instance to process it, stopping this one")
                 self.deliverBestAttemptNtf()
                 return false

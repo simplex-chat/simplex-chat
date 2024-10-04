@@ -684,7 +684,7 @@ public enum ChatResponse: Decodable, Error {
     case ntfToken(token: DeviceToken, status: NtfTknStatus, ntfMode: NotificationsMode, ntfServer: String)
     case ntfMessages(user_: User?, connEntity_: ConnectionEntity?, ntfMsgMeta_: NtfMsgMeta?, ntfMessage_: NtfMsgInfo?)
     case connNtfMessage(ntfMessage_: NtfMsgInfo?)
-    case ntfMessage(user: UserRef, connEntity: ConnectionEntity, ntfMessage: NtfMsgInfo)
+    case ntfMessage(user: UserRef, connEntity: ConnectionEntity, ntfMessage: NtfMsgAckInfo)
     case contactConnectionDeleted(user: UserRef, connection: PendingContactConnection)
     case contactDisabled(user: UserRef, contact: Contact)
     // remote desktop responses/events
