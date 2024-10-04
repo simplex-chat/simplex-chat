@@ -402,7 +402,7 @@ struct ActiveCallOverlay: View {
 
     private func endCallButton() -> some View {
         let cc = CallController.shared
-        return callButton("phone.down.fill", padding: 8) {
+        return callButton("phone.down.fill", padding: 10) {
             if let uuid = call.callUUID {
                 cc.endCall(callUUID: uuid)
             } else {
@@ -415,7 +415,7 @@ struct ActiveCallOverlay: View {
     }
 
     private func toggleMicButton() -> some View {
-        controlButton(call, call.localMediaSources.mic ? "mic.fill" : "mic.slash", padding: 12) {
+        controlButton(call, call.localMediaSources.mic ? "mic.fill" : "mic.slash", padding: 14) {
             Task {
                 if await WebRTCClient.isAuthorized(for: .audio) {
                     client.setAudioEnabled(!call.localMediaSources.mic)
@@ -452,7 +452,7 @@ struct ActiveCallOverlay: View {
     }
 
     private func toggleSpeakerButton() -> some View {
-        controlButton(call, !call.peerMediaSources.mic ? "speaker.slash" : call.speakerEnabled ? "speaker.wave.2.fill" : "speaker.wave.1.fill", padding: !call.peerMediaSources.mic ? 14 : call.speakerEnabled ? 13 : 15) {
+        controlButton(call, !call.peerMediaSources.mic ? "speaker.slash" : call.speakerEnabled ? "speaker.wave.2.fill" : "speaker.wave.1.fill", padding: !call.peerMediaSources.mic ? 16 : call.speakerEnabled ? 15 : 17) {
             let speakerEnabled = AVAudioSession.sharedInstance().currentRoute.outputs.first?.portType == .builtInSpeaker
             client.setSpeakerEnabledAndConfigureSession(!speakerEnabled)
             call.speakerEnabled = !speakerEnabled
@@ -464,7 +464,7 @@ struct ActiveCallOverlay: View {
     }
 
     private func toggleCameraButton() -> some View {
-        controlButton(call, call.localMediaSources.camera ? "video.fill" : "video.slash", padding: call.localMediaSources.camera ? 14 : 12) {
+        controlButton(call, call.localMediaSources.camera ? "video.fill" : "video.slash", padding: call.localMediaSources.camera ? 16 : 14) {
             Task {
                 if await WebRTCClient.isAuthorized(for: .video) {
                     client.setCameraEnabled(!call.localMediaSources.camera)
@@ -477,7 +477,7 @@ struct ActiveCallOverlay: View {
     }
 
     @ViewBuilder private func flipCameraButton() -> some View {
-        controlButton(call, "arrow.triangle.2.circlepath", padding: 10) {
+        controlButton(call, "arrow.triangle.2.circlepath", padding: 12) {
                 Task {
                     if await WebRTCClient.isAuthorized(for: .video) {
                         client.flipCamera()
