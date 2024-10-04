@@ -44,7 +44,7 @@ enum DatabaseAlert: Identifiable {
 struct DatabaseView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
-    @Binding var showSettings: Bool
+    @Environment(\.dismiss) var dismiss
     @State private var runChat = false
     @State private var alert: DatabaseAlert? = nil
     @State private var showFileImporter = false
@@ -439,7 +439,7 @@ struct DatabaseView: View {
 
     private func startChat() {
         if m.chatDbChanged {
-            showSettings = false
+            dismiss()
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 resetChatCtrl()
                 do {
@@ -534,6 +534,6 @@ func deleteChatAsync() async throws {
 
 struct DatabaseView_Previews: PreviewProvider {
     static var previews: some View {
-        DatabaseView(showSettings: Binding.constant(false), chatItemTTL: .none)
+        DatabaseView(chatItemTTL: .none)
     }
 }

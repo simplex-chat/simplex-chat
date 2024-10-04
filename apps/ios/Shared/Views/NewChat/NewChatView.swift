@@ -241,7 +241,6 @@ private struct InviteView: View {
     @Binding var choosingProfile: Bool
 
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
-    @State private var showSettings: Bool = false
 
     var body: some View {
         List {

@@ -257,20 +257,15 @@ let networkProxyDefault: CodableDefault<NetworkProxy> = CodableDefault(defaults:
 
 struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.dismiss) var dismiss
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var sceneDelegate: SceneDelegate
     @EnvironmentObject var theme: AppTheme
-    @Binding var showSettings: Bool
     @State private var showProgress: Bool = false
-    var withNavigation = true
 
     var body: some View {
         ZStack {
-            if withNavigation {
-                NavigationView { settingsView() }
-            } else {
-                settingsView()
-            }
+            settingsView()
             if showProgress {
                 progressView()
             }
@@ -350,7 +345,7 @@ struct SettingsView: View {
                 Section(header: Text("Help").foregroundColor(theme.colors.secondary)) {
                     if let user = user {
                         NavigationLink {
-                            ChatHelp(showSettings: $showSettings)
+                            ChatHelp()
                                 .navigationTitle("Welcome \(user.displayName)!")
                                 .modifier(ThemedBackground())
                                 .frame(maxHeight: .infinity, alignment: .top)
@@ -375,7 +370,7 @@ struct SettingsView: View {
                     }
                     settingsRow("number", color: theme.colors.secondary) {
                         Button("Send questions and ideas") {
-                            showSettings = false
+                            dismiss()
                             DispatchQueue.main.async {
                                 UIApplication.shared.open(simplexTeamURL)
                             }
@@ -432,7 +427,7 @@ struct SettingsView: View {
     
     private func chatDatabaseRow() -> some View {
         NavigationLink {
-            DatabaseView(showSettings: $showSettings, chatItemTTL: chatModel.chatItemTTL)
+            DatabaseView(chatItemTTL: chatModel.chatItemTTL)
                 .navigationTitle("Your chat database")
                 .modifier(ThemedBackground(grouped: true))
         } label: {
@@ -528,9 +523,7 @@ struct SettingsView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
         chatModel.currentUser = User.sampleData
-        @State var showSettings = false
-
-        return SettingsView(showSettings: $showSettings)
+        return SettingsView()
             .environmentObject(chatModel)
     }
 }

@@ -10,7 +10,7 @@ import SwiftUI
 
 struct ChatHelp: View {
     @EnvironmentObject var chatModel: ChatModel
-    @Binding var showSettings: Bool
+    @Environment(\.dismiss) var dismiss
 
     var body: some View {
         ScrollView { chatHelp() }
@@ -23,7 +23,7 @@ struct ChatHelp: View {
             VStack(alignment: .leading, spacing: 0) {
                 Text("To ask any questions and to receive updates:")
                 Button("connect to SimpleX Chat developers.") {
-                    showSettings = false
+                    dismiss()
                     DispatchQueue.main.async {
                         UIApplication.shared.open(simplexTeamURL)
                     }
@@ -62,7 +62,6 @@ struct ChatHelp: View {
 
 struct ChatHelp_Previews: PreviewProvider {
     static var previews: some View {
-        @State var showSettings = false
-        return ChatHelp(showSettings: $showSettings)
+        ChatHelp()
     }
 }
