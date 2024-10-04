@@ -345,7 +345,7 @@ struct SettingsView: View {
                 Section(header: Text("Help").foregroundColor(theme.colors.secondary)) {
                     if let user = user {
                         NavigationLink {
-                            ChatHelp()
+                            ChatHelp(dismissSettingsSheet: dismiss)
                                 .navigationTitle("Welcome \(user.displayName)!")
                                 .modifier(ThemedBackground())
                                 .frame(maxHeight: .infinity, alignment: .top)
@@ -427,7 +427,7 @@ struct SettingsView: View {
     
     private func chatDatabaseRow() -> some View {
         NavigationLink {
-            DatabaseView(chatItemTTL: chatModel.chatItemTTL)
+            DatabaseView(dismissSettingsSheet: dismiss, chatItemTTL: chatModel.chatItemTTL)
                 .navigationTitle("Your chat database")
                 .modifier(ThemedBackground(grouped: true))
         } label: {
