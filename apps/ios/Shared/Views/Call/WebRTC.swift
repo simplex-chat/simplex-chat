@@ -29,10 +29,6 @@ class Call: ObservableObject, Equatable {
     @Published var connectionInfo: ConnectionInfo?
     @Published var connectedAt: Date? = nil
 
-    // When a user has audio call, and then he wants to enable camera but didn't grant permissions for using camera yet,
-    // we show permissions view without enabling camera before permissions are granted. After they are granted, enabling camera
-    var wantsToEnableCamera: Bool = false
-
     init(
         direction: CallDirection,
         contact: Contact,

@@ -263,7 +263,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
             if activeCall == nil {
                 resp = .error(message: "media: call not started")
             } else {
-                enableMedia(source, enable)
+                await enableMedia(source, enable)
                 resp = .ok
             }
         case .end:
@@ -354,6 +354,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         }
     }
 
+    @MainActor
     func enableMedia(_ source: CallMediaSource, _ enable: Bool) {
         logger.debug("WebRTCClient: enabling media \(source.rawValue) \(enable)")
         source == .camera ? setCameraEnabled(enable) : setAudioEnabled(enable)
@@ -936,15 +937,18 @@ extension WebRTCClient {
         }
     }
 
+    @MainActor
     func setAudioEnabled(_ enabled: Bool) {
-        if var activeCall {
-            activeCall.localAudioTrack = enabled ? createAudioTrack() : nil
-            activeCall.connection.transceivers.first(where: { t in mediaSourceFromTransceiverMid(t.mid) == .mic })?.sender.track = activeCall.localAudioTrack
-        } else if var notConnectedCall {
-            notConnectedCall.audioTrack = enabled ? createAudioTrack() : nil
+        if activeCall != nil {
+            activeCall?.localAudioTrack = enabled ? createAudioTrack() : nil
+            activeCall?.connection.transceivers.first(where: { t in mediaSourceFromTransceiverMid(t.mid) == .mic })?.sender.track = activeCall?.localAudioTrack
+        } else if notConnectedCall != nil {
+            notConnectedCall?.audioTrack = enabled ? createAudioTrack() : nil
         }
+        ChatModel.shared.activeCall?.localMediaSources.mic = enabled
     }
 
+    @MainActor
     func setCameraEnabled(_ enabled: Bool) {
         if let call = activeCall {
             if enabled {
@@ -962,6 +966,7 @@ extension WebRTCClient {
             call.connection.transceivers
                 .first(where: { t in mediaSourceFromTransceiverMid(t.mid) == .camera })?
                 .sender.track = activeCall?.localVideoTrack
+            ChatModel.shared.activeCall?.localMediaSources.camera = activeCall?.localVideoTrack != nil
         } else if let call = notConnectedCall {
             if enabled {
                 let device = activeCall?.device ?? notConnectedCall?.device ?? .front
@@ -970,6 +975,7 @@ extension WebRTCClient {
                 (call.localCameraAndTrack?.0 as? RTCCameraVideoCapturer)?.stopCapture()
                 notConnectedCall?.localCameraAndTrack = nil
             }
+            ChatModel.shared.activeCall?.localMediaSources.camera = notConnectedCall?.localCameraAndTrack != nil
         }
     }
 

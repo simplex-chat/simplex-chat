@@ -47,7 +47,6 @@ struct CallViewRemote: UIViewRepresentable {
 
         let pipVideoCallViewController = AVPictureInPictureVideoCallViewController()
         pipVideoCallViewController.preferredContentSize = CGSize(width: 1080, height: 1920)
-        //addSubviewAndResize(pipRemoteCameraRenderer, pipRemoteScreenRenderer, into: pipVideoCallViewController.view)
         let pipContentSource = AVPictureInPictureController.ContentSource(
             activeVideoCallSourceView: view,
             contentViewController: pipVideoCallViewController

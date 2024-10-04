@@ -265,7 +265,6 @@ struct ActiveCallView: View {
         if call.initialCallType == .video && !cameraAuthorized {
             camera = await WebRTCClient.isAuthorized(for: .video)
             await MainActor.run {
-                call.localMediaSources.camera = camera
                 if camera, let client {
                     client.setCameraEnabled(true)
                 }
@@ -419,9 +418,6 @@ struct ActiveCallOverlay: View {
             Task {
                 if await WebRTCClient.isAuthorized(for: .audio) {
                     client.setAudioEnabled(!call.localMediaSources.mic)
-                    await MainActor.run {
-                        call.localMediaSources.mic = !call.localMediaSources.mic
-                    }
                 } else { WebRTCClient.showUnauthorizedAlert(for: .audio) }
             }
         }
@@ -468,9 +464,6 @@ struct ActiveCallOverlay: View {
             Task {
                 if await WebRTCClient.isAuthorized(for: .video) {
                     client.setCameraEnabled(!call.localMediaSources.camera)
-                    await MainActor.run {
-                        call.localMediaSources.camera = !call.localMediaSources.camera
-                    }
                 } else { WebRTCClient.showUnauthorizedAlert(for: .video) }
             }
         }
