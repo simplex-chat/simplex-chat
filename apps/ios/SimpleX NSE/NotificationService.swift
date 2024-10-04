@@ -244,9 +244,11 @@ class NotificationService: UNNotificationServiceExtension {
                 allowedGetNextAttempts -= 1
                 if let ntfInfo = apiGetConnNtfMessage(connId: receiveConnId) {
                     logger.debug("### NotificationService processNtf, on apiGetConnNtfMessage: msgInfo msgId = \(info.msgId, privacy: .public), ntfInfo msgId = \(ntfInfo.msgId, privacy: .public)")
+                    return true
                 } else {
                     logger.debug("### NotificationService processNtf, on apiGetConnNtfMessage: msgInfo msgId = \(info.msgId, privacy: .public): no next message, deliver best attempt")
                     self.deliverBestAttemptNtf()
+                    return false
                 }
             } else {
                 logger.debug("### NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .public): unknown message, let other instance to process it")
