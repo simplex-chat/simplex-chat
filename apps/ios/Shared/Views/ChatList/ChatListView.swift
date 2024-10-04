@@ -123,7 +123,7 @@ struct ChatListView: View {
         }
         .onChange(of: activeUserPickerSheet) {
             if $0 != nil {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                     userPickerShown = false
                 }
             }

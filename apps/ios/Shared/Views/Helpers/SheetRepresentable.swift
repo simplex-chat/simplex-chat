@@ -62,15 +62,24 @@ struct SheetRepresentable<Content: View>: UIViewControllerRepresentable {
         required init?(coder: NSCoder) { fatalError("init(coder:) missing") }
 
         func animate(isPresented: Bool) {
-            let sheetDismissed = animator.fractionComplete == (animator.isReversed ? 1 : 0)
-            if isPresented || !sheetDismissed {
-                animator.pauseAnimation()
-                animator.isReversed = !isPresented
-                animator.continueAnimation(
-                    withTimingParameters: easeOutCubic,
-                    durationFactor: 1
-                )
+            let alreadyAnimating = animator.isRunning && isPresented != animator.isReversed
+            let sheetFullyDismissed = animator.fractionComplete == (animator.isReversed ? 1 : 0)
+            let sheetFullyPresented = animator.fractionComplete == (animator.isReversed ? 0 : 1)
+
+            if !isPresented && sheetFullyDismissed ||
+                isPresented && sheetFullyPresented ||
+                alreadyAnimating {
+                return
             }
+
+            animator.pauseAnimation()
+            animator.isReversed = !isPresented
+            animator.continueAnimation(
+                withTimingParameters: isPresented
+                ? easeOutCubic
+                : UICubicTimingParameters(animationCurve: .easeIn),
+                durationFactor: 1 - animator.fractionComplete
+            )
         }
 
         override func viewDidLoad() {
