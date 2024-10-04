@@ -22,7 +22,7 @@ class CallManager {
         let m = ChatModel.shared
         if let call = m.activeCall, call.callUUID == callUUID {
             m.showCallView = true
-            Task { await m.callCommand.processCommand(.capabilities(media: call.localMedia)) }
+            Task { await m.callCommand.processCommand(.capabilities(media: call.initialCallType)) }
             return true
         }
         return false

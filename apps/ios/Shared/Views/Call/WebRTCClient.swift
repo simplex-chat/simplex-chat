@@ -171,7 +171,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         let pc = activeCall?.connection
         switch command {
         case let .capabilities(media):
-            var localCameraAndTrack: (RTCVideoCapturer, RTCVideoTrack)? = media == .video
+            let localCameraAndTrack: (RTCVideoCapturer, RTCVideoTrack)? = media == .video
             ? createVideoTrackAndStartCapture(.front)
             : nil
             notConnectedCall = NotConnectedCall(audioTrack: createAudioTrack(), localCameraAndTrack: localCameraAndTrack, device: .front)
@@ -828,7 +828,42 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
 }
 
 extension WebRTCClient {
-    func setSpeakerEnabledAndConfigureSession( _ enabled: Bool) {
+    static func isAuthorized(for type: AVMediaType) async -> Bool {
+        let status = AVCaptureDevice.authorizationStatus(for: type)
+        var isAuthorized = status == .authorized
+        if status == .notDetermined {
+            isAuthorized = await AVCaptureDevice.requestAccess(for: type)
+        }
+        return isAuthorized
+    }
+
+    static func showUnauthorizedAlert(for type: AVMediaType) {
+        if type == .audio {
+            AlertManager.shared.showAlert(Alert(
+                title: Text("No permission to record speech"),
+                message: Text("To record speech please grant permission to use Microphone."),
+                primaryButton: .default(Text("Open Settings")) {
+                    DispatchQueue.main.async {
+                        UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!, options: [:], completionHandler: nil)
+                    }
+                },
+                secondaryButton: .cancel()
+            ))
+        } else if type == .video {
+            AlertManager.shared.showAlert(Alert(
+                title: Text("No permission to record video"),
+                message: Text("To record video please grant permission to use Camera."),
+                primaryButton: .default(Text("Open Settings")) {
+                    DispatchQueue.main.async {
+                        UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!, options: [:], completionHandler: nil)
+                    }
+                },
+                secondaryButton: .cancel()
+            ))
+        }
+    }
+
+    func setSpeakerEnabledAndConfigureSession( _ enabled: Bool, skipExternalDevice: Bool = false) {
         logger.debug("WebRTCClient: configuring session with speaker enabled \(enabled)")
         audioQueue.async { [weak self] in
             guard let self = self else { return }
@@ -841,7 +876,7 @@ extension WebRTCClient {
                 if enabled {
                     try self.rtcAudioSession.setCategory(AVAudioSession.Category.playAndRecord.rawValue, with: [.defaultToSpeaker, .allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
                     try self.rtcAudioSession.setMode(AVAudioSession.Mode.videoChat.rawValue)
-                    if hasExternalAudioDevice, let preferred = self.rtcAudioSession.session.preferredInputDevice() {
+                    if hasExternalAudioDevice && !skipExternalDevice, let preferred = self.rtcAudioSession.session.preferredInputDevice() {
                         try self.rtcAudioSession.setPreferredInput(preferred)
                     } else {
                         try self.rtcAudioSession.overrideOutputAudioPort(.speaker)
@@ -851,7 +886,7 @@ extension WebRTCClient {
                     try self.rtcAudioSession.setMode(AVAudioSession.Mode.voiceChat.rawValue)
                     try self.rtcAudioSession.overrideOutputAudioPort(.none)
                 }
-                if hasExternalAudioDevice {
+                if hasExternalAudioDevice && !skipExternalDevice {
                     logger.debug("WebRTCClient: configuring session with external device available, skip configuring speaker")
                 }
                 try self.rtcAudioSession.setActive(true)

@@ -47,7 +47,9 @@ class Call: ObservableObject, Equatable {
         self.callState = callState
         self.initialCallType = initialCallType
         self.sharedKey = sharedKey
-        self.localMediaSources = CallMediaSources(mic: true, camera: initialCallType == .video)
+        self.localMediaSources = CallMediaSources(
+            mic: AVCaptureDevice.authorizationStatus(for: .audio) == .authorized,
+            camera: initialCallType == .video && AVCaptureDevice.authorizationStatus(for: .video) == .authorized)
     }
 
     var encrypted: Bool { get { localEncrypted && sharedKey != nil } }
@@ -62,8 +64,6 @@ class Call: ObservableObject, Equatable {
             }
         }
     }
-    var localMedia: CallMediaType { get { localMediaSources.hasVideo ? .video : .audio } }
-    var hasMedia: Bool { get { callState == .offerSent || callState == .negotiated || callState == .connected } }
     var hasVideo: Bool { get { localMediaSources.hasVideo || peerMediaSources.hasVideo } }
 }
 

@@ -69,6 +69,9 @@ struct ActiveCallView: View {
         .onAppear {
             logger.debug("ActiveCallView: appear client is nil \(client == nil), scenePhase \(String(describing: scenePhase)), canConnectCall \(canConnectCall)")
             AppDelegate.keepScreenOn(true)
+            Task {
+                await askRequiredPermissions()
+            }
             createWebRTCClient()
             dismissAllSheets()
             hideKeyboard()
@@ -114,7 +117,7 @@ struct ActiveCallView: View {
             logger.debug("ActiveCallView: response \(msg.resp.respType)")
             switch msg.resp {
             case let .capabilities(capabilities):
-                let callType = CallType(media: call.localMedia, capabilities: capabilities)
+                let callType = CallType(media: call.initialCallType, capabilities: capabilities)
                 Task {
                     do {
                         try await apiSendCallInvitation(call.contact, callType)
@@ -135,7 +138,7 @@ struct ActiveCallView: View {
                 Task {
                     do {
                         try await apiSendCallOffer(call.contact, offer, iceCandidates,
-                                                   media: call.localMedia, capabilities: capabilities)
+                                                   media: call.initialCallType, capabilities: capabilities)
                     } catch {
                         logger.error("apiSendCallOffer \(responseError(error))")
                     }
@@ -252,6 +255,27 @@ struct ActiveCallView: View {
         }
     }
 
+    private func askRequiredPermissions() async {
+        let mic = await WebRTCClient.isAuthorized(for: .audio)
+        await MainActor.run {
+            call.localMediaSources.mic = mic
+        }
+        let cameraAuthorized = AVCaptureDevice.authorizationStatus(for: .video) == .authorized
+        var camera = call.initialCallType == .audio || cameraAuthorized
+        if call.initialCallType == .video && !cameraAuthorized {
+            camera = await WebRTCClient.isAuthorized(for: .video)
+            await MainActor.run {
+                call.localMediaSources.camera = camera
+                if camera, let client {
+                    client.setCameraEnabled(true)
+                }
+            }
+        }
+        if !mic || !camera {
+            WebRTCClient.showUnauthorizedAlert(for: !mic ? .audio : .video)
+        }
+    }
+
     private func closeCallView(_ client: WebRTCClient) {
         if m.activeCall != nil {
             m.showCallView = false
@@ -302,16 +326,7 @@ struct ActiveCallOverlay: View {
             HStack {
                 toggleMicButton()
                 Spacer()
-
-                // Check if the only input is microphone. And in this case show toggle button,
-                // If there are more inputs, it probably means something like bluetooth headphones are available
-                // and in this case show iOS button for choosing different output.
-                // There is no way to get available outputs, only inputs
-                if deviceManager.availableInputs.allSatisfy({ $0.portType == .builtInMic }) {
-                    toggleSpeakerButton()
-                } else {
-                    audioDevicePickerButton()
-                }
+                audioDeviceButton()
                 Spacer()
                 endCallButton()
                 Spacer()
@@ -402,23 +417,45 @@ struct ActiveCallOverlay: View {
     private func toggleMicButton() -> some View {
         controlButton(call, call.localMediaSources.mic ? "mic.fill" : "mic.slash", padding: 12) {
             Task {
-                client.setAudioEnabled(!call.localMediaSources.mic)
-                DispatchQueue.main.async {
-                    call.localMediaSources.mic = !call.localMediaSources.mic
-                }
+                if await WebRTCClient.isAuthorized(for: .audio) {
+                    client.setAudioEnabled(!call.localMediaSources.mic)
+                    await MainActor.run {
+                        call.localMediaSources.mic = !call.localMediaSources.mic
+                    }
+                } else { WebRTCClient.showUnauthorizedAlert(for: .audio) }
+            }
+        }
+    }
+
+    func audioDeviceButton() -> some View {
+        // Check if the only input is microphone. And in this case show toggle button,
+        // If there are more inputs, it probably means something like bluetooth headphones are available
+        // and in this case show iOS button for choosing different output.
+        // There is no way to get available outputs, only inputs
+        Group {
+            if deviceManager.availableInputs.allSatisfy({ $0.portType == .builtInMic }) {
+                toggleSpeakerButton()
+            } else {
+                audioDevicePickerButton()
+            }
+        }
+        .onChange(of: call.hasVideo) { hasVideo in
+            let current = AVAudioSession.sharedInstance().currentRoute.outputs.first?.portType
+            let speakerEnabled = current == .builtInSpeaker
+            let receiverEnabled = current == .builtInReceiver
+            // react automatically only when speaker or receiver were selected, otherwise keep an external device selected
+            if hasVideo != speakerEnabled && (speakerEnabled || receiverEnabled) {
+                client.setSpeakerEnabledAndConfigureSession(!speakerEnabled, skipExternalDevice: true)
+                call.speakerEnabled = !speakerEnabled
             }
         }
     }
 
     private func toggleSpeakerButton() -> some View {
         controlButton(call, !call.peerMediaSources.mic ? "speaker.slash" : call.speakerEnabled ? "speaker.wave.2.fill" : "speaker.wave.1.fill", padding: !call.peerMediaSources.mic ? 14 : call.speakerEnabled ? 13 : 15) {
-            Task {
-                let speakerEnabled = AVAudioSession.sharedInstance().currentRoute.outputs.first?.portType == .builtInSpeaker
-                client.setSpeakerEnabledAndConfigureSession(!speakerEnabled)
-                DispatchQueue.main.async {
-                    call.speakerEnabled = !speakerEnabled
-                }
-            }
+            let speakerEnabled = AVAudioSession.sharedInstance().currentRoute.outputs.first?.portType == .builtInSpeaker
+            client.setSpeakerEnabledAndConfigureSession(!speakerEnabled)
+            call.speakerEnabled = !speakerEnabled
         }
         .onAppear {
             deviceManager.call = call
@@ -429,10 +466,12 @@ struct ActiveCallOverlay: View {
     private func toggleCameraButton() -> some View {
         controlButton(call, call.localMediaSources.camera ? "video.fill" : "video.slash", padding: call.localMediaSources.camera ? 14 : 12) {
             Task {
-                client.setCameraEnabled(!call.localMediaSources.camera)
-                DispatchQueue.main.async {
-                    call.localMediaSources.camera = !call.localMediaSources.camera
-                }
+                if await WebRTCClient.isAuthorized(for: .video) {
+                    client.setCameraEnabled(!call.localMediaSources.camera)
+                    await MainActor.run {
+                        call.localMediaSources.camera = !call.localMediaSources.camera
+                    }
+                } else { WebRTCClient.showUnauthorizedAlert(for: .video) }
             }
         }
     }
@@ -440,7 +479,9 @@ struct ActiveCallOverlay: View {
     @ViewBuilder private func flipCameraButton() -> some View {
         controlButton(call, "arrow.triangle.2.circlepath", padding: 10) {
                 Task {
-                    client.flipCamera()
+                    if await WebRTCClient.isAuthorized(for: .video) {
+                        client.flipCamera()
+                    }
                 }
         }
     }
