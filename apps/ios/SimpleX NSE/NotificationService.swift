@@ -204,9 +204,10 @@ class NotificationService: UNNotificationServiceExtension {
                         notificationInfo = ntfInfo
                         receiveEntityId = id
                         receiveConnId = connEntity.conn.agentConnId
-                        let msgId = ntfInfo.ntfMsgMeta_.flatMap { $0.msgId }
-                        logger.debug("### NotificationService: receiveNtfMessages: expectedMessage = \(msgId ?? "nil", privacy: .public)")
-                        expectedMessage = msgId
+                        let expectedMsgId = ntfInfo.ntfMsgMeta_.flatMap { $0.msgId }
+                        let gotMsgId = ntfInfo.ntfMessage_.flatMap { $0.msgId }
+                        logger.debug("### NotificationService: receiveNtfMessages: expectedMsgId = \(expectedMsgId ?? "nil", privacy: .public), gotMsgId = \(gotMsgId ?? "nil", privacy: .public)")
+                        expectedMessage = expectedMsgId
                         shouldProcessNtf = true
                         return
                     }
