@@ -883,8 +883,8 @@ private fun chatItemShape(roundness: Float, density: Density, tailVisible: Boole
     }
   }
   if (roundness > 0) {
-    val bubbleInitialDrawPosition = if (tailVisible) msgTailWidth else 0f
-    quadraticBezierTo(bubbleInitialDrawPosition, 0f, bubbleInitialDrawPosition + rx, 0f) // Top-left corner
+    val bubbleInitialX = if (tailVisible) msgTailWidth else 0f
+    quadraticBezierTo(bubbleInitialX, 0f, bubbleInitialX + rx, 0f) // Top-left corner
   }
 
   if (sent) {
