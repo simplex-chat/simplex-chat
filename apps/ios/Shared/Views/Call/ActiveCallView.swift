@@ -474,6 +474,7 @@ struct ActiveCallOverlay: View {
                 } else { WebRTCClient.showUnauthorizedAlert(for: .video) }
             }
         }
+        .disabled(call.initialCallType == .audio && client.activeCall?.peerHasOldVersion == true)
     }
 
     @ViewBuilder private func flipCameraButton() -> some View {
