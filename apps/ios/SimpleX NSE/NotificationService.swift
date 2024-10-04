@@ -242,9 +242,10 @@ class NotificationService: UNNotificationServiceExtension {
             } else if allowedGetNextAttempts > 0, let receiveConnId = receiveConnId {
                 logger.debug("### NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .public): unexpected msgInfo, get next message")
                 allowedGetNextAttempts -= 1
-                let ntfInfo = apiGetConnNtfMessage(connId: receiveConnId)
-                if ntfInfo == nil {
-                    logger.debug("### NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .public): no next message, deliver best attempt")
+                if let ntfInfo = apiGetConnNtfMessage(connId: receiveConnId) {
+                    logger.debug("### NotificationService processNtf, on apiGetConnNtfMessage: msgInfo msgId = \(info.msgId, privacy: .public), ntfInfo msgId = \(ntfInfo.msgId, privacy: .public)")
+                } else {
+                    logger.debug("### NotificationService processNtf, on apiGetConnNtfMessage: msgInfo msgId = \(info.msgId, privacy: .public): no next message, deliver best attempt")
                     self.deliverBestAttemptNtf()
                 }
             } else {
