@@ -51,6 +51,7 @@ struct SheetRepresentable<Content: View>: UIViewControllerRepresentable {
         private let representer: SheetRepresentable<C>
         private var retainedFraction: CGFloat = 0
         private var sheetHeight: Double { hostingController.view.frame.height }
+        private var task: Task<Void, Never>?
 
         init(content: C, representer: SheetRepresentable<C>) {
             self.representer = representer
@@ -80,9 +81,27 @@ struct SheetRepresentable<Content: View>: UIViewControllerRepresentable {
                 : UICubicTimingParameters(animationCurve: .easeIn),
                 durationFactor: 1 - animator.fractionComplete
             )
+            handleVisibility()
+        }
+
+        func handleVisibility() {
+            if animator.isReversed {
+                task = Task {
+                    do {
+                        let sleepDuration = UInt64(sheetAnimationDuration * Double(NSEC_PER_SEC))
+                        try await Task.sleep(nanoseconds: sleepDuration)
+                        view.isHidden = true
+                    } catch { }
+                }
+            } else {
+                task?.cancel()
+                task = nil
+                view.isHidden = false
+            }
         }
 
         override func viewDidLoad() {
+            view.isHidden = true
             view.backgroundColor = .clear
             view.addGestureRecognizer(
                 UITapGestureRecognizer(target: self, action: #selector(tap(gesture:)))
@@ -121,6 +140,8 @@ struct SheetRepresentable<Content: View>: UIViewControllerRepresentable {
                         }
                     }
                 }
+                animator.startAnimation()
+                animator.pauseAnimation()
             }
         }
 
@@ -140,6 +161,7 @@ struct SheetRepresentable<Content: View>: UIViewControllerRepresentable {
                 let fractionRemaining = 1 - animator.fractionComplete
                 let durationFactor = min(max(fractionRemaining / (abs(velocity) / defaultVelocity), 0.5), 1)
                 animator.continueAnimation(withTimingParameters: nil, durationFactor: durationFactor * fractionRemaining)
+                handleVisibility()
                 DispatchQueue.main.asyncAfter(deadline: .now() + sheetAnimationDuration) {
                     self.representer.isPresented = !self.animator.isReversed
                 }
