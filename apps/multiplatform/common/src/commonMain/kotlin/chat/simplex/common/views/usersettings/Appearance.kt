@@ -35,6 +35,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.ThemeManager.colorFromReadableHex
 import chat.simplex.common.ui.theme.ThemeManager.toReadableHex
 import chat.simplex.common.views.chat.item.PreviewChatItemView
+import chat.simplex.common.views.chat.item.msgTailWidthDp
 import chat.simplex.res.MR
 import com.godaddy.android.colorpicker.ClassicColorPicker
 import com.godaddy.android.colorpicker.HsvColor
@@ -81,6 +82,31 @@ object AppearanceScope {
           )
         )
       }
+    }
+  }
+
+  @Composable
+  fun MessageShapeSection() {
+    SectionView(stringResource(MR.strings.settings_section_title_message_shape).uppercase(), contentPadding = PaddingValues()) {
+      Row(modifier = Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING + 4.dp ) ,verticalAlignment = Alignment.CenterVertically) {
+        Text(stringResource(MR.strings.settings_message_shape_corner), color = colors.onBackground)
+        Spacer(Modifier.width(10.dp))
+        Slider(
+          remember { appPreferences.chatItemRoundness.state }.value,
+          valueRange = 0f..1f,
+          steps = 20,
+          onValueChange = {
+            val diff = it % 0.05f
+            appPreferences.chatItemRoundness.set(it + (if (diff >= 0.025f) -diff + 0.05f else -diff))
+            saveThemeToDatabase(null)
+          },
+          colors = SliderDefaults.colors(
+            activeTickColor = Color.Transparent,
+            inactiveTickColor = Color.Transparent,
+          )
+        )
+      }
+      SettingsPreferenceItem(icon = null, stringResource(MR.strings.settings_message_shape_tail), appPreferences.chatItemTail)
     }
   }
 
@@ -169,13 +195,17 @@ object AppearanceScope {
       .padding(DEFAULT_PADDING_HALF)
     ) {
       if (withMessages) {
-        val alice = remember { ChatItem.getSampleData(1, CIDirection.DirectRcv(), Clock.System.now(), generalGetString(MR.strings.wallpaper_preview_hello_bob)) }
-        PreviewChatItemView(alice)
-        PreviewChatItemView(
-          ChatItem.getSampleData(2, CIDirection.DirectSnd(), Clock.System.now(), stringResource(MR.strings.wallpaper_preview_hello_alice),
-          quotedItem = CIQuote(alice.chatDir, alice.id, sentAt = alice.meta.itemTs, formattedText = alice.formattedText, content = MsgContent.MCText(alice.content.text))
-        )
-        )
+        val chatItemTail = remember { appPreferences.chatItemTail.state }
+
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = if (chatItemTail.value) Modifier else Modifier.padding(horizontal = msgTailWidthDp)) {
+          val alice = remember { ChatItem.getSampleData(1, CIDirection.DirectRcv(), Clock.System.now(), generalGetString(MR.strings.wallpaper_preview_hello_bob)) }
+          PreviewChatItemView(alice)
+          PreviewChatItemView(
+            ChatItem.getSampleData(2, CIDirection.DirectSnd(), Clock.System.now(), stringResource(MR.strings.wallpaper_preview_hello_alice),
+              quotedItem = CIQuote(alice.chatDir, alice.id, sentAt = alice.meta.itemTs, formattedText = alice.formattedText, content = MsgContent.MCText(alice.content.text))
+            )
+          )
+        }
       } else {
         Box(Modifier.fillMaxSize())
       }
