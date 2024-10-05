@@ -454,7 +454,7 @@
 /* No comment provided by engineer. */
 "All new messages from %@ will be hidden!" = "来自 %@ 的所有新消息都将被隐藏!";
 
-/* No comment provided by engineer. */
+/* profile dropdown */
 "All profiles" = "所有配置文件";
 
 /* No comment provided by engineer. */
@@ -1996,7 +1996,7 @@
 /* No comment provided by engineer. */
 "Error stopping chat" = "停止聊天错误";
 
-/* No comment provided by engineer. */
+/* alertTitle */
 "Error switching profile!" = "切换资料错误！";
 
 /* No comment provided by engineer. */
@@ -2023,8 +2023,7 @@
 /* No comment provided by engineer. */
 "Error: " = "错误： ";
 
-/* file error text
-   snd error text */
+/* alert message */
 "Error: %@" = "错误： ％@";
 
 /* No comment provided by engineer. */
@@ -4904,9 +4903,6 @@
 
 /* No comment provided by engineer. */
 "you" = "您";
-
-/* No comment provided by engineer. */
-"You" = "您";
 
 /* No comment provided by engineer. */
 "You **must not** use the same database on two devices." = "您 **不得** 在两台设备上使用相同的数据库。";

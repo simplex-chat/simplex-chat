@@ -413,7 +413,7 @@
     <string name="icon_descr_group_inactive">Gruppo inattivo</string>
     <string name="rcv_conn_event_switch_queue_phase_completed">indirizzo cambiato per te</string>
     <string name="rcv_group_event_changed_member_role">ha cambiato il ruolo di %s in %s</string>
-    <string name="rcv_group_event_changed_your_role">cambiato il tuo ruolo in %s</string>
+    <string name="rcv_group_event_changed_your_role">ha cambiato il tuo ruolo in %s</string>
     <string name="rcv_conn_event_switch_queue_phase_changing">cambio indirizzo…</string>
     <string name="snd_conn_event_switch_queue_phase_changing_for_member">cambio indirizzo per %s…</string>
     <string name="rcv_group_event_member_connected">si è connesso/a</string>
@@ -2105,4 +2105,7 @@
     <string name="compose_forward_messages_n">Inoltro di %1$s messaggi</string>
     <string name="forward_multiple">Inoltra messaggi…</string>
     <string name="compose_save_messages_n">Salvataggio di %1$s messaggi</string>
+    <string name="icon_descr_sound_muted">Audio silenziato</string>
+    <string name="error_initializing_web_view_wrong_arch">Errore di inizializzazione di WebView. Assicurati di avere WebView installato e che la sua architettura supportata sia arm64.
+\nErrore: %s</string>
 </resources>

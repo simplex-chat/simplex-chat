@@ -1395,7 +1395,7 @@
 /* No comment provided by engineer. */
 "Error stopping chat" = "Virhe keskustelun lopettamisessa";
 
-/* No comment provided by engineer. */
+/* alertTitle */
 "Error switching profile!" = "Virhe profiilin vaihdossa!";
 
 /* No comment provided by engineer. */
@@ -1416,8 +1416,7 @@
 /* No comment provided by engineer. */
 "Error: " = "Virhe: ";
 
-/* file error text
-   snd error text */
+/* alert message */
 "Error: %@" = "Virhe: %@";
 
 /* No comment provided by engineer. */
@@ -3307,9 +3306,6 @@
 
 /* pref value */
 "yes" = "kyllä";
-
-/* No comment provided by engineer. */
-"You" = "Sinä";
 
 /* No comment provided by engineer. */
 "You accepted connection" = "Hyväksyit yhteyden";

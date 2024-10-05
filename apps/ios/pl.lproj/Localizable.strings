@@ -454,7 +454,7 @@
 /* No comment provided by engineer. */
 "All new messages from %@ will be hidden!" = "Wszystkie nowe wiadomości z %@ zostaną ukryte!";
 
-/* No comment provided by engineer. */
+/* profile dropdown */
 "All profiles" = "Wszystkie profile";
 
 /* No comment provided by engineer. */
@@ -1996,7 +1996,7 @@
 /* No comment provided by engineer. */
 "Error stopping chat" = "Błąd zatrzymania czatu";
 
-/* No comment provided by engineer. */
+/* alertTitle */
 "Error switching profile!" = "Błąd przełączania profilu!";
 
 /* No comment provided by engineer. */
@@ -2023,8 +2023,7 @@
 /* No comment provided by engineer. */
 "Error: " = "Błąd: ";
 
-/* file error text
-   snd error text */
+/* alert message */
 "Error: %@" = "Błąd: %@";
 
 /* No comment provided by engineer. */
@@ -4904,9 +4903,6 @@
 
 /* No comment provided by engineer. */
 "you" = "Ty";
-
-/* No comment provided by engineer. */
-"You" = "Ty";
 
 /* No comment provided by engineer. */
 "You **must not** use the same database on two devices." = "**Nie możesz** używać tej samej bazy na dwóch urządzeniach.";
