@@ -200,7 +200,7 @@ class NotificationService: UNNotificationServiceExtension {
                         ? .nse(createConnectionEventNtf(ntfInfo.user, connEntity))
                         : .empty
                     )
-                    if let id = connEntity.id, ntfInfo.ntfMsgMeta_ != nil {
+                    if let id = connEntity.id, ntfInfo.expectedMsg_ != nil {
                         notificationInfo = ntfInfo
                         receiveEntityId = id
                         receiveConnId = connEntity.conn.agentConnId
@@ -225,7 +225,7 @@ class NotificationService: UNNotificationServiceExtension {
     }
 
     func processReceivedNtf(_ ntf: NSENotification) -> Bool {
-        guard let ntfInfo = notificationInfo, let expectedMsgTs = ntfInfo.ntfMsgMeta_?.msgTs else { return false }
+        guard let ntfInfo = notificationInfo, let expectedMsgTs = ntfInfo.expectedMsg_?.msgTs else { return false }
         if !ntfInfo.user.showNotifications {
             self.setBestAttemptNtf(.empty)
         }
