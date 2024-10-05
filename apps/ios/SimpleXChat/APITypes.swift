@@ -2251,6 +2251,8 @@ public struct AppSettings: Codable, Equatable {
     public var iosCallKitEnabled: Bool? = nil
     public var iosCallKitCallsInRecents: Bool? = nil
     public var uiProfileImageCornerRadius: Double? = nil
+    public var uiChatItemRoundness: Double? = nil
+    public var uiChatItemTail: Bool? = nil
     public var uiColorScheme: String? = nil
     public var uiDarkColorScheme: String? = nil
     public var uiCurrentThemeIds: [String: String]? = nil
@@ -2283,6 +2285,8 @@ public struct AppSettings: Codable, Equatable {
         if iosCallKitEnabled != def.iosCallKitEnabled { empty.iosCallKitEnabled = iosCallKitEnabled }
         if iosCallKitCallsInRecents != def.iosCallKitCallsInRecents { empty.iosCallKitCallsInRecents = iosCallKitCallsInRecents }
         if uiProfileImageCornerRadius != def.uiProfileImageCornerRadius { empty.uiProfileImageCornerRadius = uiProfileImageCornerRadius }
+        if uiChatItemRoundness != def.uiChatItemRoundness { empty.uiChatItemRoundness = uiChatItemRoundness }
+        if uiChatItemTail != def.uiChatItemTail { empty.uiChatItemTail = uiChatItemTail }
         if uiColorScheme != def.uiColorScheme { empty.uiColorScheme = uiColorScheme }
         if uiDarkColorScheme != def.uiDarkColorScheme { empty.uiDarkColorScheme = uiDarkColorScheme }
         if uiCurrentThemeIds != def.uiCurrentThemeIds { empty.uiCurrentThemeIds = uiCurrentThemeIds }
@@ -2316,6 +2320,8 @@ public struct AppSettings: Codable, Equatable {
             iosCallKitEnabled: true,
             iosCallKitCallsInRecents: false,
             uiProfileImageCornerRadius: 22.5,
+            uiChatItemRoundness: 0.75,
+            uiChatItemTail: true,
             uiColorScheme: DefaultTheme.SYSTEM_THEME_NAME,
             uiDarkColorScheme: DefaultTheme.SIMPLEX.themeName,
             uiCurrentThemeIds: nil as [String: String]?,

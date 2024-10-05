@@ -1886,4 +1886,9 @@
     <string name="cannot_share_message_alert_title">メッセージを送信することができません</string>
     <string name="cant_call_contact_alert_title">連絡先と通話することができません</string>
     <string name="servers_info_sessions_connecting">接続待ち</string>
+    <string name="privacy_media_blur_radius_off">無し</string>
+    <string name="privacy_media_blur_radius_soft">控え目</string>
+    <string name="network_options_save_and_reconnect">保存して再接続</string>
+    <string name="privacy_media_blur_radius_strong">強め</string>
+    <string name="privacy_media_blur_radius_medium">普通</string>
 </resources>

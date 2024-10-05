@@ -122,7 +122,7 @@ extension ThemeWallpaper {
         let preset: String? = if case let WallpaperType.preset(filename, _) = type { filename } else { nil }
         let scale: Float? = if case let WallpaperType.preset(_, scale) = type { scale } else { if case let WallpaperType.image(_, scale, _) = type { scale } else { 1.0 } }
         let scaleType: WallpaperScaleType? = if case let WallpaperType.image(_, _, scaleType) = type { scaleType } else { nil }
-        let image: String? = if case WallpaperType.image = type, let image = type.uiImage { resizeImageToStrSize(image, maxDataSize: 5_000_000) } else { nil }
+        let image: String? = if case WallpaperType.image = type, let image = type.uiImage { resizeImageToStrSizeSync(image, maxDataSize: 5_000_000) } else { nil }
         return ThemeWallpaper (
             preset: preset,
             scale: scale,

@@ -175,8 +175,23 @@
 /* time interval */
 "%d days" = "%d giorni";
 
+/* forward confirmation reason */
+"%d file(s) are still being downloaded." = "%d file è/sono ancora in scaricamento.";
+
+/* forward confirmation reason */
+"%d file(s) failed to download." = "%d file ha/hanno fallito lo scaricamento.";
+
+/* forward confirmation reason */
+"%d file(s) were deleted." = "%d file è/sono stato/i eliminato/i.";
+
+/* forward confirmation reason */
+"%d file(s) were not downloaded." = "%d file non è/sono stato/i scaricato/i.";
+
 /* time interval */
 "%d hours" = "%d ore";
+
+/* alert title */
+"%d messages not forwarded" = "%d messaggi non inoltrati";
 
 /* time interval */
 "%d min" = "%d min";
@@ -457,7 +472,7 @@
 /* No comment provided by engineer. */
 "All new messages from %@ will be hidden!" = "Tutti i nuovi messaggi da %@ verrranno nascosti!";
 
-/* No comment provided by engineer. */
+/* profile dropdown */
 "All profiles" = "Tutti gli profili";
 
 /* No comment provided by engineer. */
@@ -849,7 +864,7 @@
 "changed role of %@ to %@" = "ha cambiato il ruolo di %1$@ in %2$@";
 
 /* rcv group event chat item */
-"changed your role to %@" = "cambiato il tuo ruolo in %@";
+"changed your role to %@" = "ha cambiato il tuo ruolo in %@";
 
 /* chat item text */
 "changing address for %@…" = "cambio indirizzo per %@…";
@@ -1624,6 +1639,9 @@
 "Do NOT send messages directly, even if your or destination server does not support private routing." = "NON inviare messaggi direttamente, anche se il tuo server o quello di destinazione non supporta l'instradamento privato.";
 
 /* No comment provided by engineer. */
+"Do not use credentials with proxy." = "Non usare credenziali con proxy.";
+
+/* No comment provided by engineer. */
 "Do NOT use private routing." = "NON usare l'instradamento privato.";
 
 /* No comment provided by engineer. */
@@ -1653,6 +1671,9 @@
 
 /* server test step */
 "Download file" = "Scarica file";
+
+/* alert action */
+"Download files" = "Scarica i file";
 
 /* No comment provided by engineer. */
 "Downloaded" = "Scaricato";
@@ -2020,7 +2041,7 @@
 /* No comment provided by engineer. */
 "Error switching profile" = "Errore nel cambio di profilo";
 
-/* No comment provided by engineer. */
+/* alertTitle */
 "Error switching profile!" = "Errore nel cambio di profilo!";
 
 /* No comment provided by engineer. */
@@ -2047,8 +2068,7 @@
 /* No comment provided by engineer. */
 "Error: " = "Errore: ";
 
-/* file error text
-   snd error text */
+/* alert message */
 "Error: %@" = "Errore: %@";
 
 /* No comment provided by engineer. */
@@ -2107,6 +2127,9 @@
 
 /* No comment provided by engineer. */
 "File error" = "Errore del file";
+
+/* alert message */
+"File errors:\n%@" = "Errori di file:\n%@";
 
 /* file error text */
 "File not found - most likely file was deleted or cancelled." = "File non trovato - probabilmente è stato eliminato o annullato.";
@@ -2189,8 +2212,17 @@
 /* chat item action */
 "Forward" = "Inoltra";
 
+/* alert title */
+"Forward %d message(s)?" = "Inoltrare %d messaggio/i?";
+
 /* No comment provided by engineer. */
 "Forward and save messages" = "Inoltra e salva i messaggi";
+
+/* alert action */
+"Forward messages" = "Inoltra i messaggi";
+
+/* alert message */
+"Forward messages without files?" = "Inoltrare i messaggi senza file?";
 
 /* No comment provided by engineer. */
 "forwarded" = "inoltrato";
@@ -2200,6 +2232,9 @@
 
 /* No comment provided by engineer. */
 "Forwarded from" = "Inoltrato da";
+
+/* No comment provided by engineer. */
+"Forwarding %lld messages" = "Inoltro di %lld messaggi";
 
 /* No comment provided by engineer. */
 "Forwarding server %@ failed to connect to destination server %@. Please try later." = "Il server di inoltro %@ non è riuscito a connettersi al server di destinazione %@. Riprova più tardi.";
@@ -2589,6 +2624,9 @@
 "iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications." = "Il portachiavi di iOS verrà usato per archiviare in modo sicuro la password dopo il riavvio dell'app o la modifica della password; consentirà di ricevere notifiche push.";
 
 /* No comment provided by engineer. */
+"IP address" = "Indirizzo IP";
+
+/* No comment provided by engineer. */
 "Irreversible message deletion" = "Eliminazione irreversibile del messaggio";
 
 /* No comment provided by engineer. */
@@ -2873,6 +2911,9 @@
 /* No comment provided by engineer. */
 "Messages sent" = "Messaggi inviati";
 
+/* alert message */
+"Messages were deleted after you selected them." = "I messaggi sono stati eliminati dopo che li hai selezionati.";
+
 /* No comment provided by engineer. */
 "Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." = "I messaggi, i file e le chiamate sono protetti da **crittografia end-to-end** con perfect forward secrecy, ripudio e recupero da intrusione.";
 
@@ -3083,6 +3124,9 @@
 /* No comment provided by engineer. */
 "Nothing selected" = "Nessuna selezione";
 
+/* alert title */
+"Nothing to forward!" = "Niente da inoltrare!";
+
 /* No comment provided by engineer. */
 "Notifications" = "Notifiche";
 
@@ -3235,6 +3279,9 @@
 /* No comment provided by engineer. */
 "other errors" = "altri errori";
 
+/* alert message */
+"Other file errors:\n%@" = "Altri errori di file:\n%@";
+
 /* member role */
 "owner" = "proprietario";
 
@@ -3255,6 +3302,9 @@
 
 /* No comment provided by engineer. */
 "Passcode set!" = "Codice di accesso impostato!";
+
+/* No comment provided by engineer. */
+"Password" = "Password";
 
 /* No comment provided by engineer. */
 "Password to show" = "Password per mostrare";
@@ -3351,6 +3401,9 @@
 
 /* No comment provided by engineer. */
 "Polish interface" = "Interfaccia polacca";
+
+/* No comment provided by engineer. */
+"Port" = "Porta";
 
 /* server test error */
 "Possibly, certificate fingerprint in server address is incorrect" = "Probabilmente l'impronta del certificato nell'indirizzo del server è sbagliata";
@@ -3462,6 +3515,9 @@
 
 /* No comment provided by engineer. */
 "Proxied servers" = "Server via proxy";
+
+/* No comment provided by engineer. */
+"Proxy requires password" = "Il proxy richiede una password";
 
 /* No comment provided by engineer. */
 "Push notifications" = "Notifiche push";
@@ -3803,6 +3859,9 @@
 
 /* No comment provided by engineer. */
 "Saved WebRTC ICE servers will be removed" = "I server WebRTC ICE salvati verranno rimossi";
+
+/* No comment provided by engineer. */
+"Saving %lld messages" = "Salvataggio di %lld messaggi";
 
 /* No comment provided by engineer. */
 "Scale" = "Scala";
@@ -4208,6 +4267,9 @@
 
 /* No comment provided by engineer. */
 "SMP server" = "Server SMP";
+
+/* No comment provided by engineer. */
+"SOCKS proxy" = "Proxy SOCKS";
 
 /* blur media */
 "Soft" = "Leggera";
@@ -4744,6 +4806,9 @@
 "Use SimpleX Chat servers?" = "Usare i server di SimpleX Chat?";
 
 /* No comment provided by engineer. */
+"Use SOCKS proxy" = "Usa proxy SOCKS";
+
+/* No comment provided by engineer. */
 "Use the app while in the call." = "Usa l'app mentre sei in chiamata.";
 
 /* No comment provided by engineer. */
@@ -4754,6 +4819,9 @@
 
 /* No comment provided by engineer. */
 "User selection" = "Selezione utente";
+
+/* No comment provided by engineer. */
+"Username" = "Nome utente";
 
 /* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "Utilizzo dei server SimpleX Chat.";
@@ -4955,9 +5023,6 @@
 
 /* No comment provided by engineer. */
 "you" = "tu";
-
-/* No comment provided by engineer. */
-"You" = "Tu";
 
 /* No comment provided by engineer. */
 "You **must not** use the same database on two devices." = "**Non devi** usare lo stesso database su due dispositivi.";
@@ -5210,6 +5275,9 @@
 
 /* No comment provided by engineer. */
 "Your contacts will remain connected." = "I tuoi contatti resteranno connessi.";
+
+/* No comment provided by engineer. */
+"Your credentials may be sent unencrypted." = "Le credenziali potrebbero essere inviate in chiaro.";
 
 /* No comment provided by engineer. */
 "Your current chat database will be DELETED and REPLACED with the imported one." = "Il tuo attuale database della chat verrà ELIMINATO e SOSTITUITO con quello importato.";

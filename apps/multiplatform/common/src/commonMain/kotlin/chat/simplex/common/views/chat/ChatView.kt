@@ -1036,7 +1036,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
           tryOrShowError("${cItem.id}ChatItem", error = {
             CIBrokenComposableView(if (cItem.chatDir.sent) Alignment.CenterEnd else Alignment.CenterStart)
           }) {
-            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools, showViaProxy = showViaProxy, showTimestamp = itemSeparation.timestamp)
+            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp)
           }
         }
 
@@ -1081,6 +1081,15 @@ fun BoxWithConstraintsScope.ChatItemsList(
             }
           }
 
+          @Composable
+          fun adjustTailPaddingOffset(originalPadding: Dp, start: Boolean): Dp {
+            val chatItemTail = remember { appPreferences.chatItemTail.state }
+            val style = shapeStyle(cItem, chatItemTail.value, itemSeparation.largeGap, true)
+            val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
+
+            return originalPadding + (if (tailRendered) 0.dp else if (start) msgTailWidthDp * 2 else msgTailWidthDp)
+          }
+
           Box {
             val voiceWithTransparentBack = cItem.content.msgContent is MsgContent.MCVoice && cItem.content.text.isEmpty() && cItem.quotedItem == null && cItem.meta.itemForwarded == null
             val selectionVisible = selectedChatItems.value != null && cItem.canBeDeletedForSelf
@@ -1099,7 +1108,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                   Column(
                     Modifier
                       .padding(top = 8.dp)
-                      .padding(start = 8.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp)
+                      .padding(start = 8.dp, end = if (voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
                       .fillMaxWidth()
                       .then(swipeableModifier),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -1111,7 +1120,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                         Text(
                           memberNames(member, prevMember, memCount),
                           Modifier
-                            .padding(start = MEMBER_IMAGE_SIZE + DEFAULT_PADDING_HALF)
+                            .padding(start = (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + DEFAULT_PADDING_HALF)
                             .weight(1f, false),
                           fontSize = 13.5.sp,
                           color = MaterialTheme.colors.secondary,
@@ -1119,9 +1128,13 @@ fun BoxWithConstraintsScope.ChatItemsList(
                           maxLines = 1
                         )
                         if (memCount == 1 && member.memberRole > GroupMemberRole.Member) {
+                          val chatItemTail = remember { appPreferences.chatItemTail.state }
+                          val style = shapeStyle(cItem, chatItemTail.value, itemSeparation.largeGap, true)
+                          val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
+
                           Text(
                             member.memberRole.text,
-                            Modifier.padding(start = DEFAULT_PADDING_HALF * 1.5f, end = DEFAULT_PADDING_HALF),
+                            Modifier.padding(start = DEFAULT_PADDING_HALF * 1.5f, end = DEFAULT_PADDING_HALF + if (tailRendered) msgTailWidthDp else 0.dp),
                             fontSize = 13.5.sp,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colors.secondary,
@@ -1137,12 +1150,11 @@ fun BoxWithConstraintsScope.ChatItemsList(
                         androidx.compose.animation.AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                           SelectedChatItem(Modifier, cItem.id, selectedChatItems)
                         }
-                        Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() },
-                          horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
                           Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
                             MemberImage(member)
                           }
-                          Box(modifier = Modifier.padding(top = 2.dp)) {
+                          Box(modifier = Modifier.padding(top = 2.dp, start = 4.dp).chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)) {
                             ChatItemViewShortHand(cItem, itemSeparation, range, false)
                           }
                         }
@@ -1164,7 +1176,8 @@ fun BoxWithConstraintsScope.ChatItemsList(
                     }
                     Row(
                       Modifier
-                        .padding(start = 8.dp + MEMBER_IMAGE_SIZE + 4.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp)
+                        .padding(start = 8.dp + (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + 4.dp, end = if (voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
+                        .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
                         .then(swipeableOrSelectionModifier)
                     ) {
                       ChatItemViewShortHand(cItem, itemSeparation, range)
@@ -1178,7 +1191,8 @@ fun BoxWithConstraintsScope.ChatItemsList(
                   }
                   Box(
                     Modifier
-                      .padding(start = if (voiceWithTransparentBack) 12.dp else 104.dp, end = 12.dp)
+                      .padding(start = if (voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(104.dp, start = true), end = 12.dp)
+                      .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
                       .then(if (selectionVisible) Modifier else swipeableModifier)
                   ) {
                     ChatItemViewShortHand(cItem, itemSeparation, range)
@@ -1190,11 +1204,14 @@ fun BoxWithConstraintsScope.ChatItemsList(
                 AnimatedVisibility (selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                   SelectedChatItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
                 }
+
                 Box(
                   Modifier.padding(
-                    start = if (sent && !voiceWithTransparentBack) 76.dp else 12.dp,
-                    end = if (sent || voiceWithTransparentBack) 12.dp else 76.dp,
-                  ).then(if (!selectionVisible || !sent) swipeableOrSelectionModifier else Modifier)
+                    start = if (sent && !voiceWithTransparentBack) adjustTailPaddingOffset(76.dp, start = true) else 12.dp,
+                    end = if (sent || voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(76.dp, start = false),
+                  )
+                    .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
+                    .then(if (!selectionVisible || !sent) swipeableOrSelectionModifier else Modifier)
                 ) {
                   ChatItemViewShortHand(cItem, itemSeparation, range)
                 }
