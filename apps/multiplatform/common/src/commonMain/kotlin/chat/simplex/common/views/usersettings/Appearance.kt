@@ -96,7 +96,8 @@ object AppearanceScope {
           valueRange = 0f..1f,
           steps = 20,
           onValueChange = {
-            appPreferences.chatItemRoundness.set(it)
+            val diff = it % 0.05f
+            appPreferences.chatItemRoundness.set(it + (if (diff >= 0.025f) -diff + 0.05f else -diff))
             saveThemeToDatabase(null)
           },
           colors = SliderDefaults.colors(
