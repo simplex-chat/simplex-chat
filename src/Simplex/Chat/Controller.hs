@@ -745,8 +745,8 @@ data ChatResponse
   | CRUserContactLinkSubError {chatError :: ChatError} -- TODO delete
   | CRNtfTokenStatus {status :: NtfTknStatus}
   | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode, ntfServer :: NtfServer}
-  | CRNtfMessages {user_ :: Maybe User, connEntity_ :: Maybe ConnectionEntity, ntfMsgMeta_ :: Maybe NtfMsgMeta, ntfMessage_ :: Maybe NtfMsgInfo}
-  | CRConnNtfMessage {ntfMessage_ :: Maybe NtfMsgInfo}
+  | CRNtfMessages {user_ :: Maybe User, connEntity_ :: Maybe ConnectionEntity, expectedMsg_ :: Maybe NtfMsgInfo, receivedMsg_ :: Maybe NtfMsgInfo}
+  | CRConnNtfMessage {receivedMsg_ :: Maybe NtfMsgInfo}
   | CRNtfMessage {user :: User, connEntity :: ConnectionEntity, ntfMessage :: NtfMsgAckInfo}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
@@ -1051,20 +1051,14 @@ instance FromJSON ComposedMessage where
   parseJSON invalid =
     JT.prependFailure "bad ComposedMessage, " (JT.typeMismatch "Object" invalid)
 
--- Decrypted ntf meta of the expected message (the one notification was sent for)
-data NtfMsgMeta = NtfMsgMeta {msgId :: Text, msgTs :: UTCTime}
-  deriving (Show)
-
-toNtfMsgMeta :: NMsgMeta -> NtfMsgMeta
-toNtfMsgMeta NMsgMeta {msgId, msgTs} = NtfMsgMeta {msgId = decodeLatin1 $ strEncode msgId, msgTs = systemToUTCTime msgTs}
-
--- Info of the first message retrieved by agent using GET
--- (may differ from the expected message due to, for example, coalescing or loss of notifications)
 data NtfMsgInfo = NtfMsgInfo {msgId :: Text, msgTs :: UTCTime}
   deriving (Show)
 
-ntfMsgInfo :: SMPMsgMeta -> NtfMsgInfo
-ntfMsgInfo SMPMsgMeta {msgId, msgTs} = NtfMsgInfo {msgId = decodeLatin1 $ strEncode msgId, msgTs = systemToUTCTime msgTs}
+receivedMsgInfo :: SMPMsgMeta -> NtfMsgInfo
+receivedMsgInfo SMPMsgMeta {msgId, msgTs} = NtfMsgInfo {msgId = decodeLatin1 $ strEncode msgId, msgTs = systemToUTCTime msgTs}
+
+expectedMsgInfo :: NMsgMeta -> NtfMsgInfo
+expectedMsgInfo NMsgMeta {msgId, msgTs} = NtfMsgInfo {msgId = decodeLatin1 $ strEncode msgId, msgTs = systemToUTCTime msgTs}
 
 -- Acknowledged message info - used to correlate with expected message
 data NtfMsgAckInfo = NtfMsgAckInfo {msgId :: Text, msgTs_ :: Maybe UTCTime}
@@ -1519,8 +1513,6 @@ $(JQ.deriveJSON defaultJSON ''PendingSubStatus)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "AE") ''ArchiveError)
 
 $(JQ.deriveJSON defaultJSON ''UserProfileUpdateSummary)
-
-$(JQ.deriveJSON defaultJSON ''NtfMsgMeta)
 
 $(JQ.deriveJSON defaultJSON ''NtfMsgInfo)
 

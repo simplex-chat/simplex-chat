@@ -1457,10 +1457,19 @@ processChatCommand' vr = \case
     connEntity_ <-
       pure user_ $>>= \user ->
         withStore (\db -> Just <$> getConnectionEntity db vr user agentConnId) `catchChatError` (\e -> toView (CRChatError (Just user) e) $> Nothing)
-    pure CRNtfMessages {user_, connEntity_, ntfMsgMeta_ = toNtfMsgMeta <$> nMsgMeta, ntfMessage_ = ntfMsgInfo <$> msg}
+    pure
+      CRNtfMessages
+        { user_,
+          connEntity_,
+          -- Decrypted ntf meta of the expected message (the one notification was sent for)
+          expectedMsg_ = expectedMsgInfo <$> nMsgMeta,
+          -- Info of the first message retrieved by agent using GET
+          -- (may differ from the expected message due to, for example, coalescing or loss of notifications)
+          receivedMsg_ = receivedMsgInfo <$> msg
+        }
   ApiGetConnNtfMessage (AgentConnId connId) -> withUser $ \_ -> do
     msg <- withAgent $ \a -> getConnectionMessage a connId
-    pure $ CRConnNtfMessage (ntfMsgInfo <$> msg)
+    pure $ CRConnNtfMessage (receivedMsgInfo <$> msg)
   APIGetUserProtoServers userId (AProtocolType p) -> withUserId userId $ \user -> withServerProtocol p $ do
     cfg@ChatConfig {defaultServers} <- asks config
     servers <- withFastStore' (`getProtocolServers` user)
