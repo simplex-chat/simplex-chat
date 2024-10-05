@@ -1196,6 +1196,9 @@
   <string name="settings_section_title_icon">APP ICON</string>
   <string name="settings_section_title_themes">THEMES</string>
   <string name="settings_section_title_profile_images">Profile images</string>
+  <string name="settings_section_title_message_shape">Message shape</string>
+  <string name="settings_message_shape_corner">Corner</string>
+  <string name="settings_message_shape_tail">Tail</string>
   <string name="settings_section_title_chat_theme">Chat theme</string>
   <string name="settings_section_title_user_theme">Profile theme</string>
   <string name="settings_section_title_chat_colors">Chat colors</string>
