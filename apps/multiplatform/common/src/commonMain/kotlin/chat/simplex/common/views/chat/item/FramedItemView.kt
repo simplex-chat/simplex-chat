@@ -213,15 +213,12 @@ fun FramedItemView(
               is CIDeleted.Moderated -> {
                 FramedItemHeader(String.format(stringResource(MR.strings.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName), true, painterResource(MR.images.ic_flag))
               }
-
               is CIDeleted.Blocked -> {
                 FramedItemHeader(stringResource(MR.strings.blocked_item_description), true, painterResource(MR.images.ic_back_hand))
               }
-
               is CIDeleted.BlockedByAdmin -> {
                 FramedItemHeader(stringResource(MR.strings.blocked_by_admin_item_description), true, painterResource(MR.images.ic_back_hand))
               }
-
               is CIDeleted.Deleted -> {
                 FramedItemHeader(stringResource(MR.strings.marked_deleted_description), true, painterResource(MR.images.ic_delete))
               }
@@ -256,7 +253,6 @@ fun FramedItemView(
                   CIMarkdownText(ci, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 }
               }
-
               is MsgContent.MCVideo -> {
                 CIVideoView(image = mc.image, mc.duration, file = ci.file, imageProvider ?: return@PriorityLayout, showMenu, smallView = false, receiveFile = receiveFile)
                 if (mc.text == "" && !ci.meta.isLive) {
@@ -265,14 +261,12 @@ fun FramedItemView(
                   CIMarkdownText(ci, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 }
               }
-
               is MsgContent.MCVoice -> {
                 CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = true, ci, timedMessagesTTL = chatTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp, longClick = { onLinkLongClick("") }, receiveFile = receiveFile)
                 if (mc.text != "") {
                   CIMarkdownText(ci, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 }
               }
-
               is MsgContent.MCFile -> ciFileView(ci, mc.text)
               is MsgContent.MCUnknown ->
                 if (ci.file == null) {
@@ -280,20 +274,17 @@ fun FramedItemView(
                 } else {
                   ciFileView(ci, mc.text)
                 }
-
               is MsgContent.MCLink -> {
                 ChatItemLinkView(mc.preview, showMenu, onLongClick = { showMenu.value = true })
                 Box(Modifier.widthIn(max = DEFAULT_MAX_IMAGE_WIDTH)) {
                   CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 }
               }
-
               else -> CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
             }
           }
         }
       }
-
       Box(
         Modifier
           .padding(
