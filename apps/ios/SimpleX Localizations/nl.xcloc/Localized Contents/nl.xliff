@@ -8899,9 +8899,9 @@ laatst ontvangen bericht: %2$@</target>
         <target>je bent uitgenodigd voor de groep</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="you are observer" xml:space="preserve">
+      <trans-unit id="you are observer" xml:space="preserve" approved="no">
         <source>you are observer</source>
-        <target>jij bent waarnemer</target>
+        <target state="translated">je bent waarnemer</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you blocked %@" xml:space="preserve">
@@ -8929,9 +8929,9 @@ laatst ontvangen bericht: %2$@</target>
         <target>je veranderde de rol van %1$@ in %2$@</target>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="you left" xml:space="preserve">
+      <trans-unit id="you left" xml:space="preserve" approved="no">
         <source>you left</source>
-        <target>jij bent vertrokken</target>
+        <target state="translated">je bent vertrokken</target>
         <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="you removed %@" xml:space="preserve">
