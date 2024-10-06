@@ -2108,4 +2108,7 @@
     <string name="icon_descr_sound_muted">Audio silenziato</string>
     <string name="error_initializing_web_view_wrong_arch">Errore di inizializzazione di WebView. Assicurati di avere WebView installato e che la sua architettura supportata sia arm64.
 \nErrore: %s</string>
+    <string name="settings_message_shape_corner">Angolo</string>
+    <string name="settings_section_title_message_shape">Forma del messaggio</string>
+    <string name="settings_message_shape_tail">Coda</string>
 </resources>
