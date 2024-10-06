@@ -2099,4 +2099,7 @@
     <string name="icon_descr_sound_muted">Hang elnémítva</string>
     <string name="error_initializing_web_view_wrong_arch">Hiba a WebView előkészítésekor. Győződjön meg arról, hogy a WebView telepítve van-e, és támogatja-e az arm64 architektúrát.
 \nHiba: %s</string>
+    <string name="settings_message_shape_corner">Sarkos</string>
+    <string name="settings_section_title_message_shape">Üzenetbuborék alakja</string>
+    <string name="settings_message_shape_tail">Nyúlványos</string>
 </resources>
