@@ -1780,9 +1780,9 @@ Das ist Ihr eigener Einmal-Link!</target>
         <target>Core Version: v%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Corner" xml:space="preserve">
+      <trans-unit id="Corner" xml:space="preserve" approved="no">
         <source>Corner</source>
-        <target>Ecken-Abrundung</target>
+        <target state="translated">Abrundung Ecken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Correct name to %@?" xml:space="preserve">
@@ -8399,9 +8399,9 @@ Verbindungsanfrage wiederholen?</target>
         <target>event happened</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="expired" xml:space="preserve">
+      <trans-unit id="expired" xml:space="preserve" approved="no">
         <source>expired</source>
-        <target>abgelaufen</target>
+        <target state="translated">Abgelaufen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="forwarded" xml:space="preserve">
@@ -8631,9 +8631,9 @@ Verbindungsanfrage wiederholen?</target>
         <target>Ein</target>
         <note>group pref value</note>
       </trans-unit>
-      <trans-unit id="other" xml:space="preserve">
+      <trans-unit id="other" xml:space="preserve" approved="no">
         <source>other</source>
-        <target>andere</target>
+        <target state="translated">Andere</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="other errors" xml:space="preserve">
