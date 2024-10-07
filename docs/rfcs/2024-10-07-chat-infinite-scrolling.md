@@ -166,4 +166,72 @@ else
 - Deduplication of items as they are fetched becomes of extreme importance as not doing it effectively can lead to duplicated messages being displayed.
 
 ### Option 3
-Keep N "Fragments" of chat items
+N sections each with it's own instance of `chatItems` representing all previously fetched scrollable chat areas. Long distance navigation creates new anchors in cases date wasn't yet fetched. Sections are merged in cases where 2 section intercept.
+
+#### Data structures
+
+```
+data ScrollSection {
+    chatItems: Array<ChatItem>
+    active: Bool
+    bottom: Bool
+}
+
+scrollSections = Array<ScrollSection>
+
+// Will take o(n) space where n is the number of items loaded, It will make dedup, merge and intersection operations o(1), that is probably a acceptable tradeoff as we want to minimize execution speed while scrolling.
+chatIdSection = Map<Long = Chat Item Id, Int = Index In Scroll Sections>
+
+activeSection = scrollSections.first { it.active }
+chatItems = activeSection.chatItems
+```
+
+#### Behaviour
+
+##### Scroll data fetching
+```
+if scrollingUp
+    newItems = fetch(ScrollingUp, activeSection.chatItems.first().id)
+    if chatIdSection has newItems.any
+        mergeSectionsIntoActiveSection()
+    activeSection.chatItems.addAtIndex(0, newItems)
+else
+    newItems = fetch(ScrollingUp, activeSection.chatItems.last().id)
+    if chatIdSection has newItems.any
+        mergeSectionsIntoActiveSection()
+    activeSection.chatItems.insertAtEnd(newItems)
+```
+
+##### Long Distance Navigation
+```
+if item
+    if item.id in chatIdSection
+        swapActiveTo(scrollSection[chatIdSection[item.id]])
+    else
+        newSection = scrollSections.add(ScrollSection(
+            chatItems: fetchNearItem(item)
+            active: true
+            bottom: false
+        ))
+        swapActiveTo(newSection)
+else
+    swapActiveTo(scrollSections.first { it.bottom })
+```
+
+##### Requires fetch
+```
+if scrollingUp
+    -- Same as current with active section
+else
+    -- Inverted to current with active section
+```
+
+**Pros:**
+- Least stresfull option database-wise.
+- Most common action for users (going back to the bottom of the chat) are totally addressed.
+- Any previosuly fetched data will be available to jump to without latency
+
+**Cons:**
+- This is the most complex solution engineering-wise
+- The logic to merge sections can be computationally extensive and a place for errors to emerge due to it's complexity
+- The ammount of runtime memory consumed by this solution will increase exponentially
