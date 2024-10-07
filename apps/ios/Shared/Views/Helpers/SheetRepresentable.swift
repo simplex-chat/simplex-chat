@@ -62,6 +62,11 @@ struct SheetRepresentable<Content: View>: UIViewControllerRepresentable {
         @available(*, unavailable)
         required init?(coder: NSCoder) { fatalError("init(coder:) missing") }
 
+        deinit {
+            animator.stopAnimation(true)
+            animator.finishAnimation(at: .current)
+        }
+
         func animate(isPresented: Bool) {
             let alreadyAnimating = animator.isRunning && isPresented != animator.isReversed
             let sheetFullyDismissed = animator.fractionComplete == (animator.isReversed ? 1 : 0)
