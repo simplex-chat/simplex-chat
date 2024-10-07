@@ -252,6 +252,7 @@ class NotificationService: UNNotificationServiceExtension {
                 }
             } else {
                 logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): unknown message, let other instance to process it")
+                self.deliverBestAttemptNtf()
                 return false
             }
         } else if ntfInfo.user.showNotifications {
