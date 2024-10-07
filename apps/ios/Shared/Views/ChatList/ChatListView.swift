@@ -34,7 +34,6 @@ enum UserPickerSheet: Identifiable {
 struct UserPickerSheetView: View {
     let sheet: UserPickerSheet
     @EnvironmentObject var chatModel: ChatModel
-    @Binding var showSettings: Bool
     @State private var loaded = false
 
     var body: some View {
@@ -57,7 +56,7 @@ struct UserPickerSheetView: View {
                     case .useFromDesktop:
                         ConnectDesktopView()
                     case .settings:
-                        SettingsView(showSettings: $showSettings, withNavigation: false)
+                        SettingsView()
                     }
                 }
                 Color.clear // Required for list background to be rendered during loading
@@ -65,6 +64,11 @@ struct UserPickerSheetView: View {
             .navigationTitle(sheet.navigationTitle)
             .navigationBarTitleDisplayMode(.large)
             .modifier(ThemedBackground(grouped: true))
+        }
+        .overlay {
+            if let la = chatModel.laRequest {
+                LocalAuthView(authRequest: la)
+            }
         }
         .task {
             withAnimation(
@@ -78,14 +82,13 @@ struct UserPickerSheetView: View {
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
-    @Binding var showSettings: Bool
+    @Binding var activeUserPickerSheet: UserPickerSheet?
     @State private var searchMode = false
     @FocusState private var searchFocussed
     @State private var searchText = ""
     @State private var searchShowingSimplexLink = false
     @State private var searchChatFilteredBySimplexLink: String? = nil
     @State private var scrollToSearchBar = false
-    @State private var activeUserPickerSheet: UserPickerSheet? = nil
     @State private var userPickerShown: Bool = false
 
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
@@ -119,7 +122,7 @@ struct ChatListView: View {
             }
         )
         .sheet(item: $activeUserPickerSheet) {
-            UserPickerSheetView(sheet: $0, showSettings: $showSettings)
+            UserPickerSheetView(sheet: $0)
         }
         .onChange(of: activeUserPickerSheet) {
             if $0 != nil {
@@ -576,6 +579,8 @@ func chatStoppedIcon() -> some View {
 }
 
 struct ChatListView_Previews: PreviewProvider {
+    @State static var userPickerSheet: UserPickerSheet? = .none
+
     static var previews: some View {
         let chatModel = ChatModel()
         chatModel.updateChats([
@@ -594,9 +599,9 @@ struct ChatListView_Previews: PreviewProvider {
 
         ])
         return Group {
-            ChatListView(showSettings: Binding.constant(false))
+            ChatListView(activeUserPickerSheet: $userPickerSheet)
                 .environmentObject(chatModel)
-            ChatListView(showSettings: Binding.constant(false))
+            ChatListView(activeUserPickerSheet: $userPickerSheet)
                 .environmentObject(ChatModel())
         }
     }
