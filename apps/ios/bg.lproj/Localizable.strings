@@ -1732,7 +1732,7 @@
 /* No comment provided by engineer. */
 "Error stopping chat" = "Грешка при спиране на чата";
 
-/* No comment provided by engineer. */
+/* alertTitle */
 "Error switching profile!" = "Грешка при смяна на профил!";
 
 /* No comment provided by engineer. */
@@ -1759,8 +1759,7 @@
 /* No comment provided by engineer. */
 "Error: " = "Грешка: ";
 
-/* file error text
-   snd error text */
+/* alert message */
 "Error: %@" = "Грешка: %@";
 
 /* No comment provided by engineer. */
@@ -4166,9 +4165,6 @@
 
 /* No comment provided by engineer. */
 "you" = "вие";
-
-/* No comment provided by engineer. */
-"You" = "Вие";
 
 /* No comment provided by engineer. */
 "You **must not** use the same database on two devices." = "**Не трябва** да използвате една и съща база данни на две устройства.";

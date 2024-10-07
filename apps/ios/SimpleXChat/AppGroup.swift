@@ -357,6 +357,7 @@ public func getNetCfg() -> NetCfg {
         sessionMode: sessionMode,
         smpProxyMode: smpProxyMode,
         smpProxyFallback: smpProxyFallback,
+        smpWebPort: false,
         tcpConnectTimeout: tcpConnectTimeout,
         tcpTimeout: tcpTimeout,
         tcpTimeoutPerKb: tcpTimeoutPerKb,

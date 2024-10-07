@@ -1470,7 +1470,7 @@
 /* No comment provided by engineer. */
 "Error stopping chat" = "チャット停止にエラー発生";
 
-/* No comment provided by engineer. */
+/* alertTitle */
 "Error switching profile!" = "プロフィール切り替えにエラー発生！";
 
 /* No comment provided by engineer. */
@@ -1491,8 +1491,7 @@
 /* No comment provided by engineer. */
 "Error: " = "エラー : ";
 
-/* file error text
-   snd error text */
+/* alert message */
 "Error: %@" = "エラー : %@";
 
 /* No comment provided by engineer. */
@@ -3361,9 +3360,6 @@
 
 /* pref value */
 "yes" = "はい";
-
-/* No comment provided by engineer. */
-"You" = "あなた";
 
 /* No comment provided by engineer. */
 "You accepted connection" = "接続を承認しました";
