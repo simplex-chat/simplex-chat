@@ -2240,32 +2240,42 @@ public struct MemberSubError: Decodable, Hashable {
 }
 
 public enum ConnectionEntity: Decodable, Hashable {
-    case rcvDirectMsgConnection(contact: Contact?)
-    case rcvGroupMsgConnection(groupInfo: GroupInfo, groupMember: GroupMember)
-    case sndFileConnection(sndFileTransfer: SndFileTransfer)
-    case rcvFileConnection(rcvFileTransfer: RcvFileTransfer)
-    case userContactConnection(userContact: UserContact)
+    case rcvDirectMsgConnection(entityConnection: Connection, contact: Contact?)
+    case rcvGroupMsgConnection(entityConnection: Connection, groupInfo: GroupInfo, groupMember: GroupMember)
+    case sndFileConnection(entityConnection: Connection, sndFileTransfer: SndFileTransfer)
+    case rcvFileConnection(entityConnection: Connection, rcvFileTransfer: RcvFileTransfer)
+    case userContactConnection(entityConnection: Connection, userContact: UserContact)
 
     public var id: String? {
         switch self {
-        case let .rcvDirectMsgConnection(contact):
+        case let .rcvDirectMsgConnection(_, contact):
             return contact?.id
-        case let .rcvGroupMsgConnection(_, groupMember):
+        case let .rcvGroupMsgConnection(_, _, groupMember):
             return groupMember.id
-        case let .userContactConnection(userContact):
+        case let .userContactConnection(_, userContact):
             return userContact.id
         default:
             return nil
         }
     }
 
+    public var conn: Connection {
+        switch self {
+        case let .rcvDirectMsgConnection(entityConnection, _): entityConnection
+        case let .rcvGroupMsgConnection(entityConnection, _, _): entityConnection
+        case let .sndFileConnection(entityConnection, _): entityConnection
+        case let .rcvFileConnection(entityConnection, _): entityConnection
+        case let .userContactConnection(entityConnection, _): entityConnection
+        }
+    }
+
     public var ntfsEnabled: Bool {
         switch self {
-        case let .rcvDirectMsgConnection(contact): return contact?.chatSettings.enableNtfs == .all
-        case let .rcvGroupMsgConnection(groupInfo, _): return groupInfo.chatSettings.enableNtfs == .all
+        case let .rcvDirectMsgConnection(_, contact): return contact?.chatSettings.enableNtfs == .all
+        case let .rcvGroupMsgConnection(_, groupInfo, _): return groupInfo.chatSettings.enableNtfs == .all
         case .sndFileConnection: return false
         case .rcvFileConnection: return false
-        case let .userContactConnection(userContact): return userContact.groupId == nil
+        case let .userContactConnection(_, userContact): return userContact.groupId == nil
         }
     }
 }
@@ -2273,6 +2283,11 @@ public enum ConnectionEntity: Decodable, Hashable {
 public struct NtfMsgInfo: Decodable, Hashable {
     public var msgId: String
     public var msgTs: Date
+}
+
+public struct NtfMsgAckInfo: Decodable, Hashable {
+    public var msgId: String
+    public var msgTs_: Date?
 }
 
 public struct ChatItemDeletion: Decodable, Hashable {
