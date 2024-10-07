@@ -2105,4 +2105,8 @@
     <string name="compose_forward_messages_n">转发 %1$s 条消息</string>
     <string name="compose_save_messages_n">保存 %1$s 条消息</string>
     <string name="icon_descr_sound_muted">已静音</string>
+    <string name="settings_section_title_message_shape">管理形状</string>
+    <string name="settings_message_shape_corner">拐角</string>
+    <string name="settings_message_shape_tail">尾部</string>
+    <string name="error_initializing_web_view_wrong_arch">初始化 WebView 出错。确保你安装了 WebView 且其支持的架构为 arm64。\n错误：%s</string>
 </resources>
