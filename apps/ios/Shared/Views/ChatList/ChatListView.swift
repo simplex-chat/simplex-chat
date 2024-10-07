@@ -65,6 +65,11 @@ struct UserPickerSheetView: View {
             .navigationBarTitleDisplayMode(.large)
             .modifier(ThemedBackground(grouped: true))
         }
+        .overlay {
+            if let la = chatModel.laRequest {
+                LocalAuthView(authRequest: la)
+            }
+        }
         .task {
             withAnimation(
                 .easeOut(duration: 0.1),
@@ -77,13 +82,13 @@ struct UserPickerSheetView: View {
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
+    @Binding var activeUserPickerSheet: UserPickerSheet?
     @State private var searchMode = false
     @FocusState private var searchFocussed
     @State private var searchText = ""
     @State private var searchShowingSimplexLink = false
     @State private var searchChatFilteredBySimplexLink: String? = nil
     @State private var scrollToSearchBar = false
-    @State private var activeUserPickerSheet: UserPickerSheet? = nil
     @State private var userPickerShown: Bool = false
 
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
@@ -574,6 +579,8 @@ func chatStoppedIcon() -> some View {
 }
 
 struct ChatListView_Previews: PreviewProvider {
+    @State static var userPickerSheet: UserPickerSheet? = .none
+
     static var previews: some View {
         let chatModel = ChatModel()
         chatModel.updateChats([
@@ -592,9 +599,9 @@ struct ChatListView_Previews: PreviewProvider {
 
         ])
         return Group {
-            ChatListView()
+            ChatListView(activeUserPickerSheet: $userPickerSheet)
                 .environmentObject(chatModel)
-            ChatListView()
+            ChatListView(activeUserPickerSheet: $userPickerSheet)
                 .environmentObject(ChatModel())
         }
     }

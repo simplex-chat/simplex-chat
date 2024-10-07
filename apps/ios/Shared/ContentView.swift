@@ -34,6 +34,7 @@ struct ContentView: View {
     @State private var showSetPasscode = false
     @State private var waitingForOrPassedAuth = true
     @State private var chatListActionSheet: ChatListActionSheet? = nil
+    @State private var chatListUserPickerSheet: UserPickerSheet? = nil
 
     private let callTopPadding: CGFloat = 40
 
@@ -85,7 +86,7 @@ struct ContentView: View {
                 callView(call)
             }
 
-            if let la = chatModel.laRequest {
+            if chatListUserPickerSheet == nil, let la = chatModel.laRequest {
                 LocalAuthView(authRequest: la)
                     .onDisappear {
                         // this flag is separate from accessAuthenticated to show initializationView while we wait for authentication
@@ -249,7 +250,7 @@ struct ContentView: View {
 
     private func mainView() -> some View {
         ZStack(alignment: .top) {
-            ChatListView().privacySensitive(protectScreen)
+            ChatListView(activeUserPickerSheet: $chatListUserPickerSheet).privacySensitive(protectScreen)
             .onAppear {
                 requestNtfAuthorization()
                 // Local Authentication notice is to be shown on next start after onboarding is complete

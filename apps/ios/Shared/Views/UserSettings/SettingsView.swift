@@ -269,9 +269,6 @@ struct SettingsView: View {
             if showProgress {
                 progressView()
             }
-            if let la = chatModel.laRequest {
-                LocalAuthView(authRequest: la)
-            }
         }
     }
 
