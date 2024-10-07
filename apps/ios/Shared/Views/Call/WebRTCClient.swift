@@ -644,11 +644,11 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         (notConnectedCall?.localCameraAndTrack?.0 as? RTCCameraVideoCapturer)?.stopCapture()
         guard let call = activeCall else { return }
         logger.debug("WebRTCClient: ending the call")
-        (call.localCamera as? RTCCameraVideoCapturer)?.stopCapture()
         call.connection.close()
         call.connection.delegate = nil
         call.frameEncryptor?.delegate = nil
         call.frameDecryptor?.delegate = nil
+        (call.localCamera as? RTCCameraVideoCapturer)?.stopCapture()
         audioSessionToDefaults()
         activeCall = nil
     }

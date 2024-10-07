@@ -300,9 +300,18 @@ struct ContentView: View {
         if let contactId = contacts?.first?.personHandle?.value,
            let chat = chatModel.getChat(contactId),
            case let .direct(contact) = chat.chatInfo {
-            logger.debug("callToRecentContact: schedule call")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                CallController.shared.startCall(contact, mediaType)
+            let activeCall = chatModel.activeCall
+            // This line works when a user clicks on a video button in CallKit UI while in call.
+            // The app tries to make another call to the same contact and overwite activeCall instance making its state broken
+            if let activeCall, contactId == activeCall.contact.id, mediaType == .video, !activeCall.hasVideo {
+                Task {
+                    await chatModel.callCommand.processCommand(.media(source: .camera, enable: true))
+                }
+            } else if activeCall == nil {
+                logger.debug("callToRecentContact: schedule call")
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    CallController.shared.startCall(contact, mediaType)
+                }
             }
         }
     }

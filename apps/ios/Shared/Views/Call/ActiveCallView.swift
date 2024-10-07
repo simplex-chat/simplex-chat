@@ -408,7 +408,6 @@ struct ActiveCallOverlay: View {
                 cc.endCall(call: call) {}
             }
         }
-        .foregroundColor(.white.opacity(0.8))
         .background(.red)
         .clipShape(.circle)
     }
@@ -482,7 +481,6 @@ struct ActiveCallOverlay: View {
 
     @ViewBuilder private func controlButton(_ call: Call, _ imageName: String, padding: CGFloat, _ perform: @escaping () -> Void) -> some View {
         callButton(imageName, padding: padding, perform)
-            .foregroundColor(.white.opacity(0.8))
             .background(call.peerMediaSources.hasVideo ? Color.black.opacity(0.2) : Color.white.opacity(0.2))
             .clipShape(.circle)
     }
@@ -507,6 +505,11 @@ struct ActiveCallOverlay: View {
                 .padding(padding)
                 .frame(width: 60, height: 60)
         }
+        .foregroundColor(whiteColorWithAlpha)
+    }
+
+    private var whiteColorWithAlpha: Color {
+        get { Color(red: 204 / 255, green: 204 / 255, blue: 204 / 255) }
     }
 }
 
