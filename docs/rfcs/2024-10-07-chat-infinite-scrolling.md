@@ -166,7 +166,7 @@ else
 - Deduplication of items as they are fetched becomes of extreme importance as not doing it effectively can lead to duplicated messages being displayed.
 
 ### Option 3
-N sections each with it's own instance of `chatItems` representing all previously fetched scrollable chat areas. Long distance navigation creates new anchors in cases date wasn't yet fetched. Sections are merged in cases where 2 section intercept.
+N sections each with it's own instance of `chatItems` representing all previously fetched scrollable chat areas. Long distance navigation creates new anchors in cases date wasn't yet fetched. Sections are merged in cases where 2 sections intercept.
 
 #### Data structures
 
@@ -259,6 +259,7 @@ scrollAnchors = Array<ScrollAnchor>
 // Will take o(n) space where n is the number of items loaded, It will make dedup, merge and intersection operations o(1), that is probably a acceptable tradeoff as we want to minimize execution speed while scrolling.
 chatIdAnchor = Map<Long = Chat Item Id, Int = Index In Scroll Anchors>
 chatItems = Array<ChatItem>
+scrollableItems = chatItems(slice based on active anchor)
 activeAnchorIndex = Int
 ```
 
