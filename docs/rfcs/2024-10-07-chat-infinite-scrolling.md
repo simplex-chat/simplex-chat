@@ -195,11 +195,13 @@ if scrollingUp
     if chatIdSection has newItems.any
         mergeSectionsIntoActiveSection()
     activeSection.chatItems.addAtIndex(0, newItems)
+    updateChatIdSectionMap()
 else
     newItems = fetch(ScrollingUp, activeSection.chatItems.last().id)
     if chatIdSection has newItems.any
         mergeSectionsIntoActiveSection()
     activeSection.chatItems.insertAtEnd(newItems)
+    updateChatIdSectionMap()
 ```
 
 ##### Long Distance Navigation
@@ -216,6 +218,8 @@ if item
         swapActiveTo(newSection)
 else
     swapActiveTo(scrollSections.first { it.bottom })
+
+updateChatIdSectionMap()
 ```
 
 ##### Requires fetch
@@ -227,11 +231,91 @@ else
 ```
 
 **Pros:**
-- Least stresfull option database-wise.
+- Low database stress.
 - Most common action for users (going back to the bottom of the chat) are totally addressed.
 - Any previosuly fetched data will be available to jump to without latency
 
 **Cons:**
-- This is the most complex solution engineering-wise
-- The logic to merge sections can be computationally extensive and a place for errors to emerge due to it's complexity
+- Complex solution engineering-wise
+- The logic to merge sections can be computationally expensive and a place for errors to merge due to it's complexity
+- The ammount of runtime memory consumed by this solution will increase exponentially
+
+
+### Option 4
+N anchors for a single `chatItems` representing all previously fetched scrollable chat areas. Long distance navigation creates new anchors in cases date wasn't yet fetched. Sections are merged in cases where 2 anchors intercept.
+
+#### Data structures
+
+```
+data ScrollAnchor {
+    startChatItemId: Long
+    startChatItemIndex: Int
+    endChatItemId: Long
+    endChatItemIndex: Int
+}
+
+scrollAnchors = Array<ScrollAnchor>
+
+// Will take o(n) space where n is the number of items loaded, It will make dedup, merge and intersection operations o(1), that is probably a acceptable tradeoff as we want to minimize execution speed while scrolling.
+chatIdAnchor = Map<Long = Chat Item Id, Int = Index In Scroll Anchors>
+chatItems = Array<ChatItem>
+activeAnchorIndex = Int
+```
+
+#### Behaviour
+
+##### Scroll data fetching
+```
+if scrollingUp
+    newItems = fetch(ScrollingUp, activeAnchor.startChatItemId)
+    if chatIdAnchor has newItems.any
+        mergeAnchorsIntoActiveAnchor()
+        dedup newItems
+    chatItems.addAtIndex(activeAnchor.startChatItem)
+    updateAnchor()
+    updateMap()
+else
+    newItems = fetch(ScrollingUp, activeAnchor.endChatItemId)
+    if chatIdAnchor has newItems.any
+        mergeAnchorsIntoActiveAnchor()
+        dedup newItems
+    chatItems.addAtIndex(activeAnchor.endChatItem)
+    updateAnchor()
+    updateMap()
+```
+
+##### Long Distance Navigation
+```
+if item
+    if item.id in chatIdAnchor
+        swapActiveTo(scrollAnchors[chatIdAnchor[item.id]])
+    else
+        newAnchor = if chatIdAnchor has newItems.any
+            mergeAnchorsIntoActiveAnchor()
+            dedup newItems
+        else
+            addNewAnchor()
+        swapActiveTo(newAnchor)
+else
+    swapActiveTo(anchors[0])
+
+updateMap()
+```
+
+##### Requires fetch
+```
+if scrollingUp
+    -- Same as current with active section
+else
+    -- Inverted to current with active section
+```
+
+**Pros:**
+- Low database stress.
+- Most common action for users (going back to the bottom of the chat) are totally addressed.
+- Any previosuly fetched data will be available to jump to without latency
+
+**Cons:**
+- Doesn't add much benefit from option 3, for more complexity.
+- The logic to merge sections can be computationally expensive and a place for errors to merge due to it's complexity
 - The ammount of runtime memory consumed by this solution will increase exponentially
