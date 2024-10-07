@@ -44,7 +44,7 @@ import Data.String
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1)
 import Data.Time (NominalDiffTime, UTCTime)
-import Data.Time.Clock.System (systemToUTCTime)
+import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
 import Data.Version (showVersion)
 import Data.Word (Word16)
 import Database.SQLite.Simple (SQLError)
@@ -1055,10 +1055,13 @@ data NtfMsgInfo = NtfMsgInfo {msgId :: Text, msgTs :: UTCTime}
   deriving (Show)
 
 receivedMsgInfo :: SMPMsgMeta -> NtfMsgInfo
-receivedMsgInfo SMPMsgMeta {msgId, msgTs} = NtfMsgInfo {msgId = decodeLatin1 $ strEncode msgId, msgTs = systemToUTCTime msgTs}
+receivedMsgInfo SMPMsgMeta {msgId, msgTs} = ntfMsgInfo_ msgId msgTs
 
 expectedMsgInfo :: NMsgMeta -> NtfMsgInfo
-expectedMsgInfo NMsgMeta {msgId, msgTs} = NtfMsgInfo {msgId = decodeLatin1 $ strEncode msgId, msgTs = systemToUTCTime msgTs}
+expectedMsgInfo NMsgMeta {msgId, msgTs} = ntfMsgInfo_ msgId msgTs
+
+ntfMsgInfo_ :: MsgId -> SystemTime -> NtfMsgInfo
+ntfMsgInfo_ msgId msgTs = NtfMsgInfo {msgId = decodeLatin1 $ strEncode msgId, msgTs = systemToUTCTime msgTs}
 
 -- Acknowledged message info - used to correlate with expected message
 data NtfMsgAckInfo = NtfMsgAckInfo {msgId :: Text, msgTs_ :: Maybe UTCTime}
