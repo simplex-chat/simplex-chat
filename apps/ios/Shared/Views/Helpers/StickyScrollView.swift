@@ -9,6 +9,7 @@
 import SwiftUI
 
 struct StickyScrollView<Content: View>: UIViewRepresentable {
+    @Binding var resetScroll: ResetScrollAction
     @ViewBuilder let content: () -> Content
 
     func makeUIView(context: Context) -> UIScrollView {
@@ -18,6 +19,9 @@ struct StickyScrollView<Content: View>: UIViewRepresentable {
         sv.showsHorizontalScrollIndicator = false
         sv.addSubview(hc.view)
         sv.delegate = context.coordinator
+        DispatchQueue.main.async {
+            resetScroll = ResetScrollAction { sv.setContentOffset(.zero, animated: false) }
+        }
         return sv
     }
 
@@ -49,4 +53,9 @@ struct StickyScrollView<Content: View>: UIViewRepresentable {
             }
         }
     }
+}
+
+struct ResetScrollAction {
+    var action = { }
+    func callAsFunction() { action() }
 }
