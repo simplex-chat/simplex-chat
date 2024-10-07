@@ -703,7 +703,7 @@
 /* No comment provided by engineer. */
 "Can't invite contacts!" = "Kişiler davet edilemiyor!";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Cancel" = "İptal et";
 
 /* No comment provided by engineer. */
@@ -715,7 +715,7 @@
 /* No comment provided by engineer. */
 "Cannot access keychain to save database password" = "Veritabanı şifresini kaydetmek için Anahtar Zinciri'ne erişilemiyor";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Cannot receive file" = "Dosya alınamıyor";
 
 /* snd error text */
@@ -1419,7 +1419,8 @@
 /* No comment provided by engineer. */
 "Downgrade and open chat" = "Sürüm düşür ve sohbeti aç";
 
-/* chat item action */
+/* alert button
+   chat item action */
 "Download" = "İndir";
 
 /* No comment provided by engineer. */
@@ -1707,7 +1708,7 @@
 /* No comment provided by engineer. */
 "Error opening chat" = "Sohbeti açarken sorun oluştu";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error receiving file" = "Dosya alınırken sorun oluştu";
 
 /* No comment provided by engineer. */
@@ -1755,7 +1756,7 @@
 /* No comment provided by engineer. */
 "Error stopping chat" = "Sohbet durdurulurken hata oluştu";
 
-/* No comment provided by engineer. */
+/* alertTitle */
 "Error switching profile!" = "Profil değiştirilirken hata oluştu!";
 
 /* No comment provided by engineer. */
@@ -1782,8 +1783,7 @@
 /* No comment provided by engineer. */
 "Error: " = "Hata: ";
 
-/* file error text
-   snd error text */
+/* alert message */
 "Error: %@" = "Hata: %@";
 
 /* No comment provided by engineer. */
@@ -1929,9 +1929,6 @@
 
 /* No comment provided by engineer. */
 "Full name (optional)" = "Bütün isim (opsiyonel)";
-
-/* No comment provided by engineer. */
-"Full name:" = "Bütün isim:";
 
 /* No comment provided by engineer. */
 "Fully decentralized – visible only to members." = "Tamamiyle merkezi olmayan - sadece kişilere görünür.";
@@ -2730,7 +2727,7 @@
 /* feature offered item */
 "offered %@: %@" = "%1$@: %2$@ teklif etti";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Ok" = "Tamam";
 
 /* No comment provided by engineer. */
@@ -2990,12 +2987,6 @@
 
 /* No comment provided by engineer. */
 "Profile images" = "Profil resimleri";
-
-/* No comment provided by engineer. */
-"Profile name" = "Profil ismi";
-
-/* No comment provided by engineer. */
-"Profile name:" = "Profil ismi:";
 
 /* No comment provided by engineer. */
 "Profile password" = "Profil parolası";
@@ -3271,10 +3262,11 @@
 /* No comment provided by engineer. */
 "Safer groups" = "Daha güvenli gruplar";
 
-/* chat item action */
+/* alert button
+   chat item action */
 "Save" = "Kaydet";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Save (and notify contacts)" = "Kaydet (ve kişilere bildir)";
 
 /* No comment provided by engineer. */
@@ -3288,9 +3280,6 @@
 
 /* No comment provided by engineer. */
 "Save archive" = "Arşivi kaydet";
-
-/* No comment provided by engineer. */
-"Save auto-accept settings" = "Otomatik kabul et ayarlarını kaydet";
 
 /* No comment provided by engineer. */
 "Save group profile" = "Grup profilini kaydet";
@@ -3312,9 +3301,6 @@
 
 /* No comment provided by engineer. */
 "Save servers?" = "Sunucular kaydedilsin mi?";
-
-/* No comment provided by engineer. */
-"Save settings?" = "Ayarlar kaydedilsin mi?";
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "Hoşgeldin mesajı kaydedilsin mi?";
@@ -3445,7 +3431,7 @@
 /* No comment provided by engineer. */
 "Send up to 100 last messages to new members." = "Yeni üyelere 100 adete kadar son mesajları gönderin.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Sender cancelled file transfer." = "Gönderici dosya gönderimini iptal etti.";
 
 /* No comment provided by engineer. */
@@ -4000,7 +3986,7 @@
 /* No comment provided by engineer. */
 "unknown servers" = "bilinmeyen yönlendiriciler";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Unknown servers!" = "Bilinmeyen sunucular!";
 
 /* No comment provided by engineer. */
@@ -4276,7 +4262,7 @@
 /* No comment provided by engineer. */
 "Without Tor or VPN, your IP address will be visible to file servers." = "Tor veya VPN olmadan, IP adresiniz dosya sunucularına görülebilir.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." = "Tor veya VPN olmadan, IP adresiniz bu XFTP aktarıcıları tarafından görülebilir: %@.";
 
 /* No comment provided by engineer. */
@@ -4293,9 +4279,6 @@
 
 /* No comment provided by engineer. */
 "you" = "sen";
-
-/* No comment provided by engineer. */
-"You" = "Sen";
 
 /* No comment provided by engineer. */
 "You **must not** use the same database on two devices." = "Aynı veritabanını iki cihazda **kullanmamalısınız**.";
@@ -4544,7 +4527,7 @@
 "Your profile **%@** will be shared." = "Profiliniz **%@** paylaşılacaktır.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Profiliniz cihazınızda saklanır ve sadece kişilerinizle paylaşılır.\nSimpleX sunucuları profilinizi göremez.";
+"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Profiliniz cihazınızda saklanır ve sadece kişilerinizle paylaşılır. SimpleX sunucuları profilinizi göremez.";
 
 /* No comment provided by engineer. */
 "Your profile, contacts and delivered messages are stored on your device." = "Profiliniz, kişileriniz ve gönderilmiş mesajlar cihazınızda saklanır.";

@@ -17,6 +17,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
     public var profile: LocalProfile
     public var fullPreferences: FullPreferences
     public var activeUser: Bool
+    public var activeOrder: Int64
 
     public var displayName: String { get { profile.displayName } }
     public var fullName: String { get { profile.fullName } }
@@ -49,6 +50,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
         profile: LocalProfile.sampleData,
         fullPreferences: FullPreferences.sampleData,
         activeUser: true,
+        activeOrder: 0,
         showNtfs: true,
         sendRcptsContacts: true,
         sendRcptsSmallGroups: false
@@ -2238,32 +2240,42 @@ public struct MemberSubError: Decodable, Hashable {
 }
 
 public enum ConnectionEntity: Decodable, Hashable {
-    case rcvDirectMsgConnection(contact: Contact?)
-    case rcvGroupMsgConnection(groupInfo: GroupInfo, groupMember: GroupMember)
-    case sndFileConnection(sndFileTransfer: SndFileTransfer)
-    case rcvFileConnection(rcvFileTransfer: RcvFileTransfer)
-    case userContactConnection(userContact: UserContact)
+    case rcvDirectMsgConnection(entityConnection: Connection, contact: Contact?)
+    case rcvGroupMsgConnection(entityConnection: Connection, groupInfo: GroupInfo, groupMember: GroupMember)
+    case sndFileConnection(entityConnection: Connection, sndFileTransfer: SndFileTransfer)
+    case rcvFileConnection(entityConnection: Connection, rcvFileTransfer: RcvFileTransfer)
+    case userContactConnection(entityConnection: Connection, userContact: UserContact)
 
     public var id: String? {
         switch self {
-        case let .rcvDirectMsgConnection(contact):
+        case let .rcvDirectMsgConnection(_, contact):
             return contact?.id
-        case let .rcvGroupMsgConnection(_, groupMember):
+        case let .rcvGroupMsgConnection(_, _, groupMember):
             return groupMember.id
-        case let .userContactConnection(userContact):
+        case let .userContactConnection(_, userContact):
             return userContact.id
         default:
             return nil
         }
     }
 
+    public var conn: Connection {
+        switch self {
+        case let .rcvDirectMsgConnection(entityConnection, _): entityConnection
+        case let .rcvGroupMsgConnection(entityConnection, _, _): entityConnection
+        case let .sndFileConnection(entityConnection, _): entityConnection
+        case let .rcvFileConnection(entityConnection, _): entityConnection
+        case let .userContactConnection(entityConnection, _): entityConnection
+        }
+    }
+
     public var ntfsEnabled: Bool {
         switch self {
-        case let .rcvDirectMsgConnection(contact): return contact?.chatSettings.enableNtfs == .all
-        case let .rcvGroupMsgConnection(groupInfo, _): return groupInfo.chatSettings.enableNtfs == .all
+        case let .rcvDirectMsgConnection(_, contact): return contact?.chatSettings.enableNtfs == .all
+        case let .rcvGroupMsgConnection(_, groupInfo, _): return groupInfo.chatSettings.enableNtfs == .all
         case .sndFileConnection: return false
         case .rcvFileConnection: return false
-        case let .userContactConnection(userContact): return userContact.groupId == nil
+        case let .userContactConnection(_, userContact): return userContact.groupId == nil
         }
     }
 }
@@ -2271,6 +2283,11 @@ public enum ConnectionEntity: Decodable, Hashable {
 public struct NtfMsgInfo: Decodable, Hashable {
     public var msgId: String
     public var msgTs: Date
+}
+
+public struct NtfMsgAckInfo: Decodable, Hashable {
+    public var msgId: String
+    public var msgTs_: Date?
 }
 
 public struct ChatItemDeletion: Decodable, Hashable {
@@ -2763,9 +2780,16 @@ public struct CITimed: Decodable, Hashable {
 
 let msgTimeFormat = Date.FormatStyle.dateTime.hour().minute()
 let msgDateFormat = Date.FormatStyle.dateTime.day(.twoDigits).month(.twoDigits)
+let msgDateYearFormat = Date.FormatStyle.dateTime.day(.twoDigits).month(.twoDigits).year(.twoDigits)
 
 public func formatTimestampText(_ date: Date) -> Text {
-    Text(verbatim: date.formatted(recent(date) ? msgTimeFormat : msgDateFormat))
+    Text(verbatim: date.formatted(
+        recent(date)
+        ? msgTimeFormat
+        : Calendar.current.isDate(date, equalTo: .now, toGranularity: .year)
+        ? msgDateFormat
+        : msgDateYearFormat
+    ))
 }
 
 public func formatTimestampMeta(_ date: Date) -> String {
@@ -2811,6 +2835,20 @@ public enum CIStatus: Decodable, Hashable {
         case .invalid: return "invalid"
         }
     }
+    
+    public var sent: Bool {
+        switch self {
+        case .sndNew: true
+        case .sndSent: true
+        case .sndRcvd: true
+        case .sndErrorAuth: true
+        case .sndError: true
+        case .sndWarning: true
+        case .rcvNew: false
+        case .rcvRead: false
+        case .invalid: false
+        }
+    }
 
     public func statusIcon(_ metaColor: Color, _ paleMetaColor: Color, _ primaryColor: Color = .accentColor) -> (Image, Color)? {
         switch self {
@@ -2854,6 +2892,13 @@ public enum CIStatus: Decodable, Hashable {
                 NSLocalizedString("Invalid status", comment: "item status text"),
                 text
             )
+        }
+    }
+
+    public var isSndRcvd: Bool {
+        switch self {
+        case .sndRcvd: return true
+        default: return false
         }
     }
 }
@@ -3149,6 +3194,13 @@ public enum CIContent: Decodable, ItemContent, Hashable {
         case .rcvModerated: return true
         case .rcvBlocked: return true
         case .invalidJSON: return true
+        default: return false
+        }
+    }
+
+    public var isSndCall: Bool {
+        switch self {
+        case .sndCall: return true
         default: return false
         }
     }

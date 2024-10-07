@@ -23,8 +23,8 @@ import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
 
 @Composable
-fun IntegrityErrorItemView(msgError: MsgErrorType, ci: ChatItem, timedMessagesTTL: Int?) {
-  CIMsgError(ci, timedMessagesTTL) {
+fun IntegrityErrorItemView(msgError: MsgErrorType, ci: ChatItem, showTimestamp: Boolean, timedMessagesTTL: Int?) {
+  CIMsgError(ci, showTimestamp, timedMessagesTTL) {
     when (msgError) {
       is MsgErrorType.MsgSkipped ->
         AlertManager.shared.showAlertMsg(
@@ -49,7 +49,7 @@ fun IntegrityErrorItemView(msgError: MsgErrorType, ci: ChatItem, timedMessagesTT
 }
 
 @Composable
-fun CIMsgError(ci: ChatItem, timedMessagesTTL: Int?, onClick: () -> Unit) {
+fun CIMsgError(ci: ChatItem, showTimestamp: Boolean, timedMessagesTTL: Int?, onClick: () -> Unit) {
   val receivedColor = MaterialTheme.appColors.receivedMessage
   Surface(
     Modifier.clickable(onClick = onClick),
@@ -68,7 +68,7 @@ fun CIMsgError(ci: ChatItem, timedMessagesTTL: Int?, onClick: () -> Unit) {
         style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
         modifier = Modifier.padding(end = 8.dp)
       )
-      CIMetaView(ci, timedMessagesTTL, showViaProxy = false)
+      CIMetaView(ci, timedMessagesTTL, showViaProxy = false, showTimestamp = showTimestamp)
     }
   }
 }
@@ -83,7 +83,8 @@ fun IntegrityErrorItemViewPreview() {
     IntegrityErrorItemView(
       MsgErrorType.MsgBadHash(),
       ChatItem.getDeletedContentSampleData(),
-      null
+      showTimestamp = true,
+      null,
     )
   }
 }

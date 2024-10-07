@@ -72,7 +72,7 @@
     <string name="about_simplex">Over SimpleX</string>
     <string name="about_simplex_chat">Over SimpleX Chat</string>
     <string name="above_then_preposition_continuation">hier boven, dan:</string>
-    <string name="users_delete_all_chats_deleted">Alle gesprekken en berichten worden verwijderd, dit kan niet ongedaan worden gemaakt!</string>
+    <string name="users_delete_all_chats_deleted">Alle chats en berichten worden verwijderd, dit kan niet ongedaan worden gemaakt!</string>
     <string name="clear_chat_warning">Alle berichten worden verwijderd, dit kan niet ongedaan worden gemaakt! De berichten worden ALLEEN voor jou verwijderd.</string>
     <string name="allow_disappearing_messages_only_if">Sta verdwijnende berichten alleen toe als uw contact dit toestaat.</string>
     <string name="allow_voice_messages_only_if">Sta spraak berichten alleen toe als uw contact ze toestaat.</string>
@@ -90,7 +90,7 @@
     <string name="settings_section_title_icon">APP ICON</string>
     <string name="app_version_title">App versie</string>
     <string name="app_version_name">App versie: v%s</string>
-    <string name="network_session_mode_user_description"><![CDATA[Er wordt een aparte TCP-verbinding (en SOCKS-referentie) gebruikt <b> voor elk chat profiel dat je in de app hebt </b>.]]></string>
+    <string name="network_session_mode_user_description"><![CDATA[Er wordt een aparte TCP-verbinding (en SOCKS-referentie) gebruikt <b> voor elk chatprofiel dat je in de app hebt </b>.]]></string>
     <string name="audio_call_no_encryption">audio oproep (niet e2e versleuteld)</string>
     <string name="notifications_mode_service_desc">Achtergrondservice is altijd actief, meldingen worden weergegeven zodra de berichten beschikbaar zijn.</string>
     <string name="icon_descr_call_ended">Oproep beëindigd</string>
@@ -120,9 +120,9 @@
     <string name="chat_archive_header">Gesprek archief</string>
     <string name="change_database_passphrase_question">Wachtwoord database wijzigen\?</string>
     <string name="chat_is_stopped_indication">Chat is gestopt</string>
-    <string name="chat_preferences">Gesprek voorkeuren</string>
-    <string name="network_session_mode_user">Chat profiel</string>
-    <string name="settings_section_title_chats">GESPREKKEN</string>
+    <string name="chat_preferences">Chat voorkeuren</string>
+    <string name="network_session_mode_user">Chatprofiel</string>
+    <string name="settings_section_title_chats">CHATS</string>
     <string name="chat_with_developers">Praat met de ontwikkelaars</string>
     <string name="smp_servers_check_address">Controleer het server adres en probeer het opnieuw.</string>
     <string name="choose_file">Bestand</string>
@@ -180,7 +180,7 @@
     <string name="database_will_be_encrypted_and_passphrase_stored">"De database wordt  versleuteld en het wachtwoord wordt opgeslagen in de Keychain."</string>
     <string name="database_passphrase_will_be_updated">Het wachtwoord voor database versleuteling wordt bijgewerkt.</string>
     <string name="database_error">Database fout</string>
-    <string name="database_passphrase_is_required">Database wachtwoord is vereist om je gesprekken te openen.</string>
+    <string name="database_passphrase_is_required">Database wachtwoord is vereist om je chats te openen.</string>
     <string name="contact_already_exists">Contact bestaat al</string>
     <string name="icon_descr_call_connecting">Oproep verbinden</string>
     <string name="button_create_group_link">Maak link</string>
@@ -233,7 +233,7 @@
     <string name="delete_chat_archive_question">Chat archief verwijderen\?</string>
     <string name="delete_archive">Archief verwijderen</string>
     <string name="delete_contact_question">Verwijder contact\?</string>
-    <string name="delete_chat_profile_question">Chat profiel verwijderen\?</string>
+    <string name="delete_chat_profile_question">Chatprofiel verwijderen?</string>
     <string name="full_deletion">Verwijderen voor iedereen</string>
     <string name="delete_link">Link verwijderen</string>
     <string name="conn_level_desc_direct">direct</string>
@@ -250,7 +250,7 @@
     <string name="delete_message__question">Verwijder bericht\?</string>
     <string name="delete_messages">Verwijder berichten</string>
     <string name="smp_server_test_delete_queue">Wachtrij verwijderen</string>
-    <string name="delete_files_and_media_for_all_users">Verwijder bestanden voor alle chat profielen</string>
+    <string name="delete_files_and_media_for_all_users">Verwijder bestanden voor alle chatprofielen</string>
     <string name="for_me_only">Verwijder voor mij</string>
     <string name="button_delete_group">Groep verwijderen</string>
     <string name="delete_link_question">Link verwijderen\?</string>
@@ -284,7 +284,7 @@
     <string name="ttl_mth">%dmth</string>
     <string name="ttl_hours">%d uren</string>
     <string name="ttl_h">%dh</string>
-    <string name="users_delete_question">Chat profiel verwijderen\?</string>
+    <string name="users_delete_question">Chatprofiel verwijderen?</string>
     <string name="users_delete_profile_for">Chat profiel verwijderen voor</string>
     <string name="deleted_description">verwijderd</string>
     <string name="simplex_link_mode_description">Beschrijving</string>
@@ -347,7 +347,7 @@
     <string name="group_members_can_delete">Groepsleden kunnen verzonden berichten onomkeerbaar verwijderen. (24 uur)</string>
     <string name="group_members_can_send_dms">Groepsleden kunnen directe berichten sturen</string>
     <string name="group_members_can_send_voice">Groepsleden kunnen spraak berichten verzenden.</string>
-    <string name="v4_5_transport_isolation_descr">Per chat profiel (standaard) of per verbinding (BETA).</string>
+    <string name="v4_5_transport_isolation_descr">Per chatprofiel (standaard) of per verbinding (BETA).</string>
     <string name="v4_5_multiple_chat_profiles_descr">Verschillende namen, avatars en transportisolatie.</string>
     <string name="v4_4_french_interface">Franse interface</string>
     <string name="error_saving_group_profile">Fout bij opslaan van groep profiel</string>
@@ -392,7 +392,7 @@
     <string name="error_saving_smp_servers">Fout bij opslaan van SMP servers</string>
     <string name="error_setting_network_config">Fout bij updaten van netwerk configuratie</string>
     <string name="failed_to_parse_chat_title">Kan het gesprek niet laden</string>
-    <string name="failed_to_parse_chats_title">Kan de gesprekken niet laden</string>
+    <string name="failed_to_parse_chats_title">Kan de chats niet laden</string>
     <string name="simplex_link_mode_full">Volledige link</string>
     <string name="integrity_msg_duplicate">dubbel bericht</string>
     <string name="invalid_connection_link">Ongeldige verbinding link</string>
@@ -456,10 +456,10 @@
     <string name="leave_group_question">Groep verlaten\?</string>
     <string name="new_member_role">Nieuwe leden rol</string>
     <string name="no_contacts_to_add">Geen contacten om toe te voegen</string>
-    <string name="incognito_info_allows">Het maakt het mogelijk om veel anonieme verbindingen te hebben zonder enige gedeelde gegevens tussen hen in een enkel chat profiel.</string>
+    <string name="incognito_info_allows">Het maakt het mogelijk om veel anonieme verbindingen te hebben zonder enige gedeelde gegevens tussen hen in een enkel chatprofiel.</string>
     <string name="theme_light">Licht</string>
     <string name="chat_preferences_no">nee</string>
-    <string name="v4_5_multiple_chat_profiles">Meerdere chat profielen</string>
+    <string name="v4_5_multiple_chat_profiles">Meerdere chatprofielen</string>
     <string name="v4_5_italian_interface">Italiaanse interface</string>
     <string name="v4_5_message_draft">Concept bericht</string>
     <string name="v4_5_reduced_battery_usage_descr">Meer verbeteringen volgen snel!</string>
@@ -590,7 +590,7 @@
     <string name="only_your_contact_can_send_voice">Alleen uw contact kan spraak berichten verzenden.</string>
     <string name="prohibit_message_deletion">Verbied het onomkeerbaar verwijderen van berichten.</string>
     <string name="feature_offered_item">voorgesteld %s</string>
-    <string name="store_passphrase_securely_without_recover">Sla het wachtwoord veilig op. Als u deze kwijtraakt, heeft u GEEN toegang tot de gesprekken.</string>
+    <string name="store_passphrase_securely_without_recover">Sla het wachtwoord veilig op. Als u deze kwijtraakt, heeft u GEEN toegang tot de chats.</string>
     <string name="store_passphrase_securely">Bewaar het wachtwoord veilig, u kunt deze NIET wijzigen als u deze kwijtraakt.</string>
     <string name="open_chat">Chat openen</string>
     <string name="restore_database_alert_desc">Voer het vorige wachtwoord in na het herstellen van de database back-up. Deze actie kan niet ongedaan gemaakt worden.</string>
@@ -620,12 +620,12 @@
     <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[U bepaalt via welke server(s) je de berichten <b>ontvangt</b>, uw contacten de servers die u gebruikt om ze berichten te sturen.]]></string>
     <string name="icon_descr_video_on">Video aan</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Deze actie kan niet ongedaan worden gemaakt. Uw profiel, contacten, berichten en bestanden gaan onomkeerbaar verloren.</string>
-    <string name="messages_section_description">Deze instelling is van toepassing op berichten in uw huidige chat profiel</string>
+    <string name="messages_section_description">Deze instelling is van toepassing op berichten in uw huidige chatprofiel</string>
     <string name="save_archive">Bewaar archief</string>
     <string name="rcv_group_event_updated_group_profile">bijgewerkt groep profiel</string>
     <string name="group_member_status_removed">verwijderd</string>
-    <string name="group_main_profile_sent">Uw chat profiel wordt verzonden naar de groepsleden</string>
-    <string name="failed_to_create_user_duplicate_desc">Je hebt al een chat profiel met dezelfde weergave naam. Kies een andere naam.</string>
+    <string name="group_main_profile_sent">Uw chatprofiel wordt verzonden naar de groepsleden</string>
+    <string name="failed_to_create_user_duplicate_desc">Je hebt al een chatprofiel met dezelfde weergave naam. Kies een andere naam.</string>
     <string name="you_are_already_connected_to_vName_via_this_link">U bent al verbonden met %1$s.</string>
     <string name="error_smp_test_failed_at_step">Test mislukt bij stap %s.</string>
     <string name="smp_server_test_secure_queue">Veilige wachtrij</string>
@@ -650,8 +650,8 @@
     <string name="this_text_is_available_in_settings">Deze tekst is beschikbaar in instellingen</string>
     <string name="welcome">Welkom!</string>
     <string name="group_preview_you_are_invited">je bent uitgenodigd voor de groep</string>
-    <string name="you_have_no_chats">Je hebt geen gesprekken</string>
-    <string name="your_chats">Gesprekken</string>
+    <string name="you_have_no_chats">Je hebt geen chats</string>
+    <string name="your_chats">Chats</string>
     <string name="share_file">Deel bestand…</string>
     <string name="share_image">Afbeelding delen…</string>
     <string name="icon_descr_waiting_for_image">Wachten op afbeelding</string>
@@ -680,7 +680,7 @@
     <string name="icon_descr_address">SimpleX Adres</string>
     <string name="show_QR_code">Toon QR-code</string>
     <string name="image_descr_simplex_logo">SimpleX-Logo</string>
-    <string name="your_chat_profile_will_be_sent_to_your_contact">Je chat profiel wordt verzonden naar uw contact</string>
+    <string name="your_chat_profile_will_be_sent_to_your_contact">Je chatprofiel wordt verzonden naar uw contact</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Je wordt verbonden met de groep wanneer het apparaat van de groep host online is, even geduld a.u.b. of controleer het later!</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">U wordt verbonden wanneer uw verbindingsverzoek wordt geaccepteerd, even geduld a.u.b. of controleer later!</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Je wordt verbonden wanneer het apparaat van je contact online is, even geduld a.u.b. of controleer het later!</string>
@@ -696,7 +696,7 @@
     <string name="send_us_an_email">Stuur ons een e-mail</string>
     <string name="chat_lock">SimpleX Vergrendelen</string>
     <string name="smp_servers">SMP servers</string>
-    <string name="smp_servers_save">Bewaar servers</string>
+    <string name="smp_servers_save">Servers opslaan</string>
     <string name="smp_servers_test_failed">Servertest mislukt!</string>
     <string name="smp_servers_test_some_failed">Sommige servers hebben de test niet doorstaan:</string>
     <string name="smp_servers_test_servers">Servers testen</string>
@@ -747,7 +747,7 @@
     <string name="run_chat_section">CHAT UITVOEREN</string>
     <string name="your_chat_database">Uw chat database</string>
     <string name="set_password_to_export">Wachtwoord instellen om te exporteren</string>
-    <string name="restart_the_app_to_create_a_new_chat_profile">Start de app opnieuw om een nieuw chat profiel aan te maken.</string>
+    <string name="restart_the_app_to_create_a_new_chat_profile">Start de app opnieuw om een nieuw chatprofiel aan te maken.</string>
     <string name="you_must_use_the_most_recent_version_of_database">U mag ALLEEN de meest recente versie van uw chat-database op één apparaat gebruiken, anders ontvangt u mogelijk geen berichten meer van sommige contacten.</string>
     <string name="restart_the_app_to_use_imported_chat_database">Start de app opnieuw om de geïmporteerde chat database te gebruiken.</string>
     <string name="stop_chat_to_enable_database_actions">Stop de chat om database acties mogelijk te maken.</string>
@@ -842,7 +842,7 @@
     <string name="use_camera_button">Camera</string>
     <string name="smp_servers_use_server_for_new_conn">Gebruik voor nieuwe verbindingen</string>
     <string name="star_on_github">Star on GitHub</string>
-    <string name="smp_servers_per_user">De servers voor nieuwe verbindingen van je huidige chat profiel</string>
+    <string name="smp_servers_per_user">De servers voor nieuwe verbindingen van je huidige chatprofiel</string>
     <string name="your_SMP_servers">Uw SMP servers</string>
     <string name="saved_ICE_servers_will_be_removed">Opgeslagen WebRTC ICE servers worden verwijderd.</string>
     <string name="your_ICE_servers">Uw ICE servers</string>
@@ -865,7 +865,7 @@
     <string name="v4_3_irreversible_message_deletion_desc">Uw contacten kunnen volledige verwijdering van berichten toestaan.</string>
     <string name="you_have_to_enter_passphrase_every_time">U moet elke keer dat de app start het wachtwoord invoeren, deze wordt niet op het apparaat opgeslagen.</string>
     <string name="wrong_passphrase">Verkeerd wachtwoord voor de database</string>
-    <string name="save_passphrase_and_open_chat">Bewaar het wachtwoord en open je gesprekken</string>
+    <string name="save_passphrase_and_open_chat">Bewaar het wachtwoord en open je chats</string>
     <string name="database_backup_can_be_restored">De poging om het wachtwoord van de database te wijzigen is niet voltooid.</string>
     <string name="restore_database">Database back-up terugzetten</string>
     <string name="restore_database_alert_title">Database back-up terugzetten\?</string>
@@ -963,7 +963,7 @@
     <string name="error_updating_user_privacy">Fout bij updaten van gebruikers privacy</string>
     <string name="v4_6_reduced_battery_usage">Verder verminderd batterij verbruik</string>
     <string name="v4_6_group_welcome_message">Groep welkom bericht</string>
-    <string name="v4_6_hidden_chat_profiles">Verborgen chat profielen</string>
+    <string name="v4_6_hidden_chat_profiles">Verborgen chatprofielen</string>
     <string name="hide_profile">Profiel verbergen</string>
     <string name="user_hide">Verbergen</string>
     <string name="hidden_profile_password">Verborgen profiel wachtwoord</string>
@@ -974,7 +974,7 @@
     <string name="v4_6_group_moderation_descr">Nu kunnen beheerders:
 \n- berichten van leden verwijderen.
 \n- schakel leden uit ("waarnemer" rol)</string>
-    <string name="v4_6_hidden_chat_profiles_descr">Bescherm je chat profielen met een wachtwoord!</string>
+    <string name="v4_6_hidden_chat_profiles_descr">Bescherm je chatprofielen met een wachtwoord!</string>
     <string name="password_to_show">Wachtwoord om weer te geven</string>
     <string name="save_and_update_group_profile">Groep profiel opslaan en bijwerken</string>
     <string name="smp_save_servers_question">Servers opslaan\?</string>
@@ -988,7 +988,7 @@
     <string name="user_unhide">zichtbaar maken</string>
     <string name="user_unmute">Dempen opheffen</string>
     <string name="group_welcome_title">Welkom bericht</string>
-    <string name="to_reveal_profile_enter_password">Om uw verborgen profiel te onthullen, voert u een volledig wachtwoord in een zoekveld in op de pagina Uw chat profielen.</string>
+    <string name="to_reveal_profile_enter_password">Om uw verborgen profiel te onthullen, voert u een volledig wachtwoord in een zoekveld in op de pagina Uw chatprofielen.</string>
     <string name="button_welcome_message">Welkom bericht</string>
     <string name="you_will_still_receive_calls_and_ntfs">U ontvangt nog steeds oproepen en meldingen van gedempte profielen wanneer deze actief zijn.</string>
     <string name="database_downgrade">Database downgraden</string>
@@ -1011,9 +1011,9 @@
     <string name="settings_section_title_experimenta">EXPERIMENTEEL</string>
     <string name="delete_profile">Verwijder profiel</string>
     <string name="profile_password">Profiel wachtwoord</string>
-    <string name="unhide_chat_profile">Chat profiel zichtbaar maken</string>
+    <string name="unhide_chat_profile">Chatprofiel zichtbaar maken</string>
     <string name="unhide_profile">Profiel zichtbaar maken</string>
-    <string name="delete_chat_profile">Chat profiel verwijderen\?</string>
+    <string name="delete_chat_profile">Chatprofiel verwijderen?</string>
     <string name="icon_descr_video_asked_to_receive">Gevraagd om de video te ontvangen</string>
     <string name="videos_limit_desc">Er kunnen slechts 10 video\'s tegelijk worden verzonden</string>
     <string name="videos_limit_title">Te veel video\'s!</string>
@@ -1107,7 +1107,7 @@
     <string name="v5_0_polish_interface">Poolse interface</string>
     <string name="v5_0_polish_interface_descr">Dank aan de gebruikers – draag bij via Weblate!</string>
     <string name="v5_0_large_files_support">Video\'s en bestanden tot 1 GB</string>
-    <string name="auth_open_chat_profiles">Chat profielen openen</string>
+    <string name="auth_open_chat_profiles">Open chatprofielen</string>
     <string name="learn_more_about_address">Over SimpleX adres</string>
     <string name="learn_more">Kom meer te weten</string>
     <string name="scan_qr_to_connect_to_contact">Om verbinding te maken, kan uw contact de QR-code scannen of de link in de app gebruiken.</string>
@@ -1249,7 +1249,7 @@
     <string name="abort_switch_receiving_address_desc">Adres wijziging wordt afgebroken. Het oude ontvangstadres wordt gebruikt.</string>
     <string name="abort_switch_receiving_address">Annuleer het wijzigen van het adres</string>
     <string name="abort_switch_receiving_address_confirm">Afbreken</string>
-    <string name="no_filtered_chats">Geen gefilterde gesprekken</string>
+    <string name="no_filtered_chats">Geen gefilterde chats</string>
     <string name="only_owners_can_enable_files_and_media">Alleen groep eigenaren kunnen bestanden en media inschakelen.</string>
     <string name="files_are_prohibited_in_group">Bestanden en media zijn verboden in deze groep.</string>
     <string name="favorite_chat">Favoriet</string>
@@ -1303,7 +1303,7 @@
     <string name="send_receipts">Ontvangst bevestiging verzenden</string>
     <string name="v5_2_message_delivery_receipts_descr">De tweede vink die we gemist hebben! ✅</string>
     <string name="v5_2_favourites_filter_descr">Filter ongelezen en favoriete chats.</string>
-    <string name="v5_2_favourites_filter">Vind gesprekken sneller</string>
+    <string name="v5_2_favourites_filter">Vind chats sneller</string>
     <string name="v5_2_fix_encryption_descr">Repareer versleuteling na het herstellen van back-ups.</string>
     <string name="v5_2_fix_encryption">Behoud uw verbindingen</string>
     <string name="v5_2_disappear_one_message">Eén bericht laten verdwijnen</string>
@@ -1538,7 +1538,7 @@
     <string name="recent_history">Zichtbare geschiedenis</string>
     <string name="la_app_passcode">App toegangscode</string>
     <string name="new_chat">Nieuw gesprek</string>
-    <string name="loading_chats">Gesprekken laden…</string>
+    <string name="loading_chats">Chats laden…</string>
     <string name="creating_link">Link maken…</string>
     <string name="or_scan_qr_code">Of scan de QR-code</string>
     <string name="invalid_qr_code">Ongeldige QR-code</string>
@@ -1888,7 +1888,7 @@
     <string name="servers_info_private_data_disclaimer">Beginnend vanaf %s.
 \nAlle gegevens zijn privé op uw apparaat.</string>
     <string name="servers_info_connected_servers_section_header">Verbonden servers</string>
-    <string name="servers_info_subscriptions_connections_pending">in behandeling</string>
+    <string name="servers_info_subscriptions_connections_pending">In behandeling</string>
     <string name="servers_info_previously_connected_servers_section_header">Eerder verbonden servers</string>
     <string name="servers_info_proxied_servers_section_header">Proxied servers</string>
     <string name="servers_info_subscriptions_total">Totaal</string>
@@ -1929,7 +1929,7 @@
     <string name="downloaded_files">Gedownloade bestanden</string>
     <string name="secured">Beveiligd</string>
     <string name="size">Maat</string>
-    <string name="subscribed">Ingeschreven</string>
+    <string name="subscribed">Subscribed</string>
     <string name="uploaded_files">Geüploade bestanden</string>
     <string name="upload_errors">Upload fouten</string>
     <string name="download_errors">Downloadfouten</string>
@@ -1938,7 +1938,7 @@
     <string name="all_users">Alle profielen</string>
     <string name="attempts_label">pogingen</string>
     <string name="chunks_deleted">Stukken verwijderd</string>
-    <string name="completed">voltooid</string>
+    <string name="completed">Voltooid</string>
     <string name="servers_info_sessions_connected">Verbonden</string>
     <string name="servers_info_sessions_connecting">Verbinden</string>
     <string name="servers_info_reconnect_server_error">Fout bij opnieuw verbinding maken met de server</string>
@@ -1977,8 +1977,8 @@
     <string name="app_check_for_updates">Controleer op updates</string>
     <string name="app_check_for_updates_notice_title">Controleer op updates</string>
     <string name="app_check_for_updates_notice_disable">Uitschakelen</string>
-    <string name="subscription_errors">Inschrijving fouten</string>
-    <string name="subscription_results_ignored">Inschrijvingen genegeerd</string>
+    <string name="subscription_errors">Subscription fouten</string>
+    <string name="subscription_results_ignored">Subscriptions genegeerd</string>
     <string name="app_check_for_updates_stable">Stabiel</string>
     <string name="app_check_for_updates_update_available">Update beschikbaar: %s</string>
     <string name="app_check_for_updates_canceled">Downloaden van update geannuleerd</string>
@@ -2057,7 +2057,7 @@
     <string name="one_hand_ui_change_instruction">U kunt dit wijzigen in de instellingen onder uiterlijk</string>
     <string name="create_address_button">Creëren</string>
     <string name="v6_0_privacy_blur">Vervagen voor betere privacy.</string>
-    <string name="v6_0_chat_list_media">Afspelen via de gesprekken lijst.</string>
+    <string name="v6_0_chat_list_media">Afspelen via de chatlijst.</string>
     <string name="v6_0_upgrade_app_descr">Download nieuwe versies van GitHub.</string>
     <string name="v6_0_increase_font_size">Vergroot het lettertype.</string>
     <string name="v6_0_upgrade_app">App automatisch upgraden</string>
@@ -2067,4 +2067,41 @@
     <string name="new_message">Nieuw bericht</string>
     <string name="error_parsing_uri_title">Ongeldige link</string>
     <string name="error_parsing_uri_desc">Controleer of de SimpleX-link correct is.</string>
+    <string name="switching_profile_error_title">Fout bij wisselen van profiel</string>
+    <string name="select_chat_profile">Selecteer chatprofiel</string>
+    <string name="new_chat_share_profile">Profiel delen</string>
+    <string name="switching_profile_error_message">Uw verbinding is verplaatst naar %s, maar er is een onverwachte fout opgetreden tijdens het omleiden naar het profiel.</string>
+    <string name="settings_section_title_chat_database">CHAT DATABASE</string>
+    <string name="system_mode_toast">Systeemmodus</string>
+    <string name="migrate_from_device_remove_archive_question">Archief verwijderen?</string>
+    <string name="delete_messages_cannot_be_undone_warning">Berichten worden verwijderd. Dit kan niet ongedaan worden gemaakt!</string>
+    <string name="migrate_from_device_uploaded_archive_will_be_removed">Het geüploade databasearchief wordt permanent van de servers verwijderd.</string>
+    <string name="n_file_errors">%1$d bestandsfout(en):
+\n%2$s</string>
+    <string name="forward_files_messages_deleted_after_selection_title">%1$s berichten niet doorgestuurd</string>
+    <string name="forward_alert_title_messages_to_forward">%1$s bericht(en) doorsturen?</string>
+    <string name="network_proxy_auth">Proxy-authenticatie</string>
+    <string name="forward_files_messages_deleted_after_selection_desc">Berichten zijn verwijderd nadat u ze had geselecteerd.</string>
+    <string name="network_proxy_username">Gebruikersnaam</string>
+    <string name="n_other_file_errors">%1$d overige bestandsfout(en).</string>
+    <string name="error_forwarding_messages">Fout bij het doorsturen van berichten</string>
+    <string name="forward_alert_title_nothing_to_forward">Niets om door te sturen!</string>
+    <string name="forward_files_in_progress_desc">%1$d bestand(en) worden nog gedownload.</string>
+    <string name="forward_files_not_accepted_desc">%1$d bestand(en) zijn niet gedownload.</string>
+    <string name="forward_alert_forward_messages_without_files">Berichten doorsturen zonder bestanden?</string>
+    <string name="forward_files_failed_to_receive_desc">%1$d bestand(en) konden niet worden gedownload.</string>
+    <string name="forward_files_missing_desc">%1$d bestand(en) zijn verwijderd.</string>
+    <string name="forward_files_not_accepted_receive_files">Download</string>
+    <string name="compose_forward_messages_n">%1$s berichten doorsturen</string>
+    <string name="forward_multiple">Berichten doorsturen…</string>
+    <string name="compose_save_messages_n">%1$s berichten opslaan</string>
+    <string name="network_proxy_auth_mode_no_auth">Gebruik geen inloggegevens met proxy.</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_entity">Gebruik voor elke verbinding verschillende proxy-inloggegevens.</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_user">Gebruik voor elk profiel verschillende proxy-inloggegevens.</string>
+    <string name="network_proxy_random_credentials">Gebruik willekeurige inloggegevens</string>
+    <string name="network_proxy_auth_mode_username_password">Uw inloggegevens worden mogelijk niet-versleuteld verzonden.</string>
+    <string name="network_proxy_incorrect_config_title">Fout bij opslaan proxy</string>
+    <string name="network_proxy_incorrect_config_desc">Zorg ervoor dat de proxyconfiguratie correct is.</string>
+    <string name="network_proxy_password">Wachtwoord</string>
+    <string name="icon_descr_sound_muted">Geluid gedempt</string>
 </resources>

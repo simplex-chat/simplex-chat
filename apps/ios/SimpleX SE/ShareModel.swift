@@ -320,7 +320,8 @@ class ShareModel: ObservableObject {
                 }
                 await ch.completeFile()
                 if await !ch.isRunning { break }
-            case let .chatItemStatusUpdated(_, ci):
+            case let .chatItemsStatusesUpdated(_, chatItems):
+                guard let ci = chatItems.last else { continue }
                 guard isMessage(for: ci) else { continue }
                 if let (title, message) = ci.chatItem.meta.itemStatus.statusInfo {
                     // `title` and `message` already localized and interpolated
@@ -416,7 +417,7 @@ fileprivate func getSharedContent(_ ip: NSItemProvider) async -> Result<SharedCo
                    let data = try? Data(contentsOf: url),
                    let image = UIImage(data: data),
                    let cryptoFile = saveFile(data, generateNewFileName("IMG", "gif"), encrypted: privacyEncryptLocalFilesGroupDefault.get()),
-                   let preview = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE) {
+                   let preview = await resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE) {
                     .success(.image(preview: preview, cryptoFile: cryptoFile))
                 } else { .failure(ErrorAlert("Error preparing message")) }
 
@@ -424,7 +425,7 @@ fileprivate func getSharedContent(_ ip: NSItemProvider) async -> Result<SharedCo
             } else {
                 if let image = await staticImage(),
                    let cryptoFile = saveImage(image),
-                   let preview = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE) {
+                   let preview = await resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE) {
                     .success(.image(preview: preview, cryptoFile: cryptoFile))
                 } else { .failure(ErrorAlert("Error preparing message")) }
             }
@@ -434,7 +435,7 @@ fileprivate func getSharedContent(_ ip: NSItemProvider) async -> Result<SharedCo
             if let url = try? await inPlaceUrl(type: type),
                let trancodedUrl = await transcodeVideo(from: url),
                let (image, duration) = AVAsset(url: trancodedUrl).generatePreview(),
-               let preview = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE),
+               let preview = await resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE),
                let cryptoFile = moveTempFileFromURL(trancodedUrl) {
                 try? FileManager.default.removeItem(at: trancodedUrl)
                 return .success(.movie(preview: preview, duration: duration, cryptoFile: cryptoFile))

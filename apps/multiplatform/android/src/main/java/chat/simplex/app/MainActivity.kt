@@ -150,12 +150,9 @@ fun processIntent(intent: Intent?) {
     "android.intent.action.VIEW" -> {
       val uri = intent.data
       if (uri != null) {
-        val transformedUri = uri.toURIOrNull()
-        if (transformedUri != null) {
-          chatModel.appOpenUrl.value = null to transformedUri
-        } else {
-          AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_parsing_uri_title), generalGetString(MR.strings.error_parsing_uri_desc))
-        }
+        chatModel.appOpenUrl.value = null to uri.toString()
+      } else {
+        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_parsing_uri_title), generalGetString(MR.strings.error_parsing_uri_desc))
       }
     }
   }

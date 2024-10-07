@@ -116,6 +116,9 @@ fun AppearanceScope.AppearanceLayout(
     ThemesSection(systemDarkTheme)
 
     SectionDividerSpaced()
+    MessageShapeSection()
+
+    SectionDividerSpaced()
     ProfileImageSection()
 
     SectionDividerSpaced(maxTopPadding = true)

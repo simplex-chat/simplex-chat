@@ -454,7 +454,7 @@
 /* No comment provided by engineer. */
 "All new messages from %@ will be hidden!" = "Wszystkie nowe wiadomości z %@ zostaną ukryte!";
 
-/* No comment provided by engineer. */
+/* profile dropdown */
 "All profiles" = "Wszystkie profile";
 
 /* No comment provided by engineer. */
@@ -781,7 +781,7 @@
 /* No comment provided by engineer. */
 "Can't message member" = "Nie można wysłać wiadomości do członka";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Cancel" = "Anuluj";
 
 /* No comment provided by engineer. */
@@ -796,7 +796,7 @@
 /* No comment provided by engineer. */
 "Cannot forward message" = "Nie można przekazać wiadomości";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Cannot receive file" = "Nie można odebrać pliku";
 
 /* snd error text */
@@ -1629,7 +1629,8 @@
 /* No comment provided by engineer. */
 "Downgrade and open chat" = "Obniż wersję i otwórz czat";
 
-/* chat item action */
+/* alert button
+   chat item action */
 "Download" = "Pobierz";
 
 /* No comment provided by engineer. */
@@ -1938,7 +1939,7 @@
 /* No comment provided by engineer. */
 "Error opening chat" = "Błąd otwierania czatu";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error receiving file" = "Błąd odbioru pliku";
 
 /* No comment provided by engineer. */
@@ -1995,7 +1996,7 @@
 /* No comment provided by engineer. */
 "Error stopping chat" = "Błąd zatrzymania czatu";
 
-/* No comment provided by engineer. */
+/* alertTitle */
 "Error switching profile!" = "Błąd przełączania profilu!";
 
 /* No comment provided by engineer. */
@@ -2022,8 +2023,7 @@
 /* No comment provided by engineer. */
 "Error: " = "Błąd: ";
 
-/* file error text
-   snd error text */
+/* alert message */
 "Error: %@" = "Błąd: %@";
 
 /* No comment provided by engineer. */
@@ -2202,9 +2202,6 @@
 
 /* No comment provided by engineer. */
 "Full name (optional)" = "Pełna nazwa (opcjonalna)";
-
-/* No comment provided by engineer. */
-"Full name:" = "Pełna nazwa:";
 
 /* No comment provided by engineer. */
 "Fully decentralized – visible only to members." = "W pełni zdecentralizowana – widoczna tylko dla członków.";
@@ -3084,7 +3081,7 @@
 /* feature offered item */
 "offered %@: %@" = "zaoferował %1$@: %2$@";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Ok" = "Ok";
 
 /* No comment provided by engineer. */
@@ -3377,12 +3374,6 @@
 
 /* No comment provided by engineer. */
 "Profile images" = "Zdjęcia profilowe";
-
-/* No comment provided by engineer. */
-"Profile name" = "Nazwa profilu";
-
-/* No comment provided by engineer. */
-"Profile name:" = "Nazwa profilu:";
 
 /* No comment provided by engineer. */
 "Profile password" = "Hasło profilu";
@@ -3715,10 +3706,11 @@
 /* No comment provided by engineer. */
 "Safer groups" = "Bezpieczniejsze grupy";
 
-/* chat item action */
+/* alert button
+   chat item action */
 "Save" = "Zapisz";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Save (and notify contacts)" = "Zapisz (i powiadom kontakty)";
 
 /* No comment provided by engineer. */
@@ -3735,9 +3727,6 @@
 
 /* No comment provided by engineer. */
 "Save archive" = "Zapisz archiwum";
-
-/* No comment provided by engineer. */
-"Save auto-accept settings" = "Zapisz ustawienia automatycznej akceptacji";
 
 /* No comment provided by engineer. */
 "Save group profile" = "Zapisz profil grupy";
@@ -3759,9 +3748,6 @@
 
 /* No comment provided by engineer. */
 "Save servers?" = "Zapisać serwery?";
-
-/* No comment provided by engineer. */
-"Save settings?" = "Zapisać ustawienia?";
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "Zapisać wiadomość powitalną?";
@@ -3919,7 +3905,7 @@
 /* No comment provided by engineer. */
 "Send up to 100 last messages to new members." = "Wysyłaj do 100 ostatnich wiadomości do nowych członków.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Sender cancelled file transfer." = "Nadawca anulował transfer pliku.";
 
 /* No comment provided by engineer. */
@@ -4588,7 +4574,7 @@
 /* No comment provided by engineer. */
 "unknown servers" = "nieznane przekaźniki";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Unknown servers!" = "Nieznane serwery!";
 
 /* No comment provided by engineer. */
@@ -4894,7 +4880,7 @@
 /* No comment provided by engineer. */
 "Without Tor or VPN, your IP address will be visible to file servers." = "Bez Tor lub VPN, Twój adres IP będzie widoczny do serwerów plików.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." = "Bez Tor lub VPN, Twój adres IP będzie widoczny dla tych przekaźników XFTP: %@.";
 
 /* No comment provided by engineer. */
@@ -4917,9 +4903,6 @@
 
 /* No comment provided by engineer. */
 "you" = "Ty";
-
-/* No comment provided by engineer. */
-"You" = "Ty";
 
 /* No comment provided by engineer. */
 "You **must not** use the same database on two devices." = "**Nie możesz** używać tej samej bazy na dwóch urządzeniach.";
@@ -5189,7 +5172,7 @@
 "Your profile **%@** will be shared." = "Twój profil **%@** zostanie udostępniony.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Twój profil jest przechowywany na urządzeniu i udostępniany tylko Twoim kontaktom.\nSerwery SimpleX nie mogą zobaczyć Twojego profilu.";
+"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Twój profil jest przechowywany na urządzeniu i udostępniany tylko Twoim kontaktom. Serwery SimpleX nie mogą zobaczyć Twojego profilu.";
 
 /* No comment provided by engineer. */
 "Your profile, contacts and delivered messages are stored on your device." = "Twój profil, kontakty i dostarczone wiadomości są przechowywane na Twoim urządzeniu.";

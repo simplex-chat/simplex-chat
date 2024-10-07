@@ -37,7 +37,7 @@ import java.util.concurrent.TimeUnit
 
 const val TAG = "SIMPLEX"
 
-class SimplexApp: Application(), LifecycleEventObserver, Configuration.Provider {
+class SimplexApp: Application(), LifecycleEventObserver {
   val chatModel: ChatModel
     get() = chatController.chatModel
 
@@ -287,13 +287,23 @@ class SimplexApp: Application(), LifecycleEventObserver, Configuration.Provider 
         // Blend status bar color to the animated color
         val colors = CurrentColors.value.colors
         val baseBackgroundColor = if (toolbarOnTop) colors.background.mixWith(colors.onBackground, 0.97f) else colors.background
-        window.statusBarColor = baseBackgroundColor.mixWith(drawerShadingColor.copy(1f), 1 - drawerShadingColor.alpha).toArgb()
-        val navBar = navBarColor.toArgb()
+        var statusBar = baseBackgroundColor.mixWith(drawerShadingColor.copy(1f), 1 - drawerShadingColor.alpha).toArgb()
+        var statusBarLight = isLight
 
+        // SimplexGreen while in call
+        if (window.statusBarColor == SimplexGreen.toArgb()) {
+          statusBarColorAfterCall.intValue = statusBar
+          statusBar = SimplexGreen.toArgb()
+          statusBarLight = false
+        }
+        window.statusBarColor = statusBar
+        val navBar = navBarColor.toArgb()
+        if (windowInsetController?.isAppearanceLightStatusBars != statusBarLight) {
+          windowInsetController?.isAppearanceLightStatusBars = statusBarLight
+        }
         if (window.navigationBarColor != navBar) {
           window.navigationBarColor = navBar
         }
-
         if (windowInsetController?.isAppearanceLightNavigationBars != isLight) {
           windowInsetController?.isAppearanceLightNavigationBars = isLight
         }
@@ -313,11 +323,13 @@ class SimplexApp: Application(), LifecycleEventObserver, Configuration.Provider 
             backgroundColor
           }
         }).toArgb()
+        var statusBarLight = isLight
 
         // SimplexGreen while in call
         if (window.statusBarColor == SimplexGreen.toArgb()) {
           statusBarColorAfterCall.intValue = statusBar
           statusBar = SimplexGreen.toArgb()
+          statusBarLight = false
         }
         val navBar = (if (hasBottom && appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
           backgroundColor.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
@@ -327,8 +339,8 @@ class SimplexApp: Application(), LifecycleEventObserver, Configuration.Provider 
         if (window.statusBarColor != statusBar) {
           window.statusBarColor = statusBar
         }
-        if (windowInsetController?.isAppearanceLightStatusBars != isLight) {
-          windowInsetController?.isAppearanceLightStatusBars = isLight
+        if (windowInsetController?.isAppearanceLightStatusBars != statusBarLight) {
+          windowInsetController?.isAppearanceLightStatusBars = statusBarLight
         }
         if (window.navigationBarColor != navBar) {
           window.navigationBarColor = navBar
@@ -391,9 +403,4 @@ class SimplexApp: Application(), LifecycleEventObserver, Configuration.Provider 
       }
     }
   }
-
-  // Fix for an exception:
-  // WorkManager is not initialized properly. You have explicitly disabled WorkManagerInitializer in your manifest, have not manually called WorkManager#initialize at this point, and your Application does not implement Configuration.Provider.
-  override val workManagerConfiguration: Configuration
-    get() = Configuration.Builder().build()
 }

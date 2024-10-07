@@ -19,7 +19,6 @@ module Simplex.Chat.Store.Profiles
     getUsersInfo,
     getUsers,
     setActiveUser,
-    getSetActiveUser,
     getUser,
     getUserIdByName,
     getUserByAConnId,
@@ -106,10 +105,11 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, 
     let showNtfs = True
         sendRcptsContacts = True
         sendRcptsSmallGroups = True
+    order <- getNextActiveOrder db
     DB.execute
       db
-      "INSERT INTO users (agent_user_id, local_display_name, active_user, contact_id, show_ntfs, send_rcpts_contacts, send_rcpts_small_groups, created_at, updated_at) VALUES (?,?,?,0,?,?,?,?,?)"
-      (auId, displayName, activeUser, showNtfs, sendRcptsContacts, sendRcptsSmallGroups, currentTs, currentTs)
+      "INSERT INTO users (agent_user_id, local_display_name, active_user, active_order, contact_id, show_ntfs, send_rcpts_contacts, send_rcpts_small_groups, created_at, updated_at) VALUES (?,?,?,?,0,?,?,?,?,?)"
+      (auId, displayName, activeUser, order, showNtfs, sendRcptsContacts, sendRcptsSmallGroups, currentTs, currentTs)
     userId <- insertedRowId db
     DB.execute
       db
@@ -126,7 +126,7 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, 
       (profileId, displayName, userId, True, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure $ toUser $ (userId, auId, contactId, profileId, activeUser, displayName, fullName, image, Nothing, userPreferences) :. (showNtfs, sendRcptsContacts, sendRcptsSmallGroups, Nothing, Nothing, Nothing, Nothing)
+    pure $ toUser $ (userId, auId, contactId, profileId, activeUser, order, displayName, fullName, image, Nothing, userPreferences) :. (showNtfs, sendRcptsContacts, sendRcptsSmallGroups, Nothing, Nothing, Nothing, Nothing)
 
 getUsersInfo :: DB.Connection -> IO [UserInfo]
 getUsersInfo db = getUsers db >>= mapM getUserInfo
@@ -161,15 +161,19 @@ getUsers :: DB.Connection -> IO [User]
 getUsers db =
   map toUser <$> DB.query_ db userQuery
 
-setActiveUser :: DB.Connection -> UserId -> IO ()
-setActiveUser db userId = do
+setActiveUser :: DB.Connection -> User -> IO User
+setActiveUser db user@User {userId} = do
   DB.execute_ db "UPDATE users SET active_user = 0"
-  DB.execute db "UPDATE users SET active_user = 1 WHERE user_id = ?" (Only userId)
+  activeOrder <- getNextActiveOrder db
+  DB.execute db "UPDATE users SET active_user = 1, active_order = ? WHERE user_id = ?" (activeOrder, userId)
+  pure user {activeUser = True, activeOrder}
 
-getSetActiveUser :: DB.Connection -> UserId -> ExceptT StoreError IO User
-getSetActiveUser db userId = do
-  liftIO $ setActiveUser db userId
-  getUser db userId
+getNextActiveOrder :: DB.Connection -> IO Int64
+getNextActiveOrder db = do
+  order <- fromMaybe 0 . join <$> maybeFirstRow fromOnly (DB.query_ db "SELECT max(active_order) FROM users")
+  if order == maxBound
+    then 0 <$ DB.execute db "UPDATE users SET active_order = active_order - ?" (Only (maxBound :: Int64))
+    else pure $ order + 1
 
 getUser :: DB.Connection -> UserId -> ExceptT StoreError IO User
 getUser db userId =

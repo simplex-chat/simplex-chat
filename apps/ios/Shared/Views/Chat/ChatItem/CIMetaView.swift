@@ -75,9 +75,14 @@ enum MetaColorMode {
         }
     }
 
-    var statusSpacer: Text {
+    func statusSpacer(_ sent: Bool) -> Text {
         switch self {
-        case .normal, .transparent: Text(Image(systemName: "circlebadge.fill")).foregroundColor(.clear)
+        case .normal, .transparent:
+            Text(
+                sent
+                ? Image("checkmark.wide")
+                : Image(systemName: "circlebadge.fill")
+            ).foregroundColor(.clear)
         case .invertedMaterial: Text(" ").kerning(13)
         }
     }
@@ -130,10 +135,10 @@ func ciMetaText(
                 colorMode.resolve(statusColor)
             }
             r = r + colored(Text(image), metaColor)
-            space = Text(" ")
         } else if !meta.disappearing {
-            space = colorMode.statusSpacer + Text(" ")
+            r = r + colorMode.statusSpacer(meta.itemStatus.sent)
         }
+        space = Text(" ")
     }
     if let enc = encrypted {
         appendSpace()

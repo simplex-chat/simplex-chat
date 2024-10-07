@@ -808,7 +808,7 @@ struct ThemeDestinationPicker: View {
     @Binding var customizeThemeIsOpen: Bool
 
     var body: some View {
-        let values = [(nil, "All profiles")] + m.users.filter { $0.user.activeUser }.map { ($0.user.userId, $0.user.chatViewName)}
+        let values = [(nil, NSLocalizedString("All profiles", comment: "profile dropdown"))] + m.users.filter { $0.user.activeUser }.map { ($0.user.userId, $0.user.chatViewName)}
 
         if values.contains(where: { (userId, text) in userId == themeUserDestination?.0 }) {
             Picker("Apply to", selection: $themeUserDest) {

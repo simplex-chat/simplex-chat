@@ -619,7 +619,7 @@
 /* No comment provided by engineer. */
 "Can't invite contacts!" = "連絡先を招待できません！";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Cancel" = "中止";
 
 /* feature offered item */
@@ -628,7 +628,7 @@
 /* No comment provided by engineer. */
 "Cannot access keychain to save database password" = "データベースのパスワードを保存するためのキーチェーンにアクセスできません";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Cannot receive file" = "ファイル受信ができません";
 
 /* No comment provided by engineer. */
@@ -1431,7 +1431,7 @@
 /* No comment provided by engineer. */
 "Error loading %@ servers" = "%@ サーバーのロード中にエラーが発生";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error receiving file" = "ファイル受信にエラー発生";
 
 /* No comment provided by engineer. */
@@ -1470,7 +1470,7 @@
 /* No comment provided by engineer. */
 "Error stopping chat" = "チャット停止にエラー発生";
 
-/* No comment provided by engineer. */
+/* alertTitle */
 "Error switching profile!" = "プロフィール切り替えにエラー発生！";
 
 /* No comment provided by engineer. */
@@ -1491,8 +1491,7 @@
 /* No comment provided by engineer. */
 "Error: " = "エラー : ";
 
-/* file error text
-   snd error text */
+/* alert message */
 "Error: %@" = "エラー : %@";
 
 /* No comment provided by engineer. */
@@ -1593,9 +1592,6 @@
 
 /* No comment provided by engineer. */
 "Full name (optional)" = "フルネーム (任意)：";
-
-/* No comment provided by engineer. */
-"Full name:" = "フルネーム：";
 
 /* No comment provided by engineer. */
 "Fully re-implemented - work in background!" = "完全に再実装されました - バックグラウンドで動作します!";
@@ -2238,7 +2234,7 @@
 /* feature offered item */
 "offered %@: %@" = "提供された %1$@: %2$@";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Ok" = "OK";
 
 /* No comment provided by engineer. */
@@ -2647,10 +2643,11 @@
 /* No comment provided by engineer. */
 "Run chat" = "チャット起動";
 
-/* chat item action */
+/* alert button
+   chat item action */
 "Save" = "保存";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Save (and notify contacts)" = "保存（連絡先に通知）";
 
 /* No comment provided by engineer. */
@@ -2664,9 +2661,6 @@
 
 /* No comment provided by engineer. */
 "Save archive" = "アーカイブを保存";
-
-/* No comment provided by engineer. */
-"Save auto-accept settings" = "自動受け入れ設定を保存する";
 
 /* No comment provided by engineer. */
 "Save group profile" = "グループプロフィールの保存";
@@ -2688,9 +2682,6 @@
 
 /* No comment provided by engineer. */
 "Save servers?" = "サーバを保存しますか？";
-
-/* No comment provided by engineer. */
-"Save settings?" = "設定を保存しますか？";
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "ウェルカムメッセージを保存しますか？";
@@ -2779,7 +2770,7 @@
 /* No comment provided by engineer. */
 "Send them from gallery or custom keyboards." = "ギャラリーまたはカスタム キーボードから送信します。";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Sender cancelled file transfer." = "送信者がファイル転送をキャンセルしました。";
 
 /* No comment provided by engineer. */
@@ -3371,9 +3362,6 @@
 "yes" = "はい";
 
 /* No comment provided by engineer. */
-"You" = "あなた";
-
-/* No comment provided by engineer. */
 "You accepted connection" = "接続を承認しました";
 
 /* No comment provided by engineer. */
@@ -3566,7 +3554,7 @@
 "Your profile **%@** will be shared." = "あなたのプロファイル **%@** が共有されます。";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "プロフィールはデバイスに保存され、連絡先とのみ共有されます。\nSimpleX サーバーはあなたのプロファイルを参照できません。";
+"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "プロフィールはデバイスに保存され、連絡先とのみ共有されます。 SimpleX サーバーはあなたのプロファイルを参照できません。";
 
 /* No comment provided by engineer. */
 "Your profile, contacts and delivered messages are stored on your device." = "あなたのプロフィール、連絡先、送信したメッセージがご自分の端末に保存されます。";

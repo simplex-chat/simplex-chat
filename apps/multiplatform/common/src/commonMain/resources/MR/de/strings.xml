@@ -277,11 +277,11 @@
     <string name="accept_contact_incognito_button">Inkognito akzeptieren</string>
     <string name="reject_contact_button">Ablehnen</string>
     <!-- Clear Chat - ChatListNavLinkView.kt -->
-    <string name="clear_chat_question">Chatinhalte löschen?</string>
+    <string name="clear_chat_question">Chat-Inhalte entfernen?</string>
     <string name="clear_chat_warning">Es werden alle Nachrichten gelöscht. Dies kann nicht rückgängig gemacht werden! Die Nachrichten werden NUR bei Ihnen gelöscht.</string>
-    <string name="clear_verb">Löschen</string>
-    <string name="clear_chat_button">Chatinhalte löschen</string>
-    <string name="clear_chat_menu_action">Chatinhalte löschen</string>
+    <string name="clear_verb">Entfernen</string>
+    <string name="clear_chat_button">Chat-Inhalte entfernen</string>
+    <string name="clear_chat_menu_action">Chat-Inhalte entfernen</string>
     <string name="delete_contact_menu_action">Löschen</string>
     <string name="delete_group_menu_action">Löschen</string>
     <string name="mark_read">Als gelesen markieren</string>
@@ -753,7 +753,7 @@
     <string name="skip_inviting_button">Mitgliedereinladungen überspringen</string>
     <string name="select_contacts">Kontakte auswählen</string>
     <string name="icon_descr_contact_checked">Kontakt geprüft</string>
-    <string name="clear_contacts_selection_button">Löschen</string>
+    <string name="clear_contacts_selection_button">Entfernen</string>
     <string name="num_contacts_selected">%d Kontakt(e) ausgewählt</string>
     <string name="no_contacts_selected">Keine Kontakte ausgewählt</string>
     <string name="invite_prohibited">Kontakt kann nicht eingeladen werden!</string>
@@ -765,7 +765,7 @@
     <string name="button_delete_group">Gruppe löschen</string>
     <string name="delete_group_question">Gruppe löschen?</string>
     <string name="delete_group_for_all_members_cannot_undo_warning">Die Gruppe wird für alle Mitglieder gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
-    <string name="delete_group_for_self_cannot_undo_warning">Die Gruppe wird für Sie gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
+    <string name="delete_group_for_self_cannot_undo_warning">Die Gruppe wird nur bei Ihnen gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
     <string name="button_leave_group">Gruppe verlassen</string>
     <string name="button_edit_group_profile">Gruppenprofil bearbeiten</string>
     <string name="group_link">Gruppen-Link</string>
@@ -1061,7 +1061,7 @@
     <string name="v4_6_audio_video_calls_descr">Bluetooth-Unterstützung und weitere Verbesserungen.</string>
     <string name="v4_6_group_moderation_descr">Administratoren können nun
 \n- Nachrichten von Gruppenmitgliedern löschen
-\n- Gruppenmitglieder deaktivieren („Beobachter“-Rolle)</string>
+\n- Gruppenmitglieder deaktivieren (Beobachter-Rolle)</string>
     <string name="v4_6_group_welcome_message">Gruppen-Begrüßungsmeldung</string>
     <string name="v4_6_reduced_battery_usage">Weiter reduzierter Batterieverbrauch</string>
     <string name="v4_6_reduced_battery_usage_descr">Weitere Verbesserungen sind bald verfügbar!</string>
@@ -1397,7 +1397,7 @@
     <string name="v5_2_message_delivery_receipts_descr">Wir haben das zweite Häkchen vermisst! ✅</string>
     <string name="v5_2_fix_encryption_descr">Reparatur der Verschlüsselung nach Wiedereinspielen von Backups.</string>
     <string name="v5_2_more_things">Ein paar weitere Dinge</string>
-    <string name="v5_2_disappear_one_message_descr">Auch wenn sie im Chat deaktiviert sind.</string>
+    <string name="v5_2_disappear_one_message_descr">Auch wenn sie in den Unterhaltungen deaktiviert sind.</string>
     <string name="v5_2_more_things_descr">- stabilere Zustellung von Nachrichten.
 \n- ein bisschen verbesserte Gruppen.
 \n- und mehr!</string>
@@ -1630,7 +1630,7 @@
     <string name="tap_to_scan">Zum Scannen tippen</string>
     <string name="keep_invitation_link">Behalten</string>
     <string name="tap_to_paste_link">Zum Link einfügen tippen</string>
-    <string name="search_or_paste_simplex_link">Suchen oder fügen Sie den SimpleX-Link ein</string>
+    <string name="search_or_paste_simplex_link">Suchen oder SimpleX-Link einfügen</string>
     <string name="chat_is_stopped_you_should_transfer_database">Der Chat wurde gestoppt. Wenn diese Datenbank bereits auf einem anderen Gerät von Ihnen verwendet wurde, sollten Sie diese dorthin zurück übertragen, bevor Sie den Chat starten.</string>
     <string name="start_chat_question">Chat starten?</string>
     <string name="show_internal_errors">Interne Fehler anzeigen</string>
@@ -1673,7 +1673,7 @@
     <string name="v5_5_private_notes_descr">Mit verschlüsselten Dateien und Medien.</string>
     <string name="v5_5_private_notes">Private Notizen</string>
     <string name="clear_note_folder_warning">Es werden alle Nachrichten gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
-    <string name="clear_note_folder_question">Private Notizen löschen?</string>
+    <string name="clear_note_folder_question">Private Notizen entfernen?</string>
     <string name="rcv_group_event_member_blocked">%s wurde blockiert</string>
     <string name="rcv_group_event_member_unblocked">%s wurde freigegeben</string>
     <string name="snd_group_event_member_blocked">Sie haben %s blockiert</string>
@@ -2081,16 +2081,16 @@
     <string name="info_view_connect_button">Verbinden</string>
     <string name="info_view_message_button">Nachricht</string>
     <string name="info_view_open_button">Öffnen</string>
-    <string name="conversation_deleted">Unterhaltung gelöscht!</string>
-    <string name="only_delete_conversation">Nur die Unterhaltung löschen</string>
+    <string name="conversation_deleted">Chat-Inhalte gelöscht!</string>
+    <string name="only_delete_conversation">Nur die Chat-Inhalte löschen</string>
     <string name="info_view_search_button">Suchen</string>
     <string name="info_view_video_button">Video</string>
-    <string name="you_can_still_view_conversation_with_contact">Sie können in der Chatliste weiterhin die Unterhaltung mit %1$s einsehen.</string>
+    <string name="you_can_still_view_conversation_with_contact">Sie können in der Chat-Liste weiterhin die Unterhaltung mit %1$s einsehen.</string>
     <string name="paste_link">Link einfügen</string>
     <string name="deleted_chats">Archivierte Kontakte</string>
     <string name="no_filtered_contacts">Keine gefilterten Kontakte</string>
     <string name="contact_list_header_title">Ihre Kontakte</string>
-    <string name="one_hand_ui">Erreichbare Chat-Symbolleiste</string>
+    <string name="one_hand_ui">Chat-Symbolleiste unten</string>
     <string name="calls_prohibited_ask_to_enable_calls_alert_text">Bitten Sie Ihren Kontakt darum, Anrufe zu aktivieren.</string>
     <string name="you_need_to_allow_calls">Sie müssen Ihrem Kontakt Anrufe zu Ihnen erlauben, bevor Sie ihn selbst anrufen können.</string>
     <string name="allow_calls_question">Anrufe erlauben?</string>
@@ -2106,11 +2106,11 @@
     <string name="delete_contact_cannot_undo_warning">Kontakt wird gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
     <string name="delete_without_notification">Ohne Benachrichtigung löschen</string>
     <string name="action_button_add_members">Einladen</string>
-    <string name="keep_conversation">Unterhaltung behalten</string>
+    <string name="keep_conversation">Chat-Inhalte beibehalten</string>
     <string name="cant_call_member_send_message_alert_text">Nachricht senden, um Anrufe zu aktivieren.</string>
     <string name="you_can_still_send_messages_to_contact">Sie können aus den archivierten Kontakten heraus Nachrichten an %1$s versenden.</string>
     <string name="toolbar_settings">Einstellungen</string>
-    <string name="moderate_messages_will_be_deleted_warning">Die Nachrichten werden für alle Mitglieder gelöscht.</string>
+    <string name="moderate_messages_will_be_deleted_warning">Die Nachrichten werden für alle Gruppenmitglieder gelöscht.</string>
     <string name="moderate_messages_will_be_marked_warning">Die Nachrichten werden für alle Mitglieder als moderiert markiert.</string>
     <string name="delete_members_messages__question">%d Nachrichten der Mitglieder löschen?</string>
     <string name="compose_message_placeholder">Nachricht</string>
@@ -2120,7 +2120,7 @@
     <string name="select_verb">Auswählen</string>
     <string name="invite_friends_short">Einladen</string>
     <string name="network_option_tcp_connection">TCP-Verbindung</string>
-    <string name="v6_0_increase_font_size">Schriftgröße erhöhen.</string>
+    <string name="v6_0_increase_font_size">Schriftgröße anpassen.</string>
     <string name="v6_0_new_chat_experience">Neue Chat-Erfahrung 🎉</string>
     <string name="v6_0_upgrade_app">Die App automatisch aktualisieren</string>
     <string name="v6_0_connection_servers_status_descr">Verbindungs- und Server-Status.</string>
@@ -2136,8 +2136,8 @@
     <string name="v6_0_your_contacts_descr">Kontakte für spätere Chats archivieren.</string>
     <string name="v6_0_private_routing_descr">Ihre IP-Adresse und Verbindungen werden geschützt.</string>
     <string name="v6_0_delete_many_messages_descr">Löschen Sie bis zu 20 Nachrichten auf einmal.</string>
-    <string name="v6_0_reachable_chat_toolbar">Erreichbare Chat-Symbolleiste</string>
-    <string name="v6_0_reachable_chat_toolbar_descr">Die App mit einer Hand nutzen.</string>
+    <string name="v6_0_reachable_chat_toolbar">Chat-Symbolleiste unten</string>
+    <string name="v6_0_reachable_chat_toolbar_descr">Die App mit einer Hand bedienen.</string>
     <string name="v6_0_connect_faster_descr">Schneller mit Ihren Freunden verbinden.</string>
     <string name="chat_database_exported_title">Chat-Datenbank wurde exportiert</string>
     <string name="chat_database_exported_continue">Weiter</string>
@@ -2151,4 +2151,41 @@
     <string name="new_message">Neue Nachricht</string>
     <string name="error_parsing_uri_desc">Bitte überprüfen Sie, ob der SimpleX-Link korrekt ist.</string>
     <string name="error_parsing_uri_title">Ungültiger Link</string>
+    <string name="settings_section_title_chat_database">CHAT-DATENBANK</string>
+    <string name="switching_profile_error_title">Fehler beim Wechseln des Profils</string>
+    <string name="delete_messages_cannot_be_undone_warning">Die Nachrichten werden gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
+    <string name="new_chat_share_profile">Profil teilen</string>
+    <string name="system_mode_toast">System-Modus</string>
+    <string name="migrate_from_device_uploaded_archive_will_be_removed">Das hochgeladene Datenbank-Archiv wird dauerhaft von den Servern entfernt.</string>
+    <string name="select_chat_profile">Chat-Profil auswählen</string>
+    <string name="migrate_from_device_remove_archive_question">Archiv entfernen?</string>
+    <string name="network_proxy_auth_mode_username_password">Ihre Anmeldeinformationen können unverschlüsselt versendet werden.</string>
+    <string name="network_proxy_auth_mode_no_auth">Verwenden Sie keine Anmeldeinformationen mit einem Proxy.</string>
+    <string name="switching_profile_error_message">Ihre Verbindung wurde auf %s verschoben, aber während der Weiterleitung auf das Profil trat ein unerwarteter Fehler auf.</string>
+    <string name="network_proxy_incorrect_config_desc">Stellen Sie sicher, dass die Proxy-Konfiguration richtig ist.</string>
+    <string name="network_proxy_incorrect_config_title">Fehler beim Speichern des Proxys</string>
+    <string name="network_proxy_password">Passwort</string>
+    <string name="network_proxy_auth">Proxy-Authentifizierung</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_entity">Verwenden Sie für jede Verbindung unterschiedliche Proxy-Anmeldeinformationen.</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_user">Verwenden Sie für jedes Profil unterschiedliche Proxy-Anmeldeinformationen.</string>
+    <string name="network_proxy_random_credentials">Verwenden Sie zufällige Anmeldeinformationen</string>
+    <string name="network_proxy_username">Benutzername</string>
+    <string name="n_file_errors">%1$d Datei-Fehler:
+\n%2$s</string>
+    <string name="forward_files_in_progress_desc">%1$d Datei(en) wird/werden immer noch heruntergeladen.</string>
+    <string name="forward_files_failed_to_receive_desc">Bei %1$d Datei(en) ist das Herunterladen fehlgeschlagen.</string>
+    <string name="error_forwarding_messages">Fehler beim Weiterleiten der Nachrichten</string>
+    <string name="forward_files_messages_deleted_after_selection_desc">Die Nachrichten wurden gelöscht, nachdem Sie sie ausgewählt hatten.</string>
+    <string name="forward_alert_title_nothing_to_forward">Es gibt nichts zum Weiterleiten!</string>
+    <string name="n_other_file_errors">%1$d andere(r) Datei-Fehler.</string>
+    <string name="forward_alert_title_messages_to_forward">%1$s Nachricht(en) weiterleiten?</string>
+    <string name="forward_files_missing_desc">%1$d Datei(en) wurde(n) gelöscht.</string>
+    <string name="forward_files_not_accepted_desc">%1$d Datei(en) wurde(n) nicht heruntergeladen.</string>
+    <string name="forward_alert_forward_messages_without_files">Nachrichten ohne Dateien weiterleiten?</string>
+    <string name="forward_files_messages_deleted_after_selection_title">%1$s Nachrichten wurden nicht weitergeleitet</string>
+    <string name="forward_files_not_accepted_receive_files">Herunterladen</string>
+    <string name="compose_forward_messages_n">Es wird/werden %1$s Nachricht(en) weitergeleitet</string>
+    <string name="forward_multiple">Nachrichten werden weitergeleitet…</string>
+    <string name="compose_save_messages_n">Es wird/werden %1$s Nachricht(en) gesichert</string>
+    <string name="icon_descr_sound_muted">Ton stummgeschaltet</string>
 </resources>

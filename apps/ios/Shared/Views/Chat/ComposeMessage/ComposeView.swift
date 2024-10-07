@@ -23,7 +23,7 @@ enum ComposeContextItem {
     case noContextItem
     case quotedItem(chatItem: ChatItem)
     case editingItem(chatItem: ChatItem)
-    case forwardingItem(chatItem: ChatItem, fromChatInfo: ChatInfo)
+    case forwardingItems(chatItems: [ChatItem], fromChatInfo: ChatInfo)
 }
 
 enum VoiceMessageRecordingState {
@@ -73,10 +73,10 @@ struct ComposeState {
         }
     }
 
-    init(forwardingItem: ChatItem, fromChatInfo: ChatInfo) {
+    init(forwardingItems: [ChatItem], fromChatInfo: ChatInfo) {
         self.message = ""
         self.preview = .noPreview
-        self.contextItem = .forwardingItem(chatItem: forwardingItem, fromChatInfo: fromChatInfo)
+        self.contextItem = .forwardingItems(chatItems: forwardingItems, fromChatInfo: fromChatInfo)
         self.voiceMessageRecordingState = .noRecording
     }
 
@@ -112,7 +112,7 @@ struct ComposeState {
 
     var forwarding: Bool {
         switch contextItem {
-        case .forwardingItem: return true
+        case .forwardingItems: return true
         default: return false
         }
     }
@@ -163,6 +163,13 @@ struct ComposeState {
     var voicePreview: Bool {
         switch preview {
         case .voicePreview: return true
+        default: return false
+        }
+    }
+
+    var manyMediaPreviews: Bool {
+        switch preview {
+        case let .mediaPreviews(mediaPreviews): return mediaPreviews.count > 1
         default: return false
         }
     }
@@ -452,7 +459,7 @@ struct ComposeView: View {
             Task {
                 var media: [(String, UploadContent)] = []
                 for content in selected {
-                    if let img = resizeImageToStrSize(content.uiImage, maxDataSize: 14000) {
+                    if let img = await resizeImageToStrSize(content.uiImage, maxDataSize: 14000) {
                         media.append((img, content))
                         await MainActor.run {
                             composeState = composeState.copy(preview: .mediaPreviews(mediaPreviews: media))
@@ -544,7 +551,7 @@ struct ComposeView: View {
     }
 
     private func addMediaContent(_ content: UploadContent) async {
-        if let img = resizeImageToStrSize(content.uiImage, maxDataSize: 14000) {
+        if let img = await resizeImageToStrSize(content.uiImage, maxDataSize: 14000) {
             var newMedia: [(String, UploadContent?)] = []
             if case var .mediaPreviews(media) = composeState.preview {
                 media.append((img, content))
@@ -687,7 +694,7 @@ struct ComposeView: View {
         case let .quotedItem(chatItem: quotedItem):
             ContextItemView(
                 chat: chat,
-                contextItem: quotedItem,
+                contextItems: [quotedItem],
                 contextIcon: "arrowshape.turn.up.left",
                 cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) }
             )
@@ -695,18 +702,17 @@ struct ComposeView: View {
         case let .editingItem(chatItem: editingItem):
             ContextItemView(
                 chat: chat,
-                contextItem: editingItem,
+                contextItems: [editingItem],
                 contextIcon: "pencil",
                 cancelContextItem: { clearState() }
             )
             Divider()
-        case let .forwardingItem(chatItem: forwardedItem, _):
+        case let .forwardingItems(chatItems, _):
             ContextItemView(
                 chat: chat,
-                contextItem: forwardedItem,
+                contextItems: chatItems,
                 contextIcon: "arrowshape.turn.up.forward",
-                cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) },
-                showSender: false
+                cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) }
             )
             Divider()
         }
@@ -730,10 +736,11 @@ struct ComposeView: View {
         }
         if chat.chatInfo.contact?.nextSendGrpInv ?? false {
             await sendMemberContactInvitation()
-        } else if case let .forwardingItem(ci, fromChatInfo) = composeState.contextItem {
-            sent = await forwardItem(ci, fromChatInfo, ttl)
+        } else if case let .forwardingItems(chatItems, fromChatInfo) = composeState.contextItem {
+            // Composed text is send as a reply to the last forwarded item
+            sent = await forwardItems(chatItems, fromChatInfo, ttl).last
             if !composeState.message.isEmpty {
-                sent = await send(checkLinkPreview(), quoted: sent?.id, live: false, ttl: ttl)
+                _ = await send(checkLinkPreview(), quoted: sent?.id, live: false, ttl: ttl)
             }
         } else if case let .editingItem(ci) = composeState.contextItem {
             sent = await updateMessage(ci, live: live)
@@ -750,27 +757,28 @@ struct ComposeView: View {
                 sent = await send(.text(msgText), quoted: quoted, live: live, ttl: ttl)
             case .linkPreview:
                 sent = await send(checkLinkPreview(), quoted: quoted, live: live, ttl: ttl)
-            case let .mediaPreviews(mediaPreviews: media):
-                // TODO batch send: batch media previews
+            case let .mediaPreviews(media):
                 let last = media.count - 1
+                var msgs: [ComposedMessage] = []
                 if last >= 0 {
                     for i in 0..<last {
-                        if case (_, .video(_, _, _)) = media[i] {
-                            sent = await sendVideo(media[i], ttl: ttl)
-                        } else {
-                            sent = await sendImage(media[i], ttl: ttl)
+                        if i > 0 {
+                            // Sleep to allow `progressByTimeout` update be rendered
+                            try? await Task.sleep(nanoseconds: 100_000000)
                         }
-                        _ = try? await Task.sleep(nanoseconds: 100_000000)
+                        if let (fileSource, msgContent) = mediaContent(media[i], text: "") {
+                            msgs.append(ComposedMessage(fileSource: fileSource, msgContent: msgContent))
+                        }
                     }
-                    if case (_, .video(_, _, _)) = media[last] {
-                        sent = await sendVideo(media[last], text: msgText, quoted: quoted, live: live, ttl: ttl)
-                    } else {
-                        sent = await sendImage(media[last], text: msgText, quoted: quoted, live: live, ttl: ttl)
+                    if let (fileSource, msgContent) = mediaContent(media[last], text: msgText) {
+                        msgs.append(ComposedMessage(fileSource: fileSource, quotedItemId: quoted, msgContent: msgContent))
                     }
                 }
-                if sent == nil {
-                    sent = await send(.text(msgText), quoted: quoted, live: live, ttl: ttl)
+                if msgs.isEmpty {
+                    msgs = [ComposedMessage(quotedItemId: quoted, msgContent: .text(msgText))]
                 }
+                sent = await send(msgs, live: live, ttl: ttl).last
+
             case let .voicePreview(recordingFileName, duration):
                 stopPlayback.toggle()
                 let file = voiceCryptoFile(recordingFileName)
@@ -792,6 +800,20 @@ struct ComposeView: View {
         }
         return sent
 
+        func mediaContent(_ media: (String, UploadContent?), text: String) -> (CryptoFile?, MsgContent)? {
+            let (previewImage, uploadContent) = media
+            return switch uploadContent {
+            case let .simpleImage(image):
+                (saveImage(image), .image(text: text, image: previewImage))
+            case let .animatedImage(image):
+                (saveAnimImage(image), .image(text: text, image: previewImage))
+            case let .video(_, url, duration):
+                (moveTempFileFromURL(url), .video(text: text, image: previewImage, duration: duration))
+            case .none:
+                nil
+            }
+        }
+        
         func sending() async {
             await MainActor.run { composeState.inProgress = true }
         }
@@ -855,23 +877,6 @@ struct ComposeView: View {
             }
         }
 
-        func sendImage(_ imageData: (String, UploadContent?), text: String = "", quoted: Int64? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
-            let (image, data) = imageData
-            if let data = data, let savedFile = saveAnyImage(data) {
-                return await send(.image(text: text, image: image), quoted: quoted, file: savedFile, live: live, ttl: ttl)
-            }
-            return nil
-        }
-
-        func sendVideo(_ imageData: (String, UploadContent?), text: String = "", quoted: Int64? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
-            let (image, data) = imageData
-            if case let .video(_, url, duration) = data, let savedFile = moveTempFileFromURL(url) {
-                ChatModel.shared.filesToDelete.remove(url)
-                return await send(.video(text: text, image: image, duration: duration), quoted: quoted, file: savedFile, live: live, ttl: ttl)
-            }
-            return nil
-        }
-
         func voiceCryptoFile(_ fileName: String) -> CryptoFile? {
             if !privacyEncryptLocalFilesGroupDefault.get() {
                 return CryptoFile.plain(fileName)
@@ -888,17 +893,22 @@ struct ComposeView: View {
         }
 
         func send(_ mc: MsgContent, quoted: Int64?, file: CryptoFile? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
+            await send(
+                [ComposedMessage(fileSource: file, quotedItemId: quoted, msgContent: mc)],
+                live: live,
+                ttl: ttl
+            ).first
+        }
+
+        func send(_ msgs: [ComposedMessage], live: Bool, ttl: Int?) async -> [ChatItem] {
             if let chatItems = chat.chatInfo.chatType == .local
-                ? await apiCreateChatItems(
-                    noteFolderId: chat.chatInfo.apiId,
-                    composedMessages: [ComposedMessage(fileSource: file, msgContent: mc)]
-                )
+                ? await apiCreateChatItems(noteFolderId: chat.chatInfo.apiId, composedMessages: msgs)
                 : await apiSendMessages(
                     type: chat.chatInfo.chatType,
                     id: chat.chatInfo.apiId,
                     live: live,
                     ttl: ttl,
-                    composedMessages: [ComposedMessage(fileSource: file, quotedItemId: quoted, msgContent: mc)]
+                    composedMessages: msgs
                 ) {
                 await MainActor.run {
                     chatModel.removeLiveDummy(animated: false)
@@ -906,33 +916,43 @@ struct ComposeView: View {
                         chatModel.addChatItem(chat.chatInfo, chatItem)
                     }
                 }
-                // UI only supports sending one item at a time
-                return chatItems.first
+                return chatItems
             }
-            if let file = file {
-                removeFile(file.filePath)
+            for msg in msgs {
+                if let file = msg.fileSource {
+                    removeFile(file.filePath)
+                }
             }
-            return nil
+            return []
         }
 
-        func forwardItem(_ forwardedItem: ChatItem, _ fromChatInfo: ChatInfo, _ ttl: Int?) async -> ChatItem? {
+        func forwardItems(_ forwardedItems: [ChatItem], _ fromChatInfo: ChatInfo, _ ttl: Int?) async -> [ChatItem] {
             if let chatItems = await apiForwardChatItems(
                 toChatType: chat.chatInfo.chatType,
                 toChatId: chat.chatInfo.apiId,
                 fromChatType: fromChatInfo.chatType,
                 fromChatId: fromChatInfo.apiId,
-                itemIds: [forwardedItem.id],
+                itemIds: forwardedItems.map { $0.id },
                 ttl: ttl
             ) {
                 await MainActor.run {
                     for chatItem in chatItems {
                         chatModel.addChatItem(chat.chatInfo, chatItem)
                     }
+                    if forwardedItems.count != chatItems.count {
+                        showAlert(
+                            String.localizedStringWithFormat(
+                                NSLocalizedString("%d messages not forwarded", comment: "alert title"),
+                                forwardedItems.count - chatItems.count
+                            ),
+                            message: NSLocalizedString("Messages were deleted after you selected them.", comment: "alert message")
+                        )
+                    }
                 }
-                // TODO batch send: forward multiple messages
-                return chatItems.first
+                return chatItems
+            } else {
+                return []
             }
-            return nil
         }
 
         func checkLinkPreview() -> MsgContent {
@@ -947,14 +967,6 @@ struct ComposeView: View {
                 }
             default:
                 return .text(msgText)
-            }
-        }
-
-        func saveAnyImage(_ img: UploadContent) -> CryptoFile? {
-            switch img {
-            case let .simpleImage(image): return saveImage(image)
-            case let .animatedImage(image): return saveAnimImage(image)
-            default: return nil
             }
         }
     }

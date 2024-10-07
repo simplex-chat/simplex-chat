@@ -454,7 +454,7 @@
 /* No comment provided by engineer. */
 "All new messages from %@ will be hidden!" = "Всі нові повідомлення від %@ будуть приховані!";
 
-/* No comment provided by engineer. */
+/* profile dropdown */
 "All profiles" = "Всі профілі";
 
 /* No comment provided by engineer. */
@@ -781,7 +781,7 @@
 /* No comment provided by engineer. */
 "Can't message member" = "Не можу надіслати повідомлення користувачеві";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Cancel" = "Скасувати";
 
 /* No comment provided by engineer. */
@@ -796,7 +796,7 @@
 /* No comment provided by engineer. */
 "Cannot forward message" = "Неможливо переслати повідомлення";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Cannot receive file" = "Не вдається отримати файл";
 
 /* snd error text */
@@ -1629,7 +1629,8 @@
 /* No comment provided by engineer. */
 "Downgrade and open chat" = "Пониження та відкритий чат";
 
-/* chat item action */
+/* alert button
+   chat item action */
 "Download" = "Завантажити";
 
 /* No comment provided by engineer. */
@@ -1938,7 +1939,7 @@
 /* No comment provided by engineer. */
 "Error opening chat" = "Помилка відкриття чату";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error receiving file" = "Помилка отримання файлу";
 
 /* No comment provided by engineer. */
@@ -1995,7 +1996,7 @@
 /* No comment provided by engineer. */
 "Error stopping chat" = "Помилка зупинки чату";
 
-/* No comment provided by engineer. */
+/* alertTitle */
 "Error switching profile!" = "Помилка перемикання профілю!";
 
 /* No comment provided by engineer. */
@@ -2022,8 +2023,7 @@
 /* No comment provided by engineer. */
 "Error: " = "Помилка: ";
 
-/* file error text
-   snd error text */
+/* alert message */
 "Error: %@" = "Помилка: %@";
 
 /* No comment provided by engineer. */
@@ -2202,9 +2202,6 @@
 
 /* No comment provided by engineer. */
 "Full name (optional)" = "Повне ім'я (необов'язково)";
-
-/* No comment provided by engineer. */
-"Full name:" = "Повне ім'я:";
 
 /* No comment provided by engineer. */
 "Fully decentralized – visible only to members." = "Повністю децентралізована - видима лише для учасників.";
@@ -3084,7 +3081,7 @@
 /* feature offered item */
 "offered %@: %@" = "запропонував %1$@: %2$@";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Ok" = "Гаразд";
 
 /* No comment provided by engineer. */
@@ -3377,12 +3374,6 @@
 
 /* No comment provided by engineer. */
 "Profile images" = "Зображення профілю";
-
-/* No comment provided by engineer. */
-"Profile name" = "Назва профілю";
-
-/* No comment provided by engineer. */
-"Profile name:" = "Ім'я профілю:";
 
 /* No comment provided by engineer. */
 "Profile password" = "Пароль до профілю";
@@ -3715,10 +3706,11 @@
 /* No comment provided by engineer. */
 "Safer groups" = "Безпечніші групи";
 
-/* chat item action */
+/* alert button
+   chat item action */
 "Save" = "Зберегти";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Save (and notify contacts)" = "Зберегти (і повідомити контактам)";
 
 /* No comment provided by engineer. */
@@ -3735,9 +3727,6 @@
 
 /* No comment provided by engineer. */
 "Save archive" = "Зберегти архів";
-
-/* No comment provided by engineer. */
-"Save auto-accept settings" = "Зберегти налаштування автоприйому";
 
 /* No comment provided by engineer. */
 "Save group profile" = "Зберегти профіль групи";
@@ -3759,9 +3748,6 @@
 
 /* No comment provided by engineer. */
 "Save servers?" = "Зберегти сервери?";
-
-/* No comment provided by engineer. */
-"Save settings?" = "Зберегти налаштування?";
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "Зберегти вітальне повідомлення?";
@@ -3919,7 +3905,7 @@
 /* No comment provided by engineer. */
 "Send up to 100 last messages to new members." = "Надішліть до 100 останніх повідомлень новим користувачам.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Sender cancelled file transfer." = "Відправник скасував передачу файлу.";
 
 /* No comment provided by engineer. */
@@ -4588,7 +4574,7 @@
 /* No comment provided by engineer. */
 "unknown servers" = "невідомі реле";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Unknown servers!" = "Невідомі сервери!";
 
 /* No comment provided by engineer. */
@@ -4894,7 +4880,7 @@
 /* No comment provided by engineer. */
 "Without Tor or VPN, your IP address will be visible to file servers." = "Без Tor або VPN ваша IP-адреса буде видимою для файлових серверів.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." = "Без Tor або VPN ваша IP-адреса буде видимою для цих XFTP-ретрансляторів: %@.";
 
 /* No comment provided by engineer. */
@@ -4917,9 +4903,6 @@
 
 /* No comment provided by engineer. */
 "you" = "ти";
-
-/* No comment provided by engineer. */
-"You" = "Ти";
 
 /* No comment provided by engineer. */
 "You **must not** use the same database on two devices." = "Ви **не повинні використовувати** одну і ту ж базу даних на двох пристроях.";
@@ -5189,7 +5172,7 @@
 "Your profile **%@** will be shared." = "Ваш профіль **%@** буде опублікований.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Ваш профіль зберігається на вашому пристрої і доступний лише вашим контактам.\nСервери SimpleX не бачать ваш профіль.";
+"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Ваш профіль зберігається на вашому пристрої і доступний лише вашим контактам. Сервери SimpleX не бачать ваш профіль.";
 
 /* No comment provided by engineer. */
 "Your profile, contacts and delivered messages are stored on your device." = "Ваш профіль, контакти та доставлені повідомлення зберігаються на вашому пристрої.";
