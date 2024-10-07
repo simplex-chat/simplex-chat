@@ -2,12 +2,10 @@ package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
@@ -35,6 +33,8 @@ fun FramedItemView(
   linkMode: SimplexLinkMode,
   showViaProxy: Boolean,
   showMenu: MutableState<Boolean>,
+  showTimestamp: Boolean,
+  tailVisible: Boolean = false,
   receiveFile: (Long) -> Unit,
   onLinkLongClick: (link: String) -> Unit = {},
   scrollToItem: (Long) -> Unit = {},
@@ -47,7 +47,7 @@ fun FramedItemView(
   }
 
   @Composable
-  fun ciQuotedMsgTextView(qi: CIQuote, lines: Int) {
+  fun ciQuotedMsgTextView(qi: CIQuote, lines: Int, showTimestamp: Boolean) {
     MarkdownText(
       qi.text,
       qi.formattedText,
@@ -56,7 +56,8 @@ fun FramedItemView(
       overflow = TextOverflow.Ellipsis,
       style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface),
       linkMode = linkMode,
-      uriHandler = if (appPlatform.isDesktop) uriHandler else null
+      uriHandler = if (appPlatform.isDesktop) uriHandler else null,
+      showTimestamp = showTimestamp
     )
   }
 
@@ -76,10 +77,10 @@ fun FramedItemView(
             style = TextStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary),
             maxLines = 1
           )
-          ciQuotedMsgTextView(qi, lines = 2)
+          ciQuotedMsgTextView(qi, lines = 2,  showTimestamp = showTimestamp)
         }
       } else {
-        ciQuotedMsgTextView(qi, lines = 3)
+        ciQuotedMsgTextView(qi, lines = 3,  showTimestamp = showTimestamp)
       }
     }
   }
@@ -178,7 +179,7 @@ fun FramedItemView(
   fun ciFileView(ci: ChatItem, text: String) {
     CIFileView(ci.file, ci.meta.itemEdited, showMenu, false, receiveFile)
     if (text != "" || ci.meta.isLive) {
-      CIMarkdownText(ci, chatTTL, linkMode = linkMode, uriHandler, showViaProxy = showViaProxy)
+      CIMarkdownText(ci, chatTTL, linkMode = linkMode, uriHandler, showViaProxy = showViaProxy,  showTimestamp = showTimestamp)
     }
   }
 
@@ -188,7 +189,7 @@ fun FramedItemView(
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
   Box(Modifier
-    .clip(RoundedCornerShape(18.dp))
+    .clipChatItem(ci, tailVisible, revealed = true)
     .background(
       when {
         transparentBackground -> Color.Transparent
@@ -198,7 +199,14 @@ fun FramedItemView(
     )) {
     var metaColor = MaterialTheme.colors.secondary
     Box(contentAlignment = Alignment.BottomEnd) {
-      Column(Modifier.width(IntrinsicSize.Max)) {
+      val chatItemTail = remember { appPreferences.chatItemTail.state }
+      val style = shapeStyle(ci, chatItemTail.value, tailVisible, revealed = true)
+      val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
+      Column(
+        Modifier
+          .width(IntrinsicSize.Max)
+          .padding(start = if (tailRendered) msgTailWidthDp else 0.dp, end = if (sent && tailRendered) msgTailWidthDp else 0.dp)
+      ) {
         PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
           if (ci.meta.itemDeleted != null) {
             when (ci.meta.itemDeleted) {
@@ -242,7 +250,7 @@ fun FramedItemView(
                 if (mc.text == "" && !ci.meta.isLive) {
                   metaColor = Color.White
                 } else {
-                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy)
+                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 }
               }
               is MsgContent.MCVideo -> {
@@ -250,35 +258,41 @@ fun FramedItemView(
                 if (mc.text == "" && !ci.meta.isLive) {
                   metaColor = Color.White
                 } else {
-                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy)
+                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 }
               }
               is MsgContent.MCVoice -> {
-                CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = true, ci, timedMessagesTTL = chatTTL, showViaProxy = showViaProxy, longClick = { onLinkLongClick("") }, receiveFile = receiveFile)
+                CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = true, ci, timedMessagesTTL = chatTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp, longClick = { onLinkLongClick("") }, receiveFile = receiveFile)
                 if (mc.text != "") {
-                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy)
+                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 }
               }
               is MsgContent.MCFile -> ciFileView(ci, mc.text)
               is MsgContent.MCUnknown ->
                 if (ci.file == null) {
-                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy)
+                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 } else {
                   ciFileView(ci, mc.text)
                 }
               is MsgContent.MCLink -> {
                 ChatItemLinkView(mc.preview, showMenu, onLongClick = { showMenu.value = true })
                 Box(Modifier.widthIn(max = DEFAULT_MAX_IMAGE_WIDTH)) {
-                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy)
+                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 }
               }
-              else -> CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy)
+              else -> CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
             }
           }
         }
       }
-      Box(Modifier.padding(bottom = 6.dp, end = 12.dp)) {
-        CIMetaView(ci, chatTTL, metaColor, showViaProxy = showViaProxy)
+      Box(
+        Modifier
+          .padding(
+            bottom = 6.dp,
+            end = 12.dp + if (tailRendered && sent) msgTailWidthDp else 0.dp,
+          )
+      ) {
+        CIMetaView(ci, chatTTL, metaColor, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
       }
     }
   }
@@ -291,14 +305,15 @@ fun CIMarkdownText(
   linkMode: SimplexLinkMode,
   uriHandler: UriHandler?,
   onLinkLongClick: (link: String) -> Unit = {},
-  showViaProxy: Boolean
+  showViaProxy: Boolean,
+  showTimestamp: Boolean,
 ) {
-  Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
+  Box(Modifier.padding(vertical = 7.dp, horizontal = 12.dp)) {
     val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
     MarkdownText(
       text, if (text.isEmpty()) emptyList() else ci.formattedText, toggleSecrets = true,
       meta = ci.meta, chatTTL = chatTTL, linkMode = linkMode,
-      uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, showViaProxy = showViaProxy
+      uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp
     )
   }
 }

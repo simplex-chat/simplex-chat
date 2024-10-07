@@ -50,6 +50,8 @@ data AppSettings = AppSettings
     iosCallKitEnabled :: Maybe Bool,
     iosCallKitCallsInRecents :: Maybe Bool,
     uiProfileImageCornerRadius :: Maybe Double,
+    uiChatItemRoundness :: Maybe Double,
+    uiChatItemTail :: Maybe Bool,
     uiColorScheme :: Maybe UIColorScheme,
     uiDarkColorScheme :: Maybe DarkColorScheme,
     uiCurrentThemeIds :: Maybe (Map ThemeColorScheme Text),
@@ -97,6 +99,8 @@ defaultAppSettings =
       iosCallKitEnabled = Just True,
       iosCallKitCallsInRecents = Just False,
       uiProfileImageCornerRadius = Just 22.5,
+      uiChatItemRoundness = Just 0.75,
+      uiChatItemTail = Just True,
       uiColorScheme = Just UCSSystem,
       uiDarkColorScheme = Just DCSSimplex,
       uiCurrentThemeIds = Nothing,
@@ -131,6 +135,8 @@ defaultParseAppSettings =
       iosCallKitEnabled = Nothing,
       iosCallKitCallsInRecents = Nothing,
       uiProfileImageCornerRadius = Nothing,
+      uiChatItemRoundness = Nothing,
+      uiChatItemTail = Nothing,
       uiColorScheme = Nothing,
       uiDarkColorScheme = Nothing,
       uiCurrentThemeIds = Nothing,
@@ -165,6 +171,8 @@ combineAppSettings platformDefaults storedSettings =
       iosCallKitCallsInRecents = p iosCallKitCallsInRecents,
       androidCallOnLockScreen = p androidCallOnLockScreen,
       uiProfileImageCornerRadius = p uiProfileImageCornerRadius,
+      uiChatItemRoundness = p uiChatItemRoundness,
+      uiChatItemTail = p uiChatItemTail,
       uiColorScheme = p uiColorScheme,
       uiDarkColorScheme = p uiDarkColorScheme,
       uiCurrentThemeIds = p uiCurrentThemeIds,
@@ -215,6 +223,8 @@ instance FromJSON AppSettings where
     iosCallKitCallsInRecents <- p "iosCallKitCallsInRecents"
     androidCallOnLockScreen <- p "androidCallOnLockScreen"
     uiProfileImageCornerRadius <- p "uiProfileImageCornerRadius"
+    uiChatItemRoundness <- p "uiChatItemRoundness"
+    uiChatItemTail <- p "uiChatItemTail"
     uiColorScheme <- p "uiColorScheme"
     uiDarkColorScheme <- p "uiDarkColorScheme"
     uiCurrentThemeIds <- p "uiCurrentThemeIds"
@@ -246,6 +256,8 @@ instance FromJSON AppSettings where
           iosCallKitCallsInRecents,
           androidCallOnLockScreen,
           uiProfileImageCornerRadius,
+          uiChatItemRoundness,
+          uiChatItemTail,
           uiColorScheme,
           uiDarkColorScheme,
           uiCurrentThemeIds,

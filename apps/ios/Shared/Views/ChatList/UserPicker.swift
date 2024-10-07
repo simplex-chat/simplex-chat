@@ -12,42 +12,30 @@ struct UserPicker: View {
     @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
     @Environment(\.scenePhase) private var scenePhase: ScenePhase
     @Environment(\.colorScheme) private var colorScheme: ColorScheme
-    @Environment(\.dismiss) private var dismiss: DismissAction
+    @Binding var userPickerShown: Bool
     @Binding var activeSheet: UserPickerSheet?
     @State private var currentUser: Int64?
     @State private var switchingProfile = false
     @State private var frameWidth: CGFloat = 0
+    @State private var resetScroll = ResetScrollAction()
 
     // Inset grouped list dimensions
     private let imageSize: CGFloat = 44
     private let rowPadding: CGFloat = 16
+    private let rowVerticalPadding: CGFloat = 11
     private let sectionSpacing: CGFloat = 35
     private var sectionHorizontalPadding: CGFloat { frameWidth > 375 ? 20 : 16 }
     private let sectionShape = RoundedRectangle(cornerRadius: 10, style: .continuous)
 
     var body: some View {
-        if #available(iOS 16.0, *) {
-            let v = viewBody.presentationDetents([.height(400)])
-            if #available(iOS 16.4, *) {
-                v.scrollBounceBehavior(.basedOnSize)
-            } else {
-                v
-            }
-        } else {
-            viewBody
-        }
-    }
-
-    @ViewBuilder
-    private var viewBody: some View {
         let otherUsers: [UserInfo] = m.users
             .filter { u in !u.user.hidden && u.user.userId != m.currentUser?.userId }
             .sorted(using: KeyPathComparator<UserInfo>(\.user.activeOrder, order: .reverse))
         let sectionWidth = max(frameWidth - sectionHorizontalPadding * 2, 0)
         let currentUserWidth = max(frameWidth - sectionHorizontalPadding - rowPadding * 2 - 14 - imageSize, 0)
-        VStack(spacing: 0) {
+        VStack(spacing: sectionSpacing) {
             if let user = m.currentUser {
-                StickyScrollView {
+                StickyScrollView(resetScroll: $resetScroll) {
                     HStack(spacing: rowPadding) {
                         HStack {
                             ProfileImage(imageStr: user.image, size: imageSize, color: Color(uiColor: .tertiarySystemGroupedBackground))
@@ -56,9 +44,8 @@ struct UserPicker: View {
                         }
                         .padding(rowPadding)
                         .frame(width: otherUsers.isEmpty ? sectionWidth : currentUserWidth, alignment: .leading)
-                        .background(Color(.secondarySystemGroupedBackground))
+                        .modifier(ListRow { activeSheet = .currentProfile })
                         .clipShape(sectionShape)
-                        .onTapGesture { activeSheet = .currentProfile }
                         ForEach(otherUsers) { u in
                             userView(u, size: imageSize)
                                 .frame(maxWidth: sectionWidth * 0.618)
@@ -72,20 +59,21 @@ struct UserPicker: View {
                 .overlay(DetermineWidth())
                 .onPreferenceChange(DetermineWidth.Key.self) { frameWidth = $0 }
             }
-            List {
-                Section {
-                    openSheetOnTap("qrcode", title: m.userAddress == nil ? "Create SimpleX address" : "Your SimpleX address", sheet: .address)
-                    openSheetOnTap("switch.2", title: "Chat preferences", sheet: .chatPreferences)
-                    openSheetOnTap("person.crop.rectangle.stack", title: "Your chat profiles", sheet: .chatProfiles)
-                    openSheetOnTap("desktopcomputer", title: "Use from desktop", sheet: .useFromDesktop)
-
-                    ZStack(alignment: .trailing) {
-                        openSheetOnTap("gearshape", title: "Settings", sheet: .settings)
-                        Image(systemName: colorScheme == .light ? "sun.max" : "moon.fill")
+            VStack(spacing: 0) {
+                openSheetOnTap("qrcode", title: m.userAddress == nil ? "Create SimpleX address" : "Your SimpleX address", sheet: .address)
+                openSheetOnTap("switch.2", title: "Chat preferences", sheet: .chatPreferences)
+                openSheetOnTap("person.crop.rectangle.stack", title: "Your chat profiles", sheet: .chatProfiles)
+                openSheetOnTap("desktopcomputer", title: "Use from desktop", sheet: .useFromDesktop)
+                ZStack(alignment: .trailing) {
+                    openSheetOnTap("gearshape", title: "Settings", sheet: .settings, showDivider: false)
+                    Image(systemName: colorScheme == .light ? "sun.max" : "moon.fill")
                         .resizable()
+                        .scaledToFit()
                         .symbolRenderingMode(.monochrome)
                         .foregroundColor(theme.colors.secondary)
-                        .frame(maxWidth: 20, maxHeight: 20)
+                        .frame(maxWidth: 20, maxHeight: .infinity)
+                        .padding(.horizontal, rowPadding)
+                        .background(Color(.systemBackground).opacity(0.01))
                         .onTapGesture {
                             if (colorScheme == .light) {
                                 ThemeManager.applyTheme(systemDarkThemeDefault.get())
@@ -96,9 +84,11 @@ struct UserPicker: View {
                         .onLongPressGesture {
                             ThemeManager.applyTheme(DefaultTheme.SYSTEM_THEME_NAME)
                         }
-                    }
                 }
             }
+            .clipShape(sectionShape)
+            .padding(.horizontal, sectionHorizontalPadding)
+            .padding(.bottom, sectionSpacing)
         }
         .onAppear {
             // This check prevents the call of listUsers after the app is suspended, and the database is closed.
@@ -117,6 +107,9 @@ struct UserPicker: View {
                 }
             }
         }
+        .onChange(of: userPickerShown) {
+            if !$0 { resetScroll() }
+        }
         .modifier(ThemedBackground(grouped: true))
         .disabled(switchingProfile)
     }
@@ -133,15 +126,15 @@ struct UserPicker: View {
             Text(u.user.displayName).font(.title2).lineLimit(1)
         }
         .padding(rowPadding)
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(sectionShape)
-        .onTapGesture {
+        .modifier(ListRow {
             switchingProfile = true
-            dismiss()
             Task {
                 do {
                     try await changeActiveUserAsync_(u.user.userId, viewPwd: nil)
-                    await MainActor.run { switchingProfile = false }
+                    await MainActor.run {
+                        switchingProfile = false
+                        userPickerShown = false
+                    }
                 } catch {
                     await MainActor.run {
                         switchingProfile = false
@@ -152,19 +145,23 @@ struct UserPicker: View {
                     }
                 }
             }
-        }
+        })
+        .clipShape(sectionShape)
     }
-    
-    private func openSheetOnTap(_ icon: String, title: LocalizedStringKey, sheet: UserPickerSheet) -> some View {
-        Button {
-            activeSheet = sheet
-        } label: {
+
+    private func openSheetOnTap(_ icon: String, title: LocalizedStringKey, sheet: UserPickerSheet, showDivider: Bool = true) -> some View {
+        ZStack(alignment: .bottom) {
             settingsRow(icon, color: theme.colors.secondary) {
                 Text(title).foregroundColor(.primary)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, rowPadding)
+            .padding(.vertical, rowVerticalPadding)
+            .modifier(ListRow { activeSheet = sheet })
+            if showDivider {
+                Divider().padding(.leading, 52)
+            }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .contentShape(Rectangle())
     }
     
     private func unreadBadge(_ u: UserInfo) -> some View {
@@ -179,6 +176,92 @@ struct UserPicker: View {
     }
 }
 
+struct ListRow: ViewModifier {
+    @Environment(\.colorScheme) private var colorScheme: ColorScheme
+    @State private var touchDown = false
+    let action: () -> Void
+
+    func body(content: Content) -> some View {
+        ZStack {
+            elevatedSecondarySystemGroupedBackground
+            Color(.systemGray4).opacity(touchDown ? 1 : 0)
+            content
+            TouchOverlay(touchDown: $touchDown, action: action)
+        }
+    }
+
+    var elevatedSecondarySystemGroupedBackground: Color {
+        switch colorScheme {
+        case .dark: Color(0xFF2C2C2E)
+        default:    Color(0xFFFFFFFF)
+        }
+    }
+
+    struct TouchOverlay: UIViewRepresentable {
+        @Binding var touchDown: Bool
+        let action: () -> Void
+
+        func makeUIView(context: Context) -> TouchView {
+            let touchView = TouchView()
+            let gesture = UILongPressGestureRecognizer(
+                target: touchView,
+                action: #selector(touchView.longPress(gesture:))
+            )
+            gesture.delegate = touchView
+            gesture.minimumPressDuration = 0
+            touchView.addGestureRecognizer(gesture)
+            return touchView
+        }
+
+        func updateUIView(_ touchView: TouchView, context: Context) {
+            touchView.representer = self
+        }
+
+        class TouchView: UIView, UIGestureRecognizerDelegate {
+            var representer: TouchOverlay?
+            private var startLocation: CGPoint?
+            private var task: Task<Void, Never>?
+
+            @objc
+            func longPress(gesture: UILongPressGestureRecognizer) {
+                switch gesture.state {
+                case .began:
+                    startLocation = gesture.location(in: nil)
+                    task = Task {
+                        do {
+                            try await Task.sleep(nanoseconds: 200_000000)
+                            await MainActor.run { representer?.touchDown = true }
+                        } catch { }
+                    }
+                case .ended:
+                    if hitTest(gesture.location(in: self), with: nil) == self {
+                        representer?.action()
+                    }
+                    task?.cancel()
+                    representer?.touchDown = false
+                case .changed:
+                    if let startLocation {
+                        let location = gesture.location(in: nil)
+                        let dx = location.x - startLocation.x
+                        let dy = location.y - startLocation.y
+                        if sqrt(pow(dx, 2) + pow(dy, 2)) > 10 { gesture.state = .failed }
+                    }
+                case .cancelled, .failed:
+                    task?.cancel()
+                    representer?.touchDown = false
+                default: break
+                }
+            }
+
+            func gestureRecognizer(
+                _: UIGestureRecognizer,
+                shouldRecognizeSimultaneouslyWith: UIGestureRecognizer
+            ) -> Bool { true }
+        }
+    }
+}
+
+
 struct UserPicker_Previews: PreviewProvider {
     static var previews: some View {
         @State var activeSheet: UserPickerSheet?
@@ -186,6 +269,7 @@ struct UserPicker_Previews: PreviewProvider {
         let m = ChatModel()
         m.users = [UserInfo.sampleData, UserInfo.sampleData]
         return UserPicker(
+            userPickerShown: .constant(true),
             activeSheet: $activeSheet
         )
         .environmentObject(m)

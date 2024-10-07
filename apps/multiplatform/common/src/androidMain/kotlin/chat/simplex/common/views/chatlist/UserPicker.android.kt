@@ -5,14 +5,19 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.DrawerDefaults.ScrimOpacity
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.User
@@ -21,94 +26,100 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
-import chat.simplex.res.MR
-import dev.icerock.moko.resources.compose.painterResource
-import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 
+private val USER_PICKER_IMAGE_SIZE = 44.dp
+private val USER_PICKER_ROW_PADDING = 16.dp
+
 @Composable
-actual fun UserPickerInactiveUsersSection(
+actual fun UserPickerUsersSection(
   users: List<UserInfo>,
   stopped: Boolean,
-  onShowAllProfilesClicked: () -> Unit,
   onUserClicked: (user: User) -> Unit,
 ) {
   val scrollState = rememberScrollState()
+  val screenWidthDp = windowWidth()
 
   if (users.isNotEmpty()) {
     SectionItemView(
-      padding = PaddingValues(
-        start = 16.dp,
-        top = if (windowOrientation() == WindowOrientation.PORTRAIT) DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL else DEFAULT_PADDING_HALF,
-        bottom = DEFAULT_PADDING_HALF),
+      padding = PaddingValues(),
       disabled = stopped
     ) {
       Box {
         Row(
-          modifier = Modifier.padding(end = DEFAULT_PADDING + 30.dp).horizontalScroll(scrollState)
+          modifier = Modifier.horizontalScroll(scrollState),
         ) {
-          users.forEach { u ->
-            UserPickerInactiveUserBadge(u, stopped) {
-              onUserClicked(it)
-              withBGApi {
-                delay(500)
-                scrollState.scrollTo(0)
+          Spacer(Modifier.width(DEFAULT_PADDING))
+          Row(horizontalArrangement = Arrangement.spacedBy(USER_PICKER_ROW_PADDING)) {
+            users.forEach { u ->
+              UserPickerUserBox(u, stopped, modifier = Modifier.userBoxWidth(u.user, users.size, screenWidthDp)) {
+                onUserClicked(it)
+                withBGApi {
+                  delay(500)
+                  scrollState.scrollTo(0)
+                }
               }
             }
-            Spacer(Modifier.width(20.dp))
           }
-          Spacer(Modifier.width(60.dp))
-        }
-        Row(
-          horizontalArrangement = Arrangement.End,
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(end = DEFAULT_PADDING + 30.dp)
-            .height(60.dp)
-        ) {
-          Canvas(modifier = Modifier.size(60.dp)) {
-            drawRect(
-              brush = Brush.horizontalGradient(
-                colors = listOf(
-                  Color.Transparent,
-                  CurrentColors.value.colors.surface,
-                )
-              ),
-            )
-          }
-        }
-        Row(
-          horizontalArrangement = Arrangement.End,
-          verticalAlignment = Alignment.CenterVertically,
-          modifier = Modifier
-            .height(60.dp)
-            .fillMaxWidth()
-            .padding(end = DEFAULT_PADDING)
-        ) {
-          IconButton(
-            onClick = onShowAllProfilesClicked,
-            enabled = !stopped
-          ) {
-            Icon(
-              painterResource(MR.images.ic_chevron_right),
-              stringResource(MR.strings.your_chat_profiles),
-              tint = MaterialTheme.colors.secondary,
-              modifier = Modifier.size(34.dp)
-            )
-          }
+          Spacer(Modifier.width(DEFAULT_PADDING))
         }
       }
     }
-  } else {
-    UserPickerOptionRow(
-      painterResource(MR.images.ic_manage_accounts),
-      stringResource(MR.strings.your_chat_profiles),
-      onShowAllProfilesClicked
+  }
+}
+@Composable
+fun UserPickerUserBox(
+  userInfo: UserInfo,
+  stopped: Boolean,
+  modifier: Modifier = Modifier,
+  onClick: (user: User) -> Unit,
+) {
+  Row(
+    modifier = modifier
+      .userPickerBoxModifier()
+      .clickable (
+        onClick = { onClick(userInfo.user) },
+        enabled = !stopped
+      )
+      .background(MaterialTheme.colors.background)
+      .padding(USER_PICKER_ROW_PADDING),
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(USER_PICKER_ROW_PADDING)
+  ) {
+    Box {
+      ProfileImageForActiveCall(size = USER_PICKER_IMAGE_SIZE, image = userInfo.user.profile.image, color = MaterialTheme.colors.secondaryVariant)
+
+      if (userInfo.unreadCount > 0 && !userInfo.user.activeUser) {
+        unreadBadge(userInfo.unreadCount, userInfo.user.showNtfs, false)
+      }
+    }
+    val user = userInfo.user
+    Text(
+      user.displayName,
+      fontWeight = if (user.activeUser) FontWeight.Bold else FontWeight.Normal,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis,
     )
   }
 }
+
+@Composable
+private fun Modifier.userPickerBoxModifier(): Modifier {
+  val percent = remember { appPreferences.profileImageCornerRadius.state }
+  val r = kotlin.math.max(0f, percent.value)
+
+  val cornerSize = when {
+    r >= 50 -> 50
+    r <= 0 -> 0
+    else -> r.toInt()
+  }
+
+  val shape = RoundedCornerShape(CornerSize(cornerSize))
+  return this.clip(shape).border(1.dp, MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 1 - userPickerAlpha() - 0.02f), shape)
+}
+
 
 private fun calculateFraction(pos: Float) =
   (pos / 1f).coerceIn(0f, 1f)
@@ -150,7 +161,7 @@ actual fun PlatformUserPicker(modifier: Modifier, pickerState: MutableStateFlow<
             isLight = colors.isLight,
             drawerShadingColor = shadingColor,
             toolbarOnTop = !appPrefs.oneHandUI.get(),
-            navBarColor = colors.surface
+            navBarColor = colors.background.mixWith(colors.onBackground, 1 - userPickerAlpha())
           )
         } else if (ModalManager.start.modalCount.value == 0) {
           platform.androidSetDrawerStatusAndNavBarColor(
@@ -220,3 +231,13 @@ private fun Modifier.draggableBottomDrawerModifier(
   orientation = Orientation.Vertical,
   resistance = null
 )
+
+private fun Modifier.userBoxWidth(user: User, totalUsers: Int, windowWidth: Dp): Modifier {
+  return if (totalUsers == 1) {
+    this.width(windowWidth - DEFAULT_PADDING * 2)
+  } else if (user.activeUser) {
+    this.width(windowWidth - DEFAULT_PADDING - (USER_PICKER_ROW_PADDING * 3) - USER_PICKER_IMAGE_SIZE)
+  } else {
+    this.widthIn(max = (windowWidth - (DEFAULT_PADDING * 2)) * 0.618f)
+  }
+}

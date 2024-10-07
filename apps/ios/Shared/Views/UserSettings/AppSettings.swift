@@ -58,6 +58,8 @@ extension AppSettings {
             profileImageCornerRadiusGroupDefault.set(val)
             def.setValue(val, forKey: DEFAULT_PROFILE_IMAGE_CORNER_RADIUS)
         }
+        if let val = uiChatItemRoundness { def.setValue(val, forKey: DEFAULT_CHAT_ITEM_ROUNDNESS)}
+        if let val = uiChatItemTail { def.setValue(val, forKey: DEFAULT_CHAT_ITEM_TAIL)}
         if let val = uiColorScheme { currentThemeDefault.set(val) }
         if let val = uiDarkColorScheme { systemDarkThemeDefault.set(val) }
         if let val = uiCurrentThemeIds { currentThemeIdsDefault.set(val) }
@@ -91,6 +93,8 @@ extension AppSettings {
         c.iosCallKitEnabled = callKitEnabledGroupDefault.get()
         c.iosCallKitCallsInRecents = def.bool(forKey: DEFAULT_CALL_KIT_CALLS_IN_RECENTS)
         c.uiProfileImageCornerRadius = def.double(forKey: DEFAULT_PROFILE_IMAGE_CORNER_RADIUS)
+        c.uiChatItemRoundness = def.double(forKey: DEFAULT_CHAT_ITEM_ROUNDNESS)
+        c.uiChatItemTail = def.bool(forKey: DEFAULT_CHAT_ITEM_TAIL)
         c.uiColorScheme = currentThemeDefault.get()
         c.uiDarkColorScheme = systemDarkThemeDefault.get()
         c.uiCurrentThemeIds = currentThemeIdsDefault.get()

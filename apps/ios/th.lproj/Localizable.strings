@@ -1347,7 +1347,7 @@
 /* No comment provided by engineer. */
 "Error stopping chat" = "เกิดข้อผิดพลาดในการหยุดแชท";
 
-/* No comment provided by engineer. */
+/* alertTitle */
 "Error switching profile!" = "เกิดข้อผิดพลาดในการเปลี่ยนโปรไฟล์!";
 
 /* No comment provided by engineer. */
@@ -1368,8 +1368,7 @@
 /* No comment provided by engineer. */
 "Error: " = "ผิดพลาด: ";
 
-/* file error text
-   snd error text */
+/* alert message */
 "Error: %@" = "ข้อผิดพลาด: % @";
 
 /* No comment provided by engineer. */
@@ -3214,9 +3213,6 @@
 
 /* pref value */
 "yes" = "ใช่";
-
-/* No comment provided by engineer. */
-"You" = "คุณ";
 
 /* No comment provided by engineer. */
 "You accepted connection" = "คุณยอมรับการเชื่อมต่อ";

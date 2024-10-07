@@ -175,8 +175,23 @@
 /* time interval */
 "%d days" = "%d dagen";
 
+/* forward confirmation reason */
+"%d file(s) are still being downloaded." = "%d bestand(en) worden nog gedownload.";
+
+/* forward confirmation reason */
+"%d file(s) failed to download." = "%d bestand(en) konden niet worden gedownload.";
+
+/* forward confirmation reason */
+"%d file(s) were deleted." = "%d bestand(en) zijn verwijderd.";
+
+/* forward confirmation reason */
+"%d file(s) were not downloaded." = "%d bestand(en) zijn niet gedownload.";
+
 /* time interval */
 "%d hours" = "%d uren";
+
+/* alert title */
+"%d messages not forwarded" = "%d berichten niet doorgestuurd";
 
 /* time interval */
 "%d min" = "%d min";
@@ -457,7 +472,7 @@
 /* No comment provided by engineer. */
 "All new messages from %@ will be hidden!" = "Alle nieuwe berichten van %@ worden verborgen!";
 
-/* No comment provided by engineer. */
+/* profile dropdown */
 "All profiles" = "Alle profielen";
 
 /* No comment provided by engineer. */
@@ -963,7 +978,7 @@
 "complete" = "compleet";
 
 /* No comment provided by engineer. */
-"Completed" = "voltooid";
+"Completed" = "Voltooid";
 
 /* No comment provided by engineer. */
 "Configure ICE servers" = "ICE servers configureren";
@@ -1624,6 +1639,9 @@
 "Do NOT send messages directly, even if your or destination server does not support private routing." = "Stuur GEEN berichten rechtstreeks, zelfs als uw of de bestemmingsserver geen privéroutering ondersteunt.";
 
 /* No comment provided by engineer. */
+"Do not use credentials with proxy." = "Gebruik geen inloggegevens met proxy.";
+
+/* No comment provided by engineer. */
 "Do NOT use private routing." = "Gebruik GEEN privéroutering.";
 
 /* No comment provided by engineer. */
@@ -1653,6 +1671,9 @@
 
 /* server test step */
 "Download file" = "Download bestand";
+
+/* alert action */
+"Download files" = "‐Bestanden downloaden";
 
 /* No comment provided by engineer. */
 "Downloaded" = "Gedownload";
@@ -2020,7 +2041,7 @@
 /* No comment provided by engineer. */
 "Error switching profile" = "Fout bij wisselen van profiel";
 
-/* No comment provided by engineer. */
+/* alertTitle */
 "Error switching profile!" = "Fout bij wisselen van profiel!";
 
 /* No comment provided by engineer. */
@@ -2047,8 +2068,7 @@
 /* No comment provided by engineer. */
 "Error: " = "Fout: ";
 
-/* file error text
-   snd error text */
+/* alert message */
 "Error: %@" = "Fout: %@";
 
 /* No comment provided by engineer. */
@@ -2107,6 +2127,9 @@
 
 /* No comment provided by engineer. */
 "File error" = "Bestandsfout";
+
+/* alert message */
+"File errors:\n%@" = "Bestandsfouten:\n%@";
 
 /* file error text */
 "File not found - most likely file was deleted or cancelled." = "Bestand niet gevonden - hoogstwaarschijnlijk is het bestand verwijderd of geannuleerd.";
@@ -2189,8 +2212,17 @@
 /* chat item action */
 "Forward" = "Doorsturen";
 
+/* alert title */
+"Forward %d message(s)?" = "%d bericht(en) doorsturen?";
+
 /* No comment provided by engineer. */
 "Forward and save messages" = "Berichten doorsturen en opslaan";
+
+/* alert action */
+"Forward messages" = "Berichten doorsturen";
+
+/* alert message */
+"Forward messages without files?" = "Berichten doorsturen zonder bestanden?";
 
 /* No comment provided by engineer. */
 "forwarded" = "doorgestuurd";
@@ -2200,6 +2232,9 @@
 
 /* No comment provided by engineer. */
 "Forwarded from" = "Doorgestuurd vanuit";
+
+/* No comment provided by engineer. */
+"Forwarding %lld messages" = "%lld berichten doorsturen";
 
 /* No comment provided by engineer. */
 "Forwarding server %@ failed to connect to destination server %@. Please try later." = "De doorstuurserver %@ kon geen verbinding maken met de bestemmingsserver %@. Probeer het later opnieuw.";
@@ -2589,6 +2624,9 @@
 "iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications." = "iOS-keychain wordt gebruikt om het wachtwoord veilig op te slaan nadat u de app opnieuw hebt opgestart of het wachtwoord hebt gewijzigd, hiermee kunt u push meldingen ontvangen.";
 
 /* No comment provided by engineer. */
+"IP address" = "IP-adres";
+
+/* No comment provided by engineer. */
 "Irreversible message deletion" = "Onomkeerbare berichtverwijdering";
 
 /* No comment provided by engineer. */
@@ -2873,6 +2911,9 @@
 /* No comment provided by engineer. */
 "Messages sent" = "Berichten verzonden";
 
+/* alert message */
+"Messages were deleted after you selected them." = "Berichten zijn verwijderd nadat u ze had geselecteerd.";
+
 /* No comment provided by engineer. */
 "Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." = "Berichten, bestanden en oproepen worden beschermd door **end-to-end codering** met perfecte voorwaartse geheimhouding, afwijzing en inbraakherstel.";
 
@@ -3083,6 +3124,9 @@
 /* No comment provided by engineer. */
 "Nothing selected" = "Niets geselecteerd";
 
+/* alert title */
+"Nothing to forward!" = "Niets om door te sturen!";
+
 /* No comment provided by engineer. */
 "Notifications" = "Meldingen";
 
@@ -3235,6 +3279,9 @@
 /* No comment provided by engineer. */
 "other errors" = "overige fouten";
 
+/* alert message */
+"Other file errors:\n%@" = "Andere bestandsfouten:\n%@";
+
 /* member role */
 "owner" = "Eigenaar";
 
@@ -3255,6 +3302,9 @@
 
 /* No comment provided by engineer. */
 "Passcode set!" = "Toegangscode ingesteld!";
+
+/* No comment provided by engineer. */
+"Password" = "Wachtwoord";
 
 /* No comment provided by engineer. */
 "Password to show" = "Wachtwoord om weer te geven";
@@ -3351,6 +3401,9 @@
 
 /* No comment provided by engineer. */
 "Polish interface" = "Poolse interface";
+
+/* No comment provided by engineer. */
+"Port" = "Poort";
 
 /* server test error */
 "Possibly, certificate fingerprint in server address is incorrect" = "Mogelijk is de certificaat vingerafdruk in het server adres onjuist";
@@ -3462,6 +3515,9 @@
 
 /* No comment provided by engineer. */
 "Proxied servers" = "Proxied servers";
+
+/* No comment provided by engineer. */
+"Proxy requires password" = "Proxy vereist wachtwoord";
 
 /* No comment provided by engineer. */
 "Push notifications" = "Push meldingen";
@@ -3803,6 +3859,9 @@
 
 /* No comment provided by engineer. */
 "Saved WebRTC ICE servers will be removed" = "Opgeslagen WebRTC ICE servers worden verwijderd";
+
+/* No comment provided by engineer. */
+"Saving %lld messages" = "%lld berichten opslaan";
 
 /* No comment provided by engineer. */
 "Scale" = "Schaal";
@@ -4209,6 +4268,9 @@
 /* No comment provided by engineer. */
 "SMP server" = "SMP server";
 
+/* No comment provided by engineer. */
+"SOCKS proxy" = "SOCKS proxy";
+
 /* blur media */
 "Soft" = "Soft";
 
@@ -4297,13 +4359,13 @@
 "Submit" = "Indienen";
 
 /* No comment provided by engineer. */
-"Subscribed" = "Ingeschreven";
+"Subscribed" = "Subscribed";
 
 /* No comment provided by engineer. */
-"Subscription errors" = "Inschrijving fouten";
+"Subscription errors" = "Subscription fouten";
 
 /* No comment provided by engineer. */
-"Subscriptions ignored" = "Inschrijvingen genegeerd";
+"Subscriptions ignored" = "Subscriptions genegeerd";
 
 /* No comment provided by engineer. */
 "Support SimpleX Chat" = "Ondersteuning van SimpleX Chat";
@@ -4741,6 +4803,9 @@
 "Use SimpleX Chat servers?" = "SimpleX Chat servers gebruiken?";
 
 /* No comment provided by engineer. */
+"Use SOCKS proxy" = "Gebruik SOCKS proxy";
+
+/* No comment provided by engineer. */
 "Use the app while in the call." = "Gebruik de app tijdens het gesprek.";
 
 /* No comment provided by engineer. */
@@ -4751,6 +4816,9 @@
 
 /* No comment provided by engineer. */
 "User selection" = "Gebruikersselectie";
+
+/* No comment provided by engineer. */
+"Username" = "Gebruikersnaam";
 
 /* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "SimpleX Chat servers gebruiken.";
@@ -4952,9 +5020,6 @@
 
 /* No comment provided by engineer. */
 "you" = "jij";
-
-/* No comment provided by engineer. */
-"You" = "Jij";
 
 /* No comment provided by engineer. */
 "You **must not** use the same database on two devices." = "U **mag** niet dezelfde database op twee apparaten gebruiken.";
@@ -5207,6 +5272,9 @@
 
 /* No comment provided by engineer. */
 "Your contacts will remain connected." = "Uw contacten blijven verbonden.";
+
+/* No comment provided by engineer. */
+"Your credentials may be sent unencrypted." = "Uw inloggegevens worden mogelijk niet-versleuteld verzonden.";
 
 /* No comment provided by engineer. */
 "Your current chat database will be DELETED and REPLACED with the imported one." = "Uw huidige chat database wordt VERWIJDERD en VERVANGEN door de geïmporteerde.";
