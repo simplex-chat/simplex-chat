@@ -454,7 +454,7 @@
 /* No comment provided by engineer. */
 "All new messages from %@ will be hidden!" = "Все новые сообщения от %@ будут скрыты!";
 
-/* No comment provided by engineer. */
+/* profile dropdown */
 "All profiles" = "Все профили";
 
 /* No comment provided by engineer. */
@@ -1996,7 +1996,7 @@
 /* No comment provided by engineer. */
 "Error stopping chat" = "Ошибка при остановке чата";
 
-/* No comment provided by engineer. */
+/* alertTitle */
 "Error switching profile!" = "Ошибка выбора профиля!";
 
 /* No comment provided by engineer. */
@@ -2023,8 +2023,7 @@
 /* No comment provided by engineer. */
 "Error: " = "Ошибка: ";
 
-/* file error text
-   snd error text */
+/* alert message */
 "Error: %@" = "Ошибка: %@";
 
 /* No comment provided by engineer. */
@@ -4904,9 +4903,6 @@
 
 /* No comment provided by engineer. */
 "you" = "Вы";
-
-/* No comment provided by engineer. */
-"You" = "Вы";
 
 /* No comment provided by engineer. */
 "You **must not** use the same database on two devices." = "Вы **не должны** использовать одну и ту же базу данных на двух устройствах.";

@@ -459,7 +459,7 @@ struct ComposeView: View {
             Task {
                 var media: [(String, UploadContent)] = []
                 for content in selected {
-                    if let img = resizeImageToStrSize(content.uiImage, maxDataSize: 14000) {
+                    if let img = await resizeImageToStrSize(content.uiImage, maxDataSize: 14000) {
                         media.append((img, content))
                         await MainActor.run {
                             composeState = composeState.copy(preview: .mediaPreviews(mediaPreviews: media))
@@ -551,7 +551,7 @@ struct ComposeView: View {
     }
 
     private func addMediaContent(_ content: UploadContent) async {
-        if let img = resizeImageToStrSize(content.uiImage, maxDataSize: 14000) {
+        if let img = await resizeImageToStrSize(content.uiImage, maxDataSize: 14000) {
             var newMedia: [(String, UploadContent?)] = []
             if case var .mediaPreviews(media) = composeState.preview {
                 media.append((img, content))

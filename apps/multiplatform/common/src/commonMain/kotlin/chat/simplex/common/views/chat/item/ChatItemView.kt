@@ -3,13 +3,14 @@ package chat.simplex.common.views.chat.item
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.*
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.*
@@ -26,8 +27,15 @@ import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.datetime.Clock
+import kotlin.math.*
 
 // TODO refactor so that FramedItemView can show all CIContent items if they're deleted (see Swift code)
+
+private val msgRectMaxRadius = 18.dp
+private val msgBubbleMaxRadius = msgRectMaxRadius * 1.2f
+val msgTailWidthDp = 9.dp
+private val msgTailMinHeightDp = msgTailWidthDp * 1.254f // ~56deg
+private val msgTailMaxHeightDp = msgTailWidthDp * 1.732f // 60deg
 
 val chatEventStyle = SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Light, color = CurrentColors.value.colors.secondary)
 
@@ -74,6 +82,7 @@ fun ChatItemView(
   developerTools: Boolean,
   showViaProxy: Boolean,
   showTimestamp: Boolean,
+  itemSeparation: ItemSeparation,
   preview: Boolean = false,
 ) {
   val uriHandler = LocalUriHandler.current
@@ -100,7 +109,7 @@ fun ChatItemView(
 
     @Composable
     fun ChatItemReactions() {
-      Row(verticalAlignment = Alignment.CenterVertically) {
+      Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.chatItemOffset(cItem, itemSeparation.largeGap, inverted = true, revealed = true)) {
         cItem.reactions.forEach { r ->
           var modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp).clip(RoundedCornerShape(8.dp))
           if (cInfo.featureEnabled(ChatFeature.Reactions) && (cItem.allowAddReaction || r.userReacted)) {
@@ -127,13 +136,13 @@ fun ChatItemView(
     Column(horizontalAlignment = if (cItem.chatDir.sent) Alignment.End else Alignment.Start) {
       Column(
         Modifier
-          .clip(RoundedCornerShape(18.dp))
+          .clipChatItem(cItem, itemSeparation.largeGap, revealed.value)
           .combinedClickable(onLongClick = { showMenu.value = true }, onClick = onClick)
           .onRightClick { showMenu.value = true },
       ) {
         @Composable
         fun framedItemView() {
-          FramedItemView(cInfo, cItem, uriHandler, imageProvider, linkMode = linkMode, showViaProxy = showViaProxy, showMenu, showTimestamp = showTimestamp, receiveFile, onLinkLongClick, scrollToItem)
+          FramedItemView(cInfo, cItem, uriHandler, imageProvider, linkMode = linkMode, showViaProxy = showViaProxy, showMenu, showTimestamp = showTimestamp, tailVisible = itemSeparation.largeGap, receiveFile, onLinkLongClick, scrollToItem)
         }
 
         fun deleteMessageQuestionText(): String {
@@ -795,6 +804,154 @@ fun ItemAction(text: String, color: Color = Color.Unspecified, onClick: () -> Un
   }
 }
 
+@Composable
+fun Modifier.chatItemOffset(cItem: ChatItem, tailVisible: Boolean, inverted: Boolean = false, revealed: Boolean): Modifier {
+  val chatItemTail = remember { appPreferences.chatItemTail.state }
+  val style = shapeStyle(cItem, chatItemTail.value, tailVisible, revealed)
+
+  val offset = if (style is ShapeStyle.Bubble) {
+    if (style.tailVisible) {
+      if (cItem.chatDir.sent) msgTailWidthDp else -msgTailWidthDp
+    } else {
+      0.dp
+    }
+  } else 0.dp
+
+  return this.offset(x = if (inverted) (-1f * offset) else offset)
+}
+
+@Composable
+fun Modifier.clipChatItem(chatItem: ChatItem? = null, tailVisible: Boolean = false, revealed: Boolean = false): Modifier {
+  val chatItemRoundness = remember { appPreferences.chatItemRoundness.state }
+  val chatItemTail = remember { appPreferences.chatItemTail.state }
+  val style = shapeStyle(chatItem, chatItemTail.value, tailVisible, revealed)
+  val cornerRoundness = chatItemRoundness.value.coerceIn(0f, 1f)
+
+  val shape = when (style) {
+    is ShapeStyle.Bubble -> chatItemShape(cornerRoundness, LocalDensity.current, style.tailVisible, chatItem?.chatDir?.sent == true)
+    is ShapeStyle.RoundRect -> RoundedCornerShape(style.radius * cornerRoundness)
+  }
+
+  return this.clip(shape)
+}
+
+private fun chatItemShape(roundness: Float, density: Density, tailVisible: Boolean, sent: Boolean = false): GenericShape = GenericShape { size, _ ->
+  val (msgTailWidth, msgBubbleMaxRadius) = with(density) { Pair(msgTailWidthDp.toPx(), msgBubbleMaxRadius.toPx()) }
+  val width = if (sent && tailVisible) size.width - msgTailWidth else size.width
+  val height = size.height
+  val rxMax = min(msgBubbleMaxRadius, width / 2)
+  val ryMax = min(msgBubbleMaxRadius, height / 2)
+  val rx = roundness * rxMax
+  val ry = roundness * ryMax
+  val tailHeight = with(density) {
+    min(
+      msgTailMinHeightDp.toPx() + roundness * (msgTailMaxHeightDp.toPx() - msgTailMinHeightDp.toPx()),
+      height / 2
+    )
+  }
+  moveTo(rx, 0f)
+  lineTo(width - rx, 0f) // Top Line
+  if (roundness > 0) {
+    quadraticBezierTo(width, 0f, width, ry) // Top-right corner
+  }
+  if (height > 2 * ry) {
+    lineTo(width, height - ry) // Right side
+  }
+  if (roundness > 0) {
+    quadraticBezierTo(width, height, width - rx, height) // Bottom-right corner
+  }
+  if (tailVisible) {
+    lineTo(0f, height) // Bottom line
+    if (roundness > 0) {
+      val d = tailHeight - msgTailWidth * msgTailWidth / tailHeight
+      val controlPoint = Offset(msgTailWidth, height - tailHeight + d * sqrt(roundness))
+      quadraticBezierTo(controlPoint.x, controlPoint.y, msgTailWidth, height - tailHeight)
+    } else {
+      lineTo(msgTailWidth, height - tailHeight)
+    }
+
+    if (height > ry + tailHeight) {
+      lineTo(msgTailWidth, ry)
+    }
+  } else {
+    lineTo(rx, height) // Bottom line
+    if (roundness > 0) {
+      quadraticBezierTo(0f, height, 0f, height - ry) // Bottom-left corner
+    }
+    if (height > 2 * ry) {
+      lineTo(0f, ry) // Left side
+    }
+  }
+  if (roundness > 0) {
+    val bubbleInitialX = if (tailVisible) msgTailWidth else 0f
+    quadraticBezierTo(bubbleInitialX, 0f, bubbleInitialX + rx, 0f) // Top-left corner
+  }
+
+  if (sent) {
+    val matrix = Matrix()
+    matrix.scale(-1f, 1f)
+    this.transform(matrix)
+    this.translate(Offset(size.width, 0f))
+  }
+}
+
+sealed class ShapeStyle {
+  data class Bubble(val tailVisible: Boolean, val startPadding: Boolean) : ShapeStyle()
+  data class RoundRect(val radius: Dp) : ShapeStyle()
+}
+
+fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVisible: Boolean, revealed: Boolean): ShapeStyle {
+  if (chatItem == null) {
+    return ShapeStyle.RoundRect(msgRectMaxRadius)
+  }
+
+  when (chatItem.content) {
+    is CIContent.SndMsgContent,
+    is CIContent.RcvMsgContent,
+    is CIContent.RcvDecryptionError,
+    is CIContent.SndDeleted,
+    is CIContent.RcvDeleted,
+    is CIContent.RcvIntegrityError,
+    is CIContent.SndModerated,
+    is CIContent.RcvModerated,
+    is CIContent.RcvBlocked,
+    is CIContent.InvalidJSON -> {
+      if (chatItem.meta.itemDeleted != null && (!revealed || chatItem.isDeletedContent)) {
+        return ShapeStyle.RoundRect(msgRectMaxRadius)
+      }
+
+      val tail = when (val content = chatItem.content.msgContent) {
+        is MsgContent.MCImage,
+        is MsgContent.MCVideo,
+        is MsgContent.MCVoice -> {
+          if (content.text.isEmpty()) {
+            false
+          } else {
+            tailVisible
+          }
+        }
+        is MsgContent.MCText -> {
+          if (isShortEmoji(content.text)) {
+            false
+          } else {
+            tailVisible
+          }
+        }
+        else -> tailVisible
+      }
+      return if (tailEnabled) {
+        ShapeStyle.Bubble(tail, !chatItem.chatDir.sent)
+      } else {
+        ShapeStyle.RoundRect(msgRectMaxRadius)
+      }
+    }
+
+    is CIContent.RcvGroupInvitation,
+    is CIContent.SndGroupInvitation -> return ShapeStyle.RoundRect(msgRectMaxRadius)
+    else -> return ShapeStyle.RoundRect(8.dp)
+  }
+}
+
 fun cancelFileAlertDialog(fileId: Long, cancelFile: (Long) -> Unit, cancelAction: CancelAction) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(cancelAction.alert.titleId),
@@ -931,6 +1088,7 @@ fun PreviewChatItemView(
     showViaProxy = false,
     showTimestamp = true,
     preview = true,
+    itemSeparation = ItemSeparation(timestamp = true, largeGap = true, null)
   )
 }
 
@@ -970,7 +1128,8 @@ fun PreviewChatItemViewDeletedContent() {
       developerTools = false,
       showViaProxy = false,
       preview = true,
-      showTimestamp = true
+      showTimestamp = true,
+      itemSeparation = ItemSeparation(timestamp = true, largeGap = true, null)
     )
   }
 }

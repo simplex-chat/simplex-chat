@@ -1756,7 +1756,7 @@
 /* No comment provided by engineer. */
 "Error stopping chat" = "Sohbet durdurulurken hata oluştu";
 
-/* No comment provided by engineer. */
+/* alertTitle */
 "Error switching profile!" = "Profil değiştirilirken hata oluştu!";
 
 /* No comment provided by engineer. */
@@ -1783,8 +1783,7 @@
 /* No comment provided by engineer. */
 "Error: " = "Hata: ";
 
-/* file error text
-   snd error text */
+/* alert message */
 "Error: %@" = "Hata: %@";
 
 /* No comment provided by engineer. */
@@ -4280,9 +4279,6 @@
 
 /* No comment provided by engineer. */
 "you" = "sen";
-
-/* No comment provided by engineer. */
-"You" = "Sen";
 
 /* No comment provided by engineer. */
 "You **must not** use the same database on two devices." = "Aynı veritabanını iki cihazda **kullanmamalısınız**.";
