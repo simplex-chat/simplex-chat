@@ -4051,19 +4051,19 @@ Ez az Ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Tudjon meg többet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Leave" xml:space="preserve">
+      <trans-unit id="Leave" xml:space="preserve" approved="no">
         <source>Leave</source>
-        <target>Elhagyás</target>
+        <target state="translated">Elhagyás</target>
         <note>swipe action</note>
       </trans-unit>
-      <trans-unit id="Leave group" xml:space="preserve">
+      <trans-unit id="Leave group" xml:space="preserve" approved="no">
         <source>Leave group</source>
-        <target>Csoport elhagyása</target>
+        <target state="translated">Csoport elhagyása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Leave group?" xml:space="preserve">
+      <trans-unit id="Leave group?" xml:space="preserve" approved="no">
         <source>Leave group?</source>
-        <target>Csoport elhagyása?</target>
+        <target state="translated">Csoport elhagyása?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Let's talk in SimpleX Chat" xml:space="preserve">
@@ -4923,7 +4923,7 @@ VPN engedélyezése szükséges.</target>
       </trans-unit>
       <trans-unit id="Past member %@" xml:space="preserve" approved="no">
         <source>Past member %@</source>
-        <target state="translated">(Távozott) %@</target>
+        <target state="translated">(Már nem tag) %@</target>
         <note>past/unknown group member</note>
       </trans-unit>
       <trans-unit id="Paste desktop address" xml:space="preserve">
@@ -8516,7 +8516,7 @@ Kapcsolatkérés megismétlése?</target>
       </trans-unit>
       <trans-unit id="left" xml:space="preserve" approved="no">
         <source>left</source>
-        <target state="translated">távozott</target>
+        <target state="translated">elhagyta a csoportot</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="marked deleted" xml:space="preserve">
@@ -8932,7 +8932,7 @@ utoljára fogadott üzenet: %2$@</target>
       </trans-unit>
       <trans-unit id="you left" xml:space="preserve" approved="no">
         <source>you left</source>
-        <target state="translated">Ön távozott</target>
+        <target state="translated">Ön elhagyta a csoportot</target>
         <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="you removed %@" xml:space="preserve">
