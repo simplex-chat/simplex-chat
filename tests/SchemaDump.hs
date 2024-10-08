@@ -33,7 +33,7 @@ testSchema = "tests/tmp/test_agent_schema.sql"
 schemaDumpTest :: Spec
 schemaDumpTest = do
   it "verify and overwrite schema dump" testVerifySchemaDump
-  fit "verify .lint fkey-indexes" testVerifyLintFKeyIndexes
+  it "verify .lint fkey-indexes" testVerifyLintFKeyIndexes
   it "verify schema down migrations" testSchemaMigrations
 
 testVerifySchemaDump :: IO ()
