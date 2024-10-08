@@ -467,6 +467,37 @@ private let versionDescriptions: [VersionDescription] = [
             )
         ]
     ),
+    VersionDescription(
+        version: "v6.1",
+        post: URL(string: "https://simplex.chat/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html"),
+        features: [
+            FeatureDescription(
+                icon: "checkmark.shield",
+                title: "Security review",
+                description: "SimpleX protocols reviewed by Trail of Bits."
+            ),
+            FeatureDescription(
+                icon: "phone",
+                title: "Better calls",
+                description: "Switch between audio and video calls."
+            ),
+            FeatureDescription(
+                icon: "message",
+                title: "New chat design",
+                description: "Customizable messages, date separators."
+            ),
+            FeatureDescription(
+                icon: "arrowshape.turn.up.right",
+                title: "Select multiple messages",
+                description: "Forward up to 20, delete up to 200 messages."
+            ),
+            FeatureDescription(
+                icon: "bolt",
+                title: "Better notifications",
+                description: "More stable delivery, reduced network usage."
+            )
+        ]
+    ),
 ]
 
 private let lastVersion = versionDescriptions.last!.version
