@@ -218,9 +218,9 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
       SectionDividerSpaced(maxTopPadding = true)
     }
 
-    if (currentRemoteHost == null && developerTools) {
+    if (currentRemoteHost == null) {
       SectionView(stringResource(MR.strings.network_session_mode_transport_isolation).uppercase()) {
-        SessionModePicker(sessionMode, showModal, updateSessionMode)
+        SessionModePicker(developerTools, sessionMode, showModal, updateSessionMode)
       }
       SectionDividerSpaced()
     }
