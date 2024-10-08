@@ -1428,7 +1428,7 @@
     <string name="v5_3_simpler_incognito_mode_descr">Inkognító mód kapcsolódáskor.</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Megoszthat egy hivatkozást vagy QR-kódot - így bárki csatlakozhat a csoporthoz. Ha a csoport később törlésre kerül, akkor nem fogja elveszíteni annak tagjait.</string>
     <string name="you_joined_this_group">Csatlakozott ehhez a csoporthoz</string>
-    <string name="connect_plan_this_is_your_link_for_group_vName">Ez az Ön hivatkozása a(z) <b>%1$s</b> csoporthoz!</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Ez az Ön hivatkozása a(z) <b>%1$s</b> csoporthoz!]]></string>
     <string name="voice_prohibited_in_this_chat">A hangüzenetek küldése le van tiltva ebben a csevegésben.</string>
     <string name="you_control_your_chat">Ön irányítja csevegését!</string>
     <string name="verify_code_with_desktop">Kód ellenőrzése a számítógépen</string>

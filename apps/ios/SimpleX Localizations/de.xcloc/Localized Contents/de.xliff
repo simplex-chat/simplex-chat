@@ -945,6 +945,10 @@
         <target>App-Zugangscode wurde durch den Selbstzerstörungs-Zugangscode ersetzt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="App session" xml:space="preserve">
+        <source>App session</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
         <source>App version</source>
         <target>App Version</target>
@@ -1381,6 +1385,10 @@
         <target>Die Chat-Präferenzen wurden geändert.</target>
         <note>alert message</note>
       </trans-unit>
+      <trans-unit id="Chat profile" xml:space="preserve">
+        <source>Chat profile</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Chat theme" xml:space="preserve">
         <source>Chat theme</source>
         <target>Chat-Design</target>
@@ -1780,9 +1788,9 @@ Das ist Ihr eigener Einmal-Link!</target>
         <target>Core Version: v%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Corner" xml:space="preserve" approved="no">
+      <trans-unit id="Corner" xml:space="preserve">
         <source>Corner</source>
-        <target state="translated">Abrundung Ecken</target>
+        <target>Abrundung Ecken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Correct name to %@?" xml:space="preserve">
@@ -4501,6 +4509,14 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target>Neuer Zugangscode</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="New SOCKS credentials will be used every time you start the app." xml:space="preserve">
+        <source>New SOCKS credentials will be used every time you start the app.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="New SOCKS credentials will be used for each server." xml:space="preserve">
+        <source>New SOCKS credentials will be used for each server.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="New chat" xml:space="preserve">
         <source>New chat</source>
         <target>Neuer Chat</target>
@@ -4619,6 +4635,14 @@ Das ist Ihr Link für die Gruppe %@!</target>
       <trans-unit id="No network connection" xml:space="preserve">
         <source>No network connection</source>
         <target>Keine Netzwerkverbindung</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No permission to record speech" xml:space="preserve">
+        <source>No permission to record speech</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No permission to record video" xml:space="preserve">
+        <source>No permission to record video</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No permission to record voice message" xml:space="preserve">
@@ -6089,6 +6113,10 @@ Aktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</target>
         <target>Über einen Proxy gesendet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Server" xml:space="preserve">
+        <source>Server</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Server address" xml:space="preserve">
         <source>Server address</source>
         <target>Server-Adresse</target>
@@ -6928,6 +6956,14 @@ You will be prompted to complete authentication before this feature is enabled.<
 Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funktion aktiviert wird.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="To record speech please grant permission to use Microphone." xml:space="preserve">
+        <source>To record speech please grant permission to use Microphone.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="To record video please grant permission to use Camera." xml:space="preserve">
+        <source>To record video please grant permission to use Camera.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="To record voice message please grant permission to use Microphone." xml:space="preserve">
         <source>To record voice message please grant permission to use Microphone.</source>
         <target>Bitte erlauben Sie die Nutzung des Mikrofons, um Sprachnachrichten aufnehmen zu können.</target>
@@ -7263,11 +7299,6 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       <trans-unit id="Use the app with one hand." xml:space="preserve">
         <source>Use the app with one hand.</source>
         <target>Die App mit einer Hand bedienen.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="User profile" xml:space="preserve">
-        <source>User profile</source>
-        <target>Benutzerprofil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="User selection" xml:space="preserve">
@@ -8399,9 +8430,9 @@ Verbindungsanfrage wiederholen?</target>
         <target>event happened</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="expired" xml:space="preserve" approved="no">
+      <trans-unit id="expired" xml:space="preserve">
         <source>expired</source>
-        <target state="translated">Abgelaufen</target>
+        <target>Abgelaufen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="forwarded" xml:space="preserve">
@@ -8631,9 +8662,9 @@ Verbindungsanfrage wiederholen?</target>
         <target>Ein</target>
         <note>group pref value</note>
       </trans-unit>
-      <trans-unit id="other" xml:space="preserve" approved="no">
+      <trans-unit id="other" xml:space="preserve">
         <source>other</source>
-        <target state="translated">Andere</target>
+        <target>Andere</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="other errors" xml:space="preserve">

@@ -1203,7 +1203,7 @@
 "Core version: v%@" = "Core Version: v%@";
 
 /* No comment provided by engineer. */
-"Corner" = "Ecken-Abrundung";
+"Corner" = "Abrundung Ecken";
 
 /* No comment provided by engineer. */
 "Correct name to %@?" = "Richtiger Name für %@?";
@@ -2093,7 +2093,7 @@
 "Expand" = "Erweitern";
 
 /* No comment provided by engineer. */
-"expired" = "abgelaufen";
+"expired" = "Abgelaufen";
 
 /* No comment provided by engineer. */
 "Export database" = "Datenbank exportieren";
@@ -3268,7 +3268,7 @@
 "Or show this code" = "Oder diesen QR-Code anzeigen";
 
 /* No comment provided by engineer. */
-"other" = "andere";
+"other" = "Andere";
 
 /* No comment provided by engineer. */
 "Other" = "Andere";
@@ -4813,9 +4813,6 @@
 
 /* No comment provided by engineer. */
 "Use the app with one hand." = "Die App mit einer Hand bedienen.";
-
-/* No comment provided by engineer. */
-"User profile" = "Benutzerprofil";
 
 /* No comment provided by engineer. */
 "User selection" = "Benutzer-Auswahl";

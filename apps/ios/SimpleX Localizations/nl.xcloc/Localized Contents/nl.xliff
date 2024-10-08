@@ -945,6 +945,10 @@
         <target>De app-toegangscode wordt vervangen door een zelfvernietigings wachtwoord.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="App session" xml:space="preserve">
+        <source>App session</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
         <source>App version</source>
         <target>App versie</target>
@@ -1380,6 +1384,10 @@
         <source>Chat preferences were changed.</source>
         <target>Chatvoorkeuren zijn gewijzigd.</target>
         <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="Chat profile" xml:space="preserve">
+        <source>Chat profile</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat theme" xml:space="preserve">
         <source>Chat theme</source>
@@ -4501,6 +4509,14 @@ Dit is jouw link voor groep %@!</target>
         <target>Nieuwe toegangscode</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="New SOCKS credentials will be used every time you start the app." xml:space="preserve">
+        <source>New SOCKS credentials will be used every time you start the app.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="New SOCKS credentials will be used for each server." xml:space="preserve">
+        <source>New SOCKS credentials will be used for each server.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="New chat" xml:space="preserve">
         <source>New chat</source>
         <target>Nieuw gesprek</target>
@@ -4619,6 +4635,14 @@ Dit is jouw link voor groep %@!</target>
       <trans-unit id="No network connection" xml:space="preserve">
         <source>No network connection</source>
         <target>Geen netwerkverbinding</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No permission to record speech" xml:space="preserve">
+        <source>No permission to record speech</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No permission to record video" xml:space="preserve">
+        <source>No permission to record video</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No permission to record voice message" xml:space="preserve">
@@ -6089,6 +6113,10 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Verzonden via proxy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Server" xml:space="preserve">
+        <source>Server</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Server address" xml:space="preserve">
         <source>Server address</source>
         <target>Server adres</target>
@@ -6927,6 +6955,14 @@ You will be prompted to complete authentication before this feature is enabled.<
 U wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingeschakeld.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="To record speech please grant permission to use Microphone." xml:space="preserve">
+        <source>To record speech please grant permission to use Microphone.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="To record video please grant permission to use Camera." xml:space="preserve">
+        <source>To record video please grant permission to use Camera.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="To record voice message please grant permission to use Microphone." xml:space="preserve">
         <source>To record voice message please grant permission to use Microphone.</source>
         <target>Geef toestemming om de microfoon te gebruiken om een spraakbericht op te nemen.</target>
@@ -7262,11 +7298,6 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
       <trans-unit id="Use the app with one hand." xml:space="preserve">
         <source>Use the app with one hand.</source>
         <target>Gebruik de app met één hand.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="User profile" xml:space="preserve">
-        <source>User profile</source>
-        <target>Gebruikers profiel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="User selection" xml:space="preserve">
@@ -8899,9 +8930,9 @@ laatst ontvangen bericht: %2$@</target>
         <target>je bent uitgenodigd voor de groep</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="you are observer" xml:space="preserve" approved="no">
+      <trans-unit id="you are observer" xml:space="preserve">
         <source>you are observer</source>
-        <target state="translated">je bent waarnemer</target>
+        <target>je bent waarnemer</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you blocked %@" xml:space="preserve">
@@ -8929,9 +8960,9 @@ laatst ontvangen bericht: %2$@</target>
         <target>je veranderde de rol van %1$@ in %2$@</target>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="you left" xml:space="preserve" approved="no">
+      <trans-unit id="you left" xml:space="preserve">
         <source>you left</source>
-        <target state="translated">je bent vertrokken</target>
+        <target>je bent vertrokken</target>
         <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="you removed %@" xml:space="preserve">

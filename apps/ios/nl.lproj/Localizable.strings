@@ -4812,9 +4812,6 @@
 "Use the app with one hand." = "Gebruik de app met één hand.";
 
 /* No comment provided by engineer. */
-"User profile" = "Gebruikers profiel";
-
-/* No comment provided by engineer. */
 "User selection" = "Gebruikersselectie";
 
 /* No comment provided by engineer. */
@@ -5070,7 +5067,7 @@
 "You are not connected to these servers. Private routing is used to deliver messages to them." = "U bent niet verbonden met deze servers. Privéroutering wordt gebruikt om berichten bij hen af te leveren.";
 
 /* No comment provided by engineer. */
-"you are observer" = "jij bent waarnemer";
+"you are observer" = "je bent waarnemer";
 
 /* snd group event chat item */
 "you blocked %@" = "je hebt %@ geblokkeerd";
@@ -5172,7 +5169,7 @@
 "You joined this group. Connecting to inviting group member." = "Je bent lid geworden van deze groep. Verbinding maken met uitnodigend groepslid.";
 
 /* snd group event chat item */
-"you left" = "jij bent vertrokken";
+"you left" = "je bent vertrokken";
 
 /* No comment provided by engineer. */
 "You may migrate the exported database." = "U kunt de geëxporteerde database migreren.";
