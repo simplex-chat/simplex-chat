@@ -10,6 +10,12 @@ import SwiftUI
 import Combine
 import SimpleXChat
 
+enum ChatScrollDirection {
+    case toLatest
+    case toOldest
+    case none
+}
+
 /// A List, which displays it's items in reverse order - from bottom to top
 struct ReverseList<Content: View>: UIViewControllerRepresentable {
     let items: Array<ChatItem>
@@ -50,6 +56,8 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         private var itemCount: Int = 0
         private let updateFloatingButtons = PassthroughSubject<Void, Never>()
         private var bag = Set<AnyCancellable>()
+        private var lastContentOffset: CGFloat = 0
+        private var scrollDirection: ChatScrollDirection = .none
 
         init(representer: ReverseList) {
             self.representer = representer
@@ -205,6 +213,15 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         }
 
         override func scrollViewDidScroll(_ scrollView: UIScrollView) {
+            let currentOffset = scrollView.contentOffset.y
+            if currentOffset > lastContentOffset {
+                scrollDirection = .toOldest
+            } else if currentOffset < lastContentOffset {
+                scrollDirection = .toLatest
+            } else {
+                scrollDirection = .none
+            }
+            lastContentOffset = currentOffset
             updateFloatingButtons.send()
         }
 
