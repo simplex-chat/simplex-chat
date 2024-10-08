@@ -645,6 +645,9 @@
 "Chat preferences" = "Předvolby chatu";
 
 /* No comment provided by engineer. */
+"Chat profile" = "Profil uživatele";
+
+/* No comment provided by engineer. */
 "Chats" = "Chaty";
 
 /* No comment provided by engineer. */
@@ -3228,9 +3231,6 @@
 
 /* No comment provided by engineer. */
 "Use SimpleX Chat servers?" = "Používat servery SimpleX Chat?";
-
-/* No comment provided by engineer. */
-"User profile" = "Profil uživatele";
 
 /* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "Používat servery SimpleX Chat.";
