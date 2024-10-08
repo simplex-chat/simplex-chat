@@ -753,7 +753,7 @@
     <string name="joining_group">Csatlakozás a csoporthoz</string>
     <string name="linked_desktop_options">Társított számítógép beállítások</string>
     <string name="rcv_group_event_invited_via_your_group_link">meghíva az Ön csoporthivatkozásán keresztül</string>
-    <string name="rcv_group_event_member_left">elhagyta a csoportot</string>
+    <string name="rcv_group_event_member_left">távozott</string>
     <string name="linked_desktops">Társított számítógépek</string>
     <string name="la_no_app_password">Nincs alkalmazás jelkód</string>
     <string name="muted_when_inactive">Némítás, ha inaktív!</string>
@@ -770,7 +770,7 @@
     <string name="v4_3_irreversible_message_deletion">Végleges üzenettörlés</string>
     <string name="videos_limit_desc">Egyszerre csak 10 videó küldhető el</string>
     <string name="only_you_can_add_message_reactions">Csak Ön adhat hozzá üzenetreakciókat.</string>
-    <string name="group_member_status_left">elhagyta a csoportot</string>
+    <string name="group_member_status_left">távozott</string>
     <string name="message_deletion_prohibited">Az üzenetek végleges törlése le van tiltva ebben a csevegésben.</string>
     <string name="v4_3_voice_messages_desc">Max 40 másodperc, azonnal fogadható.</string>
     <string name="description_via_contact_address_link_incognito">inkognitó a kapcsolattartási cím-hivatkozáson keresztül</string>
@@ -1254,7 +1254,7 @@
     <string name="reset_verb">Visszaállítás</string>
     <string name="only_your_contact_can_add_message_reactions">Csak az ismerőse tud üzenetreakciókat küldeni.</string>
     <string name="voice_messages">Hangüzenetek</string>
-    <string name="snd_group_event_user_left">elhagyta a csoportot</string>
+    <string name="snd_group_event_user_left">Ön távozott</string>
     <string name="icon_descr_record_voice_message">Hangüzenet rögzítése</string>
     <string name="auth_simplex_lock_turned_on">SimpleX-zár bekapcsolva</string>
     <string name="member_contact_send_direct_message">közvetlen üzenet küldése</string>
@@ -1578,7 +1578,7 @@
     <string name="developer_options_section">Fejlesztői beállítások</string>
     <string name="possible_slow_function_desc">A funkció végrehajtása túl sokáig tart: %1$d másodperc: %2$s</string>
     <string name="remote_host_error_busy"><![CDATA[A(z) <b>%s</b> hordozható eszköz elfoglalt]]></string>
-    <string name="past_member_vName">%1$s (már nem tag)</string>
+    <string name="past_member_vName">(Távozott) %1$s</string>
     <string name="group_member_status_unknown">ismeretlen állapot</string>
     <string name="profile_update_event_member_name_changed">%1$s megváltoztatta a nevét erre: %2$s</string>
     <string name="profile_update_event_removed_address">eltávolította a kapcsolattartási címet</string>
