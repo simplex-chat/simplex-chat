@@ -434,12 +434,12 @@ struct ActiveCallOverlay: View {
                 audioDevicePickerButton()
             }
         }
-        .onChange(of: call.hasVideo) { hasVideo in
+        .onChange(of: call.localMediaSources.hasVideo) { hasVideo in
             let current = AVAudioSession.sharedInstance().currentRoute.outputs.first?.portType
             let speakerEnabled = current == .builtInSpeaker
             let receiverEnabled = current == .builtInReceiver
-            // react automatically only when speaker or receiver were selected, otherwise keep an external device selected
-            if hasVideo != speakerEnabled && (speakerEnabled || receiverEnabled) {
+            // react automatically only when receiver were selected, otherwise keep an external device selected
+            if !speakerEnabled && hasVideo && receiverEnabled {
                 client.setSpeakerEnabledAndConfigureSession(!speakerEnabled, skipExternalDevice: true)
                 call.speakerEnabled = !speakerEnabled
             }
