@@ -2020,4 +2020,8 @@
     <string name="cannot_share_message_alert_text">Seçilen sohbet tercihleri bu mesajı yasakladı.</string>
     <string name="servers_info_reset_stats">Tüm istatistikleri sıfırla</string>
     <string name="reset_all_hints">Tüm ip uçlarını sıfırla</string>
+    <string name="n_file_errors">%1$d dosya hata(ları)\n%2$s</string>
+    <string name="forward_files_in_progress_desc">%1$d dosya(lar) hala indiriliyor.</string>
+    <string name="forward_files_failed_to_receive_desc">%1$d dosyası (ları) indirilemedi.</string>
+    <string name="forward_files_missing_desc">%1$d dosyası (ları) silindi.</string>
 </resources>
