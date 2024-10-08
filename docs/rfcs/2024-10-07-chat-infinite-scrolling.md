@@ -38,6 +38,15 @@ fetchLatest()
     fetchLast()
 ```
 
+
+```haskell
+-- Chat command
+APIGetInitialChatItems ChatRef
+
+-- Chat result
+CRInitialChatItems {user :: User, latestChatItems :: [AChatItem], unreadChatItems :: [AChatItem]}
+```
+
 ### Option 1
 Keep single instance of `chatItems` representing the current scrollable chat area. The entire array is cleared and replaced during long-distance navigation, and items are appended or prepended as needed during scroll.
 
