@@ -2107,8 +2107,15 @@
     <string name="new_chat_share_profile">Comparte perfil</string>
     <string name="switching_profile_error_message">Tu conexión ha sido trasladada a %s pero ha ocurrido un error inesperado al redirigirte al perfil.</string>
     <string name="icon_descr_sound_muted">Sonido silenciado</string>
-    <string name="error_initializing_web_view_wrong_arch">Error al inicializar WebView. Asegúrese de que tiene WebView instalado y que su arquitectura soportada es arm64.\nError: %s</string>
-    <string name="settings_section_title_message_shape">Formato de mensaje</string>
-    <string name="settings_message_shape_corner">Esquina</string>
+    <string name="error_initializing_web_view_wrong_arch">Error al iniciar WebView. Asegúrate de tener WebView instalado y que sea compatible con la arquitectura amr64.\nError: %s</string>
+    <string name="settings_section_title_message_shape">Formato mensaje</string>
+    <string name="settings_message_shape_corner">Esquinas</string>
     <string name="settings_message_shape_tail">Cola</string>
+    <string name="network_session_mode_session_description">Se usarán credenciales SOCKS nuevas cada vez que inicies la aplicación.</string>
+    <string name="network_session_mode_session">Sesión de aplicación</string>
+    <string name="call_desktop_permission_denied_safari">Abre la configuración de Safari / Sitios Web / Micrófono y a continuación selecciona Permitir para localhost.</string>
+    <string name="call_desktop_permission_denied_chrome">Pulsa el botón info del campo dirección para permitir el uso del micrófono.</string>
+    <string name="call_desktop_permission_denied_title">Para hacer llamadas, permite el uso del micrófono. Cuelga e intenta llamar de nuevo.</string>
+    <string name="network_session_mode_server_description">Se usarán credenciales SOCKS nuevas por cada servidor.</string>
+    <string name="network_session_mode_server">Servidor</string>
 </resources>
