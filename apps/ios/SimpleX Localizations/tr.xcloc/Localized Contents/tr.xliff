@@ -1351,6 +1351,7 @@
       </trans-unit>
       <trans-unit id="Chat profile" xml:space="preserve">
         <source>Chat profile</source>
+        <target>Kullanıcı profili</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat theme" xml:space="preserve">
