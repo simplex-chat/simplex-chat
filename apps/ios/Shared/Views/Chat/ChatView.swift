@@ -179,7 +179,7 @@ struct ChatView: View {
             if !isLoading,
                im.reversedChatItems.count <= loadItemsPerPage,
                filtered(im.reversedChatItems).count < 10 {
-                loadChatItems(chat.chatInfo)
+                loadChatItems(chat.chatInfo, .toOldest)
             }
         }
         .environmentObject(scrollModel)
@@ -433,8 +433,8 @@ struct ChatView: View {
                     forwardedChatItems: $forwardedChatItems
                 )
                 .id(ci.id) // Required to trigger `onAppear` on iOS15
-            } loadPage: {
-                loadChatItems(cInfo)
+            } loadPage: { direction in
+                loadChatItems(cInfo, direction)
             }
             .opacity(ItemsModel.shared.isLoading ? 0 : 1)
             .padding(.vertical, -InvertedTableView.inset)
@@ -834,7 +834,7 @@ struct ChatView: View {
         }
     }
 
-    private func loadChatItems(_ cInfo: ChatInfo) {
+    private func loadChatItems(_ cInfo: ChatInfo, _ direction: ChatScrollDirection) {
         Task {
             if loadingItems || firstPage { return }
             loadingItems = true
@@ -844,8 +844,11 @@ struct ChatView: View {
                 // Load additional items until the page is +50 large after merging
                 while chatItemsAvailable && filtered(reversedPage).count < loadItemsPerPage {
                     let pagination: ChatPagination =
-                        if let lastItem = reversedPage.last ?? im.reversedChatItems.last {
+                        if direction == .toOldest, let lastItem = reversedPage.last ?? im.reversedChatItems.last {
                             .before(chatItemId: lastItem.id, count: loadItemsPerPage)
+                        } else if direction == .toLatest, let firstItem = reversedPage.first ?? im.reversedChatItems.first {
+                            // TODO: Replace with anchor.
+                            .after(chatItemId: firstItem.id, count: loadItemsPerPage)
                         } else {
                             .last(count: loadItemsPerPage)
                         }

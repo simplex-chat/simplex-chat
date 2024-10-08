@@ -25,7 +25,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
     /// Closure, that returns user interface for a given item
     let content: (ChatItem) -> Content
 
-    let loadPage: () -> Void
+    let loadPage: (ChatScrollDirection) -> Void
 
     func makeUIViewController(context: Context) -> Controller {
         Controller(representer: self)
@@ -56,8 +56,6 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         private var itemCount: Int = 0
         private let updateFloatingButtons = PassthroughSubject<Void, Never>()
         private var bag = Set<AnyCancellable>()
-        private var lastContentOffset: CGFloat = 0
-        private var scrollDirection: ChatScrollDirection = .none
 
         init(representer: ReverseList) {
             self.representer = representer
@@ -87,7 +85,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 tableView: tableView
             ) { (tableView, indexPath, item) -> UITableViewCell? in
                 if indexPath.item > self.itemCount - 8, self.itemCount > 8 {
-                    self.representer.loadPage()
+                    self.representer.loadPage(.toOldest)
                 }
                 let cell = tableView.dequeueReusableCell(withIdentifier: cellReuseId, for: indexPath)
                 if #available(iOS 16.0, *) {
@@ -213,15 +211,6 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         }
 
         override func scrollViewDidScroll(_ scrollView: UIScrollView) {
-            let currentOffset = scrollView.contentOffset.y
-            if currentOffset > lastContentOffset {
-                scrollDirection = .toOldest
-            } else if currentOffset < lastContentOffset {
-                scrollDirection = .toLatest
-            } else {
-                scrollDirection = .none
-            }
-            lastContentOffset = currentOffset
             updateFloatingButtons.send()
         }
 
