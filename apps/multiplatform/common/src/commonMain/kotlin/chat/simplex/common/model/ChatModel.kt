@@ -71,6 +71,9 @@ object ChatModel {
   val groupMembers = mutableStateListOf<GroupMember>()
   val groupMembersIndexes = mutableStateMapOf<Long, Int>()
 
+  // false: default placement, true: floating window.
+  // Used for deciding to add terminal items on main thread or not. Floating means appPrefs.terminalAlwaysVisible
+  var terminalsVisible = setOf<Boolean>()
   val terminalItems = mutableStateOf<List<TerminalItem>>(listOf())
   val userAddress = mutableStateOf<UserContactLinkRec?>(null)
   val chatItemTTL = mutableStateOf<ChatItemTTL>(ChatItemTTL.None)
@@ -772,6 +775,16 @@ object ChatModel {
 
   fun addTerminalItem(item: TerminalItem) {
     val maxItems = if (appPreferences.developerTools.get()) 500 else 200
+    if (terminalsVisible.isNotEmpty()) {
+      withApi {
+        addTerminalItem(item, maxItems)
+      }
+    } else {
+      addTerminalItem(item, maxItems)
+    }
+  }
+
+  private fun addTerminalItem(item: TerminalItem, maxItems: Int) {
     if (terminalItems.value.size >= maxItems) {
       terminalItems.value = terminalItems.value.subList(1, terminalItems.value.size)
     }
