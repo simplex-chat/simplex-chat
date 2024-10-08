@@ -3,6 +3,7 @@ body {
   padding: 0;
   margin: 0;
   background-color: black;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
 #remote-video-stream.inline {
@@ -197,7 +198,6 @@ body {
   color: white;
   opacity: 0.8;
   width: 200px;
-  font-family: Arial, Helvetica, sans-serif;
 }
 
 #info-block.audio {
