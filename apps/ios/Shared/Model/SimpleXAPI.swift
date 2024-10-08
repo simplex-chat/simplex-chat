@@ -2084,7 +2084,6 @@ func processReceivedMsg(_ res: ChatResponse) async {
         await withCall(contact) { call in
             await MainActor.run {
                 call.callState = .offerReceived
-                call.peerMedia = callType.media
                 call.sharedKey = sharedKey
             }
             let useRelay = UserDefaults.standard.bool(forKey: DEFAULT_WEBRTC_POLICY_RELAY)
