@@ -4921,9 +4921,9 @@ VPN engedélyezése szükséges.</target>
         <target>Jelszó megjelenítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Past member %@" xml:space="preserve">
+      <trans-unit id="Past member %@" xml:space="preserve" approved="no">
         <source>Past member %@</source>
-        <target>%@ (már nem tag)</target>
+        <target state="translated">(Távozott) %@</target>
         <note>past/unknown group member</note>
       </trans-unit>
       <trans-unit id="Paste desktop address" xml:space="preserve">
@@ -8514,9 +8514,9 @@ Kapcsolatkérés megismétlése?</target>
         <target>csatlakozás mint: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="left" xml:space="preserve">
+      <trans-unit id="left" xml:space="preserve" approved="no">
         <source>left</source>
-        <target>elhagyta a csoportot</target>
+        <target state="translated">távozott</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="marked deleted" xml:space="preserve">
@@ -8930,9 +8930,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>%1$@ szerepkörét megváltoztatta erre: %@</target>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="you left" xml:space="preserve">
+      <trans-unit id="you left" xml:space="preserve" approved="no">
         <source>you left</source>
-        <target>elhagyta a csoportot</target>
+        <target state="translated">Ön távozott</target>
         <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="you removed %@" xml:space="preserve">
