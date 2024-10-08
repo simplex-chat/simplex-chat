@@ -12,7 +12,7 @@ constraints: zip +disable-bzip2 +disable-zstd
 source-repository-package
     type: git
     location: https://github.com/simplex-chat/simplexmq.git
-    tag: b8971a31bcb82fffabcb792c9afd6bc4a96ec649
+    tag: 491423b57d87fea510187a617ed59db030f61c0c
 
 source-repository-package
     type: git

@@ -1451,22 +1451,25 @@ processChatCommand' vr = \case
   APIVerifyToken token nonce code -> withUser $ \_ -> withAgent (\a -> verifyNtfToken a token nonce code) >> ok_
   APIDeleteToken token -> withUser $ \_ -> withAgent (`deleteNtfToken` token) >> ok_
   APIGetNtfMessage nonce encNtfInfo -> withUser $ \_ -> do
-    (NotificationInfo {ntfConnId, ntfMsgMeta = nMsgMeta}, msg) <- withAgent $ \a -> getNotificationMessage a nonce encNtfInfo
+    -- [ntf get many]
+    -- returns list now - get users, connection entities batched
+    ((NotificationInfo {ntfConnId, ntfMsgMeta = nMsgMeta}, msg) :| _) <- withAgent $ \a -> getNotificationMessage a nonce encNtfInfo
     let agentConnId = AgentConnId ntfConnId
     user_ <- withStore' (`getUserByAConnId` agentConnId)
     connEntity_ <-
       pure user_ $>>= \user ->
         withStore (\db -> Just <$> getConnectionEntity db vr user agentConnId) `catchChatError` (\e -> toView (CRChatError (Just user) e) $> Nothing)
-    pure
-      CRNtfMessages
-        { user_,
-          connEntity_,
-          -- Decrypted ntf meta of the expected message (the one notification was sent for)
-          expectedMsg_ = expectedMsgInfo <$> nMsgMeta,
-          -- Info of the first message retrieved by agent using GET
-          -- (may differ from the expected message due to, for example, coalescing or loss of notifications)
-          receivedMsg_ = receivedMsgInfo <$> msg
-        }
+    let ntfMessage =
+          NtfMessage
+            { user_,
+              connEntity_,
+              -- Decrypted ntf meta of the expected message (the one notification was sent for)
+              expectedMsg_ = expectedMsgInfo <$> nMsgMeta,
+              -- Info of the first message retrieved by agent using GET
+              -- (may differ from the expected message due to, for example, coalescing or loss of notifications)
+              receivedMsg_ = receivedMsgInfo <$> msg
+            }
+    pure $ CRNtfMessages [ntfMessage]
   ApiGetConnNtfMessage (AgentConnId connId) -> withUser $ \_ -> do
     msg <- withAgent $ \a -> getConnectionMessage a connId
     pure $ CRConnNtfMessage (receivedMsgInfo <$> msg)

@@ -745,7 +745,7 @@ data ChatResponse
   | CRUserContactLinkSubError {chatError :: ChatError} -- TODO delete
   | CRNtfTokenStatus {status :: NtfTknStatus}
   | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode, ntfServer :: NtfServer}
-  | CRNtfMessages {user_ :: Maybe User, connEntity_ :: Maybe ConnectionEntity, expectedMsg_ :: Maybe NtfMsgInfo, receivedMsg_ :: Maybe NtfMsgInfo}
+  | CRNtfMessages {ntfMessages :: [NtfMessage]}
   | CRConnNtfMessage {receivedMsg_ :: Maybe NtfMsgInfo}
   | CRNtfMessage {user :: User, connEntity :: ConnectionEntity, ntfMessage :: NtfMsgAckInfo}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
@@ -1010,7 +1010,7 @@ defaultSimpleNetCfg =
       smpWebPort = False,
       tcpTimeout_ = Nothing,
       logTLSErrors = False
-    }  
+    }
 
 data ContactSubStatus = ContactSubStatus
   { contact :: Contact,
@@ -1062,6 +1062,14 @@ instance FromJSON ComposedMessage where
     pure ComposedMessage {fileSource, quotedItemId, msgContent}
   parseJSON invalid =
     JT.prependFailure "bad ComposedMessage, " (JT.typeMismatch "Object" invalid)
+
+data NtfMessage = NtfMessage
+  { user_ :: Maybe User,
+    connEntity_ :: Maybe ConnectionEntity,
+    expectedMsg_ :: Maybe NtfMsgInfo,
+    receivedMsg_ :: Maybe NtfMsgInfo
+  }
+  deriving (Show)
 
 data NtfMsgInfo = NtfMsgInfo {msgId :: Text, msgTs :: UTCTime}
   deriving (Show)
@@ -1530,6 +1538,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "AE") ''ArchiveError)
 $(JQ.deriveJSON defaultJSON ''UserProfileUpdateSummary)
 
 $(JQ.deriveJSON defaultJSON ''NtfMsgInfo)
+
+$(JQ.deriveJSON defaultJSON ''NtfMessage)
 
 $(JQ.deriveJSON defaultJSON ''NtfMsgAckInfo)
 
