@@ -83,6 +83,7 @@ enum class CallState {
 @Serializable
 sealed class WCallCommand {
   @Serializable @SerialName("capabilities") data class Capabilities(val media: CallMediaType): WCallCommand()
+  @Serializable @SerialName("permission") data class Permission(val title: String, val chrome: String, val firefox: String, val safari: String): WCallCommand()
   @Serializable @SerialName("start") data class Start(val media: CallMediaType, val aesKey: String? = null, val iceServers: List<RTCIceServer>? = null, val relay: Boolean? = null): WCallCommand()
   @Serializable @SerialName("offer") data class Offer(val offer: String, val iceCandidates: String, val media: CallMediaType, val aesKey: String? = null, val iceServers: List<RTCIceServer>? = null, val relay: Boolean? = null): WCallCommand()
   @Serializable @SerialName("answer") data class Answer (val answer: String, val iceCandidates: String): WCallCommand()
@@ -92,7 +93,6 @@ sealed class WCallCommand {
   @Serializable @SerialName("description") data class Description(val state: String, val description: String): WCallCommand()
   @Serializable @SerialName("layout") data class Layout(val layout: LayoutType): WCallCommand()
   @Serializable @SerialName("end") object End: WCallCommand()
-  @Serializable @SerialName("permission") data class Permission(val title: String, val chrome: String, val firefox: String, val safari: String): WCallCommand()
 }
 
 @Serializable

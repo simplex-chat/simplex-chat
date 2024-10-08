@@ -9,6 +9,7 @@ interface WVApiMessage {
 
 type WCallCommand =
   | WCCapabilities
+  | WCPermission
   | WCStartCall
   | WCAcceptOffer
   | WCallAnswer
@@ -18,7 +19,6 @@ type WCallCommand =
   | WCDescription
   | WCLayout
   | WCEndCall
-  | WCPermission
 
 type WCallResponse =
   | WRCapabilities
@@ -36,6 +36,7 @@ type WCallResponse =
 
 type WCallCommandTag =
   | "capabilities"
+  | "permission"
   | "start"
   | "offer"
   | "answer"
@@ -45,7 +46,6 @@ type WCallCommandTag =
   | "description"
   | "layout"
   | "end"
-  | "permission"
 
 type WCallResponseTag =
   | "capabilities"
