@@ -196,11 +196,14 @@ struct AdvancedNetworkSettings: View {
                 if developerTools {
                     Section {
                         Picker("Transport isolation", selection: $netCfg.sessionMode) {
-                            ForEach(TransportSessionMode.values, id: \.self) { Text($0.text) }
+                            let modes = TransportSessionMode.values.contains(netCfg.sessionMode)
+                                ? TransportSessionMode.values
+                                : TransportSessionMode.values + [netCfg.sessionMode]
+                            ForEach(modes, id: \.self) { Text($0.text) }
                         }
                         .frame(height: 36)
                     } footer: {
-                        Text(sessionModeInfo(netCfg.sessionMode))
+                        sessionModeInfo(netCfg.sessionMode)
                             .foregroundColor(theme.colors.secondary)
                     }
                 }
@@ -353,10 +356,13 @@ struct AdvancedNetworkSettings: View {
         }
     }
 
-    private func sessionModeInfo(_ mode: TransportSessionMode) -> LocalizedStringKey {
-        switch mode {
-        case .user: return "A separate TCP connection will be used **for each chat profile you have in the app**."
-        case .entity: return "A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail."
+    private func sessionModeInfo(_ mode: TransportSessionMode) -> Text {
+        let userMode = Text("A separate TCP connection will be used **for each chat profile you have in the app**.")
+        return switch mode {
+        case .user: userMode
+        case .session: userMode + Text("\n") + Text("New SOCKS credentials will be used every time you start the app.")
+        case .server: userMode + Text("\n") + Text("New SOCKS credentials will be used for each server.")
+        case .entity: Text("A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.")
         }
     }
     

@@ -945,6 +945,11 @@
         <target>App passcode is replaced with self-destruct passcode.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="App session" xml:space="preserve">
+        <source>App session</source>
+        <target>App session</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
         <source>App version</source>
         <target>App version</target>
@@ -1380,6 +1385,11 @@
         <source>Chat preferences were changed.</source>
         <target>Chat preferences were changed.</target>
         <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="Chat profile" xml:space="preserve">
+        <source>Chat profile</source>
+        <target>Chat profile</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat theme" xml:space="preserve">
         <source>Chat theme</source>
@@ -4501,6 +4511,16 @@ This is your link for group %@!</target>
         <target>New Passcode</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="New SOCKS credentials will be used every time you start the app." xml:space="preserve">
+        <source>New SOCKS credentials will be used every time you start the app.</source>
+        <target>New SOCKS credentials will be used every time you start the app.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="New SOCKS credentials will be used for each server." xml:space="preserve">
+        <source>New SOCKS credentials will be used for each server.</source>
+        <target>New SOCKS credentials will be used for each server.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="New chat" xml:space="preserve">
         <source>New chat</source>
         <target>New chat</target>
@@ -4619,6 +4639,16 @@ This is your link for group %@!</target>
       <trans-unit id="No network connection" xml:space="preserve">
         <source>No network connection</source>
         <target>No network connection</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No permission to record speech" xml:space="preserve">
+        <source>No permission to record speech</source>
+        <target>No permission to record speech</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No permission to record video" xml:space="preserve">
+        <source>No permission to record video</source>
+        <target>No permission to record video</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No permission to record voice message" xml:space="preserve">
@@ -6089,6 +6119,11 @@ Enable in *Network &amp; servers* settings.</target>
         <target>Sent via proxy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Server" xml:space="preserve">
+        <source>Server</source>
+        <target>Server</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Server address" xml:space="preserve">
         <source>Server address</source>
         <target>Server address</target>
@@ -6928,6 +6963,16 @@ You will be prompted to complete authentication before this feature is enabled.<
 You will be prompted to complete authentication before this feature is enabled.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="To record speech please grant permission to use Microphone." xml:space="preserve">
+        <source>To record speech please grant permission to use Microphone.</source>
+        <target>To record speech please grant permission to use Microphone.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="To record video please grant permission to use Camera." xml:space="preserve">
+        <source>To record video please grant permission to use Camera.</source>
+        <target>To record video please grant permission to use Camera.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="To record voice message please grant permission to use Microphone." xml:space="preserve">
         <source>To record voice message please grant permission to use Microphone.</source>
         <target>To record voice message please grant permission to use Microphone.</target>
@@ -7263,11 +7308,6 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Use the app with one hand." xml:space="preserve">
         <source>Use the app with one hand.</source>
         <target>Use the app with one hand.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="User profile" xml:space="preserve">
-        <source>User profile</source>
-        <target>User profile</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="User selection" xml:space="preserve">

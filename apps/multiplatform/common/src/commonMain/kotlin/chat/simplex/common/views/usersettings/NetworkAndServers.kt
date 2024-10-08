@@ -164,9 +164,7 @@ fun NetworkAndServersView() {
   val showCustomModal = { it: @Composable (close: () -> Unit) -> Unit -> ModalManager.fullscreen.showCustomModal { close -> it(close) }}
   UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy)
   SettingsActionItem(painterResource(MR.images.ic_settings_ethernet), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkUseSocksProxy.value, networkProxy, onionHosts, sessionMode.value, true, it) } })
-  if (developerTools) {
-    SessionModePicker(sessionMode, showModal, updateSessionMode)
-  }
+  SessionModePicker(sessionMode, showModal, updateSessionMode)
 }
 
 @Composable
@@ -458,9 +456,17 @@ fun SessionModePicker(
 ) {
   val density = LocalDensity.current
   val values = remember {
-    TransportSessionMode.values().map {
+    val safeModes = TransportSessionMode.safeValues
+    val modes: Array<TransportSessionMode> =
+      if (appPrefs.developerTools.get()) TransportSessionMode.values()
+      else if (safeModes.contains(sessionMode.value)) safeModes
+      else safeModes + sessionMode.value
+    modes.map {
+      val userModeDescr: AnnotatedString = escapedHtmlToAnnotatedString(generalGetString(MR.strings.network_session_mode_user_description), density)
       when (it) {
-        TransportSessionMode.User -> ValueTitleDesc(TransportSessionMode.User, generalGetString(MR.strings.network_session_mode_user), escapedHtmlToAnnotatedString(generalGetString(MR.strings.network_session_mode_user_description), density))
+        TransportSessionMode.User -> ValueTitleDesc(TransportSessionMode.User, generalGetString(MR.strings.network_session_mode_user), userModeDescr)
+        TransportSessionMode.Session -> ValueTitleDesc(TransportSessionMode.Session, generalGetString(MR.strings.network_session_mode_session), userModeDescr + AnnotatedString("\n") + escapedHtmlToAnnotatedString(generalGetString(MR.strings.network_session_mode_session_description), density))
+        TransportSessionMode.Server -> ValueTitleDesc(TransportSessionMode.Server, generalGetString(MR.strings.network_session_mode_server), userModeDescr + AnnotatedString("\n") + escapedHtmlToAnnotatedString(generalGetString(MR.strings.network_session_mode_server_description), density))
         TransportSessionMode.Entity -> ValueTitleDesc(TransportSessionMode.Entity, generalGetString(MR.strings.network_session_mode_entity), escapedHtmlToAnnotatedString(generalGetString(MR.strings.network_session_mode_entity_description), density))
       }
     }

@@ -9,6 +9,7 @@ interface WVApiMessage {
 
 type WCallCommand =
   | WCCapabilities
+  | WCPermission
   | WCStartCall
   | WCAcceptOffer
   | WCallAnswer
@@ -33,7 +34,18 @@ type WCallResponse =
   | WRError
   | WCAcceptOffer
 
-type WCallCommandTag = "capabilities" | "start" | "offer" | "answer" | "ice" | "media" | "camera" | "description" | "layout" | "end"
+type WCallCommandTag =
+  | "capabilities"
+  | "permission"
+  | "start"
+  | "offer"
+  | "answer"
+  | "ice"
+  | "media"
+  | "camera"
+  | "description"
+  | "layout"
+  | "end"
 
 type WCallResponseTag =
   | "capabilities"
@@ -154,6 +166,13 @@ interface WCLayout extends IWCallCommand {
   layout: LayoutType
 }
 
+interface WCPermission extends IWCallCommand {
+  type: "permission"
+  title: string
+  chrome: string
+  safari: string
+}
+
 interface WRCapabilities extends IWCallResponse {
   type: "capabilities"
   capabilities: CallCapabilities
@@ -220,6 +239,7 @@ var sendMessageToNative = (msg: WVApiMessage) => console.log(JSON.stringify(msg)
 var toggleScreenShare = async () => {}
 var localOrPeerMediaSourcesChanged = (_call: Call) => {}
 var inactiveCallMediaSourcesChanged = (_inactiveCallMediaSources: CallMediaSources) => {}
+var failedToGetPermissions = (_title: string, _description: string) => {}
 
 // Global object with cryptrographic/encoding functions
 const callCrypto = callCryptoFunction()
@@ -421,7 +441,11 @@ const processCommand = (function () {
     try {
       localStream = notConnectedCall?.localStream
         ? notConnectedCall.localStream
-        : await getLocalMediaStream(inactiveCallMediaSources.mic, inactiveCallMediaSources.camera, localCamera)
+        : await getLocalMediaStream(
+            inactiveCallMediaSources.mic,
+            inactiveCallMediaSources.camera && (await browserHasCamera()),
+            localCamera
+          )
     } catch (e) {
       console.log("Error while getting local media stream", e)
       if (isDesktop) {
@@ -560,13 +584,21 @@ const processCommand = (function () {
 
           let localStream: MediaStream | null = null
           try {
-            localStream = await getLocalMediaStream(true, command.media == CallMediaType.Video, VideoCamera.User)
+            localStream = await getLocalMediaStream(
+              true,
+              command.media == CallMediaType.Video && (await browserHasCamera()),
+              VideoCamera.User
+            )
             const videos = getVideoElements()
             if (videos) {
               videos.local.srcObject = localStream
               videos.local.play().catch((e) => console.log(e))
             }
           } catch (e) {
+            console.log(e)
+            // Do not allow to continue the call without audio permission
+            resp = {type: "error", message: "capabilities: no permissions were granted for mic and/or camera"}
+            break
             localStream = new MediaStream()
             // Will be shown on the next stage of call estabilishing, can work without any streams
             //desktopShowPermissionsAlert(command.media)
@@ -698,6 +730,11 @@ const processCommand = (function () {
           break
         case "media":
           if (!activeCall) {
+            if (!notConnectedCall) {
+              // call can have a slow startup and be in this place even before "capabilities" stage
+              resp = {type: "error", message: "media: call has not yet pass capabilities stage"}
+              break
+            }
             switch (command.source) {
               case CallMediaSource.Mic:
                 inactiveCallMediaSources.mic = command.enable
@@ -741,8 +778,10 @@ const processCommand = (function () {
           if (!activeCall || !pc) {
             if (notConnectedCall) {
               recreateLocalStreamWhileNotConnected(command.camera)
+              resp = {type: "ok"}
+            } else {
+              resp = {type: "error", message: "camera: call has not yet pass capabilities stage"}
             }
-            resp = {type: "ok"}
           } else {
             if (await replaceMedia(activeCall, CallMediaSource.Camera, true, command.camera)) {
               resp = {type: "ok"}
@@ -767,6 +806,10 @@ const processCommand = (function () {
           break
         case "end":
           endCall()
+          resp = {type: "ok"}
+          break
+        case "permission":
+          failedToGetPermissions(command.title, permissionDescription(command))
           resp = {type: "ok"}
           break
         default:
@@ -1166,7 +1209,7 @@ const processCommand = (function () {
     }
     await getLocalMediaStream(
       inactiveCallMediaSources.mic && localStream.getAudioTracks().length == 0,
-      inactiveCallMediaSources.camera && (localStream.getVideoTracks().length == 0 || oldCamera != newCamera),
+      inactiveCallMediaSources.camera && (localStream.getVideoTracks().length == 0 || oldCamera != newCamera) && (await browserHasCamera()),
       newCamera
     )
       .then((stream) => {
@@ -1356,6 +1399,18 @@ const processCommand = (function () {
       // systemAudio: "include"
     }
     return navigator.mediaDevices.getDisplayMedia(constraints)
+  }
+
+  async function browserHasCamera(): Promise<boolean> {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices()
+      const hasCamera = devices.some((elem) => elem.kind == "videoinput")
+      console.log("Camera is available: " + hasCamera)
+      return hasCamera
+    } catch (error) {
+      console.log("Error while enumerating devices: " + error, error)
+      return false
+    }
   }
 
   function callMediaConstraints(mic: boolean, camera: boolean, facingMode: VideoCamera): MediaStreamConstraints {
@@ -1587,6 +1642,19 @@ function desktopShowPermissionsAlert(mediaType: CallMediaType) {
     window.alert(
       "Permissions denied. Please, allow access to mic and camera to make the call working and hit unmute/camera button. Don't reload the page."
     )
+  }
+}
+
+function permissionDescription(command: WCPermission): string {
+  if ((window as any).safari) {
+    return command.safari
+  } else if (
+    (navigator.userAgent.includes("Chrome") && navigator.vendor.includes("Google Inc")) ||
+    navigator.userAgent.includes("Firefox")
+  ) {
+    return command.chrome
+  } else {
+    return ""
   }
 }
 

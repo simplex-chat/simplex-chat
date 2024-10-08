@@ -67,7 +67,7 @@ public func registerGroupDefaults() {
         GROUP_DEFAULT_NTF_ENABLE_LOCAL: false,
         GROUP_DEFAULT_NTF_ENABLE_PERIODIC: false,
         GROUP_DEFAULT_NETWORK_USE_ONION_HOSTS: OnionHosts.no.rawValue,
-        GROUP_DEFAULT_NETWORK_SESSION_MODE: TransportSessionMode.user.rawValue,
+        GROUP_DEFAULT_NETWORK_SESSION_MODE: TransportSessionMode.session.rawValue,
         GROUP_DEFAULT_NETWORK_SMP_PROXY_MODE: SMPProxyMode.unknown.rawValue,
         GROUP_DEFAULT_NETWORK_SMP_PROXY_FALLBACK: SMPProxyFallback.allowProtected.rawValue,
         GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT: NetCfg.defaults.tcpConnectTimeout,
@@ -232,7 +232,7 @@ public let networkUseOnionHostsGroupDefault = EnumDefault<OnionHosts>(
 public let networkSessionModeGroupDefault = EnumDefault<TransportSessionMode>(
     defaults: groupDefaults,
     forKey: GROUP_DEFAULT_NETWORK_SESSION_MODE,
-    withDefault: .user
+    withDefault: .session
 )
 
 public let networkSMPProxyModeGroupDefault = EnumDefault<SMPProxyMode>(

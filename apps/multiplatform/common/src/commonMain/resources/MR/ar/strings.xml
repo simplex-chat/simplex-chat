@@ -2104,4 +2104,8 @@
     <string name="network_proxy_auth">استيثاق الوكيل</string>
     <string name="delete_messages_cannot_be_undone_warning">سيتم حذف الرسائل - لا يمكن التراجع عن هذا!</string>
     <string name="icon_descr_sound_muted">الصوت مكتوم</string>
+    <string name="error_initializing_web_view_wrong_arch">حدث خطأ أثناء تهيئة WebView. تأكد من تثبيت WebView وأن بنيته المدعومة هي arm64.\nالخطأ: %s</string>
+    <string name="settings_section_title_message_shape">شكل الرسالة</string>
+    <string name="settings_message_shape_tail">ذيل</string>
+    <string name="settings_message_shape_corner">ركن</string>
 </resources>

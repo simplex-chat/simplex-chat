@@ -884,6 +884,10 @@
         <target>รหัสผ่านแอปจะถูกแทนที่ด้วยรหัสผ่านที่ทำลายตัวเอง</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="App session" xml:space="preserve">
+        <source>App session</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
         <source>App version</source>
         <target>เวอร์ชันแอป</target>
@@ -1282,6 +1286,11 @@
       <trans-unit id="Chat preferences were changed." xml:space="preserve">
         <source>Chat preferences were changed.</source>
         <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="Chat profile" xml:space="preserve">
+        <source>Chat profile</source>
+        <target>โปรไฟล์ผู้ใช้</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat theme" xml:space="preserve">
         <source>Chat theme</source>
@@ -4173,6 +4182,14 @@ This is your link for group %@!</source>
         <target>รหัสผ่านใหม่</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="New SOCKS credentials will be used every time you start the app." xml:space="preserve">
+        <source>New SOCKS credentials will be used every time you start the app.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="New SOCKS credentials will be used for each server." xml:space="preserve">
+        <source>New SOCKS credentials will be used for each server.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="New chat" xml:space="preserve">
         <source>New chat</source>
         <note>No comment provided by engineer.</note>
@@ -4283,6 +4300,14 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="No network connection" xml:space="preserve">
         <source>No network connection</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No permission to record speech" xml:space="preserve">
+        <source>No permission to record speech</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No permission to record video" xml:space="preserve">
+        <source>No permission to record video</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No permission to record voice message" xml:space="preserve">
@@ -5640,6 +5665,10 @@ Enable in *Network &amp; servers* settings.</source>
         <source>Sent via proxy</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Server" xml:space="preserve">
+        <source>Server</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Server address" xml:space="preserve">
         <source>Server address</source>
         <note>No comment provided by engineer.</note>
@@ -6413,6 +6442,14 @@ You will be prompted to complete authentication before this feature is enabled.<
 คุณจะได้รับแจ้งให้ยืนยันตัวตนให้เสร็จสมบูรณ์ก่อนที่จะเปิดใช้งานคุณลักษณะนี้</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="To record speech please grant permission to use Microphone." xml:space="preserve">
+        <source>To record speech please grant permission to use Microphone.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="To record video please grant permission to use Camera." xml:space="preserve">
+        <source>To record video please grant permission to use Camera.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="To record voice message please grant permission to use Microphone." xml:space="preserve">
         <source>To record voice message please grant permission to use Microphone.</source>
         <target>ในการบันทึกข้อความเสียง โปรดให้สิทธิ์ในการใช้ไมโครโฟน</target>
@@ -6718,11 +6755,6 @@ To connect, please ask your contact to create another connection link and check 
       </trans-unit>
       <trans-unit id="Use the app with one hand." xml:space="preserve">
         <source>Use the app with one hand.</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="User profile" xml:space="preserve">
-        <source>User profile</source>
-        <target>โปรไฟล์ผู้ใช้</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="User selection" xml:space="preserve">

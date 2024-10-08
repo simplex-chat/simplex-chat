@@ -3654,7 +3654,7 @@ data class NetCfg(
   val socksMode: SocksMode = SocksMode.Always,
   val hostMode: HostMode = HostMode.OnionViaSocks,
   val requiredHostMode: Boolean = false,
-  val sessionMode: TransportSessionMode = TransportSessionMode.User,
+  val sessionMode: TransportSessionMode = TransportSessionMode.default,
   val smpProxyMode: SMPProxyMode = SMPProxyMode.Unknown,
   val smpProxyFallback: SMPProxyFallback = SMPProxyFallback.AllowProtected,
   val smpWebPort: Boolean = false,
@@ -3781,10 +3781,13 @@ enum class SMPProxyFallback {
 @Serializable
 enum class TransportSessionMode {
   @SerialName("user") User,
+  @SerialName("session") Session,
+  @SerialName("server") Server,
   @SerialName("entity") Entity;
 
   companion object {
-    val default = User
+    val default = Session
+    val safeValues = arrayOf(User, Session, Server)
   }
 }
 

@@ -3,6 +3,7 @@ body {
   padding: 0;
   margin: 0;
   background-color: black;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
 #remote-video-stream.inline {
@@ -157,6 +158,23 @@ body {
   animation: spin 2s linear infinite;
 }
 
+#permission-denied {
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  height: 100%;
+  align-content: center;
+  color: white;
+}
+
+#permission-denied-title {
+  font-weight: bold;
+}
+
+#permission-denied-desc {
+  font-style: italic;
+}
+
 @-webkit-keyframes spin {
   0% {
     -webkit-transform: rotate(0deg);
@@ -180,7 +198,6 @@ body {
   color: white;
   opacity: 0.8;
   width: 200px;
-  font-family: Arial, Helvetica, sans-serif;
 }
 
 #info-block.audio {

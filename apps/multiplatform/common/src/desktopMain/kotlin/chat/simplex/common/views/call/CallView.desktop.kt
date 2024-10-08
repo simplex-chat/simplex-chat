@@ -105,6 +105,14 @@ actual fun ActiveCallView() {
           else -> {}
         }
         is WCallResponse.Error -> {
+          when (apiMsg.command) {
+            is WCallCommand.Capabilities -> chatModel.callCommand.add(WCallCommand.Permission(
+              title = generalGetString(MR.strings.call_desktop_permission_denied_title),
+              chrome = generalGetString(MR.strings.call_desktop_permission_denied_chrome),
+              safari = generalGetString(MR.strings.call_desktop_permission_denied_safari)
+            ))
+            else -> {}
+          }
           Log.e(TAG, "ActiveCallView: command error ${r.message}")
         }
       }

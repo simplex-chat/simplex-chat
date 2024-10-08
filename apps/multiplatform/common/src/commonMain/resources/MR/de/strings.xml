@@ -1990,7 +1990,7 @@
     <string name="downloaded_files">Heruntergeladene Dateien</string>
     <string name="download_errors">Fehler beim Herunterladen</string>
     <string name="duplicates_label">Duplikate</string>
-    <string name="expired_label">abgelaufen</string>
+    <string name="expired_label">Abgelaufen</string>
     <string name="open_server_settings_button">Server-Einstellungen öffnen</string>
     <string name="other_errors">Andere Fehler</string>
     <string name="proxied">Proxy</string>
@@ -2188,4 +2188,8 @@
     <string name="forward_multiple">Nachrichten werden weitergeleitet…</string>
     <string name="compose_save_messages_n">Es wird/werden %1$s Nachricht(en) gesichert</string>
     <string name="icon_descr_sound_muted">Ton stummgeschaltet</string>
+    <string name="error_initializing_web_view_wrong_arch">Fehler bei der Initialisierung von WebView. Stellen Sie sicher, dass Sie WebView installiert haben, und es die ARM64-Architektur unterstützt.\nFehler: %s</string>
+    <string name="settings_section_title_message_shape">Form der Nachricht</string>
+    <string name="settings_message_shape_tail">Sprechblase</string>
+    <string name="settings_message_shape_corner">Abrundung Ecken</string>
 </resources>

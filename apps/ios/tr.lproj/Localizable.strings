@@ -801,6 +801,9 @@
 "Chat preferences" = "Sohbet tercihleri";
 
 /* No comment provided by engineer. */
+"Chat profile" = "Kullanıcı profili";
+
+/* No comment provided by engineer. */
 "Chats" = "Sohbetler";
 
 /* No comment provided by engineer. */
@@ -4090,9 +4093,6 @@
 
 /* No comment provided by engineer. */
 "Use the app while in the call." = "Görüşme sırasında uygulamayı kullanın.";
-
-/* No comment provided by engineer. */
-"User profile" = "Kullanıcı profili";
 
 /* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "SimpleX Chat sunucuları kullanılıyor.";

@@ -891,6 +891,9 @@
 "Chat preferences" = "Préférences de chat";
 
 /* No comment provided by engineer. */
+"Chat profile" = "Profil d'utilisateur";
+
+/* No comment provided by engineer. */
 "Chat theme" = "Thème de chat";
 
 /* No comment provided by engineer. */
@@ -4696,9 +4699,6 @@
 
 /* No comment provided by engineer. */
 "Use the app with one hand." = "Utiliser l'application d'une main.";
-
-/* No comment provided by engineer. */
-"User profile" = "Profil d'utilisateur";
 
 /* No comment provided by engineer. */
 "User selection" = "Sélection de l'utilisateur";

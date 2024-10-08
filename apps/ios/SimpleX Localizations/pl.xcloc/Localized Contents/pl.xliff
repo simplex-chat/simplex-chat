@@ -939,6 +939,10 @@
         <target>Pin aplikacji został zastąpiony pinem samozniszczenia.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="App session" xml:space="preserve">
+        <source>App session</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
         <source>App version</source>
         <target>Wersja aplikacji</target>
@@ -1372,6 +1376,11 @@
       <trans-unit id="Chat preferences were changed." xml:space="preserve">
         <source>Chat preferences were changed.</source>
         <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="Chat profile" xml:space="preserve">
+        <source>Chat profile</source>
+        <target>Profil użytkownika</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat theme" xml:space="preserve">
         <source>Chat theme</source>
@@ -4477,6 +4486,14 @@ To jest twój link do grupy %@!</target>
         <target>Nowy Pin</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="New SOCKS credentials will be used every time you start the app." xml:space="preserve">
+        <source>New SOCKS credentials will be used every time you start the app.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="New SOCKS credentials will be used for each server." xml:space="preserve">
+        <source>New SOCKS credentials will be used for each server.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="New chat" xml:space="preserve">
         <source>New chat</source>
         <target>Nowy czat</target>
@@ -4595,6 +4612,14 @@ To jest twój link do grupy %@!</target>
       <trans-unit id="No network connection" xml:space="preserve">
         <source>No network connection</source>
         <target>Brak połączenia z siecią</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No permission to record speech" xml:space="preserve">
+        <source>No permission to record speech</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No permission to record video" xml:space="preserve">
+        <source>No permission to record video</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No permission to record voice message" xml:space="preserve">
@@ -6054,6 +6079,10 @@ Włącz w ustawianiach *Sieć i serwery* .</target>
         <target>Wysłano przez proxy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Server" xml:space="preserve">
+        <source>Server</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Server address" xml:space="preserve">
         <source>Server address</source>
         <target>Adres serwera</target>
@@ -6888,6 +6917,14 @@ You will be prompted to complete authentication before this feature is enabled.<
 Przed włączeniem tej funkcji zostanie wyświetlony monit uwierzytelniania.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="To record speech please grant permission to use Microphone." xml:space="preserve">
+        <source>To record speech please grant permission to use Microphone.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="To record video please grant permission to use Camera." xml:space="preserve">
+        <source>To record video please grant permission to use Camera.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="To record voice message please grant permission to use Microphone." xml:space="preserve">
         <source>To record voice message please grant permission to use Microphone.</source>
         <target>Aby nagrać wiadomość głosową należy udzielić zgody na użycie Mikrofonu.</target>
@@ -7222,11 +7259,6 @@ Aby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połąc
       <trans-unit id="Use the app with one hand." xml:space="preserve">
         <source>Use the app with one hand.</source>
         <target>Korzystaj z aplikacji jedną ręką.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="User profile" xml:space="preserve">
-        <source>User profile</source>
-        <target>Profil użytkownika</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="User selection" xml:space="preserve">
