@@ -280,7 +280,7 @@
     <string name="custom_time_unit_weeks">ആഴ്ചകൾ</string>
     <string name="icon_descr_sent_msg_status_unauthorized_send">അനധികൃത അയക്കുക</string>
     <string name="switch_receiving_address_question">സ്വീകരിക്കുന്ന വിലാസം മാറണോ\?</string>
-    <string name="member_role_will_be_changed_with_invitation">കര്‍ത്തവ്യം \"%s\" ആയി മാറ്റും. അംഗത്തിന് പുതിയ ക്ഷണം ലഭിക്കും.</string>
+    <string name="member_role_will_be_changed_with_invitation">കര്‍ത്തവ്യം "%s" ആയി മാറ്റും. അംഗത്തിന് പുതിയ ക്ഷണം ലഭിക്കും.</string>
     <string name="la_lock_mode_system">സംവിധാനം പ്രാമാണീകരണം</string>
     <string name="skip_inviting_button">അംഗങ്ങളെ ക്ഷണിക്കുന്നത് ഒഴിവാക്കുക</string>
     <string name="save_welcome_message_question">സ്വാഗത സന്ദേശം സംരക്ഷിക്കണോ\?</string>

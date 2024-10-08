@@ -7,7 +7,6 @@ import chat.simplex.common.platform.Log
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.*
-import android.view.View
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.graphics.Color
@@ -120,7 +119,10 @@ class SimplexApp: Application(), LifecycleEventObserver {
            * */
           if (chatModel.chatRunning.value != false &&
             chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete &&
-            appPrefs.notificationsMode.get() == NotificationsMode.SERVICE
+            appPrefs.notificationsMode.get() == NotificationsMode.SERVICE &&
+            // New installation passes all checks above and tries to start the service which is not needed at all
+            // because preferred notification type is not yet chosen. So, check that the user has initialized db already
+            appPrefs.newDatabaseInitialized.get()
           ) {
             SimplexService.start()
           }
@@ -161,7 +163,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       .addTag(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC)
       .build()
     Log.d(TAG, "ServiceStartWorker: Scheduling period work every ${SimplexService.SERVICE_START_WORKER_INTERVAL_MINUTES} minutes")
-    WorkManager.getInstance(context)?.enqueueUniquePeriodicWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC, workPolicy, work)
+    getWorkManagerInstance().enqueueUniquePeriodicWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC, workPolicy, work)
   }
 
   fun schedulePeriodicWakeUp() = CoroutineScope(Dispatchers.Default).launch {

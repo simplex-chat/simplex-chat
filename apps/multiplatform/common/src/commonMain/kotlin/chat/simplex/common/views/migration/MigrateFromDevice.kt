@@ -4,7 +4,6 @@ import SectionBottomSpacer
 import SectionSpacer
 import SectionTextFooter
 import SectionView
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -17,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.getNetCfg
 import chat.simplex.common.model.ChatController.startChat
 import chat.simplex.common.model.ChatController.startChatWithTemporaryDatabase
@@ -38,7 +38,6 @@ import kotlinx.serialization.*
 import java.io.File
 import java.net.URLEncoder
 import kotlin.math.max
-import kotlin.math.sqrt
 
 @Serializable
 data class MigrationFileLinkData(
@@ -46,16 +45,20 @@ data class MigrationFileLinkData(
 ) {
   @Serializable
   data class NetworkConfig(
-    val socksProxy: String?,
+    // Legacy. Remove in 2025
+    @SerialName("socksProxy")
+    val legacySocksProxy: String?,
+    val networkProxy: NetworkProxy?,
     val hostMode: HostMode?,
     val requiredHostMode: Boolean?
   ) {
-    fun hasOnionConfigured(): Boolean = socksProxy != null || hostMode == HostMode.Onion
+    fun hasProxyConfigured(): Boolean = networkProxy != null || legacySocksProxy != null || hostMode == HostMode.Onion
 
     fun transformToPlatformSupported(): NetworkConfig {
       return if (hostMode != null && requiredHostMode != null) {
         NetworkConfig(
-          socksProxy = if (hostMode == HostMode.Onion) socksProxy ?: NetCfg.proxyDefaults.socksProxy else socksProxy,
+          legacySocksProxy = if (hostMode == HostMode.Onion) legacySocksProxy ?: NetCfg.proxyDefaults.socksProxy else legacySocksProxy,
+          networkProxy = if (hostMode == HostMode.Onion) networkProxy ?: NetworkProxy() else networkProxy,
           hostMode = if (hostMode == HostMode.Onion) HostMode.OnionViaSocks else hostMode,
           requiredHostMode = requiredHostMode
         )
@@ -349,7 +352,15 @@ private fun MutableState<MigrationFromState>.LinkShownView(fileId: Long, link: S
       text = stringResource(MR.strings.migrate_from_device_finalize_migration),
       textColor = MaterialTheme.colors.primary,
       click = {
-        finishMigration(fileId, ctrl)
+        AlertManager.shared.showAlertDialog(
+          title = generalGetString(MR.strings.migrate_from_device_remove_archive_question),
+          text = generalGetString(MR.strings.migrate_from_device_uploaded_archive_will_be_removed),
+          confirmText = generalGetString(MR.strings.continue_to_next_step),
+          destructive = true,
+          onConfirm = {
+            finishMigration(fileId, ctrl)
+          }
+        )
       }
     ) {}
     SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_archive_will_be_deleted))
@@ -562,7 +573,8 @@ private fun MutableState<MigrationFromState>.startUploading(
           val cfg = getNetCfg()
           val data = MigrationFileLinkData(
             networkConfig = MigrationFileLinkData.NetworkConfig(
-              socksProxy = cfg.socksProxy,
+              legacySocksProxy = null,
+              networkProxy = if (appPrefs.networkUseSocksProxy.get()) appPrefs.networkProxy.get() else null,
               hostMode = cfg.hostMode,
               requiredHostMode = cfg.requiredHostMode
             )

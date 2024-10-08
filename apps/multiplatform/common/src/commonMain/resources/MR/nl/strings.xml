@@ -767,7 +767,7 @@
     <string name="group_info_section_title_num_members">%1$s LEDEN</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">U kunt een link of een QR-code delen. Iedereen kan lid worden van de groep. U verliest geen leden van de groep als u deze later verwijdert.</string>
     <string name="switch_verb">Wijzig</string>
-    <string name="member_role_will_be_changed_with_notification">De rol wordt gewijzigd in \"%s\". Iedereen in de groep wordt op de hoogte gebracht.</string>
+    <string name="member_role_will_be_changed_with_notification">De rol wordt gewijzigd in "%s". Iedereen in de groep wordt op de hoogte gebracht.</string>
     <string name="receiving_via">Ontvang via</string>
     <string name="save_group_profile">Groep profiel opslaan</string>
     <string name="group_is_decentralized">Volledig gedecentraliseerd – alleen zichtbaar voor leden.</string>
@@ -800,7 +800,7 @@
     <string name="button_remove_member">Lid verwijderen</string>
     <string name="role_in_group">Rol</string>
     <string name="button_send_direct_message">Direct bericht sturen</string>
-    <string name="member_role_will_be_changed_with_invitation">De rol wordt gewijzigd in \"%s\". De gebruiker ontvangt een nieuwe uitnodiging.</string>
+    <string name="member_role_will_be_changed_with_invitation">De rol wordt gewijzigd in "%s". De gebruiker ontvangt een nieuwe uitnodiging.</string>
     <string name="sending_via">Verzenden via</string>
     <string name="conn_stats_section_title_servers">SERVERS</string>
     <string name="network_options_reset_to_defaults">Resetten naar standaardwaarden</string>
@@ -973,7 +973,7 @@
     <string name="make_profile_private">Profiel privé maken!</string>
     <string name="v4_6_group_moderation_descr">Nu kunnen beheerders:
 \n- berichten van leden verwijderen.
-\n- schakel leden uit (\"waarnemer\" rol)</string>
+\n- schakel leden uit ("waarnemer" rol)</string>
     <string name="v4_6_hidden_chat_profiles_descr">Bescherm je chat profielen met een wachtwoord!</string>
     <string name="password_to_show">Wachtwoord om weer te geven</string>
     <string name="save_and_update_group_profile">Groep profiel opslaan en bijwerken</string>

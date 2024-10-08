@@ -318,6 +318,7 @@
   <string name="delete_message__question">Delete message?</string>
   <string name="delete_messages__question">Delete %d messages?</string>
   <string name="delete_message_cannot_be_undone_warning">Message will be deleted - this cannot be undone!</string>
+  <string name="delete_messages_cannot_be_undone_warning">Messages will be deleted - this cannot be undone!</string>
   <string name="delete_message_mark_deleted_warning">Message will be marked for deletion. The recipient(s) will be able to reveal this message.</string>
   <string name="delete_messages_mark_deleted_warning">Messages will be marked for deletion. The recipient(s) will be able to reveal these messages.</string>
   <string name="delete_member_message__question">Delete member message?</string>
@@ -764,7 +765,17 @@
   <string name="network_socks_proxy">SOCKS proxy</string>
   <string name="network_socks_proxy_settings">SOCKS proxy settings</string>
   <string name="network_socks_toggle_use_socks_proxy">Use SOCKS proxy</string>
+  <string name="network_proxy_auth">Proxy authentication</string>
+  <string name="network_proxy_random_credentials">Use random credentials</string>
+  <string name="network_proxy_auth_mode_isolate_by_auth_user">Use different proxy credentials for each profile.</string>
+  <string name="network_proxy_auth_mode_isolate_by_auth_entity">Use different proxy credentials for each connection.</string>
+  <string name="network_proxy_auth_mode_no_auth">Do not use credentials with proxy.</string>
+  <string name="network_proxy_auth_mode_username_password">Your credentials may be sent unencrypted.</string>
+  <string name="network_proxy_username">Username</string>
+  <string name="network_proxy_password">Password</string>
   <string name="network_proxy_port">port %d</string>
+  <string name="network_proxy_incorrect_config_title">Error saving proxy</string>
+  <string name="network_proxy_incorrect_config_desc">Make sure proxy configuration is correct.</string>
   <string name="host_verb">Host</string>
   <string name="port_verb">Port</string>
   <string name="network_enable_socks">Use SOCKS proxy?</string>
@@ -1556,8 +1567,8 @@
   <string name="change_verb">Change</string>
   <string name="switch_verb">Switch</string>
   <string name="change_member_role_question">Change group role?</string>
-  <string name="member_role_will_be_changed_with_notification">The role will be changed to \"%s\". Everyone in the group will be notified.</string>
-  <string name="member_role_will_be_changed_with_invitation">The role will be changed to \"%s\". The member will receive a new invitation.</string>
+  <string name="member_role_will_be_changed_with_notification">The role will be changed to "%s". Everyone in the group will be notified.</string>
+  <string name="member_role_will_be_changed_with_invitation">The role will be changed to "%s". The member will receive a new invitation.</string>
   <string name="connect_via_member_address_alert_title">Connect directly?</string>
   <string name="connect_via_member_address_alert_desc">Сonnection request will be sent to this group member.</string>
   <string name="error_removing_member">Error removing member</string>
@@ -1893,7 +1904,7 @@
   <string name="v4_6_audio_video_calls">Audio and video calls</string>
   <string name="v4_6_audio_video_calls_descr">Support bluetooth and other improvements.</string>
   <string name="v4_6_group_moderation">Group moderation</string>
-  <string name="v4_6_group_moderation_descr">Now admins can:\n- delete members\' messages.\n- disable members (\"observer\" role)</string>
+  <string name="v4_6_group_moderation_descr">Now admins can:\n- delete members\' messages.\n- disable members ("observer" role)</string>
   <string name="v4_6_group_welcome_message">Group welcome message</string>
   <string name="v4_6_group_welcome_message_descr">Set the message shown to new members!</string>
   <string name="v4_6_reduced_battery_usage">Further reduced battery usage</string>
@@ -2174,6 +2185,8 @@
   <string name="migrate_from_device_creating_archive_link">Creating archive link</string>
   <string name="migrate_from_device_cancel_migration">Cancel migration</string>
   <string name="migrate_from_device_finalize_migration">Finalize migration</string>
+  <string name="migrate_from_device_remove_archive_question">Remove archive?</string>
+  <string name="migrate_from_device_uploaded_archive_will_be_removed">The uploaded database archive will be permanently removed from the servers.</string>
   <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[Choose <i>Migrate from another device</i> on the new device and scan QR code.]]></string>
   <string name="migrate_from_device_or_share_this_file_link">Or securely share this file link</string>
   <string name="migrate_from_device_delete_database_from_device">Delete database from this device</string>
