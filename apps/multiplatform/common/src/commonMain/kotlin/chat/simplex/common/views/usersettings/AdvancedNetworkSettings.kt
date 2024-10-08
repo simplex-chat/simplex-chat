@@ -220,7 +220,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
 
     if (currentRemoteHost == null) {
       SectionView(stringResource(MR.strings.network_session_mode_transport_isolation).uppercase()) {
-        SessionModePicker(developerTools, sessionMode, showModal, updateSessionMode)
+        SessionModePicker(sessionMode, showModal, updateSessionMode)
       }
       SectionDividerSpaced()
     }

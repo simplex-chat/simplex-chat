@@ -3654,7 +3654,7 @@ data class NetCfg(
   val socksMode: SocksMode = SocksMode.Always,
   val hostMode: HostMode = HostMode.OnionViaSocks,
   val requiredHostMode: Boolean = false,
-  val sessionMode: TransportSessionMode = TransportSessionMode.User,
+  val sessionMode: TransportSessionMode = TransportSessionMode.default,
   val smpProxyMode: SMPProxyMode = SMPProxyMode.Unknown,
   val smpProxyFallback: SMPProxyFallback = SMPProxyFallback.AllowProtected,
   val smpWebPort: Boolean = false,

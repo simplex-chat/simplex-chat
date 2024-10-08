@@ -164,7 +164,7 @@ fun NetworkAndServersView() {
   val showCustomModal = { it: @Composable (close: () -> Unit) -> Unit -> ModalManager.fullscreen.showCustomModal { close -> it(close) }}
   UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy)
   SettingsActionItem(painterResource(MR.images.ic_settings_ethernet), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkUseSocksProxy.value, networkProxy, onionHosts, sessionMode.value, true, it) } })
-  SessionModePicker(developerTools, sessionMode, showModal, updateSessionMode)
+  SessionModePicker(sessionMode, showModal, updateSessionMode)
 }
 
 @Composable
@@ -450,7 +450,6 @@ fun UseOnionHosts(
 
 @Composable
 fun SessionModePicker(
-  developerTools: Boolean,
   sessionMode: MutableState<TransportSessionMode>,
   showModal: (@Composable ModalData.() -> Unit) -> Unit,
   updateSessionMode: (TransportSessionMode) -> Unit,
@@ -459,7 +458,7 @@ fun SessionModePicker(
   val values = remember {
     val safeModes = TransportSessionMode.safeValues
     val modes: Array<TransportSessionMode> =
-      if (developerTools) TransportSessionMode.values()
+      if (appPrefs.developerTools.get()) TransportSessionMode.values()
       else if (safeModes.contains(sessionMode.value)) safeModes
       else safeModes + sessionMode.value
     modes.map {
