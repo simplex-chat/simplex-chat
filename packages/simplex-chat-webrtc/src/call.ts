@@ -170,7 +170,6 @@ interface WCPermission extends IWCallCommand {
   type: "permission"
   title: string
   chrome: string
-  firefox: string
   safari: string
 }
 
@@ -1649,10 +1648,11 @@ function desktopShowPermissionsAlert(mediaType: CallMediaType) {
 function permissionDescription(command: WCPermission): string {
   if ((window as any).safari) {
     return command.safari
-  } else if (navigator.userAgent.includes("Chrome") && navigator.vendor.includes("Google Inc")) {
+  } else if (
+    (navigator.userAgent.includes("Chrome") && navigator.vendor.includes("Google Inc")) ||
+    navigator.userAgent.includes("Firefox")
+  ) {
     return command.chrome
-  } else if (navigator.userAgent.includes("Firefox")) {
-    return command.firefox
   } else {
     return ""
   }

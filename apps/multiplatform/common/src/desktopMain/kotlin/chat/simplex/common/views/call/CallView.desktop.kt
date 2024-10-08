@@ -109,7 +109,6 @@ actual fun ActiveCallView() {
             is WCallCommand.Capabilities -> chatModel.callCommand.add(WCallCommand.Permission(
               title = generalGetString(MR.strings.call_desktop_permission_denied_title),
               chrome = generalGetString(MR.strings.call_desktop_permission_denied_chrome),
-              firefox = generalGetString(MR.strings.call_desktop_permission_denied_firefox),
               safari = generalGetString(MR.strings.call_desktop_permission_denied_safari)
             ))
             else -> {}

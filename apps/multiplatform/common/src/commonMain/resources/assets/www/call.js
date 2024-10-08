@@ -1320,11 +1320,9 @@ function permissionDescription(command) {
     if (window.safari) {
         return command.safari;
     }
-    else if (navigator.userAgent.includes("Chrome") && navigator.vendor.includes("Google Inc")) {
+    else if ((navigator.userAgent.includes("Chrome") && navigator.vendor.includes("Google Inc")) ||
+        navigator.userAgent.includes("Firefox")) {
         return command.chrome;
-    }
-    else if (navigator.userAgent.includes("Firefox")) {
-        return command.firefox;
     }
     else {
         return "";
