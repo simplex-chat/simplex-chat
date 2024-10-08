@@ -20,11 +20,12 @@ import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
-import chat.simplex.res.MR
-import dev.icerock.moko.resources.compose.stringResource
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
 
 @Composable
-fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
+fun TerminalView(floating: Boolean = false, close: () -> Unit) {
   val composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = false)) }
   val close = {
     close()
@@ -37,6 +38,7 @@ fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
   })
   TerminalLayout(
     composeState,
+    floating,
     sendCommand = { sendCommand(chatModel, composeState) },
     close
   )
@@ -65,6 +67,7 @@ private fun sendCommand(chatModel: ChatModel, composeState: MutableState<Compose
 @Composable
 fun TerminalLayout(
   composeState: MutableState<ComposeState>,
+  floating: Boolean,
   sendCommand: () -> Unit,
   close: () -> Unit
 ) {
@@ -118,19 +121,40 @@ fun TerminalLayout(
         color = MaterialTheme.colors.background,
         contentColor = LocalContentColor.current
       ) {
-        TerminalLog()
+        TerminalLog(floating)
       }
     }
   }
 }
 
 @Composable
-fun TerminalLog() {
+fun TerminalLog(floating: Boolean) {
   val reversedTerminalItems by remember {
     derivedStateOf { chatModel.terminalItems.value.asReversed() }
   }
   val clipboard = LocalClipboardManager.current
-  LazyColumnWithScrollBar(reverseLayout = true) {
+  val listState = LocalAppBarHandler.current?.listState ?: rememberLazyListState()
+  LaunchedEffect(Unit) {
+    var autoScrollToBottom = true
+    launch {
+      snapshotFlow { listState.layoutInfo.totalItemsCount }
+        .filter { autoScrollToBottom }
+        .collect {
+          try {
+            listState.scrollToItem(0)
+          } catch (e: Exception) {
+            Log.e(TAG, e.stackTraceToString())
+          }
+        }
+    }
+    launch {
+      snapshotFlow { listState.firstVisibleItemIndex }
+        .collect {
+          autoScrollToBottom = listState.firstVisibleItemIndex == 0
+        }
+    }
+  }
+  LazyColumnWithScrollBar(reverseLayout = true, state = listState) {
     items(reversedTerminalItems, key = { item -> item.id to item.createdAtNanos }) { item ->
       val rhId = item.remoteHostId
       val rhIdStr = if (rhId == null) "" else "$rhId "
@@ -142,7 +166,12 @@ fun TerminalLog() {
         modifier = Modifier
           .fillMaxWidth()
           .clickable {
-            ModalManager.start.showModal(endButtons = { ShareButton { clipboard.shareText(item.details) } }) {
+            val modalPlace = if (floating) {
+              ModalManager.floatingTerminal
+            } else {
+              ModalManager.start
+            }
+            modalPlace.showModal(endButtons = { ShareButton { clipboard.shareText(item.details) } }) {
               SelectionContainer(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 val details = item.details
                   .let {
@@ -154,6 +183,16 @@ fun TerminalLog() {
             }
           }.padding(horizontal = 8.dp, vertical = 4.dp)
       )
+    }
+  }
+  DisposableEffect(Unit) {
+    val terminals = chatModel.terminalsVisible.toMutableSet()
+    terminals += floating
+    chatModel.terminalsVisible = terminals
+    onDispose {
+      val terminals = chatModel.terminalsVisible.toMutableSet()
+      terminals -= floating
+      chatModel.terminalsVisible = terminals
     }
   }
 }
@@ -169,6 +208,7 @@ fun PreviewTerminalLayout() {
     TerminalLayout(
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = false)) },
       sendCommand = {},
+      floating = false,
       close = {}
     )
   }
