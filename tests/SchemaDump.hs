@@ -24,6 +24,19 @@ testDB = "tests/tmp/test_chat.db"
 appSchema :: FilePath
 appSchema = "src/Simplex/Chat/Migrations/chat_schema.sql"
 
+-- Some indexes found by `.lint fkey-indexes` are not added to schema, explanation:
+--
+-- - CREATE INDEX 'chat_items_group_id' ON 'chat_items'('group_id'); --> groups(group_id)
+--
+--   Covering index is used instead. See for example:
+--   EXPLAIN QUERY PLAN DELETE FROM groups;
+--   (uses idx_chat_items_groups_item_status)
+--
+-- - CREATE INDEX 'connections_group_member_id' ON 'connections'('group_member_id'); --> group_members(group_member_id)
+--
+--   Covering index is used instead. See for example:
+--   EXPLAIN QUERY PLAN DELETE FROM group_members;
+--   (uses idx_connections_group_member)
 appLint :: FilePath
 appLint = "src/Simplex/Chat/Migrations/chat_lint.sql"
 
