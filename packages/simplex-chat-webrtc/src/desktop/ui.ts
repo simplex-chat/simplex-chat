@@ -92,11 +92,11 @@ inactiveCallMediaSourcesChanged = (inactiveCallMediaSources: CallMediaSources) =
 }
 
 failedToGetPermissions = (title: string, description: string) => {
-  document.getElementById("permission-denied-title")!.innerText = title
-  document.getElementById("permission-denied-desc")!.innerText = description
-
   document.getElementById("info-block")!.style.visibility = "hidden"
   document.getElementById("progress")!.style.visibility = "hidden"
+
+  document.getElementById("permission-denied-title")!.innerText = title
+  document.getElementById("permission-denied-desc")!.innerText = description
 
   document.getElementById("toggle-mic")!.style.visibility = "hidden"
   document.getElementById("toggle-camera")!.style.visibility = "hidden"
