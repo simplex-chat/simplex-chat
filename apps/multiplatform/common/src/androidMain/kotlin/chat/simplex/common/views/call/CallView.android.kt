@@ -226,8 +226,9 @@ actual fun ActiveCallView() {
       ActiveCallOverlay(call, chatModel, callAudioDeviceManager)
     }
   }
-  KeyChangeEffect(call?.hasVideo) {
-    if (call != null) {
+  KeyChangeEffect(call?.localMediaSources?.hasVideo) {
+    if (call != null && call.hasVideo && callAudioDeviceManager.currentDevice.value?.type == AudioDeviceInfo.TYPE_BUILTIN_EARPIECE) {
+      // enabling speaker on user action (peer action ignored) and not disabling it again
       callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.hasVideo, true)
     }
   }
