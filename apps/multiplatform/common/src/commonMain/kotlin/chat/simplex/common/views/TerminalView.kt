@@ -148,7 +148,7 @@ fun TerminalLog(floating: Boolean) {
         }
     }
     launch {
-      snapshotFlow { listState.firstVisibleItemScrollOffset }
+      snapshotFlow { listState.firstVisibleItemIndex }
         .collect {
           autoScrollToBottom = listState.firstVisibleItemIndex == 0
         }
