@@ -157,6 +157,23 @@ body {
   animation: spin 2s linear infinite;
 }
 
+#permission-denied {
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  height: 100%;
+  align-content: center;
+  color: white;
+}
+
+#permission-denied-title {
+  font-weight: bold;
+}
+
+#permission-denied-desc {
+  font-style: italic;
+}
+
 @-webkit-keyframes spin {
   0% {
     -webkit-transform: rotate(0deg);

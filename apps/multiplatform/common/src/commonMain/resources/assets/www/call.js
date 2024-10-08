@@ -31,6 +31,7 @@ var sendMessageToNative = (msg) => console.log(JSON.stringify(msg));
 var toggleScreenShare = async () => { };
 var localOrPeerMediaSourcesChanged = (_call) => { };
 var inactiveCallMediaSourcesChanged = (_inactiveCallMediaSources) => { };
+var failedToGetPermissions = (_title, _description) => { };
 // Global object with cryptrographic/encoding functions
 const callCrypto = callCryptoFunction();
 var TransformOperation;
@@ -305,13 +306,9 @@ const processCommand = (function () {
                     }
                     catch (e) {
                         console.log(e);
-                        if (window.safari) {
-                            // Do not allow to continue the call without audio permission on Safari because it always asks
-                            // for permissions even they were denied previously. Chrome doesn't, Firefox (if the user checked checkbox) doesn't.
-                            window.close();
-                            resp = { type: "error", message: "capabilities: no permissions were granted for mic and/or camera" };
-                            break;
-                        }
+                        // Do not allow to continue the call without audio permission
+                        resp = { type: "error", message: "capabilities: no permissions were granted for mic and/or camera" };
+                        break;
                         localStream = new MediaStream();
                         // Will be shown on the next stage of call estabilishing, can work without any streams
                         //desktopShowPermissionsAlert(command.media)
@@ -529,6 +526,10 @@ const processCommand = (function () {
                     break;
                 case "end":
                     endCall();
+                    resp = { type: "ok" };
+                    break;
+                case "permission":
+                    failedToGetPermissions(command.title, permissionDescription(command));
                     resp = { type: "ok" };
                     break;
                 default:
@@ -1313,6 +1314,20 @@ function desktopShowPermissionsAlert(mediaType) {
     }
     else {
         window.alert("Permissions denied. Please, allow access to mic and camera to make the call working and hit unmute/camera button. Don't reload the page.");
+    }
+}
+function permissionDescription(command) {
+    if (window.safari) {
+        return command.safari;
+    }
+    else if (navigator.userAgent.includes("Chrome") && navigator.vendor.includes("Google Inc")) {
+        return command.chrome;
+    }
+    else if (navigator.userAgent.includes("Firefox")) {
+        return command.firefox;
+    }
+    else {
+        return "";
     }
 }
 // Cryptography function - it is loaded both in the main window and in worker context (if the worker is used)

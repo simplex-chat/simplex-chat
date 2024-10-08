@@ -1043,6 +1043,10 @@
   <string name="call_already_ended">Call already ended!</string>
   <string name="icon_descr_video_call">video call</string>
   <string name="icon_descr_audio_call">audio call</string>
+  <string name="call_desktop_permission_denied_title">To be able to call, please, allow to use at least your microphone. Then finish the call and try to call again.</string>
+  <string name="call_desktop_permission_denied_chrome">Click on info button near address field and allow access to microphone.</string>
+  <string name="call_desktop_permission_denied_firefox">Click on the button near address field and unblock access to microphone.</string>
+  <string name="call_desktop_permission_denied_safari">Open Safari Settings, click on "Websites", then click on "Microphone", then "Allow" access to microphone for "localhost".</string>
 
   <!-- Call settings -->
   <string name="settings_audio_video_calls">Audio &amp; video calls</string>
