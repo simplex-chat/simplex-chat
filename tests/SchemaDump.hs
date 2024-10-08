@@ -24,12 +24,16 @@ testDB = "tests/tmp/test_chat.db"
 appSchema :: FilePath
 appSchema = "src/Simplex/Chat/Migrations/chat_schema.sql"
 
+appLint :: FilePath
+appLint = "src/Simplex/Chat/Migrations/chat_lint.sql"
+
 testSchema :: FilePath
 testSchema = "tests/tmp/test_agent_schema.sql"
 
 schemaDumpTest :: Spec
 schemaDumpTest = do
   it "verify and overwrite schema dump" testVerifySchemaDump
+  fit "verify .lint fkey-indexes" testVerifyLintFkeyIndexes
   it "verify schema down migrations" testSchemaMigrations
 
 testVerifySchemaDump :: IO ()
@@ -38,6 +42,14 @@ testVerifySchemaDump = withTmpFiles $ do
   savedSchema `deepseq` pure ()
   void $ createChatStore testDB "" False MCError
   getSchema testDB appSchema `shouldReturn` savedSchema
+  removeFile testDB
+
+testVerifyLintFkeyIndexes :: IO ()
+testVerifyLintFkeyIndexes = withTmpFiles $ do
+  savedLint <- ifM (doesFileExist appLint) (readFile appLint) (pure "")
+  savedLint `deepseq` pure ()
+  void $ createChatStore testDB "" False MCError
+  getLintFkeyIndexes testDB "tests/tmp/chat_lint.sql" `shouldReturn` savedLint
   removeFile testDB
 
 testSchemaMigrations :: IO ()
@@ -81,7 +93,13 @@ skipComparisonForDownMigrations =
   ]
 
 getSchema :: FilePath -> FilePath -> IO String
-getSchema dpPath schemaPath = do
-  void $ readCreateProcess (shell $ "sqlite3 " <> dpPath <> " '.schema --indent' > " <> schemaPath) ""
+getSchema dbPath schemaPath = do
+  void $ readCreateProcess (shell $ "sqlite3 " <> dbPath <> " '.schema --indent' > " <> schemaPath) ""
   sch <- readFile schemaPath
   sch `deepseq` pure sch
+
+getLintFkeyIndexes :: FilePath -> FilePath -> IO String
+getLintFkeyIndexes dbPath lintPath = do
+  void $ readCreateProcess (shell $ "sqlite3 " <> dbPath <> " '.lint fkey-indexes' > " <> lintPath) ""
+  lint <- readFile lintPath
+  lint `deepseq` pure lint
