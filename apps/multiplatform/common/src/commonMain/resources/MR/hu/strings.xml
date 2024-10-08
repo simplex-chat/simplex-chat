@@ -2102,4 +2102,8 @@
     <string name="settings_message_shape_corner">Sarkos</string>
     <string name="settings_section_title_message_shape">Üzenetbuborék alakja</string>
     <string name="settings_message_shape_tail">Nyúlványos</string>
+    <string name="network_session_mode_server">Kiszolgáló</string>
+    <string name="network_session_mode_session_description">Minden alkalommal, amikor elindítja az alkalmazást, új SOCKS-hitelesítő-adatokat fog használni.</string>
+    <string name="network_session_mode_session">Alkalmazás munkamenete</string>
+    <string name="network_session_mode_server_description">Minden egyes kiszolgálóhoz új SOCKS-hitelesítő-adatok legyenek használva.</string>
 </resources>
