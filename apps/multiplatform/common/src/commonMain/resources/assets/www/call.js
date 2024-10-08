@@ -159,7 +159,7 @@ const processCommand = (function () {
         try {
             localStream = (notConnectedCall === null || notConnectedCall === void 0 ? void 0 : notConnectedCall.localStream)
                 ? notConnectedCall.localStream
-                : await getLocalMediaStream(inactiveCallMediaSources.mic, inactiveCallMediaSources.camera, localCamera);
+                : await getLocalMediaStream(inactiveCallMediaSources.mic, inactiveCallMediaSources.camera && (await browserHasCamera()), localCamera);
         }
         catch (e) {
             console.log("Error while getting local media stream", e);
@@ -296,7 +296,7 @@ const processCommand = (function () {
                         endCall();
                     let localStream = null;
                     try {
-                        localStream = await getLocalMediaStream(true, command.media == CallMediaType.Video, VideoCamera.User);
+                        localStream = await getLocalMediaStream(true, command.media == CallMediaType.Video && (await browserHasCamera()), VideoCamera.User);
                         const videos = getVideoElements();
                         if (videos) {
                             videos.local.srcObject = localStream;
@@ -304,6 +304,14 @@ const processCommand = (function () {
                         }
                     }
                     catch (e) {
+                        console.log(e);
+                        if (window.safari) {
+                            // Do not allow to continue the call without audio permission on Safari because it always asks
+                            // for permissions even they were denied previously. Chrome doesn't, Firefox (if the user checked checkbox) doesn't.
+                            window.close();
+                            resp = { type: "error", message: "capabilities: no permissions were granted for mic and/or camera" };
+                            break;
+                        }
                         localStream = new MediaStream();
                         // Will be shown on the next stage of call estabilishing, can work without any streams
                         //desktopShowPermissionsAlert(command.media)
@@ -437,6 +445,11 @@ const processCommand = (function () {
                     break;
                 case "media":
                     if (!activeCall) {
+                        if (!notConnectedCall) {
+                            // call can have a slow startup and be in this place even before "capabilities" stage
+                            resp = { type: "error", message: "media: call has not yet pass capabilities stage" };
+                            break;
+                        }
                         switch (command.source) {
                             case CallMediaSource.Mic:
                                 inactiveCallMediaSources.mic = command.enable;
@@ -484,8 +497,11 @@ const processCommand = (function () {
                     if (!activeCall || !pc) {
                         if (notConnectedCall) {
                             recreateLocalStreamWhileNotConnected(command.camera);
+                            resp = { type: "ok" };
                         }
-                        resp = { type: "ok" };
+                        else {
+                            resp = { type: "error", message: "camera: call has not yet pass capabilities stage" };
+                        }
                     }
                     else {
                         if (await replaceMedia(activeCall, CallMediaSource.Camera, true, command.camera)) {
@@ -884,7 +900,7 @@ const processCommand = (function () {
             localStream.getVideoTracks().forEach((elem) => elem.stop());
             localStream.getVideoTracks().forEach((elem) => localStream.removeTrack(elem));
         }
-        await getLocalMediaStream(inactiveCallMediaSources.mic && localStream.getAudioTracks().length == 0, inactiveCallMediaSources.camera && (localStream.getVideoTracks().length == 0 || oldCamera != newCamera), newCamera)
+        await getLocalMediaStream(inactiveCallMediaSources.mic && localStream.getAudioTracks().length == 0, inactiveCallMediaSources.camera && (localStream.getVideoTracks().length == 0 || oldCamera != newCamera) && (await browserHasCamera()), newCamera)
             .then((stream) => {
             stream.getTracks().forEach((elem) => {
                 localStream.addTrack(elem);
@@ -1073,6 +1089,18 @@ const processCommand = (function () {
             // systemAudio: "include"
         };
         return navigator.mediaDevices.getDisplayMedia(constraints);
+    }
+    async function browserHasCamera() {
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const hasCamera = devices.some((elem) => elem.kind == "videoinput");
+            console.log("Camera is available: " + hasCamera);
+            return hasCamera;
+        }
+        catch (error) {
+            console.log("Error while enumerating devices: " + error, error);
+            return false;
+        }
     }
     function callMediaConstraints(mic, camera, facingMode) {
         return {
