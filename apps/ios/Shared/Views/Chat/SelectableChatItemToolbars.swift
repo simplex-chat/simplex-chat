@@ -41,7 +41,8 @@ struct SelectedItemsBottomToolbar: View {
 
     @State var forwardEnabled: Bool = false
 
-    @State var allButtonsDisabled = false
+    @State var deleteCountProhibited = false
+    @State var forwardCountProhibited = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -55,9 +56,9 @@ struct SelectedItemsBottomToolbar: View {
                         .resizable()
                         .scaledToFit()
                         .frame(width: 20, height: 20, alignment: .center)
-                        .foregroundColor(!deleteEnabled || allButtonsDisabled ? theme.colors.secondary: .red)
+                        .foregroundColor(!deleteEnabled || deleteCountProhibited ? theme.colors.secondary: .red)
                 }
-                .disabled(!deleteEnabled || allButtonsDisabled)
+                .disabled(!deleteEnabled || deleteCountProhibited)
 
                 Spacer()
                 Button {
@@ -67,9 +68,9 @@ struct SelectedItemsBottomToolbar: View {
                         .resizable()
                         .scaledToFit()
                         .frame(width: 20, height: 20, alignment: .center)
-                        .foregroundColor(!moderateEnabled || allButtonsDisabled ? theme.colors.secondary : .red)
+                        .foregroundColor(!moderateEnabled || deleteCountProhibited ? theme.colors.secondary : .red)
                 }
-                .disabled(!moderateEnabled || allButtonsDisabled)
+                .disabled(!moderateEnabled || deleteCountProhibited)
                 .opacity(canModerate ? 1 : 0)
 
                 Spacer()
@@ -80,9 +81,9 @@ struct SelectedItemsBottomToolbar: View {
                         .resizable()
                         .scaledToFit()
                         .frame(width: 20, height: 20, alignment: .center)
-                        .foregroundColor(!forwardEnabled || allButtonsDisabled ? theme.colors.secondary : theme.colors.primary)
+                        .foregroundColor(!forwardEnabled || forwardCountProhibited ? theme.colors.secondary : theme.colors.primary)
                 }
-                .disabled(!forwardEnabled || allButtonsDisabled)
+                .disabled(!forwardEnabled || forwardCountProhibited)
             }
             .frame(maxHeight: .infinity)
             .padding([.leading, .trailing], 12)
@@ -105,7 +106,8 @@ struct SelectedItemsBottomToolbar: View {
 
     private func recheckItems(_ chatInfo: ChatInfo, _ chatItems: [ChatItem], _ selectedItems: Set<Int64>?) {
         let count = selectedItems?.count ?? 0
-        allButtonsDisabled = count == 0 || count > 20
+        deleteCountProhibited = count == 0 || count > 200
+        forwardCountProhibited = count == 0 || count > 20
         canModerate = possibleToModerate(chatInfo)
         if let selected = selectedItems {
             let me: Bool
