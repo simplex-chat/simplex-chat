@@ -2102,4 +2102,23 @@
     <string name="network_session_mode_server_description">Dla każdego serwera zostaną użyte nowe poświadczenia SOCKS.</string>
     <string name="call_desktop_permission_denied_chrome">Kliknij przycisk informacji przy polu adresu, aby zezwolić na korzystanie z mikrofonu.</string>
     <string name="call_desktop_permission_denied_safari">Otwórz Safari Ustawienia / Strony internetowe / Mikrofon, a następnie wybierz opcję Zezwalaj dla localhost.</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_entity">Użyj różnych poświadczeń proxy dla każdego połączenia.</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_user">Użyj różnych poświadczeń proxy dla każdego profilu.</string>
+    <string name="network_proxy_random_credentials">Użyj losowych poświadczeń</string>
+    <string name="network_proxy_username">Nazwa użytkownika</string>
+    <string name="network_proxy_auth_mode_username_password">Twoje poświadczenia mogą zostać wysłane niezaszyfrowane.</string>
+    <string name="icon_descr_sound_muted">Dźwięk wyciszony</string>
+    <string name="select_chat_profile">Wybierz profil czatu</string>
+    <string name="new_chat_share_profile">Udostępnij profil</string>
+    <string name="switching_profile_error_message">Twoje połączenie zostało przeniesione do %s, ale podczas przekierowania do profilu wystąpił nieoczekiwany błąd.</string>
+    <string name="system_mode_toast">Tryb systemu</string>
+    <string name="migrate_from_device_uploaded_archive_will_be_removed">Przesłane archiwum bazy danych zostanie trwale usunięte z serwerów.</string>
+    <string name="network_session_mode_server">Serwer</string>
+    <string name="settings_message_shape_tail">Ogon</string>
+    <string name="call_desktop_permission_denied_title">Aby wykonywać połączenia, zezwól na korzystanie z mikrofonu. Zakończ połączenie i spróbuj zadzwonić ponownie.</string>
+    <string name="v6_1_better_security">Lepsze bezpieczeństwo ✅</string>
+    <string name="v6_1_message_dates_descr">Lepsze daty wiadomości.</string>
+    <string name="v6_1_customizable_message_descr">Możliwość dostosowania kształtu wiadomości.</string>
+    <string name="v6_1_better_calls">Lepsze połączenia</string>
+    <string name="v6_1_better_user_experience">Lepsze doświadczenie użytkownika</string>
 </resources>
