@@ -3040,9 +3040,9 @@ Ez az Ön egyszer használható hivatkozása!</target>
         <target>Hiba a profilváltáskor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error switching profile!" xml:space="preserve">
+      <trans-unit id="Error switching profile!" xml:space="preserve" approved="no">
         <source>Error switching profile!</source>
-        <target>Hiba a profil váltásakor!</target>
+        <target state="translated">Hiba a profilváltásakor!</target>
         <note>alertTitle</note>
       </trans-unit>
       <trans-unit id="Error synchronizing connection" xml:space="preserve">
@@ -4036,14 +4036,14 @@ Ez az Ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Kapcsolatok megtartása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="KeyChain error" xml:space="preserve">
+      <trans-unit id="KeyChain error" xml:space="preserve" approved="no">
         <source>KeyChain error</source>
-        <target>Kulcstartó hiba</target>
+        <target state="translated">Kulcstartóhiba</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Keychain error" xml:space="preserve">
+      <trans-unit id="Keychain error" xml:space="preserve" approved="no">
         <source>Keychain error</source>
-        <target>Kulcstartó hiba</target>
+        <target state="translated">Kulcstartóhiba</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="LIVE" xml:space="preserve">
@@ -9188,9 +9188,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>Érvénytelen átköltöztetési visszaigazolás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Keychain error" xml:space="preserve">
+      <trans-unit id="Keychain error" xml:space="preserve" approved="no">
         <source>Keychain error</source>
-        <target>Kulcstartó hiba</target>
+        <target state="translated">Kulcstartóhiba</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Large file!" xml:space="preserve">
