@@ -2084,4 +2084,22 @@
     <string name="forward_files_failed_to_receive_desc">%1$d plik(ów/i) nie udało się pobrać.</string>
     <string name="switching_profile_error_title">Błąd zmiany profilu</string>
     <string name="settings_section_title_chat_database">BAZA CZATU</string>
+    <string name="n_file_errors">%1$d błędów plików:\n%2$s</string>
+    <string name="n_other_file_errors">%1$d innych błędów plików.</string>
+    <string name="forward_files_messages_deleted_after_selection_desc">Wiadomości zostały usunięte po wybraniu ich.</string>
+    <string name="forward_alert_title_nothing_to_forward">Nic do przekazania!</string>
+    <string name="forward_files_not_accepted_receive_files">Pobierz</string>
+    <string name="compose_save_messages_n">Zapisywanie %1$s wiadomości</string>
+    <string name="network_proxy_auth">Uwierzytelnianie proxy</string>
+    <string name="network_proxy_password">Hasło</string>
+    <string name="error_initializing_web_view_wrong_arch">Błąd inicjalizacji WebView. Upewnij się, że WebView jest zainstalowany, a jego obsługiwana architektura to arm64.\nBłąd: %s</string>
+    <string name="delete_messages_cannot_be_undone_warning">Wiadomości zostaną usunięte - nie można tego cofnąć!</string>
+    <string name="migrate_from_device_remove_archive_question">Usunąć archiwum?</string>
+    <string name="settings_message_shape_corner">Róg</string>
+    <string name="settings_section_title_message_shape">Kształt wiadomości</string>
+    <string name="network_session_mode_session">Sesja aplikacji</string>
+    <string name="network_session_mode_session_description">Nowe poświadczenia SOCKS będą używane przy każdym uruchomieniu aplikacji.</string>
+    <string name="network_session_mode_server_description">Dla każdego serwera zostaną użyte nowe poświadczenia SOCKS.</string>
+    <string name="call_desktop_permission_denied_chrome">Kliknij przycisk informacji przy polu adresu, aby zezwolić na korzystanie z mikrofonu.</string>
+    <string name="call_desktop_permission_denied_safari">Otwórz Safari Ustawienia / Strony internetowe / Mikrofon, a następnie wybierz opcję Zezwalaj dla localhost.</string>
 </resources>
