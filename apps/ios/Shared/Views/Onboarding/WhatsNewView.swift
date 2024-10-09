@@ -473,7 +473,7 @@ private let versionDescriptions: [VersionDescription] = [
         features: [
             FeatureDescription(
                 icon: "checkmark.shield",
-                title: "Security review ✅",
+                title: "Better security ✅",
                 description: "SimpleX protocols reviewed by Trail of Bits."
             ),
             FeatureDescription(
