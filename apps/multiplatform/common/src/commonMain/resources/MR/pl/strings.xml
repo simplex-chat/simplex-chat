@@ -2121,4 +2121,9 @@
     <string name="v6_1_customizable_message_descr">Możliwość dostosowania kształtu wiadomości.</string>
     <string name="v6_1_better_calls">Lepsze połączenia</string>
     <string name="v6_1_better_user_experience">Lepsze doświadczenie użytkownika</string>
+    <string name="v6_1_better_security_descr">Protokoły SimpleX sprawdzone przez Trail of Bits.</string>
+    <string name="v6_1_better_calls_descr">Przełączanie audio i wideo podczas połączenia.</string>
+    <string name="v6_1_delete_many_messages_descr">Usuń lub moderuj do 200 wiadomości.</string>
+    <string name="v6_1_forward_many_messages_descr">Przekazywanie do 20 wiadomości jednocześnie.</string>
+    <string name="v6_1_switch_chat_profile_descr">Przełącz profil czatu dla zaproszeń jednorazowych.</string>
 </resources>
