@@ -884,4 +884,22 @@
     <string name="edit_history">Lịch sử</string>
     <string name="alert_title_no_group">Không tìm thấy nhóm!</string>
     <string name="v4_6_hidden_chat_profiles">Hồ sơ trò chuyện ẩn</string>
+    <string name="how_to_use_simplex_chat">Cách sử dụng</string>
+    <string name="how_it_works">Cách thức hoạt động</string>
+    <string name="how_simplex_works">Cách thức SimpleX hoạt động</string>
+    <string name="how_to">Cách làm</string>
+    <string name="error_initializing_web_view_wrong_arch">Lỗi khởi động WebView. Hãy đảm bảo bạn đã cài đặt WebView và kiến trúc hỗ trợ của nó là arm64.\nLỗi: %s</string>
+    <string name="custom_time_unit_hours">giờ</string>
+    <string name="host_verb">Lưu trữ</string>
+    <string name="network_session_mode_session">Phiên làm việc trên ứng dụng</string>
+    <string name="how_to_use_markdown">Cách sử dụng markdown</string>
+    <string name="call_desktop_permission_denied_chrome">Nhấn nút thông tin gần trường địa chỉ để cho phép sử dụng microphone.</string>
+    <string name="v6_1_better_calls">Trải nghiệm cuộc gọi tốt hơn</string>
+    <string name="v6_1_better_security">Bảo mật hơn ✅</string>
+    <string name="v6_1_better_user_experience">Trải nghiệm người dùng tuyệt vời hơn</string>
+    <string name="v6_1_customizable_message_descr">Hình dạng tin nhắn có thể tùy chỉnh được.</string>
+    <string name="v6_1_message_dates_descr">Mô tả thời gian tin nhắn tốt hơn.</string>
+    <string name="v6_1_delete_many_messages_descr">Xóa hay kiểm duyệt tối đa 200 tin nhắn.</string>
+    <string name="settings_message_shape_corner">Góc</string>
+    <string name="v6_1_forward_many_messages_descr">Chuyển tiếp tối đa 20 tin nhắn cùng một lúc.</string>
 </resources>
