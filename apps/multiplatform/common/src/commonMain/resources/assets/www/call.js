@@ -955,8 +955,7 @@ const processCommand = (function () {
     function setupMuteUnmuteListener(transceiver, track) {
         // console.log("Setting up mute/unmute listener in the call without encryption for mid = ", transceiver.mid)
         let inboundStatsId = "";
-        // for some reason even for disabled tracks one packet arrives (seeing this on screenVideo track)
-        let lastPacketsReceived = 1;
+        let lastBytesReceived = 0;
         // muted initially
         let mutedSeconds = 4;
         let statsInterval = setInterval(async () => {
@@ -970,9 +969,9 @@ const processCommand = (function () {
                 });
             }
             if (inboundStatsId) {
-                // even though MSDN site says `packetsReceived` is available in WebView 80+, in reality it's available even in 69
-                const packets = (_a = stats.get(inboundStatsId)) === null || _a === void 0 ? void 0 : _a.packetsReceived;
-                if (packets <= lastPacketsReceived) {
+                // even though MSDN site says `bytesReceived` is available in WebView 80+, in reality it's available even in 69
+                const bytes = (_a = stats.get(inboundStatsId)) === null || _a === void 0 ? void 0 : _a.bytesReceived;
+                if (bytes <= lastBytesReceived) {
                     mutedSeconds++;
                     if (mutedSeconds == 3) {
                         onMediaMuteUnmute(transceiver.mid, true);
@@ -982,7 +981,7 @@ const processCommand = (function () {
                     if (mutedSeconds >= 3) {
                         onMediaMuteUnmute(transceiver.mid, false);
                     }
-                    lastPacketsReceived = packets;
+                    lastBytesReceived = bytes;
                     mutedSeconds = 0;
                 }
             }
