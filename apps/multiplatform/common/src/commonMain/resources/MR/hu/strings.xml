@@ -517,7 +517,7 @@
     <string name="choose_file">Fájl</string>
     <string name="group_link">Csoporthivatkozás</string>
     <string name="snd_conn_event_ratchet_sync_required">titkosítás-újraegyeztetés szükséges ehhez: %s</string>
-    <string name="failed_to_active_user_title">Hiba a profil váltásakor!</string>
+    <string name="failed_to_active_user_title">Hiba a profilváltáskor!</string>
     <string name="settings_experimental_features">Kísérleti funkciók</string>
     <string name="receipts_contacts_enable_keep_overrides">Engedélyezés (felülírások megtartásával)</string>
     <string name="enter_correct_passphrase">Adja meg a helyes jelmondatot.</string>
@@ -871,7 +871,7 @@
     <string name="invite_to_group_button">Meghívás a csoportba</string>
     <string name="lock_after">Zárolás miután</string>
     <string name="incoming_audio_call">Bejövő hanghívás</string>
-    <string name="keychain_error">Kulcstartó hiba</string>
+    <string name="keychain_error">Kulcstartóhiba</string>
     <string name="join_group_question">Csatlakozik a csoporthoz?</string>
     <string name="incognito_info_protects">Az inkognitómód védi személyes adatait azáltal, hogy minden ismerőshöz új véletlenszerű profilt használ.</string>
     <string name="v5_2_more_things_descr">- stabilabb üzenetkézbesítés.
@@ -1756,7 +1756,7 @@
     <string name="settings_section_title_profile_images">Profilképek</string>
     <string name="v5_7_shape_profile_images">Profilkép alakzat</string>
     <string name="v5_7_shape_profile_images_descr">Négyzet, kör vagy bármi a kettő között.</string>
-    <string name="snd_error_relay">Célkiszolgáló hiba: %1$s</string>
+    <string name="snd_error_relay">Célkiszolgáló-hiba: %1$s</string>
     <string name="snd_error_proxy">Továbbító kiszolgáló: %1$s
 \nHiba: %2$s</string>
     <string name="snd_error_expired">Hálózati problémák - az üzenet többszöri elküldési kísérlet után lejárt.</string>
@@ -1787,7 +1787,7 @@
     <string name="private_routing_explanation">Az IP-cím védelmének érdekében a privát útválasztás az SMP-kiszolgálókat használja az üzenetek kézbesítéséhez.</string>
     <string name="update_network_smp_proxy_fallback_question">Üzenet-útválasztási tartalék</string>
     <string name="settings_section_title_private_message_routing">PRIVÁT ÜZENET-ÚTVÁLASZTÁS</string>
-    <string name="network_smp_proxy_mode_unprotected_description">Privát útválasztás használata ismeretlen kiszolgálókkal, ha az IP-cím nem védett.</string>
+    <string name="network_smp_proxy_mode_unprotected_description">Használjon privát útválasztást ismeretlen kiszolgálókkal, ha az IP-cím nem védett.</string>
     <string name="network_smp_proxy_fallback_prohibit_description">Ne küldjön üzeneteket közvetlenül, még akkor sem, ha az Ön kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</string>
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Tor vagy VPN nélkül az IP-címe látható lesz a fájlkiszolgálók számára.</string>
     <string name="settings_section_title_files">FÁJLOK</string>
