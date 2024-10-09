@@ -2114,4 +2114,14 @@
     <string name="chat_database_exported_save">Dışa aktarılan arşivi kaydedebilirsiniz.</string>
     <string name="servers_info_detailed_statistics_sent_messages_total">Gönderilen tüm mesajların toplamı</string>
     <string name="servers_info_detailed_statistics_sent_messages_header">Gönderilen mesajlar</string>
+    <string name="v6_1_message_dates_descr">Daha iyi mesaj tarihleri.</string>
+    <string name="v6_1_customizable_message_descr">Özelleştirilebilir mesaj şekli.</string>
+    <string name="v6_1_forward_many_messages_descr">Aynı anda en fazla 20 mesaj iletin.</string>
+    <string name="v6_1_better_calls_descr">Görüşme sırasında ses ve görüntüyü değiştirin.</string>
+    <string name="v6_1_switch_chat_profile_descr">Sohbet profilini 1 kerelik davetler için değiştirin.</string>
+    <string name="v6_1_better_calls">Daha iyi aramalar</string>
+    <string name="v6_1_better_user_experience">Daha iyi kullanıcı deneyimi</string>
+    <string name="v6_1_delete_many_messages_descr">200\'e kadar mesajı silin veya düzenleyin.</string>
+    <string name="v6_1_better_security">Daha iyi güvenlik ✅</string>
+    <string name="v6_1_better_security_descr">SimpleX protokolleri Trail of Bits tarafından incelenmiştir.</string>
 </resources>
