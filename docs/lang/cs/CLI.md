@@ -23,7 +23,6 @@ revision: 31.01.2023
   - [Skupiny](#groups)
   - [Posílání souborů](#sending-files)
   - [Kontaktní adresy uživatelů](#user-contact-addresses)
-  - [Přístup k historii chatu](#access-chat-history)
 
 ## Funkce chatu v terminálu
 

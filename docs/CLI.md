@@ -3,7 +3,7 @@ title: Terminal CLI
 revision: 31.01.2023
 ---
 
-| Updated 31.01.2023 | Languages: EN, [FR](/docs/lang/fr/CLI.md), [CZ](/docs/lang/cs/CLI.md), [PL](/docs/lang/pl/CLI.md) |
+| Updated 31.01.2023 | Languages: EN, [FR](/docs/lang/fr/CLI.md), [CZ](/docs/lang/cs/CLI.md), [PL](/docs/lang/pl/CLI.md), [TR](/docs/lang/tr/CLI.md) |
 
 # SimpleX Chat terminal (console) app for Linux/MacOS/Windows
 
@@ -24,7 +24,6 @@ revision: 31.01.2023
   - [Groups](#groups)
   - [Sending files](#sending-files)
   - [User contact addresses](#user-contact-addresses)
-  - [Access chat history](#access-chat-history)
 
 ## Terminal chat features
 

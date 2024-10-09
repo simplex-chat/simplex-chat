@@ -2,7 +2,7 @@
 title: Přístup k souborům v aplikaci Android
 revision: 07.02.2023
 ---
-| Aktualizováno 07.02.2023 | Jazyky: CZ, [EN](/docs/ANDROID.md), [PL](/docs/lang/pl/ANDROID.md) |
+| Aktualizováno 07.02.2023 | Jazyky: CZ, [EN](/docs/ANDROID.md), [FR](/docs/lang/fr/ANDROID.md), [PL](/docs/lang/pl/ANDROID.md), [TR](/docs/lang/tr/ANDROID.md) |
 
 # Přístup k souborům v aplikaci Android
 

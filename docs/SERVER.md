@@ -3,7 +3,7 @@ title: Hosting your own SMP Server
 revision: 03.06.2024
 ---
 
-| Updated 28.05.2024 | Languages: EN, [FR](/docs/lang/fr/SERVER.md), [CZ](/docs/lang/cs/SERVER.md), [PL](/docs/lang/pl/SERVER.md) |
+| Updated 28.05.2024 | Languages: EN, [FR](/docs/lang/fr/SERVER.md), [CZ](/docs/lang/cs/SERVER.md), [PL](/docs/lang/pl/SERVER.md), [TR](/docs/lang/tr/SERVER.md) |
 
 ### Table of Contents
 
@@ -676,7 +676,7 @@ SMP-server versions starting from `v5.8.0` can be configured to serve Web page w
       sudo apt update && sudo apt install caddy
       ```
 
-   [Full Caddy instllation instructions](https://caddyserver.com/docs/install)
+   [Full Caddy installation instructions](https://caddyserver.com/docs/install)
 
 3. Replace Caddy configuration with the following (don't forget to replace `<YOUR_DOMAIN>`):
 

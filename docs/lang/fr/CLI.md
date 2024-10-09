@@ -23,7 +23,6 @@ revision: 31.01.2023
   - [Groupes](#groupes)
   - [Envoi de fichiers](#envoi-de-fichiers)
   - [Adresses de contact d'utilisateur](#adresses-de-contact-dutilisateur)
-  - [Accéder à l'historique des chats](#accéder-à-lhistorique-des-chats)
 
 ## Fonctionnalités du terminal de chat
 
