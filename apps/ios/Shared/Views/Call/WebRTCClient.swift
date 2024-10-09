@@ -306,7 +306,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
     func setupMuteUnmuteListener(_ transceiver: RTCRtpTransceiver, _ track: RTCMediaStreamTrack) {
         // logger.log("Setting up mute/unmute listener in the call without encryption for mid = \(transceiver.mid)")
         Task {
-            var lastBytesReceived = 0
+            var lastBytesReceived: Int64 = 0
             // muted initially
             var mutedSeconds = 4
             while let call = self.activeCall, transceiver.receiver.track?.readyState == .live {
@@ -314,7 +314,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
                 let stat = stats.statistics.values.first(where: { stat in stat.type == "inbound-rtp"})
                 if let stat {
                     //logger.debug("Stat \(stat.debugDescription)")
-                    let bytes = stat.values["bytesReceived"] as! Int
+                    let bytes = stat.values["bytesReceived"] as! Int64
                     if bytes <= lastBytesReceived {
                         mutedSeconds += 1
                         if mutedSeconds == 3 {
