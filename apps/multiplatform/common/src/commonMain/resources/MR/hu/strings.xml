@@ -70,7 +70,7 @@
     <string name="available_in_v51">"
 \nElérhető a v5.1-ben"</string>
     <string name="both_you_and_your_contacts_can_delete">Mindkét fél véglegesen törölheti az elküldött üzeneteket. (24 óra)</string>
-    <string name="v5_4_better_groups">Javított csoportok</string>
+    <string name="v5_4_better_groups">Továbbfejlesztett csoportok</string>
     <string name="clear_chat_warning">Minden üzenet törlésre kerül - ez a művelet nem vonható vissza! Az üzenetek CSAK az Ön számára törlődnek.</string>
     <string name="icon_descr_call_ended">Hívás befejeződött</string>
     <string name="settings_section_title_calls">HÍVÁSOK</string>
@@ -138,7 +138,7 @@
     <string name="allow_your_contacts_irreversibly_delete">Az elküldött üzenetek végleges törlése engedélyezve van az ismerősei számára. (24 óra)</string>
     <string name="cancel_verb">Mégse</string>
     <string name="notifications_mode_off_desc">Az alkalmazás csak akkor tud értesítéseket fogadni, amikor meg van nyitva. A háttérszolgáltatás nem indul el</string>
-    <string name="v5_1_better_messages">Jobb üzenetek</string>
+    <string name="v5_1_better_messages">Továbbfejlesztett üzenetek</string>
     <string name="abort_switch_receiving_address_desc">A cím módosítása megszakad. A régi fogadási cím kerül felhasználásra.</string>
     <string name="allow_verb">Engedélyezés</string>
     <string name="bad_desktop_address">Hibás számítógép cím</string>
@@ -874,9 +874,7 @@
     <string name="keychain_error">Kulcstartóhiba</string>
     <string name="join_group_question">Csatlakozik a csoporthoz?</string>
     <string name="incognito_info_protects">Az inkognitómód védi személyes adatait azáltal, hogy minden ismerőshöz új véletlenszerű profilt használ.</string>
-    <string name="v5_2_more_things_descr">- stabilabb üzenetkézbesítés.
-\n- valamivel jobb csoportok.
-\n- és még sok más!</string>
+    <string name="v5_2_more_things_descr">- stabilabb üzenetkézbesítés.\n- picit továbbfejlesztett csoportok.\n- és még sok más!</string>
     <string name="v5_1_message_reactions">Üzenetreakciók</string>
     <string name="no_connected_mobile">Nincs társított hordozható eszköz</string>
     <string name="network_status">Hálózat állapota</string>
@@ -2110,13 +2108,13 @@
     <string name="call_desktop_permission_denied_safari">Nyissa meg a Safari Beállítások / Weboldalak / Mikrofon menüt, majd válassza a helyi kiszolgálók engedélyezése lehetőséget.</string>
     <string name="call_desktop_permission_denied_title">Hívások kezdeményezéséhez engedélyezze a mikrofon használatát. Fejezze be a hívást, és próbálja meg a hívást újra.</string>
     <string name="v6_1_better_calls">Jobb hívások</string>
-    <string name="v6_1_message_dates_descr">Jobb üzenetdátumok</string>
-    <string name="v6_1_better_user_experience">Jobb felhasználói élmény</string>
+    <string name="v6_1_message_dates_descr">Továbbfejlesztett üzenetdátumok</string>
+    <string name="v6_1_better_user_experience">Továbbfejlesztett felhasználói élmény</string>
     <string name="v6_1_customizable_message_descr">Testreszabható üzenetbuborékok.</string>
     <string name="v6_1_delete_many_messages_descr">Legfeljebb 200 üzenet egyszerre való törlése, vagy moderálása.</string>
     <string name="v6_1_forward_many_messages_descr">Legfeljebb 20 üzenet egyszerre való továbbítása.</string>
-    <string name="v6_1_better_calls_descr">Hang/Videó váltás hívás közben.</string>
+    <string name="v6_1_better_calls_descr">Hang/Videó váltása hívás közben.</string>
     <string name="v6_1_switch_chat_profile_descr">Csevegési profilváltás az egyszer használható meghívókhoz.</string>
-    <string name="v6_1_better_security">Jobb biztonság ✅</string>
+    <string name="v6_1_better_security">Továbbfejlesztett biztonság ✅</string>
     <string name="v6_1_better_security_descr">A SimpleX Chat biztonsága a Trail of Bits által lett újraauditálva.</string>
 </resources>
