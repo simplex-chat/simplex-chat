@@ -902,4 +902,6 @@
     <string name="v6_1_delete_many_messages_descr">Xóa hay kiểm duyệt tối đa 200 tin nhắn.</string>
     <string name="settings_message_shape_corner">Góc</string>
     <string name="v6_1_forward_many_messages_descr">Chuyển tiếp tối đa 20 tin nhắn cùng một lúc.</string>
+    <string name="how_to_use_your_servers">Cách sử dụng máy chủ của bạn</string>
+    <string name="v5_5_new_interface_languages">Giao diện Hungary và Thổ Nhĩ Kỳ</string>
 </resources>
