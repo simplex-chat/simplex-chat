@@ -2109,4 +2109,14 @@
     <string name="call_desktop_permission_denied_chrome">Kattintson a címmező melletti info gombra a mikrofon használatának engedélyezéséhez.</string>
     <string name="call_desktop_permission_denied_safari">Nyissa meg a Safari Beállítások / Weboldalak / Mikrofon menüt, majd válassza a helyi kiszolgálók engedélyezése lehetőséget.</string>
     <string name="call_desktop_permission_denied_title">Hívások kezdeményezéséhez engedélyezze a mikrofon használatát. Fejezze be a hívást, és próbálja meg a hívást újra.</string>
+    <string name="v6_1_better_calls">Jobb hívások</string>
+    <string name="v6_1_message_dates_descr">Jobb üzenetdátumok</string>
+    <string name="v6_1_better_user_experience">Jobb felhasználói élmény</string>
+    <string name="v6_1_customizable_message_descr">Testreszabható üzenetbuborékok.</string>
+    <string name="v6_1_delete_many_messages_descr">Legfeljebb 200 üzenet egyszerre való törlése, vagy moderálása.</string>
+    <string name="v6_1_forward_many_messages_descr">Legfeljebb 20 üzenet egyszerre való továbbítása.</string>
+    <string name="v6_1_better_calls_descr">Hang/Videó váltás hívás közben.</string>
+    <string name="v6_1_switch_chat_profile_descr">Csevegési profilváltás az egyszer használható meghívókhoz.</string>
+    <string name="v6_1_better_security">Jobb biztonság ✅</string>
+    <string name="v6_1_better_security_descr">A SimpleX Chat biztonsága a Trail of Bits által lett újraauditálva.</string>
 </resources>
