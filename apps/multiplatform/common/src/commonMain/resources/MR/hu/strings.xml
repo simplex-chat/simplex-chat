@@ -338,7 +338,7 @@
     <string name="delete_image">Kép törlése</string>
     <string name="smp_server_test_create_file">Fájl létrehozása</string>
     <string name="create_secret_group_title">Tikos csoport létrehozása</string>
-    <string name="clear_contacts_selection_button">Kiürítés</string>
+    <string name="clear_contacts_selection_button">Elvetés</string>
     <string name="delete_contact_question">Ismerős törlése?</string>
     <string name="clear_verb">Kiürítés</string>
     <string name="create_address_and_let_people_connect">Cím létrehozása, hogy az emberek kapcsolatba léphessenek Önnel.</string>
@@ -512,7 +512,7 @@
     <string name="icon_descr_group_inactive">A csoport inaktív</string>
     <string name="v5_0_large_files_support_descr">Gyors és nem kell várni, amíg a feladó online lesz!</string>
     <string name="error_joining_group">Hiba a csoporthoz való csatlakozáskor</string>
-    <string name="favorite_chat">Csillag</string>
+    <string name="favorite_chat">Csillagozás</string>
     <string name="v4_6_group_moderation">Csoport moderáció</string>
     <string name="choose_file">Fájl</string>
     <string name="group_link">Csoporthivatkozás</string>
@@ -1437,7 +1437,7 @@
     <string name="incognito_info_share">Inkognitó-profil megosztása esetén a rendszer azt a profilt fogja használni azokhoz a csoportokhoz, amelyekbe meghívást kapott.</string>
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">Már küldött egy kapcsolatkérést ezen a címen keresztül!</string>
     <string name="you_can_share_this_address_with_your_contacts">Megoszthatja ezt a SimpleX-címet az ismerőseivel, hogy kapcsolatba léphessenek vele: %s.</string>
-    <string name="you_can_accept_or_reject_connection">Amikor az emberek kapcsolatot kérnek, ön elfogadhatja vagy elutasíthatja azokat.</string>
+    <string name="you_can_accept_or_reject_connection">Amikor az emberek kapcsolatot kérnek, Ön elfogadhatja vagy elutasíthatja azokat.</string>
     <string name="v4_6_group_welcome_message_descr">Megjelenítendő üzenet beállítása az új tagok számára!</string>
     <string name="whats_new_thanks_to_users_contribute_weblate">Köszönet a felhasználóknak - hozzájárulás a Weblate-en!</string>
     <string name="sending_delivery_receipts_will_be_enabled">A kézbesítési jelentés küldése minden ismerőse számára engedélyezésre kerül.</string>
@@ -1781,12 +1781,12 @@
     <string name="network_smp_proxy_mode_private_routing">Privát útválasztás</string>
     <string name="network_smp_proxy_mode_unknown_description">Használjon privát útválasztást ismeretlen kiszolgálókkal.</string>
     <string name="network_smp_proxy_mode_always_description">Mindig használjon privát útválasztást.</string>
-    <string name="update_network_smp_proxy_mode_question">Üzenet útválasztási mód</string>
+    <string name="update_network_smp_proxy_mode_question">Üzenet-útválasztási mód</string>
     <string name="network_smp_proxy_fallback_allow_protected_description">Közvetlen üzenetküldés, ha az IP-cím védett és az Ön kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</string>
     <string name="network_smp_proxy_fallback_allow_description">Közvetlen üzenetküldés, ha az Ön kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</string>
     <string name="private_routing_explanation">Az IP-cím védelmének érdekében a privát útválasztás az SMP-kiszolgálókat használja az üzenetek kézbesítéséhez.</string>
-    <string name="update_network_smp_proxy_fallback_question">Üzenet útválasztási tartalék</string>
-    <string name="settings_section_title_private_message_routing">PRIVÁT ÜZENET ÚTVÁLASZTÁS</string>
+    <string name="update_network_smp_proxy_fallback_question">Üzenet-útválasztási tartalék</string>
+    <string name="settings_section_title_private_message_routing">PRIVÁT ÜZENET-ÚTVÁLASZTÁS</string>
     <string name="network_smp_proxy_mode_unprotected_description">Privát útválasztás használata ismeretlen kiszolgálókkal, ha az IP-cím nem védett.</string>
     <string name="network_smp_proxy_fallback_prohibit_description">Ne küldjön üzeneteket közvetlenül, még akkor sem, ha az Ön kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</string>
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Tor vagy VPN nélkül az IP-címe látható lesz a fájlkiszolgálók számára.</string>
@@ -1834,7 +1834,7 @@
     <string name="chat_theme_reset_to_app_theme">Alkalmazás témájának visszaállítása</string>
     <string name="v5_8_chat_themes_descr">Tegye egyedivé a csevegéseit!</string>
     <string name="v5_8_chat_themes">Új csevegési témák</string>
-    <string name="v5_8_private_routing">Privát üzenet útválasztás 🚀</string>
+    <string name="v5_8_private_routing">Privát üzenet-útválasztás 🚀</string>
     <string name="v5_8_safe_files">Fájlok biztonságos fogadása</string>
     <string name="v5_8_message_delivery_descr">Csökkentett akkumulátor-használattal.</string>
     <string name="error_initializing_web_view">Hiba a WebView előkészítésekor. Frissítse rendszerét az új verzióra. Lépjen kapcsolatba a fejlesztőkkel.
@@ -2099,11 +2099,14 @@
     <string name="icon_descr_sound_muted">Hang elnémítva</string>
     <string name="error_initializing_web_view_wrong_arch">Hiba a WebView előkészítésekor. Győződjön meg arról, hogy a WebView telepítve van-e, és támogatja-e az arm64 architektúrát.
 \nHiba: %s</string>
-    <string name="settings_message_shape_corner">Sarkos</string>
+    <string name="settings_message_shape_corner">Sarok</string>
     <string name="settings_section_title_message_shape">Üzenetbuborék alakja</string>
-    <string name="settings_message_shape_tail">Nyúlványos</string>
+    <string name="settings_message_shape_tail">Farok</string>
     <string name="network_session_mode_server">Kiszolgáló</string>
     <string name="network_session_mode_session_description">Minden alkalommal, amikor elindítja az alkalmazást, új SOCKS-hitelesítő-adatokat fog használni.</string>
     <string name="network_session_mode_session">Alkalmazás munkamenete</string>
     <string name="network_session_mode_server_description">Minden egyes kiszolgálóhoz új SOCKS-hitelesítő-adatok legyenek használva.</string>
+    <string name="call_desktop_permission_denied_chrome">Kattintson a címmező melletti info gombra a mikrofon használatának engedélyezéséhez.</string>
+    <string name="call_desktop_permission_denied_safari">Nyissa meg a Safari Beállítások / Weboldalak / Mikrofon menüt, majd válassza a helyi kiszolgálók engedélyezése lehetőséget.</string>
+    <string name="call_desktop_permission_denied_title">Hívások kezdeményezéséhez engedélyezze a mikrofon használatát. Fejezze be a hívást, és próbálja meg a hívást újra.</string>
 </resources>
