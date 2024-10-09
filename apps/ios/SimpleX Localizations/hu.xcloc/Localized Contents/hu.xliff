@@ -5145,14 +5145,14 @@ Hiba: %@</target>
         <target>Privát fájlnevek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Private message routing" xml:space="preserve">
+      <trans-unit id="Private message routing" xml:space="preserve" approved="no">
         <source>Private message routing</source>
-        <target>Privát üzenet útválasztás</target>
+        <target state="translated">Privát üzenet-útválasztás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Private message routing 🚀" xml:space="preserve">
+      <trans-unit id="Private message routing 🚀" xml:space="preserve" approved="no">
         <source>Private message routing 🚀</source>
-        <target>Privát üzenet útválasztás 🚀</target>
+        <target state="translated">Privát üzenet-útválasztás 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Private notes" xml:space="preserve">
@@ -5165,9 +5165,9 @@ Hiba: %@</target>
         <target>Privát útválasztás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Private routing error" xml:space="preserve">
+      <trans-unit id="Private routing error" xml:space="preserve" approved="no">
         <source>Private routing error</source>
-        <target>Privát útválasztási hiba</target>
+        <target state="translated">Privát útválasztáshiba</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile and server connections" xml:space="preserve">
@@ -7285,9 +7285,9 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
         <target>Csak helyi értesítések használata?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use private routing with unknown servers when IP address is not protected." xml:space="preserve">
+      <trans-unit id="Use private routing with unknown servers when IP address is not protected." xml:space="preserve" approved="no">
         <source>Use private routing with unknown servers when IP address is not protected.</source>
-        <target>Privát útválasztás használata ismeretlen kiszolgálókkal, ha az IP-cím nem védett.</target>
+        <target state="translated">Használjon privát útválasztást ismeretlen kiszolgálókkal, ha az IP-cím nem védett.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use private routing with unknown servers." xml:space="preserve">
