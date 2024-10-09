@@ -106,8 +106,8 @@ struct GroupMemberInfoView: View {
                 justOpened = false
                 newRole = member.memberRole
                 do {
-                    let (_, stats) = try await apiGroupMemberInfoAsync(groupInfo.apiId, member.groupMemberId)
-                    let (mem, code) = member.memberActive ? try await apiGetGroupMemberCodeAsync(groupInfo.apiId, member.groupMemberId) : (member, nil)
+                    let (_, stats) = try await apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
+                    let (mem, code) = member.memberActive ? try await apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (member, nil)
                     await MainActor.run {
                         _ = chatModel.upsertGroupMember(groupInfo, mem)
                         connectionStats = stats
@@ -115,7 +115,9 @@ struct GroupMemberInfoView: View {
                         connectionLoaded = true
                     }
                 } catch let error {
-                    connectionLoaded = true
+                    await MainActor.run {
+                        connectionLoaded = true
+                    }
                     logger.error("apiGroupMemberInfo or apiGetGroupMemberCode error: \(responseError(error))")
                 }
             }
