@@ -992,13 +992,25 @@ data SimpleNetCfg = SimpleNetCfg
     requiredHostMode :: Bool,
     smpProxyMode_ :: Maybe SMPProxyMode,
     smpProxyFallback_ :: Maybe SMPProxyFallback,
+    smpWebPort :: Bool,
     tcpTimeout_ :: Maybe Int,
     logTLSErrors :: Bool
   }
   deriving (Show)
 
 defaultSimpleNetCfg :: SimpleNetCfg
-defaultSimpleNetCfg = SimpleNetCfg Nothing SMAlways HMOnionViaSocks True Nothing Nothing Nothing False
+defaultSimpleNetCfg =
+  SimpleNetCfg
+    { socksProxy = Nothing,
+      socksMode = SMAlways,
+      hostMode = HMOnionViaSocks,
+      requiredHostMode = False,
+      smpProxyMode_ = Nothing,
+      smpProxyFallback_ = Nothing,
+      smpWebPort = False,
+      tcpTimeout_ = Nothing,
+      logTLSErrors = False
+    }  
 
 data ContactSubStatus = ContactSubStatus
   { contact :: Contact,

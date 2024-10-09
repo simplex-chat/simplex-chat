@@ -1359,7 +1359,7 @@ public struct NetCfg: Codable, Equatable {
     public var sessionMode = TransportSessionMode.user
     public var smpProxyMode: SMPProxyMode = .unknown
     public var smpProxyFallback: SMPProxyFallback = .allowProtected
-    var smpWebPort = false
+    public var smpWebPort = false
     public var tcpConnectTimeout: Int // microseconds
     public var tcpTimeout: Int // microseconds
     public var tcpTimeoutPerKb: Int // microseconds
@@ -1491,18 +1491,22 @@ public enum OnionHosts: String, Identifiable {
 
 public enum TransportSessionMode: String, Codable, Identifiable {
     case user
+    case session
+    case server
     case entity
 
     public var text: LocalizedStringKey {
         switch self {
-        case .user: return "User profile"
+        case .user: return "Chat profile"
+        case .session: return "App session"
+        case .server: return "Server"
         case .entity: return "Connection"
         }
     }
 
     public var id: TransportSessionMode { self }
 
-    public static let values: [TransportSessionMode] = [.user, .entity]
+    public static let values: [TransportSessionMode] = [.user, .session, .server, .entity]
 }
 
 public struct KeepAliveOpts: Codable, Equatable {

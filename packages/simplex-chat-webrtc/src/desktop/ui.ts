@@ -91,6 +91,19 @@ inactiveCallMediaSourcesChanged = (inactiveCallMediaSources: CallMediaSources) =
   // document.getElementById("media-sources")!.innerText = inactiveCallMediaSourcesStatus(inactiveCallMediaSources)
 }
 
+failedToGetPermissions = (title: string, description: string) => {
+  document.getElementById("info-block")!.style.visibility = "hidden"
+  document.getElementById("progress")!.style.visibility = "hidden"
+
+  document.getElementById("permission-denied-title")!.innerText = title
+  document.getElementById("permission-denied-desc")!.innerText = description
+
+  document.getElementById("toggle-mic")!.style.visibility = "hidden"
+  document.getElementById("toggle-camera")!.style.visibility = "hidden"
+  document.getElementById("toggle-screen")!.style.visibility = "hidden"
+  document.getElementById("toggle-speaker")!.style.visibility = "hidden"
+}
+
 function enableMicIcon(enabled: boolean) {
   document.getElementById("toggle-mic")!.innerHTML = enabled
     ? '<img src="/desktop/images/ic_mic.svg" />'

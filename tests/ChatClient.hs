@@ -36,7 +36,7 @@ import Simplex.Chat.Terminal.Output (newChatTerminal)
 import Simplex.Chat.Types
 import Simplex.FileTransfer.Description (kb, mb)
 import Simplex.FileTransfer.Server (runXFTPServerBlocking)
-import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), defaultFileExpiration, supportedXFTPhandshakes)
+import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), defaultFileExpiration)
 import Simplex.FileTransfer.Transport (supportedFileServerVRange)
 import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite
@@ -52,7 +52,7 @@ import Simplex.Messaging.Protocol (srvHostnamesSMPClientVersion)
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
 import Simplex.Messaging.Transport
-import Simplex.Messaging.Transport.Server (ServerCredentials (..), TransportServerConfig (..), defaultTransportServerConfig)
+import Simplex.Messaging.Transport.Server (ServerCredentials (..), defaultTransportServerConfig)
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
 import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
