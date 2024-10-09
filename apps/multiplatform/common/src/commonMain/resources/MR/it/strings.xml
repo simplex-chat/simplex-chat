@@ -2111,4 +2111,11 @@
     <string name="settings_message_shape_corner">Angolo</string>
     <string name="settings_section_title_message_shape">Forma del messaggio</string>
     <string name="settings_message_shape_tail">Coda</string>
+    <string name="network_session_mode_session">Sessione dell\'app</string>
+    <string name="network_session_mode_session_description">Le nuove credenziali SOCKS verranno usate ogni volta che avvii l\'app.</string>
+    <string name="network_session_mode_server_description">Le nuove credenziali SOCKS verranno usate per ogni server.</string>
+    <string name="network_session_mode_server">Server</string>
+    <string name="call_desktop_permission_denied_safari">Apri le impostazioni di Safari / Siti web / Microfono, quindi scegli Consenti per localhost.</string>
+    <string name="call_desktop_permission_denied_chrome">Clicca il pulsante info vicino al campo indirizzo per consentire l\'uso del microfono.</string>
+    <string name="call_desktop_permission_denied_title">Per effettuare chiamate, consenti di usare il microfono. Termina la chiamata e cerca di richiamare.</string>
 </resources>
