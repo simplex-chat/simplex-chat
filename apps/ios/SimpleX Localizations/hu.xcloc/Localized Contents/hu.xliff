@@ -945,8 +945,9 @@
         <target>Az alkalmazás jelkód helyettesítésre kerül egy önmegsemmisítő jelkóddal.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App session" xml:space="preserve">
+      <trans-unit id="App session" xml:space="preserve" approved="no">
         <source>App session</source>
+        <target state="translated">Alkalmazás munkamenete</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
@@ -1789,9 +1790,9 @@ Ez az Ön egyszer használható hivatkozása!</target>
         <target>Alapverziószám: v%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Corner" xml:space="preserve">
+      <trans-unit id="Corner" xml:space="preserve" approved="no">
         <source>Corner</source>
-        <target>Sarkos</target>
+        <target state="translated">Sarok</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Correct name to %@?" xml:space="preserve">
@@ -3164,9 +3165,9 @@ Ez az Ön egyszer használható hivatkozása!</target>
         <target>Gyorsabb csatlakozás és megbízhatóbb üzenetkézbesítés.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Favorite" xml:space="preserve">
+      <trans-unit id="Favorite" xml:space="preserve" approved="no">
         <source>Favorite</source>
-        <target>Csillag</target>
+        <target state="translated">Csillagozás</target>
         <note>swipe action</note>
       </trans-unit>
       <trans-unit id="File error" xml:space="preserve">
@@ -4510,12 +4511,14 @@ Ez az Ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Új jelkód</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New SOCKS credentials will be used every time you start the app." xml:space="preserve">
+      <trans-unit id="New SOCKS credentials will be used every time you start the app." xml:space="preserve" approved="no">
         <source>New SOCKS credentials will be used every time you start the app.</source>
+        <target state="translated">Minden alkalommal, amikor elindítja az alkalmazást, új SOCKS-hitelesítő-adatokat fog használni.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New SOCKS credentials will be used for each server." xml:space="preserve">
+      <trans-unit id="New SOCKS credentials will be used for each server." xml:space="preserve" approved="no">
         <source>New SOCKS credentials will be used for each server.</source>
+        <target state="translated">Minden egyes kiszolgálóhoz új SOCKS-hitelesítő-adatok legyenek használva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New chat" xml:space="preserve">
@@ -4638,12 +4641,14 @@ Ez az Ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Nincs hálózati kapcsolat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No permission to record speech" xml:space="preserve">
+      <trans-unit id="No permission to record speech" xml:space="preserve" approved="no">
         <source>No permission to record speech</source>
+        <target state="translated">Nincs jogosultság megadva a beszéd rögzítéséhez</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No permission to record video" xml:space="preserve">
+      <trans-unit id="No permission to record video" xml:space="preserve" approved="no">
         <source>No permission to record video</source>
+        <target state="translated">Nincs jogosultság megadva a videó rögzítéséhez</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No permission to record voice message" xml:space="preserve">
@@ -6114,8 +6119,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>Proxyn keresztül küldve</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Server" xml:space="preserve">
+      <trans-unit id="Server" xml:space="preserve" approved="no">
         <source>Server</source>
+        <target state="translated">Kiszolgáló</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Server address" xml:space="preserve">
@@ -6628,9 +6634,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>TCP_KEEPINTVL</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tail" xml:space="preserve">
+      <trans-unit id="Tail" xml:space="preserve" approved="no">
         <source>Tail</source>
-        <target>Nyúlványos</target>
+        <target state="translated">Farok</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Take picture" xml:space="preserve">
@@ -6957,12 +6963,14 @@ You will be prompted to complete authentication before this feature is enabled.<
 A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beállítására az eszközén.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To record speech please grant permission to use Microphone." xml:space="preserve">
+      <trans-unit id="To record speech please grant permission to use Microphone." xml:space="preserve" approved="no">
         <source>To record speech please grant permission to use Microphone.</source>
+        <target state="translated">A beszéd rögzítéséhez adjon engedélyt a Mikrofon használatára.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To record video please grant permission to use Camera." xml:space="preserve">
+      <trans-unit id="To record video please grant permission to use Camera." xml:space="preserve" approved="no">
         <source>To record video please grant permission to use Camera.</source>
+        <target state="translated">A videó rögzítéséhez adjon engedélyt a Kamera használatára.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To record voice message please grant permission to use Microphone." xml:space="preserve">
