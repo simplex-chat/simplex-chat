@@ -2109,4 +2109,11 @@
     <string name="settings_message_shape_corner">拐角</string>
     <string name="settings_message_shape_tail">尾部</string>
     <string name="error_initializing_web_view_wrong_arch">初始化 WebView 出错。确保你安装了 WebView 且其支持的架构为 arm64。\n错误：%s</string>
+    <string name="network_session_mode_session">应用会话</string>
+    <string name="network_session_mode_session_description">每次启动应用都会使用新的 SOCKS5 凭据。</string>
+    <string name="network_session_mode_server">服务器</string>
+    <string name="call_desktop_permission_denied_safari">打开 Safari 设置/网站/麦克风，接着在 localhost 选择“允许”。</string>
+    <string name="call_desktop_permission_denied_title">要进行通话，请允许使用设备麦克风。结束通话并尝试再次呼叫。</string>
+    <string name="call_desktop_permission_denied_chrome">单击地址附近的\"信息\"按钮允许使用麦克风。</string>
+    <string name="network_session_mode_server_description">每个服务器都会使用新的 SOCKS5 凭据。</string>
 </resources>
