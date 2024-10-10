@@ -65,13 +65,13 @@
 "[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Csillagozás a GitHubon](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
-"**Add contact**: to create a new invitation link, or connect via a link you received." = "**Ismerős hozzáadása**: új meghívó-hivatkozás létrehozásához, vagy egy kapott hivatkozáson keresztül történő kapcsolódáshoz.";
+"**Add contact**: to create a new invitation link, or connect via a link you received." = "**Ismerős hozzáadása:** új meghívó-hivatkozás létrehozásához, vagy egy kapott hivatkozáson keresztül történő kapcsolódáshoz.";
 
 /* No comment provided by engineer. */
-"**Add new contact**: to create your one-time QR Code for your contact." = "**Új ismerős hozzáadása**: egyszer használható QR-kód vagy hivatkozás létrehozása az ismerőse számára.";
+"**Add new contact**: to create your one-time QR Code for your contact." = "**Új ismerős hozzáadása:** egyszer használható QR-kód vagy hivatkozás létrehozása az ismerőse számára.";
 
 /* No comment provided by engineer. */
-"**Create group**: to create a new group." = "**Csoport létrehozása**: új csoport létrehozásához.";
+"**Create group**: to create a new group." = "**Csoport létrehozása:** új csoport létrehozásához.";
 
 /* No comment provided by engineer. */
 "**e2e encrypted** audio call" = "**e2e titkosított** hanghívás";
@@ -80,10 +80,10 @@
 "**e2e encrypted** video call" = "**e2e titkosított** videóhívás";
 
 /* No comment provided by engineer. */
-"**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." = "**Privátabb**: 20 percenként ellenőrzi az új üzeneteket. Az eszköztoken megosztásra kerül a SimpleX Chat-kiszolgálóval, de az nem, hogy hány ismerőse vagy üzenete van.";
+"**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." = "**Privátabb:** 20 percenként ellenőrzi az új üzeneteket. Az eszköztoken megosztásra kerül a SimpleX Chat-kiszolgálóval, de az nem, hogy hány ismerőse vagy üzenete van.";
 
 /* No comment provided by engineer. */
-"**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." = "**Legprivátabb**: ne használja a SimpleX Chat értesítési kiszolgálót, rendszeresen ellenőrizze az üzeneteket a háttérben (attól függően, hogy milyen gyakran használja az alkalmazást).";
+"**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." = "**Legprivátabb:** ne használja a SimpleX Chat értesítési kiszolgálót, rendszeresen ellenőrizze az üzeneteket a háttérben (attól függően, hogy milyen gyakran használja az alkalmazást).";
 
 /* No comment provided by engineer. */
 "**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." = "**Megjegyzés:** ha két eszközön is ugyanazt az adatbázist használja, akkor biztonsági védelemként megszakítja az ismerőseitől érkező üzenetek visszafejtését.";
@@ -92,7 +92,7 @@
 "**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**Megjegyzés:** NEM tudja visszaállítani vagy megváltoztatni jelmondatát, ha elveszíti azt.";
 
 /* No comment provided by engineer. */
-"**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." = "**Javasolt**: az eszköztoken és az értesítések elküldésre kerülnek a SimpleX Chat értesítési kiszolgálóra, kivéve az üzenet tartalma, mérete vagy az, hogy kitől származik.";
+"**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." = "**Megjegyzés:** az eszköztoken és az értesítések elküldésre kerülnek a SimpleX Chat értesítési kiszolgálóra, kivéve az üzenet tartalma, mérete vagy az, hogy kitől származik.";
 
 /* No comment provided by engineer. */
 "**Warning**: Instant push notifications require passphrase saved in Keychain." = "**Figyelmeztetés:** Az azonnali push-értesítésekhez a kulcstartóban tárolt jelmondat megadása szükséges.";
@@ -368,7 +368,7 @@
 
 /* accept contact request via notification
    swipe action */
-"Accept incognito" = "Fogadás inkognítóban";
+"Accept incognito" = "Fogadás inkognitóban";
 
 /* call status */
 "accepted call" = "elfogadott hívás";
@@ -594,6 +594,9 @@
 
 /* No comment provided by engineer. */
 "App passcode is replaced with self-destruct passcode." = "Az alkalmazás jelkód helyettesítésre kerül egy önmegsemmisítő jelkóddal.";
+
+/* No comment provided by engineer. */
+"App session" = "Alkalmazás munkamenete";
 
 /* No comment provided by engineer. */
 "App version" = "Alkalmazás verzió";
@@ -864,7 +867,7 @@
 "changed role of %@ to %@" = "%1$@ szerepkörét megváltoztatta erre: %2$@";
 
 /* rcv group event chat item */
-"changed your role to %@" = "megváltoztatta a szerepkörét erre: %@";
+"changed your role to %@" = "megváltoztatta az Ön szerepkörét erre: %@";
 
 /* chat item text */
 "changing address for %@…" = "cím megváltoztatása nála: %@…";
@@ -1206,7 +1209,7 @@
 "Core version: v%@" = "Alapverziószám: v%@";
 
 /* No comment provided by engineer. */
-"Corner" = "Sarkos";
+"Corner" = "Sarok";
 
 /* No comment provided by engineer. */
 "Correct name to %@?" = "Név javítása erre: %@?";
@@ -1489,7 +1492,7 @@
 "Delete queue" = "Sorbaállítás törlése";
 
 /* No comment provided by engineer. */
-"Delete up to 20 messages at once." = "Legfeljebb 20 üzenet törlése egyszerre.";
+"Delete up to 20 messages at once." = "Legfeljebb 20 üzenet egyszerre való törlése.";
 
 /* No comment provided by engineer. */
 "Delete user profile?" = "Felhasználói profil törlése?";
@@ -1904,7 +1907,7 @@
 "Error changing setting" = "Hiba a beállítás megváltoztatásakor";
 
 /* No comment provided by engineer. */
-"Error changing to incognito!" = "Hiba az inkognitó-profilra való váltáskor!";
+"Error changing to incognito!" = "Hiba az inkognitóprofilra való váltáskor!";
 
 /* No comment provided by engineer. */
 "Error connecting to forwarding server %@. Please try later." = "Hiba a(z) %@ továbbító kiszolgálóhoz való kapcsolódáskor. Próbálja meg később.";
@@ -2045,7 +2048,7 @@
 "Error switching profile" = "Hiba a profilváltáskor";
 
 /* alertTitle */
-"Error switching profile!" = "Hiba a profil váltásakor!";
+"Error switching profile!" = "Hiba a profilváltásakor!";
 
 /* No comment provided by engineer. */
 "Error synchronizing connection" = "Hiba a kapcsolat szinkronizálásakor";
@@ -2066,7 +2069,7 @@
 "Error uploading the archive" = "Hiba az archívum feltöltésekor";
 
 /* No comment provided by engineer. */
-"Error verifying passphrase:" = "Hiba a jelmondat ellenőrzésekor:";
+"Error verifying passphrase:" = "Hiba a jelmondat hitelesítésekor:";
 
 /* No comment provided by engineer. */
 "Error: " = "Hiba: ";
@@ -2126,7 +2129,7 @@
 "Faster joining and more reliable messages." = "Gyorsabb csatlakozás és megbízhatóbb üzenetkézbesítés.";
 
 /* swipe action */
-"Favorite" = "Csillag";
+"Favorite" = "Kedvenc";
 
 /* No comment provided by engineer. */
 "File error" = "Fájlhiba";
@@ -2177,7 +2180,7 @@
 "Files and media prohibited!" = "A fájlok- és a médiatartalmak küldése le van tiltva!";
 
 /* No comment provided by engineer. */
-"Filter unread and favorite chats." = "Olvasatlan és csillagozott csevegésekre való szűrés.";
+"Filter unread and favorite chats." = "Olvasatlan és kedvenc csevegésekre való szűrés.";
 
 /* No comment provided by engineer. */
 "Finalize migration" = "Átköltöztetés véglegesítése";
@@ -2303,7 +2306,7 @@
 "Group full name (optional)" = "Csoport teljes neve (nem kötelező)";
 
 /* No comment provided by engineer. */
-"Group image" = "Csoportkép";
+"Group image" = "Csoport profilképe";
 
 /* No comment provided by engineer. */
 "Group invitation" = "Csoportmeghívó";
@@ -2378,10 +2381,10 @@
 "Hidden chat profiles" = "Rejtett csevegési profilok";
 
 /* No comment provided by engineer. */
-"Hidden profile password" = "Rejtett profil jelszó";
+"Hidden profile password" = "Rejtett profiljelszó";
 
 /* chat item action */
-"Hide" = "Elrejt";
+"Hide" = "Elrejtés";
 
 /* No comment provided by engineer. */
 "Hide app screen in the recent apps." = "Alkalmazás képernyőjének elrejtése a gyakran használt alkalmazások között.";
@@ -2390,7 +2393,7 @@
 "Hide profile" = "Profil elrejtése";
 
 /* No comment provided by engineer. */
-"Hide:" = "Elrejt:";
+"Hide:" = "Elrejtés:";
 
 /* No comment provided by engineer. */
 "History" = "Előzmények";
@@ -2492,7 +2495,7 @@
 "Incognito" = "Inkognitó";
 
 /* No comment provided by engineer. */
-"Incognito groups" = "Inkognitó csoportok";
+"Incognito groups" = "Inkognitócsoportok";
 
 /* No comment provided by engineer. */
 "Incognito mode" = "Inkognitómód";
@@ -2501,7 +2504,7 @@
 "Incognito mode protects your privacy by using a new random profile for each contact." = "Az inkognitómód védi személyes adatait azáltal, hogy minden ismerőshöz új véletlenszerű profilt használ.";
 
 /* chat list item description */
-"incognito via contact address link" = "inkognitó a kapcsolattartási hivatkozáson keresztül";
+"incognito via contact address link" = "inkognitó a kapcsolattartási címhivatkozáson keresztül";
 
 /* chat list item description */
 "incognito via group link" = "inkognitó a csoporthivatkozáson keresztül";
@@ -2705,10 +2708,10 @@
 "Keep your connections" = "Kapcsolatok megtartása";
 
 /* No comment provided by engineer. */
-"Keychain error" = "Kulcstartó hiba";
+"Keychain error" = "Kulcstartóhiba";
 
 /* No comment provided by engineer. */
-"KeyChain error" = "Kulcstartó hiba";
+"KeyChain error" = "Kulcstartóhiba";
 
 /* No comment provided by engineer. */
 "Large file!" = "Nagy fájl!";
@@ -3070,6 +3073,12 @@
 /* No comment provided by engineer. */
 "New passphrase…" = "Új jelmondat…";
 
+/* No comment provided by engineer. */
+"New SOCKS credentials will be used every time you start the app." = "Minden alkalommal, amikor elindítja az alkalmazást, új SOCKS-hitelesítő-adatokat fog használni.";
+
+/* No comment provided by engineer. */
+"New SOCKS credentials will be used for each server." = "Minden egyes kiszolgálóhoz új SOCKS-hitelesítő-adatok legyenek használva.";
+
 /* pref value */
 "no" = "nem";
 
@@ -3111,6 +3120,12 @@
 
 /* No comment provided by engineer. */
 "No network connection" = "Nincs hálózati kapcsolat";
+
+/* No comment provided by engineer. */
+"No permission to record speech" = "Nincs jogosultság megadva a beszéd rögzítéséhez";
+
+/* No comment provided by engineer. */
+"No permission to record video" = "Nincs jogosultság megadva a videó rögzítéséhez";
 
 /* No comment provided by engineer. */
 "No permission to record voice message" = "Nincs engedély a hangüzenet rögzítésére";
@@ -3175,7 +3190,7 @@
 "One-time invitation link" = "Egyszer használható meghívó-hivatkozás";
 
 /* No comment provided by engineer. */
-"Onion hosts will be **required** for connection.\nRequires compatible VPN." = "Az onion-kiszolgálók **szükségesek** a kapcsolódáshoz.\nKompatibilis VPN szükséges.";
+"Onion hosts will be **required** for connection.\nRequires compatible VPN." = "Onion-kiszolgálók **szükségesek** a kapcsolódáshoz.\nKompatibilis VPN szükséges.";
 
 /* No comment provided by engineer. */
 "Onion hosts will be used when available.\nRequires compatible VPN." = "Onion-kiszolgálók használata, ha azok rendelkezésre állnak.\nVPN engedélyezése szükséges.";
@@ -3436,10 +3451,10 @@
 "Private filenames" = "Privát fájlnevek";
 
 /* No comment provided by engineer. */
-"Private message routing" = "Privát üzenet útválasztás";
+"Private message routing" = "Privát üzenet-útválasztás";
 
 /* No comment provided by engineer. */
-"Private message routing 🚀" = "Privát üzenet útválasztás 🚀";
+"Private message routing 🚀" = "Privát üzenet-útválasztás 🚀";
 
 /* name of notes to self */
 "Private notes" = "Privát jegyzetek";
@@ -3448,7 +3463,7 @@
 "Private routing" = "Privát útválasztás";
 
 /* No comment provided by engineer. */
-"Private routing error" = "Privát útválasztási hiba";
+"Private routing error" = "Privát útválasztáshiba";
 
 /* No comment provided by engineer. */
 "Profile and server connections" = "Profil és kiszolgálókapcsolatok";
@@ -4065,6 +4080,9 @@
 "Sent via proxy" = "Proxyn keresztül küldve";
 
 /* No comment provided by engineer. */
+"Server" = "Kiszolgáló";
+
+/* No comment provided by engineer. */
 "Server address" = "Kiszolgáló címe";
 
 /* No comment provided by engineer. */
@@ -4254,7 +4272,7 @@
 "SimpleX one-time invitation" = "Egyszer használható SimpleX-meghívó";
 
 /* No comment provided by engineer. */
-"Simplified incognito mode" = "Egyszerűsített inkognító mód";
+"Simplified incognito mode" = "Egyszerűsített inkognitómód";
 
 /* No comment provided by engineer. */
 "Size" = "Méret";
@@ -4380,7 +4398,7 @@
 "System authentication" = "Rendszerhitelesítés";
 
 /* No comment provided by engineer. */
-"Tail" = "Nyúlványos";
+"Tail" = "Farok";
 
 /* No comment provided by engineer. */
 "Take picture" = "Kép készítése";
@@ -4401,7 +4419,7 @@
 "Tap to join incognito" = "Koppintson az inkognitóban való csatlakozáshoz";
 
 /* No comment provided by engineer. */
-"Tap to paste link" = "Koppintson a hivatkozás beillesztéséhez";
+"Tap to paste link" = "Koppintson ide a hivatkozás beillesztéséhez";
 
 /* No comment provided by engineer. */
 "Tap to scan" = "Koppintson a beolvasáshoz";
@@ -4593,6 +4611,12 @@
 "To protect your IP address, private routing uses your SMP servers to deliver messages." = "Az IP-cím védelmének érdekében a privát útválasztás az SMP-kiszolgálókat használja az üzenetek kézbesítéséhez.";
 
 /* No comment provided by engineer. */
+"To record speech please grant permission to use Microphone." = "A beszéd rögzítéséhez adjon engedélyt a Mikrofon használatára.";
+
+/* No comment provided by engineer. */
+"To record video please grant permission to use Camera." = "A videó rögzítéséhez adjon engedélyt a Kamera használatára.";
+
+/* No comment provided by engineer. */
 "To record voice message please grant permission to use Microphone." = "Hangüzenet rögzítéséhez adjon engedélyt a mikrofon használathoz.";
 
 /* No comment provided by engineer. */
@@ -4602,13 +4626,13 @@
 "To support instant push notifications the chat database has to be migrated." = "Az azonnali push-értesítések támogatásához a csevegési adatbázis átköltöztetése szükséges.";
 
 /* No comment provided by engineer. */
-"To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "A végpontok közötti titkosítás ellenőrzéséhez hasonlítsa össze (vagy olvassa be a QR-kódot) az ismerőse eszközén lévő kóddal.";
+"To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "A végpontok közötti titkosítás hitelesítéséhez hasonlítsa össze (vagy olvassa be a QR-kódot) az ismerőse eszközén lévő kóddal.";
 
 /* No comment provided by engineer. */
 "Toggle chat list:" = "Csevegőlista átváltása:";
 
 /* No comment provided by engineer. */
-"Toggle incognito when connecting." = "Inkognitómód kapcsolódáskor.";
+"Toggle incognito when connecting." = "Inkognitómód használata kapcsolódáskor.";
 
 /* No comment provided by engineer. */
 "Toolbar opacity" = "Eszköztár átlátszatlansága";
@@ -4662,7 +4686,7 @@
 "Unexpected migration state" = "Váratlan átköltöztetési állapot";
 
 /* swipe action */
-"Unfav." = "Csillagozás megszüntetése";
+"Unfav." = "Kedvenc megszüntetése";
 
 /* No comment provided by engineer. */
 "Unhide" = "Felfedés";
@@ -4791,13 +4815,13 @@
 "Use iOS call interface" = "Az iOS hívófelület használata";
 
 /* No comment provided by engineer. */
-"Use new incognito profile" = "Az új inkognító profil használata";
+"Use new incognito profile" = "Új inkognitóprofil használata";
 
 /* No comment provided by engineer. */
 "Use only local notifications?" = "Csak helyi értesítések használata?";
 
 /* No comment provided by engineer. */
-"Use private routing with unknown servers when IP address is not protected." = "Privát útválasztás használata ismeretlen kiszolgálókkal, ha az IP-cím nem védett.";
+"Use private routing with unknown servers when IP address is not protected." = "Használjon privát útválasztást ismeretlen kiszolgálókkal, ha az IP-cím nem védett.";
 
 /* No comment provided by engineer. */
 "Use private routing with unknown servers." = "Használjon privát útválasztást ismeretlen kiszolgálókkal.";
@@ -4833,25 +4857,25 @@
 "v%@ (%@)" = "v%@ (%@)";
 
 /* No comment provided by engineer. */
-"Verify code with desktop" = "Kód ellenőrzése a számítógépen";
+"Verify code with desktop" = "Kód hitelesítése a számítógépen";
 
 /* No comment provided by engineer. */
-"Verify connection" = "Kapcsolat ellenőrzése";
+"Verify connection" = "Kapcsolat hitelesítése";
 
 /* No comment provided by engineer. */
-"Verify connection security" = "Kapcsolat biztonságának ellenőrzése";
+"Verify connection security" = "Biztonságos kapcsolat hitelesítése";
 
 /* No comment provided by engineer. */
-"Verify connections" = "Kapcsolatok ellenőrzése";
+"Verify connections" = "Kapcsolatok hitelesítése";
 
 /* No comment provided by engineer. */
-"Verify database passphrase" = "Az adatbázis jelmondatának ellenőrzése";
+"Verify database passphrase" = "Az adatbázis jelmondatának hitelesítése";
 
 /* No comment provided by engineer. */
-"Verify passphrase" = "Jelmondat ellenőrzése";
+"Verify passphrase" = "Jelmondat hitelesítése";
 
 /* No comment provided by engineer. */
-"Verify security code" = "Biztonsági kód ellenőrzése";
+"Verify security code" = "Biztonsági kód hitelesítése";
 
 /* No comment provided by engineer. */
 "Via browser" = "Böngészőn keresztül";
@@ -4977,7 +5001,7 @@
 "When people request to connect, you can accept or reject it." = "Amikor az emberek kapcsolatot kérnek, Ön elfogadhatja vagy elutasíthatja azokat.";
 
 /* No comment provided by engineer. */
-"When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Inkognitó-profil megosztása esetén a rendszer azt a profilt fogja használni azokhoz a csoportokhoz, amelyekbe meghívást kapott.";
+"When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Inkognitóprofil megosztása esetén a rendszer azt a profilt fogja használni azokhoz a csoportokhoz, amelyekbe meghívást kapott.";
 
 /* No comment provided by engineer. */
 "WiFi" = "Wi-Fi";
@@ -5088,7 +5112,7 @@
 "You can create it later" = "Létrehozás később";
 
 /* No comment provided by engineer. */
-"You can enable later via Settings" = "Később engedélyezheti a Beállításokban";
+"You can enable later via Settings" = "Később engedélyezheti a „Beállításokban”";
 
 /* No comment provided by engineer. */
 "You can enable them later via app Privacy & Security settings." = "Később engedélyezheti őket az alkalmazás „Adatvédelem és biztonság” menüben.";
@@ -5145,10 +5169,10 @@
 "you changed address for %@" = "cím megváltoztatva nála: %@";
 
 /* snd group event chat item */
-"you changed role for yourself to %@" = "saját szerepkör megváltoztatva erre: %@";
+"you changed role for yourself to %@" = "saját szerepköre megváltozott erre: %@";
 
 /* snd group event chat item */
-"you changed role of %@ to %@" = "%1$@ szerepkörét megváltoztatta erre: %@";
+"you changed role of %@ to %@" = "Ön megváltoztatta %1$@ szerepkörét erre: %@";
 
 /* No comment provided by engineer. */
 "You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." = "Ön szabályozhatja, hogy mely kiszogál(ók)ón keresztül **kapja** az üzeneteket, az ismerősöket - az üzenetküldéshez használt kiszolgálókon.";
@@ -5196,7 +5220,7 @@
 "You rejected group invitation" = "Csoportmeghívó elutasítva";
 
 /* snd group event chat item */
-"you removed %@" = "eltávolította őt: %@";
+"you removed %@" = "Ön eltávolította őt: %@";
 
 /* No comment provided by engineer. */
 "You sent group invitation" = "Csoportmeghívó elküldve";
@@ -5241,10 +5265,10 @@
 "you: " = "Ön: ";
 
 /* No comment provided by engineer. */
-"You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" = "Egy olyan ismerőst próbál meghívni, akivel inkognító profilt osztott meg abban a csoportban, amelyben saját fő profilja van használatban";
+"You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" = "Egy olyan ismerősét próbálja meghívni, akivel inkognitóprofilt osztott meg abban a csoportban, amelyben a saját fő profilja van használatban";
 
 /* No comment provided by engineer. */
-"You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "Inkognító profilt használ ehhez a csoporthoz - fő profilja megosztásának elkerülése érdekében a meghívók küldése le van tiltva";
+"You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "Inkognitóprofilt használ ehhez a csoporthoz - fő profilja megosztásának elkerülése érdekében a meghívók küldése le van tiltva";
 
 /* No comment provided by engineer. */
 "Your %@ servers" = "%@ nevű profiljához tartozó kiszolgálók";

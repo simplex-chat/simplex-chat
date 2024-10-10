@@ -596,6 +596,9 @@
 "App passcode is replaced with self-destruct passcode." = "App-Zugangscode wurde durch den Selbstzerstörungs-Zugangscode ersetzt.";
 
 /* No comment provided by engineer. */
+"App session" = "App-Sitzung";
+
+/* No comment provided by engineer. */
 "App version" = "App Version";
 
 /* No comment provided by engineer. */
@@ -3070,6 +3073,12 @@
 /* No comment provided by engineer. */
 "New passphrase…" = "Neues Passwort…";
 
+/* No comment provided by engineer. */
+"New SOCKS credentials will be used every time you start the app." = "Jedes Mal wenn Sie die App starten, werden neue SOCKS-Anmeldeinformationen genutzt";
+
+/* No comment provided by engineer. */
+"New SOCKS credentials will be used for each server." = "Für jeden Server werden neue SOCKS-Anmeldeinformationen genutzt";
+
 /* pref value */
 "no" = "Nein";
 
@@ -3111,6 +3120,12 @@
 
 /* No comment provided by engineer. */
 "No network connection" = "Keine Netzwerkverbindung";
+
+/* No comment provided by engineer. */
+"No permission to record speech" = "Keine Genehmigung für Sprach-Aufnahmen";
+
+/* No comment provided by engineer. */
+"No permission to record video" = "Keine Genehmigung für Video-Aufnahmen";
 
 /* No comment provided by engineer. */
 "No permission to record voice message" = "Keine Berechtigung für das Aufnehmen von Sprachnachrichten";
@@ -4065,6 +4080,9 @@
 "Sent via proxy" = "Über einen Proxy gesendet";
 
 /* No comment provided by engineer. */
+"Server" = "Server";
+
+/* No comment provided by engineer. */
 "Server address" = "Server-Adresse";
 
 /* No comment provided by engineer. */
@@ -4591,6 +4609,12 @@
 
 /* No comment provided by engineer. */
 "To protect your IP address, private routing uses your SMP servers to deliver messages." = "Zum Schutz Ihrer IP-Adresse, wird für die Nachrichten-Auslieferung privates Routing über Ihre konfigurierten SMP-Server genutzt.";
+
+/* No comment provided by engineer. */
+"To record speech please grant permission to use Microphone." = "Bitte erteilen Sie für Sprach-Aufnahmen die Genehmigung das Mikrofon zu nutzen.";
+
+/* No comment provided by engineer. */
+"To record video please grant permission to use Camera." = "Bitte erteilen Sie für Video-Aufnahmen die Genehmigung die Kamera zu nutzen.";
 
 /* No comment provided by engineer. */
 "To record voice message please grant permission to use Microphone." = "Bitte erlauben Sie die Nutzung des Mikrofons, um Sprachnachrichten aufnehmen zu können.";

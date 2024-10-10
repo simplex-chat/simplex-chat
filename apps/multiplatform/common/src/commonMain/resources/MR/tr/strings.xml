@@ -757,7 +757,7 @@
     <string name="callstatus_connecting">aramaya bağlanılıyor…</string>
     <string name="delivery_receipts_are_disabled">Gönderildi bilgisi kapalı!</string>
     <string name="v5_2_more_things">Birkaç şey daha</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>Daha fazla pil kullanır</b>! Uygulama her zaman arka planda çalışır - bildirimler anında gösterilir.</string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Daha fazla pil kullanır</b>! Uygulama her zaman arka planda çalışır - bildirimler anında gösterilir.]]></string>
     <string name="in_developing_title">Çok yakında!</string>
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Kişi ve tüm mesajlar silinecektir - bu geri alınamaz!</string>
     <string name="alert_title_contact_connection_pending">Kişi henüz bağlanmadı!</string>
