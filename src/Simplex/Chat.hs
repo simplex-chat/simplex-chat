@@ -1787,8 +1787,8 @@ processChatCommand' vr = \case
         -- search connection by link (cReq)
         -- or, better, pass connId found by connectPlan? (Either AConnectionRequestUri DBConnectionId)
         connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup'
-        conn@PendingContactConnection {pccConnId} <- withFastStore' $ \db -> createDirectConnection db user connId cReq ConnJoined (incognitoProfile $> profileToSend) subMode chatV pqSup'
-        joinPreparedAgentConnection user pccConnId connId cReq dm pqSup' subMode
+        conn <- withFastStore' $ \db -> createDirectConnection db user connId cReq ConnJoined (incognitoProfile $> profileToSend) subMode chatV pqSup'
+        void $ withAgent $ \a -> joinConnection a (aUserId user) connId True cReq dm pqSup' subMode
         pure $ CRSentConfirmation user conn
   APIConnect userId incognito (Just (ACR SCMContact cReq)) -> withUserId userId $ \user -> connectViaContact user incognito cReq
   APIConnect _ _ Nothing -> throwChatError CEInvalidConnReq
@@ -2054,7 +2054,7 @@ processChatCommand' vr = \case
             pure cId
           -- TODO conn prepare
           -- don't cleanup (set failure state? - same as for invitation links)
-          void (withAgent $ \a -> joinConnection a (aUserId user) (Just agentConnId) True connRequest dm PQSupportOff subMode)
+          void (withAgent $ \a -> joinConnection a (aUserId user) agentConnId True connRequest dm PQSupportOff subMode)
             `catchChatError` \e -> do
               withFastStore' $ \db -> do
                 deleteConnectionRecord db user cId
@@ -2630,15 +2630,7 @@ processChatCommand' vr = \case
       let profileToSend = userProfileToSend user incognitoProfile Nothing inGroup
       dm <- encodeConnInfoPQ pqSup chatV (XContact profileToSend $ Just xContactId)
       subMode <- chatReadVar subscriptionMode
-      joinPreparedAgentConnection user pccConnId connId cReq dm pqSup subMode
-    joinPreparedAgentConnection :: User -> Int64 -> ConnId -> ConnectionRequestUri m -> ByteString -> PQSupport -> SubscriptionMode -> CM ()
-    joinPreparedAgentConnection user pccConnId connId cReq connInfo pqSup subMode = do
-      void (withAgent $ \a -> joinConnection a (aUserId user) (Just connId) True cReq connInfo pqSup subMode)
-        -- TODO conn prepare
-        -- if joining invitation connection:
-        --   don't cleanup connection on error
-        --   tbd - only joinConnection, or catch to mark error status?
-        -- if joining contact connection: keep cleanup? (there's no secure - api is misleading, it's not really a JOIN)
+      void (withAgent $ \a -> joinConnection a (aUserId user) connId True cReq dm pqSup subMode)
         `catchChatError` \e -> do
           withFastStore' $ \db -> deleteConnectionRecord db user pccConnId
           withAgent $ \a -> deleteConnectionAsync a False connId
@@ -3696,7 +3688,9 @@ acceptContactRequest user UserContactRequest {agentInvitationId = AgentInvId inv
       chatV = vr `peerConnChatVersion` cReqChatVRange
       pqSup' = pqSup `CR.pqSupportAnd` pqSupport
   dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
-  (acId, sqSecured) <- withAgent $ \a -> acceptContact a True invId dm pqSup' subMode
+  -- TODO conn prepare
+  -- use prepared conn id
+  (acId, sqSecured) <- withAgent $ \a -> acceptContact a "" True invId dm pqSup' subMode
   let connStatus = if sqSecured then ConnSndReady else ConnNew
   withStore' $ \db -> createAcceptedContact db user acId connStatus chatV cReqChatVRange cName profileId cp userContactLinkId xContactId incognitoProfile subMode pqSup' contactUsed
 
