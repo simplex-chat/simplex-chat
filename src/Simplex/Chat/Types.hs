@@ -297,6 +297,7 @@ userContactGroupId UserContact {groupId} = groupId
 data UserContactRequest = UserContactRequest
   { contactRequestId :: Int64,
     agentInvitationId :: AgentInvId,
+    contactId_ :: Maybe ContactId,
     userContactLinkId :: Int64,
     agentContactConnId :: AgentConnId, -- connection id of user contact
     cReqChatVRange :: VersionRangeChat,
