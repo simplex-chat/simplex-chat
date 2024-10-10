@@ -1874,8 +1874,7 @@
     <string name="servers_info_sessions_connecting">Kapcsolódás</string>
     <string name="servers_info_sessions_errors">Hibák</string>
     <string name="servers_info_subscriptions_connections_pending">Függőben</string>
-    <string name="servers_info_private_data_disclaimer">Ekkortól kezdve: %s.
-\nMinden adat biztonságban van az eszközén.</string>
+    <string name="servers_info_private_data_disclaimer">Statisztikagyűjtés kezdete: %s.\nMinden adat biztonságban van az eszközén.</string>
     <string name="servers_info_messages_sent">Elküldött üzenetek</string>
     <string name="servers_info_proxied_servers_section_header">Proxyzott kiszolgálók</string>
     <string name="servers_info_reconnect_servers_title">Újrakapcsolódás a kiszolgálókhoz?</string>
@@ -1899,7 +1898,7 @@
     <string name="servers_info_detailed_statistics_sent_messages_total">Összes elküldött</string>
     <string name="sent_via_proxy">Proxyn keresztül küldve</string>
     <string name="smp_server">SMP-kiszolgáló</string>
-    <string name="servers_info_starting_from">Ekkortól kezdve: %s.</string>
+    <string name="servers_info_starting_from">Statisztika gyűjtés kezdete: %s.</string>
     <string name="servers_info_uploaded">Feltöltve</string>
     <string name="xftp_server">XFTP-kiszolgáló</string>
     <string name="proxied">Proxyzott</string>
