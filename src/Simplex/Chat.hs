@@ -1297,8 +1297,7 @@ processChatCommand' vr = \case
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIAcceptContact incognito connReqId -> withUser $ \_ -> do
-    (user@User {userId}, cReq) <- withFastStore $ \db -> getContactRequest' db connReqId
-    let UserContactRequest {agentInvitationId = AgentInvId invId, userContactLinkId, cReqChatVRange, localDisplayName = cName, profileId, profile = cp, xContactId, pqSupport} = cReq
+    (user@User {userId}, cReq@UserContactRequest {userContactLinkId}) <- withFastStore $ \db -> getContactRequest' db connReqId
     withUserContactLock "acceptContact" userContactLinkId $ do
       -- TODO conn prepare
       -- add connection_id to contact_requests; read in getContactRequest
@@ -1309,21 +1308,11 @@ processChatCommand' vr = \case
       -- case connection Just:
       --   use it
       -- acceptContactRequest to work with prepared connection, pass connId to agent's acceptContact
-
-      incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
-      connId <- withAgent $ \a -> prepareConnectionToAccept a True invId pqSupport
-      let chatV = vr `peerConnChatVersion` cReqChatVRange
-      subMode <- chatReadVar subscriptionMode
-      conn <- withFastStore' $ \db -> createContactRequestConn db user connId chatV cReqChatVRange userContactLinkId incognitoProfile subMode pqSupport
-
       ucl <- withFastStore $ \db -> getUserContactLinkById db userId userContactLinkId
       let contactUsed = (\(_, groupId_, _) -> isNothing groupId_) ucl
       -- [incognito] generate profile to send, create connection with incognito profile
-      let profileToSend = profileToSendOnAccept user incognitoProfile False
-      dm <- encodeConnInfoPQ pqSupport chatV $ XInfo profileToSend
-      (acId, sqSecured) <- withAgent $ \a -> acceptContact a "" True invId dm pqSupport subMode
-      let connStatus = if sqSecured then ConnSndReady else ConnNew
-      ct <- withStore' $ \db -> createAcceptedContact db user acId connStatus chatV cReqChatVRange cName profileId cp userContactLinkId xContactId incognitoProfile subMode pqSupport contactUsed
+      incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
+      ct <- acceptContactRequest user cReq incognitoProfile contactUsed
       pure $ CRAcceptingContactRequest user ct
   APIRejectContact connReqId -> withUser $ \user -> do
     cReq@UserContactRequest {userContactLinkId, agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <-
@@ -3691,6 +3680,21 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
               h <- getFileHandle fileId fPath rcvFiles AppendMode
               liftIO $ B.hPut h "" >> hFlush h
           | otherwise = liftIO $ B.writeFile fPath ""
+
+acceptContactRequest :: User -> UserContactRequest -> Maybe IncognitoProfile -> Bool -> CM Contact
+acceptContactRequest user UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = cp, userContactLinkId, xContactId, pqSupport} incognitoProfile contactUsed = do
+  subMode <- chatReadVar subscriptionMode
+  let pqSup = PQSupportOn
+  vr <- chatVersionRange
+  let profileToSend = profileToSendOnAccept user incognitoProfile False
+      chatV = vr `peerConnChatVersion` cReqChatVRange
+      pqSup' = pqSup `CR.pqSupportAnd` pqSupport
+  dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
+  -- TODO conn prepare
+  -- use prepared conn id
+  (acId, sqSecured) <- withAgent $ \a -> acceptContact a "" True invId dm pqSup' subMode
+  let connStatus = if sqSecured then ConnSndReady else ConnNew
+  withStore' $ \db -> createAcceptedContact db user acId connStatus chatV cReqChatVRange cName profileId cp userContactLinkId xContactId incognitoProfile subMode pqSup' contactUsed
 
 acceptContactRequestAsync :: User -> UserContactRequest -> Maybe IncognitoProfile -> Bool -> PQSupport -> CM Contact
 acceptContactRequestAsync user UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile contactUsed pqSup = do

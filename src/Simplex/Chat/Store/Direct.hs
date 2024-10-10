@@ -61,7 +61,6 @@ module Simplex.Chat.Store.Direct
     getContactRequest,
     getContactRequestIdByName,
     deleteContactRequest,
-    createContactRequestConn,
     createAcceptedContact,
     getUserByContactRequestId,
     getPendingContactConnections,
@@ -767,30 +766,20 @@ deleteContactRequest db User {userId} contactRequestId = do
     (userId, userId, contactRequestId, userId)
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
 
-createContactRequestConn :: DB.Connection -> User -> ConnId -> VersionChat -> VersionRangeChat -> Int64 -> Maybe IncognitoProfile -> SubscriptionMode -> PQSupport -> IO Connection
-createContactRequestConn db User {userId} connId connChatVersion cReqChatVRange userContactLinkId incognitoProfile subMode pqSup = do
+createAcceptedContact :: DB.Connection -> User -> ConnId -> ConnStatus -> VersionChat -> VersionRangeChat -> ContactName -> ProfileId -> Profile -> Int64 -> Maybe XContactId -> Maybe IncognitoProfile -> SubscriptionMode -> PQSupport -> Bool -> IO Contact
+createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}} agentConnId connStatus connChatVersion cReqChatVRange localDisplayName profileId profile userContactLinkId xContactId incognitoProfile subMode pqSup contactUsed = do
+  DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
   createdAt <- getCurrentTime
   customUserProfileId <- forM incognitoProfile $ \case
     NewIncognito p -> createIncognitoProfile_ db userId createdAt p
     ExistingIncognito LocalProfile {profileId = pId} -> pure pId
-  createConnection_ db userId ConnContact Nothing connId ConnNew connChatVersion cReqChatVRange Nothing (Just userContactLinkId) customUserProfileId 0 createdAt subMode pqSup
-
-createAcceptedContact :: DB.Connection -> User -> ConnStatus -> ContactName -> ProfileId -> Profile -> Maybe XContactId -> Connection -> Bool -> IO Contact
-createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}} connStatus localDisplayName profileId profile xContactId conn@Connection {connId, customUserProfileId} contactUsed = do
-  DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
-  createdAt <- getCurrentTime
-  incognitoProfile <- forM customUserProfileId $ \cupId -> runExceptT $ getProfileById db userId cupId
   let userPreferences = fromMaybe emptyChatPrefs $ incognitoProfile >> preferences
   DB.execute
     db
     "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, enable_ntfs, user_preferences, created_at, updated_at, chat_ts, xcontact_id, contact_used) VALUES (?,?,?,?,?,?,?,?,?,?)"
     (userId, localDisplayName, profileId, True, userPreferences, createdAt, createdAt, createdAt, xContactId, contactUsed)
   contactId <- insertedRowId db
-  -- todo update conn: set contact id, update conn status, conn type
-  DB.execute
-    db
-    "UPDATE connections SET contact_id = ?, conn_status = ?, conn_type = ? WHERE connection_id = ?"
-    (contactId, connStatus, ConnContact, connId)
+  conn <- createConnection_ db userId ConnContact (Just contactId) agentConnId connStatus connChatVersion cReqChatVRange Nothing (Just userContactLinkId) customUserProfileId 0 createdAt subMode pqSup
   let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito conn
   pure $
     Contact
