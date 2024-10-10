@@ -25,7 +25,7 @@
     <string name="accept_feature">Elfogadás</string>
     <string name="accept_call_on_lock_screen">Elfogadás</string>
     <string name="above_then_preposition_continuation">gombra fent, majd:</string>
-    <string name="accept_contact_incognito_button">Elfogadás inkognítóban</string>
+    <string name="accept_contact_incognito_button">Elfogadás inkognitóban</string>
     <string name="accept_connection_request__question">Kapcsolatkérés elfogadása?</string>
     <string name="accept_contact_button">Elfogadás</string>
     <string name="accept">Elfogadás</string>
@@ -495,7 +495,7 @@
     <string name="marked_deleted_items_description">%d üzenet megjelölve törlésre</string>
     <string name="conn_event_ratchet_sync_allowed">titkosítás újra egyeztetése engedélyezve</string>
     <string name="enable_self_destruct">Önmegsemmisítés engedélyezése</string>
-    <string name="v5_2_favourites_filter_descr">Olvasatlan és a kedvenc csevegésekre való szűrés.</string>
+    <string name="v5_2_favourites_filter_descr">Olvasatlan és kedvenc csevegésekre való szűrés.</string>
     <string name="failed_to_parse_chats_title">A csevegések betöltése sikertelen</string>
     <string name="connect_plan_group_already_exists">A csoport már létezik!</string>
     <string name="v4_4_french_interface">Francia kezelőfelület</string>
@@ -624,7 +624,7 @@
     <string name="v4_6_hidden_chat_profiles">Rejtett csevegési profilok</string>
     <string name="files_and_media_section">Fájlok és médiatartalmak</string>
     <string name="image_saved">A kép mentve a „Galériába”</string>
-    <string name="hide_notification">Elrejt</string>
+    <string name="hide_notification">Elrejtés</string>
     <string name="la_immediately">Azonnal</string>
     <string name="files_and_media_prohibited">A fájlok- és a médiatartalmak küldése le van tiltva!</string>
     <string name="hide_profile">Profil elrejtése</string>
@@ -636,13 +636,13 @@
     <string name="incompatible_database_version">Nem kompatibilis adatbázis-verzió</string>
     <string name="how_simplex_works">Hogyan működik a SimpleX</string>
     <string name="desktop_incompatible_version">Nem kompatibilis verzió</string>
-    <string name="user_hide">Elrejt</string>
+    <string name="user_hide">Elrejtés</string>
     <string name="incoming_video_call">Bejövő videóhívás</string>
     <string name="incorrect_passcode">Téves jelkód</string>
     <string name="onboarding_notifications_mode_service">Azonnali</string>
-    <string name="v5_4_incognito_groups">Inkognitó csoportok</string>
+    <string name="v5_4_incognito_groups">Inkognitócsoportok</string>
     <string name="how_to">Hogyan</string>
-    <string name="hide_verb">Elrejt</string>
+    <string name="hide_verb">Elrejtés</string>
     <string name="gallery_image_button">Kép</string>
     <string name="v4_3_improved_privacy_and_security">Fejlesztett adatvédelem és biztonság</string>
     <string name="ignore">Mellőzés</string>
@@ -657,7 +657,7 @@
     <string name="v4_3_improved_privacy_and_security_desc">Alkalmazás képernyőjének elrejtése a gyakran használt alkalmazások között.</string>
     <string name="v4_3_improved_server_configuration">Javított kiszolgáló konfiguráció</string>
     <string name="edit_history">Előzmények</string>
-    <string name="hidden_profile_password">Rejtett profil jelszó</string>
+    <string name="hidden_profile_password">Rejtett profiljelszó</string>
     <string name="import_database">Adatbázis importálása</string>
     <string name="import_database_confirmation">Importálás</string>
     <string name="icon_descr_instant_notifications">Azonnali értesítések</string>
@@ -668,7 +668,7 @@
     <string name="image_descr">Kép</string>
     <string name="files_are_prohibited_in_group">A fájlok- és a médiatartalmak le vannak tiltva ebben a csoportban.</string>
     <string name="how_it_works">Hogyan működik</string>
-    <string name="hide_dev_options">Elrejt:</string>
+    <string name="hide_dev_options">Elrejtés:</string>
     <string name="error_creating_member_contact">Hiba az ismerőssel történő kapcsolat létrehozásában</string>
     <string name="enter_one_ICE_server_per_line">ICE-kiszolgálók (soronként egy)</string>
     <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Ha nem tud személyesen találkozni, <b>beolvashatja a QR-kódot a videohívásban</b>, vagy az ismerőse megoszthat egy meghívó-hivatkozást.]]></string>
@@ -773,9 +773,8 @@
     <string name="group_member_status_left">elhagyta a csoportot</string>
     <string name="message_deletion_prohibited">Az üzenetek végleges törlése le van tiltva ebben a csevegésben.</string>
     <string name="v4_3_voice_messages_desc">Max 40 másodperc, azonnal fogadható.</string>
-    <string name="description_via_contact_address_link_incognito">inkognitó a kapcsolattartási cím-hivatkozáson keresztül</string>
-    <string name="network_use_onion_hosts_required_desc">Az onion-kiszolgálók szükségesek a kapcsolódáshoz.
-\nMegjegyzés: .onion cím nélkül nem fog tudni kapcsolódni a kiszolgálókhoz.</string>
+    <string name="description_via_contact_address_link_incognito">inkognitó a kapcsolattartási címhivatkozáson keresztül</string>
+    <string name="network_use_onion_hosts_required_desc">Onion-kiszolgálók szükségesek a kapcsolódáshoz.\nMegjegyzés: .onion cím nélkül nem fog tudni kapcsolódni a kiszolgálókhoz.</string>
     <string name="v4_5_italian_interface">Olasz kezelőfelület</string>
     <string name="system_restricted_background_in_call_title">Nincsenek háttérhívások</string>
     <string name="messages_section_title">Üzenetek</string>
@@ -943,7 +942,7 @@
     <string name="reply_verb">Válasz</string>
     <string name="connect_plan_this_is_your_own_one_time_link">Ez az Ön egyszer használható hivatkozása!</string>
     <string name="ntf_channel_calls">SimpleX Chat hívások</string>
-    <string name="connect_use_new_incognito_profile">Új inkognító profil használata</string>
+    <string name="connect_use_new_incognito_profile">Új inkognitóprofil használata</string>
     <string name="contact_developers">Frissítse az alkalmazást, és lépjen kapcsolatba a fejlesztőkkel.</string>
     <string name="theme_simplex">SimpleX</string>
     <string name="send_link_previews">Hivatkozás előnézete</string>
@@ -1055,7 +1054,7 @@
     <string name="group_welcome_title">Üdvözlőüzenet</string>
     <string name="network_option_seconds_label">mp</string>
     <string name="profile_update_will_be_sent_to_contacts">A profilfrissítés elküldésre került az ismerősök számára.</string>
-    <string name="v5_3_simpler_incognito_mode">Egyszerűsített inkognító mód</string>
+    <string name="v5_3_simpler_incognito_mode">Egyszerűsített inkognitómód</string>
     <string name="save_welcome_message_question">Üdvözlőüzenet mentése?</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Új csevegési fiók létrehozásához indítsa újra az alkalmazást.</string>
     <string name="toast_permission_denied">Engedély megtagadva!</string>
@@ -1216,7 +1215,7 @@
     <string name="save_verb">Mentés</string>
     <string name="call_connection_via_relay">közvetítő-kiszolgálón keresztül</string>
     <string name="stop_sharing">Megosztás megállítása</string>
-    <string name="snd_group_event_member_deleted">eltávolította őt: %1$s</string>
+    <string name="snd_group_event_member_deleted">Ön eltávolította őt: %1$s</string>
     <string name="save_passphrase_and_open_chat">Jelmondat mentése és a csevegés megnyitása</string>
     <string name="save_preferences_question">Beállítások mentése?</string>
     <string name="first_platform_without_user_ids">Nincsenek felhasználói azonosítók.</string>
@@ -1368,7 +1367,7 @@
     <string name="invite_prohibited_description">Egy olyan ismerősét próbálja meghívni, akivel inkognitó-profilt osztott meg abban a csoportban, amelyben a saját fő profilja van használatban</string>
     <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[A csatlakozás már folyamatban van a(z) <b>%1$s</b> nevű csoporthoz.]]></string>
     <string name="onboarding_notifications_mode_off">Amikor az alkalmazás fut</string>
-    <string name="alert_title_cant_invite_contacts_descr">Inkognító profilt használ ehhez a csoporthoz - fő profilja megosztásának elkerülése érdekében a meghívók küldése le van tiltva</string>
+    <string name="alert_title_cant_invite_contacts_descr">Inkognitóprofilt használ ehhez a csoporthoz - fő profilja megosztásának elkerülése érdekében a meghívók küldése le van tiltva</string>
     <string name="v4_5_transport_isolation">Kapcsolat izolációs mód</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Akkor lesz kapcsolódva, ha a kapcsolatkérése elfogadásra kerül, várjon, vagy ellenőrizze később!</string>
     <string name="voice_messages_are_prohibited">A hangüzenetek küldése le van tiltva ebben a csoportban.</string>
@@ -1423,7 +1422,7 @@
     <string name="v4_2_auto_accept_contact_requests_desc">Nem kötelező üdvözlőüzenettel.</string>
     <string name="unknown_database_error_with_info">Ismeretlen adatbázishiba: %s</string>
     <string name="you_can_hide_or_mute_user_profile">Elrejtheti vagy lenémíthatja a felhasználó profiljait - koppintson (vagy számítógép-alkalmazásban kattintson) hosszan a profilra a felugró menühöz.</string>
-    <string name="v5_3_simpler_incognito_mode_descr">Inkognító mód kapcsolódáskor.</string>
+    <string name="v5_3_simpler_incognito_mode_descr">Inkognitómód használata kapcsolódáskor.</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Megoszthat egy hivatkozást vagy QR-kódot - így bárki csatlakozhat a csoporthoz. Ha a csoport később törlésre kerül, akkor nem fogja elveszíteni annak tagjait.</string>
     <string name="you_joined_this_group">Csatlakozott ehhez a csoporthoz</string>
     <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Ez az Ön hivatkozása a(z) <b>%1$s</b> csoporthoz!]]></string>
@@ -1521,7 +1520,7 @@
     <string name="la_app_passcode">Alkalmazás jelkód</string>
     <string name="add_contact_tab">Ismerős hozzáadása</string>
     <string name="tap_to_scan">Koppintson a beolvasáshoz</string>
-    <string name="tap_to_paste_link">Koppintson a hivatkozás beillesztéséhez</string>
+    <string name="tap_to_paste_link">Koppintson ide a hivatkozás beillesztéséhez</string>
     <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Ismerős hozzáadása</b>: új meghívó-hivatkozás létrehozásához, vagy egy kapott hivatkozáson keresztül történő kapcsolódáshoz.]]></string>
     <string name="create_group_button_to_create_new_group"><![CDATA[<b>Csoport létrehozása</b>: új csoport létrehozásához.]]></string>
     <string name="chat_is_stopped_you_should_transfer_database">A csevegés leállt. Ha már használta ezt az adatbázist egy másik eszközön, úgy visszaállítás szükséges a csevegés megkezdése előtt.</string>
@@ -2108,7 +2107,7 @@
     <string name="call_desktop_permission_denied_safari">Nyissa meg a Safari Beállítások / Weboldalak / Mikrofon menüt, majd válassza a helyi kiszolgálók engedélyezése lehetőséget.</string>
     <string name="call_desktop_permission_denied_title">Hívások kezdeményezéséhez engedélyezze a mikrofon használatát. Fejezze be a hívást, és próbálja meg a hívást újra.</string>
     <string name="v6_1_better_calls">Továbbfejlesztett hívásélmény</string>
-    <string name="v6_1_message_dates_descr">Továbbfejlesztett üzenetdátumok</string>
+    <string name="v6_1_message_dates_descr">Továbbfejlesztett üzenetdátumok.</string>
     <string name="v6_1_better_user_experience">Továbbfejlesztett felhasználói élmény</string>
     <string name="v6_1_customizable_message_descr">Testreszabható üzenetbuborékok.</string>
     <string name="v6_1_delete_many_messages_descr">Legfeljebb 200 üzenet egyszerre való törlése, vagy moderálása.</string>
