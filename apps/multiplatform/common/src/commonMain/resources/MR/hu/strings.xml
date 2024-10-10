@@ -642,7 +642,7 @@
     <string name="onboarding_notifications_mode_service">Azonnali</string>
     <string name="v5_4_incognito_groups">Inkognitócsoportok</string>
     <string name="how_to">Hogyan</string>
-    <string name="hide_verb">Elrejtés</string>
+    <string name="hide_verb">Összecsukás</string>
     <string name="gallery_image_button">Kép</string>
     <string name="v4_3_improved_privacy_and_security">Fejlesztett adatvédelem és biztonság</string>
     <string name="ignore">Mellőzés</string>
@@ -1065,7 +1065,7 @@
     <string name="onboarding_notifications_mode_title">Privát értesítések</string>
     <string name="you_invited_a_contact">Meghívta egy ismerősét</string>
     <string name="is_not_verified">%s nincs hitelesítve</string>
-    <string name="contact_tap_to_connect">Koppintson a kapcsolódáshoz</string>
+    <string name="contact_tap_to_connect">Koppintson ide a kapcsolódáshoz</string>
     <string name="this_device_name">Ennek az eszköznek a neve</string>
     <string name="your_current_profile">Jelenlegi profil</string>
     <string name="smp_server_test_upload_file">Fájl feltöltése</string>
@@ -1286,7 +1286,7 @@
 \nEz a művelet nem vonható vissza - profiljai, ismerősei, csevegési üzenetei és fájljai véglegesen törölve lesznek.</string>
     <string name="chat_with_the_founder">Ötletek és javaslatok</string>
     <string name="database_downgrade_warning">Figyelmeztetés: néhány adat elveszhet!</string>
-    <string name="tap_to_start_new_chat">Koppintson az új csevegés indításához</string>
+    <string name="tap_to_start_new_chat">Koppintson ide az új csevegés indításához</string>
     <string name="waiting_for_desktop">Várakozás a számítógépre…</string>
     <string name="next_generation_of_private_messaging">A privát üzenetküldés
 \nkövetkező generációja</string>
@@ -1311,7 +1311,7 @@
     <string name="restore_passphrase_not_found_desc">A jelszó nem található a Keystore-ban, ezért kézzel szükséges megadni. Ez akkor történhetett meg, ha visszaállította az alkalmazás adatait egy biztonságimentési eszközzel. Ha nem így történt, akkor lépjen kapcsolatba a fejlesztőkkel.</string>
     <string name="your_contacts_will_remain_connected">Az ismerősei továbbra is kapcsolódva maradnak.</string>
     <string name="error_xftp_test_server_auth">A kiszolgálónak engedélyre van szüksége a várólisták létrehozásához, ellenőrizze jelszavát</string>
-    <string name="database_initialization_error_desc">Az adatbázis nem működik megfelelően. Koppintson további információért</string>
+    <string name="database_initialization_error_desc">Az adatbázis nem működik megfelelően. Koppintson ide a további információkért</string>
     <string name="stop_snd_file__message">A fájl küldése leállt.</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Kapcsolódási kísérlet ahhoz a kiszolgálóhoz, amely az adott ismerősétől érkező üzenetek fogadására szolgál.</string>
     <string name="la_could_not_be_verified">Nem sikerült hitelesíteni; próbálja meg újra.</string>
@@ -1421,7 +1421,7 @@
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Kapcsolatba léphet <font color="#0088ff">a SimpleX Chat fejlesztőivel, ahol bármiről kérdezhet és értesülhet az újdonságokról</font>.]]></string>
     <string name="v4_2_auto_accept_contact_requests_desc">Nem kötelező üdvözlőüzenettel.</string>
     <string name="unknown_database_error_with_info">Ismeretlen adatbázishiba: %s</string>
-    <string name="you_can_hide_or_mute_user_profile">Elrejtheti vagy lenémíthatja a felhasználó profiljait - koppintson (vagy számítógép-alkalmazásban kattintson) hosszan a profilra a felugró menühöz.</string>
+    <string name="you_can_hide_or_mute_user_profile">Elrejtheti vagy lenémíthatja a felhasználó-profiljait - koppintson (vagy számítógép-alkalmazásban kattintson) hosszan a profilra a felugró menühöz.</string>
     <string name="v5_3_simpler_incognito_mode_descr">Inkognitómód használata kapcsolódáskor.</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Megoszthat egy hivatkozást vagy QR-kódot - így bárki csatlakozhat a csoporthoz. Ha a csoport később törlésre kerül, akkor nem fogja elveszíteni annak tagjait.</string>
     <string name="you_joined_this_group">Csatlakozott ehhez a csoporthoz</string>
@@ -1443,7 +1443,7 @@
     <string name="enable_automatic_deletion_message">Ez a művelet nem vonható vissza - a kiválasztottnál korábban küldött és fogadott üzenetek törlésre kerülnek. Ez több percet is igénybe vehet.</string>
     <string name="profile_is_only_shared_with_your_contacts">A profilja csak az ismerőseivel kerül megosztásra.</string>
     <string name="smp_servers_test_some_failed">Néhány kiszolgáló megbukott a teszten:</string>
-    <string name="group_invitation_tap_to_join">Koppintson a csatlakozáshoz</string>
+    <string name="group_invitation_tap_to_join">Koppintson ide a csatlakozáshoz</string>
     <string name="delete_files_and_media_desc">Ez a művelet nem vonható vissza - az összes fogadott és küldött fájl a médiatartalmakkal együtt törlésre kerülnek. Az alacsony felbontású képek viszont megmaradnak.</string>
     <string name="receipts_contacts_override_enabled">A kézbesítési jelentések engedélyezve vannak %d ismerősnél</string>
     <string name="sending_via">Küldés ezen keresztül:</string>
@@ -1457,7 +1457,7 @@
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">Az ismerőse, akivel megosztotta ezt a hivatkozást, NEM fog tudni kapcsolódni!</string>
     <string name="you_can_change_it_later">A véletlenszerű jelmondat egyszerű szövegként van tárolva a beállításokban.
 \nEz később megváltoztatható.</string>
-    <string name="group_invitation_tap_to_join_incognito">Koppintson az inkognitóban való kapcsolódáshoz</string>
+    <string name="group_invitation_tap_to_join_incognito">Koppintson ide az inkognitóban való kapcsolódáshoz</string>
     <string name="set_password_to_export">Jelmondat beállítása az exportáláshoz</string>
     <string name="receipts_groups_override_disabled">A kézbesítési jelentések le vannak tiltva %d csoportban</string>
     <string name="non_fatal_errors_occured_during_import">Néhány nem végzetes hiba történt az importáláskor:</string>
@@ -1519,7 +1519,7 @@
     <string name="recent_history">Látható előzmények</string>
     <string name="la_app_passcode">Alkalmazás jelkód</string>
     <string name="add_contact_tab">Ismerős hozzáadása</string>
-    <string name="tap_to_scan">Koppintson a beolvasáshoz</string>
+    <string name="tap_to_scan">Koppintson ide a QR-kód beolvasásához</string>
     <string name="tap_to_paste_link">Koppintson ide a hivatkozás beillesztéséhez</string>
     <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Ismerős hozzáadása</b>: új meghívó-hivatkozás létrehozásához, vagy egy kapott hivatkozáson keresztül történő kapcsolódáshoz.]]></string>
     <string name="create_group_button_to_create_new_group"><![CDATA[<b>Csoport létrehozása</b>: új csoport létrehozásához.]]></string>
@@ -1844,8 +1844,8 @@
 \nutoljára kézbesített üzenet: %2$s</string>
     <string name="file_error_auth">Hibás kulcs vagy ismeretlen fájltöredék cím - valószínűleg a fájl törlődött.</string>
     <string name="temporary_file_error">Ideiglenesfájl-hiba</string>
-    <string name="info_row_message_status">Üzenetállapot</string>
-    <string name="share_text_message_status">Üzenetállapot: %s</string>
+    <string name="info_row_message_status">Üzenet állapota</string>
+    <string name="share_text_message_status">Üzenet állapota: %s</string>
     <string name="file_error">Fájlhiba</string>
     <string name="file_error_no_file">A fájl nem található - valószínűleg a fájlt törölték vagy visszavonták.</string>
     <string name="file_error_relay">Fájlkiszolgáló-hiba: %1$s</string>
