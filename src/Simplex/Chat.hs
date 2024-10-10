@@ -1787,7 +1787,9 @@ processChatCommand' vr = \case
         conn@PendingContactConnection {pccConnId} <- withFastStore' $ \db -> createDirectConnection db user connId cReq ConnJoined (incognitoProfile $> profileToSend) subMode chatV pqSup'
         -- TODO reuse connection record
         -- try to get PendingContactConnection by link (reuse connectPlan?);
-        -- if it exists, pass its connId to joinConnection to reuse key and avoid AUTH error;
+        -- connectPlan has to be modified to allow reuse of connection record
+        -- (e.g. connection reset to ConnNew on failure, and connectPlan having new branch for ConnNew);
+        -- if connection exists, pass its connId to joinConnection to reuse key and avoid AUTH error;
         -- insead of deleting, cleanup should mark connection in a way so that it's filtered out of chat list
         void (withAgent $ \a -> joinConnection a (aUserId user) connId True cReq dm pqSup' subMode)
           `catchChatError` \e -> do
