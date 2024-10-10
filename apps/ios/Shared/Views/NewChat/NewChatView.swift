@@ -97,6 +97,11 @@ struct NewChatView: View {
             }
             .pickerStyle(.segmented)
             .padding()
+            .onChange(of: $selection.wrappedValue) { opt in
+                if opt == NewChatOption.connect {
+                    showQRCodeScanner = true
+                }
+            }
 
             VStack {
                 // it seems there's a bug in iOS 15 if several views in switch (or if-else) statement have different transitions
