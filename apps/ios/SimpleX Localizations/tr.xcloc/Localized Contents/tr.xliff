@@ -1085,8 +1085,9 @@
         <target>Kötü mesaj karması</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Better calls" xml:space="preserve">
+      <trans-unit id="Better calls" xml:space="preserve" approved="no">
         <source>Better calls</source>
+        <target state="translated">Daha iyi aramalar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better groups" xml:space="preserve">
@@ -1094,8 +1095,9 @@
         <target>Daha iyi gruplar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Better message dates." xml:space="preserve">
+      <trans-unit id="Better message dates." xml:space="preserve" approved="no">
         <source>Better message dates.</source>
+        <target state="translated">Daha iyi mesaj tarihleri.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better messages" xml:space="preserve">
@@ -1108,16 +1110,19 @@
         <target>Daha iyi ağ oluşturma</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Better notifications" xml:space="preserve">
+      <trans-unit id="Better notifications" xml:space="preserve" approved="no">
         <source>Better notifications</source>
+        <target state="translated">Daha iyi bildirimler</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Better security ✅" xml:space="preserve">
+      <trans-unit id="Better security ✅" xml:space="preserve" approved="no">
         <source>Better security ✅</source>
+        <target state="translated">Daha iyi güvenlik ✅</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Better user experience" xml:space="preserve">
+      <trans-unit id="Better user experience" xml:space="preserve" approved="no">
         <source>Better user experience</source>
+        <target state="translated">Daha iyi kullanıcı deneyimi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Black" xml:space="preserve">
@@ -1940,8 +1945,9 @@ Bu senin kendi tek kullanımlık bağlantın!</target>
         <target>Özel saat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Customizable message shape." xml:space="preserve">
+      <trans-unit id="Customizable message shape." xml:space="preserve" approved="no">
         <source>Customizable message shape.</source>
+        <target state="translated">Özelleştirilebilir mesaj şekli.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Customize theme" xml:space="preserve">
@@ -2238,8 +2244,9 @@ Bu senin kendi tek kullanımlık bağlantın!</target>
         <target>Eski veritabanı silinsin mi?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete or moderate up to 200 messages." xml:space="preserve">
+      <trans-unit id="Delete or moderate up to 200 messages." xml:space="preserve" approved="no">
         <source>Delete or moderate up to 200 messages.</source>
+        <target state="translated">200'e kadar mesajı silin veya düzenleyin.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete pending connection?" xml:space="preserve">
@@ -3365,8 +3372,9 @@ Bu senin kendi tek kullanımlık bağlantın!</target>
         <target>Mesajlar dosyalar olmadan iletilsin mi ?</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Forward up to 20 messages at once." xml:space="preserve">
+      <trans-unit id="Forward up to 20 messages at once." xml:space="preserve" approved="no">
         <source>Forward up to 20 messages at once.</source>
+        <target state="translated">Aynı anda en fazla 20 mesaj iletin.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Forwarded" xml:space="preserve">
@@ -3758,9 +3766,11 @@ Hata: %2$@</target>
         <target>Arşiv içe aktarılıyor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Improved delivery, reduced traffic usage.&#10;More improvements are coming soon!" xml:space="preserve">
+      <trans-unit id="Improved delivery, reduced traffic usage.&#10;More improvements are coming soon!" xml:space="preserve" approved="no">
         <source>Improved delivery, reduced traffic usage.
 More improvements are coming soon!</source>
+        <target state="translated">İyileştirilmiş teslimat, azaltılmış trafik kullanımı.
+Daha fazla iyileştirme yakında geliyor!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Improved message delivery" xml:space="preserve">
@@ -6461,8 +6471,9 @@ Enable in *Network &amp; servers* settings.</source>
         <target>SimpleX tek kullanımlık davet</target>
         <note>simplex link type</note>
       </trans-unit>
-      <trans-unit id="SimpleX protocols reviewed by Trail of Bits." xml:space="preserve">
+      <trans-unit id="SimpleX protocols reviewed by Trail of Bits." xml:space="preserve" approved="no">
         <source>SimpleX protocols reviewed by Trail of Bits.</source>
+        <target state="translated">SimpleX protokolleri Trail of Bits tarafından incelenmiştir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Simplified incognito mode" xml:space="preserve">
@@ -6640,12 +6651,14 @@ Enable in *Network &amp; servers* settings.</source>
         <target>SimpleX Chat'e destek ol</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Switch audio and video during the call." xml:space="preserve">
+      <trans-unit id="Switch audio and video during the call." xml:space="preserve" approved="no">
         <source>Switch audio and video during the call.</source>
+        <target state="translated">Görüşme sırasında ses ve görüntüyü değiştirin.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Switch chat profile for 1-time invitations." xml:space="preserve">
+      <trans-unit id="Switch chat profile for 1-time invitations." xml:space="preserve" approved="no">
         <source>Switch chat profile for 1-time invitations.</source>
+        <target state="translated">Sohbet profilini 1 kerelik davetler için değiştirin.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="System" xml:space="preserve">
