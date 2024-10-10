@@ -504,7 +504,7 @@
     <string name="error_starting_chat">Hiba a csevegés elindításakor</string>
     <string name="group_profile_is_stored_on_members_devices">A csoport profilja a tagok eszközein tárolódik, nem a kiszolgálókon.</string>
     <string name="enter_passphrase">Jelmondat megadása…</string>
-    <string name="error_updating_user_privacy">Hiba a felhasználói beállítások frissítésekor</string>
+    <string name="error_updating_user_privacy">Hiba a felhasználói adatvédelem frissítésekor</string>
     <string name="encrypt_database">Titkosít</string>
     <string name="alert_title_no_group">Csoport nem található!</string>
     <string name="error_saving_smp_servers">Hiba az SMP-kiszolgálók mentésekor</string>
@@ -542,7 +542,7 @@
     <string name="files_and_media">Fájlok és médiatartalmak</string>
     <string name="section_title_for_console">KONZOLHOZ</string>
     <string name="alert_text_encryption_renegotiation_failed">Sikertelen titkosítás-újraegyeztetés.</string>
-    <string name="error_deleting_user">Hiba a felhasználói profil törlésekor</string>
+    <string name="error_deleting_user">Hiba a felhasználó-profil törlésekor</string>
     <string name="fix_connection_not_supported_by_group_member">Csoporttag általi javítás nem támogatott</string>
     <string name="enter_welcome_message">Üdvözlőüzenet megadása…</string>
     <string name="encrypted_database">Titkosított adatbázis</string>
@@ -804,7 +804,7 @@
     <string name="link_a_mobile">Egy hordozható eszköz társítása</string>
     <string name="settings_notifications_mode_title">Értesítési szolgáltatás</string>
     <string name="only_group_owners_can_enable_voice">Csak a csoporttulajdonosok engedélyezhetik a hangüzenetek küldését.</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Csak az alkalmazások tárolják a felhasználói profilokat, ismerősöket, csoportokat és a <b>2 rétegű végpontok közötti titkosítással</b> küldött üzeneteket.]]></string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Csak az alkalmazások tárolják a felhasználó-profilokat, ismerősöket, csoportokat és a <b>2 rétegű végpontok közötti titkosítással</b> küldött üzeneteket.</string>
     <string name="invalid_migration_confirmation">Érvénytelen átköltöztetési visszaigazolás</string>
     <string name="only_group_owners_can_change_prefs">Csak a csoporttulajdonosok módosíthatják a csoportbeállításokat.</string>
     <string name="no_history">Nincsenek előzmények</string>
@@ -822,7 +822,7 @@
     <string name="feature_offered_item">ajánlott %s</string>
     <string name="button_leave_group">Csoport elhagyása</string>
     <string name="unblock_member_desc">Minden %s által írt üzenet megjelenik!</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Sokan kérdezték: <i>Ha a SimpleX Chatnek nincs felhasználói azonosítója, hogyan lehet mégis üzeneteket küldeni?</i>]]></string>
+    <string name="many_people_asked_how_can_it_deliver">Sokan kérdezték: <i>Ha a SimpleX Chatnek nincs felhasználó-azonosítója, hogyan lehet mégis üzeneteket küldeni?</i></string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Ez akkor fordulhat elő, ha:\n1. Az üzenetek 2 nap után, vagy a kiszolgálón 30 nap után lejártak.\n2. Az üzenet visszafejtése sikertelen volt, mert Ön, vagy az ismerőse régebbi adatbázis biztonsági mentést használt.\n3. A kapcsolat sérült.</string>
     <string name="group_member_role_observer">megfigyelő</string>
     <string name="description_via_group_link_incognito">inkognitó a csoporthivatkozáson keresztül</string>
@@ -979,7 +979,7 @@
     <string name="reject_contact_button">Elutasítás</string>
     <string name="notification_preview_mode_message_desc">Ismerős nevének és az üzenet tartalmának megjelenítése</string>
     <string name="settings_section_title_settings">BEÁLLÍTÁSOK</string>
-    <string name="save_profile_password">Felhasználói fiók jelszavának mentése</string>
+    <string name="save_profile_password">Profiljelszó mentése</string>
     <string name="stop_snd_file__title">Fájlküldés megállítása?</string>
     <string name="unlink_desktop_question">Számítógép leválasztása?</string>
     <string name="voice_messages_prohibited">A hangüzenetek le vannak tilva!</string>
@@ -1218,7 +1218,7 @@
     <string name="snd_group_event_member_deleted">Ön eltávolította őt: %1$s</string>
     <string name="save_passphrase_and_open_chat">Jelmondat mentése és a csevegés megnyitása</string>
     <string name="save_preferences_question">Beállítások mentése?</string>
-    <string name="first_platform_without_user_ids">Nincsenek felhasználói azonosítók.</string>
+    <string name="first_platform_without_user_ids">Nincsenek felhasználó-azonosítók.</string>
     <string name="prohibit_direct_messages">A közvetlen üzenetek küldése a tagok között le van tiltva.</string>
     <string name="network_enable_socks">SOCKS proxy használata?</string>
     <string name="icon_descr_speaker_off">Hangszóró kikapcsolva</string>
@@ -1386,7 +1386,7 @@
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">A profilja az eszközén van tárolva és csak az ismerőseivel kerül megosztásra. A SimpleX-kiszolgálók nem láthatják a profilját.</string>
     <string name="snd_group_event_changed_member_role">Ön megváltoztatta %s szerepkörét erre: %s</string>
     <string name="you_rejected_group_invitation">Csoportmeghívó elutasítva</string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">Az adatvédelem érdekében, a más csevegési platformokon megszokott felhasználói azonosítók helyett, a SimpleX csak az üzenetek sorbaállításához használ azonosítókat, minden egyes ismerőshöz egy-egy különbözőt.</string>
+    <string name="to_protect_privacy_simplex_has_ids_for_queues">Az adatvédelem érdekében, a más csevegési platformokon megszokott felhasználó-azonosítók helyett, a SimpleX csak az üzenetek sorbaállításához használ azonosítókat, minden egyes ismerőshöz egy-egy különbözőt.</string>
     <string name="to_share_with_your_contact">(a megosztáshoz az ismerősével)</string>
     <string name="you_sent_group_invitation">Csoportmeghívó elküldve</string>
     <string name="update_network_session_mode_question">Kapcsolat izolációs mód frissítése?</string>
