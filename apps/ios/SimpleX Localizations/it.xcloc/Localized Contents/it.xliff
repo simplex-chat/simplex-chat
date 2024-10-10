@@ -945,8 +945,9 @@
         <target>Il codice di accesso dell'app viene sostituito da un codice di autodistruzione.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App session" xml:space="preserve">
+      <trans-unit id="App session" xml:space="preserve" approved="no">
         <source>App session</source>
+        <target state="translated">Sessione dell'app</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
@@ -4547,12 +4548,14 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Nuovo codice di accesso</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New SOCKS credentials will be used every time you start the app." xml:space="preserve">
+      <trans-unit id="New SOCKS credentials will be used every time you start the app." xml:space="preserve" approved="no">
         <source>New SOCKS credentials will be used every time you start the app.</source>
+        <target state="translated">Le nuove credenziali SOCKS verranno usate ogni volta che avvii l'app.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New SOCKS credentials will be used for each server." xml:space="preserve">
+      <trans-unit id="New SOCKS credentials will be used for each server." xml:space="preserve" approved="no">
         <source>New SOCKS credentials will be used for each server.</source>
+        <target state="translated">Le nuove credenziali SOCKS verranno usate per ogni server.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New chat" xml:space="preserve">
@@ -4675,12 +4678,14 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Nessuna connessione di rete</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No permission to record speech" xml:space="preserve">
+      <trans-unit id="No permission to record speech" xml:space="preserve" approved="no">
         <source>No permission to record speech</source>
+        <target state="translated">Nessuna autorizzazione per registrare l'audio</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No permission to record video" xml:space="preserve">
+      <trans-unit id="No permission to record video" xml:space="preserve" approved="no">
         <source>No permission to record video</source>
+        <target state="translated">Nessuna autorizzazione per registrare il video</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No permission to record voice message" xml:space="preserve">
@@ -6151,8 +6156,9 @@ Attivalo nelle impostazioni *Rete e server*.</target>
         <target>Inviato via proxy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Server" xml:space="preserve">
+      <trans-unit id="Server" xml:space="preserve" approved="no">
         <source>Server</source>
+        <target state="translated">Server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Server address" xml:space="preserve">
@@ -7006,12 +7012,14 @@ You will be prompted to complete authentication before this feature is enabled.<
 Ti verrà chiesto di completare l'autenticazione prima di attivare questa funzionalità.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To record speech please grant permission to use Microphone." xml:space="preserve">
+      <trans-unit id="To record speech please grant permission to use Microphone." xml:space="preserve" approved="no">
         <source>To record speech please grant permission to use Microphone.</source>
+        <target state="translated">Per registrare l'audio, concedi l'autorizzazione di usare il microfono.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To record video please grant permission to use Camera." xml:space="preserve">
+      <trans-unit id="To record video please grant permission to use Camera." xml:space="preserve" approved="no">
         <source>To record video please grant permission to use Camera.</source>
+        <target state="translated">Per registrare il video, concedi l'autorizzazione di usare la fotocamera.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To record voice message please grant permission to use Microphone." xml:space="preserve">

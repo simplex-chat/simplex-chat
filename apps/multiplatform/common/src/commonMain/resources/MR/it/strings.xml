@@ -2111,4 +2111,21 @@
     <string name="settings_message_shape_corner">Angolo</string>
     <string name="settings_section_title_message_shape">Forma del messaggio</string>
     <string name="settings_message_shape_tail">Coda</string>
+    <string name="network_session_mode_session">Sessione dell\'app</string>
+    <string name="network_session_mode_session_description">Le nuove credenziali SOCKS verranno usate ogni volta che avvii l\'app.</string>
+    <string name="network_session_mode_server_description">Le nuove credenziali SOCKS verranno usate per ogni server.</string>
+    <string name="network_session_mode_server">Server</string>
+    <string name="call_desktop_permission_denied_safari">Apri le impostazioni di Safari / Siti web / Microfono, quindi scegli Consenti per localhost.</string>
+    <string name="call_desktop_permission_denied_chrome">Clicca il pulsante info vicino al campo indirizzo per consentire l\'uso del microfono.</string>
+    <string name="call_desktop_permission_denied_title">Per effettuare chiamate, consenti di usare il microfono. Termina la chiamata e cerca di richiamare.</string>
+    <string name="v6_1_better_calls">Chiamate migliorate</string>
+    <string name="v6_1_message_dates_descr">Date dei messaggi migliorate.</string>
+    <string name="v6_1_better_security">Sicurezza migliorata ✅</string>
+    <string name="v6_1_better_user_experience">Esperienza utente migliorata</string>
+    <string name="v6_1_customizable_message_descr">Forma dei messaggi personalizzabile.</string>
+    <string name="v6_1_better_security_descr">Protocolli di SimpleX esaminati da Trail of Bits.</string>
+    <string name="v6_1_better_calls_descr">Cambia tra audio e video durante la chiamata.</string>
+    <string name="v6_1_switch_chat_profile_descr">Cambia profilo di chat per inviti una tantum.</string>
+    <string name="v6_1_delete_many_messages_descr">Elimina o modera fino a 200 messaggi.</string>
+    <string name="v6_1_forward_many_messages_descr">Inoltra fino a 20 messaggi alla volta.</string>
 </resources>

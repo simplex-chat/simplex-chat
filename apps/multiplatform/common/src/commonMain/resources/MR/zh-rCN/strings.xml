@@ -2109,4 +2109,21 @@
     <string name="settings_message_shape_corner">拐角</string>
     <string name="settings_message_shape_tail">尾部</string>
     <string name="error_initializing_web_view_wrong_arch">初始化 WebView 出错。确保你安装了 WebView 且其支持的架构为 arm64。\n错误：%s</string>
+    <string name="network_session_mode_session">应用会话</string>
+    <string name="network_session_mode_session_description">每次启动应用都会使用新的 SOCKS5 凭据。</string>
+    <string name="network_session_mode_server">服务器</string>
+    <string name="call_desktop_permission_denied_safari">打开 Safari 设置/网站/麦克风，接着在 localhost 选择“允许”。</string>
+    <string name="call_desktop_permission_denied_title">要进行通话，请允许使用设备麦克风。结束通话并尝试再次呼叫。</string>
+    <string name="call_desktop_permission_denied_chrome">单击地址附近的\"信息\"按钮允许使用麦克风。</string>
+    <string name="network_session_mode_server_description">每个服务器都会使用新的 SOCKS5 凭据。</string>
+    <string name="v6_1_message_dates_descr">更好的消息日期。</string>
+    <string name="v6_1_better_security">更佳的安全性✅</string>
+    <string name="v6_1_better_user_experience">更佳的使用体验</string>
+    <string name="v6_1_customizable_message_descr">可自定义消息形状。</string>
+    <string name="v6_1_forward_many_messages_descr">一次性转发最多20条消息。</string>
+    <string name="v6_1_better_security_descr">Trail of Bits 审核了 SimpleX 协议。</string>
+    <string name="v6_1_better_calls_descr">通话期间切换音频和视频。</string>
+    <string name="v6_1_switch_chat_profile_descr">对一次性邀请切换聊天配置文件。</string>
+    <string name="v6_1_better_calls">更佳的通话</string>
+    <string name="v6_1_delete_many_messages_descr">允许自行删除或管理员移除最多200条消息。</string>
 </resources>

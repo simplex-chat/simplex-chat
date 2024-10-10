@@ -945,8 +945,9 @@
         <target>El código de acceso será reemplazado por código de autodestrucción.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App session" xml:space="preserve">
+      <trans-unit id="App session" xml:space="preserve" approved="no">
         <source>App session</source>
+        <target state="translated">Sesión de aplicación</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
@@ -1560,9 +1561,9 @@
         <target>Confirmar contraseña</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm that you remember database passphrase to migrate it." xml:space="preserve">
+      <trans-unit id="Confirm that you remember database passphrase to migrate it." xml:space="preserve" approved="no">
         <source>Confirm that you remember database passphrase to migrate it.</source>
-        <target>Para migrar confirma que recuerdas la frase de contraseña de la base de datos.</target>
+        <target state="translated">Para migrar la base de datos confirma que recuerdas la frase de contraseña.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm upload" xml:space="preserve">
@@ -4162,9 +4163,9 @@ This is your link for group %@!</source>
         <target>Nombre local</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Local profile data only" xml:space="preserve">
+      <trans-unit id="Local profile data only" xml:space="preserve" approved="no">
         <source>Local profile data only</source>
-        <target>Sólo datos del perfil local</target>
+        <target state="translated">Eliminar sólo el perfil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Lock after" xml:space="preserve">
@@ -4547,12 +4548,14 @@ This is your link for group %@!</source>
         <target>Código Nuevo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New SOCKS credentials will be used every time you start the app." xml:space="preserve">
+      <trans-unit id="New SOCKS credentials will be used every time you start the app." xml:space="preserve" approved="no">
         <source>New SOCKS credentials will be used every time you start the app.</source>
+        <target state="translated">Se usarán credenciales SOCKS nuevas cada vez que inicies la aplicación.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New SOCKS credentials will be used for each server." xml:space="preserve">
+      <trans-unit id="New SOCKS credentials will be used for each server." xml:space="preserve" approved="no">
         <source>New SOCKS credentials will be used for each server.</source>
+        <target state="translated">Se usarán credenciales SOCKS nuevas por cada servidor.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New chat" xml:space="preserve">
@@ -4675,12 +4678,14 @@ This is your link for group %@!</source>
         <target>Sin conexión de red</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No permission to record speech" xml:space="preserve">
+      <trans-unit id="No permission to record speech" xml:space="preserve" approved="no">
         <source>No permission to record speech</source>
+        <target state="translated">Sin permiso para grabación de voz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No permission to record video" xml:space="preserve">
+      <trans-unit id="No permission to record video" xml:space="preserve" approved="no">
         <source>No permission to record video</source>
+        <target state="translated">Sin permiso para grabación de vídeo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No permission to record voice message" xml:space="preserve">
@@ -5132,9 +5137,9 @@ Error: %@</target>
         <target>Puerto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve">
+      <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve" approved="no">
         <source>Possibly, certificate fingerprint in server address is incorrect</source>
-        <target>Posiblemente la huella digital del certificado en la dirección del servidor es incorrecta</target>
+        <target state="translated">Posiblemente la huella del certificado en la dirección del servidor es incorrecta</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve">
@@ -5202,9 +5207,9 @@ Error: %@</target>
         <target>Error de enrutamiento privado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Profile and server connections" xml:space="preserve">
+      <trans-unit id="Profile and server connections" xml:space="preserve" approved="no">
         <source>Profile and server connections</source>
-        <target>Datos del perfil y conexiones</target>
+        <target state="translated">Eliminar perfil y conexiones</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile image" xml:space="preserve">
@@ -6151,8 +6156,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Mediante proxy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Server" xml:space="preserve">
+      <trans-unit id="Server" xml:space="preserve" approved="no">
         <source>Server</source>
+        <target state="translated">Servidor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Server address" xml:space="preserve">
@@ -6180,9 +6186,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>El servidor requiere autorización para subir, comprueba la contraseña</target>
         <note>server test error</note>
       </trans-unit>
-      <trans-unit id="Server test failed!" xml:space="preserve">
+      <trans-unit id="Server test failed!" xml:space="preserve" approved="no">
         <source>Server test failed!</source>
-        <target>¡Error en prueba del servidor!</target>
+        <target state="translated">¡Prueba no superada!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Server type" xml:space="preserve">
@@ -6727,9 +6733,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Error en archivo temporal</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Test failed at step %@." xml:space="preserve">
+      <trans-unit id="Test failed at step %@." xml:space="preserve" approved="no">
         <source>Test failed at step %@.</source>
-        <target>La prueba ha fallado en el paso %@.</target>
+        <target state="translated">Prueba no superada en el paso %@.</target>
         <note>server test failure</note>
       </trans-unit>
       <trans-unit id="Test server" xml:space="preserve">
@@ -6742,9 +6748,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Probar servidores</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tests failed!" xml:space="preserve">
+      <trans-unit id="Tests failed!" xml:space="preserve" approved="no">
         <source>Tests failed!</source>
-        <target>¡Pruebas fallidas!</target>
+        <target state="translated">¡Pruebas no superadas!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Thank you for installing SimpleX Chat!" xml:space="preserve">
@@ -7006,12 +7012,14 @@ You will be prompted to complete authentication before this feature is enabled.<
 Se te pedirá que completes la autenticación antes de activar esta función.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To record speech please grant permission to use Microphone." xml:space="preserve">
+      <trans-unit id="To record speech please grant permission to use Microphone." xml:space="preserve" approved="no">
         <source>To record speech please grant permission to use Microphone.</source>
+        <target state="translated">Para grabación de voz, por favor concede el permiso para usar el micrófono.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To record video please grant permission to use Camera." xml:space="preserve">
+      <trans-unit id="To record video please grant permission to use Camera." xml:space="preserve" approved="no">
         <source>To record video please grant permission to use Camera.</source>
+        <target state="translated">Para grabación de vídeo, por favor concede el permiso para usar la cámara.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To record voice message please grant permission to use Microphone." xml:space="preserve">
@@ -8772,9 +8780,9 @@ Repeat connection request?</source>
         <target>dirección de contacto eliminada</target>
         <note>profile update event chat item</note>
       </trans-unit>
-      <trans-unit id="removed profile picture" xml:space="preserve">
+      <trans-unit id="removed profile picture" xml:space="preserve" approved="no">
         <source>removed profile picture</source>
-        <target>imagen de perfil eliminada</target>
+        <target state="translated">ha eliminado la imagen del perfil</target>
         <note>profile update event chat item</note>
       </trans-unit>
       <trans-unit id="removed you" xml:space="preserve">
@@ -8836,9 +8844,9 @@ last received msg: %2$@</source>
         <target>nueva dirección de contacto</target>
         <note>profile update event chat item</note>
       </trans-unit>
-      <trans-unit id="set new profile picture" xml:space="preserve">
+      <trans-unit id="set new profile picture" xml:space="preserve" approved="no">
         <source>set new profile picture</source>
-        <target>nueva imagen de perfil</target>
+        <target state="translated">tiene nueva imagen del perfil</target>
         <note>profile update event chat item</note>
       </trans-unit>
       <trans-unit id="standard end-to-end encryption" xml:space="preserve">
