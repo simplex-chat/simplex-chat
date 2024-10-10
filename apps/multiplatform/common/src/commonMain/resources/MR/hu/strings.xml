@@ -1898,7 +1898,7 @@
     <string name="servers_info_detailed_statistics_sent_messages_total">Összes elküldött</string>
     <string name="sent_via_proxy">Proxyn keresztül küldve</string>
     <string name="smp_server">SMP-kiszolgáló</string>
-    <string name="servers_info_starting_from">Statisztika gyűjtés kezdete: %s.</string>
+    <string name="servers_info_starting_from">Statisztikagyűjtés kezdete: %s.</string>
     <string name="servers_info_uploaded">Feltöltve</string>
     <string name="xftp_server">XFTP-kiszolgáló</string>
     <string name="proxied">Proxyzott</string>
