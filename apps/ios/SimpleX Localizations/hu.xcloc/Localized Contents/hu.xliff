@@ -352,29 +352,29 @@
         <target>)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Add contact**: to create a new invitation link, or connect via a link you received." xml:space="preserve">
+      <trans-unit id="**Add contact**: to create a new invitation link, or connect via a link you received." xml:space="preserve" approved="no">
         <source>**Add contact**: to create a new invitation link, or connect via a link you received.</source>
-        <target>**Ismerős hozzáadása**: új meghívó-hivatkozás létrehozásához, vagy egy kapott hivatkozáson keresztül történő kapcsolódáshoz.</target>
+        <target state="translated">**Ismerős hozzáadása:** új meghívó-hivatkozás létrehozásához, vagy egy kapott hivatkozáson keresztül történő kapcsolódáshoz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Add new contact**: to create your one-time QR Code for your contact." xml:space="preserve">
+      <trans-unit id="**Add new contact**: to create your one-time QR Code for your contact." xml:space="preserve" approved="no">
         <source>**Add new contact**: to create your one-time QR Code or link for your contact.</source>
-        <target>**Új ismerős hozzáadása**: egyszer használható QR-kód vagy hivatkozás létrehozása az ismerőse számára.</target>
+        <target state="translated">**Új ismerős hozzáadása:** egyszer használható QR-kód vagy hivatkozás létrehozása az ismerőse számára.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Create group**: to create a new group." xml:space="preserve">
+      <trans-unit id="**Create group**: to create a new group." xml:space="preserve" approved="no">
         <source>**Create group**: to create a new group.</source>
-        <target>**Csoport létrehozása**: új csoport létrehozásához.</target>
+        <target state="translated">**Csoport létrehozása:** új csoport létrehozásához.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." xml:space="preserve">
+      <trans-unit id="**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." xml:space="preserve" approved="no">
         <source>**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have.</source>
-        <target>**Privátabb**: 20 percenként ellenőrzi az új üzeneteket. Az eszköztoken megosztásra kerül a SimpleX Chat-kiszolgálóval, de az nem, hogy hány ismerőse vagy üzenete van.</target>
+        <target state="translated">**Privátabb:** 20 percenként ellenőrzi az új üzeneteket. Az eszköztoken megosztásra kerül a SimpleX Chat-kiszolgálóval, de az nem, hogy hány ismerőse vagy üzenete van.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." xml:space="preserve">
+      <trans-unit id="**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." xml:space="preserve" approved="no">
         <source>**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app).</source>
-        <target>**Legprivátabb**: ne használja a SimpleX Chat értesítési kiszolgálót, rendszeresen ellenőrizze az üzeneteket a háttérben (attól függően, hogy milyen gyakran használja az alkalmazást).</target>
+        <target state="translated">**Legprivátabb:** ne használja a SimpleX Chat értesítési kiszolgálót, rendszeresen ellenőrizze az üzeneteket a háttérben (attól függően, hogy milyen gyakran használja az alkalmazást).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." xml:space="preserve">
@@ -387,9 +387,9 @@
         <target>**Megjegyzés:** NEM tudja visszaállítani vagy megváltoztatni jelmondatát, ha elveszíti azt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." xml:space="preserve">
+      <trans-unit id="**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." xml:space="preserve" approved="no">
         <source>**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from.</source>
-        <target>**Javasolt**: az eszköztoken és az értesítések elküldésre kerülnek a SimpleX Chat értesítési kiszolgálóra, kivéve az üzenet tartalma, mérete vagy az, hogy kitől származik.</target>
+        <target state="translated">**Megjegyzés:** az eszköztoken és az értesítések elküldésre kerülnek a SimpleX Chat értesítési kiszolgálóra, kivéve az üzenet tartalma, mérete vagy az, hogy kitől származik.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Warning**: Instant push notifications require passphrase saved in Keychain." xml:space="preserve">
@@ -604,9 +604,9 @@
         <target>Elfogadja %@ kapcsolatkérését?</target>
         <note>notification body</note>
       </trans-unit>
-      <trans-unit id="Accept incognito" xml:space="preserve">
+      <trans-unit id="Accept incognito" xml:space="preserve" approved="no">
         <source>Accept incognito</source>
-        <target>Fogadás inkognítóban</target>
+        <target state="translated">Fogadás inkognitóban</target>
         <note>accept contact request via notification
    swipe action</note>
       </trans-unit>
@@ -2805,9 +2805,9 @@ Ez az Ön egyszer használható hivatkozása!</target>
         <target>Hiba a beállítás megváltoztatásakor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error changing to incognito!" xml:space="preserve">
+      <trans-unit id="Error changing to incognito!" xml:space="preserve" approved="no">
         <source>Error changing to incognito!</source>
-        <target>Hiba az inkognitó-profilra való váltáskor!</target>
+        <target state="translated">Hiba az inkognitóprofilra való váltáskor!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error connecting to forwarding server %@. Please try later." xml:space="preserve">
@@ -3254,7 +3254,7 @@ Ez az Ön egyszer használható hivatkozása!</target>
       </trans-unit>
       <trans-unit id="Filter unread and favorite chats." xml:space="preserve" approved="no">
         <source>Filter unread and favorite chats.</source>
-        <target state="translated">Olvasatlan és a kedvenc csevegésekre való szűrés.</target>
+        <target state="translated">Olvasatlan és kedvenc csevegésekre való szűrés.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Finalize migration" xml:space="preserve">
@@ -3456,9 +3456,9 @@ Hiba: %2$@</target>
         <target>Csoport teljes neve (nem kötelező)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group image" xml:space="preserve">
+      <trans-unit id="Group image" xml:space="preserve" approved="no">
         <source>Group image</source>
-        <target>Csoportkép</target>
+        <target state="translated">Csoport profilképe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group invitation" xml:space="preserve">
@@ -3576,14 +3576,14 @@ Hiba: %2$@</target>
         <target>Rejtett csevegési profilok</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Hidden profile password" xml:space="preserve">
+      <trans-unit id="Hidden profile password" xml:space="preserve" approved="no">
         <source>Hidden profile password</source>
-        <target>Rejtett profil jelszó</target>
+        <target state="translated">Rejtett profiljelszó</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Hide" xml:space="preserve">
+      <trans-unit id="Hide" xml:space="preserve" approved="no">
         <source>Hide</source>
-        <target>Elrejt</target>
+        <target state="translated">Elrejtés</target>
         <note>chat item action</note>
       </trans-unit>
       <trans-unit id="Hide app screen in the recent apps." xml:space="preserve">
@@ -3596,9 +3596,9 @@ Hiba: %2$@</target>
         <target>Profil elrejtése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Hide:" xml:space="preserve">
+      <trans-unit id="Hide:" xml:space="preserve" approved="no">
         <source>Hide:</source>
-        <target>Elrejt:</target>
+        <target state="translated">Elrejtés:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="History" xml:space="preserve">
@@ -3761,9 +3761,9 @@ Hiba: %2$@</target>
         <target>Inkognitó</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Incognito groups" xml:space="preserve">
+      <trans-unit id="Incognito groups" xml:space="preserve" approved="no">
         <source>Incognito groups</source>
-        <target>Inkognitó csoportok</target>
+        <target state="translated">Inkognitócsoportok</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incognito mode" xml:space="preserve">
@@ -4725,10 +4725,10 @@ Ez az Ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Egyszer használható meghívó-hivatkozás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Onion hosts will be **required** for connection.&#10;Requires compatible VPN." xml:space="preserve">
+      <trans-unit id="Onion hosts will be **required** for connection.&#10;Requires compatible VPN." xml:space="preserve" approved="no">
         <source>Onion hosts will be **required** for connection.
 Requires compatible VPN.</source>
-        <target>Az onion-kiszolgálók **szükségesek** a kapcsolódáshoz.
+        <target state="translated">Onion-kiszolgálók **szükségesek** a kapcsolódáshoz.
 Kompatibilis VPN szükséges.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -6424,9 +6424,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>Egyszer használható SimpleX-meghívó</target>
         <note>simplex link type</note>
       </trans-unit>
-      <trans-unit id="Simplified incognito mode" xml:space="preserve">
+      <trans-unit id="Simplified incognito mode" xml:space="preserve" approved="no">
         <source>Simplified incognito mode</source>
-        <target>Egyszerűsített inkognító mód</target>
+        <target state="translated">Egyszerűsített inkognitómód</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Size" xml:space="preserve">
@@ -6669,9 +6669,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>Koppintson az inkognitóban való csatlakozáshoz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap to paste link" xml:space="preserve">
+      <trans-unit id="Tap to paste link" xml:space="preserve" approved="no">
         <source>Tap to paste link</source>
-        <target>Koppintson a hivatkozás beillesztéséhez</target>
+        <target state="translated">Koppintson ide a hivatkozás beillesztéséhez</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap to scan" xml:space="preserve">
@@ -6998,9 +6998,9 @@ A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beáll
         <target>Csevegőlista átváltása:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Toggle incognito when connecting." xml:space="preserve">
+      <trans-unit id="Toggle incognito when connecting." xml:space="preserve" approved="no">
         <source>Toggle incognito when connecting.</source>
-        <target>Inkognitómód kapcsolódáskor.</target>
+        <target state="translated">Inkognitómód használata kapcsolódáskor.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Toolbar opacity" xml:space="preserve">
@@ -7275,9 +7275,9 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
         <target>Az iOS hívófelület használata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use new incognito profile" xml:space="preserve">
+      <trans-unit id="Use new incognito profile" xml:space="preserve" approved="no">
         <source>Use new incognito profile</source>
-        <target>Az új inkognító profil használata</target>
+        <target state="translated">Új inkognitóprofil használata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use only local notifications?" xml:space="preserve">
@@ -7510,9 +7510,9 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
         <target>Amikor az emberek kapcsolatot kérnek, Ön elfogadhatja vagy elutasíthatja azokat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." xml:space="preserve">
+      <trans-unit id="When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." xml:space="preserve" approved="no">
         <source>When you share an incognito profile with somebody, this profile will be used for the groups they invite you to.</source>
-        <target>Inkognitó-profil megosztása esetén a rendszer azt a profilt fogja használni azokhoz a csoportokhoz, amelyekbe meghívást kapott.</target>
+        <target state="translated">Inkognitóprofil megosztása esetén a rendszer azt a profilt fogja használni azokhoz a csoportokhoz, amelyekbe meghívást kapott.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="WiFi" xml:space="preserve">
@@ -7879,14 +7879,14 @@ Kapcsolatkérés megismétlése?</target>
         <target>Nem veszíti el az ismerőseit, ha később törli a címét.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" xml:space="preserve">
+      <trans-unit id="You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" xml:space="preserve" approved="no">
         <source>You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile</source>
-        <target>Egy olyan ismerőst próbál meghívni, akivel inkognító profilt osztott meg abban a csoportban, amelyben saját fő profilja van használatban</target>
+        <target state="translated">Egy olyan ismerősét próbálja meghívni, akivel inkognitóprofilt osztott meg abban a csoportban, amelyben a saját fő profilja van használatban</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" xml:space="preserve">
+      <trans-unit id="You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" xml:space="preserve" approved="no">
         <source>You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed</source>
-        <target>Inkognító profilt használ ehhez a csoporthoz - fő profilja megosztásának elkerülése érdekében a meghívók küldése le van tiltva</target>
+        <target state="translated">Inkognitóprofilt használ ehhez a csoporthoz - fő profilja megosztásának elkerülése érdekében a meghívók küldése le van tiltva</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your %@ servers" xml:space="preserve">
@@ -8479,9 +8479,9 @@ Kapcsolatkérés megismétlése?</target>
         <target>inaktív</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="incognito via contact address link" xml:space="preserve">
+      <trans-unit id="incognito via contact address link" xml:space="preserve" approved="no">
         <source>incognito via contact address link</source>
-        <target>inkognitó a kapcsolattartási hivatkozáson keresztül</target>
+        <target state="translated">inkognitó a kapcsolattartási címhivatkozáson keresztül</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="incognito via group link" xml:space="preserve">
@@ -8975,9 +8975,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>Ön elhagyta a csoportot</target>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="you removed %@" xml:space="preserve">
+      <trans-unit id="you removed %@" xml:space="preserve" approved="no">
         <source>you removed %@</source>
-        <target>eltávolította őt: %@</target>
+        <target state="translated">Ön eltávolította őt: %@</target>
         <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="you shared one-time link" xml:space="preserve">
