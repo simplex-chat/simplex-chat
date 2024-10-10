@@ -53,9 +53,9 @@ struct UserPicker: View {
                             userView(u, size: imageSize)
                                 .frame(maxWidth: sectionWidth * 0.618)
                                 .fixedSize()
+                                .disabled(stopped)
+                                .opacity(stopped ? 0.4 : 1)
                         }
-                        .opacity(stopped ? 0.4 : 1)
-                        .disabled(stopped)
                     }
                     .padding(.horizontal, sectionHorizontalPadding)
                 }
