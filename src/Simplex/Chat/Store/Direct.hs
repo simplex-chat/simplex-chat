@@ -657,7 +657,7 @@ createOrUpdateContactRequest db vr user@User {userId} userContactLinkId invId (V
           db
           [sql|
             SELECT
-              cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
+              cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.contact_id, cr.user_contact_link_id,
               c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id, cr.pq_support, p.preferences, cr.created_at, cr.updated_at,
               cr.peer_chat_min_version, cr.peer_chat_max_version
             FROM contact_requests cr
@@ -726,7 +726,7 @@ getContactRequest db User {userId} contactRequestId =
       db
       [sql|
         SELECT
-          cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
+          cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.contact_id, cr.user_contact_link_id,
           c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id, cr.pq_support, p.preferences, cr.created_at, cr.updated_at,
           cr.peer_chat_min_version, cr.peer_chat_max_version
         FROM contact_requests cr
@@ -780,6 +780,7 @@ createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}
     "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, enable_ntfs, user_preferences, created_at, updated_at, chat_ts, xcontact_id, contact_used) VALUES (?,?,?,?,?,?,?,?,?,?)"
     (userId, localDisplayName, profileId, True, userPreferences, createdAt, createdAt, createdAt, xContactId, contactUsed)
   contactId <- insertedRowId db
+  DB.execute db "UPDATE contact_requests SET contact_id = ? WHERE user_id = ? AND local_display_name = ?" (contactId, userId, localDisplayName)
   conn <- createConnection_ db userId ConnContact (Just contactId) agentConnId ConnNew connChatVersion cReqChatVRange Nothing (Just userContactLinkId) customUserProfileId 0 createdAt subMode pqSup
   let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito conn
   pure $
@@ -814,7 +815,7 @@ updateContactAccepted db User {userId} ct@Contact {contactId, activeConn = Just 
     liftIO $
       DB.execute
         db
-        "UPDATE contacts SET contact_used = ?, WHERE user_id = ? AND contact_id = ?"
+        "UPDATE contacts SET contact_used = ? WHERE user_id = ? AND contact_id = ?"
         (contactUsed, userId, contactId)
     conn' <- case connStatus_ of
       Just connStatus -> do

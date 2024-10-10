@@ -1298,33 +1298,36 @@ processChatCommand' vr = \case
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIAcceptContact incognito connReqId -> withUser $ \_ -> do
     (user@User {userId}, cReq) <- withFastStore $ \db -> getContactRequest' db connReqId
-    let UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = cp, userContactLinkId, xContactId, pqSupport} = cReq
+    let UserContactRequest {agentInvitationId = AgentInvId invId, contactId_, cReqChatVRange, localDisplayName = cName, profileId, profile = cp, userContactLinkId, xContactId, pqSupport} = cReq
     withUserContactLock "acceptContact" userContactLinkId $ do
-      -- TODO conn prepare
-      -- add connection_id to contact_requests; read in getContactRequest
-      -- case connection Nothing:
-      --   connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup'
-      --   create connection record, attach to contact request
-      --   (move connection creation from createAcceptedContact here)
-      -- case connection Just:
-      --   use it
-      -- acceptContactRequest to work with prepared connection, pass connId to agent's acceptContact
-      -- [incognito] generate profile to send, create connection with incognito profile
-      incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
-      connId <- withAgent $ \a -> prepareConnectionToAccept a True invId pqSupport
       subMode <- chatReadVar subscriptionMode
-      let profileToSend = profileToSendOnAccept user incognitoProfile False
-          chatV = vr `peerConnChatVersion` cReqChatVRange
-      dm <- encodeConnInfoPQ pqSupport chatV $ XInfo profileToSend
-      ct <- withStore' $ \db -> createAcceptedContact db user connId chatV cReqChatVRange cName profileId cp userContactLinkId xContactId incognitoProfile subMode pqSupport False
-      (_, sqSecured) <- withAgent $ \a -> acceptContact a connId True invId dm pqSupport subMode
-      ucl <- withFastStore $ \db -> getUserContactLinkById db userId userContactLinkId
-      let contactUsed = (\(_, groupId_, _) -> isNothing groupId_) ucl
-          connStatus_ = if sqSecured then Just ConnSndReady else Nothing
-      ct' <- withStore $ \db -> do
-        liftIO $ deleteContactRequestByName db user cName
-        updateContactAccepted db user ct connStatus_ contactUsed
-      pure $ CRAcceptingContactRequest user ct'
+      let chatV = vr `peerConnChatVersion` cReqChatVRange
+      (ct, incognitoProfile) <- case contactId_ of
+        Nothing -> do
+          incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
+          connId <- withAgent $ \a -> prepareConnectionToAccept a True invId pqSupport
+          ct <- withStore' $ \db -> createAcceptedContact db user connId chatV cReqChatVRange cName profileId cp userContactLinkId xContactId incognitoProfile subMode pqSupport False
+          pure (ct, incognitoProfile)
+        Just contactId -> do
+          ct <- withFastStore $ \db -> getContact db vr user contactId
+          incognitoProfile <- case contactConn ct of
+            Nothing -> pure Nothing
+            Just Connection {customUserProfileId} ->
+              forM customUserProfileId $ \pId -> withFastStore (\db -> getProfileById db userId pId)
+          pure (ct, ExistingIncognito <$> incognitoProfile)
+      case contactConn ct of
+        Just conn -> do
+          let profileToSend = profileToSendOnAccept user incognitoProfile False
+          dm <- encodeConnInfoPQ pqSupport chatV $ XInfo profileToSend
+          (_, sqSecured) <- withAgent $ \a -> acceptContact a (aConnId conn) True invId dm pqSupport subMode
+          ucl <- withFastStore $ \db -> getUserContactLinkById db userId userContactLinkId
+          let contactUsed = (\(_, groupId_, _) -> isNothing groupId_) ucl
+              connStatus_ = if sqSecured then Just ConnSndReady else Nothing
+          ct' <- withStore $ \db -> do
+            liftIO $ deleteContactRequestByName db user cName
+            updateContactAccepted db user ct connStatus_ contactUsed
+          pure $ CRAcceptingContactRequest user ct'
+        Nothing -> pure $ chatCmdError (Just user) "contact has no connection"
   APIRejectContact connReqId -> withUser $ \user -> do
     cReq@UserContactRequest {userContactLinkId, agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <-
       withFastStore $ \db ->
