@@ -2040,27 +2040,22 @@ processChatCommand' vr = \case
       case activeConn of
         Just Connection {peerChatVRange} -> do
           subMode <- chatReadVar subscriptionMode
-          dm <- encodeConnInfo $ XGrpAcpt membershipMemId
-          -- TODO conn prepare
-          -- check if admin member already has connection record
-          -- case connection Just: use it
-          -- case connection Nothing: code below
-          agentConnId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True connRequest PQSupportOff
-          let chatV = vr `peerConnChatVersion` peerChatVRange
-          cId <- withFastStore' $ \db -> do
-            Connection {connId = cId} <- createMemberConnection db userId fromMember agentConnId chatV peerChatVRange subMode
+          agentConnId <- case memberConn fromMember of
+            Nothing -> do
+              agentConnId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True connRequest PQSupportOff
+              let chatV = vr `peerConnChatVersion` peerChatVRange
+              void $ withFastStore' $ \db -> createMemberConnection db userId fromMember agentConnId chatV peerChatVRange subMode
+              pure agentConnId
+            Just conn -> pure $ aConnId conn
+          withFastStore' $ \db -> do
             updateGroupMemberStatus db userId fromMember GSMemAccepted
             updateGroupMemberStatus db userId membership GSMemAccepted
-            pure cId
-          -- TODO conn prepare
-          -- don't cleanup (set failure state? - same as for invitation links)
+          dm <- encodeConnInfo $ XGrpAcpt membershipMemId
           void (withAgent $ \a -> joinConnection a (aUserId user) agentConnId True connRequest dm PQSupportOff subMode)
             `catchChatError` \e -> do
               withFastStore' $ \db -> do
-                deleteConnectionRecord db user cId
                 updateGroupMemberStatus db userId fromMember GSMemInvited
                 updateGroupMemberStatus db userId membership GSMemInvited
-              withAgent $ \a -> deleteConnectionAsync a False agentConnId
               throwError e
           updateCIGroupInvitationStatus user g CIGISAccepted `catchChatError` (toView . CRChatError (Just user))
           pure $ CRUserAcceptedGroupSent user g {membership = membership {memberStatus = GSMemAccepted}} Nothing
