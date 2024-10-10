@@ -97,110 +97,110 @@ struct GroupMemberInfoView: View {
 
                 if connectionLoaded {
 
-                if member.memberActive {
-                    Section {
-                        if let code = connectionCode { verifyCodeButton(code) }
-                        if let connStats = connectionStats,
-                            connStats.ratchetSyncAllowed {
-                            synchronizeConnectionButton()
+                    if member.memberActive {
+                        Section {
+                            if let code = connectionCode { verifyCodeButton(code) }
+                            if let connStats = connectionStats,
+                               connStats.ratchetSyncAllowed {
+                                synchronizeConnectionButton()
+                            }
+                            // } else if developerTools {
+                            //     synchronizeConnectionButtonForce()
+                            // }
                         }
-                        // } else if developerTools {
-                        //     synchronizeConnectionButtonForce()
-                        // }
                     }
-                }
 
-                if let contactLink = member.contactLink {
-                    Section {
-                        SimpleXLinkQRCode(uri: contactLink)
-                        Button {
-                            showShareSheet(items: [simplexChatLink(contactLink)])
-                        } label: {
-                            Label("Share address", systemImage: "square.and.arrow.up")
-                        }
-                        if let contactId = member.memberContactId {
-                            if knownDirectChat(contactId) == nil && !groupInfo.fullGroupPreferences.directMessages.on(for: groupInfo.membership) {
+                    if let contactLink = member.contactLink {
+                        Section {
+                            SimpleXLinkQRCode(uri: contactLink)
+                            Button {
+                                showShareSheet(items: [simplexChatLink(contactLink)])
+                            } label: {
+                                Label("Share address", systemImage: "square.and.arrow.up")
+                            }
+                            if let contactId = member.memberContactId {
+                                if knownDirectChat(contactId) == nil && !groupInfo.fullGroupPreferences.directMessages.on(for: groupInfo.membership) {
+                                    connectViaAddressButton(contactLink)
+                                }
+                            } else {
                                 connectViaAddressButton(contactLink)
                             }
-                        } else {
-                            connectViaAddressButton(contactLink)
+                        } header: {
+                            Text("Address")
+                                .foregroundColor(theme.colors.secondary)
+                        } footer: {
+                            Text("You can share this address with your contacts to let them connect with **\(member.displayName)**.")
+                                .foregroundColor(theme.colors.secondary)
                         }
-                    } header: {
-                        Text("Address")
-                            .foregroundColor(theme.colors.secondary)
-                    } footer: {
-                        Text("You can share this address with your contacts to let them connect with **\(member.displayName)**.")
-                            .foregroundColor(theme.colors.secondary)
                     }
-                }
 
-                Section(header: Text("Member").foregroundColor(theme.colors.secondary)) {
-                    infoRow("Group", groupInfo.displayName)
+                    Section(header: Text("Member").foregroundColor(theme.colors.secondary)) {
+                        infoRow("Group", groupInfo.displayName)
 
-                    if let roles = member.canChangeRoleTo(groupInfo: groupInfo) {
-                        Picker("Change role", selection: $newRole) {
-                            ForEach(roles) { role in
-                                Text(role.text)
+                        if let roles = member.canChangeRoleTo(groupInfo: groupInfo) {
+                            Picker("Change role", selection: $newRole) {
+                                ForEach(roles) { role in
+                                    Text(role.text)
+                                }
                             }
+                            .frame(height: 36)
+                        } else {
+                            infoRow("Role", member.memberRole.text)
                         }
-                        .frame(height: 36)
-                    } else {
-                        infoRow("Role", member.memberRole.text)
                     }
-                }
 
-                if let connStats = connectionStats {
-                    Section(header: Text("Servers").foregroundColor(theme.colors.secondary)) {
-                        // TODO network connection status
-                        Button("Change receiving address") {
-                            alert = .switchAddressAlert
-                        }
-                        .disabled(
-                            connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil }
-                            || connStats.ratchetSyncSendProhibited
-                        )
-                        if connStats.rcvQueuesInfo.contains(where: { $0.rcvSwitchStatus != nil }) {
-                            Button("Abort changing address") {
-                                alert = .abortSwitchAddressAlert
+                    if let connStats = connectionStats {
+                        Section(header: Text("Servers").foregroundColor(theme.colors.secondary)) {
+                            // TODO network connection status
+                            Button("Change receiving address") {
+                                alert = .switchAddressAlert
                             }
                             .disabled(
-                                connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil && !$0.canAbortSwitch }
+                                connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil }
                                 || connStats.ratchetSyncSendProhibited
                             )
+                            if connStats.rcvQueuesInfo.contains(where: { $0.rcvSwitchStatus != nil }) {
+                                Button("Abort changing address") {
+                                    alert = .abortSwitchAddressAlert
+                                }
+                                .disabled(
+                                    connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil && !$0.canAbortSwitch }
+                                    || connStats.ratchetSyncSendProhibited
+                                )
+                            }
+                            smpServers("Receiving via", connStats.rcvQueuesInfo.map { $0.rcvServer }, theme.colors.secondary)
+                            smpServers("Sending via", connStats.sndQueuesInfo.map { $0.sndServer }, theme.colors.secondary)
                         }
-                        smpServers("Receiving via", connStats.rcvQueuesInfo.map { $0.rcvServer }, theme.colors.secondary)
-                        smpServers("Sending via", connStats.sndQueuesInfo.map { $0.sndServer }, theme.colors.secondary)
                     }
-                }
 
-                if groupInfo.membership.memberRole >= .admin {
-                    adminDestructiveSection(member)
-                } else {
-                    nonAdminBlockSection(member)
-                }
+                    if groupInfo.membership.memberRole >= .admin {
+                        adminDestructiveSection(member)
+                    } else {
+                        nonAdminBlockSection(member)
+                    }
 
-                if developerTools {
-                    Section(header: Text("For console").foregroundColor(theme.colors.secondary)) {
-                        infoRow("Local name", member.localDisplayName)
-                        infoRow("Database ID", "\(member.groupMemberId)")
-                        if let conn = member.activeConn {
-                            let connLevelDesc = conn.connLevel == 0 ? NSLocalizedString("direct", comment: "connection level description") : String.localizedStringWithFormat(NSLocalizedString("indirect (%d)", comment: "connection level description"), conn.connLevel)
-                            infoRow("Connection", connLevelDesc)
-                        }
-                        Button ("Debug delivery") {
-                            Task {
-                                do {
-                                    let info = queueInfoText(try await apiGroupMemberQueueInfo(groupInfo.apiId, member.groupMemberId))
-                                    await MainActor.run { alert = .queueInfo(info: info) }
-                                } catch let e {
-                                    logger.error("apiContactQueueInfo error: \(responseError(e))")
-                                    let a = getErrorAlert(e, "Error")
-                                    await MainActor.run { alert = .error(title: a.title, error: a.message) }
+                    if developerTools {
+                        Section(header: Text("For console").foregroundColor(theme.colors.secondary)) {
+                            infoRow("Local name", member.localDisplayName)
+                            infoRow("Database ID", "\(member.groupMemberId)")
+                            if let conn = member.activeConn {
+                                let connLevelDesc = conn.connLevel == 0 ? NSLocalizedString("direct", comment: "connection level description") : String.localizedStringWithFormat(NSLocalizedString("indirect (%d)", comment: "connection level description"), conn.connLevel)
+                                infoRow("Connection", connLevelDesc)
+                            }
+                            Button ("Debug delivery") {
+                                Task {
+                                    do {
+                                        let info = queueInfoText(try await apiGroupMemberQueueInfo(groupInfo.apiId, member.groupMemberId))
+                                        await MainActor.run { alert = .queueInfo(info: info) }
+                                    } catch let e {
+                                        logger.error("apiContactQueueInfo error: \(responseError(e))")
+                                        let a = getErrorAlert(e, "Error")
+                                        await MainActor.run { alert = .error(title: a.title, error: a.message) }
+                                    }
                                 }
                             }
                         }
                     }
-                }
 
                 }
             }
