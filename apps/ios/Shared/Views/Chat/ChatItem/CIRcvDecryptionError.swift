@@ -48,7 +48,7 @@ struct CIRcvDecryptionError: View {
                 if case let .group(groupInfo) = chat.chatInfo,
                    case let .groupRcv(groupMember) = chatItem.chatDir {
                     do {
-                        let (member, stats) = try apiGroupMemberInfo(groupInfo.apiId, groupMember.groupMemberId)
+                        let (member, stats) = try apiGroupMemberInfoSync(groupInfo.apiId, groupMember.groupMemberId)
                         if let s = stats {
                             m.updateGroupMemberConnectionStats(groupInfo, member, s)
                         }
