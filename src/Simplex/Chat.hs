@@ -3677,7 +3677,7 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
               liftIO $ B.hPut h "" >> hFlush h
           | otherwise = liftIO $ B.writeFile fPath ""
 
-acceptContactRequest :: User -> UserContactRequest -> IncognitoEnabled -> CM (Contact, Connection, Bool)
+acceptContactRequest :: User -> UserContactRequest -> IncognitoEnabled -> CM (Contact, Connection, SndQueueSecured)
 acceptContactRequest user@User {userId} UserContactRequest {agentInvitationId = AgentInvId invId, contactId_, cReqChatVRange, localDisplayName = cName, profileId, profile = cp, userContactLinkId, xContactId, pqSupport} incognito = do
   subMode <- chatReadVar subscriptionMode
   let pqSup = PQSupportOn
@@ -3699,8 +3699,7 @@ acceptContactRequest user@User {userId} UserContactRequest {agentInvitationId = 
           pure (ct, conn, ExistingIncognito <$> incognitoProfile)
   let profileToSend = profileToSendOnAccept user incognitoProfile False
   dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
-  (_, sqSecured) <- withAgent $ \a -> acceptContact a (aConnId conn) True invId dm pqSup' subMode
-  pure (ct, conn, sqSecured)
+  (ct,conn,) <$> withAgent (\a -> acceptContact a (aConnId conn) True invId dm pqSup' subMode)
 
 acceptContactRequestAsync :: User -> UserContactRequest -> Maybe IncognitoProfile -> Bool -> PQSupport -> CM Contact
 acceptContactRequestAsync user cReq@UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile contactUsed pqSup = do
