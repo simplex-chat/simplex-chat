@@ -1783,12 +1783,17 @@ processChatCommand' vr = \case
       Just (agentV, pqSup') -> do
         let chatV = agentToChatVersion agentV
         dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
-        -- TODO conn prepare
-        -- search connection by link (cReq)
-        -- or, better, pass connId found by connectPlan? (Either AConnectionRequestUri DBConnectionId)
         connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup'
-        conn <- withFastStore' $ \db -> createDirectConnection db user connId cReq ConnJoined (incognitoProfile $> profileToSend) subMode chatV pqSup'
-        void $ withAgent $ \a -> joinConnection a (aUserId user) connId True cReq dm pqSup' subMode
+        conn@PendingContactConnection {pccConnId} <- withFastStore' $ \db -> createDirectConnection db user connId cReq ConnJoined (incognitoProfile $> profileToSend) subMode chatV pqSup'
+        -- TODO reuse connection record
+        -- try to get PendingContactConnection by link (reuse connectPlan?);
+        -- if it exists, pass its connId to joinConnection to reuse key and avoid AUTH error;
+        -- insead of deleting, cleanup should mark connection in a way so that it's filtered out of chat list
+        void (withAgent $ \a -> joinConnection a (aUserId user) connId True cReq dm pqSup' subMode)
+          `catchChatError` \e -> do
+            withFastStore' $ \db -> deleteConnectionRecord db user pccConnId
+            withAgent $ \a -> deleteConnectionAsync a False connId
+            throwError e
         pure $ CRSentConfirmation user conn
   APIConnect userId incognito (Just (ACR SCMContact cReq)) -> withUserId userId $ \user -> connectViaContact user incognito cReq
   APIConnect _ _ Nothing -> throwChatError CEInvalidConnReq
