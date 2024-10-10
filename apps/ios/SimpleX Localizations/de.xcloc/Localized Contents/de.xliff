@@ -3766,9 +3766,11 @@ Fehler: %2$@</target>
         <target>Archiv wird importiert</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Improved delivery, reduced traffic usage.&#10;More improvements are coming soon!" xml:space="preserve">
+      <trans-unit id="Improved delivery, reduced traffic usage.&#10;More improvements are coming soon!" xml:space="preserve" approved="no">
         <source>Improved delivery, reduced traffic usage.
 More improvements are coming soon!</source>
+        <target state="translated">Verbesserte Nachrichten-Auslieferung und verringerter Datenverbrauch.
+Weitere Verbesserungen sind bald verfügbar!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Improved message delivery" xml:space="preserve">
@@ -6469,8 +6471,9 @@ Aktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</target>
         <target>SimpleX-Einmal-Einladung</target>
         <note>simplex link type</note>
       </trans-unit>
-      <trans-unit id="SimpleX protocols reviewed by Trail of Bits." xml:space="preserve">
+      <trans-unit id="SimpleX protocols reviewed by Trail of Bits." xml:space="preserve" approved="no">
         <source>SimpleX protocols reviewed by Trail of Bits.</source>
+        <target state="translated">Die SimpleX-Protokolle wurden von Trail of Bits überprüft.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Simplified incognito mode" xml:space="preserve">
@@ -6648,12 +6651,14 @@ Aktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</target>
         <target>Unterstützung von SimpleX Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Switch audio and video during the call." xml:space="preserve">
+      <trans-unit id="Switch audio and video during the call." xml:space="preserve" approved="no">
         <source>Switch audio and video during the call.</source>
+        <target state="translated">Während des Anrufs zwischen Audio und Video wechseln</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Switch chat profile for 1-time invitations." xml:space="preserve">
+      <trans-unit id="Switch chat profile for 1-time invitations." xml:space="preserve" approved="no">
         <source>Switch chat profile for 1-time invitations.</source>
+        <target state="translated">Das Chat-Profil für Einmal-Einladungen wechseln</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="System" xml:space="preserve">
