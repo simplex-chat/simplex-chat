@@ -341,7 +341,8 @@ private fun GlobalSettingsSection(
         ModalManager.start.showCustomModal { close ->
           ConnectDesktopView(close)
         }
-      }
+      },
+      disabled = stopped
     )
   } else {
     UserPickerOptionRow(
