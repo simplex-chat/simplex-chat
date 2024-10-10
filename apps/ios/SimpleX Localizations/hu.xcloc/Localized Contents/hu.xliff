@@ -3621,9 +3621,9 @@ Hiba: %2$@</target>
         <target>Rejtett profiljelszó</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Hide" xml:space="preserve">
+      <trans-unit id="Hide" xml:space="preserve" approved="no">
         <source>Hide</source>
-        <target>Elrejtés</target>
+        <target state="translated">Összecsukás</target>
         <note>chat item action</note>
       </trans-unit>
       <trans-unit id="Hide app screen in the recent apps." xml:space="preserve">
@@ -3706,9 +3706,9 @@ Hiba: %2$@</target>
         <target>Ha az alkalmazás megnyitásakor megadja az önmegsemmisítő jelkódot:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." xml:space="preserve">
+      <trans-unit id="If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." xml:space="preserve" approved="no">
         <source>If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app).</source>
-        <target>Ha most kell használnia a csevegést, koppintson alább az **Befejezés később** lehetőségre (az alkalmazás újraindításakor felajánlásra kerül az adatbázis átköltöztetése).</target>
+        <target state="translated">Ha most kell használnia a csevegést, koppintson alább a **Befejezés később** lehetőségre (az alkalmazás újraindításakor felajánlásra kerül az adatbázis átköltöztetése).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Ignore" xml:space="preserve">
@@ -3769,7 +3769,7 @@ Hiba: %2$@</target>
       <trans-unit id="Improved delivery, reduced traffic usage.&#10;More improvements are coming soon!" xml:space="preserve" approved="no">
         <source>Improved delivery, reduced traffic usage.
 More improvements are coming soon!</source>
-        <target state="translated">Jobb kézbesítés, csökkentett adatforgalom-használat.
+        <target state="translated">Továbbfejlesztett kézbesítés, csökkentett adatforgalom-használat.
 További fejlesztések hamarosan!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -4353,14 +4353,14 @@ Ez az Ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Az üzenet forrása titokban marad.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message status" xml:space="preserve">
+      <trans-unit id="Message status" xml:space="preserve" approved="no">
         <source>Message status</source>
-        <target>Üzenetállapot</target>
+        <target state="translated">Üzenet állapota</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message status: %@" xml:space="preserve">
+      <trans-unit id="Message status: %@" xml:space="preserve" approved="no">
         <source>Message status: %@</source>
-        <target>Üzenetállapot: %@</target>
+        <target state="translated">Üzenet állapota: %@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Message text" xml:space="preserve">
@@ -6711,9 +6711,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>Koppintson a </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap to Connect" xml:space="preserve">
+      <trans-unit id="Tap to Connect" xml:space="preserve" approved="no">
         <source>Tap to Connect</source>
-        <target>Koppintson a kapcsolódáshoz</target>
+        <target state="translated">Koppintson ide a kapcsolódáshoz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap to activate profile." xml:space="preserve">
@@ -6721,14 +6721,14 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>A profil aktiválásához koppintson az ikonra.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap to join" xml:space="preserve">
+      <trans-unit id="Tap to join" xml:space="preserve" approved="no">
         <source>Tap to join</source>
-        <target>Koppintson a csatlakozáshoz</target>
+        <target state="translated">Koppintson ide a csatlakozáshoz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap to join incognito" xml:space="preserve">
+      <trans-unit id="Tap to join incognito" xml:space="preserve" approved="no">
         <source>Tap to join incognito</source>
-        <target>Koppintson az inkognitóban való csatlakozáshoz</target>
+        <target state="translated">Koppintson ide az inkognitóban való csatlakozáshoz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap to paste link" xml:space="preserve">
@@ -6736,9 +6736,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>Koppintson ide a hivatkozás beillesztéséhez</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap to scan" xml:space="preserve">
+      <trans-unit id="Tap to scan" xml:space="preserve" approved="no">
         <source>Tap to scan</source>
-        <target>Koppintson a beolvasáshoz</target>
+        <target state="translated">Koppintson ide a QR-kód beolvasáshoz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Temporary file error" xml:space="preserve">
