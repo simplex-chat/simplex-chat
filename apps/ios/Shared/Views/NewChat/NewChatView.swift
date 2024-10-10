@@ -45,10 +45,10 @@ enum NewChatOption: Identifiable {
     var id: Self { self }
 }
 
-func cleanupPendingConnection(chatModel: ChatModel, contactConnection: PendingContactConnection?) -> SomeAlert? {
+func cleanupPendingConnection(contactConnection: PendingContactConnection?) -> SomeAlert? {
     var alert: SomeAlert? = nil
 
-    if !(chatModel.showingInvitation?.connChatUsed ?? true),
+    if !(ChatModel.shared.showingInvitation?.connChatUsed ?? true),
        let conn = contactConnection {
         alert = SomeAlert(
             alert: Alert(
@@ -68,7 +68,7 @@ func cleanupPendingConnection(chatModel: ChatModel, contactConnection: PendingCo
         )
     }
     
-    chatModel.showingInvitation = nil
+    ChatModel.shared.showingInvitation = nil
 
     return alert
 }
@@ -157,7 +157,7 @@ struct NewChatView: View {
         }
         .onDisappear {
             if !choosingProfile {
-                parentAlert = cleanupPendingConnection(chatModel: m, contactConnection: contactConnection)
+                parentAlert = cleanupPendingConnection(contactConnection: contactConnection)
                 contactConnection = nil
             }
         }
