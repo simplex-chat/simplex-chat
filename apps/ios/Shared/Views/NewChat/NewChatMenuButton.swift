@@ -14,7 +14,8 @@ enum ContactType: Int {
 }
 
 struct NewChatMenuButton: View {
-    @EnvironmentObject var chatModel: ChatModel
+    // do not use chatModel here because it prevents showing AddGroupMembersView after group creation and QR code after link creation on iOS 16
+//    @EnvironmentObject var chatModel: ChatModel
     @State private var showNewChatSheet = false
     @State private var alert: SomeAlert? = nil
     @State private var pendingConnection: PendingContactConnection? = nil
@@ -32,7 +33,7 @@ struct NewChatMenuButton: View {
             NewChatSheet(pendingConnection: $pendingConnection)
                 .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
                 .onDisappear {
-                    alert = cleanupPendingConnection(chatModel: chatModel, contactConnection: pendingConnection)
+                    alert = cleanupPendingConnection(contactConnection: pendingConnection)
                     pendingConnection = nil
                 }
         }
