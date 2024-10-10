@@ -127,7 +127,6 @@ data StoreError
   | SERemoteCtrlNotFound {remoteCtrlId :: RemoteCtrlId}
   | SERemoteCtrlDuplicateCA
   | SEProhibitedDeleteUser {userId :: UserId, contactId :: ContactId}
-  | SEContactWithoutConnection
   deriving (Show, Exception)
 
 $(J.deriveJSON (sumTypeJSON $ dropPrefix "SE") ''StoreError)

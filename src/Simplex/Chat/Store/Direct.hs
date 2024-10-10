@@ -62,7 +62,7 @@ module Simplex.Chat.Store.Direct
     getContactRequestIdByName,
     deleteContactRequest,
     createAcceptedContact,
-    deleteContactRequestByName,
+    deleteContactRequestRec,
     updateContactAccepted,
     getUserByContactRequestId,
     getPendingContactConnections,
@@ -768,7 +768,7 @@ deleteContactRequest db User {userId} contactRequestId = do
     (userId, userId, contactRequestId, userId)
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
 
-createAcceptedContact :: DB.Connection -> User -> ConnId -> VersionChat -> VersionRangeChat -> ContactName -> ProfileId -> Profile -> Int64 -> Maybe XContactId -> Maybe IncognitoProfile -> SubscriptionMode -> PQSupport -> Bool -> IO Contact
+createAcceptedContact :: DB.Connection -> User -> ConnId -> VersionChat -> VersionRangeChat -> ContactName -> ProfileId -> Profile -> Int64 -> Maybe XContactId -> Maybe IncognitoProfile -> SubscriptionMode -> PQSupport -> Bool -> IO (Contact, Connection)
 createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}} agentConnId connChatVersion cReqChatVRange localDisplayName profileId profile userContactLinkId xContactId incognitoProfile subMode pqSup contactUsed = do
   createdAt <- getCurrentTime
   customUserProfileId <- forM incognitoProfile $ \case
@@ -783,51 +783,39 @@ createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}
   DB.execute db "UPDATE contact_requests SET contact_id = ? WHERE user_id = ? AND local_display_name = ?" (contactId, userId, localDisplayName)
   conn <- createConnection_ db userId ConnContact (Just contactId) agentConnId ConnNew connChatVersion cReqChatVRange Nothing (Just userContactLinkId) customUserProfileId 0 createdAt subMode pqSup
   let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito conn
-  pure $
-    Contact
-      { contactId,
-        localDisplayName,
-        profile = toLocalProfile profileId profile "",
-        activeConn = Just conn,
-        viaGroup = Nothing,
-        contactUsed,
-        contactStatus = CSActive,
-        chatSettings = defaultChatSettings,
-        userPreferences,
-        mergedPreferences,
-        createdAt,
-        updatedAt = createdAt,
-        chatTs = Just createdAt,
-        contactGroupMemberId = Nothing,
-        contactGrpInvSent = False,
-        uiThemes = Nothing,
-        chatDeleted = False,
-        customData = Nothing
-      }
+      ct =
+        Contact
+          { contactId,
+            localDisplayName,
+            profile = toLocalProfile profileId profile "",
+            activeConn = Just conn,
+            viaGroup = Nothing,
+            contactUsed,
+            contactStatus = CSActive,
+            chatSettings = defaultChatSettings,
+            userPreferences,
+            mergedPreferences,
+            createdAt,
+            updatedAt = createdAt,
+            chatTs = Just createdAt,
+            contactGroupMemberId = Nothing,
+            contactGrpInvSent = False,
+            uiThemes = Nothing,
+            chatDeleted = False,
+            customData = Nothing
+          }
+  pure (ct, conn)
 
-deleteContactRequestByName :: DB.Connection -> User -> ContactName -> IO ()
-deleteContactRequestByName db User {userId} localDisplayName =
-  DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+deleteContactRequestRec :: DB.Connection -> User -> UserContactRequest -> IO ()
+deleteContactRequestRec db User {userId} UserContactRequest {contactRequestId} =
+  DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
 
-updateContactAccepted :: DB.Connection -> User -> Contact -> Maybe ConnStatus -> Bool -> ExceptT StoreError IO Contact
-updateContactAccepted db User {userId} ct@Contact {contactId, activeConn = Just conn@Connection {connId}} connStatus_ contactUsed =
-  ExceptT $ runExceptT $ do
-    liftIO $
-      DB.execute
-        db
-        "UPDATE contacts SET contact_used = ? WHERE user_id = ? AND contact_id = ?"
-        (contactUsed, userId, contactId)
-    conn' <- case connStatus_ of
-      Just connStatus -> do
-        liftIO $
-          DB.execute
-            db
-            "UPDATE connections SET conn_status = ? WHERE user_id = ? AND connection_id = ?"
-            (connStatus, userId, connId)
-        pure conn {connStatus}
-      Nothing -> pure conn
-    pure ct {contactUsed, activeConn = Just conn'}
-updateContactAccepted _ _ _ _ _ = throwError SEContactWithoutConnection
+updateContactAccepted :: DB.Connection -> User -> Contact -> Bool -> IO ()
+updateContactAccepted db User {userId} Contact {contactId} contactUsed =
+  DB.execute
+    db
+    "UPDATE contacts SET contact_used = ? WHERE user_id = ? AND contact_id = ?"
+    (contactUsed, userId, contactId)
 
 getContactIdByName :: DB.Connection -> User -> ContactName -> ExceptT StoreError IO Int64
 getContactIdByName db User {userId} cName =
