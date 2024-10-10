@@ -62,6 +62,8 @@ module Simplex.Chat.Store.Direct
     getContactRequestIdByName,
     deleteContactRequest,
     createAcceptedContact,
+    deleteContactRequestByName,
+    updateContactAccepted,
     getUserByContactRequestId,
     getPendingContactConnections,
     updatePCCUser,
@@ -766,9 +768,8 @@ deleteContactRequest db User {userId} contactRequestId = do
     (userId, userId, contactRequestId, userId)
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
 
-createAcceptedContact :: DB.Connection -> User -> ConnId -> ConnStatus -> VersionChat -> VersionRangeChat -> ContactName -> ProfileId -> Profile -> Int64 -> Maybe XContactId -> Maybe IncognitoProfile -> SubscriptionMode -> PQSupport -> Bool -> IO Contact
-createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}} agentConnId connStatus connChatVersion cReqChatVRange localDisplayName profileId profile userContactLinkId xContactId incognitoProfile subMode pqSup contactUsed = do
-  DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+createAcceptedContact :: DB.Connection -> User -> ConnId -> VersionChat -> VersionRangeChat -> ContactName -> ProfileId -> Profile -> Int64 -> Maybe XContactId -> Maybe IncognitoProfile -> SubscriptionMode -> PQSupport -> Bool -> IO Contact
+createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}} agentConnId connChatVersion cReqChatVRange localDisplayName profileId profile userContactLinkId xContactId incognitoProfile subMode pqSup contactUsed = do
   createdAt <- getCurrentTime
   customUserProfileId <- forM incognitoProfile $ \case
     NewIncognito p -> createIncognitoProfile_ db userId createdAt p
@@ -779,7 +780,7 @@ createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}
     "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, enable_ntfs, user_preferences, created_at, updated_at, chat_ts, xcontact_id, contact_used) VALUES (?,?,?,?,?,?,?,?,?,?)"
     (userId, localDisplayName, profileId, True, userPreferences, createdAt, createdAt, createdAt, xContactId, contactUsed)
   contactId <- insertedRowId db
-  conn <- createConnection_ db userId ConnContact (Just contactId) agentConnId connStatus connChatVersion cReqChatVRange Nothing (Just userContactLinkId) customUserProfileId 0 createdAt subMode pqSup
+  conn <- createConnection_ db userId ConnContact (Just contactId) agentConnId ConnNew connChatVersion cReqChatVRange Nothing (Just userContactLinkId) customUserProfileId 0 createdAt subMode pqSup
   let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito conn
   pure $
     Contact
@@ -802,6 +803,30 @@ createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}
         chatDeleted = False,
         customData = Nothing
       }
+
+deleteContactRequestByName :: DB.Connection -> User -> ContactName -> IO ()
+deleteContactRequestByName db User {userId} localDisplayName =
+  DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+
+updateContactAccepted :: DB.Connection -> User -> Contact -> Maybe ConnStatus -> Bool -> ExceptT StoreError IO Contact
+updateContactAccepted db User {userId} ct@Contact {contactId, activeConn = Just conn@Connection {connId}} connStatus_ contactUsed =
+  ExceptT $ runExceptT $ do
+    liftIO $
+      DB.execute
+        db
+        "UPDATE contacts SET contact_used = ?, WHERE user_id = ? AND contact_id = ?"
+        (contactUsed, userId, contactId)
+    conn' <- case connStatus_ of
+      Just connStatus -> do
+        liftIO $
+          DB.execute
+            db
+            "UPDATE connections SET conn_status = ? WHERE user_id = ? AND connection_id = ?"
+            (connStatus, userId, connId)
+        pure conn {connStatus}
+      Nothing -> pure conn
+    pure ct {contactUsed, activeConn = Just conn'}
+updateContactAccepted _ _ _ _ _ = throwError SEContactWithoutConnection
 
 getContactIdByName :: DB.Connection -> User -> ContactName -> ExceptT StoreError IO Int64
 getContactIdByName db User {userId} cName =
