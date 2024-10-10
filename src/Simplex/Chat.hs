@@ -1299,6 +1299,15 @@ processChatCommand' vr = \case
   APIAcceptContact incognito connReqId -> withUser $ \_ -> do
     (user@User {userId}, cReq@UserContactRequest {userContactLinkId}) <- withFastStore $ \db -> getContactRequest' db connReqId
     withUserContactLock "acceptContact" userContactLinkId $ do
+      -- TODO conn prepare
+      -- add connection_id to contact_requests; read in getContactRequest
+      -- case connection Nothing:
+      --   connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup'
+      --   create connection record, attach to contact request
+      --   (move connection creation from createAcceptedContact here)
+      -- case connection Just:
+      --   use it
+      -- acceptContactRequest to work with prepared connection, pass connId to agent's acceptContact
       ucl <- withFastStore $ \db -> getUserContactLinkById db userId userContactLinkId
       let contactUsed = (\(_, groupId_, _) -> isNothing groupId_) ucl
       -- [incognito] generate profile to send, create connection with incognito profile
@@ -1774,6 +1783,9 @@ processChatCommand' vr = \case
       Just (agentV, pqSup') -> do
         let chatV = agentToChatVersion agentV
         dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
+        -- TODO conn prepare
+        -- search connection by link (cReq)
+        -- or, better, pass connId found by connectPlan? (Either AConnectionRequestUri DBConnectionId)
         connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup'
         conn@PendingContactConnection {pccConnId} <- withFastStore' $ \db -> createDirectConnection db user connId cReq ConnJoined (incognitoProfile $> profileToSend) subMode chatV pqSup'
         joinPreparedAgentConnection user pccConnId connId cReq dm pqSup' subMode
@@ -2029,6 +2041,10 @@ processChatCommand' vr = \case
         Just Connection {peerChatVRange} -> do
           subMode <- chatReadVar subscriptionMode
           dm <- encodeConnInfo $ XGrpAcpt membershipMemId
+          -- TODO conn prepare
+          -- check if admin member already has connection record
+          -- case connection Just: use it
+          -- case connection Nothing: code below
           agentConnId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True connRequest PQSupportOff
           let chatV = vr `peerConnChatVersion` peerChatVRange
           cId <- withFastStore' $ \db -> do
@@ -2036,6 +2052,8 @@ processChatCommand' vr = \case
             updateGroupMemberStatus db userId fromMember GSMemAccepted
             updateGroupMemberStatus db userId membership GSMemAccepted
             pure cId
+          -- TODO conn prepare
+          -- don't cleanup (set failure state? - same as for invitation links)
           void (withAgent $ \a -> joinConnection a (aUserId user) (Just agentConnId) True connRequest dm PQSupportOff subMode)
             `catchChatError` \e -> do
               withFastStore' $ \db -> do
@@ -2616,6 +2634,11 @@ processChatCommand' vr = \case
     joinPreparedAgentConnection :: User -> Int64 -> ConnId -> ConnectionRequestUri m -> ByteString -> PQSupport -> SubscriptionMode -> CM ()
     joinPreparedAgentConnection user pccConnId connId cReq connInfo pqSup subMode = do
       void (withAgent $ \a -> joinConnection a (aUserId user) (Just connId) True cReq connInfo pqSup subMode)
+        -- TODO conn prepare
+        -- if joining invitation connection:
+        --   don't cleanup connection on error
+        --   tbd - only joinConnection, or catch to mark error status?
+        -- if joining contact connection: keep cleanup? (there's no secure - api is misleading, it's not really a JOIN)
         `catchChatError` \e -> do
           withFastStore' $ \db -> deleteConnectionRecord db user pccConnId
           withAgent $ \a -> deleteConnectionAsync a False connId
