@@ -4200,7 +4200,7 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="## In reply to" xml:space="preserve" approved="no">
         <source>## In reply to</source>
-        <target state="translated">## Ως απαντηση σε</target>
+        <target state="translated">## Ως απάντηση σε</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="%@ (current)" xml:space="preserve" approved="no">

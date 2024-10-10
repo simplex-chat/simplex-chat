@@ -947,6 +947,7 @@
       </trans-unit>
       <trans-unit id="App session" xml:space="preserve">
         <source>App session</source>
+        <target>Appsessie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
@@ -4549,10 +4550,12 @@ Dit is jouw link voor groep %@!</target>
       </trans-unit>
       <trans-unit id="New SOCKS credentials will be used every time you start the app." xml:space="preserve">
         <source>New SOCKS credentials will be used every time you start the app.</source>
+        <target>Elke keer dat u de app start, worden er nieuwe SOCKS-inloggegevens gebruikt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New SOCKS credentials will be used for each server." xml:space="preserve">
         <source>New SOCKS credentials will be used for each server.</source>
+        <target>Voor elke server worden nieuwe SOCKS-inloggegevens gebruikt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New chat" xml:space="preserve">
@@ -4677,10 +4680,12 @@ Dit is jouw link voor groep %@!</target>
       </trans-unit>
       <trans-unit id="No permission to record speech" xml:space="preserve">
         <source>No permission to record speech</source>
+        <target>Geen toestemming om spraak op te nemen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No permission to record video" xml:space="preserve">
         <source>No permission to record video</source>
+        <target>Geen toestemming om video op te nemen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No permission to record voice message" xml:space="preserve">
@@ -6153,6 +6158,7 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
       </trans-unit>
       <trans-unit id="Server" xml:space="preserve">
         <source>Server</source>
+        <target>Server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Server address" xml:space="preserve">
@@ -6679,6 +6685,7 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
       </trans-unit>
       <trans-unit id="Tail" xml:space="preserve">
         <source>Tail</source>
+        <target>Staart</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Take picture" xml:space="preserve">
@@ -7007,10 +7014,12 @@ U wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingesc
       </trans-unit>
       <trans-unit id="To record speech please grant permission to use Microphone." xml:space="preserve">
         <source>To record speech please grant permission to use Microphone.</source>
+        <target>Geef toestemming om de microfoon te gebruiken om spraak op te nemen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To record video please grant permission to use Camera." xml:space="preserve">
         <source>To record video please grant permission to use Camera.</source>
+        <target>Om video op te nemen, dient u toestemming te geven om de camera te gebruiken.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To record voice message please grant permission to use Microphone." xml:space="preserve">

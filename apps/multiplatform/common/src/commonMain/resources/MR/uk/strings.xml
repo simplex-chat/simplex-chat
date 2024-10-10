@@ -2108,4 +2108,11 @@
     <string name="settings_message_shape_tail">Хвіст</string>
     <string name="settings_message_shape_corner">Куточок</string>
     <string name="settings_section_title_message_shape">Форма повідомлення</string>
+    <string name="network_session_mode_session">Сесія додатку</string>
+    <string name="network_session_mode_session_description">Нові облікові дані SOCKS будуть використовуватись щоразу, коли ви запускаєте додаток.</string>
+    <string name="network_session_mode_server_description">Нові облікові дані SOCKS будуть використовуватись для кожного сервера.</string>
+    <string name="network_session_mode_server">Сервер</string>
+    <string name="call_desktop_permission_denied_chrome">Натисніть кнопку інформації поруч із полем адреси, щоб дозволити використання мікрофона.</string>
+    <string name="call_desktop_permission_denied_safari">Відкрийте Налаштування Safari / Сайти / Мікрофон, а потім виберіть \"Дозволити для localhost\".</string>
+    <string name="call_desktop_permission_denied_title">Щоб здійснювати дзвінки, дозволіть використовувати ваш мікрофон. Завершіть дзвінок і спробуйте зателефонувати знову.</string>
 </resources>

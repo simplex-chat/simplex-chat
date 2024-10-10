@@ -2192,4 +2192,21 @@
     <string name="settings_section_title_message_shape">Form der Nachricht</string>
     <string name="settings_message_shape_tail">Sprechblase</string>
     <string name="settings_message_shape_corner">Abrundung Ecken</string>
+    <string name="network_session_mode_session">App-Sitzung</string>
+    <string name="network_session_mode_server_description">Für jeden Server werden neue SOCKS-Anmeldeinformationen genutzt</string>
+    <string name="network_session_mode_server">Server</string>
+    <string name="call_desktop_permission_denied_chrome">Klicken Sie auf die Info-Schaltfläche neben dem Adressfeld, um die Verwendung des Mikrofons zu erlauben.</string>
+    <string name="call_desktop_permission_denied_title">Um Anrufe durchzuführen, erlauben Sie die Nutzung Ihres Mikrofons. Beenden Sie den Anruf und versuchen Sie es erneut.</string>
+    <string name="call_desktop_permission_denied_safari">Öffnen Sie die Safari-Einstellungen / Webseiten / Mikrofon und wählen Sie dann \"Für Localhost erlauben\".</string>
+    <string name="v6_1_better_calls">Verbesserte Anrufe</string>
+    <string name="v6_1_customizable_message_descr">Anpassbares Format des Nachrichtenfelds</string>
+    <string name="v6_1_delete_many_messages_descr">Bis zu 200 Nachrichten löschen oder moderieren</string>
+    <string name="v6_1_forward_many_messages_descr">Bis zu 20 Nachrichten auf einmal weiterleiten</string>
+    <string name="v6_1_better_security_descr">Die SimpleX-Protokolle wurden von Trail of Bits überprüft.</string>
+    <string name="v6_1_better_calls_descr">Während des Anrufs zwischen Audio und Video wechseln</string>
+    <string name="v6_1_switch_chat_profile_descr">Das Chat-Profil für Einmal-Einladungen wechseln</string>
+    <string name="network_session_mode_session_description">Jedes Mal wenn Sie die App starten, werden neue SOCKS-Anmeldeinformationen genutzt</string>
+    <string name="v6_1_better_security">Verbesserte Sicherheit ✅</string>
+    <string name="v6_1_message_dates_descr">Verbesserte Nachrichten-Datumsinformation</string>
+    <string name="v6_1_better_user_experience">Verbesserte Nutzer-Erfahrung</string>
 </resources>

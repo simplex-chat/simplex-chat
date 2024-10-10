@@ -947,6 +947,7 @@
       </trans-unit>
       <trans-unit id="App session" xml:space="preserve">
         <source>App session</source>
+        <target>Sesión de aplicación</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
@@ -1562,7 +1563,7 @@
       </trans-unit>
       <trans-unit id="Confirm that you remember database passphrase to migrate it." xml:space="preserve">
         <source>Confirm that you remember database passphrase to migrate it.</source>
-        <target>Para migrar confirma que recuerdas la frase de contraseña de la base de datos.</target>
+        <target>Para migrar la base de datos confirma que recuerdas la frase de contraseña.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm upload" xml:space="preserve">
@@ -4164,7 +4165,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Local profile data only" xml:space="preserve">
         <source>Local profile data only</source>
-        <target>Sólo datos del perfil local</target>
+        <target>Eliminar sólo el perfil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Lock after" xml:space="preserve">
@@ -4549,10 +4550,12 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="New SOCKS credentials will be used every time you start the app." xml:space="preserve">
         <source>New SOCKS credentials will be used every time you start the app.</source>
+        <target>Se usarán credenciales SOCKS nuevas cada vez que inicies la aplicación.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New SOCKS credentials will be used for each server." xml:space="preserve">
         <source>New SOCKS credentials will be used for each server.</source>
+        <target>Se usarán credenciales SOCKS nuevas por cada servidor.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New chat" xml:space="preserve">
@@ -4677,10 +4680,12 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="No permission to record speech" xml:space="preserve">
         <source>No permission to record speech</source>
+        <target>Sin permiso para grabación de voz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No permission to record video" xml:space="preserve">
         <source>No permission to record video</source>
+        <target>Sin permiso para grabación de vídeo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No permission to record voice message" xml:space="preserve">
@@ -5134,7 +5139,7 @@ Error: %@</target>
       </trans-unit>
       <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve">
         <source>Possibly, certificate fingerprint in server address is incorrect</source>
-        <target>Posiblemente la huella digital del certificado en la dirección del servidor es incorrecta</target>
+        <target>Posiblemente la huella del certificado en la dirección del servidor es incorrecta</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve">
@@ -5204,7 +5209,7 @@ Error: %@</target>
       </trans-unit>
       <trans-unit id="Profile and server connections" xml:space="preserve">
         <source>Profile and server connections</source>
-        <target>Datos del perfil y conexiones</target>
+        <target>Eliminar perfil y conexiones</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile image" xml:space="preserve">
@@ -6153,6 +6158,7 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
       </trans-unit>
       <trans-unit id="Server" xml:space="preserve">
         <source>Server</source>
+        <target>Servidor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Server address" xml:space="preserve">
@@ -6182,7 +6188,7 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
       </trans-unit>
       <trans-unit id="Server test failed!" xml:space="preserve">
         <source>Server test failed!</source>
-        <target>¡Error en prueba del servidor!</target>
+        <target>¡Prueba no superada!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Server type" xml:space="preserve">
@@ -6729,7 +6735,7 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
       </trans-unit>
       <trans-unit id="Test failed at step %@." xml:space="preserve">
         <source>Test failed at step %@.</source>
-        <target>La prueba ha fallado en el paso %@.</target>
+        <target>Prueba no superada en el paso %@.</target>
         <note>server test failure</note>
       </trans-unit>
       <trans-unit id="Test server" xml:space="preserve">
@@ -6744,7 +6750,7 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
       </trans-unit>
       <trans-unit id="Tests failed!" xml:space="preserve">
         <source>Tests failed!</source>
-        <target>¡Pruebas fallidas!</target>
+        <target>¡Pruebas no superadas!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Thank you for installing SimpleX Chat!" xml:space="preserve">
@@ -7008,10 +7014,12 @@ Se te pedirá que completes la autenticación antes de activar esta función.</t
       </trans-unit>
       <trans-unit id="To record speech please grant permission to use Microphone." xml:space="preserve">
         <source>To record speech please grant permission to use Microphone.</source>
+        <target>Para grabación de voz, por favor concede el permiso para usar el micrófono.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To record video please grant permission to use Camera." xml:space="preserve">
         <source>To record video please grant permission to use Camera.</source>
+        <target>Para grabación de vídeo, por favor concede el permiso para usar la cámara.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To record voice message please grant permission to use Microphone." xml:space="preserve">
@@ -8774,7 +8782,7 @@ Repeat connection request?</source>
       </trans-unit>
       <trans-unit id="removed profile picture" xml:space="preserve">
         <source>removed profile picture</source>
-        <target>imagen de perfil eliminada</target>
+        <target>ha eliminado la imagen del perfil</target>
         <note>profile update event chat item</note>
       </trans-unit>
       <trans-unit id="removed you" xml:space="preserve">
@@ -8838,7 +8846,7 @@ last received msg: %2$@</source>
       </trans-unit>
       <trans-unit id="set new profile picture" xml:space="preserve">
         <source>set new profile picture</source>
-        <target>nueva imagen de perfil</target>
+        <target>tiene nueva imagen del perfil</target>
         <note>profile update event chat item</note>
       </trans-unit>
       <trans-unit id="standard end-to-end encryption" xml:space="preserve">
