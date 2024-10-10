@@ -33,6 +33,7 @@ struct UserPicker: View {
             .sorted(using: KeyPathComparator<UserInfo>(\.user.activeOrder, order: .reverse))
         let sectionWidth = max(frameWidth - sectionHorizontalPadding * 2, 0)
         let currentUserWidth = max(frameWidth - sectionHorizontalPadding - rowPadding * 2 - 14 - imageSize, 0)
+        let stopped = m.chatRunning != true
         VStack(spacing: sectionSpacing) {
             if let user = m.currentUser {
                 StickyScrollView(resetScroll: $resetScroll) {
@@ -46,11 +47,15 @@ struct UserPicker: View {
                         .frame(width: otherUsers.isEmpty ? sectionWidth : currentUserWidth, alignment: .leading)
                         .modifier(ListRow { activeSheet = .currentProfile })
                         .clipShape(sectionShape)
+                        .disabled(stopped)
+                        .opacity(stopped ? 0.4 : 1)
                         ForEach(otherUsers) { u in
                             userView(u, size: imageSize)
                                 .frame(maxWidth: sectionWidth * 0.618)
                                 .fixedSize()
                         }
+                        .opacity(stopped ? 0.4 : 1)
+                        .disabled(stopped)
                     }
                     .padding(.horizontal, sectionHorizontalPadding)
                 }
@@ -60,10 +65,10 @@ struct UserPicker: View {
                 .onPreferenceChange(DetermineWidth.Key.self) { frameWidth = $0 }
             }
             VStack(spacing: 0) {
-                openSheetOnTap("qrcode", title: m.userAddress == nil ? "Create SimpleX address" : "Your SimpleX address", sheet: .address)
-                openSheetOnTap("switch.2", title: "Chat preferences", sheet: .chatPreferences)
-                openSheetOnTap("person.crop.rectangle.stack", title: "Your chat profiles", sheet: .chatProfiles)
-                openSheetOnTap("desktopcomputer", title: "Use from desktop", sheet: .useFromDesktop)
+                openSheetOnTap("qrcode", title: m.userAddress == nil ? "Create SimpleX address" : "Your SimpleX address", sheet: .address, disabled: stopped)
+                openSheetOnTap("switch.2", title: "Chat preferences", sheet: .chatPreferences, disabled: stopped)
+                openSheetOnTap("person.crop.rectangle.stack", title: "Your chat profiles", sheet: .chatProfiles, disabled: stopped)
+                openSheetOnTap("desktopcomputer", title: "Use from desktop", sheet: .useFromDesktop, disabled: stopped)
                 ZStack(alignment: .trailing) {
                     openSheetOnTap("gearshape", title: "Settings", sheet: .settings, showDivider: false)
                     Image(systemName: colorScheme == .light ? "sun.max" : "moon.fill")
@@ -149,15 +154,16 @@ struct UserPicker: View {
         .clipShape(sectionShape)
     }
 
-    private func openSheetOnTap(_ icon: String, title: LocalizedStringKey, sheet: UserPickerSheet, showDivider: Bool = true) -> some View {
+    private func openSheetOnTap(_ icon: String, title: LocalizedStringKey, sheet: UserPickerSheet, showDivider: Bool = true, disabled: Bool = false) -> some View {
         ZStack(alignment: .bottom) {
             settingsRow(icon, color: theme.colors.secondary) {
-                Text(title).foregroundColor(.primary)
+                Text(title).foregroundColor(.primary).opacity(disabled ? 0.4 : 1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, rowPadding)
             .padding(.vertical, rowVerticalPadding)
             .modifier(ListRow { activeSheet = sheet })
+            .disabled(disabled)
             if showDivider {
                 Divider().padding(.leading, 52)
             }
