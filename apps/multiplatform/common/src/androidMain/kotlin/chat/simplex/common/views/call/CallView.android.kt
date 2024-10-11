@@ -41,8 +41,10 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.*
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewClientCompat
+import chat.simplex.common.helpers.applyAppLocale
 import chat.simplex.common.helpers.showAllowPermissionInSettingsAlert
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -702,9 +704,10 @@ fun WebRTCView(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIM
 
   Box(Modifier.fillMaxSize()) {
     AndroidView(
-      factory = { AndroidViewContext ->
+      factory = {
         try {
           (staticWebView ?: WebView(androidAppContext)).apply {
+            reapplyLocale()
             layoutParams = ViewGroup.LayoutParams(
               ViewGroup.LayoutParams.MATCH_PARENT,
               ViewGroup.LayoutParams.MATCH_PARENT,
@@ -773,6 +776,15 @@ private fun updateActiveCall(initial: Call, transform: (Call) -> Call) {
   } else {
     Log.d(TAG, "withActiveCall: ignoring, not in call with the contact ${activeCall?.contact?.id}")
   }
+}
+
+/*
+* Creating WebView automatically drops user's custom app locale to default system locale.
+* Preventing it by re-applying custom locale
+* */
+private fun reapplyLocale() {
+  mainActivity.get()?.applyAppLocale(appPrefs.appLanguage)
+  callActivity.get()?.applyAppLocale(appPrefs.appLanguage)
 }
 
 private class LocalContentWebViewClient(val webView: MutableState<WebView?>, private val assetLoader: WebViewAssetLoader) : WebViewClientCompat() {
