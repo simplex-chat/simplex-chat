@@ -24,8 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -37,7 +36,9 @@ import chat.simplex.app.R
 import chat.simplex.app.TAG
 import chat.simplex.app.model.NtfManager
 import chat.simplex.app.model.NtfManager.AcceptCallAction
+import chat.simplex.common.helpers.applyAppLocale
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.theme.*
@@ -49,6 +50,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import java.lang.ref.WeakReference
+import java.util.*
 import chat.simplex.common.platform.chatModel as m
 
 class CallActivity: ComponentActivity(), ServiceConnection {
@@ -56,6 +58,7 @@ class CallActivity: ComponentActivity(), ServiceConnection {
   var boundService: CallService? = null
 
   override fun onCreate(savedInstanceState: Bundle?) {
+    applyAppLocale(appPrefs.appLanguage)
     super.onCreate(savedInstanceState)
     callActivity = WeakReference(this)
     when (intent?.action) {
@@ -80,6 +83,7 @@ class CallActivity: ComponentActivity(), ServiceConnection {
 
   override fun onDestroy() {
     super.onDestroy()
+    (mainActivity.get() ?: this).applyAppLocale(appPrefs.appLanguage)
     if (isOnLockScreenNow()) {
       lockAfterIncomingCall()
     }
@@ -233,7 +237,7 @@ fun CallActivityView() {
   }
   SimpleXTheme {
     var prevCall by remember { mutableStateOf(call) }
-    KeyChangeEffect(m.activeCall.value) {
+    KeyChangeEffect(m.activeCall.value, remember { appPrefs.appLanguage.state }.value) {
       if (m.activeCall.value != null) {
         prevCall = m.activeCall.value
         activity.boundService?.updateNotification()
