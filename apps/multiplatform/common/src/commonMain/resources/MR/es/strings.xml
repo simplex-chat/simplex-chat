@@ -2126,6 +2126,6 @@
     <string name="v6_1_better_security_descr">Protocolos de SimpleX auditados por Trail of Bits.</string>
     <string name="v6_1_better_calls_descr">Intercambia audio y video durante la llamada.</string>
     <string name="v6_1_better_security">Seguridad mejorada ✅</string>
-    <string name="v6_1_delete_many_messages_descr">Borrar o moderar hasta 200 mensajes.</string>
+    <string name="v6_1_delete_many_messages_descr">Borra o modera hasta 200 mensajes a la vez.</string>
     <string name="v6_1_switch_chat_profile_descr">Cambia el perfil de chat para invitaciones de un solo uso.</string>
 </resources>
