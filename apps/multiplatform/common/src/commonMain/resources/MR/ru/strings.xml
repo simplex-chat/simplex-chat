@@ -2198,7 +2198,7 @@
     <string name="v6_1_forward_many_messages_descr">Пересылайте до 20 сообщений за раз.</string>
     <string name="v6_1_better_calls_descr">Переключайте звук и видео во время звонка.</string>
     <string name="v6_1_switch_chat_profile_descr">Переключайте профиль чата для одноразовых приглашений.</string>
-    <string name="v6_1_better_security_descr">Анализ безопасности протоколов SimpleX от Trail of Bits.</string>
+    <string name="v6_1_better_security_descr">Аудит SimpleX протоколов от Trail of Bits.</string>
     <string name="call_desktop_permission_denied_title">Чтобы совершать звонки, разрешите использовать микрофон. Завершите вызов и попробуйте позвонить снова.</string>
     <string name="network_proxy_auth_mode_no_auth">Не использовать учетные данные с прокси.</string>
     <string name="network_proxy_incorrect_config_title">Ошибка сохранения прокси</string>
