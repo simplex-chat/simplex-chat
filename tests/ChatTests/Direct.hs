@@ -4,6 +4,7 @@
 {-# LANGUAGE PostfixOperators #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 module ChatTests.Direct where
 
@@ -24,12 +25,16 @@ import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Messages (ChatItemId)
-import Simplex.Chat.Options (ChatOpts (..))
+import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
+import Simplex.Messaging.Agent.Env.SQLite
+import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
+import Simplex.Messaging.Transport
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import Simplex.Messaging.Version
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
@@ -40,6 +45,7 @@ chatDirectTests :: SpecWith FilePath
 chatDirectTests = do
   describe "direct messages" $ do
     describe "add contact and send/receive messages" testAddContact
+    it "retry connencting via the same link" testRetryConnecting
     it "mark multiple messages as read" testMarkReadDirect
     it "clear chat with contact" testContactClear
     it "deleting contact deletes profile" testDeleteContactDeletesProfile
@@ -214,6 +220,57 @@ testAddContact = versionTestMatrix2 runTestAddContact
           if pqExpected
             then chatFeatures
             else (0, e2eeInfoNoPQStr) : tail chatFeatures
+
+testRetryConnecting :: HasCallStack => FilePath -> IO ()
+testRetryConnecting =
+  testChatCfgOpts2 cfg' opts' aliceProfile bobProfile $ \alice bob -> do
+    inv <- withSmpServer' serverCfg' $ do
+      alice ##> "/_connect 1"
+      getInvitation alice
+    alice <## "server disconnected localhost ()"
+    bob ##> ("/_connect plan 1 " <> inv)
+    bob <## "invitation link: ok to connect"
+    bob ##> ("/_connect 1 " <> inv)
+    bob <##. "smp agent error: BROKER"
+    withSmpServer' serverCfg' $ do
+      alice <## "server connected localhost ()"
+      bob ##> ("/_connect plan 1 " <> inv)
+      bob <## "invitation link: ok to connect"
+      bob ##> ("/_connect 1 " <> inv)
+      bob <## "confirmation sent!"
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+      alice #> "@bob message 1"
+      bob <# "alice> message 1"
+      bob #> "@alice message 2"
+      alice <# "bob> message 2"
+    bob <## "server disconnected localhost (@alice)"
+    alice <## "server disconnected localhost (@bob)"
+  where
+    serverCfg' =
+      smpServerCfg
+        { transports = [("7003", transport @TLS, False)],
+          msgQueueQuota = 2,
+          storeLogFile = Just "tests/tmp/smp-server-store.log",
+          storeMsgsFile = Just "tests/tmp/smp-server-messages.log"
+        }
+    fastRetryInterval = defaultReconnectInterval {initialInterval = 50000} -- same as in agent tests
+    cfg' =
+      testCfg
+        { agentConfig =
+            testAgentCfg
+              { quotaExceededTimeout = 1,
+                messageRetryInterval = RetryInterval2 {riFast = fastRetryInterval, riSlow = fastRetryInterval}
+              }
+        }
+    opts' =
+      testOpts
+        { coreOptions =
+            testCoreOpts
+              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
+              }
+        }
 
 testMarkReadDirect :: HasCallStack => FilePath -> IO ()
 testMarkReadDirect = testChat2 aliceProfile bobProfile $ \alice bob -> do

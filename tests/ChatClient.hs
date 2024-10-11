@@ -463,7 +463,7 @@ smpServerCfg =
 withSmpServer :: IO () -> IO ()
 withSmpServer = withSmpServer' smpServerCfg
 
-withSmpServer' :: ServerConfig -> IO () -> IO ()
+withSmpServer' :: ServerConfig -> IO a -> IO a
 withSmpServer' cfg = serverBracket (\started -> runSMPServerBlocking started cfg Nothing)
 
 xftpTestPort :: ServiceName
@@ -515,7 +515,7 @@ withXFTPServer' cfg =
         runXFTPServerBlocking started cfg Nothing
     )
 
-serverBracket :: (TMVar Bool -> IO ()) -> IO () -> IO ()
+serverBracket :: (TMVar Bool -> IO ()) -> IO a -> IO a
 serverBracket server f = do
   started <- newEmptyTMVarIO
   bracket

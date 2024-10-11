@@ -1769,7 +1769,7 @@ processChatCommand' vr = \case
         pure conn'
   APIConnectPlan userId cReqUri -> withUserId userId $ \user ->
     CRConnectionPlan user <$> connectPlan user cReqUri
-  APIConnect userId incognito (Just (ACR SCMInvitation cReq)) -> withUserId userId $ \user -> withInvitationLock "connect" (strEncode cReq) . procCmd $ do
+  APIConnect userId incognito (Just (ACR SCMInvitation cReq@(CRInvitationUri crData e2e))) -> withUserId userId $ \user -> withInvitationLock "connect" (strEncode cReq) . procCmd $ do
     subMode <- chatReadVar subscriptionMode
     -- [incognito] generate profile to send
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
@@ -1780,16 +1780,27 @@ processChatCommand' vr = \case
       Just (agentV, pqSup') -> do
         let chatV = agentToChatVersion agentV
         dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
-        connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup'
-        conn@PendingContactConnection {pccConnId} <- withFastStore' $ \db -> createDirectConnection db user connId cReq ConnJoined (incognitoProfile $> profileToSend) subMode chatV pqSup'
-        -- TODO reuse connection record
-        -- try to get PendingContactConnection by link (reuse connectPlan?);
-        -- connectPlan has to be modified to allow reuse of connection record
-        -- (e.g. connection reset to ConnNew on failure, and connectPlan having new branch for ConnNew);
-        -- if connection exists, pass its connId to joinConnection to reuse key and avoid AUTH error;
-        -- insead of deleting, cleanup should mark connection in a way so that it's filtered out of chat list
-        joinPreparedAgentConnection user pccConnId connId cReq dm pqSup' subMode
-        pure $ CRSentConfirmation user conn
+        withFastStore' (\db -> getConnectionEntityByConnReq db vr user cReqs) >>= \case
+          Nothing -> joinNewConn chatV dm
+          Just (RcvDirectMsgConnection conn@Connection {connId, connStatus, contactConnInitiated} Nothing)
+            | connStatus == ConnNew && contactConnInitiated -> joinNewConn chatV dm -- own connection link
+            | connStatus == ConnPrepared -> do -- retrying join after error
+                pcc <- withFastStore $ \db -> getPendingContactConnection db userId connId
+                joinPreparedConn (aConnId conn) pcc dm
+          Just ent -> throwChatError $ CECommandError $ "connection exists: " <> show (connEntityInfo ent)
+        where
+          joinNewConn chatV dm = do
+            connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup'
+            pcc <- withFastStore' $ \db -> createDirectConnection db user connId cReq ConnPrepared (incognitoProfile $> profileToSend) subMode chatV pqSup'
+            joinPreparedConn connId pcc dm
+          joinPreparedConn connId pcc@PendingContactConnection {pccConnId} dm = do
+            void $ withAgent $ \a -> joinConnection a (aUserId user) connId True cReq dm pqSup' subMode
+            withFastStore' $ \db -> updateConnectionStatus' db pccConnId ConnJoined
+            pure $ CRSentConfirmation user pcc
+          cReqs =
+            ( CRInvitationUri crData {crScheme = SSSimplex} e2e,
+              CRInvitationUri crData {crScheme = simplexChat} e2e
+            )
   APIConnect userId incognito (Just (ACR SCMContact cReq)) -> withUserId userId $ \user -> connectViaContact user incognito cReq
   APIConnect _ _ Nothing -> throwChatError CEInvalidConnReq
   Connect incognito aCReqUri@(Just cReqUri) -> withUser $ \user@User {userId} -> do
@@ -2870,6 +2881,8 @@ processChatCommand' vr = \case
     connectPlan user (ACR SCMInvitation (CRInvitationUri crData e2e)) = do
       withFastStore' (\db -> getConnectionEntityByConnReq db vr user cReqSchemas) >>= \case
         Nothing -> pure $ CPInvitationLink ILPOk
+        Just (RcvDirectMsgConnection Connection {connStatus = ConnPrepared} Nothing) ->
+          pure $ CPInvitationLink ILPOk
         Just (RcvDirectMsgConnection conn ct_) -> do
           let Connection {connStatus, contactConnInitiated} = conn
           if
