@@ -2119,7 +2119,7 @@
     <string name="network_session_mode_server_description">Se usarán credenciales SOCKS nuevas por cada servidor.</string>
     <string name="network_session_mode_server">Servidor</string>
     <string name="v6_1_better_calls">Llamadas mejoradas</string>
-    <string name="v6_1_message_dates_descr">Mensajes mejor datados.</string>
+    <string name="v6_1_message_dates_descr">Sistema de fechas mejorado.</string>
     <string name="v6_1_better_user_experience">Experiencia de usuario mejorada</string>
     <string name="v6_1_customizable_message_descr">Forma personalizable de los mensajes.</string>
     <string name="v6_1_forward_many_messages_descr">Desplazamiento de hasta 20 mensajes.</string>
