@@ -202,6 +202,7 @@ actual fun ActiveCallView() {
             is WCallCommand.Camera -> {
               updateActiveCall(call) { it.copy(localCamera = cmd.camera) }
               if (!call.localMediaSources.mic) {
+                callAudioDeviceManager.selectSameDeviceOnWebViewChange()
                 chatModel.callCommand.add(WCallCommand.Media(CallMediaSource.Mic, enable = false))
               }
             }
@@ -261,7 +262,10 @@ private fun ActiveCallOverlay(call: Call, chatModel: ChatModel, callAudioDeviceM
     devices = remember { callAudioDeviceManager.devices }.value,
     currentDevice = remember { callAudioDeviceManager.currentDevice },
     dismiss = { withBGApi { chatModel.callManager.endCall(call) } },
-    toggleAudio = { chatModel.callCommand.add(WCallCommand.Media(CallMediaSource.Mic, enable = !call.localMediaSources.mic)) },
+    toggleAudio = {
+      callAudioDeviceManager.selectSameDeviceOnWebViewChange()
+      chatModel.callCommand.add(WCallCommand.Media(CallMediaSource.Mic, enable = !call.localMediaSources.mic))
+    },
     selectDevice = { callAudioDeviceManager.selectDevice(it.id) },
     toggleVideo = {
       if (ContextCompat.checkSelfPermission(androidAppContext, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {

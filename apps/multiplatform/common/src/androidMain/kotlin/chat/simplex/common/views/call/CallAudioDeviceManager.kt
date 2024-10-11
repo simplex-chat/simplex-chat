@@ -7,9 +7,12 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.helpers.withBGApi
 import dev.icerock.moko.resources.ImageResource
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import java.util.concurrent.Executors
 
 interface CallAudioDeviceManagerInterface {
@@ -19,6 +22,7 @@ interface CallAudioDeviceManagerInterface {
   fun stop()
   // AudioDeviceInfo.AudioDeviceType
   fun selectLastExternalDeviceOrDefault(speaker: Boolean, keepAnyExternal: Boolean)
+  fun selectSameDeviceOnWebViewChange()
   // AudioDeviceInfo.AudioDeviceType
   fun selectDevice(id: Int)
 
@@ -35,12 +39,15 @@ interface CallAudioDeviceManagerInterface {
 @RequiresApi(Build.VERSION_CODES.S)
 class PostSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
   private val am = androidAppContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+  private var resetDeviceToDevice: AudioDeviceInfo? = null
+  private var resetDeviceToDeviceJob: Job = Job()
   override val devices: MutableState<List<AudioDeviceInfo>> = mutableStateOf(emptyList())
   override val currentDevice: MutableState<AudioDeviceInfo?> = mutableStateOf(null)
 
   private val audioCallback = object: AudioDeviceCallback() {
     override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>) {
       Log.d(TAG, "Added audio devices: ${addedDevices.map { it.type }}")
+      resetDeviceToDevice = null
       super.onAudioDevicesAdded(addedDevices)
       val oldDevices = devices.value
       devices.value = am.availableCommunicationDevices
@@ -53,13 +60,21 @@ class PostSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
 
     override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>) {
       Log.d(TAG, "Removed audio devices: ${removedDevices.map { it.type }}")
+      resetDeviceToDevice = null
       super.onAudioDevicesRemoved(removedDevices)
       devices.value = am.availableCommunicationDevices
     }
   }
 
   private val listener: OnCommunicationDeviceChangedListener = OnCommunicationDeviceChangedListener { device ->
+    val resetTo = resetDeviceToDevice
+    if (resetTo != null && device != null && resetTo.id != device.id) {
+      Log.w(TAG, "Resetting device that was set by WebView ${device.name?.localized()} to previously set device ${resetTo.name?.localized()}")
+      selectDevice(resetTo.id)
+      return@OnCommunicationDeviceChangedListener
+    }
     devices.value = am.availableCommunicationDevices
+    //Log.d(TAG, "Devices changed ${device?.details()} | ${devices.value.map { it.details() }}")
     currentDevice.value = device
   }
 
@@ -98,7 +113,18 @@ class PostSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
     }
   }
 
+  // WebView modifies speaker when muting/unmuting microphone. It's not needed at all, returning back current device if it will be changed
+  override fun selectSameDeviceOnWebViewChange() {
+    resetDeviceToDevice = currentDevice.value
+    resetDeviceToDeviceJob.cancel()
+    resetDeviceToDeviceJob = withBGApi {
+      delay(5000)
+      resetDeviceToDevice = null
+    }
+  }
+
   override fun selectDevice(id: Int) {
+    resetDeviceToDevice = null
     val device = devices.value.lastOrNull { it.id == id }
     if (device != null && am.communicationDevice?.id != id ) {
       am.setCommunicationDevice(device)
@@ -152,6 +178,9 @@ class PreSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
       adaptToCurrentlyActiveDevice(newCurrentDevice)
     }
   }
+
+  // Works without it
+  override fun selectSameDeviceOnWebViewChange() {}
 
   override fun selectDevice(id: Int) {
     val device = devices.value.lastOrNull { it.id == id }
@@ -215,6 +244,8 @@ val AudioDeviceInfo.icon: ImageResource
     AudioDeviceInfo.TYPE_USB_HEADSET, AudioDeviceInfo.TYPE_USB_DEVICE -> MR.images.ic_usb
     else -> MR.images.ic_brand_awareness_filled
   }
+
+private fun AudioDeviceInfo.details(): String = "$productName id:$id name:${name?.localized()} type:$type sink:$isSink source:$isSource"
 
 val AudioDeviceInfo.name: StringResource?
   get() = when (this.type) {
