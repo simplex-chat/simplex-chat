@@ -49,7 +49,7 @@
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>Megjegyzés:</b> az üzenet- és fájlközvetítő-kiszolgálók SOCKS proxyn keresztül kapcsolódnak. A hívások és a hivatkozások előnézetének elküldése közvetlen kapcsolatot használnak.]]></string>
     <string name="full_backup">Alkalmazásadatok biztonsági mentése</string>
     <string name="database_initialization_error_title">Az adatbázis előkészítése sikertelen</string>
-    <string name="all_your_contacts_will_remain_connected_update_sent">Az ismerőseivel kapcsolatban marad. A profil változtatások frissítésre kerülnek az ismerősöknél.</string>
+    <string name="all_your_contacts_will_remain_connected_update_sent">Az ismerőseivel kapcsolatban marad. A profil-változtatások frissítésre kerülnek az ismerősöknél.</string>
     <string name="v4_5_transport_isolation_descr">A csevegési profillal (alapértelmezett), vagy a kapcsolattal (BÉTA).</string>
     <string name="connect__a_new_random_profile_will_be_shared">Egy új véletlenszerű profil lesz megosztva.</string>
     <string name="allow_voice_messages_only_if">A hangüzenetek küldése csak abban az esetben van engedélyezve, ha az ismerőse is engedélyezi.</string>
