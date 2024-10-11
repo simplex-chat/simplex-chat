@@ -2120,7 +2120,7 @@
     <string name="v6_1_message_dates_descr">Betere datums voor berichten.</string>
     <string name="v6_1_better_user_experience">Betere gebruikerservaring</string>
     <string name="v6_1_customizable_message_descr">Aanpasbare berichtvorm.</string>
-    <string name="v6_1_better_calls_descr">Wissel tussen audio en video tijdens het gesprek.</string>
+    <string name="v6_1_better_calls_descr">Wisselen tussen audio en video tijdens het gesprek.</string>
     <string name="v6_1_switch_chat_profile_descr">Wijzig chatprofiel voor eenmalige uitnodigingen.</string>
     <string name="v6_1_delete_many_messages_descr">Maximaal 200 berichten verwijderen of modereren.</string>
     <string name="v6_1_forward_many_messages_descr">Stuur maximaal 20 berichten tegelijk door.</string>
