@@ -781,6 +781,7 @@ private fun updateActiveCall(initial: Call, transform: (Call) -> Call) {
 /*
 * Creating WebView automatically drops user's custom app locale to default system locale.
 * Preventing it by re-applying custom locale
+* https://issuetracker.google.com/issues/109833940
 * */
 private fun reapplyLocale() {
   mainActivity.get()?.applyAppLocale(appPrefs.appLanguage)
