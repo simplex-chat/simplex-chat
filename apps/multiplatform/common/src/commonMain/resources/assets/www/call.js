@@ -847,6 +847,8 @@ const processCommand = (function () {
         for (const t of source == CallMediaSource.Mic ? call.localStream.getAudioTracks() : call.localStream.getVideoTracks()) {
             if (isDesktop || source != CallMediaSource.Mic || stopTrackOnAndroid)
                 t.stop();
+            else
+                t.enabled = false;
             call.localStream.removeTrack(t);
         }
         let localStream;
@@ -896,8 +898,7 @@ const processCommand = (function () {
         if (!localStream || !oldCamera || !videos)
             return;
         if (!inactiveCallMediaSources.mic) {
-            if (isDesktop || stopTrackOnAndroid)
-                localStream.getAudioTracks().forEach((elem) => elem.stop());
+            localStream.getAudioTracks().forEach((elem) => (isDesktop || stopTrackOnAndroid ? elem.stop() : (elem.enabled = false)));
             localStream.getAudioTracks().forEach((elem) => localStream.removeTrack(elem));
         }
         if (!inactiveCallMediaSources.camera || oldCamera != newCamera) {
@@ -1162,6 +1163,8 @@ const processCommand = (function () {
                     else {
                         if (isDesktop || t.kind == CallMediaType.Video || stopTrackOnAndroid)
                             t.stop();
+                        else
+                            t.enabled = false;
                         s.removeTrack(t);
                         transceiver.sender.replaceTrack(null);
                     }
