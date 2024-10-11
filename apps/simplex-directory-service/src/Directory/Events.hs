@@ -106,6 +106,7 @@ data DirectoryCmdTag (r :: DirectoryRole) where
   DCConfirmDuplicateGroup_ :: DirectoryCmdTag 'DRUser
   DCListUserGroups_ :: DirectoryCmdTag 'DRUser
   DCDeleteGroup_ :: DirectoryCmdTag 'DRUser
+  DCSetRole_ :: DirectoryCmdTag 'DRUser
   DCApproveGroup_ :: DirectoryCmdTag 'DRSuperUser
   DCRejectGroup_ :: DirectoryCmdTag 'DRSuperUser
   DCSuspendGroup_ :: DirectoryCmdTag 'DRSuperUser
@@ -128,6 +129,7 @@ data DirectoryCmd (r :: DirectoryRole) where
   DCConfirmDuplicateGroup :: UserGroupRegId -> GroupName -> DirectoryCmd 'DRUser
   DCListUserGroups :: DirectoryCmd 'DRUser
   DCDeleteGroup :: UserGroupRegId -> GroupName -> DirectoryCmd 'DRUser
+  DCSetRole :: GroupId -> GroupName -> GroupMemberRole -> DirectoryCmd 'DRUser
   DCApproveGroup :: {groupId :: GroupId, displayName :: GroupName, groupApprovalId :: GroupApprovalId} -> DirectoryCmd 'DRSuperUser
   DCRejectGroup :: GroupId -> GroupName -> DirectoryCmd 'DRSuperUser
   DCSuspendGroup :: GroupId -> GroupName -> DirectoryCmd 'DRSuperUser
@@ -165,6 +167,7 @@ directoryCmdP =
         "list" -> u DCListUserGroups_
         "ls" -> u DCListUserGroups_
         "delete" -> u DCDeleteGroup_
+        "role" -> u DCSetRole_
         "approve" -> su DCApproveGroup_
         "reject" -> su DCRejectGroup_
         "suspend" -> su DCSuspendGroup_
@@ -187,10 +190,14 @@ directoryCmdP =
       DCConfirmDuplicateGroup_ -> gc DCConfirmDuplicateGroup
       DCListUserGroups_ -> pure DCListUserGroups
       DCDeleteGroup_ -> gc DCDeleteGroup
+      DCSetRole_ -> do
+        (groupId, displayName) <- gc (,)
+        memberRole <- A.space *> ("member" $> GRMember <|> "observer" $> GRObserver)
+        pure $ DCSetRole groupId displayName memberRole
       DCApproveGroup_ -> do
         (groupId, displayName) <- gc (,)
         groupApprovalId <- A.space *> A.decimal
-        pure $ DCApproveGroup {groupId, displayName, groupApprovalId}
+        pure DCApproveGroup {groupId, displayName, groupApprovalId}
       DCRejectGroup_ -> gc DCRejectGroup
       DCSuspendGroup_ -> gc DCSuspendGroup
       DCResumeGroup_ -> gc DCResumeGroup
@@ -221,6 +228,7 @@ directoryCmdTag = \case
   DCListUserGroups -> "list" 
   DCDeleteGroup {} -> "delete"
   DCApproveGroup {} -> "approve"
+  DCSetRole {} -> "role"
   DCRejectGroup {} -> "reject"
   DCSuspendGroup {} -> "suspend"
   DCResumeGroup {} -> "resume"

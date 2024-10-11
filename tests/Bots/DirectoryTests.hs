@@ -25,7 +25,7 @@ import System.FilePath ((</>))
 import Test.Hspec hiding (it)
 
 directoryServiceTests :: SpecWith FilePath
-directoryServiceTests = do
+directoryServiceTests = focus $ do
   it "should register group" testDirectoryService
   it "should suspend and resume group" testSuspendResume
   it "should join found group via link" testJoinGroup

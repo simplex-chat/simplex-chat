@@ -23,6 +23,7 @@ import Data.Set (Set)
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.Encoding (decodeLatin1)
 import Data.Time.Clock (diffUTCTime, getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
 import Directory.Events
@@ -447,30 +448,43 @@ directoryService st DirectoryOpts {superUsers, serviceName, searchResults, testi
       DCRecentGroups -> withFoundListedGroups Nothing $ sendAllGroups takeRecent "the most recent" STRecent
       DCSubmitGroup _link -> pure ()
       DCConfirmDuplicateGroup ugrId gName ->
-        atomically (getUserGroupReg st (contactId' ct) ugrId) >>= \case
-          Nothing -> sendReply $ "Group ID " <> show ugrId <> " not found"
-          Just GroupReg {dbGroupId, groupRegStatus} -> do
-            getGroup cc dbGroupId >>= \case
-              Nothing -> sendReply $ "Group ID " <> show ugrId <> " not found"
-              Just g@GroupInfo {groupProfile = GroupProfile {displayName}}
-                | displayName == gName ->
-                    readTVarIO groupRegStatus >>= \case
-                      GRSPendingConfirmation -> do
-                        getDuplicateGroup g >>= \case
-                          Nothing -> sendMessage cc ct "Error: getDuplicateGroup. Please notify the developers."
-                          Just DGReserved -> sendMessage cc ct $ groupAlreadyListed g
-                          _ -> processInvitation ct g
-                      _ -> sendReply $ "Error: the group ID " <> show ugrId <> " (" <> T.unpack displayName <> ") is not pending confirmation."
-                | otherwise -> sendReply $ "Group ID " <> show ugrId <> " has the display name " <> T.unpack displayName
+        withUserGroupReg ugrId gName $ \gr g@GroupInfo {groupProfile = GroupProfile {displayName}} ->
+          readTVarIO (groupRegStatus gr) >>= \case
+            GRSPendingConfirmation ->
+              getDuplicateGroup g >>= \case
+                Nothing -> sendMessage cc ct "Error: getDuplicateGroup. Please notify the developers."
+                Just DGReserved -> sendMessage cc ct $ groupAlreadyListed g
+                _ -> processInvitation ct g
+            _ -> sendReply $ "Error: the group ID " <> show ugrId <> " (" <> T.unpack displayName <> ") is not pending confirmation."
       DCListUserGroups ->
         atomically (getUserGroupRegs st $ contactId' ct) >>= \grs -> do
           sendReply $ show (length grs) <> " registered group(s)"
           void . forkIO $ forM_ (reverse grs) $ \gr@GroupReg {userGroupRegId} ->
             sendGroupInfo ct gr userGroupRegId Nothing
-      DCDeleteGroup _ugrId _gName -> pure ()
+      DCDeleteGroup ugrId gName ->
+        withUserGroupReg ugrId gName $ \gr GroupInfo {groupProfile = GroupProfile {displayName}} -> do
+          delGroupReg st gr
+          sendReply $ T.unpack $ "Your group " <> displayName <> " is deleted from the directory"
+      DCSetRole ugrId gName mRole ->
+        withUserGroupReg ugrId gName $ \_gr GroupInfo {groupId, groupProfile = GroupProfile {displayName}} -> do
+          gLink_ <- setGroupLinkRole cc groupId mRole
+          sendReply $ T.unpack $ case gLink_ of
+            Nothing -> "Error: the initial member role for the group " <> displayName <> " was NOT upgated"
+            Just gLink ->
+              ("The initial member role for the group " <> displayName <> " is set to *" <> decodeLatin1 (strEncode mRole) <> "*\n\n")
+                <> ("*Please note*: it applies only to members joining via this link: " <> safeDecodeUtf8 (strEncode gLink))
       DCUnknownCommand -> sendReply "Unknown command"
       DCCommandError tag -> sendReply $ "Command error: " <> show tag
       where
+        withUserGroupReg ugrId gName action =
+          atomically (getUserGroupReg st (contactId' ct) ugrId) >>= \case
+            Nothing -> sendReply $ "Group ID " <> show ugrId <> " not found"
+            Just gr@GroupReg {dbGroupId} -> do
+              getGroup cc dbGroupId >>= \case
+                Nothing -> sendReply $ "Group ID " <> show ugrId <> " not found"
+                Just g@GroupInfo {groupProfile = GroupProfile {displayName}}
+                  | displayName == gName -> action gr g
+                  | otherwise -> sendReply $ "Group ID " <> show ugrId <> " has the display name " <> T.unpack displayName
         sendReply = sendComposedMessage cc ct (Just ciId) . textMsgContent
         withFoundListedGroups s_ action =
           getGroups_ s_ >>= \case
@@ -645,6 +659,13 @@ getGroupAndSummary cc gId = resp <$> sendChatCmd cc (APIGroupInfo gId)
   where
     resp = \case
       CRGroupInfo {groupInfo, groupSummary} -> Just (groupInfo, groupSummary)
+      _ -> Nothing
+
+setGroupLinkRole :: ChatController -> GroupId -> GroupMemberRole -> IO (Maybe ConnReqContact)
+setGroupLinkRole cc gId mRole = resp <$> sendChatCmd cc (APIGroupLinkMemberRole gId mRole)
+  where
+    resp = \case
+      CRGroupLink _ _ gLink _ -> Just gLink
       _ -> Nothing
 
 unexpectedError :: String -> String
