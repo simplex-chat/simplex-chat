@@ -366,7 +366,7 @@
     <string name="description_via_contact_address_link_incognito">en modo incógnito mediante enlace de dirección del contacto</string>
     <string name="failed_to_create_user_title">¡Error al crear perfil!</string>
     <string name="failed_to_parse_chat_title">No se pudo cargar el chat</string>
-    <string name="failed_to_parse_chats_title">No se pudieron cargar los chats</string>
+    <string name="failed_to_parse_chats_title">Fallo en la carga de chats</string>
     <string name="simplex_link_mode_full">Enlace completo</string>
     <string name="error_deleting_contact">Error al eliminar contacto</string>
     <string name="error_joining_group">Error al unirte al grupo</string>
@@ -562,7 +562,7 @@
     <string name="rcv_group_event_member_left">ha salido</string>
     <string name="button_leave_group">Salir del grupo</string>
     <string name="only_group_owners_can_change_prefs">Sólo los propietarios pueden modificar las preferencias del grupo.</string>
-    <string name="users_delete_data_only">Sólo datos del perfil</string>
+    <string name="users_delete_data_only">Eliminar sólo el perfil</string>
     <string name="chat_preferences_no">no</string>
     <string name="thousand_abbreviation">k</string>
     <string name="marked_deleted_description">marcado eliminado</string>
@@ -579,7 +579,7 @@
     <string name="make_private_connection">Establecer una conexión privada</string>
     <string name="network_error_desc">Comprueba tu conexión de red con %1$s e inténtalo de nuevo.</string>
     <string name="sender_may_have_deleted_the_connection_request">El remitente puede haber eliminado la solicitud de conexión.</string>
-    <string name="error_smp_test_certificate">Posiblemente la huella digital del certificado en la dirección del servidor es incorrecta</string>
+    <string name="error_smp_test_certificate">Posiblemente la huella del certificado en la dirección del servidor es incorrecta</string>
     <string name="reply_verb">Responder</string>
     <string name="save_passphrase_in_keychain">Guardar contraseña en Keystore</string>
     <string name="database_restore_error">Error al restaurar base de datos</string>
@@ -668,7 +668,7 @@
     <string name="receiving_via">Recibiendo vía</string>
     <string name="network_option_protocol_timeout">Timeout protocolo</string>
     <string name="network_option_seconds_label">seg</string>
-    <string name="users_delete_with_connections">Datos del perfil y conexiones</string>
+    <string name="users_delete_with_connections">Eliminar perfil y conexiones</string>
     <string name="prohibit_sending_disappearing_messages">No se permiten mensajes temporales.</string>
     <string name="only_you_can_send_voice">Sólo tú puedes enviar mensajes de voz.</string>
     <string name="only_your_contact_can_send_voice">Sólo tu contacto puede enviar mensajes de voz.</string>
@@ -820,7 +820,7 @@
     <string name="trying_to_connect_to_server_to_receive_messages">Intentando conectar con el servidor para recibir mensajes de este contacto.</string>
     <string name="unknown_message_format">formato de mensaje desconocido</string>
     <string name="trying_to_connect_to_server_to_receive_messages_with_error">Intentando conectar con el servidor para recibir mensajes de este contacto (error: %1$s).</string>
-    <string name="error_smp_test_failed_at_step">Prueba fallida en el paso %s.</string>
+    <string name="error_smp_test_failed_at_step">Prueba no superada en el paso %s.</string>
     <string name="tap_to_start_new_chat">Pulsa para iniciar chat nuevo</string>
     <string name="share_message">Compartir mensaje…</string>
     <string name="share_image">Compartir medios…</string>
@@ -832,8 +832,8 @@
     <string name="switch_receiving_address">Cambiar servidor de recepción</string>
     <string name="group_is_decentralized">Totalmente descentralizado. Visible sólo para los miembros.</string>
     <string name="to_connect_via_link_title">Para conectarte mediante enlace</string>
-    <string name="smp_servers_test_failed">¡Error en prueba del servidor!</string>
-    <string name="smp_servers_test_some_failed">Algunos servidores no superaron la prueba:</string>
+    <string name="smp_servers_test_failed">¡Prueba no superada!</string>
+    <string name="smp_servers_test_some_failed">Algunos servidores no han superado la prueba:</string>
     <string name="smp_servers_use_server">Usar servidor</string>
     <string name="smp_servers_use_server_for_new_conn">Usar para conexiones nuevas</string>
     <string name="theme_system">Sistema</string>
@@ -1627,9 +1627,9 @@
     <string name="past_member_vName">Miembro pasado %1$s</string>
     <string name="profile_update_event_member_name_changed">el miembro %1$s ha cambiado a %2$s</string>
     <string name="profile_update_event_removed_address">dirección de contacto eliminada</string>
-    <string name="profile_update_event_removed_picture">imagen de perfil eliminada</string>
+    <string name="profile_update_event_removed_picture">ha eliminado la imagen del perfil</string>
     <string name="profile_update_event_set_new_address">nueva dirección de contacto</string>
-    <string name="profile_update_event_set_new_picture">nueva imagen de perfil</string>
+    <string name="profile_update_event_set_new_picture">tiene nueva imagen del perfil</string>
     <string name="call_service_notification_audio_call">Llamada</string>
     <string name="call_service_notification_end_call">Llamada finalizada</string>
     <string name="call_service_notification_video_call">Videollamada</string>
@@ -1686,7 +1686,7 @@
     <string name="migrate_from_device_finalize_migration">Finalizar migración</string>
     <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Atención</b>: el archivo será eliminado.]]></string>
     <string name="migrate_from_device_check_connection_and_try_again">Comprueba tu conexión a internet y vuelve a intentarlo</string>
-    <string name="migrate_from_device_confirm_you_remember_passphrase">Para migrar confirma que recuerdas la frase de contraseña de la base de datos.</string>
+    <string name="migrate_from_device_confirm_you_remember_passphrase">Para migrar la base de datos confirma que recuerdas la frase de contraseña.</string>
     <string name="migrate_from_device_error_verifying_passphrase">Error al verificar la frase de contraseña:</string>
     <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>Recuerda</b>: usar la misma base de datos en dos dispositivos hará que falle el descifrado de mensajes como protección de seguridad.]]></string>
     <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[En el nuevo dispositivo selecciona <i>Migrar desde otro dispositivo</i> y escanea el código QR.]]></string>
@@ -2107,4 +2107,25 @@
     <string name="new_chat_share_profile">Comparte perfil</string>
     <string name="switching_profile_error_message">Tu conexión ha sido trasladada a %s pero ha ocurrido un error inesperado al redirigirte al perfil.</string>
     <string name="icon_descr_sound_muted">Sonido silenciado</string>
+    <string name="error_initializing_web_view_wrong_arch">Error al iniciar WebView. Asegúrate de tener WebView instalado y que sea compatible con la arquitectura amr64.\nError: %s</string>
+    <string name="settings_section_title_message_shape">Forma del mensaje</string>
+    <string name="settings_message_shape_corner">Esquinas</string>
+    <string name="settings_message_shape_tail">Cola</string>
+    <string name="network_session_mode_session_description">Se usarán credenciales SOCKS nuevas cada vez que inicies la aplicación.</string>
+    <string name="network_session_mode_session">Sesión de aplicación</string>
+    <string name="call_desktop_permission_denied_safari">Abre la configuración de Safari / Sitios Web / Micrófono y a continuación selecciona Permitir para localhost.</string>
+    <string name="call_desktop_permission_denied_chrome">Pulsa el botón info del campo dirección para permitir el uso del micrófono.</string>
+    <string name="call_desktop_permission_denied_title">Para hacer llamadas, permite el uso del micrófono. Cuelga e intenta llamar de nuevo.</string>
+    <string name="network_session_mode_server_description">Se usarán credenciales SOCKS nuevas por cada servidor.</string>
+    <string name="network_session_mode_server">Servidor</string>
+    <string name="v6_1_better_calls">Llamadas mejoradas</string>
+    <string name="v6_1_message_dates_descr">Mensajes mejor datados.</string>
+    <string name="v6_1_better_user_experience">Experiencia de usuario mejorada</string>
+    <string name="v6_1_customizable_message_descr">Forma personalizable de los mensajes.</string>
+    <string name="v6_1_forward_many_messages_descr">Desplazamiento de hasta 20 mensajes.</string>
+    <string name="v6_1_better_security_descr">Protocolos de SimpleX auditados por Trail of Bits.</string>
+    <string name="v6_1_better_calls_descr">Intercambia audio y video durante la llamada.</string>
+    <string name="v6_1_better_security">Seguridad mejorada ✅</string>
+    <string name="v6_1_delete_many_messages_descr">Borrar o moderar hasta 200 mensajes.</string>
+    <string name="v6_1_switch_chat_profile_descr">Cambia el perfil de chat para invitaciones de un solo uso.</string>
 </resources>

@@ -49,7 +49,7 @@
     <string name="accept_feature">Aceitar</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">Permitir que seus contatos enviem mensagens que desaparecem.</string>
     <string name="accept_feature_set_1_day">Definir 1 dia</string>
-    <string name="allow_irreversible_message_deletion_only_if">Permitir a exclusão irreversível de mensagens apenas se o seu contato permitir.</string>
+    <string name="allow_irreversible_message_deletion_only_if">Permitir a exclusão irreversível de mensagens apenas se o seu contato permitir. (24 horas)</string>
     <string name="allow_your_contacts_irreversibly_delete">Permitir que seus contatos eliminem de forma irreversível mensagens enviadas.</string>
     <string name="allow_voice_messages_only_if">Permitir mensagens de voz apenas se o contato permitir.</string>
     <string name="allow_your_contacts_to_send_voice_messages">Permitir que seus contatos enviem mensagens de voz.</string>
@@ -130,7 +130,7 @@
     <string name="network_enable_socks_info">Aceder aos servidores via proxy SOCKS no porto %d\? O proxy tem de iniciar antes de ativar esta opção.</string>
     <string name="smp_servers_add_to_another_device">Adicionar a outro dispositivo</string>
     <string name="group_member_role_admin">administrador</string>
-    <string name="allow_to_delete_messages">Permitir apagar irreversivelmente as mensagens enviadas.</string>
+    <string name="allow_to_delete_messages">Permitir apagar irreversivelmente as mensagens enviadas. (24 horas)</string>
     <string name="delete_address__question">Eliminar endereço\?</string>
     <string name="delete_after">Eliminar após</string>
     <string name="delete_verb">Eliminar</string>
@@ -565,7 +565,7 @@
     <string name="v4_3_voice_messages_desc">Máximo de 40 segundos, recebido instantaneamente.</string>
     <string name="icon_descr_more_button">Mais</string>
     <string name="network_and_servers">Rede e servidores</string>
-    <string name="network_settings_title">Definições de rede</string>
+    <string name="network_settings_title">Configurações avançadas</string>
     <string name="settings_section_title_experimenta">EXPERIMENTAL</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Você pode iniciar a conversa através das Definições da aplicação / Base de Dados ou reiniciando a aplicação.</string>
     <string name="update_network_settings_confirmation">Atualizar</string>
@@ -968,4 +968,15 @@
     <string name="abort_switch_receiving_address_desc">Mudança de endereço será cancelada. Antigo endereço de recebimento será usado.</string>
     <string name="allow_calls_question">Permitir ligações?</string>
     <string name="servers_info_subscriptions_connections_subscribed">Conexões ativas</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">Todos os seus contatos, conversas e arquivos serão encriptados e enviados em chunks para relays XFTP configurados.</string>
+    <string name="n_other_file_errors">%1$d erro(s) de outro arquivo.</string>
+    <string name="forward_files_messages_deleted_after_selection_title">%1$s mensagens não encaminhadas</string>
+    <string name="network_smp_proxy_mode_always">Sempre</string>
+    <string name="network_smp_proxy_mode_always_description">Sempre use uma rota privata.</string>
+    <string name="allow_to_send_simplex_links">Permitir o envio de links SimpleX.</string>
+    <string name="moderated_items_description">%1$d mensagens moderadas por %2$s</string>
+    <string name="rcv_group_and_other_events">e %d outros</string>
+    <string name="all_users">Todos os perfis</string>
+    <string name="connect_plan_already_connecting">Já conectando!</string>
+    <string name="connect_plan_already_joining_the_group">Já entrando no grupo!</string>
 </resources>

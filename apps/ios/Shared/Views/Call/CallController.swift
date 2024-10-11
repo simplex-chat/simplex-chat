@@ -357,11 +357,9 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
                 self.provider.reportCall(with: uuid, updated: update)
             }
         } else if callManager.startOutgoingCall(callUUID: callUUID) {
-            if callManager.startOutgoingCall(callUUID: callUUID) {
-                logger.debug("CallController.startCall: call started")
-            } else {
-                logger.error("CallController.startCall: no active call")
-            }
+            logger.debug("CallController.startCall: call started")
+        } else {
+            logger.error("CallController.startCall: no active call")
         }
     }
 

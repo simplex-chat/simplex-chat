@@ -31,6 +31,7 @@ var sendMessageToNative = (msg) => console.log(JSON.stringify(msg));
 var toggleScreenShare = async () => { };
 var localOrPeerMediaSourcesChanged = (_call) => { };
 var inactiveCallMediaSourcesChanged = (_inactiveCallMediaSources) => { };
+var failedToGetPermissions = (_title, _description) => { };
 // Global object with cryptrographic/encoding functions
 const callCrypto = callCryptoFunction();
 var TransformOperation;
@@ -62,6 +63,7 @@ const allowSendScreenAudio = false;
 // When one side of a call sends candidates tot fast (until local & remote descriptions are set), that candidates
 // will be stored here and then set when the call will be ready to process them
 let afterCallInitializedCandidates = [];
+const stopTrackOnAndroid = false;
 const processCommand = (function () {
     const defaultIceServers = [
         { urls: ["stuns:stun.simplex.im:443"] },
@@ -159,7 +161,7 @@ const processCommand = (function () {
         try {
             localStream = (notConnectedCall === null || notConnectedCall === void 0 ? void 0 : notConnectedCall.localStream)
                 ? notConnectedCall.localStream
-                : await getLocalMediaStream(inactiveCallMediaSources.mic, inactiveCallMediaSources.camera, localCamera);
+                : await getLocalMediaStream(inactiveCallMediaSources.mic, inactiveCallMediaSources.camera && (await browserHasCamera()), localCamera);
         }
         catch (e) {
             console.log("Error while getting local media stream", e);
@@ -296,7 +298,7 @@ const processCommand = (function () {
                         endCall();
                     let localStream = null;
                     try {
-                        localStream = await getLocalMediaStream(true, command.media == CallMediaType.Video, VideoCamera.User);
+                        localStream = await getLocalMediaStream(true, command.media == CallMediaType.Video && (await browserHasCamera()), VideoCamera.User);
                         const videos = getVideoElements();
                         if (videos) {
                             videos.local.srcObject = localStream;
@@ -304,6 +306,10 @@ const processCommand = (function () {
                         }
                     }
                     catch (e) {
+                        console.log(e);
+                        // Do not allow to continue the call without audio permission
+                        resp = { type: "error", message: "capabilities: no permissions were granted for mic and/or camera" };
+                        break;
                         localStream = new MediaStream();
                         // Will be shown on the next stage of call estabilishing, can work without any streams
                         //desktopShowPermissionsAlert(command.media)
@@ -437,6 +443,11 @@ const processCommand = (function () {
                     break;
                 case "media":
                     if (!activeCall) {
+                        if (!notConnectedCall) {
+                            // call can have a slow startup and be in this place even before "capabilities" stage
+                            resp = { type: "error", message: "media: call has not yet pass capabilities stage" };
+                            break;
+                        }
                         switch (command.source) {
                             case CallMediaSource.Mic:
                                 inactiveCallMediaSources.mic = command.enable;
@@ -484,8 +495,11 @@ const processCommand = (function () {
                     if (!activeCall || !pc) {
                         if (notConnectedCall) {
                             recreateLocalStreamWhileNotConnected(command.camera);
+                            resp = { type: "ok" };
                         }
-                        resp = { type: "ok" };
+                        else {
+                            resp = { type: "error", message: "camera: call has not yet pass capabilities stage" };
+                        }
                     }
                     else {
                         if (await replaceMedia(activeCall, CallMediaSource.Camera, true, command.camera)) {
@@ -513,6 +527,10 @@ const processCommand = (function () {
                     break;
                 case "end":
                     endCall();
+                    resp = { type: "ok" };
+                    break;
+                case "permission":
+                    failedToGetPermissions(command.title, permissionDescription(command));
                     resp = { type: "ok" };
                     break;
                 default:
@@ -827,7 +845,10 @@ const processCommand = (function () {
         // doing it vice versa gives an error like "too many cameras were open" on some Android devices or webViews
         // which means the second camera will never be opened
         for (const t of source == CallMediaSource.Mic ? call.localStream.getAudioTracks() : call.localStream.getVideoTracks()) {
-            t.stop();
+            if (isDesktop || source != CallMediaSource.Mic || stopTrackOnAndroid)
+                t.stop();
+            else
+                t.enabled = false;
             call.localStream.removeTrack(t);
         }
         let localStream;
@@ -877,14 +898,14 @@ const processCommand = (function () {
         if (!localStream || !oldCamera || !videos)
             return;
         if (!inactiveCallMediaSources.mic) {
-            localStream.getAudioTracks().forEach((elem) => elem.stop());
+            localStream.getAudioTracks().forEach((elem) => (isDesktop || stopTrackOnAndroid ? elem.stop() : (elem.enabled = false)));
             localStream.getAudioTracks().forEach((elem) => localStream.removeTrack(elem));
         }
         if (!inactiveCallMediaSources.camera || oldCamera != newCamera) {
             localStream.getVideoTracks().forEach((elem) => elem.stop());
             localStream.getVideoTracks().forEach((elem) => localStream.removeTrack(elem));
         }
-        await getLocalMediaStream(inactiveCallMediaSources.mic && localStream.getAudioTracks().length == 0, inactiveCallMediaSources.camera && (localStream.getVideoTracks().length == 0 || oldCamera != newCamera), newCamera)
+        await getLocalMediaStream(inactiveCallMediaSources.mic && localStream.getAudioTracks().length == 0, inactiveCallMediaSources.camera && (localStream.getVideoTracks().length == 0 || oldCamera != newCamera) && (await browserHasCamera()), newCamera)
             .then((stream) => {
             stream.getTracks().forEach((elem) => {
                 localStream.addTrack(elem);
@@ -938,8 +959,7 @@ const processCommand = (function () {
     function setupMuteUnmuteListener(transceiver, track) {
         // console.log("Setting up mute/unmute listener in the call without encryption for mid = ", transceiver.mid)
         let inboundStatsId = "";
-        // for some reason even for disabled tracks one packet arrives (seeing this on screenVideo track)
-        let lastPacketsReceived = 1;
+        let lastBytesReceived = 0;
         // muted initially
         let mutedSeconds = 4;
         let statsInterval = setInterval(async () => {
@@ -953,9 +973,9 @@ const processCommand = (function () {
                 });
             }
             if (inboundStatsId) {
-                // even though MSDN site says `packetsReceived` is available in WebView 80+, in reality it's available even in 69
-                const packets = (_a = stats.get(inboundStatsId)) === null || _a === void 0 ? void 0 : _a.packetsReceived;
-                if (packets <= lastPacketsReceived) {
+                // even though MSDN site says `bytesReceived` is available in WebView 80+, in reality it's available even in 69
+                const bytes = (_a = stats.get(inboundStatsId)) === null || _a === void 0 ? void 0 : _a.bytesReceived;
+                if (bytes <= lastBytesReceived) {
                     mutedSeconds++;
                     if (mutedSeconds == 3) {
                         onMediaMuteUnmute(transceiver.mid, true);
@@ -965,7 +985,7 @@ const processCommand = (function () {
                     if (mutedSeconds >= 3) {
                         onMediaMuteUnmute(transceiver.mid, false);
                     }
-                    lastPacketsReceived = packets;
+                    lastBytesReceived = bytes;
                     mutedSeconds = 0;
                 }
             }
@@ -1074,6 +1094,18 @@ const processCommand = (function () {
         };
         return navigator.mediaDevices.getDisplayMedia(constraints);
     }
+    async function browserHasCamera() {
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const hasCamera = devices.some((elem) => elem.kind == "videoinput");
+            console.log("Camera is available: " + hasCamera);
+            return hasCamera;
+        }
+        catch (error) {
+            console.log("Error while enumerating devices: " + error, error);
+            return false;
+        }
+    }
     function callMediaConstraints(mic, camera, facingMode) {
         return {
             audio: mic,
@@ -1129,7 +1161,10 @@ const processCommand = (function () {
                         transceiver.sender.replaceTrack(t);
                     }
                     else {
-                        t.stop();
+                        if (isDesktop || t.kind == CallMediaType.Video || stopTrackOnAndroid)
+                            t.stop();
+                        else
+                            t.enabled = false;
                         s.removeTrack(t);
                         transceiver.sender.replaceTrack(null);
                     }
@@ -1285,6 +1320,18 @@ function desktopShowPermissionsAlert(mediaType) {
     }
     else {
         window.alert("Permissions denied. Please, allow access to mic and camera to make the call working and hit unmute/camera button. Don't reload the page.");
+    }
+}
+function permissionDescription(command) {
+    if (window.safari) {
+        return command.safari;
+    }
+    else if ((navigator.userAgent.includes("Chrome") && navigator.vendor.includes("Google Inc")) ||
+        navigator.userAgent.includes("Firefox")) {
+        return command.chrome;
+    }
+    else {
+        return "";
     }
 }
 // Cryptography function - it is loaded both in the main window and in worker context (if the worker is used)

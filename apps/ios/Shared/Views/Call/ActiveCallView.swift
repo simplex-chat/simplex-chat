@@ -401,15 +401,13 @@ struct ActiveCallOverlay: View {
 
     private func endCallButton() -> some View {
         let cc = CallController.shared
-        return callButton("phone.down.fill", padding: 10) {
+        return callButton("phone.down.fill", .red, padding: 10) {
             if let uuid = call.callUUID {
                 cc.endCall(callUUID: uuid)
             } else {
                 cc.endCall(call: call) {}
             }
         }
-        .background(.red)
-        .clipShape(.circle)
     }
 
     private func toggleMicButton() -> some View {
@@ -434,12 +432,12 @@ struct ActiveCallOverlay: View {
                 audioDevicePickerButton()
             }
         }
-        .onChange(of: call.hasVideo) { hasVideo in
+        .onChange(of: call.localMediaSources.hasVideo) { hasVideo in
             let current = AVAudioSession.sharedInstance().currentRoute.outputs.first?.portType
             let speakerEnabled = current == .builtInSpeaker
             let receiverEnabled = current == .builtInReceiver
-            // react automatically only when speaker or receiver were selected, otherwise keep an external device selected
-            if hasVideo != speakerEnabled && (speakerEnabled || receiverEnabled) {
+            // react automatically only when receiver were selected, otherwise keep an external device selected
+            if !speakerEnabled && hasVideo && receiverEnabled {
                 client.setSpeakerEnabledAndConfigureSession(!speakerEnabled, skipExternalDevice: true)
                 call.speakerEnabled = !speakerEnabled
             }
@@ -480,9 +478,7 @@ struct ActiveCallOverlay: View {
     }
 
     @ViewBuilder private func controlButton(_ call: Call, _ imageName: String, padding: CGFloat, _ perform: @escaping () -> Void) -> some View {
-        callButton(imageName, padding: padding, perform)
-            .background(call.peerMediaSources.hasVideo ? Color.black.opacity(0.2) : Color.white.opacity(0.2))
-            .clipShape(.circle)
+        callButton(imageName, call.peerMediaSources.hasVideo ? Color.black.opacity(0.2) : Color.white.opacity(0.2), padding: padding, perform)
     }
 
     @ViewBuilder private func audioDevicePickerButton() -> some View {
@@ -495,7 +491,7 @@ struct ActiveCallOverlay: View {
             .clipShape(.circle)
     }
 
-    private func callButton(_ imageName: String, padding: CGFloat, _ perform: @escaping () -> Void) -> some View {
+    private func callButton(_ imageName: String, _ background: Color, padding: CGFloat, _ perform: @escaping () -> Void) -> some View {
         Button {
             perform()
         } label: {
@@ -504,8 +500,10 @@ struct ActiveCallOverlay: View {
                 .scaledToFit()
                 .padding(padding)
                 .frame(width: 60, height: 60)
+                .background(background)
         }
         .foregroundColor(whiteColorWithAlpha)
+        .clipShape(.circle)
     }
 
     private var whiteColorWithAlpha: Color {

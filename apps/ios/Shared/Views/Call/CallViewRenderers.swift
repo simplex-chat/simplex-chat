@@ -21,16 +21,22 @@ struct CallViewRemote: UIViewRepresentable {
         let remoteCameraRenderer = RTCMTLVideoView(frame: view.frame)
         remoteCameraRenderer.videoContentMode = contentMode
         remoteCameraRenderer.tag = 0
+
+        let screenVideo = call.peerMediaSources.screenVideo
         let remoteScreenRenderer = RTCMTLVideoView(frame: view.frame)
         remoteScreenRenderer.videoContentMode = contentMode
         remoteScreenRenderer.tag = 1
-        remoteScreenRenderer.alpha = call.peerMediaSources.screenVideo ? 1 : 0
+        remoteScreenRenderer.alpha = screenVideo ? 1 : 0
 
         context.coordinator.cameraRenderer = remoteCameraRenderer
         context.coordinator.screenRenderer = remoteScreenRenderer
         client.addRemoteCameraRenderer(remoteCameraRenderer)
         client.addRemoteScreenRenderer(remoteScreenRenderer)
-        addSubviewAndResize(remoteCameraRenderer, remoteScreenRenderer, into: view)
+        if screenVideo {
+            addSubviewAndResize(remoteScreenRenderer, remoteCameraRenderer, into: view)
+        } else {
+            addSubviewAndResize(remoteCameraRenderer, remoteScreenRenderer, into: view)
+        }
 
         if AVPictureInPictureController.isPictureInPictureSupported() {
             makeViewWithRTCRenderer(remoteCameraRenderer, remoteScreenRenderer, view, context)

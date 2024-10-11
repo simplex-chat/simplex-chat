@@ -596,6 +596,9 @@
 "App passcode is replaced with self-destruct passcode." = "De app-toegangscode wordt vervangen door een zelfvernietigings wachtwoord.";
 
 /* No comment provided by engineer. */
+"App session" = "Appsessie";
+
+/* No comment provided by engineer. */
 "App version" = "App versie";
 
 /* No comment provided by engineer. */
@@ -913,6 +916,9 @@
 
 /* alert message */
 "Chat preferences were changed." = "Chatvoorkeuren zijn gewijzigd.";
+
+/* No comment provided by engineer. */
+"Chat profile" = "Gebruikers profiel";
 
 /* No comment provided by engineer. */
 "Chat theme" = "Chat thema";
@@ -3067,6 +3073,12 @@
 /* No comment provided by engineer. */
 "New passphrase…" = "Nieuw wachtwoord…";
 
+/* No comment provided by engineer. */
+"New SOCKS credentials will be used every time you start the app." = "Elke keer dat u de app start, worden er nieuwe SOCKS-inloggegevens gebruikt.";
+
+/* No comment provided by engineer. */
+"New SOCKS credentials will be used for each server." = "Voor elke server worden nieuwe SOCKS-inloggegevens gebruikt.";
+
 /* pref value */
 "no" = "Nee";
 
@@ -3108,6 +3120,12 @@
 
 /* No comment provided by engineer. */
 "No network connection" = "Geen netwerkverbinding";
+
+/* No comment provided by engineer. */
+"No permission to record speech" = "Geen toestemming om spraak op te nemen";
+
+/* No comment provided by engineer. */
+"No permission to record video" = "Geen toestemming om video op te nemen";
 
 /* No comment provided by engineer. */
 "No permission to record voice message" = "Geen toestemming om spraakbericht op te nemen";
@@ -4062,6 +4080,9 @@
 "Sent via proxy" = "Verzonden via proxy";
 
 /* No comment provided by engineer. */
+"Server" = "Server";
+
+/* No comment provided by engineer. */
 "Server address" = "Server adres";
 
 /* No comment provided by engineer. */
@@ -4377,6 +4398,9 @@
 "System authentication" = "Systeem authenticatie";
 
 /* No comment provided by engineer. */
+"Tail" = "Staart";
+
+/* No comment provided by engineer. */
 "Take picture" = "Foto nemen";
 
 /* No comment provided by engineer. */
@@ -4585,6 +4609,12 @@
 
 /* No comment provided by engineer. */
 "To protect your IP address, private routing uses your SMP servers to deliver messages." = "Om uw IP-adres te beschermen, gebruikt privéroutering uw SMP-servers om berichten te bezorgen.";
+
+/* No comment provided by engineer. */
+"To record speech please grant permission to use Microphone." = "Geef toestemming om de microfoon te gebruiken om spraak op te nemen.";
+
+/* No comment provided by engineer. */
+"To record video please grant permission to use Camera." = "Om video op te nemen, dient u toestemming te geven om de camera te gebruiken.";
 
 /* No comment provided by engineer. */
 "To record voice message please grant permission to use Microphone." = "Geef toestemming om de microfoon te gebruiken om een spraakbericht op te nemen.";
@@ -4810,9 +4840,6 @@
 
 /* No comment provided by engineer. */
 "Use the app with one hand." = "Gebruik de app met één hand.";
-
-/* No comment provided by engineer. */
-"User profile" = "Gebruikers profiel";
 
 /* No comment provided by engineer. */
 "User selection" = "Gebruikersselectie";
@@ -5070,7 +5097,7 @@
 "You are not connected to these servers. Private routing is used to deliver messages to them." = "U bent niet verbonden met deze servers. Privéroutering wordt gebruikt om berichten bij hen af te leveren.";
 
 /* No comment provided by engineer. */
-"you are observer" = "jij bent waarnemer";
+"you are observer" = "je bent waarnemer";
 
 /* snd group event chat item */
 "you blocked %@" = "je hebt %@ geblokkeerd";
@@ -5172,7 +5199,7 @@
 "You joined this group. Connecting to inviting group member." = "Je bent lid geworden van deze groep. Verbinding maken met uitnodigend groepslid.";
 
 /* snd group event chat item */
-"you left" = "jij bent vertrokken";
+"you left" = "je bent vertrokken";
 
 /* No comment provided by engineer. */
 "You may migrate the exported database." = "U kunt de geëxporteerde database migreren.";

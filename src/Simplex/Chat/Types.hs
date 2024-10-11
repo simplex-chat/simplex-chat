@@ -297,6 +297,7 @@ userContactGroupId UserContact {groupId} = groupId
 data UserContactRequest = UserContactRequest
   { contactRequestId :: Int64,
     agentInvitationId :: AgentInvId,
+    contactId_ :: Maybe ContactId,
     userContactLinkId :: Int64,
     agentContactConnId :: AgentConnId, -- connection id of user contact
     cReqChatVRange :: VersionRangeChat,
@@ -1371,6 +1372,8 @@ aConnId' PendingContactConnection {pccAgentConnId = AgentConnId cId} = cId
 data ConnStatus
   = -- | connection is created by initiating party with agent NEW command (createConnection)
     ConnNew
+  | -- | connection is prepared, to avoid changing keys on invitation links when retrying.
+    ConnPrepared
   | -- | connection is joined by joining party with agent JOIN command (joinConnection)
     ConnJoined
   | -- | initiating party received CONF notification (to be renamed to REQ)
@@ -1399,6 +1402,7 @@ instance ToJSON ConnStatus where
 instance TextEncoding ConnStatus where
   textDecode = \case
     "new" -> Just ConnNew
+    "prepared" -> Just ConnPrepared
     "joined" -> Just ConnJoined
     "requested" -> Just ConnRequested
     "accepted" -> Just ConnAccepted
@@ -1408,6 +1412,7 @@ instance TextEncoding ConnStatus where
     _ -> Nothing
   textEncode = \case
     ConnNew -> "new"
+    ConnPrepared -> "prepared"
     ConnJoined -> "joined"
     ConnRequested -> "requested"
     ConnAccepted -> "accepted"
