@@ -39,15 +39,15 @@ interface CallAudioDeviceManagerInterface {
 @RequiresApi(Build.VERSION_CODES.S)
 class PostSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
   private val am = androidAppContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-  private var resetDeviceToDevice: AudioDeviceInfo? = null
-  private var resetDeviceToDeviceJob: Job = Job()
+  private var resetCurrentToDevice: AudioDeviceInfo? = null
+  private var resetCurrentToDeviceJob: Job = Job()
   override val devices: MutableState<List<AudioDeviceInfo>> = mutableStateOf(emptyList())
   override val currentDevice: MutableState<AudioDeviceInfo?> = mutableStateOf(null)
 
   private val audioCallback = object: AudioDeviceCallback() {
     override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>) {
       Log.d(TAG, "Added audio devices: ${addedDevices.map { it.type }}")
-      resetDeviceToDevice = null
+      resetCurrentToDevice = null
       super.onAudioDevicesAdded(addedDevices)
       val oldDevices = devices.value
       devices.value = am.availableCommunicationDevices
@@ -60,14 +60,14 @@ class PostSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
 
     override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>) {
       Log.d(TAG, "Removed audio devices: ${removedDevices.map { it.type }}")
-      resetDeviceToDevice = null
+      resetCurrentToDevice = null
       super.onAudioDevicesRemoved(removedDevices)
       devices.value = am.availableCommunicationDevices
     }
   }
 
   private val listener: OnCommunicationDeviceChangedListener = OnCommunicationDeviceChangedListener { device ->
-    val resetTo = resetDeviceToDevice
+    val resetTo = resetCurrentToDevice
     if (resetTo != null && device != null && resetTo.id != device.id) {
       Log.w(TAG, "Resetting device that was set by WebView ${device.name?.localized()} to previously set device ${resetTo.name?.localized()}")
       selectDevice(resetTo.id)
@@ -115,16 +115,16 @@ class PostSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
 
   // WebView modifies speaker when muting/unmuting microphone. It's not needed at all, returning back current device if it will be changed
   override fun selectSameDeviceOnWebViewChange() {
-    resetDeviceToDevice = currentDevice.value
-    resetDeviceToDeviceJob.cancel()
-    resetDeviceToDeviceJob = withBGApi {
+    resetCurrentToDevice = currentDevice.value
+    resetCurrentToDeviceJob.cancel()
+    resetCurrentToDeviceJob = withBGApi {
       delay(5000)
-      resetDeviceToDevice = null
+      resetCurrentToDevice = null
     }
   }
 
   override fun selectDevice(id: Int) {
-    resetDeviceToDevice = null
+    resetCurrentToDevice = null
     val device = devices.value.lastOrNull { it.id == id }
     if (device != null && am.communicationDevice?.id != id ) {
       am.setCommunicationDevice(device)
@@ -134,12 +134,14 @@ class PostSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
 
 class PreSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
   private val am = androidAppContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+  private var resetCurrentToDeviceJob: Job = Job()
   override val devices: MutableState<List<AudioDeviceInfo>> = mutableStateOf(emptyList())
   override val currentDevice: MutableState<AudioDeviceInfo?> = mutableStateOf(null)
 
   private val audioCallback = object: AudioDeviceCallback() {
     override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>) {
       Log.d(TAG, "Added audio devices: ${addedDevices.map { it.type }}")
+      resetCurrentToDeviceJob.cancel()
       super.onAudioDevicesAdded(addedDevices)
       devices.value = am.getDevices(AudioManager.GET_DEVICES_OUTPUTS).filter { it.hasSupportedType() }.excludeSameType().excludeEarpieceIfWired()
       selectLastExternalDeviceOrDefault(chatModel.activeCall.value?.hasVideo == true, false)
@@ -147,6 +149,7 @@ class PreSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
 
     override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>) {
       Log.d(TAG, "Removed audio devices: ${removedDevices.map { it.type }}")
+      resetCurrentToDeviceJob.cancel()
       super.onAudioDevicesRemoved(removedDevices)
       devices.value = am.getDevices(AudioManager.GET_DEVICES_OUTPUTS).filter { it.hasSupportedType() }.excludeSameType().excludeEarpieceIfWired()
       selectLastExternalDeviceOrDefault(chatModel.activeCall.value?.hasVideo == true, true)
@@ -179,10 +182,22 @@ class PreSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
     }
   }
 
-  // Works without it
-  override fun selectSameDeviceOnWebViewChange() {}
+  override fun selectSameDeviceOnWebViewChange() {
+    val current = currentDevice.value ?: return
+    resetCurrentToDeviceJob.cancel()
+    resetCurrentToDeviceJob = withBGApi {
+      // select old device manually because WebView will change it for sure.
+      // smaller delay first if it's possible to make the switch less noticeable
+      delay(300)
+      selectDevice(current.id)
+      // and in order to be sure that it will be selected even if WebView will be slow in changing its device
+      delay(700)
+      selectDevice(current.id)
+    }
+  }
 
   override fun selectDevice(id: Int) {
+    resetCurrentToDeviceJob.cancel()
     val device = devices.value.lastOrNull { it.id == id }
     val isExternalDevice = device != null && device.type != AudioDeviceInfo.TYPE_BUILTIN_EARPIECE && device.type != AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
     if (isExternalDevice) {
