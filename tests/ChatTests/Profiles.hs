@@ -259,47 +259,47 @@ testUserContactLink =
       alice <##> cath
 
 testRetryAcceptingViaContactLink :: HasCallStack => FilePath -> IO ()
-testRetryAcceptingViaContactLink =
-  testChatCfgOpts2 cfg' opts' aliceProfile bobProfile $ \alice bob -> do
-    cLink <- withSmpServer' serverCfg' $ do
-      alice ##> "/ad"
-      getContactLink alice True
-    alice <## "server disconnected localhost ()"
-    bob ##> ("/_connect plan 1 " <> cLink)
-    bob <## "contact address: ok to connect"
-    bob ##> ("/_connect 1 " <> cLink)
-    bob <##. "smp agent error: BROKER"
-    withSmpServer' serverCfg' $ do
-      alice <## "server connected localhost ()"
+testRetryAcceptingViaContactLink tmp = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile test tmp
+  where
+    test alice bob = do
+      cLink <- withSmpServer' serverCfg' $ do
+        alice ##> "/ad"
+        getContactLink alice True
+      alice <## "server disconnected localhost ()"
       bob ##> ("/_connect plan 1 " <> cLink)
       bob <## "contact address: ok to connect"
       bob ##> ("/_connect 1 " <> cLink)
-      alice <#? bob
-    alice <## "server disconnected localhost ()"
-    bob <## "server disconnected localhost ()"
-    alice ##> "/ac bob"
-    alice <##. "smp agent error: BROKER"
-    withSmpServer' serverCfg' $ do
-      alice <## "server connected localhost ()"
-      bob <## "server connected localhost ()"
+      bob <##. "smp agent error: BROKER"
+      withSmpServer' serverCfg' $ do
+        alice <## "server connected localhost ()"
+        bob ##> ("/_connect plan 1 " <> cLink)
+        bob <## "contact address: ok to connect"
+        bob ##> ("/_connect 1 " <> cLink)
+        alice <#? bob
+      alice <## "server disconnected localhost ()"
+      bob <## "server disconnected localhost ()"
       alice ##> "/ac bob"
-      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
-      concurrently_
-        (bob <## "alice (Alice): contact is connected")
-        (alice <## "bob (Bob): contact is connected")
-      alice #> "@bob message 1"
-      bob <# "alice> message 1"
-      bob #> "@alice message 2"
-      alice <# "bob> message 2"
-    alice <## "server disconnected localhost (@bob)"
-    bob <## "server disconnected localhost (@alice)"
-  where
+      alice <##. "smp agent error: BROKER"
+      withSmpServer' serverCfg' $ do
+        alice <## "server connected localhost ()"
+        bob <## "server connected localhost ()"
+        alice ##> "/ac bob"
+        alice <## "bob (Bob): accepting contact request, you can send messages to contact"
+        concurrently_
+          (bob <## "alice (Alice): contact is connected")
+          (alice <## "bob (Bob): contact is connected")
+        alice #> "@bob message 1"
+        bob <# "alice> message 1"
+        bob #> "@alice message 2"
+        alice <# "bob> message 2"
+      alice <## "server disconnected localhost (@bob)"
+      bob <## "server disconnected localhost (@alice)"
     serverCfg' =
       smpServerCfg
         { transports = [("7003", transport @TLS, False)],
           msgQueueQuota = 2,
-          storeLogFile = Just "tests/tmp/smp-server-store.log",
-          storeMsgsFile = Just "tests/tmp/smp-server-messages.log"
+          storeLogFile = Just $ tmp <> "/smp-server-store.log",
+          storeMsgsFile = Just $ tmp <> "/smp-server-messages.log"
         }
     fastRetryInterval = defaultReconnectInterval {initialInterval = 50000} -- same as in agent tests
     cfg' =

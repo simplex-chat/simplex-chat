@@ -222,38 +222,38 @@ testAddContact = versionTestMatrix2 runTestAddContact
             else (0, e2eeInfoNoPQStr) : tail chatFeatures
 
 testRetryConnecting :: HasCallStack => FilePath -> IO ()
-testRetryConnecting =
-  testChatCfgOpts2 cfg' opts' aliceProfile bobProfile $ \alice bob -> do
-    inv <- withSmpServer' serverCfg' $ do
-      alice ##> "/_connect 1"
-      getInvitation alice
-    alice <## "server disconnected localhost ()"
-    bob ##> ("/_connect plan 1 " <> inv)
-    bob <## "invitation link: ok to connect"
-    bob ##> ("/_connect 1 " <> inv)
-    bob <##. "smp agent error: BROKER"
-    withSmpServer' serverCfg' $ do
-      alice <## "server connected localhost ()"
+testRetryConnecting tmp = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile test tmp
+  where
+    test alice bob = do
+      inv <- withSmpServer' serverCfg' $ do
+        alice ##> "/_connect 1"
+        getInvitation alice
+      alice <## "server disconnected localhost ()"
       bob ##> ("/_connect plan 1 " <> inv)
       bob <## "invitation link: ok to connect"
       bob ##> ("/_connect 1 " <> inv)
-      bob <## "confirmation sent!"
-      concurrently_
-        (bob <## "alice (Alice): contact is connected")
-        (alice <## "bob (Bob): contact is connected")
-      alice #> "@bob message 1"
-      bob <# "alice> message 1"
-      bob #> "@alice message 2"
-      alice <# "bob> message 2"
-    bob <## "server disconnected localhost (@alice)"
-    alice <## "server disconnected localhost (@bob)"
-  where
+      bob <##. "smp agent error: BROKER"
+      withSmpServer' serverCfg' $ do
+        alice <## "server connected localhost ()"
+        bob ##> ("/_connect plan 1 " <> inv)
+        bob <## "invitation link: ok to connect"
+        bob ##> ("/_connect 1 " <> inv)
+        bob <## "confirmation sent!"
+        concurrently_
+          (bob <## "alice (Alice): contact is connected")
+          (alice <## "bob (Bob): contact is connected")
+        alice #> "@bob message 1"
+        bob <# "alice> message 1"
+        bob #> "@alice message 2"
+        alice <# "bob> message 2"
+      bob <## "server disconnected localhost (@alice)"
+      alice <## "server disconnected localhost (@bob)"
     serverCfg' =
       smpServerCfg
         { transports = [("7003", transport @TLS, False)],
           msgQueueQuota = 2,
-          storeLogFile = Just "tests/tmp/smp-server-store.log",
-          storeMsgsFile = Just "tests/tmp/smp-server-messages.log"
+          storeLogFile = Just $ tmp <> "/smp-server-store.log",
+          storeMsgsFile = Just $ tmp <> "/smp-server-messages.log"
         }
     fastRetryInterval = defaultReconnectInterval {initialInterval = 50000} -- same as in agent tests
     cfg' =
