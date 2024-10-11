@@ -1889,6 +1889,7 @@ class PendingContactConnection(
 @Serializable
 enum class ConnStatus {
   @SerialName("new") New,
+  @SerialName("prepared") Prepared,
   @SerialName("joined") Joined,
   @SerialName("requested") Requested,
   @SerialName("accepted") Accepted,

@@ -71,7 +71,7 @@ module Simplex.Chat.Store.Direct
     getConnectionById,
     getConnectionsContacts,
     updateConnectionStatus,
-    updateConnectionStatus',
+    updateConnectionStatusFromTo,
     updateContactSettings,
     setConnConnReqInv,
     resetContactConnInitiated,
@@ -942,11 +942,17 @@ getConnectionsContacts db agentConnIds = do
     toContactRef (contactId, connId, acId, localDisplayName) = ContactRef {contactId, connId, agentConnId = AgentConnId acId, localDisplayName}
 
 updateConnectionStatus :: DB.Connection -> Connection -> ConnStatus -> IO ()
-updateConnectionStatus db Connection {connId} = updateConnectionStatus' db connId
+updateConnectionStatus db Connection {connId} = updateConnectionStatus_ db connId
 {-# INLINE updateConnectionStatus #-}
 
-updateConnectionStatus' :: DB.Connection -> Int64 -> ConnStatus -> IO ()
-updateConnectionStatus' db connId connStatus = do
+updateConnectionStatusFromTo :: DB.Connection -> Int64 -> ConnStatus -> ConnStatus -> IO ()
+updateConnectionStatusFromTo db connId fromStatus toStatus = do
+  maybeFirstRow fromOnly (DB.query db "SELECT conn_status FROM connections WHERE connection_id = ?" (Only connId)) >>= \case
+    Just status | status == fromStatus -> updateConnectionStatus_ db connId toStatus
+    _ -> pure ()
+
+updateConnectionStatus_ :: DB.Connection -> Int64 -> ConnStatus -> IO ()
+updateConnectionStatus_ db connId connStatus = do
   currentTs <- getCurrentTime
   if connStatus == ConnReady
     then DB.execute db "UPDATE connections SET conn_status = ?, updated_at = ?, conn_req_inv = NULL WHERE connection_id = ?" (connStatus, currentTs, connId)

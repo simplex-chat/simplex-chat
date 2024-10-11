@@ -1299,7 +1299,7 @@ processChatCommand' vr = \case
   APIAcceptContact incognito connReqId -> withUser $ \_ -> do
     (user@User {userId}, cReq@UserContactRequest {userContactLinkId}) <- withFastStore $ \db -> getContactRequest' db connReqId
     withUserContactLock "acceptContact" userContactLinkId $ do
-      (ct, conn, sqSecured) <- acceptContactRequest user cReq incognito
+      (ct, conn@Connection {connId}, sqSecured) <- acceptContactRequest user cReq incognito
       ucl <- withFastStore $ \db -> getUserContactLinkById db userId userContactLinkId
       let contactUsed = (\(_, groupId_, _) -> isNothing groupId_) ucl
       ct' <- withStore' $ \db -> do
@@ -1307,7 +1307,7 @@ processChatCommand' vr = \case
         updateContactAccepted db user ct contactUsed
         conn' <-
           if sqSecured
-            then conn {connStatus = ConnSndReady} <$ updateConnectionStatus db conn ConnSndReady
+            then conn {connStatus = ConnSndReady} <$ updateConnectionStatusFromTo db connId ConnNew ConnSndReady
             else pure conn
         pure ct {contactUsed, activeConn = Just conn'}
       pure $ CRAcceptingContactRequest user ct'
@@ -1795,12 +1795,8 @@ processChatCommand' vr = \case
             joinPreparedConn connId pcc dm
           joinPreparedConn connId pcc@PendingContactConnection {pccConnId} dm = do
             void $ withAgent $ \a -> joinConnection a (aUserId user) connId True cReq dm pqSup' subMode
-            withFastStore' $ \db ->
-              tryStoreError' (getPendingContactConnection db userId pccConnId) >>= \case
-                Right PendingContactConnection {pccConnStatus = ConnPrepared} ->
-                  updateConnectionStatus' db pccConnId ConnJoined
-                _ -> pure ()
-            pure $ CRSentConfirmation user pcc
+            withFastStore' $ \db -> updateConnectionStatusFromTo db pccConnId ConnPrepared ConnJoined
+            pure $ CRSentConfirmation user pcc {pccConnStatus = ConnJoined}
           cReqs =
             ( CRInvitationUri crData {crScheme = SSSimplex} e2e,
               CRInvitationUri crData {crScheme = simplexChat} e2e
