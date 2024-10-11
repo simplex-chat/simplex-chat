@@ -1899,6 +1899,7 @@ enum class ConnStatus {
 
   val initiated: Boolean? get() = when (this) {
     New -> true
+    Prepared -> false
     Joined -> false
     Requested -> true
     Accepted -> true
