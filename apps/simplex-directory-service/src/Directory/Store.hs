@@ -19,6 +19,7 @@ module Directory.Store
     getUserGroupRegs,
     filterListedGroups,
     groupRegStatusText,
+    pendingApproval,
   )
 where
 
@@ -78,6 +79,11 @@ data GroupRegStatus
   | GRSSuspended
   | GRSSuspendedBadRoles
   | GRSRemoved
+
+pendingApproval :: GroupRegStatus -> Bool
+pendingApproval = \case
+  GRSPendingApproval _ -> True
+  _ -> False
 
 data DirectoryStatus = DSListed | DSReserved | DSRegistered
 

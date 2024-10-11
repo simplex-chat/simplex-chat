@@ -576,13 +576,8 @@ directoryService st DirectoryOpts {superUsers, serviceName, searchResults, testi
                     notifyOwner gr $ "The group " <> userGroupReference' gr gName <> " is listed in the directory again!"
                     sendReply "Group listing resumed!"
                   _ -> sendReply $ "The group " <> groupRef <> " is not suspended, can't be resumed."
-          DCListLastGroups count ->
-            readTVarIO (groupRegs st) >>= \grs -> do
-              sendReply $ show (length grs) <> " registered group(s)" <> (if length grs > count then ", showing the last " <> show count else "")
-              void . forkIO $ forM_ (reverse $ take count grs) $ \gr@GroupReg {dbGroupId, dbContactId} -> do
-                ct_ <- getContact cc dbContactId
-                let ownerStr = "Owner: " <> maybe "getContact error" localDisplayName' ct_
-                sendGroupInfo ct gr dbGroupId $ Just ownerStr
+          DCListLastGroups count -> listGroups count False
+          DCListPendingGroups count -> listGroups count True
           DCExecuteCommand cmdStr ->
             sendChatCmdStr cc cmdStr >>= \r -> do
               ts <- getCurrentTime
@@ -593,6 +588,17 @@ directoryService st DirectoryOpts {superUsers, serviceName, searchResults, testi
       where
         superUser = KnownContact {contactId = contactId' ct, localDisplayName = localDisplayName' ct}
         sendReply = sendComposedMessage cc ct (Just ciId) . textMsgContent
+        listGroups count pending =
+          readTVarIO (groupRegs st) >>= \groups -> do
+            grs <-
+              if pending 
+                then filterM (fmap pendingApproval . readTVarIO . groupRegStatus) groups
+                else pure groups
+            sendReply $ show (length grs) <> " registered group(s)" <> (if length grs > count then ", showing the last " <> show count else "")
+            void . forkIO $ forM_ (reverse $ take count grs) $ \gr@GroupReg {dbGroupId, dbContactId} -> do
+              ct_ <- getContact cc dbContactId
+              let ownerStr = "Owner: " <> maybe "getContact error" localDisplayName' ct_
+              sendGroupInfo ct gr dbGroupId $ Just ownerStr
 
     getGroupAndReg :: GroupId -> GroupName -> IO (Maybe (GroupInfo, GroupReg))
     getGroupAndReg gId gName =

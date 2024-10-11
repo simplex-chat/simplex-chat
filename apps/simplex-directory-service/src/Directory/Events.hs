@@ -111,6 +111,7 @@ data DirectoryCmdTag (r :: DirectoryRole) where
   DCSuspendGroup_ :: DirectoryCmdTag 'DRSuperUser
   DCResumeGroup_ :: DirectoryCmdTag 'DRSuperUser
   DCListLastGroups_ :: DirectoryCmdTag 'DRSuperUser
+  DCListPendingGroups_ :: DirectoryCmdTag 'DRSuperUser
   DCExecuteCommand_ :: DirectoryCmdTag 'DRSuperUser
 
 deriving instance Show (DirectoryCmdTag r)
@@ -132,6 +133,7 @@ data DirectoryCmd (r :: DirectoryRole) where
   DCSuspendGroup :: GroupId -> GroupName -> DirectoryCmd 'DRSuperUser
   DCResumeGroup :: GroupId -> GroupName -> DirectoryCmd 'DRSuperUser
   DCListLastGroups :: Int -> DirectoryCmd 'DRSuperUser
+  DCListPendingGroups :: Int -> DirectoryCmd 'DRSuperUser
   DCExecuteCommand :: String -> DirectoryCmd 'DRSuperUser
   DCUnknownCommand :: DirectoryCmd 'DRUser
   DCCommandError :: DirectoryCmdTag r -> DirectoryCmd r
@@ -168,6 +170,7 @@ directoryCmdP =
         "suspend" -> su DCSuspendGroup_
         "resume" -> su DCResumeGroup_
         "last" -> su DCListLastGroups_
+        "pending" -> su DCListPendingGroups_
         "exec" -> su DCExecuteCommand_
         "x" -> su DCExecuteCommand_
         _ -> fail "bad command tag"
@@ -192,6 +195,7 @@ directoryCmdP =
       DCSuspendGroup_ -> gc DCSuspendGroup
       DCResumeGroup_ -> gc DCResumeGroup
       DCListLastGroups_ -> DCListLastGroups <$> (A.space *> A.decimal <|> pure 10)
+      DCListPendingGroups_ -> DCListPendingGroups <$> (A.space *> A.decimal <|> pure 10)
       DCExecuteCommand_ -> DCExecuteCommand . T.unpack <$> (A.space *> A.takeText)
       where
         gc f = f <$> (A.space *> A.decimal <* A.char ':') <*> displayNameP
@@ -214,13 +218,14 @@ directoryCmdTag = \case
   DCRecentGroups -> "new"
   DCSubmitGroup _ -> "submit"
   DCConfirmDuplicateGroup {} -> "confirm"
-  DCListUserGroups -> "list"
+  DCListUserGroups -> "list" 
   DCDeleteGroup {} -> "delete"
   DCApproveGroup {} -> "approve"
   DCRejectGroup {} -> "reject"
   DCSuspendGroup {} -> "suspend"
   DCResumeGroup {} -> "resume"
   DCListLastGroups _ -> "last"
+  DCListPendingGroups _ -> "pending"
   DCExecuteCommand _ -> "exec"
   DCUnknownCommand -> "unknown"
   DCCommandError _ -> "error"
