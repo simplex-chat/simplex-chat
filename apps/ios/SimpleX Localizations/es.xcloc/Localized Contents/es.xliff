@@ -1085,9 +1085,9 @@
         <target>Hash de mensaje incorrecto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Better calls" xml:space="preserve" approved="no">
+      <trans-unit id="Better calls" xml:space="preserve">
         <source>Better calls</source>
-        <target state="translated">Llamadas mejoradas</target>
+        <target>Llamadas mejoradas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better groups" xml:space="preserve">
@@ -1095,9 +1095,9 @@
         <target>Grupos mejorados</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Better message dates." xml:space="preserve" approved="no">
+      <trans-unit id="Better message dates." xml:space="preserve">
         <source>Better message dates.</source>
-        <target state="translated">Sistema de fechas mejorado.</target>
+        <target>Sistema de fechas mejorado.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better messages" xml:space="preserve">
@@ -1110,19 +1110,19 @@
         <target>Uso de red mejorado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Better notifications" xml:space="preserve" approved="no">
+      <trans-unit id="Better notifications" xml:space="preserve">
         <source>Better notifications</source>
-        <target state="translated">Notificaciones mejoradas</target>
+        <target>Notificaciones mejoradas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Better security ✅" xml:space="preserve" approved="no">
+      <trans-unit id="Better security ✅" xml:space="preserve">
         <source>Better security ✅</source>
-        <target state="translated">Seguridad mejorada ✅</target>
+        <target>Seguridad mejorada ✅</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Better user experience" xml:space="preserve" approved="no">
+      <trans-unit id="Better user experience" xml:space="preserve">
         <source>Better user experience</source>
-        <target state="translated">Experiencia de usuario mejorada</target>
+        <target>Experiencia de usuario mejorada</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Black" xml:space="preserve">
@@ -1945,9 +1945,9 @@ This is your own one-time link!</source>
         <target>Tiempo personalizado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Customizable message shape." xml:space="preserve" approved="no">
+      <trans-unit id="Customizable message shape." xml:space="preserve">
         <source>Customizable message shape.</source>
-        <target state="translated">Forma personalizable de los mensajes.</target>
+        <target>Forma personalizable de los mensajes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Customize theme" xml:space="preserve">
@@ -2244,9 +2244,9 @@ This is your own one-time link!</source>
         <target>¿Eliminar base de datos antigua?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete or moderate up to 200 messages." xml:space="preserve" approved="no">
+      <trans-unit id="Delete or moderate up to 200 messages." xml:space="preserve">
         <source>Delete or moderate up to 200 messages.</source>
-        <target state="translated">Borrar o moderar hasta 200 mensajes.</target>
+        <target>Borrar o moderar hasta 200 mensajes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete pending connection?" xml:space="preserve">
@@ -3372,9 +3372,9 @@ This is your own one-time link!</source>
         <target>¿Reenviar mensajes sin los archivos?</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Forward up to 20 messages at once." xml:space="preserve" approved="no">
+      <trans-unit id="Forward up to 20 messages at once." xml:space="preserve">
         <source>Forward up to 20 messages at once.</source>
-        <target state="translated">Desplazamiento de hasta 20 mensajes.</target>
+        <target>Desplazamiento de hasta 20 mensajes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Forwarded" xml:space="preserve">
@@ -3766,10 +3766,10 @@ Error: %2$@</target>
         <target>Importando archivo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Improved delivery, reduced traffic usage.&#10;More improvements are coming soon!" xml:space="preserve" approved="no">
+      <trans-unit id="Improved delivery, reduced traffic usage.&#10;More improvements are coming soon!" xml:space="preserve">
         <source>Improved delivery, reduced traffic usage.
 More improvements are coming soon!</source>
-        <target state="translated">Reducción del tráfico y entrega mejorada.
+        <target>Reducción del tráfico y entrega mejorada.
 ¡Pronto habrá nuevas mejoras!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -6471,9 +6471,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Invitación SimpleX de un uso</target>
         <note>simplex link type</note>
       </trans-unit>
-      <trans-unit id="SimpleX protocols reviewed by Trail of Bits." xml:space="preserve" approved="no">
+      <trans-unit id="SimpleX protocols reviewed by Trail of Bits." xml:space="preserve">
         <source>SimpleX protocols reviewed by Trail of Bits.</source>
-        <target state="translated">Protocolos de SimpleX auditados por Trail of Bits.</target>
+        <target>Protocolos de SimpleX auditados por Trail of Bits.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Simplified incognito mode" xml:space="preserve">
@@ -6651,14 +6651,14 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Soporte SimpleX Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Switch audio and video during the call." xml:space="preserve" approved="no">
+      <trans-unit id="Switch audio and video during the call." xml:space="preserve">
         <source>Switch audio and video during the call.</source>
-        <target state="translated">Intercambia audio y video durante la llamada.</target>
+        <target>Intercambia audio y video durante la llamada.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Switch chat profile for 1-time invitations." xml:space="preserve" approved="no">
+      <trans-unit id="Switch chat profile for 1-time invitations." xml:space="preserve">
         <source>Switch chat profile for 1-time invitations.</source>
-        <target state="translated">Cambia el perfil de chat para invitaciones de un solo uso.</target>
+        <target>Cambia el perfil de chat para invitaciones de un solo uso.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="System" xml:space="preserve">

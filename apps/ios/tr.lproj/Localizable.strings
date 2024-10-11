@@ -695,13 +695,28 @@
 "Bad message ID" = "Kötü mesaj kimliği";
 
 /* No comment provided by engineer. */
+"Better calls" = "Daha iyi aramalar";
+
+/* No comment provided by engineer. */
 "Better groups" = "Daha iyi gruplar";
+
+/* No comment provided by engineer. */
+"Better message dates." = "Daha iyi mesaj tarihleri.";
 
 /* No comment provided by engineer. */
 "Better messages" = "Daha iyi mesajlar";
 
 /* No comment provided by engineer. */
 "Better networking" = "Daha iyi ağ oluşturma";
+
+/* No comment provided by engineer. */
+"Better notifications" = "Daha iyi bildirimler";
+
+/* No comment provided by engineer. */
+"Better security ✅" = "Daha iyi güvenlik ✅";
+
+/* No comment provided by engineer. */
+"Better user experience" = "Daha iyi kullanıcı deneyimi";
 
 /* No comment provided by engineer. */
 "Black" = "Siyah";
@@ -1293,6 +1308,9 @@
 "Custom time" = "Özel saat";
 
 /* No comment provided by engineer. */
+"Customizable message shape." = "Özelleştirilebilir mesaj şekli.";
+
+/* No comment provided by engineer. */
 "Customize theme" = "Renk temalarını kişiselleştir";
 
 /* No comment provided by engineer. */
@@ -1481,6 +1499,9 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "Eski veritabanı silinsin mi?";
+
+/* No comment provided by engineer. */
+"Delete or moderate up to 200 messages." = "200'e kadar mesajı silin veya düzenleyin.";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "Bekleyen bağlantı silinsin mi?";
@@ -2231,6 +2252,9 @@
 "Forward messages without files?" = "Mesajlar dosyalar olmadan iletilsin mi ?";
 
 /* No comment provided by engineer. */
+"Forward up to 20 messages at once." = "Aynı anda en fazla 20 mesaj iletin.";
+
+/* No comment provided by engineer. */
 "forwarded" = "iletildi";
 
 /* No comment provided by engineer. */
@@ -2469,6 +2493,9 @@
 
 /* No comment provided by engineer. */
 "Importing archive" = "Arşiv içe aktarılıyor";
+
+/* No comment provided by engineer. */
+"Improved delivery, reduced traffic usage.\nMore improvements are coming soon!" = "İyileştirilmiş teslimat, azaltılmış trafik kullanımı.\nDaha fazla iyileştirme yakında geliyor!";
 
 /* No comment provided by engineer. */
 "Improved message delivery" = "İyileştirilmiş mesaj iletimi";
@@ -4272,6 +4299,9 @@
 "SimpleX one-time invitation" = "SimpleX tek kullanımlık davet";
 
 /* No comment provided by engineer. */
+"SimpleX protocols reviewed by Trail of Bits." = "SimpleX protokolleri Trail of Bits tarafından incelenmiştir.";
+
+/* No comment provided by engineer. */
 "Simplified incognito mode" = "Basitleştirilmiş gizli mod";
 
 /* No comment provided by engineer. */
@@ -4390,6 +4420,12 @@
 
 /* No comment provided by engineer. */
 "Support SimpleX Chat" = "SimpleX Chat'e destek ol";
+
+/* No comment provided by engineer. */
+"Switch audio and video during the call." = "Görüşme sırasında ses ve görüntüyü değiştirin.";
+
+/* No comment provided by engineer. */
+"Switch chat profile for 1-time invitations." = "Sohbet profilini 1 kerelik davetler için değiştirin.";
 
 /* No comment provided by engineer. */
 "System" = "Sistem";

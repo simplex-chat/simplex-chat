@@ -160,6 +160,9 @@
 /* notification title */
 "%@ wants to connect!" = "%@ хочет соединиться!";
 
+/* format for date separator in chat */
+"%@, %@" = "%1$@, %2$@";
+
 /* No comment provided by engineer. */
 "%@, %@ and %lld members" = "%@, %@ и %lld членов группы";
 
@@ -692,13 +695,28 @@
 "Bad message ID" = "Ошибка ID сообщения";
 
 /* No comment provided by engineer. */
+"Better calls" = "Улучшенные звонки";
+
+/* No comment provided by engineer. */
 "Better groups" = "Улучшенные группы";
+
+/* No comment provided by engineer. */
+"Better message dates." = "Улучшенные даты сообщений.";
 
 /* No comment provided by engineer. */
 "Better messages" = "Улучшенные сообщения";
 
 /* No comment provided by engineer. */
 "Better networking" = "Улучшенные сетевые функции";
+
+/* No comment provided by engineer. */
+"Better notifications" = "Улучшенные уведомления";
+
+/* No comment provided by engineer. */
+"Better security ✅" = "Улучшенная безопасность ✅";
+
+/* No comment provided by engineer. */
+"Better user experience" = "Улучшенный интерфейс";
 
 /* No comment provided by engineer. */
 "Black" = "Черная";
@@ -1290,6 +1308,9 @@
 "Custom time" = "Пользовательское время";
 
 /* No comment provided by engineer. */
+"Customizable message shape." = "Настраиваемая форма сообщений.";
+
+/* No comment provided by engineer. */
 "Customize theme" = "Настроить тему";
 
 /* No comment provided by engineer. */
@@ -1478,6 +1499,9 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "Удалить предыдущую версию данных?";
+
+/* No comment provided by engineer. */
+"Delete or moderate up to 200 messages." = "Удаляйте или модерируйте до 200 сообщений.";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "Удалить ожидаемое соединение?";
@@ -2228,6 +2252,9 @@
 "Forward messages without files?" = "Переслать сообщения без файлов?";
 
 /* No comment provided by engineer. */
+"Forward up to 20 messages at once." = "Пересылайте до 20 сообщений за раз.";
+
+/* No comment provided by engineer. */
 "forwarded" = "переслано";
 
 /* No comment provided by engineer. */
@@ -2466,6 +2493,9 @@
 
 /* No comment provided by engineer. */
 "Importing archive" = "Импорт архива";
+
+/* No comment provided by engineer. */
+"Improved delivery, reduced traffic usage.\nMore improvements are coming soon!" = "Улучшенная доставка, меньше трафик.";
 
 /* No comment provided by engineer. */
 "Improved message delivery" = "Улучшенная доставка сообщений";
@@ -4269,6 +4299,9 @@
 "SimpleX one-time invitation" = "SimpleX одноразовая ссылка";
 
 /* No comment provided by engineer. */
+"SimpleX protocols reviewed by Trail of Bits." = "Аудит SimpleX протоколов от Trail of Bits.";
+
+/* No comment provided by engineer. */
 "Simplified incognito mode" = "Упрощенный режим Инкогнито";
 
 /* No comment provided by engineer. */
@@ -4387,6 +4420,12 @@
 
 /* No comment provided by engineer. */
 "Support SimpleX Chat" = "Поддержать SimpleX Chat";
+
+/* No comment provided by engineer. */
+"Switch audio and video during the call." = "Переключайте звук и видео во время звонка.";
+
+/* No comment provided by engineer. */
+"Switch chat profile for 1-time invitations." = "Переключайте профиль чата для одноразовых приглашений.";
 
 /* No comment provided by engineer. */
 "System" = "Системная";

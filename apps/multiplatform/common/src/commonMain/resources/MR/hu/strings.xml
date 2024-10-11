@@ -804,7 +804,7 @@
     <string name="link_a_mobile">Egy hordozható eszköz társítása</string>
     <string name="settings_notifications_mode_title">Értesítési szolgáltatás</string>
     <string name="only_group_owners_can_enable_voice">Csak a csoporttulajdonosok engedélyezhetik a hangüzenetek küldését.</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Csak az alkalmazások tárolják a felhasználó-profilokat, ismerősöket, csoportokat és a <b>2 rétegű végpontok közötti titkosítással</b> küldött üzeneteket.</string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Csak az alkalmazások tárolják a felhasználó-profilokat, ismerősöket, csoportokat és a <b>2 rétegű végpontok közötti titkosítással</b> küldött üzeneteket.]]></string>
     <string name="invalid_migration_confirmation">Érvénytelen átköltöztetési visszaigazolás</string>
     <string name="only_group_owners_can_change_prefs">Csak a csoporttulajdonosok módosíthatják a csoportbeállításokat.</string>
     <string name="no_history">Nincsenek előzmények</string>
@@ -822,7 +822,7 @@
     <string name="feature_offered_item">ajánlott %s</string>
     <string name="button_leave_group">Csoport elhagyása</string>
     <string name="unblock_member_desc">Minden %s által írt üzenet megjelenik!</string>
-    <string name="many_people_asked_how_can_it_deliver">Sokan kérdezték: <i>Ha a SimpleX Chatnek nincs felhasználó-azonosítója, hogyan lehet mégis üzeneteket küldeni?</i></string>
+    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Sokan kérdezték: <i>Ha a SimpleX Chatnek nincs felhasználó-azonosítója, hogyan lehet mégis üzeneteket küldeni?</i>]]></string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Ez akkor fordulhat elő, ha:\n1. Az üzenetek 2 nap után, vagy a kiszolgálón 30 nap után lejártak.\n2. Az üzenet visszafejtése sikertelen volt, mert Ön, vagy az ismerőse régebbi adatbázis biztonsági mentést használt.\n3. A kapcsolat sérült.</string>
     <string name="group_member_role_observer">megfigyelő</string>
     <string name="description_via_group_link_incognito">inkognitó a csoporthivatkozáson keresztül</string>
