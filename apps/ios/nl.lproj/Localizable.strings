@@ -596,6 +596,9 @@
 "App passcode is replaced with self-destruct passcode." = "De app-toegangscode wordt vervangen door een zelfvernietigings wachtwoord.";
 
 /* No comment provided by engineer. */
+"App session" = "Appsessie";
+
+/* No comment provided by engineer. */
 "App version" = "App versie";
 
 /* No comment provided by engineer. */
@@ -692,13 +695,28 @@
 "Bad message ID" = "Onjuiste bericht-ID";
 
 /* No comment provided by engineer. */
+"Better calls" = "Betere gesprekken";
+
+/* No comment provided by engineer. */
 "Better groups" = "Betere groepen";
+
+/* No comment provided by engineer. */
+"Better message dates." = "Betere datums voor berichten.";
 
 /* No comment provided by engineer. */
 "Better messages" = "Betere berichten";
 
 /* No comment provided by engineer. */
 "Better networking" = "Beter netwerk";
+
+/* No comment provided by engineer. */
+"Better notifications" = "Betere meldingen";
+
+/* No comment provided by engineer. */
+"Better security ✅" = "Betere beveiliging ✅";
+
+/* No comment provided by engineer. */
+"Better user experience" = "Betere gebruikerservaring";
 
 /* No comment provided by engineer. */
 "Black" = "Zwart";
@@ -1290,6 +1308,9 @@
 "Custom time" = "Aangepaste tijd";
 
 /* No comment provided by engineer. */
+"Customizable message shape." = "Aanpasbare berichtvorm.";
+
+/* No comment provided by engineer. */
 "Customize theme" = "Thema aanpassen";
 
 /* No comment provided by engineer. */
@@ -1478,6 +1499,9 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "Oude database verwijderen?";
+
+/* No comment provided by engineer. */
+"Delete or moderate up to 200 messages." = "Maximaal 200 berichten verwijderen of modereren.";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "Wachtende verbinding verwijderen?";
@@ -2228,6 +2252,9 @@
 "Forward messages without files?" = "Berichten doorsturen zonder bestanden?";
 
 /* No comment provided by engineer. */
+"Forward up to 20 messages at once." = "Stuur maximaal 20 berichten tegelijk door.";
+
+/* No comment provided by engineer. */
 "forwarded" = "doorgestuurd";
 
 /* No comment provided by engineer. */
@@ -2466,6 +2493,9 @@
 
 /* No comment provided by engineer. */
 "Importing archive" = "Archief importeren";
+
+/* No comment provided by engineer. */
+"Improved delivery, reduced traffic usage.\nMore improvements are coming soon!" = "Verbeterde levering, minder data gebruik.\nBinnenkort meer verbeteringen!";
 
 /* No comment provided by engineer. */
 "Improved message delivery" = "Verbeterde berichtbezorging";
@@ -3070,6 +3100,12 @@
 /* No comment provided by engineer. */
 "New passphrase…" = "Nieuw wachtwoord…";
 
+/* No comment provided by engineer. */
+"New SOCKS credentials will be used every time you start the app." = "Elke keer dat u de app start, worden er nieuwe SOCKS-inloggegevens gebruikt.";
+
+/* No comment provided by engineer. */
+"New SOCKS credentials will be used for each server." = "Voor elke server worden nieuwe SOCKS-inloggegevens gebruikt.";
+
 /* pref value */
 "no" = "Nee";
 
@@ -3111,6 +3147,12 @@
 
 /* No comment provided by engineer. */
 "No network connection" = "Geen netwerkverbinding";
+
+/* No comment provided by engineer. */
+"No permission to record speech" = "Geen toestemming om spraak op te nemen";
+
+/* No comment provided by engineer. */
+"No permission to record video" = "Geen toestemming om video op te nemen";
 
 /* No comment provided by engineer. */
 "No permission to record voice message" = "Geen toestemming om spraakbericht op te nemen";
@@ -4065,6 +4107,9 @@
 "Sent via proxy" = "Verzonden via proxy";
 
 /* No comment provided by engineer. */
+"Server" = "Server";
+
+/* No comment provided by engineer. */
 "Server address" = "Server adres";
 
 /* No comment provided by engineer. */
@@ -4254,6 +4299,9 @@
 "SimpleX one-time invitation" = "Eenmalige SimpleX uitnodiging";
 
 /* No comment provided by engineer. */
+"SimpleX protocols reviewed by Trail of Bits." = "SimpleX-protocollen beoordeeld door Trail of Bits.";
+
+/* No comment provided by engineer. */
 "Simplified incognito mode" = "Vereenvoudigde incognitomodus";
 
 /* No comment provided by engineer. */
@@ -4374,10 +4422,19 @@
 "Support SimpleX Chat" = "Ondersteuning van SimpleX Chat";
 
 /* No comment provided by engineer. */
+"Switch audio and video during the call." = "Wissel tussen audio en video tijdens het gesprek.";
+
+/* No comment provided by engineer. */
+"Switch chat profile for 1-time invitations." = "Wijzig chatprofiel voor eenmalige uitnodigingen.";
+
+/* No comment provided by engineer. */
 "System" = "Systeem";
 
 /* No comment provided by engineer. */
 "System authentication" = "Systeem authenticatie";
+
+/* No comment provided by engineer. */
+"Tail" = "Staart";
 
 /* No comment provided by engineer. */
 "Take picture" = "Foto nemen";
@@ -4588,6 +4645,12 @@
 
 /* No comment provided by engineer. */
 "To protect your IP address, private routing uses your SMP servers to deliver messages." = "Om uw IP-adres te beschermen, gebruikt privéroutering uw SMP-servers om berichten te bezorgen.";
+
+/* No comment provided by engineer. */
+"To record speech please grant permission to use Microphone." = "Geef toestemming om de microfoon te gebruiken om spraak op te nemen.";
+
+/* No comment provided by engineer. */
+"To record video please grant permission to use Camera." = "Om video op te nemen, dient u toestemming te geven om de camera te gebruiken.";
 
 /* No comment provided by engineer. */
 "To record voice message please grant permission to use Microphone." = "Geef toestemming om de microfoon te gebruiken om een spraakbericht op te nemen.";

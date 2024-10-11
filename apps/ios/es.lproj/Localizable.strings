@@ -596,6 +596,9 @@
 "App passcode is replaced with self-destruct passcode." = "El código de acceso será reemplazado por código de autodestrucción.";
 
 /* No comment provided by engineer. */
+"App session" = "Sesión de aplicación";
+
+/* No comment provided by engineer. */
 "App version" = "Versión de la aplicación";
 
 /* No comment provided by engineer. */
@@ -692,13 +695,28 @@
 "Bad message ID" = "ID de mensaje incorrecto";
 
 /* No comment provided by engineer. */
+"Better calls" = "Llamadas mejoradas";
+
+/* No comment provided by engineer. */
 "Better groups" = "Grupos mejorados";
+
+/* No comment provided by engineer. */
+"Better message dates." = "Sistema de fechas mejorado.";
 
 /* No comment provided by engineer. */
 "Better messages" = "Mensajes mejorados";
 
 /* No comment provided by engineer. */
 "Better networking" = "Uso de red mejorado";
+
+/* No comment provided by engineer. */
+"Better notifications" = "Notificaciones mejoradas";
+
+/* No comment provided by engineer. */
+"Better security ✅" = "Seguridad mejorada ✅";
+
+/* No comment provided by engineer. */
+"Better user experience" = "Experiencia de usuario mejorada";
 
 /* No comment provided by engineer. */
 "Black" = "Negro";
@@ -1014,7 +1032,7 @@
 "Confirm password" = "Confirmar contraseña";
 
 /* No comment provided by engineer. */
-"Confirm that you remember database passphrase to migrate it." = "Para migrar confirma que recuerdas la frase de contraseña de la base de datos.";
+"Confirm that you remember database passphrase to migrate it." = "Para migrar la base de datos confirma que recuerdas la frase de contraseña.";
 
 /* No comment provided by engineer. */
 "Confirm upload" = "Confirmar subida";
@@ -1290,6 +1308,9 @@
 "Custom time" = "Tiempo personalizado";
 
 /* No comment provided by engineer. */
+"Customizable message shape." = "Forma personalizable de los mensajes.";
+
+/* No comment provided by engineer. */
 "Customize theme" = "Personalizar tema";
 
 /* No comment provided by engineer. */
@@ -1478,6 +1499,9 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "¿Eliminar base de datos antigua?";
+
+/* No comment provided by engineer. */
+"Delete or moderate up to 200 messages." = "Borrar o moderar hasta 200 mensajes.";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "¿Eliminar conexión pendiente?";
@@ -2228,6 +2252,9 @@
 "Forward messages without files?" = "¿Reenviar mensajes sin los archivos?";
 
 /* No comment provided by engineer. */
+"Forward up to 20 messages at once." = "Desplazamiento de hasta 20 mensajes.";
+
+/* No comment provided by engineer. */
 "forwarded" = "reenviado";
 
 /* No comment provided by engineer. */
@@ -2466,6 +2493,9 @@
 
 /* No comment provided by engineer. */
 "Importing archive" = "Importando archivo";
+
+/* No comment provided by engineer. */
+"Improved delivery, reduced traffic usage.\nMore improvements are coming soon!" = "Reducción del tráfico y entrega mejorada.\n¡Pronto habrá nuevas mejoras!";
 
 /* No comment provided by engineer. */
 "Improved message delivery" = "Entrega de mensajes mejorada";
@@ -2762,7 +2792,7 @@
 "Local name" = "Nombre local";
 
 /* No comment provided by engineer. */
-"Local profile data only" = "Sólo datos del perfil local";
+"Local profile data only" = "Eliminar sólo el perfil";
 
 /* No comment provided by engineer. */
 "Lock after" = "Bloquear en";
@@ -3070,6 +3100,12 @@
 /* No comment provided by engineer. */
 "New passphrase…" = "Contraseña nueva…";
 
+/* No comment provided by engineer. */
+"New SOCKS credentials will be used every time you start the app." = "Se usarán credenciales SOCKS nuevas cada vez que inicies la aplicación.";
+
+/* No comment provided by engineer. */
+"New SOCKS credentials will be used for each server." = "Se usarán credenciales SOCKS nuevas por cada servidor.";
+
 /* pref value */
 "no" = "no";
 
@@ -3111,6 +3147,12 @@
 
 /* No comment provided by engineer. */
 "No network connection" = "Sin conexión de red";
+
+/* No comment provided by engineer. */
+"No permission to record speech" = "Sin permiso para grabación de voz";
+
+/* No comment provided by engineer. */
+"No permission to record video" = "Sin permiso para grabación de vídeo";
 
 /* No comment provided by engineer. */
 "No permission to record voice message" = "Sin permiso para grabar mensajes de voz";
@@ -3409,7 +3451,7 @@
 "Port" = "Puerto";
 
 /* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "Posiblemente la huella digital del certificado en la dirección del servidor es incorrecta";
+"Possibly, certificate fingerprint in server address is incorrect" = "Posiblemente la huella del certificado en la dirección del servidor es incorrecta";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Conserva el último borrador del mensaje con los datos adjuntos.";
@@ -3451,7 +3493,7 @@
 "Private routing error" = "Error de enrutamiento privado";
 
 /* No comment provided by engineer. */
-"Profile and server connections" = "Datos del perfil y conexiones";
+"Profile and server connections" = "Eliminar perfil y conexiones";
 
 /* No comment provided by engineer. */
 "Profile image" = "Imagen del perfil";
@@ -3692,7 +3734,7 @@
 "removed contact address" = "dirección de contacto eliminada";
 
 /* profile update event chat item */
-"removed profile picture" = "imagen de perfil eliminada";
+"removed profile picture" = "ha eliminado la imagen del perfil";
 
 /* rcv group event chat item */
 "removed you" = "te ha expulsado";
@@ -4065,6 +4107,9 @@
 "Sent via proxy" = "Mediante proxy";
 
 /* No comment provided by engineer. */
+"Server" = "Servidor";
+
+/* No comment provided by engineer. */
 "Server address" = "Dirección del servidor";
 
 /* No comment provided by engineer. */
@@ -4083,7 +4128,7 @@
 "Server requires authorization to upload, check password" = "El servidor requiere autorización para subir, comprueba la contraseña";
 
 /* No comment provided by engineer. */
-"Server test failed!" = "¡Error en prueba del servidor!";
+"Server test failed!" = "¡Prueba no superada!";
 
 /* No comment provided by engineer. */
 "Server type" = "Tipo de servidor";
@@ -4125,7 +4170,7 @@
 "set new contact address" = "nueva dirección de contacto";
 
 /* profile update event chat item */
-"set new profile picture" = "nueva imagen de perfil";
+"set new profile picture" = "tiene nueva imagen del perfil";
 
 /* No comment provided by engineer. */
 "Set passcode" = "Código autodestrucción";
@@ -4254,6 +4299,9 @@
 "SimpleX one-time invitation" = "Invitación SimpleX de un uso";
 
 /* No comment provided by engineer. */
+"SimpleX protocols reviewed by Trail of Bits." = "Protocolos de SimpleX auditados por Trail of Bits.";
+
+/* No comment provided by engineer. */
 "Simplified incognito mode" = "Modo incógnito simplificado";
 
 /* No comment provided by engineer. */
@@ -4374,6 +4422,12 @@
 "Support SimpleX Chat" = "Soporte SimpleX Chat";
 
 /* No comment provided by engineer. */
+"Switch audio and video during the call." = "Intercambia audio y video durante la llamada.";
+
+/* No comment provided by engineer. */
+"Switch chat profile for 1-time invitations." = "Cambia el perfil de chat para invitaciones de un solo uso.";
+
+/* No comment provided by engineer. */
 "System" = "Sistema";
 
 /* No comment provided by engineer. */
@@ -4425,7 +4479,7 @@
 "Temporary file error" = "Error en archivo temporal";
 
 /* server test failure */
-"Test failed at step %@." = "La prueba ha fallado en el paso %@.";
+"Test failed at step %@." = "Prueba no superada en el paso %@.";
 
 /* No comment provided by engineer. */
 "Test server" = "Probar servidor";
@@ -4434,7 +4488,7 @@
 "Test servers" = "Probar servidores";
 
 /* No comment provided by engineer. */
-"Tests failed!" = "¡Pruebas fallidas!";
+"Tests failed!" = "¡Pruebas no superadas!";
 
 /* No comment provided by engineer. */
 "Thank you for installing SimpleX Chat!" = "¡Gracias por instalar SimpleX Chat!";
@@ -4591,6 +4645,12 @@
 
 /* No comment provided by engineer. */
 "To protect your IP address, private routing uses your SMP servers to deliver messages." = "Para proteger tu dirección IP, el enrutamiento privado usa tu lista de servidores SMP para enviar mensajes.";
+
+/* No comment provided by engineer. */
+"To record speech please grant permission to use Microphone." = "Para grabación de voz, por favor concede el permiso para usar el micrófono.";
+
+/* No comment provided by engineer. */
+"To record video please grant permission to use Camera." = "Para grabación de vídeo, por favor concede el permiso para usar la cámara.";
 
 /* No comment provided by engineer. */
 "To record voice message please grant permission to use Microphone." = "Para grabar el mensaje de voz concede permiso para usar el micrófono.";

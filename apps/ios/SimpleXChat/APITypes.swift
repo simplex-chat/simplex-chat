@@ -2041,7 +2041,7 @@ public enum SQLiteError: Decodable, Hashable {
 }
 
 public enum AgentErrorType: Decodable, Hashable {
-    case CMD(cmdErr: CommandErrorType)
+    case CMD(cmdErr: CommandErrorType, errContext: String)
     case CONN(connErr: ConnectionErrorType)
     case SMP(serverAddress: String, smpErr: ProtocolErrorType)
     case NTF(ntfErr: ProtocolErrorType)

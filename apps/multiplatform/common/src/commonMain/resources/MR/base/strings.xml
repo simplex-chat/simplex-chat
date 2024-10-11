@@ -2041,6 +2041,16 @@
   <string name="v6_0_upgrade_app_descr">Download new versions from GitHub.</string>
   <string name="v6_0_connection_servers_status">Control your network</string>
   <string name="v6_0_connection_servers_status_descr">Connection and servers status.</string>
+  <string name="v6_1_better_security">Better security ✅</string>
+  <string name="v6_1_better_security_descr">SimpleX protocols reviewed by Trail of Bits.</string>
+  <string name="v6_1_better_calls">Better calls</string>
+  <string name="v6_1_better_calls_descr">Switch audio and video during the call.</string>
+  <string name="v6_1_better_user_experience">Better user experience</string>
+  <string name="v6_1_switch_chat_profile_descr">Switch chat profile for 1-time invitations.</string>
+  <string name="v6_1_customizable_message_descr">Customizable message shape.</string>
+  <string name="v6_1_message_dates_descr">Better message dates.</string>
+  <string name="v6_1_forward_many_messages_descr">Forward up to 20 messages at once.</string>
+  <string name="v6_1_delete_many_messages_descr">Delete or moderate up to 200 messages.</string>
 
   <!-- CustomTimePicker -->
   <string name="custom_time_unit_seconds">seconds</string>

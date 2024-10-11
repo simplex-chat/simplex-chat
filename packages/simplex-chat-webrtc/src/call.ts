@@ -246,7 +246,7 @@ const callCrypto = callCryptoFunction()
 
 declare var RTCRtpScriptTransform: {
   prototype: RTCRtpScriptTransform
-  new (worker: Worker, options?: any): RTCRtpScriptTransform
+  new (worker: Worker, options?: any, transfer?: any[] | undefined): RTCRtpScriptTransform
 }
 
 enum TransformOperation {
@@ -315,6 +315,8 @@ const allowSendScreenAudio = false
 // When one side of a call sends candidates tot fast (until local & remote descriptions are set), that candidates
 // will be stored here and then set when the call will be ready to process them
 let afterCallInitializedCandidates: RTCIceCandidateInit[] = []
+
+const stopTrackOnAndroid = false
 
 const processCommand = (function () {
   type RTCRtpSenderWithEncryption = RTCRtpSender & {
@@ -1141,7 +1143,8 @@ const processCommand = (function () {
     // doing it vice versa gives an error like "too many cameras were open" on some Android devices or webViews
     // which means the second camera will never be opened
     for (const t of source == CallMediaSource.Mic ? call.localStream.getAudioTracks() : call.localStream.getVideoTracks()) {
-      t.stop()
+      if (isDesktop || source != CallMediaSource.Mic || stopTrackOnAndroid) t.stop()
+      else t.enabled = false
       call.localStream.removeTrack(t)
     }
     let localStream: MediaStream
@@ -1200,7 +1203,7 @@ const processCommand = (function () {
     if (!localStream || !oldCamera || !videos) return
 
     if (!inactiveCallMediaSources.mic) {
-      localStream.getAudioTracks().forEach((elem) => elem.stop())
+      localStream.getAudioTracks().forEach((elem) => (isDesktop || stopTrackOnAndroid ? elem.stop() : (elem.enabled = false)))
       localStream.getAudioTracks().forEach((elem) => localStream.removeTrack(elem))
     }
     if (!inactiveCallMediaSources.camera || oldCamera != newCamera) {
@@ -1272,8 +1275,7 @@ const processCommand = (function () {
   function setupMuteUnmuteListener(transceiver: RTCRtpTransceiver, track: MediaStreamTrack) {
     // console.log("Setting up mute/unmute listener in the call without encryption for mid = ", transceiver.mid)
     let inboundStatsId = ""
-    // for some reason even for disabled tracks one packet arrives (seeing this on screenVideo track)
-    let lastPacketsReceived = 1
+    let lastBytesReceived = 0
     // muted initially
     let mutedSeconds = 4
     let statsInterval = setInterval(async () => {
@@ -1286,9 +1288,9 @@ const processCommand = (function () {
         })
       }
       if (inboundStatsId) {
-        // even though MSDN site says `packetsReceived` is available in WebView 80+, in reality it's available even in 69
-        const packets = (stats as any).get(inboundStatsId)?.packetsReceived
-        if (packets <= lastPacketsReceived) {
+        // even though MSDN site says `bytesReceived` is available in WebView 80+, in reality it's available even in 69
+        const bytes = (stats as any).get(inboundStatsId)?.bytesReceived
+        if (bytes <= lastBytesReceived) {
           mutedSeconds++
           if (mutedSeconds == 3) {
             onMediaMuteUnmute(transceiver.mid, true)
@@ -1297,7 +1299,7 @@ const processCommand = (function () {
           if (mutedSeconds >= 3) {
             onMediaMuteUnmute(transceiver.mid, false)
           }
-          lastPacketsReceived = packets
+          lastBytesReceived = bytes
           mutedSeconds = 0
         }
       }
@@ -1475,7 +1477,9 @@ const processCommand = (function () {
           if (enable) {
             transceiver.sender.replaceTrack(t)
           } else {
-            t.stop()
+            if (isDesktop || t.kind == CallMediaType.Video || stopTrackOnAndroid) t.stop()
+            else t.enabled = false
+
             s.removeTrack(t)
             transceiver.sender.replaceTrack(null)
           }
