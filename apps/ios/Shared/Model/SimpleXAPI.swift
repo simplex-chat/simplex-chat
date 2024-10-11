@@ -462,7 +462,7 @@ func apiGetNtfToken() -> (DeviceToken?, NtfTknStatus?, NotificationsMode, String
     let r = chatSendCmdSync(.apiGetNtfToken)
     switch r {
     case let .ntfToken(token, status, ntfMode, ntfServer): return (token, status, ntfMode, ntfServer)
-    case .chatCmdError(_, .errorAgent(.CMD(.PROHIBITED))): return (nil, nil, .off, nil)
+    case .chatCmdError(_, .errorAgent(.CMD(.PROHIBITED, _))): return (nil, nil, .off, nil)
     default:
         logger.debug("apiGetNtfToken response: \(String(describing: r))")
         return (nil, nil, .off, nil)

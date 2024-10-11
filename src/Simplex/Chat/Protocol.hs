@@ -125,6 +125,17 @@ data ConnectionEntity
 
 $(JQ.deriveJSON (sumTypeJSON fstToLower) ''ConnectionEntity)
 
+connEntityInfo :: ConnectionEntity -> String
+connEntityInfo = \case
+  RcvDirectMsgConnection c ct_ -> ctInfo ct_ <> ", status: " <> show (connStatus c)
+  RcvGroupMsgConnection c g m -> mInfo g m <> ", status: " <> show (connStatus c)
+  SndFileConnection c _ft -> "snd file, status: " <> show (connStatus c)
+  RcvFileConnection c _ft -> "rcv file, status: " <> show (connStatus c)
+  UserContactConnection c _uc -> "user address, status: " <> show (connStatus c)
+  where
+    ctInfo = maybe "connection" $ \Contact {contactId} -> "contact " <> show contactId
+    mInfo GroupInfo {groupId} GroupMember {groupMemberId} = "group " <> show groupId <> ", member " <> show groupMemberId
+
 updateEntityConnStatus :: ConnectionEntity -> ConnStatus -> ConnectionEntity
 updateEntityConnStatus connEntity connStatus = case connEntity of
   RcvDirectMsgConnection c ct_ -> RcvDirectMsgConnection (st c) ((\ct -> (ct :: Contact) {activeConn = Just $ st c}) <$> ct_)

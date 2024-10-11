@@ -62,6 +62,8 @@ module Simplex.Chat.Store.Direct
     getContactRequestIdByName,
     deleteContactRequest,
     createAcceptedContact,
+    deleteContactRequestRec,
+    updateContactAccepted,
     getUserByContactRequestId,
     getPendingContactConnections,
     updatePCCUser,
@@ -69,6 +71,7 @@ module Simplex.Chat.Store.Direct
     getConnectionById,
     getConnectionsContacts,
     updateConnectionStatus,
+    updateConnectionStatusFromTo,
     updateContactSettings,
     setConnConnReqInv,
     resetContactConnInitiated,
@@ -655,7 +658,7 @@ createOrUpdateContactRequest db vr user@User {userId} userContactLinkId invId (V
           db
           [sql|
             SELECT
-              cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
+              cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.contact_id, cr.user_contact_link_id,
               c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id, cr.pq_support, p.preferences, cr.created_at, cr.updated_at,
               cr.peer_chat_min_version, cr.peer_chat_max_version
             FROM contact_requests cr
@@ -724,7 +727,7 @@ getContactRequest db User {userId} contactRequestId =
       db
       [sql|
         SELECT
-          cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
+          cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.contact_id, cr.user_contact_link_id,
           c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id, cr.pq_support, p.preferences, cr.created_at, cr.updated_at,
           cr.peer_chat_min_version, cr.peer_chat_max_version
         FROM contact_requests cr
@@ -766,9 +769,8 @@ deleteContactRequest db User {userId} contactRequestId = do
     (userId, userId, contactRequestId, userId)
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
 
-createAcceptedContact :: DB.Connection -> User -> ConnId -> ConnStatus -> VersionChat -> VersionRangeChat -> ContactName -> ProfileId -> Profile -> Int64 -> Maybe XContactId -> Maybe IncognitoProfile -> SubscriptionMode -> PQSupport -> Bool -> IO Contact
-createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}} agentConnId connStatus connChatVersion cReqChatVRange localDisplayName profileId profile userContactLinkId xContactId incognitoProfile subMode pqSup contactUsed = do
-  DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+createAcceptedContact :: DB.Connection -> User -> ConnId -> VersionChat -> VersionRangeChat -> ContactName -> ProfileId -> Profile -> Int64 -> Maybe XContactId -> Maybe IncognitoProfile -> SubscriptionMode -> PQSupport -> Bool -> IO (Contact, Connection)
+createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}} agentConnId connChatVersion cReqChatVRange localDisplayName profileId profile userContactLinkId xContactId incognitoProfile subMode pqSup contactUsed = do
   createdAt <- getCurrentTime
   customUserProfileId <- forM incognitoProfile $ \case
     NewIncognito p -> createIncognitoProfile_ db userId createdAt p
@@ -779,29 +781,42 @@ createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}
     "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, enable_ntfs, user_preferences, created_at, updated_at, chat_ts, xcontact_id, contact_used) VALUES (?,?,?,?,?,?,?,?,?,?)"
     (userId, localDisplayName, profileId, True, userPreferences, createdAt, createdAt, createdAt, xContactId, contactUsed)
   contactId <- insertedRowId db
-  conn <- createConnection_ db userId ConnContact (Just contactId) agentConnId connStatus connChatVersion cReqChatVRange Nothing (Just userContactLinkId) customUserProfileId 0 createdAt subMode pqSup
+  DB.execute db "UPDATE contact_requests SET contact_id = ? WHERE user_id = ? AND local_display_name = ?" (contactId, userId, localDisplayName)
+  conn <- createConnection_ db userId ConnContact (Just contactId) agentConnId ConnNew connChatVersion cReqChatVRange Nothing (Just userContactLinkId) customUserProfileId 0 createdAt subMode pqSup
   let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito conn
-  pure $
-    Contact
-      { contactId,
-        localDisplayName,
-        profile = toLocalProfile profileId profile "",
-        activeConn = Just conn,
-        viaGroup = Nothing,
-        contactUsed,
-        contactStatus = CSActive,
-        chatSettings = defaultChatSettings,
-        userPreferences,
-        mergedPreferences,
-        createdAt,
-        updatedAt = createdAt,
-        chatTs = Just createdAt,
-        contactGroupMemberId = Nothing,
-        contactGrpInvSent = False,
-        uiThemes = Nothing,
-        chatDeleted = False,
-        customData = Nothing
-      }
+      ct =
+        Contact
+          { contactId,
+            localDisplayName,
+            profile = toLocalProfile profileId profile "",
+            activeConn = Just conn,
+            viaGroup = Nothing,
+            contactUsed,
+            contactStatus = CSActive,
+            chatSettings = defaultChatSettings,
+            userPreferences,
+            mergedPreferences,
+            createdAt,
+            updatedAt = createdAt,
+            chatTs = Just createdAt,
+            contactGroupMemberId = Nothing,
+            contactGrpInvSent = False,
+            uiThemes = Nothing,
+            chatDeleted = False,
+            customData = Nothing
+          }
+  pure (ct, conn)
+
+deleteContactRequestRec :: DB.Connection -> User -> UserContactRequest -> IO ()
+deleteContactRequestRec db User {userId} UserContactRequest {contactRequestId} =
+  DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
+
+updateContactAccepted :: DB.Connection -> User -> Contact -> Bool -> IO ()
+updateContactAccepted db User {userId} Contact {contactId} contactUsed =
+  DB.execute
+    db
+    "UPDATE contacts SET contact_used = ? WHERE user_id = ? AND contact_id = ?"
+    (contactUsed, userId, contactId)
 
 getContactIdByName :: DB.Connection -> User -> ContactName -> ExceptT StoreError IO Int64
 getContactIdByName db User {userId} cName =
@@ -927,7 +942,17 @@ getConnectionsContacts db agentConnIds = do
     toContactRef (contactId, connId, acId, localDisplayName) = ContactRef {contactId, connId, agentConnId = AgentConnId acId, localDisplayName}
 
 updateConnectionStatus :: DB.Connection -> Connection -> ConnStatus -> IO ()
-updateConnectionStatus db Connection {connId} connStatus = do
+updateConnectionStatus db Connection {connId} = updateConnectionStatus_ db connId
+{-# INLINE updateConnectionStatus #-}
+
+updateConnectionStatusFromTo :: DB.Connection -> Int64 -> ConnStatus -> ConnStatus -> IO ()
+updateConnectionStatusFromTo db connId fromStatus toStatus = do
+  maybeFirstRow fromOnly (DB.query db "SELECT conn_status FROM connections WHERE connection_id = ?" (Only connId)) >>= \case
+    Just status | status == fromStatus -> updateConnectionStatus_ db connId toStatus
+    _ -> pure ()
+
+updateConnectionStatus_ :: DB.Connection -> Int64 -> ConnStatus -> IO ()
+updateConnectionStatus_ db connId connStatus = do
   currentTs <- getCurrentTime
   if connStatus == ConnReady
     then DB.execute db "UPDATE connections SET conn_status = ?, updated_at = ?, conn_req_inv = NULL WHERE connection_id = ?" (connStatus, currentTs, connId)
