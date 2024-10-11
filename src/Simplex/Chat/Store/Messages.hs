@@ -882,7 +882,7 @@ getContactRequestChatPreviews_ db User {userId} pagination clq = case clq of
           db
           ( [sql|
               SELECT
-                cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
+                cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.contact_id, cr.user_contact_link_id,
                 c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id, cr.pq_support, p.preferences,
                 cr.created_at, cr.updated_at as ts,
                 cr.peer_chat_min_version, cr.peer_chat_max_version
@@ -930,6 +930,7 @@ getContactConnectionChatPreviews_ db User {userId} pagination clq = case clq of
               FROM connections
               WHERE user_id = :user_id
                 AND conn_type = :conn_contact
+                AND conn_status != :conn_status
                 AND contact_id IS NULL
                 AND conn_level = 0
                 AND via_contact IS NULL
@@ -938,7 +939,7 @@ getContactConnectionChatPreviews_ db User {userId} pagination clq = case clq of
             |]
               <> pagQuery
           )
-          ([":user_id" := userId, ":conn_contact" := ConnContact, ":search" := search] <> pagParams)
+          ([":user_id" := userId, ":conn_contact" := ConnContact, ":conn_status" := ConnPrepared, ":search" := search] <> pagParams)
     toPreview :: (Int64, ConnId, ConnStatus, Maybe ByteString, Maybe Int64, Maybe GroupLinkId, Maybe Int64, Maybe ConnReqInvitation, LocalAlias, UTCTime, UTCTime) -> AChatPreviewData
     toPreview connRow =
       let conn@PendingContactConnection {updatedAt} = toPendingContactConnection connRow
