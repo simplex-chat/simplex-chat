@@ -246,7 +246,7 @@ const callCrypto = callCryptoFunction()
 
 declare var RTCRtpScriptTransform: {
   prototype: RTCRtpScriptTransform
-  new (worker: Worker, options?: any): RTCRtpScriptTransform
+  new (worker: Worker, options?: any, transfer?: any[] | undefined): RTCRtpScriptTransform
 }
 
 enum TransformOperation {
@@ -315,6 +315,8 @@ const allowSendScreenAudio = false
 // When one side of a call sends candidates tot fast (until local & remote descriptions are set), that candidates
 // will be stored here and then set when the call will be ready to process them
 let afterCallInitializedCandidates: RTCIceCandidateInit[] = []
+
+const stopTrackOnAndroid = false
 
 const processCommand = (function () {
   type RTCRtpSenderWithEncryption = RTCRtpSender & {
@@ -1141,7 +1143,7 @@ const processCommand = (function () {
     // doing it vice versa gives an error like "too many cameras were open" on some Android devices or webViews
     // which means the second camera will never be opened
     for (const t of source == CallMediaSource.Mic ? call.localStream.getAudioTracks() : call.localStream.getVideoTracks()) {
-      t.stop()
+      if (isDesktop || source != CallMediaSource.Mic || stopTrackOnAndroid) t.stop()
       call.localStream.removeTrack(t)
     }
     let localStream: MediaStream
@@ -1200,7 +1202,7 @@ const processCommand = (function () {
     if (!localStream || !oldCamera || !videos) return
 
     if (!inactiveCallMediaSources.mic) {
-      localStream.getAudioTracks().forEach((elem) => elem.stop())
+      if (isDesktop || stopTrackOnAndroid) localStream.getAudioTracks().forEach((elem) => elem.stop())
       localStream.getAudioTracks().forEach((elem) => localStream.removeTrack(elem))
     }
     if (!inactiveCallMediaSources.camera || oldCamera != newCamera) {
@@ -1474,7 +1476,7 @@ const processCommand = (function () {
           if (enable) {
             transceiver.sender.replaceTrack(t)
           } else {
-            t.stop()
+            if (isDesktop || t.kind == CallMediaType.Video || stopTrackOnAndroid) t.stop()
             s.removeTrack(t)
             transceiver.sender.replaceTrack(null)
           }
