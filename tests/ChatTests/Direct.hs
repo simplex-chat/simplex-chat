@@ -1,10 +1,12 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PostfixOperators #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -Wno-ambiguous-fields #-}
 
 module ChatTests.Direct where
 
@@ -23,7 +25,7 @@ import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
-import Simplex.Chat.Controller (ChatConfig (..))
+import Simplex.Chat.Controller (ChatConfig (..), DefaultAgentServers (..))
 import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
@@ -45,7 +47,8 @@ chatDirectTests :: SpecWith FilePath
 chatDirectTests = do
   describe "direct messages" $ do
     describe "add contact and send/receive messages" testAddContact
-    it "retry connencting via the same link" testRetryConnecting
+    it "retry connecting via the same link" testRetryConnecting
+    xit'' "retry connecting via the same link with client timeout" testRetryConnectingClientTimeout
     it "mark multiple messages as read" testMarkReadDirect
     it "clear chat with contact" testContactClear
     it "deleting contact deletes profile" testDeleteContactDeletesProfile
@@ -263,6 +266,75 @@ testRetryConnecting tmp = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile te
               { quotaExceededTimeout = 1,
                 messageRetryInterval = RetryInterval2 {riFast = fastRetryInterval, riSlow = fastRetryInterval}
               }
+        }
+    opts' =
+      testOpts
+        { coreOptions =
+            testCoreOpts
+              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
+              }
+        }
+
+testRetryConnectingClientTimeout :: HasCallStack => FilePath -> IO ()
+testRetryConnectingClientTimeout tmp = do
+  inv <- withSmpServer' serverCfg' $ do
+    withNewTestChatCfgOpts tmp cfg' opts' "alice" aliceProfile $ \alice -> do
+      alice ##> "/_connect 1"
+      inv <- getInvitation alice
+
+      withNewTestChatCfgOpts tmp cfgZeroTimeout opts' "bob" bobProfile $ \bob -> do
+        bob ##> ("/_connect plan 1 " <> inv)
+        bob <## "invitation link: ok to connect"
+        bob ##> ("/_connect 1 " <> inv)
+        bob <## "smp agent error: BROKER {brokerAddress = \"smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7003\", brokerErr = TIMEOUT}"
+
+      pure inv
+
+  logFile <- readFile $ tmp <> "/smp-server-store.log"
+  logFile `shouldContain` "SECURE"
+
+  withSmpServer' serverCfg' $ do
+    withTestChatCfgOpts tmp cfg' opts' "alice" $ \alice -> do
+      withTestChatCfgOpts tmp cfg' opts' "bob" $ \bob -> do
+        bob ##> ("/_connect plan 1 " <> inv)
+        bob <## "invitation link: ok to connect"
+        bob ##> ("/_connect 1 " <> inv)
+        bob <## "confirmation sent!"
+
+        concurrently_
+          (bob <## "alice (Alice): contact is connected")
+          (alice <## "bob (Bob): contact is connected")
+        alice #> "@bob message 1"
+        bob <# "alice> message 1"
+        bob #> "@alice message 2"
+        alice <# "bob> message 2"
+  where
+    serverCfg' =
+      smpServerCfg
+        { transports = [("7003", transport @TLS, False)],
+          msgQueueQuota = 2,
+          storeLogFile = Just $ tmp <> "/smp-server-store.log",
+          storeMsgsFile = Just $ tmp <> "/smp-server-messages.log"
+        }
+    fastRetryInterval = defaultReconnectInterval {initialInterval = 50000} -- same as in agent tests
+    cfg' =
+      testCfg
+        { agentConfig =
+            testAgentCfg
+              { quotaExceededTimeout = 1,
+                messageRetryInterval = RetryInterval2 {riFast = fastRetryInterval, riSlow = fastRetryInterval}
+              }
+        }
+    cfgZeroTimeout =
+      (testCfg :: ChatConfig)
+        { agentConfig =
+            testAgentCfg
+              { quotaExceededTimeout = 1,
+                messageRetryInterval = RetryInterval2 {riFast = fastRetryInterval, riSlow = fastRetryInterval}
+              },
+          defaultServers =
+            let def@DefaultAgentServers {netCfg} = defaultServers testCfg
+             in def {netCfg = (netCfg :: NetworkConfig) {tcpTimeout = 10}}
         }
     opts' =
       testOpts
