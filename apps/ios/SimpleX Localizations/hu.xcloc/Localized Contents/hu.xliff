@@ -760,9 +760,9 @@
         <target>Minden ismerősével kapcsolatban marad.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All your contacts will remain connected. Profile update will be sent to your contacts." xml:space="preserve">
+      <trans-unit id="All your contacts will remain connected. Profile update will be sent to your contacts." xml:space="preserve" approved="no">
         <source>All your contacts will remain connected. Profile update will be sent to your contacts.</source>
-        <target>Az ismerőseivel kapcsolatban marad. A profil változtatások frissítésre kerülnek az ismerősöknél.</target>
+        <target state="translated">Az ismerőseivel kapcsolatban marad. A profil-változtatások frissítésre kerülnek az ismerősöknél.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." xml:space="preserve">
