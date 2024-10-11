@@ -1795,7 +1795,11 @@ processChatCommand' vr = \case
             joinPreparedConn connId pcc dm
           joinPreparedConn connId pcc@PendingContactConnection {pccConnId} dm = do
             void $ withAgent $ \a -> joinConnection a (aUserId user) connId True cReq dm pqSup' subMode
-            withFastStore' $ \db -> updateConnectionStatus' db pccConnId ConnJoined
+            withFastStore' $ \db ->
+              tryStoreError' (getPendingContactConnection db userId pccConnId) >>= \case
+                Right PendingContactConnection {pccConnStatus = ConnPrepared} ->
+                  updateConnectionStatus' db pccConnId ConnJoined
+                _ -> pure ()
             pure $ CRSentConfirmation user pcc
           cReqs =
             ( CRInvitationUri crData {crScheme = SSSimplex} e2e,
