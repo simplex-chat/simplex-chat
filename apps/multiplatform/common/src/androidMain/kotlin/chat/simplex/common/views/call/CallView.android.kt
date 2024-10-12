@@ -194,7 +194,11 @@ actual fun ActiveCallView() {
               updateActiveCall(call) {
                 val sources = it.localMediaSources
                 when (cmd.source) {
-                  CallMediaSource.Mic -> it.copy(localMediaSources = sources.copy(mic = cmd.enable))
+                  CallMediaSource.Mic -> {
+                    val am = androidAppContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+                    am.isMicrophoneMute = !cmd.enable
+                    it.copy(localMediaSources = sources.copy(mic = cmd.enable))
+                  }
                   CallMediaSource.Camera -> it.copy(localMediaSources = sources.copy(camera = cmd.enable))
                   CallMediaSource.ScreenAudio -> it.copy(localMediaSources = sources.copy(screenAudio = cmd.enable))
                   CallMediaSource.ScreenVideo -> it.copy(localMediaSources = sources.copy(screenVideo = cmd.enable))

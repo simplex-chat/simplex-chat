@@ -1087,6 +1087,7 @@
       </trans-unit>
       <trans-unit id="Better calls" xml:space="preserve">
         <source>Better calls</source>
+        <target>Chiamate migliorate</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better groups" xml:space="preserve">
@@ -1096,6 +1097,7 @@
       </trans-unit>
       <trans-unit id="Better message dates." xml:space="preserve">
         <source>Better message dates.</source>
+        <target>Date dei messaggi migliorate.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better messages" xml:space="preserve">
@@ -1110,14 +1112,17 @@
       </trans-unit>
       <trans-unit id="Better notifications" xml:space="preserve">
         <source>Better notifications</source>
+        <target>Notifiche migliorate</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better security ✅" xml:space="preserve">
         <source>Better security ✅</source>
+        <target>Sicurezza migliorata ✅</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better user experience" xml:space="preserve">
         <source>Better user experience</source>
+        <target>Esperienza utente migliorata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Black" xml:space="preserve">
@@ -1942,6 +1947,7 @@ Questo è il tuo link una tantum!</target>
       </trans-unit>
       <trans-unit id="Customizable message shape." xml:space="preserve">
         <source>Customizable message shape.</source>
+        <target>Forma dei messaggi personalizzabile.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Customize theme" xml:space="preserve">
@@ -2240,6 +2246,7 @@ Questo è il tuo link una tantum!</target>
       </trans-unit>
       <trans-unit id="Delete or moderate up to 200 messages." xml:space="preserve">
         <source>Delete or moderate up to 200 messages.</source>
+        <target>Elimina o modera fino a 200 messaggi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete pending connection?" xml:space="preserve">
@@ -3367,6 +3374,7 @@ Questo è il tuo link una tantum!</target>
       </trans-unit>
       <trans-unit id="Forward up to 20 messages at once." xml:space="preserve">
         <source>Forward up to 20 messages at once.</source>
+        <target>Inoltra fino a 20 messaggi alla volta.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Forwarded" xml:space="preserve">
@@ -3761,6 +3769,8 @@ Errore: %2$@</target>
       <trans-unit id="Improved delivery, reduced traffic usage.&#10;More improvements are coming soon!" xml:space="preserve">
         <source>Improved delivery, reduced traffic usage.
 More improvements are coming soon!</source>
+        <target>Consegna migliorata, utilizzo di traffico ridotto.
+Altri miglioramenti sono in arrivo!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Improved message delivery" xml:space="preserve">
@@ -6463,6 +6473,7 @@ Attivalo nelle impostazioni *Rete e server*.</target>
       </trans-unit>
       <trans-unit id="SimpleX protocols reviewed by Trail of Bits." xml:space="preserve">
         <source>SimpleX protocols reviewed by Trail of Bits.</source>
+        <target>Protocolli di SimpleX esaminati da Trail of Bits.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Simplified incognito mode" xml:space="preserve">
@@ -6642,10 +6653,12 @@ Attivalo nelle impostazioni *Rete e server*.</target>
       </trans-unit>
       <trans-unit id="Switch audio and video during the call." xml:space="preserve">
         <source>Switch audio and video during the call.</source>
+        <target>Cambia tra audio e video durante la chiamata.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Switch chat profile for 1-time invitations." xml:space="preserve">
         <source>Switch chat profile for 1-time invitations.</source>
+        <target>Cambia profilo di chat per inviti una tantum.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="System" xml:space="preserve">

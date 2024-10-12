@@ -695,13 +695,28 @@
 "Bad message ID" = "ID de mensaje incorrecto";
 
 /* No comment provided by engineer. */
+"Better calls" = "Llamadas mejoradas";
+
+/* No comment provided by engineer. */
 "Better groups" = "Grupos mejorados";
+
+/* No comment provided by engineer. */
+"Better message dates." = "Sistema de fechas mejorado.";
 
 /* No comment provided by engineer. */
 "Better messages" = "Mensajes mejorados";
 
 /* No comment provided by engineer. */
 "Better networking" = "Uso de red mejorado";
+
+/* No comment provided by engineer. */
+"Better notifications" = "Notificaciones mejoradas";
+
+/* No comment provided by engineer. */
+"Better security ✅" = "Seguridad mejorada ✅";
+
+/* No comment provided by engineer. */
+"Better user experience" = "Experiencia de usuario mejorada";
 
 /* No comment provided by engineer. */
 "Black" = "Negro";
@@ -1293,6 +1308,9 @@
 "Custom time" = "Tiempo personalizado";
 
 /* No comment provided by engineer. */
+"Customizable message shape." = "Forma personalizable de los mensajes.";
+
+/* No comment provided by engineer. */
 "Customize theme" = "Personalizar tema";
 
 /* No comment provided by engineer. */
@@ -1481,6 +1499,9 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "¿Eliminar base de datos antigua?";
+
+/* No comment provided by engineer. */
+"Delete or moderate up to 200 messages." = "Borrar o moderar hasta 200 mensajes.";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "¿Eliminar conexión pendiente?";
@@ -2231,6 +2252,9 @@
 "Forward messages without files?" = "¿Reenviar mensajes sin los archivos?";
 
 /* No comment provided by engineer. */
+"Forward up to 20 messages at once." = "Desplazamiento de hasta 20 mensajes.";
+
+/* No comment provided by engineer. */
 "forwarded" = "reenviado";
 
 /* No comment provided by engineer. */
@@ -2469,6 +2493,9 @@
 
 /* No comment provided by engineer. */
 "Importing archive" = "Importando archivo";
+
+/* No comment provided by engineer. */
+"Improved delivery, reduced traffic usage.\nMore improvements are coming soon!" = "Reducción del tráfico y entrega mejorada.\n¡Pronto habrá nuevas mejoras!";
 
 /* No comment provided by engineer. */
 "Improved message delivery" = "Entrega de mensajes mejorada";
@@ -4272,6 +4299,9 @@
 "SimpleX one-time invitation" = "Invitación SimpleX de un uso";
 
 /* No comment provided by engineer. */
+"SimpleX protocols reviewed by Trail of Bits." = "Protocolos de SimpleX auditados por Trail of Bits.";
+
+/* No comment provided by engineer. */
 "Simplified incognito mode" = "Modo incógnito simplificado";
 
 /* No comment provided by engineer. */
@@ -4390,6 +4420,12 @@
 
 /* No comment provided by engineer. */
 "Support SimpleX Chat" = "Soporte SimpleX Chat";
+
+/* No comment provided by engineer. */
+"Switch audio and video during the call." = "Intercambia audio y video durante la llamada.";
+
+/* No comment provided by engineer. */
+"Switch chat profile for 1-time invitations." = "Cambia el perfil de chat para invitaciones de un solo uso.";
 
 /* No comment provided by engineer. */
 "System" = "Sistema";
