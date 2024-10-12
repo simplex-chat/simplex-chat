@@ -16,17 +16,20 @@ import SimpleXChat
 struct ChatItemClipped: ViewModifier {
     @AppStorage(DEFAULT_CHAT_ITEM_ROUNDNESS) private var roundness = defaultChatItemRoundness
     @AppStorage(DEFAULT_CHAT_ITEM_TAIL) private var tailEnabled = true
-    private let chatItem: (content: CIContent, chatDir: CIDirection)?
+    private let chatItem: (content: CIContent, chatDir: CIDirection, meta: CIMeta, isDeletedContent: Bool)?
     private let tailVisible: Bool
+    private let reveleaded: Bool
 
     init() {
         self.chatItem = nil
         self.tailVisible = false
+        self.reveleaded = false
     }
 
-    init(_ ci: ChatItem, tailVisible: Bool) {
-        self.chatItem = (ci.content, ci.chatDir)
+    init(_ ci: ChatItem, tailVisible: Bool, revealed: Bool) {
+        self.chatItem = (ci.content, ci.chatDir, ci.meta, ci.isDeletedContent)
         self.tailVisible = tailVisible
+        self.reveleaded = revealed
     }
     
     private func shapeStyle() -> ChatItemShape.Style {
@@ -43,6 +46,9 @@ struct ChatItemClipped: ViewModifier {
                     .rcvModerated,
                     .rcvBlocked,
                     .invalidJSON:
+                if ci.meta.itemDeleted != nil, (!reveleaded || ci.isDeletedContent) {
+                    return .roundRect(radius: msgRectMaxRadius)
+                }
                 let tail = if let mc = ci.content.msgContent, mc.isImageOrVideo && mc.text.isEmpty {
                     false
                 } else {
