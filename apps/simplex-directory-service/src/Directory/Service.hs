@@ -472,7 +472,7 @@ directoryService st DirectoryOpts {superUsers, serviceName, searchResults, testi
             Nothing -> "Error: the initial member role for the group " <> displayName <> " was NOT upgated"
             Just gLink ->
               ("The initial member role for the group " <> displayName <> " is set to *" <> decodeLatin1 (strEncode mRole) <> "*\n\n")
-                <> ("*Please note*: it applies only to members joining via this link: " <> safeDecodeUtf8 (strEncode gLink))
+                <> ("*Please note*: it applies only to members joining via this link: " <> safeDecodeUtf8 (strEncode $ simplexChatContact gLink))
       DCUnknownCommand -> sendReply "Unknown command"
       DCCommandError tag -> sendReply $ "Command error: " <> show tag
       where
