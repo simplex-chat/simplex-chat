@@ -1436,9 +1436,9 @@
         <target>Kínai és spanyol kezelőfelület</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Choose _Migrate from another device_ on the new device and scan QR code." xml:space="preserve">
+      <trans-unit id="Choose _Migrate from another device_ on the new device and scan QR code." xml:space="preserve" approved="no">
         <source>Choose _Migrate from another device_ on the new device and scan QR code.</source>
-        <target>Válassza az _Átköltöztetés egy másik eszközről opciót az új eszközén és olvassa be a QR-kódot.</target>
+        <target state="translated">Válassza az _Átköltöztetés egy másik eszközről_ opciót az új eszközén és olvassa be a QR-kódot.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Choose file" xml:space="preserve">
@@ -1720,9 +1720,9 @@ Ez az Ön egyszer használható hivatkozása!</target>
         <target>Kapcsolat megszakítva</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection timeout" xml:space="preserve">
+      <trans-unit id="Connection timeout" xml:space="preserve" approved="no">
         <source>Connection timeout</source>
-        <target>Kapcsolat időtúllépés</target>
+        <target state="translated">Időtúllépés kapcsolódáskor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection with desktop stopped" xml:space="preserve">
@@ -1975,9 +1975,9 @@ Ez az Ön egyszer használható hivatkozása!</target>
         <target>Adatbázis-azonosító: %d</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Database IDs and Transport isolation option." xml:space="preserve">
+      <trans-unit id="Database IDs and Transport isolation option." xml:space="preserve" approved="no">
         <source>Database IDs and Transport isolation option.</source>
-        <target>Adatbázis-azonosítók és átviteli izolációs beállítások.</target>
+        <target state="translated">Adatbázis-azonosítók és átvitel-izolációs beállítások.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database downgrade" xml:space="preserve">
@@ -2354,9 +2354,9 @@ Ez az Ön egyszer használható hivatkozása!</target>
         <target>Részletes statisztikák</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Details" xml:space="preserve">
+      <trans-unit id="Details" xml:space="preserve" approved="no">
         <source>Details</source>
-        <target>Részletek</target>
+        <target state="translated">További részletek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Develop" xml:space="preserve">
@@ -2389,9 +2389,9 @@ Ez az Ön egyszer használható hivatkozása!</target>
         <target>Az eszközön nincs beállítva a képernyőzár. A SimpleX-zár az „Adatvédelem és biztonság” menüben kapcsolható be, miután beállította a képernyőzárat az eszközén.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Different names, avatars and transport isolation." xml:space="preserve">
+      <trans-unit id="Different names, avatars and transport isolation." xml:space="preserve" approved="no">
         <source>Different names, avatars and transport isolation.</source>
-        <target>Különböző nevek, avatarok és átviteli izoláció.</target>
+        <target state="translated">Különböző nevek, profilképek és átvitel-izoláció.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Direct messages" xml:space="preserve">
@@ -4353,14 +4353,14 @@ Ez az Ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Az üzenet forrása titokban marad.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message status" xml:space="preserve">
+      <trans-unit id="Message status" xml:space="preserve" approved="no">
         <source>Message status</source>
-        <target>Üzenet állapota</target>
+        <target state="translated">Üzenetállapot</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message status: %@" xml:space="preserve">
+      <trans-unit id="Message status: %@" xml:space="preserve" approved="no">
         <source>Message status: %@</source>
-        <target>Üzenet állapota: %@</target>
+        <target state="translated">Üzenetállapot: %@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Message text" xml:space="preserve">
@@ -4953,14 +4953,14 @@ VPN engedélyezése szükséges.</target>
 %@</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="PING count" xml:space="preserve">
+      <trans-unit id="PING count" xml:space="preserve" approved="no">
         <source>PING count</source>
-        <target>PING számláló</target>
+        <target state="translated">PING-ek száma</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="PING interval" xml:space="preserve">
+      <trans-unit id="PING interval" xml:space="preserve" approved="no">
         <source>PING interval</source>
-        <target>PING időköze</target>
+        <target state="translated">Időtartam a PING-ek között</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Passcode" xml:space="preserve">
@@ -5314,14 +5314,14 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>Védje meg a csevegési profiljait egy jelszóval!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protocol timeout" xml:space="preserve">
+      <trans-unit id="Protocol timeout" xml:space="preserve" approved="no">
         <source>Protocol timeout</source>
-        <target>Protokoll időtúllépés</target>
+        <target state="translated">Protokoll időtúllépése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protocol timeout per KB" xml:space="preserve">
+      <trans-unit id="Protocol timeout per KB" xml:space="preserve" approved="no">
         <source>Protocol timeout per KB</source>
-        <target>Protokoll időkorlát KB-onként</target>
+        <target state="translated">Protokoll időtúllépése KB-onként</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Proxied" xml:space="preserve">
@@ -5444,9 +5444,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>Fogadott válaszüzenet-buborék színe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Received total" xml:space="preserve">
+      <trans-unit id="Received total" xml:space="preserve" approved="no">
         <source>Received total</source>
-        <target>Összes fogadott</target>
+        <target state="translated">Összes fogadott üzenet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Receiving address will be changed to a different server. Address change will complete after sender comes online." xml:space="preserve">
@@ -6156,9 +6156,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>Válaszüzenet-buborék színe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sent total" xml:space="preserve">
+      <trans-unit id="Sent total" xml:space="preserve" approved="no">
         <source>Sent total</source>
-        <target>Összes elküldött</target>
+        <target state="translated">Összes elküldött üzenet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sent via proxy" xml:space="preserve">
@@ -6371,9 +6371,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>Szobák utolsó üzeneteinek megjelenítése a listanézetben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show message status" xml:space="preserve">
+      <trans-unit id="Show message status" xml:space="preserve" approved="no">
         <source>Show message status</source>
-        <target>Üzenet állapot megjelenítése</target>
+        <target state="translated">Üzenetállapot megjelenítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show percentage" xml:space="preserve">
@@ -6676,9 +6676,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>TCP kapcsolat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="TCP connection timeout" xml:space="preserve">
+      <trans-unit id="TCP connection timeout" xml:space="preserve" approved="no">
         <source>TCP connection timeout</source>
-        <target>TCP kapcsolat időtúllépés</target>
+        <target state="translated">TCP kapcsolat időtúllépése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="TCP_KEEPCNT" xml:space="preserve">
@@ -7070,14 +7070,14 @@ A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beáll
         <target>Eszköztár átlátszatlansága</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Total" xml:space="preserve">
+      <trans-unit id="Total" xml:space="preserve" approved="no">
         <source>Total</source>
-        <target>Összesen</target>
+        <target state="translated">Összes kapcsolat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Transport isolation" xml:space="preserve">
+      <trans-unit id="Transport isolation" xml:space="preserve" approved="no">
         <source>Transport isolation</source>
-        <target>Kapcsolat izolációs mód</target>
+        <target state="translated">Átvitel-izoláció módja</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Transport sessions" xml:space="preserve">
