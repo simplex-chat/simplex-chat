@@ -679,8 +679,8 @@
     <string name="onboarding_notifications_mode_off">Když aplikace běží</string>
     <string name="onboarding_notifications_mode_service">Okamžité</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Nejlepší pro baterii</b>. Budete přijímat oznámení pouze když aplikace běží (žádná služba na pozadí).]]></string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>Dobré pro baterii</b>. Apka bude kontrolovat zprávy každých 10 minut. Můžete zmeškat volání nebo naléhavé zprávy.</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>Využívá více baterie</b>! Apka stále běží na pozadí - oznámení se zobrazí okamžitě.</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Dobré pro baterii</b>. Apka bude kontrolovat zprávy každých 10 minut. Můžete zmeškat volání nebo naléhavé zprávy.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Využívá více baterie</b>! Apka stále běží na pozadí - oznámení se zobrazí okamžitě.]]></string>
     <string name="paste_the_link_you_received">Vložte přijatý odkaz</string>
     <string name="incoming_video_call">Příchozí videohovor</string>
     <string name="incoming_audio_call">Příchozí zvukový hovor</string>
@@ -1728,7 +1728,7 @@
     <string name="forwarded_description">přeposláno</string>
     <string name="e2ee_info_no_pq_short">Tento chat je chráněn koncovým šifrováním.</string>
     <string name="e2ee_info_pq_short">Tento chat je chráněn kvantům odolným koncovým šifrováním.</string>
-    <string name="e2ee_info_pq">Zprávy, soubory a hovory jsou chráněny <b>kvantům odolným koncovým šifrováním</b> s dokonalým dopředným utajením, odpíráním a obnovou po vloupání.</string>
+    <string name="e2ee_info_pq"><![CDATA[Zprávy, soubory a hovory jsou chráněny <b>kvantům odolným koncovým šifrováním</b> s dokonalým dopředným utajením, odpíráním a obnovou po vloupání.]]></string>
     <string name="network_type_cellular">Mobilní</string>
     <string name="network_type_no_network_connection">Žádné připojení k síti</string>
     <string name="network_type_other">Ostatní</string>
@@ -1763,7 +1763,7 @@
     <string name="permissions_camera">Kamera</string>
     <string name="permissions_camera_and_record_audio">Kamera a mikrofon</string>
     <string name="simplex_links_are_prohibited_in_group">SimpleX odkazy jsou v této skupině zakázány.</string>
-    <string name="e2ee_info_no_pq">Zprávy, soubory a hovory jsou chráněny <b>koncovým</b> šifrováním s dokonalým dopředným utajením, odmítnutím a obnovením po vloupání.</string>
+    <string name="e2ee_info_no_pq"><![CDATA[Zprávy, soubory a hovory jsou chráněny <b>koncovým</b> šifrováním s dokonalým dopředným utajením, odmítnutím a obnovením po vloupání.]]></string>
     <string name="wallpaper_advanced_settings">Pokročilé nastavení</string>
     <string name="chat_theme_apply_to_all_modes">Všechny barevné režimy</string>
     <string name="snd_error_quota">Překročená kapacita - příjemci neobdrží dříve poslané zprávy.</string>
