@@ -104,7 +104,7 @@ class ShareModel: ObservableObject {
                         // Decode base64 images on background thread
                         let profileImages = chats.reduce(into: Dictionary<ChatInfo.ID, UIImage>()) { dict, chatData in
                             if let profileImage = chatData.chatInfo.image,
-                               let uiImage = UIImage(base64Encoded: profileImage) {
+                               let uiImage = imageFromBase64(profileImage) {
                                 dict[chatData.id] = uiImage
                             }
                         }
@@ -141,23 +141,25 @@ class ShareModel: ObservableObject {
                 do {
                     SEChatState.shared.set(.sendingMessage)
                     await waitForOtherProcessesToSuspend()
-                    let ci = try apiSendMessage(
+                    let chatItems = try apiSendMessages(
                         chatInfo: selected.chatInfo,
-                        cryptoFile: sharedContent.cryptoFile,
-                        msgContent: sharedContent.msgContent(comment: self.comment)
+                        composedMessages: [ComposedMessage(fileSource: sharedContent.cryptoFile, msgContent: sharedContent.msgContent(comment: self.comment))]
                     )
                     if selected.chatInfo.chatType == .local {
                         completion()
                     } else {
-                        await MainActor.run { self.bottomBar = .loadingBar(progress: 0) }
-                        if let e = await handleEvents(
-                            isGroupChat: ci.chatInfo.chatType == .group,
-                            isWithoutFile: sharedContent.cryptoFile == nil,
-                            chatItemId: ci.chatItem.id
-                        ) {
-                            await MainActor.run { errorAlert = e }
-                        } else {
-                            completion()
+                        // TODO batch send: share multiple items
+                        if let ci = chatItems.first {
+                            await MainActor.run { self.bottomBar = .loadingBar(progress: 0) }
+                            if let e = await handleEvents(
+                                isGroupChat: ci.chatInfo.chatType == .group,
+                                isWithoutFile: sharedContent.cryptoFile == nil,
+                                chatItemId: ci.chatItem.id
+                            ) {
+                                await MainActor.run { errorAlert = e }
+                            } else {
+                                completion()
+                            }
                         }
                     }
                 } catch {
@@ -318,7 +320,8 @@ class ShareModel: ObservableObject {
                 }
                 await ch.completeFile()
                 if await !ch.isRunning { break }
-            case let .chatItemStatusUpdated(_, ci):
+            case let .chatItemsStatusesUpdated(_, chatItems):
+                guard let ci = chatItems.last else { continue }
                 guard isMessage(for: ci) else { continue }
                 if let (title, message) = ci.chatItem.meta.itemStatus.statusInfo {
                     // `title` and `message` already localized and interpolated
@@ -414,7 +417,7 @@ fileprivate func getSharedContent(_ ip: NSItemProvider) async -> Result<SharedCo
                    let data = try? Data(contentsOf: url),
                    let image = UIImage(data: data),
                    let cryptoFile = saveFile(data, generateNewFileName("IMG", "gif"), encrypted: privacyEncryptLocalFilesGroupDefault.get()),
-                   let preview = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE) {
+                   let preview = await resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE) {
                     .success(.image(preview: preview, cryptoFile: cryptoFile))
                 } else { .failure(ErrorAlert("Error preparing message")) }
 
@@ -422,7 +425,7 @@ fileprivate func getSharedContent(_ ip: NSItemProvider) async -> Result<SharedCo
             } else {
                 if let image = await staticImage(),
                    let cryptoFile = saveImage(image),
-                   let preview = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE) {
+                   let preview = await resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE) {
                     .success(.image(preview: preview, cryptoFile: cryptoFile))
                 } else { .failure(ErrorAlert("Error preparing message")) }
             }
@@ -432,7 +435,7 @@ fileprivate func getSharedContent(_ ip: NSItemProvider) async -> Result<SharedCo
             if let url = try? await inPlaceUrl(type: type),
                let trancodedUrl = await transcodeVideo(from: url),
                let (image, duration) = AVAsset(url: trancodedUrl).generatePreview(),
-               let preview = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE),
+               let preview = await resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE),
                let cryptoFile = moveTempFileFromURL(trancodedUrl) {
                 try? FileManager.default.removeItem(at: trancodedUrl)
                 return .success(.movie(preview: preview, duration: duration, cryptoFile: cryptoFile))

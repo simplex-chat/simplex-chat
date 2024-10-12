@@ -12,7 +12,7 @@ import SimpleXChat
 class CallManager {
     func newOutgoingCall(_ contact: Contact, _ media: CallMediaType) -> String {
         let uuid = UUID().uuidString.lowercased()
-        let call = Call(direction: .outgoing, contact: contact, callUUID: uuid, callState: .waitCapabilities, localMedia: media)
+        let call = Call(direction: .outgoing, contact: contact, callUUID: uuid, callState: .waitCapabilities, initialCallType: media)
         call.speakerEnabled = media == .video
         ChatModel.shared.activeCall = call
         return uuid
@@ -22,7 +22,7 @@ class CallManager {
         let m = ChatModel.shared
         if let call = m.activeCall, call.callUUID == callUUID {
             m.showCallView = true
-            Task { await m.callCommand.processCommand(.capabilities(media: call.localMedia)) }
+            Task { await m.callCommand.processCommand(.capabilities(media: call.initialCallType)) }
             return true
         }
         return false
@@ -44,7 +44,7 @@ class CallManager {
             contact: invitation.contact,
             callUUID: invitation.callUUID,
             callState: .invitationAccepted,
-            localMedia: invitation.callType.media,
+            initialCallType: invitation.callType.media,
             sharedKey: invitation.sharedKey
         )
         call.speakerEnabled = invitation.callType.media == .video
@@ -68,10 +68,10 @@ class CallManager {
         }
     }
 
-    func enableMedia(media: CallMediaType, enable: Bool, callUUID: String) -> Bool {
+    func enableMedia(source: CallMediaSource, enable: Bool, callUUID: String) -> Bool {
         if let call = ChatModel.shared.activeCall, call.callUUID == callUUID {
             let m = ChatModel.shared
-            Task { await m.callCommand.processCommand(.media(media: media, enable: enable)) }
+            Task { await m.callCommand.processCommand(.media(source: source, enable: enable)) }
             return true
         }
         return false

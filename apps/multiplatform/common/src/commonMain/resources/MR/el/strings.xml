@@ -227,4 +227,20 @@
     <string name="deleted_description">διαγράφτηκε</string>
     <string name="moderated_item_description">με συντονιστή %s</string>
     <string name="blocked_item_description">φραγμένος</string>
+    <string name="learn_more_about_address">Σχετικά με τη διεύθυνση SimpleX</string>
+    <string name="conn_event_ratchet_sync_started">συμφωνία κρυπτογράφησης…</string>
+    <string name="chat_theme_apply_to_all_modes">Όλες οι χρωματικές λειτουργίες</string>
+    <string name="abort_switch_receiving_address_desc">Η αλλαγή διεύθυνσης θα ακυρωθεί. Θα χρησιμοποιηθεί η παλιά διεύθυνση παραλαβής.</string>
+    <string name="servers_info_subscriptions_connections_subscribed">Ενεργές συνδέσεις</string>
+    <string name="network_settings_title">Προχωρημένες ρυθμίσεις</string>
+    <string name="color_primary_variant">Πρόσθετη προφορά</string>
+    <string name="add_contact_tab">Προσθήκη επαφής</string>
+    <string name="abort_switch_receiving_address">Διακοπή αλλαγής διεύθυνσης</string>
+    <string name="wallpaper_advanced_settings">Προχωρημένες ρυθμίσεις</string>
+    <string name="v5_6_safer_groups_descr">Οι διαχειριστές μπορούν να αποκλείσουν ένα μέλος για όλους.</string>
+    <string name="acknowledged">Αναγνωρισμένο</string>
+    <string name="above_then_preposition_continuation">παραπάνω, λοιπόν:</string>
+    <string name="add_address_to_your_profile">Προσθέστε τη διεύθυνση στο προφίλ σας, έτσι ώστε οι επαφές σας να μπορούν να τη μοιραστούν με άλλα άτομα. Το ενημέρωμένο προφίλ θα σταλεί στις επαφές σας.</string>
+    <string name="feature_roles_admins">διαχειριστές</string>
+    <string name="acknowledgement_errors">Λάθη αναγνώρισης</string>
 </resources>

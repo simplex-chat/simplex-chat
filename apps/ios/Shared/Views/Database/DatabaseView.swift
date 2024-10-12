@@ -44,7 +44,7 @@ enum DatabaseAlert: Identifiable {
 struct DatabaseView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
-    @Binding var showSettings: Bool
+    let dismissSettingsSheet: DismissAction
     @State private var runChat = false
     @State private var alert: DatabaseAlert? = nil
     @State private var showFileImporter = false
@@ -270,12 +270,12 @@ struct DatabaseView: View {
         case let .archiveImportedWithErrors(errs):
             return Alert(
                 title: Text("Chat database imported"),
-                message: Text("Restart the app to use imported chat database") + Text(verbatim: "\n\n") + Text("Some non-fatal errors occurred during import:") + archiveErrorsText(errs)
+                message: Text("Restart the app to use imported chat database") + Text(verbatim: "\n") + Text("Some non-fatal errors occurred during import:") + archiveErrorsText(errs)
             )
         case let .archiveExportedWithErrors(archivePath, errs):
             return Alert(
                 title: Text("Chat database exported"),
-                message: Text("You may save the exported archive.") + Text(verbatim: "\n\n") + Text("Some file(s) were not exported:") + archiveErrorsText(errs),
+                message: Text("You may save the exported archive.") + Text(verbatim: "\n") + Text("Some file(s) were not exported:") + archiveErrorsText(errs),
                 dismissButton: .default(Text("Continue")) {
                     showShareSheet(items: [archivePath])
                 }
@@ -439,7 +439,7 @@ struct DatabaseView: View {
 
     private func startChat() {
         if m.chatDbChanged {
-            showSettings = false
+            dismissSettingsSheet()
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 resetChatCtrl()
                 do {
@@ -533,7 +533,9 @@ func deleteChatAsync() async throws {
 }
 
 struct DatabaseView_Previews: PreviewProvider {
+    @Environment(\.dismiss) static var mockDismiss
+
     static var previews: some View {
-        DatabaseView(showSettings: Binding.constant(false), chatItemTTL: .none)
+        DatabaseView(dismissSettingsSheet: mockDismiss, chatItemTTL: .none)
     }
 }

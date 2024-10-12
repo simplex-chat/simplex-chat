@@ -46,7 +46,7 @@ mySquaringBot _user cc = do
       CRContactConnected _ contact _ -> do
         contactConnected contact
         sendMessage cc contact welcomeMessage
-      CRNewChatItem _ (AChatItem _ SMDRcv (DirectChat contact) ChatItem {content = mc@CIRcvMsgContent {}}) -> do
+      CRNewChatItems {chatItems = (AChatItem _ SMDRcv (DirectChat contact) ChatItem {content = mc@CIRcvMsgContent {}}) : _} -> do
         let msg = T.unpack $ ciContentToText mc
             number_ = readMaybe msg :: Maybe Integer
         sendMessage cc contact $ case number_ of

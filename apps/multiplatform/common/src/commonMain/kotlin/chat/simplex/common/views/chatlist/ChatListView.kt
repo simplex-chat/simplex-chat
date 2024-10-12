@@ -23,7 +23,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.*
-import chat.simplex.common.SettingsViewState
+import chat.simplex.common.AppLock
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
@@ -135,7 +135,7 @@ fun ToggleChatListCard() {
 }
 
 @Composable
-fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
+fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedViewState>, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   LaunchedEffect(Unit) {
     if (shouldShowWhatsNew(chatModel)) {
@@ -153,18 +153,15 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
       VideoPlayerHolder.stopAll()
     }
   }
-  val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
-  val scope = rememberCoroutineScope()
-  val (userPickerState, scaffoldState ) = settingsState
   Scaffold(
     topBar = {
       if (!oneHandUI.value) {
-        Column(Modifier.padding(end = endPadding)) {
+        Column {
           ChatListToolbar(
-            scaffoldState.drawerState,
             userPickerState,
             stopped,
+            setPerformLA,
           )
           Divider()
         }
@@ -172,33 +169,17 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
     },
     bottomBar = {
       if (oneHandUI.value) {
-        Column(Modifier.padding(end = endPadding)) {
+        Column {
           Divider()
           ChatListToolbar(
-            scaffoldState.drawerState,
             userPickerState,
             stopped,
-          )
-        }
-      }
-    },
-    scaffoldState = scaffoldState,
-    drawerContent = {
-      tryOrShowError("Settings", error = { ErrorSettingsView() }) {
-        val handler = remember { AppBarHandler() }
-        CompositionLocalProvider(
-          LocalAppBarHandler provides handler
-        ) {
-          ModalView(showClose = appPlatform.isDesktop, close = { scope.launch { scaffoldState.drawerState.close() } }) {
-            SettingsView(chatModel, setPerformLA, scaffoldState.drawerState)
-          }
+            setPerformLA,
+            )
         }
       }
     },
     contentColor = LocalContentColor.current,
-    drawerContentColor = LocalContentColor.current,
-    drawerScrimColor = MaterialTheme.colors.onSurface.copy(alpha = if (isInDarkTheme()) 0.16f else 0.32f),
-    drawerGesturesEnabled = appPlatform.isAndroid,
     floatingActionButton = {
       if (!oneHandUI.value && searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
         FloatingActionButton(
@@ -208,7 +189,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
             }
           },
           Modifier
-            .padding(end = DEFAULT_PADDING - 16.dp + endPadding, bottom = DEFAULT_PADDING - 16.dp)
+            .padding(end = DEFAULT_PADDING - 16.dp, bottom = DEFAULT_PADDING - 16.dp)
             .size(AppBarHeight * fontSizeSqrtMultiplier),
           elevation = FloatingActionButtonDefaults.elevation(
             defaultElevation = 0.dp,
@@ -224,7 +205,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
       }
     }
   ) {
-    Box(Modifier.padding(it).padding(end = endPadding)) {
+    Box(Modifier.padding(it)) {
       Box(
         modifier = Modifier
           .fillMaxSize()
@@ -252,11 +233,8 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
       UserPicker(
         chatModel = chatModel,
         userPickerState = userPickerState,
-        contentAlignment = if (oneHandUI.value) Alignment.BottomStart else Alignment.TopStart
-      ) {
-        scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
-        userPickerState.value = AnimatedViewState.GONE
-      }
+        setPerformLA = AppLock::setPerformLA
+      )
     }
   }
 }
@@ -278,7 +256,7 @@ private fun ConnectButton(text: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean) {
+private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean, setPerformLA: (Boolean) -> Unit) {
   val serversSummary: MutableState<PresentedServersSummary?> = remember { mutableStateOf(null) }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val updatingProgress = remember { chatModel.updatingProgress }.value
@@ -344,23 +322,22 @@ private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableSt
       }
     }
   }
-  val scope = rememberCoroutineScope()
   val clipboard = LocalClipboardManager.current
   DefaultTopAppBar(
     navigationButton = {
       if (chatModel.users.isEmpty() && !chatModel.desktopNoUserNoRemote) {
-        NavigationButtonMenu { scope.launch { if (drawerState.isOpen) drawerState.close() else drawerState.open() } }
+        NavigationButtonMenu {
+          ModalManager.start.showModalCloseable { close ->
+            SettingsView(chatModel, setPerformLA, close)
+          }
+        }
       } else {
         val users by remember { derivedStateOf { chatModel.users.filter { u -> u.user.activeUser || !u.user.hidden } } }
         val allRead = users
           .filter { u -> !u.user.activeUser && !u.user.hidden }
           .all { u -> u.unreadCount == 0 }
         UserProfileButton(chatModel.currentUser.value?.profile?.image, allRead) {
-          if (users.size == 1 && chatModel.remoteHosts.isEmpty()) {
-            scope.launch { drawerState.open() }
-          } else {
             userPickerState.value = AnimatedViewState.VISIBLE
-          }
         }
       }
     },
@@ -501,7 +478,7 @@ private fun ToggleFilterEnabledButton() {
 @Composable
 expect fun ActiveCallInteractiveArea(call: Call)
 
-fun connectIfOpenedViaUri(rhId: Long?, uri: URI, chatModel: ChatModel) {
+fun connectIfOpenedViaUri(rhId: Long?, uri: String, chatModel: ChatModel) {
   Log.d(TAG, "connectIfOpenedViaUri: opened via link")
   if (chatModel.currentUser.value == null) {
     chatModel.appOpenUrl.value = rhId to uri
@@ -589,7 +566,7 @@ private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<
   withBGApi {
     planAndConnect(
       chatModel.remoteHostId(),
-      URI.create(link),
+      link,
       incognito = null,
       filterKnownContact = { searchChatFilteredBySimplexLink.value = it.id },
       filterKnownGroup = { searchChatFilteredBySimplexLink.value = it.id },

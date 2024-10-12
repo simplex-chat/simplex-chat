@@ -35,7 +35,8 @@ CREATE TABLE users(
   send_rcpts_contacts INTEGER NOT NULL DEFAULT 0,
   send_rcpts_small_groups INTEGER NOT NULL DEFAULT 0,
   user_member_profile_updated_at TEXT,
-  ui_themes TEXT, -- 1 for active user
+  ui_themes TEXT,
+  active_order INTEGER NOT NULL DEFAULT 0, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE RESTRICT
@@ -326,6 +327,7 @@ CREATE TABLE contact_requests(
   peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   pq_support INTEGER NOT NULL DEFAULT 0,
+  contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON UPDATE CASCADE
@@ -884,3 +886,7 @@ CREATE INDEX idx_chat_items_fwd_from_group_id ON chat_items(fwd_from_group_id);
 CREATE INDEX idx_chat_items_fwd_from_chat_item_id ON chat_items(
   fwd_from_chat_item_id
 );
+CREATE INDEX idx_received_probes_group_member_id on received_probes(
+  group_member_id
+);
+CREATE INDEX idx_contact_requests_contact_id ON contact_requests(contact_id);

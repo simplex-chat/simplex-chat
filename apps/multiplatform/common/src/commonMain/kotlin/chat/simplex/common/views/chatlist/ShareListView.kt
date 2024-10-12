@@ -11,31 +11,24 @@ import androidx.compose.ui.graphics.Color
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import chat.simplex.common.SettingsViewState
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.newchat.ActiveProfilePicker
 import chat.simplex.res.MR
-import kotlinx.coroutines.flow.MutableStateFlow
 
 @Composable
-fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stopped: Boolean) {
+fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
   var searchInList by rememberSaveable { mutableStateOf("") }
-  val (userPickerState, scaffoldState) = settingsState
-  val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
   val oneHandUI = remember { appPrefs.oneHandUI.state }
 
   Scaffold(
-    Modifier.padding(end = endPadding),
     contentColor = LocalContentColor.current,
-    drawerContentColor = LocalContentColor.current,
-    scaffoldState = scaffoldState,
     topBar = {
       if (!oneHandUI.value) {
         Column {
-          ShareListToolbar(chatModel, userPickerState, stopped) { searchInList = it.trim() }
+          ShareListToolbar(chatModel, stopped) { searchInList = it.trim() }
           Divider()
         }
       }
@@ -44,7 +37,7 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
       if (oneHandUI.value) {
         Column {
           Divider()
-          ShareListToolbar(chatModel, userPickerState, stopped) { searchInList = it.trim() }
+          ShareListToolbar(chatModel, stopped) { searchInList = it.trim() }
         }
       }
     }
@@ -65,11 +58,13 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
         hasSimplexLink = hasSimplexLink(sharedContent.text)
       }
       is SharedContent.Forward -> {
-        val mc = sharedContent.chatItem.content.msgContent
-        if (mc != null) {
-          isMediaOrFileAttachment = mc.isMediaOrFileAttachment
-          isVoice = mc.isVoice
-          hasSimplexLink = hasSimplexLink(mc.text)
+        sharedContent.chatItems.forEach { ci ->
+          val mc = ci.content.msgContent
+          if (mc != null) {
+            isMediaOrFileAttachment = isMediaOrFileAttachment || mc.isMediaOrFileAttachment
+            isVoice = isVoice || mc.isVoice
+            hasSimplexLink = hasSimplexLink || hasSimplexLink(mc.text)
+          }
         }
       }
       null -> {}
@@ -92,21 +87,6 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
       }
     }
   }
-  if (appPlatform.isAndroid) {
-    tryOrShowError("UserPicker", error = {}) {
-      UserPicker(
-        chatModel,
-        userPickerState,
-        showSettings = false,
-        showCancel = true,
-        contentAlignment = if (oneHandUI.value) Alignment.BottomStart else Alignment.TopStart,
-        cancelClicked = {
-          chatModel.sharedContent.value = null
-          userPickerState.value = AnimatedViewState.GONE
-        }
-      )
-    }
-  }
 }
 
 private fun hasSimplexLink(msg: String): Boolean {
@@ -122,7 +102,7 @@ private fun EmptyList() {
 }
 
 @Composable
-private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean, onSearchValueChanged: (String) -> Unit) {
+private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchValueChanged: (String) -> Unit) {
   var showSearch by rememberSaveable { mutableStateOf(false) }
   val hideSearchOnBack = { onSearchValueChanged(""); showSearch = false }
   if (showSearch) {
@@ -138,7 +118,24 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
           .filter { u -> !u.user.activeUser && !u.user.hidden }
           .all { u -> u.unreadCount == 0 }
         UserProfileButton(chatModel.currentUser.value?.profile?.image, allRead) {
-          userPickerState.value = AnimatedViewState.VISIBLE
+          ModalManager.start.showCustomModal { close ->
+            val search = rememberSaveable { mutableStateOf("") }
+            ModalView(
+              { close() },
+              endButtons = {
+                SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
+              },
+              content = {
+                ActiveProfilePicker(
+                  search = search,
+                  rhId = chatModel.remoteHostId,
+                  close = close,
+                  contactConnection = null,
+                  showIncognito = false
+                )
+              }
+            )
+          }
         }
       }
       else -> NavigationButtonBack(onButtonClicked = {
@@ -180,11 +177,11 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
     title = {
       Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
-          when (chatModel.sharedContent.value) {
+          when (val v = chatModel.sharedContent.value) {
             is SharedContent.Text -> stringResource(MR.strings.share_message)
             is SharedContent.Media -> stringResource(MR.strings.share_image)
             is SharedContent.File -> stringResource(MR.strings.share_file)
-            is SharedContent.Forward -> stringResource(MR.strings.forward_message)
+            is SharedContent.Forward -> if (v.chatItems.size > 1) stringResource(MR.strings.forward_multiple) else stringResource(MR.strings.forward_message)
             null -> stringResource(MR.strings.share_message)
           },
           color = MaterialTheme.colors.onBackground,

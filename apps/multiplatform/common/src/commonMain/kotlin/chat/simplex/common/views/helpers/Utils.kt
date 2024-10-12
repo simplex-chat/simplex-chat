@@ -480,11 +480,10 @@ inline fun <reified T> serializableSaver(): Saver<T, *> = Saver(
 )
 
 fun UriHandler.openVerifiedSimplexUri(uri: String) {
-  val URI = try { URI.create(uri) } catch (e: Exception) { null }
-  if (URI != null) {
-    connectIfOpenedViaUri(chatModel.remoteHostId(), URI, ChatModel)
-  }
+  connectIfOpenedViaUri(chatModel.remoteHostId(), uri, ChatModel)
 }
+
+fun uriCreateOrNull(uri: String) = try { URI.create(uri) } catch (e: Exception) { null }
 
 fun UriHandler.openUriCatching(uri: String) {
   try {
@@ -588,9 +587,11 @@ fun <T> KeyChangeEffect(
   var anyChange by remember { mutableStateOf(false) }
   LaunchedEffect(key1) {
     if (anyChange || key1 != prevKey) {
-      block(prevKey)
+      val prev = prevKey
       prevKey = key1
       anyChange = true
+      // Call it as the last statement because the coroutine can be cancelled earlier
+      block(prev)
     }
   }
 }
@@ -610,8 +611,8 @@ fun KeyChangeEffect(
   var anyChange by remember { mutableStateOf(false) }
   LaunchedEffect(key1, key2) {
     if (anyChange || key1 != initialKey || key2 != initialKey2) {
-      block()
       anyChange = true
+      block()
     }
   }
 }
@@ -633,8 +634,8 @@ fun KeyChangeEffect(
   var anyChange by remember { mutableStateOf(false) }
   LaunchedEffect(key1, key2, key3) {
     if (anyChange || key1 != initialKey || key2 != initialKey2 || key3 != initialKey3) {
-      block()
       anyChange = true
+      block()
     }
   }
 }

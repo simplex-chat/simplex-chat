@@ -1933,8 +1933,8 @@ createMemberContact
     contactId <- insertedRowId db
     DB.execute
       db
-      "UPDATE group_members SET contact_id = ?, updated_at = ? WHERE group_member_id = ?"
-      (contactId, currentTs, groupMemberId)
+      "UPDATE group_members SET contact_id = ?, updated_at = ? WHERE contact_profile_id = ?"
+      (contactId, currentTs, memberContactProfileId)
     DB.execute
       db
       [sql|
@@ -2003,7 +2003,7 @@ createMemberContactInvited
   user@User {userId, profile = LocalProfile {preferences}}
   connIds
   gInfo
-  m@GroupMember {groupMemberId, localDisplayName = memberLDN, memberProfile, memberContactProfileId}
+  m@GroupMember {localDisplayName = memberLDN, memberProfile, memberContactProfileId}
   mConn
   subMode = do
     currentTs <- liftIO getCurrentTime
@@ -2031,8 +2031,8 @@ createMemberContactInvited
         contactId <- insertedRowId db
         DB.execute
           db
-          "UPDATE group_members SET contact_id = ?, updated_at = ? WHERE group_member_id = ?"
-          (contactId, currentTs, groupMemberId)
+          "UPDATE group_members SET contact_id = ?, updated_at = ? WHERE contact_profile_id = ?"
+          (contactId, currentTs, memberContactProfileId)
         pure contactId
 
 updateMemberContactInvited :: DB.Connection -> User -> (CommandId, ConnId) -> GroupInfo -> Connection -> Contact -> SubscriptionMode -> ExceptT StoreError IO Contact

@@ -2,6 +2,7 @@ package chat.simplex.app
 
 import android.app.*
 import android.content.*
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -83,7 +84,7 @@ class CallService: Service() {
       generalGetString(MR.strings.notification_preview_somebody)
     else
       call?.contact?.profile?.displayName ?: ""
-    val text = generalGetString(if (call?.supportsVideo() == true) MR.strings.call_service_notification_video_call else MR.strings.call_service_notification_audio_call)
+    val text = generalGetString(if (call?.hasVideo == true) MR.strings.call_service_notification_video_call else MR.strings.call_service_notification_audio_call)
     val image = call?.contact?.image
     val largeIcon = if (image == null || previewMode == NotificationPreviewMode.HIDDEN.name)
       BitmapFactory.decodeResource(resources, R.drawable.icon)
@@ -105,7 +106,7 @@ class CallService: Service() {
         0
       }
     } else if (Build.VERSION.SDK_INT >= 30) {
-      if (call.supportsVideo()) {
+      if (call.hasVideo && ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
         ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
       } else {
         ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE

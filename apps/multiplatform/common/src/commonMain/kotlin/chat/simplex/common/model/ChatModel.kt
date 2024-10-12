@@ -71,6 +71,9 @@ object ChatModel {
   val groupMembers = mutableStateListOf<GroupMember>()
   val groupMembersIndexes = mutableStateMapOf<Long, Int>()
 
+  // false: default placement, true: floating window.
+  // Used for deciding to add terminal items on main thread or not. Floating means appPrefs.terminalAlwaysVisible
+  var terminalsVisible = setOf<Boolean>()
   val terminalItems = mutableStateOf<List<TerminalItem>>(listOf())
   val userAddress = mutableStateOf<UserContactLinkRec?>(null)
   val chatItemTTL = mutableStateOf<ChatItemTTL>(ChatItemTTL.None)
@@ -82,7 +85,7 @@ object ChatModel {
   val desktopOnboardingRandomPassword = mutableStateOf(false)
 
   // set when app is opened via contact or invitation URI (rhId, uri)
-  val appOpenUrl = mutableStateOf<Pair<Long?, URI>?>(null)
+  val appOpenUrl = mutableStateOf<Pair<Long?, String>?>(null)
 
   // Needed to check for bottom nav bar and to apply or not navigation bar color on Android
   val newChatSheetVisible = mutableStateOf(false)
@@ -772,6 +775,16 @@ object ChatModel {
 
   fun addTerminalItem(item: TerminalItem) {
     val maxItems = if (appPreferences.developerTools.get()) 500 else 200
+    if (terminalsVisible.isNotEmpty()) {
+      withApi {
+        addTerminalItem(item, maxItems)
+      }
+    } else {
+      addTerminalItem(item, maxItems)
+    }
+  }
+
+  private fun addTerminalItem(item: TerminalItem, maxItems: Int) {
     if (terminalItems.value.size >= maxItems) {
       terminalItems.value = terminalItems.value.subList(1, terminalItems.value.size)
     }
@@ -785,7 +798,8 @@ object ChatModel {
 data class ShowingInvitation(
   val connId: String,
   val connReq: String,
-  val connChatUsed: Boolean
+  val connChatUsed: Boolean,
+  val conn: PendingContactConnection
 )
 
 enum class ChatType(val type: String) {
@@ -805,6 +819,7 @@ data class User(
   val profile: LocalProfile,
   val fullPreferences: FullChatPreferences,
   override val activeUser: Boolean,
+  val activeOrder: Long,
   override val showNtfs: Boolean,
   val sendRcptsContacts: Boolean,
   val sendRcptsSmallGroups: Boolean,
@@ -832,6 +847,7 @@ data class User(
       profile = LocalProfile.sampleData,
       fullPreferences = FullChatPreferences.sampleData,
       activeUser = true,
+      activeOrder = 0,
       showNtfs = true,
       sendRcptsContacts = true,
       sendRcptsSmallGroups = false,
@@ -1404,6 +1420,14 @@ class Group (
 )
 
 @Serializable
+sealed class ForwardConfirmation {
+  @Serializable @SerialName("filesNotAccepted") data class FilesNotAccepted(val fileIds: List<Long>) : ForwardConfirmation()
+  @Serializable @SerialName("filesInProgress") data class FilesInProgress(val filesCount: Int) : ForwardConfirmation()
+  @Serializable @SerialName("filesMissing") data class FilesMissing(val filesCount: Int) : ForwardConfirmation()
+  @Serializable @SerialName("filesFailed") data class FilesFailed(val filesCount: Int) : ForwardConfirmation()
+}
+
+@Serializable
 data class GroupInfo (
   val groupId: Long,
   override val localDisplayName: String,
@@ -1865,6 +1889,7 @@ class PendingContactConnection(
 @Serializable
 enum class ConnStatus {
   @SerialName("new") New,
+  @SerialName("prepared") Prepared,
   @SerialName("joined") Joined,
   @SerialName("requested") Requested,
   @SerialName("accepted") Accepted,
@@ -1874,6 +1899,7 @@ enum class ConnStatus {
 
   val initiated: Boolean? get() = when (this) {
     New -> true
+    Prepared -> false
     Joined -> false
     Requested -> true
     Accepted -> true
@@ -2345,7 +2371,8 @@ data class CIMeta (
   val deletable: Boolean,
   val editable: Boolean
 ) {
-  val timestampText: String get() = getTimestampText(itemTs)
+  val timestampText: String get() = getTimestampText(itemTs, true)
+
   val recent: Boolean get() = updatedAt + 10.toDuration(DurationUnit.SECONDS) > Clock.System.now()
   val isLive: Boolean get() = itemLive == true
   val disappearing: Boolean get() = !isRcvNew && itemTimed?.deleteAt != null
@@ -2409,7 +2436,18 @@ data class CITimed(
   val deleteAt: Instant?
 )
 
-fun getTimestampText(t: Instant): String {
+fun getTimestampDateText(t: Instant): String {
+  val tz = TimeZone.currentSystemDefault()
+  val time = t.toLocalDateTime(tz).toJavaLocalDateTime()
+  val weekday = time.format(DateTimeFormatter.ofPattern("EEE"))
+  val dayMonthYear = time.format(DateTimeFormatter.ofPattern(
+    if (Clock.System.now().toLocalDateTime(tz).year == time.year) "d MMM" else "d MMM YYYY")
+  )
+
+  return "$weekday, $dayMonthYear"
+}
+
+fun getTimestampText(t: Instant, shortFormat: Boolean = false): String {
   val tz = TimeZone.currentSystemDefault()
   val now: LocalDateTime = Clock.System.now().toLocalDateTime(tz)
   val time: LocalDateTime = t.toLocalDateTime(tz)
@@ -2417,16 +2455,23 @@ fun getTimestampText(t: Instant): String {
   val recent = now.date == time.date ||
       (period.years == 0 && period.months == 0 && period.days == 1 && now.hour < 12 && time.hour >= 18 )
   val dateFormatter =
-    if (recent) {
+    if (recent || shortFormat) {
       DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
     } else {
+      val dayMonthFormat = when (Locale.getDefault().country) {
+        "US" -> "M/dd"
+        "DE" -> "dd.MM"
+        "RU" -> "dd.MM"
+        else -> "dd/MM"
+      }
+      val dayMonthYearFormat = when (Locale.getDefault().country) {
+        "US" -> "M/dd/yy"
+        "DE" -> "dd.MM.yy"
+        "RU" -> "dd.MM.yy"
+        else -> "dd/MM/yy"
+      }
       DateTimeFormatter.ofPattern(
-        when (Locale.getDefault().country) {
-          "US" -> "M/dd"
-          "DE" -> "dd.MM"
-          "RU" -> "dd.MM"
-          else -> "dd/MM"
-        }
+       if (now.year == time.year) dayMonthFormat else dayMonthYearFormat
       )
 //      DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT)
     }

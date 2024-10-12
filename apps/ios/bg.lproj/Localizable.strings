@@ -697,7 +697,7 @@
 /* No comment provided by engineer. */
 "Can't invite contacts!" = "Не може да поканят контактите!";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Cancel" = "Отказ";
 
 /* No comment provided by engineer. */
@@ -709,7 +709,7 @@
 /* No comment provided by engineer. */
 "Cannot access keychain to save database password" = "Няма достъп до Keychain за запазване на паролата за базата данни";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Cannot receive file" = "Файлът не може да бъде получен";
 
 /* No comment provided by engineer. */
@@ -790,6 +790,9 @@
 
 /* No comment provided by engineer. */
 "Chat preferences" = "Чат настройки";
+
+/* No comment provided by engineer. */
+"Chat profile" = "Потребителски профил";
 
 /* No comment provided by engineer. */
 "Chats" = "Чатове";
@@ -1395,7 +1398,8 @@
 /* No comment provided by engineer. */
 "Downgrade and open chat" = "Понижи версията и отвори чата";
 
-/* chat item action */
+/* alert button
+   chat item action */
 "Download" = "Изтегли";
 
 /* No comment provided by engineer. */
@@ -1683,7 +1687,7 @@
 /* No comment provided by engineer. */
 "Error opening chat" = "Грешка при отваряне на чата";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error receiving file" = "Грешка при получаване на файл";
 
 /* No comment provided by engineer. */
@@ -1731,7 +1735,7 @@
 /* No comment provided by engineer. */
 "Error stopping chat" = "Грешка при спиране на чата";
 
-/* No comment provided by engineer. */
+/* alertTitle */
 "Error switching profile!" = "Грешка при смяна на профил!";
 
 /* No comment provided by engineer. */
@@ -1758,8 +1762,7 @@
 /* No comment provided by engineer. */
 "Error: " = "Грешка: ";
 
-/* file error text
-   snd error text */
+/* alert message */
 "Error: %@" = "Грешка: %@";
 
 /* No comment provided by engineer. */
@@ -1896,9 +1899,6 @@
 
 /* No comment provided by engineer. */
 "Full name (optional)" = "Пълно име (незадължително)";
-
-/* No comment provided by engineer. */
-"Full name:" = "Пълно име:";
 
 /* No comment provided by engineer. */
 "Fully decentralized – visible only to members." = "Напълно децентрализирана – видима е само за членовете.";
@@ -2688,7 +2688,7 @@
 /* feature offered item */
 "offered %@: %@" = "предлага %1$@: %2$@";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Ok" = "Ок";
 
 /* No comment provided by engineer. */
@@ -2939,12 +2939,6 @@
 
 /* No comment provided by engineer. */
 "Profile images" = "Профилни изображения";
-
-/* No comment provided by engineer. */
-"Profile name" = "Име на профила";
-
-/* No comment provided by engineer. */
-"Profile name:" = "Име на профила:";
 
 /* No comment provided by engineer. */
 "Profile password" = "Профилна парола";
@@ -3211,10 +3205,11 @@
 /* No comment provided by engineer. */
 "Safer groups" = "По-безопасни групи";
 
-/* chat item action */
+/* alert button
+   chat item action */
 "Save" = "Запази";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Save (and notify contacts)" = "Запази (и уведоми контактите)";
 
 /* No comment provided by engineer. */
@@ -3228,9 +3223,6 @@
 
 /* No comment provided by engineer. */
 "Save archive" = "Запази архив";
-
-/* No comment provided by engineer. */
-"Save auto-accept settings" = "Запази настройките за автоматично приемане";
 
 /* No comment provided by engineer. */
 "Save group profile" = "Запази профила на групата";
@@ -3252,9 +3244,6 @@
 
 /* No comment provided by engineer. */
 "Save servers?" = "Запази сървърите?";
-
-/* No comment provided by engineer. */
-"Save settings?" = "Запази настройките?";
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "Запази съобщението при посрещане?";
@@ -3379,7 +3368,7 @@
 /* No comment provided by engineer. */
 "Send up to 100 last messages to new members." = "Изпращане до последните 100 съобщения на нови членове.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Sender cancelled file transfer." = "Подателят отмени прехвърлянето на файла.";
 
 /* No comment provided by engineer. */
@@ -4004,9 +3993,6 @@
 "Use the app while in the call." = "Използвайте приложението по време на разговора.";
 
 /* No comment provided by engineer. */
-"User profile" = "Потребителски профил";
-
-/* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "Използват се сървърите на SimpleX Chat.";
 
 /* No comment provided by engineer. */
@@ -4179,9 +4165,6 @@
 
 /* No comment provided by engineer. */
 "you" = "вие";
-
-/* No comment provided by engineer. */
-"You" = "Вие";
 
 /* No comment provided by engineer. */
 "You **must not** use the same database on two devices." = "**Не трябва** да използвате една и съща база данни на две устройства.";
@@ -4430,7 +4413,7 @@
 "Your profile **%@** will be shared." = "Вашият профил **%@** ще бъде споделен.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Вашият профил се съхранява на вашето устройство и се споделя само с вашите контакти.\nSimpleX сървърите не могат да видят вашия профил.";
+"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Вашият профил се съхранява на вашето устройство и се споделя само с вашите контакти. SimpleX сървърите не могат да видят вашия профил.";
 
 /* No comment provided by engineer. */
 "Your profile, contacts and delivered messages are stored on your device." = "Вашият профил, контакти и доставени съобщения се съхраняват на вашето устройство.";

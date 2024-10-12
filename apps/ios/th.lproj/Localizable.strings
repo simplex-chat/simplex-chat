@@ -523,7 +523,7 @@
 /* No comment provided by engineer. */
 "Can't invite contacts!" = "ไม่สามารถเชิญผู้ติดต่อได้!";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Cancel" = "ยกเลิก";
 
 /* feature offered item */
@@ -532,7 +532,7 @@
 /* No comment provided by engineer. */
 "Cannot access keychain to save database password" = "ไม่สามารถเข้าถึง keychain เพื่อบันทึกรหัสผ่านฐานข้อมูล";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Cannot receive file" = "ไม่สามารถรับไฟล์ได้";
 
 /* No comment provided by engineer. */
@@ -604,6 +604,9 @@
 
 /* No comment provided by engineer. */
 "Chat preferences" = "ค่ากําหนดในการแชท";
+
+/* No comment provided by engineer. */
+"Chat profile" = "โปรไฟล์ผู้ใช้";
 
 /* No comment provided by engineer. */
 "Chats" = "แชท";
@@ -1308,7 +1311,7 @@
 /* No comment provided by engineer. */
 "Error loading %@ servers" = "โหลดเซิร์ฟเวอร์ %@ ผิดพลาด";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error receiving file" = "เกิดข้อผิดพลาดในการรับไฟล์";
 
 /* No comment provided by engineer. */
@@ -1347,7 +1350,7 @@
 /* No comment provided by engineer. */
 "Error stopping chat" = "เกิดข้อผิดพลาดในการหยุดแชท";
 
-/* No comment provided by engineer. */
+/* alertTitle */
 "Error switching profile!" = "เกิดข้อผิดพลาดในการเปลี่ยนโปรไฟล์!";
 
 /* No comment provided by engineer. */
@@ -1368,8 +1371,7 @@
 /* No comment provided by engineer. */
 "Error: " = "ผิดพลาด: ";
 
-/* file error text
-   snd error text */
+/* alert message */
 "Error: %@" = "ข้อผิดพลาด: % @";
 
 /* No comment provided by engineer. */
@@ -1467,9 +1469,6 @@
 
 /* No comment provided by engineer. */
 "Full name (optional)" = "ชื่อเต็ม (ไม่บังคับ)";
-
-/* No comment provided by engineer. */
-"Full name:" = "ชื่อเต็ม:";
 
 /* No comment provided by engineer. */
 "Fully re-implemented - work in background!" = "ดำเนินการใหม่อย่างสมบูรณ์ - ทำงานในพื้นหลัง!";
@@ -2100,7 +2099,7 @@
 /* feature offered item */
 "offered %@: %@" = "เสนอแล้ว %1$@: %2$@";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Ok" = "ตกลง";
 
 /* No comment provided by engineer. */
@@ -2503,10 +2502,11 @@
 /* No comment provided by engineer. */
 "Run chat" = "เรียกใช้แชท";
 
-/* chat item action */
+/* alert button
+   chat item action */
 "Save" = "บันทึก";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Save (and notify contacts)" = "บันทึก (และแจ้งผู้ติดต่อ)";
 
 /* No comment provided by engineer. */
@@ -2520,9 +2520,6 @@
 
 /* No comment provided by engineer. */
 "Save archive" = "บันทึกไฟล์เก็บถาวร";
-
-/* No comment provided by engineer. */
-"Save auto-accept settings" = "บันทึกการตั้งค่าการยอมรับอัตโนมัติ";
 
 /* No comment provided by engineer. */
 "Save group profile" = "บันทึกโปรไฟล์กลุ่ม";
@@ -2544,9 +2541,6 @@
 
 /* No comment provided by engineer. */
 "Save servers?" = "บันทึกเซิร์ฟเวอร์?";
-
-/* No comment provided by engineer. */
-"Save settings?" = "บันทึกการตั้งค่า?";
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "บันทึกข้อความต้อนรับ?";
@@ -2638,7 +2632,7 @@
 /* No comment provided by engineer. */
 "Send them from gallery or custom keyboards." = "ส่งจากแกลเลอรีหรือแป้นพิมพ์แบบกำหนดเอง";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Sender cancelled file transfer." = "ผู้ส่งยกเลิกการโอนไฟล์";
 
 /* No comment provided by engineer. */
@@ -3104,9 +3098,6 @@
 "Use SimpleX Chat servers?" = "ใช้เซิร์ฟเวอร์ SimpleX Chat ไหม?";
 
 /* No comment provided by engineer. */
-"User profile" = "โปรไฟล์ผู้ใช้";
-
-/* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "กำลังใช้เซิร์ฟเวอร์ SimpleX Chat อยู่";
 
 /* No comment provided by engineer. */
@@ -3222,9 +3213,6 @@
 
 /* pref value */
 "yes" = "ใช่";
-
-/* No comment provided by engineer. */
-"You" = "คุณ";
 
 /* No comment provided by engineer. */
 "You accepted connection" = "คุณยอมรับการเชื่อมต่อ";
@@ -3413,7 +3401,7 @@
 "Your privacy" = "ความเป็นส่วนตัวของคุณ";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "โปรไฟล์ของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณและแชร์กับผู้ติดต่อของคุณเท่านั้น\nเซิร์ฟเวอร์ SimpleX ไม่สามารถดูโปรไฟล์ของคุณได้";
+"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "โปรไฟล์ของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณและแชร์กับผู้ติดต่อของคุณเท่านั้น เซิร์ฟเวอร์ SimpleX ไม่สามารถดูโปรไฟล์ของคุณได้";
 
 /* No comment provided by engineer. */
 "Your profile, contacts and delivered messages are stored on your device." = "โปรไฟล์ รายชื่อผู้ติดต่อ และข้อความที่ส่งของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณ";
