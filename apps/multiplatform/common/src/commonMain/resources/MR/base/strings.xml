@@ -125,6 +125,7 @@
   <string name="proxy_destination_error_broker_version">Destination server version of %1$s is incompatible with forwarding server %2$s.</string>
   <string name="please_try_later">Please try later.</string>
   <string name="error_sending_message">Error sending message</string>
+  <string name="error_forwarding_messages">Error forwarding messages</string>
   <string name="error_creating_message">Error creating message</string>
   <string name="error_loading_details">Error loading details</string>
   <string name="error_adding_members">Error adding member(s)</string>
@@ -133,7 +134,9 @@
   <string name="sender_cancelled_file_transfer">Sender cancelled file transfer.</string>
   <string name="file_not_approved_title">Unknown servers!</string>
   <string name="file_not_approved_descr">Without Tor or VPN, your IP address will be visible to these XFTP relays:\n%1$s.</string>
+  <string name="n_other_file_errors">%1$d other file error(s).</string>
   <string name="error_receiving_file">Error receiving file</string>
+  <string name="n_file_errors">%1$d file error(s):\n%2$s</string>
   <string name="error_creating_address">Error creating address</string>
   <string name="contact_already_exists">Contact already exists</string>
   <string name="you_are_already_connected_to_vName_via_this_link">You are already connected to %1$s.</string>
@@ -378,12 +381,23 @@
   <string name="no_selected_chat">No selected chat</string>
   <string name="selected_chat_items_nothing_selected">Nothing selected</string>
   <string name="selected_chat_items_selected_n">Selected %d</string>
+  <string name="forward_alert_title_messages_to_forward">Forward %1$s message(s)?</string>
+  <string name="forward_alert_title_nothing_to_forward">Nothing to forward!</string>
+  <string name="forward_alert_forward_messages_without_files">Forward messages without files?</string>
+  <string name="forward_files_messages_deleted_after_selection_desc">Messages were deleted after you selected them.</string>
+  <string name="forward_files_not_accepted_desc">%1$d file(s) were not downloaded.</string>
+  <string name="forward_files_in_progress_desc">%1$d file(s) are still being downloaded.</string>
+  <string name="forward_files_failed_to_receive_desc">%1$d file(s) failed to download.</string>
+  <string name="forward_files_missing_desc">%1$d file(s) were deleted.</string>
+  <string name="forward_files_not_accepted_receive_files">Download</string>
+  <string name="forward_files_messages_deleted_after_selection_title">%1$s messages not forwarded</string>
 
   <!-- ShareListView.kt -->
   <string name="share_message">Share message…</string>
   <string name="share_image">Share media…</string>
   <string name="share_file">Share file…</string>
   <string name="forward_message">Forward message…</string>
+  <string name="forward_multiple">Forward messages…</string>
   <string name="cannot_share_message_alert_title">Cannot send message</string>
   <string name="cannot_share_message_alert_text">Selected chat preferences prohibit this message.</string>
 
@@ -405,6 +419,8 @@
   <string name="files_and_media_prohibited">Files and media prohibited!</string>
   <string name="only_owners_can_enable_files_and_media">Only group owners can enable files and media.</string>
   <string name="compose_send_direct_message_to_connect">Send direct message to connect</string>
+  <string name="compose_forward_messages_n">Forwarding %1$s messages</string>
+  <string name="compose_save_messages_n">Saving %1$s messages</string>
   <string name="simplex_links_not_allowed">SimpleX links not allowed</string>
   <string name="files_and_media_not_allowed">Files and media not allowed</string>
   <string name="voice_messages_not_allowed">Voice messages not allowed</string>
@@ -666,6 +682,10 @@
   <string name="one_time_link_short">1-time link</string>
   <string name="simplex_address">SimpleX address</string>
   <string name="or_show_this_qr_code">Or show this code</string>
+  <string name="new_chat_share_profile">Share profile</string>
+  <string name="select_chat_profile">Select chat profile</string>
+  <string name="switching_profile_error_title">Error switching profile</string>
+  <string name="switching_profile_error_message">Your connection was moved to %s but an unexpected error occurred while redirecting you to the profile.</string>
   <string name="or_scan_qr_code">Or scan QR code</string>
   <string name="keep_unused_invitation_question">Keep unused invitation?</string>
   <string name="you_can_view_invitation_link_again">You can view invitation link again in connection details.</string>
@@ -791,8 +811,12 @@
   <string name="network_use_onion_hosts_required_desc">Onion hosts will be required for connection.\nPlease note: you will not be able to connect to the servers without .onion address.</string>
   <string name="network_session_mode_transport_isolation">Transport isolation</string>
   <string name="network_session_mode_user">Chat profile</string>
+  <string name="network_session_mode_session">App session</string>
+  <string name="network_session_mode_server">Server</string>
   <string name="network_session_mode_entity">Connection</string>
   <string name="network_session_mode_user_description"><![CDATA[A separate TCP connection (and SOCKS credential) will be used <b>for each chat profile you have in the app</b>.]]></string>
+  <string name="network_session_mode_session_description">New SOCKS credentials will be used every time you start the app.</string>
+  <string name="network_session_mode_server_description">New SOCKS credentials will be used for each server.</string>
   <string name="network_session_mode_entity_description"><![CDATA[A separate TCP connection (and SOCKS credential) will be used <b>for each contact and group member</b>.\n<b>Please note</b>: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.]]></string>
   <string name="update_network_session_mode_question">Update transport isolation mode?</string>
   <string name="disable_onion_hosts_when_not_supported"><![CDATA[Set <i>Use .onion hosts</i> to No if SOCKS proxy does not support them.]]></string>
@@ -969,6 +993,7 @@
   <string name="audio_device_wired_headphones">Headphones</string>
   <string name="audio_device_bluetooth">Bluetooth</string>
   <string name="error_initializing_web_view">Error initializing WebView. Update your system to the new version. Please contact developers.\nError: %s</string>
+  <string name="error_initializing_web_view_wrong_arch">Error initializing WebView. Make sure you have WebView installed and it\'s supported architecture is arm64.\nError: %s</string>
 
   <!-- SimpleXInfo -->
   <string name="next_generation_of_private_messaging">The next generation\nof private messaging</string>
@@ -1022,6 +1047,9 @@
   <string name="call_already_ended">Call already ended!</string>
   <string name="icon_descr_video_call">video call</string>
   <string name="icon_descr_audio_call">audio call</string>
+  <string name="call_desktop_permission_denied_title">To make calls, allow to use your microphone. End the call and try to call again.</string>
+  <string name="call_desktop_permission_denied_chrome">Click info button near address field to allow using microphone.</string>
+  <string name="call_desktop_permission_denied_safari">Open Safari Settings / Websites / Microphone, then choose Allow for localhost.</string>
 
   <!-- Call settings -->
   <string name="settings_audio_video_calls">Audio &amp; video calls</string>
@@ -1055,6 +1083,7 @@
   <string name="icon_descr_audio_on">Audio on</string>
   <string name="icon_descr_speaker_off">Speaker off</string>
   <string name="icon_descr_speaker_on">Speaker on</string>
+  <string name="icon_descr_sound_muted">Sound muted</string>
   <string name="icon_descr_flip_camera">Flip camera</string>
 
   <!-- Call items -->
@@ -1156,6 +1185,7 @@
   <!-- Settings sections -->
   <string name="settings_section_title_you">YOU</string>
   <string name="settings_section_title_settings">SETTINGS</string>
+  <string name="settings_section_title_chat_database">CHAT DATABASE</string>
   <string name="settings_section_title_help">HELP</string>
   <string name="settings_section_title_support">SUPPORT SIMPLEX CHAT</string>
   <string name="settings_section_title_app">APP</string>
@@ -1173,6 +1203,9 @@
   <string name="settings_section_title_icon">APP ICON</string>
   <string name="settings_section_title_themes">THEMES</string>
   <string name="settings_section_title_profile_images">Profile images</string>
+  <string name="settings_section_title_message_shape">Message shape</string>
+  <string name="settings_message_shape_corner">Corner</string>
+  <string name="settings_message_shape_tail">Tail</string>
   <string name="settings_section_title_chat_theme">Chat theme</string>
   <string name="settings_section_title_user_theme">Profile theme</string>
   <string name="settings_section_title_chat_colors">Chat colors</string>
@@ -1720,6 +1753,7 @@
   <string name="theme_remove_image">Remove image</string>
   <string name="appearance_font_size">Font size</string>
   <string name="appearance_zoom">Zoom</string>
+  <string name="system_mode_toast">System mode</string>
 
   <!-- Wallpapers -->
   <string name="wallpaper_preview_hello_alice">Good afternoon!</string>
@@ -2007,6 +2041,16 @@
   <string name="v6_0_upgrade_app_descr">Download new versions from GitHub.</string>
   <string name="v6_0_connection_servers_status">Control your network</string>
   <string name="v6_0_connection_servers_status_descr">Connection and servers status.</string>
+  <string name="v6_1_better_security">Better security ✅</string>
+  <string name="v6_1_better_security_descr">SimpleX protocols reviewed by Trail of Bits.</string>
+  <string name="v6_1_better_calls">Better calls</string>
+  <string name="v6_1_better_calls_descr">Switch audio and video during the call.</string>
+  <string name="v6_1_better_user_experience">Better user experience</string>
+  <string name="v6_1_switch_chat_profile_descr">Switch chat profile for 1-time invitations.</string>
+  <string name="v6_1_customizable_message_descr">Customizable message shape.</string>
+  <string name="v6_1_message_dates_descr">Better message dates.</string>
+  <string name="v6_1_forward_many_messages_descr">Forward up to 20 messages at once.</string>
+  <string name="v6_1_delete_many_messages_descr">Delete or moderate up to 200 messages.</string>
 
   <!-- CustomTimePicker -->
   <string name="custom_time_unit_seconds">seconds</string>

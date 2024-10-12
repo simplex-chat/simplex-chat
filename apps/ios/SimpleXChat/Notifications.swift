@@ -94,7 +94,7 @@ public func createConnectionEventNtf(_ user: User, _ connEntity: ConnectionEntit
     var body: String? = nil
     var targetContentIdentifier: String? = nil
     switch connEntity {
-    case let .rcvDirectMsgConnection(contact):
+    case let .rcvDirectMsgConnection(_, contact):
         if let contact = contact {
             title = hideContent ? contactHidden : "\(contact.chatViewName):"
             targetContentIdentifier = contact.id
@@ -102,7 +102,7 @@ public func createConnectionEventNtf(_ user: User, _ connEntity: ConnectionEntit
             title = NSLocalizedString("New contact:", comment: "notification")
         }
         body = NSLocalizedString("message received", comment: "notification")
-    case let .rcvGroupMsgConnection(groupInfo, groupMember):
+    case let .rcvGroupMsgConnection(_, groupInfo, groupMember):
         title = groupMsgNtfTitle(groupInfo, groupMember, hideContent: hideContent)
         body = NSLocalizedString("message received", comment: "notification")
         targetContentIdentifier = groupInfo.id

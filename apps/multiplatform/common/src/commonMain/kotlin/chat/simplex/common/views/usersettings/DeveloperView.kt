@@ -35,7 +35,7 @@ fun DeveloperView(
     val unchangedHints = mutableStateOf(unchangedHintPreferences())
     SectionView {
       InstallTerminalAppItem(uriHandler)
-      ChatConsoleItem { withAuth(generalGetString(MR.strings.auth_open_chat_console), generalGetString(MR.strings.auth_log_in_using_credential), showCustomModal { it, close -> TerminalView(it, close) }) }
+      ChatConsoleItem { withAuth(generalGetString(MR.strings.auth_open_chat_console), generalGetString(MR.strings.auth_log_in_using_credential), showCustomModal { it, close -> TerminalView(false, close) }) }
       ResetHintsItem(unchangedHints)
       SettingsPreferenceItem(painterResource(MR.images.ic_code), stringResource(MR.strings.show_developer_options), developerTools)
       SectionTextFooter(

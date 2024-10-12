@@ -12,7 +12,7 @@ import SimpleXChat
 struct FramedItemView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
-    @EnvironmentObject var scrollModel: ReverseListScrollModel<ChatItem>
+    @EnvironmentObject var scrollModel: ReverseListScrollModel
     @ObservedObject var chat: Chat
     var chatItem: ChatItem
     var preview: UIImage?
@@ -64,15 +64,20 @@ struct FramedItemView: View {
                     .overlay(DetermineWidth())
             }
 
-            if chatItem.content.msgContent != nil {
-                CIMetaView(chat: chat, chatItem: chatItem, metaColor: useWhiteMetaColor ? Color.white : theme.colors.secondary)
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 6)
-                    .overlay(DetermineWidth())
-                    .accessibilityLabel("")
+            if let content = chatItem.content.msgContent {
+                CIMetaView(
+                    chat: chat,
+                    chatItem: chatItem,
+                    metaColor: theme.colors.secondary,
+                    invertedMaterial: useWhiteMetaColor
+                )
+                .padding(.horizontal, 12)
+                .padding(.bottom, 6)
+                .overlay(DetermineWidth())
+                .accessibilityLabel("")
             }
-        }
-            .background(chatItemFrameColorMaybeImageOrVideo(chatItem, theme))
+        }   
+            .background { chatItemFrameColorMaybeImageOrVideo(chatItem, theme).modifier(ChatTailPadding()) }
             .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
 
         if let (title, text) = chatItem.meta.itemStatus.statusInfo {
@@ -185,7 +190,7 @@ struct FramedItemView: View {
         let v = ZStack(alignment: .topTrailing) {
             switch (qi.content) {
             case let .image(_, image):
-                if let uiImage = UIImage(base64Encoded: image) {
+                if let uiImage = imageFromBase64(image) {
                     ciQuotedMsgView(qi)
                         .padding(.trailing, 70).frame(minWidth: msgWidth, alignment: .leading)
                     Image(uiImage: uiImage)
@@ -197,7 +202,7 @@ struct FramedItemView: View {
                     ciQuotedMsgView(qi)
                 }
             case let .video(_, image, _):
-                if let uiImage = UIImage(base64Encoded: image) {
+                if let uiImage = imageFromBase64(image) {
                     ciQuotedMsgView(qi)
                     .padding(.trailing, 70).frame(minWidth: msgWidth, alignment: .leading)
                     Image(uiImage: uiImage)

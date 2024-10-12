@@ -17,6 +17,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
     public var profile: LocalProfile
     public var fullPreferences: FullPreferences
     public var activeUser: Bool
+    public var activeOrder: Int64
 
     public var displayName: String { get { profile.displayName } }
     public var fullName: String { get { profile.fullName } }
@@ -49,6 +50,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
         profile: LocalProfile.sampleData,
         fullPreferences: FullPreferences.sampleData,
         activeUser: true,
+        activeOrder: 0,
         showNtfs: true,
         sendRcptsContacts: true,
         sendRcptsSmallGroups: false
@@ -1850,6 +1852,7 @@ public struct PendingContactConnection: Decodable, NamedChat, Hashable {
 
 public enum ConnStatus: String, Decodable, Hashable {
     case new = "new"
+    case prepared = "prepared"
     case joined = "joined"
     case requested = "requested"
     case accepted = "accepted"
@@ -1861,6 +1864,7 @@ public enum ConnStatus: String, Decodable, Hashable {
         get {
             switch self {
             case .new: return true
+            case .prepared: return false
             case .joined: return false
             case .requested: return true
             case .accepted: return true
@@ -2238,32 +2242,42 @@ public struct MemberSubError: Decodable, Hashable {
 }
 
 public enum ConnectionEntity: Decodable, Hashable {
-    case rcvDirectMsgConnection(contact: Contact?)
-    case rcvGroupMsgConnection(groupInfo: GroupInfo, groupMember: GroupMember)
-    case sndFileConnection(sndFileTransfer: SndFileTransfer)
-    case rcvFileConnection(rcvFileTransfer: RcvFileTransfer)
-    case userContactConnection(userContact: UserContact)
+    case rcvDirectMsgConnection(entityConnection: Connection, contact: Contact?)
+    case rcvGroupMsgConnection(entityConnection: Connection, groupInfo: GroupInfo, groupMember: GroupMember)
+    case sndFileConnection(entityConnection: Connection, sndFileTransfer: SndFileTransfer)
+    case rcvFileConnection(entityConnection: Connection, rcvFileTransfer: RcvFileTransfer)
+    case userContactConnection(entityConnection: Connection, userContact: UserContact)
 
     public var id: String? {
         switch self {
-        case let .rcvDirectMsgConnection(contact):
+        case let .rcvDirectMsgConnection(_, contact):
             return contact?.id
-        case let .rcvGroupMsgConnection(_, groupMember):
+        case let .rcvGroupMsgConnection(_, _, groupMember):
             return groupMember.id
-        case let .userContactConnection(userContact):
+        case let .userContactConnection(_, userContact):
             return userContact.id
         default:
             return nil
         }
     }
 
+    public var conn: Connection {
+        switch self {
+        case let .rcvDirectMsgConnection(entityConnection, _): entityConnection
+        case let .rcvGroupMsgConnection(entityConnection, _, _): entityConnection
+        case let .sndFileConnection(entityConnection, _): entityConnection
+        case let .rcvFileConnection(entityConnection, _): entityConnection
+        case let .userContactConnection(entityConnection, _): entityConnection
+        }
+    }
+
     public var ntfsEnabled: Bool {
         switch self {
-        case let .rcvDirectMsgConnection(contact): return contact?.chatSettings.enableNtfs == .all
-        case let .rcvGroupMsgConnection(groupInfo, _): return groupInfo.chatSettings.enableNtfs == .all
+        case let .rcvDirectMsgConnection(_, contact): return contact?.chatSettings.enableNtfs == .all
+        case let .rcvGroupMsgConnection(_, groupInfo, _): return groupInfo.chatSettings.enableNtfs == .all
         case .sndFileConnection: return false
         case .rcvFileConnection: return false
-        case let .userContactConnection(userContact): return userContact.groupId == nil
+        case let .userContactConnection(_, userContact): return userContact.groupId == nil
         }
     }
 }
@@ -2271,6 +2285,11 @@ public enum ConnectionEntity: Decodable, Hashable {
 public struct NtfMsgInfo: Decodable, Hashable {
     public var msgId: String
     public var msgTs: Date
+}
+
+public struct NtfMsgAckInfo: Decodable, Hashable {
+    public var msgId: String
+    public var msgTs_: Date?
 }
 
 public struct ChatItemDeletion: Decodable, Hashable {
@@ -2688,6 +2707,13 @@ public enum CIDirection: Decodable, Hashable {
             }
         }
     }
+    
+    public func sameDirection(_ dir: CIDirection) -> Bool {
+        switch (self, dir) {
+        case let (.groupRcv(m1), .groupRcv(m2)): m1.groupMemberId == m2.groupMemberId
+        default: sent == dir.sent
+        }
+    }
 }
 
 public struct CIMeta: Decodable, Hashable {
@@ -2706,7 +2732,7 @@ public struct CIMeta: Decodable, Hashable {
     public var deletable: Bool
     public var editable: Bool
 
-    public var timestampText: Text { get { formatTimestampText(itemTs) } }
+    public var timestampText: Text { Text(formatTimestampMeta(itemTs)) }
     public var recent: Bool { updatedAt + 10 > .now }
     public var isLive: Bool { itemLive == true }
     public var disappearing: Bool { !isRcvNew && itemTimed?.deleteAt != nil }
@@ -2714,10 +2740,6 @@ public struct CIMeta: Decodable, Hashable {
     public var isRcvNew: Bool {
         if case .rcvNew = itemStatus { return true }
         return false
-    }
-
-    public func statusIcon(_ metaColor: Color/* = .secondary*/, _ primaryColor: Color = .accentColor) -> (String, Color)? {
-        itemStatus.statusIcon(metaColor, primaryColor)
     }
 
     public static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true) -> CIMeta {
@@ -2760,9 +2782,20 @@ public struct CITimed: Decodable, Hashable {
 
 let msgTimeFormat = Date.FormatStyle.dateTime.hour().minute()
 let msgDateFormat = Date.FormatStyle.dateTime.day(.twoDigits).month(.twoDigits)
+let msgDateYearFormat = Date.FormatStyle.dateTime.day(.twoDigits).month(.twoDigits).year(.twoDigits)
 
 public func formatTimestampText(_ date: Date) -> Text {
-    return Text(date, format: recent(date) ? msgTimeFormat : msgDateFormat)
+    Text(verbatim: date.formatted(
+        recent(date)
+        ? msgTimeFormat
+        : Calendar.current.isDate(date, equalTo: .now, toGranularity: .year)
+        ? msgDateFormat
+        : msgDateYearFormat
+    ))
+}
+
+public func formatTimestampMeta(_ date: Date) -> String {
+    date.formatted(date: .omitted, time: .shortened)
 }
 
 private func recent(_ date: Date) -> Bool {
@@ -2804,22 +2837,37 @@ public enum CIStatus: Decodable, Hashable {
         case .invalid: return "invalid"
         }
     }
-
-    public func statusIcon(_ metaColor: Color/* = .secondary*/, _ primaryColor: Color = .accentColor) -> (String, Color)? {
+    
+    public var sent: Bool {
         switch self {
-        case .sndNew: return nil
-        case .sndSent: return ("checkmark", metaColor)
-        case let .sndRcvd(msgRcptStatus, _):
+        case .sndNew: true
+        case .sndSent: true
+        case .sndRcvd: true
+        case .sndErrorAuth: true
+        case .sndError: true
+        case .sndWarning: true
+        case .rcvNew: false
+        case .rcvRead: false
+        case .invalid: false
+        }
+    }
+
+    public func statusIcon(_ metaColor: Color, _ paleMetaColor: Color, _ primaryColor: Color = .accentColor) -> (Image, Color)? {
+        switch self {
+        case .sndNew: nil
+        case let .sndSent(sndProgress):
+            (Image("checkmark.wide"),  sndProgress == .partial ? paleMetaColor : metaColor)
+        case let .sndRcvd(msgRcptStatus, sndProgress):
             switch msgRcptStatus {
-            case .ok: return ("checkmark", metaColor)
-            case .badMsgHash: return ("checkmark", .red)
+            case .ok: (Image("checkmark.2"), sndProgress == .partial ? paleMetaColor : metaColor)
+            case .badMsgHash: (Image("checkmark.2"), .red)
             }
-        case .sndErrorAuth: return ("multiply", .red)
-        case .sndError: return ("multiply", .red)
-        case .sndWarning: return ("exclamationmark.triangle.fill", .orange)
-        case .rcvNew: return ("circlebadge.fill", primaryColor)
-        case .rcvRead: return nil
-        case .invalid: return ("questionmark", metaColor)
+        case .sndErrorAuth: (Image(systemName: "multiply"), .red)
+        case .sndError: (Image(systemName: "multiply"), .red)
+        case .sndWarning: (Image(systemName: "exclamationmark.triangle.fill"), .orange)
+        case .rcvNew: (Image(systemName: "circlebadge.fill"), primaryColor)
+        case .rcvRead: nil
+        case .invalid: (Image(systemName: "questionmark"), metaColor)
         }
     }
 
@@ -2846,6 +2894,13 @@ public enum CIStatus: Decodable, Hashable {
                 NSLocalizedString("Invalid status", comment: "item status text"),
                 text
             )
+        }
+    }
+
+    public var isSndRcvd: Bool {
+        switch self {
+        case .sndRcvd: return true
+        default: return false
         }
     }
 }
@@ -2914,20 +2969,20 @@ public enum GroupSndStatus: Decodable, Hashable {
     case warning(agentError: SndError)
     case invalid(text: String)
 
-    public func statusIcon(_ metaColor: Color/* = .secondary*/, _ primaryColor: Color = .accentColor) -> (String, Color) {
+    public func statusIcon(_ metaColor: Color, _ primaryColor: Color = .accentColor) -> (Image, Color) {
         switch self {
-        case .new: return ("ellipsis", metaColor)
-        case .forwarded: return ("chevron.forward.2", metaColor)
-        case .inactive: return ("person.badge.minus", metaColor)
-        case .sent: return ("checkmark", metaColor)
+        case .new: (Image(systemName: "ellipsis"), metaColor)
+        case .forwarded: (Image(systemName: "chevron.forward.2"), metaColor)
+        case .inactive: (Image(systemName: "person.badge.minus"), metaColor)
+        case .sent: (Image("checkmark.wide"), metaColor)
         case let .rcvd(msgRcptStatus):
             switch msgRcptStatus {
-            case .ok: return ("checkmark", metaColor)
-            case .badMsgHash: return ("checkmark", .red)
+            case .ok: (Image("checkmark.2"), metaColor)
+            case .badMsgHash: (Image("checkmark.2"), .red)
             }
-        case .error: return ("multiply", .red)
-        case .warning: return ("exclamationmark.triangle.fill", .orange)
-        case .invalid: return ("questionmark", metaColor)
+        case .error: (Image(systemName: "multiply"), .red)
+        case .warning: (Image(systemName: "exclamationmark.triangle.fill"), .orange)
+        case .invalid: (Image(systemName: "questionmark"), metaColor)
         }
     }
 
@@ -3141,6 +3196,13 @@ public enum CIContent: Decodable, ItemContent, Hashable {
         case .rcvModerated: return true
         case .rcvBlocked: return true
         case .invalidJSON: return true
+        default: return false
+        }
+    }
+
+    public var isSndCall: Bool {
+        switch self {
+        case .sndCall: return true
         default: return false
         }
     }

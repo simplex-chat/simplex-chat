@@ -24,7 +24,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 @Composable
 actual fun ActiveCallInteractiveArea(call: Call) {
   val showMenu = remember { mutableStateOf(false) }
-  val media = call.peerMedia ?: call.localMedia
   CompositionLocalProvider(
     LocalIndication provides NoIndication
   ) {
@@ -35,7 +34,7 @@ actual fun ActiveCallInteractiveArea(call: Call) {
     ) {
       Box(
         Modifier
-          .padding(end = 71.dp, bottom = 92.dp)
+          .padding(end = 15.dp, bottom = 92.dp)
           .size(67.dp)
           .combinedClickable(onClick = {
             val chat = chatModel.getChat(call.contact.id)
@@ -56,7 +55,7 @@ actual fun ActiveCallInteractiveArea(call: Call) {
           Modifier.padding().background(SimplexGreen, CircleShape).padding(4.dp)
             .align(Alignment.TopEnd)
         ) {
-          if (media == CallMediaType.Video) {
+          if (call.hasVideo) {
             Icon(
               painterResource(MR.images.ic_videocam_filled),
               stringResource(MR.strings.icon_descr_video_call),

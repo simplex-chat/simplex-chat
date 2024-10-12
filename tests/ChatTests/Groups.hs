@@ -14,7 +14,9 @@ import Control.Monad (forM_, void, when)
 import qualified Data.ByteString.Char8 as B
 import Data.List (intercalate, isInfixOf)
 import qualified Data.Text as T
+import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.Controller (ChatConfig (..))
+import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
@@ -33,6 +35,7 @@ chatGroupTests :: SpecWith FilePath
 chatGroupTests = do
   describe "chat groups" $ do
     describe "add contacts, create group and send/receive messages" testGroupMatrix
+    it "mark multiple messages as read" testMarkReadGroup
     it "v1: add contacts, create group and send/receive messages" testGroup
     it "v1: add contacts, create group and send/receive messages, check messages" testGroupCheckMessages
     it "send large message" testGroupLargeMessage
@@ -64,6 +67,10 @@ chatGroupTests = do
     it "moderate message of another group member (full delete)" testGroupModerateFullDelete
     it "moderate message that arrives after the event of moderation" testGroupDelayedModeration
     it "moderate message that arrives after the event of moderation (full delete)" testGroupDelayedModerationFullDelete
+  describe "batch send messages" $ do
+    it "send multiple messages api" testSendMulti
+    it "send multiple timed messages" testSendMultiTimed
+    it "send multiple messages (many chat batches)" testSendMultiManyBatches
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
   describe "group links" $ do
@@ -123,6 +130,7 @@ chatGroupTests = do
     it "invited member replaces member contact reference if it already exists" testMemberContactInvitedConnectionReplaced
     it "share incognito profile" testMemberContactIncognito
     it "sends and updates profile when creating contact" testMemberContactProfileUpdate
+    it "re-create member contact after deletion, many groups" testRecreateMemberContactManyGroups
   describe "group message forwarding" $ do
     it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForward
     it "deduplicate forwarded messages" testGroupMsgForwardDeduplicate
@@ -349,6 +357,22 @@ testGroupShared alice bob cath checkMessages directConnections = do
       cath #$> ("/_read chat #1", id, "ok")
       alice #$> ("/_unread chat #1 on", id, "ok")
       alice #$> ("/_unread chat #1 off", id, "ok")
+
+testMarkReadGroup :: HasCallStack => FilePath -> IO ()
+testMarkReadGroup = testChat2 aliceProfile bobProfile $ \alice bob -> do
+  createGroup2 "team" alice bob
+  alice #> "#team 1"
+  alice #> "#team 2"
+  alice #> "#team 3"
+  alice #> "#team 4"
+  bob <# "#team alice> 1"
+  bob <# "#team alice> 2"
+  bob <# "#team alice> 3"
+  bob <# "#team alice> 4"
+  bob ##> "/last_item_id"
+  i :: ChatItemId <- read <$> getTermLine bob
+  let itemIds = intercalate "," $ map show [i - 3 .. i]
+  bob #$> ("/_read chat items #1 " <> itemIds, id, "ok")
 
 testGroupLargeMessage :: HasCallStack => FilePath -> IO ()
 testGroupLargeMessage =
@@ -1304,26 +1328,29 @@ testGroupMessageDeleteMultipleManyBatches =
       cath ##> "/set receipts all off"
       cath <## "ok"
 
-      alice #> "#team message 0"
-      concurrently_
-        (bob <# "#team alice> message 0")
-        (cath <# "#team alice> message 0")
-      msgIdFirst <- lastItemId alice
+      msgIdZero <- lastItemId alice
+
+      let cm i = "{\"msgContent\": {\"type\": \"text\", \"text\": \"message " <> show i <> "\"}}"
+          cms = intercalate ", " (map cm [1 .. 300 :: Int])
+
+      alice `send` ("/_send #1 json [" <> cms <> "]")
+      _ <- getTermLine alice
+
+      alice <## "300 messages sent"
 
       forM_ [(1 :: Int) .. 300] $ \i -> do
-        alice #> ("#team message " <> show i)
         concurrently_
           (bob <# ("#team alice> message " <> show i))
           (cath <# ("#team alice> message " <> show i))
       msgIdLast <- lastItemId alice
 
-      let mIdFirst = read msgIdFirst :: Int
+      let mIdFirst = (read msgIdZero :: Int) + 1
           mIdLast = read msgIdLast :: Int
           deleteIds = intercalate "," (map show [mIdFirst .. mIdLast])
       alice `send` ("/_delete item #1 " <> deleteIds <> " broadcast")
       _ <- getTermLine alice
-      alice <## "301 messages deleted"
-      forM_ [(0 :: Int) .. 300] $ \i ->
+      alice <## "300 messages deleted"
+      forM_ [(1 :: Int) .. 300] $ \i ->
         concurrently_
           (bob <# ("#team alice> [marked deleted] message " <> show i))
           (cath <# ("#team alice> [marked deleted] message " <> show i))
@@ -1817,6 +1844,92 @@ testGroupDelayedModerationFullDelete tmp = do
         r `shouldMatchList` [(0, "Full deletion: on"), (0, "connected"), (0, "moderated [deleted by alice]")]
   where
     cfg = testCfgCreateGroupDirect
+
+testSendMulti :: HasCallStack => FilePath -> IO ()
+testSendMulti =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      alice ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"test 1\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"test 2\"}}]"
+      alice <# "#team test 1"
+      alice <# "#team test 2"
+      bob <# "#team alice> test 1"
+      bob <# "#team alice> test 2"
+      cath <# "#team alice> test 1"
+      cath <# "#team alice> test 2"
+
+testSendMultiTimed :: HasCallStack => FilePath -> IO ()
+testSendMultiTimed =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      alice ##> "/set disappear #team on 1"
+      alice <## "updated group preferences:"
+      alice <## "Disappearing messages: on (1 sec)"
+      bob <## "alice updated group #team:"
+      bob <## "updated group preferences:"
+      bob <## "Disappearing messages: on (1 sec)"
+      cath <## "alice updated group #team:"
+      cath <## "updated group preferences:"
+      cath <## "Disappearing messages: on (1 sec)"
+
+      alice ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"test 1\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"test 2\"}}]"
+      alice <# "#team test 1"
+      alice <# "#team test 2"
+      bob <# "#team alice> test 1"
+      bob <# "#team alice> test 2"
+      cath <# "#team alice> test 1"
+      cath <# "#team alice> test 2"
+
+      alice
+        <### [ "timed message deleted: test 1",
+               "timed message deleted: test 2"
+             ]
+      bob
+        <### [ "timed message deleted: test 1",
+               "timed message deleted: test 2"
+             ]
+      cath
+        <### [ "timed message deleted: test 1",
+               "timed message deleted: test 2"
+             ]
+
+testSendMultiManyBatches :: HasCallStack => FilePath -> IO ()
+testSendMultiManyBatches =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      msgIdAlice <- lastItemId alice
+      msgIdBob <- lastItemId bob
+      msgIdCath <- lastItemId cath
+
+      let cm i = "{\"msgContent\": {\"type\": \"text\", \"text\": \"message " <> show i <> "\"}}"
+          cms = intercalate ", " (map cm [1 .. 300 :: Int])
+
+      alice `send` ("/_send #1 json [" <> cms <> "]")
+      _ <- getTermLine alice
+
+      alice <## "300 messages sent"
+
+      forM_ [(1 :: Int) .. 300] $ \i -> do
+        concurrently_
+          (bob <# ("#team alice> message " <> show i))
+          (cath <# ("#team alice> message " <> show i))
+
+      aliceItemsCount <- withCCTransaction alice $ \db ->
+        DB.query db "SELECT count(1) FROM chat_items WHERE chat_item_id > ?" (Only msgIdAlice) :: IO [[Int]]
+      aliceItemsCount `shouldBe` [[300]]
+
+      bobItemsCount <- withCCTransaction bob $ \db ->
+        DB.query db "SELECT count(1) FROM chat_items WHERE chat_item_id > ?" (Only msgIdBob) :: IO [[Int]]
+      bobItemsCount `shouldBe` [[300]]
+
+      cathItemsCount <- withCCTransaction cath $ \db ->
+        DB.query db "SELECT count(1) FROM chat_items WHERE chat_item_id > ?" (Only msgIdCath) :: IO [[Int]]
+      cathItemsCount `shouldBe` [[300]]
 
 testGroupAsync :: HasCallStack => FilePath -> IO ()
 testGroupAsync tmp = do
@@ -3468,7 +3581,8 @@ testGroupSyncRatchet tmp =
       bob <## "1 contacts connected (use /cs for the list)"
       bob <## "#team: connected to server(s)"
       bob `send` "#team 1"
-      bob <## "error: command is prohibited, sendMessagesB: send prohibited" -- silence?
+      -- "send prohibited" error is not printed in group as SndMessage is created,
+      -- but it should be displayed in per member snd statuses
       bob <# "#team 1"
       (alice </)
       -- synchronize bob and alice
@@ -4424,6 +4538,73 @@ testMemberContactProfileUpdate =
       alice <# "#team kate> hello there"
       bob <# "#team kate> hello there" -- updated profile
 
+testRecreateMemberContactManyGroups :: HasCallStack => FilePath -> IO ()
+testRecreateMemberContactManyGroups =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      createGroup2' "team" alice bob False
+      createGroup2' "club" alice bob False
+
+      -- alice can message bob via team and via club
+      alice ##> "@#team bob 1"
+      alice <# "@bob 1"
+      bob <# "alice> 1"
+
+      bob ##> "@#team alice 2"
+      bob <# "@alice 2"
+      alice <# "bob> 2"
+
+      alice ##> "@#club bob 3"
+      alice <# "@bob 3"
+      bob <# "alice> 3"
+
+      bob ##> "@#club alice 4"
+      bob <# "@alice 4"
+      alice <# "bob> 4"
+
+      -- alice deletes contact with bob
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
+
+      bob ##> "/d alice"
+      bob <## "alice: contact is deleted"
+
+      -- alice creates member contact with bob
+      alice ##> "@#team bob hi"
+      alice
+        <### [ "member #team bob does not have direct connection, creating",
+               "contact for member #team bob is created",
+               "sent invitation to connect directly to member #team bob",
+               WithTime "@bob hi"
+             ]
+      bob
+        <### [ "#team alice is creating direct contact alice with you",
+               WithTime "alice> hi"
+             ]
+      bob <## "alice (Alice): you can send messages to contact"
+      concurrently_
+        (alice <## "bob (Bob): contact is connected")
+        (bob <## "alice (Alice): contact is connected")
+
+      -- alice can message bob via team and via club
+      alice ##> "@#team bob 1"
+      alice <# "@bob 1"
+      bob <# "alice> 1"
+
+      bob ##> "@#team alice 2"
+      bob <# "@alice 2"
+      alice <# "bob> 2"
+
+      alice ##> "@#club bob 3"
+      alice <# "@bob 3"
+      bob <# "alice> 3"
+
+      bob ##> "@#club alice 4"
+      bob <# "@alice 4"
+      alice <# "bob> 4"
+
 testGroupMsgForward :: HasCallStack => FilePath -> IO ()
 testGroupMsgForward =
   testChat3 aliceProfile bobProfile cathProfile $
@@ -4908,7 +5089,7 @@ testGroupHistoryLargeFile =
 
       createGroup2 "team" alice bob
 
-      bob ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile\", \"msgContent\": {\"text\":\"hello\",\"type\":\"file\"}}"
+      bob ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile\", \"msgContent\": {\"text\":\"hello\",\"type\":\"file\"}}]"
       bob <# "#team hello"
       bob <# "/f #team ./tests/tmp/testfile"
       bob <## "use /fc 1 to cancel sending"
@@ -4969,7 +5150,7 @@ testGroupHistoryMultipleFiles =
 
       threadDelay 1000000
 
-      bob ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile_bob\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}"
+      bob ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile_bob\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}]"
       bob <# "#team hi alice"
       bob <# "/f #team ./tests/tmp/testfile_bob"
       bob <## "use /fc 1 to cancel sending"
@@ -4981,7 +5162,7 @@ testGroupHistoryMultipleFiles =
 
       threadDelay 1000000
 
-      alice ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile_alice\", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}"
+      alice ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile_alice\", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}]"
       alice <# "#team hey bob"
       alice <# "/f #team ./tests/tmp/testfile_alice"
       alice <## "use /fc 2 to cancel sending"
@@ -5047,7 +5228,7 @@ testGroupHistoryFileCancel =
 
       createGroup2 "team" alice bob
 
-      bob ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile_bob\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}"
+      bob ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile_bob\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}]"
       bob <# "#team hi alice"
       bob <# "/f #team ./tests/tmp/testfile_bob"
       bob <## "use /fc 1 to cancel sending"
@@ -5063,7 +5244,7 @@ testGroupHistoryFileCancel =
 
       threadDelay 1000000
 
-      alice ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile_alice\", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}"
+      alice ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile_alice\", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}]"
       alice <# "#team hey bob"
       alice <# "/f #team ./tests/tmp/testfile_alice"
       alice <## "use /fc 2 to cancel sending"
@@ -6306,7 +6487,7 @@ testGroupMemberInactive tmp = do
   where
     serverCfg' =
       smpServerCfg
-        { transports = [("7003", transport @TLS)],
+        { transports = [("7003", transport @TLS, False)],
           msgQueueQuota = 2
         }
     fastRetryInterval = defaultReconnectInterval {initialInterval = 50_000} -- same as in agent tests

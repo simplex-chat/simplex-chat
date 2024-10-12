@@ -29,12 +29,12 @@ struct ContentView: View {
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
     @AppStorage(DEFAULT_NOTIFICATION_ALERT_SHOWN) private var notificationAlertShown = false
-    @State private var showSettings = false
     @State private var showWhatsNew = false
     @State private var showChooseLAMode = false
     @State private var showSetPasscode = false
     @State private var waitingForOrPassedAuth = true
     @State private var chatListActionSheet: ChatListActionSheet? = nil
+    @State private var chatListUserPickerSheet: UserPickerSheet? = nil
 
     private let callTopPadding: CGFloat = 40
 
@@ -86,7 +86,7 @@ struct ContentView: View {
                 callView(call)
             }
 
-            if !showSettings, let la = chatModel.laRequest {
+            if chatListUserPickerSheet == nil, let la = chatModel.laRequest {
                 LocalAuthView(authRequest: la)
                     .onDisappear {
                         // this flag is separate from accessAuthenticated to show initializationView while we wait for authentication
@@ -109,9 +109,6 @@ struct ContentView: View {
             }
         }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
-        .sheet(isPresented: $showSettings) {
-            SettingsView(showSettings: $showSettings)
-        }
         .confirmationDialog("SimpleX Lock mode", isPresented: $showChooseLAMode, titleVisibility: .visible) {
             Button("System authentication") { initialEnableLA() }
             Button("Passcode entry") { showSetPasscode = true }
@@ -253,7 +250,7 @@ struct ContentView: View {
 
     private func mainView() -> some View {
         ZStack(alignment: .top) {
-            ChatListView(showSettings: $showSettings).privacySensitive(protectScreen)
+            ChatListView(activeUserPickerSheet: $chatListUserPickerSheet).privacySensitive(protectScreen)
             .onAppear {
                 requestNtfAuthorization()
                 // Local Authentication notice is to be shown on next start after onboarding is complete
@@ -300,9 +297,18 @@ struct ContentView: View {
         if let contactId = contacts?.first?.personHandle?.value,
            let chat = chatModel.getChat(contactId),
            case let .direct(contact) = chat.chatInfo {
-            logger.debug("callToRecentContact: schedule call")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                CallController.shared.startCall(contact, mediaType)
+            let activeCall = chatModel.activeCall
+            // This line works when a user clicks on a video button in CallKit UI while in call.
+            // The app tries to make another call to the same contact and overwite activeCall instance making its state broken
+            if let activeCall, contactId == activeCall.contact.id, mediaType == .video, !activeCall.hasVideo {
+                Task {
+                    await chatModel.callCommand.processCommand(.media(source: .camera, enable: true))
+                }
+            } else if activeCall == nil {
+                logger.debug("callToRecentContact: schedule call")
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    CallController.shared.startCall(contact, mediaType)
+                }
             }
         }
     }
