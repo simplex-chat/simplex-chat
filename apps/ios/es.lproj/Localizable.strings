@@ -1501,7 +1501,7 @@
 "Delete old database?" = "¿Eliminar base de datos antigua?";
 
 /* No comment provided by engineer. */
-"Delete or moderate up to 200 messages." = "Borrar o moderar hasta 200 mensajes.";
+"Delete or moderate up to 200 messages." = "Borra o modera hasta 200 mensajes a la vez.";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "¿Eliminar conexión pendiente?";
