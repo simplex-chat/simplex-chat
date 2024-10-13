@@ -1,14 +1,16 @@
 ---
 title: Hosting your own SMP Server
-revision: 01.10.2024
+revision: 12.10.2024
 ---
 
-| Updated 28.05.2024 | Languages: EN, [FR](/docs/lang/fr/SERVER.md), [CZ](/docs/lang/cs/SERVER.md), [PL](/docs/lang/pl/SERVER.md) |
+# Hosting your own SMP Server
+
+| Updated 12.10.2024 | Languages: EN, [FR](/docs/lang/fr/SERVER.md), [CZ](/docs/lang/cs/SERVER.md), [PL](/docs/lang/pl/SERVER.md) |
 
 ### Table of Contents
 
-- [TLDR](#tldr)
-- [Hosting your own SMP server](#hosting-your-own-smp-server)
+- [Quick start](#quick-start)
+- [Detailed guide](#detailed-guide)
   - [Overview](#overview)
   - [Installation](#installation)
   - [Configuration](#configuration)
@@ -30,13 +32,15 @@ revision: 01.10.2024
   - [Updating your SMP server](#updating-your-smp-server)
   - [Configuring the app to use the server](#configuring-the-app-to-use-the-server)
 
-# TLDR:
+## Quick start
 
 To create SMP server, you'll need:
 
 - VPS or any other server.
-- Your own domain, pointed at the server (`smp1.example.com`)
+- Your server domain, with A and AAAA records specifying server IPv4 and IPv6 addresses (`smp1.example.com`)
 - A basic Linux knowledge.
+
+*Please note*: while you can run an SMP server without a domain name, in the near future client applications will start using server domain name in the invitation links (instead of `simplex.chat` domain they use now). In case a server does not have domain name and server pages (see below), the clients will be generaing the links with `simplex:` scheme that cannot be opened in the browsers.
 
 1. Install server with [Installation script](https://github.com/simplex-chat/simplexmq#using-installation-script).
 
@@ -50,7 +54,7 @@ To create SMP server, you'll need:
 
 3. Init server:
 
-   Replace `smp1.example.com` with your actual domain.
+   Replace `smp1.example.com` with your actual server domain.
 
    ```sh
    su smp -c 'smp-server init --yes \
@@ -59,14 +63,7 @@ To create SMP server, you'll need:
                            --control-port \
                            --socks-proxy \
                            --source-code \
-                           --fqdn=smp1.example.com \
-                           --operator="Illuminati" \
-                           --operator-country=DE \
-                           --hosting="Illuminati Inc." \
-                           --hosting-country=DE \
-                           --hosting-type=dedicated \
-                           --server-country=DE \
-                           --operator-website="https://illuminati.exist"'
+                           --fqdn=smp1.example.com
    ```
 
 4. Install tor:
@@ -98,7 +95,7 @@ To create SMP server, you'll need:
    ```sh
    # Enable log (otherwise, tor doesn't seem to deploy onion address)
    Log notice file /var/log/tor/notices.log
-   # Enable single hop routing (2 options below are dependencies of the third) - It will reduce the latency at the cost of lower anonimity of the server - as SMP-server onion address is used in the clients together with public address, this is ok. If you deploy SMP-server with onion-only address, you may want to keep standard configuration instead.
+   # Enable single hop routing (2 options below are dependencies of the third) - It will reduce the latency at the cost of lower anonimity of the server - as SMP-server onion address is used in the clients together with public address, this is ok. If you deploy SMP-server with onion-only address, keep standard configuration.
    SOCKSPort 0
    HiddenServiceNonAnonymousMode 1
    HiddenServiceSingleHopMode 1
@@ -145,7 +142,7 @@ To create SMP server, you'll need:
    vim /etc/caddy/Caddyfile
    ```
 
-   Replace `smp1.example.com` with your actual domain. Paste the following:
+   Replace `smp1.example.com` with your actual server domain. Paste the following:
 
    ```
    http://smp1.example.com {
@@ -163,7 +160,7 @@ To create SMP server, you'll need:
    vim /usr/local/bin/simplex-servers-certs
    ```
 
-   Replace `smp1.example.com` with your actual domain. Paste the following:
+   Replace `smp1.example.com` with your actual server domain. Paste the following:
 
    ```sh
    #!/usr/bin/env sh
@@ -230,9 +227,9 @@ To create SMP server, you'll need:
     echo "$smp,$tor"
     ```
 
-# Hosting your own SMP Server
+## Detailed guide
 
-## Overview
+### Overview
 
 SMP server is the relay server used to pass messages in SimpleX network. SimpleX Chat apps have preset servers (for mobile apps these are smp11, smp12 and smp14.simplex.im), but you can easily change app configuration to use other servers.
 
@@ -246,7 +243,7 @@ To create SMP server, you'll need:
 
 _Please note_: when you change the servers in the app configuration, it only affects which servers will be used for the new contacts, the existing contacts will not automatically move to the new servers, but you can move them manually using ["Change receiving address"](../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md#change-your-delivery-address-beta) button in contact/member information pages – it will be automated in the future.
 
-## Installation
+### Installation
 
 1. First, install `smp-server`:
 
@@ -319,7 +316,7 @@ Manual installation requires some preliminary actions:
 
    And execute `sudo systemctl daemon-reload`.
 
-## Configuration
+### Configuration
 
 To see which options are available, execute `smp-server` without flags:
 
@@ -339,7 +336,7 @@ You can get further help by executing `sudo su smp -c "smp-server <command> -h"`
 
 After that, we need to configure `smp-server`:
 
-### Interactively
+#### Interactively
 
 Execute the following command:
 
@@ -369,7 +366,7 @@ These statistics include daily counts of created, secured and deleted queues, se
 
   Enter your domain or ip address that your smp-server is running on - it will be included in server certificates and also printed as part of server address.
 
-### Via command line options
+#### Via command line options
 
 Execute the following command:
 
@@ -433,7 +430,7 @@ Server address: smp://d5fcsc7hhtPpexYUbI2XPxDbyU2d3WsVmROimcL90ss=:V8ONoJ6ICwnrZ
 
 The server address above should be used in your client configuration, and if you added server password it should only be shared with the other people who you want to allow using your server to receive the messages (all your contacts will be able to send messages - it does not require a password). If you passed IP address or hostnames during the initialisation, they will be printed as part of server address, otherwise replace `<hostnames>` with the actual server hostnames.
 
-## Further configuration
+### Further configuration
 
 All generated configuration, along with a description for each parameter, is available inside configuration file in `/etc/opt/simplex/smp-server.ini` for further customization. Depending on the smp-server version, the configuration file looks something like this:
 
@@ -562,9 +559,9 @@ cert: /etc/opt/simplex/web.crt
 key: /etc/opt/simplex/web.key
 ```
 
-## Server security
+### Server security
 
-### Initialization
+#### Initialization
 
 Although it's convenient to initialize smp-server configuration directly on the server, operators **ARE ADVISED** to initialize smp-server fully offline to protect your SMP server CA private key.
 
@@ -584,7 +581,7 @@ Follow the steps to quickly initialize the server offline:
    rsync -hzasP $HOME/simplex/smp/config/ <server_user>@<server_address>:/etc/opt/simplex/
    ```
 
-### Private keys
+#### Private keys
 
 Connection to the smp server occurs via a TLS connection. During the TLS handshake, the client verifies smp-server CA and server certificates by comparing its fingerprint with the one included in server address. If server TLS credential is compromised, this key can be used to sign a new one, keeping the same server identity and established connections. In order to protect your smp-server from bad actors, operators **ARE ADVISED** to move CA private key to a safe place. That could be:
 
@@ -609,7 +606,7 @@ Follow the steps to secure your CA keys:
    rm /etc/opt/simplex/ca.key
    ```
 
-### Online certificate rotation
+#### Online certificate rotation
 
 Operators of smp servers **ARE ADVISED** to rotate online certificate regularly (e.g., every 3 months). In order to do this, follow the steps:
 
@@ -685,9 +682,9 @@ Operators of smp servers **ARE ADVISED** to rotate online certificate regularly 
 
 10. Done!
 
-## Tor: installation and configuration
+### Tor: installation and configuration
 
-### Installation for onion address
+#### Installation for onion address
 
 SMP-server can also be deployed to be available via [Tor](https://www.torproject.org) network. Run the following commands as `root` user.
 
@@ -768,7 +765,7 @@ SMP-server can also be deployed to be available via [Tor](https://www.torproject
    cat /var/lib/tor/simplex-smp/hostname
    ```
 
-### SOCKS port for SMP PROXY
+#### SOCKS port for SMP PROXY
 
 SMP-server versions starting from `v5.8.0-beta.0` can be configured to PROXY smp servers available exclusively through [Tor](https://www.torproject.org) network to be accessible to the clients that do not use Tor. Run the following commands as `root` user.
 
@@ -815,7 +812,7 @@ SMP-server versions starting from `v5.8.0-beta.0` can be configured to PROXY smp
    ...
    ```
 
-## Server information page
+### Server information page
 
 SMP server **SHOULD** be configured to serve Web page with server information that can include admin info, server info, provider info, etc. It will also serve connection links, generated using the mobile/desktop apps. Run the following commands as `root` user.
 
@@ -997,13 +994,13 @@ _Please note:_ this configuration is supported since `v6.1.0-beta.2`.
 
 10. Access the webpage you've deployed from your browser (`https://smp.example.org`). You should see the smp-server information that you've provided in your ini file.
 
-## Documentation
+### Documentation
 
 All necessary files for `smp-server` are located in `/etc/opt/simplex/` folder.
 
 Stored messages, connections, statistics and server log are located in `/var/opt/simplex/` folder.
 
-### SMP server address
+#### SMP server address
 
 SMP server address has the following format:
 
@@ -1023,7 +1020,7 @@ smp://<fingerprint>[:<password>]@<public_hostname>[,<onion_hostname>]
 
   Your configured hostname(s) of `smp-server`. You can check your configured hosts in `/etc/opt/simplex/smp-server.ini`, under `[TRANSPORT]` section in `host:` field.
 
-### Systemd commands
+#### Systemd commands
 
 To start `smp-server` on host boot, run:
 
@@ -1082,7 +1079,7 @@ Nov 23 19:23:21 5588ab759e80 smp-server[30878]: not expiring inactive clients
 Nov 23 19:23:21 5588ab759e80 smp-server[30878]: creating new queues requires password
 ```
 
-### Monitoring
+#### Monitoring
 
 You can enable `smp-server` statistics for `Grafana` dashboard by setting value `on` in `/etc/opt/simplex/smp-server.ini`, under `[STORE_LOG]` section in `log_stats:` field.
 
@@ -1092,7 +1089,7 @@ Logs will be stored as `csv` file in `/var/opt/simplex/smp-server-stats.daily.lo
 fromTime,qCreated,qSecured,qDeleted,msgSent,msgRecv,dayMsgQueues,weekMsgQueues,monthMsgQueues,msgSentNtf,msgRecvNtf,dayCountNtf,weekCountNtf,monthCountNtf,qCount,msgCount,msgExpired,qDeletedNew,qDeletedSecured,pRelays_pRequests,pRelays_pSuccesses,pRelays_pErrorsConnect,pRelays_pErrorsCompat,pRelays_pErrorsOther,pRelaysOwn_pRequests,pRelaysOwn_pSuccesses,pRelaysOwn_pErrorsConnect,pRelaysOwn_pErrorsCompat,pRelaysOwn_pErrorsOther,pMsgFwds_pRequests,pMsgFwds_pSuccesses,pMsgFwds_pErrorsConnect,pMsgFwds_pErrorsCompat,pMsgFwds_pErrorsOther,pMsgFwdsOwn_pRequests,pMsgFwdsOwn_pSuccesses,pMsgFwdsOwn_pErrorsConnect,pMsgFwdsOwn_pErrorsCompat,pMsgFwdsOwn_pErrorsOther,pMsgFwdsRecv,qSub,qSubAuth,qSubDuplicate,qSubProhibited,msgSentAuth,msgSentQuota,msgSentLarge,msgNtfs,msgNtfNoSub,msgNtfLost,qSubNoMsg,msgRecvGet,msgGet,msgGetNoMsg,msgGetAuth,msgGetDuplicate,msgGetProhibited,psSubDaily,psSubWeekly,psSubMonthly,qCount2,ntfCreated,ntfDeleted,ntfSub,ntfSubAuth,ntfSubDuplicate,ntfCount,qDeletedAllB,qSubAllB,qSubEnd,qSubEndB,ntfDeletedB,ntfSubB,msgNtfsB,msgNtfExpired
 ```
 
-# TODO: Fields description
+#### Fields description
 
 | Field number  | Field name                   | Field Description          |
 | ------------- | ---------------------------- | -------------------------- |
@@ -1208,7 +1205,7 @@ To import `csv` to `Grafana` one should:
 
 For further documentation, see: [CSV Data Source for Grafana - Documentation](https://grafana.github.io/grafana-csv-datasource/)
 
-## Updating your SMP server
+### Updating your SMP server
 
 To update your smp-server to latest version, choose your installation method and follow the steps:
 
@@ -1294,7 +1291,7 @@ To update your smp-server to latest version, choose your installation method and
         docker image prune
         ```
 
-## Configuring the app to use the server
+### Configuring the app to use the server
 
 To configure the app to use your messaging server copy it's full address, including password, and add it to the app. You have an option to use your server together with preset servers or without them - you can remove or disable them.
 
