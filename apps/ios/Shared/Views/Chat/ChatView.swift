@@ -23,6 +23,7 @@ struct ChatView: View {
     @Environment(\.scenePhase) var scenePhase
     @State @ObservedObject var chat: Chat
     @StateObject private var scrollModel = ReverseListScrollModel()
+    @State private var itemSection: Dictionary<Int64, ChatSection> = Dictionary()
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
@@ -418,7 +419,7 @@ struct ChatView: View {
         let cInfo = chat.chatInfo
         let mergedItems = filtered(im.reversedChatItems)
         return GeometryReader { g in
-            ReverseList(items: mergedItems, scrollState: $scrollModel.state) { ci in
+            ReverseList(items: mergedItems, scrollState: $scrollModel.state, itemSection: $itemSection ) { ci in
                 let voiceNoFrame = voiceWithoutFrame(ci)
                 let maxWidth = cInfo.chatType == .group
                                 ? voiceNoFrame
@@ -440,6 +441,8 @@ struct ChatView: View {
                 .id(ci.id) // Required to trigger `onAppear` on iOS15
             } loadPage: { direction in
                 loadChatItems(cInfo, direction)
+            } loadItemsAround: { chatItemId in
+                loadItemsAround(cInfo, chatItemId)
             }
             .opacity(ItemsModel.shared.isLoading ? 0 : 1)
             .padding(.vertical, -InvertedTableView.inset)
@@ -870,6 +873,57 @@ struct ChatView: View {
                     if reversedPage.count == 0 {
                         firstPage = true
                     } else {
+                        reversedPage.forEach { ci in
+                            itemSection[ci.id] = .bottom
+                        }
+                        im.reversedChatItems.append(contentsOf: reversedPage)
+                    }
+                    loadingItems = false
+                }
+            } catch let error {
+                logger.error("apiGetChat error: \(responseError(error))")
+                await MainActor.run { loadingItems = false }
+            }
+        }
+    }
+    
+    private func loadItemsAround(_ cInfo: ChatInfo, _ chatItemId: Int64) {
+        Task {
+            if loadingItems { return }
+            loadingItems = true
+            do {
+                var reversedPage = Array<ChatItem>()
+                var chatItemsAvailable = true
+                // Load additional items until the page is +50 large after merging
+                while chatItemsAvailable && filtered(reversedPage).count < loadItemsPerPage {
+                    let pagination: ChatPagination = .before(chatItemId: chatItemId, count: loadItemsPerPage / 2)
+                    var chatItems = try await apiGetChatItems(
+                        type: cInfo.chatType,
+                        id: cInfo.apiId,
+                        pagination: pagination,
+                        search: searchText
+                    )
+                    if let lastItem = chatItems.last {
+                        let pagination: ChatPagination = .after(chatItemId: lastItem.id, count: loadItemsPerPage / 2)
+                        let afterItems = try await apiGetChatItems(
+                            type: cInfo.chatType,
+                            id: cInfo.apiId,
+                            pagination: pagination,
+                            search: searchText
+                        )
+                        chatItems.append(contentsOf: afterItems)
+                    }
+
+                    chatItemsAvailable = !chatItems.isEmpty
+                    reversedPage.append(contentsOf: chatItems.reversed())
+                }
+                await MainActor.run {
+                    if reversedPage.count == 0 {
+                        firstPage = true
+                    } else {
+                        reversedPage.forEach { ci in
+                            itemSection[ci.id] = .destination
+                        }
                         im.reversedChatItems.append(contentsOf: reversedPage)
                     }
                     loadingItems = false

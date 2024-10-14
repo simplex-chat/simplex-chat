@@ -16,17 +16,25 @@ enum ChatScrollDirection {
     case none
 }
 
+enum ChatSection: CaseIterable {
+    case main
+    case destination
+    case bottom
+}
+
 /// A List, which displays it's items in reverse order - from bottom to top
 struct ReverseList<Content: View>: UIViewControllerRepresentable {
     let items: Array<ChatItem>
 
     @Binding var scrollState: ReverseListScrollModel.State
+    @Binding var itemSection: Dictionary<Int64, ChatSection>
 
     /// Closure, that returns user interface for a given item
     let content: (ChatItem) -> Content
 
     let loadPage: (ChatScrollDirection) -> Void
-
+    let loadItemsAround: (Int64) -> Void
+    
     func makeUIViewController(context: Context) -> Controller {
         Controller(representer: self)
     }
@@ -39,9 +47,10 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             case .nextPage:
                 controller.scrollToNextPage()
             case let .item(id):
-                controller.scroll(to: items.firstIndex(where: { $0.id == id }), position: .bottom)
+                controller.update(items: items)
+                controller.scrollToItem(id: id)
             case .bottom:
-                controller.scroll(to: 0, position: .top)
+                controller.scroll(to: 0, position: .top, section: .bottom)
             }
         } else {
             controller.update(items: items)
@@ -50,9 +59,8 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
 
     /// Controller, which hosts SwiftUI cells
     class Controller: UITableViewController {
-        private enum Section { case main }
         var representer: ReverseList
-        private var dataSource: UITableViewDiffableDataSource<Section, ChatItem>!
+        private var dataSource: UITableViewDiffableDataSource<ChatSection, ChatItem>!
         private var itemCount: Int = 0
         private let updateFloatingButtons = PassthroughSubject<Void, Never>()
         private var bag = Set<AnyCancellable>()
@@ -79,12 +87,12 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     forCellReuseIdentifier: cellReuseId
                 )
             }
-
+            
             // 3. Configure data source
-            self.dataSource = UITableViewDiffableDataSource<Section, ChatItem>(
+            self.dataSource = UITableViewDiffableDataSource<ChatSection, ChatItem>(
                 tableView: tableView
             ) { (tableView, indexPath, item) -> UITableViewCell? in
-                if indexPath.item > self.itemCount - 8, self.itemCount > 8 {
+                if self.representer.scrollState == .atDestination, indexPath.item > self.itemCount - 8, self.itemCount > 8 {
                     self.representer.loadPage(.toOldest)
                 }
                 let cell = tableView.dequeueReusableCell(withIdentifier: cellReuseId, for: indexPath)
@@ -167,17 +175,32 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             )
             Task { representer.scrollState = .atDestination }
         }
+        
+        /// Scrolls up
+        func scrollToItem(id: Int64) {
+            if let loadedIndex = representer.items.firstIndex(where: { $0.id == id }) {
+                let ci = representer.items[loadedIndex]
+                if let indexPath = dataSource.indexPath(for: ci),
+                   let section = dataSource.sectionIdentifier(for: indexPath.section) {
+                    self.scroll(to: indexPath.row, position: .bottom, section: section)
+                }
+            } else {
+                Task {
+                    self.representer.loadItemsAround(id)
+                }
+            }
+        }
 
         /// Scrolls to Item at index path
         /// - Parameter indexPath: Item to scroll to - will scroll to beginning of the list, if `nil`
-        func scroll(to index: Int?, position: UITableView.ScrollPosition) {
+        func scroll(to index: Int?, position: UITableView.ScrollPosition, section: ChatSection) {
             var animated = false
             if #available(iOS 16.0, *) {
                 animated = true
             }
-            if let index, tableView.numberOfRows(inSection: 0) != 0 {
+            if let index, let sectionIndex = dataSource.index(for: section), tableView.numberOfRows(inSection: sectionIndex) != 0 {
                 tableView.scrollToRow(
-                    at: IndexPath(row: index, section: 0),
+                    at: IndexPath(row: index, section: sectionIndex),
                     at: position,
                     animated: animated
                 )
@@ -191,9 +214,29 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         }
 
         func update(items: [ChatItem]) {
-            var snapshot = NSDiffableDataSourceSnapshot<Section, ChatItem>()
-            snapshot.appendSections([.main])
-            snapshot.appendItems(items)
+            var snapshot = NSDiffableDataSourceSnapshot<ChatSection, ChatItem>()
+            var itemsBySection: Dictionary<ChatSection, [ChatItem]> = Dictionary()
+            items.forEach { ci in
+                var section: ChatSection = .bottom
+                if let sec = representer.itemSection[ci.id] {
+                    section = sec
+                }
+                
+                if var existingItems = itemsBySection[section] {
+                    existingItems.append(ci)
+                    itemsBySection[section] = existingItems
+                } else {
+                    itemsBySection[section] = [ci]
+                }
+            }
+            snapshot.appendSections([.bottom, .destination])
+            if let bottomItems = itemsBySection[.bottom] {
+                snapshot.appendItems(bottomItems, toSection: .bottom)
+            }
+            if let destinationItems = itemsBySection[.destination] {
+                snapshot.appendItems(destinationItems, toSection: .destination)
+            }
+            
             dataSource.defaultRowAnimation = .none
             dataSource.apply(
                 snapshot,
