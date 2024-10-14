@@ -811,8 +811,12 @@
   <string name="network_use_onion_hosts_required_desc">Onion hosts will be required for connection.\nPlease note: you will not be able to connect to the servers without .onion address.</string>
   <string name="network_session_mode_transport_isolation">Transport isolation</string>
   <string name="network_session_mode_user">Chat profile</string>
+  <string name="network_session_mode_session">App session</string>
+  <string name="network_session_mode_server">Server</string>
   <string name="network_session_mode_entity">Connection</string>
   <string name="network_session_mode_user_description"><![CDATA[A separate TCP connection (and SOCKS credential) will be used <b>for each chat profile you have in the app</b>.]]></string>
+  <string name="network_session_mode_session_description">New SOCKS credentials will be used every time you start the app.</string>
+  <string name="network_session_mode_server_description">New SOCKS credentials will be used for each server.</string>
   <string name="network_session_mode_entity_description"><![CDATA[A separate TCP connection (and SOCKS credential) will be used <b>for each contact and group member</b>.\n<b>Please note</b>: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.]]></string>
   <string name="update_network_session_mode_question">Update transport isolation mode?</string>
   <string name="disable_onion_hosts_when_not_supported"><![CDATA[Set <i>Use .onion hosts</i> to No if SOCKS proxy does not support them.]]></string>
@@ -1043,6 +1047,9 @@
   <string name="call_already_ended">Call already ended!</string>
   <string name="icon_descr_video_call">video call</string>
   <string name="icon_descr_audio_call">audio call</string>
+  <string name="call_desktop_permission_denied_title">To make calls, allow to use your microphone. End the call and try to call again.</string>
+  <string name="call_desktop_permission_denied_chrome">Click info button near address field to allow using microphone.</string>
+  <string name="call_desktop_permission_denied_safari">Open Safari Settings / Websites / Microphone, then choose Allow for localhost.</string>
 
   <!-- Call settings -->
   <string name="settings_audio_video_calls">Audio &amp; video calls</string>
@@ -2034,6 +2041,16 @@
   <string name="v6_0_upgrade_app_descr">Download new versions from GitHub.</string>
   <string name="v6_0_connection_servers_status">Control your network</string>
   <string name="v6_0_connection_servers_status_descr">Connection and servers status.</string>
+  <string name="v6_1_better_security">Better security ✅</string>
+  <string name="v6_1_better_security_descr">SimpleX protocols reviewed by Trail of Bits.</string>
+  <string name="v6_1_better_calls">Better calls</string>
+  <string name="v6_1_better_calls_descr">Switch audio and video during the call.</string>
+  <string name="v6_1_better_user_experience">Better user experience</string>
+  <string name="v6_1_switch_chat_profile_descr">Switch chat profile for 1-time invitations.</string>
+  <string name="v6_1_customizable_message_descr">Customizable message shape.</string>
+  <string name="v6_1_message_dates_descr">Better message dates.</string>
+  <string name="v6_1_forward_many_messages_descr">Forward up to 20 messages at once.</string>
+  <string name="v6_1_delete_many_messages_descr">Delete or moderate up to 200 messages.</string>
 
   <!-- CustomTimePicker -->
   <string name="custom_time_unit_seconds">seconds</string>

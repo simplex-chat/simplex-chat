@@ -2104,4 +2104,15 @@
     <string name="forward_files_messages_deleted_after_selection_desc">Повідомлення були видалені після того, як ви їх вибрали.</string>
     <string name="error_forwarding_messages">Помилка при пересиланні повідомлень</string>
     <string name="icon_descr_sound_muted">Звук вимкнено</string>
+    <string name="error_initializing_web_view_wrong_arch">Помилка ініціалізації WebView. Переконайтеся, що WebView встановлено, і його підтримувана архітектура — arm64.  \nПомилка: %s</string>
+    <string name="settings_message_shape_tail">Хвіст</string>
+    <string name="settings_message_shape_corner">Куточок</string>
+    <string name="settings_section_title_message_shape">Форма повідомлення</string>
+    <string name="network_session_mode_session">Сесія додатку</string>
+    <string name="network_session_mode_session_description">Нові облікові дані SOCKS будуть використовуватись щоразу, коли ви запускаєте додаток.</string>
+    <string name="network_session_mode_server_description">Нові облікові дані SOCKS будуть використовуватись для кожного сервера.</string>
+    <string name="network_session_mode_server">Сервер</string>
+    <string name="call_desktop_permission_denied_chrome">Натисніть кнопку інформації поруч із полем адреси, щоб дозволити використання мікрофона.</string>
+    <string name="call_desktop_permission_denied_safari">Відкрийте Налаштування Safari / Сайти / Мікрофон, а потім виберіть \"Дозволити для localhost\".</string>
+    <string name="call_desktop_permission_denied_title">Щоб здійснювати дзвінки, дозволіть використовувати ваш мікрофон. Завершіть дзвінок і спробуйте зателефонувати знову.</string>
 </resources>

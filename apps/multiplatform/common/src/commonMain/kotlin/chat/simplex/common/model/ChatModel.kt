@@ -1889,6 +1889,7 @@ class PendingContactConnection(
 @Serializable
 enum class ConnStatus {
   @SerialName("new") New,
+  @SerialName("prepared") Prepared,
   @SerialName("joined") Joined,
   @SerialName("requested") Requested,
   @SerialName("accepted") Accepted,
@@ -1898,6 +1899,7 @@ enum class ConnStatus {
 
   val initiated: Boolean? get() = when (this) {
     New -> true
+    Prepared -> false
     Joined -> false
     Requested -> true
     Accepted -> true

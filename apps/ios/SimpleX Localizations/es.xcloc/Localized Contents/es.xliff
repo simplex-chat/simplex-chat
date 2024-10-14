@@ -945,6 +945,11 @@
         <target>El código de acceso será reemplazado por código de autodestrucción.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="App session" xml:space="preserve">
+        <source>App session</source>
+        <target>Sesión de aplicación</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
         <source>App version</source>
         <target>Versión de la aplicación</target>
@@ -1080,9 +1085,19 @@
         <target>Hash de mensaje incorrecto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Better calls" xml:space="preserve">
+        <source>Better calls</source>
+        <target>Llamadas mejoradas</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Better groups" xml:space="preserve">
         <source>Better groups</source>
         <target>Grupos mejorados</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Better message dates." xml:space="preserve">
+        <source>Better message dates.</source>
+        <target>Sistema de fechas mejorado.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better messages" xml:space="preserve">
@@ -1093,6 +1108,21 @@
       <trans-unit id="Better networking" xml:space="preserve">
         <source>Better networking</source>
         <target>Uso de red mejorado</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Better notifications" xml:space="preserve">
+        <source>Better notifications</source>
+        <target>Notificaciones mejoradas</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Better security ✅" xml:space="preserve">
+        <source>Better security ✅</source>
+        <target>Seguridad mejorada ✅</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Better user experience" xml:space="preserve">
+        <source>Better user experience</source>
+        <target>Experiencia de usuario mejorada</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Black" xml:space="preserve">
@@ -1381,6 +1411,11 @@
         <target>Las preferencias del chat han sido modificadas.</target>
         <note>alert message</note>
       </trans-unit>
+      <trans-unit id="Chat profile" xml:space="preserve">
+        <source>Chat profile</source>
+        <target>Perfil de usuario</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Chat theme" xml:space="preserve">
         <source>Chat theme</source>
         <target>Tema de chat</target>
@@ -1533,7 +1568,7 @@
       </trans-unit>
       <trans-unit id="Confirm that you remember database passphrase to migrate it." xml:space="preserve">
         <source>Confirm that you remember database passphrase to migrate it.</source>
-        <target>Para migrar confirma que recuerdas la frase de contraseña de la base de datos.</target>
+        <target>Para migrar la base de datos confirma que recuerdas la frase de contraseña.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm upload" xml:space="preserve">
@@ -1910,6 +1945,11 @@ This is your own one-time link!</source>
         <target>Tiempo personalizado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Customizable message shape." xml:space="preserve">
+        <source>Customizable message shape.</source>
+        <target>Forma personalizable de los mensajes.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Customize theme" xml:space="preserve">
         <source>Customize theme</source>
         <target>Personalizar tema</target>
@@ -2202,6 +2242,11 @@ This is your own one-time link!</source>
       <trans-unit id="Delete old database?" xml:space="preserve">
         <source>Delete old database?</source>
         <target>¿Eliminar base de datos antigua?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delete or moderate up to 200 messages." xml:space="preserve">
+        <source>Delete or moderate up to 200 messages.</source>
+        <target>Borra o modera hasta 200 mensajes a la vez.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete pending connection?" xml:space="preserve">
@@ -3327,6 +3372,11 @@ This is your own one-time link!</source>
         <target>¿Reenviar mensajes sin los archivos?</target>
         <note>alert message</note>
       </trans-unit>
+      <trans-unit id="Forward up to 20 messages at once." xml:space="preserve">
+        <source>Forward up to 20 messages at once.</source>
+        <target>Desplazamiento de hasta 20 mensajes.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Forwarded" xml:space="preserve">
         <source>Forwarded</source>
         <target>Reenviado</target>
@@ -3714,6 +3764,13 @@ Error: %2$@</target>
       <trans-unit id="Importing archive" xml:space="preserve">
         <source>Importing archive</source>
         <target>Importando archivo</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Improved delivery, reduced traffic usage.&#10;More improvements are coming soon!" xml:space="preserve">
+        <source>Improved delivery, reduced traffic usage.
+More improvements are coming soon!</source>
+        <target>Reducción del tráfico y entrega mejorada.
+¡Pronto habrá nuevas mejoras!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Improved message delivery" xml:space="preserve">
@@ -4118,7 +4175,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Local profile data only" xml:space="preserve">
         <source>Local profile data only</source>
-        <target>Sólo datos del perfil local</target>
+        <target>Eliminar sólo el perfil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Lock after" xml:space="preserve">
@@ -4501,6 +4558,16 @@ This is your link for group %@!</source>
         <target>Código Nuevo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="New SOCKS credentials will be used every time you start the app." xml:space="preserve">
+        <source>New SOCKS credentials will be used every time you start the app.</source>
+        <target>Se usarán credenciales SOCKS nuevas cada vez que inicies la aplicación.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="New SOCKS credentials will be used for each server." xml:space="preserve">
+        <source>New SOCKS credentials will be used for each server.</source>
+        <target>Se usarán credenciales SOCKS nuevas por cada servidor.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="New chat" xml:space="preserve">
         <source>New chat</source>
         <target>Nuevo chat</target>
@@ -4619,6 +4686,16 @@ This is your link for group %@!</source>
       <trans-unit id="No network connection" xml:space="preserve">
         <source>No network connection</source>
         <target>Sin conexión de red</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No permission to record speech" xml:space="preserve">
+        <source>No permission to record speech</source>
+        <target>Sin permiso para grabación de voz</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No permission to record video" xml:space="preserve">
+        <source>No permission to record video</source>
+        <target>Sin permiso para grabación de vídeo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No permission to record voice message" xml:space="preserve">
@@ -5072,7 +5149,7 @@ Error: %@</target>
       </trans-unit>
       <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve">
         <source>Possibly, certificate fingerprint in server address is incorrect</source>
-        <target>Posiblemente la huella digital del certificado en la dirección del servidor es incorrecta</target>
+        <target>Posiblemente la huella del certificado en la dirección del servidor es incorrecta</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve">
@@ -5142,7 +5219,7 @@ Error: %@</target>
       </trans-unit>
       <trans-unit id="Profile and server connections" xml:space="preserve">
         <source>Profile and server connections</source>
-        <target>Datos del perfil y conexiones</target>
+        <target>Eliminar perfil y conexiones</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile image" xml:space="preserve">
@@ -6089,6 +6166,11 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Mediante proxy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Server" xml:space="preserve">
+        <source>Server</source>
+        <target>Servidor</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Server address" xml:space="preserve">
         <source>Server address</source>
         <target>Dirección del servidor</target>
@@ -6116,7 +6198,7 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
       </trans-unit>
       <trans-unit id="Server test failed!" xml:space="preserve">
         <source>Server test failed!</source>
-        <target>¡Error en prueba del servidor!</target>
+        <target>¡Prueba no superada!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Server type" xml:space="preserve">
@@ -6389,6 +6471,11 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Invitación SimpleX de un uso</target>
         <note>simplex link type</note>
       </trans-unit>
+      <trans-unit id="SimpleX protocols reviewed by Trail of Bits." xml:space="preserve">
+        <source>SimpleX protocols reviewed by Trail of Bits.</source>
+        <target>Protocolos de SimpleX auditados por Trail of Bits.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Simplified incognito mode" xml:space="preserve">
         <source>Simplified incognito mode</source>
         <target>Modo incógnito simplificado</target>
@@ -6564,6 +6651,16 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Soporte SimpleX Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Switch audio and video during the call." xml:space="preserve">
+        <source>Switch audio and video during the call.</source>
+        <target>Intercambia audio y video durante la llamada.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Switch chat profile for 1-time invitations." xml:space="preserve">
+        <source>Switch chat profile for 1-time invitations.</source>
+        <target>Cambia el perfil de chat para invitaciones de un solo uso.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="System" xml:space="preserve">
         <source>System</source>
         <target>Sistema</target>
@@ -6651,7 +6748,7 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
       </trans-unit>
       <trans-unit id="Test failed at step %@." xml:space="preserve">
         <source>Test failed at step %@.</source>
-        <target>La prueba ha fallado en el paso %@.</target>
+        <target>Prueba no superada en el paso %@.</target>
         <note>server test failure</note>
       </trans-unit>
       <trans-unit id="Test server" xml:space="preserve">
@@ -6666,7 +6763,7 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
       </trans-unit>
       <trans-unit id="Tests failed!" xml:space="preserve">
         <source>Tests failed!</source>
-        <target>¡Pruebas fallidas!</target>
+        <target>¡Pruebas no superadas!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Thank you for installing SimpleX Chat!" xml:space="preserve">
@@ -6926,6 +7023,16 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
 You will be prompted to complete authentication before this feature is enabled.</source>
         <target>Para proteger tu información, activa el Bloqueo SimpleX.
 Se te pedirá que completes la autenticación antes de activar esta función.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="To record speech please grant permission to use Microphone." xml:space="preserve">
+        <source>To record speech please grant permission to use Microphone.</source>
+        <target>Para grabación de voz, por favor concede el permiso para usar el micrófono.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="To record video please grant permission to use Camera." xml:space="preserve">
+        <source>To record video please grant permission to use Camera.</source>
+        <target>Para grabación de vídeo, por favor concede el permiso para usar la cámara.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To record voice message please grant permission to use Microphone." xml:space="preserve">
@@ -7263,11 +7370,6 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
       <trans-unit id="Use the app with one hand." xml:space="preserve">
         <source>Use the app with one hand.</source>
         <target>Usa la aplicación con una sola mano.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="User profile" xml:space="preserve">
-        <source>User profile</source>
-        <target>Perfil de usuario</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="User selection" xml:space="preserve">
@@ -8693,7 +8795,7 @@ Repeat connection request?</source>
       </trans-unit>
       <trans-unit id="removed profile picture" xml:space="preserve">
         <source>removed profile picture</source>
-        <target>imagen de perfil eliminada</target>
+        <target>ha eliminado la imagen del perfil</target>
         <note>profile update event chat item</note>
       </trans-unit>
       <trans-unit id="removed you" xml:space="preserve">
@@ -8757,7 +8859,7 @@ last received msg: %2$@</source>
       </trans-unit>
       <trans-unit id="set new profile picture" xml:space="preserve">
         <source>set new profile picture</source>
-        <target>nueva imagen de perfil</target>
+        <target>tiene nueva imagen del perfil</target>
         <note>profile update event chat item</note>
       </trans-unit>
       <trans-unit id="standard end-to-end encryption" xml:space="preserve">

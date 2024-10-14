@@ -12,6 +12,7 @@ module Directory.Store
     GroupApprovalId,
     restoreDirectoryStore,
     addGroupReg,
+    delGroupReg,
     setGroupStatus,
     setGroupRegOwner,
     getGroupReg,
@@ -19,6 +20,7 @@ module Directory.Store
     getUserGroupRegs,
     filterListedGroups,
     groupRegStatusText,
+    pendingApproval,
   )
 where
 
@@ -79,6 +81,11 @@ data GroupRegStatus
   | GRSSuspendedBadRoles
   | GRSRemoved
 
+pendingApproval :: GroupRegStatus -> Bool
+pendingApproval = \case
+  GRSPendingApproval _ -> True
+  _ -> False
+
 data DirectoryStatus = DSListed | DSReserved | DSRegistered
 
 groupRegStatusText :: GroupRegStatus -> Text
@@ -117,6 +124,12 @@ addGroupReg st ct GroupInfo {groupId} grStatus = do
     maxUgrId mx GroupReg {dbContactId, userGroupRegId}
       | dbContactId == ctId && userGroupRegId > mx = userGroupRegId
       | otherwise = mx
+
+delGroupReg :: DirectoryStore -> GroupReg -> IO ()
+delGroupReg st GroupReg {dbGroupId = gId} = do
+  logGDelete st gId
+  atomically $ unlistGroup st gId
+  atomically $ modifyTVar' (groupRegs st) $ filter ((gId ==) . dbGroupId)
 
 setGroupStatus :: DirectoryStore -> GroupReg -> GroupRegStatus -> IO ()
 setGroupStatus st gr grStatus = do
@@ -167,16 +180,24 @@ unlistGroup st gId = do
 
 data DirectoryLogRecord
   = GRCreate GroupRegData
+  | GRDelete GroupId
   | GRUpdateStatus GroupId GroupRegStatus
   | GRUpdateOwner GroupId GroupMemberId
 
-data DLRTag = GRCreate_ | GRUpdateStatus_ | GRUpdateOwner_
+data DLRTag
+  = GRCreate_
+  | GRDelete_
+  | GRUpdateStatus_
+  | GRUpdateOwner_
 
 logDLR :: DirectoryStore -> DirectoryLogRecord -> IO ()
 logDLR st r = forM_ (directoryLogFile st) $ \h -> B.hPutStrLn h (strEncode r)
 
 logGCreate :: DirectoryStore -> GroupRegData -> IO ()
 logGCreate st = logDLR st . GRCreate
+
+logGDelete :: DirectoryStore -> GroupId -> IO ()
+logGDelete st = logDLR st . GRDelete
 
 logGUpdateStatus :: DirectoryStore -> GroupId -> GroupRegStatus -> IO ()
 logGUpdateStatus st = logDLR st .: GRUpdateStatus
@@ -187,11 +208,13 @@ logGUpdateOwner st = logDLR st .: GRUpdateOwner
 instance StrEncoding DLRTag where
   strEncode = \case
     GRCreate_ -> "GCREATE"
+    GRDelete_ -> "GDELETE"
     GRUpdateStatus_ -> "GSTATUS"
     GRUpdateOwner_ -> "GOWNER"
   strP =
     A.takeTill (== ' ') >>= \case
       "GCREATE" -> pure GRCreate_
+      "GDELETE" -> pure GRDelete_
       "GSTATUS" -> pure GRUpdateStatus_
       "GOWNER" -> pure GRUpdateOwner_
       _ -> fail "invalid DLRTag"
@@ -199,13 +222,15 @@ instance StrEncoding DLRTag where
 instance StrEncoding DirectoryLogRecord where
   strEncode = \case
     GRCreate gr -> strEncode (GRCreate_, gr)
+    GRDelete gId -> strEncode (GRDelete_, gId)
     GRUpdateStatus gId grStatus -> strEncode (GRUpdateStatus_, gId, grStatus)
     GRUpdateOwner gId grOwnerId -> strEncode (GRUpdateOwner_, gId, grOwnerId)
   strP =
-    strP >>= \case
-      GRCreate_ -> GRCreate <$> (A.space *> strP)
-      GRUpdateStatus_ -> GRUpdateStatus <$> (A.space *> A.decimal) <*> (A.space *> strP)
-      GRUpdateOwner_ -> GRUpdateOwner <$> (A.space *> A.decimal) <*> (A.space *> A.decimal)
+    strP_ >>= \case
+      GRCreate_ -> GRCreate <$> strP
+      GRDelete_ -> GRDelete <$> strP
+      GRUpdateStatus_ -> GRUpdateStatus <$> A.decimal <*> _strP
+      GRUpdateOwner_ -> GRUpdateOwner <$> A.decimal <* A.space <*> A.decimal
 
 instance StrEncoding GroupRegData where
   strEncode GroupRegData {dbGroupId_, userGroupRegId_, dbContactId_, dbOwnerMemberId_, groupRegStatus_} =
@@ -314,6 +339,9 @@ readDirectoryData f =
             putStrLn $
               "Warning: duplicate group with ID " <> show gId <> ", group replaced."
           pure $ M.insert gId gr m
+        GRDelete gId -> case M.lookup gId m of
+          Just _ -> pure $ M.delete gId m
+          Nothing -> m <$ putStrLn ("Warning: no group with ID " <> show gId <> ", deletion ignored.")
         GRUpdateStatus gId groupRegStatus_ -> case M.lookup gId m of
           Just gr -> pure $ M.insert gId gr {groupRegStatus_} m
           Nothing -> m <$ putStrLn ("Warning: no group with ID " <> show gId <> ", status update ignored.")

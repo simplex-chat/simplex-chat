@@ -53,7 +53,8 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
           maxLines = 2,
           overflow = TextOverflow.Ellipsis,
           style = MaterialTheme.typography.h4,
-          fontWeight = FontWeight.Medium
+          fontWeight = FontWeight.Medium,
+          modifier = Modifier.padding(bottom = 6.dp)
         )
         if (link != null) {
           linkButton(link)
@@ -64,7 +65,7 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
         Row(
           verticalAlignment = Alignment.CenterVertically,
           horizontalArrangement = Arrangement.spacedBy(8.dp),
-          modifier = Modifier.padding(bottom = 4.dp)
+          modifier = Modifier.padding(bottom = 6.dp)
         ) {
           Icon(painterResource(si), stringResource(sd), tint = MaterialTheme.colors.secondary)
           Text(generalGetString(sd), fontSize = 15.sp)
@@ -648,7 +649,36 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         show = appPlatform.isDesktop
       ),
     ),
-  )
+  ),
+  VersionDescription(
+    version = "v6.1",
+    post = "https://simplex.chat/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html",
+    features = listOf(
+      FeatureDescription(
+        icon = MR.images.ic_verified_user,
+        titleId = MR.strings.v6_1_better_security,
+        descrId = MR.strings.v6_1_better_security_descr,
+        link = "https://simplex.chat/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html"
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_videocam,
+        titleId = MR.strings.v6_1_better_calls,
+        descrId = MR.strings.v6_1_better_calls_descr
+      ),
+      FeatureDescription(
+        icon = null,
+        titleId = MR.strings.v6_1_better_user_experience,
+        descrId = null,
+        subfeatures = listOf(
+          MR.images.ic_link to MR.strings.v6_1_switch_chat_profile_descr,
+          MR.images.ic_chat to MR.strings.v6_1_customizable_message_descr,
+          MR.images.ic_calendar to MR.strings.v6_1_message_dates_descr,
+          MR.images.ic_forward to MR.strings.v6_1_forward_many_messages_descr,
+          MR.images.ic_delete to MR.strings.v6_1_delete_many_messages_descr
+        )
+      ),
+    ),
+  ),
 )
 
 private val lastVersion = versionDescriptions.last().version

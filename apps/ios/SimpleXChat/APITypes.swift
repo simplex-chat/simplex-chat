@@ -1491,18 +1491,22 @@ public enum OnionHosts: String, Identifiable {
 
 public enum TransportSessionMode: String, Codable, Identifiable {
     case user
+    case session
+    case server
     case entity
 
     public var text: LocalizedStringKey {
         switch self {
-        case .user: return "User profile"
+        case .user: return "Chat profile"
+        case .session: return "App session"
+        case .server: return "Server"
         case .entity: return "Connection"
         }
     }
 
     public var id: TransportSessionMode { self }
 
-    public static let values: [TransportSessionMode] = [.user, .entity]
+    public static let values: [TransportSessionMode] = [.user, .session, .server, .entity]
 }
 
 public struct KeepAliveOpts: Codable, Equatable {
@@ -2037,7 +2041,7 @@ public enum SQLiteError: Decodable, Hashable {
 }
 
 public enum AgentErrorType: Decodable, Hashable {
-    case CMD(cmdErr: CommandErrorType)
+    case CMD(cmdErr: CommandErrorType, errContext: String)
     case CONN(connErr: ConnectionErrorType)
     case SMP(serverAddress: String, smpErr: ProtocolErrorType)
     case NTF(ntfErr: ProtocolErrorType)

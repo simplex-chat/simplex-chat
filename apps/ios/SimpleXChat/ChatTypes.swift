@@ -1852,6 +1852,7 @@ public struct PendingContactConnection: Decodable, NamedChat, Hashable {
 
 public enum ConnStatus: String, Decodable, Hashable {
     case new = "new"
+    case prepared = "prepared"
     case joined = "joined"
     case requested = "requested"
     case accepted = "accepted"
@@ -1863,6 +1864,7 @@ public enum ConnStatus: String, Decodable, Hashable {
         get {
             switch self {
             case .new: return true
+            case .prepared: return false
             case .joined: return false
             case .requested: return true
             case .accepted: return true

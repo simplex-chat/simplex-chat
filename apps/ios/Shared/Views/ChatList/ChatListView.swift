@@ -437,7 +437,7 @@ struct SubsStatusIndicator: View {
     private func startTask() {
         task = Task {
             while !Task.isCancelled {
-                if AppChatState.shared.value == .active {
+                if AppChatState.shared.value == .active, ChatModel.shared.chatRunning == true {
                     do {
                         let (subs, hasSess) = try await getAgentSubsTotal()
                         await MainActor.run {

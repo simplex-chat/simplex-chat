@@ -130,6 +130,7 @@ chatGroupTests = do
     it "invited member replaces member contact reference if it already exists" testMemberContactInvitedConnectionReplaced
     it "share incognito profile" testMemberContactIncognito
     it "sends and updates profile when creating contact" testMemberContactProfileUpdate
+    it "re-create member contact after deletion, many groups" testRecreateMemberContactManyGroups
   describe "group message forwarding" $ do
     it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForward
     it "deduplicate forwarded messages" testGroupMsgForwardDeduplicate
@@ -4536,6 +4537,73 @@ testMemberContactProfileUpdate =
       cath #> "#team hello there"
       alice <# "#team kate> hello there"
       bob <# "#team kate> hello there" -- updated profile
+
+testRecreateMemberContactManyGroups :: HasCallStack => FilePath -> IO ()
+testRecreateMemberContactManyGroups =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      createGroup2' "team" alice bob False
+      createGroup2' "club" alice bob False
+
+      -- alice can message bob via team and via club
+      alice ##> "@#team bob 1"
+      alice <# "@bob 1"
+      bob <# "alice> 1"
+
+      bob ##> "@#team alice 2"
+      bob <# "@alice 2"
+      alice <# "bob> 2"
+
+      alice ##> "@#club bob 3"
+      alice <# "@bob 3"
+      bob <# "alice> 3"
+
+      bob ##> "@#club alice 4"
+      bob <# "@alice 4"
+      alice <# "bob> 4"
+
+      -- alice deletes contact with bob
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
+
+      bob ##> "/d alice"
+      bob <## "alice: contact is deleted"
+
+      -- alice creates member contact with bob
+      alice ##> "@#team bob hi"
+      alice
+        <### [ "member #team bob does not have direct connection, creating",
+               "contact for member #team bob is created",
+               "sent invitation to connect directly to member #team bob",
+               WithTime "@bob hi"
+             ]
+      bob
+        <### [ "#team alice is creating direct contact alice with you",
+               WithTime "alice> hi"
+             ]
+      bob <## "alice (Alice): you can send messages to contact"
+      concurrently_
+        (alice <## "bob (Bob): contact is connected")
+        (bob <## "alice (Alice): contact is connected")
+
+      -- alice can message bob via team and via club
+      alice ##> "@#team bob 1"
+      alice <# "@bob 1"
+      bob <# "alice> 1"
+
+      bob ##> "@#team alice 2"
+      bob <# "@alice 2"
+      alice <# "bob> 2"
+
+      alice ##> "@#club bob 3"
+      alice <# "@bob 3"
+      bob <# "alice> 3"
+
+      bob ##> "@#club alice 4"
+      bob <# "@alice 4"
+      alice <# "bob> 4"
 
 testGroupMsgForward :: HasCallStack => FilePath -> IO ()
 testGroupMsgForward =

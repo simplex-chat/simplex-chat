@@ -1416,6 +1416,10 @@ catchStoreError :: ExceptT StoreError IO a -> (StoreError -> ExceptT StoreError 
 catchStoreError = catchAllErrors mkStoreError
 {-# INLINE catchStoreError #-}
 
+tryStoreError' :: ExceptT StoreError IO a -> IO (Either StoreError a)
+tryStoreError' = tryAllErrors' mkStoreError
+{-# INLINE tryStoreError' #-}
+
 mkStoreError :: SomeException -> StoreError
 mkStoreError = SEInternalError . show
 {-# INLINE mkStoreError #-}

@@ -702,6 +702,9 @@
 "Chat preferences" = "チャット設定";
 
 /* No comment provided by engineer. */
+"Chat profile" = "ユーザープロフィール";
+
+/* No comment provided by engineer. */
 "Chats" = "チャット";
 
 /* No comment provided by engineer. */
@@ -2065,6 +2068,12 @@
 "Messages & files" = "メッセージ & ファイル";
 
 /* No comment provided by engineer. */
+"Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." = "メッセージ、ファイル、通話は、前方秘匿性、否認可能性および侵入復元性を備えた**エンドツーエンドの暗号化**によって保護されます。";
+
+/* No comment provided by engineer. */
+"Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." = "メッセージ、ファイル、通話は、前方秘匿性、否認可能性および侵入復元性を備えた**耐量子E2E暗号化**によって保護されます。";
+
+/* No comment provided by engineer. */
 "Migrating database archive…" = "データベースのアーカイブを移行しています…";
 
 /* No comment provided by engineer. */
@@ -3240,9 +3249,6 @@
 
 /* No comment provided by engineer. */
 "Use SimpleX Chat servers?" = "SimpleX チャット サーバーを使用しますか?";
-
-/* No comment provided by engineer. */
-"User profile" = "ユーザープロフィール";
 
 /* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "SimpleX チャット サーバーを使用する。";

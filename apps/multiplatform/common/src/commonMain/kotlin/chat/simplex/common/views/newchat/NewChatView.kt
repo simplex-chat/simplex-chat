@@ -321,17 +321,19 @@ fun ActiveProfilePicker(
               }
             }
 
-            controller.changeActiveUser_(
-              rhId = user.remoteHostId,
-              toUserId = user.userId,
-              viewPwd = if (user.hidden) searchTextOrPassword.value else null
-            )
-
-            if (chatModel.currentUser.value?.userId != user.userId) {
-              AlertManager.shared.showAlertMsg(generalGetString(
-                MR.strings.switching_profile_error_title),
-                String.format(generalGetString(MR.strings.switching_profile_error_message), user.chatViewName)
+            if ((contactConnection != null && updatedConn != null) || contactConnection == null) {
+              controller.changeActiveUser_(
+                rhId = user.remoteHostId,
+                toUserId = user.userId,
+                viewPwd = if (user.hidden) searchTextOrPassword.value else null
               )
+
+              if (chatModel.currentUser.value?.userId != user.userId) {
+                AlertManager.shared.showAlertMsg(generalGetString(
+                  MR.strings.switching_profile_error_title),
+                  String.format(generalGetString(MR.strings.switching_profile_error_message), user.chatViewName)
+                )
+              }
             }
 
             if (updatedConn != null) {
