@@ -226,7 +226,7 @@ While introduced members establish connection inside group, inviting member forw
 
 ### Member roles
 
-Currently members can have one of three roles - `owner`, `admin`, `member` and `observer`. The user that created the group is self-assigned owner role, the new members are assigned role by the member who adds them - only `owner` and `admin` members can add new members; only `owner` members can add members with `owner` role. `Observer` members only receive messages and aren't allowed to send messages.
+Currently members can have one of four roles - `owner`, `admin`, `member` and `observer`. The user that created the group is self-assigned owner role, the new members are assigned role by the member who adds them - only `owner` and `admin` members can add new members; only `owner` members can add members with `owner` role. `Observer` members only receive messages and aren't allowed to send messages.
 
 ### Messages to manage groups and add members
 

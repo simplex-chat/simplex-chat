@@ -2246,7 +2246,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Delete or moderate up to 200 messages." xml:space="preserve">
         <source>Delete or moderate up to 200 messages.</source>
-        <target>Borrar o moderar hasta 200 mensajes.</target>
+        <target>Borra o modera hasta 200 mensajes a la vez.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete pending connection?" xml:space="preserve">
