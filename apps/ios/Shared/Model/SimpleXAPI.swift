@@ -745,7 +745,7 @@ func apiConnect_(incognito: Bool, connReq: String) async -> ((ConnReqType, Pendi
         return (nil, alert)
     case .chatCmdError(_, .errorAgent(.SMP(_, .QUOTA))):
         let alert = mkAlert(
-            title: "Connection error (QUOTA)",
+            title: "Undelivered messages",
             message: "The connection reached the limit of undelivered messages, your contact may be offline."
         )
         return (nil, alert)
