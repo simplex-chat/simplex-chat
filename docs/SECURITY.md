@@ -8,7 +8,9 @@ revision: 23.04.2024
 
 While great care is taken to ensure the highest level of security and privacy in SimpleX network servers and clients, all software can have flaws, and we believe it is a critical part of an organization's social responsibility to minimize the impact of these flaws through continual vulnerability discovery efforts, defense in depth design, and prompt remediation and notification.
 
-The security assessment of SimpleX cryptography and networking was done by Trail of Bits in [November 2022](../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
+The implementation security assessment of SimpleX cryptography and networking was done by Trail of Bits in [November 2022](../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
+
+The cryptographic review of SimpleX protocols design was done by Trail of Bits in [July 2024](../blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.md).
 
 We are planning design review of SimpleX protocols in July 2024 and implementation review in December 2024/January 2025.
 
