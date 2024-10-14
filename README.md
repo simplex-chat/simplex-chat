@@ -233,13 +233,11 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Recent and important updates:
 
+[Oct 14, 2024. SimpleX network: security review of protocols design by Trail of Bits, v6.1 released with better calls and user experience.](./blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.md)
+
 [Aug 14, 2024. SimpleX network: the investment from Jack Dorsey and Asymmetric, v6.0 released with the new user experience and private message routing](./blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.md)
 
 [Jun 4, 2024. SimpleX network: private message routing, v5.8 released with IP address protection and chat themes](./blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.md)
-
-[Apr 26, 2024. SimpleX network: legally binding transparency, v5.7 released with better calls and messages.](./blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.md)
-
-[Mar 23, 2024. SimpleX network: real privacy and stable profits, non-profits for protocols, v5.6 released with quantum resistant e2e encryption and simple profile migration.](./blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.md)
 
 [Mar 14, 2024. SimpleX Chat v5.6 beta: adding quantum resistance to Signal double ratchet algorithm.](./blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.md)
 
@@ -248,10 +246,6 @@ Recent and important updates:
 [Nov 25, 2023. SimpleX Chat v5.4 released: link mobile and desktop apps via quantum resistant protocol, and much better groups](./blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.md).
 
 [Sep 25, 2023. SimpleX Chat v5.3 released: desktop app, local file encryption, improved groups and directory service](./blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.md).
-
-[Jul 22, 2023. SimpleX Chat: v5.2 released with message delivery receipts](./blog/20230722-simplex-chat-v5-2-message-delivery-receipts.md).
-
-[May 23, 2023. SimpleX Chat: v5.1 released with message reactions and self-destruct passcode](./blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.md).
 
 [Apr 22, 2023. SimpleX Chat: vision and funding, v5.0 released with videos and files up to 1gb](./blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.md).
 
