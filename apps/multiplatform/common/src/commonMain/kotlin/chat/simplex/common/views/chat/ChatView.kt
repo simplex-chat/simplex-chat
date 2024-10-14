@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshots.AutoboxingStateValueProperty
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
@@ -988,6 +989,8 @@ fun BoxWithConstraintsScope.ChatItemsList(
 
   Spacer(Modifier.size(8.dp))
   val reversedChatItems by remember { derivedStateOf { chatModel.chatItems.asReversed() } }
+  val revealedItems = rememberSaveable { mutableStateOf(setOf<Long>()) }
+  val groups by remember { derivedStateOf { (reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems + reversedChatItems).putIntoGroups(revealedItems.value) } }
   val maxHeightRounded = with(LocalDensity.current) { maxHeight.roundToPx() }
   val scrollToItem: (Long) -> Unit = { itemId: Long ->
     val index = reversedChatItems.indexOfFirst { it.id == itemId }
@@ -1011,8 +1014,8 @@ fun BoxWithConstraintsScope.ChatItemsList(
       VideoPlayerHolder.releaseAll()
     }
   )
-  LazyColumnWithScrollBar(Modifier.align(Alignment.BottomCenter), state = listState, reverseLayout = true) {
-    itemsIndexed(reversedChatItems, key = { _, item -> item.id to item.meta.createdAt.toEpochMilliseconds() }) { i, cItem ->
+    @Composable
+    fun ChatViewListItem(i: Int, showAvatar: Boolean, cItem: ChatItem) {
       CompositionLocalProvider(
         // Makes horizontal and vertical scrolling to coexist nicely.
         // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view
@@ -1104,7 +1107,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                   } else {
                     null to 1
                   }
-                if (prevItem == null || showMemberImage(member, prevItem) || prevMember != null) {
+                if (showMemberImage(member, prevItem) || showAvatar) {
                   Column(
                     Modifier
                       .padding(top = 8.dp)
@@ -1225,37 +1228,6 @@ fun BoxWithConstraintsScope.ChatItemsList(
             }
           }
         }
-
-        val (currIndex, nextItem) = chatModel.getNextChatItem(cItem)
-        val ciCategory = cItem.mergeCategory
-        if (ciCategory != null && ciCategory == nextItem?.mergeCategory) {
-          // memberConnected events and deleted items are aggregated at the last chat item in a row, see ChatItemView
-        } else {
-          val (prevHidden, prevItem) = chatModel.getPrevShownChatItem(currIndex, ciCategory)
-
-          val itemSeparation = getItemSeparation(cItem, nextItem)
-          val previousItemSeparation = if (prevItem != null) getItemSeparation(prevItem, cItem) else null
-
-          if (itemSeparation.date != null) {
-            DateSeparator(itemSeparation.date)
-          }
-
-          val range = chatViewItemsRange(currIndex, prevHidden)
-          if (revealed.value && range != null) {
-            reversedChatItems.subList(range.first, range.last + 1).forEachIndexed { index, ci ->
-              val prev = if (index + range.first == prevHidden) prevItem else reversedChatItems[index + range.first + 1]
-              ChatItemView(ci, null, prev, itemSeparation, previousItemSeparation)
-            }
-          } else {
-            ChatItemView(cItem, range, prevItem, itemSeparation, previousItemSeparation)
-          }
-
-          if (i == reversedChatItems.lastIndex) {
-            DateSeparator(cItem.meta.itemTs)
-          }
-        }
-
-
         if (cItem.isRcvNew && chatInfo.id == ChatModel.chatId.value) {
           LaunchedEffect(cItem.id) {
             scope.launch {
@@ -1264,6 +1236,29 @@ fun BoxWithConstraintsScope.ChatItemsList(
             }
           }
         }
+        val itemSeparation = getItemSeparation(cItem, null)
+        ChatItemView(cItem, null, null, itemSeparation, null)
+      }
+    }
+  LazyColumnWithScrollBar(Modifier.align(Alignment.BottomCenter), state = listState, reverseLayout = true) {
+    for (group in groups) {
+      if (group.revealed) {
+        itemsIndexed(group.items, key = { _, item -> (item.id to item.meta.createdAt.toEpochMilliseconds()).toString() }) { i, cItem ->
+          // index here is just temporary, should be removed at all or put in the section items
+          ChatViewListItem(reversedChatItems.indexOf(cItem), showAvatar = group.showAvatar.contains(cItem.id), cItem)
+        }
+      } else {
+        val item = group.items.last()
+        item(key = { (item.id to item.meta.createdAt.toEpochMilliseconds()).toString() }) {
+          // here you make one collapsed item from multiple items (should be already in section items)
+          ChatViewListItem(reversedChatItems.indexOf(item), showAvatar = group.showAvatar.contains(item.id), item)
+        }
+      }
+    }
+
+    if (reversedChatItems.isNotEmpty()) {
+      item {
+        DateSeparator(reversedChatItems.last().meta.itemTs)
       }
     }
   }
