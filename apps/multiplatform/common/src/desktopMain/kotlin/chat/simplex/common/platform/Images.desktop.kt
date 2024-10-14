@@ -206,3 +206,35 @@ fun BufferedImage.flip(vertically: Boolean, horizontally: Boolean): BufferedImag
   }
   return AffineTransformOp(tx, AffineTransformOp.TYPE_NEAREST_NEIGHBOR).filter(this, null)
 }
+
+fun BufferedImage.saveInTmpFile(): File? {
+  val formats = arrayOf("jpg", "png")
+  for (format in formats) {
+    val tmpFile = File.createTempFile("image", ".$format", tmpDir)
+    try {
+      // May fail on JPG, using PNG as an alternative
+      val success = ImageIO.write(this, format, tmpFile)
+      if (success) {
+        tmpFile.deleteOnExit()
+        chatModel.filesToDelete.add(tmpFile)
+        return tmpFile
+      } else {
+        tmpFile.delete()
+      }
+    } catch (e: Exception) {
+      Log.e(TAG, e.stackTraceToString())
+      tmpFile.delete()
+      return null
+    }
+  }
+  return null
+}
+
+fun BufferedImage.hasAlpha(): Boolean {
+  for (x in 0 until width) {
+    for (y in 0 until height) {
+      if (getRGB(x, y) == 0) return true
+    }
+  }
+  return false
+}
