@@ -642,14 +642,7 @@ fun ChatLayout(
       .desktopOnExternalDrag(
         enabled = remember(attachmentDisabled.value, chatInfo.value?.userCanSend) { mutableStateOf(!attachmentDisabled.value && chatInfo.value?.userCanSend == true) }.value,
         onFiles = { paths -> composeState.onFilesAttached(paths.map { it.toURI() }) },
-        onImage = {
-          // TODO: file is not saved anywhere?!
-          val tmpFile = File.createTempFile("image", ".bmp", tmpDir)
-          tmpFile.deleteOnExit()
-          chatModel.filesToDelete.add(tmpFile)
-          val uri = tmpFile.toURI()
-          CoroutineScope(Dispatchers.IO).launch { composeState.processPickedMedia(listOf(uri), null) }
-        },
+        onImage = { file -> CoroutineScope(Dispatchers.IO).launch { composeState.processPickedMedia(listOf(file.toURI()), null) } },
         onText = {
           // Need to parse HTML in order to correctly display the content
           //composeState.value = composeState.value.copy(message = composeState.value.message + it)

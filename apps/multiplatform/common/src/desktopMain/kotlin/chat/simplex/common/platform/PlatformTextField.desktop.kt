@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.*
@@ -109,7 +110,7 @@ actual fun PlatformTextField(
     maxLines = 16,
     keyboardOptions = KeyboardOptions.Default.copy(
       capitalization = KeyboardCapitalization.Sentences,
-      autoCorrect = true
+      autoCorrectEnabled = true
     ),
     modifier = Modifier
       .padding(vertical = 4.dp)
@@ -193,6 +194,7 @@ actual fun PlatformTextField(
               interactionSource = remember { MutableInteractionSource() },
               contentPadding = PaddingValues(),
               visualTransformation = VisualTransformation.None,
+              colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.Unspecified)
             )
             Spacer(Modifier.height(10.dp))
           }

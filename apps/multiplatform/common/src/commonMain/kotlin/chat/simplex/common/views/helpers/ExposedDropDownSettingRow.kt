@@ -6,7 +6,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
-import androidx.compose.material.ripple.rememberRipple
 import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -107,6 +106,7 @@ fun <T> ExposedDropDownSettingWithIcon(
       expanded.value = !expanded.value && enabled.value
     }
   ) {
+    val ripple = remember { ripple(bounded = false, radius = boxSize / 2, color = background.lighter(0.1f)) }
     Box(
       Modifier
         .background(background, CircleShape)
@@ -115,7 +115,7 @@ fun <T> ExposedDropDownSettingWithIcon(
           onClick = {},
           role = Role.Button,
           interactionSource = remember { MutableInteractionSource() },
-          indication = rememberRipple(bounded = false, radius = boxSize / 2, color = background.lighter(0.1f)),
+          indication = ripple,
           enabled = enabled.value
         ),
       contentAlignment = Alignment.Center
