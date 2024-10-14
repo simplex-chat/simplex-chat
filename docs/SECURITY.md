@@ -12,7 +12,7 @@ The implementation security assessment of SimpleX cryptography and networking wa
 
 The cryptographic review of SimpleX protocols design was done by Trail of Bits in [July 2024](../blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.md).
 
-We are planning design review of SimpleX protocols in July 2024 and implementation review in December 2024/January 2025.
+We are planning implementation security assessment in early 2025.
 
 ## Reporting security issues
 
