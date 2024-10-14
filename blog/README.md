@@ -1,8 +1,19 @@
 # Blog
 
+Oct 14, 2024 [SimpleX network: security review of protocols design by Trail of Bits, v6.1 released with better calls and user experience.](./20241014-simplex-network-v6-1-security-review-better-calls-user-experience.md)
+
+New security audit: Trail of Bits reviewed the cryptographic design of protocols used in SimpleX network and apps.
+
+What's new in v6.1:
+- Better calls: switch audio and video during the call.
+- Better iOS notifications: improved delivery, reduced traffic usage.
+- Better user experience: switch chat profiles, customizable message shapes, forward up to 20 messages.
+
+---
+
 Aug 14, 2024 [SimpleX network: the investment from Jack Dorsey and Asymmetric, v6.0 released with the new user experience and private message routing](./20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.md)
 
-[SimpleX Chat: vision and funding 2.0](#simplex-chat-vision-and-funding-20): past, present, future.
+SimpleX Chat: vision and funding 2.0: past, present, future.
 
 Announcing the investment from Jack Dorsey and Asymmetric.
 
