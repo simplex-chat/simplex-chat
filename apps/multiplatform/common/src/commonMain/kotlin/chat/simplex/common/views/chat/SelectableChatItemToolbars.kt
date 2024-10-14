@@ -59,7 +59,8 @@ fun SelectedItemsBottomToolbar(
   val canModerate = remember { mutableStateOf(false) }
   val moderateEnabled = remember { mutableStateOf(false) }
   val forwardEnabled = remember { mutableStateOf(false) }
-  val allButtonsDisabled = remember { mutableStateOf(false) }
+  val deleteCountProhibited = remember { mutableStateOf(false) }
+  val forwardCountProhibited = remember { mutableStateOf(false) }
   Box {
     // It's hard to measure exact height of ComposeView with different fontSizes. Better to depend on actual ComposeView, even empty
     ComposeView(chatModel = chatModel, Chat.sampleData, remember { mutableStateOf(ComposeState(useLinkPreviews = false)) }, remember { mutableStateOf(null) }, {})
@@ -75,36 +76,36 @@ fun SelectedItemsBottomToolbar(
       horizontalArrangement = Arrangement.SpaceBetween,
       verticalAlignment = Alignment.CenterVertically
     ) {
-      IconButton({ deleteItems(deleteForEveryoneEnabled.value) }, enabled = deleteEnabled.value && !allButtonsDisabled.value) {
+      IconButton({ deleteItems(deleteForEveryoneEnabled.value) }, enabled = deleteEnabled.value && !deleteCountProhibited.value) {
         Icon(
           painterResource(MR.images.ic_delete),
           null,
           Modifier.size(22.dp),
-          tint = if (!deleteEnabled.value || allButtonsDisabled.value) MaterialTheme.colors.secondary else MaterialTheme.colors.error
+          tint = if (!deleteEnabled.value || deleteCountProhibited.value) MaterialTheme.colors.secondary else MaterialTheme.colors.error
         )
       }
 
-      IconButton({ moderateItems() }, Modifier.alpha(if (canModerate.value) 1f else 0f), enabled = moderateEnabled.value && !allButtonsDisabled.value) {
+      IconButton({ moderateItems() }, Modifier.alpha(if (canModerate.value) 1f else 0f), enabled = moderateEnabled.value && !deleteCountProhibited.value) {
         Icon(
           painterResource(MR.images.ic_flag),
           null,
           Modifier.size(22.dp),
-          tint = if (!moderateEnabled.value || allButtonsDisabled.value) MaterialTheme.colors.secondary else MaterialTheme.colors.error
+          tint = if (!moderateEnabled.value || deleteCountProhibited.value) MaterialTheme.colors.secondary else MaterialTheme.colors.error
         )
       }
 
-      IconButton({ forwardItems() }, enabled = forwardEnabled.value && !allButtonsDisabled.value) {
+      IconButton({ forwardItems() }, enabled = forwardEnabled.value && !forwardCountProhibited.value) {
         Icon(
           painterResource(MR.images.ic_forward),
           null,
           Modifier.size(22.dp),
-          tint = if (!forwardEnabled.value || allButtonsDisabled.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
+          tint = if (!forwardEnabled.value || forwardCountProhibited.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
         )
       }
     }
   }
   LaunchedEffect(chatInfo, chatItems, selectedChatItems.value) {
-    recheckItems(chatInfo, chatItems, selectedChatItems, deleteEnabled, deleteForEveryoneEnabled, canModerate, moderateEnabled, forwardEnabled, allButtonsDisabled)
+    recheckItems(chatInfo, chatItems, selectedChatItems, deleteEnabled, deleteForEveryoneEnabled, canModerate, moderateEnabled, forwardEnabled, deleteCountProhibited, forwardCountProhibited)
   }
 }
 
@@ -116,10 +117,12 @@ private fun recheckItems(chatInfo: ChatInfo,
   canModerate: MutableState<Boolean>,
   moderateEnabled: MutableState<Boolean>,
   forwardEnabled: MutableState<Boolean>,
-  allButtonsDisabled: MutableState<Boolean>
+  deleteCountProhibited: MutableState<Boolean>,
+  forwardCountProhibited: MutableState<Boolean>
 ) {
   val count = selectedChatItems.value?.size ?: 0
-  allButtonsDisabled.value = count == 0 || count > 20
+  deleteCountProhibited.value = count == 0 || count > 200
+  forwardCountProhibited.value = count == 0 || count > 20
   canModerate.value = possibleToModerate(chatInfo)
   val selected = selectedChatItems.value ?: return
   var rDeleteEnabled = true

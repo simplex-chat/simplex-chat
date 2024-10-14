@@ -596,6 +596,9 @@
 "App passcode is replaced with self-destruct passcode." = "Il codice di accesso dell'app viene sostituito da un codice di autodistruzione.";
 
 /* No comment provided by engineer. */
+"App session" = "Sessione dell'app";
+
+/* No comment provided by engineer. */
 "App version" = "Versione dell'app";
 
 /* No comment provided by engineer. */
@@ -692,13 +695,28 @@
 "Bad message ID" = "ID del messaggio errato";
 
 /* No comment provided by engineer. */
+"Better calls" = "Chiamate migliorate";
+
+/* No comment provided by engineer. */
 "Better groups" = "Gruppi migliorati";
+
+/* No comment provided by engineer. */
+"Better message dates." = "Date dei messaggi migliorate.";
 
 /* No comment provided by engineer. */
 "Better messages" = "Messaggi migliorati";
 
 /* No comment provided by engineer. */
 "Better networking" = "Rete migliorata";
+
+/* No comment provided by engineer. */
+"Better notifications" = "Notifiche migliorate";
+
+/* No comment provided by engineer. */
+"Better security ✅" = "Sicurezza migliorata ✅";
+
+/* No comment provided by engineer. */
+"Better user experience" = "Esperienza utente migliorata";
 
 /* No comment provided by engineer. */
 "Black" = "Nero";
@@ -913,6 +931,9 @@
 
 /* alert message */
 "Chat preferences were changed." = "Le preferenze della chat sono state cambiate.";
+
+/* No comment provided by engineer. */
+"Chat profile" = "Profilo utente";
 
 /* No comment provided by engineer. */
 "Chat theme" = "Tema della chat";
@@ -1287,6 +1308,9 @@
 "Custom time" = "Tempo personalizzato";
 
 /* No comment provided by engineer. */
+"Customizable message shape." = "Forma dei messaggi personalizzabile.";
+
+/* No comment provided by engineer. */
 "Customize theme" = "Personalizza il tema";
 
 /* No comment provided by engineer. */
@@ -1475,6 +1499,9 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "Eliminare il database vecchio?";
+
+/* No comment provided by engineer. */
+"Delete or moderate up to 200 messages." = "Elimina o modera fino a 200 messaggi.";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "Eliminare la connessione in attesa?";
@@ -2225,6 +2252,9 @@
 "Forward messages without files?" = "Inoltrare i messaggi senza file?";
 
 /* No comment provided by engineer. */
+"Forward up to 20 messages at once." = "Inoltra fino a 20 messaggi alla volta.";
+
+/* No comment provided by engineer. */
 "forwarded" = "inoltrato";
 
 /* No comment provided by engineer. */
@@ -2463,6 +2493,9 @@
 
 /* No comment provided by engineer. */
 "Importing archive" = "Importazione archivio";
+
+/* No comment provided by engineer. */
+"Improved delivery, reduced traffic usage.\nMore improvements are coming soon!" = "Consegna migliorata, utilizzo di traffico ridotto.\nAltri miglioramenti sono in arrivo!";
 
 /* No comment provided by engineer. */
 "Improved message delivery" = "Consegna dei messaggi migliorata";
@@ -3067,6 +3100,12 @@
 /* No comment provided by engineer. */
 "New passphrase…" = "Nuova password…";
 
+/* No comment provided by engineer. */
+"New SOCKS credentials will be used every time you start the app." = "Le nuove credenziali SOCKS verranno usate ogni volta che avvii l'app.";
+
+/* No comment provided by engineer. */
+"New SOCKS credentials will be used for each server." = "Le nuove credenziali SOCKS verranno usate per ogni server.";
+
 /* pref value */
 "no" = "no";
 
@@ -3108,6 +3147,12 @@
 
 /* No comment provided by engineer. */
 "No network connection" = "Nessuna connessione di rete";
+
+/* No comment provided by engineer. */
+"No permission to record speech" = "Nessuna autorizzazione per registrare l'audio";
+
+/* No comment provided by engineer. */
+"No permission to record video" = "Nessuna autorizzazione per registrare il video";
 
 /* No comment provided by engineer. */
 "No permission to record voice message" = "Nessuna autorizzazione per registrare messaggi vocali";
@@ -4062,6 +4107,9 @@
 "Sent via proxy" = "Inviato via proxy";
 
 /* No comment provided by engineer. */
+"Server" = "Server";
+
+/* No comment provided by engineer. */
 "Server address" = "Indirizzo server";
 
 /* No comment provided by engineer. */
@@ -4251,6 +4299,9 @@
 "SimpleX one-time invitation" = "Invito SimpleX una tantum";
 
 /* No comment provided by engineer. */
+"SimpleX protocols reviewed by Trail of Bits." = "Protocolli di SimpleX esaminati da Trail of Bits.";
+
+/* No comment provided by engineer. */
 "Simplified incognito mode" = "Modalità incognito semplificata";
 
 /* No comment provided by engineer. */
@@ -4369,6 +4420,12 @@
 
 /* No comment provided by engineer. */
 "Support SimpleX Chat" = "Supporta SimpleX Chat";
+
+/* No comment provided by engineer. */
+"Switch audio and video during the call." = "Cambia tra audio e video durante la chiamata.";
+
+/* No comment provided by engineer. */
+"Switch chat profile for 1-time invitations." = "Cambia profilo di chat per inviti una tantum.";
 
 /* No comment provided by engineer. */
 "System" = "Sistema";
@@ -4588,6 +4645,12 @@
 
 /* No comment provided by engineer. */
 "To protect your IP address, private routing uses your SMP servers to deliver messages." = "Per proteggere il tuo indirizzo IP, l'instradamento privato usa i tuoi server SMP per consegnare i messaggi.";
+
+/* No comment provided by engineer. */
+"To record speech please grant permission to use Microphone." = "Per registrare l'audio, concedi l'autorizzazione di usare il microfono.";
+
+/* No comment provided by engineer. */
+"To record video please grant permission to use Camera." = "Per registrare il video, concedi l'autorizzazione di usare la fotocamera.";
 
 /* No comment provided by engineer. */
 "To record voice message please grant permission to use Microphone." = "Per registrare un messaggio vocale, concedi l'autorizzazione all'uso del microfono.";
@@ -4813,9 +4876,6 @@
 
 /* No comment provided by engineer. */
 "Use the app with one hand." = "Usa l'app con una mano sola.";
-
-/* No comment provided by engineer. */
-"User profile" = "Profilo utente";
 
 /* No comment provided by engineer. */
 "User selection" = "Selezione utente";

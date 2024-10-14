@@ -73,11 +73,11 @@ import UnliftIO.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExis
 
 -- when acting as host
 minRemoteCtrlVersion :: AppVersion
-minRemoteCtrlVersion = AppVersion [6, 1, 0, 4]
+minRemoteCtrlVersion = AppVersion [6, 1, 0, 8]
 
 -- when acting as controller
 minRemoteHostVersion :: AppVersion
-minRemoteHostVersion = AppVersion [6, 1, 0, 4]
+minRemoteHostVersion = AppVersion [6, 1, 0, 8]
 
 currentAppVersion :: AppVersion
 currentAppVersion = AppVersion SC.version

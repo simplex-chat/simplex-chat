@@ -411,13 +411,13 @@ getProfileById db userId profileId =
     toProfile :: (ContactName, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Maybe Preferences) -> LocalProfile
     toProfile (displayName, fullName, image, contactLink, localAlias, preferences) = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
 
-type ContactRequestRow = (Int64, ContactName, AgentInvId, Int64, AgentConnId, Int64, ContactName, Text, Maybe ImageData, Maybe ConnReqContact) :. (Maybe XContactId, PQSupport, Maybe Preferences, UTCTime, UTCTime, VersionChat, VersionChat)
+type ContactRequestRow = (Int64, ContactName, AgentInvId, Maybe ContactId, Int64, AgentConnId, Int64, ContactName, Text, Maybe ImageData, Maybe ConnReqContact) :. (Maybe XContactId, PQSupport, Maybe Preferences, UTCTime, UTCTime, VersionChat, VersionChat)
 
 toContactRequest :: ContactRequestRow -> UserContactRequest
-toContactRequest ((contactRequestId, localDisplayName, agentInvitationId, userContactLinkId, agentContactConnId, profileId, displayName, fullName, image, contactLink) :. (xContactId, pqSupport, preferences, createdAt, updatedAt, minVer, maxVer)) = do
+toContactRequest ((contactRequestId, localDisplayName, agentInvitationId, contactId_, userContactLinkId, agentContactConnId, profileId, displayName, fullName, image, contactLink) :. (xContactId, pqSupport, preferences, createdAt, updatedAt, minVer, maxVer)) = do
   let profile = Profile {displayName, fullName, image, contactLink, preferences}
       cReqChatVRange = fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
-   in UserContactRequest {contactRequestId, agentInvitationId, userContactLinkId, agentContactConnId, cReqChatVRange, localDisplayName, profileId, profile, xContactId, pqSupport, createdAt, updatedAt}
+   in UserContactRequest {contactRequestId, agentInvitationId, contactId_, userContactLinkId, agentContactConnId, cReqChatVRange, localDisplayName, profileId, profile, xContactId, pqSupport, createdAt, updatedAt}
 
 userQuery :: Query
 userQuery =

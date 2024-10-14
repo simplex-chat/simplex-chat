@@ -41,8 +41,10 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.*
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewClientCompat
+import chat.simplex.common.helpers.applyAppLocale
 import chat.simplex.common.helpers.showAllowPermissionInSettingsAlert
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -192,7 +194,11 @@ actual fun ActiveCallView() {
               updateActiveCall(call) {
                 val sources = it.localMediaSources
                 when (cmd.source) {
-                  CallMediaSource.Mic -> it.copy(localMediaSources = sources.copy(mic = cmd.enable))
+                  CallMediaSource.Mic -> {
+                    val am = androidAppContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+                    am.isMicrophoneMute = !cmd.enable
+                    it.copy(localMediaSources = sources.copy(mic = cmd.enable))
+                  }
                   CallMediaSource.Camera -> it.copy(localMediaSources = sources.copy(camera = cmd.enable))
                   CallMediaSource.ScreenAudio -> it.copy(localMediaSources = sources.copy(screenAudio = cmd.enable))
                   CallMediaSource.ScreenVideo -> it.copy(localMediaSources = sources.copy(screenVideo = cmd.enable))
@@ -226,8 +232,9 @@ actual fun ActiveCallView() {
       ActiveCallOverlay(call, chatModel, callAudioDeviceManager)
     }
   }
-  KeyChangeEffect(call?.hasVideo) {
-    if (call != null) {
+  KeyChangeEffect(call?.localMediaSources?.hasVideo) {
+    if (call != null && call.hasVideo && callAudioDeviceManager.currentDevice.value?.type == AudioDeviceInfo.TYPE_BUILTIN_EARPIECE) {
+      // enabling speaker on user action (peer action ignored) and not disabling it again
       callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.hasVideo, true)
     }
   }
@@ -701,9 +708,10 @@ fun WebRTCView(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIM
 
   Box(Modifier.fillMaxSize()) {
     AndroidView(
-      factory = { AndroidViewContext ->
+      factory = {
         try {
           (staticWebView ?: WebView(androidAppContext)).apply {
+            reapplyLocale()
             layoutParams = ViewGroup.LayoutParams(
               ViewGroup.LayoutParams.MATCH_PARENT,
               ViewGroup.LayoutParams.MATCH_PARENT,
@@ -772,6 +780,16 @@ private fun updateActiveCall(initial: Call, transform: (Call) -> Call) {
   } else {
     Log.d(TAG, "withActiveCall: ignoring, not in call with the contact ${activeCall?.contact?.id}")
   }
+}
+
+/*
+* Creating WebView automatically drops user's custom app locale to default system locale.
+* Preventing it by re-applying custom locale
+* https://issuetracker.google.com/issues/109833940
+* */
+private fun reapplyLocale() {
+  mainActivity.get()?.applyAppLocale(appPrefs.appLanguage)
+  callActivity.get()?.applyAppLocale(appPrefs.appLanguage)
 }
 
 private class LocalContentWebViewClient(val webView: MutableState<WebView?>, private val assetLoader: WebViewAssetLoader) : WebViewClientCompat() {

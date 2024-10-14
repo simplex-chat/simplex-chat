@@ -791,7 +791,7 @@
     <string name="group_invitation_tap_to_join_incognito">Tik hier om incognito lid te worden</string>
     <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Je bent lid geworden van deze groep. Verbinding maken met uitnodigend lid.</string>
     <string name="you_sent_group_invitation">Je hebt een groep uitnodiging verzonden</string>
-    <string name="snd_group_event_user_left">jij bent vertrokken</string>
+    <string name="snd_group_event_user_left">je bent vertrokken</string>
     <string name="snd_conn_event_switch_queue_phase_completed">je bent van adres veranderd</string>
     <string name="select_contacts">Selecteer contacten</string>
     <string name="skip_inviting_button">Sla het uitnodigen van leden over</string>
@@ -950,7 +950,7 @@
     <string name="initial_member_role">Initiële rol</string>
     <string name="group_member_role_observer">Waarnemer</string>
     <string name="observer_cant_send_message_title">Je kunt geen berichten versturen!</string>
-    <string name="you_are_observer">jij bent waarnemer</string>
+    <string name="you_are_observer">je bent waarnemer</string>
     <string name="language_system">Systeem</string>
     <string name="v4_6_audio_video_calls">Audio en video oproepen</string>
     <string name="confirm_password">Bevestig wachtwoord</string>
@@ -2104,4 +2104,25 @@
     <string name="network_proxy_incorrect_config_desc">Zorg ervoor dat de proxyconfiguratie correct is.</string>
     <string name="network_proxy_password">Wachtwoord</string>
     <string name="icon_descr_sound_muted">Geluid gedempt</string>
+    <string name="error_initializing_web_view_wrong_arch">Fout bij initialiseren van WebView. Zorg ervoor dat WebView geïnstalleerd is en de ondersteunde architectuur is arm64.\nFout: %s</string>
+    <string name="settings_message_shape_corner">Hoek</string>
+    <string name="settings_section_title_message_shape">Berichtvorm</string>
+    <string name="network_session_mode_session">Appsessie</string>
+    <string name="network_session_mode_session_description">Elke keer dat u de app start, worden er nieuwe SOCKS-inloggegevens gebruikt.</string>
+    <string name="network_session_mode_server_description">Voor elke server worden nieuwe SOCKS-inloggegevens gebruikt.</string>
+    <string name="network_session_mode_server">Server</string>
+    <string name="settings_message_shape_tail">Staart</string>
+    <string name="call_desktop_permission_denied_chrome">Klik op de infoknop naast het adresveld om het gebruik van de microfoon toe te staan.</string>
+    <string name="call_desktop_permission_denied_safari">Open Safari Instellingen / Websites / Microfoon en kies Toestaan voor localhost.</string>
+    <string name="call_desktop_permission_denied_title">Als u wilt bellen, geeft u toestemming om uw microfoon te gebruiken. Beëindig het gesprek en probeer opnieuw te bellen.</string>
+    <string name="v6_1_better_security">Betere beveiliging ✅</string>
+    <string name="v6_1_better_security_descr">SimpleX-protocollen beoordeeld door Trail of Bits.</string>
+    <string name="v6_1_message_dates_descr">Betere datums voor berichten.</string>
+    <string name="v6_1_better_user_experience">Betere gebruikerservaring</string>
+    <string name="v6_1_customizable_message_descr">Aanpasbare berichtvorm.</string>
+    <string name="v6_1_better_calls_descr">Wisselen tussen audio en video tijdens het gesprek.</string>
+    <string name="v6_1_switch_chat_profile_descr">Wijzig chatprofiel voor eenmalige uitnodigingen.</string>
+    <string name="v6_1_delete_many_messages_descr">Maximaal 200 berichten verwijderen of modereren.</string>
+    <string name="v6_1_forward_many_messages_descr">Stuur maximaal 20 berichten tegelijk door.</string>
+    <string name="v6_1_better_calls">Betere gesprekken</string>
 </resources>

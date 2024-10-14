@@ -2,10 +2,8 @@ package chat.simplex.common.views.helpers
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -209,11 +207,14 @@ class ModalManager(private val placement: ModalPlacement? = null) {
     val end = if (appPlatform.isAndroid) shared else ModalManager(ModalPlacement.END)
     val fullscreen = if (appPlatform.isAndroid) shared else ModalManager(ModalPlacement.FULLSCREEN)
 
+    val floatingTerminal = if (appPlatform.isAndroid) shared else ModalManager(ModalPlacement.START)
+
     fun closeAllModalsEverywhere() {
       start.closeModals()
       center.closeModals()
       end.closeModals()
       fullscreen.closeModals()
+      floatingTerminal.closeModals()
     }
 
     @OptIn(ExperimentalAnimationApi::class)
