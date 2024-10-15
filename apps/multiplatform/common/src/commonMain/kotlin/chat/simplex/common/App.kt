@@ -269,26 +269,10 @@ fun AndroidScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
         snapshotFlow { chatModel.chatId.value }
           .distinctUntilChanged()
           .collect {
-            if (it == null) {
-              platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
-              onComposed(null)
-            }
+            if (it == null) onComposed(null)
             currentChatId.value = it
           }
       }
-    }
-    LaunchedEffect(Unit) {
-      snapshotFlow { ModalManager.center.modalCount.value > 0 }
-        .filter { chatModel.chatId.value == null }
-        .collect { modalBackground ->
-          if (chatModel.newChatSheetVisible.value) {
-            platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, false, appPrefs.oneHandUI.get())
-          } else if (modalBackground) {
-            platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, false, false)
-          } else {
-            platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
-          }
-        }
     }
     Box(Modifier
       .graphicsLayer { translationX = maxWidth.toPx() - offset.value.dp.toPx() }

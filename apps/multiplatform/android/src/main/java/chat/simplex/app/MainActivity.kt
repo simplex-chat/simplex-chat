@@ -5,11 +5,8 @@ import android.content.Intent
 import android.net.Uri
 import android.os.*
 import android.view.WindowManager
-import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.ClipboardManager
 import androidx.fragment.app.FragmentActivity
 import chat.simplex.app.model.NtfManager
@@ -17,7 +14,6 @@ import chat.simplex.app.model.NtfManager.getUserIdFromIntent
 import chat.simplex.common.*
 import chat.simplex.common.helpers.*
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
@@ -33,7 +29,7 @@ class MainActivity: FragmentActivity() {
     mainActivity = WeakReference(this)
     platform.androidSetNightModeIfSupported()
     val c = CurrentColors.value.colors
-    platform.androidSetStatusAndNavBarColors(c.isLight, c.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
+    platform.androidSetStatusAndNavigationBarAppearance(c.isLight)
     applyAppLocale(ChatModel.controller.appPrefs.appLanguage)
     super.onCreate(savedInstanceState)
     // testJson()

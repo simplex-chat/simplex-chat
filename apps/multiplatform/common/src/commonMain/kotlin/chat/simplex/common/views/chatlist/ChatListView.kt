@@ -122,11 +122,7 @@ fun ToggleChatListCard() {
 
           SharedPreferenceToggle(
             appPrefs.oneHandUI,
-            enabled = true,
-            onChange = {
-              val c = CurrentColors.value.colors
-              platform.androidSetStatusAndNavBarColors(c.isLight, c.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
-            }
+            enabled = true
           )
         }
       }
