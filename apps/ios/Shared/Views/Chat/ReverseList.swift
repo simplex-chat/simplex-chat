@@ -261,15 +261,18 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             if let visibleRows = tableView.indexPathsForVisibleRows,
                 visibleRows.last?.item ?? 0 < representer.items.count {
                 let scrollOffset: Double = tableView.contentOffset.y + InvertedTableView.inset
+            
                 let topItemDate: Date? =
-                    if let lastVisible = visibleRows.last(where: { isVisible(indexPath: $0) }) {
-                        representer.items[lastVisible.item].meta.itemTs
+                    if let lastVisible = visibleRows.last(where: { isVisible(indexPath: $0) }),
+                       let cI = self.dataSource.itemIdentifier(for: lastVisible) {
+                        cI.meta.itemTs
                     } else {
                         nil
                     }
                 let bottomItemId: ChatItem.ID? =
-                    if let firstVisible = visibleRows.first(where: { isVisible(indexPath: $0) }) {
-                        representer.items[firstVisible.item].id
+                    if let firstVisible = visibleRows.first(where: { isVisible(indexPath: $0) }),
+                       let cI = self.dataSource.itemIdentifier(for: firstVisible) {
+                        cI.id
                     } else {
                         nil
                     }
