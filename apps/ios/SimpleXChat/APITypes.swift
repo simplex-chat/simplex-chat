@@ -682,7 +682,7 @@ public enum ChatResponse: Decodable, Error {
     case callInvitations(callInvitations: [RcvCallInvitation])
     case ntfTokenStatus(status: NtfTknStatus)
     case ntfToken(token: DeviceToken, status: NtfTknStatus, ntfMode: NotificationsMode, ntfServer: String)
-    case ntfMessages(user_: User?, connEntity_: ConnectionEntity?, expectedMsg_: NtfMsgInfo?, receivedMsg_: NtfMsgInfo?)
+    case ntfMessages(ntfMessages: [NtfMessage])
     case connNtfMessage(receivedMsg_: NtfMsgInfo?)
     case ntfMessage(user: UserRef, connEntity: ConnectionEntity, ntfMessage: NtfMsgAckInfo)
     case contactConnectionDeleted(user: UserRef, connection: PendingContactConnection)
@@ -1029,7 +1029,7 @@ public enum ChatResponse: Decodable, Error {
             case let .callInvitations(invs): return String(describing: invs)
             case let .ntfTokenStatus(status): return String(describing: status)
             case let .ntfToken(token, status, ntfMode, ntfServer): return "token: \(token)\nstatus: \(status.rawValue)\nntfMode: \(ntfMode.rawValue)\nntfServer: \(ntfServer)"
-            case let .ntfMessages(u, connEntity, expectedMsg_, receivedMsg_): return withUser(u, "connEntity: \(String(describing: connEntity))\nexpectedMsg_: \(String(describing: expectedMsg_))\nreceivedMsg_: \(String(describing: receivedMsg_))")
+            case let .ntfMessages(ntfMessages): return String(describing: ntfMessages)
             case let .connNtfMessage(receivedMsg_): return "receivedMsg_: \(String(describing: receivedMsg_))"
             case let .ntfMessage(u, connEntity, ntfMessage): return withUser(u, "connEntity: \(String(describing: connEntity))\nntfMessage: \(String(describing: ntfMessage))")
             case let .contactConnectionDeleted(u, connection): return withUser(u, String(describing: connection))
