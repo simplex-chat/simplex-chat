@@ -132,7 +132,7 @@ struct UserWallpaperEditor: View {
             }
         }
         .modifier(
-            ThemeImporter(isPresented: $showMore) { imported in
+            ThemeImporter(isPresented: $showFileImporter) { imported in
                 let importedFromString = imported.wallpaper?.importFromString()
                 let importedType = importedFromString?.toAppWallpaper().type
                 let currentTheme = ThemeManager.currentColors(nil, nil, nil, themeOverridesDefault.get())
