@@ -86,7 +86,7 @@ class NSEThreads {
 
     private func rcvEntityThread(_ id: ChatId) -> (UUID, NotificationService)? {
         NSEThreads.queue.sync {
-            activeThreads.first(where: { (_, nse) in nse.expectedMessages.keys.contains(id) })
+            activeThreads.first(where: { (_, nse) in nse.expectedMessages[id]?.ready ?? false })
         }
     }
 
