@@ -64,7 +64,9 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         private var itemCount: Int = 0
         private let updateFloatingButtons = PassthroughSubject<Void, Never>()
         private var bag = Set<AnyCancellable>()
-
+        private var lastContentOffset: CGFloat = 0
+        private var scrollDirection: ChatScrollDirection = .none
+        
         init(representer: ReverseList) {
             self.representer = representer
             super.init(style: .plain)
@@ -94,7 +96,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             ) { (tableView, indexPath, item) -> UITableViewCell? in
                 if let section = self.dataSource.sectionIdentifier(for: indexPath.section) {
                     let itemCount = self.getTotalItemsInItemSection(indexPath: indexPath)
-                    if self.representer.activeSection == section, indexPath.item > itemCount - 8, itemCount > 8 {
+                    if self.representer.activeSection == section, self.scrollDirection == .toOldest, indexPath.item > itemCount - 8, itemCount > 8 {
                         let lastItem = self.getLastItemInItemSection(indexPath: indexPath)
                         self.representer.loadPage(.toOldest, section, lastItem)
                     }
@@ -261,6 +263,15 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         }
 
         override func scrollViewDidScroll(_ scrollView: UIScrollView) {
+            let currentOffset = scrollView.contentOffset.y
+            if currentOffset > lastContentOffset {
+                scrollDirection = .toOldest
+            } else if currentOffset < lastContentOffset {
+                scrollDirection = .toLatest
+            } else {
+                scrollDirection = .none
+            }
+            lastContentOffset = currentOffset
             updateFloatingButtons.send()
         }
 
