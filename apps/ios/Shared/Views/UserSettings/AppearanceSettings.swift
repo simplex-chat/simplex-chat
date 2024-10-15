@@ -583,11 +583,14 @@ struct CustomizeThemeView: View {
                 }
             }
 
-            ImportExportThemeSection(perChat: nil, perUser: nil, save: { theme in
+            ImportExportThemeSection(showFileImporter: $showFileImporter, perChat: nil, perUser: nil)
+        }
+        .modifier(
+            ThemeImporter(isPresented: $showFileImporter) { theme in
                 ThemeManager.saveAndApplyThemeOverrides(theme)
                 saveThemeToDatabase(nil)
-            })
-        }
+            }
+        )
         /// When changing app theme, user overrides are hidden. User overrides will be returned back after closing Appearance screen, see ThemeDestinationPicker()
         .interactiveDismissDisabled(true)
     }
@@ -595,10 +598,9 @@ struct CustomizeThemeView: View {
 
 struct ImportExportThemeSection: View {
     @EnvironmentObject var theme: AppTheme
+    @Binding var showFileImporter: Bool
     var perChat: ThemeModeOverride?
     var perUser: ThemeModeOverrides?
-    var save: (ThemeOverrides) -> Void
-    @State private var showFileImporter = false
 
     var body: some View {
         Section {
@@ -626,39 +628,47 @@ struct ImportExportThemeSection: View {
             } label: {
                 Text("Import theme").foregroundColor(theme.colors.primary)
             }
-            .fileImporter(
-                isPresented: $showFileImporter,
-                allowedContentTypes: [.data/*.plainText*/],
-                allowsMultipleSelection: false
-            ) { result in
-                if case let .success(files) = result, let fileURL = files.first {
-                    do {
-                        var fileSize: Int? = nil
-                        if fileURL.startAccessingSecurityScopedResource() {
-                            let resourceValues = try fileURL.resourceValues(forKeys: [.fileSizeKey])
-                            fileSize = resourceValues.fileSize
-                        }
-                        if let fileSize = fileSize,
-                           // Same as Android/desktop
-                           fileSize <= 5_500_000 {
-                            if let string = try? String(contentsOf: fileURL, encoding: .utf8), let theme: ThemeOverrides = decodeYAML("themeId: \(UUID().uuidString)\n" + string) {
-                                save(theme)
-                                logger.error("Saved theme from file")
-                            } else {
-                                logger.error("Error decoding theme file")
-                            }
-                            fileURL.stopAccessingSecurityScopedResource()
-                        } else {
-                            fileURL.stopAccessingSecurityScopedResource()
-                            let prettyMaxFileSize = ByteCountFormatter.string(fromByteCount: 5_500_000, countStyle: .binary)
-                            AlertManager.shared.showAlertMsg(
-                                title: "Large file!",
-                                message: "Currently maximum supported file size is \(prettyMaxFileSize)."
-                            )
-                        }
-                    } catch {
-                        logger.error("Appearance fileImporter error \(error.localizedDescription)")
+        }
+    }
+}
+
+struct ThemeImporter: ViewModifier {
+    @Binding var isPresented: Bool
+    var save: (ThemeOverrides) -> Void
+
+    func body(content: Content) -> some View {
+        content.fileImporter(
+            isPresented: $isPresented,
+            allowedContentTypes: [.data/*.plainText*/],
+            allowsMultipleSelection: false
+        ) { result in
+            if case let .success(files) = result, let fileURL = files.first {
+                do {
+                    var fileSize: Int? = nil
+                    if fileURL.startAccessingSecurityScopedResource() {
+                        let resourceValues = try fileURL.resourceValues(forKeys: [.fileSizeKey])
+                        fileSize = resourceValues.fileSize
                     }
+                    if let fileSize = fileSize,
+                       // Same as Android/desktop
+                       fileSize <= 5_500_000 {
+                        if let string = try? String(contentsOf: fileURL, encoding: .utf8), let theme: ThemeOverrides = decodeYAML("themeId: \(UUID().uuidString)\n" + string) {
+                            save(theme)
+                            logger.error("Saved theme from file")
+                        } else {
+                            logger.error("Error decoding theme file")
+                        }
+                        fileURL.stopAccessingSecurityScopedResource()
+                    } else {
+                        fileURL.stopAccessingSecurityScopedResource()
+                        let prettyMaxFileSize = ByteCountFormatter.string(fromByteCount: 5_500_000, countStyle: .binary)
+                        AlertManager.shared.showAlertMsg(
+                            title: "Large file!",
+                            message: "Currently maximum supported file size is \(prettyMaxFileSize)."
+                        )
+                    }
+                } catch {
+                    logger.error("Appearance fileImporter error \(error.localizedDescription)")
                 }
             }
         }
