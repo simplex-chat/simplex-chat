@@ -28,11 +28,11 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
 
     @Binding var scrollState: ReverseListScrollModel.State
     @Binding var itemSection: Dictionary<Int64, ChatSection>
-
+    @Binding var activeSection: ChatSection
     /// Closure, that returns user interface for a given item
     let content: (ChatItem) -> Content
 
-    let loadPage: (ChatScrollDirection) -> Void
+    let loadPage: (ChatScrollDirection, ChatSection, ChatItem?) -> Void
     let loadItemsAround: (Int64) -> Void
     
     func makeUIViewController(context: Context) -> Controller {
@@ -92,8 +92,12 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             self.dataSource = UITableViewDiffableDataSource<ChatSection, ChatItem>(
                 tableView: tableView
             ) { (tableView, indexPath, item) -> UITableViewCell? in
-                if self.representer.scrollState == .atDestination, indexPath.item > self.itemCount - 8, self.itemCount > 8 {
-                    self.representer.loadPage(.toOldest)
+                if let section = self.dataSource.sectionIdentifier(for: indexPath.section) {
+                    let itemCount = self.getTotalItemsInItemSection(indexPath: indexPath)
+                    if self.representer.activeSection == section, indexPath.item > itemCount - 8, itemCount > 8 {
+                        let lastItem = self.getLastItemInItemSection(indexPath: indexPath)
+                        self.representer.loadPage(.toOldest, section, lastItem)
+                    }
                 }
                 let cell = tableView.dequeueReusableCell(withIdentifier: cellReuseId, for: indexPath)
                 if #available(iOS 16.0, *) {
@@ -178,7 +182,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         
         /// Scrolls up
         func scrollToItem(id: Int64) {
-            if let loadedIndex = representer.items.firstIndex(where: { $0.id == id }) {
+            if let loadedIndex = self.representer.items.firstIndex(where: { $0.id == id }) {
                 let ci = representer.items[loadedIndex]
                 if let indexPath = dataSource.indexPath(for: ci),
                    let section = dataSource.sectionIdentifier(for: indexPath.section) {
@@ -186,7 +190,10 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 }
             } else {
                 Task {
-                    self.representer.loadItemsAround(id)
+                    if (self.representer.itemSection[id] == nil) {
+                        self.representer.activeSection = .destination
+                        self.representer.loadItemsAround(id)
+                    }
                 }
             }
         }
@@ -289,6 +296,30 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 relativeFrame.maxY > InvertedTableView.inset &&
                 relativeFrame.minY < tableView.frame.height - InvertedTableView.inset
             } else { false }
+        }
+        
+        private func getTotalItemsInItemSection(indexPath: IndexPath) -> Int {
+            return self.tableView.numberOfRows(inSection: indexPath.section)
+        }
+        
+        private func getLastItemInItemSection(indexPath: IndexPath) -> ChatItem? {
+            let numberOfRows = self.getTotalItemsInItemSection(indexPath: indexPath)
+            
+            return if numberOfRows > 0,
+                      let lastItem = self.dataSource.itemIdentifier(for: IndexPath(row: numberOfRows - 1, section: indexPath.section)) {
+                lastItem
+            } else {
+                nil
+            }
+        }
+        
+        private func getFirstItemInItemSection(indexPath: IndexPath) -> ChatItem? {
+            let firstIndexPath = IndexPath(item: 0, section: indexPath.section)
+            return if let firstItem = self.dataSource.itemIdentifier(for: firstIndexPath) {
+                firstItem
+            } else {
+                nil
+            }
         }
     }
 

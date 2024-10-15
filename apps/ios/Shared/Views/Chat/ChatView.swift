@@ -23,7 +23,8 @@ struct ChatView: View {
     @Environment(\.scenePhase) var scenePhase
     @State @ObservedObject var chat: Chat
     @StateObject private var scrollModel = ReverseListScrollModel()
-    @State private var itemSection: Dictionary<Int64, ChatSection> = Dictionary()
+    @State private var itemSection: [Int64: ChatSection] = [:]
+    @State private var activeSection: ChatSection = .bottom
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
@@ -188,7 +189,7 @@ struct ChatView: View {
             if !isLoading,
                im.reversedChatItems.count <= loadItemsPerPage,
                filtered(im.reversedChatItems).count < 10 {
-                loadChatItems(chat.chatInfo, .toOldest)
+                loadChatItems(chat.chatInfo, .toOldest, .bottom, nil)
             }
         }
         .environmentObject(scrollModel)
@@ -419,7 +420,7 @@ struct ChatView: View {
         let cInfo = chat.chatInfo
         let mergedItems = filtered(im.reversedChatItems)
         return GeometryReader { g in
-            ReverseList(items: mergedItems, scrollState: $scrollModel.state, itemSection: $itemSection ) { ci in
+            ReverseList(items: mergedItems, scrollState: $scrollModel.state, itemSection: $itemSection, activeSection: $activeSection ) { ci in
                 let voiceNoFrame = voiceWithoutFrame(ci)
                 let maxWidth = cInfo.chatType == .group
                                 ? voiceNoFrame
@@ -439,8 +440,8 @@ struct ChatView: View {
                     forwardedChatItems: $forwardedChatItems
                 )
                 .id(ci.id) // Required to trigger `onAppear` on iOS15
-            } loadPage: { direction in
-                loadChatItems(cInfo, direction)
+            } loadPage: { (direction, section, chatItemId) in
+                loadChatItems(cInfo, direction, section, chatItemId)
             } loadItemsAround: { chatItemId in
                 loadItemsAround(cInfo, chatItemId)
             }
@@ -842,7 +843,7 @@ struct ChatView: View {
         }
     }
 
-    private func loadChatItems(_ cInfo: ChatInfo, _ direction: ChatScrollDirection) {
+    private func loadChatItems(_ cInfo: ChatInfo, _ direction: ChatScrollDirection, _ section: ChatSection, _ chatItem: ChatItem?) {
         Task {
             if loadingItems || firstPage { return }
             loadingItems = true
@@ -852,9 +853,9 @@ struct ChatView: View {
                 // Load additional items until the page is +50 large after merging
                 while chatItemsAvailable && filtered(reversedPage).count < loadItemsPerPage {
                     let pagination: ChatPagination =
-                        if direction == .toOldest, let lastItem = reversedPage.last ?? im.reversedChatItems.last {
+                        if direction == .toOldest, let lastItem = chatItem ?? reversedPage.last ?? im.reversedChatItems.last {
                             .before(chatItemId: lastItem.id, count: loadItemsPerPage)
-                        } else if direction == .toLatest, let firstItem = reversedPage.first ?? im.reversedChatItems.first {
+                        } else if direction == .toLatest, let firstItem = chatItem ?? reversedPage.first ?? im.reversedChatItems.first {
                             // TODO: Replace with anchor.
                             .after(chatItemId: firstItem.id, count: loadItemsPerPage)
                         } else {
@@ -870,13 +871,19 @@ struct ChatView: View {
                     reversedPage.append(contentsOf: chatItems.reversed())
                 }
                 await MainActor.run {
-                    if reversedPage.count == 0 {
+                    if reversedPage.count == 0  {
                         firstPage = true
                     } else {
+                        var reversedPageToAppend = Array<ChatItem>()
                         reversedPage.forEach { ci in
-                            itemSection[ci.id] = .bottom
+                            if itemSection[ci.id] == nil {
+                                reversedPageToAppend.append(ci)
+                                itemSection[ci.id] = section
+                            } else {
+                                // TODO: Maybe merge
+                            }
                         }
-                        im.reversedChatItems.append(contentsOf: reversedPage)
+                        im.reversedChatItems.append(contentsOf: reversedPageToAppend)
                     }
                     loadingItems = false
                 }
@@ -889,9 +896,9 @@ struct ChatView: View {
     
     private func loadItemsAround(_ cInfo: ChatInfo, _ chatItemId: Int64) {
         Task {
-            if loadingItems { return }
+            if loadingItems || itemSection[chatItemId] != nil { return }
             loadingItems = true
-            do {
+            do {                
                 var reversedPage = Array<ChatItem>()
                 var chatItemsAvailable = true
                 // Load additional items until the page is +50 large after merging
@@ -913,7 +920,7 @@ struct ChatView: View {
                         )
                         chatItems.append(contentsOf: afterItems)
                     }
-
+                    
                     chatItemsAvailable = !chatItems.isEmpty
                     reversedPage.append(contentsOf: chatItems.reversed())
                 }
