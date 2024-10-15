@@ -12,9 +12,9 @@ import SimpleXChat
 struct MarkedDeletedItemView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.revealed) var revealed: Bool
     @ObservedObject var chat: Chat
     var chatItem: ChatItem
-    @Binding var revealed: Bool
 
     var body: some View {
         (Text(mergedMarkedDeletedText).italic() + Text(" ") + chatItem.timestampText)
@@ -79,7 +79,10 @@ struct MarkedDeletedItemView: View {
 struct MarkedDeletedItemView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
-            MarkedDeletedItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: .now)), revealed: Binding.constant(true))
+            MarkedDeletedItemView(
+                chat: Chat.sampleData,
+                chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: .now))
+            ).environment(\.revealed, true)
         }
         .previewLayout(.fixed(width: 360, height: 200))
     }
