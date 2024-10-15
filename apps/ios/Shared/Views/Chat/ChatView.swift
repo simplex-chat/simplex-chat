@@ -1247,9 +1247,9 @@ struct ChatView: View {
                     chat: chat,
                     chatItem: ci,
                     maxWidth: maxWidth,
-                    revealed: .constant(revealed),
                     allowMenu: $allowMenu
                 )
+                .environment(\.revealed, revealed)
                 .environment(\.showTimestamp, itemSeparation.timestamp)
                 .modifier(ChatItemClipped(ci, tailVisible: itemSeparation.largeGap && (ci.meta.itemDeleted == nil || revealed)))
                 .contextMenu { menu(ci, range, live: composeState.liveMessage != nil) }

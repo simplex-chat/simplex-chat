@@ -1226,6 +1226,15 @@ object ChatController {
         )
         return null
       }
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
+          && r.chatError.agentError is AgentErrorType.SMP
+          && r.chatError.agentError.smpErr is SMPErrorType.QUOTA -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.connection_error_quota),
+          generalGetString(MR.strings.connection_error_quota_desc)
+        )
+        return null
+      }
       else -> {
         if (!(networkErrorAlert(r))) {
           apiErrorAlert("apiConnect", generalGetString(MR.strings.connection_error), r)

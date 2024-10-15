@@ -27,7 +27,7 @@ In the course of the audit, Trail of Bits assessed the maturity of the [simplexm
 
 Explained below is our understanding of the issues, as well as fixes implemented by the SimpleX Chat team after project completion. The full security review is available via [Trail of Bits publications](https://github.com/trailofbits/publications/blob/master/reviews/SimpleXChat.pdf).
 
-We are hugely thankful to Trail of Bits and their engineers for the work they did, helping us identify these issues and supporting the ongoing efforts to make Simple Chat more secure.
+We are hugely thankful to Trail of Bits and their engineers for the work they did, helping us identify these issues and supporting the ongoing efforts to make SimpleX Chat more secure.
 
 ### Medium severity issues
 
