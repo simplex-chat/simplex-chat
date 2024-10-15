@@ -247,6 +247,11 @@ class NotificationService: UNNotificationServiceExtension {
         deliverBestAttemptNtf(urgent: true)
     }
 
+    // TODO
+    // for cases where we couldn't process notification:
+    // - return `!expectedMessages.allSatisfy { $0.value.ready }` instead of false?
+    //   (so that outside loop goes on to expected messages from other connections)
+    // - or instead of waiting in outside loop, do one more attempt, if another matching thread is not found proceed?
     func processReceivedNtf(_ id: ChatId, _ ntf: NSENotification) -> Bool {
         guard
             let expectedMessage = expectedMessages[id],
