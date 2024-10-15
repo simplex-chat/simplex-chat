@@ -43,7 +43,7 @@ fun SelectedItemsTopToolbar(selectedChatItems: MutableState<Set<Long>?>) {
     onTop = true,
     onSearchValueChanged = {},
   )
-  Divider(Modifier.padding(top = AppBarHeight * fontSizeSqrtMultiplier))
+  Divider()
 }
 
 @Composable

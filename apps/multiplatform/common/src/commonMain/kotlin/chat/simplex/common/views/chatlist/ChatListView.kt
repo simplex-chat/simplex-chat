@@ -592,6 +592,11 @@ enum class ScrollDirection {
 }
 
 @Composable
+fun StatusBarBackground() {
+  Box(Modifier.background(MaterialTheme.colors.background).windowInsetsTopHeight(WindowInsets.statusBars))
+}
+
+@Composable
 private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldValue>) {
   val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
   var scrollDirection by remember { mutableStateOf(ScrollDirection.Idle) }
@@ -630,8 +635,12 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
   val searchShowingSimplexLink = remember { mutableStateOf(false) }
   val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
   val chats = filteredChats(showUnreadAndFavorites, searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.value.toList())
+  Column {
+    if (oneHandUI.value) {
+      StatusBarBackground()
+    }
   LazyColumnWithScrollBar(
-    Modifier.fillMaxSize(),
+    Modifier.fillMaxSize().then(if (!oneHandUI.value) Modifier.imePadding() else Modifier),
     listState,
     reverseLayout = oneHandUI.value
   ) {
@@ -679,6 +688,10 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
         ToggleChatListCard()
       }
     }
+    if (!oneHandUI.value) {
+      item { Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars)) }
+    }
+  }
   }
   if (chats.isEmpty() && chatModel.chats.value.isNotEmpty()) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

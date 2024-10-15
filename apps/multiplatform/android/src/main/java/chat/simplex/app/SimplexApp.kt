@@ -285,28 +285,28 @@ class SimplexApp: Application(), LifecycleEventObserver {
         @Suppress("DEPRECATION")
         val windowInsetController = ViewCompat.getWindowInsetsController(window.decorView)
         // Blend status bar color to the animated color
-        val colors = CurrentColors.value.colors
-        val baseBackgroundColor = if (toolbarOnTop) colors.background.mixWith(colors.onBackground, 0.97f) else colors.background
-        var statusBar = baseBackgroundColor.mixWith(drawerShadingColor.copy(1f), 1 - drawerShadingColor.alpha).toArgb()
+//        val colors = CurrentColors.value.colors
+//        val baseBackgroundColor = if (toolbarOnTop) colors.background.mixWith(colors.onBackground, 0.97f) else colors.background
+//        var statusBar = baseBackgroundColor.mixWith(drawerShadingColor.copy(1f), 1 - drawerShadingColor.alpha).toArgb()
         var statusBarLight = isLight
-
-        // SimplexGreen while in call
+//
+//        // SimplexGreen while in call
         if (window.statusBarColor == SimplexGreen.toArgb()) {
-          statusBarColorAfterCall.intValue = statusBar
-          statusBar = SimplexGreen.toArgb()
+//          statusBarColorAfterCall.intValue = statusBar
+//          statusBar = SimplexGreen.toArgb()
           statusBarLight = false
         }
-        window.statusBarColor = statusBar
-        val navBar = navBarColor.toArgb()
+//        window.statusBarColor = statusBar
+//        val navBar = navBarColor.toArgb()
         if (windowInsetController?.isAppearanceLightStatusBars != statusBarLight) {
           windowInsetController?.isAppearanceLightStatusBars = statusBarLight
         }
-        if (window.navigationBarColor != navBar) {
-          window.navigationBarColor = navBar
-        }
-        if (windowInsetController?.isAppearanceLightNavigationBars != isLight) {
-          windowInsetController?.isAppearanceLightNavigationBars = isLight
-        }
+//        if (window.navigationBarColor != navBar) {
+//          window.navigationBarColor = navBar
+//        }
+//        if (windowInsetController?.isAppearanceLightNavigationBars != isLight) {
+//          windowInsetController?.isAppearanceLightNavigationBars = isLight
+//        }
       }
 
       override fun androidSetStatusAndNavBarColors(isLight: Boolean, backgroundColor: Color, hasTop: Boolean, hasBottom: Boolean) {

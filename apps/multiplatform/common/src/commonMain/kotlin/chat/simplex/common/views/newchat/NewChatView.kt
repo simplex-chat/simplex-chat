@@ -434,6 +434,9 @@ fun ActiveProfilePicker(
             ProfilePickerUserOption(p)
           }
         }
+        item {
+          Spacer(Modifier.imePadding())
+        }
       }
     }
     if (progressByTimeout) {

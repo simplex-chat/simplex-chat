@@ -397,6 +397,7 @@ fun ModalData.GroupChatInfoLayout(
         }
       }
       SectionBottomSpacer()
+      Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.systemBars))
     }
   }
 }

@@ -1,9 +1,7 @@
 package chat.simplex.common.views.newchat
 
-import SectionDivider
 import SectionDividerSpaced
 import SectionItemView
-import SectionSpacer
 import SectionView
 import TextIconSpaced
 import androidx.compose.desktop.ui.tooling.preview.Preview
@@ -33,24 +31,22 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chatlist.ScrollDirection
+import chat.simplex.common.views.chatlist.StatusBarBackground
 import chat.simplex.common.views.contacts.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
-import java.net.URI
 
 @Composable
 fun ModalData.NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
-  val keyboardState by getKeyboardState()
-  val showToolbarInOneHandUI = remember { derivedStateOf { keyboardState == KeyboardState.Closed && oneHandUI.value } }
 
   Scaffold(
     bottomBar = {
-      if (showToolbarInOneHandUI.value) {
-        Column {
+      if (oneHandUI.value) {
+        Column(Modifier.imePadding()) {
           Divider()
           CloseSheetBar(
             close = close,
@@ -187,8 +183,12 @@ private fun ModalData.NewChatSheetLayout(
     derivedStateOf { filterContactTypes(chatModel.chats.value, deletedContactTypes) }
   }
 
+  Column {
+  if (oneHandUI.value) {
+    StatusBarBackground()
+  }
   LazyColumnWithScrollBar(
-    Modifier.fillMaxSize(),
+    Modifier.fillMaxSize().then(if (!oneHandUI.value) Modifier.imePadding() else Modifier),
     listState,
     reverseLayout = oneHandUI.value
   ) {
@@ -242,8 +242,6 @@ private fun ModalData.NewChatSheetLayout(
         )
         if (!oneHandUI.value) {
           Divider()
-        } else {
-          Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
         }
       }
     }
@@ -352,6 +350,7 @@ private fun ModalData.NewChatSheetLayout(
       }
       ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = true)
     }
+  }
   }
 }
 
@@ -556,13 +555,10 @@ private fun contactTypesSearchTargets(baseContactTypes: List<ContactType>, searc
 @Composable
 private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats: () -> Unit, close: () -> Unit) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
-  val keyboardState by getKeyboardState()
-  val showToolbarInOneHandUI = remember { derivedStateOf { keyboardState == KeyboardState.Closed && oneHandUI.value } }
-
   Scaffold(
     bottomBar = {
-      if (showToolbarInOneHandUI.value) {
-        Column {
+      if (oneHandUI.value) {
+        Column(Modifier.imePadding()) {
           Divider()
           CloseSheetBar(
             close = closeDeletedChats,
@@ -592,8 +588,12 @@ private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats
       contactChats = allChats
     )
 
+    Column {
+      if (oneHandUI.value) {
+        StatusBarBackground()
+      }
     LazyColumnWithScrollBar(
-      Modifier.fillMaxSize(),
+      Modifier.fillMaxSize().then(if (!oneHandUI.value) Modifier.imePadding() else Modifier),
       contentPadding = contentPadding,
       reverseLayout = oneHandUI.value,
     ) {
@@ -612,8 +612,6 @@ private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats
       item {
         if (!oneHandUI.value) {
           Divider()
-        } else {
-          Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
         }
         ContactsSearchBar(
           listState = listState,
@@ -646,6 +644,7 @@ private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats
         }
         ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = false)
       }
+    }
     }
   }
 }

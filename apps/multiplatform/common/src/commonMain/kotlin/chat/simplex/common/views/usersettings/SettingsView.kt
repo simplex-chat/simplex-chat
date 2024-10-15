@@ -39,7 +39,6 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, close: (
   val user = chatModel.currentUser.value
   val stopped = chatModel.chatRunning.value == false
   SettingsLayout(
-    profile = user?.profile,
     stopped,
     chatModel.chatDbEncrypted.value == true,
     remember { chatModel.controller.appPrefs.storeDBPassphrase.state }.value,
@@ -80,7 +79,6 @@ val simplexTeamUri =
 
 @Composable
 fun SettingsLayout(
-  profile: LocalProfile?,
   stopped: Boolean,
   encrypted: Boolean,
   passphraseSaved: Boolean,
@@ -94,17 +92,14 @@ fun SettingsLayout(
   showVersion: () -> Unit,
   withAuth: (title: String, desc: String, block: () -> Unit) -> Unit,
 ) {
-  val scope = rememberCoroutineScope()
   val view = LocalMultiplatformView()
   LaunchedEffect(Unit) {
     hideKeyboard(view)
   }
-  val theme = CurrentColors.collectAsState()
   val uriHandler = LocalUriHandler.current
   ColumnWithScrollBar(
     Modifier
       .fillMaxSize()
-      .themedBackground(theme.value.base)
   ) {
     AppBarTitle(stringResource(MR.strings.your_settings))
 
@@ -488,7 +483,6 @@ private fun runAuth(title: String, desc: String, onFinish: (success: Boolean) ->
 fun PreviewSettingsLayout() {
   SimpleXTheme {
     SettingsLayout(
-      profile = LocalProfile.sampleData,
       stopped = false,
       encrypted = false,
       passphraseSaved = false,

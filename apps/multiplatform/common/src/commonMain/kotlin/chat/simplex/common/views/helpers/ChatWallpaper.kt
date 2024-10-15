@@ -382,6 +382,7 @@ private fun drawToBitmap(image: ImageBitmap, imageScale: Float, tint: Color, siz
 }
 
 fun CacheDrawScope.chatViewBackground(image: ImageBitmap, imageType: WallpaperType, background: Color, tint: Color): DrawResult {
+  println("LALAL SIZE $size")
   val imageScale = if (imageType is WallpaperType.Preset) {
     (imageType.scale ?: 1f) * imageType.predefinedImageScale
   } else if (imageType is WallpaperType.Image && imageType.scaleType == WallpaperScaleType.REPEAT) {
@@ -396,6 +397,7 @@ fun CacheDrawScope.chatViewBackground(image: ImageBitmap, imageType: WallpaperTy
   }
 
   return onDrawBehind {
+    println("LALAL SIZE2 $size")
     val quality = if (appPlatform.isAndroid) FilterQuality.High else FilterQuality.Low
     drawRect(background)
     when (imageType) {

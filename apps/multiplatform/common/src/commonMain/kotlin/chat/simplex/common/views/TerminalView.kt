@@ -78,7 +78,6 @@ fun TerminalLayout(
     composeState.value = composeState.value.copy(message = s)
   }
 
-  ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
     Scaffold(
       topBar = { CloseSheetBar(close) },
       bottomBar = {
@@ -112,7 +111,7 @@ fun TerminalLayout(
         }
       },
       contentColor = LocalContentColor.current,
-      modifier = Modifier.navigationBarsWithImePadding()
+      modifier = Modifier.navigationBarsPadding().imePadding()
     ) { contentPadding ->
       Surface(
         modifier = Modifier
@@ -124,7 +123,6 @@ fun TerminalLayout(
         TerminalLog(floating)
       }
     }
-  }
 }
 
 @Composable
@@ -172,7 +170,7 @@ fun TerminalLog(floating: Boolean) {
               ModalManager.start
             }
             modalPlace.showModal(endButtons = { ShareButton { clipboard.shareText(item.details) } }) {
-              SelectionContainer(modifier = Modifier.verticalScroll(rememberScrollState())) {
+              SelectionContainer(modifier = Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding()) {
                 val details = item.details
                   .let {
                     if (it.length < 100_000) it

@@ -107,6 +107,7 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
         chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == activeChatInfo.value?.id }?.chatStats?.unreadCount ?: 0
       }
     }
+    println("LALAL TOP")
     val clipboard = LocalClipboardManager.current
     when (chatInfo) {
       is ChatInfo.Direct, is ChatInfo.Group, is ChatInfo.Local -> {
@@ -634,6 +635,7 @@ fun ChatLayout(
   showViaProxy: Boolean,
   showSearch: MutableState<Boolean>
 ) {
+  println("LALAL CHATLAYOUT TOP")
   val scope = rememberCoroutineScope()
   val attachmentDisabled = remember { derivedStateOf { composeState.value.attachmentDisabled } }
   Box(
@@ -656,66 +658,62 @@ fun ChatLayout(
         },
       )
   ) {
-      ModalBottomSheetLayout(
-        scrimColor = Color.Black.copy(alpha = 0.12F),
-        sheetElevation = 0.dp,
-        sheetContent = {
-          ChooseAttachmentView(
-            attachmentOption,
-            hide = { scope.launch { attachmentBottomSheetState.hide() } }
-          )
-        },
-        sheetState = attachmentBottomSheetState,
-        sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
-      ) {
-        val floatingButton: MutableState<@Composable () -> Unit> = remember { mutableStateOf({}) }
-        val setFloatingButton = { button: @Composable () -> Unit ->
-          floatingButton.value = button
-        }
+    println("LALAL CHATLAYOUT TOP 1")
 
-        Scaffold(
-          topBar = {
-            if (selectedChatItems.value == null) {
-              val chatInfo = chatInfo.value
-              if (chatInfo != null) {
-                ChatInfoToolbar(chatInfo, back, info, startCall, endCall, addMembers, openGroupLink, changeNtfsState, onSearchValueChanged, showSearch)
-              }
-            } else {
-              SelectedItemsTopToolbar(selectedChatItems)
-            }
-          },
-          bottomBar = composeView,
-          floatingActionButton = { floatingButton.value() },
-          contentColor = LocalContentColor.current,
-          backgroundColor = Color.Unspecified
-        ) { contentPadding ->
-          val wallpaperImage = MaterialTheme.wallpaper.type.image
-          val wallpaperType = MaterialTheme.wallpaper.type
-          val backgroundColor = MaterialTheme.wallpaper.background ?: wallpaperType.defaultBackgroundColor(CurrentColors.value.base, MaterialTheme.colors.background)
-          val tintColor = MaterialTheme.wallpaper.tint ?: wallpaperType.defaultTintColor(CurrentColors.value.base)
-          BoxWithConstraints(Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colors.background)
-            .then(if (wallpaperImage != null)
-              Modifier.drawWithCache { chatViewBackground(wallpaperImage, wallpaperType, backgroundColor, tintColor) }
-            else
-              Modifier)
-            .padding(contentPadding)
-          ) {
-            val remoteHostId = remember { remoteHostId }.value
-            val chatInfo = remember { chatInfo }.value
-            if (chatInfo != null) {
-              ChatItemsList(
-                remoteHostId, chatInfo, unreadCount, composeState, searchValue,
-                useLinkPreviews, linkMode, selectedChatItems, showMemberInfo, loadPrevMessages, deleteMessage, deleteMessages,
-                receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, openDirectChat, forwardItem,
-                updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
-                setReaction, showItemDetails, markRead, setFloatingButton, onComposed, developerTools, showViaProxy,
-              )
-            }
+    ModalBottomSheetLayout(
+      scrimColor = Color.Black.copy(alpha = 0.12F),
+      sheetElevation = 0.dp,
+      sheetContent = {
+        ChooseAttachmentView(
+          attachmentOption,
+          hide = { scope.launch { attachmentBottomSheetState.hide() } }
+        )
+      },
+      sheetState = attachmentBottomSheetState,
+      sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
+    ) {
+      println("LALAL CHATLAYOUT TOP 2")
+      val wallpaperImage = MaterialTheme.wallpaper.type.image
+      val wallpaperType = MaterialTheme.wallpaper.type
+      val backgroundColor = MaterialTheme.wallpaper.background ?: wallpaperType.defaultBackgroundColor(CurrentColors.value.base, MaterialTheme.colors.background)
+      val tintColor = MaterialTheme.wallpaper.tint ?: wallpaperType.defaultTintColor(CurrentColors.value.base)
+      Column(
+        Modifier
+          .background(MaterialTheme.colors.background)
+          .then(if (wallpaperImage != null)
+            Modifier.drawWithCache { chatViewBackground(wallpaperImage, wallpaperType, backgroundColor, tintColor) }
+          else
+            Modifier)
+      ) {
+        if (selectedChatItems.value == null) {
+          val chatInfo = chatInfo.value
+          if (chatInfo != null) {
+            ChatInfoToolbar(chatInfo, back, info, startCall, endCall, addMembers, openGroupLink, changeNtfsState, onSearchValueChanged, showSearch)
+          }
+        } else {
+          SelectedItemsTopToolbar(selectedChatItems)
+        }
+        Box(
+          Modifier
+            .fillMaxWidth()
+            .weight(1f)
+        ) {
+          println("LALAL CHATLAYOUT")
+          val remoteHostId = remember { remoteHostId }.value
+          val chatInfo = remember { chatInfo }.value
+          if (chatInfo != null) {
+            ChatItemsList(
+              remoteHostId, chatInfo, unreadCount, composeState, searchValue,
+              useLinkPreviews, linkMode, selectedChatItems, showMemberInfo, loadPrevMessages, deleteMessage, deleteMessages,
+              receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, openDirectChat, forwardItem,
+              updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
+              setReaction, showItemDetails, markRead, onComposed, developerTools, showViaProxy,
+            )
           }
         }
+        composeView()
       }
+    }
   }
 }
 
@@ -882,14 +880,12 @@ fun ChatInfoToolbar(
     onSearchValueChanged = onSearchValueChanged,
     buttons = barButtons
   )
-
-  Divider(Modifier.statusBarsPadding().padding(top = AppBarHeight * fontSizeSqrtMultiplier))
-
-  Box(Modifier.fillMaxWidth().wrapContentSize(Alignment.TopEnd).offset(y = AppBarHeight * fontSizeSqrtMultiplier)) {
+  Box(Modifier.fillMaxWidth().wrapContentSize(Alignment.TopEnd)) {
     DefaultDropdownMenu(showMenu) {
       menuItems.forEach { it() }
     }
   }
+  Divider()
 }
 
 @Composable
@@ -931,7 +927,7 @@ private fun ContactVerifiedShield() {
 }
 
 @Composable
-fun BoxWithConstraintsScope.ChatItemsList(
+fun BoxScope.ChatItemsList(
   remoteHostId: Long?,
   chatInfo: ChatInfo,
   unreadCount: State<Int>,
@@ -960,11 +956,11 @@ fun BoxWithConstraintsScope.ChatItemsList(
   setReaction: (ChatInfo, ChatItem, Boolean, MsgReaction) -> Unit,
   showItemDetails: (ChatInfo, ChatItem) -> Unit,
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
-  setFloatingButton: (@Composable () -> Unit) -> Unit,
   onComposed: suspend (chatId: String) -> Unit,
   developerTools: Boolean,
   showViaProxy: Boolean
 ) {
+  println("LALAL CHATITEMSLIST")
   val listState = rememberLazyListState()
   val scope = rememberCoroutineScope()
   ScrollToBottom(chatInfo.id, listState, chatModel.chatItems)
@@ -985,11 +981,11 @@ fun BoxWithConstraintsScope.ChatItemsList(
 
   Spacer(Modifier.size(8.dp))
   val reversedChatItems by remember { derivedStateOf { chatModel.chatItems.asReversed() } }
-  val maxHeightRounded = with(LocalDensity.current) { maxHeight.roundToPx() }
+  val maxHeight = remember { derivedStateOf { listState.layoutInfo.viewportSize.height } }
   val scrollToItem: (Long) -> Unit = { itemId: Long ->
     val index = reversedChatItems.indexOfFirst { it.id == itemId }
     if (index != -1) {
-      scope.launch { listState.animateScrollToItem(kotlin.math.min(reversedChatItems.lastIndex, index + 1), -maxHeightRounded) }
+      scope.launch { listState.animateScrollToItem(kotlin.math.min(reversedChatItems.lastIndex, index + 1), -maxHeight.value) }
     }
   }
   // TODO: Having this block on desktop makes ChatItemsList() to recompose twice on chatModel.chatId update instead of once
@@ -1010,6 +1006,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   )
   LazyColumnWithScrollBar(Modifier.align(Alignment.BottomCenter), state = listState, reverseLayout = true) {
     itemsIndexed(reversedChatItems, key = { _, item -> item.id to item.meta.createdAt.toEpochMilliseconds() }) { i, cItem ->
+      println("LALAL ITEM $i")
       CompositionLocalProvider(
         // Makes horizontal and vertical scrolling to coexist nicely.
         // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view
@@ -1020,7 +1017,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
             scope.launch {
               listState.scrollToItem(
                 kotlin.math.min(reversedChatItems.lastIndex, indexInReversed + 1),
-                -maxHeightRounded
+                -maxHeight.value
               )
             }
           }
@@ -1264,7 +1261,9 @@ fun BoxWithConstraintsScope.ChatItemsList(
       }
     }
   }
-  FloatingButtons(chatModel.chatItems, unreadCount, remoteHostId, chatInfo, searchValue, markRead, setFloatingButton, listState)
+  println("LALAL REDRAW TOP")
+
+  FloatingButtons(chatModel.chatItems, unreadCount, remoteHostId, chatInfo, searchValue, markRead, listState)
 
   FloatingDate(
     Modifier.padding(top = 10.dp).align(Alignment.TopCenter),
@@ -1322,87 +1321,61 @@ private fun ScrollToBottom(chatId: ChatId, listState: LazyListState, chatItems: 
 }
 
 @Composable
-fun BoxWithConstraintsScope.FloatingButtons(
+fun BoxScope.FloatingButtons(
   chatItems: State<List<ChatItem>>,
   unreadCount: State<Int>,
   remoteHostId: Long?,
   chatInfo: ChatInfo,
   searchValue: State<String>,
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
-  setFloatingButton: (@Composable () -> Unit) -> Unit,
   listState: LazyListState
 ) {
   val scope = rememberCoroutineScope()
-  var firstVisibleIndex by remember { mutableStateOf(listState.firstVisibleItemIndex) }
-  var lastIndexOfVisibleItems by remember { mutableStateOf(listState.layoutInfo.visibleItemsInfo.lastIndex) }
-  var firstItemIsVisible by remember { mutableStateOf(firstVisibleIndex == 0) }
-
-  LaunchedEffect(listState) {
-    snapshotFlow { listState.firstVisibleItemIndex }
-      .distinctUntilChanged()
-      .collect {
-        firstVisibleIndex = it
-        firstItemIsVisible = firstVisibleIndex == 0
-      }
+  val maxHeight = remember { derivedStateOf { listState.layoutInfo.viewportSize.height } }
+  val maxWidth = remember { derivedStateOf { listState.layoutInfo.viewportSize.width } }
+  SideEffect {
+    println("LALAL REDRAW ${maxHeight.value}")
   }
-
-  LaunchedEffect(listState) {
-    // When both snapshotFlows located in one LaunchedEffect second block will never be called because coroutine is paused on first block
-    // so separate them into two LaunchedEffects
-    snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastIndex }
-      .distinctUntilChanged()
-      .collect {
-        lastIndexOfVisibleItems = it
-      }
-  }
-  val bottomUnreadCount by remember {
+  val bottomUnreadCount = remember {
     derivedStateOf {
       if (unreadCount.value == 0) return@derivedStateOf 0
       val items = chatItems.value
-      val from = items.lastIndex - firstVisibleIndex - lastIndexOfVisibleItems
+      val from = items.lastIndex - listState.firstVisibleItemIndex - listState.layoutInfo.visibleItemsInfo.lastIndex
       if (items.size <= from || from < 0) return@derivedStateOf 0
 
       items.subList(from, items.size).count { it.isRcvNew }
     }
   }
-  val firstVisibleOffset = (-with(LocalDensity.current) { maxHeight.roundToPx() } * 0.8).toInt()
 
-  LaunchedEffect(bottomUnreadCount, firstItemIsVisible) {
-    val showButtonWithCounter = bottomUnreadCount > 0 && !firstItemIsVisible && searchValue.value.isEmpty()
-    val showButtonWithArrow = !showButtonWithCounter && !firstItemIsVisible
-    setFloatingButton(
-      bottomEndFloatingButton(
-        bottomUnreadCount,
-        showButtonWithCounter,
-        showButtonWithArrow,
-        onClickArrowDown = {
-          scope.launch { listState.animateScrollToItem(0) }
-        },
-        onClickCounter = {
-          scope.launch { listState.animateScrollToItem(kotlin.math.max(0, bottomUnreadCount - 1), firstVisibleOffset) }
-        }
-      ))
-  }
+  val showBottomButtonWithCounter = remember { derivedStateOf { bottomUnreadCount.value > 0 && listState.firstVisibleItemIndex != 0 && searchValue.value.isEmpty() } }
+  val showBottomButtonWithArrow = remember { derivedStateOf { !showBottomButtonWithCounter.value && listState.firstVisibleItemIndex != 0 } }
+  BottomEndFloatingButton(
+    bottomUnreadCount,
+    showBottomButtonWithCounter,
+    showBottomButtonWithArrow,
+    onClickArrowDown = {
+      scope.launch { listState.animateScrollToItem(0) }
+    },
+    onClickCounter = {
+      val firstVisibleOffset = (-maxHeight.value * 0.8).toInt()
+      scope.launch { listState.animateScrollToItem(kotlin.math.max(0, bottomUnreadCount.value - 1), firstVisibleOffset) }
+    }
+  )
   // Don't show top FAB if is in search
   if (searchValue.value.isNotEmpty()) return
   val fabSize = 56.dp
-  val topUnreadCount by remember {
-    derivedStateOf { unreadCount.value - bottomUnreadCount }
-  }
-  val showButtonWithCounter = topUnreadCount > 0
-  val height = with(LocalDensity.current) { maxHeight.toPx() }
+  val topUnreadCount = remember { derivedStateOf { unreadCount.value - bottomUnreadCount.value } }
   val showDropDown = remember { mutableStateOf(false) }
 
   TopEndFloatingButton(
     Modifier.padding(end = DEFAULT_PADDING, top = 24.dp).align(Alignment.TopEnd),
     topUnreadCount,
-    showButtonWithCounter,
-    onClick = { scope.launch { listState.animateScrollBy(height) } },
+    onClick = { scope.launch { listState.animateScrollBy(maxHeight.value.toFloat()) } },
     onLongClick = { showDropDown.value = true }
   )
 
-  Box {
-    DefaultDropdownMenu(showDropDown, offset = DpOffset(this@FloatingButtons.maxWidth - DEFAULT_PADDING, 24.dp + fabSize)) {
+  Box(Modifier.offset { IntOffset(maxWidth.value - DEFAULT_PADDING.roundToPx(), (24.dp + fabSize).roundToPx()) }) {
+    DefaultDropdownMenu(showDropDown) {
       ItemAction(
         generalGetString(MR.strings.mark_read),
         painterResource(MR.images.ic_check),
@@ -1410,7 +1383,7 @@ fun BoxWithConstraintsScope.FloatingButtons(
           val minUnreadItemId = chatModel.chats.value.firstOrNull { it.remoteHostId == remoteHostId && it.id == chatInfo.id }?.chatStats?.minUnreadItemId ?: return@ItemAction
           markRead(
             CC.ItemRange(minUnreadItemId, chatItems.value[chatItems.value.size - listState.layoutInfo.visibleItemsInfo.lastIndex - 1].id - 1),
-            bottomUnreadCount
+            bottomUnreadCount.value
           )
           showDropDown.value = false
         })
@@ -1472,12 +1445,11 @@ fun MemberImage(member: GroupMember) {
 @Composable
 private fun TopEndFloatingButton(
   modifier: Modifier = Modifier,
-  unreadCount: Int,
-  showButtonWithCounter: Boolean,
+  unreadCount: State<Int>,
   onClick: () -> Unit,
   onLongClick: () -> Unit
 ) = when {
-  showButtonWithCounter -> {
+  unreadCount.value > 0 -> {
     val interactionSource = interactionSourceWithDetection(onClick, onLongClick)
     FloatingActionButton(
       {}, // no action here
@@ -1487,7 +1459,7 @@ private fun TopEndFloatingButton(
       interactionSource = interactionSource,
     ) {
       Text(
-        unreadCountStr(unreadCount),
+        unreadCountStr(unreadCount.value),
         color = MaterialTheme.colors.primary,
         fontSize = 14.sp,
       )
@@ -1694,48 +1666,43 @@ fun openGroupLink(groupInfo: GroupInfo, rhId: Long?, view: Any? = null, close: (
   }
 }
 
-private fun bottomEndFloatingButton(
-  unreadCount: Int,
-  showButtonWithCounter: Boolean,
-  showButtonWithArrow: Boolean,
+@Composable
+private fun BoxScope.BottomEndFloatingButton(
+  unreadCount: State<Int>,
+  showButtonWithCounter: State<Boolean>,
+  showButtonWithArrow: State<Boolean>,
   onClickArrowDown: () -> Unit,
   onClickCounter: () -> Unit
-): @Composable () -> Unit = when {
-  showButtonWithCounter -> {
-    {
-      FloatingActionButton(
-        onClick = onClickCounter,
-        elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
-        modifier = Modifier.size(48.dp),
-        backgroundColor = MaterialTheme.colors.secondaryVariant,
-      ) {
-        Text(
-          unreadCountStr(unreadCount),
-          color = MaterialTheme.colors.primary,
-          fontSize = 14.sp,
-        )
-      }
+) = when {
+  showButtonWithCounter.value -> {
+    FloatingActionButton(
+      onClick = onClickCounter,
+      elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
+      modifier = Modifier.padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING).align(Alignment.BottomEnd).size(48.dp),
+      backgroundColor = MaterialTheme.colors.secondaryVariant,
+    ) {
+      Text(
+        unreadCountStr(unreadCount.value),
+        color = MaterialTheme.colors.primary,
+        fontSize = 14.sp,
+      )
     }
   }
-  showButtonWithArrow -> {
-    {
-      FloatingActionButton(
-        onClick = onClickArrowDown,
-        elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
-        modifier = Modifier.size(48.dp),
-        backgroundColor = MaterialTheme.colors.secondaryVariant,
-      ) {
-        Icon(
-          painter = painterResource(MR.images.ic_keyboard_arrow_down),
-          contentDescription = null,
-          tint = MaterialTheme.colors.primary
-        )
-      }
+  showButtonWithArrow.value -> {
+    FloatingActionButton(
+      onClick = onClickArrowDown,
+      elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
+      modifier = Modifier.padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING).align(Alignment.BottomEnd).size(48.dp),
+      backgroundColor = MaterialTheme.colors.secondaryVariant,
+    ) {
+      Icon(
+        painter = painterResource(MR.images.ic_keyboard_arrow_down),
+        contentDescription = null,
+        tint = MaterialTheme.colors.primary
+      )
     }
   }
-  else -> {
-    {}
-  }
+  else -> {}
 }
 
 @Composable

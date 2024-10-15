@@ -912,6 +912,7 @@ object AppearanceScope {
     ColumnWithScrollBar(
       Modifier
         .fillMaxWidth()
+        .imePadding()
     ) {
       AppBarTitle(name.text)
 

@@ -7,10 +7,9 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalLayoutDirection
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.views.helpers.*
 import kotlinx.coroutines.flow.filter
 import kotlin.math.absoluteValue
@@ -40,19 +39,15 @@ actual fun LazyColumnWithScrollBar(
         }
       }
   }
+  val direction = LocalLayoutDirection.current
+  val paddingEnd = WindowInsets.navigationBars.asPaddingValues().calculateEndPadding(direction)
   if (connection != null) {
-    LazyColumn(modifier.nestedScroll(connection), state, contentPadding, reverseLayout, verticalArrangement, horizontalAlignment, flingBehavior, userScrollEnabled) {
+    LazyColumn(modifier.nestedScroll(connection).padding(end = paddingEnd), state, contentPadding, reverseLayout, verticalArrangement, horizontalAlignment, flingBehavior, userScrollEnabled) {
       content()
-      item {
-        Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.systemBars))
-      }
     }
   } else {
-    LazyColumn(modifier, state, contentPadding, reverseLayout, verticalArrangement, horizontalAlignment, flingBehavior, userScrollEnabled) {
+    LazyColumn(modifier.padding(end = paddingEnd), state, contentPadding, reverseLayout, verticalArrangement, horizontalAlignment, flingBehavior, userScrollEnabled) {
       content()
-      item {
-        Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.systemBars))
-      }
     }
   }
 }
@@ -66,6 +61,7 @@ actual fun ColumnWithScrollBar(
   maxIntrinsicSize: Boolean,
   content: @Composable() (ColumnScope.() -> Unit)
 ) {
+  val modifier = modifier.imePadding()
   val state = state ?: LocalAppBarHandler.current?.scrollState ?: rememberScrollState()
   val connection = LocalAppBarHandler.current?.connection
   LaunchedEffect(Unit) {
@@ -78,21 +74,22 @@ actual fun ColumnWithScrollBar(
         }
       }
   }
+  val direction = LocalLayoutDirection.current
   if (connection != null) {
       Column(
         if (maxIntrinsicSize) {
-          modifier.nestedScroll(connection).verticalScroll(state).height(IntrinsicSize.Max)
+          modifier.nestedScroll(connection).verticalScroll(state).height(IntrinsicSize.Max).padding(end = WindowInsets.navigationBars.asPaddingValues().calculateEndPadding(direction))
         } else {
-          modifier.nestedScroll(connection).verticalScroll(state)
+          modifier.nestedScroll(connection).verticalScroll(state).padding(end = WindowInsets.navigationBars.asPaddingValues().calculateEndPadding(direction))
         }, verticalArrangement, horizontalAlignment) {
         content()
         Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.systemBars))
       }
   } else {
       Column(if (maxIntrinsicSize) {
-        modifier.verticalScroll(state).height(IntrinsicSize.Max)
+        modifier.verticalScroll(state).height(IntrinsicSize.Max).padding(end = WindowInsets.navigationBars.asPaddingValues().calculateEndPadding(direction))
       } else {
-        modifier.verticalScroll(state)
+        modifier.verticalScroll(state).padding(end = WindowInsets.navigationBars.asPaddingValues().calculateEndPadding(direction))
       }, verticalArrangement, horizontalAlignment) {
         content()
         Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.systemBars))

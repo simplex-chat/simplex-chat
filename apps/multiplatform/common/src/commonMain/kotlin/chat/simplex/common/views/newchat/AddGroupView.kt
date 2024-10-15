@@ -84,10 +84,9 @@ fun AddGroupLayout(
   val focusRequester = remember { FocusRequester() }
   val incognito = remember { mutableStateOf(incognitoPref.get()) }
 
-  ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
     ModalBottomSheetLayout(
       scrimColor = Color.Black.copy(alpha = 0.12F),
-      modifier = Modifier.navigationBarsWithImePadding(),
+      modifier = Modifier.imePadding(),
       sheetContent = {
         GetImageBottomSheet(
           chosenImage,
@@ -170,7 +169,6 @@ fun AddGroupLayout(
         }
       }
     }
-  }
 }
 
 fun canCreateProfile(displayName: String): Boolean = displayName.trim().isNotEmpty() && isValidDisplayName(displayName.trim())

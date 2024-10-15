@@ -14,15 +14,6 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.filter
 import java.io.File
 
-expect fun Modifier.navigationBarsWithImePadding(): Modifier
-
-@Composable
-expect fun ProvideWindowInsets(
-  consumeWindowInsets: Boolean = true,
-  windowInsetsAnimationsEnabled: Boolean = true,
-  content: @Composable () -> Unit
-)
-
 @Composable
 expect fun Modifier.desktopOnExternalDrag(
   enabled: Boolean = true,

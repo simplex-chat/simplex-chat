@@ -35,7 +35,7 @@ fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
     },
     bottomBar = {
       if (oneHandUI.value) {
-        Column {
+        Column(Modifier.imePadding()) {
           Divider()
           ShareListToolbar(chatModel, stopped) { searchInList = it.trim() }
         }
@@ -73,6 +73,9 @@ fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
       Column(
         modifier = Modifier.fillMaxSize()
       ) {
+        if (oneHandUI.value) {
+          StatusBarBackground()
+        }
         if (chatModel.chats.value.isNotEmpty()) {
           ShareList(
             chatModel,
@@ -213,7 +216,7 @@ private fun ShareList(
     }
   }
   LazyColumnWithScrollBar(
-    modifier = Modifier.fillMaxSize(),
+    modifier = Modifier.fillMaxSize().then(if (!oneHandUI.value) Modifier.imePadding() else Modifier),
     reverseLayout = oneHandUI.value
   ) {
     items(chats) { chat ->
@@ -224,6 +227,11 @@ private fun ShareList(
         isVoice = isVoice,
         hasSimplexLink = hasSimplexLink,
       )
+    }
+    if (!oneHandUI.value) {
+      item {
+        Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
+      }
     }
   }
 }
