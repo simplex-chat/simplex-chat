@@ -183,8 +183,9 @@ class NotificationService: UNNotificationServiceExtension {
                     deliverBestAttemptNtf()
                 }
             }
-        default:
-            deliverBestAttemptNtf()
+        case .active: contentHandler(UNMutableNotificationContent())
+        case .activating: contentHandler(UNMutableNotificationContent())
+        case .bgRefresh: contentHandler(UNMutableNotificationContent())
         }
     }
 
@@ -376,16 +377,8 @@ class NotificationService: UNNotificationServiceExtension {
         if let handler = contentHandler, let ntf = prepareNotification() {
             contentHandler = nil
             bestAttemptNtf = nil
-            let deliver: (UNMutableNotificationContent?) -> Void = { ntf in
-                let useNtf = if let ntf = ntf {
-                    appStateGroupDefault.get().running ? UNMutableNotificationContent() : ntf
-                } else {
-                    UNMutableNotificationContent()
-                }
-                handler(useNtf)
-            }
             switch ntf {
-            case let .nse(content): deliver(content)
+            case let .nse(content): handler(content)
             case let .callkit(invitation):
                 logger.debug("NotificationService reportNewIncomingVoIPPushPayload for \(invitation.contact.id)")
                 CXProvider.reportNewIncomingVoIPPushPayload([
@@ -396,10 +389,10 @@ class NotificationService: UNNotificationServiceExtension {
                     "callTs": invitation.callTs.timeIntervalSince1970
                 ]) { error in
                     logger.debug("reportNewIncomingVoIPPushPayload result: \(error)")
-                    deliver(error == nil ? nil : createCallInvitationNtf(invitation))
+                    handler(error == nil ? UNMutableNotificationContent() : createCallInvitationNtf(invitation))
                 }
-            case .empty: deliver(nil) // used to mute notifications that did not unsubscribe yet
-            case .msgInfo: deliver(nil) // unreachable, the best attempt is never set to msgInfo
+            case .empty: handler(UNMutableNotificationContent()) // used to mute notifications that did not unsubscribe yet
+            case .msgInfo: handler(UNMutableNotificationContent()) // unreachable, the best attempt is never set to msgInfo
             }
         }
     }
