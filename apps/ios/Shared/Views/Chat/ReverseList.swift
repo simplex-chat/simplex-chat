@@ -96,9 +96,14 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             ) { (tableView, indexPath, item) -> UITableViewCell? in
                 if let section = self.dataSource.sectionIdentifier(for: indexPath.section) {
                     let itemCount = self.getTotalItemsInItemSection(indexPath: indexPath)
-                    if self.representer.activeSection == section, self.scrollDirection == .toOldest, indexPath.item > itemCount - 8, itemCount > 8 {
-                        let lastItem = self.getLastItemInItemSection(indexPath: indexPath)
-                        self.representer.loadPage(.toOldest, section, lastItem)
+                    if self.representer.activeSection == section {
+                        if self.scrollDirection == .toOldest, indexPath.item > itemCount - 8, itemCount > 8 {
+                            let lastItem = self.getLastItemInItemSection(indexPath: indexPath)
+                            self.representer.loadPage(.toOldest, section, lastItem)
+                        } else if self.scrollDirection == .toLatest, indexPath.item < 8, itemCount > 8 {
+                            let firstItem = self.getFirstItemInItemSection(indexPath: indexPath)
+                            self.representer.loadPage(.toLatest, section, firstItem)
+                        }
                     }
                 }
                 let cell = tableView.dequeueReusableCell(withIdentifier: cellReuseId, for: indexPath)

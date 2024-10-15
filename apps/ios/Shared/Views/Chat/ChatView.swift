@@ -13,6 +13,11 @@ import Combine
 
 private let memberImageSize: CGFloat = 34
 
+struct PaginationBoundary {
+    var oldest: Bool
+    var latest: Bool
+}
+
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var im = ItemsModel.shared
@@ -33,7 +38,7 @@ struct ChatView: View {
     @State private var customUserProfile: Profile?
     @State private var connectionCode: String?
     @State private var loadingItems = false
-    @State private var firstPage = false
+    @State private var paginationBoundary = PaginationBoundary(oldest: false, latest: false)
     @State private var revealedChatItem: ChatItem?
     @State private var searchMode = false
     @State private var searchText: String = ""
@@ -365,6 +370,10 @@ struct ChatView: View {
             }
         }
         ChatView.FloatingButtonModel.shared.totalUnread = chat.chatStats.unreadCount
+        itemSection.removeAll()
+        im.reversedChatItems.forEach {
+            itemSection[$0.id] = .bottom
+        }
     }
 
     private func searchToolbar() -> some View {
@@ -842,10 +851,18 @@ struct ChatView: View {
             await MainActor.run { forwardedChatItems = fci }
         }
     }
+    
+    private func boundaryReached(_ direction: ChatScrollDirection) -> Bool {
+        return (direction == .toLatest && paginationBoundary.latest) || (direction == .toOldest && paginationBoundary.oldest)
+    }
+    
+    private func setBoundary(_ direction: ChatScrollDirection) {
+        direction == .toLatest ? (paginationBoundary.latest = true) : (paginationBoundary.oldest = true)
+    }
 
     private func loadChatItems(_ cInfo: ChatInfo, _ direction: ChatScrollDirection, _ section: ChatSection, _ chatItem: ChatItem?) {
         Task {
-            if loadingItems || firstPage { return }
+            if loadingItems || boundaryReached(direction)  { return }
             loadingItems = true
             do {
                 var reversedPage = Array<ChatItem>()
@@ -853,14 +870,13 @@ struct ChatView: View {
                 // Load additional items until the page is +50 large after merging
                 while chatItemsAvailable && filtered(reversedPage).count < loadItemsPerPage {
                     let pagination: ChatPagination =
-                        if direction == .toOldest, let lastItem = chatItem ?? reversedPage.last ?? im.reversedChatItems.last {
-                            .before(chatItemId: lastItem.id, count: loadItemsPerPage)
-                        } else if direction == .toLatest, let firstItem = chatItem ?? reversedPage.first ?? im.reversedChatItems.first {
-                            // TODO: Replace with anchor.
-                            .after(chatItemId: firstItem.id, count: loadItemsPerPage)
-                        } else {
-                            .last(count: loadItemsPerPage)
-                        }
+                    if direction == .toOldest, let lastItem = chatItem ?? reversedPage.last ?? im.reversedChatItems.last {
+                        .before(chatItemId: lastItem.id, count: loadItemsPerPage)
+                    } else if direction == .toLatest, let firstItem = chatItem ?? reversedPage.first ?? im.reversedChatItems.first {
+                        .after(chatItemId: firstItem.id, count: loadItemsPerPage)
+                    } else {
+                        .last(count: loadItemsPerPage)
+                    }
                     let chatItems = try await apiGetChatItems(
                         type: cInfo.chatType,
                         id: cInfo.apiId,
@@ -872,18 +888,40 @@ struct ChatView: View {
                 }
                 await MainActor.run {
                     if reversedPage.count == 0  {
-                        firstPage = true
+                        setBoundary(direction)
                     } else {
                         var reversedPageToAppend = Array<ChatItem>()
+                        var targetSection = section
+                        
+                        if let sectionIntersectionItem = reversedPage.first(where: { itemSection[$0.id] != nil && itemSection[$0.id] != section }) {
+                            let sectionToDrop = itemSection[sectionIntersectionItem.id] == .bottom ? section : (itemSection[sectionIntersectionItem.id] ?? .destination)
+                            targetSection = itemSection[sectionIntersectionItem.id] == .bottom ? .bottom : section
+                            im.reversedChatItems.forEach {
+                                if itemSection[$0.id] == sectionToDrop {
+                                    itemSection[$0.id] = targetSection
+                                }
+                            }
+                        }
+                        
                         reversedPage.forEach { ci in
                             if itemSection[ci.id] == nil {
                                 reversedPageToAppend.append(ci)
-                                itemSection[ci.id] = section
-                            } else {
-                                // TODO: Maybe merge
+                                itemSection[ci.id] = targetSection
                             }
                         }
-                        im.reversedChatItems.append(contentsOf: reversedPageToAppend)
+                        
+                        self.activeSection = targetSection
+                        
+                        if direction == .toLatest {
+                            let at = if let chatItemId = chatItem?.id, let index = im.reversedChatItems.firstIndex(where: { $0.id == chatItemId }) {
+                                index
+                            } else {
+                                0
+                            }
+                            im.reversedChatItems.insert(contentsOf: reversedPageToAppend, at: at)
+                        } else {
+                            im.reversedChatItems.append(contentsOf: reversedPageToAppend)
+                        }
                     }
                     loadingItems = false
                 }
@@ -925,14 +963,10 @@ struct ChatView: View {
                     reversedPage.append(contentsOf: chatItems.reversed())
                 }
                 await MainActor.run {
-                    if reversedPage.count == 0 {
-                        firstPage = true
-                    } else {
-                        reversedPage.forEach { ci in
-                            itemSection[ci.id] = .destination
-                        }
-                        im.reversedChatItems.append(contentsOf: reversedPage)
+                    reversedPage.forEach { ci in
+                        itemSection[ci.id] = .destination
                     }
+                    im.reversedChatItems.append(contentsOf: reversedPage)
                     loadingItems = false
                 }
             } catch let error {
