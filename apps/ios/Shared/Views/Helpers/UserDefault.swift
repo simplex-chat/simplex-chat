@@ -11,7 +11,7 @@ import Combine
 
 @propertyWrapper
 public struct UserDefault<Value: Equatable>: DynamicProperty {
-    @StateObject private var observer = Observer()
+    @StateObject private var observer = UserDefaultObserver()
     let initialValue: Value
     let key: String
     let store: UserDefaults
@@ -38,7 +38,7 @@ public struct UserDefault<Value: Equatable>: DynamicProperty {
     }
 }
 
-private class Observer: ObservableObject {
+private class UserDefaultObserver: ObservableObject {
     private var subscribed = false
 
     func subscribe(to key: String) {
