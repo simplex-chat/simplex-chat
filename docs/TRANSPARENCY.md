@@ -6,7 +6,7 @@ revision: 16.07.2024
 
 # Transparency Reports
 
-**Updated**: Jul 16, 2024
+**Updated**: Oct 14, 2024
 
 SimpleX Chat Ltd. is a company registered in the UK – it develops communication software enabling users to operate and communicate via SimpleX network, without user profile identifiers of any kind, and without having their data hosted by any network infrastructure operators.
 
@@ -23,6 +23,9 @@ Our objective is to consistently ensure that no user data and absolute minimum o
   - [Trust in servers](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md#trust-in-servers)
   - [Encryption Primitives Used](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md#encryption-primitives-used)
   - [Threat model](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md#threat-model)
+- Security assessments:
+  - Trail of Bits, SimpleX cryptography and networking, [October 2022](../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
+  - Trail of Bits, the cryptographic review of SimpleX protocols design, [July 2024](../blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.md).
 
 Have a more specific question? Reach out to us via [SimpleX Chat](https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion) or via email [chat@simplex.chat](mailto:chat@simplex.chat).
 
