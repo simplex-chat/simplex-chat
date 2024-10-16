@@ -107,7 +107,6 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
         chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == activeChatInfo.value?.id }?.chatStats?.unreadCount ?: 0
       }
     }
-    println("LALAL TOP")
     val clipboard = LocalClipboardManager.current
     when (chatInfo) {
       is ChatInfo.Direct, is ChatInfo.Group, is ChatInfo.Local -> {
@@ -621,7 +620,6 @@ fun ChatLayout(
   showViaProxy: Boolean,
   showSearch: MutableState<Boolean>
 ) {
-  println("LALAL CHATLAYOUT TOP")
   val scope = rememberCoroutineScope()
   val attachmentDisabled = remember { derivedStateOf { composeState.value.attachmentDisabled } }
   Box(
@@ -644,8 +642,6 @@ fun ChatLayout(
         },
       )
   ) {
-    println("LALAL CHATLAYOUT TOP 1")
-
     ModalBottomSheetLayout(
       scrimColor = Color.Black.copy(alpha = 0.12F),
       sheetElevation = 0.dp,
@@ -658,7 +654,6 @@ fun ChatLayout(
       sheetState = attachmentBottomSheetState,
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
-      println("LALAL CHATLAYOUT TOP 2")
       val wallpaperImage = MaterialTheme.wallpaper.type.image
       val wallpaperType = MaterialTheme.wallpaper.type
       val backgroundColor = MaterialTheme.wallpaper.background ?: wallpaperType.defaultBackgroundColor(CurrentColors.value.base, MaterialTheme.colors.background)
@@ -684,7 +679,6 @@ fun ChatLayout(
             .fillMaxWidth()
             .weight(1f)
         ) {
-          println("LALAL CHATLAYOUT")
           val remoteHostId = remember { remoteHostId }.value
           val chatInfo = remember { chatInfo }.value
           if (chatInfo != null) {
@@ -946,7 +940,6 @@ fun BoxScope.ChatItemsList(
   developerTools: Boolean,
   showViaProxy: Boolean
 ) {
-  println("LALAL CHATITEMSLIST")
   val listState = rememberLazyListState()
   val scope = rememberCoroutineScope()
   ScrollToBottom(chatInfo.id, listState, chatModel.chatItems)
@@ -992,7 +985,6 @@ fun BoxScope.ChatItemsList(
   )
   LazyColumnWithScrollBar(Modifier.align(Alignment.BottomCenter), state = listState, reverseLayout = true) {
     itemsIndexed(reversedChatItems, key = { _, item -> item.id to item.meta.createdAt.toEpochMilliseconds() }) { i, cItem ->
-      println("LALAL ITEM $i")
       CompositionLocalProvider(
         // Makes horizontal and vertical scrolling to coexist nicely.
         // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view
@@ -1247,8 +1239,6 @@ fun BoxScope.ChatItemsList(
       }
     }
   }
-  println("LALAL REDRAW TOP")
-
   FloatingButtons(chatModel.chatItems, unreadCount, remoteHostId, chatInfo, searchValue, markRead, listState)
 
   FloatingDate(
@@ -1318,10 +1308,6 @@ fun BoxScope.FloatingButtons(
 ) {
   val scope = rememberCoroutineScope()
   val maxHeight = remember { derivedStateOf { listState.layoutInfo.viewportSize.height } }
-  val maxWidth = remember { derivedStateOf { listState.layoutInfo.viewportSize.width } }
-  SideEffect {
-    println("LALAL REDRAW ${maxHeight.value}")
-  }
   val bottomUnreadCount = remember {
     derivedStateOf {
       if (unreadCount.value == 0) return@derivedStateOf 0
