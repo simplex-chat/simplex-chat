@@ -302,7 +302,7 @@ class NotificationService: UNNotificationServiceExtension {
             let expectedMessage = expectedMessages[id],
             let expectedMsgTs = expectedMessage.ntfMessage.expectedMsg_?.msgTs
         else {
-            return false
+            return !expectedMessages.allSatisfy { $0.value.ready }
         }
         let ntfInfo = expectedMessage.ntfMessage
         if !ntfInfo.user.showNotifications {
@@ -319,7 +319,7 @@ class NotificationService: UNNotificationServiceExtension {
                 logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): unexpected msgInfo, let other instance to process it, stopping this one")
                 expectedMessages[id]?.ready = true
                 self.deliverBestAttemptNtf()
-                return false
+                return !expectedMessages.allSatisfy { $0.value.ready }
             } else if (expectedMessages[id]?.allowedGetNextAttempts ?? 0) > 0, let receiveConnId = expectedMessages[id]?.receiveConnId {
                 logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): unexpected msgInfo, get next message")
                 expectedMessages[id]?.allowedGetNextAttempts -= 1
@@ -330,13 +330,13 @@ class NotificationService: UNNotificationServiceExtension {
                     logger.debug("NotificationService processNtf, on apiGetConnNtfMessage: msgInfo msgId = \(info.msgId, privacy: .private): no next message, deliver best attempt")
                     expectedMessages[id]?.ready = true
                     self.deliverBestAttemptNtf()
-                    return false
+                    return !expectedMessages.allSatisfy { $0.value.ready }
                 }
             } else {
                 logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): unknown message, let other instance to process it")
                 expectedMessages[id]?.ready = true
                 self.deliverBestAttemptNtf()
-                return false
+                return !expectedMessages.allSatisfy { $0.value.ready }
             }
         } else if ntfInfo.user.showNotifications {
             logger.debug("NotificationService processNtf: setting best attempt")
@@ -346,7 +346,7 @@ class NotificationService: UNNotificationServiceExtension {
             }
             return true
         }
-        return false
+        return !expectedMessages.allSatisfy { $0.value.ready }
     }
 
     func setBadgeCount() {
