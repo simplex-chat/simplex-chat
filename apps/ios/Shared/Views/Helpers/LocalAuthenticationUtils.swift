@@ -67,13 +67,12 @@ func systemAuthenticate(_ reason: String, _ completed: @escaping (LAResult) -> V
         laContext.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { success, authError in
             logger.debug("DEBUGGING: systemAuthenticate evaluatePolicy callback")
             DispatchQueue.main.async {
+                AppSheetState.shared.biometricAuth = false
                 if success {
                     completed(LAResult.success)
-                    AppSheetState.shared.biometricAuth = false
                 } else {
                     logger.error("DEBUGGING: systemAuthenticate authentication error: \(authError.debugDescription)")
                     completed(LAResult.failed(authError: authError?.localizedDescription))
-                    AppSheetState.shared.biometricAuth = false
                 }
             }
         }
