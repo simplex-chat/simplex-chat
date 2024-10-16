@@ -384,7 +384,7 @@ struct ChatListNavLink: View {
             .tint(theme.colors.primary)
         }
         .frame(height: dynamicRowHeight)
-        .appSheet(isPresented: $showContactConnectionInfo) {
+        .sheet(isPresented: $showContactConnectionInfo) {
             Group {
                 if case let .contactConnection(contactConnection) = chat.chatInfo {
                     ContactConnectionInfo(contactConnection: contactConnection)
@@ -464,7 +464,7 @@ struct ChatListNavLink: View {
             .padding(4)
             .frame(height: dynamicRowHeight)
             .onTapGesture { showInvalidJSON = true }
-            .appSheet(isPresented: $showInvalidJSON) {
+            .sheet(isPresented: $showInvalidJSON) {
                 invalidJSONView(json)
                     .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
             }

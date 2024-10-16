@@ -13,7 +13,6 @@ struct ContentView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
-    @ObservedObject var appSheetState = AppSheetState.shared
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var sceneDelegate: SceneDelegate
@@ -252,7 +251,7 @@ struct ContentView: View {
     private func mainView() -> some View {
         ZStack(alignment: .top) {
             ChatListView(activeUserPickerSheet: $chatListUserPickerSheet)
-                .redacted(reason: appSheetState.redactionReasons(protectScreen))
+                .redacted(reason: protectScreen && scenePhase != .active ? .placeholder : RedactionReasons())
             .onAppear {
                 requestNtfAuthorization()
                 // Local Authentication notice is to be shown on next start after onboarding is complete

@@ -29,7 +29,7 @@ struct NewChatMenuButton: View {
                 .scaledToFit()
                 .frame(width: 24, height: 24)
         }
-        .appSheet(isPresented: $showNewChatSheet) {
+        .sheet(isPresented: $showNewChatSheet) {
             NewChatSheet(pendingConnection: $pendingConnection)
                 .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
                 .onDisappear {
