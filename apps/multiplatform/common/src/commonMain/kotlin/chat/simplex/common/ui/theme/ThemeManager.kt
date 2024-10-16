@@ -106,7 +106,7 @@ object ThemeManager {
     CurrentColors.value = currentColors(null, null, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
     platform.androidSetNightModeIfSupported()
     val c = CurrentColors.value.colors
-    platform.androidSetStatusAndNavigationBarAppearance(c.isLight)
+    platform.androidSetStatusAndNavigationBarAppearance(c.isLight, c.isLight)
   }
 
   fun changeDarkTheme(theme: String) {

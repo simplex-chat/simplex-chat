@@ -38,14 +38,6 @@ actual fun SimpleAndAnimatedImageView(
     if (getLoadedFilePath(file) != null) {
       ModalManager.fullscreen.showCustomModal(animated = false) { close ->
         ImageFullScreenView(imageProvider, close)
-        if (smallView) {
-          DisposableEffect(Unit) {
-            onDispose {
-              val c = CurrentColors.value.colors
-              platform.androidSetStatusAndNavigationBarAppearance(c.isLight)
-            }
-          }
-        }
       }
     }
   }

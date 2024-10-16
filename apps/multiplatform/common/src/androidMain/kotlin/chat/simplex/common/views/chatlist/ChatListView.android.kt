@@ -75,9 +75,9 @@ private fun GreenLine(statusBarHeight: Dp, call: Call) {
     CallDuration(call)
   }
   DisposableEffect(Unit) {
-    platform.androidSetStatusAndNavigationBarAppearance(false)
+    platform.androidSetStatusAndNavigationBarAppearance(false, CurrentColors.value.colors.isLight)
     onDispose {
-      platform.androidSetStatusAndNavigationBarAppearance(CurrentColors.value.colors.isLight)
+      platform.androidSetStatusAndNavigationBarAppearance(CurrentColors.value.colors.isLight, CurrentColors.value.colors.isLight)
     }
   }
 }

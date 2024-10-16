@@ -8,7 +8,6 @@ import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.*
 import android.view.View
-import android.view.WindowManager.LayoutParams
 import androidx.compose.animation.core.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -275,21 +274,26 @@ class SimplexApp: Application(), LifecycleEventObserver {
         uiModeManager.setApplicationNightMode(mode)
       }
 
-      override fun androidSetStatusAndNavigationBarAppearance(isLight: Boolean) {
+      override fun androidSetStatusAndNavigationBarAppearance(isLightStatusBar: Boolean, isLightNavBar: Boolean) {
         val window = mainActivity.get()?.window ?: return
         @Suppress("DEPRECATION")
-        val light = isLight && chatModel.activeCall.value == null
+        val statusLight = isLightStatusBar && chatModel.activeCall.value == null
+        val navBarLight = isLightNavBar || windowOrientation() == WindowOrientation.LANDSCAPE
         val windowInsetController = ViewCompat.getWindowInsetsController(window.decorView)
-        if (windowInsetController?.isAppearanceLightStatusBars != light) {
-          windowInsetController?.isAppearanceLightStatusBars = light
+        if (windowInsetController?.isAppearanceLightStatusBars != statusLight) {
+          windowInsetController?.isAppearanceLightStatusBars = statusLight
         }
         window.navigationBarColor = Color.Transparent.toArgb()
-        if (windowInsetController?.isAppearanceLightNavigationBars != CurrentColors.value.colors.isLight) {
-          windowInsetController?.isAppearanceLightNavigationBars = CurrentColors.value.colors.isLight
+        if (windowInsetController?.isAppearanceLightNavigationBars != navBarLight) {
+          windowInsetController?.isAppearanceLightNavigationBars = navBarLight
         }
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-          window.decorView.systemUiVisibility = if (CurrentColors.value.colors.isLight) {
+          window.decorView.systemUiVisibility = if (statusLight && navBarLight) {
             View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+          } else if (statusLight) {
+            View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+          } else if (navBarLight) {
+            View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
           } else {
             0
           }

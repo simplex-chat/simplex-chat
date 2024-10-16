@@ -56,8 +56,14 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
   val scope = rememberCoroutineScope()
   val playersToRelease = rememberSaveable { mutableSetOf<URI>() }
   DisposableEffectOnGone(
-    always = { platform.androidSetStatusAndNavigationBarAppearance(CurrentColors.value.colors.isLight) },
-    whenGone = { playersToRelease.forEach { VideoPlayerHolder.release(it, true, true) } }
+    always = { platform.androidSetStatusAndNavigationBarAppearance(false, false) },
+    whenDispose = {
+      val c = CurrentColors.value.colors
+      platform.androidSetStatusAndNavigationBarAppearance(c.isLight, c.isLight)
+    },
+    whenGone = {
+      playersToRelease.forEach { VideoPlayerHolder.release(it, true, true) }
+    }
   )
 
   @Composable

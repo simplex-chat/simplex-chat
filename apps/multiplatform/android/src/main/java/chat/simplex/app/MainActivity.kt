@@ -29,7 +29,7 @@ class MainActivity: FragmentActivity() {
     mainActivity = WeakReference(this)
     platform.androidSetNightModeIfSupported()
     val c = CurrentColors.value.colors
-    platform.androidSetStatusAndNavigationBarAppearance(c.isLight)
+    platform.androidSetStatusAndNavigationBarAppearance(c.isLight, c.isLight)
     applyAppLocale(ChatModel.controller.appPrefs.appLanguage)
     // This flag makes status bar and navigation bar fully transparent. But on API level < 30 it breaks insets entirely
     // https://issuetracker.google.com/issues/236862874
