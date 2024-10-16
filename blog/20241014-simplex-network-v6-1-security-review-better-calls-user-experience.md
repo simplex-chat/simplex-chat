@@ -23,7 +23,7 @@ permalink: "/blog/20241014-simplex-network-v6-1-security-review-better-calls-use
 
 ## SimpleX cryptographic design review by Trail of Bits
 
-<img src="./images/20221108-trail-of-bits.jpg" width=240>
+<img src="./images/20221108-trail-of-bits.jpg" width=240 class="float-to-right">
 
 It's been almost two years since Trail of Bits did the first security assessment of SimpleX Chat.
 

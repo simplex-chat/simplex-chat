@@ -10,6 +10,8 @@ permalink: "/blog/20241016-wired-misleading-attack-on-privacy-of-communications.
 
 # Wired’s Misleading Attack on Privacy of Communications
 
+<img src="./images/20241016-wired-privacy.jpg" width="330" class="float-to-right">
+
 The [Wired article](https://www.wired.com/story/neo-nazis-flee-telegram-encrypted-app-simplex/) by David Gilbert is biased and misleading. By cherry-picking information from [the report](https://www.isdglobal.org/digital_dispatches/neo-nazi-accelerationists-seek-new-digital-refuge-amid-looming-telegram-crackdown/) by the Institute for Strategic Dialogue (ISD), Wired constructs a skewed narrative, focusing on who uses privacy-preserving technologies, ignoring the vital role of privacy in democratic societies. The article fails to mention that SimpleX network design and features prioritize privacy and anonymity in order to protect human rights defenders, journalists, and everyday users who value their privacy. Many ordinary families feel safer using SimpleX than non-private apps, because SimpleX makes it impossible for strangers to approach them.
 
 Filtering the facts to fit the story, instead of telling the story that describes the facts, is a violation of journalism ethics about factual reporting. It also creates a real harm to democracy, as it frames privacy as something negative to their audience, &mdash; and democratic governance is impossible without privacy.
