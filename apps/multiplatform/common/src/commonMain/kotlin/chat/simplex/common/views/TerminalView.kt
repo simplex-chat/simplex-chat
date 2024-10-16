@@ -20,6 +20,7 @@ import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.chatlist.NavigationBarBackground
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
@@ -170,13 +171,16 @@ fun TerminalLog(floating: Boolean) {
               ModalManager.start
             }
             modalPlace.showModal(endButtons = { ShareButton { clipboard.shareText(item.details) } }) {
-              SelectionContainer(modifier = Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding()) {
-                val details = item.details
-                  .let {
-                    if (it.length < 100_000) it
-                    else it.substring(0, 100_000)
-                  }
-                Text(details, modifier = Modifier.heightIn(max = 50_000.dp).padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING))
+              Box(Modifier.fillMaxHeight()) {
+                SelectionContainer(modifier = Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding()) {
+                  val details = item.details
+                    .let {
+                      if (it.length < 100_000) it
+                      else it.substring(0, 100_000)
+                    }
+                  Text(details, modifier = Modifier.heightIn(max = 50_000.dp).padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING))
+                }
+                NavigationBarBackground()
               }
             }
           }.padding(horizontal = 8.dp, vertical = 4.dp)

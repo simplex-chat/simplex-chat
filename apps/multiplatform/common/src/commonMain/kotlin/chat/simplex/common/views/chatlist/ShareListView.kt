@@ -69,24 +69,22 @@ fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
       }
       null -> {}
     }
-    Box(Modifier.padding(it)) {
-      Column(
-        modifier = Modifier.fillMaxSize()
-      ) {
-        if (oneHandUI.value) {
-          StatusBarBackground()
-        }
-        if (chatModel.chats.value.isNotEmpty()) {
-          ShareList(
-            chatModel,
-            search = searchInList,
-            isMediaOrFileAttachment = isMediaOrFileAttachment,
-            isVoice = isVoice,
-            hasSimplexLink = hasSimplexLink,
-          )
-        } else {
-          EmptyList()
-        }
+    Box(Modifier.fillMaxSize().padding(it)) {
+      if (chatModel.chats.value.isNotEmpty()) {
+        ShareList(
+          chatModel,
+          search = searchInList,
+          isMediaOrFileAttachment = isMediaOrFileAttachment,
+          isVoice = isVoice,
+          hasSimplexLink = hasSimplexLink,
+        )
+      } else {
+        EmptyList()
+      }
+      if (oneHandUI.value) {
+        StatusBarBackground()
+      } else {
+        NavigationBarBackground()
       }
     }
   }
@@ -228,9 +226,9 @@ private fun ShareList(
         hasSimplexLink = hasSimplexLink,
       )
     }
-    if (!oneHandUI.value) {
+    if (appPlatform.isAndroid) {
       item {
-        Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
+        Spacer(if (oneHandUI.value) Modifier.windowInsetsTopHeight(WindowInsets.statusBars) else Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
       }
     }
   }

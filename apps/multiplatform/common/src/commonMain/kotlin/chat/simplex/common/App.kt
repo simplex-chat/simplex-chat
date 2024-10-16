@@ -12,9 +12,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.usersettings.SetDeliveryReceiptsView
 import chat.simplex.common.model.*
@@ -45,7 +45,22 @@ fun AppScreen() {
   AppBarHandler.appBarMaxHeightPx = with(LocalDensity.current) { AppBarHeight.roundToPx() }
   SimpleXTheme {
     Surface(color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
-      MainScreen()
+      // This padding applies to landscape view only taking care of navigation bar and holes in screen in status bar area
+      // (because nav bar and holes located on vertical sides of screen in landscape view)
+      val direction = LocalLayoutDirection.current
+      val safePadding = WindowInsets.safeDrawing.asPaddingValues()
+      val paddingStart = safePadding.calculateStartPadding(direction)
+      val paddingEnd = safePadding.calculateEndPadding(direction)
+      // Such a strange layout is needed because the main content should be covered by solid color in order to hide overflow
+      // of some elements that may have negative offset (so, can't use Row {}).
+      // To check: go to developer settings of Android, choose Display cutout -> Punch hole, and rotate the phone to landscape, open any chat
+      Box {
+        Box(Modifier.padding(start = paddingStart, end = paddingEnd).consumeWindowInsets(PaddingValues(start = paddingStart, end = paddingEnd))) {
+          MainScreen()
+        }
+        Box(Modifier.width(paddingStart).fillMaxHeight().background(MaterialTheme.colors.background))
+        Box(Modifier.align(Alignment.CenterEnd).width(paddingEnd).fillMaxHeight().background(MaterialTheme.colors.background))
+      }
     }
   }
 }
@@ -245,7 +260,10 @@ fun AndroidScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
     Box(
       Modifier
         .graphicsLayer {
-          translationX = -offset.value.dp.toPx()
+          // minOf thing is needed for devices with holes in screen while the user on ChatView rotates his phone from portrait to landscape
+          // because in this case (at least in emulator) maxWidth changes in two steps: big first, smaller on next frame.
+          // But offset is remembered already, so this is a better way than dropping a value of offset
+          translationX = -minOf(offset.value.dp, maxWidth).toPx()
         }
         .padding(top = if (showCallArea) ANDROID_CALL_TOP_PADDING else 0.dp)
     ) {
@@ -275,7 +293,7 @@ fun AndroidScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
       }
     }
     Box(Modifier
-      .graphicsLayer { translationX = maxWidth.toPx() - offset.value.dp.toPx() }
+      .graphicsLayer { translationX = maxWidth.toPx() - minOf(offset.value.dp, maxWidth).toPx() }
       .padding(top = if (showCallArea) ANDROID_CALL_TOP_PADDING else 0.dp)
     ) Box2@{
       currentChatId.value?.let {

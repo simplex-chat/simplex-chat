@@ -1045,7 +1045,6 @@ fun ComposeView(
       )
     }
     Spacer(Modifier.imePadding().navigationBarsPadding())
-      // WindowInsets.ime.asPaddingValues().calculateBottomPadding()
   }
   }
 }

@@ -704,7 +704,7 @@ fun ChatLayout(
 }
 
 @Composable
-fun ChatInfoToolbar(
+fun ColumnScope.ChatInfoToolbar(
   chatInfo: ChatInfo,
   back: () -> Unit,
   info: () -> Unit,
@@ -866,12 +866,12 @@ fun ChatInfoToolbar(
     onSearchValueChanged = onSearchValueChanged,
     buttons = barButtons
   )
-  Box(Modifier.fillMaxWidth().wrapContentSize(Alignment.TopEnd)) {
+  Box(Modifier.align(Alignment.End)) {
     DefaultDropdownMenu(showMenu) {
       menuItems.forEach { it() }
     }
   }
-  Divider()
+  Divider(Modifier.background(MaterialTheme.colors.background))
 }
 
 @Composable
@@ -1360,8 +1360,8 @@ fun BoxScope.FloatingButtons(
     onLongClick = { showDropDown.value = true }
   )
 
-  Box(Modifier.offset { IntOffset(maxWidth.value - DEFAULT_PADDING.roundToPx(), (24.dp + fabSize).roundToPx()) }) {
-    DefaultDropdownMenu(showDropDown) {
+  Box(Modifier.align(Alignment.TopEnd)) {
+    DefaultDropdownMenu(showDropDown, offset = DpOffset(-DEFAULT_PADDING, 24.dp + fabSize)) {
       ItemAction(
         generalGetString(MR.strings.mark_read),
         painterResource(MR.images.ic_check),

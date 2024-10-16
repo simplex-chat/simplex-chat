@@ -283,6 +283,7 @@ fun ModalData.GroupChatInfoLayout(
       if (s.isEmpty()) members else members.filter { m -> m.anyNameContains(s) }
     }
   }
+  Box {
   LazyColumnWithScrollBar(
     Modifier
       .fillMaxWidth(),
@@ -397,8 +398,10 @@ fun ModalData.GroupChatInfoLayout(
         }
       }
       SectionBottomSpacer()
-      Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.systemBars))
+      Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
     }
+  }
+    NavigationBarBackground()
   }
 }
 

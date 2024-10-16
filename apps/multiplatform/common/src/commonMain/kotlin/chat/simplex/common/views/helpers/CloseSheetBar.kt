@@ -12,7 +12,6 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import chat.simplex.common.platform.appPlatform
@@ -100,8 +99,7 @@ fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Co
           } else {
             Spacer(Modifier.weight(1f))
           }
-          val direction = LocalLayoutDirection.current
-          Row(Modifier.padding(end = WindowInsets.navigationBars.asPaddingValues().calculateEndPadding(direction))) {
+          Row {
             endButtons()
           }
         }

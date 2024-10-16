@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.*
@@ -587,13 +588,29 @@ enum class ScrollDirection {
   Up, Down, Idle
 }
 
+private const val SYSTEM_BAR_BACKGROUND_ALPHA = 0.6f
+
 @Composable
-fun StatusBarBackground() {
-  Box(Modifier.background(MaterialTheme.colors.background).windowInsetsTopHeight(WindowInsets.statusBars))
+fun BoxScope.StatusBarBackground() {
+  if (appPlatform.isAndroid) {
+    val finalColor = MaterialTheme.colors.background.copy(SYSTEM_BAR_BACKGROUND_ALPHA)
+    Box(Modifier.fillMaxWidth().windowInsetsTopHeight(WindowInsets.statusBars).background(finalColor))
+  }
 }
 
 @Composable
-private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldValue>) {
+fun BoxScope.NavigationBarBackground(modifier: Modifier = Modifier, color: Color = MaterialTheme.colors.background) {
+  val keyboardState = getKeyboardState()
+  if (appPlatform.isAndroid && keyboardState.value == KeyboardState.Closed) {
+    val barPadding = WindowInsets.navigationBars.asPaddingValues()
+    val paddingBottom = barPadding.calculateBottomPadding()
+    val finalColor = color.copy(SYSTEM_BAR_BACKGROUND_ALPHA)
+    Box(modifier.align(Alignment.BottomStart).height(paddingBottom).fillMaxWidth().background(finalColor))
+  }
+}
+
+@Composable
+private fun BoxScope.ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldValue>) {
   val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
   var scrollDirection by remember { mutableStateOf(ScrollDirection.Idle) }
   var previousIndex by remember { mutableStateOf(0) }
@@ -631,10 +648,6 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
   val searchShowingSimplexLink = remember { mutableStateOf(false) }
   val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
   val chats = filteredChats(showUnreadAndFavorites, searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.value.toList())
-  Column {
-    if (oneHandUI.value) {
-      StatusBarBackground()
-    }
   LazyColumnWithScrollBar(
     Modifier.fillMaxSize().then(if (!oneHandUI.value) Modifier.imePadding() else Modifier),
     listState,
@@ -684,15 +697,19 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
         ToggleChatListCard()
       }
     }
-    if (!oneHandUI.value) {
-      item { Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars)) }
+    if (appPlatform.isAndroid) {
+      item { Spacer(if (oneHandUI.value) Modifier.windowInsetsTopHeight(WindowInsets.statusBars) else Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars)) }
     }
-  }
   }
   if (chats.isEmpty() && chatModel.chats.value.isNotEmpty()) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
       Text(generalGetString(MR.strings.no_filtered_chats), color = MaterialTheme.colors.secondary)
     }
+  }
+  if (oneHandUI.value) {
+    StatusBarBackground()
+  } else {
+    NavigationBarBackground()
   }
 }
 

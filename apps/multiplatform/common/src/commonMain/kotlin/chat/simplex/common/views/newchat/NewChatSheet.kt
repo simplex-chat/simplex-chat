@@ -30,8 +30,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.chatlist.ScrollDirection
-import chat.simplex.common.views.chatlist.StatusBarBackground
+import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.contacts.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
@@ -183,10 +182,7 @@ private fun ModalData.NewChatSheetLayout(
     derivedStateOf { filterContactTypes(chatModel.chats.value, deletedContactTypes) }
   }
 
-  Column {
-  if (oneHandUI.value) {
-    StatusBarBackground()
-  }
+  Box {
   LazyColumnWithScrollBar(
     Modifier.fillMaxSize().then(if (!oneHandUI.value) Modifier.imePadding() else Modifier),
     listState,
@@ -350,7 +346,17 @@ private fun ModalData.NewChatSheetLayout(
       }
       ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = true)
     }
+    if (appPlatform.isAndroid) {
+      item {
+        Spacer(if (oneHandUI.value) Modifier.windowInsetsTopHeight(WindowInsets.statusBars) else Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
+      }
+    }
   }
+    if (oneHandUI.value) {
+      StatusBarBackground()
+    } else {
+      NavigationBarBackground()
+    }
   }
 }
 
@@ -588,10 +594,7 @@ private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats
       contactChats = allChats
     )
 
-    Column {
-      if (oneHandUI.value) {
-        StatusBarBackground()
-      }
+    Box {
     LazyColumnWithScrollBar(
       Modifier.fillMaxSize().then(if (!oneHandUI.value) Modifier.imePadding() else Modifier),
       contentPadding = contentPadding,
@@ -644,7 +647,17 @@ private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats
         }
         ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = false)
       }
+      if (appPlatform.isAndroid) {
+        item {
+          Spacer(if (oneHandUI.value) Modifier.windowInsetsTopHeight(WindowInsets.statusBars) else Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
+        }
+      }
     }
+      if (oneHandUI.value) {
+        StatusBarBackground()
+      } else {
+        NavigationBarBackground()
+      }
     }
   }
 }

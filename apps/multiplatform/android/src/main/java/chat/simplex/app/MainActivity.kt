@@ -31,6 +31,13 @@ class MainActivity: FragmentActivity() {
     val c = CurrentColors.value.colors
     platform.androidSetStatusAndNavigationBarAppearance(c.isLight)
     applyAppLocale(ChatModel.controller.appPrefs.appLanguage)
+    // This flag makes status bar and navigation bar fully transparent. But on API level < 30 it breaks insets entirely
+    // https://issuetracker.google.com/issues/236862874
+    if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q){
+      window.setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
+    } else {
+      window.setFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION, WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION)
+    }
     super.onCreate(savedInstanceState)
     // testJson()
     // When call ended and orientation changes, it re-process old intent, it's unneeded.

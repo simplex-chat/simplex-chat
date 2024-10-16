@@ -7,6 +7,8 @@ import chat.simplex.common.platform.Log
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.*
+import android.view.View
+import android.view.WindowManager.LayoutParams
 import androidx.compose.animation.core.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -284,6 +286,13 @@ class SimplexApp: Application(), LifecycleEventObserver {
         window.navigationBarColor = Color.Transparent.toArgb()
         if (windowInsetController?.isAppearanceLightNavigationBars != CurrentColors.value.colors.isLight) {
           windowInsetController?.isAppearanceLightNavigationBars = CurrentColors.value.colors.isLight
+        }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+          window.decorView.systemUiVisibility = if (CurrentColors.value.colors.isLight) {
+            View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+          } else {
+            0
+          }
         }
       }
 
