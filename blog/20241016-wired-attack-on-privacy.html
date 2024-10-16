@@ -38,14 +38,14 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SimpleX blog: SimpleX network: cryptographic design review by Trail of Bits, v6.1 released with better calls and user experience.</title>
+    <title>SimpleX blog: Wired’s Attack on Privacy</title>
     <meta name="Content-Type" content="text/html;charset=utf-8" />
-    <meta http-equiv="onion-location" content="http://isdb4l77sjqoy2qq7ipum6x3at6hyn3jmxfx4zdhc72ufbmuq4ilwkqd.onion/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html" />
-    <meta property="og:url" content="https://simplex.chat/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html" />
+    <meta http-equiv="onion-location" content="http://isdb4l77sjqoy2qq7ipum6x3at6hyn3jmxfx4zdhc72ufbmuq4ilwkqd.onion/blog/20241016-wired-attack-on-privacy.html" />
+    <meta property="og:url" content="https://simplex.chat/blog/20241016-wired-attack-on-privacy.html" />
     <meta property="og:type" content="article" />
-    <meta property="og:title" content="SimpleX network: cryptographic design review by Trail of Bits, v6.1 released with better calls and user experience." />
+    <meta property="og:title" content="Wired’s Attack on Privacy" />
     
-      <meta property="og:image" content="https://simplex.chat/blog/images/20221108-trail-of-bits.jpg" />
+      <meta property="og:image" content="https://simplex.chat/blog/images/20241016-wired-privacy.jpg" />
     
     <meta name="twitter:card" content="summary" />
     <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
@@ -378,114 +378,25 @@ window.addEventListener('scroll',changeHeaderBg);
     </div>
 
     <section id="article" class="container mb-[75px] bg-white dark:bg-[#17203D] px-5">
-      <div class="py-6 md:p-[60px]"><h1 id="simplex-network-security-review-of-protocols-design-by-trail-of-bits-v61-released-with-better-calls-and-user-experience" tabindex="-1">SimpleX network: security review of protocols design by Trail of Bits, v6.1 released with better calls and user experience.</h1>
-<p><strong>Published:</strong> Oct 14, 2024</p>
-<p><a href="#simplex-cryptographic-design-review-by-trail-of-bits">New security audit</a>:</p>
-<ul>
-<li><a href="#review-findings-our-comments-and-improvements">review findings</a>, our comments and improvements.</li>
-<li><a href="#next-security-audit-in-2025">next</a>: security audit in early 2025.</li>
-</ul>
-<p><a href="#whats-new-in-v61">What's new in v6.1</a>:</p>
-<ul>
-<li><a href="#better-calls">better calls</a>.</li>
-<li><a href="#better-ios-notifications">better iOS notifications</a>.</li>
-<li><a href="#better-user-experience">better user experience</a>.</li>
-</ul>
-<h2 id="simplex-cryptographic-design-review-by-trail-of-bits" tabindex="-1">SimpleX cryptographic design review by Trail of Bits</h2>
-<img src="./images/20221108-trail-of-bits.jpg" width=240 class="float-to-right">
-<p>It's been almost two years since Trail of Bits did the first security assessment of SimpleX Chat.</p>
-<p>Since then SimpleX Chat grew a lot, both in the number of users and in its functionality. We added XFTP — a protocol for sending files, — and XRCP — the protocol for using a mobile app profile from a desktop app. Messaging protocols also evolved a lot, adding private message routing and quantum resistant encryption.</p>
-<p>Trail of Bits reviewed the design of protocols used in SimpleX network and applications in July 2024. Even though there are no critical issues, we made some security improvements based on this report.</p>
-<p><a href="https://www.trailofbits.com/about">Trail of Bits</a> is a US based security and technology consultancy whose clients include big tech companies, governmental agencies and major blockchain projects. Its engineers reviewed the cryptographic design of the protocols used in SimpleX network and applications over a week:</p>
-<ul>
-<li>SimpleX Messaging Protocol (SMP), including a formal verification of currently used message queue negotiation protocol,</li>
-<li>the SMP agent protocol,</li>
-<li>the push notification system,</li>
-<li>the file transfer protocol (XFTP),</li>
-<li>the remote control protocol (XRCP),</li>
-<li>and the chat protocol.</li>
-</ul>
-<p>There are 3 medium and 1 low severity findings, all of which require a high difficulty attack to exploit — the attacker would need to have a privileged access to the system, may need to know complex technical details, or must discover other weaknesses to exploit them. Additionally, there are 3 informational findings.</p>
-<p>3 of these issues are improved in v6.1, and the remaining issues are accepted. Below we are commenting on these findings in detail, and also on the released improvements.</p>
-<p>The full cryptographic design review is available <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SimpleX_Design_Review_2024_Summary_Report_12_08_2024.pdf">here</a>.</p>
-<p>We are very thankful to Trail of Bits and their engineers for their work identifying these issues and helping us make SimpleX Chat more secure.</p>
-<h3 id="review-findings-our-comments-and-improvements" tabindex="-1">Review findings, our comments and improvements</h3>
-<h4 id="protocols-specifications-informational" tabindex="-1">Protocols specifications (informational)</h4>
-<p>The review finding #1 is that the protocols specification is informal. We addressed <a href="https://github.com/simplex-chat/simplexmq/commit/7b6c86c6c1093cdae5ad2ee566655828076bc25c">reported</a> <a href="https://github.com/simplex-chat/simplex-chat/commit/1cb3c25478db0f2a42c943f7469f5f9f75752a27">inconsistencies</a>, and we accept that we need to improve specification beyond verbose descriptions and ABNF syntax specification, and add algebraic notations and sequence diagrams. Having said that, the current specification correctly describes the implemented protocol, without any contradictions.</p>
-<h4 id="user-correlating-attacks-via-introduced-latency-or-via-get-command-of-messaging-protocol-medium-and-low-severity" tabindex="-1">User-correlating attacks via introduced latency or via GET command of messaging protocol (medium and low severity)</h4>
-<p>These two findings #7 and #2 of the report relate to the attacks confirming that two known users communicate via observing their internet traffic.</p>
-<p>The first attack is possible for a party that can introduce the latency in the network traffic. This attacker has to control some network node that passes the traffic of the sender — for example, it could be the sender's ISP, VPN provider, Tor entry node operator, the operator of the forwarding SMP server or a server hosting provider, etc. Such attacker can correlate delays in sender's traffic and the suspected recipient's traffic to confirm that they communicate.</p>
-<p>The second attack relates to GET command used by iOS clients receiving notifications — depending on whether the server has the message, there will be a different number of packets sent, allowing the observer to determine if there was the message. While this comment is correct, in practice iOS clients only send GET commands when they receive notification, which also happens only when there is a message on the server, so in absolute majority of cases the number of packets will be the same.</p>
-<p>These are not new findings — this type of attacks is covered in <a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md#a-passive-adversary-able-to-monitor-a-set-of-senders-and-recipients">threat model</a>: <em>a passive adversary able to monitor a set of senders and recipients <strong>can</strong> perform traffic correlation attacks against senders and recipients and correlate senders and recipients within the monitored set, frustrated by the number of users on the servers</em>.</p>
-<p>As threat model states, this attack is more likely to be successful with the less busy servers, and also for the users with few connections.</p>
-<p>The recommendation of the review is to add optional randomized latency to message delivery that would reduce the opportunities for traffic correlation attacks — we consider adding it in the future.</p>
-<h4 id="a-compromised-transport-protocol-allows-more-efficient-correlation-attacks-medium-severity" tabindex="-1">A compromised transport protocol allows more efficient correlation attacks (medium severity)</h4>
-<p>The finding #3 is about the incorrect statement in threat model for SMP and XFTP protocols: <em>a passive adversary, able to monitor a set of senders and recipients, <strong>cannot</strong>, even in case of a compromised transport protocol perform traffic correlation attacks with any increase in efficiency over a non-compromised transport protocol</em>.</p>
-<p>For protocols prior to v6.1 it is only partially correct, as responses to the commands that create a messaging queue or a file chunk include the identifiers both for senders and for the recipients, so if any observers were to compromise transport protocol (TLS) and record these identifiers, then they were able to correlate message senders with the recipients (and file recipients with the file senders).</p>
-<p>The solution to make this correlation impossible even in case of compromised TLS is to encrypt these identifiers, as proposed in the review, or, better, encrypt the whole transmission inside TLS.</p>
-<p>However unlikely is TLS being compromised, we added additional <a href="https://github.com/simplex-chat/simplexmq/pull/1317/files">transport encryption layer in SMP protocol</a>, where it can be more important, and we are going to add the same layer of encryption in XFTP protocol later, where we <a href="https://github.com/simplex-chat/simplexmq/commit/7b6c86c6c1093cdae5ad2ee566655828076bc25c">amended the threat model</a>.</p>
-<h4 id="xrcp-protocol-recommendations-informational" tabindex="-1">XRCP protocol recommendations (informational)</h4>
-<p>XRCP protocol is used for connecting desktop and mobile. There are two findings in the review:</p>
-<ul>
-<li>SHA256 was used as a KDF in XRCP (#4).</li>
-<li>there was no forward secrecy or break-in recovery between sessions (#5).</li>
-</ul>
-<p>SHA256 is now <a href="https://github.com/simplex-chat/simplexmq/pull/1302/files">replaced with SHA3-256</a>, as was <a href="https://www.ietf.org/archive/id/draft-josefsson-ntruprime-hybrid-01.html">recommended</a> by the internet draft about hybrid key agreement that XRCP uses.</p>
-<p>Even though XRCP sessions are short lived, and usually the connection happens over local network, we added forward secrecy to XRCP sessions <a href="https://github.com/simplex-chat/simplexmq/pull/1328/files">here</a> and <a href="https://github.com/simplex-chat/simplex-chat/pull/4926/files">here</a> — each request from desktop app to mobile app is now encrypted with a new key derived from chain ratchets. This improves security of this connection.</p>
-<p>We believe that it is unnecessary to have in-session break-in recovery in XRCP protocol, as there is break-in recovery between the sessions.</p>
-<h4 id="device-compromise-can-be-hidden-in-some-scenarios-medium" tabindex="-1">Device compromise can be hidden in some scenarios (medium)</h4>
-<p>The finding #6 in the report is about an attacker who was not only able to break into the device and get a copy of the database, which would be mitigated by break-in recovery in <a href="/docs/glossary.html#double-ratchet-algorithm">double ratchet protocol</a>, but also was able to modify the state of the app database and to substitute the addresses and cryptographic keys of the messaging queues used with some contact with other message queues that the attacker controls.</p>
-<p>Even though this is a very hard attack, if successful, it would allow the attacker intercepting all messages with this contact.</p>
-<p>Effectively, it is a <a href="/docs/glossary.html#man-in-the-middle-attack">man-in-the-middle attack</a>, where an intermediary is inserted via the app database modification. Such attack can be mitigated by periodic verification of security codes. Although, the attacker who was able to modify the state of the device, could have also modified the app itself, making it show the same security code as the compromised contact has, thus avoiding detection.</p>
-<p>We accept that such an attack is possible, and we don't believe there is any viable defense against the attacker who can modify the device state. We may consider adding the measures to validate the database integrity, but they may be ineffective in case the app and/or operating system are compromised.</p>
-<h3 id="next-security-audit-in-2025" tabindex="-1">Next: security audit in 2025</h3>
-<p>We are planning the implementation security assessment with Trail of Bits in the beginning of 2025. It will be a twice bigger assessment than we did in 2022 — it will cover both the core of the app and the handling of cryptographic secrets in the mobile applications.</p>
-<h2 id="whats-new-in-v61" tabindex="-1">What's new in v6.1</h2>
-<p>This release has many user experience and stability improvements.</p>
-<h3 id="better-calls" tabindex="-1">Better calls</h3>
-<img src="./images/20241014-calls.png" width="288" class="float-to-right">
-<p>This release improves reliability and usability of the calls. Now you can enable the camera and share the screen from the desktop app even if the call started as a voice call. We've also fixed several issues that prevented calls from connecting.</p>
-<p>This is a substantial change, and some issues may have been introduced - please report them.</p>
-<p>We will be further improving the calls interface in the app in the next versions.</p>
-<h3 id="better-ios-notifications" tabindex="-1">Better iOS notifications</h3>
-<p>iOS notifications were added <a href="/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.html">more than 2 years ago</a>, based on this <a href="/blog/20220404-simplex-chat-instant-notifications.html">system design</a>. Until recently we made almost no improvements to them. As the number of iOS users is growing, their reliability is insufficient. In addition to that, once we started the work on improving them, we have found several important issues, one of which was introduced recently, when we improved the speed of creating new connections.</p>
-<p>This release fixes many important issues with iOS notifications delivery in iOS app, improves app performance and reduces traffic required to manage notifications.</p>
-<p>We also fixed several notification server issues, made change that almost completely prevents losing notifications when notification servers are restarted, and added real-time monitoring to diagnose any issues with iOS notifications delivery.</p>
-<p>This work is not over – iOS notifications in a decentralized network are complex and require more work. We will be further improving both client apps and servers to make their delivery stable.</p>
-<h3 id="better-user-experience" tabindex="-1">Better user experience</h3>
-<h4 id="new-conversation-layout-and-customizable-messages" tabindex="-1">New conversation layout and customizable messages</h4>
-<img src="./images/20241014-messages.png" width="288" class="float-to-right">
-<p>Messages are now grouped when they are sent sequentially, with less than 60 seconds between them. We also made message shapes configurable, and separated the messages in different days. When you scroll conversation quickly, there will be a floating date indication, allowing to find messages faster.</p>
-<h4 id="improved-switching-between-user-profiles" tabindex="-1">Improved switching between user profiles</h4>
-<p><img src="./images/20241014-profiles2.png" width="288" class="float-to-right"> <img src="./images/20241014-profiles1.png" width="288" class="float-to-right"></p>
-<p>Another improvement relates to switching between chat profiles. Previously, when you added multiple chat profiles to the app, there were two problems:</p>
-<ul>
-<li>you had to tap twice to get to some important functions in the app,</li>
-<li>anybody who could see your screen, could also see all your chat profiles.</li>
-</ul>
-<p>We changed this design by making important functions available after tapping profile image once, and by only showing the previously used profile image to switch to it quickly, while switching to other profiles now requires scrolling to them or opening <em>Your chat profiles</em> screen.</p>
-<p>You also can switch chat profile when creating a one-time invitation link.</p>
-<h4 id="faster-deletion-moderation-and-forwarding-of-messages" tabindex="-1">Faster deletion, moderation and forwarding of messages</h4>
-<img src="./images/20241014-forward.png" width="288" class="float-to-right">
-<p>You now can forward multiple messages at once - up to 20. If you are forwarding messages with files or media, and they were not received, the app will offer you to download them, and it will also allow forwarding messages without files. These messages will be &quot;packed&quot; into the smallest number of sent messages as possible. If there are no images and messages are not too large, it will be just one sent message containing all forwarded messages.</p>
-<p>The previous version allowed deleting and moderating multiple messages. As most users now upgraded the app, we increased the maximum number of messages that can be deleted or moderated to 200 messages - in most cases all these deletions will be packed into one sent message.</p>
-<h2 id="simplex-network" tabindex="-1">SimpleX network</h2>
-<p>Some links to answer the most common questions:</p>
-<p><a href="/blog/20220511-simplex-chat-v2-images-files.html#the-first-messaging-platform-without-user-identifiers">How can SimpleX deliver messages without user identifiers</a>.</p>
-<p><a href="/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.html#why-having-users-identifiers-is-bad-for-the-users">What are the risks to have identifiers assigned to the users</a>.</p>
-<p><a href="https://github.com/simplex-chat/simplex-chat#privacy-technical-details-and-limitations">Technical details and limitations</a>.</p>
-<p><a href="/faq/index.html">Frequently asked questions</a>.</p>
-<p>Please also see our <a href="https://simplex.chat">website</a>.</p>
-<h2 id="please-support-us-with-your-donations" tabindex="-1">Please support us with your donations</h2>
-<p>Huge <em>thank you</em> to everybody who donated to SimpleX Chat!</p>
-<p>Prioritizing users privacy and security, and also raising the investment, would have been impossible without your support and donations.</p>
-<p>Also, funding the work to transition the protocols to non-profit governance model would not have been possible without the donations we received from the users.</p>
-<p>Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, so anybody can build the future implementations of the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.</p>
-<p>Your donations help us raise more funds — any amount, even the price of the cup of coffee, makes a big difference for us.</p>
-<p>See <a href="https://github.com/simplex-chat/simplex-chat/tree/master#help-us-with-donations">this section</a> for the ways to donate.</p>
-<p>Thank you,</p>
-<p>Evgeny</p>
-<p>SimpleX Chat founder</p>
+      <div class="py-6 md:p-[60px]"><h1 id="wireds-attack-on-privacy" tabindex="-1">Wired’s Attack on Privacy</h1>
+<img src="./images/20241016-wired-privacy.jpg" width="330" class="float-to-right">
+<p>The <a href="https://www.wired.com/story/neo-nazis-flee-telegram-encrypted-app-simplex/">Wired article</a> by David Gilbert focusing on neo-Nazis moving to SimpleX Chat following the Telegram's changes in privacy policy is biased and misleading. By cherry-picking information from <a href="https://www.isdglobal.org/digital_dispatches/neo-nazi-accelerationists-seek-new-digital-refuge-amid-looming-telegram-crackdown/">the report</a> by the Institute for Strategic Dialogue (ISD), Wired fails to mention that SimpleX network design prioritizes privacy in order to protect human rights defenders, journalists, and everyday users who value their privacy — many people feel safer using SimpleX than non-private apps, being protected from strangers contacting them.</p>
+<p>Yes, privacy-focused SimpleX network offers encryption and anonymity — that’s the point. To paint this as problematic solely because of who may use such apps misses the broader, critical context.</p>
+<p>SimpleX’s true strength lies in protection of <a href="/blog/20240416-dangers-of-metadata-in-messengers.html">users' metadata</a>, which can reveal sensitive information about who is communicating, when, and how often. SimpleX protocols are designed to minimize metadata collection. For countless people, especially vulnerable groups, these features can be life-saving. Wired article ignores these essential protections, and overlooks the positive aspects of having such a unique design, as noted in the publication which <a href="https://www.maargentino.com/is-telegrams-privacy-shift-driving-extremists-toward-simplex/">they link to</a>:</p>
+<blockquote>
+<p><em>“SimpleX also has a significant advantage when it comes to protecting metadata — the information that can reveal who you’re talking to, when, and how often. SimpleX is designed with privacy at its core, minimizing the amount of metadata collected and ensuring that any temporary data necessary for functionality is not retained or linked to identifiable users.”</em></p>
+</blockquote>
+<p>Both publications referenced by Wired also explore how SimpleX design actually hinders extremist groups from spreading propaganda or building large networks. SimpleX design restricts message visibility and file retention, making it far from ideal for those looking to coordinate large networks. Yet these important qualities are ignored by Wired in favor of fear-mongering about encryption — an argument we've seen before when apps like Signal <a href="https://foreignpolicy.com/2021/03/13/telegram-signal-apps-right-wing-extremism-islamic-state-terrorism-violence-europol-encrypted/">faced similar treatment</a>. Ironically, Wired just a month earlier encouraged its readers to <a href="https://www.wired.com/story/gadget-lab-podcast-657/">adopt encrypted messaging apps</a>, making its current stance even more contradictory.</p>
+<p>The vilification of apps that offer critically important privacy, anonymity, and encryption must stop. That a small share of users may abuse these tools doesn’t justify broad criticism. Additionally, the lobbying for client-side scanning, which Wired’s article seems to indirectly endorse, is not only dangerous but goes against fundamental principles of free speech and personal security. We strongly oppose the use of private communications for any kind of monitoring, including AI training, which would undermine the very trust encryption is designed to build.</p>
+<p>It’s alarming to see Wired not only criticize SimpleX for its strong privacy protections but also subtly blame the European Court of Human Rights for <a href="https://www.theregister.com/2024/02/15/echr_backdoor_encryption/">upholding basic human rights</a> by rejecting laws that would force encrypted apps to scan and hand over private messages before encryption. Wired writes:</p>
+<blockquote>
+<p><em>…European Court of Human Rights decision in February of this year ruled that forcing encrypted messaging apps to provide a backdoor to law enforcement was illegal. This decision undermined the EU’s controversial proposal that would potentially force encrypted messaging apps to scan all user content for identifiers of child sexual abuse material.</em></p>
+</blockquote>
+<p>This commentary is both inappropriate and misguided — it plays into the hands of anti-privacy lobbyists attempting to criminalize access to private communications. Framing privacy and anonymity as tools for criminals ignores the reality that these protections are essential for millions of legitimate users, from activists to journalists, to ordinary citizens. Client-side scanning can't have any meaningful effect on reducing CSAM distribution, instead resulting in increase of crime and abuse when criminals get access to this data.</p>
+<p>We need to correct this narrative. The real danger lies not in protecting communication, but in failing to do so. Privacy apps like SimpleX are crucial, not just for those resisting mass surveillance, but for everyone who values the right to communicate without fear of their conversations being monitored or misused. This is a right we must defend and incorporate into law, <a href="/blog/20240704-future-of-privacy-enforcing-privacy-standards.html">as we wrote before</a>.</p>
+<p>Wired could have stood on the right side of this battle and helped normalize the demand for privacy, genuinely protecting people from criminals and from the exploitation of the increasingly AI-enabled mass surveillance. Instead they chose the path of spreading fear and uncertainty of encrypted messaging and tools that enable privacy and anonymity.</p>
+<p>Spreading misinformation about privacy and security undermines trust in the tools that protect us, making it easier to justify more invasive surveillance measures that chip away at our civil liberties.</p>
+<p>Wired did not respond to our request for comment.</p>
 </div>
     </section>
 
