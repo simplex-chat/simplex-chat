@@ -1456,16 +1456,20 @@ processChatCommand' vr = \case
     CRNtfTokenStatus <$> withAgent (\a -> registerNtfToken a token mode)
   APIVerifyToken token nonce code -> withUser $ \_ -> withAgent (\a -> verifyNtfToken a token nonce code) >> ok_
   APIDeleteToken token -> withUser $ \_ -> withAgent (`deleteNtfToken` token) >> ok_
-  APIGetNtfMessage nonce encNtfInfo -> withUser $ \_ -> do
-    -- [ntf get many]
-    -- returns list now - get users, connection entities batched
-    ((NotificationInfo {ntfConnId, ntfMsgMeta = nMsgMeta}, msg) :| _) <- withAgent $ \a -> getNotificationMessage a nonce encNtfInfo
-    let agentConnId = AgentConnId ntfConnId
-    user_ <- withStore' (`getUserByAConnId` agentConnId)
-    connEntity_ <-
-      pure user_ $>>= \user ->
-        withStore (\db -> Just <$> getConnectionEntity db vr user agentConnId) `catchChatError` (\e -> toView (CRChatError (Just user) e) $> Nothing)
-    let ntfMessage =
+  APIGetNtfMessage nonce encNtfInfo -> withUser $ \user -> do
+    ntfInfos <- withAgent $ \a -> getNotificationMessage a nonce encNtfInfo
+    (errs, ntfMsgs) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (getMsgConn db) (L.toList ntfInfos))
+    unless (null errs) $ toView $ CRChatErrors (Just user) errs
+    pure $ CRNtfMessages ntfMsgs
+    where
+      getMsgConn :: DB.Connection -> (NotificationInfo, Maybe SMP.SMPMsgMeta) -> IO NtfMessage
+      getMsgConn db (NotificationInfo {ntfConnId, ntfMsgMeta = nMsgMeta}, msg) = do
+        let agentConnId = AgentConnId ntfConnId
+        user_ <- getUserByAConnId db agentConnId
+        connEntity_ <-
+          pure user_ $>>= \user ->
+            eitherToMaybe <$> runExceptT (getConnectionEntity db vr user agentConnId)
+        pure $
           NtfMessage
             { user_,
               connEntity_,
@@ -1475,7 +1479,6 @@ processChatCommand' vr = \case
               -- (may differ from the expected message due to, for example, coalescing or loss of notifications)
               receivedMsg_ = receivedMsgInfo <$> msg
             }
-    pure $ CRNtfMessages [ntfMessage]
   ApiGetConnNtfMessage (AgentConnId connId) -> withUser $ \_ -> do
     msg <- withAgent $ \a -> getConnectionMessage a connId
     pure $ CRConnNtfMessage (receivedMsgInfo <$> msg)
@@ -1787,7 +1790,8 @@ processChatCommand' vr = \case
           Nothing -> joinNewConn chatV dm
           Just (RcvDirectMsgConnection conn@Connection {connId, connStatus, contactConnInitiated} Nothing)
             | connStatus == ConnNew && contactConnInitiated -> joinNewConn chatV dm -- own connection link
-            | connStatus == ConnPrepared -> do -- retrying join after error
+            | connStatus == ConnPrepared -> do
+                -- retrying join after error
                 pcc <- withFastStore $ \db -> getPendingContactConnection db userId connId
                 joinPreparedConn (aConnId conn) pcc dm
           Just ent -> throwChatError $ CECommandError $ "connection exists: " <> show (connEntityInfo ent)
