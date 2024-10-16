@@ -49,9 +49,16 @@ enum NSENotification {
         default: false
         }
     }
+
+    var ntfData_: NSENotificationData? {
+        switch self {
+        case let .nseData(ntfData): return ntfData
+        default: return nil
+        }
+    }
 }
 
-enum NSENotificationData {
+public enum NSENotificationData {
     case connectionEvent(_ user: User, _ connEntity: ConnectionEntity)
     case contactConnected(_ user: any UserLike, _ contact: Contact)
     case contactRequest(_ user: any UserLike, _ contactRequest: UserContactRequest)
@@ -65,6 +72,20 @@ enum NSENotificationData {
         case let .contactRequest(user, contactRequest): createContactRequestNtf(user, contactRequest)
         case let .messageReceived(user, cInfo, cItem): createMessageReceivedNtf(user, cInfo, cItem)
         case let .callInvitation(invitation): createCallInvitationNtf(invitation)
+        }
+    }
+
+    var newMsgData: (any UserLike, ChatInfo)? {
+        return switch self {
+        case let .messageReceived(user, cInfo, _): (user, cInfo)
+        default: nil
+        }
+    }
+
+    var contactRequestData: (any UserLike, UserContactRequest)? {
+        return switch self {
+        case let .contactRequest(user, contactRequest): (user, contactRequest)
+        default: nil
         }
     }
 }
@@ -437,11 +458,64 @@ class NotificationService: UNNotificationServiceExtension {
                   let callNtf = callNtfKV.value.msgBestAttempt {
             return callNtf
         } else {
-            // TODO combine notifications (.nseData) into single .nseNtfContent
-            // - e.g. "messages from x, y and n other chats"
-            // - priority to contact requests?
-            return nil
+            let ntfsData = expectedMessages.compactMap { $0.value.msgBestAttempt?.ntfData_ }
+            if ntfsData.isEmpty {
+                return .empty
+            } else if let ntfData = ntfsData.count == 1 ? ntfsData.first : nil {
+                return .nseNtfContent(ntfData.notificationContent)
+            } else {
+                return .nseNtfContent(createJointNtf(ntfsData))
+            }
         }
+    }
+}
+
+func createJointNtf(_ ntfsData: [NSENotificationData]) -> UNMutableNotificationContent {
+    let previewMode = ntfPreviewModeGroupDefault.get()
+    let newMsgsData: [(any UserLike, ChatInfo)] = ntfsData.compactMap { $0.newMsgData }
+    if !newMsgsData.isEmpty, let userId = newMsgsData.first?.0.userId {
+        let newMsgsChats: Set<ChatInfo> = Set(newMsgsData.map { $0.1 })
+        var body: String
+        if previewMode == .hidden {
+            body = String.localizedStringWithFormat(NSLocalizedString("New messages in %d chats", comment: "notification body"), newMsgsChats.count)
+        } else {
+            body = String.localizedStringWithFormat(NSLocalizedString("From: %@", comment: "notification body"), newMsgsChatsStr(newMsgsChats))
+        }
+        return createNotification(
+            categoryIdentifier: ntfCategoryManyEvents,
+            title: NSLocalizedString("New messages", comment: "notification"),
+            body: body,
+            userInfo: ["userId": userId]
+        )
+    } else {
+        let contactRequestsData: [(any UserLike, UserContactRequest)] = ntfsData.compactMap { $0.contactRequestData }
+        if !contactRequestsData.isEmpty, let userId = contactRequestsData.first?.0.userId {
+            return createNotification(
+                categoryIdentifier: ntfCategoryManyEvents,
+                title: NSLocalizedString("New contact requests", comment: "notification"),
+                body: String.localizedStringWithFormat(NSLocalizedString("%d new contacts want to connect", comment: "notification body"), contactRequestsData.count),
+                userInfo: ["userId": userId]
+            )
+        } else {
+            return createNotification(
+                categoryIdentifier: ntfCategoryManyEvents,
+                title: NSLocalizedString("New events", comment: "notification"),
+                body: String.localizedStringWithFormat(NSLocalizedString("%d new events", comment: "notification body"), ntfsData.count)
+            )
+        }
+    }
+}
+
+func newMsgsChatsStr(_ newMsgsChats: Set<ChatInfo>) -> String {
+    let names = newMsgsChats.map { $0.chatViewName }
+    return switch names.count {
+    case 1: names[0]
+    case 2: "\(names[0]) and \(names[1])"
+    case 3: "\(names[0] + ", " + names[1]) and \(names[2])"
+    default:
+        names.count > 3
+        ? "\(names[0]), \(names[1]) and \(names.count - 2) other chats"
+        : ""
     }
 }
 
