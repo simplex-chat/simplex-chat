@@ -95,6 +95,7 @@ struct ChatListView: View {
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
     @AppStorage(DEFAULT_ONE_HAND_UI_CARD_SHOWN) private var oneHandUICardShown = false
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
+    @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
 
     var body: some View {
         if #available(iOS 16.0, *) {
@@ -119,9 +120,10 @@ struct ChatListView: View {
         .modifier(
             Sheet(isPresented: $userPickerShown) {
                 UserPicker(userPickerShown: $userPickerShown, activeSheet: $activeUserPickerSheet)
+                    .privacySensitive(protectScreen)
             }
         )
-        .sheet(item: $activeUserPickerSheet) {
+        .appSheet(item: $activeUserPickerSheet) {
             UserPickerSheetView(sheet: $0)
         }
         .onChange(of: activeUserPickerSheet) {
@@ -140,6 +142,7 @@ struct ChatListView: View {
                 .background(theme.colors.background)
                 .navigationBarTitleDisplayMode(.inline)
                 .navigationBarHidden(searchMode || oneHandUI)
+                .privacySensitive(protectScreen)
         }
         .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
         .onDisappear() { activeUserPickerSheet = nil }
@@ -241,6 +244,7 @@ struct ChatListView: View {
                 unreadBadge(size: 12)
             }
         }
+        .privacySensitive(protectScreen)
         .onTapGesture {
             userPickerShown = true
         }

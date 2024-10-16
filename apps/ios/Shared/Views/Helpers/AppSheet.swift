@@ -11,6 +11,8 @@ import SwiftUI
 class AppSheetState: ObservableObject {
     static let shared = AppSheetState()
     @Published var scenePhaseActive: Bool = false
+    // Scehe phase is also be inactive while faceID is requested
+    @Published var biometricAuth: Bool = false
 }
 
 private struct PrivacySensitive: ViewModifier {
@@ -22,7 +24,7 @@ private struct PrivacySensitive: ViewModifier {
         if !protectScreen {
             content
         } else {
-            content.privacySensitive(!appSheetState.scenePhaseActive).redacted(reason: .privacy)
+            content.privacySensitive(!appSheetState.scenePhaseActive && !appSheetState.biometricAuth).redacted(reason: .privacy)
         }
     }
 }

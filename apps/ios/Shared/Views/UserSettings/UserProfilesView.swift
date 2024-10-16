@@ -59,7 +59,8 @@ struct UserProfilesView: View {
             userProfilesView()
         } else {
             Button(action: runAuth) { Label("Unlock", systemImage: "lock") }
-            .onAppear(perform: runAuth)
+            // TODO: Prevent Feedback loop
+//            .onAppear(perform: runAuth)
         }
     }
 
