@@ -58,6 +58,7 @@ struct SimpleXApp: App {
                 }
                 .onChange(of: scenePhase) { phase in
                     logger.debug("scenePhase was \(String(describing: scenePhase)), now \(String(describing: phase))")
+                    AppSheetState.shared.scenePhaseActive = phase == .active
                     switch (phase) {
                     case .background:
                         // --- authentication

@@ -130,7 +130,7 @@ struct ChatView: View {
                 }
             }
         }
-        .sheet(item: $selectedMember) { member in
+        .appSheet(item: $selectedMember) { member in
             Group {
                 if case let .group(groupInfo) = chat.chatInfo {
                     GroupMemberInfoView(groupInfo: groupInfo, groupMember: member, navigation: true)
@@ -138,7 +138,7 @@ struct ChatView: View {
             }
         }
         // it should be presented on top level in order to prevent a bug in SwiftUI on iOS 16 related to .focused() modifier in AddGroupMembersView's search field
-        .sheet(isPresented: $showAddMembersSheet) {
+        .appSheet(isPresented: $showAddMembersSheet) {
             Group {
                 if case let .group(groupInfo) = cInfo {
                     AddGroupMembersView(chat: chat, groupInfo: groupInfo)
@@ -221,7 +221,7 @@ struct ChatView: View {
                     } label: {
                         ChatInfoToolbar(chat: chat)
                     }
-                    .sheet(isPresented: $showChatInfoSheet, onDismiss: { theme = buildTheme() }) {
+                    .appSheet(isPresented: $showChatInfoSheet, onDismiss: { theme = buildTheme() }) {
                         ChatInfoView(
                             chat: chat,
                             contact: contact,
@@ -236,7 +236,7 @@ struct ChatView: View {
                         ChatInfoToolbar(chat: chat)
                             .tint(theme.colors.primary)
                     }
-                    .sheet(isPresented: $showChatInfoSheet, onDismiss: { theme = buildTheme() }) {
+                    .appSheet(isPresented: $showChatInfoSheet, onDismiss: { theme = buildTheme() }) {
                         GroupChatInfoView(
                             chat: chat,
                             groupInfo: Binding(
@@ -301,7 +301,7 @@ struct ChatView: View {
                             if groupInfo.canAddMembers {
                                 if (chat.chatInfo.incognito) {
                                     groupLinkButton()
-                                        .sheet(isPresented: $showGroupLinkSheet) {
+                                        .appSheet(isPresented: $showGroupLinkSheet) {
                                             GroupLinkView(
                                                 groupId: groupInfo.groupId,
                                                 groupLink: $groupLink,

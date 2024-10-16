@@ -63,9 +63,11 @@ func systemAuthenticate(_ reason: String, _ completed: @escaping (LAResult) -> V
     var authAvailabilityError: NSError?
     if laContext.canEvaluatePolicy(.deviceOwnerAuthentication, error: &authAvailabilityError) {
         logger.debug("DEBUGGING: systemAuthenticate: canEvaluatePolicy callback")
+        AppSheetState.shared.biometricAuth = true
         laContext.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { success, authError in
             logger.debug("DEBUGGING: systemAuthenticate evaluatePolicy callback")
             DispatchQueue.main.async {
+                AppSheetState.shared.biometricAuth = false
                 if success {
                     completed(LAResult.success)
                 } else {

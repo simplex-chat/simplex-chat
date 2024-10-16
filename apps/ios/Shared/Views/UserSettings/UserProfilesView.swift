@@ -124,7 +124,7 @@ struct UserProfilesView: View {
             deleteModeButton("Profile and server connections", true)
             deleteModeButton("Local profile data only", false)
         }
-        .sheet(item: $selectedUser) { user in
+        .appSheet(item: $selectedUser) { user in
             HiddenProfileView(user: user, profileHidden: $profileHidden)
         }
         .onChange(of: profileHidden) { _ in
@@ -132,7 +132,7 @@ struct UserProfilesView: View {
                 withAnimation { profileHidden = false }
             }
         }
-        .sheet(item: $profileAction) { action in
+        .appSheet(item: $profileAction) { action in
             profileActionView(action)
         }
         .alert(item: $alert) { alert in
