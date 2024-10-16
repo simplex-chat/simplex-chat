@@ -447,6 +447,7 @@ struct ChatView: View {
             .onChange(of: im.itemAdded) { added in
                 if added {
                     im.itemAdded = false
+                    sectionModel.resetSections(items: im.reversedChatItems)
                     if FloatingButtonModel.shared.isReallyNearBottom {
                         scrollModel.scrollToBottom()
                     }
