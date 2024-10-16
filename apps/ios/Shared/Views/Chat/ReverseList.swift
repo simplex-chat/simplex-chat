@@ -184,7 +184,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             Task { representer.scrollState = .atDestination }
         }
         
-        /// Scrolls up
+        /// Scrolls to a given item
         func scrollToItem(id: Int64) {
             if let loadedIndex = self.representer.items.firstIndex(where: { $0.id == id }) {
                 let ci = representer.items[loadedIndex]
