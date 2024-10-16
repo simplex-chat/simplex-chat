@@ -105,7 +105,11 @@ struct TerminalView: View {
             }
         }
         .navigationViewStyle(.stack)
-        .navigationTitle("Chat console")
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text("Chat console").font(.headline)
+            }
+        }
         .modifier(ThemedBackground())
     }
 
