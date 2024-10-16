@@ -1,14 +1,14 @@
 ---
 layout: layouts/article.html
-title: "Wired’s Attack on Privacy of Communications"
+title: "Wired’s Attack on Privacy"
 date: 2024-10-16
 previewBody: blog_previews/20241016.html
 image: images/20241016-wired-privacy.jpg
 imageWide: true
-permalink: "/blog/20241016-wired-attack-on-privacy-of-communications.html"
+permalink: "/blog/20241016-wired-attack-on-privacy.html"
 ---
 
-# Wired’s Attack on Privacy of Communications
+# Wired’s Attack on Privacy
 
 <img src="./images/20241016-wired-privacy.jpg" width="330" class="float-to-right">
 
