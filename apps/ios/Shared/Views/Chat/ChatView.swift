@@ -370,6 +370,10 @@ struct ChatView: View {
             }
         }
         ChatView.FloatingButtonModel.shared.totalUnread = chat.chatStats.unreadCount
+        resetSections()
+    }
+    
+    private func resetSections() {
         itemSection.removeAll()
         im.reversedChatItems.forEach {
             itemSection[$0.id] = .bottom
@@ -458,7 +462,10 @@ struct ChatView: View {
             .padding(.vertical, -InvertedTableView.inset)
             .onTapGesture { hideKeyboard() }
             .onChange(of: searchText) { _ in
-                Task { await loadChat(chat: chat, search: searchText) }
+                Task {
+                    await loadChat(chat: chat, search: searchText)
+                    resetSections()
+                }
             }
             .onChange(of: im.itemAdded) { added in
                 if added {
