@@ -216,6 +216,7 @@ struct ChatListView: View {
                 Spacer()
                 trailingToolbarItem.padding(.bottom, padding)
             }
+            .privacySensitive(protectScreen)
             .contentShape(Rectangle())
             .onTapGesture { scrollToSearchBar = true }
         }
@@ -251,11 +252,13 @@ struct ChatListView: View {
     }
 
     @ViewBuilder var trailingToolbarItem: some View {
-        switch chatModel.chatRunning {
-        case .some(true): NewChatMenuButton()
-        case .some(false): chatStoppedIcon()
-        case .none: EmptyView()
-        }
+        Group {
+            switch chatModel.chatRunning {
+            case .some(true): NewChatMenuButton()
+            case .some(false): chatStoppedIcon()
+            case .none: EmptyView()
+            }
+        }.privacySensitive(protectScreen)
     }
 
     @ViewBuilder private var chatList: some View {
@@ -412,6 +415,7 @@ struct SubsStatusIndicator: View {
     @State private var showServersSummary = false
 
     @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
+    @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
 
     var body: some View {
         Button {
@@ -426,6 +430,7 @@ struct SubsStatusIndicator: View {
             }
         }
         .disabled(ChatModel.shared.chatRunning != true)
+        .privacySensitive(protectScreen)
         .onAppear {
             startTask()
         }

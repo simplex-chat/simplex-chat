@@ -59,8 +59,10 @@ struct UserProfilesView: View {
             userProfilesView()
         } else {
             Button(action: runAuth) { Label("Unlock", systemImage: "lock") }
-            // TODO: Prevent Feedback loop
-//            .onAppear(perform: runAuth)
+                .onAppear {
+                    // `scenePhase` check Prevents a feedback loop
+                    if AppSheetState.shared.scenePhaseActive { runAuth() }
+                }
         }
     }
 
