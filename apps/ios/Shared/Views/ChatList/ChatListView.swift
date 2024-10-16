@@ -123,9 +123,11 @@ struct ChatListView: View {
                     .privacySensitive(protectScreen)
             }
         )
-        .appSheet(item: $activeUserPickerSheet) {
-            UserPickerSheetView(sheet: $0)
-        }
+        .appSheet(
+            item: $activeUserPickerSheet,
+            onDismiss: { chatModel.laRequest = nil },
+            content: { UserPickerSheetView(sheet: $0) }
+        )
         .onChange(of: activeUserPickerSheet) {
             if $0 != nil {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
