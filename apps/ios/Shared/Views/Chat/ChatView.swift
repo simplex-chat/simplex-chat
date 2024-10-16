@@ -197,6 +197,7 @@ struct ChatView: View {
             }
         }
         .environmentObject(scrollModel)
+        .environmentObject(sectionModel)
         .onDisappear {
             VideoPlayerView.players.removeAll()
             stopAudioPlayer()
@@ -407,20 +408,6 @@ struct ChatView: View {
         ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil && ci.meta.itemForwarded == nil
     }
 
-    private func filtered(_ reversedChatItems: Array<ChatItem>) -> Array<ChatItem> {
-        reversedChatItems
-            .enumerated()
-            .filter { (index, chatItem) in
-                if let mergeCategory = chatItem.mergeCategory, index > 0 {
-                    mergeCategory != reversedChatItems[index - 1].mergeCategory
-                } else {
-                    true
-                }
-            }
-            .map { $0.element }
-    }
-
-
     private func chatItemsList() -> some View {
         let cInfo = chat.chatInfo
         let mergedItems = filtered(im.reversedChatItems)
@@ -447,8 +434,6 @@ struct ChatView: View {
                 .id(ci.id) // Required to trigger `onAppear` on iOS15
             } loadPage: { (direction, section, chatItemId) in
                 loadChatItems(cInfo, direction, section, chatItemId)
-            } loadItemsAround: { chatItemId in
-                loadItemsAround(cInfo, chatItemId)
             }
             .opacity(ItemsModel.shared.isLoading ? 0 : 1)
             .padding(.vertical, -InvertedTableView.inset)
@@ -906,52 +891,6 @@ struct ChatView: View {
                             im.reversedChatItems.append(contentsOf: reversedPageToAppend)
                         }
                     }
-                    loadingItems = false
-                }
-            } catch let error {
-                logger.error("apiGetChat error: \(responseError(error))")
-                await MainActor.run { loadingItems = false }
-            }
-        }
-    }
-    
-    private func loadItemsAround(_ cInfo: ChatInfo, _ chatItemId: Int64) {
-        Task {
-            if loadingItems || sectionModel.getItemSection(chatItemId) != nil { return }
-            loadingItems = true
-            do {                
-                var reversedPage = Array<ChatItem>()
-                var chatItemsAvailable = true
-                // Load additional items until the page is +50 large after merging
-                while chatItemsAvailable && filtered(reversedPage).count < loadItemsPerPage {
-                    let pagination: ChatPagination = .before(chatItemId: chatItemId, count: loadItemsPerPage / 2)
-                    var chatItems = try await apiGetChatItems(
-                        type: cInfo.chatType,
-                        id: cInfo.apiId,
-                        pagination: pagination,
-                        search: searchText
-                    )
-                    if let lastItem = chatItems.last {
-                        let pagination: ChatPagination = .after(chatItemId: lastItem.id, count: loadItemsPerPage / 2)
-                        let afterItems = try await apiGetChatItems(
-                            type: cInfo.chatType,
-                            id: cInfo.apiId,
-                            pagination: pagination,
-                            search: searchText
-                        )
-                        chatItems.append(contentsOf: afterItems)
-                    }
-                    
-                    chatItemsAvailable = !chatItems.isEmpty
-                    reversedPage.append(contentsOf: chatItems.reversed())
-                }
-                await MainActor.run {
-                    let reversedPageToAppend = self.sectionModel.handleSectionInsertion(
-                        candidateSection: .destination,
-                        reversedPage: reversedPage,
-                        allItems: im.reversedChatItems
-                    )
-                    im.reversedChatItems.append(contentsOf: reversedPageToAppend)
                     loadingItems = false
                 }
             } catch let error {
@@ -1967,6 +1906,54 @@ func updateChatSettings(_ chat: Chat, chatSettings: ChatSettings) {
         } catch let error {
             logger.error("apiSetChatSettings error \(responseError(error))")
         }
+    }
+}
+private func filtered(_ reversedChatItems: Array<ChatItem>) -> Array<ChatItem> {
+    reversedChatItems
+        .enumerated()
+        .filter { (index, chatItem) in
+            if let mergeCategory = chatItem.mergeCategory, index > 0 {
+                mergeCategory != reversedChatItems[index - 1].mergeCategory
+            } else {
+                true
+            }
+        }
+        .map { $0.element }
+}
+
+func loadItemsAround(_ cInfo: ChatInfo, _ chatItemId: Int64) async -> [ChatItem]? {
+    do {
+        let im = ItemsModel.shared
+        var reversedPage = Array<ChatItem>()
+        var chatItemsAvailable = true
+        // Load additional items until the page is +50 large after merging
+        while chatItemsAvailable && filtered(reversedPage).count < loadItemsPerPage {
+            let pagination: ChatPagination = .before(chatItemId: chatItemId, count: loadItemsPerPage / 2)
+            var chatItems = try await apiGetChatItems(
+                type: cInfo.chatType,
+                id: cInfo.apiId,
+                pagination: pagination,
+                search: ""
+            )
+            if let lastItem = chatItems.last {
+                let pagination: ChatPagination = .after(chatItemId: lastItem.id, count: loadItemsPerPage / 2)
+                let afterItems = try await apiGetChatItems(
+                    type: cInfo.chatType,
+                    id: cInfo.apiId,
+                    pagination: pagination,
+                    search: ""
+                )
+                chatItems.append(contentsOf: afterItems)
+            }
+            
+            chatItemsAvailable = !chatItems.isEmpty
+            reversedPage.append(contentsOf: chatItems.reversed())
+        }
+        
+        return reversedPage
+    } catch let error {
+        logger.error("apiGetChat error: \(responseError(error))")
+        return nil
     }
 }
 

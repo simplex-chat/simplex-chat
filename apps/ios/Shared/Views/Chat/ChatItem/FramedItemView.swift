@@ -50,8 +50,22 @@ struct FramedItemView: View {
                     ciQuoteView(qi)
                         .onTapGesture {
                             if let itemId = qi.itemId {
-                                withAnimation {
-                                    scrollModel.scrollToItem(id: itemId)
+                                Task {
+                                    if let reversedPage = await loadItemsAround(chat.chatInfo, itemId) {
+                                        await MainActor.run {
+                                            let im = ItemsModel.shared
+                                            let reversedPageToAppend = self.sectionModel.handleSectionInsertion(
+                                                candidateSection: .destination,
+                                                reversedPage: reversedPage,
+                                                allItems: im.reversedChatItems
+                                            )
+                                            im.reversedChatItems.append(contentsOf: reversedPageToAppend)
+                                            
+                                            withAnimation {
+                                                scrollModel.scrollToItem(id: itemId)
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }

@@ -32,7 +32,6 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
     let content: (ChatItem) -> Content
 
     let loadPage: (ChatScrollDirection, ChatSection, ChatItem?) -> Void
-    let loadItemsAround: (Int64) -> Void
     
     func makeUIViewController(context: Context) -> Controller {
         Controller(representer: self)
@@ -46,7 +45,6 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             case .nextPage:
                 controller.scrollToNextPage()
             case let .item(id):
-                controller.update(items: items)
                 controller.scrollToItem(id: id)
             case .bottom:
                 controller.scroll(to: 0, position: .top, section: .bottom)
@@ -193,13 +191,6 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 if let indexPath = dataSource.indexPath(for: ci),
                    let section = dataSource.sectionIdentifier(for: indexPath.section) {
                     self.scroll(to: indexPath.row, position: .bottom, section: section)
-                }
-            } else {
-                Task {
-                    if (self.representer.sectionModel.getItemSection(id) == nil) {
-                        self.representer.sectionModel.activeSection = .destination
-                        self.representer.loadItemsAround(id)
-                    }
                 }
             }
         }
