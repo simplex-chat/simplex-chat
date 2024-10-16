@@ -10,11 +10,10 @@ import SwiftUI
 
 class AppSheetState: ObservableObject {
     static let shared = AppSheetState()
-    @Published var biometricAuth: Bool = false
     @Published var scenePhaseActive: Bool = false
 
     func redactionReasons(_ protectScreen: Bool) -> RedactionReasons {
-        !protectScreen || scenePhaseActive || biometricAuth
+        !protectScreen || scenePhaseActive
         ? RedactionReasons()
         : RedactionReasons.placeholder
     }
