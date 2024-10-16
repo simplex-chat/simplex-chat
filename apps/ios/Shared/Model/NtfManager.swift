@@ -190,7 +190,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                 identifier: ntfCategoryManyEvents,
                 actions: [],
                 intentIdentifiers: [],
-                hiddenPreviewsBodyPlaceholder: NSLocalizedString("Multiple new events", comment: "notification")
+                hiddenPreviewsBodyPlaceholder: NSLocalizedString("New events", comment: "notification")
             )
         ])
     }
