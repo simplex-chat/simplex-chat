@@ -10,17 +10,29 @@ import SwiftUI
 import Combine
 import SimpleXChat
 
+enum ChatScrollDirection {
+    case toLatest
+    case toOldest
+    case none
+}
+
+enum ChatSection: CaseIterable {
+    case main
+    case destination
+    case bottom
+}
+
 /// A List, which displays it's items in reverse order - from bottom to top
 struct ReverseList<Content: View>: UIViewControllerRepresentable {
     let items: Array<ChatItem>
 
     @Binding var scrollState: ReverseListScrollModel.State
-
+    @ObservedObject var sectionModel: ReverseListSectionModel
     /// Closure, that returns user interface for a given item
     let content: (ChatItem) -> Content
 
-    let loadPage: () -> Void
-
+    let loadPage: (ChatScrollDirection, ChatSection, ChatItem?) -> Void
+    
     func makeUIViewController(context: Context) -> Controller {
         Controller(representer: self)
     }
@@ -33,9 +45,9 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             case .nextPage:
                 controller.scrollToNextPage()
             case let .item(id):
-                controller.scroll(to: items.firstIndex(where: { $0.id == id }), position: .bottom)
+                controller.scrollToItem(id: id)
             case .bottom:
-                controller.scroll(to: 0, position: .top)
+                controller.scroll(to: 0, position: .top, section: .bottom)
             }
         } else {
             controller.update(items: items)
@@ -44,13 +56,14 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
 
     /// Controller, which hosts SwiftUI cells
     class Controller: UITableViewController {
-        private enum Section { case main }
         var representer: ReverseList
-        private var dataSource: UITableViewDiffableDataSource<Section, ChatItem>!
+        private var dataSource: UITableViewDiffableDataSource<ChatSection, ChatItem>!
         private var itemCount: Int = 0
         private let updateFloatingButtons = PassthroughSubject<Void, Never>()
         private var bag = Set<AnyCancellable>()
-
+        private var lastContentOffset: CGFloat = 0
+        private var scrollDirection: ChatScrollDirection = .none
+        
         init(representer: ReverseList) {
             self.representer = representer
             super.init(style: .plain)
@@ -73,13 +86,22 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     forCellReuseIdentifier: cellReuseId
                 )
             }
-
+            
             // 3. Configure data source
-            self.dataSource = UITableViewDiffableDataSource<Section, ChatItem>(
+            self.dataSource = UITableViewDiffableDataSource<ChatSection, ChatItem>(
                 tableView: tableView
             ) { (tableView, indexPath, item) -> UITableViewCell? in
-                if indexPath.item > self.itemCount - 8, self.itemCount > 8 {
-                    self.representer.loadPage()
+                if let section = self.dataSource.sectionIdentifier(for: indexPath.section) {
+                    let itemCount = self.getTotalItemsInItemSection(indexPath: indexPath)
+                    if self.representer.sectionModel.activeSection == section {
+                        if self.scrollDirection == .toOldest, indexPath.item > itemCount - 8, itemCount > 8 {
+                            let lastItem = self.getLastItemInItemSection(indexPath: indexPath)
+                            self.representer.loadPage(.toOldest, section, lastItem)
+                        } else if self.scrollDirection == .toLatest, indexPath.item < 8, itemCount > 8 {
+                            let firstItem = self.getFirstItemInItemSection(indexPath: indexPath)
+                            self.representer.loadPage(.toLatest, section, firstItem)
+                        }
+                    }
                 }
                 let cell = tableView.dequeueReusableCell(withIdentifier: cellReuseId, for: indexPath)
                 if #available(iOS 16.0, *) {
@@ -161,17 +183,28 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             )
             Task { representer.scrollState = .atDestination }
         }
+        
+        /// Scrolls to a given item
+        func scrollToItem(id: Int64) {
+            if let loadedIndex = self.representer.items.firstIndex(where: { $0.id == id }) {
+                let ci = representer.items[loadedIndex]
+                if let indexPath = dataSource.indexPath(for: ci),
+                   let section = dataSource.sectionIdentifier(for: indexPath.section) {
+                    self.scroll(to: indexPath.row, position: .bottom, section: section)
+                }
+            }
+        }
 
         /// Scrolls to Item at index path
         /// - Parameter indexPath: Item to scroll to - will scroll to beginning of the list, if `nil`
-        func scroll(to index: Int?, position: UITableView.ScrollPosition) {
+        func scroll(to index: Int?, position: UITableView.ScrollPosition, section: ChatSection) {
             var animated = false
             if #available(iOS 16.0, *) {
                 animated = true
             }
-            if let index, tableView.numberOfRows(inSection: 0) != 0 {
+            if let index, let sectionIndex = dataSource.index(for: section), tableView.numberOfRows(inSection: sectionIndex) != 0 {
                 tableView.scrollToRow(
-                    at: IndexPath(row: index, section: 0),
+                    at: IndexPath(row: index, section: sectionIndex),
                     at: position,
                     animated: animated
                 )
@@ -185,9 +218,15 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         }
 
         func update(items: [ChatItem]) {
-            var snapshot = NSDiffableDataSourceSnapshot<Section, ChatItem>()
-            snapshot.appendSections([.main])
-            snapshot.appendItems(items)
+            var snapshot = NSDiffableDataSourceSnapshot<ChatSection, ChatItem>()
+            let sections = self.representer.sectionModel.getSectionsOrdered()
+            let itemsBySection = self.itemsBySection(items: items)
+            snapshot.appendSections(sections)
+            sections.forEach { sec in
+                if let sectionItems = itemsBySection[sec] {
+                    snapshot.appendItems(sectionItems, toSection: sec)
+                }
+            }
             dataSource.defaultRowAnimation = .none
             dataSource.apply(
                 snapshot,
@@ -205,6 +244,15 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         }
 
         override func scrollViewDidScroll(_ scrollView: UIScrollView) {
+            let currentOffset = scrollView.contentOffset.y
+            if currentOffset > lastContentOffset {
+                scrollDirection = .toOldest
+            } else if currentOffset < lastContentOffset {
+                scrollDirection = .toLatest
+            } else {
+                scrollDirection = .none
+            }
+            lastContentOffset = currentOffset
             updateFloatingButtons.send()
         }
 
@@ -212,15 +260,18 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             if let visibleRows = tableView.indexPathsForVisibleRows,
                 visibleRows.last?.item ?? 0 < representer.items.count {
                 let scrollOffset: Double = tableView.contentOffset.y + InvertedTableView.inset
+            
                 let topItemDate: Date? =
-                    if let lastVisible = visibleRows.last(where: { isVisible(indexPath: $0) }) {
-                        representer.items[lastVisible.item].meta.itemTs
+                    if let lastVisible = visibleRows.last(where: { isVisible(indexPath: $0) }),
+                       let cI = self.dataSource.itemIdentifier(for: lastVisible) {
+                        cI.meta.itemTs
                     } else {
                         nil
                     }
                 let bottomItemId: ChatItem.ID? =
-                    if let firstVisible = visibleRows.first(where: { isVisible(indexPath: $0) }) {
-                        representer.items[firstVisible.item].id
+                    if let firstVisible = visibleRows.first(where: { isVisible(indexPath: $0) }),
+                       let cI = self.dataSource.itemIdentifier(for: firstVisible) {
+                        cI.id
                     } else {
                         nil
                     }
@@ -237,6 +288,40 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 relativeFrame.maxY > InvertedTableView.inset &&
                 relativeFrame.minY < tableView.frame.height - InvertedTableView.inset
             } else { false }
+        }
+        
+        private func getTotalItemsInItemSection(indexPath: IndexPath) -> Int {
+            return self.tableView.numberOfRows(inSection: indexPath.section)
+        }
+        
+        private func getLastItemInItemSection(indexPath: IndexPath) -> ChatItem? {
+            let numberOfRows = self.getTotalItemsInItemSection(indexPath: indexPath)
+            
+            return if numberOfRows > 0,
+                      let lastItem = self.dataSource.itemIdentifier(for: IndexPath(row: numberOfRows - 1, section: indexPath.section)) {
+                lastItem
+            } else {
+                nil
+            }
+        }
+        
+        private func getFirstItemInItemSection(indexPath: IndexPath) -> ChatItem? {
+            let firstIndexPath = IndexPath(item: 0, section: indexPath.section)
+            return if let firstItem = self.dataSource.itemIdentifier(for: firstIndexPath) {
+                firstItem
+            } else {
+                nil
+            }
+        }
+        
+        private func itemsBySection(items: [ChatItem]) -> [ChatSection: [ChatItem]] {
+            let itemsBySection = items.reduce(into: [ChatSection: [ChatItem]]()) { result, ci in
+                if let sec = self.representer.sectionModel.getItemSection(ci.id) {
+                    result[sec, default: []].append(ci)
+                }
+            }
+            
+            return itemsBySection
         }
     }
 
@@ -312,6 +397,56 @@ class ReverseListScrollModel: ObservableObject {
 
     func scrollToItem(id: ChatItem.ID) {
         state = .scrollingTo(.item(id))
+    }
+}
+
+/// Manages ``ReverseList`` sections
+class ReverseListSectionModel: ObservableObject {
+    @Published var activeSection: ChatSection = .bottom
+    @Published private var itemSection: [Int64: ChatSection] = [:]
+    @Published private var sections = Set<ChatSection>()
+
+    func getItemSection(_ id: Int64) -> ChatSection? {
+        return itemSection[id]
+    }
+    
+    func getSectionsOrdered() -> [ChatSection] {
+        var orderedSections: [ChatSection] = [.bottom]
+        
+        if (sections.contains(.destination)) {
+            orderedSections.append(.destination)
+        }
+        
+        return orderedSections
+    }
+    
+    func resetSections(items: [ChatItem]) {
+        itemSection = Dictionary(uniqueKeysWithValues: items.map { ($0.id, .bottom) })
+    }
+    
+    func handleSectionInsertion(candidateSection: ChatSection, reversedPage: [ChatItem], allItems: [ChatItem]) -> [ChatItem] {
+        var reversedPageToAppend = Array<ChatItem>()
+        var targetSection = candidateSection
+        
+        if let sectionIntersectionItem = reversedPage.first(where: { itemSection[$0.id] != nil && itemSection[$0.id] != candidateSection }) {
+            let sectionToDrop = itemSection[sectionIntersectionItem.id] == .bottom ? candidateSection : (itemSection[sectionIntersectionItem.id] ?? .destination)
+            targetSection = itemSection[sectionIntersectionItem.id] == .bottom ? .bottom : candidateSection
+            itemSection = itemSection.mapValues { section in
+                section == sectionToDrop ? targetSection : section
+            }
+            sections.remove(targetSection)
+        }
+        
+        reversedPage.forEach { ci in
+            if itemSection[ci.id] == nil {
+                reversedPageToAppend.append(ci)
+                itemSection[ci.id] = targetSection
+            }
+        }
+        sections.insert(targetSection)
+        self.activeSection = targetSection
+        
+        return reversedPageToAppend
     }
 }
 
