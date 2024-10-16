@@ -13,6 +13,7 @@ struct FramedItemView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var scrollModel: ReverseListScrollModel
+    @EnvironmentObject var sectionModel: ReverseListSectionModel
     @ObservedObject var chat: Chat
     var chatItem: ChatItem
     var preview: UIImage?

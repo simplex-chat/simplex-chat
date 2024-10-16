@@ -28,8 +28,7 @@ struct ChatView: View {
     @Environment(\.scenePhase) var scenePhase
     @State @ObservedObject var chat: Chat
     @StateObject private var scrollModel = ReverseListScrollModel()
-    @State private var itemSection: [Int64: ChatSection] = [:]
-    @State private var activeSection: ChatSection = .bottom
+    @StateObject private var sectionModel = ReverseListSectionModel()
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
@@ -370,14 +369,7 @@ struct ChatView: View {
             }
         }
         ChatView.FloatingButtonModel.shared.totalUnread = chat.chatStats.unreadCount
-        resetSections()
-    }
-    
-    private func resetSections() {
-        itemSection.removeAll()
-        im.reversedChatItems.forEach {
-            itemSection[$0.id] = .bottom
-        }
+        sectionModel.resetSections(items: im.reversedChatItems)
     }
 
     private func searchToolbar() -> some View {
@@ -433,7 +425,7 @@ struct ChatView: View {
         let cInfo = chat.chatInfo
         let mergedItems = filtered(im.reversedChatItems)
         return GeometryReader { g in
-            ReverseList(items: mergedItems, scrollState: $scrollModel.state, itemSection: $itemSection, activeSection: $activeSection ) { ci in
+            ReverseList(items: mergedItems, scrollState: $scrollModel.state, sectionModel: sectionModel) { ci in
                 let voiceNoFrame = voiceWithoutFrame(ci)
                 let maxWidth = cInfo.chatType == .group
                                 ? voiceNoFrame
@@ -464,7 +456,7 @@ struct ChatView: View {
             .onChange(of: searchText) { _ in
                 Task {
                     await loadChat(chat: chat, search: searchText)
-                    resetSections()
+                    sectionModel.resetSections(items: im.reversedChatItems)
                 }
             }
             .onChange(of: im.itemAdded) { added in
@@ -897,27 +889,11 @@ struct ChatView: View {
                     if reversedPage.count == 0  {
                         setBoundary(direction)
                     } else {
-                        var reversedPageToAppend = Array<ChatItem>()
-                        var targetSection = section
-                        
-                        if let sectionIntersectionItem = reversedPage.first(where: { itemSection[$0.id] != nil && itemSection[$0.id] != section }) {
-                            let sectionToDrop = itemSection[sectionIntersectionItem.id] == .bottom ? section : (itemSection[sectionIntersectionItem.id] ?? .destination)
-                            targetSection = itemSection[sectionIntersectionItem.id] == .bottom ? .bottom : section
-                            im.reversedChatItems.forEach {
-                                if itemSection[$0.id] == sectionToDrop {
-                                    itemSection[$0.id] = targetSection
-                                }
-                            }
-                        }
-                        
-                        reversedPage.forEach { ci in
-                            if itemSection[ci.id] == nil {
-                                reversedPageToAppend.append(ci)
-                                itemSection[ci.id] = targetSection
-                            }
-                        }
-                        
-                        self.activeSection = targetSection
+                        let reversedPageToAppend = self.sectionModel.handleSectionInsertion(
+                            candidateSection: section,
+                            reversedPage: reversedPage,
+                            allItems: im.reversedChatItems
+                        )
                         
                         if direction == .toLatest {
                             let at = if let chatItemId = chatItem?.id, let index = im.reversedChatItems.firstIndex(where: { $0.id == chatItemId }) {
@@ -941,7 +917,7 @@ struct ChatView: View {
     
     private func loadItemsAround(_ cInfo: ChatInfo, _ chatItemId: Int64) {
         Task {
-            if loadingItems || itemSection[chatItemId] != nil { return }
+            if loadingItems || sectionModel.getItemSection(chatItemId) != nil { return }
             loadingItems = true
             do {                
                 var reversedPage = Array<ChatItem>()
@@ -970,10 +946,12 @@ struct ChatView: View {
                     reversedPage.append(contentsOf: chatItems.reversed())
                 }
                 await MainActor.run {
-                    reversedPage.forEach { ci in
-                        itemSection[ci.id] = .destination
-                    }
-                    im.reversedChatItems.append(contentsOf: reversedPage)
+                    let reversedPageToAppend = self.sectionModel.handleSectionInsertion(
+                        candidateSection: .destination,
+                        reversedPage: reversedPage,
+                        allItems: im.reversedChatItems
+                    )
+                    im.reversedChatItems.append(contentsOf: reversedPageToAppend)
                     loadingItems = false
                 }
             } catch let error {

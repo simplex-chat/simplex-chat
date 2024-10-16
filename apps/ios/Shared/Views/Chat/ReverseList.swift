@@ -27,8 +27,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
     let items: Array<ChatItem>
 
     @Binding var scrollState: ReverseListScrollModel.State
-    @Binding var itemSection: Dictionary<Int64, ChatSection>
-    @Binding var activeSection: ChatSection
+    @ObservedObject var sectionModel: ReverseListSectionModel
     /// Closure, that returns user interface for a given item
     let content: (ChatItem) -> Content
 
@@ -96,7 +95,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             ) { (tableView, indexPath, item) -> UITableViewCell? in
                 if let section = self.dataSource.sectionIdentifier(for: indexPath.section) {
                     let itemCount = self.getTotalItemsInItemSection(indexPath: indexPath)
-                    if self.representer.activeSection == section {
+                    if self.representer.sectionModel.activeSection == section {
                         if self.scrollDirection == .toOldest, indexPath.item > itemCount - 8, itemCount > 8 {
                             let lastItem = self.getLastItemInItemSection(indexPath: indexPath)
                             self.representer.loadPage(.toOldest, section, lastItem)
@@ -197,8 +196,8 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 }
             } else {
                 Task {
-                    if (self.representer.itemSection[id] == nil) {
-                        self.representer.activeSection = .destination
+                    if (self.representer.sectionModel.getItemSection(id) == nil) {
+                        self.representer.sectionModel.activeSection = .destination
                         self.representer.loadItemsAround(id)
                     }
                 }
@@ -229,28 +228,14 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
 
         func update(items: [ChatItem]) {
             var snapshot = NSDiffableDataSourceSnapshot<ChatSection, ChatItem>()
-            var itemsBySection: Dictionary<ChatSection, [ChatItem]> = Dictionary()
-            items.forEach { ci in
-                var section: ChatSection = .bottom
-                if let sec = representer.itemSection[ci.id] {
-                    section = sec
-                }
-                
-                if var existingItems = itemsBySection[section] {
-                    existingItems.append(ci)
-                    itemsBySection[section] = existingItems
-                } else {
-                    itemsBySection[section] = [ci]
+            let sections = self.representer.sectionModel.getSectionsOrdered()
+            let itemsBySection = self.itemsBySection(items: items)
+            snapshot.appendSections(sections)
+            sections.forEach { sec in
+                if let sectionItems = itemsBySection[sec] {
+                    snapshot.appendItems(sectionItems, toSection: sec)
                 }
             }
-            snapshot.appendSections([.bottom, .destination])
-            if let bottomItems = itemsBySection[.bottom] {
-                snapshot.appendItems(bottomItems, toSection: .bottom)
-            }
-            if let destinationItems = itemsBySection[.destination] {
-                snapshot.appendItems(destinationItems, toSection: .destination)
-            }
-            
             dataSource.defaultRowAnimation = .none
             dataSource.apply(
                 snapshot,
@@ -337,6 +322,16 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 nil
             }
         }
+        
+        private func itemsBySection(items: [ChatItem]) -> [ChatSection: [ChatItem]] {
+            let itemsBySection = items.reduce(into: [ChatSection: [ChatItem]]()) { result, ci in
+                if let sec = self.representer.sectionModel.getItemSection(ci.id) {
+                    result[sec, default: []].append(ci)
+                }
+            }
+            
+            return itemsBySection
+        }
     }
 
     /// `UIHostingConfiguration` back-port for iOS14 and iOS15
@@ -411,6 +406,56 @@ class ReverseListScrollModel: ObservableObject {
 
     func scrollToItem(id: ChatItem.ID) {
         state = .scrollingTo(.item(id))
+    }
+}
+
+/// Manages ``ReverseList`` sections
+class ReverseListSectionModel: ObservableObject {
+    @Published var activeSection: ChatSection = .bottom
+    @Published private var itemSection: [Int64: ChatSection] = [:]
+    @Published private var sections = Set<ChatSection>()
+
+    func getItemSection(_ id: Int64) -> ChatSection? {
+        return itemSection[id]
+    }
+    
+    func getSectionsOrdered() -> [ChatSection] {
+        var orderedSections: [ChatSection] = [.bottom]
+        
+        if (sections.contains(.destination)) {
+            orderedSections.append(.destination)
+        }
+        
+        return orderedSections
+    }
+    
+    func resetSections(items: [ChatItem]) {
+        itemSection = Dictionary(uniqueKeysWithValues: items.map { ($0.id, .bottom) })
+    }
+    
+    func handleSectionInsertion(candidateSection: ChatSection, reversedPage: [ChatItem], allItems: [ChatItem]) -> [ChatItem] {
+        var reversedPageToAppend = Array<ChatItem>()
+        var targetSection = candidateSection
+        
+        if let sectionIntersectionItem = reversedPage.first(where: { itemSection[$0.id] != nil && itemSection[$0.id] != candidateSection }) {
+            let sectionToDrop = itemSection[sectionIntersectionItem.id] == .bottom ? candidateSection : (itemSection[sectionIntersectionItem.id] ?? .destination)
+            targetSection = itemSection[sectionIntersectionItem.id] == .bottom ? .bottom : candidateSection
+            itemSection = itemSection.mapValues { section in
+                section == sectionToDrop ? targetSection : section
+            }
+            sections.remove(targetSection)
+        }
+        
+        reversedPage.forEach { ci in
+            if itemSection[ci.id] == nil {
+                reversedPageToAppend.append(ci)
+                itemSection[ci.id] = targetSection
+            }
+        }
+        sections.insert(targetSection)
+        self.activeSection = targetSection
+        
+        return reversedPageToAppend
     }
 }
 
