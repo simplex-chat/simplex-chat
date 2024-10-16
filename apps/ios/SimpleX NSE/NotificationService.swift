@@ -131,7 +131,7 @@ class NSEThreads {
 
     private func rcvEntityThread(_ id: ChatId) -> (UUID, NotificationService)? {
         NSEThreads.queue.sync {
-            activeThreads.first(where: { (_, nse) in nse.expectedMessages[id]?.ready ?? false })
+            activeThreads.first(where: { (_, nse) in nse.expectedMessages[id]?.ready == false })
         }
     }
 
@@ -271,7 +271,7 @@ class NotificationService: UNNotificationServiceExtension {
            let receiveEntityId = connEntity.id, ntfMessage.expectedMsg_ != nil {
             let expectedMsgId = ntfMessage.expectedMsg_?.msgId
             let receivedMsgId = ntfMessage.receivedMsg_?.msgId
-            logger.debug("NotificationService: addExpectedMessage: expectedMsgId = \(expectedMsgId ?? "nil", privacy: .private), receivedMsgId = \(receivedMsgId ?? "nil", privacy: .private)")
+            logger.debug("NotificationService: addExpectedMessage: expectedMsgId = \(expectedMsgId ?? "nil", privacy: .public), receivedMsgId = \(receivedMsgId ?? "nil", privacy: .public)")
             expectedMessages[receiveEntityId] = ExpectedMessage(
                 ntfMessage: ntfMessage,
                 receiveConnId: connEntity.conn.agentConnId,
@@ -312,28 +312,28 @@ class NotificationService: UNNotificationServiceExtension {
             if info.msgId == expectedMessage.expectedMsgId {
                 expectedMessages[id]?.expectedMsgId = nil
                 expectedMessages[id]?.ready = true
-                logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): expected")
+                logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .public): expected")
                 self.deliverBestAttemptNtf()
                 return true
             } else if let msgTs = info.msgTs_, msgTs > expectedMsgTs {
-                logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): unexpected msgInfo, let other instance to process it, stopping this one")
+                logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .public): unexpected msgInfo, let other instance to process it, stopping this one")
                 expectedMessages[id]?.ready = true
                 self.deliverBestAttemptNtf()
                 return !expectedMessages.allSatisfy { $0.value.ready }
             } else if (expectedMessages[id]?.allowedGetNextAttempts ?? 0) > 0, let receiveConnId = expectedMessages[id]?.receiveConnId {
-                logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): unexpected msgInfo, get next message")
+                logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .public): unexpected msgInfo, get next message")
                 expectedMessages[id]?.allowedGetNextAttempts -= 1
                 if let receivedMsg = apiGetConnNtfMessage(connId: receiveConnId) {
-                    logger.debug("NotificationService processNtf, on apiGetConnNtfMessage: msgInfo msgId = \(info.msgId, privacy: .private), receivedMsg msgId = \(receivedMsg.msgId, privacy: .private)")
+                    logger.debug("NotificationService processNtf, on apiGetConnNtfMessage: msgInfo msgId = \(info.msgId, privacy: .public), receivedMsg msgId = \(receivedMsg.msgId, privacy: .public)")
                     return true
                 } else {
-                    logger.debug("NotificationService processNtf, on apiGetConnNtfMessage: msgInfo msgId = \(info.msgId, privacy: .private): no next message, deliver best attempt")
+                    logger.debug("NotificationService processNtf, on apiGetConnNtfMessage: msgInfo msgId = \(info.msgId, privacy: .public): no next message, deliver best attempt")
                     expectedMessages[id]?.ready = true
                     self.deliverBestAttemptNtf()
                     return !expectedMessages.allSatisfy { $0.value.ready }
                 }
             } else {
-                logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): unknown message, let other instance to process it")
+                logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .public): unknown message, let other instance to process it")
                 expectedMessages[id]?.ready = true
                 self.deliverBestAttemptNtf()
                 return !expectedMessages.allSatisfy { $0.value.ready }
