@@ -1240,14 +1240,14 @@
         <target>Nem lehet felhívni a tagot</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Can't invite contact!" xml:space="preserve">
+      <trans-unit id="Can't invite contact!" xml:space="preserve" approved="no">
         <source>Can't invite contact!</source>
-        <target>Ismerős meghívása nem lehetséges!</target>
+        <target state="translated">Nem lehet meghívni az ismerőst!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Can't invite contacts!" xml:space="preserve">
+      <trans-unit id="Can't invite contacts!" xml:space="preserve" approved="no">
         <source>Can't invite contacts!</source>
-        <target>Ismerősök meghívása nem lehetséges!</target>
+        <target state="translated">Nem lehet meghívni az ismerősöket!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Can't message member" xml:space="preserve">
@@ -1546,9 +1546,9 @@
         <target>Adatbázis fejlesztésének megerősítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm files from unknown servers." xml:space="preserve">
+      <trans-unit id="Confirm files from unknown servers." xml:space="preserve" approved="no">
         <source>Confirm files from unknown servers.</source>
-        <target>Ismeretlen kiszolgálókról származó fájlok jóváhagyása.</target>
+        <target state="translated">Ismeretlen kiszolgálókról származó fájlok megerősítése.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm network settings" xml:space="preserve">
@@ -1640,9 +1640,9 @@ Ez az Ön egyszer használható hivatkozása!</target>
         <target>Kapcsolódás ezzel: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connected" xml:space="preserve">
+      <trans-unit id="Connected" xml:space="preserve" approved="no">
         <source>Connected</source>
-        <target>Kapcsolódva</target>
+        <target state="translated">Kapcsolódott</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connected desktop" xml:space="preserve">
@@ -3237,9 +3237,9 @@ Ez az Ön egyszer használható hivatkozása!</target>
         <target>Fájlállapot: %@</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="File will be deleted from servers." xml:space="preserve">
+      <trans-unit id="File will be deleted from servers." xml:space="preserve" approved="no">
         <source>File will be deleted from servers.</source>
-        <target>A fájl törölve lesz a kiszolgálóról.</target>
+        <target state="translated">A fájl törölve lesz a kiszolgálókról.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File will be received when your contact completes uploading it." xml:space="preserve">
@@ -5479,9 +5479,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>A címzettek a beírás közben látják a szövegváltozásokat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reconnect" xml:space="preserve">
+      <trans-unit id="Reconnect" xml:space="preserve" approved="no">
         <source>Reconnect</source>
-        <target>Újrakapcsolás</target>
+        <target state="translated">Újrakapcsolódás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reconnect all connected servers to force message delivery. It uses additional traffic." xml:space="preserve">
@@ -8271,9 +8271,9 @@ Kapcsolatkérés megismétlése?</target>
         <target>kapcsolódás a SimpleX Chat fejlesztőkhöz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="connected" xml:space="preserve">
+      <trans-unit id="connected" xml:space="preserve" approved="no">
         <source>connected</source>
-        <target>kapcsolódva</target>
+        <target state="translated">kapcsolódott</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connected directly" xml:space="preserve">
