@@ -658,7 +658,7 @@ fun ChatLayout(
       val wallpaperType = MaterialTheme.wallpaper.type
       val backgroundColor = MaterialTheme.wallpaper.background ?: wallpaperType.defaultBackgroundColor(CurrentColors.value.base, MaterialTheme.colors.background)
       val tintColor = MaterialTheme.wallpaper.tint ?: wallpaperType.defaultTintColor(CurrentColors.value.base)
-      Column(
+      Box(
         Modifier
           .background(MaterialTheme.colors.background)
           .then(if (wallpaperImage != null)
@@ -666,39 +666,43 @@ fun ChatLayout(
           else
             Modifier)
       ) {
-        if (selectedChatItems.value == null) {
-          val chatInfo = chatInfo.value
-          if (chatInfo != null) {
-            ChatInfoToolbar(chatInfo, back, info, startCall, endCall, addMembers, openGroupLink, changeNtfsState, onSearchValueChanged, showSearch)
+        Column {
+          Box(
+            Modifier
+              .fillMaxWidth()
+              .weight(1f)
+          ) {
+            val remoteHostId = remember { remoteHostId }.value
+            val chatInfo = remember { chatInfo }.value
+            if (chatInfo != null) {
+              ChatItemsList(
+                remoteHostId, chatInfo, unreadCount, composeState, searchValue,
+                useLinkPreviews, linkMode, selectedChatItems, showMemberInfo, loadPrevMessages, deleteMessage, deleteMessages,
+                receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, openDirectChat, forwardItem,
+                updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
+                setReaction, showItemDetails, markRead, onComposed, developerTools, showViaProxy,
+              )
+            }
           }
-        } else {
-          SelectedItemsTopToolbar(selectedChatItems)
+          composeView()
         }
-        Box(
-          Modifier
-            .fillMaxWidth()
-            .weight(1f)
-        ) {
-          val remoteHostId = remember { remoteHostId }.value
-          val chatInfo = remember { chatInfo }.value
-          if (chatInfo != null) {
-            ChatItemsList(
-              remoteHostId, chatInfo, unreadCount, composeState, searchValue,
-              useLinkPreviews, linkMode, selectedChatItems, showMemberInfo, loadPrevMessages, deleteMessage, deleteMessages,
-              receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, openDirectChat, forwardItem,
-              updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
-              setReaction, showItemDetails, markRead, onComposed, developerTools, showViaProxy,
-            )
+        Column {
+          if (selectedChatItems.value == null) {
+            val chatInfo = chatInfo.value
+            if (chatInfo != null) {
+              ChatInfoToolbar(chatInfo, back, info, startCall, endCall, addMembers, openGroupLink, changeNtfsState, onSearchValueChanged, showSearch)
+            }
+          } else {
+            SelectedItemsTopToolbar(selectedChatItems)
           }
         }
-        composeView()
       }
     }
   }
 }
 
 @Composable
-fun ColumnScope.ChatInfoToolbar(
+fun ChatInfoToolbar(
   chatInfo: ChatInfo,
   back: () -> Unit,
   info: () -> Unit,
@@ -860,7 +864,10 @@ fun ColumnScope.ChatInfoToolbar(
     onSearchValueChanged = onSearchValueChanged,
     buttons = barButtons
   )
-  Box(Modifier.align(Alignment.End)) {
+  Box(Modifier
+    .fillMaxWidth()
+    .wrapContentSize(Alignment.TopEnd)
+  ) {
     DefaultDropdownMenu(showMenu) {
       menuItems.forEach { it() }
     }
@@ -983,7 +990,12 @@ fun BoxScope.ChatItemsList(
       VideoPlayerHolder.releaseAll()
     }
   )
-  LazyColumnWithScrollBar(Modifier.align(Alignment.BottomCenter), state = listState, reverseLayout = true) {
+  LazyColumnWithScrollBar(
+    Modifier.align(Alignment.BottomCenter),
+    state = listState,
+    reverseLayout = true,
+    contentPadding = PaddingValues(top = topPaddingToContent())
+  ) {
     itemsIndexed(reversedChatItems, key = { _, item -> item.id to item.meta.createdAt.toEpochMilliseconds() }) { i, cItem ->
       CompositionLocalProvider(
         // Makes horizontal and vertical scrolling to coexist nicely.
@@ -1242,7 +1254,7 @@ fun BoxScope.ChatItemsList(
   FloatingButtons(chatModel.chatItems, unreadCount, remoteHostId, chatInfo, searchValue, markRead, listState)
 
   FloatingDate(
-    Modifier.padding(top = 10.dp).align(Alignment.TopCenter),
+    Modifier.padding(top = 10.dp + topPaddingToContent()).align(Alignment.TopCenter),
     listState,
   )
 
@@ -1340,14 +1352,14 @@ fun BoxScope.FloatingButtons(
   val showDropDown = remember { mutableStateOf(false) }
 
   TopEndFloatingButton(
-    Modifier.padding(end = DEFAULT_PADDING, top = 24.dp).align(Alignment.TopEnd),
+    Modifier.padding(end = DEFAULT_PADDING, top = 24.dp + topPaddingToContent()).align(Alignment.TopEnd),
     topUnreadCount,
     onClick = { scope.launch { listState.animateScrollBy(maxHeight.value.toFloat()) } },
     onLongClick = { showDropDown.value = true }
   )
 
   Box(Modifier.align(Alignment.TopEnd)) {
-    DefaultDropdownMenu(showDropDown, offset = DpOffset(-DEFAULT_PADDING, 24.dp + fabSize)) {
+    DefaultDropdownMenu(showDropDown, offset = DpOffset(-DEFAULT_PADDING, 24.dp + fabSize + topPaddingToContent())) {
       ItemAction(
         generalGetString(MR.strings.mark_read),
         painterResource(MR.images.ic_check),
@@ -1440,6 +1452,9 @@ private fun TopEndFloatingButton(
   else -> {
   }
 }
+
+@Composable
+fun topPaddingToContent(): Dp = AppBarHeight * fontSizeSqrtMultiplier + WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
 @Composable
 private fun FloatingDate(

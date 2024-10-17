@@ -40,7 +40,8 @@ fun DefaultTopAppBar(
         SearchTextField(Modifier.fillMaxWidth(), alwaysVisible = false, onValueChange = onSearchValueChanged)
       }
     },
-    backgroundColor = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f),
+    backgroundColor = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
+      .copy(remember { appPrefs.barsAlpha.state }.value),
     navigationIcon = navigationButton,
     buttons = if (!showSearch) buttons else emptyList(),
     centered = !showSearch,
@@ -99,8 +100,9 @@ private fun TopAppBar(
   Box(
     modifier
       .fillMaxWidth()
+      .then(if (!onTop) Modifier.navigationBarsPadding() else Modifier)
       .background(backgroundColor)
-      .then(if (onTop) Modifier.statusBarsPadding() else Modifier.navigationBarsPadding())
+      .then(if (onTop) Modifier.statusBarsPadding() else Modifier)
       .height(AppBarHeight * fontSizeSqrtMultiplier)
       .padding(horizontal = 4.dp),
     contentAlignment = Alignment.CenterStart,

@@ -30,6 +30,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.contacts.*
 import chat.simplex.common.views.helpers.*
@@ -42,42 +43,34 @@ import kotlinx.coroutines.flow.filter
 fun ModalData.NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
 
-  Scaffold(
-    backgroundColor = Color.Unspecified,
-    bottomBar = {
-      if (oneHandUI.value) {
-        Column {
-          Divider()
-          CloseSheetBar(
-            close = close,
-            showClose = true,
-            endButtons = { Spacer(Modifier.minimumInteractiveComponentSize()) },
-            arrangement = Arrangement.Bottom,
-            closeBarTitle = generalGetString(MR.strings.new_message),
-            barPaddingValues = PaddingValues(horizontal = 0.dp)
-          )
-        }
-      }
-    }
-  ) {
-    Column(
-      modifier = Modifier.fillMaxSize().padding(it)
-    ) {
-      val closeAll = { ModalManager.start.closeModals() }
+  Box {
+    val closeAll = { ModalManager.start.closeModals() }
 
-      Column(modifier = Modifier.fillMaxSize()) {
-        NewChatSheetLayout(
-          addContact = {
-            ModalManager.start.showModalCloseable(endButtons = { AddContactLearnMoreButton() }) { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = closeAll ) }
-          },
-          scanPaste = {
-            ModalManager.start.showModalCloseable(endButtons = { AddContactLearnMoreButton() }) { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = closeAll) }
-          },
-          createGroup = {
-            ModalManager.start.showCustomModal { close -> AddGroupView(chatModel, chatModel.currentRemoteHost.value, close, closeAll) }
-          },
-          rh = rh,
-          close = close
+    Column(modifier = Modifier.fillMaxSize()) {
+      NewChatSheetLayout(
+        addContact = {
+          ModalManager.start.showModalCloseable(endButtons = { AddContactLearnMoreButton() }) { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = closeAll) }
+        },
+        scanPaste = {
+          ModalManager.start.showModalCloseable(endButtons = { AddContactLearnMoreButton() }) { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = closeAll) }
+        },
+        createGroup = {
+          ModalManager.start.showCustomModal { close -> AddGroupView(chatModel, chatModel.currentRemoteHost.value, close, closeAll) }
+        },
+        rh = rh,
+        close = close
+      )
+    }
+    if (oneHandUI.value) {
+      Column(Modifier.align(Alignment.BottomCenter)) {
+        Divider()
+        CloseSheetBar(
+          close = close,
+          showClose = true,
+          endButtons = { Spacer(Modifier.minimumInteractiveComponentSize()) },
+          arrangement = Arrangement.Bottom,
+          closeBarTitle = generalGetString(MR.strings.new_message),
+          barPaddingValues = PaddingValues()
         )
       }
     }
@@ -184,9 +177,14 @@ private fun ModalData.NewChatSheetLayout(
   }
 
   Box {
+    val topPaddingToContent = topPaddingToContent()
   LazyColumnWithScrollBar(
     Modifier.fillMaxSize().then(if (!oneHandUI.value) Modifier.imePadding() else Modifier),
     listState,
+    contentPadding = PaddingValues(
+      top = if (!oneHandUI.value) topPaddingToContent else 0.dp,
+      bottom = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else 0.dp
+    ),
     reverseLayout = oneHandUI.value
   ) {
     if (!oneHandUI.value) {
@@ -374,9 +372,8 @@ private fun ModalData.NewChatSheetLayout(
   }
     if (oneHandUI.value) {
       StatusBarBackground()
-    } else {
-      NavigationBarBackground()
     }
+    NavigationBarBackground()
   }
 }
 
@@ -581,24 +578,7 @@ private fun contactTypesSearchTargets(baseContactTypes: List<ContactType>, searc
 @Composable
 private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats: () -> Unit, close: () -> Unit) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
-  Scaffold(
-    backgroundColor = Color.Unspecified,
-    bottomBar = {
-      if (oneHandUI.value) {
-        Column {
-          Divider()
-          CloseSheetBar(
-            close = closeDeletedChats,
-            showClose = true,
-            endButtons = { Spacer(Modifier.minimumInteractiveComponentSize()) },
-            arrangement = Arrangement.Bottom,
-            closeBarTitle = generalGetString(MR.strings.deleted_chats),
-            barPaddingValues = PaddingValues(horizontal = 0.dp)
-          )
-        }
-      }
-    }
-  ) { contentPadding ->
+  Box {
     val listState = remember { appBarHandler.listState }
     val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
     val searchShowingSimplexLink = remember { mutableStateOf(false) }
@@ -616,9 +596,13 @@ private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats
     )
 
     Box {
+      val topPaddingToContent = topPaddingToContent()
     LazyColumnWithScrollBar(
       Modifier.fillMaxSize().then(if (!oneHandUI.value) Modifier.imePadding() else Modifier),
-      contentPadding = contentPadding,
+      contentPadding = PaddingValues(
+        top = if (!oneHandUI.value) topPaddingToContent else 0.dp,
+        bottom = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else 0.dp
+      ),
       reverseLayout = oneHandUI.value,
     ) {
       item {
@@ -687,8 +671,20 @@ private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats
     }
       if (oneHandUI.value) {
         StatusBarBackground()
-      } else {
-        NavigationBarBackground()
+      }
+      NavigationBarBackground()
+    }
+    if (oneHandUI.value) {
+      Column(Modifier.align(Alignment.BottomCenter)) {
+        Divider()
+        CloseSheetBar(
+          close = closeDeletedChats,
+          showClose = true,
+          endButtons = { Spacer(Modifier.minimumInteractiveComponentSize()) },
+          arrangement = Arrangement.Bottom,
+          closeBarTitle = generalGetString(MR.strings.deleted_chats),
+          barPaddingValues = PaddingValues(horizontal = 0.dp)
+        )
       }
     }
   }

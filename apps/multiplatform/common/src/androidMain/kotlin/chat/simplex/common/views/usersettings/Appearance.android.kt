@@ -2,6 +2,7 @@ package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
 import SectionDividerSpaced
+import SectionSpacer
 import SectionView
 import android.app.Activity
 import android.content.ComponentName
@@ -31,6 +32,7 @@ import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.helpers.APPLICATION_ID
 import chat.simplex.common.helpers.saveAppLocale
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.compose.painterResource
@@ -114,6 +116,11 @@ fun AppearanceScope.AppearanceLayout(
 
     SectionDividerSpaced()
     MessageShapeSection()
+
+    SectionDividerSpaced()
+    BarsAlphaSection(appPrefs.barsAlpha, 0.9f)
+    SectionSpacer()
+    BarsAlphaSection(appPrefs.barsAlpha2, 0.6f)
 
     SectionDividerSpaced()
     ProfileImageSection()

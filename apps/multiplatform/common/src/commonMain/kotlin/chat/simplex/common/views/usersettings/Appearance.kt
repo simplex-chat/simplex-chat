@@ -171,6 +171,46 @@ object AppearanceScope {
   }
 
   @Composable
+  fun BarsAlphaSection(pref: SharedPreference<Float>, defaultValue: Float) {
+    val barsAlpha = remember { mutableStateOf(pref.get()) }
+    SectionView(stringResource(MR.strings.appearance_bars_alpha).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+      Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(60.dp)
+          .background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22))
+          .clip(RoundedCornerShape(percent = 22))
+          .clickable {
+            barsAlpha.value = defaultValue
+            pref.set(barsAlpha.value)
+          },
+          contentAlignment = Alignment.Center) {
+          Text("${barsAlpha.value}",
+            color = if (barsAlpha.value == defaultValue) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground,
+            fontSize = 12.sp,
+            maxLines = 1
+          )
+        }
+        Spacer(Modifier.width(10.dp))
+        Slider(
+          barsAlpha.value,
+          valueRange = 0f..1f,
+          steps = 11,
+          onValueChange = {
+            val diff = it % 0.1f
+            barsAlpha.value = String.format(Locale.US, "%.1f", it + (if (diff >= 0.05f) -diff + 0.1f else -diff)).toFloatOrNull() ?: 1f
+          },
+          onValueChangeFinished = {
+            pref.set(barsAlpha.value)
+          },
+          colors = SliderDefaults.colors(
+            activeTickColor = Color.Transparent,
+            inactiveTickColor = Color.Transparent,
+          )
+        )
+      }
+    }
+  }
+
+  @Composable
   fun ChatThemePreview(
     theme: DefaultTheme,
     wallpaperImage: ImageBitmap?,

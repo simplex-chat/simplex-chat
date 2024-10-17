@@ -83,9 +83,8 @@ fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
       }
       if (oneHandUI.value) {
         StatusBarBackground()
-      } else {
-        NavigationBarBackground()
       }
+      NavigationBarBackground()
     }
   }
 }

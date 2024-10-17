@@ -137,7 +137,7 @@ fun SettingsLayout(
     }
     SectionDividerSpaced()
 
-    SettingsSectionApp(showSettingsModal, showCustomModal, showVersion, withAuth)
+    SettingsSectionApp(showSettingsModal, showVersion, withAuth)
     SectionBottomSpacer()
   }
 }
@@ -145,7 +145,6 @@ fun SettingsLayout(
 @Composable
 expect fun SettingsSectionApp(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  showCustomModal: (@Composable ModalData.(ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showVersion: () -> Unit,
   withAuth: (title: String, desc: String, block: () -> Unit) -> Unit
 )
