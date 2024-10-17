@@ -105,7 +105,12 @@ struct TerminalView: View {
             }
         }
         .navigationViewStyle(.stack)
-        .navigationTitle("Chat console")
+        .toolbar {
+            // Redaction broken for `.navigationTitle` - using a toolbar item instead.
+            ToolbarItem(placement: .principal) {
+                Text("Chat console").font(.headline)
+            }
+        }
         .modifier(ThemedBackground())
     }
 
