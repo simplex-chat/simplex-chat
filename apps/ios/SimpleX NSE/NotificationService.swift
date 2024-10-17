@@ -81,13 +81,6 @@ public enum NSENotificationData {
         default: nil
         }
     }
-
-    var contactRequestData: (any UserLike, UserContactRequest)? {
-        return switch self {
-        case let .contactRequest(user, contactRequest): (user, contactRequest)
-        default: nil
-        }
-    }
 }
 
 // Once the last thread in the process completes processing chat controller is suspended, and the database is closed, to avoid
@@ -483,21 +476,11 @@ func createJointNtf(_ ntfsData: [NSENotificationData]) -> UNMutableNotificationC
             userInfo: ["userId": userId]
         )
     } else {
-        let contactRequestsData: [(any UserLike, UserContactRequest)] = ntfsData.compactMap { $0.contactRequestData }
-        if !contactRequestsData.isEmpty, let userId = contactRequestsData.first?.0.userId {
-            return createNotification(
-                categoryIdentifier: ntfCategoryManyEvents,
-                title: NSLocalizedString("New contact requests", comment: "notification"),
-                body: String.localizedStringWithFormat(NSLocalizedString("%d new contacts want to connect", comment: "notification body"), contactRequestsData.count),
-                userInfo: ["userId": userId]
-            )
-        } else {
-            return createNotification(
-                categoryIdentifier: ntfCategoryManyEvents,
-                title: NSLocalizedString("New events", comment: "notification"),
-                body: String.localizedStringWithFormat(NSLocalizedString("%d new events", comment: "notification body"), ntfsData.count)
-            )
-        }
+        return createNotification(
+            categoryIdentifier: ntfCategoryManyEvents,
+            title: NSLocalizedString("New events", comment: "notification"),
+            body: String.localizedStringWithFormat(NSLocalizedString("%d new events", comment: "notification body"), ntfsData.count)
+        )
     }
 }
 
