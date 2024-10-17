@@ -6,6 +6,7 @@ import ChatTests.Utils (xdescribe'')
 import Control.Logger.Simple
 import Data.Time.Clock.System
 import JSONTests
+import LinkPreviewTests
 import MarkdownTests
 import MessageBatching
 import MobileTests
@@ -21,7 +22,7 @@ import WebRTCTests
 
 main :: IO ()
 main = do
-  setLogLevel LogError
+  setLogLevel LogDebug
   withGlobalLogging logCfg . hspec $ do
     describe "Schema dump" schemaDumpTest
     describe "SimpleX chat markdown" markdownTests
@@ -38,6 +39,7 @@ main = do
       xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
       xdescribe'' "SimpleX Directory service bot" directoryServiceTests
       describe "Remote session" remoteTests
+    around testBracket $ describe "Link preview" linkPreviewTests
   where
     testBracket test = withSmpServer $ tmpBracket test
     tmpBracket test = do
