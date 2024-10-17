@@ -82,10 +82,9 @@ fun GroupProfileLayout(
       }, close)
     }
   }
-  ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
     ModalBottomSheetLayout(
       scrimColor = Color.Black.copy(alpha = 0.12F),
-      modifier = Modifier.navigationBarsWithImePadding(),
+      modifier = Modifier.imePadding(),
       sheetContent = {
         GetImageBottomSheet(
           chosenImage,
@@ -177,7 +176,6 @@ fun GroupProfileLayout(
         }
       }
     }
-  }
 }
 
 private fun canUpdateProfile(displayName: String, groupProfile: GroupProfile): Boolean =

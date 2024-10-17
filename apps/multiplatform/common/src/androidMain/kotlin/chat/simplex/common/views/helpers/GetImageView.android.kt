@@ -171,6 +171,8 @@ actual fun GetImageBottomSheet(
     modifier = Modifier
       .fillMaxWidth()
       .wrapContentHeight()
+      .imePadding()
+      .navigationBarsPadding()
       .onFocusChanged { focusState ->
         if (!focusState.hasFocus) hideBottomSheet()
       }

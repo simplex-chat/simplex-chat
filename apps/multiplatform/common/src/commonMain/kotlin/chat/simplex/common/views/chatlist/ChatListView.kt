@@ -34,6 +34,7 @@ import chat.simplex.common.views.onboarding.shouldShowWhatsNew
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.Call
 import chat.simplex.common.views.chat.item.CIFileViewScope
+import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
@@ -41,7 +42,6 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.serialization.json.Json
-import java.net.URI
 import kotlin.time.Duration.Companion.seconds
 
 private fun showNewChatSheet(oneHandUI: State<Boolean>) {
@@ -122,11 +122,7 @@ fun ToggleChatListCard() {
 
           SharedPreferenceToggle(
             appPrefs.oneHandUI,
-            enabled = true,
-            onChange = {
-              val c = CurrentColors.value.colors
-              platform.androidSetStatusAndNavBarColors(c.isLight, c.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
-            }
+            enabled = true
           )
         }
       }
@@ -154,72 +150,33 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
     }
   }
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
-  Scaffold(
-    topBar = {
-      if (!oneHandUI.value) {
-        Column {
-          ChatListToolbar(
-            userPickerState,
-            stopped,
-            setPerformLA,
-          )
-          Divider()
-        }
+  Box(Modifier.fillMaxSize()) {
+    if (oneHandUI.value) {
+      ChatListWithLoadingScreen(searchText)
+      Column(Modifier.align(Alignment.BottomCenter)) {
+        Divider()
+        ChatListToolbar(
+          userPickerState,
+          stopped,
+          setPerformLA,
+        )
       }
-    },
-    bottomBar = {
-      if (oneHandUI.value) {
-        Column {
-          Divider()
-          ChatListToolbar(
-            userPickerState,
-            stopped,
-            setPerformLA,
-            )
-        }
+    } else {
+      ChatListWithLoadingScreen(searchText)
+      Column {
+        ChatListToolbar(
+          userPickerState,
+          stopped,
+          setPerformLA,
+        )
+        Divider()
       }
-    },
-    contentColor = LocalContentColor.current,
-    floatingActionButton = {
-      if (!oneHandUI.value && searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
-        FloatingActionButton(
-          onClick = {
-            if (!stopped) {
-              showNewChatSheet(oneHandUI)
-            }
-          },
-          Modifier
-            .padding(end = DEFAULT_PADDING - 16.dp, bottom = DEFAULT_PADDING - 16.dp)
-            .size(AppBarHeight * fontSizeSqrtMultiplier),
-          elevation = FloatingActionButtonDefaults.elevation(
-            defaultElevation = 0.dp,
-            pressedElevation = 0.dp,
-            hoveredElevation = 0.dp,
-            focusedElevation = 0.dp,
-          ),
-          backgroundColor = if (!stopped) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-          contentColor = Color.White
-        ) {
-          Icon(painterResource(MR.images.ic_edit_filled), stringResource(MR.strings.add_contact_or_create_group), Modifier.size(22.dp * fontSizeSqrtMultiplier))
-        }
-      }
-    }
-  ) {
-    Box(Modifier.padding(it)) {
-      Box(
-        modifier = Modifier
-          .fillMaxSize()
-      ) {
-        if (!chatModel.desktopNoUserNoRemote) {
-          ChatList(chatModel, searchText = searchText)
-        }
-        if (chatModel.chats.value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
-          Text(stringResource(
-            if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
-        }
+      if (searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
+        NewChatSheetFloatingButton(oneHandUI, stopped)
       }
     }
   }
+
   if (searchText.value.text.isEmpty()) {
     if (appPlatform.isDesktop) {
       val call = remember { chatModel.activeCall }.value
@@ -236,6 +193,46 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
         setPerformLA = AppLock::setPerformLA
       )
     }
+  }
+}
+
+@Composable
+private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFieldValue>) {
+  if (!chatModel.desktopNoUserNoRemote) {
+    ChatList(searchText = searchText)
+  }
+  if (chatModel.chats.value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
+    Text(
+      stringResource(
+        if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats
+      ), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary
+    )
+  }
+}
+
+@Composable
+private fun BoxScope.NewChatSheetFloatingButton(oneHandUI: State<Boolean>, stopped: Boolean) {
+  FloatingActionButton(
+    onClick = {
+      if (!stopped) {
+        showNewChatSheet(oneHandUI)
+      }
+    },
+    Modifier
+      .navigationBarsPadding()
+      .padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING)
+      .align(Alignment.BottomEnd)
+      .size(AppBarHeight * fontSizeSqrtMultiplier),
+    elevation = FloatingActionButtonDefaults.elevation(
+      defaultElevation = 0.dp,
+      pressedElevation = 0.dp,
+      hoveredElevation = 0.dp,
+      focusedElevation = 0.dp,
+    ),
+    backgroundColor = if (!stopped) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
+    contentColor = Color.White
+  ) {
+    Icon(painterResource(MR.images.ic_edit_filled), stringResource(MR.strings.add_contact_or_create_group), Modifier.size(22.dp * fontSizeSqrtMultiplier))
   }
 }
 
@@ -372,6 +369,7 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
     },
     onTitleClick = null,
     showSearch = false,
+    onTop = !oneHandUI.value,
     onSearchValueChanged = {},
     buttons = barButtons
   )
@@ -590,7 +588,26 @@ enum class ScrollDirection {
 }
 
 @Composable
-private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldValue>) {
+fun BoxScope.StatusBarBackground() {
+  if (appPlatform.isAndroid) {
+    val finalColor = MaterialTheme.colors.background.copy(remember { appPrefs.barsAlpha.state }.value)
+    Box(Modifier.fillMaxWidth().windowInsetsTopHeight(WindowInsets.statusBars).background(finalColor))
+  }
+}
+
+@Composable
+fun BoxScope.NavigationBarBackground(modifier: Modifier = Modifier, color: Color = MaterialTheme.colors.background) {
+  val keyboardState = getKeyboardState()
+  if (appPlatform.isAndroid && keyboardState.value == KeyboardState.Closed) {
+    val barPadding = WindowInsets.navigationBars.asPaddingValues()
+    val paddingBottom = barPadding.calculateBottomPadding()
+    val finalColor = color.copy(remember { appPrefs.barsAlpha2.state }.value)
+    Box(modifier.align(Alignment.BottomStart).height(paddingBottom).fillMaxWidth().background(finalColor))
+  }
+}
+
+@Composable
+private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>) {
   val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
   var scrollDirection by remember { mutableStateOf(ScrollDirection.Idle) }
   var previousIndex by remember { mutableStateOf(0) }
@@ -628,11 +645,15 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
   val searchShowingSimplexLink = remember { mutableStateOf(false) }
   val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
   val chats = filteredChats(showUnreadAndFavorites, searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.value.toList())
+  val topPaddingToContent = topPaddingToContent()
   LazyColumnWithScrollBar(
-    Modifier.fillMaxSize(),
+    Modifier.fillMaxSize().then(if (!oneHandUI.value) Modifier.imePadding() else Modifier),
     listState,
     reverseLayout = oneHandUI.value
   ) {
+    item {
+      Spacer(Modifier.height(if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else topPaddingToContent))
+    }
     stickyHeader {
       Column(
         Modifier
@@ -644,19 +665,31 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
                 (appPlatform.isAndroid && keyboardState == KeyboardState.Opened)
               ) {
                 0
-              } else if (listState.firstVisibleItemIndex == 0) offsetMultiplier * listState.firstVisibleItemScrollOffset else offsetMultiplier * 1000
+              } else if (oneHandUI.value && listState.firstVisibleItemIndex == 0) {
+                listState.firstVisibleItemScrollOffset
+              } else if (!oneHandUI.value && listState.firstVisibleItemIndex == 0) {
+                0
+              } else if (!oneHandUI.value && listState.firstVisibleItemIndex == 1) {
+                -listState.firstVisibleItemScrollOffset
+              } else {
+                offsetMultiplier * 1000
+              }
             } else {
               0
             }
+            println("LALAL ${listState.firstVisibleItemIndex} ${listState.firstVisibleItemScrollOffset} ${listState.layoutInfo.beforeContentPadding}")
             IntOffset(0, y)
           }
           .background(MaterialTheme.colors.background),
         ) {
         if (oneHandUI.value) {
           Divider()
-        }
-        ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
-        if (!oneHandUI.value) {
+          Column(Modifier.consumeWindowInsets(WindowInsets.navigationBars).consumeWindowInsets(PaddingValues(bottom = AppBarHeight))) {
+            ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
+            Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
+          }
+        } else {
+          ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
           Divider()
         }
       }
@@ -677,12 +710,19 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
         ToggleChatListCard()
       }
     }
+    if (appPlatform.isAndroid) {
+      item { Spacer(if (oneHandUI.value) Modifier.windowInsetsTopHeight(WindowInsets.statusBars) else Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars)) }
+    }
   }
   if (chats.isEmpty() && chatModel.chats.value.isNotEmpty()) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
       Text(generalGetString(MR.strings.no_filtered_chats), color = MaterialTheme.colors.secondary)
     }
   }
+  if (oneHandUI.value) {
+    StatusBarBackground()
+  }
+  NavigationBarBackground()
 }
 
 fun filteredChats(

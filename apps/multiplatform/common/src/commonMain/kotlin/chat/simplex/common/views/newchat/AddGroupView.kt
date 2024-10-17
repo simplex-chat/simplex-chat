@@ -84,10 +84,9 @@ fun AddGroupLayout(
   val focusRequester = remember { FocusRequester() }
   val incognito = remember { mutableStateOf(incognitoPref.get()) }
 
-  ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
     ModalBottomSheetLayout(
       scrimColor = Color.Black.copy(alpha = 0.12F),
-      modifier = Modifier.navigationBarsWithImePadding(),
+      modifier = Modifier.imePadding(),
       sheetContent = {
         GetImageBottomSheet(
           chosenImage,
@@ -103,7 +102,6 @@ fun AddGroupLayout(
         ColumnWithScrollBar(
           Modifier
             .fillMaxSize()
-            .padding(horizontal = DEFAULT_PADDING)
         ) {
           AppBarTitle(stringResource(MR.strings.create_secret_group_title), hostDevice(rhId))
           Box(
@@ -122,7 +120,7 @@ fun AddGroupLayout(
               }
             }
           }
-          Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+          Row(Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(
               stringResource(MR.strings.group_display_name_field),
               fontSize = 16.sp
@@ -134,7 +132,9 @@ fun AddGroupLayout(
               }
             }
           }
-          ProfileNameField(displayName, "", { isValidDisplayName(it.trim()) }, focusRequester)
+          Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+            ProfileNameField(displayName, "", { isValidDisplayName(it.trim()) }, focusRequester)
+          }
           Spacer(Modifier.height(8.dp))
 
           SettingsActionItem(
@@ -170,7 +170,6 @@ fun AddGroupLayout(
         }
       }
     }
-  }
 }
 
 fun canCreateProfile(displayName: String): Boolean = displayName.trim().isNotEmpty() && isValidDisplayName(displayName.trim())

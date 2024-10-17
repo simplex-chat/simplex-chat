@@ -199,11 +199,14 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
       768.dp)
       Window(state = cWindowState, onCloseRequest = { hiddenUntilRestart = true }, title = stringResource(MR.strings.chat_console)) {
         SimpleXTheme {
-          TerminalView(true) { hiddenUntilRestart = true }
-          ModalManager.floatingTerminal.showInView()
-          DisposableEffect(Unit) {
-            onDispose {
-              ModalManager.floatingTerminal.closeModals()
+          Column {
+            CloseSheetBar(close = { hiddenUntilRestart = true })
+            TerminalView(true)
+            ModalManager.floatingTerminal.showInView()
+            DisposableEffect(Unit) {
+              onDispose {
+                ModalManager.floatingTerminal.closeModals()
+              }
             }
           }
         }

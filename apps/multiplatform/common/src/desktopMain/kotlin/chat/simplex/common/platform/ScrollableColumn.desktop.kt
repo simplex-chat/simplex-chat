@@ -61,7 +61,10 @@ actual fun LazyColumnWithScrollBar(
       .filter { state.firstVisibleItemIndex == 0 }
       .collect { scrollPosition ->
         val offset = connection?.appBarOffset
-        if (offset != null && ((offset + scrollPosition).absoluteValue > 1 || scrollBarDraggingState.value)) {
+        if (reverseLayout) {
+          // always show app bar in reverse layout
+          connection?.appBarOffset = -1000f
+        } else if (offset != null && ((offset + scrollPosition).absoluteValue > 1 || scrollBarDraggingState.value)) {
           connection.appBarOffset = -scrollPosition.toFloat()
 //          Log.d(TAG, "Scrolling position changed from $offset to ${connection.appBarOffset}")
         }
@@ -124,7 +127,12 @@ actual fun ColumnWithScrollBar(
       } else {
         modifier.verticalScroll(state).then(scrollModifier)
       },
-      verticalArrangement, horizontalAlignment, content)
+      verticalArrangement, horizontalAlignment) {
+      if (connection != null) {
+        Spacer(Modifier.padding(top = AppBarHeight * fontSizeSqrtMultiplier))
+      }
+      content()
+    }
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
       DesktopScrollBar(rememberScrollbarAdapter(state), Modifier.fillMaxHeight(), scrollBarAlpha, scrollJob, false, scrollBarDraggingState)
     }
