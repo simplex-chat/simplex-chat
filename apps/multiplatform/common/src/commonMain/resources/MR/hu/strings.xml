@@ -90,7 +90,7 @@
     <string name="v4_2_group_links_desc">Az adminok hivatkozásokat hozhatnak létre a csoportokhoz való csatlakozáshoz.</string>
     <string name="call_on_lock_screen">Hívások a zárolási képernyőn:</string>
     <string name="conn_event_ratchet_sync_started">titkosítás elfogadása…</string>
-    <string name="invite_prohibited">Ismerős meghívása nem lehetséges!</string>
+    <string name="invite_prohibited">Nem lehet meghívni az ismerőst!</string>
     <string name="integrity_msg_bad_id">téves üzenet ID</string>
     <string name="v4_2_auto_accept_contact_requests">Kapcsolatkérések automatikus elfogadása</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Megjegyzés:</b> NEM fogja tudni helyreállítani, vagy megváltoztatni a jelmondatot abban az esetben, ha elveszíti.]]></string>
@@ -255,7 +255,7 @@
     <string name="share_text_deleted_at">Törölve ekkor: %s</string>
     <string name="info_row_deleted_at">Törölve ekkor:</string>
     <string name="v4_6_chinese_spanish_interface">Kínai és spanyol kezelőfelület</string>
-    <string name="alert_title_cant_invite_contacts">Ismerősök meghívása nem lehetséges!</string>
+    <string name="alert_title_cant_invite_contacts">Nem lehet meghívni az ismerősöket!</string>
     <string name="chat_is_stopped_indication">A csevegés leállt</string>
     <string name="theme_dark">Sötét</string>
     <string name="create_profile">Profil létrehozása</string>
@@ -528,7 +528,7 @@
     <string name="receipts_contacts_title_enable">Kézbesítési jelentések engedélyezése?</string>
     <string name="error_saving_group_profile">Hiba a csoportprofil mentésekor</string>
     <string name="server_error">hiba</string>
-    <string name="revoke_file__message">A fájl törölve lesz a kiszolgálóról.</string>
+    <string name="revoke_file__message">A fájl törölve lesz a kiszolgálókról.</string>
     <string name="v5_2_disappear_one_message_descr">Akkor is, ha le van tiltva a beszélgetésben.</string>
     <string name="v5_4_better_groups_descr">Gyorsabb csatlakozás és megbízhatóbb üzenetkézbesítés.</string>
     <string name="enable_lock">Zárolás engedélyezése</string>
@@ -970,7 +970,7 @@
     <string name="color_title">Cím</string>
     <string name="icon_descr_send_message">Üzenet elküldése</string>
     <string name="restore_database">Adatbázismentés visszaállítása</string>
-    <string name="revoke_file__confirm">Visszavon</string>
+    <string name="revoke_file__confirm">Visszavonás</string>
     <string name="ask_your_contact_to_enable_voice">Kérje meg az ismerősét, hogy engedélyezze a hangüzenetek küldését.</string>
     <string name="description_you_shared_one_time_link">egyszer használható hivatkozást osztott meg</string>
     <string name="simplex_link_mode_browser_warning">A hivatkozás megnyitása a böngészőben gyengítheti az adatvédelmet és a biztonságot. A megbízhatatlan SimpleX-hivatkozások pirossal vannak kiemelve.</string>
@@ -1826,7 +1826,7 @@
     <string name="v5_8_persian_ui">Perzsa kezelőfelület</string>
     <string name="v5_8_private_routing_descr">Védje IP-címét az ismerősei által kiválasztott üzenet-közvetítő-kiszolgálókkal szemben.
 \nEngedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.</string>
-    <string name="v5_8_safe_files_descr">Ismeretlen kiszolgálókról származó fájlok jóváhagyása.</string>
+    <string name="v5_8_safe_files_descr">Ismeretlen kiszolgálókról származó fájlok megerősítése.</string>
     <string name="v5_8_message_delivery">Javított üzenetkézbesítés</string>
     <string name="chat_theme_reset_to_app_theme">Alkalmazás témájának visszaállítása</string>
     <string name="v5_8_chat_themes_descr">Tegye egyedivé a csevegéseit!</string>
@@ -1892,7 +1892,7 @@
     <string name="other_label">egyéb</string>
     <string name="servers_info_detailed_statistics_received_total">Összes fogadott üzenet</string>
     <string name="servers_info_detailed_statistics_receive_errors">Üzenetfogadási hibák</string>
-    <string name="reconnect">Újrakapcsolás</string>
+    <string name="reconnect">Újrakapcsolódás</string>
     <string name="send_errors">Üzenetküldési hibák</string>
     <string name="sent_directly">Közvetlenül küldött</string>
     <string name="servers_info_detailed_statistics_sent_messages_total">Összes elküldött üzenet</string>
@@ -1924,7 +1924,7 @@
     <string name="completed">Elkészült</string>
     <string name="servers_info_connected_servers_section_header">Kapcsolódott kiszolgálók</string>
     <string name="xftp_servers_configured">Konfigurált XFTP-kiszolgálók</string>
-    <string name="servers_info_sessions_connected">Kapcsolódva</string>
+    <string name="servers_info_sessions_connected">Kapcsolódott</string>
     <string name="current_user">Jelenlegi profil</string>
     <string name="servers_info_details">További részletek</string>
     <string name="decryption_errors">visszafejtési hibák</string>
