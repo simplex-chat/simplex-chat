@@ -40,7 +40,7 @@ struct SendMessageView: View {
     @State private var showCustomTimePicker = false
     @State private var selectedDisappearingMessageTime: Int? = customDisappearingMessageTimeDefault.get()
     @State private var progressByTimeout = false
-    @AppStorage(DEFAULT_LIVE_MESSAGE_ALERT_SHOWN) private var liveMessageAlertShown = false
+    @UserDefault(DEFAULT_LIVE_MESSAGE_ALERT_SHOWN) private var liveMessageAlertShown = false
 
     var body: some View {
         ZStack {
