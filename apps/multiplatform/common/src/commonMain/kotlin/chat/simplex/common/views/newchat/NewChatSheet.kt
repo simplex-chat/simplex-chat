@@ -43,9 +43,10 @@ fun ModalData.NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
 
   Scaffold(
+    backgroundColor = Color.Unspecified,
     bottomBar = {
       if (oneHandUI.value) {
-        Column(Modifier.imePadding()) {
+        Column {
           Divider()
           CloseSheetBar(
             close = close,
@@ -201,6 +202,7 @@ private fun ModalData.NewChatSheetLayout(
       }
     }
     stickyHeader {
+      val scrolledSomething by remember { derivedStateOf { listState.firstVisibleItemScrollOffset > 0 } }
       Column(
         Modifier
           .offset {
@@ -226,18 +228,36 @@ private fun ModalData.NewChatSheetLayout(
             }
             IntOffset(0, y)
           }
-          .background(MaterialTheme.colors.background)
+          // show background when something is scrolled because otherwise the bar is transparent.
+          // not using background always because of gradient in SimpleX theme
+          .background(if (scrolledSomething && keyboardState == KeyboardState.Opened) {
+            MaterialTheme.colors.background
+          } else {
+            Color.Unspecified
+          }
+          )
       ) {
         Divider()
-        ContactsSearchBar(
-          listState = listState,
-          searchText = searchText,
-          searchShowingSimplexLink = searchShowingSimplexLink,
-          searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
-          close = close,
-        )
         if (!oneHandUI.value) {
+          ContactsSearchBar(
+            listState = listState,
+            searchText = searchText,
+            searchShowingSimplexLink = searchShowingSimplexLink,
+            searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
+            close = close,
+          )
           Divider()
+        } else {
+          Column(Modifier.consumeWindowInsets(WindowInsets.navigationBars).consumeWindowInsets(PaddingValues(bottom = AppBarHeight))) {
+            ContactsSearchBar(
+              listState = listState,
+              searchText = searchText,
+              searchShowingSimplexLink = searchShowingSimplexLink,
+              searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
+              close = close,
+            )
+            Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
+          }
         }
       }
     }
@@ -562,9 +582,10 @@ private fun contactTypesSearchTargets(baseContactTypes: List<ContactType>, searc
 private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats: () -> Unit, close: () -> Unit) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   Scaffold(
+    backgroundColor = Color.Unspecified,
     bottomBar = {
       if (oneHandUI.value) {
-        Column(Modifier.imePadding()) {
+        Column {
           Divider()
           CloseSheetBar(
             close = closeDeletedChats,
@@ -615,14 +636,25 @@ private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats
       item {
         if (!oneHandUI.value) {
           Divider()
+          ContactsSearchBar(
+            listState = listState,
+            searchText = searchText,
+            searchShowingSimplexLink = searchShowingSimplexLink,
+            searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
+            close = close,
+          )
+        } else {
+          Column(Modifier.consumeWindowInsets(WindowInsets.navigationBars).consumeWindowInsets(PaddingValues(bottom = AppBarHeight))) {
+            ContactsSearchBar(
+              listState = listState,
+              searchText = searchText,
+              searchShowingSimplexLink = searchShowingSimplexLink,
+              searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
+              close = close,
+            )
+            Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
+          }
         }
-        ContactsSearchBar(
-          listState = listState,
-          searchText = searchText,
-          searchShowingSimplexLink = searchShowingSimplexLink,
-          searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
-          close = close,
-        )
         Divider()
       }
 

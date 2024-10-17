@@ -166,7 +166,7 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
     },
     bottomBar = {
       if (oneHandUI.value) {
-        Column(Modifier.imePadding()) {
+        Column {
           Divider()
           ChatListToolbar(
             userPickerState,
@@ -674,9 +674,12 @@ private fun BoxScope.ChatList(chatModel: ChatModel, searchText: MutableState<Tex
         ) {
         if (oneHandUI.value) {
           Divider()
-        }
-        ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
-        if (!oneHandUI.value) {
+          Column(Modifier.consumeWindowInsets(WindowInsets.navigationBars).consumeWindowInsets(PaddingValues(bottom = AppBarHeight))) {
+            ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
+            Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
+          }
+        } else {
+          ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
           Divider()
         }
       }
