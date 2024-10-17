@@ -23,17 +23,62 @@ let nseSuspendSchedule: SuspendSchedule = (2, 4)
 let fastNSESuspendSchedule: SuspendSchedule = (1, 1)
 
 enum NSENotification {
-    case nse(UNMutableNotificationContent)
+    case nseData(NSENotificationData)
+    case nseNtfContent(UNMutableNotificationContent)
     case callkit(RcvCallInvitation)
     case empty
     case msgInfo(NtfMsgAckInfo)
 
     var isCallInvitation: Bool {
         switch self {
-        case let .nse(ntf): ntf.categoryIdentifier == ntfCategoryCallInvitation
+        case let .nseData(ntfData):
+            switch ntfData {
+            case .callInvitation: true
+            default: false
+            }
+        case .nseNtfContent: false
         case .callkit: true
         case .empty: false
         case .msgInfo: false
+        }
+    }
+
+    var isCallKit: Bool {
+        switch self {
+        case .callkit: true
+        default: false
+        }
+    }
+
+    var ntfData_: NSENotificationData? {
+        switch self {
+        case let .nseData(ntfData): return ntfData
+        default: return nil
+        }
+    }
+}
+
+public enum NSENotificationData {
+    case connectionEvent(_ user: User, _ connEntity: ConnectionEntity)
+    case contactConnected(_ user: any UserLike, _ contact: Contact)
+    case contactRequest(_ user: any UserLike, _ contactRequest: UserContactRequest)
+    case messageReceived(_ user: any UserLike, _ cInfo: ChatInfo, _ cItem: ChatItem)
+    case callInvitation(_ invitation: RcvCallInvitation)
+
+    var notificationContent: UNMutableNotificationContent {
+        return switch self {
+        case let .connectionEvent(user, connEntity): createConnectionEventNtf(user, connEntity)
+        case let .contactConnected(user, contact): createContactConnectedNtf(user, contact)
+        case let .contactRequest(user, contactRequest): createContactRequestNtf(user, contactRequest)
+        case let .messageReceived(user, cInfo, cItem): createMessageReceivedNtf(user, cInfo, cItem)
+        case let .callInvitation(invitation): createCallInvitationNtf(invitation)
+        }
+    }
+
+    var newMsgData: (any UserLike, ChatInfo)? {
+        return switch self {
+        case let .messageReceived(user, cInfo, _): (user, cInfo)
+        default: nil
         }
     }
 }
@@ -68,7 +113,7 @@ class NSEThreads {
         var waitTime: Int64 = 5_000_000000
         while waitTime > 0 {
             if let (_, nse) = rcvEntityThread(id),
-               nse.shouldProcessNtf && nse.processReceivedNtf(ntf) {
+               nse.shouldProcessNtf && nse.processReceivedNtf(id, ntf) {
                 break
             } else {
                 try? await Task.sleep(nanoseconds: 10_000000)
@@ -79,7 +124,7 @@ class NSEThreads {
 
     private func rcvEntityThread(_ id: ChatId) -> (UUID, NotificationService)? {
         NSEThreads.queue.sync {
-            activeThreads.first(where: { (_, nse) in nse.receiveEntityId == id })
+            activeThreads.first(where: { (_, nse) in nse.expectedMessages[id]?.ready == false })
         }
     }
 
@@ -106,6 +151,15 @@ class NSEThreads {
     }
 }
 
+struct ExpectedMessage {
+    var ntfMessage: UserNtfMessage
+    var receiveConnId: String?
+    var expectedMsgId: String?
+    var allowedGetNextAttempts: Int = 3
+    var msgBestAttempt: NSENotification?
+    var ready: Bool
+}
+
 // Notification service extension creates a new instance of the class and calls didReceive for each notification.
 // Each didReceive is called in its own thread, but multiple calls can be made in one process, and, empirically, there is never
 // more than one process of notification service extension exists at a time.
@@ -117,11 +171,7 @@ class NotificationService: UNNotificationServiceExtension {
     // thread is added to allThreads here - if thread did not start chat,
     // chat does not need to be suspended but NSE state still needs to be set to "suspended".
     var threadId: UUID? = NSEThreads.shared.newThread()
-    var notificationInfo: NtfMessages?
-    var receiveEntityId: String?
-    var receiveConnId: String?
-    var expectedMessage: String?
-    var allowedGetNextAttempts: Int = 3
+    var expectedMessages: Dictionary<String, ExpectedMessage> = [:] // key is receiveEntityId
     // return true if the message is taken - it prevents sending it to another NotificationService instance for processing
     var shouldProcessNtf = false
     var appSubscriber: AppSubscriber?
@@ -171,8 +221,9 @@ class NotificationService: UNNotificationServiceExtension {
                     deliverBestAttemptNtf()
                 }
             }
-        default:
-            deliverBestAttemptNtf()
+        case .active: contentHandler(UNMutableNotificationContent())
+        case .activating: contentHandler(UNMutableNotificationContent())
+        case .bgRefresh: contentHandler(UNMutableNotificationContent())
         }
     }
 
@@ -192,25 +243,14 @@ class NotificationService: UNNotificationServiceExtension {
             if let t = threadId { NSEThreads.shared.startThread(t, self) }
             let dbStatus = startChat()
             if case .ok = dbStatus,
-               let ntfInfo = apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo) {
-                logger.debug("NotificationService: receiveNtfMessages: apiGetNtfMessage \(String(describing: ntfInfo.receivedMsg_ == nil ? 0 : 1))")
-                if let connEntity = ntfInfo.connEntity_ {
-                    setBestAttemptNtf(
-                        ntfInfo.ntfsEnabled
-                        ? .nse(createConnectionEventNtf(ntfInfo.user, connEntity))
-                        : .empty
-                    )
-                    if let id = connEntity.id, ntfInfo.expectedMsg_ != nil {
-                        notificationInfo = ntfInfo
-                        receiveEntityId = id
-                        receiveConnId = connEntity.conn.agentConnId
-                        let expectedMsgId = ntfInfo.expectedMsg_?.msgId
-                        let receivedMsgId = ntfInfo.receivedMsg_?.msgId
-                        logger.debug("NotificationService: receiveNtfMessages: expectedMsgId = \(expectedMsgId ?? "nil", privacy: .private), receivedMsgId = \(receivedMsgId ?? "nil", privacy: .private)")
-                        expectedMessage = expectedMsgId
-                        shouldProcessNtf = true
-                        return
-                    }
+               let ntfMessages = apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo) {
+                logger.debug("NotificationService: receiveNtfMessages: apiGetNtfMessage ntfMessages count = \(ntfMessages.count)")
+                for ntfMessage in ntfMessages {
+                    addExpectedMessage(ntfMessage: ntfMessage)
+                }
+                if !expectedMessages.isEmpty {
+                    shouldProcessNtf = true
+                    return
                 }
             } else if let dbStatus = dbStatus {
                 setBestAttemptNtf(createErrorNtf(dbStatus))
@@ -219,51 +259,82 @@ class NotificationService: UNNotificationServiceExtension {
         deliverBestAttemptNtf()
     }
 
+    func addExpectedMessage(ntfMessage: UserNtfMessage) {
+        if let connEntity = ntfMessage.connEntity_,
+           let receiveEntityId = connEntity.id, ntfMessage.expectedMsg_ != nil {
+            let expectedMsgId = ntfMessage.expectedMsg_?.msgId
+            let receivedMsgId = ntfMessage.receivedMsg_?.msgId
+            logger.debug("NotificationService: addExpectedMessage: expectedMsgId = \(expectedMsgId ?? "nil", privacy: .public), receivedMsgId = \(receivedMsgId ?? "nil", privacy: .public)")
+            expectedMessages[receiveEntityId] = ExpectedMessage(
+                ntfMessage: ntfMessage,
+                receiveConnId: connEntity.conn.agentConnId,
+                expectedMsgId: expectedMsgId,
+                allowedGetNextAttempts: 3,
+                msgBestAttempt: (
+                    ntfMessage.ntfsEnabled
+                    ? .nseData(.connectionEvent(ntfMessage.user, connEntity))
+                    : .empty
+                ),
+                ready: false
+            )
+        }
+    }
+
     override func serviceExtensionTimeWillExpire() {
         logger.debug("DEBUGGING: NotificationService.serviceExtensionTimeWillExpire")
         deliverBestAttemptNtf(urgent: true)
     }
 
-    func processReceivedNtf(_ ntf: NSENotification) -> Bool {
-        guard let ntfInfo = notificationInfo, let expectedMsgTs = ntfInfo.expectedMsg_?.msgTs else { return false }
+    func processReceivedNtf(_ id: ChatId, _ ntf: NSENotification) -> Bool {
+        guard
+            let expectedMessage = expectedMessages[id],
+            let expectedMsgTs = expectedMessage.ntfMessage.expectedMsg_?.msgTs
+        else {
+            return !expectedMessages.allSatisfy { $0.value.ready }
+        }
+        let ntfInfo = expectedMessage.ntfMessage
         if !ntfInfo.user.showNotifications {
-            self.setBestAttemptNtf(.empty)
+            expectedMessages[id]?.msgBestAttempt = .empty
         }
         if case let .msgInfo(info) = ntf {
-            if info.msgId == expectedMessage {
-                expectedMessage = nil
-                logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): expected")
+            if info.msgId == expectedMessage.expectedMsgId {
+                expectedMessages[id]?.expectedMsgId = nil
+                expectedMessages[id]?.ready = true
+                logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .public): expected")
                 self.deliverBestAttemptNtf()
                 return true
             } else if let msgTs = info.msgTs_, msgTs > expectedMsgTs {
-                logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): unexpected msgInfo, let other instance to process it, stopping this one")
+                logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .public): unexpected msgInfo, let other instance to process it, stopping this one")
+                expectedMessages[id]?.ready = true
                 self.deliverBestAttemptNtf()
-                return false
-            } else if allowedGetNextAttempts > 0, let receiveConnId = receiveConnId {
-                logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): unexpected msgInfo, get next message")
-                allowedGetNextAttempts -= 1
+                return !expectedMessages.allSatisfy { $0.value.ready }
+            } else if (expectedMessages[id]?.allowedGetNextAttempts ?? 0) > 0, let receiveConnId = expectedMessages[id]?.receiveConnId {
+                logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .public): unexpected msgInfo, get next message")
+                expectedMessages[id]?.allowedGetNextAttempts -= 1
                 if let receivedMsg = apiGetConnNtfMessage(connId: receiveConnId) {
-                    logger.debug("NotificationService processNtf, on apiGetConnNtfMessage: msgInfo msgId = \(info.msgId, privacy: .private), receivedMsg msgId = \(receivedMsg.msgId, privacy: .private)")
+                    logger.debug("NotificationService processNtf, on apiGetConnNtfMessage: msgInfo msgId = \(info.msgId, privacy: .public), receivedMsg msgId = \(receivedMsg.msgId, privacy: .public)")
                     return true
                 } else {
-                    logger.debug("NotificationService processNtf, on apiGetConnNtfMessage: msgInfo msgId = \(info.msgId, privacy: .private): no next message, deliver best attempt")
+                    logger.debug("NotificationService processNtf, on apiGetConnNtfMessage: msgInfo msgId = \(info.msgId, privacy: .public): no next message, deliver best attempt")
+                    expectedMessages[id]?.ready = true
                     self.deliverBestAttemptNtf()
-                    return false
+                    return !expectedMessages.allSatisfy { $0.value.ready }
                 }
             } else {
-                logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): unknown message, let other instance to process it")
+                logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .public): unknown message, let other instance to process it")
+                expectedMessages[id]?.ready = true
                 self.deliverBestAttemptNtf()
-                return false
+                return !expectedMessages.allSatisfy { $0.value.ready }
             }
         } else if ntfInfo.user.showNotifications {
             logger.debug("NotificationService processNtf: setting best attempt")
-            self.setBestAttemptNtf(ntf)
+            expectedMessages[id]?.msgBestAttempt = ntf
             if ntf.isCallInvitation {
-                self.deliverBestAttemptNtf()
+                self.deliverBestAttemptNtf(call: true)
             }
             return true
         }
-        return false
+        return !expectedMessages.allSatisfy { $0.value.ready }
     }
 
     func setBadgeCount() {
@@ -272,36 +343,38 @@ class NotificationService: UNNotificationServiceExtension {
     }
 
     func setBestAttemptNtf(_ ntf: UNMutableNotificationContent) {
-        setBestAttemptNtf(.nse(ntf))
+        setBestAttemptNtf(.nseNtfContent(ntf))
     }
 
     func setBestAttemptNtf(_ ntf: NSENotification) {
         logger.debug("NotificationService.setBestAttemptNtf")
-        if case let .nse(notification) = ntf {
+        if case let .nseNtfContent(notification) = ntf {
             notification.badge = badgeCount as NSNumber
-            bestAttemptNtf = .nse(notification)
+            bestAttemptNtf = .nseNtfContent(notification)
         } else {
             bestAttemptNtf = ntf
         }
     }
 
-    private func deliverBestAttemptNtf(urgent: Bool = false) {
-        logger.debug("NotificationService.deliverBestAttemptNtf")
-        // stop processing other messages
-        shouldProcessNtf = false
+    private func deliverBestAttemptNtf(urgent: Bool = false, call: Bool = false) {
+        if (urgent || call || expectedMessages.allSatisfy { (_, v) in v.ready }) {
+            logger.debug("NotificationService.deliverBestAttemptNtf")
+            // stop processing other messages
+            shouldProcessNtf = false
 
-        let suspend: Bool
-        if let t = threadId {
-            threadId = nil
-            suspend = NSEThreads.shared.endThread(t) && NSEThreads.shared.noThreads
-        } else {
-            suspend = false
+            let suspend: Bool
+            if let t = threadId {
+                threadId = nil
+                suspend = NSEThreads.shared.endThread(t) && NSEThreads.shared.noThreads
+            } else {
+                suspend = false
+            }
+            deliverCallkitOrNotification(urgent: urgent, suspend: suspend)
         }
-        deliverCallkitOrNotification(urgent: urgent, suspend: suspend)
     }
 
     private func deliverCallkitOrNotification(urgent: Bool, suspend: Bool = false) {
-        if case .callkit = bestAttemptNtf {
+        if expectedMessages.contains(where: { $0.value.msgBestAttempt?.isCallKit ?? false }) {
             logger.debug("NotificationService.deliverCallkitOrNotification: will suspend, callkit")
             if urgent {
                 // suspending NSE even though there may be other notifications
@@ -339,19 +412,12 @@ class NotificationService: UNNotificationServiceExtension {
     }
 
     private func deliverNotification() {
-        if let handler = contentHandler, let ntf = bestAttemptNtf {
+        if let handler = contentHandler, let ntf = prepareNotification() {
             contentHandler = nil
             bestAttemptNtf = nil
-            let deliver: (UNMutableNotificationContent?) -> Void = { ntf in
-                let useNtf = if let ntf = ntf {
-                    appStateGroupDefault.get().running ? UNMutableNotificationContent() : ntf
-                } else {
-                    UNMutableNotificationContent()
-                }
-                handler(useNtf)
-            }
             switch ntf {
-            case let .nse(content): deliver(content)
+            case let .nseData(content): handler(content.notificationContent)
+            case let .nseNtfContent(content): handler(content)
             case let .callkit(invitation):
                 logger.debug("NotificationService reportNewIncomingVoIPPushPayload for \(invitation.contact.id)")
                 CXProvider.reportNewIncomingVoIPPushPayload([
@@ -362,12 +428,72 @@ class NotificationService: UNNotificationServiceExtension {
                     "callTs": invitation.callTs.timeIntervalSince1970
                 ]) { error in
                     logger.debug("reportNewIncomingVoIPPushPayload result: \(error)")
-                    deliver(error == nil ? nil : createCallInvitationNtf(invitation))
+                    handler(error == nil ? UNMutableNotificationContent() : createCallInvitationNtf(invitation))
                 }
-            case .empty: deliver(nil) // used to mute notifications that did not unsubscribe yet
-            case .msgInfo: deliver(nil) // unreachable, the best attempt is never set to msgInfo
+            case .empty: handler(UNMutableNotificationContent()) // used to mute notifications that did not unsubscribe yet
+            case .msgInfo: handler(UNMutableNotificationContent()) // unreachable, the best attempt is never set to msgInfo
             }
         }
+    }
+
+    private func prepareNotification() -> NSENotification? {
+        if expectedMessages.isEmpty {
+            return bestAttemptNtf
+        } else if let singleNtf = expectedMessages.count == 1 ? expectedMessages.values.first : nil,
+                  let ntf = singleNtf.msgBestAttempt {
+            return ntf
+        } else if let callNtfKV = expectedMessages.first(where: { $0.value.msgBestAttempt?.isCallInvitation ?? false }),
+                  let callNtf = callNtfKV.value.msgBestAttempt {
+            return callNtf
+        } else {
+            let ntfsData = expectedMessages.compactMap { $0.value.msgBestAttempt?.ntfData_ }
+            if ntfsData.isEmpty {
+                return .empty
+            } else if let ntfData = ntfsData.count == 1 ? ntfsData.first : nil {
+                return .nseNtfContent(ntfData.notificationContent)
+            } else {
+                return .nseNtfContent(createJointNtf(ntfsData))
+            }
+        }
+    }
+}
+
+func createJointNtf(_ ntfsData: [NSENotificationData]) -> UNMutableNotificationContent {
+    let previewMode = ntfPreviewModeGroupDefault.get()
+    let newMsgsData: [(any UserLike, ChatInfo)] = ntfsData.compactMap { $0.newMsgData }
+    if !newMsgsData.isEmpty, let userId = newMsgsData.first?.0.userId {
+        let newMsgsChats: Set<ChatInfo> = Set(newMsgsData.map { $0.1 })
+        var body: String
+        if previewMode == .hidden {
+            body = String.localizedStringWithFormat(NSLocalizedString("New messages in %d chats", comment: "notification body"), newMsgsChats.count)
+        } else {
+            body = String.localizedStringWithFormat(NSLocalizedString("From: %@", comment: "notification body"), newMsgsChatsStr(newMsgsChats))
+        }
+        return createNotification(
+            categoryIdentifier: ntfCategoryManyEvents,
+            title: NSLocalizedString("New messages", comment: "notification"),
+            body: body,
+            userInfo: ["userId": userId]
+        )
+    } else {
+        return createNotification(
+            categoryIdentifier: ntfCategoryManyEvents,
+            title: NSLocalizedString("New events", comment: "notification"),
+            body: String.localizedStringWithFormat(NSLocalizedString("%d new events", comment: "notification body"), ntfsData.count)
+        )
+    }
+}
+
+func newMsgsChatsStr(_ newMsgsChats: Set<ChatInfo>) -> String {
+    let names = newMsgsChats.map { $0.chatViewName }
+    return switch names.count {
+    case 1: names[0]
+    case 2: "\(names[0]) and \(names[1])"
+    case 3: "\(names[0] + ", " + names[1]) and \(names[2])"
+    default:
+        names.count > 3
+        ? "\(names[0]), \(names[1]) and \(names.count - 2) other chats"
+        : ""
     }
 }
 
@@ -586,11 +712,11 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotification)? {
     logger.debug("NotificationService receivedMsgNtf: \(res.responseType)")
     switch res {
     case let .contactConnected(user, contact, _):
-        return (contact.id, .nse(createContactConnectedNtf(user, contact)))
+        return (contact.id, .nseData(.contactConnected(user, contact)))
 //        case let .contactConnecting(contact):
 //            TODO profile update
     case let .receivedContactRequest(user, contactRequest):
-        return (UserContact(contactRequest: contactRequest).id, .nse(createContactRequestNtf(user, contactRequest)))
+        return (UserContact(contactRequest: contactRequest).id, .nseData(.contactRequest(user, contactRequest)))
     case let .newChatItems(user, chatItems):
         // Received items are created one at a time
         if let chatItem = chatItems.first {
@@ -602,7 +728,7 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotification)? {
             if let file = cItem.autoReceiveFile() {
                 cItem = autoReceiveFile(file) ?? cItem
             }
-            let ntf: NSENotification = cInfo.ntfsEnabled ? .nse(createMessageReceivedNtf(user, cInfo, cItem)) : .empty
+            let ntf: NSENotification = cInfo.ntfsEnabled ? .nseData(.messageReceived(user, cInfo, cItem)) : .empty
             return cItem.showNotification ? (chatItem.chatId, ntf) : nil
         } else {
             return nil
@@ -622,7 +748,7 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotification)? {
         // Do not post it without CallKit support, iOS will stop launching the app without showing CallKit
         return (
             invitation.contact.id,
-            useCallKit() ? .callkit(invitation) : .nse(createCallInvitationNtf(invitation))
+            useCallKit() ? .callkit(invitation) : .nseData(.callInvitation(invitation))
         )
     case let .ntfMessage(_, connEntity, ntfMessage):
         return if let id = connEntity.id { (id, .msgInfo(ntfMessage)) } else { nil }
@@ -704,21 +830,29 @@ func apiSetEncryptLocalFiles(_ enable: Bool) throws {
     throw r
 }
 
-func apiGetNtfMessage(nonce: String, encNtfInfo: String) -> NtfMessages? {
+func apiGetNtfMessage(nonce: String, encNtfInfo: String) -> [UserNtfMessage]? {
     guard apiGetActiveUser() != nil else {
         logger.debug("no active user")
         return nil
     }
     let r = sendSimpleXCmd(.apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo))
-    if case let .ntfMessages(user, connEntity_, expectedMsg_, receivedMsg_) = r, let user = user {
-        logger.debug("apiGetNtfMessage response ntfMessages: \(receivedMsg_ == nil ? 0 : 1)")
-        return NtfMessages(user: user, connEntity_: connEntity_, expectedMsg_: expectedMsg_, receivedMsg_: receivedMsg_)
+    if case let .ntfMessages(ntfMessages) = r {
+        logger.debug("apiGetNtfMessage response ntfMessages: \(ntfMessages.count)")
+        return ntfMessages.compactMap { toUserNtfMessage($0) }
     } else if case let .chatCmdError(_, error) = r {
         logger.debug("apiGetNtfMessage error response: \(String.init(describing: error))")
     } else {
         logger.debug("apiGetNtfMessage ignored response: \(r.responseType) \(String.init(describing: r))")
     }
     return nil
+}
+
+func toUserNtfMessage(_ ntfMessage: NtfMessage) -> UserNtfMessage? {
+    if let user = ntfMessage.user_ {
+        return UserNtfMessage(user: user, connEntity_: ntfMessage.connEntity_, expectedMsg_: ntfMessage.expectedMsg_, receivedMsg_: ntfMessage.receivedMsg_)
+    } else {
+        return nil
+    }
 }
 
 func apiGetConnNtfMessage(connId: String) -> NtfMsgInfo? {
@@ -769,7 +903,7 @@ func setNetworkConfig(_ cfg: NetCfg) throws {
     throw r
 }
 
-struct NtfMessages {
+struct UserNtfMessage {
     var user: User
     var connEntity_: ConnectionEntity?
     var expectedMsg_: NtfMsgInfo?

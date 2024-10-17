@@ -15,6 +15,7 @@ public let ntfCategoryContactConnected = "NTF_CAT_CONTACT_CONNECTED"
 public let ntfCategoryMessageReceived = "NTF_CAT_MESSAGE_RECEIVED"
 public let ntfCategoryCallInvitation = "NTF_CAT_CALL_INVITATION"
 public let ntfCategoryConnectionEvent = "NTF_CAT_CONNECTION_EVENT"
+public let ntfCategoryManyEvents = "NTF_CAT_MANY_EVENTS"
 public let ntfCategoryCheckMessage = "NTF_CAT_CHECK_MESSAGE"
 
 public let appNotificationId = "chat.simplex.app.notification"

@@ -185,6 +185,12 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                 actions: [],
                 intentIdentifiers: [],
                 hiddenPreviewsBodyPlaceholder: NSLocalizedString("SimpleX encrypted message or connection event", comment: "notification")
+            ),
+            UNNotificationCategory(
+                identifier: ntfCategoryManyEvents,
+                actions: [],
+                intentIdentifiers: [],
+                hiddenPreviewsBodyPlaceholder: NSLocalizedString("New events", comment: "notification")
             )
         ])
     }
