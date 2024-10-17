@@ -78,7 +78,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             self.dataSource = UITableViewDiffableDataSource<Section, ChatItem>(
                 tableView: tableView
             ) { (tableView, indexPath, item) -> UITableViewCell? in
-                if indexPath.item > self.itemCount - 8, self.itemCount > 8 {
+                if indexPath.item > self.itemCount - 8 {
                     self.representer.loadPage()
                 }
                 let cell = tableView.dequeueReusableCell(withIdentifier: cellReuseId, for: indexPath)
