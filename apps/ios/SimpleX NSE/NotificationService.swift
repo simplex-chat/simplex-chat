@@ -156,7 +156,7 @@ struct ExpectedMessage {
     var receiveConnId: String?
     var expectedMsgId: String?
     var allowedGetNextAttempts: Int = 3
-    var bestMsgAttemptNtf: NSENotification?
+    var msgBestAttemptNtf: NSENotification?
     var ready: Bool
 }
 
@@ -166,8 +166,8 @@ struct ExpectedMessage {
 // Soon after notification service delivers the last notification it is either suspended or terminated.
 class NotificationService: UNNotificationServiceExtension {
     var contentHandler: ((UNNotificationContent) -> Void)?
-    // served as notification if no message attempts (bestMsgAttemptNtf) could be produced
-    var bestServiceAttemptNtf: NSENotification?
+    // served as notification if no message attempts (msgBestAttemptNtf) could be produced
+    var serviceBestAttemptNtf: NSENotification?
     var badgeCount: Int = 0
     // thread is added to allThreads here - if thread did not start chat,
     // chat does not need to be suspended but NSE state still needs to be set to "suspended".
@@ -181,7 +181,7 @@ class NotificationService: UNNotificationServiceExtension {
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
         logger.debug("DEBUGGING: NotificationService.didReceive")
         let ntf = if let ntf_ = request.content.mutableCopy() as? UNMutableNotificationContent { ntf_ } else { UNMutableNotificationContent() }
-        setBestServiceAttemptNtf(ntf)
+        setServiceBestAttemptNtf(ntf)
         self.contentHandler = contentHandler
         registerGroupDefaults()
         let appState = appStateGroupDefault.get()
@@ -189,7 +189,7 @@ class NotificationService: UNNotificationServiceExtension {
         switch appState {
         case .stopped:
             setBadgeCount()
-            setBestServiceAttemptNtf(createAppStoppedNtf(badgeCount))
+            setServiceBestAttemptNtf(createAppStoppedNtf(badgeCount))
             deliverBestAttemptNtf()
         case .suspended:
             receiveNtfMessages(request, contentHandler)
@@ -252,7 +252,7 @@ class NotificationService: UNNotificationServiceExtension {
                     return
                 }
             } else if let dbStatus = dbStatus {
-                setBestServiceAttemptNtf(createErrorNtf(dbStatus, badgeCount))
+                setServiceBestAttemptNtf(createErrorNtf(dbStatus, badgeCount))
             }
         }
         deliverBestAttemptNtf()
@@ -269,11 +269,7 @@ class NotificationService: UNNotificationServiceExtension {
                 receiveConnId: connEntity.conn.agentConnId,
                 expectedMsgId: expectedMsgId,
                 allowedGetNextAttempts: 3,
-                bestMsgAttemptNtf: (
-                    ntfMessage.ntfsEnabled
-                    ? .nseData(.connectionEvent(ntfMessage.user, connEntity))
-                    : .empty
-                ),
+                msgBestAttemptNtf: ntfMessage.defaultBestAttemptNtf,
                 ready: false
             )
         }
@@ -293,7 +289,7 @@ class NotificationService: UNNotificationServiceExtension {
         }
         let ntfInfo = expectedMessage.ntfMessage
         if !ntfInfo.user.showNotifications {
-            expectedMessages[id]?.bestMsgAttemptNtf = .empty
+            expectedMessages[id]?.msgBestAttemptNtf = .empty
         }
         if case let .msgInfo(info) = ntf {
             if info.msgId == expectedMessage.expectedMsgId {
@@ -328,13 +324,13 @@ class NotificationService: UNNotificationServiceExtension {
         } else if ntfInfo.user.showNotifications {
             logger.debug("NotificationService processNtf: setting best attempt")
             setBadgeCount()
-            let prevBestAttempt = expectedMessages[id]?.bestMsgAttemptNtf
+            let prevBestAttempt = expectedMessages[id]?.msgBestAttemptNtf
             if prevBestAttempt?.isCallInvitation ?? false {
                 if ntf.isCallInvitation { // replace with newer call
-                    expectedMessages[id]?.bestMsgAttemptNtf = ntf
+                    expectedMessages[id]?.msgBestAttemptNtf = ntf
                 } // otherwise keep call as best attempt
             } else {
-                expectedMessages[id]?.bestMsgAttemptNtf = ntf
+                expectedMessages[id]?.msgBestAttemptNtf = ntf
             }
             return true
         }
@@ -346,9 +342,9 @@ class NotificationService: UNNotificationServiceExtension {
         ntfBadgeCountGroupDefault.set(badgeCount)
     }
 
-    func setBestServiceAttemptNtf(_ ntf: UNMutableNotificationContent) {
-        logger.debug("NotificationService.setBestServiceAttemptNtf")
-        bestServiceAttemptNtf = .nseNtfContent(ntf)
+    func setServiceBestAttemptNtf(_ ntf: UNMutableNotificationContent) {
+        logger.debug("NotificationService.setServiceBestAttemptNtf")
+        serviceBestAttemptNtf = .nseNtfContent(ntf)
     }
 
     private func deliverBestAttemptNtf(urgent: Bool = false) {
@@ -369,7 +365,7 @@ class NotificationService: UNNotificationServiceExtension {
     }
 
     private func deliverCallkitOrNotification(urgent: Bool, suspend: Bool = false) {
-        if expectedMessages.contains(where: { $0.value.bestMsgAttemptNtf?.isCallKit ?? false }) {
+        if expectedMessages.contains(where: { $0.value.msgBestAttemptNtf?.isCallKit ?? false }) {
             logger.debug("NotificationService.deliverCallkitOrNotification: will suspend, callkit")
             if urgent {
                 // suspending NSE even though there may be other notifications
@@ -409,7 +405,7 @@ class NotificationService: UNNotificationServiceExtension {
     private func deliverNotification() {
         if let handler = contentHandler, let ntf = prepareNotification() {
             contentHandler = nil
-            bestServiceAttemptNtf = nil
+            serviceBestAttemptNtf = nil
             switch ntf {
             case let .nseData(data):
                 handler(data.notificationContent(badgeCount))
@@ -438,15 +434,15 @@ class NotificationService: UNNotificationServiceExtension {
 
     private func prepareNotification() -> NSENotification? {
         if expectedMessages.isEmpty {
-            return bestServiceAttemptNtf
+            return serviceBestAttemptNtf
         } else if let singleNtf = expectedMessages.count == 1 ? expectedMessages.values.first : nil,
-                  let ntf = singleNtf.bestMsgAttemptNtf {
+                  let ntf = singleNtf.msgBestAttemptNtf {
             return ntf
-        } else if let callNtfKV = expectedMessages.first(where: { $0.value.bestMsgAttemptNtf?.isCallInvitation ?? false }),
-                  let callNtf = callNtfKV.value.bestMsgAttemptNtf {
+        } else if let callNtfKV = expectedMessages.first(where: { $0.value.msgBestAttemptNtf?.isCallInvitation ?? false }),
+                  let callNtf = callNtfKV.value.msgBestAttemptNtf {
             return callNtf
         } else {
-            let ntfsData = expectedMessages.compactMap { $0.value.bestMsgAttemptNtf?.ntfData_ }
+            let ntfsData = expectedMessages.compactMap { $0.value.msgBestAttemptNtf?.ntfData_ }
             if ntfsData.isEmpty {
                 return .empty
             } else if let ntfData = ntfsData.count == 1 ? ntfsData.first : nil {
@@ -911,7 +907,25 @@ struct UserNtfMessage {
     var expectedMsg_: NtfMsgInfo?
     var receivedMsg_: NtfMsgInfo?
 
-    var ntfsEnabled: Bool {
-        user.showNotifications && (connEntity_?.ntfsEnabled ?? false)
+    var defaultBestAttemptNtf: NSENotification {
+        return if !user.showNotifications {
+            .empty
+        } else if let connEntity = connEntity_ {
+            switch connEntity {
+            case let .rcvDirectMsgConnection(_, contact):
+                contact?.chatSettings.enableNtfs == .all
+                ? .nseData(.connectionEvent(user, connEntity))
+                : .empty
+            case .rcvGroupMsgConnection: .empty
+            case .sndFileConnection: .empty
+            case .rcvFileConnection: .empty
+            case let .userContactConnection(_, userContact):
+                userContact.groupId == nil
+                ? .nseData(.connectionEvent(user, connEntity))
+                : .empty
+            }
+        } else {
+            .empty
+        }
     }
 }
