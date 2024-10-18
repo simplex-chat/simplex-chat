@@ -83,7 +83,10 @@ struct SimpleXApp: App {
                         if appState != .stopped {
                             startChatAndActivate {
                                 if chatModel.chatRunning == true {
-                                    processUserNotificationCenterResponse_()
+                                    if let ntfResponse = chatModel.notificationResponse {
+                                        chatModel.notificationResponse = nil
+                                        NtfManager.shared.processNotificationResponse(ntfResponse)
+                                    }
                                     if appState.inactive {
                                         Task {
                                             await updateChats()
