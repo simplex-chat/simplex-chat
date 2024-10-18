@@ -147,7 +147,7 @@ final class ChatModel: ObservableObject {
     @Published var chatDbEncrypted: Bool?
     @Published var chatDbStatus: DBMigrationResult?
     @Published var ctrlInitInProgress: Bool = false
-    @Published var userNotificationCenterCont: UserNotificationCenterCont?
+    @Published var userNotificationCenterResponse: UNNotificationResponse?
     // local authentication
     @Published var contentViewAccessAuthenticated: Bool = false
     @Published var laRequest: LocalAuthRequest?

@@ -13,7 +13,9 @@ import SwiftUI
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-        logger.debug("AppDelegate: didFinishLaunchingWithOptions")
+//        let val = if let val_ = launchOptions?[.remoteNotification] { "\(val_)" } else { "nil" }
+        let val = if let opts_ = launchOptions { "\(opts_)" } else { "nil" }
+        logger.debug("### DEBUGGING AppDelegate: didFinishLaunchingWithOptions \(val, privacy: .public)")
         application.registerForRemoteNotifications()
         removePasscodesIfReinstalled()
         prepareForLaunch()
