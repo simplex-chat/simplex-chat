@@ -25,7 +25,9 @@ While SimpleX Chat Ltd is not a communication service provider, and provide publ
 
 We see users and data sovereignty, and device and provider portability as critically important properties for any communication system.
 
-SimpleX Chat security assessment was done in October 2022 by [Trail of Bits](https://www.trailofbits.com/about), and most fixes were released in v4.2 – see [the announcement](/blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
+The implementation security assessment of SimpleX cryptography and networking was done in October 2022 by [Trail of Bits](https://www.trailofbits.com/about), and most fixes were released in v4.2 – see [the announcement](/blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
+
+The cryptographic review of SimpleX protocols design was done in July 2024 by Trail of Bits – see [the announcement](/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.md).
 
 ### Your information
 
@@ -172,4 +174,4 @@ You accept the Conditions of Use of Software and Infrastructure ("Conditions") b
 
 **Ending these conditions**. You may end these Conditions with SimpleX Chat Ltd at any time by deleting our Applications from your devices and discontinuing use of our Infrastructure. The provisions related to Licenses, Disclaimers, Limitation of Liability, Resolving dispute, Availability, Changes to the conditions, Enforcing the conditions, and Ending these conditions will survive termination of your relationship with SimpleX Chat Ltd.
 
-Updated April 24, 2024
+Updated October 14, 2024
