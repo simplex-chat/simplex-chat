@@ -2047,7 +2047,7 @@
     <string name="v6_0_reachable_chat_toolbar_descr">استخدم التطبيق بيد واحدة.</string>
     <string name="chat_database_exported_title">صُدرت قاعدة بيانات الدردشة</string>
     <string name="v6_0_connection_servers_status">التحكم في شبكتك</string>
-    <string name="v6_0_delete_many_messages_descr">حذف ما يصل إلى 20 رسالة في وقت واحد.</string>
+    <string name="v6_0_delete_many_messages_descr">حذف ما يصل إلى 20 رسالة في آن واحد.</string>
     <string name="chat_database_exported_not_all_files">لم يتم تصدير بعض الملفات</string>
     <string name="v6_0_private_routing_descr">يحمي عنوان IP الخاص بك واتصالاتك.</string>
     <string name="network_option_tcp_connection">اتصال TCP</string>
@@ -2119,7 +2119,7 @@
     <string name="v6_1_customizable_message_descr">شكل الرسالة قابل للتخصيص.</string>
     <string name="v6_1_better_calls_descr">تبديل الصوت والفيديو أثناء المكالمة.</string>
     <string name="v6_1_delete_many_messages_descr">حذف أو إشراف ما يصل إلى 200 رسالة.</string>
-    <string name="v6_1_forward_many_messages_descr">حوّل ما يصل إلى 20 رسالة آن واحد.</string>
+    <string name="v6_1_forward_many_messages_descr">حوّل ما يصل إلى 20 رسالة في آن واحد.</string>
     <string name="v6_1_better_calls">مكالمات أفضل</string>
     <string name="v6_1_message_dates_descr">تواريخ أفضل للرسائل.</string>
     <string name="v6_1_better_security">أمان أفضل ✅</string>
