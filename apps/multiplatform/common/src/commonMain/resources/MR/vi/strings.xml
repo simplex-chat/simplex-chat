@@ -904,4 +904,24 @@
     <string name="v6_1_forward_many_messages_descr">Chuyển tiếp tối đa 20 tin nhắn cùng một lúc.</string>
     <string name="how_to_use_your_servers">Cách sử dụng máy chủ của bạn</string>
     <string name="v5_5_new_interface_languages">Giao diện Hungary và Thổ Nhĩ Kỳ</string>
+    <string name="immune_to_spam_and_abuse">Miễn nhiễm với tin nhắn rác</string>
+    <string name="import_database_question">Nhập cơ sở dữ liệu trò chuyện?</string>
+    <string name="if_you_enter_self_destruct_code">Nếu bạn nhập mã tự hủy của mình khi mở ứng dụng:</string>
+    <string name="enter_one_ICE_server_per_line">Máy chủ ICE (một dòng mỗi máy)</string>
+    <string name="if_you_enter_passcode_data_removed">Nếu bạn nhập mã truy cập này khi mở ứng dụng, tất cả dữ liệu ứng dụng sẽ bị xóa vĩnh viễn!</string>
+    <string name="image_will_be_received_when_contact_is_online">Hình ảnh sẽ được nhận khi liên hệ của bạn trực tuyến, xin vui lòng chờ hoặc kiểm tra lại sau!</string>
+    <string name="la_immediately">Ngay lập tức</string>
+    <string name="image_will_be_received_when_contact_completes_uploading">Hình ảnh sẽ được nhận khi liên hệ của bạn hoàn thành việc tải lên.</string>
+    <string name="gallery_image_button">Hình ảnh</string>
+    <string name="if_you_cant_meet_in_person">Nếu bạn không thể gặp mặt trực tiếp, cho liên hệ của bạn xem mã QR trong một cuộc gọi video, hoặc chia sẻ liên kết.</string>
+    <string name="icon_descr_image_snd_complete">Hình ảnh đã được gửi</string>
+    <string name="image_descr">Hình ảnh</string>
+    <string name="image_saved">Hình ảnh đã được lưu vào Thư viện</string>
+    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Nếu bạn nhận được liên kết mời SimpleX Chat, bạn có thể mở nó trong trình duyệt của mình:</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Nếu bạn không thể gặp mặt trực tiếp, bạn có thể <b>quét mã QR trong cuộc gọi video</b>, hoặc liên hệ của bạn có thể chia sẻ một liên kết mời.</string>
+    <string name="network_disable_socks_info">Nếu bạn xác nhận, các máy chủ truyền tin nhắn sẽ có thể biết địa chỉ IP, và nhà cung cấp của bạn - máy chủ nào mà bạn đang kết nối.</string>
+    <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Nếu bạn chọn từ chối người gửi sẽ KHÔNG được thông báo.</string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Nếu bạn không thể gặp mặt trực tiếp, <b>cho liên hệ của bạn xem mã QR trong cuộc gọi video</b>, hoặc chia sẻ liên kết.</string>
+    <string name="import_database_confirmation">Nhập</string>
+    <string name="ignore">Bỏ qua</string>
 </resources>
