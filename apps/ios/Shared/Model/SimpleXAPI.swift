@@ -743,6 +743,12 @@ func apiConnect_(incognito: Bool, connReq: String) async -> ((ConnReqType, Pendi
             message: "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection."
         )
         return (nil, alert)
+    case .chatCmdError(_, .errorAgent(.SMP(_, .QUOTA))):
+        let alert = mkAlert(
+            title: "Undelivered messages",
+            message: "The connection reached the limit of undelivered messages, your contact may be offline."
+        )
+        return (nil, alert)
     case let .chatCmdError(_, .errorAgent(.INTERNAL(internalErr))):
         if internalErr == "SEUniqueID" {
             let alert = mkAlert(

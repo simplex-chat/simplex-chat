@@ -948,7 +948,7 @@
 "Chinese and Spanish interface" = "Kínai és spanyol kezelőfelület";
 
 /* No comment provided by engineer. */
-"Choose _Migrate from another device_ on the new device and scan QR code." = "Válassza az _Átköltöztetés egy másik eszközről opciót az új eszközén és olvassa be a QR-kódot.";
+"Choose _Migrate from another device_ on the new device and scan QR code." = "Válassza az _Átköltöztetés egy másik eszközről_ opciót az új eszközén és olvassa be a QR-kódot.";
 
 /* No comment provided by engineer. */
 "Choose file" = "Fájl kiválasztása";
@@ -1155,7 +1155,7 @@
 "Connection terminated" = "Kapcsolat megszakítva";
 
 /* No comment provided by engineer. */
-"Connection timeout" = "Kapcsolat időtúllépés";
+"Connection timeout" = "Időtúllépés kapcsolódáskor";
 
 /* No comment provided by engineer. */
 "Connection with desktop stopped" = "A kapcsolat a számítógéppel megszakadt";
@@ -1341,7 +1341,7 @@
 "Database ID: %d" = "Adatbázis-azonosító: %d";
 
 /* No comment provided by engineer. */
-"Database IDs and Transport isolation option." = "Adatbázis-azonosítók és átviteli izolációs beállítások.";
+"Database IDs and Transport isolation option." = "Adatbázis-azonosítók és átvitel-izolációs beállítások.";
 
 /* No comment provided by engineer. */
 "Database is encrypted using a random passphrase, you can change it." = "Az adatbázis egy véletlenszerű jelmondattal van titkosítva, ami megváltoztatható.";
@@ -1576,7 +1576,7 @@
 "Detailed statistics" = "Részletes statisztikák";
 
 /* No comment provided by engineer. */
-"Details" = "Részletek";
+"Details" = "További részletek";
 
 /* No comment provided by engineer. */
 "Develop" = "Fejlesztés";
@@ -1600,7 +1600,7 @@
 "different migration in the app/database: %@ / %@" = "különböző átköltöztetések az alkalmazásban/adatbázisban: %@ / %@";
 
 /* No comment provided by engineer. */
-"Different names, avatars and transport isolation." = "Különböző nevek, avatarok és átviteli izoláció.";
+"Different names, avatars and transport isolation." = "Különböző nevek, profilképek és átvitel-izoláció.";
 
 /* connection level description */
 "direct" = "közvetlen";
@@ -2918,10 +2918,10 @@
 "Message source remains private." = "Az üzenet forrása titokban marad.";
 
 /* No comment provided by engineer. */
-"Message status" = "Üzenet állapota";
+"Message status" = "Üzenetállapot";
 
 /* copied message info */
-"Message status: %@" = "Üzenet állapota: %@";
+"Message status: %@" = "Üzenetállapot: %@";
 
 /* No comment provided by engineer. */
 "Message text" = "Név és üzenet";
@@ -3388,10 +3388,10 @@
 "Picture-in-picture calls" = "Kép a képben hívások";
 
 /* No comment provided by engineer. */
-"PING count" = "PING számláló";
+"PING count" = "PING-ek száma";
 
 /* No comment provided by engineer. */
-"PING interval" = "PING időköze";
+"PING interval" = "Időtartam a PING-ek között";
 
 /* No comment provided by engineer. */
 "Play from the chat list." = "Lejátszás a csevegési listából.";
@@ -3550,10 +3550,10 @@
 "Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & servers* settings." = "Védje IP-címét az ismerősei által kiválasztott üzenet-közvetítő-kiszolgálókkal szemben.\nEngedélyezze a „Beállítások -> Hálózat és kiszolgálók” menüben.";
 
 /* No comment provided by engineer. */
-"Protocol timeout" = "Protokoll időtúllépés";
+"Protocol timeout" = "Protokoll időtúllépése";
 
 /* No comment provided by engineer. */
-"Protocol timeout per KB" = "Protokoll időkorlát KB-onként";
+"Protocol timeout per KB" = "Protokoll időtúllépése KB-onként";
 
 /* No comment provided by engineer. */
 "Proxied" = "Proxyzott";
@@ -3637,7 +3637,7 @@
 "Received reply" = "Fogadott válaszüzenet-buborék színe";
 
 /* No comment provided by engineer. */
-"Received total" = "Összes fogadott";
+"Received total" = "Összes fogadott üzenet";
 
 /* No comment provided by engineer. */
 "Receiving address will be changed to a different server. Address change will complete after sender comes online." = "A fogadó cím egy másik kiszolgálóra változik. A címváltoztatás a feladó online állapotba kerülése után fejeződik be.";
@@ -4101,7 +4101,7 @@
 "Sent reply" = "Válaszüzenet-buborék színe";
 
 /* No comment provided by engineer. */
-"Sent total" = "Összes elküldött";
+"Sent total" = "Összes elküldött üzenet";
 
 /* No comment provided by engineer. */
 "Sent via proxy" = "Proxyn keresztül küldve";
@@ -4239,7 +4239,7 @@
 "Show last messages" = "Szobák utolsó üzeneteinek megjelenítése a listanézetben";
 
 /* No comment provided by engineer. */
-"Show message status" = "Üzenet állapot megjelenítése";
+"Show message status" = "Üzenetállapot megjelenítése";
 
 /* No comment provided by engineer. */
 "Show percentage" = "Százalék megjelenítése";
@@ -4464,7 +4464,7 @@
 "TCP connection" = "TCP kapcsolat";
 
 /* No comment provided by engineer. */
-"TCP connection timeout" = "TCP kapcsolat időtúllépés";
+"TCP connection timeout" = "TCP kapcsolat időtúllépése";
 
 /* No comment provided by engineer. */
 "TCP_KEEPCNT" = "TCP_KEEPCNT";
@@ -4674,10 +4674,10 @@
 "Toolbar opacity" = "Eszköztár átlátszatlansága";
 
 /* No comment provided by engineer. */
-"Total" = "Összesen";
+"Total" = "Összes kapcsolat";
 
 /* No comment provided by engineer. */
-"Transport isolation" = "Kapcsolat izolációs mód";
+"Transport isolation" = "Átvitel-izoláció módja";
 
 /* No comment provided by engineer. */
 "Transport sessions" = "Munkamenetek átvitele";
