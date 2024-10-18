@@ -1226,6 +1226,15 @@ object ChatController {
         )
         return null
       }
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
+          && r.chatError.agentError is AgentErrorType.SMP
+          && r.chatError.agentError.smpErr is SMPErrorType.QUOTA -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.connection_error_quota),
+          generalGetString(MR.strings.connection_error_quota_desc)
+        )
+        return null
+      }
       else -> {
         if (!(networkErrorAlert(r))) {
           apiErrorAlert("apiConnect", generalGetString(MR.strings.connection_error), r)
@@ -6045,6 +6054,7 @@ sealed class SMPErrorType {
     is AUTH -> "AUTH"
     is CRYPTO -> "CRYPTO"
     is QUOTA -> "QUOTA"
+    is STORE -> "STORE ${storeErr}"
     is NO_MSG -> "NO_MSG"
     is LARGE_MSG -> "LARGE_MSG"
     is EXPIRED -> "EXPIRED"
@@ -6057,6 +6067,7 @@ sealed class SMPErrorType {
   @Serializable @SerialName("AUTH") class AUTH: SMPErrorType()
   @Serializable @SerialName("CRYPTO") class CRYPTO: SMPErrorType()
   @Serializable @SerialName("QUOTA") class QUOTA: SMPErrorType()
+  @Serializable @SerialName("STORE") class STORE(val storeErr: String): SMPErrorType()
   @Serializable @SerialName("NO_MSG") class NO_MSG: SMPErrorType()
   @Serializable @SerialName("LARGE_MSG") class LARGE_MSG: SMPErrorType()
   @Serializable @SerialName("EXPIRED") class EXPIRED: SMPErrorType()

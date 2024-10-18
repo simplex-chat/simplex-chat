@@ -144,6 +144,8 @@
   <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Please check that you used the correct link or ask your contact to send you another one.</string>
   <string name="connection_error_auth">Connection error (AUTH)</string>
   <string name="connection_error_auth_desc">Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection.</string>
+  <string name="connection_error_quota">Undelivered messages</string>
+  <string name="connection_error_quota_desc">The connection reached the limit of undelivered messages, your contact may be offline.</string>
   <string name="error_accepting_contact_request">Error accepting contact request</string>
   <string name="sender_may_have_deleted_the_connection_request">Sender may have deleted the connection request.</string>
   <string name="error_deleting_contact">Error deleting contact</string>
