@@ -13,6 +13,11 @@ import Combine
 
 private let memberImageSize: CGFloat = 34
 
+struct PaginationBoundary {
+    var oldest: Bool
+    var latest: Bool
+}
+
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var im = ItemsModel.shared
@@ -23,6 +28,7 @@ struct ChatView: View {
     @Environment(\.scenePhase) var scenePhase
     @State @ObservedObject var chat: Chat
     @StateObject private var scrollModel = ReverseListScrollModel()
+    @StateObject private var sectionModel = ReverseListSectionModel()
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
@@ -31,7 +37,7 @@ struct ChatView: View {
     @State private var customUserProfile: Profile?
     @State private var connectionCode: String?
     @State private var loadingItems = false
-    @State private var firstPage = false
+    @State private var paginationBoundary = PaginationBoundary(oldest: false, latest: false)
     @State private var revealedChatItem: ChatItem?
     @State private var searchMode = false
     @State private var searchText: String = ""
@@ -187,10 +193,11 @@ struct ChatView: View {
             if !isLoading,
                im.reversedChatItems.count <= loadItemsPerPage,
                filtered(im.reversedChatItems).count < 10 {
-                loadChatItems(chat.chatInfo)
+                loadChatItems(chat.chatInfo, .toOldest, .bottom, nil)
             }
         }
         .environmentObject(scrollModel)
+        .environmentObject(sectionModel)
         .onDisappear {
             VideoPlayerView.players.removeAll()
             stopAudioPlayer()
@@ -363,6 +370,7 @@ struct ChatView: View {
             }
         }
         ChatView.FloatingButtonModel.shared.totalUnread = chat.chatStats.unreadCount
+        sectionModel.resetSections(items: im.reversedChatItems)
     }
 
     private func searchToolbar() -> some View {
@@ -400,25 +408,11 @@ struct ChatView: View {
         ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil && ci.meta.itemForwarded == nil
     }
 
-    private func filtered(_ reversedChatItems: Array<ChatItem>) -> Array<ChatItem> {
-        reversedChatItems
-            .enumerated()
-            .filter { (index, chatItem) in
-                if let mergeCategory = chatItem.mergeCategory, index > 0 {
-                    mergeCategory != reversedChatItems[index - 1].mergeCategory
-                } else {
-                    true
-                }
-            }
-            .map { $0.element }
-    }
-
-
     private func chatItemsList() -> some View {
         let cInfo = chat.chatInfo
         let mergedItems = filtered(im.reversedChatItems)
         return GeometryReader { g in
-            ReverseList(items: mergedItems, scrollState: $scrollModel.state) { ci in
+            ReverseList(items: mergedItems, scrollState: $scrollModel.state, sectionModel: sectionModel) { ci in
                 let voiceNoFrame = voiceWithoutFrame(ci)
                 let maxWidth = cInfo.chatType == .group
                                 ? voiceNoFrame
@@ -438,18 +432,22 @@ struct ChatView: View {
                     forwardedChatItems: $forwardedChatItems
                 )
                 .id(ci.id) // Required to trigger `onAppear` on iOS15
-            } loadPage: {
-                loadChatItems(cInfo)
+            } loadPage: { (direction, section, chatItemId) in
+                loadChatItems(cInfo, direction, section, chatItemId)
             }
             .opacity(ItemsModel.shared.isLoading ? 0 : 1)
             .padding(.vertical, -InvertedTableView.inset)
             .onTapGesture { hideKeyboard() }
             .onChange(of: searchText) { _ in
-                Task { await loadChat(chat: chat, search: searchText) }
+                Task {
+                    await loadChat(chat: chat, search: searchText)
+                    sectionModel.resetSections(items: im.reversedChatItems)
+                }
             }
             .onChange(of: im.itemAdded) { added in
                 if added {
                     im.itemAdded = false
+                    sectionModel.resetSections(items: im.reversedChatItems)
                     if FloatingButtonModel.shared.isReallyNearBottom {
                         scrollModel.scrollToBottom()
                     }
@@ -838,10 +836,18 @@ struct ChatView: View {
             await MainActor.run { forwardedChatItems = fci }
         }
     }
+    
+    private func boundaryReached(_ direction: ChatScrollDirection) -> Bool {
+        return (direction == .toLatest && paginationBoundary.latest) || (direction == .toOldest && paginationBoundary.oldest)
+    }
+    
+    private func setBoundary(_ direction: ChatScrollDirection) {
+        direction == .toLatest ? (paginationBoundary.latest = true) : (paginationBoundary.oldest = true)
+    }
 
-    private func loadChatItems(_ cInfo: ChatInfo) {
+    private func loadChatItems(_ cInfo: ChatInfo, _ direction: ChatScrollDirection, _ section: ChatSection, _ chatItem: ChatItem?) {
         Task {
-            if loadingItems || firstPage { return }
+            if loadingItems || boundaryReached(direction)  { return }
             loadingItems = true
             do {
                 var reversedPage = Array<ChatItem>()
@@ -849,11 +855,13 @@ struct ChatView: View {
                 // Load additional items until the page is +50 large after merging
                 while chatItemsAvailable && filtered(reversedPage).count < loadItemsPerPage {
                     let pagination: ChatPagination =
-                        if let lastItem = reversedPage.last ?? im.reversedChatItems.last {
-                            .before(chatItemId: lastItem.id, count: loadItemsPerPage)
-                        } else {
-                            .last(count: loadItemsPerPage)
-                        }
+                    if direction == .toOldest, let lastItem = chatItem ?? reversedPage.last ?? im.reversedChatItems.last {
+                        .before(chatItemId: lastItem.id, count: loadItemsPerPage)
+                    } else if direction == .toLatest, let firstItem = chatItem ?? reversedPage.first ?? im.reversedChatItems.first {
+                        .after(chatItemId: firstItem.id, count: loadItemsPerPage)
+                    } else {
+                        .last(count: loadItemsPerPage)
+                    }
                     let chatItems = try await apiGetChatItems(
                         type: cInfo.chatType,
                         id: cInfo.apiId,
@@ -864,10 +872,25 @@ struct ChatView: View {
                     reversedPage.append(contentsOf: chatItems.reversed())
                 }
                 await MainActor.run {
-                    if reversedPage.count == 0 {
-                        firstPage = true
+                    if reversedPage.count == 0  {
+                        setBoundary(direction)
                     } else {
-                        im.reversedChatItems.append(contentsOf: reversedPage)
+                        let reversedPageToAppend = self.sectionModel.handleSectionInsertion(
+                            candidateSection: section,
+                            reversedPage: reversedPage,
+                            allItems: im.reversedChatItems
+                        )
+                        
+                        if direction == .toLatest {
+                            let at = if let chatItemId = chatItem?.id, let index = im.reversedChatItems.firstIndex(where: { $0.id == chatItemId }) {
+                                index
+                            } else {
+                                0
+                            }
+                            im.reversedChatItems.insert(contentsOf: reversedPageToAppend, at: at)
+                        } else {
+                            im.reversedChatItems.append(contentsOf: reversedPageToAppend)
+                        }
                     }
                     loadingItems = false
                 }
@@ -1884,6 +1907,54 @@ func updateChatSettings(_ chat: Chat, chatSettings: ChatSettings) {
         } catch let error {
             logger.error("apiSetChatSettings error \(responseError(error))")
         }
+    }
+}
+private func filtered(_ reversedChatItems: Array<ChatItem>) -> Array<ChatItem> {
+    reversedChatItems
+        .enumerated()
+        .filter { (index, chatItem) in
+            if let mergeCategory = chatItem.mergeCategory, index > 0 {
+                mergeCategory != reversedChatItems[index - 1].mergeCategory
+            } else {
+                true
+            }
+        }
+        .map { $0.element }
+}
+
+func loadItemsAround(_ cInfo: ChatInfo, _ chatItemId: Int64) async -> [ChatItem]? {
+    do {
+        let im = ItemsModel.shared
+        var reversedPage = Array<ChatItem>()
+        var chatItemsAvailable = true
+        // Load additional items until the page is +50 large after merging
+        while chatItemsAvailable && filtered(reversedPage).count < loadItemsPerPage {
+            let pagination: ChatPagination = .before(chatItemId: chatItemId, count: loadItemsPerPage / 2)
+            var chatItems = try await apiGetChatItems(
+                type: cInfo.chatType,
+                id: cInfo.apiId,
+                pagination: pagination,
+                search: ""
+            )
+            if let lastItem = chatItems.last {
+                let pagination: ChatPagination = .after(chatItemId: lastItem.id, count: loadItemsPerPage / 2)
+                let afterItems = try await apiGetChatItems(
+                    type: cInfo.chatType,
+                    id: cInfo.apiId,
+                    pagination: pagination,
+                    search: ""
+                )
+                chatItems.append(contentsOf: afterItems)
+            }
+            
+            chatItemsAvailable = !chatItems.isEmpty
+            reversedPage.append(contentsOf: chatItems.reversed())
+        }
+        
+        return reversedPage
+    } catch let error {
+        logger.error("apiGetChat error: \(responseError(error))")
+        return nil
     }
 }
 

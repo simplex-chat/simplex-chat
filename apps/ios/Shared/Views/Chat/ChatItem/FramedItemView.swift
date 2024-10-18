@@ -13,6 +13,7 @@ struct FramedItemView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var scrollModel: ReverseListScrollModel
+    @EnvironmentObject var sectionModel: ReverseListSectionModel
     @ObservedObject var chat: Chat
     var chatItem: ChatItem
     var preview: UIImage?
@@ -48,9 +49,23 @@ struct FramedItemView: View {
                 if let qi = chatItem.quotedItem {
                     ciQuoteView(qi)
                         .onTapGesture {
-                            if let ci = ItemsModel.shared.reversedChatItems.first(where: { $0.id == qi.itemId }) {
-                                withAnimation {
-                                    scrollModel.scrollToItem(id: ci.id)
+                            if let itemId = qi.itemId {
+                                Task {
+                                    if let reversedPage = await loadItemsAround(chat.chatInfo, itemId) {
+                                        await MainActor.run {
+                                            let im = ItemsModel.shared
+                                            let reversedPageToAppend = self.sectionModel.handleSectionInsertion(
+                                                candidateSection: .destination,
+                                                reversedPage: reversedPage,
+                                                allItems: im.reversedChatItems
+                                            )
+                                            im.reversedChatItems.append(contentsOf: reversedPageToAppend)
+                                            
+                                            withAnimation {
+                                                scrollModel.scrollToItem(id: itemId)
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
