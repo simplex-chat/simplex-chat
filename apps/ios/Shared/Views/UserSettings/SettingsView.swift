@@ -331,7 +331,12 @@ struct SettingsView: View {
                     chatDatabaseRow()
                     NavigationLink {
                         MigrateFromDevice(showProgressOnSettings: $showProgress)
-                            .navigationTitle("Migrate device")
+                            .toolbar {
+                                // Redaction broken for `.navigationTitle` - using a toolbar item instead.
+                                ToolbarItem(placement: .principal) {
+                                    Text("Migrate device").font(.headline)
+                                }
+                            }
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
