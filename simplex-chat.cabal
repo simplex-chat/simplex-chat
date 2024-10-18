@@ -35,6 +35,7 @@ library
       Simplex.Chat.Core
       Simplex.Chat.Files
       Simplex.Chat.Help
+      Simplex.Chat.Image
       Simplex.Chat.Markdown
       Simplex.Chat.Messages
       Simplex.Chat.Messages.Batch
@@ -198,7 +199,9 @@ library
       StrictData
   ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns
   build-depends:
-      aeson ==2.2.*
+      JuicyPixels
+    , JuicyPixels-stbir
+    , aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
     , async ==2.2.*
     , attoparsec ==0.14.*
@@ -261,7 +264,9 @@ executable simplex-bot
       StrictData
   ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -threaded
   build-depends:
-      aeson ==2.2.*
+      JuicyPixels
+    , JuicyPixels-stbir
+    , aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
     , async ==2.2.*
     , attoparsec ==0.14.*
@@ -325,7 +330,9 @@ executable simplex-bot-advanced
       StrictData
   ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -threaded
   build-depends:
-      aeson ==2.2.*
+      JuicyPixels
+    , JuicyPixels-stbir
+    , aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
     , async ==2.2.*
     , attoparsec ==0.14.*
@@ -392,7 +399,9 @@ executable simplex-broadcast-bot
       Paths_simplex_chat
   ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -threaded
   build-depends:
-      aeson ==2.2.*
+      JuicyPixels
+    , JuicyPixels-stbir
+    , aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
     , async ==2.2.*
     , attoparsec ==0.14.*
@@ -457,7 +466,9 @@ executable simplex-chat
       StrictData
   ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -threaded
   build-depends:
-      aeson ==2.2.*
+      JuicyPixels
+    , JuicyPixels-stbir
+    , aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
     , async ==2.2.*
     , attoparsec ==0.14.*
@@ -528,7 +539,9 @@ executable simplex-directory-service
       Paths_simplex_chat
   ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -threaded
   build-depends:
-      aeson ==2.2.*
+      JuicyPixels
+    , JuicyPixels-stbir
+    , aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
     , async ==2.2.*
     , attoparsec ==0.14.*
@@ -599,6 +612,7 @@ test-suite simplex-chat-test
       ChatTests.Profiles
       ChatTests.Utils
       JSONTests
+      LinkPreviewTests
       MarkdownTests
       MessageBatching
       MobileTests
@@ -625,7 +639,9 @@ test-suite simplex-chat-test
       StrictData
   ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -threaded
   build-depends:
-      QuickCheck ==2.14.*
+      JuicyPixels
+    , JuicyPixels-stbir
+    , QuickCheck ==2.14.*
     , aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
     , async ==2.2.*
