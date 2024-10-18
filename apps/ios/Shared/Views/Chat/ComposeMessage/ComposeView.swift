@@ -287,8 +287,8 @@ struct ComposeView: View {
     // this is a workaround to fire an explicit event in certain cases
     @State private var stopPlayback: Bool = false
 
-    @AppStorage(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
-    @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
+    @UserDefault(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
+    @UserDefault(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
 
     var body: some View {
         VStack(spacing: 0) {

@@ -29,17 +29,33 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     private var granted = false
     private var prevNtfTime: Dictionary<ChatId, Date> = [:]
 
+    override init() {
+        super.init()
+        UNUserNotificationCenter.current().delegate = self
+    }
+
     // Handle notification when app is in background
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse,
                                 withCompletionHandler handler: () -> Void) {
         logger.debug("NtfManager.userNotificationCenter: didReceive")
-        let content = response.notification.request.content
+        if appStateGroupDefault.get() == .active {
+            processNotificationResponse(response)
+        } else {
+            logger.debug("NtfManager.userNotificationCenter: remember response in model")
+            ChatModel.shared.notificationResponse = response
+        }
+        handler()
+    }
+
+    func processNotificationResponse(_ ntfResponse: UNNotificationResponse) {
         let chatModel = ChatModel.shared
-        let action = response.actionIdentifier
-        logger.debug("NtfManager.userNotificationCenter: didReceive: action \(action), categoryIdentifier \(content.categoryIdentifier)")
+        let content = ntfResponse.notification.request.content
+        let action = ntfResponse.actionIdentifier
+        logger.debug("NtfManager.processNotificationResponse: didReceive: action \(action), categoryIdentifier \(content.categoryIdentifier)")
         if let userId = content.userInfo["userId"] as? Int64,
            userId != chatModel.currentUser?.userId {
+            logger.debug("NtfManager.processNotificationResponse changeActiveUser")
             changeActiveUser(userId, viewPwd: nil)
         }
         if content.categoryIdentifier == ntfCategoryContactRequest && (action == ntfActionAcceptContact || action == ntfActionAcceptContactIncognito),
@@ -61,7 +77,6 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                 ItemsModel.shared.loadOpenChat(chatId)
             }
         }
-        handler()
     }
 
     private func ntfCallAction(_ content: UNNotificationContent, _ action: String) -> (ChatId, NtfCallAction)? {
@@ -75,7 +90,6 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         }
         return nil
     }
-
 
     // Handle notification when the app is in foreground
     func userNotificationCenter(_ center: UNUserNotificationCenter,
@@ -210,7 +224,6 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                 }
             }
         }
-        center.delegate = self
     }
 
     func notifyContactRequest(_ user: any UserLike, _ contactRequest: UserContactRequest) {
