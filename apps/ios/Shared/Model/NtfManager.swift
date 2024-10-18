@@ -42,7 +42,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         if appStateGroupDefault.get() == .active {
             processNotificationResponse(response)
         } else {
-            logger.debug("NtfManager.userNotificationCenter putting response into model")
+            logger.debug("NtfManager.userNotificationCenter: remember response in model")
             ChatModel.shared.notificationResponse = response
         }
         handler()
