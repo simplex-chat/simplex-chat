@@ -8,17 +8,6 @@ import androidx.compose.ui.input.pointer.*
 import java.io.File
 import java.net.URI
 
-actual fun Modifier.navigationBarsWithImePadding(): Modifier = this
-
-@Composable
-actual fun ProvideWindowInsets(
-  consumeWindowInsets: Boolean,
-  windowInsetsAnimationsEnabled: Boolean,
-  content: @Composable () -> Unit
-) {
-  content()
-}
-
 @Composable
 actual fun Modifier.desktopOnExternalDrag(
   enabled: Boolean,

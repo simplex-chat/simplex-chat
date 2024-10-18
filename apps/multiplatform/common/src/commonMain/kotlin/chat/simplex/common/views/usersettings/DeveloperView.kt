@@ -22,11 +22,9 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 
 @Composable
-fun DeveloperView(
-  m: ChatModel,
-  showCustomModal: (@Composable ModalData.(ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
-  withAuth: (title: String, desc: String, block: () -> Unit) -> Unit
+fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> Unit
 ) {
+  val m = chatModel
   ColumnWithScrollBar(Modifier.fillMaxWidth()) {
     val uriHandler = LocalUriHandler.current
     AppBarTitle(stringResource(MR.strings.settings_developer_tools))
@@ -35,7 +33,7 @@ fun DeveloperView(
     val unchangedHints = mutableStateOf(unchangedHintPreferences())
     SectionView {
       InstallTerminalAppItem(uriHandler)
-      ChatConsoleItem { withAuth(generalGetString(MR.strings.auth_open_chat_console), generalGetString(MR.strings.auth_log_in_using_credential), showCustomModal { it, close -> TerminalView(false, close) }) }
+      ChatConsoleItem { withAuth(generalGetString(MR.strings.auth_open_chat_console), generalGetString(MR.strings.auth_log_in_using_credential)) { ModalManager.start.showModalCloseable { TerminalView(false) } } }
       ResetHintsItem(unchangedHints)
       SettingsPreferenceItem(painterResource(MR.images.ic_code), stringResource(MR.strings.show_developer_options), developerTools)
       SectionTextFooter(

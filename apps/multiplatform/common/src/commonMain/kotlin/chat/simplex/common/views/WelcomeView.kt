@@ -40,8 +40,6 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
   val scrollState = rememberScrollState()
   val keyboardState by getKeyboardState()
   var savedKeyboardState by remember { mutableStateOf(keyboardState) }
-
-  ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
     Box(
       modifier = Modifier
         .fillMaxSize()
@@ -102,7 +100,6 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
         }
       }
     }
-  }
 }
 
 @Composable
@@ -115,7 +112,6 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
   CompositionLocalProvider(
     LocalAppBarHandler provides handler
   ) {
-    ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
       Column(
         modifier = Modifier
           .fillMaxSize()
@@ -178,7 +174,6 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
         }
       }
     }
-  }
 }
 
 fun createProfileInNoProfileSetup(displayName: String, close: () -> Unit) {
@@ -255,7 +250,6 @@ fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isVal
   val modifier = Modifier
     .fillMaxWidth()
     .heightIn(min = 50.dp)
-    .navigationBarsWithImePadding()
     .onFocusChanged { focused = it.isFocused }
   Column(
     Modifier

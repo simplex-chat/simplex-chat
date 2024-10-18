@@ -64,7 +64,6 @@ kotlin {
         implementation("androidx.activity:activity-compose:1.9.1")
         val workVersion = "2.9.1"
         implementation("androidx.work:work-runtime-ktx:$workVersion")
-        implementation("com.google.accompanist:accompanist-insets:0.30.1")
 
         // Video support
         implementation("com.google.android.exoplayer:exoplayer:2.19.1")

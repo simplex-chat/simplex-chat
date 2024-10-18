@@ -57,7 +57,6 @@ fun TextEditor(
   ) {
     val textFieldModifier = modifier
       .fillMaxWidth()
-      .navigationBarsWithImePadding()
       .onFocusChanged { focused = it.isFocused }
       .padding(10.dp)
 

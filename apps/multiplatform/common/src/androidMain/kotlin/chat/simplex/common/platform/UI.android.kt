@@ -3,17 +3,18 @@ package chat.simplex.common.platform
 import android.app.Activity
 import android.content.Context
 import android.content.pm.ActivityInfo
-import android.graphics.Rect
 import android.os.*
 import android.view.*
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import chat.simplex.common.AppScreen
 import chat.simplex.common.model.clear
-import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.helpers.*
 import androidx.compose.ui.platform.LocalContext as LocalContext1
 import chat.simplex.res.MR
@@ -43,28 +44,13 @@ actual fun LocalMultiplatformView(): Any? = LocalView.current
 
 @Composable
 actual fun getKeyboardState(): State<KeyboardState> {
-  val keyboardState = remember { mutableStateOf(KeyboardState.Closed) }
-  val view = LocalView.current
-  DisposableEffect(view) {
-    val onGlobalListener = ViewTreeObserver.OnGlobalLayoutListener {
-      val rect = Rect()
-      view.getWindowVisibleDisplayFrame(rect)
-      val screenHeight = view.rootView.height
-      val keypadHeight = screenHeight - rect.bottom
-      keyboardState.value = if (keypadHeight > screenHeight * 0.15) {
-        KeyboardState.Opened
-      } else {
-        KeyboardState.Closed
-      }
-    }
-    view.viewTreeObserver.addOnGlobalLayoutListener(onGlobalListener)
-
-    onDispose {
-      view.viewTreeObserver.removeOnGlobalLayoutListener(onGlobalListener)
+  val density = LocalDensity.current
+  val ime = WindowInsets.ime
+  return remember {
+    derivedStateOf {
+      if (ime.getBottom(density) == 0) KeyboardState.Closed else KeyboardState.Opened
     }
   }
-
-  return keyboardState
 }
 
 actual fun hideKeyboard(view: Any?, clearFocus: Boolean) {
