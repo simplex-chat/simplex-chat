@@ -23,18 +23,6 @@ enum NtfCallAction {
     case reject
 }
 
-private func ntfCallAction(_ content: UNNotificationContent, _ action: String) -> (ChatId, NtfCallAction)? {
-    if content.categoryIdentifier == ntfCategoryCallInvitation,
-       let chatId = content.userInfo["chatId"] as? String {
-        if action == ntfActionAcceptCall {
-            return (chatId, .accept)
-        } else if action == ntfActionRejectCall {
-            return (chatId, .reject)
-        }
-    }
-    return nil
-}
-
 class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     static let shared = NtfManager()
 
@@ -89,6 +77,18 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                 ItemsModel.shared.loadOpenChat(chatId)
             }
         }
+    }
+
+    private func ntfCallAction(_ content: UNNotificationContent, _ action: String) -> (ChatId, NtfCallAction)? {
+        if content.categoryIdentifier == ntfCategoryCallInvitation,
+           let chatId = content.userInfo["chatId"] as? String {
+            if action == ntfActionAcceptCall {
+                return (chatId, .accept)
+            } else if action == ntfActionRejectCall {
+                return (chatId, .reject)
+            }
+        }
+        return nil
     }
 
     // Handle notification when the app is in foreground
