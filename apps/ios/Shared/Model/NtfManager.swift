@@ -32,7 +32,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     // Handle notification when app is in background
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse,
-                                withCompletionHandler handler: @escaping (() -> Void)) {
+                                withCompletionHandler handler: () -> Void) {
         logger.debug("NtfManager.userNotificationCenter: didReceive")
         let content = response.notification.request.content
         let chatModel = ChatModel.shared
@@ -40,26 +40,8 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         logger.debug("NtfManager.userNotificationCenter: didReceive: action \(action), categoryIdentifier \(content.categoryIdentifier)")
         if let userId = content.userInfo["userId"] as? Int64,
            userId != chatModel.currentUser?.userId {
-            logger.debug("NtfManager.userNotificationCenter changeActiveUser")
-            Task {
-                do {
-                    try await Task.sleep(nanoseconds: 1000_000000)
-                    try await changeActiveUserAsync_(userId, viewPwd: nil)
-                    self.userNotificationCenterCont(withCompletionHandler: handler, content: content, action: action)
-                } catch {
-                    logger.error("NtfManager.userNotificationCenter changeActiveUser error: \(responseError(error))")
-                }
-            }
-        } else {
-            self.userNotificationCenterCont(withCompletionHandler: handler, content: content, action: action)
+            changeActiveUser(userId, viewPwd: nil)
         }
-    }
-
-    func userNotificationCenterCont(withCompletionHandler handler: () -> Void,
-                                    content: UNNotificationContent,
-                                    action: String) {
-        logger.debug("NtfManager.userNotificationCenterCont")
-        let chatModel = ChatModel.shared
         if content.categoryIdentifier == ntfCategoryContactRequest && (action == ntfActionAcceptContact || action == ntfActionAcceptContactIncognito),
            let chatId = content.userInfo["chatId"] as? String {
             let incognito = action == ntfActionAcceptContactIncognito
