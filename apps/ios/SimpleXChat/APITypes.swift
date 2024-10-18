@@ -2088,6 +2088,7 @@ public enum ProtocolErrorType: Decodable, Hashable {
     case AUTH
     case CRYPTO
     case QUOTA
+    case STORE(storeErr: String)
     case NO_MSG
     case LARGE_MSG
     case EXPIRED
