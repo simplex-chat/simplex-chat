@@ -328,9 +328,13 @@ class NotificationService: UNNotificationServiceExtension {
             }
         } else if ntfInfo.user.showNotifications {
             logger.debug("NotificationService processNtf: setting best attempt")
-            expectedMessages[id]?.msgBestAttempt = ntf
-            if ntf.isCallInvitation {
-                self.deliverBestAttemptNtf(call: true)
+            let prevBestAttempt = expectedMessages[id]?.msgBestAttempt
+            if prevBestAttempt?.isCallInvitation ?? false {
+                if ntf.isCallInvitation { // replace with newer call
+                    expectedMessages[id]?.msgBestAttempt = ntf
+                } // otherwise keep call as best attempt
+            } else {
+                expectedMessages[id]?.msgBestAttempt = ntf
             }
             return true
         }
@@ -348,8 +352,8 @@ class NotificationService: UNNotificationServiceExtension {
         bestAttemptNtf = .nseNtfContent(ntf)
     }
 
-    private func deliverBestAttemptNtf(urgent: Bool = false, call: Bool = false) {
-        if (urgent || call || expectedMessages.allSatisfy { (_, v) in v.ready }) {
+    private func deliverBestAttemptNtf(urgent: Bool = false) {
+        if (urgent || expectedMessages.allSatisfy { (_, v) in v.ready }) {
             logger.debug("NotificationService.deliverBestAttemptNtf")
             // stop processing other messages
             shouldProcessNtf = false
