@@ -13,7 +13,7 @@ struct OnboardingView: View {
 
     var body: some View {
         switch onboarding {
-        case .step1_SimpleXInfo: NavigationView { SimpleXInfo(onboarding: true) }
+        case .step1_SimpleXInfo: SimpleXInfo(onboarding: true)
         case .step2_CreateProfile: CreateFirstProfile()
         case .step3_CreateSimpleXAddress: CreateSimpleXAddress()
         case .step4_SetNotificationsMode: SetNotificationsMode()

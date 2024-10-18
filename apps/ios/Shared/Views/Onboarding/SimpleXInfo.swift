@@ -17,6 +17,13 @@ struct SimpleXInfo: View {
     var body: some View {
         GeometryReader { g in
             ScrollView {
+                HStack {
+                    Spacer()
+                    InfoSheetButton {
+                        HowItWorks(onboarding: onboarding)
+                    }
+                }
+                .padding(.bottom, 8)
                 VStack(alignment: .leading) {
                     Image(colorScheme == .light ? "logo" : "logo-light")
                         .resizable()
@@ -56,13 +63,6 @@ struct SimpleXInfo: View {
                     }
                 }
                 .frame(minHeight: g.size.height)
-            }
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    InfoSheetButton {
-                        HowItWorks(onboarding: onboarding)
-                    }
-                }
             }
             .sheet(isPresented: Binding(
                 get: { m.migrationState != nil },
