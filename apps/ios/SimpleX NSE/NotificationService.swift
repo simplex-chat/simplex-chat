@@ -343,17 +343,9 @@ class NotificationService: UNNotificationServiceExtension {
     }
 
     func setBestAttemptNtf(_ ntf: UNMutableNotificationContent) {
-        setBestAttemptNtf(.nseNtfContent(ntf))
-    }
-
-    func setBestAttemptNtf(_ ntf: NSENotification) {
         logger.debug("NotificationService.setBestAttemptNtf")
-        if case let .nseNtfContent(notification) = ntf {
-            notification.badge = badgeCount as NSNumber
-            bestAttemptNtf = .nseNtfContent(notification)
-        } else {
-            bestAttemptNtf = ntf
-        }
+        ntf.badge = badgeCount as NSNumber
+        bestAttemptNtf = .nseNtfContent(ntf)
     }
 
     private func deliverBestAttemptNtf(urgent: Bool = false, call: Bool = false) {
