@@ -82,17 +82,14 @@ struct SimpleXApp: App {
 
                         if appState != .stopped {
                             startChatAndActivate {
-                                if let cont = chatModel.userNotificationCenterCont {
-                                    defer {
-                                        chatModel.userNotificationCenterCont = nil
-                                    }
-                                    processUserNotificationCenterCont(cont)
-                                }
-                                if appState.inactive && chatModel.chatRunning == true {
-                                    Task {
-                                        await updateChats()
-                                        if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
-                                            await updateCallInvitations()
+                                if chatModel.chatRunning == true {
+                                    processUserNotificationCenterCont_()
+                                    if appState.inactive {
+                                        Task {
+                                            await updateChats()
+                                            if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
+                                                await updateCallInvitations()
+                                            }
                                         }
                                     }
                                 }

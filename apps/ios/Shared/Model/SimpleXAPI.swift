@@ -1609,7 +1609,11 @@ func startChat(refreshInvitations: Bool = true) throws {
     let chatRunning = try apiCheckChatRunning()
     m.users = try listUsers()
     if !chatRunning {
-        try getUserChatData()
+        if let cont = m.userNotificationCenterCont {
+            processUserNotificationCenterContChangeUser(cont)
+        } else {
+            try getUserChatData()
+        }
         NtfManager.shared.setNtfBadgeCount(m.totalUnreadCountForAllUsers())
         if (refreshInvitations) {
             Task { try await refreshCallInvitations() }
@@ -1633,6 +1637,7 @@ func startChat(refreshInvitations: Bool = true) throws {
     }
     ChatReceiver.shared.start()
     m.chatRunning = true
+    processUserNotificationCenterCont_()
     chatLastStartGroupDefault.set(Date.now)
 }
 

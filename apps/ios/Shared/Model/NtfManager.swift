@@ -28,16 +28,30 @@ public struct UserNotificationCenterCont {
     var handler: () -> Void
 }
 
-public func processUserNotificationCenterCont(_ cont: UserNotificationCenterCont) {
+public func processUserNotificationCenterCont_() {
+    let chatModel = ChatModel.shared
+    if let cont = chatModel.userNotificationCenterCont {
+        chatModel.userNotificationCenterCont = nil
+        processUserNotificationCenterCont(cont)
+    }
+}
+
+public func processUserNotificationCenterContChangeUser(_ cont: UserNotificationCenterCont) {
     let chatModel = ChatModel.shared
     let content = cont.response.notification.request.content
-    let action = cont.response.actionIdentifier
-    logger.debug("processUserNotificationCenterCont: didReceive: action \(action), categoryIdentifier \(content.categoryIdentifier)")
     if let userId = content.userInfo["userId"] as? Int64,
        userId != chatModel.currentUser?.userId {
         logger.debug("processUserNotificationCenterCont changeActiveUser")
         changeActiveUser(userId, viewPwd: nil)
     }
+}
+
+private func processUserNotificationCenterCont(_ cont: UserNotificationCenterCont) {
+    let chatModel = ChatModel.shared
+    let content = cont.response.notification.request.content
+    let action = cont.response.actionIdentifier
+    logger.debug("processUserNotificationCenterCont: didReceive: action \(action), categoryIdentifier \(content.categoryIdentifier)")
+    processUserNotificationCenterContChangeUser(cont)
     if content.categoryIdentifier == ntfCategoryContactRequest && (action == ntfActionAcceptContact || action == ntfActionAcceptContactIncognito),
        let chatId = content.userInfo["chatId"] as? String {
         let incognito = action == ntfActionAcceptContactIncognito
