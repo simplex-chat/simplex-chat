@@ -124,6 +124,9 @@ class NSEThreads {
 
     private func rcvEntityThread(_ id: ChatId) -> (UUID, NotificationService)? {
         NSEThreads.queue.sync {
+            // this selects the earliest thread that:
+            // 1) has this connection in nse.expectedMessages
+            // 2) has not completed processing messages for this connection (not ready)
             activeThreads.first(where: { (_, nse) in nse.expectedMessages[id]?.ready == false })
         }
     }
@@ -280,29 +283,31 @@ class NotificationService: UNNotificationServiceExtension {
         deliverBestAttemptNtf(urgent: true)
     }
 
+    var expectingMoreMessages: Bool {
+        !expectedMessages.allSatisfy { $0.value.ready }
+    }
+
+    // Boolean value returned from this function indicates whether outer receiving loop should continue to receive next messages, or wait for current message to be assigned to another thread (via timed while loop)
     func processReceivedNtf(_ id: ChatId, _ ntf: NSENotification) -> Bool {
-        guard
-            let expectedMessage = expectedMessages[id],
-            let expectedMsgTs = expectedMessage.ntfMessage.expectedMsg_?.msgTs
-        else {
-            return !expectedMessages.allSatisfy { $0.value.ready }
+        guard let expectedMessage = expectedMessages[id] else {
+            return expectingMoreMessages
         }
-        let ntfInfo = expectedMessage.ntfMessage
-        if !ntfInfo.user.showNotifications {
-            expectedMessages[id]?.msgBestAttemptNtf = .empty
+        guard let expectedMsgTs = expectedMessage.ntfMessage.expectedMsg_?.msgTs else {
+            expectedMessages[id]?.ready = true
+            return expectingMoreMessages
         }
         if case let .msgInfo(info) = ntf {
             if info.msgId == expectedMessage.expectedMsgId {
+                logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): expected")
                 expectedMessages[id]?.expectedMsgId = nil
                 expectedMessages[id]?.ready = true
-                logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): expected")
                 self.deliverBestAttemptNtf()
                 return true
             } else if let msgTs = info.msgTs_, msgTs > expectedMsgTs {
                 logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): unexpected msgInfo, let other instance to process it, stopping this one")
                 expectedMessages[id]?.ready = true
                 self.deliverBestAttemptNtf()
-                return !expectedMessages.allSatisfy { $0.value.ready }
+                return expectingMoreMessages
             } else if (expectedMessages[id]?.allowedGetNextAttempts ?? 0) > 0, let receiveConnId = expectedMessages[id]?.receiveConnId {
                 logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): unexpected msgInfo, get next message")
                 expectedMessages[id]?.allowedGetNextAttempts -= 1
@@ -313,15 +318,15 @@ class NotificationService: UNNotificationServiceExtension {
                     logger.debug("NotificationService processNtf, on apiGetConnNtfMessage: msgInfo msgId = \(info.msgId, privacy: .private): no next message, deliver best attempt")
                     expectedMessages[id]?.ready = true
                     self.deliverBestAttemptNtf()
-                    return !expectedMessages.allSatisfy { $0.value.ready }
+                    return expectingMoreMessages
                 }
             } else {
                 logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): unknown message, let other instance to process it")
                 expectedMessages[id]?.ready = true
                 self.deliverBestAttemptNtf()
-                return !expectedMessages.allSatisfy { $0.value.ready }
+                return expectingMoreMessages
             }
-        } else if ntfInfo.user.showNotifications {
+        } else if expectedMessage.ntfMessage.user.showNotifications {
             logger.debug("NotificationService processNtf: setting best attempt")
             setBadgeCount()
             let prevBestAttempt = expectedMessages[id]?.msgBestAttemptNtf
@@ -334,7 +339,8 @@ class NotificationService: UNNotificationServiceExtension {
             }
             return true
         }
-        return !expectedMessages.allSatisfy { $0.value.ready }
+        expectedMessages[id]?.ready = true
+        return expectingMoreMessages
     }
 
     func setBadgeCount() {
