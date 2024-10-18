@@ -457,12 +457,13 @@ class NotificationService: UNNotificationServiceExtension {
         let previewMode = ntfPreviewModeGroupDefault.get()
         let newMsgsData: [(any UserLike, ChatInfo)] = ntfsData.compactMap { $0.newMsgData }
         if !newMsgsData.isEmpty, let userId = newMsgsData.first?.0.userId {
-            let newMsgsChats: Set<ChatInfo> = Set(newMsgsData.map { $0.1 })
+            let newMsgsChats: [ChatInfo] = newMsgsData.map { $0.1 }
+            let uniqueChatsNames = uniqueNewMsgsChatsNames(newMsgsChats)
             var body: String
             if previewMode == .hidden {
-                body = String.localizedStringWithFormat(NSLocalizedString("New messages in %d chats", comment: "notification body"), newMsgsChats.count)
+                body = String.localizedStringWithFormat(NSLocalizedString("New messages in %d chats", comment: "notification body"), uniqueChatsNames.count)
             } else {
-                body = String.localizedStringWithFormat(NSLocalizedString("From: %@", comment: "notification body"), newMsgsChatsStr(newMsgsChats))
+                body = String.localizedStringWithFormat(NSLocalizedString("From: %@", comment: "notification body"), newMsgsChatsNamesStr(uniqueChatsNames))
             }
             return createNotification(
                 categoryIdentifier: ntfCategoryManyEvents,
@@ -481,8 +482,19 @@ class NotificationService: UNNotificationServiceExtension {
         }
     }
 
-    private func newMsgsChatsStr(_ newMsgsChats: Set<ChatInfo>) -> String {
-        let names = newMsgsChats.map { $0.chatViewName }
+    private func uniqueNewMsgsChatsNames(_ newMsgsChats: [ChatInfo]) -> [String] {
+        var seenChatIds = Set<ChatId>()
+        var uniqueChatsNames: [String] = []
+        for chat in newMsgsChats {
+            if !seenChatIds.contains(chat.id) {
+                seenChatIds.insert(chat.id)
+                uniqueChatsNames.append(chat.chatViewName)
+            }
+        }
+        return uniqueChatsNames
+    }
+
+    private func newMsgsChatsNamesStr(_ names: [String]) -> String {
         return switch names.count {
         case 1: names[0]
         case 2: "\(names[0]) and \(names[1])"
