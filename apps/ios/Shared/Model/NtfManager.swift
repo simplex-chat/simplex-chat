@@ -30,7 +30,9 @@ public struct UserNotificationCenterCont {
 
 public func processUserNotificationCenterCont_() {
     let chatModel = ChatModel.shared
+    logger.debug("### DEBUGGING processUserNotificationCenterCont_")
     if let cont = chatModel.userNotificationCenterCont {
+        logger.debug("### DEBUGGING processUserNotificationCenterCont_ have cont")
         chatModel.userNotificationCenterCont = nil
         processUserNotificationCenterCont(cont)
     }
@@ -101,6 +103,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         if appStateGroupDefault.get() == .active {
             processUserNotificationCenterCont(cont)
         } else {
+            logger.debug("### DEBUGGING userNotificationCenter putting cont into model")
             ChatModel.shared.userNotificationCenterCont = cont
         }
     }
