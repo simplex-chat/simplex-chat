@@ -82,6 +82,12 @@ struct SimpleXApp: App {
 
                         if appState != .stopped {
                             startChatAndActivate {
+                                if let cont = chatModel.userNotificationCenterCont {
+                                    defer {
+                                        chatModel.userNotificationCenterCont = nil
+                                    }
+                                    processUserNotificationCenterCont(cont)
+                                }
                                 if appState.inactive && chatModel.chatRunning == true {
                                     Task {
                                         await updateChats()

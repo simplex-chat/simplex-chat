@@ -23,6 +23,55 @@ enum NtfCallAction {
     case reject
 }
 
+public struct UserNotificationCenterCont {
+    var response: UNNotificationResponse
+    var handler: () -> Void
+}
+
+public func processUserNotificationCenterCont(_ cont: UserNotificationCenterCont) {
+    let chatModel = ChatModel.shared
+    let content = cont.response.notification.request.content
+    let action = cont.response.actionIdentifier
+    logger.debug("processUserNotificationCenterCont: didReceive: action \(action), categoryIdentifier \(content.categoryIdentifier)")
+    if let userId = content.userInfo["userId"] as? Int64,
+       userId != chatModel.currentUser?.userId {
+        logger.debug("processUserNotificationCenterCont changeActiveUser")
+        changeActiveUser(userId, viewPwd: nil)
+    }
+    if content.categoryIdentifier == ntfCategoryContactRequest && (action == ntfActionAcceptContact || action == ntfActionAcceptContactIncognito),
+       let chatId = content.userInfo["chatId"] as? String {
+        let incognito = action == ntfActionAcceptContactIncognito
+        if case let .contactRequest(contactRequest) = chatModel.getChat(chatId)?.chatInfo {
+            Task { await acceptContactRequest(incognito: incognito, contactRequest: contactRequest) }
+        } else {
+            chatModel.ntfContactRequest = NTFContactRequest(incognito: incognito, chatId: chatId)
+        }
+    } else if let (chatId, ntfAction) = ntfCallAction(content, action) {
+        if let invitation = chatModel.callInvitations.removeValue(forKey: chatId) {
+            CallController.shared.callAction(invitation: invitation, action: ntfAction)
+        } else {
+            chatModel.ntfCallInvitationAction = (chatId, ntfAction)
+        }
+    } else {
+        if let chatId = content.targetContentIdentifier {
+            ItemsModel.shared.loadOpenChat(chatId)
+        }
+    }
+    cont.handler()
+}
+
+private func ntfCallAction(_ content: UNNotificationContent, _ action: String) -> (ChatId, NtfCallAction)? {
+    if content.categoryIdentifier == ntfCategoryCallInvitation,
+       let chatId = content.userInfo["chatId"] as? String {
+        if action == ntfActionAcceptCall {
+            return (chatId, .accept)
+        } else if action == ntfActionRejectCall {
+            return (chatId, .reject)
+        }
+    }
+    return nil
+}
+
 class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     static let shared = NtfManager()
 
@@ -32,50 +81,15 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     // Handle notification when app is in background
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse,
-                                withCompletionHandler handler: () -> Void) {
+                                withCompletionHandler handler: @escaping(() -> Void)) {
         logger.debug("NtfManager.userNotificationCenter: didReceive")
-        let content = response.notification.request.content
-        let chatModel = ChatModel.shared
-        let action = response.actionIdentifier
-        logger.debug("NtfManager.userNotificationCenter: didReceive: action \(action), categoryIdentifier \(content.categoryIdentifier)")
-        if let userId = content.userInfo["userId"] as? Int64,
-           userId != chatModel.currentUser?.userId {
-            changeActiveUser(userId, viewPwd: nil)
-        }
-        if content.categoryIdentifier == ntfCategoryContactRequest && (action == ntfActionAcceptContact || action == ntfActionAcceptContactIncognito),
-           let chatId = content.userInfo["chatId"] as? String {
-            let incognito = action == ntfActionAcceptContactIncognito
-            if case let .contactRequest(contactRequest) = chatModel.getChat(chatId)?.chatInfo {
-                Task { await acceptContactRequest(incognito: incognito, contactRequest: contactRequest) }
-            } else {
-                chatModel.ntfContactRequest = NTFContactRequest(incognito: incognito, chatId: chatId)
-            }
-        } else if let (chatId, ntfAction) = ntfCallAction(content, action) {
-            if let invitation = chatModel.callInvitations.removeValue(forKey: chatId) {
-                CallController.shared.callAction(invitation: invitation, action: ntfAction)
-            } else {
-                chatModel.ntfCallInvitationAction = (chatId, ntfAction)
-            }
+        let cont = UserNotificationCenterCont(response: response, handler: handler)
+        if appStateGroupDefault.get() == .active {
+            processUserNotificationCenterCont(cont)
         } else {
-            if let chatId = content.targetContentIdentifier {
-                ItemsModel.shared.loadOpenChat(chatId)
-            }
+            ChatModel.shared.userNotificationCenterCont = cont
         }
-        handler()
     }
-
-    private func ntfCallAction(_ content: UNNotificationContent, _ action: String) -> (ChatId, NtfCallAction)? {
-        if content.categoryIdentifier == ntfCategoryCallInvitation,
-           let chatId = content.userInfo["chatId"] as? String {
-            if action == ntfActionAcceptCall {
-                return (chatId, .accept)
-            } else if action == ntfActionRejectCall {
-                return (chatId, .reject)
-            }
-        }
-        return nil
-    }
-
 
     // Handle notification when the app is in foreground
     func userNotificationCenter(_ center: UNUserNotificationCenter,
