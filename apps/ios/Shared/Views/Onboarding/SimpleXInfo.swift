@@ -23,46 +23,48 @@ struct SimpleXInfo: View {
                         HowItWorks(onboarding: onboarding)
                     }
                 }
-                .padding(.bottom, 8)
+                .padding(.bottom, 40)
                 VStack(alignment: .leading) {
                     Image(colorScheme == .light ? "logo" : "logo-light")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: g.size.width * 0.67)
-                        .padding(.bottom, 8)
+                        .padding(.bottom, 40)
                         .frame(maxWidth: .infinity, minHeight: 48, alignment: .top)
 
                     VStack(alignment: .leading) {
                         Text("The next generation of private messaging")
-                            .font(.title2)
+                            .font(.title3)
                             .padding(.bottom, 30)
                             .padding(.horizontal, 40)
                             .frame(maxWidth: .infinity)
                             .multilineTextAlignment(.center)
-                        infoRow("privacy", "Privacy redefined",
-                                "The 1st platform without any user identifiers – private by design.", width: 48)
-                        infoRow("shield", "Immune to spam and abuse",
-                                "People can connect to you only via the links you share.", width: 46)
-                        infoRow(colorScheme == .light ? "decentralized" : "decentralized-light", "Decentralized",
-                                "Open-source protocol and code – anybody can run the servers.", width: 44)
-                    }
-
-                    Spacer()
-                    if onboarding {
-                        OnboardingActionButton()
-                        Spacer()
-
-                        Button {
-                            m.migrationState = .pasteOrScanLink
-                        } label: {
-                            Label("Migrate from another device", systemImage: "tray.and.arrow.down")
-                                .font(.subheadline)
+                        VStack(alignment: .leading) {
+                            infoRow("privacy", "Privacy redefined",
+                                    "No user identifiers.", width: 48)
+                            infoRow("shield", "Immune to spam",
+                                    "You decide who can connect.", width: 46)
+                            infoRow(colorScheme == .light ? "decentralized" : "decentralized-light", "Decentralized",
+                                    "Anybody can host servers.", width: 44)
                         }
-                        .padding(.bottom, 8)
                         .frame(maxWidth: .infinity)
                     }
+
+                    if onboarding {
+                        VStack {
+                            OnboardingActionButton()
+                            Button {
+                                m.migrationState = .pasteOrScanLink
+                            } label: {
+                                Label("Migrate from another device", systemImage: "tray.and.arrow.down")
+                                    .font(.subheadline)
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                        .padding(.top, 40)
+                    }
                 }
-                .frame(minHeight: g.size.height)
+                //.frame(minHeight: g.size.height)
             }
             .sheet(isPresented: Binding(
                 get: { m.migrationState != nil },
@@ -90,13 +92,14 @@ struct SimpleXInfo: View {
                 .scaledToFit()
                 .frame(width: width, height: 54)
                 .frame(width: 54)
-                .padding(.top, 4)
-                .padding(.leading, 4)
-                .padding(.trailing, 10)
-            VStack(alignment: .leading, spacing: 4) {
+                //.padding(.top, 4)
+                //.padding(.leading, 50)
+                .padding(.trailing, 4)
+            VStack(alignment: .leading, spacing: 8) {
                 Text(title).font(.headline)
-                Text(text).frame(minHeight: 40, alignment: .top)
+                Text(text).font(.subheadline).frame(alignment: .top)
             }
+            .padding(4)
         }
         .padding(.bottom, 20)
         .padding(.trailing, 6)
@@ -106,6 +109,7 @@ struct SimpleXInfo: View {
 struct OnboardingActionButton: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var theme: AppTheme
 
     var body: some View {
         if m.currentUser == nil {
@@ -123,12 +127,18 @@ struct OnboardingActionButton: View {
             }
         } label: {
             HStack {
-                Text(label).font(.title2)
-                Image(systemName: "greaterthan")
+                Text(label)
+                    .font(.headline)
+                    .foregroundColor(theme.colors.background)
+                    .padding(.vertical, 20)
+                    .padding(.horizontal, 80)
             }
         }
+        .background(theme.colors.primary)
+        .clipShape(RoundedRectangle(cornerRadius: 50))
         .frame(maxWidth: .infinity)
-        .padding(.bottom)
+        .padding(.bottom, 20)
+        .padding(.horizontal)
     }
 
     private func actionButton(_ label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
