@@ -98,7 +98,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse,
                                 withCompletionHandler handler: @escaping(() -> Void)) {
-        logger.debug("NtfManager.userNotificationCenter: didReceive")
+        logger.debug("### DEBUGGING NtfManager.userNotificationCenter: didReceive")
         let cont = UserNotificationCenterCont(response: response, handler: handler)
         if appStateGroupDefault.get() == .active {
             processUserNotificationCenterCont(cont)
@@ -112,7 +112,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 willPresent notification: UNNotification,
                                 withCompletionHandler handler: (UNNotificationPresentationOptions) -> Void) {
-        logger.debug("NtfManager.userNotificationCenter: willPresent")
+        logger.debug("### DEBUGGING NtfManager.userNotificationCenter: willPresent")
         handler(presentationOptions(notification.request.content))
     }
 
