@@ -12,7 +12,6 @@ import SimpleXChat
 struct SimpleXInfo: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme: ColorScheme
-    @State private var showHowItWorks = false
     var onboarding: Bool
 
     var body: some View {
@@ -55,18 +54,15 @@ struct SimpleXInfo: View {
                         .padding(.bottom, 8)
                         .frame(maxWidth: .infinity)
                     }
-
-                    Button {
-                        showHowItWorks = true
-                    } label: {
-                        Label("How it works", systemImage: "info.circle")
-                            .font(.subheadline)
-                    }
-                    .padding(.bottom, 8)
-                    .frame(maxWidth: .infinity)
-
                 }
                 .frame(minHeight: g.size.height)
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    InfoSheetButton {
+                        HowItWorks(onboarding: onboarding)
+                    }
+                }
             }
             .sheet(isPresented: Binding(
                 get: { m.migrationState != nil },
@@ -81,9 +77,6 @@ struct SimpleXInfo: View {
                     .navigationTitle("Migrate here")
                     .modifier(ThemedBackground(grouped: true))
                 }
-            }
-            .sheet(isPresented: $showHowItWorks) {
-                HowItWorks(onboarding: onboarding)
             }
         }
         .frame(maxHeight: .infinity)
