@@ -37,7 +37,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     // Handle notification when app is in background
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse,
-                                withCompletionHandler handler: @escaping(() -> Void)) {
+                                withCompletionHandler handler: () -> Void) {
         logger.debug("NtfManager.userNotificationCenter: didReceive")
         if appStateGroupDefault.get() == .active {
             processNotificationResponse(response)
