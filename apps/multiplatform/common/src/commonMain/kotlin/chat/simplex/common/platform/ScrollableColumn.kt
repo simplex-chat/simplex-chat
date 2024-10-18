@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -21,6 +22,7 @@ expect fun LazyColumnWithScrollBar(
   horizontalAlignment: Alignment.Horizontal = Alignment.Start,
   flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
   userScrollEnabled: Boolean = true,
+  additionalBarHeight: State<Dp>? = null,
   content: LazyListScope.() -> Unit
 )
 

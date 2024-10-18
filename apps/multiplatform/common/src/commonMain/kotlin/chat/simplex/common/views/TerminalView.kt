@@ -9,12 +9,13 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.theme.*
@@ -23,7 +24,9 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chatlist.NavigationBarBackground
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 @Composable
@@ -76,14 +79,17 @@ fun TerminalLayout(
     composeState.value = composeState.value.copy(message = s)
   }
   Box(Modifier.fillMaxSize()) {
-    TerminalLog(floating)
+    val composeViewHeight = remember { mutableStateOf(0.dp) }
+    TerminalLog(floating, composeViewHeight)
     NavigationBarBackground()
+    val density = LocalDensity.current
     Column(
       Modifier
         .align(Alignment.BottomCenter)
         .navigationBarsPadding()
         .imePadding()
         .background(MaterialTheme.colors.background.copy(remember { appPrefs.barsAlpha.state }.value))
+        .onSizeChanged { composeViewHeight.value = with(density) { it.height.toDp() } }
     ) {
       Divider()
       Box(Modifier.padding(horizontal = 8.dp)) {
@@ -116,17 +122,18 @@ fun TerminalLayout(
 }
 
 @Composable
-fun TerminalLog(floating: Boolean) {
+fun TerminalLog(floating: Boolean, composeViewHeight: State<Dp>) {
   val reversedTerminalItems by remember {
     derivedStateOf { chatModel.terminalItems.value.asReversed() }
   }
   val clipboard = LocalClipboardManager.current
   val listState = LocalAppBarHandler.current?.listState ?: rememberLazyListState()
   LaunchedEffect(Unit) {
-    var autoScrollToBottom = listState.firstVisibleItemIndex == 0
+    var autoScrollToBottom = listState.firstVisibleItemIndex <= 1
     launch {
-      snapshotFlow { listState.layoutInfo.totalItemsCount }
+      snapshotFlow { listState.layoutInfo.totalItemsCount to composeViewHeight.value }
         .filter { autoScrollToBottom }
+        .onEach { delay(100) }
         .collect {
           try {
             listState.scrollToItem(0)
@@ -137,19 +144,21 @@ fun TerminalLog(floating: Boolean) {
     }
     launch {
       snapshotFlow { listState.firstVisibleItemIndex }
+        .onEach { delay(100) }
         .collect {
-          autoScrollToBottom = listState.firstVisibleItemIndex == 0
+          autoScrollToBottom = it == 0
         }
     }
   }
   LazyColumnWithScrollBar (
     reverseLayout = true,
-    contentPadding = PaddingValues(
-      top = topPaddingToContent(),
-      bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier
-    ),
-    state = listState
+    contentPadding = PaddingValues(top = topPaddingToContent()),
+    state = listState,
+    additionalBarHeight = composeViewHeight
   ) {
+    item {
+      Spacer(Modifier.imePadding().navigationBarsPadding().padding(bottom = composeViewHeight.value))
+    }
     items(reversedTerminalItems, key = { item -> item.id to item.createdAtNanos }) { item ->
       val rhId = item.remoteHostId
       val rhIdStr = if (rhId == null) "" else "$rhId "

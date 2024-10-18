@@ -10,8 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.*
@@ -646,26 +645,24 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>) {
   val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
   val chats = filteredChats(showUnreadAndFavorites, searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.value.toList())
   val topPaddingToContent = topPaddingToContent()
+  val blankSpaceSize = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else topPaddingToContent
   LazyColumnWithScrollBar(
     Modifier.fillMaxSize().then(if (!oneHandUI.value) Modifier.imePadding() else Modifier),
     listState,
     reverseLayout = oneHandUI.value
   ) {
-    item {
-      Spacer(Modifier.height(if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else topPaddingToContent))
-    }
+    item { Spacer(Modifier.height(blankSpaceSize)) }
     stickyHeader {
       Column(
         Modifier
+          .zIndex(1f)
           .offset {
-            val y = if (searchText.value.text.isEmpty()) {
-              val offsetMultiplier = if (oneHandUI.value) 1 else -1
-              if (
-                (oneHandUI.value && scrollDirection == ScrollDirection.Up) ||
-                (appPlatform.isAndroid && keyboardState == KeyboardState.Opened)
-              ) {
-                0
-              } else if (oneHandUI.value && listState.firstVisibleItemIndex == 0) {
+            val offsetMultiplier = if (oneHandUI.value) 1 else -1
+            val y = if (searchText.value.text.isNotEmpty() || (appPlatform.isAndroid && keyboardState == KeyboardState.Opened) || scrollDirection == ScrollDirection.Up) {
+              if (listState.firstVisibleItemIndex == 0) -offsetMultiplier * listState.firstVisibleItemScrollOffset
+              else -offsetMultiplier * blankSpaceSize.roundToPx()
+            } else {
+              if (oneHandUI.value && listState.firstVisibleItemIndex == 0) {
                 listState.firstVisibleItemScrollOffset
               } else if (!oneHandUI.value && listState.firstVisibleItemIndex == 0) {
                 0
@@ -674,13 +671,11 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>) {
               } else {
                 offsetMultiplier * 1000
               }
-            } else {
-              0
             }
-            println("LALAL ${listState.firstVisibleItemIndex} ${listState.firstVisibleItemScrollOffset} ${listState.layoutInfo.beforeContentPadding}")
+            println("LALAL ${listState.firstVisibleItemIndex} ${listState.firstVisibleItemScrollOffset} ${listState.layoutInfo.beforeContentPadding} ${listState.layoutInfo.viewportStartOffset}")
             IntOffset(0, y)
           }
-          .background(MaterialTheme.colors.background),
+          .background(MaterialTheme.colors.background)
         ) {
         if (oneHandUI.value) {
           Divider()
@@ -715,7 +710,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>) {
     }
   }
   if (chats.isEmpty() && chatModel.chats.value.isNotEmpty()) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().imePadding(), contentAlignment = Alignment.Center) {
       Text(generalGetString(MR.strings.no_filtered_chats), color = MaterialTheme.colors.secondary)
     }
   }

@@ -9,7 +9,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.draw.*
@@ -17,9 +16,7 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.ChatController.appPrefs
-import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.ui.theme.ThemeManager.toReadableHex
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
@@ -50,7 +47,7 @@ fun CloseSheetBar(
       .clickable(interactionSource = interactionSource, indication = null) { /* receive clicks to not allow to click through */ }
       .heightIn(min = AppBarHeight * fontSizeSqrtMultiplier)
       .drawWithCache {
-        val backgroundColor = if (connection != null) themeBackgroundMix.copy(alpha = topTitleAlpha(false, connection)) else Color.Transparent
+        val backgroundColor = if (arrangement == Arrangement.Bottom) themeBackgroundMix else if (connection != null) themeBackgroundMix.copy(alpha = topTitleAlpha(false, connection)) else Color.Transparent
         onDrawBehind {
           drawRect(backgroundColor)
         }

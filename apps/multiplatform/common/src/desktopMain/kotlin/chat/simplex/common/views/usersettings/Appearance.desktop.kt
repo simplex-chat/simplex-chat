@@ -59,6 +59,7 @@ fun AppearanceScope.AppearanceLayout(
           }
         }
       }
+      SettingsPreferenceItem(icon = null, stringResource(MR.strings.one_hand_ui), ChatModel.controller.appPrefs.oneHandUI)
     }
     SectionDividerSpaced()
     ThemesSection(systemDarkTheme)
