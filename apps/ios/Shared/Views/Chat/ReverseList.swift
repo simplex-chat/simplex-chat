@@ -17,7 +17,7 @@ enum ChatScrollDirection {
 }
 
 enum ChatSection: CaseIterable {
-    case main
+    case current
     case destination
     case bottom
 }
@@ -44,10 +44,10 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             switch destination {
             case .nextPage:
                 controller.scrollToNextPage()
-            case let .item(id):
-                controller.scrollToItem(id: id)
+            case let .item(id, position, animated):
+                controller.scrollToItem(id: id, position: position, animated: animated)
             case .bottom:
-                controller.scroll(to: 0, position: .top, section: .bottom)
+                controller.scroll(to: 0, position: .top, section: .bottom, shouldTryAnimate: true)
             }
         } else {
             controller.update(items: items)
@@ -185,22 +185,22 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         }
         
         /// Scrolls to a given item
-        func scrollToItem(id: Int64) {
+        func scrollToItem(id: Int64, position: UITableView.ScrollPosition, animated: Bool) {
             if let loadedIndex = self.representer.items.firstIndex(where: { $0.id == id }) {
                 let ci = representer.items[loadedIndex]
                 if let indexPath = dataSource.indexPath(for: ci),
                    let section = dataSource.sectionIdentifier(for: indexPath.section) {
-                    self.scroll(to: indexPath.row, position: .bottom, section: section)
+                    self.scroll(to: indexPath.row, position: position, section: section, shouldTryAnimate: animated)
                 }
             }
         }
 
         /// Scrolls to Item at index path
         /// - Parameter indexPath: Item to scroll to - will scroll to beginning of the list, if `nil`
-        func scroll(to index: Int?, position: UITableView.ScrollPosition, section: ChatSection) {
+        func scroll(to index: Int?, position: UITableView.ScrollPosition, section: ChatSection, shouldTryAnimate: Bool) {
             var animated = false
             if #available(iOS 16.0, *) {
-                animated = true
+                animated = shouldTryAnimate
             }
             if let index, let sectionIndex = dataSource.index(for: section), tableView.numberOfRows(inSection: sectionIndex) != 0 {
                 tableView.scrollToRow(
@@ -377,7 +377,7 @@ class ReverseListScrollModel: ObservableObject {
     enum State: Equatable {
         enum Destination: Equatable {
             case nextPage
-            case item(ChatItem.ID)
+            case item(ChatItem.ID, UITableView.ScrollPosition, Bool)
             case bottom
         }
 
@@ -395,8 +395,8 @@ class ReverseListScrollModel: ObservableObject {
         state = .scrollingTo(.bottom)
     }
 
-    func scrollToItem(id: ChatItem.ID) {
-        state = .scrollingTo(.item(id))
+    func scrollToItem(id: ChatItem.ID, position: UITableView.ScrollPosition? = .bottom, animated: Bool = true) {
+        state = .scrollingTo(.item(id, position ?? .bottom, animated))
     }
 }
 
@@ -412,6 +412,10 @@ class ReverseListSectionModel: ObservableObject {
     
     func getSectionsOrdered() -> [ChatSection] {
         var orderedSections: [ChatSection] = [.bottom]
+        
+        if (sections.contains(.current)) {
+            orderedSections.append(.current)
+        }
         
         if (sections.contains(.destination)) {
             orderedSections.append(.destination)

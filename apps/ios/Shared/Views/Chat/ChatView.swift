@@ -174,7 +174,6 @@ struct ChatView: View {
         .onChange(of: chatModel.chatId) { cId in
             showChatInfoSheet = false
             selectedChatItems = nil
-            scrollModel.scrollToBottom()
             stopAudioPlayer()
             if let cId {
                 if let c = chatModel.getChat(cId) {
@@ -371,6 +370,28 @@ struct ChatView: View {
         }
         ChatView.FloatingButtonModel.shared.totalUnread = chat.chatStats.unreadCount
         sectionModel.resetSections(items: im.reversedChatItems)
+                
+        let minUnreadItemId = chat.chatStats.minUnreadItemId
+        if minUnreadItemId > 0, !im.reversedChatItems.contains(where: { $0.id == minUnreadItemId }) {
+            Task {
+                if let reversedPage = await loadItemsAround(chat.chatInfo, minUnreadItemId) {
+                    await MainActor.run {
+                        let reversedPageToAppend = self.sectionModel.handleSectionInsertion(
+                            candidateSection: .current,
+                            reversedPage: reversedPage,
+                            allItems: im.reversedChatItems
+                        )
+                        im.reversedChatItems.append(contentsOf: reversedPageToAppend)
+
+                        withAnimation {
+                            scrollModel.scrollToItem(id: minUnreadItemId, position: .middle)
+                        }
+                    }
+                }
+            }
+        } else {
+            scrollModel.scrollToBottom()
+        }
     }
 
     private func searchToolbar() -> some View {
