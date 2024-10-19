@@ -434,7 +434,7 @@ class ReverseListSectionModel: ObservableObject {
             itemSection = itemSection.mapValues { section in
                 section == sectionToDrop ? targetSection : section
             }
-            sections.remove(targetSection)
+            sections.remove(sectionToDrop)
         }
         
         reversedPage.forEach { ci in
