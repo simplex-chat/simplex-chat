@@ -263,4 +263,8 @@
     <string name="allow_to_send_files">Izinkan untuk mengirim file dan media.</string>
     <string name="all_your_contacts_will_remain_connected">Semua kontak kamu akan tetap terhubung.</string>
     <string name="forward_files_missing_desc">%1$d berkas telah dihapus.</string>
+    <string name="color_primary_variant">Corak tambahan</string>
+    <string name="color_primary_variant2">Corak tambahan 2</string>
+    <string name="forward_files_messages_deleted_after_selection_title">%1$s pesan tidak diteruskan</string>
+    <string name="servers_info_subscriptions_connections_subscribed">Koneksi aktif</string>
 </resources>
