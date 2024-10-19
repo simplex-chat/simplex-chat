@@ -402,6 +402,7 @@ class ReverseListScrollModel: ObservableObject {
 
 /// Manages ``ReverseList`` sections
 class ReverseListSectionModel: ObservableObject {
+    static let shared = ReverseListSectionModel()
     @Published var activeSection: ChatSection = .bottom
     @Published private var itemSection: [Int64: ChatSection] = [:]
     @Published private var sections = Set<ChatSection>()

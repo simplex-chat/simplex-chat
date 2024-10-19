@@ -28,7 +28,7 @@ struct ChatView: View {
     @Environment(\.scenePhase) var scenePhase
     @State @ObservedObject var chat: Chat
     @StateObject private var scrollModel = ReverseListScrollModel()
-    @StateObject private var sectionModel = ReverseListSectionModel()
+    @StateObject private var sectionModel = ReverseListSectionModel.shared
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
