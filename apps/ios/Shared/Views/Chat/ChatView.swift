@@ -370,21 +370,26 @@ struct ChatView: View {
         }
         ChatView.FloatingButtonModel.shared.totalUnread = chat.chatStats.unreadCount
         sectionModel.resetSections(items: im.reversedChatItems)
-                
+        
         let minUnreadItemId = chat.chatStats.minUnreadItemId
-        if minUnreadItemId > 0, !im.reversedChatItems.contains(where: { $0.id == minUnreadItemId }) {
-            Task {
-                if let reversedPage = await loadItemsAround(chat.chatInfo, minUnreadItemId) {
-                    await MainActor.run {
-                        let reversedPageToAppend = self.sectionModel.handleSectionInsertion(
-                            candidateSection: .current,
-                            reversedPage: reversedPage,
-                            allItems: im.reversedChatItems
-                        )
-                        im.reversedChatItems.append(contentsOf: reversedPageToAppend)
-
-                        withAnimation {
-                            scrollModel.scrollToItem(id: minUnreadItemId, position: .middle)
+        if minUnreadItemId > 0 {
+            if im.reversedChatItems.contains(where: { $0.id == minUnreadItemId }) {
+                withAnimation {
+                    scrollModel.scrollToItem(id: minUnreadItemId, position: .middle)
+                }
+            } else {
+                Task {
+                    if let reversedPage = await loadItemsAround(chat.chatInfo, minUnreadItemId) {
+                        await MainActor.run {
+                            let reversedPageToAppend = self.sectionModel.handleSectionInsertion(
+                                candidateSection: .current,
+                                reversedPage: reversedPage,
+                                allItems: im.reversedChatItems
+                            )
+                            im.reversedChatItems.append(contentsOf: reversedPageToAppend)
+                            withAnimation {
+                                scrollModel.scrollToItem(id: minUnreadItemId, position: .middle, animated: false)
+                            }
                         }
                     }
                 }
