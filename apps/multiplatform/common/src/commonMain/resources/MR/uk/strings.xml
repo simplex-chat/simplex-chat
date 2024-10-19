@@ -2115,4 +2115,14 @@
     <string name="call_desktop_permission_denied_chrome">Натисніть кнопку інформації поруч із полем адреси, щоб дозволити використання мікрофона.</string>
     <string name="call_desktop_permission_denied_safari">Відкрийте Налаштування Safari / Сайти / Мікрофон, а потім виберіть \"Дозволити для localhost\".</string>
     <string name="call_desktop_permission_denied_title">Щоб здійснювати дзвінки, дозволіть використовувати ваш мікрофон. Завершіть дзвінок і спробуйте зателефонувати знову.</string>
+    <string name="v6_1_better_calls">Кращі дзвінки</string>
+    <string name="v6_1_better_security">Краща безпека ✅</string>
+    <string name="v6_1_customizable_message_descr">Налаштовувана форма повідомлень.</string>
+    <string name="v6_1_better_security_descr">Протоколи SimpleX перевірені компанією Trail of Bits.</string>
+    <string name="v6_1_better_calls_descr">Переключити аудіо та відео під час дзвінка.</string>
+    <string name="v6_1_message_dates_descr">Кращі дати повідомлень.</string>
+    <string name="v6_1_better_user_experience">Кращий користувацький досвід</string>
+    <string name="v6_1_delete_many_messages_descr">Видалити або модерувати до 200 повідомлень.</string>
+    <string name="v6_1_forward_many_messages_descr">Переслати до 20 повідомлень одночасно.</string>
+    <string name="v6_1_switch_chat_profile_descr">Переключити профіль чату для одноразових запрошень.</string>
 </resources>
