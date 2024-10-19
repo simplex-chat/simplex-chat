@@ -924,4 +924,19 @@
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Nếu bạn không thể gặp mặt trực tiếp, <b>cho liên hệ của bạn xem mã QR trong cuộc gọi video</b>, hoặc chia sẻ liên kết.</string>
     <string name="import_database_confirmation">Nhập</string>
     <string name="ignore">Bỏ qua</string>
+    <string name="member_info_member_inactive">không hoạt động</string>
+    <string name="migrate_to_device_import_failed">Nhập dữ liệu không thành công</string>
+    <string name="v5_5_message_delivery">Đã cải thiện việc chuyển gửi tin nhắn</string>
+    <string name="import_theme_error">Lỗi nhập chủ đề</string>
+    <string name="settings_section_title_incognito">Chế độ ẩn danh</string>
+    <string name="incognito">Ẩn danh</string>
+    <string name="migrate_to_device_importing_archive">Đang nhập dữ liệu từ kho lưu trữ</string>
+    <string name="import_theme">Nhập chủ đề</string>
+    <string name="v4_3_improved_server_configuration">Đã cải thiện cấu hình máy chủ</string>
+    <string name="v5_4_incognito_groups">Nhóm ẩn danh</string>
+    <string name="incognito_info_protects">Chế độ ẩn danh bảo vệ sự riêng tư của bạn bằng cách sử dụng một hồ sơ ngẫu nhiên mới với mỗi liên hệ.</string>
+    <string name="v5_8_message_delivery">Đã cải thiện việc chuyển gửi tin nhắn</string>
+    <string name="import_database">Nhập cơ sở dữ liệu</string>
+    <string name="v5_7_call_sounds">Âm thanh trong cuộc gọi</string>
+    <string name="v4_3_improved_privacy_and_security">Nâng cao bảo mật và sự riêng tư</string>
 </resources>
