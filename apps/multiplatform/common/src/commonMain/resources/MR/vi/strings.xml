@@ -939,4 +939,24 @@
     <string name="import_database">Nhập cơ sở dữ liệu</string>
     <string name="v5_7_call_sounds">Âm thanh trong cuộc gọi</string>
     <string name="v4_3_improved_privacy_and_security">Nâng cao bảo mật và sự riêng tư</string>
+    <string name="description_via_one_time_link_incognito">ẩn danh qua liên kết dùng một lần</string>
+    <string name="info_menu">Thông tin</string>
+    <string name="conn_level_desc_indirect">gián tiếp (%1$s)</string>
+    <string name="migrate_from_device_chat_should_be_stopped">Để tiếp tục, hãy dừng ứng dụng.</string>
+    <string name="install_simplex_chat_for_terminal">Cài đặt SimpleX Chat cho cửa sổ câu lệnh</string>
+    <string name="description_via_contact_address_link_incognito">ẩn danh qua liên kết địa chỉ liên lạc</string>
+    <string name="incoming_audio_call">Cuộc gọi thoại đến</string>
+    <string name="initial_member_role">Quyền hạn ban đầu</string>
+    <string name="description_via_group_link_incognito">ẩn danh qua liên kết nhóm</string>
+    <string name="incorrect_code">Mã bảo mật không đúng!</string>
+    <string name="in_reply_to">Trả lời đến</string>
+    <string name="incompatible_database_version">Phiên bản cơ sở dữ liệu không tương thích</string>
+    <string name="onboarding_notifications_mode_service">Ngay lập tức</string>
+    <string name="incorrect_passcode">Mã truy cập không đúng</string>
+    <string name="v6_0_increase_font_size">Tăng cỡ chữ.</string>
+    <string name="new_desktop"><i>(mới)</i></string>
+    <string name="app_check_for_updates_installed_successfully_title">Đã cài đặt thành công</string>
+    <string name="app_check_for_updates_button_install">Cài đặt cập nhật</string>
+    <string name="incoming_video_call">Cuộc gọi video đến</string>
+    <string name="desktop_incompatible_version">Phiên bản không tương thích</string>
 </resources>
