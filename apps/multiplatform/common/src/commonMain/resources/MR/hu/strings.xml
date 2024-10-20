@@ -38,7 +38,7 @@
     <string name="feature_cancelled_item">%s visszavonva</string>
     <string name="smp_servers_preset_add">Előre beállított kiszolgálók hozzáadása</string>
     <string name="calls_prohibited_with_this_contact">A hívások kezdeményezése le van tiltva ebben a csevegésben.</string>
-    <string name="network_session_mode_entity_description"><b>Az összes ismerőséhez és csoporttaghoz</b> külön TCP-kapcsolat (és SOCKS-hitelesítőadat) lesz használva.  \n<b>Megjegyzés:</b> ha sok kapcsolata van, az akkumulátor-használat és az adatforgalom jelentősen megnövekedhet, és néhány kapcsolódási kísérlet sikertelen lehet.</string>
+    <string name="network_session_mode_entity_description"><b>Az összes ismerőséhez és csoporttaghoz</b> külön TCP-kapcsolat (és SOCKS-hitelesítőadat) lesz használva.\n<b>Megjegyzés:</b> ha sok kapcsolata van, az akkumulátor-használat és az adatforgalom jelentősen megnövekedhet, és néhány kapcsolódási kísérlet sikertelen lehet.</string>
     <string name="icon_descr_cancel_link_preview">hivatkozás előnézetének visszavonása</string>
     <string name="network_session_mode_user_description"><b>Az összes csevegési profiljához az alkalmazásban</b> külön TCP-kapcsolat (és SOCKS-hitelesítőadat) lesz használva.</string>
     <string name="both_you_and_your_contact_can_send_disappearing">Mindkét fél küldhet eltűnő üzeneteket.</string>
@@ -259,7 +259,7 @@
     <string name="theme_dark">Sötét</string>
     <string name="create_profile">Profil létrehozása</string>
     <string name="rcv_group_event_group_deleted">törölt csoport</string>
-    <string name="full_deletion">Törlés mindenkinél</string>
+    <string name="full_deletion">Törlés az összes tagnál</string>
     <string name="button_create_group_link">Hivatkozás létrehozása</string>
     <string name="chat_preferences">Csevegési beállítások</string>
     <string name="chat_archive_header">Csevegési archívum</string>
@@ -383,7 +383,7 @@
     <string name="passphrase_is_different">Az adatbázis-jelmondat eltér a Keystore-ban lévőtől.</string>
     <string name="direct_messages">Közvetlen üzenetek</string>
     <string name="icon_descr_email">E-mail</string>
-    <string name="receipts_contacts_disable_for_all">Letiltás mindenki számára</string>
+    <string name="receipts_contacts_disable_for_all">Letiltás az összes tag számára</string>
     <string name="settings_developer_tools">Fejlesztői eszközök</string>
     <string name="database_passphrase">Adatbázis-jelmondat</string>
     <string name="ttl_days">%d nap</string>
@@ -461,7 +461,7 @@
     <string name="total_files_count_and_size">%d fájl %s összméretben</string>
     <string name="database_passphrase_is_required">A csevegés megnyitásához adja meg az adatbázis jelmondatát.</string>
     <string name="ttl_d">%dnap</string>
-    <string name="receipts_contacts_enable_for_all">Engedélyezés mindenki számára</string>
+    <string name="receipts_contacts_enable_for_all">Engedélyezés az összes tag számára</string>
     <string name="delivery_receipts_are_disabled">A kézbesítési jelentések le vannak tiltva!</string>
     <string name="expand_verb">Kibontás</string>
     <string name="error_sending_message">Hiba az üzenet küldésekor</string>
@@ -1447,7 +1447,7 @@
     <string name="receipts_contacts_override_enabled">A kézbesítési jelentések engedélyezve vannak %d ismerősnél</string>
     <string name="sending_via">Küldés ezen keresztül:</string>
     <string name="v5_0_polish_interface_descr">Köszönet a felhasználóknak - hozzájárulás a Weblate-en!</string>
-    <string name="sending_delivery_receipts_will_be_enabled_all_profiles">A kézbesítési jelentések küldése engedélyezésre kerül az összes látható csevegési profilban lévő minden ismerős számára.</string>
+    <string name="sending_delivery_receipts_will_be_enabled_all_profiles">A kézbesítési jelentések küldése engedélyezésre kerül az összes látható csevegési profilban lévő összes ismerőse számára.</string>
     <string name="v4_6_audio_video_calls_descr">Bluetooth támogatás és további fejlesztések.</string>
     <string name="in_developing_desc">Ez a funkció még nem támogatott. Próbálja meg a következő kiadásban.</string>
     <string name="share_text_updated_at">A bejegyzés frissítve: %s</string>
@@ -1511,7 +1511,7 @@
     <string name="error_showing_message">hiba az üzenet megjelenítésekor</string>
     <string name="you_can_make_address_visible_via_settings">Láthatóvá teheti a SimpleXbeli ismerősei számára a „Beállításokban”.</string>
     <string name="recent_history_is_sent_to_new_members">Legfeljebb az utolsó 100 üzenet kerül elküldésre az új tagok számára.</string>
-    <string name="code_you_scanned_is_not_simplex_link_qr_code">A beolvasott QR-kód nem egy SimpleX QR-kód hivatkozás.</string>
+    <string name="code_you_scanned_is_not_simplex_link_qr_code">A beolvasott QR-kód nem egy SimpleX-QR-kód-hivatkozás.</string>
     <string name="the_text_you_pasted_is_not_a_link">A beillesztett szöveg nem egy SimpleX-hivatkozás.</string>
     <string name="you_can_view_invitation_link_again">A meghívó-hivatkozását újra megtekintheti a kapcsolat részleteinél.</string>
     <string name="start_chat_question">Csevegés indítása?</string>
@@ -1612,7 +1612,7 @@
     <string name="unblock_for_all">Letiltás feloldása az összes tag számára</string>
     <string name="unblock_for_all_question">Az összes tag számára feloldja a tag letiltását?</string>
     <string name="snd_group_event_member_blocked">Ön letiltotta őt: %s</string>
-    <string name="error_blocking_member_for_all">Hiba a tag mindenki számára való letiltásakor</string>
+    <string name="error_blocking_member_for_all">Hiba a tag az összes csoporttag számára való letiltásakor</string>
     <string name="message_too_large">Az üzenet túl nagy</string>
     <string name="welcome_message_is_too_long">Az üdvözlőüzenet túl hosszú</string>
     <string name="database_migration_in_progress">Az adatbázis átköltöztetése folyamatban van.
@@ -1629,7 +1629,7 @@
     <string name="migrate_from_device_confirm_upload">Feltöltés megerősítése</string>
     <string name="migrate_from_device_error_deleting_database">Hiba az adatbázis törlésekor</string>
     <string name="v5_6_safer_groups_descr">Az adminok egy tagot a csoport összes tagja számára letilthatnak.</string>
-    <string name="migrate_from_device_all_data_will_be_uploaded">Az összes ismerőse, a beszélgetései és a fájljai biztonságosan titkosításra kerülnek, melyek részletekben feltöltődnek a beállított XFTP-közvetítő-kiszolgálóra.</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">Az összes ismerőse, -beszélgetése és -fájlja biztonságosan titkosításra kerülnek, melyek részletekben feltöltődnek a beállított XFTP-közvetítő-kiszolgálóra.</string>
     <string name="v5_6_app_data_migration">Alkalmazásadatok átköltöztetése</string>
     <string name="migrate_from_device_archiving_database">Adatbázis archiválása</string>
     <string name="migrate_from_device_cancel_migration">Átköltöztetés visszavonása</string>
@@ -1724,7 +1724,7 @@
     <string name="simplex_links_are_prohibited_in_group">A SimpleX-hivatkozások küldése le van tiltva ebben a csoportban.</string>
     <string name="prohibit_sending_simplex_links">A SimpleX-hivatkozások küldése le van tiltva</string>
     <string name="files_and_media_not_allowed">A fájlok- és médiatartalmak nincsenek engedélyezve</string>
-    <string name="allow_to_send_simplex_links">A SimpleX hivatkozások küldése engedélyezve van.</string>
+    <string name="allow_to_send_simplex_links">A SimpleX-hivatkozások küldése engedélyezve van.</string>
     <string name="feature_enabled_for">Számukra engedélyezve:</string>
     <string name="saved_description">mentett</string>
     <string name="saved_from_description">mentve innen: %s</string>
