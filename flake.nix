@@ -387,6 +387,7 @@
                   "chat_valid_name"
                   "chat_json_length"
                   "chat_write_file"
+                  "chat_resize_image_to_str_size"
                 ];
                 postInstall = ''
                   set -x
@@ -490,6 +491,7 @@
                   "chat_valid_name"
                   "chat_json_length"
                   "chat_write_file"
+                  "chat_resize_image_to_str_size"
                 ];
                 postInstall = ''
                   set -x

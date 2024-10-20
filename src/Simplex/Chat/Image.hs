@@ -2,18 +2,18 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
 module Simplex.Chat.Image where
 
 import qualified Data.ByteString.Base64.Lazy as LB64
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
 import qualified Codec.Picture as Picture
+import Codec.Picture.Metadata (Metadatas)
 import Codec.Picture.Jpg (encodeDirectJpegAtQualityWithMetadata)
 import Codec.Picture.Png (encodePng)
 import qualified Codec.Picture.STBIR as STBIR
@@ -22,15 +22,15 @@ import Data.Int (Int64)
 import Data.Monoid (All(..))
 import Data.Word (Word8)
 
-resizeImageToStrSize :: Int64 -> ResizeableImage -> Maybe LB.ByteString
+resizeImageToStrSize :: Int64 -> ResizeableImage -> LB.ByteString
 resizeImageToStrSize maxSize (ResizeableImage fmt img encoder) = either resizePNG resizeJPG encoder
   where
     halveAndRetry = resizeImageToStrSize maxSize $ ResizeableImage fmt imgHalved encoder
     imgHalved = downscale img 2.0
     resizePNG enc
-      | LB.length encoded <= maxSize = Just encoded
+      | LB.length encoded <= maxSize = encoded
       | LB.length (encode imgHalved) > maxSize = halveAndRetry
-      | otherwise = Just $ fitScale 1.0 2.0
+      | otherwise = fitScale 1.0 2.0
       where
         encode = toDataUri "png" enc
         encoded = encode img
@@ -44,13 +44,12 @@ resizeImageToStrSize maxSize (ResizeableImage fmt img encoder) = either resizePN
               where
                 m = (l + u) / 2
                 result = encode $ downscale img m
-    resizeJPG enc -- if minSize > maxSize then halveAndRetry else Just $ fitQuality 33 99
+    resizeJPG enc
       | minSize > maxSize = halveAndRetry
-      | otherwise = Just $ fitQuality 33 99
+      | otherwise = fitQuality 33 99
       where
         encode q = toDataUri "jpeg" (enc q) img
         minSize = LB.length $ encode 33
-        -- fitQuality = binarySearch (\l u -> (l + u) `div` 2) (\l u -> u - l <= 1) encode score 50 99
         fitQuality l u
           | u - l <= 1 = encode l -- prefer higher compression
           | otherwise =
@@ -69,6 +68,11 @@ downscale img scale = STBIR.resize STBIR.defaultOptions (scaled Picture.imageWid
 
 toDataUri :: LB.ByteString -> (Picture.Image a -> LB.ByteString) -> Picture.Image a -> LB.ByteString
 toDataUri fmt enc img = "data:image/" <> fmt <> ";base64," <> LB64.encode (enc img)
+
+readResizeable :: FilePath -> IO (Either String (ResizeableImage, Metadatas))
+readResizeable inputPath = runExceptT $ do
+  (input, metadata) <- ExceptT $ Picture.readImageWithMetadata inputPath
+  maybe (throwError "unsupported image format") (pure . (,metadata)) $ resizeableImage (tryDropOpacity input)
 
 tryDropOpacity :: Picture.DynamicImage -> Picture.DynamicImage
 tryDropOpacity dyn = case dyn of
