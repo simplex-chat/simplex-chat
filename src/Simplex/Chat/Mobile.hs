@@ -36,6 +36,7 @@ import Foreign.Storable (poke)
 import GHC.IO.Encoding (setFileSystemEncoding, setForeignEncoding, setLocaleEncoding)
 import Simplex.Chat
 import Simplex.Chat.Controller
+import Simplex.Chat.Image (readResizeable, resizeImageToStrSize)
 import Simplex.Chat.Markdown (ParsedMarkdown (..), parseMaybeMarkdownList)
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Mobile.Shared
@@ -45,6 +46,7 @@ import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
+import Simplex.Chat.Util (liftIOEither)
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Env.SQLite (createAgentStore)
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, closeSQLiteStore, reopenSQLiteStore)
@@ -107,6 +109,8 @@ foreign export ccall "chat_read_file" cChatReadFile :: CString -> CString -> CSt
 foreign export ccall "chat_encrypt_file" cChatEncryptFile :: StablePtr ChatController -> CString -> CString -> IO CJSONString
 
 foreign export ccall "chat_decrypt_file" cChatDecryptFile :: CString -> CString -> CString -> CString -> IO CString
+
+foreign export ccall "chat_resize_image_to_str_size" cChatResizeImageToStrSize :: CString -> CInt -> IO CString
 
 -- | check / migrate database and initialize chat controller on success
 cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
@@ -181,6 +185,32 @@ cChatValidName cName = newCString . mkValidName =<< peekCString cName
 -- | returns length of JSON encoded string
 cChatJsonLength :: CString -> IO CInt
 cChatJsonLength s = fromIntegral . subtract 2 . LB.length . J.encode . safeDecodeUtf8 <$> B.packCString s
+
+-- -- | Resize image at path to match specified dimensions preserving aspect ratio
+-- cChatResizeImageToFit :: CString -> CInt -> CInt -> IO CString
+-- cChatResizeImageToFit path maxWidth maxHeight = error "todo"
+
+-- -- | Resize image at path to match specified dimensions, cropping the extra pixels
+-- cChatResizeImageCrop :: CString -> CInt -> CInt -> IO CString
+-- cChatResizeImageCrop path width height = error "todo" -- аватарки
+
+-- -- | Downscale image at path until it fits into specified size
+-- cChatResizeImageToDataSize :: CString -> CInt -> IO CString
+-- cChatResizeImageToDataSize path maxSize = error "todo"
+
+-- | Downscale image at path until its data-uri encoding fits into specified size
+cChatResizeImageToStrSize :: CString -> CInt -> IO CString
+cChatResizeImageToStrSize fp' maxSize = do
+  fp <- peekCString fp'
+  res <- runExceptT $ do
+    (ri, _) <- liftIOEither $ readResizeable fp
+    let resized = resizeImageToStrSize (fromIntegral maxSize) ri
+    if LB.length resized > fromIntegral maxSize then throwError "unable to fit" else pure resized
+  either (const $ pure nullPtr) newCStringFromLazyBS res
+
+-- -- | Strip EXIF etc metadata from image, inlplace
+-- cChatStripImageMetadata :: CString -> IO CBool
+-- cChatStripImageMetadata path = error "todo"
 
 mobileChatOpts :: String -> ChatOpts
 mobileChatOpts dbFilePrefix =
