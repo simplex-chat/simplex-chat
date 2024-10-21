@@ -55,7 +55,8 @@ public enum ChatCommand {
     case apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode)
     case apiVerifyToken(token: DeviceToken, nonce: String, code: String)
     case apiDeleteToken(token: DeviceToken)
-    case apiGetNtfMessage(nonce: String, encNtfInfo: String)
+    case apiGetNtfConns(nonce: String, encNtfInfo: String)
+    case apiGetConnNtfMessages(connIds: [String])
     case apiGetConnNtfMessage(connId: String)
     case apiNewGroup(userId: Int64, incognito: Bool, groupProfile: GroupProfile)
     case apiAddMember(groupId: Int64, contactId: Int64, memberRole: GroupMemberRole)
@@ -214,7 +215,8 @@ public enum ChatCommand {
             case let .apiRegisterToken(token, notificationMode): return "/_ntf register \(token.cmdString) \(notificationMode.rawValue)"
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
             case let .apiDeleteToken(token): return "/_ntf delete \(token.cmdString)"
-            case let .apiGetNtfMessage(nonce, encNtfInfo): return "/_ntf message \(nonce) \(encNtfInfo)"
+            case let .apiGetNtfConns(nonce, encNtfInfo): return "/_ntf conns \(nonce) \(encNtfInfo)"
+            case let .apiGetConnNtfMessages(connIds): return "/_ntf conn messages \(connIds.joined(separator: ","))"
             case let .apiGetConnNtfMessage(connId): return "/_ntf conn message \(connId)"
             case let .apiNewGroup(userId, incognito, groupProfile): return "/_group \(userId) incognito=\(onOff(incognito)) \(encodeJSON(groupProfile))"
             case let .apiAddMember(groupId, contactId, memberRole): return "/_add #\(groupId) \(contactId) \(memberRole)"
@@ -369,7 +371,8 @@ public enum ChatCommand {
             case .apiRegisterToken: return "apiRegisterToken"
             case .apiVerifyToken: return "apiVerifyToken"
             case .apiDeleteToken: return "apiDeleteToken"
-            case .apiGetNtfMessage: return "apiGetNtfMessage"
+            case .apiGetNtfConns: return "apiGetNtfConns"
+            case .apiGetConnNtfMessages: return "apiGetConnNtfMessages"
             case .apiGetConnNtfMessage: return "apiGetConnNtfMessage"
             case .apiNewGroup: return "apiNewGroup"
             case .apiAddMember: return "apiAddMember"
@@ -682,7 +685,8 @@ public enum ChatResponse: Decodable, Error {
     case callInvitations(callInvitations: [RcvCallInvitation])
     case ntfTokenStatus(status: NtfTknStatus)
     case ntfToken(token: DeviceToken, status: NtfTknStatus, ntfMode: NotificationsMode, ntfServer: String)
-    case ntfMessages(ntfMessages: [NtfMessage])
+    case ntfConns(ntfConns: [NtfConn])
+    case connNtfMessages(receivedMsgs: [NtfMessage])
     case connNtfMessage(receivedMsg_: NtfMsgInfo?)
     case ntfMessage(user: UserRef, connEntity: ConnectionEntity, ntfMessage: NtfMsgAckInfo)
     case contactConnectionDeleted(user: UserRef, connection: PendingContactConnection)
@@ -851,7 +855,8 @@ public enum ChatResponse: Decodable, Error {
             case .callInvitations: return "callInvitations"
             case .ntfTokenStatus: return "ntfTokenStatus"
             case .ntfToken: return "ntfToken"
-            case .ntfMessages: return "ntfMessages"
+            case .ntfConns: return "ntfConns"
+            case .connNtfMessages: return "connNtfMessages"
             case .connNtfMessage: return "connNtfMessage"
             case .ntfMessage: return "ntfMessage"
             case .contactConnectionDeleted: return "contactConnectionDeleted"
@@ -1029,7 +1034,8 @@ public enum ChatResponse: Decodable, Error {
             case let .callInvitations(invs): return String(describing: invs)
             case let .ntfTokenStatus(status): return String(describing: status)
             case let .ntfToken(token, status, ntfMode, ntfServer): return "token: \(token)\nstatus: \(status.rawValue)\nntfMode: \(ntfMode.rawValue)\nntfServer: \(ntfServer)"
-            case let .ntfMessages(ntfMessages): return String(describing: ntfMessages)
+            case let .ntfConns(ntfConns): return String(describing: ntfConns)
+            case let .connNtfMessages(receivedMsgs): return "receivedMsgs: \(String(describing: receivedMsgs))"
             case let .connNtfMessage(receivedMsg_): return "receivedMsg_: \(String(describing: receivedMsg_))"
             case let .ntfMessage(u, connEntity, ntfMessage): return withUser(u, "connEntity: \(String(describing: connEntity))\nntfMessage: \(String(describing: ntfMessage))")
             case let .contactConnectionDeleted(u, connection): return withUser(u, String(describing: connection))

@@ -1457,29 +1457,31 @@ processChatCommand' vr = \case
     CRNtfTokenStatus <$> withAgent (\a -> registerNtfToken a token mode)
   APIVerifyToken token nonce code -> withUser $ \_ -> withAgent (\a -> verifyNtfToken a token nonce code) >> ok_
   APIDeleteToken token -> withUser $ \_ -> withAgent (`deleteNtfToken` token) >> ok_
-  APIGetNtfMessage nonce encNtfInfo -> withUser $ \user -> do
-    ntfInfos <- withAgent $ \a -> getNotificationMessage a nonce encNtfInfo
+  APIGetNtfConns nonce encNtfInfo -> withUser $ \user -> do
+    ntfInfos <- withAgent $ \a -> getNotificationConns a nonce encNtfInfo
     (errs, ntfMsgs) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (getMsgConn db) (L.toList ntfInfos))
     unless (null errs) $ toView $ CRChatErrors (Just user) errs
-    pure $ CRNtfMessages ntfMsgs
+    pure $ CRNtfConns ntfMsgs
     where
-      getMsgConn :: DB.Connection -> (NotificationInfo, Maybe SMP.SMPMsgMeta) -> IO NtfMessage
-      getMsgConn db (NotificationInfo {ntfConnId, ntfMsgMeta = nMsgMeta}, msg) = do
+      getMsgConn :: DB.Connection -> NotificationInfo -> IO NtfConn
+      getMsgConn db NotificationInfo {ntfConnId, ntfMsgMeta = nMsgMeta} = do
         let agentConnId = AgentConnId ntfConnId
         user_ <- getUserByAConnId db agentConnId
         connEntity_ <-
           pure user_ $>>= \user ->
             eitherToMaybe <$> runExceptT (getConnectionEntity db vr user agentConnId)
         pure $
-          NtfMessage
+          NtfConn
             { user_,
               connEntity_,
               -- Decrypted ntf meta of the expected message (the one notification was sent for)
-              expectedMsg_ = expectedMsgInfo <$> nMsgMeta,
-              -- Info of the first message retrieved by agent using GET
-              -- (may differ from the expected message due to, for example, coalescing or loss of notifications)
-              receivedMsg_ = receivedMsgInfo <$> msg
+              expectedMsg_ = expectedMsgInfo <$> nMsgMeta
             }
+  ApiGetConnNtfMessages connIds -> withUser $ \_ -> do
+    let acIds = L.map (\(AgentConnId acId) -> acId) connIds
+    msgs <- withAgent $ \a -> getConnectionMessages a acIds
+    let ntfMsgs = map (\(connId, msg) -> NtfMessage {connId = AgentConnId connId, receivedMsg = receivedMsgInfo msg}) msgs
+    pure $ CRConnNtfMessages ntfMsgs
   ApiGetConnNtfMessage (AgentConnId connId) -> withUser $ \_ -> do
     msg <- withAgent $ \a -> getConnectionMessage a connId
     pure $ CRConnNtfMessage (receivedMsgInfo <$> msg)
@@ -8068,7 +8070,8 @@ chatCommandP =
       "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP),
       "/_ntf verify " *> (APIVerifyToken <$> strP <* A.space <*> strP <* A.space <*> strP),
       "/_ntf delete " *> (APIDeleteToken <$> strP),
-      "/_ntf message " *> (APIGetNtfMessage <$> strP <* A.space <*> strP),
+      "/_ntf conns " *> (APIGetNtfConns <$> strP <* A.space <*> strP),
+      "/_ntf conn messages " *> (ApiGetConnNtfMessages <$> strP),
       "/_ntf conn message " *> (ApiGetConnNtfMessage <$> strP),
       "/_add #" *> (APIAddMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_join #" *> (APIJoinGroup <$> A.decimal),
