@@ -6058,6 +6058,7 @@ sealed class SMPErrorType {
     is AUTH -> "AUTH"
     is CRYPTO -> "CRYPTO"
     is QUOTA -> "QUOTA"
+    is STORE -> "STORE ${storeErr}"
     is NO_MSG -> "NO_MSG"
     is LARGE_MSG -> "LARGE_MSG"
     is EXPIRED -> "EXPIRED"
@@ -6070,6 +6071,7 @@ sealed class SMPErrorType {
   @Serializable @SerialName("AUTH") class AUTH: SMPErrorType()
   @Serializable @SerialName("CRYPTO") class CRYPTO: SMPErrorType()
   @Serializable @SerialName("QUOTA") class QUOTA: SMPErrorType()
+  @Serializable @SerialName("STORE") class STORE(val storeErr: String): SMPErrorType()
   @Serializable @SerialName("NO_MSG") class NO_MSG: SMPErrorType()
   @Serializable @SerialName("LARGE_MSG") class LARGE_MSG: SMPErrorType()
   @Serializable @SerialName("EXPIRED") class EXPIRED: SMPErrorType()
