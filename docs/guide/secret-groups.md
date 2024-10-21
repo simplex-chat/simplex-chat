@@ -72,4 +72,4 @@ If you are a group owner you can create a welcome message that will be shown to 
 
 ## SimpleX Directory Service
 
-If you want your group to be always joinable, but you cannot be always online, you can use SimpleX Directory bot to host the invite link for you, the bot is always online, but note that the group needs to meet the rules of SimpleX Directory. For more information see: (/DIRECTORY.md)[SimpleX Directory Service]
+If you want your group to be always joinable, but you cannot be always online, you can use SimpleX Directory bot to host the invite link for you, the bot is always online, but note that the group needs to meet the rules of SimpleX Directory. For more information see: (SimpleX Directory Service)[./DIRECTORY.md]
