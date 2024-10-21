@@ -3,7 +3,7 @@ title: Secret groups
 ---
 # Secret groups
 
-Secret groups are anonymous and private, they are designed to be hard to track by outsiders. Every message and file gets sent separately to every member in the group, which makes secret groups only fit for smaller groups.
+Secret groups are anonymous and private, they are designed to be hard to track by outsiders. Every message (except files) gets sent separately to every member in the group, which makes secret groups only fit for smaller groups.
 
 ## Creating a group
 
@@ -29,7 +29,7 @@ Here you can choose whether you want to allow disappearing messages, direct mess
 
 <img src="../../blog/images/20220723-group-invite.png" width="330">
 
-When you receive the invitation to join the group you can accept it both from the conversation with your contact and from the list of conversations.
+When you receive the invitation to join the group you can accept it both from the conversation with your contact and from the list of conversations. Note that the inviter needs to be online to be able to join the group. Once you have finished initial connection to group members, the group will continue to function even if the inviter is offline.
 
 ## Leaving a group
 
@@ -56,14 +56,20 @@ Open a group and tap on group's name to view members list, there you can tap on 
 
 <img src="../../blog/images/20221108-group1.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20221108-group2.png" width="288">
 
-If you are a group owner or admin, you can create a link that can be used by anyone to join the group, making a group more public.
+If you are a group owner or admin, you can create a link that can be used by anyone to join the group, making a group more public. Note that you must be online for this link to work.
 
 - Open a group conversation.
 - Tap group name.
-- Tap on "Create group link.
+- Tap on "Create group link".
 
 Once the link is created, you can also change the role assigned to members when they join.
 
+Every admin can create a group link, but for group's stability it is recommended to have only one inviter, because if one inviter goes offline forever they will no longer forward newest members information to users that joined through their invite link.
+
 ## Welcome message
 
-If you are a group owner you can create a welcome message that will be shown to all new members joining group.
+If you are a group owner you can create a welcome message that will be shown to all new members joining group. It can also be viewed in group's profile.
+
+## SimpleX Directory Service
+
+If you want your group to be always joinable, but you cannot be always online, you can use SimpleX Directory bot to host the invite link for you, the bot is always online, but note that the group needs to meet the rules of SimpleX Directory. For more information see: (/DIRECTORY.md)[SimpleX Directory Service]
