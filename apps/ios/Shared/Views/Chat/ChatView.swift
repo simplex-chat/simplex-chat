@@ -13,11 +13,6 @@ import Combine
 
 private let memberImageSize: CGFloat = 34
 
-struct PaginationBoundary {
-    var oldest: Bool
-    var latest: Bool
-}
-
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var im = ItemsModel.shared
@@ -37,7 +32,6 @@ struct ChatView: View {
     @State private var customUserProfile: Profile?
     @State private var connectionCode: String?
     @State private var loadingItems = false
-    @State private var paginationBoundary = PaginationBoundary(oldest: false, latest: false)
     @State private var revealedChatItem: ChatItem?
     @State private var searchMode = false
     @State private var searchText: String = ""
@@ -170,10 +164,6 @@ struct ChatView: View {
         .onAppear {
             selectedChatItems = nil
             initChatView()
-        }
-        .onChange(of: sectionModel.activeSection) { ac in
-            paginationBoundary.oldest = false
-            paginationBoundary.latest = false
         }
         .onChange(of: chatModel.chatId) { cId in
             showChatInfoSheet = false
@@ -868,11 +858,11 @@ struct ChatView: View {
     }
     
     private func boundaryReached(_ direction: ChatScrollDirection) -> Bool {
-        return (direction == .toLatest && paginationBoundary.latest) || (direction == .toOldest && paginationBoundary.oldest)
+        return (direction == .toLatest && sectionModel.boundaries.latest) || (direction == .toOldest && sectionModel.boundaries.oldest)
     }
     
     private func setBoundary(_ direction: ChatScrollDirection) {
-        direction == .toLatest ? (paginationBoundary.latest = true) : (paginationBoundary.oldest = true)
+        direction == .toLatest ? (sectionModel.boundaries.latest = true) : (sectionModel.boundaries.oldest = true)
     }
 
     private func loadChatItems(_ cInfo: ChatInfo, _ direction: ChatScrollDirection, _ section: ChatSection, _ chatItem: ChatItem?) {
@@ -902,6 +892,7 @@ struct ChatView: View {
                     chatItemsAvailable = !chatItems.isEmpty
                     reversedPage.append(contentsOf: chatItems.reversed())
                 }
+
                 await MainActor.run {
                     if reversedPage.count == 0  {
                         setBoundary(direction)
