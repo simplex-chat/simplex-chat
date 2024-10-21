@@ -4046,11 +4046,11 @@ További fejlesztések hamarosan!</target>
         <target>Csatlakozás a jelenlegi profillal</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Join your group?&#10;This is your link for group %@!" xml:space="preserve">
+      <trans-unit id="Join your group?&#10;This is your link for group %@!" xml:space="preserve" approved="no">
         <source>Join your group?
 This is your link for group %@!</source>
-        <target>Csatlakozik a csoportjához?
-Ez az Ön hivatkozása a(z) %@ csoporthoz!</target>
+        <target state="translated">Csatlakozik a csoportjához?
+Ez az Ön hivatkozása a(z) %@ nevű csoporthoz!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Joining group" xml:space="preserve">
