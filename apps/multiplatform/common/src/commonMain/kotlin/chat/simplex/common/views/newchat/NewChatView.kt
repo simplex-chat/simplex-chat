@@ -619,6 +619,7 @@ fun LinkTextView(link: String, share: Boolean) {
             enabled = false,
             isError = false,
             interactionSource = remember { MutableInteractionSource() },
+            colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.Unspecified)
           )
         })
     }

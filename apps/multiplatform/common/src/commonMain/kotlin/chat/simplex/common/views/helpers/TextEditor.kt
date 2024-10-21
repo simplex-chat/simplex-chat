@@ -86,6 +86,7 @@ fun TextEditor(
           enabled = true,
           isError = false,
           interactionSource = remember { MutableInteractionSource() },
+          colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.Unspecified)
         )
       }
     )

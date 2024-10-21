@@ -283,6 +283,7 @@ fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isVal
           enabled = true,
           isError = false,
           interactionSource = remember { MutableInteractionSource() },
+          colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.Unspecified)
         )
       }
     )

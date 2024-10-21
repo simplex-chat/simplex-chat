@@ -9,7 +9,7 @@ import java.io.File
 actual fun Modifier.desktopOnExternalDrag(
   enabled: Boolean,
   onFiles: (List<File>) -> Unit,
-  onImage: (Painter) -> Unit,
+  onImage: (File) -> Unit,
   onText: (String) -> Unit
 ): Modifier = this
 

@@ -5,7 +5,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,8 +35,8 @@ actual fun ActiveCallInteractiveArea(call: Call) {
   val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
   Box(Modifier.offset(y = CALL_TOP_OFFSET).height(CALL_INTERACTIVE_AREA_HEIGHT + statusBar)) {
     val source = remember { MutableInteractionSource() }
-    val indication = rememberRipple(bounded = true, 3000.dp)
-    Box(Modifier.height(CALL_TOP_GREEN_LINE_HEIGHT + statusBar).clickable(onClick = onClick, indication = indication, interactionSource = source)) {
+    val ripple = remember { ripple(bounded = true, 3000.dp) }
+    Box(Modifier.height(CALL_TOP_GREEN_LINE_HEIGHT + statusBar).clickable(onClick = onClick, indication = ripple, interactionSource = source)) {
       GreenLine(statusBar, call)
     }
     Box(
@@ -46,7 +45,7 @@ actual fun ActiveCallInteractiveArea(call: Call) {
         .size(CALL_BOTTOM_ICON_HEIGHT)
         .background(SimplexGreen, CircleShape)
         .clip(CircleShape)
-        .clickable(onClick = onClick, indication = indication, interactionSource = source)
+        .clickable(onClick = onClick, indication = ripple, interactionSource = source)
         .align(Alignment.BottomCenter),
       contentAlignment = Alignment.Center
     ) {

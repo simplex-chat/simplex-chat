@@ -18,7 +18,7 @@ import java.io.File
 expect fun Modifier.desktopOnExternalDrag(
   enabled: Boolean = true,
   onFiles: (List<File>) -> Unit = {},
-  onImage: (Painter) -> Unit = {},
+  onImage: (File) -> Unit = {},
   onText: (String) -> Unit = {}
 ): Modifier
 
