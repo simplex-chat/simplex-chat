@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshots.SnapshotStateList
@@ -411,6 +410,7 @@ private fun ControlButton(icon: Painter, iconText: StringResource, enabled: Bool
 
 @Composable
 private fun ControlButtonWrap(enabled: Boolean = true, action: () -> Unit, background: Color = controlButtonsBackground(), size: Dp, content: @Composable () -> Unit) {
+  val ripple = remember { ripple(bounded = false, radius = size / 2, color = background.lighter(0.1f)) }
   Box(
     Modifier
       .background(background, CircleShape)
@@ -419,7 +419,7 @@ private fun ControlButtonWrap(enabled: Boolean = true, action: () -> Unit, backg
         onClick = action,
         role = Role.Button,
         interactionSource = remember { MutableInteractionSource() },
-        indication = rememberRipple(bounded = false, radius = size / 2, color = background.lighter(0.1f)),
+        indication = ripple,
         enabled = enabled
       ),
     contentAlignment = Alignment.Center

@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.graphics.drawable.DrawableCompat
+import androidx.core.view.children
 import androidx.core.view.inputmethod.EditorInfoCompat
 import androidx.core.view.inputmethod.InputConnectionCompat
 import androidx.core.widget.doAfterTextChanged
@@ -94,8 +95,8 @@ actual fun PlatformTextField(
   }
 
   val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-  AndroidView(modifier = Modifier, factory = {
-    val editText = @SuppressLint("AppCompatCustomView") object: EditText(it) {
+  AndroidView(modifier = Modifier, factory = { context ->
+    val editText = @SuppressLint("AppCompatCustomView") object: EditText(context) {
       override fun setOnReceiveContentListener(
         mimeTypes: Array<out String>?,
         listener: OnReceiveContentListener?
@@ -148,8 +149,12 @@ actual fun PlatformTextField(
       }
     }
     editText.doAfterTextChanged { text -> if (composeState.value.preview is ComposePreview.VoicePreview && text.toString() != "") editText.setText("") }
-    editText
+    val workaround = WorkaroundFocusSearchLayout(context)
+    workaround.addView(editText)
+    workaround.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+    workaround
   }) {
+    val it = it.children.first() as EditText
     it.setTextColor(textColor.toArgb())
     it.setHintTextColor(hintColor.toArgb())
     it.hint = placeholder

@@ -156,7 +156,9 @@ actual fun getFileSize(uri: URI): Long? = uri.toFile().length()
 
 actual fun getBitmapFromUri(uri: URI, withAlertOnException: Boolean): ImageBitmap? =
   try {
-    ImageIO.read(uri.inputStream()).toComposeImageBitmap()
+    uri.inputStream().use {
+      ImageIO.read(it).toComposeImageBitmap()
+    }
   } catch (e: Exception) {
     Log.e(TAG, "Error while decoding drawable: ${e.stackTraceToString()}")
     if (withAlertOnException) showImageDecodingException()
