@@ -330,7 +330,8 @@ data ChatCommand
   | APIRegisterToken DeviceToken NotificationsMode
   | APIVerifyToken DeviceToken C.CbNonce ByteString
   | APIDeleteToken DeviceToken
-  | APIGetNtfMessage {nonce :: C.CbNonce, encNtfInfo :: ByteString}
+  | APIGetNtfConns {nonce :: C.CbNonce, encNtfInfo :: ByteString}
+  | ApiGetConnNtfMessages {connIds :: NonEmpty AgentConnId}
   | ApiGetConnNtfMessage {connId :: AgentConnId}
   | APIAddMember GroupId ContactId GroupMemberRole
   | APIJoinGroup GroupId
@@ -745,7 +746,8 @@ data ChatResponse
   | CRUserContactLinkSubError {chatError :: ChatError} -- TODO delete
   | CRNtfTokenStatus {status :: NtfTknStatus}
   | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode, ntfServer :: NtfServer}
-  | CRNtfMessages {ntfMessages :: [NtfMessage]}
+  | CRNtfConns {ntfConns :: [NtfConn]}
+  | CRConnNtfMessages {receivedMsgs :: [NtfMessage]}
   | CRConnNtfMessage {receivedMsg_ :: Maybe NtfMsgInfo}
   | CRNtfMessage {user :: User, connEntity :: ConnectionEntity, ntfMessage :: NtfMsgAckInfo}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
@@ -1063,11 +1065,16 @@ instance FromJSON ComposedMessage where
   parseJSON invalid =
     JT.prependFailure "bad ComposedMessage, " (JT.typeMismatch "Object" invalid)
 
-data NtfMessage = NtfMessage
+data NtfConn = NtfConn
   { user_ :: Maybe User,
     connEntity_ :: Maybe ConnectionEntity,
-    expectedMsg_ :: Maybe NtfMsgInfo,
-    receivedMsg_ :: Maybe NtfMsgInfo
+    expectedMsg_ :: Maybe NtfMsgInfo
+  }
+  deriving (Show)
+
+data NtfMessage = NtfMessage
+  { connId :: AgentConnId,
+    receivedMsg :: NtfMsgInfo
   }
   deriving (Show)
 
@@ -1542,6 +1549,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "AE") ''ArchiveError)
 $(JQ.deriveJSON defaultJSON ''UserProfileUpdateSummary)
 
 $(JQ.deriveJSON defaultJSON ''NtfMsgInfo)
+
+$(JQ.deriveJSON defaultJSON ''NtfConn)
 
 $(JQ.deriveJSON defaultJSON ''NtfMessage)
 
