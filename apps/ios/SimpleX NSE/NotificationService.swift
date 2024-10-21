@@ -110,7 +110,7 @@ class NSEThreads {
     }
 
     // TODO remove wait loop
-    // TODO instead of checking s
+    // add to rejected messages queue?
     func processNotification(_ id: ChatId, _ ntf: NSENotification) async -> Void {
         var waitTime: Int64 = 5_000_000000
         while waitTime > 0 {
@@ -251,6 +251,7 @@ class NotificationService: UNNotificationServiceExtension {
                 logger.debug("NotificationService: receiveNtfMessages: apiGetNtfConns ntfConns count = \(ntfConns.count)")
                 // TODO check (in wait loop?), if there are other threads working on same connId (not ready),
                 // only add to expectedMessages and set shouldProcessNtf to true afterwards
+                // TODO process from rejected messages queue?
                 for ntfConn in ntfConns {
                     addExpectedMessage(ntfConn: ntfConn)
                 }
