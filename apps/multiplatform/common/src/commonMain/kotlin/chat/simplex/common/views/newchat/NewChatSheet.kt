@@ -261,9 +261,9 @@ private fun ModalData.NewChatSheetLayout(
     LazyColumnWithScrollBar(
       Modifier.fillMaxSize(),
       listState,
-      contentPadding = PaddingValues(bottom = blankSpaceSize),
       reverseLayout = oneHandUI.value
     ) {
+      item { Spacer(Modifier.height(blankSpaceSize)) }
       stickyHeader {
         val scrolledSomething by remember { derivedStateOf { listState.firstVisibleItemScrollOffset > 0 || listState.firstVisibleItemIndex > 0 } }
         Column(
@@ -274,10 +274,10 @@ private fun ModalData.NewChatSheetLayout(
                 if (listState.firstVisibleItemIndex == 0) -minOf(listState.firstVisibleItemScrollOffset, blankSpaceSize.roundToPx())
                 else -blankSpaceSize.roundToPx()
               } else {
-                if (listState.firstVisibleItemIndex == 0) {
-                  listState.firstVisibleItemScrollOffset
-                } else {
-                  1000
+                when (listState.firstVisibleItemIndex) {
+                  0 -> 0
+                  1 -> listState.firstVisibleItemScrollOffset
+                  else -> 1000
                 }
               }
               IntOffset(0, y)
@@ -425,7 +425,7 @@ private fun ModalData.NewChatSheetLayout(
     } else {
       NonOneHandLazyColumn()
     }
-    NavigationBarBackground()
+    NavigationBarBackground(oneHandUI.value, true)
   }
 }
 
@@ -724,7 +724,7 @@ private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats
       if (oneHandUI.value) {
         StatusBarBackground()
       }
-      NavigationBarBackground()
+      NavigationBarBackground(oneHandUI.value, true)
     }
     if (oneHandUI.value) {
       Column(Modifier.align(Alignment.BottomCenter)) {

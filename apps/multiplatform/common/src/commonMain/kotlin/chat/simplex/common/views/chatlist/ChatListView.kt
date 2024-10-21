@@ -595,7 +595,19 @@ fun BoxScope.StatusBarBackground() {
 }
 
 @Composable
-fun BoxScope.NavigationBarBackground(modifier: Modifier = Modifier, color: Color = MaterialTheme.colors.background) {
+fun BoxScope.NavigationBarBackground(appBarOnBottom: Boolean = false, mixedColor: Boolean = false) {
+  val keyboardState = getKeyboardState()
+  if (appPlatform.isAndroid && keyboardState.value == KeyboardState.Closed) {
+    val barPadding = WindowInsets.navigationBars.asPaddingValues()
+    val paddingBottom = barPadding.calculateBottomPadding()
+    val color = if (mixedColor) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f) else MaterialTheme.colors.background
+    val finalColor = color.copy(remember(appBarOnBottom) { if (appBarOnBottom) appPrefs.barsAlpha.state else appPrefs.barsAlpha2.state }.value)
+    Box(Modifier.align(Alignment.BottomStart).height(paddingBottom).fillMaxWidth().background(finalColor))
+  }
+}
+
+@Composable
+fun BoxScope.NavigationBarBackground(modifier: Modifier, color: Color = MaterialTheme.colors.background) {
   val keyboardState = getKeyboardState()
   if (appPlatform.isAndroid && keyboardState.value == KeyboardState.Closed) {
     val barPadding = WindowInsets.navigationBars.asPaddingValues()
@@ -662,17 +674,12 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>) {
               if (listState.firstVisibleItemIndex == 0) -offsetMultiplier * listState.firstVisibleItemScrollOffset
               else -offsetMultiplier * blankSpaceSize.roundToPx()
             } else {
-              if (oneHandUI.value && listState.firstVisibleItemIndex == 0) {
-                listState.firstVisibleItemScrollOffset
-              } else if (!oneHandUI.value && listState.firstVisibleItemIndex == 0) {
-                0
-              } else if (!oneHandUI.value && listState.firstVisibleItemIndex == 1) {
-                -listState.firstVisibleItemScrollOffset
-              } else {
-                offsetMultiplier * 1000
+              when (listState.firstVisibleItemIndex) {
+                0 -> 0
+                1 -> offsetMultiplier * listState.firstVisibleItemScrollOffset
+                else -> offsetMultiplier * 1000
               }
             }
-            println("LALAL ${listState.firstVisibleItemIndex} ${listState.firstVisibleItemScrollOffset} ${listState.layoutInfo.beforeContentPadding} ${listState.layoutInfo.viewportStartOffset}")
             IntOffset(0, y)
           }
           .background(MaterialTheme.colors.background)
@@ -717,7 +724,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>) {
   if (oneHandUI.value) {
     StatusBarBackground()
   }
-  NavigationBarBackground()
+  NavigationBarBackground(oneHandUI.value, true)
 }
 
 fun filteredChats(

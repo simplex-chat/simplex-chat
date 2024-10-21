@@ -79,9 +79,10 @@ fun TerminalLayout(
     composeState.value = composeState.value.copy(message = s)
   }
   Box(Modifier.fillMaxSize()) {
-    val composeViewHeight = remember { mutableStateOf(0.dp) }
+    val fontSizeSqrtMultiplier = fontSizeSqrtMultiplier
+    val composeViewHeight = remember { mutableStateOf(AppBarHeight * fontSizeSqrtMultiplier) }
     TerminalLog(floating, composeViewHeight)
-    NavigationBarBackground()
+    NavigationBarBackground(true)
     val density = LocalDensity.current
     Column(
       Modifier
@@ -126,12 +127,11 @@ fun TerminalLog(floating: Boolean, composeViewHeight: State<Dp>) {
   val reversedTerminalItems by remember {
     derivedStateOf { chatModel.terminalItems.value.asReversed() }
   }
-  val clipboard = LocalClipboardManager.current
   val listState = LocalAppBarHandler.current?.listState ?: rememberLazyListState()
   LaunchedEffect(Unit) {
     var autoScrollToBottom = listState.firstVisibleItemIndex <= 1
     launch {
-      snapshotFlow { listState.layoutInfo.totalItemsCount to composeViewHeight.value }
+      snapshotFlow { listState.layoutInfo.totalItemsCount }
         .filter { autoScrollToBottom }
         .onEach { delay(100) }
         .collect {
@@ -151,15 +151,17 @@ fun TerminalLog(floating: Boolean, composeViewHeight: State<Dp>) {
     }
   }
   LazyColumnWithScrollBar (
+    modifier = Modifier.consumeWindowInsets(WindowInsets.navigationBars.only(WindowInsetsSides.Vertical)).imePadding(),
     reverseLayout = true,
-    contentPadding = PaddingValues(top = topPaddingToContent()),
+    contentPadding = PaddingValues(
+      top = topPaddingToContent(),
+      bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + composeViewHeight.value
+    ),
     state = listState,
     additionalBarHeight = composeViewHeight
   ) {
-    item {
-      Spacer(Modifier.imePadding().navigationBarsPadding().padding(bottom = composeViewHeight.value))
-    }
     items(reversedTerminalItems, key = { item -> item.id to item.createdAtNanos }) { item ->
+      val clipboard = LocalClipboardManager.current
       val rhId = item.remoteHostId
       val rhIdStr = if (rhId == null) "" else "$rhId "
       Text(

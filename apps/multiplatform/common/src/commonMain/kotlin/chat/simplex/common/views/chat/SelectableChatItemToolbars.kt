@@ -20,7 +20,7 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 
 @Composable
-fun SelectedItemsTopToolbar(selectedChatItems: MutableState<Set<Long>?>) {
+fun ColumnScope.SelectedItemsTopToolbar(selectedChatItems: MutableState<Set<Long>?>) {
   val onBackClicked = { selectedChatItems.value = null }
   BackHandler(onBack = onBackClicked)
   val count = selectedChatItems.value?.size ?: 0
