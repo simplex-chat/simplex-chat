@@ -91,7 +91,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             self.dataSource = UITableViewDiffableDataSource<ChatSection, ChatItem>(
                 tableView: tableView
             ) { (tableView, indexPath, item) -> UITableViewCell? in
-                if let section = self.dataSource.sectionIdentifier(for: indexPath.section) {
+                if let section = self.dataSource.sectionIdentifier(for: indexPath.section), self.representer.scrollState == .atDestination {
                     let itemCount = self.getTotalItemsInItemSection(indexPath: indexPath)
                     if self.representer.sectionModel.activeSection == section {
                         if self.scrollDirection == .toOldest, indexPath.item > itemCount - 8 {
@@ -198,6 +198,11 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         /// Scrolls to Item at index path
         /// - Parameter indexPath: Item to scroll to - will scroll to beginning of the list, if `nil`
         func scroll(to index: Int?, position: UITableView.ScrollPosition, section: ChatSection, shouldTryAnimate: Bool) {
+            let activeSectionBeforeScroll = representer.sectionModel.activeSection
+            
+            Task {
+                representer.sectionModel.activeSection = section
+            }
             var animated = false
             if #available(iOS 16.0, *) {
                 animated = shouldTryAnimate
@@ -214,7 +219,12 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     animated: animated
                 )
             }
-            Task { representer.scrollState = .atDestination }
+            Task {
+                representer.scrollState = .atDestination
+                if activeSectionBeforeScroll != section {
+                    representer.sectionModel.maybeDropSection(activeSectionBeforeScroll)
+                }
+            }
         }
 
         func update(items: [ChatItem]) {
@@ -411,6 +421,14 @@ class ReverseListSectionModel: ObservableObject {
         return itemSection[id]
     }
     
+    func maybeDropSection(_ section: ChatSection) {
+        if section == .bottom { return }
+        let im = ItemsModel.shared
+        
+        sections.remove(section)
+        im.reversedChatItems = im.reversedChatItems.filter { it in itemSection[it.id] != section }
+    }
+    
     func getSectionsOrdered() -> [ChatSection] {
         var orderedSections: [ChatSection] = [.bottom]
         
@@ -439,7 +457,9 @@ class ReverseListSectionModel: ObservableObject {
             itemSection = itemSection.mapValues { section in
                 section == sectionToDrop ? targetSection : section
             }
-            sections.remove(sectionToDrop)
+            if (sectionToDrop != targetSection) {
+                sections.remove(sectionToDrop)
+            }
         }
         
         reversedPage.forEach { ci in

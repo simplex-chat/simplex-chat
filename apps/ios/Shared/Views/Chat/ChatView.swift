@@ -171,6 +171,10 @@ struct ChatView: View {
             selectedChatItems = nil
             initChatView()
         }
+        .onChange(of: sectionModel.activeSection) { ac in
+            paginationBoundary.oldest = false
+            paginationBoundary.latest = false
+        }
         .onChange(of: chatModel.chatId) { cId in
             showChatInfoSheet = false
             selectedChatItems = nil
@@ -888,6 +892,7 @@ struct ChatView: View {
                     } else {
                         .last(count: loadItemsPerPage)
                     }
+
                     let chatItems = try await apiGetChatItems(
                         type: cInfo.chatType,
                         id: cInfo.apiId,
