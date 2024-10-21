@@ -252,6 +252,7 @@ class NotificationService: UNNotificationServiceExtension {
                 // TODO check (in wait loop?), if there are other threads working on same connId (not ready),
                 // only add to expectedMessages and set shouldProcessNtf to true afterwards
                 // TODO process from rejected messages queue?
+                // TODO probably need some global mechanism of synchronization between threads in addition to shouldProcessNtf, to avoid letting multiple threads working on rejected messages queue at the same time after waiting
                 for ntfConn in ntfConns {
                     addExpectedMessage(ntfConn: ntfConn)
                 }
