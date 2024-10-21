@@ -15,6 +15,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.User
 import chat.simplex.common.model.UserInfo
 import chat.simplex.common.platform.*
@@ -95,7 +96,8 @@ actual fun PlatformUserPicker(modifier: Modifier, pickerState: MutableStateFlow<
         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = { pickerState.value = AnimatedViewState.HIDING }),
       contentAlignment = Alignment.TopStart
     ) {
-      ColumnWithScrollBar(modifier) {
+      val oneHandUI = remember { appPrefs.oneHandUI.state }
+      ColumnWithScrollBar(modifier.align(if (oneHandUI.value) Alignment.BottomCenter else Alignment.TopCenter)) {
         content()
       }
     }

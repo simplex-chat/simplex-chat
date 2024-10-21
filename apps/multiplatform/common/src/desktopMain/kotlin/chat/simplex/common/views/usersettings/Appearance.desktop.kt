@@ -2,6 +2,7 @@ package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
 import SectionDividerSpaced
+import SectionSpacer
 import SectionView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -58,12 +59,18 @@ fun AppearanceScope.AppearanceLayout(
           }
         }
       }
+      SettingsPreferenceItem(icon = null, stringResource(MR.strings.one_hand_ui), ChatModel.controller.appPrefs.oneHandUI)
     }
     SectionDividerSpaced()
     ThemesSection(systemDarkTheme)
 
     SectionDividerSpaced()
     MessageShapeSection()
+
+    SectionDividerSpaced()
+    BarsAlphaSection(appPrefs.barsAlpha, 0.9f)
+    SectionSpacer()
+    BarsAlphaSection(appPrefs.barsAlpha2, 0.6f)
 
     SectionDividerSpaced()
     ProfileImageSection()

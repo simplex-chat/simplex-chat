@@ -35,7 +35,7 @@ fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
     },
     bottomBar = {
       if (oneHandUI.value) {
-        Column {
+        Column(Modifier.imePadding()) {
           Divider()
           ShareListToolbar(chatModel, stopped) { searchInList = it.trim() }
         }
@@ -69,22 +69,22 @@ fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
       }
       null -> {}
     }
-    Box(Modifier.padding(it)) {
-      Column(
-        modifier = Modifier.fillMaxSize()
-      ) {
-        if (chatModel.chats.value.isNotEmpty()) {
-          ShareList(
-            chatModel,
-            search = searchInList,
-            isMediaOrFileAttachment = isMediaOrFileAttachment,
-            isVoice = isVoice,
-            hasSimplexLink = hasSimplexLink,
-          )
-        } else {
-          EmptyList()
-        }
+    Box(Modifier.fillMaxSize().padding(it)) {
+      if (chatModel.chats.value.isNotEmpty()) {
+        ShareList(
+          chatModel,
+          search = searchInList,
+          isMediaOrFileAttachment = isMediaOrFileAttachment,
+          isVoice = isVoice,
+          hasSimplexLink = hasSimplexLink,
+        )
+      } else {
+        EmptyList()
       }
+      if (oneHandUI.value) {
+        StatusBarBackground()
+      }
+      NavigationBarBackground(oneHandUI.value, true)
     }
   }
 }
@@ -191,6 +191,7 @@ private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchVal
     },
     onTitleClick = null,
     showSearch = showSearch,
+    onTop = !remember { appPrefs.oneHandUI.state }.value,
     onSearchValueChanged = onSearchValueChanged,
     buttons = barButtons
   )
@@ -212,7 +213,7 @@ private fun ShareList(
     }
   }
   LazyColumnWithScrollBar(
-    modifier = Modifier.fillMaxSize(),
+    modifier = Modifier.fillMaxSize().then(if (!oneHandUI.value) Modifier.imePadding() else Modifier),
     reverseLayout = oneHandUI.value
   ) {
     items(chats) { chat ->
@@ -223,6 +224,11 @@ private fun ShareList(
         isVoice = isVoice,
         hasSimplexLink = hasSimplexLink,
       )
+    }
+    if (appPlatform.isAndroid) {
+      item {
+        Spacer(if (oneHandUI.value) Modifier.windowInsetsTopHeight(WindowInsets.statusBars) else Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
+      }
     }
   }
 }

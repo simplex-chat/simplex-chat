@@ -19,6 +19,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.filesToDelete
 import chat.simplex.common.model.ChatModel.withChats
@@ -896,7 +897,7 @@ fun ComposeView(
         }
       }
     }
-    Column(Modifier.background(MaterialTheme.colors.background)) {
+    Column(Modifier.background(MaterialTheme.colors.background.copy(remember { appPrefs.barsAlpha.state }.value))) {
     Divider()
     Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
       val isGroupAndProhibitedFiles = chat.chatInfo is ChatInfo.Group && !chat.chatInfo.groupInfo.fullGroupPreferences.files.on(chat.chatInfo.groupInfo.membership)
