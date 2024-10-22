@@ -33,7 +33,7 @@ fun CloseSheetBar(
   endButtons: @Composable RowScope.() -> Unit = {}
 ) {
   val background = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
-  val themeBackgroundMix = background.copy(remember { appPrefs.barsAlpha.state }.value)
+  val themeBackgroundMix = background.copy(remember { appPrefs.inAppBarsAlpha.state }.value)
   val handler = LocalAppBarHandler.current
   val connection = LocalAppBarHandler.current?.connection
   val title = remember(handler?.title?.value) { handler?.title ?: mutableStateOf("") }
@@ -157,7 +157,7 @@ fun AppBarTitle(title: String, hostDevice: Pair<Long?, String>? = null,  withPad
 
 private fun topTitleAlpha(text: Boolean, connection: CollapsingAppBarNestedScrollConnection) =
   if (connection.appBarOffset.absoluteValue < AppBarHandler.appBarMaxHeightPx / 3) 0f
-  else ((-connection.appBarOffset * 1.5f) / (AppBarHandler.appBarMaxHeightPx)).coerceIn(0f, if (text) 1f else appPrefs.barsAlpha.get())
+  else ((-connection.appBarOffset * 1.5f) / (AppBarHandler.appBarMaxHeightPx)).coerceIn(0f, if (text) 1f else appPrefs.inAppBarsAlpha.get())
 
 private fun bottomTitleAlpha(connection: CollapsingAppBarNestedScrollConnection?) =
   if ((connection?.appBarOffset ?: 0f).absoluteValue < AppBarHandler.appBarMaxHeightPx / 3) 1f

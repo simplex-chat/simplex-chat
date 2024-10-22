@@ -39,6 +39,7 @@ import chat.simplex.common.views.chat.item.msgTailWidthDp
 import chat.simplex.res.MR
 import com.godaddy.android.colorpicker.ClassicColorPicker
 import com.godaddy.android.colorpicker.HsvColor
+import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
@@ -171,9 +172,9 @@ object AppearanceScope {
   }
 
   @Composable
-  fun BarsAlphaSection(pref: SharedPreference<Float>, defaultValue: Float) {
+  fun BarsAlphaSection(sectionTitle: StringResource, pref: SharedPreference<Float>, defaultValue: Float) {
     val barsAlpha = remember { mutableStateOf(pref.get()) }
-    SectionView(stringResource(MR.strings.appearance_bars_alpha).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+    SectionView(stringResource(sectionTitle).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
       Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(60.dp)
           .background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22))

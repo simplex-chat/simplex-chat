@@ -897,7 +897,7 @@ fun ComposeView(
         }
       }
     }
-    Column(Modifier.background(MaterialTheme.colors.background.copy(remember { appPrefs.barsAlpha.state }.value))) {
+    Column(Modifier.background(MaterialTheme.colors.background.copy(remember { appPrefs.inAppBarsAlpha.state }.value))) {
     Divider()
     Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
       val isGroupAndProhibitedFiles = chat.chatInfo is ChatInfo.Group && !chat.chatInfo.groupInfo.fullGroupPreferences.files.on(chat.chatInfo.groupInfo.membership)

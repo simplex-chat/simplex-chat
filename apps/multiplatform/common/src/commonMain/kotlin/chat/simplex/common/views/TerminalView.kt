@@ -89,7 +89,7 @@ fun TerminalLayout(
           .align(Alignment.BottomCenter)
           .navigationBarsPadding()
           .imePadding()
-          .background(MaterialTheme.colors.background.copy(remember { appPrefs.barsAlpha.state }.value))
+          .background(MaterialTheme.colors.background.copy(remember { appPrefs.inAppBarsAlpha.state }.value))
       ) {
         Divider()
         Box(Modifier.padding(horizontal = 8.dp)) {

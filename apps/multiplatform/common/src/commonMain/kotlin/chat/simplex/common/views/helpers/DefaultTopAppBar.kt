@@ -41,7 +41,7 @@ fun DefaultTopAppBar(
       }
     },
     backgroundColor = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
-      .copy(remember { appPrefs.barsAlpha.state }.value),
+      .copy(remember { appPrefs.inAppBarsAlpha.state }.value),
     navigationIcon = navigationButton,
     buttons = if (!showSearch) buttons else emptyList(),
     centered = !showSearch,

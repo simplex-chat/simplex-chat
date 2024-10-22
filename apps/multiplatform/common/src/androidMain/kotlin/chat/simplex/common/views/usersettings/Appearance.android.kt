@@ -118,9 +118,10 @@ fun AppearanceScope.AppearanceLayout(
     MessageShapeSection()
 
     SectionDividerSpaced()
-    BarsAlphaSection(appPrefs.barsAlpha, 0.9f)
+    BarsAlphaSection(MR.strings.appearance_in_app_bars_alpha, appPrefs.inAppBarsAlpha, 0.9f)
+    SectionDividerSpaced()
     SectionSpacer()
-    BarsAlphaSection(appPrefs.barsAlpha2, 0.6f)
+    BarsAlphaSection(MR.strings.appearance_nav_bar_alpha, appPrefs.navBarAlpha, 0.6f)
 
     SectionDividerSpaced()
     ProfileImageSection()

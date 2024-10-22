@@ -1755,7 +1755,8 @@
   <string name="theme_remove_image">Remove image</string>
   <string name="appearance_font_size">Font size</string>
   <string name="appearance_zoom">Zoom</string>
-  <string name="appearance_bars_alpha">Navigation bars transparency</string>
+  <string name="appearance_in_app_bars_alpha">In-app bars transparency</string>
+  <string name="appearance_nav_bar_alpha">Navigation bar transparency</string>
   <string name="system_mode_toast">System mode</string>
 
   <!-- Wallpapers -->
