@@ -492,7 +492,7 @@ class ReverseListSectionModel: ObservableObject {
         while (!completed) {
             let it = im.reversedChatItems[i]
             if itemSection[it.id] == section {
-                if sectionCount >= ReverseListSectionModel.IDEAL_SECTION_SIZE {
+                if sectionCount >= ReverseListSectionModel.MAX_SECTION_SIZE {
                     toRemoveIndexes.insert(i)
                     itemSection.removeValue(forKey: it.id)
                 } else {
