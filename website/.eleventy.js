@@ -7,6 +7,7 @@ const i18n = require('eleventy-plugin-i18n')
 const fs = require("fs")
 const path = require("path")
 const matter = require('gray-matter')
+const cheerio = require('cheerio')
 const pluginRss = require('@11ty/eleventy-plugin-rss')
 const { JSDOM } = require('jsdom')
 
@@ -91,6 +92,40 @@ module.exports = function (ty) {
       else if (supportedLangs.includes(urlParts[1])) return urlParts[1]
       return "en"
     }
+  })
+
+  ty.addShortcode("includeReadmeSectionHtml", function(sectionName) {
+    const readmePath = path.join(__dirname, '../README.md')
+    const readmeContent = fs.readFileSync(readmePath, 'utf8')
+    
+    const htmlContent = md.render(readmeContent)
+    
+    const cheerioDoc = cheerio.load(htmlContent)
+    let sectionContent = ''
+    let captureContent = false
+    let depth = 0
+    
+    cheerioDoc('body > *').each((i, elem) => {
+      if (cheerioDoc(elem).is('h2') && cheerioDoc(elem).text().trim() === sectionName) {
+        captureContent = true
+        sectionContent += cheerioDoc(elem).prop('outerHTML')
+      } else if (cheerioDoc(elem).is('h2') && captureContent) {
+        if (depth === 0) {
+          captureContent = false
+          return false // Stop iterating
+        }
+      } else if (captureContent) {
+        if (cheerioDoc(elem).is('ul, ol')) {
+          depth++
+        }
+        sectionContent += cheerioDoc(elem).prop('outerHTML')
+        if (cheerioDoc(elem).is('ul, ol')) {
+          depth--
+        }
+      }
+    })
+    
+    return sectionContent || `Section "${sectionName}" not found in README.md`
   })
 
   ty.addFilter('applyGlossary', function (content) {
