@@ -864,11 +864,14 @@ fun ColumnScope.ChatInfoToolbar(
     onSearchValueChanged = onSearchValueChanged,
     buttons = barButtons
   )
-  Box(Modifier
-    .fillMaxWidth()
-    .wrapContentSize(Alignment.TopEnd)
-  ) {
-    DefaultDropdownMenu(showMenu) {
+  Box(Modifier.fillMaxWidth().wrapContentSize(Alignment.TopEnd)) {
+    val density = LocalDensity.current
+    val width = remember { mutableStateOf(250.dp) }
+    DefaultDropdownMenu(
+      showMenu,
+      modifier = Modifier.onSizeChanged { with(density) { width.value = it.width.toDp().coerceAtLeast(250.dp) } },
+      offset = DpOffset(-width.value, 0.dp)
+    ) {
       menuItems.forEach { it() }
     }
   }
@@ -1373,8 +1376,14 @@ fun BoxScope.FloatingButtons(
     onLongClick = { showDropDown.value = true }
   )
 
-  Box(Modifier.align(Alignment.TopEnd)) {
-    DefaultDropdownMenu(showDropDown, offset = DpOffset(-DEFAULT_PADDING, 24.dp + fabSize + topPaddingToContent())) {
+  Box(Modifier.fillMaxWidth().wrapContentSize(Alignment.TopEnd)) {
+    val density = LocalDensity.current
+    val width = remember { mutableStateOf(250.dp) }
+    DefaultDropdownMenu(
+      showDropDown,
+      modifier = Modifier.onSizeChanged { with(density) { width.value = it.width.toDp().coerceAtLeast(250.dp) } },
+      offset = DpOffset(-DEFAULT_PADDING - width.value, 24.dp + fabSize + topPaddingToContent())
+    ) {
       ItemAction(
         generalGetString(MR.strings.mark_read),
         painterResource(MR.images.ic_check),

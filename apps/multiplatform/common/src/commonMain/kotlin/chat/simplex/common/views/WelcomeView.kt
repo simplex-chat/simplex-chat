@@ -52,7 +52,7 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
         modifier = Modifier.fillMaxSize()
       ) {
         Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
-          AppBarTitle(stringResource(MR.strings.create_profile), bottomPadding = DEFAULT_PADDING)
+          AppBarTitle(stringResource(MR.strings.create_profile), withPadding = false, bottomPadding = DEFAULT_PADDING)
           Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(
               stringResource(MR.strings.display_name),

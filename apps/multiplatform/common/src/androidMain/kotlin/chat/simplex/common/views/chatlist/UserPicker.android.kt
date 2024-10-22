@@ -34,6 +34,7 @@ private val USER_PICKER_ROW_PADDING = 16.dp
 @Composable
 actual fun UserPickerUsersSection(
   users: List<UserInfo>,
+  iconColor: Color,
   stopped: Boolean,
   onUserClicked: (user: User) -> Unit,
 ) {

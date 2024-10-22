@@ -151,7 +151,9 @@ fun MainScreen() {
           }
           SetupClipboardListener()
           if (appPlatform.isAndroid) {
-            AndroidScreen(userPickerState)
+            AndroidWrapInCallLayout {
+              AndroidScreen(userPickerState)
+            }
           } else {
             DesktopScreen(userPickerState)
           }
@@ -183,7 +185,9 @@ fun MainScreen() {
       }
     }
     if (appPlatform.isAndroid) {
-      ModalManager.fullscreen.showInView()
+      AndroidWrapInCallLayout {
+        ModalManager.fullscreen.showInView()
+      }
       SwitchingUsersView()
     }
 
@@ -251,10 +255,22 @@ fun MainScreen() {
 val ANDROID_CALL_TOP_PADDING = 40.dp
 
 @Composable
+fun AndroidWrapInCallLayout(content: @Composable () -> Unit) {
+  val call = remember { chatModel.activeCall}.value
+  val showCallArea = call != null && call.callState != CallState.WaitCapabilities && call.callState != CallState.InvitationAccepted
+  Box {
+    Box(Modifier.padding(top = if (showCallArea) ANDROID_CALL_TOP_PADDING else 0.dp)) {
+      content()
+    }
+    if (call != null && showCallArea) {
+      ActiveCallInteractiveArea(call)
+    }
+  }
+}
+
+@Composable
 fun AndroidScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
   BoxWithConstraints {
-    val call = remember { chatModel.activeCall} .value
-    val showCallArea = call != null && call.callState != CallState.WaitCapabilities && call.callState != CallState.InvitationAccepted
     val currentChatId = remember { mutableStateOf(chatModel.chatId.value) }
     val offset = remember { Animatable(if (chatModel.chatId.value == null) 0f else maxWidth.value) }
     Box(
@@ -265,7 +281,6 @@ fun AndroidScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
           // But offset is remembered already, so this is a better way than dropping a value of offset
           translationX = -minOf(offset.value.dp, maxWidth).toPx()
         }
-        .padding(top = if (showCallArea) ANDROID_CALL_TOP_PADDING else 0.dp)
     ) {
       StartPartOfScreen(userPickerState)
     }
@@ -294,14 +309,10 @@ fun AndroidScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
     }
     Box(Modifier
       .graphicsLayer { translationX = maxWidth.toPx() - minOf(offset.value.dp, maxWidth).toPx() }
-      .padding(top = if (showCallArea) ANDROID_CALL_TOP_PADDING else 0.dp)
     ) Box2@{
       currentChatId.value?.let {
         ChatView(currentChatId, onComposed)
       }
-    }
-    if (call != null && showCallArea) {
-      ActiveCallInteractiveArea(call)
     }
   }
 }

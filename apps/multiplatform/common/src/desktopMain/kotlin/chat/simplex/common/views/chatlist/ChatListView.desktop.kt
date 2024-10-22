@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.Call
@@ -27,14 +28,15 @@ actual fun ActiveCallInteractiveArea(call: Call) {
   CompositionLocalProvider(
     LocalIndication provides NoIndication
   ) {
+    val oneHandUI = remember { appPrefs.oneHandUI.state }
     Box(
       Modifier
         .fillMaxSize(),
-      contentAlignment = Alignment.BottomEnd
+      contentAlignment = if (oneHandUI.value) Alignment.TopEnd else Alignment.BottomEnd
     ) {
       Box(
         Modifier
-          .padding(end = 15.dp, bottom = 92.dp)
+          .padding(end = 15.dp, top = if (oneHandUI.value) 15.dp else 0.dp, bottom = if (oneHandUI.value) 0.dp else 92.dp)
           .size(67.dp)
           .combinedClickable(onClick = {
             val chat = chatModel.getChat(call.contact.id)
