@@ -63,6 +63,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         private var bag = Set<AnyCancellable>()
         private var lastContentOffset: CGFloat = 0
         private var scrollDirection: ChatScrollDirection = .none
+        private var requestedRange = false
         
         init(representer: ReverseList) {
             self.representer = representer
@@ -91,13 +92,15 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             self.dataSource = UITableViewDiffableDataSource<ChatSection, ChatItem>(
                 tableView: tableView
             ) { (tableView, indexPath, item) -> UITableViewCell? in
-                if let section = self.dataSource.sectionIdentifier(for: indexPath.section), self.representer.scrollState == .atDestination {
-                    let itemCount = self.getTotalItemsInItemSection(indexPath: indexPath)
+                if let section = self.dataSource.sectionIdentifier(for: indexPath.section), self.representer.scrollState == .atDestination, !self.requestedRange {
                     if self.representer.sectionModel.activeSection == section {
+                        let itemCount = self.getTotalItemsInItemSection(indexPath: indexPath)
                         if self.scrollDirection == .toOldest, indexPath.item > itemCount - 8 {
                             let lastItem = self.getLastItemInItemSection(indexPath: indexPath)
+                            self.requestedRange = !self.representer.sectionModel.boundaries.oldest
                             self.representer.loadPage(.toOldest, section, lastItem)
                         } else if self.scrollDirection == .toLatest, indexPath.item < 8 {
+                            self.requestedRange = !self.representer.sectionModel.boundaries.latest
                             let firstItem = self.getFirstItemInItemSection(indexPath: indexPath)
                             self.representer.loadPage(.toLatest, section, firstItem)
                         }
@@ -230,6 +233,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         }
 
         func update(items: [ChatItem]) {
+            requestedRange = false
             var snapshot = NSDiffableDataSourceSnapshot<ChatSection, ChatItem>()
             let sections = self.representer.sectionModel.getSectionsOrdered()
             let itemsBySection = self.itemsBySection(items: items)
