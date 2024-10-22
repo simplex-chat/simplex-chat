@@ -11,12 +11,11 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.*
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
@@ -43,6 +42,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlin.math.absoluteValue
 
 @Composable
 fun AppScreen() {
@@ -75,15 +75,13 @@ fun AppScreen() {
             MainScreen()
           }
         }
-        Box(Modifier.width(paddingStart + cutoutMax)
-          .fillMaxHeight()
-          .graphicsLayer { alpha = if (fullscreenGallery.value) 0f else 1f }
-          .background(MaterialTheme.colors.background))
-        Box(Modifier.align(Alignment.CenterEnd)
-          .width(paddingEnd + cutoutMax)
-          .fillMaxHeight()
-          .graphicsLayer { alpha = if (fullscreenGallery.value) 0f else 1f }
-          .background(MaterialTheme.colors.background))
+//        Box(Modifier.width(paddingStart + cutoutMax)
+//          .fillMaxHeight()
+//          .drawBehind { drawRect(if (fullscreenGallery.value) Color.Black else CurrentColors.value.colors.background) })
+//        Box(Modifier.align(Alignment.CenterEnd)
+//          .width(paddingEnd + cutoutMax)
+//          .fillMaxHeight()
+//          .drawBehind { drawRect(if (fullscreenGallery.value) Color.Black else CurrentColors.value.colors.background) })
       }
     }
   }
@@ -297,8 +295,14 @@ fun AndroidScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
   BoxWithConstraints {
     val currentChatId = remember { mutableStateOf(chatModel.chatId.value) }
     val offset = remember { Animatable(if (chatModel.chatId.value == null) 0f else maxWidth.value) }
+    val cutout = WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal).asPaddingValues()
+    val direction = LocalLayoutDirection.current
+    val hasCutout = cutout.calculateStartPadding(direction) + cutout.calculateEndPadding(direction) > 0.dp
     Box(
       Modifier
+        // clipping only for devices with cutout currently visible on sides. It prevents showing chat list with open chat view
+        // In order cases it's not needed to use clip
+        .then(if (hasCutout) Modifier.clip(RectangleShape) else Modifier)
         .graphicsLayer {
           // minOf thing is needed for devices with holes in screen while the user on ChatView rotates his phone from portrait to landscape
           // because in this case (at least in emulator) maxWidth changes in two steps: big first, smaller on next frame.
@@ -332,6 +336,7 @@ fun AndroidScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
       }
     }
     Box(Modifier
+      .then(if (hasCutout) Modifier.clip(RectangleShape) else Modifier)
       .graphicsLayer { translationX = maxWidth.toPx() - minOf(offset.value.dp, maxWidth).toPx() }
     ) Box2@{
       currentChatId.value?.let {
