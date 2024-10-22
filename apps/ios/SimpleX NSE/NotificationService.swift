@@ -321,7 +321,9 @@ class NotificationService: UNNotificationServiceExtension {
             }
         } else if expectedMessage.ntfMessage.user.showNotifications {
             logger.debug("NotificationService processNtf: setting best attempt")
-            setBadgeCount()
+            if ntf.notificationEvent != nil {
+                setBadgeCount()
+            }
             let prevBestAttempt = expectedMessages[id]?.msgBestAttemptNtf
             if prevBestAttempt?.callInvitation != nil {
                 if ntf.callInvitation != nil { // replace with newer call
@@ -728,8 +730,8 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotificationData)?
             if let file = cItem.autoReceiveFile() {
                 cItem = autoReceiveFile(file) ?? cItem
             }
-            let ntf: NSENotificationData = cInfo.ntfsEnabled ? .messageReceived(user, cInfo, cItem) : .noNtf
-            return cItem.showNotification ? (chatItem.chatId, ntf) : nil
+            let ntf: NSENotificationData = (cInfo.ntfsEnabled && cItem.showNotification) ? .messageReceived(user, cInfo, cItem) : .noNtf
+            return (chatItem.chatId, ntf)
         } else {
             return nil
         }
