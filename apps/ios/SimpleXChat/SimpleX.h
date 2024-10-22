@@ -29,7 +29,7 @@ extern char *chat_valid_name(char *name);
 extern int chat_json_length(char *str);
 extern char *chat_encrypt_media(chat_ctrl ctl, char *key, char *frame, int len);
 extern char *chat_decrypt_media(char *key, char *frame, int len);
-extern char *chat_resize_image_to_str_size(char *path, int maxSize);
+extern char *chat_resize_image_to_str_size(const char *path, int maxSize);
 
 // chat_write_file returns null-terminated string with JSON of WriteFileResult
 extern char *chat_write_file(chat_ctrl ctl, char *path, char *data, int len);

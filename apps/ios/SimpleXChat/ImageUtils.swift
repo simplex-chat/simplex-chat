@@ -103,12 +103,25 @@ public func resizeImageToDataSize(_ image: UIImage, maxDataSize: Int64, hasAlpha
 public func resizeImageToStrSizeSync(_ image: UIImage, maxDataSize: Int64) -> String? {
     // XXX: only needed when the original encoding isn't available
     let tmpFile = generateNewFileName(getTempFilesDirectory().path + "/" + "resize", "png", fullPath: true)
-    saveFile(image.pngData(), tmpFile) // encode as png and let the backend deal with alpha and formats
-    let str = chat_resize_image_to_str_size(filePath, maxDataSize)
-    removeFile(tmpFile)
-    guard let dataSize = str?.count > 0 else { return nil }
-    logger.debug("resizeImageToStrSize final \(dataSize)")
-    return str
+    // encode as png and let the backend deal with alpha and formats
+    guard let d = image.pngData() else { return nil }
+    if let _ = saveFile(d, tmpFile, encrypted: false) {
+        defer { removeFile(tmpFile) }
+        let ptr = chat_resize_image_to_str_size(tmpFile, Int32(maxDataSize))
+        if let ptr = ptr {
+            let str = fromCString(ptr)
+            let dataSize = str.count
+            if dataSize <= 0 { return nil }
+            logger.debug("resizeImageToStrSize final \(dataSize)")
+            return str
+        } else {
+            logger.error("resizeImageToStrSize failed")
+            return nil
+        }
+    } else {
+        logger.error("saveFile failed")
+        return nil
+    }
 }
 
 public func resizeImageToStrSize(_ image: UIImage, maxDataSize: Int64) async -> String? {
