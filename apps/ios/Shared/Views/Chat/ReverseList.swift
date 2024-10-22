@@ -101,13 +101,6 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                             let firstItem = self.getFirstItemInItemSection(indexPath: indexPath)
                             self.representer.loadPage(.toLatest, section, firstItem)
                         }
-                        
-                        if (self.scrollDirection == .toOldest && indexPath.item - ReverseListSectionModel.IDEAL_SECTION_SIZE > 8) ||
-                            (self.scrollDirection == .toLatest && indexPath.item <  ReverseListSectionModel.IDEAL_SECTION_SIZE) {
-                            Task {
-                                self.representer.sectionModel.manageActiveSection(scrollDirection: self.scrollDirection)
-                            }
-                        }
                     }
                 }
                 let cell = tableView.dequeueReusableCell(withIdentifier: cellReuseId, for: indexPath)
@@ -427,8 +420,8 @@ struct SectionBoundaryReached {
 /// Manages ``ReverseList`` sections
 class ReverseListSectionModel: ObservableObject {
     static let shared = ReverseListSectionModel()
-    static let MAX_SECTION_SIZE = 50
-    static let IDEAL_SECTION_SIZE = 35
+    static let MAX_SECTION_SIZE = 500
+    static let MIN_SECTION_SIZE = 200
     @Published private(set) var activeSection: ChatSection = .bottom
     @Published var boundaries = SectionBoundaryReached(oldest: false, latest: false)
     @Published private var itemSection: [Int64: ChatSection] = [:]
@@ -455,6 +448,21 @@ class ReverseListSectionModel: ObservableObject {
     private func activeSectionItemsCount() -> Int {
         // TODO: check
         return itemSection.values.filter { $0 == self.activeSection }.count
+    }
+    
+    private func splitSection(originalSection: ChatSection, newSection: ChatSection) {
+        var originalSectionCount = 0
+        let im = ItemsModel.shared
+
+        im.reversedChatItems.forEach { it in
+            if itemSection[it.id] == originalSection {
+                if originalSectionCount < ReverseListSectionModel.MIN_SECTION_SIZE {
+                    originalSectionCount += 1
+                } else {
+                    itemSection[it.id] = newSection
+                }
+            }
+        }
     }
     
     private func trimSection(scrollDirection: ChatScrollDirection, section: ChatSection) {
@@ -504,10 +512,15 @@ class ReverseListSectionModel: ObservableObject {
 
         switch self.activeSection {
         case .bottom:
-            if scrollDirection == .toLatest, activeSectionCount > ReverseListSectionModel.MAX_SECTION_SIZE {
-                // boundaries?, the visible item needs to not be there
+            if activeSectionCount > ReverseListSectionModel.MAX_SECTION_SIZE {
+                if scrollDirection == .toLatest {
                 boundaries.oldest = false
                 self.trimSection(scrollDirection: scrollDirection, section: self.activeSection)
+                } else {
+                    splitSection(originalSection: .bottom, newSection: .current)
+                    changeActiveSection(.current)
+                    sections.insert(.current)
+                }
             }
             break;
         default:

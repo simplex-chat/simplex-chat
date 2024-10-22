@@ -23,7 +23,7 @@ struct ChatView: View {
     @Environment(\.scenePhase) var scenePhase
     @State @ObservedObject var chat: Chat
     @StateObject private var scrollModel = ReverseListScrollModel()
-    @StateObject private var sectionModel = ReverseListSectionModel.shared
+    @StateObject private var sectionModel = ReverseListSectionModel()
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
@@ -914,6 +914,7 @@ struct ChatView: View {
                             im.reversedChatItems.append(contentsOf: reversedPageToAppend)
                         }
                     }
+                    self.sectionModel.manageActiveSection(scrollDirection: direction)
                     loadingItems = false
                 }
             } catch let error {
