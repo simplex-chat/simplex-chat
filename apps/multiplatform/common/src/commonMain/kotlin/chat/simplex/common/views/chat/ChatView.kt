@@ -654,7 +654,6 @@ fun ChatLayout(
       val backgroundColor = MaterialTheme.wallpaper.background ?: wallpaperType.defaultBackgroundColor(CurrentColors.value.base, MaterialTheme.colors.background)
       val tintColor = MaterialTheme.wallpaper.tint ?: wallpaperType.defaultTintColor(CurrentColors.value.base)
       val composeViewHeight = remember { mutableStateOf(0.dp) }
-      val composeHeight = composeViewHeight.value
       Box(
         Modifier
           .fillMaxSize()
@@ -663,24 +662,29 @@ fun ChatLayout(
             Modifier.drawWithCache { chatViewBackground(wallpaperImage, wallpaperType, backgroundColor, tintColor) }
           else
             Modifier)
-          // don't show initial frame of chat if height of compose area is not known yet. Otherwise, the view jumps
-          .graphicsLayer { alpha = if (composeHeight > 0.dp) 1f else 0f },
         ) {
         val remoteHostId = remember { remoteHostId }.value
         val chatInfo = remember { chatInfo }.value
-        if (chatInfo != null) {
-          ChatItemsList(
-            remoteHostId, chatInfo, unreadCount, composeState, composeViewHeight, searchValue,
-            useLinkPreviews, linkMode, selectedChatItems, showMemberInfo, loadPrevMessages, deleteMessage, deleteMessages,
-            receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, openDirectChat, forwardItem,
-            updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
-            setReaction, showItemDetails, markRead, remember { {onComposed(it)} }, developerTools, showViaProxy,
-          )
-        }
-        val density = LocalDensity.current
-        println("LALAL height ${composeViewHeight.value}  ${AppBarHeight * fontSizeSqrtMultiplier}")
-        Box(Modifier.align(Alignment.BottomCenter).imePadding().navigationBarsPadding().onSizeChanged { composeViewHeight.value = with(density) { it.height.toDp() } }) {
-          composeView()
+        AdaptingBottomPaddingLayout(Modifier, CHAT_COMPOSE_LAYOUT_ID, composeViewHeight) {
+          if (chatInfo != null) {
+            Box(Modifier.fillMaxSize()) {
+              ChatItemsList(
+                remoteHostId, chatInfo, unreadCount, composeState, composeViewHeight, searchValue,
+                useLinkPreviews, linkMode, selectedChatItems, showMemberInfo, loadPrevMessages, deleteMessage, deleteMessages,
+                receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, openDirectChat, forwardItem,
+                updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
+                setReaction, showItemDetails, markRead, remember { { onComposed(it) } }, developerTools, showViaProxy,
+              )
+            }
+          }
+          Box(Modifier
+            .layoutId(CHAT_COMPOSE_LAYOUT_ID)
+            .align(Alignment.BottomCenter)
+            .imePadding()
+            .navigationBarsPadding()
+          ) {
+            composeView()
+          }
         }
         NavigationBarBackground(true)
         Column {
@@ -993,14 +997,14 @@ fun BoxScope.ChatItemsList(
     }
   )
   LazyColumnWithScrollBar(
-    Modifier.consumeWindowInsets(WindowInsets.navigationBars.only(WindowInsetsSides.Vertical)).imePadding(),
+    Modifier.align(Alignment.BottomCenter),
     state = listState,
     reverseLayout = true,
     contentPadding = PaddingValues(
       top = topPaddingToContent(),
-      bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + composeViewHeight.value
+      bottom = composeViewHeight.value
     ),
-    additionalBarHeight = composeViewHeight
+    additionalBarOffset = composeViewHeight
   ) {
     itemsIndexed(reversedChatItems.value, key = { _, item -> item.id to item.meta.createdAt.toEpochMilliseconds() }) { i, cItem ->
       println("LALAL RELOAD ITEM $i")
@@ -1678,7 +1682,7 @@ private fun BoxScope.BottomEndFloatingButton(
     FloatingActionButton(
       onClick = onClickCounter,
       elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
-      modifier = Modifier.padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING + composeViewHeight.value).align(Alignment.BottomEnd).imePadding().navigationBarsPadding().size(48.dp),
+      modifier = Modifier.padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING + composeViewHeight.value).align(Alignment.BottomEnd).size(48.dp),
       backgroundColor = MaterialTheme.colors.secondaryVariant,
     ) {
       Text(
@@ -1692,7 +1696,7 @@ private fun BoxScope.BottomEndFloatingButton(
     FloatingActionButton(
       onClick = onClickArrowDown,
       elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
-      modifier = Modifier.padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING + composeViewHeight.value).align(Alignment.BottomEnd).imePadding().navigationBarsPadding().size(48.dp),
+      modifier = Modifier.padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING + composeViewHeight.value).align(Alignment.BottomEnd).size(48.dp),
       backgroundColor = MaterialTheme.colors.secondaryVariant,
     ) {
       Icon(

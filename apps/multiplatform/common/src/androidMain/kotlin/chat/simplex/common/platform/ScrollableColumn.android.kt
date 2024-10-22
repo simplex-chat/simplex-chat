@@ -24,7 +24,7 @@ actual fun LazyColumnWithScrollBar(
   horizontalAlignment: Alignment.Horizontal,
   flingBehavior: FlingBehavior,
   userScrollEnabled: Boolean,
-  additionalBarHeight: State<Dp>?,
+  additionalBarOffset: State<Dp>?,
   content: LazyListScope.() -> Unit
 ) {
   val state = state ?: LocalAppBarHandler.current?.listState ?: rememberLazyListState()

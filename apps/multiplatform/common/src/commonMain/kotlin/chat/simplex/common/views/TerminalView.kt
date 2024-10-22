@@ -9,6 +9,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
@@ -23,10 +24,10 @@ import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.chat.item.CONSOLE_COMPOSE_LAYOUT_ID
+import chat.simplex.common.views.chat.item.AdaptingBottomPaddingLayout
 import chat.simplex.common.views.chatlist.NavigationBarBackground
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 @Composable
@@ -79,46 +80,46 @@ fun TerminalLayout(
     composeState.value = composeState.value.copy(message = s)
   }
   Box(Modifier.fillMaxSize()) {
-    val fontSizeSqrtMultiplier = fontSizeSqrtMultiplier
-    val composeViewHeight = remember { mutableStateOf(AppBarHeight * fontSizeSqrtMultiplier) }
-    TerminalLog(floating, composeViewHeight)
-    NavigationBarBackground(true)
-    val density = LocalDensity.current
-    Column(
-      Modifier
-        .align(Alignment.BottomCenter)
-        .navigationBarsPadding()
-        .imePadding()
-        .background(MaterialTheme.colors.background.copy(remember { appPrefs.barsAlpha.state }.value))
-        .onSizeChanged { composeViewHeight.value = with(density) { it.height.toDp() } }
-    ) {
-      Divider()
-      Box(Modifier.padding(horizontal = 8.dp)) {
-        SendMsgView(
-          composeState = composeState,
-          showVoiceRecordIcon = false,
-          recState = remember { mutableStateOf(RecordingState.NotStarted) },
-          isDirectChat = false,
-          liveMessageAlertShown = SharedPreference(get = { false }, set = {}),
-          sendMsgEnabled = true,
-          sendButtonEnabled = true,
-          nextSendGrpInv = false,
-          needToAllowVoiceToContact = false,
-          allowedVoiceByPrefs = false,
-          userIsObserver = false,
-          userCanSend = true,
-          allowVoiceToContact = {},
-          placeholder = "",
-          sendMessage = { sendCommand() },
-          sendLiveMessage = null,
-          updateLiveMessage = null,
-          editPrevMessage = {},
-          onMessageChange = ::onMessageChange,
-          onFilesPasted = {},
-          textStyle = textStyle
-        )
+    val composeViewHeight = remember { mutableStateOf(0.dp) }
+    AdaptingBottomPaddingLayout(Modifier, CONSOLE_COMPOSE_LAYOUT_ID, composeViewHeight) {
+      TerminalLog(floating, composeViewHeight)
+      Column(
+        Modifier
+          .layoutId(CONSOLE_COMPOSE_LAYOUT_ID)
+          .align(Alignment.BottomCenter)
+          .navigationBarsPadding()
+          .imePadding()
+          .background(MaterialTheme.colors.background.copy(remember { appPrefs.barsAlpha.state }.value))
+      ) {
+        Divider()
+        Box(Modifier.padding(horizontal = 8.dp)) {
+          SendMsgView(
+            composeState = composeState,
+            showVoiceRecordIcon = false,
+            recState = remember { mutableStateOf(RecordingState.NotStarted) },
+            isDirectChat = false,
+            liveMessageAlertShown = SharedPreference(get = { false }, set = {}),
+            sendMsgEnabled = true,
+            sendButtonEnabled = true,
+            nextSendGrpInv = false,
+            needToAllowVoiceToContact = false,
+            allowedVoiceByPrefs = false,
+            userIsObserver = false,
+            userCanSend = true,
+            allowVoiceToContact = {},
+            placeholder = "",
+            sendMessage = { sendCommand() },
+            sendLiveMessage = null,
+            updateLiveMessage = null,
+            editPrevMessage = {},
+            onMessageChange = ::onMessageChange,
+            onFilesPasted = {},
+            textStyle = textStyle
+          )
+        }
       }
     }
+    NavigationBarBackground(true)
   }
 }
 
@@ -133,7 +134,6 @@ fun TerminalLog(floating: Boolean, composeViewHeight: State<Dp>) {
     launch {
       snapshotFlow { listState.layoutInfo.totalItemsCount }
         .filter { autoScrollToBottom }
-        .onEach { delay(100) }
         .collect {
           try {
             listState.scrollToItem(0)
@@ -144,21 +144,19 @@ fun TerminalLog(floating: Boolean, composeViewHeight: State<Dp>) {
     }
     launch {
       snapshotFlow { listState.firstVisibleItemIndex }
-        .onEach { delay(100) }
         .collect {
           autoScrollToBottom = it == 0
         }
     }
   }
   LazyColumnWithScrollBar (
-    modifier = Modifier.consumeWindowInsets(WindowInsets.navigationBars.only(WindowInsetsSides.Vertical)).imePadding(),
     reverseLayout = true,
     contentPadding = PaddingValues(
       top = topPaddingToContent(),
-      bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + composeViewHeight.value
+      bottom = composeViewHeight.value
     ),
     state = listState,
-    additionalBarHeight = composeViewHeight
+    additionalBarOffset = composeViewHeight
   ) {
     items(reversedTerminalItems, key = { item -> item.id to item.createdAtNanos }) { item ->
       val clipboard = LocalClipboardManager.current

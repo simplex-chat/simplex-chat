@@ -22,7 +22,7 @@ expect fun LazyColumnWithScrollBar(
   horizontalAlignment: Alignment.Horizontal = Alignment.Start,
   flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
   userScrollEnabled: Boolean = true,
-  additionalBarHeight: State<Dp>? = null,
+  additionalBarOffset: State<Dp>? = null,
   content: LazyListScope.() -> Unit
 )
 

@@ -32,7 +32,7 @@ actual fun LazyColumnWithScrollBar(
   horizontalAlignment: Alignment.Horizontal,
   flingBehavior: FlingBehavior,
   userScrollEnabled: Boolean,
-  additionalBarHeight: State<Dp>?,
+  additionalBarOffset: State<Dp>?,
   content: LazyListScope.() -> Unit
 ) {
   val scope = rememberCoroutineScope()
@@ -87,7 +87,7 @@ actual fun LazyColumnWithScrollBar(
   }
   Box(if (connection != null) Modifier.nestedScroll(connection) else Modifier) {
     LazyColumn(modifier.then(scrollModifier), state, contentPadding, reverseLayout, verticalArrangement, horizontalAlignment, flingBehavior, userScrollEnabled, content)
-    ScrollBar(reverseLayout, state, scrollBarAlpha, scrollJob, scrollBarDraggingState, additionalBarHeight)
+    ScrollBar(reverseLayout, state, scrollBarAlpha, scrollJob, scrollBarDraggingState, additionalBarOffset)
   }
 }
 
