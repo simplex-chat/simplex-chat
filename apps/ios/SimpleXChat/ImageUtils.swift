@@ -101,17 +101,12 @@ public func resizeImageToDataSize(_ image: UIImage, maxDataSize: Int64, hasAlpha
 }
 
 public func resizeImageToStrSizeSync(_ image: UIImage, maxDataSize: Int64) -> String? {
-    var img = image
-    let hasAlpha = imageHasAlpha(image)
-    var str = compressImageStr(img, hasAlpha: hasAlpha)
-    var dataSize = str?.count ?? 0
-    while dataSize != 0 && dataSize > maxDataSize {
-        let ratio = sqrt(Double(dataSize) / Double(maxDataSize))
-        let clippedRatio = min(ratio, 2.0)
-        img = reduceSize(img, ratio: clippedRatio, hasAlpha: hasAlpha)
-        str = compressImageStr(img, hasAlpha: hasAlpha)
-        dataSize = str?.count ?? 0
-    }
+    // XXX: only needed when the original encoding isn't available
+    let tmpFile = generateNewFileName(getTempFilesDirectory().path + "/" + "resize", "png", fullPath: true)
+    saveFile(image.pngData(), tmpFile) // encode as png and let the backend deal with alpha and formats
+    let str = chat_resize_image_to_str_size(filePath, maxDataSize)
+    removeFile(tmpFile)
+    guard let dataSize = str?.count > 0 else { return nil }
     logger.debug("resizeImageToStrSize final \(dataSize)")
     return str
 }

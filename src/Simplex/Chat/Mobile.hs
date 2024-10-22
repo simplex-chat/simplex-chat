@@ -21,6 +21,7 @@ import qualified Data.ByteString.Base64.URL as U
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Either (fromRight)
 import Data.Functor (($>))
 import Data.List (find)
 import qualified Data.List.NonEmpty as L
@@ -198,7 +199,10 @@ cChatJsonLength s = fromIntegral . subtract 2 . LB.length . J.encode . safeDecod
 -- cChatResizeImageToDataSize :: CString -> CInt -> IO CString
 -- cChatResizeImageToDataSize path maxSize = error "todo"
 
--- | Downscale image at path until its data-uri encoding fits into specified size
+-- | Downscale image at path until its data-uri encoding fits into specified size.
+-- Returns data-uri/base64 encoded image as 0-terminated string.
+-- Empty result string means operation failure.
+-- The caller must free the result ptr.
 cChatResizeImageToStrSize :: CString -> CInt -> IO CString
 cChatResizeImageToStrSize fp' maxSize = do
   fp <- peekCString fp'
@@ -206,7 +210,7 @@ cChatResizeImageToStrSize fp' maxSize = do
     (ri, _) <- liftIOEither $ readResizeable fp
     let resized = resizeImageToStrSize (fromIntegral maxSize) ri
     if LB.length resized > fromIntegral maxSize then throwError "unable to fit" else pure resized
-  either (const $ pure nullPtr) newCStringFromLazyBS res
+  newCStringFromLazyBS $ fromRight "" res
 
 -- -- | Strip EXIF etc metadata from image, inlplace
 -- cChatStripImageMetadata :: CString -> IO CBool
