@@ -344,6 +344,7 @@ func loadChat(chat: Chat, search: String = "", clearItems: Bool = true) async {
         let chat = try await apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
         await MainActor.run {
             im.reversedChatItems = chat.chatItems.reversed()
+            m.updateChatStats(id: chat.chatInfo.id, cStats: chat.chatStats)
             m.updateChatInfo(chat.chatInfo)
         }
     } catch let error {
