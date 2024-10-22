@@ -12,6 +12,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -49,17 +53,37 @@ fun AppScreen() {
       // (because nav bar and holes located on vertical sides of screen in landscape view)
       val direction = LocalLayoutDirection.current
       val safePadding = WindowInsets.safeDrawing.asPaddingValues()
-      val paddingStart = safePadding.calculateStartPadding(direction)
-      val paddingEnd = safePadding.calculateEndPadding(direction)
+      val cutout = WindowInsets.displayCutout.asPaddingValues()
+      val cutoutStart = cutout.calculateStartPadding(direction)
+      val cutoutEnd = cutout.calculateEndPadding(direction)
+      val cutoutMax = maxOf(cutoutStart, cutoutEnd)
+      val paddingStartUntouched = safePadding.calculateStartPadding(direction)
+      val paddingStart = paddingStartUntouched - cutoutStart
+      val paddingEndUntouched = safePadding.calculateEndPadding(direction)
+      val paddingEnd = paddingEndUntouched - cutoutEnd
       // Such a strange layout is needed because the main content should be covered by solid color in order to hide overflow
       // of some elements that may have negative offset (so, can't use Row {}).
       // To check: go to developer settings of Android, choose Display cutout -> Punch hole, and rotate the phone to landscape, open any chat
       Box {
-        Box(Modifier.padding(start = paddingStart, end = paddingEnd).consumeWindowInsets(PaddingValues(start = paddingStart, end = paddingEnd))) {
-          MainScreen()
+        val fullscreenGallery = remember { chatModel.fullscreenGalleryVisible }
+        Box(Modifier.padding(start = paddingStart + cutoutMax, end = paddingEnd + cutoutMax).consumeWindowInsets(PaddingValues(start = paddingStartUntouched, end = paddingEndUntouched))) {
+          Box(Modifier.drawBehind {
+            if (fullscreenGallery.value) {
+              drawRect(Color.Black,  topLeft = Offset(-(paddingStart + cutoutMax).toPx(), 0f), Size(size.width + (paddingStart + cutoutMax).toPx() + (paddingEnd + cutoutMax).toPx(), size.height))
+            }
+          }) {
+            MainScreen()
+          }
         }
-        Box(Modifier.width(paddingStart).fillMaxHeight().background(MaterialTheme.colors.background))
-        Box(Modifier.align(Alignment.CenterEnd).width(paddingEnd).fillMaxHeight().background(MaterialTheme.colors.background))
+        Box(Modifier.width(paddingStart + cutoutMax)
+          .fillMaxHeight()
+          .graphicsLayer { alpha = if (fullscreenGallery.value) 0f else 1f }
+          .background(MaterialTheme.colors.background))
+        Box(Modifier.align(Alignment.CenterEnd)
+          .width(paddingEnd + cutoutMax)
+          .fillMaxHeight()
+          .graphicsLayer { alpha = if (fullscreenGallery.value) 0f else 1f }
+          .background(MaterialTheme.colors.background))
       }
     }
   }

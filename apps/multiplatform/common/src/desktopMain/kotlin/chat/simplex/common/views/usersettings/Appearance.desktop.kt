@@ -70,7 +70,7 @@ fun AppearanceScope.AppearanceLayout(
     SectionDividerSpaced()
     BarsAlphaSection(MR.strings.appearance_in_app_bars_alpha, appPrefs.inAppBarsAlpha, 0.9f)
 
-    SectionDividerSpaced()
+    SectionDividerSpaced(maxTopPadding = true)
     ProfileImageSection()
 
     SectionDividerSpaced(maxTopPadding = true)
