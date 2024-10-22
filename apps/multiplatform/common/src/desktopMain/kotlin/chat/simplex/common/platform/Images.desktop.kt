@@ -3,6 +3,8 @@ package chat.simplex.common.platform
 import androidx.compose.ui.graphics.*
 import boofcv.io.image.ConvertBufferedImage
 import boofcv.struct.image.GrayU8
+import chat.simplex.common.views.helpers.generateNewFileName
+import chat.simplex.common.views.helpers.removeFile
 import chat.simplex.res.MR
 import org.jetbrains.skia.Image
 import java.awt.RenderingHints
@@ -32,18 +34,17 @@ actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
 }
 
 actual fun resizeImageToStrSize(image: ImageBitmap, maxDataSize: Long): String {
-  var img = image
-  var str = compressImageStr(img)
-  while (str.length > maxDataSize) {
-    val ratio = sqrt(str.length.toDouble() / maxDataSize.toDouble())
-    val clippedRatio = kotlin.math.min(ratio, 2.0)
-    val width = (img.width.toDouble() / clippedRatio).toInt()
-    val height = img.height * width / img.width
-    img = img.scale(width, height)
-    str = compressImageStr(img)
-  }
+  val tmpFileName = generateNewFileName("IMG", "png", tmpDir)
+  val tmpFile = File(tmpDir, tmpFileName)
+  val output = FileOutputStream(tmpFile)
+  compressImageData(image, true).writeTo(output)
+  output.flush()
+  output.close()
+  var str = chatResizeImageToStrSize(tmpFileName, maxDataSize.toInt())
+  removeFile(tmpFileName)
   return str
 }
+
 actual fun resizeImageToDataSize(image: ImageBitmap, usePng: Boolean, maxDataSize: Long): ByteArrayOutputStream {
   var img = image
   var stream = compressImageData(img, usePng)

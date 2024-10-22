@@ -19,3 +19,4 @@ EXPORTS
     chat_read_file
     chat_encrypt_file
     chat_decrypt_file
+    chat_resize_image_to_str_size

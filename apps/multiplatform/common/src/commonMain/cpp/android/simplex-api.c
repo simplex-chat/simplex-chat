@@ -71,6 +71,7 @@ extern char *chat_write_file(chat_ctrl ctrl, const char *path, char *ptr, int le
 extern char *chat_read_file(const char *path, const char *key, const char *nonce);
 extern char *chat_encrypt_file(chat_ctrl ctrl, const char *from_path, const char *to_path);
 extern char *chat_decrypt_file(const char *from_path, const char *key, const char *nonce, const char *to_path);
+extern char *chat_resize_image_to_str_size(const char *from_path, int max_size);
 
 JNIEXPORT jobjectArray JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatMigrateInit(JNIEnv *env, __unused jclass clazz, jstring dbPath, jstring dbKey, jstring confirm) {
@@ -242,5 +243,13 @@ Java_chat_simplex_common_platform_CoreKt_chatDecryptFile(JNIEnv *env, jclass cla
     (*env)->ReleaseStringUTFChars(env, key, _key);
     (*env)->ReleaseStringUTFChars(env,  nonce, _nonce);
     (*env)->ReleaseStringUTFChars(env, to_path, _to_path);
+    return res;
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatResizeImageToStrSize(JNIEnv *env, jclass clazz, jstring from_path, jint max_size) {
+    const char *_from_path = encode_to_utf8_chars(env, from_path);
+    jstring res = decode_to_utf8_string(env, chat_resize_image_to_str_size(_from_path, max_size));
+    (*env)->ReleaseStringUTFChars(env, from_path, _from_path);
     return res;
 }
