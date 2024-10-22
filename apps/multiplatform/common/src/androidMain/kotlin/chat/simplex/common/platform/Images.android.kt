@@ -14,7 +14,9 @@ import boofcv.android.ConvertBitmap
 import boofcv.struct.image.GrayU8
 import chat.simplex.common.R
 import chat.simplex.common.views.helpers.errorBitmap
+import chat.simplex.common.views.helpers.generateNewFileName
 import chat.simplex.common.views.helpers.getFileName
+import chat.simplex.common.views.helpers.removeFile
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.net.URI
@@ -35,16 +37,14 @@ actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
 }
 
 actual fun resizeImageToStrSize(image: ImageBitmap, maxDataSize: Long): String {
-  var img = image
-  var str = compressImageStr(img)
-  while (str.length > maxDataSize) {
-    val ratio = sqrt(str.length.toDouble() / maxDataSize.toDouble())
-    val clippedRatio = min(ratio, 2.0)
-    val width = (img.width.toDouble() / clippedRatio).toInt()
-    val height = img.height * width / img.width
-    img = Bitmap.createScaledBitmap(img.asAndroidBitmap(), width, height, true).asImageBitmap()
-    str = compressImageStr(img)
-  }
+  val tmpFileName = generateNewFileName("IMG", "png", tmpDir)
+  val tmpFile = File(tmpDir, tmpFileName)
+  val output = FileOutputStream(tmpFile)
+  compressImageData(image, true).writeTo(output)
+  output.flush()
+  output.close()
+  var str = chatResizeImageToStrSize(tmpFileName, maxDataSize.toInt())
+  removeFile(tmpFileName)
   return str
 }
 

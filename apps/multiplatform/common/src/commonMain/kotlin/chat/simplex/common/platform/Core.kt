@@ -35,6 +35,7 @@ external fun chatWriteFile(ctrl: ChatCtrl, path: String, buffer: ByteBuffer): St
 external fun chatReadFile(path: String, key: String, nonce: String): Array<Any>
 external fun chatEncryptFile(ctrl: ChatCtrl, fromPath: String, toPath: String): String
 external fun chatDecryptFile(fromPath: String, key: String, nonce: String, toPath: String): String
+external fun chatResizeImageToStrSize(fromPath: String, maxSize: Int): String
 
 val chatModel: ChatModel
   get() = chatController.chatModel
