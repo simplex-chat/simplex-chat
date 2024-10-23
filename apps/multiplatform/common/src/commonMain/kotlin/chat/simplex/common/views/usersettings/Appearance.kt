@@ -183,7 +183,7 @@ object AppearanceScope {
             pref.set(defaultValue)
           },
           contentAlignment = Alignment.Center) {
-          Text("$prefValue",
+          Text(String.format(Locale.US, "%.2f", prefValue),
             color = if (prefValue == defaultValue) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground,
             fontSize = 12.sp,
             maxLines = 1
@@ -193,10 +193,10 @@ object AppearanceScope {
         Slider(
           prefValue,
           valueRange = 0f..1f,
-          steps = 11,
+          steps = 101,
           onValueChange = {
-            val diff = it % 0.1f
-            pref.set(String.format(Locale.US, "%.1f", it + (if (diff >= 0.05f) -diff + 0.1f else -diff)).toFloatOrNull() ?: 1f)
+            val diff = it % 0.01f
+            pref.set(String.format(Locale.US, "%.2f", it + (if (diff >= 0.005f) -diff + 0.01f else -diff)).toFloatOrNull() ?: 1f)
           },
           colors = SliderDefaults.colors(
             activeTickColor = Color.Transparent,
