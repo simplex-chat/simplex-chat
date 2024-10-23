@@ -267,4 +267,5 @@
     <string name="color_primary_variant2">Corak tambahan 2</string>
     <string name="forward_files_messages_deleted_after_selection_title">%1$s pesan tidak diteruskan</string>
     <string name="servers_info_subscriptions_connections_subscribed">Koneksi aktif</string>
+    <string name="feature_roles_admins">pengelola</string>
 </resources>
