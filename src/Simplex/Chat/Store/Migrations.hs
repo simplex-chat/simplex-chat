@@ -229,7 +229,7 @@ schemaMigrations =
     ("20240920_user_order", m20240920_user_order, Just down_m20240920_user_order),
     ("20241008_indexes", m20241008_indexes, Just down_m20241008_indexes),
     ("20241010_contact_requests_contact_id", m20241010_contact_requests_contact_id, Just down_m20241010_contact_requests_contact_id),
-    ("20241023_chat_item_autoincrement_id", m20241023_chat_item_autoincrement_id, Just down_m2024102_chat_item_autoincrement_id)
+    ("20241023_chat_item_autoincrement_id", m20241023_chat_item_autoincrement_id, Just down_m20241023_chat_item_autoincrement_id)
   ]
 
 -- | The list of migrations in ascending order by date
