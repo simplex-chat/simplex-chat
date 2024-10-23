@@ -28,7 +28,7 @@ Also, we added Persian interface language to the Android and desktop apps, thank
 
 <img src="./images/simplex-explained.svg" width="37%" class="float-right">
 
-SimpleX network design has always been focussed on protecting user identity on the messaging protocol level - there is no user profile identifiers of any kind in the protocol design, not even random numbers or cryptographic keys.
+SimpleX network design has always been focused on protecting user identity on the messaging protocol level - there is no user profile identifiers of any kind in the protocol design, not even random numbers or cryptographic keys.
 
 Until this release though, SimpleX network had no built-in protection of user transport identities - IP addresses. As previously the users could only choose which messaging relays to use to receive messages, these relays could observe the IP addresses of the senders, and if these relays were controlled by the recipients, the recipients themselves could observe them too - either by modifying server code or simply by tracking all connecting IP addresses.
 
@@ -49,7 +49,7 @@ Many SimpleX network design ideas are borrowed from Tor network design:
 
 So why didn't we just embed Tor into the messaging clients to provide IP address protection?
 
-We believe that Tor may be the wrong solution for some users for one of the reasons:
+We believe that Tor may be the wrong solution for some users for one of these reasons:
 - much higher latency, error rate and resource usage.
 - people who want to use Tor are better served by specialized apps, such as [Orbot](https://guardianproject.info/apps/org.torproject.android/).
 - Tor usage is restricted in some networks, so it would require complex configuration in the app UI.
