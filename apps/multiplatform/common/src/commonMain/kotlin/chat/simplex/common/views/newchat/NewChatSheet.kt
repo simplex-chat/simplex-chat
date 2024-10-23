@@ -62,11 +62,9 @@ fun ModalData.NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
     }
     if (oneHandUI.value) {
       Column(Modifier.align(Alignment.BottomCenter)) {
-        Divider()
         CloseSheetBarBottom(
           close = close,
           showClose = true,
-          endButtons = { Spacer(Modifier.minimumInteractiveComponentSize()) },
           closeBarTitle = generalGetString(MR.strings.new_message)
         )
       }
@@ -726,11 +724,9 @@ private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats
     }
     if (oneHandUI.value) {
       Column(Modifier.align(Alignment.BottomCenter)) {
-        Divider()
         CloseSheetBarBottom(
           close = closeDeletedChats,
           showClose = true,
-          endButtons = { Spacer(Modifier.minimumInteractiveComponentSize()) },
           closeBarTitle = generalGetString(MR.strings.deleted_chats),
         )
       }

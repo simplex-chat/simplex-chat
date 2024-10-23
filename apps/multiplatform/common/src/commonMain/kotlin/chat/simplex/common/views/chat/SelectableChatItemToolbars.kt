@@ -12,6 +12,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.BackHandler
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.views.helpers.*
@@ -20,10 +21,11 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 
 @Composable
-fun ColumnScope.SelectedItemsTopToolbar(selectedChatItems: MutableState<Set<Long>?>) {
+fun BoxScope.SelectedItemsTopToolbar(selectedChatItems: MutableState<Set<Long>?>) {
   val onBackClicked = { selectedChatItems.value = null }
   BackHandler(onBack = onBackClicked)
   val count = selectedChatItems.value?.size ?: 0
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
   DefaultTopAppBar(
     navigationButton = { NavigationButtonClose(onButtonClicked = onBackClicked) },
     title = {
@@ -40,10 +42,10 @@ fun ColumnScope.SelectedItemsTopToolbar(selectedChatItems: MutableState<Set<Long
     },
     onTitleClick = null,
     showSearch = false,
-    onTop = true,
+    onTop = oneHandUI.value,
     onSearchValueChanged = {},
   )
-  Divider()
+  Divider(Modifier.align(if (oneHandUI.value) Alignment.TopStart else Alignment.BottomStart))
 }
 
 @Composable

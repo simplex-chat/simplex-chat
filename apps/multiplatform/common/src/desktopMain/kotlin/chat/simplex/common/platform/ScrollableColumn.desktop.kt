@@ -101,12 +101,13 @@ private fun ScrollBar(
   scrollBarDraggingState: MutableState<Boolean>,
   additionalBarHeight: State<Dp>?
 ) {
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
   val padding = if (additionalBarHeight != null) {
-    PaddingValues(top = AppBarHeight * fontSizeSqrtMultiplier, bottom = additionalBarHeight.value)
+    PaddingValues(top = if (oneHandUI.value) 0.dp else AppBarHeight * fontSizeSqrtMultiplier, bottom = additionalBarHeight.value)
   } else if (reverseLayout) {
     PaddingValues(bottom = AppBarHeight * fontSizeSqrtMultiplier)
   } else {
-    PaddingValues(top = AppBarHeight * fontSizeSqrtMultiplier)
+    PaddingValues(top = if (oneHandUI.value) 0.dp else AppBarHeight * fontSizeSqrtMultiplier)
   }
   Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.CenterEnd) {
     DesktopScrollBar(rememberScrollbarAdapter(state), Modifier.fillMaxHeight(), scrollBarAlpha, scrollJob, reverseLayout, scrollBarDraggingState)

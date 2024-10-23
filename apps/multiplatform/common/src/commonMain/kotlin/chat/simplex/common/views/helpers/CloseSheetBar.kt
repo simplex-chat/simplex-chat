@@ -40,7 +40,7 @@ fun CloseSheetBar(
 
   val interactionSource = remember { MutableInteractionSource() }
   val oneHandUI = remember { appPrefs.oneHandUI.state }
-  Column(
+  Box(
     modifier = Modifier
       .fillMaxWidth()
       .then(if (oneHandUI.value) Modifier.navigationBarsPadding() else Modifier)
@@ -53,9 +53,6 @@ fun CloseSheetBar(
         }
       }
   ) {
-    if (oneHandUI.value && title.value.isNotEmpty()) {
-      CloseBarDivider(connection)
-    }
     Row(
       modifier = Modifier.padding(barPaddingValues),
       content = {
@@ -96,19 +93,18 @@ fun CloseSheetBar(
         }
       }
     )
-    if (!oneHandUI.value && title.value.isNotEmpty()) {
-      CloseBarDivider(connection)
-    }
+    CloseBarDivider(connection)
   }
 }
 
 @Composable
-private fun CloseBarDivider(connection: CollapsingAppBarNestedScrollConnection?) {
+private fun BoxScope.CloseBarDivider(connection: CollapsingAppBarNestedScrollConnection?) {
   if (connection != null) {
     val oneHandUI = remember { appPrefs.oneHandUI.state }
     val prefAlpha = appPrefs.inAppBarsAlpha.get()
     Divider(
       Modifier
+        .align(if (oneHandUI.value) Alignment.TopStart else Alignment.BottomStart)
         .graphicsLayer {
           alpha = if (oneHandUI.value) prefAlpha else topTitleAlpha(false, connection)
         }
@@ -127,42 +123,39 @@ fun CloseSheetBarBottom(
   val background = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
   val themeBackgroundMix = background.copy(remember { appPrefs.inAppBarsAlpha.state }.value)
   val interactionSource = remember { MutableInteractionSource() }
-  Column(
+  Box(
     modifier = Modifier
       .fillMaxWidth()
       .navigationBarsPadding()
       .clickable(interactionSource = interactionSource, indication = null) { /* receive clicks to not allow to click through */ }
-      .heightIn(min = AppBarHeight * fontSizeSqrtMultiplier)
       .background(themeBackgroundMix)
   ) {
     Row(
-      content = {
-        Row(
-          Modifier
-            .fillMaxWidth()
-            .height(AppBarHeight * fontSizeSqrtMultiplier),
-          verticalAlignment = Alignment.CenterVertically
-        ) {
-          if (showClose) {
-            NavigationButtonBack(tintColor = tintColor, onButtonClicked = close)
-          }
-          Row(
-              Modifier.weight(1f),
-              horizontalArrangement = Arrangement.Center,
-              verticalAlignment = Alignment.CenterVertically
-            ) {
-            Text(
-              closeBarTitle,
-              fontWeight = FontWeight.SemiBold,
-              maxLines = 1
-            )
-          }
-          Row {
-            endButtons()
-          }
-        }
+      Modifier
+        .fillMaxWidth()
+        .height(AppBarHeight * fontSizeSqrtMultiplier),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      if (showClose) {
+        NavigationButtonBack(tintColor = tintColor, onButtonClicked = close)
       }
-    )
+      Row(
+        Modifier.weight(1f),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Text(
+          closeBarTitle,
+          fontWeight = FontWeight.SemiBold,
+          maxLines = 1
+        )
+      }
+      Row {
+        endButtons()
+      }
+    }
+    val oneHandUI = remember { appPrefs.oneHandUI.state }
+    Divider(Modifier.align(if (oneHandUI.value) Alignment.TopStart else Alignment.BottomStart))
   }
 }
 

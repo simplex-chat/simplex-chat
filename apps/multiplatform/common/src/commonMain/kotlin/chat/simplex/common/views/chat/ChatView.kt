@@ -677,18 +677,19 @@ fun ChatLayout(
               )
             }
           }
+          val oneHandUI = remember { appPrefs.oneHandUI.state }
           Box(Modifier
             .layoutId(CHAT_COMPOSE_LAYOUT_ID)
             .align(Alignment.BottomCenter)
             .imePadding()
-            .navigationBarsPadding()
+            .then(if (oneHandUI.value) Modifier.padding(bottom = AppBarHeight * fontSizeSqrtMultiplier) else Modifier.navigationBarsPadding())
           ) {
             composeView()
           }
         }
         val oneHandUI = remember { appPrefs.oneHandUI.state }
         NavigationBarBackground(true, oneHandUI.value)
-        Column {
+        Box(if (oneHandUI.value) Modifier.align(Alignment.BottomStart).navigationBarsPadding() else Modifier) {
           if (selectedChatItems.value == null) {
             if (chatInfo != null) {
               ChatInfoToolbar(chatInfo, back, info, startCall, endCall, addMembers, openGroupLink, changeNtfsState, onSearchValueChanged, showSearch)
@@ -703,7 +704,7 @@ fun ChatLayout(
 }
 
 @Composable
-fun ColumnScope.ChatInfoToolbar(
+fun BoxScope.ChatInfoToolbar(
   chatInfo: ChatInfo,
   back: () -> Unit,
   info: () -> Unit,
@@ -855,13 +856,13 @@ fun ColumnScope.ChatInfoToolbar(
       }
     }
   }
-
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
   DefaultTopAppBar(
     navigationButton = { if (appPlatform.isAndroid || showSearch.value) { NavigationButtonBack(onBackClicked) }  },
     title = { ChatInfoToolbarTitle(chatInfo) },
     onTitleClick = if (chatInfo is ChatInfo.Local) null else info,
     showSearch = showSearch.value,
-    onTop = true,
+    onTop = oneHandUI.value,
     onSearchValueChanged = onSearchValueChanged,
     buttons = barButtons
   )
@@ -871,12 +872,12 @@ fun ColumnScope.ChatInfoToolbar(
     DefaultDropdownMenu(
       showMenu,
       modifier = Modifier.onSizeChanged { with(density) { width.value = it.width.toDp().coerceAtLeast(250.dp) } },
-      offset = DpOffset(-width.value, 0.dp)
+      offset = DpOffset(-width.value, AppBarHeight)
     ) {
       menuItems.forEach { it() }
     }
   }
-  Divider(Modifier.background(MaterialTheme.colors.background))
+  Divider(Modifier.background(MaterialTheme.colors.background).align(if (oneHandUI.value) Alignment.TopStart else Alignment.BottomStart))
 }
 
 @Composable
@@ -1479,7 +1480,14 @@ private fun TopEndFloatingButton(
 }
 
 @Composable
-fun topPaddingToContent(): Dp = AppBarHeight * fontSizeSqrtMultiplier + WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+fun topPaddingToContent(): Dp {
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  return if (oneHandUI.value) {
+    WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+  } else {
+    AppBarHeight * fontSizeSqrtMultiplier + WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+  }
+}
 
 @Composable
 private fun FloatingDate(

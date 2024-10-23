@@ -488,74 +488,78 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: String, chatModel: ChatModel) {
 
 @Composable
 private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState<TextFieldValue>, searchShowingSimplexLink: MutableState<Boolean>, searchChatFilteredBySimplexLink: MutableState<String?>) {
-  Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-    val focusRequester = remember { FocusRequester() }
-    var focused by remember { mutableStateOf(false) }
-    Icon(
-      painterResource(MR.images.ic_search),
-      contentDescription = null,
-      Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF).size(22.dp * fontSizeSqrtMultiplier),
-      tint = MaterialTheme.colors.secondary
-    )
-    SearchTextField(
-      Modifier.weight(1f).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
-      placeholder = stringResource(MR.strings.search_or_paste_simplex_link),
-      alwaysVisible = true,
-      searchText = searchText,
-      enabled = !remember { searchShowingSimplexLink }.value,
-      trailingContent = null,
-    ) {
-      searchText.value = searchText.value.copy(it)
-    }
-    val hasText = remember { derivedStateOf { searchText.value.text.isNotEmpty() } }
-    if (hasText.value) {
-      val hideSearchOnBack: () -> Unit = { searchText.value = TextFieldValue() }
-      BackHandler(onBack = hideSearchOnBack)
-      KeyChangeEffect(chatModel.currentRemoteHost.value) {
-        hideSearchOnBack()
+  Box {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().heightIn(min = AppBarHeight * fontSizeSqrtMultiplier)) {
+      val focusRequester = remember { FocusRequester() }
+      var focused by remember { mutableStateOf(false) }
+      Icon(
+        painterResource(MR.images.ic_search),
+        contentDescription = null,
+        Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF).size(22.dp * fontSizeSqrtMultiplier),
+        tint = MaterialTheme.colors.secondary
+      )
+      SearchTextField(
+        Modifier.weight(1f).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
+        placeholder = stringResource(MR.strings.search_or_paste_simplex_link),
+        alwaysVisible = true,
+        searchText = searchText,
+        enabled = !remember { searchShowingSimplexLink }.value,
+        trailingContent = null,
+      ) {
+        searchText.value = searchText.value.copy(it)
       }
-    } else {
-      val padding = if (appPlatform.isDesktop) 0.dp else 7.dp
-      if (chatModel.chats.value.isNotEmpty()) {
-        ToggleFilterEnabledButton() 
-      }
-      Spacer(Modifier.width(padding))
-    }
-    val focusManager = LocalFocusManager.current
-    val keyboardState = getKeyboardState()
-    LaunchedEffect(keyboardState.value) {
-      if (keyboardState.value == KeyboardState.Closed && focused) {
-        focusManager.clearFocus()
-      }
-    }
-    val view = LocalMultiplatformView()
-    LaunchedEffect(Unit) {
-      snapshotFlow { searchText.value.text }
-        .distinctUntilChanged()
-        .collect {
-          val link = strHasSingleSimplexLink(it.trim())
-          if (link != null) {
-            // if SimpleX link is pasted, show connection dialogue
-            hideKeyboard(view)
-            if (link.format is Format.SimplexLink) {
-              val linkText = link.simplexLinkText(link.format.linkType, link.format.smpHosts)
-              searchText.value = searchText.value.copy(linkText, selection = TextRange.Zero)
-            }
-            searchShowingSimplexLink.value = true
-            searchChatFilteredBySimplexLink.value = null
-            connect(link.text, searchChatFilteredBySimplexLink) { searchText.value = TextFieldValue() }
-          } else if (!searchShowingSimplexLink.value || it.isEmpty()) {
-            if (it.isNotEmpty()) {
-              // if some other text is pasted, enter search mode
-              focusRequester.requestFocus()
-            } else if (listState.layoutInfo.totalItemsCount > 0) {
-              listState.scrollToItem(0)
-            }
-            searchShowingSimplexLink.value = false
-            searchChatFilteredBySimplexLink.value = null
-          }
+      val hasText = remember { derivedStateOf { searchText.value.text.isNotEmpty() } }
+      if (hasText.value) {
+        val hideSearchOnBack: () -> Unit = { searchText.value = TextFieldValue() }
+        BackHandler(onBack = hideSearchOnBack)
+        KeyChangeEffect(chatModel.currentRemoteHost.value) {
+          hideSearchOnBack()
         }
+      } else {
+        val padding = if (appPlatform.isDesktop) 0.dp else 7.dp
+        if (chatModel.chats.value.isNotEmpty()) {
+          ToggleFilterEnabledButton()
+        }
+        Spacer(Modifier.width(padding))
+      }
+      val focusManager = LocalFocusManager.current
+      val keyboardState = getKeyboardState()
+      LaunchedEffect(keyboardState.value) {
+        if (keyboardState.value == KeyboardState.Closed && focused) {
+          focusManager.clearFocus()
+        }
+      }
+      val view = LocalMultiplatformView()
+      LaunchedEffect(Unit) {
+        snapshotFlow { searchText.value.text }
+          .distinctUntilChanged()
+          .collect {
+            val link = strHasSingleSimplexLink(it.trim())
+            if (link != null) {
+              // if SimpleX link is pasted, show connection dialogue
+              hideKeyboard(view)
+              if (link.format is Format.SimplexLink) {
+                val linkText = link.simplexLinkText(link.format.linkType, link.format.smpHosts)
+                searchText.value = searchText.value.copy(linkText, selection = TextRange.Zero)
+              }
+              searchShowingSimplexLink.value = true
+              searchChatFilteredBySimplexLink.value = null
+              connect(link.text, searchChatFilteredBySimplexLink) { searchText.value = TextFieldValue() }
+            } else if (!searchShowingSimplexLink.value || it.isEmpty()) {
+              if (it.isNotEmpty()) {
+                // if some other text is pasted, enter search mode
+                focusRequester.requestFocus()
+              } else if (listState.layoutInfo.totalItemsCount > 0) {
+                listState.scrollToItem(0)
+              }
+              searchShowingSimplexLink.value = false
+              searchChatFilteredBySimplexLink.value = null
+            }
+          }
+      }
     }
+    val oneHandUI = remember { appPrefs.oneHandUI.state }
+    Divider(Modifier.align(if (oneHandUI.value) Alignment.TopStart else Alignment.BottomStart))
   }
 }
 
@@ -685,14 +689,12 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>) {
           .background(MaterialTheme.colors.background)
         ) {
         if (oneHandUI.value) {
-          Divider()
           Column(Modifier.consumeWindowInsets(WindowInsets.navigationBars).consumeWindowInsets(PaddingValues(bottom = AppBarHeight))) {
             ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
           }
         } else {
           ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
-          Divider()
         }
       }
     }
