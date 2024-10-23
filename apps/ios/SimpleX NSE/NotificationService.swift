@@ -252,6 +252,7 @@ class NotificationService: UNNotificationServiceExtension {
                 if !expectedMessages.isEmpty {
                     shouldProcessNtf = true
                     // TODO apiGetConnNtfMessages to trigger message processing loop
+                    let _ = apiGetConnNtfMessages(connIds: ntfConns.compactMap { $0.connEntity_?.conn.agentConnId })
                     return
                 }
             } else if let dbStatus = dbStatus {
@@ -310,11 +311,11 @@ class NotificationService: UNNotificationServiceExtension {
             } else if (expectedMessages[id]?.allowedGetNextAttempts ?? 0) > 0, let receiveConnId = expectedMessages[id]?.receiveConnId {
                 logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): unexpected msgInfo, get next message")
                 expectedMessages[id]?.allowedGetNextAttempts -= 1
-                if let receivedMsg = apiGetConnNtfMessage(connId: receiveConnId) {
-                    logger.debug("NotificationService processNtf, on apiGetConnNtfMessage: msgInfo msgId = \(info.msgId, privacy: .private), receivedMsg msgId = \(receivedMsg.msgId, privacy: .private)")
+                if let receivedMsg = getConnNtfMessage(connId: receiveConnId) {
+                    logger.debug("NotificationService processNtf, on getConnNtfMessage: msgInfo msgId = \(info.msgId, privacy: .private), receivedMsg msgId = \(receivedMsg.msgId, privacy: .private)")
                     return true
                 } else {
-                    logger.debug("NotificationService processNtf, on apiGetConnNtfMessage: msgInfo msgId = \(info.msgId, privacy: .private): no next message, deliver best attempt")
+                    logger.debug("NotificationService processNtf, on getConnNtfMessage: msgInfo msgId = \(info.msgId, privacy: .private): no next message, deliver best attempt")
                     expectedMessages[id]?.ready = true
                     self.deliverBestAttemptNtf()
                     return expectingMoreMessages
@@ -860,7 +861,7 @@ func toUserNtfConn(_ ntfConn: NtfConn) -> UserNtfConn? {
     }
 }
 
-func apiGetConnNtfMessages(connIds: [String]) -> [NtfMessage]? {
+func apiGetConnNtfMessages(connIds: [String]) -> [NtfMsgInfo?]? {
     guard apiGetActiveUser() != nil else {
         logger.debug("no active user")
         return nil
@@ -874,17 +875,11 @@ func apiGetConnNtfMessages(connIds: [String]) -> [NtfMessage]? {
     return nil
 }
 
-func apiGetConnNtfMessage(connId: String) -> NtfMsgInfo? {
-    guard apiGetActiveUser() != nil else {
-        logger.debug("no active user")
-        return nil
+func getConnNtfMessage(connId: String) -> NtfMsgInfo? {
+    let r_ = apiGetConnNtfMessages(connIds: [connId])
+    if let r = r_, let receivedMsg = r.count == 1 ? r.first : nil {
+        return receivedMsg
     }
-    let r = sendSimpleXCmd(.apiGetConnNtfMessage(connId: connId))
-    if case let .connNtfMessage(receivedMsg_) = r {
-        logger.debug("apiGetConnNtfMessage response receivedMsg_: \(receivedMsg_ == nil ? 0 : 1)")
-        return receivedMsg_
-    }
-    logger.debug("apiGetConnNtfMessage error: \(responseError(r))")
     return nil
 }
 

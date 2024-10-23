@@ -2279,11 +2279,6 @@ public struct NtfConn: Decodable, Hashable {
 
 }
 
-public struct NtfMessage: Decodable, Hashable {
-    public var connId: String
-    public var receivedMsg_: NtfMsgInfo?
-}
-
 public struct NtfMsgInfo: Decodable, Hashable {
     public var msgId: String
     public var msgTs: Date
