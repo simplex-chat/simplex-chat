@@ -114,6 +114,7 @@ import Simplex.Chat.Migrations.M20240827_calls_uuid
 import Simplex.Chat.Migrations.M20240920_user_order
 import Simplex.Chat.Migrations.M20241008_indexes
 import Simplex.Chat.Migrations.M20241010_contact_requests_contact_id
+import Simplex.Chat.Migrations.M20241023_chat_item_autoincrement_id
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -227,7 +228,8 @@ schemaMigrations =
     ("20240827_calls_uuid", m20240827_calls_uuid, Just down_m20240827_calls_uuid),
     ("20240920_user_order", m20240920_user_order, Just down_m20240920_user_order),
     ("20241008_indexes", m20241008_indexes, Just down_m20241008_indexes),
-    ("20241010_contact_requests_contact_id", m20241010_contact_requests_contact_id, Just down_m20241010_contact_requests_contact_id)
+    ("20241010_contact_requests_contact_id", m20241010_contact_requests_contact_id, Just down_m20241010_contact_requests_contact_id),
+    ("20241023_chat_item_autoincrement_id", m20241023_chat_item_autoincrement_id, Just down_m2024102_chat_item_autoincrement_id)
   ]
 
 -- | The list of migrations in ascending order by date
