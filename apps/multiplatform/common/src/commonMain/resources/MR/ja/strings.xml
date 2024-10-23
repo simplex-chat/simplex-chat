@@ -1870,7 +1870,7 @@
     <string name="cant_call_contact_deleted_alert_text">連絡先が削除されました。</string>
     <string name="member_info_member_disabled">無効</string>
     <string name="v6_0_delete_many_messages_descr">一度に最大20件のメッセージを削除できます。</string>
-    <string name="servers_info_connected_servers_section_header">サーバに接続中</string>
+    <string name="servers_info_connected_servers_section_header">接続中のサーバ</string>
     <string name="servers_info_modal_error_title">エラー</string>
     <string name="servers_info_reconnect_server_error">サーバーへの再接続エラー</string>
     <string name="servers_info_sessions_errors">エラー</string>
@@ -1891,4 +1891,21 @@
     <string name="network_options_save_and_reconnect">保存して再接続</string>
     <string name="privacy_media_blur_radius_strong">強め</string>
     <string name="privacy_media_blur_radius_medium">普通</string>
+    <string name="subscription_percentage">パーセンテージを表示</string>
+    <string name="one_hand_ui_change_instruction">これは見た目の設定から変更できます。</string>
+    <string name="servers_info_previously_connected_servers_section_header">以前接続していたサーバ</string>
+    <string name="servers_info_subscriptions_connections_subscribed">アクティブな接続</string>
+    <string name="servers_info_statistics_section_header">統計情報</string>
+    <string name="deleted_chats">アーカイブされた連絡先</string>
+    <string name="settings_message_shape_corner">角丸</string>
+    <string name="servers_info_messages_sent">送信されたメッセージ数</string>
+    <string name="servers_info_reset_stats_alert_title">全ての統計情報をリセットしますか？</string>
+    <string name="servers_info_subscriptions_total">合計</string>
+    <string name="settings_message_shape_tail">しっぽ</string>
+    <string name="servers_info">サーバ情報</string>
+    <string name="servers_info_private_data_disclaimer">%sから計測されています。\nデバイス上の全てのデータはプライベートです。</string>
+    <string name="servers_info_messages_received">受信したメッセージ数</string>
+    <string name="servers_info_reset_stats_alert_message">サーバの統計情報をリセットしようとしています - これは元に戻せません！</string>
+    <string name="servers_info_reset_stats">全統計情報をリセットする</string>
+    <string name="reset_all_hints">ヒントをリセットする</string>
 </resources>
