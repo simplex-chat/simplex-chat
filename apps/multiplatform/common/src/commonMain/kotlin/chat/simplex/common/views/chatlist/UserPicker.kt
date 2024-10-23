@@ -139,9 +139,8 @@ fun UserPicker(
   }
 
   val oneHandUI = remember { appPrefs.oneHandUI.state }
-  val shouldDrawProfilePicturesDarker = appPlatform.isDesktop && MaterialTheme.colors.secondaryVariant == LightColorPalette.secondaryVariant && MaterialTheme.colors.background == LightColorPalette.background
-  val iconColor = if (shouldDrawProfilePicturesDarker) MaterialTheme.colors.secondaryVariant.darker(0.05f) else MaterialTheme.colors.secondaryVariant
-  val background = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, alpha = 1 - userPickerAlpha())
+  val iconColor = MaterialTheme.colors.secondaryVariant
+  val background = if (appPlatform.isAndroid) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, alpha = 1 - userPickerAlpha()) else MaterialTheme.colors.surface
   PlatformUserPicker(
     modifier = Modifier
       .height(IntrinsicSize.Min)
