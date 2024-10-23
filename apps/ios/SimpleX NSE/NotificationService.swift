@@ -104,22 +104,24 @@ class NSEThreads {
     }
 
     func processNotification(_ id: ChatId, _ ntf: NSENotificationData) async -> Void {
-        NSEThreads.queue.sync {
-            if let (_, nse) = rcvEntityThread(id),
-               nse.expectedMessages[id]?.shouldProcessNtf ?? false,
-               nse.processReceivedNtf(id, ntf) {
-                // continue
-            } else {
+        if let (_, nse) = rcvEntityThread(id),
+           nse.expectedMessages[id]?.shouldProcessNtf ?? false,
+           nse.processReceivedNtf(id, ntf) {
+            // continue
+        } else {
+            NSEThreads.queue.sync {
                 droppedNotifications.append((id, ntf))
             }
         }
     }
 
     private func rcvEntityThread(_ id: ChatId) -> (UUID, NotificationService)? {
-        // this selects the earliest thread that:
-        // 1) has this connection in nse.expectedMessages
-        // 2) has not completed processing messages for this connection (not ready)
-        activeThreads.first(where: { (_, nse) in nse.expectedMessages[id]?.ready == false })
+        NSEThreads.queue.sync {
+            // this selects the earliest thread that:
+            // 1) has this connection in nse.expectedMessages
+            // 2) has not completed processing messages for this connection (not ready)
+            activeThreads.first(where: { (_, nse) in nse.expectedMessages[id]?.ready == false })
+        }
     }
 
     func endThread(_ t: UUID) -> Bool {
