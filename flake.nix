@@ -12,7 +12,7 @@
   outputs = { self, haskellNix, nixpkgs, flake-utils, mac2ios, ... }:
     let systems = [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ]; in
     flake-utils.lib.eachSystem systems (system:
-      # this android26 overlay makes the pkgsCross.{aarch64-android,armv7a-android-prebuilt} to set stdVer to 26 (Android 8).
+      # This android26 overlay makes the pkgsCross.{aarch64-android,armv7a-android-prebuilt} to set stdVer to 26 (Android 8).
       let android26 = final: prev: {
         pkgsCross = prev.pkgsCross // {
           aarch64-android = import prev.path {
@@ -43,14 +43,14 @@
         modules = [
         ({ pkgs, lib, ...}: lib.mkIf (!pkgs.stdenv.hostPlatform.isWindows) {
           # This patch adds `dl` as an extra-library to direct-sqlciper, which is needed
-          # on pretty much all unix platforms, but then blows up on windows m(
+          # on pretty much all unix platforms, but then blows up on windows
           packages.direct-sqlcipher.patches = [ ./scripts/nix/direct-sqlcipher-2.3.27.patch ];
         })
         ({ pkgs,lib, ... }: lib.mkIf (pkgs.stdenv.hostPlatform.isAndroid) {
           packages.simplex-chat.components.library.ghcOptions = [ "-pie" ];
         })] ++ extra-modules;
       }; in
-      # by defualt we don't need to pass extra-modules.
+      # By default we don't need to pass extra-modules.
       let drv = pkgs': drv' { extra-modules = []; inherit pkgs'; }; in
       # This will package up all *.a in $out into a pkg.zip that can
       # be downloaded from hydra.
@@ -101,9 +101,9 @@
       let iosOverrides = bundleName: {
         smallAddressSpace = true;
         enableShared = false;
-        # we need threaded here, otherwise all the queing logic doesn't work properly.
-        # for iOS we also use -staticlib, to get one rolled up library.
-        # still needs mac2ios patching of the archives.
+        # We need threaded here, otherwise all the queuing logic doesn't work properly.
+        # For iOS we also use -staticlib, to get one rolled up library.
+        # Still needs mac2ios patching of the archives.
         ghcOptions = [ "-staticlib" "-threaded" "-DIOS" ];
         postInstall = iosPostInstall bundleName;
       }; in
@@ -117,15 +117,15 @@
                   androidPkgs = pkgs.pkgsCross.aarch64-android;
                   android32Pkgs = pkgs.pkgsCross.armv7a-android-prebuilt;
                   # For some reason building libiconv with nixpgks android setup produces
-                  # LANGINFO_CODESET to be found, which is not compatible with android sdk 23;
-                  # so we'll patch up iconv to not include that.
+                  # LANGINFO_CODESET to be found, which is not compatible with android sdk 23.
+                  # So we'll patch up iconv to not include that.
                   androidIconv = (androidPkgs.libiconv.override { enableStatic = true; }).overrideAttrs (old: {
                       postConfigure = ''
                       echo "#undef HAVE_LANGINFO_CODESET" >> libcharset/config.h
                       echo "#undef HAVE_LANGINFO_CODESET" >> lib/config.h
                       '';
                   });
-                  # Similarly to icovn, for reasons beyond my current knowledge, nixpkgs andorid
+                  # Similarly to iconv, for reasons beyond my current knowledge, nixpkgs android
                   # toolchain makes configure believe we have MEMFD_CREATE, which we don't in
                   # sdk 23.
                   androidFFI = androidPkgs.libffi.overrideAttrs (old: {
@@ -189,8 +189,7 @@
                 pkgs' = pkgs.pkgsCross.mingwW64;
                 extra-modules = [{
                   packages.direct-sqlcipher.flags.openssl = true;
-                  # simd will try to read __cpu_model, which we don't expose
-                  # from the rts (yet!).
+                  # simd will try to read __cpu_model, which we don't expose from the rts (yet!).
                   packages.bitvec.flags.simd = false;
                   packages.direct-sqlcipher.patches = [
                     ./scripts/nix/direct-sqlcipher-2.3.27-win.patch
@@ -264,7 +263,7 @@
               "${pkgs.pkgsCross.aarch64-multiplatform-musl.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.aarch64-multiplatform-musl).simplex-chat.components.exes.simplex-chat;
               "armv7a-android:lib:support" = (drv android32Pkgs).android-support.components.library.override (p: {
                 smallAddressSpace = true;
-                # we won't want -dyamic (see aarch64-android:lib:simplex-chat)
+                # we won't want -dynamic (see aarch64-android:lib:simplex-chat)
                 enableShared = false;
                 # we also do not want to have any dependencies listed (especially no rts!)
                 enableStatic = false;
@@ -348,7 +347,7 @@
                 }];
               }).simplex-chat.components.library.override (p: {
                 smallAddressSpace = true;
-                # we want -shared, but not -dyanmic, hence `enableShared = false`.
+                # we want -shared, but not -dynamic, hence `enableShared = false`.
                 enableShared = false;
                 # we _do_ want rts, and other libs. Hence `enableStatic = true`.
                 enableStatic = true;
@@ -450,7 +449,7 @@
               }).simplex-chat.components.library.override (p: {
                 smallAddressSpace = true;
                 # we do not want a dynamically linked object, even though we _do_
-                # want to produce a _shared_ object. But `shared` implied -dyanmic
+                # want to produce a _shared_ object. But `shared` implied -dynamic
                 # with cabal, so we disable and pass `-shared` explicitly.
                 enableShared = false;
                 # we do want static (e.g. pass all dependencies in, so we get -staticlib)
@@ -471,7 +470,7 @@
                 # symbols (a GHC bug? Codegen bug?). So we need to pass `-u <sym>`
                 # to ensure they stay in the produced library. Having them
                 # _undefined_ and _lazy_ (lld will tell with -y <sym> that the
-                # symbol is lazy), makes them _defined_. m(
+                # symbol is lazy), makes them _defined_.
                 ++ map (sym: "--ghc-option=-optl-Wl,-u,${sym}") [
                   "chat_close_store"
                   "chat_decrypt_file"
