@@ -258,9 +258,9 @@ class NotificationService: UNNotificationServiceExtension {
                     if started {
                         return expectedMessages[id]?.receiveConnId
                     } else {
-                        if let t = threadId { logger.debug("NotificationService \(t): receiveNtfMessages: waiting on semaphore for \(id)") }
+                        if let t = threadId { logger.debug("NotificationService \(t, privacy: .public): receiveNtfMessages: waiting on semaphore for \(id, privacy: .public)") }
                         expectedMessages[id]?.semaphore.wait()
-                        if let t = threadId { logger.debug("NotificationService \(t): receiveNtfMessages: after semaphore for \(id)") }
+                        if let t = threadId { logger.debug("NotificationService \(t, privacy: .public): receiveNtfMessages: after semaphore for \(id, privacy: .public)") }
                         Task {
                             NSEThreads.queue.sync {
                                 processDroppedNotifications(id)
@@ -395,10 +395,10 @@ class NotificationService: UNNotificationServiceExtension {
     }
 
     func entityReady(_ entityId: ChatId) {
-        if let t = threadId { logger.debug("NotificationService \(t): entityReady: entityId = \(entityId)") }
+        if let t = threadId { logger.debug("NotificationService \(t, privacy: .public): entityReady: entityId = \(entityId, privacy: .public)") }
         expectedMessages[entityId]?.ready = true
         if let (tNext, nse) = NSEThreads.shared.activeThreads.first(where: { (_, nse) in nse.expectedMessages[entityId]?.startedProcessingNewMsgs == false }) {
-            if let t = threadId { logger.debug("NotificationService \(t): entityReady: signal next thread \(tNext) for entityId = \(entityId)") }
+            if let t = threadId { logger.debug("NotificationService \(t, privacy: .public): entityReady: signal next thread \(tNext, privacy: .public) for entityId = \(entityId, privacy: .public)") }
             nse.expectedMessages[entityId]?.semaphore.signal()
         }
     }
