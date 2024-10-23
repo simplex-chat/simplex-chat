@@ -1480,11 +1480,8 @@ processChatCommand' vr = \case
   ApiGetConnNtfMessages connIds -> withUser $ \_ -> do
     let acIds = L.map (\(AgentConnId acId) -> acId) connIds
     msgs <- withAgent $ \a -> getConnectionMessages a acIds
-    let ntfMsgs = map (\(connId, msg) -> NtfMessage {connId = AgentConnId connId, receivedMsg = receivedMsgInfo msg}) msgs
+    let ntfMsgs = L.map (\msg -> receivedMsgInfo <$> msg) msgs
     pure $ CRConnNtfMessages ntfMsgs
-  ApiGetConnNtfMessage (AgentConnId connId) -> withUser $ \_ -> do
-    msg <- withAgent $ \a -> getConnectionMessage a connId
-    pure $ CRConnNtfMessage (receivedMsgInfo <$> msg)
   APIGetUserProtoServers userId (AProtocolType p) -> withUserId userId $ \user -> withServerProtocol p $ do
     cfg@ChatConfig {defaultServers} <- asks config
     servers <- withFastStore' (`getProtocolServers` user)
@@ -8072,7 +8069,6 @@ chatCommandP =
       "/_ntf delete " *> (APIDeleteToken <$> strP),
       "/_ntf conns " *> (APIGetNtfConns <$> strP <* A.space <*> strP),
       "/_ntf conn messages " *> (ApiGetConnNtfMessages <$> strP),
-      "/_ntf conn message " *> (ApiGetConnNtfMessage <$> strP),
       "/_add #" *> (APIAddMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_join #" *> (APIJoinGroup <$> A.decimal),
       "/_member role #" *> (APIMemberRole <$> A.decimal <* A.space <*> A.decimal <*> memberRole),

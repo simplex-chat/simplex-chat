@@ -327,7 +327,6 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRNtfToken _ status mode srv -> ["device token status: " <> plain (smpEncode status) <> ", notifications mode: " <> plain (strEncode mode) <> ", server: " <> sShow srv]
   CRNtfConns {} -> []
   CRConnNtfMessages {} -> []
-  CRConnNtfMessage {} -> []
   CRNtfMessage {} -> []
   CRCurrentRemoteHost rhi_ ->
     [ maybe

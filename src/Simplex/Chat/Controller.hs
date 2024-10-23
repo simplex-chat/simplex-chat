@@ -332,7 +332,6 @@ data ChatCommand
   | APIDeleteToken DeviceToken
   | APIGetNtfConns {nonce :: C.CbNonce, encNtfInfo :: ByteString}
   | ApiGetConnNtfMessages {connIds :: NonEmpty AgentConnId}
-  | ApiGetConnNtfMessage {connId :: AgentConnId}
   | APIAddMember GroupId ContactId GroupMemberRole
   | APIJoinGroup GroupId
   | APIMemberRole GroupId GroupMemberId GroupMemberRole
@@ -747,8 +746,7 @@ data ChatResponse
   | CRNtfTokenStatus {status :: NtfTknStatus}
   | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode, ntfServer :: NtfServer}
   | CRNtfConns {ntfConns :: [NtfConn]}
-  | CRConnNtfMessages {receivedMsgs :: [NtfMessage]}
-  | CRConnNtfMessage {receivedMsg_ :: Maybe NtfMsgInfo}
+  | CRConnNtfMessages {receivedMsgs :: NonEmpty (Maybe NtfMsgInfo)}
   | CRNtfMessage {user :: User, connEntity :: ConnectionEntity, ntfMessage :: NtfMsgAckInfo}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
@@ -1069,12 +1067,6 @@ data NtfConn = NtfConn
   { user_ :: Maybe User,
     connEntity_ :: Maybe ConnectionEntity,
     expectedMsg_ :: Maybe NtfMsgInfo
-  }
-  deriving (Show)
-
-data NtfMessage = NtfMessage
-  { connId :: AgentConnId,
-    receivedMsg :: NtfMsgInfo
   }
   deriving (Show)
 
@@ -1551,8 +1543,6 @@ $(JQ.deriveJSON defaultJSON ''UserProfileUpdateSummary)
 $(JQ.deriveJSON defaultJSON ''NtfMsgInfo)
 
 $(JQ.deriveJSON defaultJSON ''NtfConn)
-
-$(JQ.deriveJSON defaultJSON ''NtfMessage)
 
 $(JQ.deriveJSON defaultJSON ''NtfMsgAckInfo)
 
