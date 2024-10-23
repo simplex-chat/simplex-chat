@@ -316,12 +316,6 @@ final class ChatModel: ObservableObject {
             chats[i].created = Date.now
         }
     }
-    
-    func updateChatStats(id: String, cStats: ChatStats) {
-        if let i = getChatIndex(id) {
-            chats[i].chatStats = cStats
-        }
-    }
 
     func updateContactConnection(_ contactConnection: PendingContactConnection) {
         updateChat(.contactConnection(contactConnection: contactConnection))
