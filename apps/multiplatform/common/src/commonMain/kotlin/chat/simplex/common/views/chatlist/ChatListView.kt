@@ -54,7 +54,7 @@ private fun showNewChatSheet(oneHandUI: State<Boolean>) {
       chatModel.newChatSheetVisible.value = false
       close()
     }
-    ModalView(close, closeOnTop = !oneHandUI.value) {
+    ModalView(close, showCloseBar = !oneHandUI.value) {
       if (appPlatform.isAndroid) {
         BackHandler {
           close()
@@ -595,7 +595,7 @@ fun BoxScope.StatusBarBackground() {
 }
 
 @Composable
-fun BoxScope.NavigationBarBackground(appBarOnBottom: Boolean = false, mixedColor: Boolean = false) {
+fun BoxScope.NavigationBarBackground(appBarOnBottom: Boolean = false, mixedColor: Boolean) {
   val keyboardState = getKeyboardState()
   if (appPlatform.isAndroid && keyboardState.value == KeyboardState.Closed) {
     val barPadding = WindowInsets.navigationBars.asPaddingValues()

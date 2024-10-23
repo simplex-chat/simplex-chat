@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.Dp
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.views.chatlist.NavigationBarBackground
 import chat.simplex.common.views.helpers.*
 import kotlinx.coroutines.flow.filter
@@ -89,6 +90,7 @@ actual fun ColumnWithScrollBar(
         }
       }
   }
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
   Box(Modifier.fillMaxHeight()) {
     if (connection != null) {
       Column(
@@ -98,9 +100,15 @@ actual fun ColumnWithScrollBar(
           modifier.nestedScroll(connection).verticalScroll(state)
         }, verticalArrangement, horizontalAlignment
       ) {
-        Spacer(Modifier.statusBarsPadding().padding(top = AppBarHeight * fontSizeSqrtMultiplier))
-        content()
-        Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.systemBars))
+        if (oneHandUI.value) {
+          Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
+          content()
+          Spacer(Modifier.padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier))
+        } else {
+          Spacer(Modifier.statusBarsPadding().padding(top = AppBarHeight * fontSizeSqrtMultiplier))
+          content()
+          Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.systemBars))
+        }
       }
     } else {
       Column(
@@ -110,10 +118,15 @@ actual fun ColumnWithScrollBar(
           modifier.verticalScroll(state)
         }, verticalArrangement, horizontalAlignment
       ) {
-        content()
-        Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.systemBars))
+        if (oneHandUI.value) {
+          Spacer(Modifier.windowInsetsTopHeight(WindowInsets.systemBars))
+          content()
+        } else {
+          content()
+          Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.systemBars))
+        }
       }
     }
-    NavigationBarBackground()
+    NavigationBarBackground(oneHandUI.value, oneHandUI.value)
   }
 }

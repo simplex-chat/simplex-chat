@@ -9,6 +9,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.draw.*
@@ -27,60 +28,48 @@ fun CloseSheetBar(
   close: (() -> Unit)?,
   showClose: Boolean = true,
   tintColor: Color = if (close != null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-  arrangement: Arrangement.Vertical = Arrangement.Top,
-  closeBarTitle: String? = null,
   barPaddingValues: PaddingValues = PaddingValues(horizontal = AppBarHorizontalPadding),
   endButtons: @Composable RowScope.() -> Unit = {}
 ) {
   val background = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
-  val themeBackgroundMix = background.copy(remember { appPrefs.inAppBarsAlpha.state }.value)
+  val prefAlpha = remember { appPrefs.inAppBarsAlpha.state }.value
+  val themeBackgroundMix = background.copy(prefAlpha)
   val handler = LocalAppBarHandler.current
   val connection = LocalAppBarHandler.current?.connection
   val title = remember(handler?.title?.value) { handler?.title ?: mutableStateOf("") }
 
   val interactionSource = remember { MutableInteractionSource() }
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
   Column(
-    verticalArrangement = arrangement,
     modifier = Modifier
       .fillMaxWidth()
-      .then(if (arrangement == Arrangement.Bottom) Modifier.navigationBarsPadding() else Modifier)
+      .then(if (oneHandUI.value) Modifier.navigationBarsPadding() else Modifier)
       .clickable(interactionSource = interactionSource, indication = null) { /* receive clicks to not allow to click through */ }
       .heightIn(min = AppBarHeight * fontSizeSqrtMultiplier)
       .drawWithCache {
-        val backgroundColor = if (arrangement == Arrangement.Bottom) themeBackgroundMix else if (connection != null) themeBackgroundMix.copy(alpha = topTitleAlpha(false, connection)) else Color.Transparent
+        val backgroundColor = if (connection != null) themeBackgroundMix.copy(alpha = if (oneHandUI.value) prefAlpha else topTitleAlpha(false, connection)) else Color.Transparent
         onDrawBehind {
           drawRect(backgroundColor)
         }
       }
   ) {
+    if (oneHandUI.value && title.value.isNotEmpty()) {
+      CloseBarDivider(connection)
+    }
     Row(
       modifier = Modifier.padding(barPaddingValues),
       content = {
         Row(
           Modifier
             .fillMaxWidth()
-            .then(if (arrangement == Arrangement.Top) Modifier.statusBarsPadding() else Modifier)
+            .then(if (!oneHandUI.value) Modifier.statusBarsPadding() else Modifier)
             .height(AppBarHeight * fontSizeSqrtMultiplier),
           verticalAlignment = Alignment.CenterVertically
         ) {
           if (showClose) {
             NavigationButtonBack(tintColor = tintColor, onButtonClicked = close)
-          } else {
-            Spacer(Modifier)
           }
-          if (!closeBarTitle.isNullOrEmpty()) {
-            Row(
-              Modifier.weight(1f),
-              horizontalArrangement = Arrangement.Center,
-              verticalAlignment = Alignment.CenterVertically
-            ) {
-              Text(
-                closeBarTitle,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1
-              )
-            }
-          } else if (title.value.isNotEmpty() && connection != null) {
+          if (title.value.isNotEmpty() && connection != null) {
             Row(
               Modifier
                 .padding(start = if (showClose) 0.dp else DEFAULT_PADDING_HALF)
@@ -107,14 +96,73 @@ fun CloseSheetBar(
         }
       }
     )
-    if (closeBarTitle.isNullOrEmpty() && title.value.isNotEmpty() && connection != null) {
-      Divider(
-        Modifier
-          .graphicsLayer {
-            alpha = topTitleAlpha(false, connection)
-          }
-      )
+    if (!oneHandUI.value && title.value.isNotEmpty()) {
+      CloseBarDivider(connection)
     }
+  }
+}
+
+@Composable
+private fun CloseBarDivider(connection: CollapsingAppBarNestedScrollConnection?) {
+  if (connection != null) {
+    val oneHandUI = remember { appPrefs.oneHandUI.state }
+    val prefAlpha = appPrefs.inAppBarsAlpha.get()
+    Divider(
+      Modifier
+        .graphicsLayer {
+          alpha = if (oneHandUI.value) prefAlpha else topTitleAlpha(false, connection)
+        }
+    )
+  }
+}
+
+@Composable
+fun CloseSheetBarBottom(
+  close: (() -> Unit)?,
+  showClose: Boolean = true,
+  tintColor: Color = if (close != null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
+  closeBarTitle: String,
+  endButtons: @Composable RowScope.() -> Unit = {}
+) {
+  val background = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
+  val themeBackgroundMix = background.copy(remember { appPrefs.inAppBarsAlpha.state }.value)
+  val interactionSource = remember { MutableInteractionSource() }
+  Column(
+    modifier = Modifier
+      .fillMaxWidth()
+      .navigationBarsPadding()
+      .clickable(interactionSource = interactionSource, indication = null) { /* receive clicks to not allow to click through */ }
+      .heightIn(min = AppBarHeight * fontSizeSqrtMultiplier)
+      .background(themeBackgroundMix)
+  ) {
+    Row(
+      content = {
+        Row(
+          Modifier
+            .fillMaxWidth()
+            .height(AppBarHeight * fontSizeSqrtMultiplier),
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          if (showClose) {
+            NavigationButtonBack(tintColor = tintColor, onButtonClicked = close)
+          }
+          Row(
+              Modifier.weight(1f),
+              horizontalArrangement = Arrangement.Center,
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+            Text(
+              closeBarTitle,
+              fontWeight = FontWeight.SemiBold,
+              maxLines = 1
+            )
+          }
+          Row {
+            endButtons()
+          }
+        }
+      }
+    )
   }
 }
 

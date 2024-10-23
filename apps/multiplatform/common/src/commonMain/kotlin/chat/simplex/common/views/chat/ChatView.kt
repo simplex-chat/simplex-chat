@@ -686,7 +686,8 @@ fun ChatLayout(
             composeView()
           }
         }
-        NavigationBarBackground(true)
+        val oneHandUI = remember { appPrefs.oneHandUI.state }
+        NavigationBarBackground(true, oneHandUI.value)
         Column {
           if (selectedChatItems.value == null) {
             if (chatInfo != null) {

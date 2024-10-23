@@ -119,7 +119,8 @@ fun TerminalLayout(
         }
       }
     }
-    NavigationBarBackground(true)
+    val oneHandUI = remember { appPrefs.oneHandUI.state }
+    NavigationBarBackground(true, oneHandUI.value)
   }
 }
 

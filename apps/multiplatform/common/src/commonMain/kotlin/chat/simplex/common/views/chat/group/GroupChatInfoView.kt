@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -401,7 +402,8 @@ fun ModalData.GroupChatInfoLayout(
       Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
     }
   }
-    NavigationBarBackground()
+    val oneHandUI = remember { appPrefs.oneHandUI.state }
+    NavigationBarBackground(oneHandUI.value, oneHandUI.value)
   }
 }
 

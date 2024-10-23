@@ -17,6 +17,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.views.helpers.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.filter
@@ -155,6 +156,8 @@ actual fun ColumnWithScrollBar(
       }
   }
   Box(if (connection != null) Modifier.nestedScroll(connection) else Modifier) {
+    val oneHandUI = remember { appPrefs.oneHandUI.state }
+    val padding = if (oneHandUI.value) PaddingValues(bottom = AppBarHeight * fontSizeSqrtMultiplier) else PaddingValues(top = AppBarHeight * fontSizeSqrtMultiplier)
     Column(
       if (maxIntrinsicSize) {
         modifier.verticalScroll(state).height(IntrinsicSize.Max).then(scrollModifier)
@@ -162,12 +165,15 @@ actual fun ColumnWithScrollBar(
         modifier.verticalScroll(state).then(scrollModifier)
       },
       verticalArrangement, horizontalAlignment) {
-      if (connection != null) {
-        Spacer(Modifier.padding(top = AppBarHeight * fontSizeSqrtMultiplier))
+      if (connection != null && !oneHandUI.value) {
+        Spacer(Modifier.padding(padding))
       }
       content()
+      if (connection != null && oneHandUI.value) {
+        Spacer(Modifier.padding(padding))
+      }
     }
-    Box(Modifier.fillMaxSize().padding(top = AppBarHeight * fontSizeSqrtMultiplier), contentAlignment = Alignment.CenterEnd) {
+    Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.CenterEnd) {
       DesktopScrollBar(rememberScrollbarAdapter(state), Modifier.fillMaxHeight(), scrollBarAlpha, scrollJob, false, scrollBarDraggingState)
     }
   }

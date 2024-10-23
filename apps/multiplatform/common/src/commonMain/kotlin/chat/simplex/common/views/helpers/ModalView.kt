@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -23,23 +24,26 @@ import kotlin.math.sqrt
 fun ModalView(
   close: () -> Unit,
   showClose: Boolean = true,
+  showCloseBar: Boolean = true,
   enableClose: Boolean = true,
   background: Color = Color.Unspecified,
   modifier: Modifier = Modifier,
-  closeOnTop: Boolean = true,
   endButtons: @Composable RowScope.() -> Unit = {},
   content: @Composable BoxScope.() -> Unit,
 ) {
   if (showClose) {
     BackHandler(enabled = enableClose, onBack = close)
   }
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
   Surface(Modifier.fillMaxSize(), contentColor = LocalContentColor.current) {
     Box(if (background != Color.Unspecified) Modifier.background(background) else Modifier.themedBackground()) {
       Box(modifier = modifier) {
         content()
       }
-      if (closeOnTop) {
-        CloseSheetBar(if (enableClose) close else null, showClose, endButtons = endButtons)
+      if (showCloseBar) {
+        Box(Modifier.align(if (oneHandUI.value) Alignment.BottomStart else Alignment.TopStart).then(if (oneHandUI.value) Modifier.imePadding() else Modifier)) {
+          CloseSheetBar(if (enableClose) close else null, showClose, endButtons = endButtons)
+        }
       }
     }
   }
@@ -71,17 +75,17 @@ class ModalManager(private val placement: ModalPlacement? = null) {
   private var passcodeView: MutableStateFlow<(@Composable (close: () -> Unit) -> Unit)?> = MutableStateFlow(null)
   private var onTimePasscodeView: MutableStateFlow<(@Composable (close: () -> Unit) -> Unit)?> = MutableStateFlow(null)
 
-  fun showModal(settings: Boolean = false, showClose: Boolean = true, closeOnTop: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
+  fun showModal(settings: Boolean = false, showClose: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
     val data = ModalData()
     showCustomModal { close ->
-      ModalView(close, showClose = showClose, closeOnTop = closeOnTop, endButtons = endButtons, content = { data.content() })
+      ModalView(close, showClose = showClose, endButtons = endButtons, content = { data.content() })
     }
   }
 
-  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, closeOnTop: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.(close: () -> Unit) -> Unit) {
+  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.(close: () -> Unit) -> Unit) {
     val data = ModalData()
     showCustomModal { close ->
-      ModalView(close, showClose = showClose, endButtons = endButtons, closeOnTop = closeOnTop, content = { data.content(close) })
+      ModalView(close, showClose = showClose, endButtons = endButtons, content = { data.content(close) })
     }
   }
 
