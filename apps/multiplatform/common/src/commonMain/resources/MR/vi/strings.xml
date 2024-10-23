@@ -942,7 +942,7 @@
     <string name="description_via_one_time_link_incognito">ẩn danh qua liên kết dùng một lần</string>
     <string name="info_menu">Thông tin</string>
     <string name="conn_level_desc_indirect">gián tiếp (%1$s)</string>
-    <string name="migrate_from_device_chat_should_be_stopped">Để tiếp tục, hãy dừng ứng dụng.</string>
+    <string name="migrate_from_device_chat_should_be_stopped">Để tiếp tục, hãy ngắt kết nối tới các máy chủ dùng để truyền dẫn tin nhắn.</string>
     <string name="install_simplex_chat_for_terminal">Cài đặt SimpleX Chat cho cửa sổ câu lệnh</string>
     <string name="description_via_contact_address_link_incognito">ẩn danh qua liên kết địa chỉ liên lạc</string>
     <string name="incoming_audio_call">Cuộc gọi thoại đến</string>
@@ -959,4 +959,28 @@
     <string name="app_check_for_updates_button_install">Cài đặt cập nhật</string>
     <string name="incoming_video_call">Cuộc gọi video đến</string>
     <string name="desktop_incompatible_version">Phiên bản không tương thích</string>
+    <string name="theme_colors_section_title">MÀU SẮC GIAO DIỆN</string>
+    <string name="group_member_status_invited">đã mời</string>
+    <string name="error_parsing_uri_title">Liên kết không hợp lệ</string>
+    <string name="invalid_chat">tác vụ trò chuyện không hợp lệ</string>
+    <string name="invalid_data">dữ liệu không hợp lệ</string>
+    <string name="invalid_message_format">định dạng tin nhắn không hợp lệ</string>
+    <string name="action_button_add_members">Mời</string>
+    <string name="alert_title_group_invitation_expired">Lời mời đã hết hạn!</string>
+    <string name="invalid_contact_link">Liên kết không hợp lệ!</string>
+    <string name="invalid_file_link">Liên kết không hợp lệ</string>
+    <string name="failed_to_create_user_invalid_title">Tên hiển thị không hợp lệ!</string>
+    <string name="invalid_connection_link">Liên kết kết nối không hợp lệ</string>
+    <string name="service_notifications">Thông báo tức thời!</string>
+    <string name="invalid_QR_code">Mã QR không hợp lệ</string>
+    <string name="icon_descr_instant_notifications">Thông báo tức thời</string>
+    <string name="service_notifications_disabled">Thông báo tức thời đã bị tắt!</string>
+    <string name="non_content_uri_alert_title">Đường dẫn tệp không hợp lệ</string>
+    <string name="agent_internal_error_title">Lỗi nội bộ</string>
+    <string name="invalid_qr_code">Mã QR không hợp lệ</string>
+    <string name="smp_servers_invalid_address">Địa chỉ máy chủ không hợp lệ!</string>
+    <string name="invalid_migration_confirmation">Xác nhận di dời không hợp lệ</string>
+    <string name="invalid_name">Tên không hợp lệ!</string>
+    <string name="invite_friends_short">Mời</string>
+    <string name="group_invitation_item_description">lời mời tham gia nhóm %1$s</string>
 </resources>
