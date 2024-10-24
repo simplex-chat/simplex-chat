@@ -33,6 +33,7 @@ import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
@@ -398,7 +399,7 @@ fun ActiveProfilePicker(
         .fillMaxSize()
         .alpha(if (progressByTimeout) 0.6f else 1f)
     ) {
-      LazyColumnWithScrollBar(userScrollEnabled = !switchingProfile.value) {
+      LazyColumnWithScrollBar(Modifier.padding(top = topPaddingToContent()), userScrollEnabled = !switchingProfile.value) {
         item {
           AppBarTitle(stringResource(MR.strings.select_chat_profile), hostDevice(rhId), bottomPadding = DEFAULT_PADDING)
         }
@@ -433,6 +434,9 @@ fun ActiveProfilePicker(
           itemsIndexed(filteredProfiles) { _, p ->
             ProfilePickerUserOption(p)
           }
+        }
+        item {
+          Spacer(Modifier.imePadding())
         }
       }
     }
@@ -476,9 +480,9 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
             val search = rememberSaveable { mutableStateOf("") }
             ModalView(
               { close() },
-              endButtons = {
-                SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
-              },
+              showSearch = true,
+              searchAlwaysVisible = true,
+              onSearchValueChanged = { search.value = it },
               content = {
                 ActiveProfilePicker(
                   search = search,
@@ -616,6 +620,7 @@ fun LinkTextView(link: String, share: Boolean) {
             enabled = false,
             isError = false,
             interactionSource = remember { MutableInteractionSource() },
+            colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.Unspecified)
           )
         })
     }

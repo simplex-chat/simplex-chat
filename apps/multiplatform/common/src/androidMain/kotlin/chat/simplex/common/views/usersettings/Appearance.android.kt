@@ -2,6 +2,7 @@ package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
 import SectionDividerSpaced
+import SectionSpacer
 import SectionView
 import android.app.Activity
 import android.content.ComponentName
@@ -31,6 +32,7 @@ import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.helpers.APPLICATION_ID
 import chat.simplex.common.helpers.saveAppLocale
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.compose.painterResource
@@ -106,10 +108,7 @@ fun AppearanceScope.AppearanceLayout(
       }
       //      }
 
-      SettingsPreferenceItem(icon = null, stringResource(MR.strings.one_hand_ui), ChatModel.controller.appPrefs.oneHandUI) {
-        val c = CurrentColors.value.colors
-        platform.androidSetStatusAndNavBarColors(c.isLight, c.background, false, false)
-      }
+      SettingsPreferenceItem(icon = null, stringResource(MR.strings.one_hand_ui), ChatModel.controller.appPrefs.oneHandUI)
     }
 
     SectionDividerSpaced()
@@ -119,6 +118,9 @@ fun AppearanceScope.AppearanceLayout(
     MessageShapeSection()
 
     SectionDividerSpaced()
+    BarsAlphaSection(MR.strings.appearance_in_app_bars_alpha, appPrefs.inAppBarsAlpha, 0.95f)
+
+    SectionDividerSpaced(maxTopPadding = true)
     ProfileImageSection()
 
     SectionDividerSpaced(maxTopPadding = true)

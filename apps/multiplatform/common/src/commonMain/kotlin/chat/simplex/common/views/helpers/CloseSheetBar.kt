@@ -10,41 +10,46 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
-import chat.simplex.common.platform.appPlatform
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.chatlist.DevicePill
+import chat.simplex.common.views.chatlist.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import kotlin.math.absoluteValue
 
 @Composable
-fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Color = if (close != null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,  arrangement: Arrangement.Vertical = Arrangement.Top, closeBarTitle: String? = null, barPaddingValues: PaddingValues = PaddingValues(horizontal = AppBarHorizontalPadding), endButtons: @Composable RowScope.() -> Unit = {}) {
-  var rowModifier = Modifier
-    .fillMaxWidth()
-    .height(AppBarHeight * fontSizeSqrtMultiplier)
-  val themeBackgroundMix = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
-  if (!closeBarTitle.isNullOrEmpty()) {
-    rowModifier = rowModifier.background(themeBackgroundMix)
-  }
+fun CloseSheetBar(
+  close: (() -> Unit)?,
+  showClose: Boolean = true,
+  tintColor: Color = if (close != null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
+  barPaddingValues: PaddingValues = PaddingValues(horizontal = AppBarHorizontalPadding),
+  endButtons: @Composable RowScope.() -> Unit = {}
+) {
+  /*val background = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
+  val prefAlpha = remember { appPrefs.inAppBarsAlpha.state }.value
+  val themeBackgroundMix = background.copy(prefAlpha)
   val handler = LocalAppBarHandler.current
   val connection = LocalAppBarHandler.current?.connection
   val title = remember(handler?.title?.value) { handler?.title ?: mutableStateOf("") }
 
-  Column(
-    verticalArrangement = arrangement,
+  val interactionSource = remember { MutableInteractionSource() }
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  Box(
     modifier = Modifier
       .fillMaxWidth()
+      .then(if (oneHandUI.value) Modifier.navigationBarsPadding() else Modifier)
+      .clickable(interactionSource = interactionSource, indication = null) { *//* receive clicks to not allow to click through *//* }
       .heightIn(min = AppBarHeight * fontSizeSqrtMultiplier)
       .drawWithCache {
-        val backgroundColor = if (appPlatform.isDesktop && connection != null) themeBackgroundMix.copy(alpha = topTitleAlpha(connection)) else Color.Transparent
+        val backgroundColor = if (connection != null) themeBackgroundMix.copy(alpha = if (oneHandUI.value) prefAlpha else topTitleAlpha(false, connection)) else Color.Transparent
         onDrawBehind {
-          if (appPlatform.isDesktop) {
-            drawRect(backgroundColor)
-          }
+          drawRect(backgroundColor)
         }
       }
   ) {
@@ -52,33 +57,22 @@ fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Co
       modifier = Modifier.padding(barPaddingValues),
       content = {
         Row(
-          rowModifier,
+          Modifier
+            .fillMaxWidth()
+            .then(if (!oneHandUI.value) Modifier.statusBarsPadding() else Modifier)
+            .height(AppBarHeight * fontSizeSqrtMultiplier),
           verticalAlignment = Alignment.CenterVertically
         ) {
           if (showClose) {
             NavigationButtonBack(tintColor = tintColor, onButtonClicked = close)
-          } else {
-            Spacer(Modifier)
           }
-          if (!closeBarTitle.isNullOrEmpty()) {
-            Row(
-              Modifier.weight(1f),
-              horizontalArrangement = Arrangement.Center,
-              verticalAlignment = Alignment.CenterVertically
-            ) {
-              Text(
-                closeBarTitle,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1
-              )
-            }
-          } else if (title.value.isNotEmpty() && connection != null) {
+          if (title.value.isNotEmpty() && connection != null) {
             Row(
               Modifier
                 .padding(start = if (showClose) 0.dp else DEFAULT_PADDING_HALF)
                 .weight(1f) // hides the title if something wants full width (eg, search field in chat profiles screen)
                 .graphicsLayer {
-                  alpha = topTitleAlpha((connection))
+                  alpha = topTitleAlpha(true, connection)
                 }
                 .padding(start = 4.dp),
               verticalAlignment = Alignment.CenterVertically
@@ -99,14 +93,54 @@ fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Co
         }
       }
     )
-    if (closeBarTitle.isNullOrEmpty() && title.value.isNotEmpty() && connection != null) {
-      Divider(
-        Modifier
-          .graphicsLayer {
-            alpha = topTitleAlpha(connection)
-          }
-      )
+    CloseBarDivider(connection)
+  }*/
+}
+
+@Composable
+fun CloseSheetBarBottom(
+  close: (() -> Unit)?,
+  showClose: Boolean = true,
+  tintColor: Color = if (close != null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
+  closeBarTitle: String,
+  endButtons: @Composable RowScope.() -> Unit = {}
+) {
+  val background = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
+  val themeBackgroundMix = background.copy(remember { appPrefs.inAppBarsAlpha.state }.value)
+  val interactionSource = remember { MutableInteractionSource() }
+  Box(
+    modifier = Modifier
+      .fillMaxWidth()
+      .navigationBarsPadding()
+      .clickable(interactionSource = interactionSource, indication = null) { /* receive clicks to not allow to click through */ }
+      .background(themeBackgroundMix)
+  ) {
+    Row(
+      Modifier
+        .fillMaxWidth()
+        .height(AppBarHeight * fontSizeSqrtMultiplier),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      if (showClose) {
+        NavigationButtonBack(tintColor = tintColor, onButtonClicked = close)
+      }
+      Row(
+        Modifier.weight(1f),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Text(
+          closeBarTitle,
+          fontWeight = FontWeight.SemiBold,
+          maxLines = 1
+        )
+      }
+      Row {
+        endButtons()
+      }
     }
+    val oneHandUI = remember { appPrefs.oneHandUI.state }
+    Divider(Modifier.align(if (oneHandUI.value) Alignment.TopStart else Alignment.BottomStart))
   }
 }
 
@@ -146,10 +180,6 @@ fun AppBarTitle(title: String, hostDevice: Pair<Long?, String>? = null,  withPad
     Spacer(Modifier.height(bottomPadding))
   }
 }
-
-private fun topTitleAlpha(connection: CollapsingAppBarNestedScrollConnection) =
-  if (connection.appBarOffset.absoluteValue < AppBarHandler.appBarMaxHeightPx / 3) 0f
-  else ((-connection.appBarOffset * 1.5f) / (AppBarHandler.appBarMaxHeightPx)).coerceIn(0f, 1f)
 
 private fun bottomTitleAlpha(connection: CollapsingAppBarNestedScrollConnection?) =
   if ((connection?.appBarOffset ?: 0f).absoluteValue < AppBarHandler.appBarMaxHeightPx / 3) 1f

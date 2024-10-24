@@ -15,7 +15,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.*
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.ui.theme.DEFAULT_PADDING
+import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 import chat.simplex.common.views.helpers.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.filter
@@ -31,6 +35,7 @@ actual fun LazyColumnWithScrollBar(
   horizontalAlignment: Alignment.Horizontal,
   flingBehavior: FlingBehavior,
   userScrollEnabled: Boolean,
+  additionalBarOffset: State<Dp>?,
   content: LazyListScope.() -> Unit
 ) {
   val scope = rememberCoroutineScope()
@@ -57,21 +62,57 @@ actual fun LazyColumnWithScrollBar(
   // (only first visible row is useful because LazyColumn doesn't have absolute scroll position, only relative to row)
   val scrollBarDraggingState = remember { mutableStateOf(false) }
   LaunchedEffect(Unit) {
-    snapshotFlow { state.firstVisibleItemScrollOffset }
-      .filter { state.firstVisibleItemIndex == 0 }
-      .collect { scrollPosition ->
-        val offset = connection?.appBarOffset
-        if (offset != null && ((offset + scrollPosition).absoluteValue > 1 || scrollBarDraggingState.value)) {
-          connection.appBarOffset = -scrollPosition.toFloat()
-//          Log.d(TAG, "Scrolling position changed from $offset to ${connection.appBarOffset}")
+    if (reverseLayout) {
+      snapshotFlow { state.layoutInfo.visibleItemsInfo.lastOrNull()?.offset ?: 0 }
+        .collect { scrollPosition ->
+          val offset = connection?.appBarOffset
+          if (offset != null) {
+            connection.appBarOffset = if (state.layoutInfo.visibleItemsInfo.lastOrNull()?.index == state.layoutInfo.totalItemsCount - 1) {
+              state.layoutInfo.viewportEndOffset - scrollPosition.toFloat() - state.layoutInfo.afterContentPadding
+            } else {
+              // show always when last item is not visible
+              -1000f
+            }
+            //Log.d(TAG, "Scrolling position changed from $offset to ${connection.appBarOffset}")
+          }
         }
-      }
+    } else {
+      snapshotFlow { state.firstVisibleItemScrollOffset }
+        .filter { state.firstVisibleItemIndex == 0 }
+        .collect { scrollPosition ->
+          val offset = connection?.appBarOffset
+          if (offset != null && ((offset + scrollPosition + state.layoutInfo.afterContentPadding).absoluteValue > 1 || scrollBarDraggingState.value)) {
+              connection.appBarOffset = -scrollPosition.toFloat()
+              //Log.d(TAG, "Scrolling position changed from $offset to ${connection.appBarOffset}")
+          }
+        }
+    }
   }
   Box(if (connection != null) Modifier.nestedScroll(connection) else Modifier) {
     LazyColumn(modifier.then(scrollModifier), state, contentPadding, reverseLayout, verticalArrangement, horizontalAlignment, flingBehavior, userScrollEnabled, content)
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
-      DesktopScrollBar(rememberScrollbarAdapter(state), Modifier.fillMaxHeight(), scrollBarAlpha, scrollJob, reverseLayout, scrollBarDraggingState)
-    }
+    ScrollBar(reverseLayout, state, scrollBarAlpha, scrollJob, scrollBarDraggingState, additionalBarOffset)
+  }
+}
+
+@Composable
+private fun ScrollBar(
+  reverseLayout: Boolean,
+  state: LazyListState,
+  scrollBarAlpha: Animatable<Float, AnimationVector1D>,
+  scrollJob: MutableState<Job>,
+  scrollBarDraggingState: MutableState<Boolean>,
+  additionalBarHeight: State<Dp>?
+) {
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val padding = if (additionalBarHeight != null) {
+    PaddingValues(top = if (oneHandUI.value) 0.dp else AppBarHeight * fontSizeSqrtMultiplier, bottom = additionalBarHeight.value)
+  } else if (reverseLayout) {
+    PaddingValues(bottom = AppBarHeight * fontSizeSqrtMultiplier)
+  } else {
+    PaddingValues(top = if (oneHandUI.value) 0.dp else AppBarHeight * fontSizeSqrtMultiplier)
+  }
+  Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.CenterEnd) {
+    DesktopScrollBar(rememberScrollbarAdapter(state), Modifier.fillMaxHeight(), scrollBarAlpha, scrollJob, reverseLayout, scrollBarDraggingState)
   }
 }
 
@@ -118,14 +159,24 @@ actual fun ColumnWithScrollBar(
       }
   }
   Box(if (connection != null) Modifier.nestedScroll(connection) else Modifier) {
+    val oneHandUI = remember { appPrefs.oneHandUI.state }
+    val padding = if (oneHandUI.value) PaddingValues(bottom = AppBarHeight * fontSizeSqrtMultiplier) else PaddingValues(top = AppBarHeight * fontSizeSqrtMultiplier)
     Column(
       if (maxIntrinsicSize) {
         modifier.verticalScroll(state).height(IntrinsicSize.Max).then(scrollModifier)
       } else {
         modifier.verticalScroll(state).then(scrollModifier)
       },
-      verticalArrangement, horizontalAlignment, content)
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
+      verticalArrangement, horizontalAlignment) {
+      if (connection != null) {
+        Spacer(if (oneHandUI.value) Modifier.padding(top = DEFAULT_PADDING + 5.dp) else Modifier.padding(padding))
+      }
+      content()
+      if (connection != null && oneHandUI.value) {
+        Spacer(Modifier.padding(padding))
+      }
+    }
+    Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.CenterEnd) {
       DesktopScrollBar(rememberScrollbarAdapter(state), Modifier.fillMaxHeight(), scrollBarAlpha, scrollJob, false, scrollBarDraggingState)
     }
   }

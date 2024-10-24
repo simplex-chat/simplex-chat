@@ -60,9 +60,10 @@ private fun LinkAMobileLayout(
   updateDeviceName: (String) -> Unit,
 ) {
   Column(Modifier.themedBackground()) {
-    CloseSheetBar(close = {
-      appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
-    })
+    DefaultTopAppBar(
+      navigationButton = { NavigationButtonBack(onButtonClicked = { appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo) } ) },
+      onTop = true
+    )
     BackHandler(onBack = {
       appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
     })

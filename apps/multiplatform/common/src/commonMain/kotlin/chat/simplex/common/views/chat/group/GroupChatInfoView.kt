@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -283,9 +284,16 @@ fun ModalData.GroupChatInfoLayout(
       if (s.isEmpty()) members else members.filter { m -> m.anyNameContains(s) }
     }
   }
+  Box {
+    val oneHandUI = remember { appPrefs.oneHandUI.state }
   LazyColumnWithScrollBar(
     Modifier
       .fillMaxWidth(),
+    contentPadding = if (oneHandUI.value) {
+      PaddingValues(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + DEFAULT_PADDING + 5.dp, bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
+    } else {
+      PaddingValues()
+    },
     state = listState
   ) {
     item {
@@ -397,7 +405,10 @@ fun ModalData.GroupChatInfoLayout(
         }
       }
       SectionBottomSpacer()
+      Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
     }
+  }
+    NavigationBarBackground(oneHandUI.value, oneHandUI.value)
   }
 }
 

@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun DefaultDropdownMenu(
   showMenu: MutableState<Boolean>,
+  modifier: Modifier = Modifier,
   offset: DpOffset = DpOffset(0.dp, 0.dp),
   dropdownMenuItems: (@Composable () -> Unit)?
 ) {
@@ -23,7 +24,7 @@ fun DefaultDropdownMenu(
     DropdownMenu(
       expanded = showMenu.value,
       onDismissRequest = { showMenu.value = false },
-      modifier = Modifier
+      modifier = modifier
         .widthIn(min = 250.dp)
         .background(MaterialTheme.colors.surface)
         .padding(vertical = 4.dp),

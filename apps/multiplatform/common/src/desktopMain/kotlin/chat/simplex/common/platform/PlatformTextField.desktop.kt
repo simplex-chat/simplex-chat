@@ -1,15 +1,18 @@
 package chat.simplex.common.platform
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
+import androidx.compose.material.TextFieldDefaults.textFieldWithLabelPadding
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.*
@@ -109,10 +112,12 @@ actual fun PlatformTextField(
     maxLines = 16,
     keyboardOptions = KeyboardOptions.Default.copy(
       capitalization = KeyboardCapitalization.Sentences,
-      autoCorrect = true
+      autoCorrectEnabled = true
     ),
     modifier = Modifier
-      .padding(vertical = 4.dp)
+      .padding(start = startPadding, end = endPadding)
+      .offset(y = (-5).dp)
+      .fillMaxWidth()
       .focusRequester(focusRequester)
       .onPreviewKeyEvent {
         if ((it.key == Key.Enter || it.key == Key.NumPadEnter) && it.type == KeyEventType.KeyDown) {
@@ -176,29 +181,24 @@ actual fun PlatformTextField(
       },
     cursorBrush = SolidColor(MaterialTheme.colors.secondary),
     decorationBox = { innerTextField ->
-      Row(verticalAlignment = Alignment.Bottom) {
         CompositionLocalProvider(
           LocalLayoutDirection provides if (isRtlByCharacters) LayoutDirection.Rtl else LocalLayoutDirection.current
         ) {
-          Column(Modifier.weight(1f).padding(start = startPadding, end = endPadding)) {
-            Spacer(Modifier.height(8.dp))
-            TextFieldDefaults.TextFieldDecorationBox(
-              value = textFieldValue.text,
-              innerTextField = innerTextField,
-              placeholder = { Text(placeholder, style = textStyle.value.copy(color = MaterialTheme.colors.secondary)) },
-              singleLine = false,
-              enabled = true,
-              isError = false,
-              trailingIcon = null,
-              interactionSource = remember { MutableInteractionSource() },
-              contentPadding = PaddingValues(),
-              visualTransformation = VisualTransformation.None,
-            )
-            Spacer(Modifier.height(10.dp))
-          }
+          TextFieldDefaults.TextFieldDecorationBox(
+            value = textFieldValue.text,
+            innerTextField = innerTextField,
+            placeholder = { Text(placeholder, style = textStyle.value.copy(color = MaterialTheme.colors.secondary)) },
+            singleLine = false,
+            enabled = true,
+            isError = false,
+            trailingIcon = null,
+            interactionSource = remember { MutableInteractionSource() },
+            contentPadding = textFieldWithLabelPadding(start = 0.dp, end = 0.dp),
+            visualTransformation = VisualTransformation.None,
+            colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.Unspecified)
+          )
         }
-      }
-    },
+    }
   )
   showDeleteTextButton.value = cs.message.split("\n").size >= 4 && !cs.inProgress
   if (composeState.value.preview is ComposePreview.VoicePreview) {

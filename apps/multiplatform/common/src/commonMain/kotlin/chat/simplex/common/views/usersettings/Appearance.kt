@@ -39,6 +39,7 @@ import chat.simplex.common.views.chat.item.msgTailWidthDp
 import chat.simplex.res.MR
 import com.godaddy.android.colorpicker.ClassicColorPicker
 import com.godaddy.android.colorpicker.HsvColor
+import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
@@ -115,7 +116,7 @@ object AppearanceScope {
     val localFontScale = remember { mutableStateOf(appPrefs.fontScale.get()) }
     SectionView(stringResource(MR.strings.appearance_font_size).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
       Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(60.dp)
+        Box(Modifier.size(50.dp)
           .background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22))
           .clip(RoundedCornerShape(percent = 22))
           .clickable {
@@ -129,7 +130,7 @@ object AppearanceScope {
             Text("Aa", color = if (localFontScale.value == 1f) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground)
           }
         }
-        Spacer(Modifier.width(10.dp))
+        Spacer(Modifier.width(15.dp))
         //      Text("${(localFontScale.value * 100).roundToInt()}%", Modifier.width(70.dp), textAlign = TextAlign.Center, fontSize = 12.sp)
         if (appPlatform.isAndroid) {
           Slider(
@@ -166,6 +167,42 @@ object AppearanceScope {
             )
           )
         }
+      }
+    }
+  }
+
+  @Composable
+  fun BarsAlphaSection(sectionTitle: StringResource, pref: SharedPreference<Float>, defaultValue: Float) {
+    val prefValue = remember { pref.state }.value
+    SectionView(stringResource(sectionTitle).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+      Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(50.dp)
+          .background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22))
+          .clip(RoundedCornerShape(percent = 22))
+          .clickable {
+            pref.set(defaultValue)
+          },
+          contentAlignment = Alignment.Center) {
+          Text(String.format(Locale.US, "%.2f", 1 - prefValue),
+            color = if (prefValue == defaultValue) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground,
+            fontSize = 12.sp,
+            maxLines = 1
+          )
+        }
+        Spacer(Modifier.width(15.dp))
+        Slider(
+          1 - prefValue,
+          valueRange = 0f..1f,
+          steps = 21,
+          onValueChange = {
+            val diff = it % 0.05f
+            pref.set(1f - (String.format(Locale.US, "%.2f", it + (if (diff >= 0.025f) -diff + 0.05f else -diff)).toFloatOrNull() ?: 1f))
+          },
+          colors = SliderDefaults.colors(
+            activeTickColor = Color.Transparent,
+            inactiveTickColor = Color.Transparent,
+          )
+        )
       }
     }
   }
@@ -912,6 +949,7 @@ object AppearanceScope {
     ColumnWithScrollBar(
       Modifier
         .fillMaxWidth()
+        .imePadding()
     ) {
       AppBarTitle(name.text)
 

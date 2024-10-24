@@ -2,6 +2,7 @@ package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
 import SectionDividerSpaced
+import SectionSpacer
 import SectionView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -58,6 +59,7 @@ fun AppearanceScope.AppearanceLayout(
           }
         }
       }
+      SettingsPreferenceItem(icon = null, stringResource(MR.strings.one_hand_ui), ChatModel.controller.appPrefs.oneHandUI)
     }
     SectionDividerSpaced()
     ThemesSection(systemDarkTheme)
@@ -66,6 +68,9 @@ fun AppearanceScope.AppearanceLayout(
     MessageShapeSection()
 
     SectionDividerSpaced()
+    BarsAlphaSection(MR.strings.appearance_in_app_bars_alpha, appPrefs.inAppBarsAlpha, 0.95f)
+
+    SectionDividerSpaced(maxTopPadding = true)
     ProfileImageSection()
 
     SectionDividerSpaced(maxTopPadding = true)
@@ -83,7 +88,7 @@ fun DensityScaleSection() {
   val localDensityScale = remember { mutableStateOf(appPrefs.densityScale.get()) }
   SectionView(stringResource(MR.strings.appearance_zoom).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
     Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-      Box(Modifier.size(60.dp)
+      Box(Modifier.size(50.dp)
         .background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22))
         .clip(RoundedCornerShape(percent = 22))
         .clickable {
@@ -101,7 +106,7 @@ fun DensityScaleSection() {
           )
         }
       }
-      Spacer(Modifier.width(10.dp))
+      Spacer(Modifier.width(15.dp))
       Slider(
         localDensityScale.value,
         valueRange = 1f..2f,

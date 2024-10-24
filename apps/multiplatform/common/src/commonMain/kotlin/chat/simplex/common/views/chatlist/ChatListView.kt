@@ -10,11 +10,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.*
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.TextRange
@@ -34,6 +37,7 @@ import chat.simplex.common.views.onboarding.shouldShowWhatsNew
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.Call
 import chat.simplex.common.views.chat.item.CIFileViewScope
+import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
@@ -41,7 +45,6 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.serialization.json.Json
-import java.net.URI
 import kotlin.time.Duration.Companion.seconds
 
 private fun showNewChatSheet(oneHandUI: State<Boolean>) {
@@ -55,7 +58,7 @@ private fun showNewChatSheet(oneHandUI: State<Boolean>) {
       chatModel.newChatSheetVisible.value = false
       close()
     }
-    ModalView(close, closeOnTop = !oneHandUI.value) {
+    ModalView(close, showCloseBar = !oneHandUI.value) {
       if (appPlatform.isAndroid) {
         BackHandler {
           close()
@@ -122,11 +125,7 @@ fun ToggleChatListCard() {
 
           SharedPreferenceToggle(
             appPrefs.oneHandUI,
-            enabled = true,
-            onChange = {
-              val c = CurrentColors.value.colors
-              platform.androidSetStatusAndNavBarColors(c.isLight, c.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
-            }
+            enabled = true
           )
         }
       }
@@ -154,72 +153,34 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
     }
   }
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
-  Scaffold(
-    topBar = {
-      if (!oneHandUI.value) {
-        Column {
-          ChatListToolbar(
-            userPickerState,
-            stopped,
-            setPerformLA,
-          )
-          Divider()
-        }
+  val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
+  Box(Modifier.fillMaxSize()) {
+    if (oneHandUI.value) {
+      ChatListWithLoadingScreen(searchText, listState)
+      Column(Modifier.align(Alignment.BottomCenter)) {
+        ChatListToolbar(
+          userPickerState,
+          listState,
+          stopped,
+          setPerformLA,
+        )
       }
-    },
-    bottomBar = {
-      if (oneHandUI.value) {
-        Column {
-          Divider()
-          ChatListToolbar(
-            userPickerState,
-            stopped,
-            setPerformLA,
-            )
-        }
+    } else {
+      ChatListWithLoadingScreen(searchText, listState)
+      Column {
+        ChatListToolbar(
+          userPickerState,
+          listState,
+          stopped,
+          setPerformLA,
+        )
       }
-    },
-    contentColor = LocalContentColor.current,
-    floatingActionButton = {
-      if (!oneHandUI.value && searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
-        FloatingActionButton(
-          onClick = {
-            if (!stopped) {
-              showNewChatSheet(oneHandUI)
-            }
-          },
-          Modifier
-            .padding(end = DEFAULT_PADDING - 16.dp, bottom = DEFAULT_PADDING - 16.dp)
-            .size(AppBarHeight * fontSizeSqrtMultiplier),
-          elevation = FloatingActionButtonDefaults.elevation(
-            defaultElevation = 0.dp,
-            pressedElevation = 0.dp,
-            hoveredElevation = 0.dp,
-            focusedElevation = 0.dp,
-          ),
-          backgroundColor = if (!stopped) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-          contentColor = Color.White
-        ) {
-          Icon(painterResource(MR.images.ic_edit_filled), stringResource(MR.strings.add_contact_or_create_group), Modifier.size(22.dp * fontSizeSqrtMultiplier))
-        }
-      }
-    }
-  ) {
-    Box(Modifier.padding(it)) {
-      Box(
-        modifier = Modifier
-          .fillMaxSize()
-      ) {
-        if (!chatModel.desktopNoUserNoRemote) {
-          ChatList(chatModel, searchText = searchText)
-        }
-        if (chatModel.chats.value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
-          Text(stringResource(
-            if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
-        }
+      if (searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
+        NewChatSheetFloatingButton(oneHandUI, stopped)
       }
     }
   }
+
   if (searchText.value.text.isEmpty()) {
     if (appPlatform.isDesktop) {
       val call = remember { chatModel.activeCall }.value
@@ -240,6 +201,46 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
 }
 
 @Composable
+private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFieldValue>, listState: LazyListState) {
+  if (!chatModel.desktopNoUserNoRemote) {
+    ChatList(searchText = searchText, listState)
+  }
+  if (chatModel.chats.value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
+    Text(
+      stringResource(
+        if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats
+      ), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary
+    )
+  }
+}
+
+@Composable
+private fun BoxScope.NewChatSheetFloatingButton(oneHandUI: State<Boolean>, stopped: Boolean) {
+  FloatingActionButton(
+    onClick = {
+      if (!stopped) {
+        showNewChatSheet(oneHandUI)
+      }
+    },
+    Modifier
+      .navigationBarsPadding()
+      .padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING)
+      .align(Alignment.BottomEnd)
+      .size(AppBarHeight * fontSizeSqrtMultiplier),
+    elevation = FloatingActionButtonDefaults.elevation(
+      defaultElevation = 0.dp,
+      pressedElevation = 0.dp,
+      hoveredElevation = 0.dp,
+      focusedElevation = 0.dp,
+    ),
+    backgroundColor = if (!stopped) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
+    contentColor = Color.White
+  ) {
+    Icon(painterResource(MR.images.ic_edit_filled), stringResource(MR.strings.add_contact_or_create_group), Modifier.size(22.dp * fontSizeSqrtMultiplier))
+  }
+}
+
+@Composable
 private fun ConnectButton(text: String, onClick: () -> Unit) {
   Button(
     onClick,
@@ -256,7 +257,7 @@ private fun ConnectButton(text: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean, setPerformLA: (Boolean) -> Unit) {
+private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>, listState: LazyListState, stopped: Boolean, setPerformLA: (Boolean) -> Unit) {
   val serversSummary: MutableState<PresentedServersSummary?> = remember { mutableStateOf(null) }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val updatingProgress = remember { chatModel.updatingProgress }.value
@@ -323,6 +324,8 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
     }
   }
   val clipboard = LocalClipboardManager.current
+  val scope = rememberCoroutineScope()
+  val canScrollToZero = remember { derivedStateOf { listState.firstVisibleItemIndex != 0 || listState.firstVisibleItemScrollOffset != 0 } }
   DefaultTopAppBar(
     navigationButton = {
       if (chatModel.users.isEmpty() && !chatModel.desktopNoUserNoRemote) {
@@ -351,27 +354,26 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
         SubscriptionStatusIndicator(
           click = {
             ModalManager.start.closeModals()
+            val summary = serversSummary.value
             ModalManager.start.showModalCloseable(
-              endButtons = {
-                val summary = serversSummary.value
-                if (summary != null) {
+              endButtons = if (summary != null) {
+                listOf {
                   ShareButton {
                     val json = Json {
                       prettyPrint = true
                     }
-
                     val text = json.encodeToString(PresentedServersSummary.serializer(), summary)
                     clipboard.shareText(text)
                   }
                 }
-              }
+              } else emptyList()
             ) { ServersSummaryView(chatModel.currentRemoteHost.value, serversSummary) }
           }
         )
       }
     },
-    onTitleClick = null,
-    showSearch = false,
+    onTitleClick = if (canScrollToZero.value) { { scrollToBottom(scope, listState) } } else null,
+    onTop = !oneHandUI.value,
     onSearchValueChanged = {},
     buttons = barButtons
   )
@@ -491,74 +493,78 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: String, chatModel: ChatModel) {
 
 @Composable
 private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState<TextFieldValue>, searchShowingSimplexLink: MutableState<Boolean>, searchChatFilteredBySimplexLink: MutableState<String?>) {
-  Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-    val focusRequester = remember { FocusRequester() }
-    var focused by remember { mutableStateOf(false) }
-    Icon(
-      painterResource(MR.images.ic_search),
-      contentDescription = null,
-      Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF).size(22.dp * fontSizeSqrtMultiplier),
-      tint = MaterialTheme.colors.secondary
-    )
-    SearchTextField(
-      Modifier.weight(1f).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
-      placeholder = stringResource(MR.strings.search_or_paste_simplex_link),
-      alwaysVisible = true,
-      searchText = searchText,
-      enabled = !remember { searchShowingSimplexLink }.value,
-      trailingContent = null,
-    ) {
-      searchText.value = searchText.value.copy(it)
-    }
-    val hasText = remember { derivedStateOf { searchText.value.text.isNotEmpty() } }
-    if (hasText.value) {
-      val hideSearchOnBack: () -> Unit = { searchText.value = TextFieldValue() }
-      BackHandler(onBack = hideSearchOnBack)
-      KeyChangeEffect(chatModel.currentRemoteHost.value) {
-        hideSearchOnBack()
+  Box {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().onSizeChanged { println("LALAL SIZE-1 $it") }) {
+      val focusRequester = remember { FocusRequester() }
+      var focused by remember { mutableStateOf(false) }
+      Icon(
+        painterResource(MR.images.ic_search),
+        contentDescription = null,
+        Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF).size(22.dp * fontSizeSqrtMultiplier),
+        tint = MaterialTheme.colors.secondary
+      )
+      SearchTextField(
+        Modifier.weight(1f).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
+        placeholder = stringResource(MR.strings.search_or_paste_simplex_link),
+        alwaysVisible = true,
+        searchText = searchText,
+        enabled = !remember { searchShowingSimplexLink }.value,
+        trailingContent = null,
+      ) {
+        searchText.value = searchText.value.copy(it)
       }
-    } else {
-      val padding = if (appPlatform.isDesktop) 0.dp else 7.dp
-      if (chatModel.chats.value.isNotEmpty()) {
-        ToggleFilterEnabledButton() 
-      }
-      Spacer(Modifier.width(padding))
-    }
-    val focusManager = LocalFocusManager.current
-    val keyboardState = getKeyboardState()
-    LaunchedEffect(keyboardState.value) {
-      if (keyboardState.value == KeyboardState.Closed && focused) {
-        focusManager.clearFocus()
-      }
-    }
-    val view = LocalMultiplatformView()
-    LaunchedEffect(Unit) {
-      snapshotFlow { searchText.value.text }
-        .distinctUntilChanged()
-        .collect {
-          val link = strHasSingleSimplexLink(it.trim())
-          if (link != null) {
-            // if SimpleX link is pasted, show connection dialogue
-            hideKeyboard(view)
-            if (link.format is Format.SimplexLink) {
-              val linkText = link.simplexLinkText(link.format.linkType, link.format.smpHosts)
-              searchText.value = searchText.value.copy(linkText, selection = TextRange.Zero)
-            }
-            searchShowingSimplexLink.value = true
-            searchChatFilteredBySimplexLink.value = null
-            connect(link.text, searchChatFilteredBySimplexLink) { searchText.value = TextFieldValue() }
-          } else if (!searchShowingSimplexLink.value || it.isEmpty()) {
-            if (it.isNotEmpty()) {
-              // if some other text is pasted, enter search mode
-              focusRequester.requestFocus()
-            } else if (listState.layoutInfo.totalItemsCount > 0) {
-              listState.scrollToItem(0)
-            }
-            searchShowingSimplexLink.value = false
-            searchChatFilteredBySimplexLink.value = null
-          }
+      val hasText = remember { derivedStateOf { searchText.value.text.isNotEmpty() } }
+      if (hasText.value) {
+        val hideSearchOnBack: () -> Unit = { searchText.value = TextFieldValue() }
+        BackHandler(onBack = hideSearchOnBack)
+        KeyChangeEffect(chatModel.currentRemoteHost.value) {
+          hideSearchOnBack()
         }
+      } else {
+        val padding = if (appPlatform.isDesktop) 0.dp else 7.dp
+        if (chatModel.chats.value.isNotEmpty()) {
+          ToggleFilterEnabledButton()
+        }
+        Spacer(Modifier.width(padding))
+      }
+      val focusManager = LocalFocusManager.current
+      val keyboardState = getKeyboardState()
+      LaunchedEffect(keyboardState.value) {
+        if (keyboardState.value == KeyboardState.Closed && focused) {
+          focusManager.clearFocus()
+        }
+      }
+      val view = LocalMultiplatformView()
+      LaunchedEffect(Unit) {
+        snapshotFlow { searchText.value.text }
+          .distinctUntilChanged()
+          .collect {
+            val link = strHasSingleSimplexLink(it.trim())
+            if (link != null) {
+              // if SimpleX link is pasted, show connection dialogue
+              hideKeyboard(view)
+              if (link.format is Format.SimplexLink) {
+                val linkText = link.simplexLinkText(link.format.linkType, link.format.smpHosts)
+                searchText.value = searchText.value.copy(linkText, selection = TextRange.Zero)
+              }
+              searchShowingSimplexLink.value = true
+              searchChatFilteredBySimplexLink.value = null
+              connect(link.text, searchChatFilteredBySimplexLink) { searchText.value = TextFieldValue() }
+            } else if (!searchShowingSimplexLink.value || it.isEmpty()) {
+              if (it.isNotEmpty()) {
+                // if some other text is pasted, enter search mode
+                focusRequester.requestFocus()
+              } else if (listState.layoutInfo.totalItemsCount > 0) {
+                listState.scrollToItem(0)
+              }
+              searchShowingSimplexLink.value = false
+              searchChatFilteredBySimplexLink.value = null
+            }
+          }
+      }
     }
+    val oneHandUI = remember { appPrefs.oneHandUI.state }
+    Divider(Modifier.align(if (oneHandUI.value) Alignment.TopStart else Alignment.BottomStart))
   }
 }
 
@@ -590,8 +596,37 @@ enum class ScrollDirection {
 }
 
 @Composable
-private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldValue>) {
-  val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
+fun BoxScope.StatusBarBackground() {
+  if (appPlatform.isAndroid) {
+    val finalColor = MaterialTheme.colors.background.copy(0.88f)
+    Box(Modifier.fillMaxWidth().windowInsetsTopHeight(WindowInsets.statusBars).background(finalColor))
+  }
+}
+
+@Composable
+fun BoxScope.NavigationBarBackground(appBarOnBottom: Boolean = false, mixedColor: Boolean) {
+  if (appPlatform.isAndroid) {
+    val barPadding = WindowInsets.navigationBars.asPaddingValues()
+    val paddingBottom = barPadding.calculateBottomPadding()
+    val color = if (mixedColor) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f) else MaterialTheme.colors.background
+    val finalColor = color.copy(if (appBarOnBottom) remember { appPrefs.inAppBarsAlpha.state }.value else 0.6f)
+    Box(Modifier.align(Alignment.BottomStart).height(paddingBottom).fillMaxWidth().background(finalColor))
+  }
+}
+
+@Composable
+fun BoxScope.NavigationBarBackground(modifier: Modifier, color: Color = MaterialTheme.colors.background) {
+  val keyboardState = getKeyboardState()
+  if (appPlatform.isAndroid && keyboardState.value == KeyboardState.Closed) {
+    val barPadding = WindowInsets.navigationBars.asPaddingValues()
+    val paddingBottom = barPadding.calculateBottomPadding()
+    val finalColor = color.copy(0.6f)
+    Box(modifier.align(Alignment.BottomStart).height(paddingBottom).fillMaxWidth().background(finalColor))
+  }
+}
+
+@Composable
+private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listState: LazyListState) {
   var scrollDirection by remember { mutableStateOf(ScrollDirection.Idle) }
   var previousIndex by remember { mutableStateOf(0) }
   var previousScrollOffset by remember { mutableStateOf(0) }
@@ -628,40 +663,45 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
   val searchShowingSimplexLink = remember { mutableStateOf(false) }
   val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
   val chats = filteredChats(showUnreadAndFavorites, searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.value.toList())
+  val topPaddingToContent = topPaddingToContent()
+  val blankSpaceSize = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else topPaddingToContent
   LazyColumnWithScrollBar(
-    Modifier.fillMaxSize(),
+    Modifier.fillMaxSize().then(if (!oneHandUI.value) Modifier.imePadding() else Modifier),
     listState,
     reverseLayout = oneHandUI.value
   ) {
+    item { Spacer(Modifier.height(blankSpaceSize)) }
     stickyHeader {
       Column(
         Modifier
+          .zIndex(1f)
           .offset {
-            val y = if (searchText.value.text.isEmpty()) {
-              val offsetMultiplier = if (oneHandUI.value) 1 else -1
-              if (
-                (oneHandUI.value && scrollDirection == ScrollDirection.Up) ||
-                (appPlatform.isAndroid && keyboardState == KeyboardState.Opened)
-              ) {
-                0
-              } else if (listState.firstVisibleItemIndex == 0) offsetMultiplier * listState.firstVisibleItemScrollOffset else offsetMultiplier * 1000
+            val offsetMultiplier = if (oneHandUI.value) 1 else -1
+            val y = if (searchText.value.text.isNotEmpty() || (appPlatform.isAndroid && keyboardState == KeyboardState.Opened) || scrollDirection == ScrollDirection.Up) {
+              if (listState.firstVisibleItemIndex == 0) -offsetMultiplier * listState.firstVisibleItemScrollOffset
+              else -offsetMultiplier * blankSpaceSize.roundToPx()
             } else {
-              0
+              when (listState.firstVisibleItemIndex) {
+                0 -> 0
+                1 -> offsetMultiplier * listState.firstVisibleItemScrollOffset
+                else -> offsetMultiplier * 1000
+              }
             }
             IntOffset(0, y)
           }
-          .background(MaterialTheme.colors.background),
+          .background(MaterialTheme.colors.background)
         ) {
         if (oneHandUI.value) {
-          Divider()
-        }
-        ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
-        if (!oneHandUI.value) {
-          Divider()
+          Column(Modifier.consumeWindowInsets(WindowInsets.navigationBars).consumeWindowInsets(PaddingValues(bottom = AppBarHeight))) {
+            ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
+            Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
+          }
+        } else {
+          ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
         }
       }
     }
-    if (appPlatform.isAndroid && !oneHandUICardShown.value && chats.count() > 1) {
+    if (!oneHandUICardShown.value && chats.size > 1) {
       item {
         ToggleChatListCard()
       }
@@ -672,16 +712,24 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
       } }
       ChatListNavLinkView(chat, nextChatSelected)
     }
-    if (appPlatform.isAndroid && !oneHandUICardShown.value && chats.count() <= 1) {
+    if (!oneHandUICardShown.value && chats.size <= 1) {
       item {
         ToggleChatListCard()
       }
     }
+    if (appPlatform.isAndroid) {
+      item { Spacer(if (oneHandUI.value) Modifier.windowInsetsTopHeight(WindowInsets.statusBars) else Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars)) }
+    }
   }
   if (chats.isEmpty() && chatModel.chats.value.isNotEmpty()) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().imePadding(), contentAlignment = Alignment.Center) {
       Text(generalGetString(MR.strings.no_filtered_chats), color = MaterialTheme.colors.secondary)
     }
+  }
+  if (oneHandUI.value) {
+    StatusBarBackground()
+  } else {
+    NavigationBarBackground(oneHandUI.value, true)
   }
 }
 
@@ -727,3 +775,7 @@ private fun filtered(chat: Chat): Boolean =
   (chat.chatInfo.chatSettings?.favorite ?: false) ||
       chat.chatStats.unreadChat ||
       (chat.chatInfo.ntfsEnabled && chat.chatStats.unreadCount > 0)
+
+fun scrollToBottom(scope: CoroutineScope, listState: LazyListState) {
+  scope.launch { try { listState.animateScrollToItem(0) } catch (e: Exception) { Log.e(TAG, e.stackTraceToString()) } }
+}

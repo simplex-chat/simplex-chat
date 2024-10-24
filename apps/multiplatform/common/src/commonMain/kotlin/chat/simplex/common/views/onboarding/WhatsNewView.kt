@@ -123,7 +123,7 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
         .padding(horizontal = DEFAULT_PADDING),
       verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING.times(0.75f))
     ) {
-      AppBarTitle(String.format(generalGetString(MR.strings.new_in_version), v.version), bottomPadding = DEFAULT_PADDING)
+      AppBarTitle(String.format(generalGetString(MR.strings.new_in_version), v.version), withPadding = false, bottomPadding = DEFAULT_PADDING)
 
       v.features.forEach { feature ->
         if (feature.show) {

@@ -27,16 +27,12 @@ fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
     contentColor = LocalContentColor.current,
     topBar = {
       if (!oneHandUI.value) {
-        Column {
-          ShareListToolbar(chatModel, stopped) { searchInList = it.trim() }
-          Divider()
-        }
+        ShareListToolbar(chatModel, stopped) { searchInList = it.trim() }
       }
     },
     bottomBar = {
       if (oneHandUI.value) {
-        Column {
-          Divider()
+        Box(Modifier.imePadding()) {
           ShareListToolbar(chatModel, stopped) { searchInList = it.trim() }
         }
       }
@@ -69,21 +65,22 @@ fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
       }
       null -> {}
     }
-    Box(Modifier.padding(it)) {
-      Column(
-        modifier = Modifier.fillMaxSize()
-      ) {
-        if (chatModel.chats.value.isNotEmpty()) {
-          ShareList(
-            chatModel,
-            search = searchInList,
-            isMediaOrFileAttachment = isMediaOrFileAttachment,
-            isVoice = isVoice,
-            hasSimplexLink = hasSimplexLink,
-          )
-        } else {
-          EmptyList()
-        }
+    Box(Modifier.fillMaxSize().padding(it)) {
+      if (chatModel.chats.value.isNotEmpty()) {
+        ShareList(
+          chatModel,
+          search = searchInList,
+          isMediaOrFileAttachment = isMediaOrFileAttachment,
+          isVoice = isVoice,
+          hasSimplexLink = hasSimplexLink,
+        )
+      } else {
+        EmptyList()
+      }
+      if (oneHandUI.value) {
+        StatusBarBackground()
+      } else {
+        NavigationBarBackground(oneHandUI.value, true)
       }
     }
   }
@@ -122,9 +119,9 @@ private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchVal
             val search = rememberSaveable { mutableStateOf("") }
             ModalView(
               { close() },
-              endButtons = {
-                SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
-              },
+              showSearch = true,
+              searchAlwaysVisible = true,
+              onSearchValueChanged = { search.value = it },
               content = {
                 ActiveProfilePicker(
                   search = search,
@@ -191,6 +188,7 @@ private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchVal
     },
     onTitleClick = null,
     showSearch = showSearch,
+    onTop = !remember { appPrefs.oneHandUI.state }.value,
     onSearchValueChanged = onSearchValueChanged,
     buttons = barButtons
   )
@@ -212,7 +210,7 @@ private fun ShareList(
     }
   }
   LazyColumnWithScrollBar(
-    modifier = Modifier.fillMaxSize(),
+    modifier = Modifier.fillMaxSize().then(if (!oneHandUI.value) Modifier.imePadding() else Modifier),
     reverseLayout = oneHandUI.value
   ) {
     items(chats) { chat ->
@@ -223,6 +221,11 @@ private fun ShareList(
         isVoice = isVoice,
         hasSimplexLink = hasSimplexLink,
       )
+    }
+    if (appPlatform.isAndroid) {
+      item {
+        Spacer(if (oneHandUI.value) Modifier.windowInsetsTopHeight(WindowInsets.statusBars) else Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
+      }
     }
   }
 }

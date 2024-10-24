@@ -89,7 +89,7 @@ private fun ContactConnectionInfoLayout(
       SettingsActionItemWithContent(
         icon = painterResource(MR.images.ic_theater_comedy_filled),
         text = null,
-        click = { ModalManager.start.showModal { IncognitoView() } },
+        click = { ModalManager.end.showModal { IncognitoView() } },
         iconColor = Indigo,
         extraPadding = false
       ) {

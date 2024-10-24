@@ -6,12 +6,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chatlist.StatusBarBackground
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.min
@@ -21,23 +23,39 @@ import kotlin.math.sqrt
 fun ModalView(
   close: () -> Unit,
   showClose: Boolean = true,
+  showCloseBar: Boolean = true,
   enableClose: Boolean = true,
-  background: Color = MaterialTheme.colors.background,
+  background: Color = Color.Unspecified,
   modifier: Modifier = Modifier,
-  closeOnTop: Boolean = true,
-  endButtons: @Composable RowScope.() -> Unit = {},
-  content: @Composable () -> Unit,
+  showSearch: Boolean = false,
+  searchAlwaysVisible: Boolean = false,
+  onSearchValueChanged: (String) -> Unit = {},
+  endButtons: List<@Composable RowScope.() -> Unit> = emptyList(),
+  content: @Composable BoxScope.() -> Unit,
 ) {
   if (showClose) {
     BackHandler(enabled = enableClose, onBack = close)
   }
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
   Surface(Modifier.fillMaxSize(), contentColor = LocalContentColor.current) {
-    Column(if (background != MaterialTheme.colors.background) Modifier.background(background) else Modifier.themedBackground()) {
-      if (closeOnTop) {
-        CloseSheetBar(if (enableClose) close else null, showClose, endButtons = endButtons)
-      }
+    Box(if (background != Color.Unspecified) Modifier.background(background) else Modifier.themedBackground()) {
       Box(modifier = modifier) {
         content()
+      }
+      if (showCloseBar) {
+        if (oneHandUI.value) {
+          StatusBarBackground()
+        }
+        Box(Modifier.align(if (oneHandUI.value) Alignment.BottomStart else Alignment.TopStart)) {
+          DefaultTopAppBar(
+            navigationButton = if (showClose) {{ NavigationButtonBack(onButtonClicked = if (enableClose) close else null) }} else null,
+            onTop = !oneHandUI.value,
+            showSearch = showSearch,
+            searchAlwaysVisible = searchAlwaysVisible,
+            onSearchValueChanged = onSearchValueChanged,
+            buttons = endButtons
+          )
+        }
       }
     }
   }
@@ -69,17 +87,17 @@ class ModalManager(private val placement: ModalPlacement? = null) {
   private var passcodeView: MutableStateFlow<(@Composable (close: () -> Unit) -> Unit)?> = MutableStateFlow(null)
   private var onTimePasscodeView: MutableStateFlow<(@Composable (close: () -> Unit) -> Unit)?> = MutableStateFlow(null)
 
-  fun showModal(settings: Boolean = false, showClose: Boolean = true, closeOnTop: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
+  fun showModal(settings: Boolean = false, showClose: Boolean = true, endButtons: List<@Composable RowScope.() -> Unit> = emptyList(), content: @Composable ModalData.() -> Unit) {
     val data = ModalData()
     showCustomModal { close ->
-      ModalView(close, showClose = showClose, closeOnTop = closeOnTop, endButtons = endButtons, content = { data.content() })
+      ModalView(close, showClose = showClose, endButtons = endButtons, content = { data.content() })
     }
   }
 
-  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, closeOnTop: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.(close: () -> Unit) -> Unit) {
+  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, endButtons: List<@Composable RowScope.() -> Unit> = emptyList(), content: @Composable ModalData.(close: () -> Unit) -> Unit) {
     val data = ModalData()
     showCustomModal { close ->
-      ModalView(close, showClose = showClose, endButtons = endButtons, closeOnTop = closeOnTop, content = { data.content(close) })
+      ModalView(close, showClose = showClose, endButtons = endButtons, content = { data.content(close) })
     }
   }
 
