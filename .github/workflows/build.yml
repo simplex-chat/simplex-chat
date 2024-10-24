@@ -131,6 +131,10 @@ jobs:
           echo "    extra-include-dirs: /opt/homebrew/opt/openssl@1.1/include" >> cabal.project.local
           echo "    extra-lib-dirs: /opt/homebrew/opt/openssl@1.1/lib"         >> cabal.project.local
           echo "    flags: +openssl"                                           >> cabal.project.local
+          echo ""                                                              >> cabal.project.local
+          echo "package rocksdb"                                               >> cabal.project.local
+          echo "    extra-include-dirs: /opt/homebrew/opt/rocksdb/include"     >> cabal.project.local
+          echo "    extra-lib-dirs: /opt/homebrew/opt/rocksdb/lib"             >> cabal.project.local
 
       - name: Unix prepare cabal.project.local for Mac
         if: matrix.os == 'macos-13'
@@ -145,14 +149,22 @@ jobs:
           echo "    extra-include-dirs: /usr/local/opt/openssl@1.1/include"    >> cabal.project.local
           echo "    extra-lib-dirs: /usr/local/opt/openssl@1.1/lib"            >> cabal.project.local
           echo "    flags: +openssl"                                           >> cabal.project.local
+          echo ""                                                              >> cabal.project.local
+          echo "package rocksdb"                                               >> cabal.project.local
+          echo "    extra-include-dirs: /opt/homebrew/opt/rocksdb/include"     >> cabal.project.local
+          echo "    extra-lib-dirs: /opt/homebrew/opt/rocksdb/lib"             >> cabal.project.local
 
       - name: Install AppImage dependencies
         if: startsWith(github.ref, 'refs/tags/v') && matrix.asset_name && matrix.os == 'ubuntu-20.04'
         run: sudo apt install -y desktop-file-utils
 
+      - name: Install package dependencies
+        if: matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04'
+        run: sudo apt install -y librocksdb-dev
+
       - name: Install pkg-config for Mac
         if: matrix.os == 'macos-latest' || matrix.os == 'macos-13'
-        run: brew install pkg-config
+        run: brew install pkg-config rocksdb
 
       - name: Unix prepare cabal.project.local for Ubuntu
         if: matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04'
@@ -322,6 +334,7 @@ jobs:
             git
             perl
             make
+            mingw-w64-rocksdb
           pacboy: >-
             toolchain:p
             cmake:p
