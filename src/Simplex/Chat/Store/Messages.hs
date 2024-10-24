@@ -1023,90 +1023,61 @@ getDirectChatItemLast db user@User {userId} contactId = do
   getDirectChatItem db user contactId chatItemId
 
 getDirectChatAfter_ :: DB.Connection -> User -> Contact -> ChatItemId -> Int -> String -> IO (Chat 'CTDirect)
-getDirectChatAfter_ db user@User {userId} ct@Contact {contactId} afterChatItemId count search = do
+getDirectChatAfter_ db user ct afterChatItemId count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  chatItemIds <- getDirectChatItemIdsAfter_
+  chatItemIds <- getDirectChatItemIdsAfter_ db user ct afterChatItemId count search
   currentTs <- getCurrentTime
   chatItems <- mapM (safeGetDirectItem db user ct currentTs) chatItemIds
   pure $ Chat (DirectChat ct) chatItems stats
-  where
-    getDirectChatItemIdsAfter_ :: IO [ChatItemId]
-    getDirectChatItemIdsAfter_ =
-      map fromOnly
-        <$> DB.query
-          db
-          [sql|
-            SELECT chat_item_id
-            FROM chat_items
-            WHERE user_id = ? AND contact_id = ? AND item_text LIKE '%' || ? || '%'
-              AND chat_item_id > ?
-            ORDER BY created_at ASC, chat_item_id ASC
-            LIMIT ?
-          |]
-          (userId, contactId, search, afterChatItemId, count)
+
+getDirectChatItemIdsAfter_ :: DB.Connection -> User -> Contact -> ChatItemId -> Int -> String -> IO [ChatItemId]
+getDirectChatItemIdsAfter_ db User {userId} Contact {contactId} afterChatItemId count search =
+  map fromOnly
+    <$> DB.query
+      db
+      [sql|
+        SELECT chat_item_id
+        FROM chat_items
+        WHERE user_id = ? AND contact_id = ? AND item_text LIKE '%' || ? || '%'
+          AND chat_item_id > ?
+        ORDER BY created_at ASC, chat_item_id ASC
+        LIMIT ?
+      |]
+      (userId, contactId, search, afterChatItemId, count)
 
 getDirectChatBefore_ :: DB.Connection -> User -> Contact -> ChatItemId -> Int -> String -> IO (Chat 'CTDirect)
-getDirectChatBefore_ db user@User {userId} ct@Contact {contactId} beforeChatItemId count search = do
+getDirectChatBefore_ db user ct beforeChatItemId count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  chatItemIds <- getDirectChatItemsIdsBefore_
+  chatItemIds <- getDirectChatItemsIdsBefore_ db user ct beforeChatItemId count search
   currentTs <- getCurrentTime
   chatItems <- mapM (safeGetDirectItem db user ct currentTs) chatItemIds
   pure $ Chat (DirectChat ct) (reverse chatItems) stats
-  where
-    getDirectChatItemsIdsBefore_ :: IO [ChatItemId]
-    getDirectChatItemsIdsBefore_ =
-      map fromOnly
-        <$> DB.query
-          db
-          [sql|
-            SELECT chat_item_id
-            FROM chat_items
-            WHERE user_id = ? AND contact_id = ? AND item_text LIKE '%' || ? || '%'
-              AND chat_item_id < ?
-            ORDER BY created_at DESC, chat_item_id DESC
-            LIMIT ?
-          |]
-          (userId, contactId, search, beforeChatItemId, count)
+
+getDirectChatItemsIdsBefore_ :: DB.Connection -> User -> Contact -> ChatItemId -> Int -> String -> IO [ChatItemId]
+getDirectChatItemsIdsBefore_ db User {userId} Contact {contactId} beforeChatItemId count search =
+  map fromOnly
+    <$> DB.query
+      db
+      [sql|
+        SELECT chat_item_id
+        FROM chat_items
+        WHERE user_id = ? AND contact_id = ? AND item_text LIKE '%' || ? || '%'
+          AND chat_item_id < ?
+        ORDER BY created_at DESC, chat_item_id DESC
+        LIMIT ?
+      |]
+      (userId, contactId, search, beforeChatItemId, count)
 
 getDirectChatAround_ :: DB.Connection -> User -> Contact -> ChatItemId -> Int -> String -> IO (Chat 'CTDirect)
-getDirectChatAround_ db user@User {userId} ct@Contact {contactId} aroundItemId count search = do
+getDirectChatAround_ db user ct aroundItemId count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  chatItemIds <- getDirectChatItemsIdsAround_
+  let (fetchCountBefore, fetchCountAfter) = divideFetchCountAround_ (count - 1)
+  beforeIds <- getDirectChatItemsIdsBefore_ db user ct aroundItemId fetchCountBefore search
+  afterIds <- getDirectChatItemIdsAfter_ db user ct aroundItemId fetchCountAfter search
+  let chatItemIds = reverse beforeIds <> [aroundItemId] <> afterIds
   currentTs <- getCurrentTime
   chatItems <- mapM (safeGetDirectItem db user ct currentTs) chatItemIds
-  pure $ Chat (DirectChat ct) (reverse chatItems) stats
-  where
-    getDirectChatItemsIdsAround_ :: IO [ChatItemId]
-    getDirectChatItemsIdsAround_ = do
-      let (fetchCountBefore, fetchCountAfter) = divideFetchCountAround_ count
-      map fromOnly
-        <$> DB.queryNamed
-          db
-          [sql|
-            (SELECT chat_item_id
-            FROM chat_items
-            WHERE user_id = :userId AND contact_id = :contactId AND item_text LIKE '%' || :search || '%'
-              AND chat_item_id < :aroundItemId
-            ORDER BY created_at DESC, chat_item_id DESC
-            LIMIT :fetchCountBefore)
-            UNION ALL
-            (SELECT chat_item_id
-            FROM chat_items
-            WHERE user_id = :userId AND contact_id = :contactId AND item_text LIKE '%' || :search || '%'
-              AND chat_item_id >= :aroundItemId
-            ORDER BY created_at ASC, chat_item_id ASC
-            LIMIT :fetchCountAfter)
-            ORDER BY created_at DESC, chat_item_id DESC
-            LIMIT :count
-          |]
-          [ ":userId" := userId,
-            ":contactId" := contactId,
-            ":search" := search,
-            ":aroundItemId" := aroundItemId,
-            ":fetchCountBefore" := fetchCountBefore,
-            ":fetchCountAfter" := fetchCountAfter,
-            ":count" := count
-          ]
+  pure $ Chat (DirectChat ct) chatItems stats
 
 getGroupChat :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTGroup)
 getGroupChat db vr user groupId pagination search_ = do
