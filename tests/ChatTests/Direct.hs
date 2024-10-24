@@ -791,7 +791,7 @@ testDirectMessageDelete =
       alice @@@ [("@bob", lastChatFeature)]
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures)
 
-      -- alice: msg id 1
+      -- alice: msg id 3
       bob ##> ("/_update item @2 " <> itemId 2 <> " text hey alice")
       bob <# "@alice [edited] > hello 🙂"
       bob <## "      hey alice"
@@ -806,12 +806,12 @@ testDirectMessageDelete =
       alice @@@ [("@bob", "hey alice [marked deleted]")]
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hey alice [marked deleted]")])
 
-      -- alice: deletes msg id 1 that was broadcast deleted by bob
-      alice #$> ("/_delete item @2 " <> itemId 1 <> " internal", id, "message deleted")
+      -- alice: deletes msg id 3 that was broadcast deleted by bob
+      alice #$> ("/_delete item @2 " <> itemId 3 <> " internal", id, "message deleted")
       alice @@@ [("@bob", lastChatFeature)]
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures)
 
-      -- alice: msg id 1, bob: msg id 3 (quoting message alice deleted locally)
+      -- alice: msg id 4, bob: msg id 3 (quoting message alice deleted locally)
       bob `send` "> @alice (hello 🙂) do you receive my messages?"
       bob <# "@alice > hello 🙂"
       bob <## "      do you receive my messages?"
@@ -819,14 +819,14 @@ testDirectMessageDelete =
       alice <## "      do you receive my messages?"
       alice @@@ [("@bob", "do you receive my messages?")]
       alice #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((0, "do you receive my messages?"), Just (1, "hello 🙂"))])
-      alice #$> ("/_delete item @2 " <> itemId 1 <> " broadcast", id, "cannot delete this item")
+      alice #$> ("/_delete item @2 " <> itemId 4 <> " broadcast", id, "cannot delete this item")
 
-      -- alice: msg id 2, bob: msg id 4
+      -- alice: msg id 5, bob: msg id 4
       bob #> "@alice how are you?"
       alice <# "bob> how are you?"
 
-      -- alice: deletes msg id 2
-      alice #$> ("/_delete item @2 " <> itemId 2 <> " internal", id, "message deleted")
+      -- alice: deletes msg id 5
+      alice #$> ("/_delete item @2 " <> itemId 5 <> " internal", id, "message deleted")
 
       -- bob: marks deleted msg id 4 (that alice deleted locally)
       bob #$> ("/_delete item @2 " <> itemId 4 <> " broadcast", id, "message marked deleted")

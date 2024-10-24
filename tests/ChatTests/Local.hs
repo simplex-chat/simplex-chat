@@ -51,7 +51,7 @@ testNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   alice ##> "/chats"
 
   alice /* "ahoy!"
-  alice ##> "/_update item *1 1 text Greetings."
+  alice ##> "/_update item *1 2 text Greetings."
   alice ##> "/tail *"
   alice <# "* Greetings."
 

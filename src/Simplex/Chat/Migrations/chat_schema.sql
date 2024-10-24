@@ -360,7 +360,7 @@ CREATE TABLE pending_group_messages(
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
 CREATE TABLE chat_items(
-  chat_item_id INTEGER PRIMARY KEY,
+  chat_item_id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
   group_id INTEGER REFERENCES groups ON DELETE CASCADE,
@@ -399,6 +399,7 @@ CREATE TABLE chat_items(
   fwd_from_chat_item_id INTEGER REFERENCES chat_items ON DELETE SET NULL,
   via_proxy INTEGER
 );
+CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE chat_item_messages(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
   message_id INTEGER NOT NULL UNIQUE REFERENCES messages ON DELETE CASCADE,
@@ -429,7 +430,6 @@ CREATE TABLE commands(
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
-CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE settings(
   settings_id INTEGER PRIMARY KEY,
   chat_item_ttl INTEGER,
