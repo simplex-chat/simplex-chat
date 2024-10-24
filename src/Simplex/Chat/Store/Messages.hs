@@ -1331,15 +1331,15 @@ safeToLocalItem currentTs itemId = \case
               }
 
 getLocalChatAfter_ :: DB.Connection -> User -> NoteFolder -> ChatItemId -> Int -> String -> IO (Chat 'CTLocal)
-getLocalChatAfter_ db user@User {userId} nf@NoteFolder {noteFolderId} afterChatItemId count search = do
+getLocalChatAfter_ db user nf afterChatItemId count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  chatItemIds <- getLocalChatItemIdsAfter_ db userId noteFolderId afterChatItemId count search
+  chatItemIds <- getLocalChatItemIdsAfter_ db user nf afterChatItemId count search
   currentTs <- getCurrentTime
   chatItems <- mapM (safeGetLocalItem db user nf currentTs) chatItemIds
   pure $ Chat (LocalChat nf) chatItems stats
 
-getLocalChatItemIdsAfter_ :: DB.Connection -> UserId -> NoteFolderId -> ChatItemId -> Int -> String -> IO [ChatItemId]
-getLocalChatItemIdsAfter_ db userId noteFolderId afterChatItemId count search =
+getLocalChatItemIdsAfter_ :: DB.Connection -> User -> NoteFolder -> ChatItemId -> Int -> String -> IO [ChatItemId]
+getLocalChatItemIdsAfter_ db User {userId} NoteFolder {noteFolderId} afterChatItemId count search =
   map fromOnly
     <$> DB.query
       db
@@ -1354,15 +1354,15 @@ getLocalChatItemIdsAfter_ db userId noteFolderId afterChatItemId count search =
       (userId, noteFolderId, search, afterChatItemId, count)
 
 getLocalChatBefore_ :: DB.Connection -> User -> NoteFolder -> ChatItemId -> Int -> String -> IO (Chat 'CTLocal)
-getLocalChatBefore_ db user@User {userId} nf@NoteFolder {noteFolderId} beforeChatItemId count search = do
+getLocalChatBefore_ db user nf beforeChatItemId count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  chatItemIds <- getLocalChatItemIdsBefore_ db userId noteFolderId beforeChatItemId count search
+  chatItemIds <- getLocalChatItemIdsBefore_ db user nf beforeChatItemId count search
   currentTs <- getCurrentTime
   chatItems <- mapM (safeGetLocalItem db user nf currentTs) chatItemIds
   pure $ Chat (LocalChat nf) (reverse chatItems) stats
 
-getLocalChatItemIdsBefore_ :: DB.Connection -> UserId -> NoteFolderId -> ChatItemId -> Int -> String -> IO [ChatItemId]
-getLocalChatItemIdsBefore_ db userId noteFolderId beforeChatItemId count search =
+getLocalChatItemIdsBefore_ :: DB.Connection -> User -> NoteFolder -> ChatItemId -> Int -> String -> IO [ChatItemId]
+getLocalChatItemIdsBefore_ db User {userId} NoteFolder {noteFolderId} beforeChatItemId count search =
   map fromOnly
     <$> DB.query
       db
@@ -1380,8 +1380,8 @@ getLocalChatAround_ :: DB.Connection -> User -> NoteFolder -> ChatItemId -> Int 
 getLocalChatAround_ db user@User {userId} nf@NoteFolder {noteFolderId} aroundItemId count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   let (fetchCountBefore, fetchCountAfter) = divideFetchCountAround_ (count - 1)
-  beforeIds <- getLocalChatItemIdsBefore_ db userId noteFolderId aroundItemId fetchCountBefore search
-  afterIds <- getLocalChatItemIdsAfter_ db userId noteFolderId aroundItemId fetchCountAfter search
+  beforeIds <- getLocalChatItemIdsBefore_ db user nf aroundItemId fetchCountBefore search
+  afterIds <- getLocalChatItemIdsAfter_ db user nf aroundItemId fetchCountAfter search
   let chatItemIds = reverse beforeIds <> [aroundItemId] <> afterIds
   currentTs <- getCurrentTime
   chatItems <- mapM (safeGetLocalItem db user nf currentTs) chatItemIds
