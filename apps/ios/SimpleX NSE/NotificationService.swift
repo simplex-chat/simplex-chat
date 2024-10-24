@@ -105,22 +105,9 @@ class NSEThreads {
     }
 
     func processNotification(_ id: ChatId, _ ntf: NSENotificationData) async -> Void {
-        // TODO revert to single if
-        if let (_, nse) = rcvEntityThread(id) {
-            if nse.expectedMessages[id]?.shouldProcessNtf ?? false,
-               nse.processReceivedNtf(id, ntf, signalReady: true) {
-                // continue
-            } else {
-                if let t = nse.threadId { logger.debug("### NotificationService \(t, privacy: .public) processNotification: adding to droppedNotifications: id = \(id, privacy: .public)") }
-                NSEThreads.queue.sync {
-                    droppedNotifications.append((id, ntf))
-                }
-            }
-        } else {
-            logger.debug("### NotificationService NO THREAD processNotification: adding to droppedNotifications: id = \(id, privacy: .public)")
-            NSEThreads.queue.sync {
-                droppedNotifications.append((id, ntf))
-            }
+        if let (_, nse) = rcvEntityThread(id),
+           nse.expectedMessages[id]?.shouldProcessNtf ?? false {
+            nse.processReceivedNtf(id, ntf, signalReady: true)
         }
     }
 
@@ -186,6 +173,23 @@ class NotificationService: UNNotificationServiceExtension {
     var returnedSuspension = false
 
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
+        // ------ TODO remove
+        NSEThreads.queue.sync {
+            counter = NSEThreads.shared.counter
+            NSEThreads.shared.counter += 1
+        }
+        if let t = threadId, let c = counter { logger.debug("### NotificationService \(t, privacy: .public) counter = \(c, privacy: .public): didReceive !!!!") }
+
+        if let counter = counter, counter % 2 == 1 {
+            let newThread = Thread {
+                Thread.sleep(forTimeInterval: 2)
+                let newNse = NotificationService()
+                newNse.didReceive(request, withContentHandler: contentHandler)
+            }
+            newThread.start()
+        }
+
+        // ------
         logger.debug("DEBUGGING: NotificationService.didReceive")
         let ntf = if let ntf_ = request.content.mutableCopy() as? UNMutableNotificationContent { ntf_ } else { UNMutableNotificationContent() }
         setServiceBestAttemptNtf(ntf)
@@ -199,7 +203,9 @@ class NotificationService: UNNotificationServiceExtension {
             setServiceBestAttemptNtf(createAppStoppedNtf(badgeCount))
             deliverBestAttemptNtf()
         case .suspended:
-            receiveNtfMessages(request, contentHandler)
+            Task {
+                await receiveNtfMessages(request, contentHandler)
+            }
         case .suspending:
             Task {
                 let state: AppState = await withCheckedContinuation { cont in
@@ -222,7 +228,7 @@ class NotificationService: UNNotificationServiceExtension {
                 }
                 logger.debug("NotificationService: app state is now \(state.rawValue)")
                 if state.inactive {
-                    receiveNtfMessages(request, contentHandler)
+                    await receiveNtfMessages(request, contentHandler)
                 } else {
                     deliverBestAttemptNtf()
                 }
@@ -233,7 +239,7 @@ class NotificationService: UNNotificationServiceExtension {
         }
     }
 
-    func receiveNtfMessages(_ request: UNNotificationRequest, _ contentHandler: @escaping (UNNotificationContent) -> Void) {
+    func receiveNtfMessages(_ request: UNNotificationRequest, _ contentHandler: @escaping (UNNotificationContent) -> Void) async {
         logger.debug("NotificationService: receiveNtfMessages")
         if case .documents = dbContainerGroupDefault.get() {
             deliverBestAttemptNtf()
@@ -245,28 +251,32 @@ class NotificationService: UNNotificationServiceExtension {
            let encNtfInfo = ntfData["message"] as? String,
            // check it here again
            appStateGroupDefault.get().inactive {
-            // ------ TODO remove
-            counter = NSEThreads.shared.counter
-            NSEThreads.shared.counter += 1
-            // ------
+//            // ------ TODO remove
+//            NSEThreads.queue.sync {
+//                counter = NSEThreads.shared.counter
+//                NSEThreads.shared.counter += 1
+//            }
+//            // ------
             // thread is added to activeThreads tracking set here - if thread started chat it needs to be suspended
             if let t = threadId { NSEThreads.shared.startThread(t, self) }
+            if let t = threadId, let c = counter { logger.debug("### NotificationService \(t, privacy: .public) counter = \(c, privacy: .public): started thread") }
             let dbStatus = startChat()
             if case .ok = dbStatus,
                let ntfConns = apiGetNtfConns(nonce: nonce, encNtfInfo: encNtfInfo) {
-                logger.debug("NotificationService: receiveNtfMessages: apiGetNtfConns ntfConns count = \(ntfConns.count)")
+                if let t = threadId { logger.debug("### NotificationService \(t, privacy: .public): receiveNtfMessages: apiGetNtfConns ntfConns count = \(ntfConns.count)") }
 
                 for ntfConn in ntfConns {
                     addExpectedMessage(ntfConn: ntfConn)
                 }
 
-                // ------ TODO remove
-                if let counter = counter, counter % 2 == 1 {
-                     Thread.sleep(forTimeInterval: 2)
-                }
-                // ------
+//                // ------ TODO remove
+//                if let counter = counter, counter % 2 == 1 {
+//                     Thread.sleep(forTimeInterval: 4)
+//                }
+//                // ------
+//                await waitLoop()
 
-                let getNtfConnIds = expectedMessages.compactMap { (id, _) in
+                let connIdsToGet = expectedMessages.compactMap { (id, _) in
                     let started = NSEThreads.queue.sync {
                         let canStart = checkCanStart(id)
                         if let t = threadId { logger.debug("### NotificationService \(t, privacy: .public) can start: \(canStart)") }
@@ -297,8 +307,12 @@ class NotificationService: UNNotificationServiceExtension {
                     }
                 }
 
-                if !getNtfConnIds.isEmpty {
-                    if let r = apiGetConnNtfMessages(connIds: getNtfConnIds) {
+                if let counter = counter, counter % 2 == 1 {
+                    try? await Task.sleep(nanoseconds: 4_000_000000)
+                }
+
+                if !connIdsToGet.isEmpty {
+                    if let r = apiGetConnNtfMessages(connIds: connIdsToGet) {
                         logger.debug("NotificationService: receiveNtfMessages: apiGetConnNtfMessages r count = \(r.count)")
                     }
                     return
@@ -308,6 +322,14 @@ class NotificationService: UNNotificationServiceExtension {
             }
         }
         deliverBestAttemptNtf()
+    }
+
+    func waitLoop() async -> Void {
+        var waitTime: Int64 = 4_000_000000
+        while waitTime > 0 {
+            try? await Task.sleep(nanoseconds: 10_000000)
+            waitTime -= 10_000000
+        }
     }
 
     func checkCanStart(_ entityId: String) -> Bool {
@@ -330,7 +352,7 @@ class NotificationService: UNNotificationServiceExtension {
                 ready: false,
                 shouldProcessNtf: false,
                 startedProcessingNewMsgs: false,
-                semaphore: DispatchSemaphore(value: 1)
+                semaphore: DispatchSemaphore(value: 0)
             )
         }
     }
@@ -341,11 +363,8 @@ class NotificationService: UNNotificationServiceExtension {
             let messagesToProcess = NSEThreads.shared.droppedNotifications.filter { (eId, _) in eId == entityId }
             NSEThreads.shared.droppedNotifications.removeAll(where: { (eId, _) in eId == entityId })
             for (_, ntf) in messagesToProcess {
-                if processReceivedNtf(entityId, ntf, signalReady: false) {
-                    // continue
-                } else {
-                    NSEThreads.shared.droppedNotifications.append((entityId, ntf))
-                }
+                if let t = threadId { logger.debug("### NotificationService \(t, privacy: .public) processDroppedNotifications: entityId = \(entityId, privacy: .public): PROCESSING DROPPED") }
+                processReceivedNtf(entityId, ntf, signalReady: false)
             }
         }
     }
@@ -359,24 +378,21 @@ class NotificationService: UNNotificationServiceExtension {
         !expectedMessages.allSatisfy { $0.value.ready }
     }
 
-    // Boolean value returned from this function indicates whether message was processed by this thread (true),
-    // or should be added to droppedNotifications for future processing by next threads (false)
-    func processReceivedNtf(_ id: ChatId, _ ntf: NSENotificationData, signalReady: Bool) -> Bool {
-        guard let expectedMessage = expectedMessages[id] else {
-            return false
-        }
+    func processReceivedNtf(_ id: ChatId, _ ntf: NSENotificationData, signalReady: Bool) {
+        guard let expectedMessage = expectedMessages[id] else { return }
         // ------ TODO remove
         if signalReady, let counter = counter, counter % 2 == 1 {
             // Thread.sleep(forTimeInterval: 2)
             if let t = threadId { logger.debug("### NotificationService TEST EXITING \(t, privacy: .public)") }
+            NSEThreads.shared.droppedNotifications.append((id, ntf))
             entityReady(id, signalReady: signalReady)
             self.deliverBestAttemptNtf()
-            return false
         }
         // ------
         guard let expectedMsgTs = expectedMessage.ntfConn.expectedMsg_?.msgTs else {
+            NSEThreads.shared.droppedNotifications.append((id, ntf))
             entityReady(id, signalReady: signalReady)
-            return false
+            return
         }
         if case let .msgInfo(info) = ntf {
             if info.msgId == expectedMessage.expectedMsgId {
@@ -384,29 +400,27 @@ class NotificationService: UNNotificationServiceExtension {
                 expectedMessages[id]?.expectedMsgId = nil
                 entityReady(id, signalReady: signalReady)
                 self.deliverBestAttemptNtf()
-                return true
             } else if let msgTs = info.msgTs_, msgTs > expectedMsgTs {
                 logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .public): unexpected msgInfo, let other instance to process it, stopping this one")
+                NSEThreads.shared.droppedNotifications.append((id, ntf))
                 entityReady(id, signalReady: signalReady)
                 self.deliverBestAttemptNtf()
-                return false
             } else if (expectedMessages[id]?.allowedGetNextAttempts ?? 0) > 0, let receiveConnId = expectedMessages[id]?.receiveConnId {
                 logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .public): unexpected msgInfo, get next message")
                 expectedMessages[id]?.allowedGetNextAttempts -= 1
                 if let receivedMsg = getConnNtfMessage(connId: receiveConnId) {
                     logger.debug("NotificationService processNtf, on getConnNtfMessage: msgInfo msgId = \(info.msgId, privacy: .public), receivedMsg msgId = \(receivedMsg.msgId, privacy: .public)")
-                    return true
                 } else {
                     logger.debug("NotificationService processNtf, on getConnNtfMessage: msgInfo msgId = \(info.msgId, privacy: .public): no next message, deliver best attempt")
+                    NSEThreads.shared.droppedNotifications.append((id, ntf))
                     entityReady(id, signalReady: signalReady)
                     self.deliverBestAttemptNtf()
-                    return false
                 }
             } else {
                 logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .public): unknown message, let other instance to process it")
+                NSEThreads.shared.droppedNotifications.append((id, ntf))
                 entityReady(id, signalReady: signalReady)
                 self.deliverBestAttemptNtf()
-                return false
             }
         } else if expectedMessage.ntfConn.user.showNotifications {
             logger.debug("NotificationService processNtf: setting best attempt")
@@ -421,16 +435,16 @@ class NotificationService: UNNotificationServiceExtension {
             } else {
                 expectedMessages[id]?.msgBestAttemptNtf = ntf
             }
-            return true
+        } else {
+            NSEThreads.shared.droppedNotifications.append((id, ntf))
+            entityReady(id, signalReady: signalReady)
         }
-        entityReady(id, signalReady: signalReady)
-        return false
     }
 
     func entityReady(_ entityId: ChatId, signalReady: Bool) {
-        if let t = threadId { logger.debug("### NotificationService \(t, privacy: .public): entityReady: entityId = \(entityId, privacy: .public)") }
-        expectedMessages[entityId]?.ready = true
         if signalReady {
+            if let t = threadId { logger.debug("### NotificationService \(t, privacy: .public): entityReady: entityId = \(entityId, privacy: .public)") }
+            expectedMessages[entityId]?.ready = true
             if let (tNext, nse) = NSEThreads.shared.activeThreads.first(where: { (_, nse) in nse.expectedMessages[entityId]?.startedProcessingNewMsgs == false }) {
                 if let t = threadId { logger.debug("### NotificationService \(t, privacy: .public): entityReady: signal next thread \(tNext, privacy: .public) for entityId = \(entityId, privacy: .public)") }
                 nse.expectedMessages[entityId]?.semaphore.signal()
@@ -449,21 +463,24 @@ class NotificationService: UNNotificationServiceExtension {
     }
 
     private func deliverBestAttemptNtf(urgent: Bool = false) {
-        if (urgent || !expectingMoreMessages) {
-            logger.debug("NotificationService.deliverBestAttemptNtf")
-            // stop processing other messages
-            for (key, _) in expectedMessages {
-                expectedMessages[key]?.shouldProcessNtf = false
-            }
+        if let counter = counter, counter % 2 == 0 {
+            if (urgent || !expectingMoreMessages) {
+                if let t = threadId { logger.debug("### NotificationService \(t, privacy: .public) counter = \(counter, privacy: .public): deliverBestAttemptNtf") }
+                logger.debug("NotificationService.deliverBestAttemptNtf")
+                // stop processing other messages
+                for (key, _) in expectedMessages {
+                    expectedMessages[key]?.shouldProcessNtf = false
+                }
 
-            let suspend: Bool
-            if let t = threadId {
-                threadId = nil
-                suspend = NSEThreads.shared.endThread(t) && NSEThreads.shared.noThreads
-            } else {
-                suspend = false
+                let suspend: Bool
+                if let t = threadId {
+                    threadId = nil
+                    suspend = NSEThreads.shared.endThread(t) && NSEThreads.shared.noThreads
+                } else {
+                    suspend = false
+                }
+                deliverCallkitOrNotification(urgent: urgent, suspend: suspend)
             }
-            deliverCallkitOrNotification(urgent: urgent, suspend: suspend)
         }
     }
 
@@ -487,6 +504,7 @@ class NotificationService: UNNotificationServiceExtension {
                 }
             }
         } else {
+            if let c = counter { logger.debug("### NotificationService counter = \(c, privacy: .public): deliverCallkitOrNotification") }
             if suspend {
                 logger.debug("NotificationService.deliverCallkitOrNotification: will suspend")
                 if urgent {
@@ -530,6 +548,7 @@ class NotificationService: UNNotificationServiceExtension {
                 handler(UNMutableNotificationContent()) // used to mute notifications that did not unsubscribe yet
             }
         }
+        if let c = counter { logger.debug("### NotificationService counter = \(c, privacy: .public): HANDLER !!!!") }
     }
 
     private func prepareNotification() -> NSENotification? {
