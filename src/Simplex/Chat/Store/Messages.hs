@@ -1377,7 +1377,7 @@ getLocalChatItemIdsBefore_ db User {userId} NoteFolder {noteFolderId} beforeChat
       (userId, noteFolderId, search, beforeChatItemId, count)
 
 getLocalChatAround_ :: DB.Connection -> User -> NoteFolder -> ChatItemId -> Int -> String -> IO (Chat 'CTLocal)
-getLocalChatAround_ db user@User {userId} nf@NoteFolder {noteFolderId} aroundItemId count search = do
+getLocalChatAround_ db user nf aroundItemId count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   let (fetchCountBefore, fetchCountAfter) = divideFetchCountAround_ (count - 1)
   beforeIds <- getLocalChatItemIdsBefore_ db user nf aroundItemId fetchCountBefore search
