@@ -138,7 +138,7 @@ import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Database.SQLite.Simple (NamedParam (..), Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
-import Simplex.Chat.Controller (ChatListQuery (..), ChatPagination (..), ChatResponse (chat), PaginationByTime (..))
+import Simplex.Chat.Controller (ChatListQuery (..), ChatPagination (..), PaginationByTime (..))
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
