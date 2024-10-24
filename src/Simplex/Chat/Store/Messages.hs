@@ -1154,94 +1154,64 @@ getGroupMemberChatItemLast db user@User {userId} groupId groupMemberId = do
   getGroupChatItem db user groupId chatItemId
 
 getGroupChatAfter_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
-getGroupChatAfter_ db user@User {userId} g@GroupInfo {groupId} afterChatItemId count search = do
+getGroupChatAfter_ db user g@GroupInfo {groupId} afterChatItemId count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   afterChatItem <- getGroupChatItem db user groupId afterChatItemId
-  chatItemIds <- liftIO $ getGroupChatItemIdsAfter_ (chatItemTs afterChatItem)
+  chatItemIds <- liftIO $ getGroupChatItemIdsAfter_ db user g afterChatItemId count search (chatItemTs afterChatItem)
   currentTs <- liftIO getCurrentTime
   chatItems <- liftIO $ mapM (safeGetGroupItem db user g currentTs) chatItemIds
   pure $ Chat (GroupChat g) chatItems stats
-  where
-    getGroupChatItemIdsAfter_ :: UTCTime -> IO [ChatItemId]
-    getGroupChatItemIdsAfter_ afterChatItemTs =
-      map fromOnly
-        <$> DB.query
-          db
-          [sql|
-            SELECT chat_item_id
-            FROM chat_items
-            WHERE user_id = ? AND group_id = ? AND item_text LIKE '%' || ? || '%'
-              AND (item_ts > ? OR (item_ts = ? AND chat_item_id > ?))
-            ORDER BY item_ts ASC, chat_item_id ASC
-            LIMIT ?
-          |]
-          (userId, groupId, search, afterChatItemTs, afterChatItemTs, afterChatItemId, count)
+
+getGroupChatItemIdsAfter_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> Int -> String -> UTCTime -> IO [ChatItemId]
+getGroupChatItemIdsAfter_ db User {userId} GroupInfo {groupId} afterChatItemId count search afterChatItemTs =
+  map fromOnly
+    <$> DB.query
+      db
+      [sql|
+        SELECT chat_item_id
+        FROM chat_items
+        WHERE user_id = ? AND group_id = ? AND item_text LIKE '%' || ? || '%'
+          AND (item_ts > ? OR (item_ts = ? AND chat_item_id > ?))
+        ORDER BY item_ts ASC, chat_item_id ASC
+        LIMIT ?
+      |]
+      (userId, groupId, search, afterChatItemTs, afterChatItemTs, afterChatItemId, count)
 
 getGroupChatBefore_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
-getGroupChatBefore_ db user@User {userId} g@GroupInfo {groupId} beforeChatItemId count search = do
+getGroupChatBefore_ db user g@GroupInfo {groupId} beforeChatItemId count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   beforeChatItem <- getGroupChatItem db user groupId beforeChatItemId
-  chatItemIds <- liftIO $ getGroupChatItemIdsBefore_ (chatItemTs beforeChatItem)
+  chatItemIds <- liftIO $ getGroupChatItemIdsBefore_ db user g beforeChatItemId count search (chatItemTs beforeChatItem)
   currentTs <- liftIO getCurrentTime
   chatItems <- liftIO $ mapM (safeGetGroupItem db user g currentTs) chatItemIds
   pure $ Chat (GroupChat g) (reverse chatItems) stats
-  where
-    getGroupChatItemIdsBefore_ :: UTCTime -> IO [ChatItemId]
-    getGroupChatItemIdsBefore_ beforeChatItemTs =
-      map fromOnly
-        <$> DB.query
-          db
-          [sql|
-            SELECT chat_item_id
-            FROM chat_items
-            WHERE user_id = ? AND group_id = ? AND item_text LIKE '%' || ? || '%'
-              AND (item_ts < ? OR (item_ts = ? AND chat_item_id < ?))
-            ORDER BY item_ts DESC, chat_item_id DESC
-            LIMIT ?
-          |]
-          (userId, groupId, search, beforeChatItemTs, beforeChatItemTs, beforeChatItemId, count)
+
+getGroupChatItemIdsBefore_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> Int -> String -> UTCTime -> IO [ChatItemId]
+getGroupChatItemIdsBefore_ db User {userId} GroupInfo {groupId} beforeChatItemId count search beforeChatItemTs =
+  map fromOnly
+    <$> DB.query
+      db
+      [sql|
+        SELECT chat_item_id
+        FROM chat_items
+        WHERE user_id = ? AND group_id = ? AND item_text LIKE '%' || ? || '%'
+          AND (item_ts < ? OR (item_ts = ? AND chat_item_id < ?))
+        ORDER BY item_ts DESC, chat_item_id DESC
+        LIMIT ?
+      |]
+      (userId, groupId, search, beforeChatItemTs, beforeChatItemTs, beforeChatItemId, count)
 
 getGroupChatAround_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
-getGroupChatAround_ db user@User {userId} g@GroupInfo {groupId} aroundItemId count search = do
+getGroupChatAround_ db user g@GroupInfo {groupId} aroundItemId count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
+  let (fetchCountBefore, fetchCountAfter) = divideFetchCountAround_ (count - 1)
   chatItem <- getGroupChatItem db user groupId aroundItemId
-  chatItemIds <- liftIO $ getGroupChatItemIdsAround_ (chatItemTs chatItem)
+  beforeIds <- liftIO $ getGroupChatItemIdsBefore_ db user g aroundItemId fetchCountBefore search (chatItemTs chatItem)
+  afterIds <- liftIO $ getGroupChatItemIdsAfter_ db user g aroundItemId fetchCountAfter search (chatItemTs chatItem)
+  let chatItemIds = reverse beforeIds <> [aroundItemId] <> afterIds
   currentTs <- liftIO getCurrentTime
   chatItems <- liftIO $ mapM (safeGetGroupItem db user g currentTs) chatItemIds
-  pure $ Chat (GroupChat g) (reverse chatItems) stats
-  where
-    getGroupChatItemIdsAround_ :: UTCTime -> IO [ChatItemId]
-    getGroupChatItemIdsAround_ aroundItemIdTs = do
-      let (fetchCountBefore, fetchCountAfter) = divideFetchCountAround_ count
-      map fromOnly
-        <$> DB.queryNamed
-          db
-          [sql|
-            (SELECT chat_item_id
-            FROM chat_items
-            WHERE user_id = :userId AND group_id = :groupId AND item_text LIKE '%' || :search || '%'
-              AND (item_ts < :aroundItemIdTs OR (item_ts = :aroundItemIdTs AND chat_item_id < :aroundItemId))
-            ORDER BY item_ts DESC, chat_item_id DESC
-            LIMIT :fetchCountBefore)
-            UNION ALL
-            (SELECT chat_item_id
-            FROM chat_items
-            WHERE user_id = :userId AND group_id = :groupId AND item_text LIKE '%' || :search || '%'
-              AND (item_ts > :aroundItemIdTs OR (item_ts = :aroundItemIdTs AND chat_item_id >= :aroundItemId))
-            ORDER BY item_ts ASC, chat_item_id ASC
-            LIMIT :fetchCountAfter)
-            ORDER BY item_ts DESC, chat_item_id DESC
-            LIMIT :count
-          |]
-          [ ":userId" := userId,
-            ":groupId" := groupId,
-            ":search" := search,
-            ":aroundItemIdTs" := aroundItemIdTs,
-            ":aroundItemId" := aroundItemId,
-            ":fetchCountBefore" := fetchCountBefore,
-            ":fetchCountAfter" := fetchCountAfter,
-            ":count" := count
-          ]
+  pure $ Chat (GroupChat g) chatItems stats
 
 getLocalChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTLocal)
 getLocalChat db user folderId pagination search_ = do
