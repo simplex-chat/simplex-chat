@@ -285,9 +285,15 @@ fun ModalData.GroupChatInfoLayout(
     }
   }
   Box {
+    val oneHandUI = remember { appPrefs.oneHandUI.state }
   LazyColumnWithScrollBar(
     Modifier
       .fillMaxWidth(),
+    contentPadding = if (oneHandUI.value) {
+      PaddingValues(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + DEFAULT_PADDING + 5.dp, bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
+    } else {
+      PaddingValues()
+    },
     state = listState
   ) {
     item {
@@ -402,7 +408,6 @@ fun ModalData.GroupChatInfoLayout(
       Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
     }
   }
-    val oneHandUI = remember { appPrefs.oneHandUI.state }
     NavigationBarBackground(oneHandUI.value, oneHandUI.value)
   }
 }

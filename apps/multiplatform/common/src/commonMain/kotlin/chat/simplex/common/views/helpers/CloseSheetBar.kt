@@ -31,7 +31,7 @@ fun CloseSheetBar(
   barPaddingValues: PaddingValues = PaddingValues(horizontal = AppBarHorizontalPadding),
   endButtons: @Composable RowScope.() -> Unit = {}
 ) {
-  val background = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
+  /*val background = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
   val prefAlpha = remember { appPrefs.inAppBarsAlpha.state }.value
   val themeBackgroundMix = background.copy(prefAlpha)
   val handler = LocalAppBarHandler.current
@@ -44,7 +44,7 @@ fun CloseSheetBar(
     modifier = Modifier
       .fillMaxWidth()
       .then(if (oneHandUI.value) Modifier.navigationBarsPadding() else Modifier)
-      .clickable(interactionSource = interactionSource, indication = null) { /* receive clicks to not allow to click through */ }
+      .clickable(interactionSource = interactionSource, indication = null) { *//* receive clicks to not allow to click through *//* }
       .heightIn(min = AppBarHeight * fontSizeSqrtMultiplier)
       .drawWithCache {
         val backgroundColor = if (connection != null) themeBackgroundMix.copy(alpha = if (oneHandUI.value) prefAlpha else topTitleAlpha(false, connection)) else Color.Transparent
@@ -94,22 +94,7 @@ fun CloseSheetBar(
       }
     )
     CloseBarDivider(connection)
-  }
-}
-
-@Composable
-private fun BoxScope.CloseBarDivider(connection: CollapsingAppBarNestedScrollConnection?) {
-  if (connection != null) {
-    val oneHandUI = remember { appPrefs.oneHandUI.state }
-    val prefAlpha = appPrefs.inAppBarsAlpha.get()
-    Divider(
-      Modifier
-        .align(if (oneHandUI.value) Alignment.TopStart else Alignment.BottomStart)
-        .graphicsLayer {
-          alpha = if (oneHandUI.value) prefAlpha else topTitleAlpha(false, connection)
-        }
-    )
-  }
+  }*/
 }
 
 @Composable
@@ -195,10 +180,6 @@ fun AppBarTitle(title: String, hostDevice: Pair<Long?, String>? = null,  withPad
     Spacer(Modifier.height(bottomPadding))
   }
 }
-
-private fun topTitleAlpha(text: Boolean, connection: CollapsingAppBarNestedScrollConnection) =
-  if (connection.appBarOffset.absoluteValue < AppBarHandler.appBarMaxHeightPx / 3) 0f
-  else ((-connection.appBarOffset * 1.5f) / (AppBarHandler.appBarMaxHeightPx)).coerceIn(0f, if (text) 1f else appPrefs.inAppBarsAlpha.get())
 
 private fun bottomTitleAlpha(connection: CollapsingAppBarNestedScrollConnection?) =
   if ((connection?.appBarOffset ?: 0f).absoluteValue < AppBarHandler.appBarMaxHeightPx / 3) 1f

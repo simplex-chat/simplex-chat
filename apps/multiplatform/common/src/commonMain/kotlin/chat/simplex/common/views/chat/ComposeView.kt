@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontStyle
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -897,7 +898,7 @@ fun ComposeView(
         }
       }
     }
-    Column(Modifier.background(MaterialTheme.colors.background.copy(remember { appPrefs.inAppBarsAlpha.state }.value))) {
+    Box(Modifier.background(MaterialTheme.colors.background).onSizeChanged { println("LALAL SIZE0 $it") }) {
     Divider()
     Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
       val isGroupAndProhibitedFiles = chat.chatInfo is ChatInfo.Group && !chat.chatInfo.groupInfo.fullGroupPreferences.files.on(chat.chatInfo.groupInfo.membership)

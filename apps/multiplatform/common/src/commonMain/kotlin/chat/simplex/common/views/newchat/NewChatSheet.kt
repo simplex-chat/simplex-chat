@@ -48,10 +48,10 @@ fun ModalData.NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
     Column(modifier = Modifier.fillMaxSize()) {
       NewChatSheetLayout(
         addContact = {
-          ModalManager.start.showModalCloseable(endButtons = { AddContactLearnMoreButton() }) { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = closeAll) }
+          ModalManager.start.showModalCloseable(endButtons = listOf { AddContactLearnMoreButton() }) { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = closeAll) }
         },
         scanPaste = {
-          ModalManager.start.showModalCloseable(endButtons = { AddContactLearnMoreButton() }) { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = closeAll) }
+          ModalManager.start.showModalCloseable(endButtons = listOf { AddContactLearnMoreButton() }) { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = closeAll) }
         },
         createGroup = {
           ModalManager.start.showCustomModal { close -> AddGroupView(chatModel, chatModel.currentRemoteHost.value, close, closeAll) }
@@ -62,10 +62,10 @@ fun ModalData.NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
     }
     if (oneHandUI.value) {
       Column(Modifier.align(Alignment.BottomCenter)) {
-        CloseSheetBarBottom(
-          close = close,
-          showClose = true,
-          closeBarTitle = generalGetString(MR.strings.new_message)
+        DefaultTopAppBar(
+          navigationButton = { NavigationButtonBack(onButtonClicked = close) },
+          fixedTitleText = generalGetString(MR.strings.new_message),
+          onTop = false,
         )
       }
     }
@@ -289,7 +289,7 @@ private fun ModalData.NewChatSheetLayout(
             )
         ) {
           Divider()
-          Column(Modifier.consumeWindowInsets(WindowInsets.navigationBars).consumeWindowInsets(PaddingValues(bottom = AppBarHeight))) {
+          Column(Modifier.consumeWindowInsets(WindowInsets.navigationBars).consumeWindowInsets(PaddingValues(bottom = AppBarHeight * fontSizeSqrtMultiplier))) {
             ContactsSearchBar(
               listState = listState,
               searchText = searchText,
@@ -420,8 +420,8 @@ private fun ModalData.NewChatSheetLayout(
       StatusBarBackground()
     } else {
       NonOneHandLazyColumn()
+      NavigationBarBackground(oneHandUI.value, true)
     }
-    NavigationBarBackground(oneHandUI.value, true)
   }
 }
 
@@ -719,15 +719,16 @@ private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats
     }
       if (oneHandUI.value) {
         StatusBarBackground()
+      } else {
+        NavigationBarBackground(oneHandUI.value, true)
       }
-      NavigationBarBackground(oneHandUI.value, true)
     }
     if (oneHandUI.value) {
       Column(Modifier.align(Alignment.BottomCenter)) {
-        CloseSheetBarBottom(
-          close = closeDeletedChats,
-          showClose = true,
-          closeBarTitle = generalGetString(MR.strings.deleted_chats),
+        DefaultTopAppBar(
+          navigationButton = { NavigationButtonBack(onButtonClicked = closeDeletedChats) },
+          fixedTitleText = generalGetString(MR.strings.deleted_chats),
+          onTop = false,
         )
       }
     }

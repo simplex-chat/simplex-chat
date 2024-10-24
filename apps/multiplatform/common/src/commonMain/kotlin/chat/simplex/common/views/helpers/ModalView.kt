@@ -8,13 +8,12 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chatlist.StatusBarBackground
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.min
@@ -28,7 +27,10 @@ fun ModalView(
   enableClose: Boolean = true,
   background: Color = Color.Unspecified,
   modifier: Modifier = Modifier,
-  endButtons: @Composable RowScope.() -> Unit = {},
+  showSearch: Boolean = false,
+  searchAlwaysVisible: Boolean = false,
+  onSearchValueChanged: (String) -> Unit = {},
+  endButtons: List<@Composable RowScope.() -> Unit> = emptyList(),
   content: @Composable BoxScope.() -> Unit,
 ) {
   if (showClose) {
@@ -41,8 +43,18 @@ fun ModalView(
         content()
       }
       if (showCloseBar) {
-        Box(Modifier.align(if (oneHandUI.value) Alignment.BottomStart else Alignment.TopStart).then(if (oneHandUI.value) Modifier.imePadding() else Modifier)) {
-          CloseSheetBar(if (enableClose) close else null, showClose, endButtons = endButtons)
+        if (oneHandUI.value) {
+          StatusBarBackground()
+        }
+        Box(Modifier.align(if (oneHandUI.value) Alignment.BottomStart else Alignment.TopStart)) {
+          DefaultTopAppBar(
+            navigationButton = if (showClose) {{ NavigationButtonBack(onButtonClicked = if (enableClose) close else null) }} else null,
+            onTop = !oneHandUI.value,
+            showSearch = showSearch,
+            searchAlwaysVisible = searchAlwaysVisible,
+            onSearchValueChanged = onSearchValueChanged,
+            buttons = endButtons
+          )
         }
       }
     }
@@ -75,14 +87,14 @@ class ModalManager(private val placement: ModalPlacement? = null) {
   private var passcodeView: MutableStateFlow<(@Composable (close: () -> Unit) -> Unit)?> = MutableStateFlow(null)
   private var onTimePasscodeView: MutableStateFlow<(@Composable (close: () -> Unit) -> Unit)?> = MutableStateFlow(null)
 
-  fun showModal(settings: Boolean = false, showClose: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
+  fun showModal(settings: Boolean = false, showClose: Boolean = true, endButtons: List<@Composable RowScope.() -> Unit> = emptyList(), content: @Composable ModalData.() -> Unit) {
     val data = ModalData()
     showCustomModal { close ->
       ModalView(close, showClose = showClose, endButtons = endButtons, content = { data.content() })
     }
   }
 
-  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.(close: () -> Unit) -> Unit) {
+  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, endButtons: List<@Composable RowScope.() -> Unit> = emptyList(), content: @Composable ModalData.(close: () -> Unit) -> Unit) {
     val data = ModalData()
     showCustomModal { close ->
       ModalView(close, showClose = showClose, endButtons = endButtons, content = { data.content(close) })

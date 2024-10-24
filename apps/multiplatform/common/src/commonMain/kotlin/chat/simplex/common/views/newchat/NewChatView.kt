@@ -480,9 +480,9 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
             val search = rememberSaveable { mutableStateOf("") }
             ModalView(
               { close() },
-              endButtons = {
-                SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
-              },
+              showSearch = true,
+              searchAlwaysVisible = true,
+              onSearchValueChanged = { search.value = it },
               content = {
                 ActiveProfilePicker(
                   search = search,

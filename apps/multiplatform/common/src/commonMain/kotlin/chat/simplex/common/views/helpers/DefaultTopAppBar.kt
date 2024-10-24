@@ -3,27 +3,34 @@ package chat.simplex.common.views.helpers
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chatlist.NavigationBarBackground
 import chat.simplex.res.MR
+import kotlin.math.absoluteValue
 
 @Composable
 fun DefaultTopAppBar(
   navigationButton: (@Composable RowScope.() -> Unit)? = null,
-  title: (@Composable () -> Unit)?,
+  title: (@Composable () -> Unit)? = null,
+  fixedTitleText: String? = null,
   onTitleClick: (() -> Unit)? = null,
-  showSearch: Boolean,
   onTop: Boolean,
-  onSearchValueChanged: (String) -> Unit,
+  showSearch: Boolean = false,
+  searchAlwaysVisible: Boolean = false,
+  onSearchValueChanged: (String) -> Unit = {},
   buttons: List<@Composable RowScope.() -> Unit> = emptyList(),
 ) {
   // If I just disable clickable modifier when don't need it, it will stop passing clicks to search. Replacing the whole modifier
@@ -31,21 +38,83 @@ fun DefaultTopAppBar(
     Modifier.clickable(enabled = onTitleClick != null, onClick = onTitleClick ?: { })
   } else Modifier
 
+  val background = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
+  val prefAlpha = remember { appPrefs.inAppBarsAlpha.state }.value
+  val themeBackgroundMix = background.copy(prefAlpha)
+  val handler = LocalAppBarHandler.current
+  val connection = LocalAppBarHandler.current?.connection
+  val titleText = remember(handler?.title?.value, fixedTitleText) {
+    if (fixedTitleText != null) {
+      mutableStateOf(fixedTitleText)
+    } else {
+      handler?.title ?: mutableStateOf("")
+    }
+  }
+  Box(modifier) {
+    if (!onTop) {
+      NavigationBarBackground(true, true)
+    }
+    Box(
+      Modifier
+        .fillMaxWidth()
+        .then(if (!onTop) Modifier.navigationBarsPadding() else Modifier)
+        .heightIn(min = AppBarHeight * fontSizeSqrtMultiplier)
+        .drawWithCache {
+          val backgroundColor = if (connection != null && onTop) {
+            themeBackgroundMix.copy(topTitleAlpha(false, connection))
+          } else if (title != null || fixedTitleText != null || connection != null) {
+            themeBackgroundMix.copy(prefAlpha)
+          } else {
+            Color.Transparent
+          }
+          onDrawBehind {
+            drawRect(backgroundColor)
+          }
+        }
+    ) {
+      TopAppBar(
+        title = {
+          if (showSearch) {
+            SearchTextField(Modifier.fillMaxWidth(), alwaysVisible = searchAlwaysVisible, onValueChange = onSearchValueChanged)
+          } else if (title != null) {
+            title()
+          } else if (titleText.value.isNotEmpty() && connection != null) {
+            Row(
+              Modifier
+                .graphicsLayer {
+                  alpha = if (fixedTitleText != null) prefAlpha else topTitleAlpha(true, connection)
+                }
+            ) {
+              Text(
+                titleText.value,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+              )
+            }
+          }
+        },
+        navigationIcon = navigationButton,
+        buttons = if (!showSearch) buttons else emptyList(),
+        centered = !showSearch && (title != null || !onTop),
+        onTop = onTop,
+      )
+      CloseBarDivider(onTop, connection)
+    }
+  }
+}
+
+
+@Composable
+fun CallAppBar(
+  title: @Composable () -> Unit,
+  onBack: () -> Unit
+) {
   TopAppBar(
-    modifier = modifier,
-    title = {
-      if (!showSearch) {
-        title?.invoke()
-      } else {
-        SearchTextField(Modifier.fillMaxWidth(), alwaysVisible = false, onValueChange = onSearchValueChanged)
-      }
-    },
-    backgroundColor = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
-      .copy(remember { appPrefs.inAppBarsAlpha.state }.value),
-    navigationIcon = navigationButton,
-    buttons = if (!showSearch) buttons else emptyList(),
-    centered = !showSearch,
-    onTop = onTop,
+    title,
+    navigationIcon = { NavigationButtonBack(tintColor = Color(0xFFFFFFD8), onButtonClicked = onBack) },
+    centered = false,
+    onTop = true
   )
 }
 
@@ -88,22 +157,35 @@ fun NavigationButtonMenu(onButtonClicked: () -> Unit) {
 }
 
 @Composable
+private fun BoxScope.CloseBarDivider(onTop: Boolean, connection: CollapsingAppBarNestedScrollConnection?) {
+  if (connection != null) {
+    val prefAlpha = appPrefs.inAppBarsAlpha.get()
+    Divider(
+      Modifier
+        .align(if (onTop) Alignment.BottomStart else Alignment.TopStart)
+        .graphicsLayer {
+          alpha = if (!onTop) prefAlpha else topTitleAlpha(false, connection)
+        }
+    )
+  } else {
+    Divider(Modifier.align(if (onTop) Alignment.BottomStart else Alignment.TopStart))
+  }
+}
+
+@Composable
 private fun TopAppBar(
   title: @Composable () -> Unit,
   modifier: Modifier = Modifier,
   navigationIcon: @Composable (RowScope.() -> Unit)? = null,
   buttons: List<@Composable RowScope.() -> Unit> = emptyList(),
-  backgroundColor: Color = MaterialTheme.colors.primarySurface,
   centered: Boolean,
   onTop: Boolean,
 ) {
   Box(
     modifier
-      .fillMaxWidth()
-      .then(if (!onTop) Modifier.navigationBarsPadding() else Modifier)
-      .background(backgroundColor)
       .then(if (onTop) Modifier.statusBarsPadding() else Modifier)
       .height(AppBarHeight * fontSizeSqrtMultiplier)
+      .fillMaxWidth()
       .padding(horizontal = 4.dp),
     contentAlignment = Alignment.CenterStart,
   ) {
@@ -134,15 +216,18 @@ private fun TopAppBar(
           start = if (centered) kotlin.math.max(startPadding.value, endPadding.value).dp else startPadding,
           end = if (centered) kotlin.math.max(startPadding.value, endPadding.value).dp else endPadding
         ),
-      contentAlignment = Alignment.Center
+      contentAlignment = if (centered) Alignment.Center else Alignment.CenterStart
     ) {
       title()
     }
   }
 }
 
+private fun topTitleAlpha(text: Boolean, connection: CollapsingAppBarNestedScrollConnection) =
+  if (connection.appBarOffset.absoluteValue < AppBarHandler.appBarMaxHeightPx / 3) 0f
+  else ((-connection.appBarOffset * 1.5f) / (AppBarHandler.appBarMaxHeightPx)).coerceIn(0f, if (text) 1f else appPrefs.inAppBarsAlpha.get())
+
 val AppBarHeight = 56.dp
 val AppBarHorizontalPadding = 4.dp
-val BottomAppBarHeight = 60.dp
 private val TitleInsetWithoutIcon = DEFAULT_PADDING - AppBarHorizontalPadding
-val TitleInsetWithIcon = 72.dp
+val TitleInsetWithIcon = 52.dp

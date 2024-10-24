@@ -9,7 +9,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.chatlist.NavigationBarBackground
 import chat.simplex.common.views.helpers.*
 import kotlinx.coroutines.flow.filter
@@ -101,9 +103,9 @@ actual fun ColumnWithScrollBar(
         }, verticalArrangement, horizontalAlignment
       ) {
         if (oneHandUI.value) {
-          Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
+          Spacer(Modifier.padding(top = DEFAULT_PADDING + 5.dp).windowInsetsTopHeight(WindowInsets.statusBars))
           content()
-          Spacer(Modifier.padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier))
+          Spacer(Modifier.navigationBarsPadding().padding(bottom = AppBarHeight * fontSizeSqrtMultiplier))
         } else {
           Spacer(Modifier.statusBarsPadding().padding(top = AppBarHeight * fontSizeSqrtMultiplier))
           content()

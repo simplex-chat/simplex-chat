@@ -41,11 +41,9 @@ fun BoxScope.SelectedItemsTopToolbar(selectedChatItems: MutableState<Set<Long>?>
       )
     },
     onTitleClick = null,
-    showSearch = false,
-    onTop = oneHandUI.value,
+    onTop = !oneHandUI.value,
     onSearchValueChanged = {},
   )
-  Divider(Modifier.align(if (oneHandUI.value) Alignment.TopStart else Alignment.BottomStart))
 }
 
 @Composable

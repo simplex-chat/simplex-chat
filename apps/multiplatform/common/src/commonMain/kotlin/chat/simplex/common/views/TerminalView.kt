@@ -79,6 +79,7 @@ fun TerminalLayout(
   fun onMessageChange(s: String) {
     composeState.value = composeState.value.copy(message = s)
   }
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
   Box(Modifier.fillMaxSize()) {
     val composeViewHeight = remember { mutableStateOf(0.dp) }
     AdaptingBottomPaddingLayout(Modifier, CONSOLE_COMPOSE_LAYOUT_ID, composeViewHeight) {
@@ -88,8 +89,10 @@ fun TerminalLayout(
           .layoutId(CONSOLE_COMPOSE_LAYOUT_ID)
           .align(Alignment.BottomCenter)
           .navigationBarsPadding()
+          .consumeWindowInsets(PaddingValues(bottom = if (oneHandUI.value) AppBarHeight * fontSizeSqrtMultiplier else 0.dp))
           .imePadding()
-          .background(MaterialTheme.colors.background.copy(remember { appPrefs.inAppBarsAlpha.state }.value))
+          .padding(bottom = if (oneHandUI.value) AppBarHeight * fontSizeSqrtMultiplier else 0.dp)
+          .background(MaterialTheme.colors.background)
       ) {
         Divider()
         Box(Modifier.padding(horizontal = 8.dp)) {
@@ -119,8 +122,9 @@ fun TerminalLayout(
         }
       }
     }
-    val oneHandUI = remember { appPrefs.oneHandUI.state }
-    NavigationBarBackground(true, oneHandUI.value)
+    if (!oneHandUI.value) {
+      NavigationBarBackground(true, oneHandUI.value)
+    }
   }
 }
 
@@ -176,7 +180,7 @@ fun TerminalLog(floating: Boolean, composeViewHeight: State<Dp>) {
             } else {
               ModalManager.start
             }
-            modalPlace.showModal(endButtons = { ShareButton { clipboard.shareText(item.details) } }) {
+            modalPlace.showModal(endButtons = listOf { ShareButton { clipboard.shareText(item.details) } }) {
               ColumnWithScrollBar {
                 SelectionContainer {
                   val details = item.details

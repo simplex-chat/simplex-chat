@@ -463,7 +463,7 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
               withBGApi {
                 var initialCiInfo = loadChatItemInfo() ?: return@withBGApi
                 ModalManager.end.closeModals()
-                ModalManager.end.showModalCloseable(endButtons = {
+                ModalManager.end.showModalCloseable(endButtons = listOf {
                   ShareButton {
                     clipboard.shareText(itemInfoShareText(chatModel, cItem, initialCiInfo, chatModel.controller.appPrefs.developerTools.get()))
                   }
@@ -548,7 +548,7 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
         CompositionLocalProvider(
           LocalAppBarHandler provides handler
         ) {
-          ModalView(close, showClose = appPlatform.isAndroid, endButtons = { ShareButton { clipboard.shareText(chatInfo.json) } }, content = {
+          ModalView(close, showClose = appPlatform.isAndroid, endButtons = listOf { ShareButton { clipboard.shareText(chatInfo.json) } }, content = {
             InvalidJSONView(chatInfo.json)
           })
           LaunchedEffect(chatInfo.id) {
@@ -678,18 +678,24 @@ fun ChatLayout(
             }
           }
           val oneHandUI = remember { appPrefs.oneHandUI.state }
-          Box(Modifier
-            .layoutId(CHAT_COMPOSE_LAYOUT_ID)
-            .align(Alignment.BottomCenter)
-            .imePadding()
-            .then(if (oneHandUI.value) Modifier.padding(bottom = AppBarHeight * fontSizeSqrtMultiplier) else Modifier.navigationBarsPadding())
+          Box(
+            Modifier
+              .layoutId(CHAT_COMPOSE_LAYOUT_ID)
+              .align(Alignment.BottomCenter)
+              .imePadding()
+              .navigationBarsPadding()
+              .then(if (oneHandUI.value) Modifier.padding(bottom = AppBarHeight * fontSizeSqrtMultiplier) else Modifier)
           ) {
             composeView()
           }
         }
         val oneHandUI = remember { appPrefs.oneHandUI.state }
-        NavigationBarBackground(true, oneHandUI.value)
-        Box(if (oneHandUI.value) Modifier.align(Alignment.BottomStart).navigationBarsPadding() else Modifier) {
+        if (oneHandUI.value) {
+          StatusBarBackground()
+        } else {
+          NavigationBarBackground(true, oneHandUI.value)
+        }
+        Box(if (oneHandUI.value) Modifier.align(Alignment.BottomStart).imePadding() else Modifier) {
           if (selectedChatItems.value == null) {
             if (chatInfo != null) {
               ChatInfoToolbar(chatInfo, back, info, startCall, endCall, addMembers, openGroupLink, changeNtfsState, onSearchValueChanged, showSearch)
@@ -862,22 +868,29 @@ fun BoxScope.ChatInfoToolbar(
     title = { ChatInfoToolbarTitle(chatInfo) },
     onTitleClick = if (chatInfo is ChatInfo.Local) null else info,
     showSearch = showSearch.value,
-    onTop = oneHandUI.value,
+    onTop = !oneHandUI.value,
     onSearchValueChanged = onSearchValueChanged,
     buttons = barButtons
   )
   Box(Modifier.fillMaxWidth().wrapContentSize(Alignment.TopEnd)) {
     val density = LocalDensity.current
     val width = remember { mutableStateOf(250.dp) }
+    val height = remember { mutableStateOf(0.dp) }
     DefaultDropdownMenu(
       showMenu,
-      modifier = Modifier.onSizeChanged { with(density) { width.value = it.width.toDp().coerceAtLeast(250.dp) } },
-      offset = DpOffset(-width.value, AppBarHeight)
+      modifier = Modifier.onSizeChanged { with(density) {
+        width.value = it.width.toDp().coerceAtLeast(250.dp)
+        if (oneHandUI.value) height.value = it.height.toDp()
+      } },
+      offset = DpOffset(-width.value, if (oneHandUI.value) -height.value else AppBarHeight)
     ) {
-      menuItems.forEach { it() }
+      if (oneHandUI.value) {
+        menuItems.asReversed().forEach { it() }
+      } else {
+        menuItems.forEach { it() }
+      }
     }
   }
-  Divider(Modifier.background(MaterialTheme.colors.background).align(if (oneHandUI.value) Alignment.TopStart else Alignment.BottomStart))
 }
 
 @Composable

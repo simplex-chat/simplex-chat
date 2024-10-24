@@ -52,9 +52,9 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, close: (
         val search = rememberSaveable { mutableStateOf("") }
         ModalView(
           { close() },
-          endButtons = {
-            SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
-          },
+          showSearch = true,
+          searchAlwaysVisible = true,
+          onSearchValueChanged = { search.value = it },
           content = { modalView(chatModel, search) })
       }
     },

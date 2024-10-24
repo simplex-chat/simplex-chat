@@ -277,8 +277,10 @@ fun UserPicker(
                 val profileHidden = rememberSaveable { mutableStateOf(false) }
                 ModalView(
                   { close() },
-                  endButtons = {
-                    SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
+                  showSearch = true,
+                  searchAlwaysVisible = true,
+                  onSearchValueChanged = {
+                    search.value = it
                   },
                   content = { UserProfilesView(chatModel, search, profileHidden) })
               }

@@ -18,6 +18,8 @@ import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.ui.theme.DEFAULT_PADDING
+import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 import chat.simplex.common.views.helpers.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.filter
@@ -166,8 +168,8 @@ actual fun ColumnWithScrollBar(
         modifier.verticalScroll(state).then(scrollModifier)
       },
       verticalArrangement, horizontalAlignment) {
-      if (connection != null && !oneHandUI.value) {
-        Spacer(Modifier.padding(padding))
+      if (connection != null) {
+        Spacer(if (oneHandUI.value) Modifier.padding(top = DEFAULT_PADDING + 5.dp) else Modifier.padding(padding))
       }
       content()
       if (connection != null && oneHandUI.value) {

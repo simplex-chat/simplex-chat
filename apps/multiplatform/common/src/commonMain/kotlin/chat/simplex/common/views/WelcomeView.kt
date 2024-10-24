@@ -118,13 +118,16 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
           .themedBackground(),
         horizontalAlignment = Alignment.CenterHorizontally
       ) {
-        CloseSheetBar(close = {
-          if (chatModel.users.none { !it.user.hidden }) {
-            appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
-          } else {
-            close()
-          }
-        })
+        DefaultTopAppBar(
+          navigationButton = { NavigationButtonBack(onButtonClicked = {
+            if (chatModel.users.none { !it.user.hidden }) {
+              appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
+            } else {
+              close()
+            }
+          } ) },
+          onTop = true
+        )
         BackHandler(onBack = {
           appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
         })

@@ -121,9 +121,6 @@ fun AppearanceScope.AppearanceLayout(
     BarsAlphaSection(MR.strings.appearance_in_app_bars_alpha, appPrefs.inAppBarsAlpha, 0.95f)
 
     SectionDividerSpaced(maxTopPadding = true)
-    BarsAlphaSection(MR.strings.appearance_nav_bar_alpha, appPrefs.navBarAlpha, 0.6f)
-
-    SectionDividerSpaced(maxTopPadding = true)
     ProfileImageSection()
 
     SectionDividerSpaced(maxTopPadding = true)

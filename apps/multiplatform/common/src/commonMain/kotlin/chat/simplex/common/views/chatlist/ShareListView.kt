@@ -27,16 +27,12 @@ fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
     contentColor = LocalContentColor.current,
     topBar = {
       if (!oneHandUI.value) {
-        Column {
-          ShareListToolbar(chatModel, stopped) { searchInList = it.trim() }
-          Divider()
-        }
+        ShareListToolbar(chatModel, stopped) { searchInList = it.trim() }
       }
     },
     bottomBar = {
       if (oneHandUI.value) {
-        Column(Modifier.imePadding()) {
-          Divider()
+        Box(Modifier.imePadding()) {
           ShareListToolbar(chatModel, stopped) { searchInList = it.trim() }
         }
       }
@@ -83,8 +79,9 @@ fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
       }
       if (oneHandUI.value) {
         StatusBarBackground()
+      } else {
+        NavigationBarBackground(oneHandUI.value, true)
       }
-      NavigationBarBackground(oneHandUI.value, true)
     }
   }
 }
@@ -122,9 +119,9 @@ private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchVal
             val search = rememberSaveable { mutableStateOf("") }
             ModalView(
               { close() },
-              endButtons = {
-                SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
-              },
+              showSearch = true,
+              searchAlwaysVisible = true,
+              onSearchValueChanged = { search.value = it },
               content = {
                 ActiveProfilePicker(
                   search = search,

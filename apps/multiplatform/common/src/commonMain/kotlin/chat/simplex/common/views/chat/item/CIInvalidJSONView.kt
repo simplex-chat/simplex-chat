@@ -23,7 +23,7 @@ fun CIInvalidJSONView(json: String) {
     .clickable {
       ModalManager.center.closeModals()
       ModalManager.end.closeModals()
-      ModalManager.center.showModal(true, endButtons = { ShareButton { clipboard.shareText(json) } }) { InvalidJSONView(json) }
+      ModalManager.center.showModal(true, endButtons = listOf { ShareButton { clipboard.shareText(json) } }) { InvalidJSONView(json) }
     }
     .padding(horizontal = 10.dp, vertical = 6.dp)
   ) {

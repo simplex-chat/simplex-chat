@@ -88,7 +88,7 @@ fun DensityScaleSection() {
   val localDensityScale = remember { mutableStateOf(appPrefs.densityScale.get()) }
   SectionView(stringResource(MR.strings.appearance_zoom).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
     Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-      Box(Modifier.size(60.dp)
+      Box(Modifier.size(50.dp)
         .background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22))
         .clip(RoundedCornerShape(percent = 22))
         .clickable {
@@ -106,7 +106,7 @@ fun DensityScaleSection() {
           )
         }
       }
-      Spacer(Modifier.width(10.dp))
+      Spacer(Modifier.width(15.dp))
       Slider(
         localDensityScale.value,
         valueRange = 1f..2f,

@@ -12,8 +12,12 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.*
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.TextRange
@@ -149,26 +153,27 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
     }
   }
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
+  val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
   Box(Modifier.fillMaxSize()) {
     if (oneHandUI.value) {
-      ChatListWithLoadingScreen(searchText)
+      ChatListWithLoadingScreen(searchText, listState)
       Column(Modifier.align(Alignment.BottomCenter)) {
-        Divider()
         ChatListToolbar(
           userPickerState,
+          listState,
           stopped,
           setPerformLA,
         )
       }
     } else {
-      ChatListWithLoadingScreen(searchText)
+      ChatListWithLoadingScreen(searchText, listState)
       Column {
         ChatListToolbar(
           userPickerState,
+          listState,
           stopped,
           setPerformLA,
         )
-        Divider()
       }
       if (searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
         NewChatSheetFloatingButton(oneHandUI, stopped)
@@ -196,9 +201,9 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
 }
 
 @Composable
-private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFieldValue>) {
+private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFieldValue>, listState: LazyListState) {
   if (!chatModel.desktopNoUserNoRemote) {
-    ChatList(searchText = searchText)
+    ChatList(searchText = searchText, listState)
   }
   if (chatModel.chats.value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
     Text(
@@ -252,7 +257,7 @@ private fun ConnectButton(text: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean, setPerformLA: (Boolean) -> Unit) {
+private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>, listState: LazyListState, stopped: Boolean, setPerformLA: (Boolean) -> Unit) {
   val serversSummary: MutableState<PresentedServersSummary?> = remember { mutableStateOf(null) }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val updatingProgress = remember { chatModel.updatingProgress }.value
@@ -319,6 +324,8 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
     }
   }
   val clipboard = LocalClipboardManager.current
+  val scope = rememberCoroutineScope()
+  val canScrollToZero = remember { derivedStateOf { listState.firstVisibleItemIndex != 0 || listState.firstVisibleItemScrollOffset != 0 } }
   DefaultTopAppBar(
     navigationButton = {
       if (chatModel.users.isEmpty() && !chatModel.desktopNoUserNoRemote) {
@@ -347,27 +354,25 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
         SubscriptionStatusIndicator(
           click = {
             ModalManager.start.closeModals()
+            val summary = serversSummary.value
             ModalManager.start.showModalCloseable(
-              endButtons = {
-                val summary = serversSummary.value
-                if (summary != null) {
+              endButtons = if (summary != null) {
+                listOf {
                   ShareButton {
                     val json = Json {
                       prettyPrint = true
                     }
-
                     val text = json.encodeToString(PresentedServersSummary.serializer(), summary)
                     clipboard.shareText(text)
                   }
                 }
-              }
+              } else emptyList()
             ) { ServersSummaryView(chatModel.currentRemoteHost.value, serversSummary) }
           }
         )
       }
     },
-    onTitleClick = null,
-    showSearch = false,
+    onTitleClick = if (canScrollToZero.value) { { scrollToBottom(scope, listState) } } else null,
     onTop = !oneHandUI.value,
     onSearchValueChanged = {},
     buttons = barButtons
@@ -489,7 +494,7 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: String, chatModel: ChatModel) {
 @Composable
 private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState<TextFieldValue>, searchShowingSimplexLink: MutableState<Boolean>, searchChatFilteredBySimplexLink: MutableState<String?>) {
   Box {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().heightIn(min = AppBarHeight * fontSizeSqrtMultiplier)) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().onSizeChanged { println("LALAL SIZE-1 $it") }) {
       val focusRequester = remember { FocusRequester() }
       var focused by remember { mutableStateOf(false) }
       Icon(
@@ -593,19 +598,18 @@ enum class ScrollDirection {
 @Composable
 fun BoxScope.StatusBarBackground() {
   if (appPlatform.isAndroid) {
-    val finalColor = MaterialTheme.colors.background.copy(remember { appPrefs.inAppBarsAlpha.state }.value)
+    val finalColor = MaterialTheme.colors.background.copy(0.88f)
     Box(Modifier.fillMaxWidth().windowInsetsTopHeight(WindowInsets.statusBars).background(finalColor))
   }
 }
 
 @Composable
 fun BoxScope.NavigationBarBackground(appBarOnBottom: Boolean = false, mixedColor: Boolean) {
-  val keyboardState = getKeyboardState()
-  if (appPlatform.isAndroid && keyboardState.value == KeyboardState.Closed) {
+  if (appPlatform.isAndroid) {
     val barPadding = WindowInsets.navigationBars.asPaddingValues()
     val paddingBottom = barPadding.calculateBottomPadding()
     val color = if (mixedColor) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f) else MaterialTheme.colors.background
-    val finalColor = color.copy(remember(appBarOnBottom) { if (appBarOnBottom) appPrefs.inAppBarsAlpha.state else appPrefs.navBarAlpha.state }.value)
+    val finalColor = color.copy(if (appBarOnBottom) remember { appPrefs.inAppBarsAlpha.state }.value else 0.6f)
     Box(Modifier.align(Alignment.BottomStart).height(paddingBottom).fillMaxWidth().background(finalColor))
   }
 }
@@ -616,14 +620,13 @@ fun BoxScope.NavigationBarBackground(modifier: Modifier, color: Color = Material
   if (appPlatform.isAndroid && keyboardState.value == KeyboardState.Closed) {
     val barPadding = WindowInsets.navigationBars.asPaddingValues()
     val paddingBottom = barPadding.calculateBottomPadding()
-    val finalColor = color.copy(remember { appPrefs.navBarAlpha.state }.value)
+    val finalColor = color.copy(0.6f)
     Box(modifier.align(Alignment.BottomStart).height(paddingBottom).fillMaxWidth().background(finalColor))
   }
 }
 
 @Composable
-private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>) {
-  val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
+private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listState: LazyListState) {
   var scrollDirection by remember { mutableStateOf(ScrollDirection.Idle) }
   var previousIndex by remember { mutableStateOf(0) }
   var previousScrollOffset by remember { mutableStateOf(0) }
@@ -698,7 +701,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>) {
         }
       }
     }
-    if (appPlatform.isAndroid && !oneHandUICardShown.value && chats.count() > 1) {
+    if (!oneHandUICardShown.value && chats.size > 1) {
       item {
         ToggleChatListCard()
       }
@@ -709,7 +712,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>) {
       } }
       ChatListNavLinkView(chat, nextChatSelected)
     }
-    if (appPlatform.isAndroid && !oneHandUICardShown.value && chats.count() <= 1) {
+    if (!oneHandUICardShown.value && chats.size <= 1) {
       item {
         ToggleChatListCard()
       }
@@ -725,8 +728,9 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>) {
   }
   if (oneHandUI.value) {
     StatusBarBackground()
+  } else {
+    NavigationBarBackground(oneHandUI.value, true)
   }
-  NavigationBarBackground(oneHandUI.value, true)
 }
 
 fun filteredChats(
@@ -771,3 +775,7 @@ private fun filtered(chat: Chat): Boolean =
   (chat.chatInfo.chatSettings?.favorite ?: false) ||
       chat.chatStats.unreadChat ||
       (chat.chatInfo.ntfsEnabled && chat.chatStats.unreadCount > 0)
+
+fun scrollToBottom(scope: CoroutineScope, listState: LazyListState) {
+  scope.launch { try { listState.animateScrollToItem(0) } catch (e: Exception) { Log.e(TAG, e.stackTraceToString()) } }
+}
