@@ -1721,42 +1721,21 @@ getAllChatItems db vr user@User {userId} pagination search_ = do
             LIMIT ?
           |]
           (userId, search, beforeTs, beforeTs, beforeId, count)
+    getChatItem chatId =
+      DB.query
+        db
+        [sql|
+          SELECT chat_item_id, contact_id, group_id, note_folder_id
+          FROM chat_items
+          WHERE chat_item_id = ?
+        |]
+        (Only chatId)
     getAllChatItemsAround_ aroundId count aroundTs = do
-      let (fetchCountBefore, fetchCountAfter) = divideFetchCountAround_ count
-      reverse
-        <$> DB.queryNamed
-          db
-          [sql|
-            SELECT chat_item_id, contact_id, group_id, note_folder_id
-            FROM (
-              SELECT chat_item_id, contact_id, group_id, note_folder_id
-              FROM chat_items
-              WHERE user_id = :userId AND item_text LIKE '%' || :search || '%'
-                AND (item_ts < :aroundTs OR (item_ts = :aroundTs AND chat_item_id < :aroundId))
-              ORDER BY item_ts DESC, chat_item_id DESC
-              LIMIT :fetchCountBefore
-            )
-            UNION ALL
-            SELECT chat_item_id, contact_id, group_id, note_folder_id
-            FROM (
-              SELECT chat_item_id, contact_id, group_id, note_folder_id
-              FROM chat_items
-              WHERE user_id = :userId AND item_text LIKE '%' || :search || '%'
-                AND (item_ts > :aroundTs OR (item_ts = :aroundTs AND chat_item_id > :aroundId))
-              ORDER BY item_ts ASC, chat_item_id ASC
-              LIMIT :fetchCountAfter
-            )
-            ORDER BY chat_item_id DESC
-            LIMIT :count
-          |]
-          [ ":userId" := userId,
-            ":search" := search,
-            ":aroundTs" := aroundTs,
-            ":aroundId" := aroundId,
-            ":fetchCountBefore" := fetchCountBefore,
-            ":fetchCountAfter" := fetchCountAfter,
-            ":count" := count
-          ]
+      let (fetchCountBefore, fetchCountAfter) = divideFetchCountAround_ (count - 1)
+      itemsBefore <- getAllChatItemsBefore_ aroundId fetchCountBefore aroundTs
+      item <- getChatItem aroundId
+      itemsAfter <- getAllChatItemsAfter_ aroundId fetchCountAfter aroundTs
+      pure $ itemsBefore <> item <> itemsAfter
 
 getChatItemIdsByAgentMsgId :: DB.Connection -> Int64 -> AgentMsgId -> IO [ChatItemId]
 getChatItemIdsByAgentMsgId db connId msgId =

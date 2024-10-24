@@ -2340,6 +2340,12 @@ testUserPrivacy =
                "bob> Voice messages: enabled",
                "bob> Audio/video calls: enabled"
              ]
+      alice ##> "/_get items around=11 count=3"
+      alice
+        <##? [ "bob> Message reactions: enabled",
+               "bob> Voice messages: enabled",
+               "bob> Audio/video calls: enabled"
+             ]
       alice ##> "/_get items after=12 count=10"
       alice
         <##? [ "@bob hello",
