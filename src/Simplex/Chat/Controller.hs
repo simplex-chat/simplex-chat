@@ -839,6 +839,7 @@ data ChatPagination
   = CPLast Int
   | CPAfter ChatItemId Int
   | CPBefore ChatItemId Int
+  | CPAround ChatItemId Int
   deriving (Show)
 
 data PaginationByTime
@@ -1010,7 +1011,7 @@ defaultSimpleNetCfg =
       smpWebPort = False,
       tcpTimeout_ = Nothing,
       logTLSErrors = False
-    }  
+    }
 
 data ContactSubStatus = ContactSubStatus
   { contact :: Contact,

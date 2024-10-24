@@ -210,6 +210,7 @@ testAddContact = versionTestMatrix2 runTestAddContact
           -- pagination
           alice #$> ("/_get chat @2 after=" <> itemId 1 <> " count=100", chat, [(0, "hello there"), (0, "how are you?")])
           alice #$> ("/_get chat @2 before=" <> itemId 2 <> " count=100", chat, features <> [(1, "hello there 🙂")])
+          alice #$> ("/_get chat @2 around=" <> itemId 2 <> " count=3", chat, [(1, "hello there 🙂"), (0, "hello there"), (0, "how are you?")])
           -- search
           alice #$> ("/_get chat @2 count=100 search=ello ther", chat, [(1, "hello there 🙂"), (0, "hello there")])
           -- read messages
@@ -2337,6 +2338,12 @@ testUserPrivacy =
                "bob> Disappearing messages: allowed",
                "bob> Full deletion: off",
                "bob> Message reactions: enabled",
+               "bob> Voice messages: enabled",
+               "bob> Audio/video calls: enabled"
+             ]
+      alice ##> "/_get items around=11 count=3"
+      alice
+        <##? [ "bob> Message reactions: enabled",
                "bob> Voice messages: enabled",
                "bob> Audio/video calls: enabled"
              ]

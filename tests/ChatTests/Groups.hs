@@ -344,6 +344,7 @@ testGroupShared alice bob cath checkMessages directConnections = do
       -- so we take into account group event items as well as sent group invitations in direct chats
       alice #$> ("/_get chat #1 after=" <> msgItem1 <> " count=100", chat, [(0, "hi there"), (0, "hey team")])
       alice #$> ("/_get chat #1 before=" <> msgItem2 <> " count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there")])
+      alice #$> ("/_get chat #1 around=" <> msgItem2 <> " count=6", chat, [(0, "connected"), (1, "hello"), (0, "hi there"), (0, "hey team")]) -- expecting only 4 items since there is only 1 item after
       alice #$> ("/_get chat #1 count=100 search=team", chat, [(0, "hey team")])
       bob @@@ [("@cath", "hey"), ("#team", "hey team"), ("@alice", "received invitation to join group team as admin")]
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "added cath (Catherine)"), (0, "connected"), (0, "hello"), (1, "hi there"), (0, "hey team")])

@@ -204,8 +204,8 @@ _defaultSMPServers =
 _defaultNtfServers :: [NtfServer]
 _defaultNtfServers =
   [ "ntf://FB-Uop7RTaZZEG0ZLD2CIaTjsPh-Fw0zFAnb7QyA8Ks=@ntf2.simplex.im,5ex3mupcazy3zlky64ab27phjhijpemsiby33qzq3pliejipbtx5xgad.onion"
-    -- "ntf://KmpZNNXiVZJx_G2T7jRUmDFxWXM3OAnunz3uLT0tqAA=@ntf3.simplex.im,pxculznuryunjdvtvh6s6szmanyadumpbmvevgdpe4wk5c65unyt4yid.onion",
-    -- "ntf://CJ5o7X6fCxj2FFYRU2KuCo70y4jSqz7td2HYhLnXWbU=@ntf4.simplex.im,wtvuhdj26jwprmomnyfu5wfuq2hjkzfcc72u44vi6gdhrwxldt6xauad.onion"
+  -- "ntf://KmpZNNXiVZJx_G2T7jRUmDFxWXM3OAnunz3uLT0tqAA=@ntf3.simplex.im,pxculznuryunjdvtvh6s6szmanyadumpbmvevgdpe4wk5c65unyt4yid.onion",
+  -- "ntf://CJ5o7X6fCxj2FFYRU2KuCo70y4jSqz7td2HYhLnXWbU=@ntf4.simplex.im,wtvuhdj26jwprmomnyfu5wfuq2hjkzfcc72u44vi6gdhrwxldt6xauad.onion"
   ]
 
 maxImageSize :: Integer
@@ -1785,7 +1785,8 @@ processChatCommand' vr = \case
           Nothing -> joinNewConn chatV dm
           Just (RcvDirectMsgConnection conn@Connection {connId, connStatus, contactConnInitiated} Nothing)
             | connStatus == ConnNew && contactConnInitiated -> joinNewConn chatV dm -- own connection link
-            | connStatus == ConnPrepared -> do -- retrying join after error
+            | connStatus == ConnPrepared -> do
+                -- retrying join after error
                 pcc <- withFastStore $ \db -> getPendingContactConnection db userId connId
                 joinPreparedConn (aConnId conn) pcc dm
           Just ent -> throwChatError $ CECommandError $ "connection exists: " <> show (connEntityInfo ent)
@@ -8295,6 +8296,7 @@ chatCommandP =
       (CPLast <$ "count=" <*> A.decimal)
         <|> (CPAfter <$ "after=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
         <|> (CPBefore <$ "before=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
+        <|> (CPAround <$ "around=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
     paginationByTimeP =
       (PTLast <$ "count=" <*> A.decimal)
         <|> (PTAfter <$ "after=" <*> strP <* A.space <* "count=" <*> A.decimal)
