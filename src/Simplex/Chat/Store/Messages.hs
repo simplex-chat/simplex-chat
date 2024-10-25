@@ -1205,12 +1205,13 @@ getGroupChatAround_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> Int -
 getGroupChatAround_ db user g@GroupInfo {groupId} aroundItemId count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   let (fetchCountBefore, fetchCountAfter) = divideFetchCountAround_ (count - 1)
-  chatItem <- getGroupChatItem db user groupId aroundItemId
-  beforeIds <- liftIO $ getGroupChatItemIdsBefore_ db user g aroundItemId fetchCountBefore search (chatItemTs chatItem)
-  afterIds <- liftIO $ getGroupChatItemIdsAfter_ db user g aroundItemId fetchCountAfter search (chatItemTs chatItem)
-  let chatItemIds = reverse beforeIds <> [aroundItemId] <> afterIds
+  middleChatItem <- getGroupChatItem db user groupId aroundItemId
+  beforeIds <- liftIO $ getGroupChatItemIdsBefore_ db user g aroundItemId fetchCountBefore search (chatItemTs middleChatItem)
+  afterIds <- liftIO $ getGroupChatItemIdsAfter_ db user g aroundItemId fetchCountAfter search (chatItemTs middleChatItem)
   currentTs <- liftIO getCurrentTime
-  chatItems <- liftIO $ mapM (safeGetGroupItem db user g currentTs) chatItemIds
+  beforeChatItems <- liftIO $ reverse <$> mapM (safeGetGroupItem db user g currentTs) beforeIds
+  afterChatItems <- liftIO $ mapM (safeGetGroupItem db user g currentTs) afterIds
+  let chatItems = beforeChatItems <> [middleChatItem] <> afterChatItems
   pure $ Chat (GroupChat g) chatItems stats
 
 getLocalChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTLocal)
