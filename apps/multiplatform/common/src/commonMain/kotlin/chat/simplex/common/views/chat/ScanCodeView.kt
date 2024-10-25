@@ -14,9 +14,7 @@ import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
 fun ScanCodeView(verifyCode: (String?, cb: (Boolean) -> Unit) -> Unit, close: () -> Unit) {
-  ColumnWithScrollBar(
-    Modifier.fillMaxSize()
-  ) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.scan_code))
     QRCodeScanner { text ->
       verifyCode(text) {

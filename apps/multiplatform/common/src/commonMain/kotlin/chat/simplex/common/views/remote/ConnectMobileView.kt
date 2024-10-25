@@ -89,7 +89,7 @@ fun ConnectMobileLayout(
   connectDesktop: () -> Unit,
   deleteHost: (RemoteHostInfo) -> Unit,
 ) {
-  ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(if (remember { chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles))
     SectionView(generalGetString(MR.strings.this_device_name).uppercase()) {
       DeviceNameField(deviceName.value ?: "") { updateDeviceName(it) }
@@ -176,7 +176,7 @@ private fun ConnectMobileViewLayout(
   refreshQrCode: () -> Unit = {},
   UnderQrLayout: @Composable () -> Unit = {},
 ) {
-  ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+  ColumnWithScrollBar {
     if (title != null) {
       AppBarTitle(title)
     }

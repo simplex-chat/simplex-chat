@@ -208,6 +208,41 @@ object AppearanceScope {
   }
 
   @Composable
+  fun BarsBlurSection(sectionTitle: StringResource, pref: SharedPreference<Int>, defaultValue: Int) {
+    val prefValue = remember { pref.state }.value
+    SectionView(stringResource(sectionTitle).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+      Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(50.dp)
+          .background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22))
+          .clip(RoundedCornerShape(percent = 22))
+          .clickable {
+            pref.set(defaultValue)
+          },
+          contentAlignment = Alignment.Center) {
+          Text(String.format(Locale.US, prefValue.toString(), prefValue),
+            color = if (prefValue == defaultValue) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground,
+            fontSize = 12.sp,
+            maxLines = 1
+          )
+        }
+        Spacer(Modifier.width(15.dp))
+        Slider(
+          prefValue.toFloat(),
+          valueRange = 0f..100f,
+          steps = 101,
+          onValueChange = {
+            pref.set(it.roundToInt())
+          },
+          colors = SliderDefaults.colors(
+            activeTickColor = Color.Transparent,
+            inactiveTickColor = Color.Transparent,
+          )
+        )
+      }
+    }
+  }
+
+  @Composable
   fun ChatThemePreview(
     theme: DefaultTheme,
     wallpaperImage: ImageBitmap?,
@@ -551,9 +586,7 @@ object AppearanceScope {
 
   @Composable
   fun CustomizeThemeView(onChooseType: (WallpaperType?) -> Unit) {
-    ColumnWithScrollBar(
-      Modifier.fillMaxWidth(),
-    ) {
+    ColumnWithScrollBar {
       val currentTheme by CurrentColors.collectAsState()
 
       AppBarTitle(stringResource(MR.strings.customize_theme_title))
@@ -946,11 +979,7 @@ object AppearanceScope {
     currentColors: () -> ThemeManager.ActiveTheme,
     onColorChange: (Color?) -> Unit,
   ) {
-    ColumnWithScrollBar(
-      Modifier
-        .fillMaxWidth()
-        .imePadding()
-    ) {
+    ColumnWithScrollBar(Modifier.imePadding()) {
       AppBarTitle(name.text)
 
       val supportedLiveChange = name in listOf(ThemeColor.SECONDARY, ThemeColor.BACKGROUND, ThemeColor.SURFACE, ThemeColor.RECEIVED_MESSAGE, ThemeColor.SENT_MESSAGE, ThemeColor.SENT_QUOTE, ThemeColor.WALLPAPER_BACKGROUND, ThemeColor.WALLPAPER_TINT)

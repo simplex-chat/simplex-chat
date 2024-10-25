@@ -604,12 +604,12 @@ fun BoxScope.StatusBarBackground() {
 }
 
 @Composable
-fun BoxScope.NavigationBarBackground(appBarOnBottom: Boolean = false, mixedColor: Boolean) {
+fun BoxScope.NavigationBarBackground(appBarOnBottom: Boolean = false, mixedColor: Boolean, noAlpha: Boolean = false) {
   if (appPlatform.isAndroid) {
     val barPadding = WindowInsets.navigationBars.asPaddingValues()
     val paddingBottom = barPadding.calculateBottomPadding()
     val color = if (mixedColor) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f) else MaterialTheme.colors.background
-    val finalColor = color.copy(if (appBarOnBottom) remember { appPrefs.inAppBarsAlpha.state }.value else 0.6f)
+    val finalColor = color.copy(if (noAlpha) 1f else if (appBarOnBottom) remember { appPrefs.inAppBarsAlpha.state }.value else 0.6f)
     Box(Modifier.align(Alignment.BottomStart).height(paddingBottom).fillMaxWidth().background(finalColor))
   }
 }
@@ -666,7 +666,8 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   val topPaddingToContent = topPaddingToContent()
   val blankSpaceSize = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else topPaddingToContent
   LazyColumnWithScrollBar(
-    Modifier.fillMaxSize().then(if (!oneHandUI.value) Modifier.imePadding() else Modifier),
+    if (!oneHandUI.value) Modifier.imePadding() else Modifier,
+    backgroundModifier = Modifier.background(MaterialTheme.colors.background),
     listState,
     reverseLayout = oneHandUI.value
   ) {

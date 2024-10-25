@@ -110,7 +110,7 @@ private fun SetupDatabasePassphraseLayout(
   ) {
     ModalView({}, showClose = false) {
       ColumnWithScrollBar(
-        Modifier.fillMaxSize().themedBackground().padding(bottom = DEFAULT_PADDING * 2),
+        Modifier.themedBackground().padding(bottom = DEFAULT_PADDING * 2),
         horizontalAlignment = Alignment.CenterHorizontally,
       ) {
         AppBarTitle(stringResource(MR.strings.setup_database_passphrase))

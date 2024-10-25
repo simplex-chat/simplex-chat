@@ -105,9 +105,7 @@ private fun ContactConnectionInfoLayout(
     }
   }
 
-  ColumnWithScrollBar(
-    Modifier,
-  ) {
+  ColumnWithScrollBar {
     AppBarTitle(
       stringResource(
         if (contactConnection.initiated) MR.strings.you_invited_a_contact

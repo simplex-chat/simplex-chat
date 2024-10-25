@@ -48,9 +48,7 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
       val displayName = rememberSaveable { mutableStateOf("") }
       val focusRequester = remember { FocusRequester() }
 
-      ColumnWithScrollBar(
-        modifier = Modifier.fillMaxSize()
-      ) {
+      ColumnWithScrollBar {
         Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
           AppBarTitle(stringResource(MR.strings.create_profile), withPadding = false, bottomPadding = DEFAULT_PADDING)
           Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -132,9 +130,7 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
           appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
         })
 
-        ColumnWithScrollBar(
-          modifier = Modifier.fillMaxSize()
-        ) {
+        ColumnWithScrollBar {
           val displayName = rememberSaveable { mutableStateOf("") }
           val focusRequester = remember { FocusRequester() }
           Column(if (appPlatform.isAndroid) Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING) else Modifier.widthIn(max = 600.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING).align(Alignment.CenterHorizontally)) {

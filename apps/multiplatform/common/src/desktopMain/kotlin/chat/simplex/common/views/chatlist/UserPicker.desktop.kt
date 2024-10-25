@@ -40,7 +40,7 @@ actual fun UserPickerUsersSection(
       .padding(horizontal = horizontalPadding)
       .height((55.dp + 16.sp.toDp()) * rowsToDisplay + (if (rowsToDisplay > 1) DEFAULT_PADDING else 0.dp))
     ) {
-      ColumnWithScrollBar(
+      ColumnWithScrollBarNoAppBar(
         verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING)
       ) {
         val spaceBetween = (((DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier) - (horizontalPadding)) - (65.dp * 5)) / 5
@@ -99,7 +99,7 @@ actual fun PlatformUserPicker(modifier: Modifier, pickerState: MutableStateFlow<
       contentAlignment = Alignment.TopStart
     ) {
       val oneHandUI = remember { appPrefs.oneHandUI.state }
-      ColumnWithScrollBar(modifier.align(if (oneHandUI.value) Alignment.BottomCenter else Alignment.TopCenter)) {
+      ColumnWithScrollBarNoAppBar(modifier.align(if (oneHandUI.value) Alignment.BottomCenter else Alignment.TopCenter)) {
         content()
       }
     }

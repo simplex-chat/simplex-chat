@@ -40,9 +40,7 @@ fun AppearanceScope.AppearanceLayout(
   languagePref: SharedPreference<String?>,
   systemDarkTheme: SharedPreference<String?>,
 ) {
-  ColumnWithScrollBar(
-    Modifier.fillMaxWidth(),
-  ) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.appearance_settings))
     SectionView(stringResource(MR.strings.settings_section_title_language), contentPadding = PaddingValues()) {
       val state = rememberSaveable { mutableStateOf(languagePref.get() ?: "system") }
@@ -69,6 +67,9 @@ fun AppearanceScope.AppearanceLayout(
 
     SectionDividerSpaced()
     BarsAlphaSection(MR.strings.appearance_in_app_bars_alpha, appPrefs.inAppBarsAlpha, 0.95f)
+
+    SectionDividerSpaced(maxTopPadding = true)
+    BarsBlurSection(MR.strings.appearance_bars_blur_radius, appPrefs.appearanceBarsBlurRadius, 40)
 
     SectionDividerSpaced(maxTopPadding = true)
     ProfileImageSection()

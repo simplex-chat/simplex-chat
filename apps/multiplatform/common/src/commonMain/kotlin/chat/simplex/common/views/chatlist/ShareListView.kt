@@ -210,7 +210,7 @@ private fun ShareList(
     }
   }
   LazyColumnWithScrollBar(
-    modifier = Modifier.fillMaxSize().then(if (!oneHandUI.value) Modifier.imePadding() else Modifier),
+    modifier = if (!oneHandUI.value) Modifier.imePadding() else Modifier,
     reverseLayout = oneHandUI.value
   ) {
     items(chats) { chat ->

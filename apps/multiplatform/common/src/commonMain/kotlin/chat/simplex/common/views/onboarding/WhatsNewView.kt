@@ -119,7 +119,6 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
   ModalView(close = close) {
     ColumnWithScrollBar(
       Modifier
-        .fillMaxSize()
         .padding(horizontal = DEFAULT_PADDING),
       verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING.times(0.75f))
     ) {

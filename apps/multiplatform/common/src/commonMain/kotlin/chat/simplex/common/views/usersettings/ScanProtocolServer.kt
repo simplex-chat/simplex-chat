@@ -18,10 +18,7 @@ expect fun ScanProtocolServer(rhId: Long?, onNext: (ServerCfg) -> Unit)
 
 @Composable
 fun ScanProtocolServerLayout(rhId: Long?, onNext: (ServerCfg) -> Unit) {
-  ColumnWithScrollBar(
-    Modifier
-      .fillMaxSize()
-  ) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.smp_servers_scan_qr))
     QRCodeScanner { text ->
       val res = parseServerAddress(text)

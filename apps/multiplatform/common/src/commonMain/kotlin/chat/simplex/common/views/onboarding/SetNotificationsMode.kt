@@ -30,11 +30,7 @@ fun SetNotificationsMode(m: ChatModel) {
     LocalAppBarHandler provides handler
   ) {
     ModalView({}, showClose = false) {
-      ColumnWithScrollBar(
-        modifier = Modifier
-          .fillMaxSize()
-          .themedBackground()
-      ) {
+      ColumnWithScrollBar(Modifier.themedBackground()) {
         Box(Modifier.align(Alignment.CenterHorizontally)) {
           AppBarTitle(stringResource(MR.strings.onboarding_notifications_mode_title))
         }

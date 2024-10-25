@@ -25,7 +25,7 @@ import chat.simplex.res.MR
 fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> Unit
 ) {
   val m = chatModel
-  ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+  ColumnWithScrollBar {
     val uriHandler = LocalUriHandler.current
     AppBarTitle(stringResource(MR.strings.settings_developer_tools))
     val developerTools = m.controller.appPrefs.developerTools

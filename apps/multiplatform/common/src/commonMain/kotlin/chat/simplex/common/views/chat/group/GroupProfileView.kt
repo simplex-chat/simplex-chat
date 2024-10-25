@@ -97,9 +97,7 @@ fun GroupProfileLayout(
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
       ModalView(close = closeWithAlert) {
-        ColumnWithScrollBar(
-          Modifier
-        ) {
+        ColumnWithScrollBar {
           Column(
             Modifier.fillMaxWidth()
               .padding(horizontal = DEFAULT_PADDING)

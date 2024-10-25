@@ -589,18 +589,20 @@ data class ThemeModeOverride (
 
 fun Modifier.themedBackground(baseTheme: DefaultTheme = CurrentColors.value.base, shape: Shape = RectangleShape): Modifier {
   return if (baseTheme == DefaultTheme.SIMPLEX) {
-    this.background(brush = Brush.linearGradient(
-      listOf(
-        CurrentColors.value.colors.background.darker(0.4f),
-        CurrentColors.value.colors.background.lighter(0.4f)
-      ),
-      Offset(0f, Float.POSITIVE_INFINITY),
-      Offset(Float.POSITIVE_INFINITY, 0f)
-    ), shape = shape)
+    this.background(brush = themedBackgroundBrush(), shape = shape)
   } else {
     this.background(color = CurrentColors.value.colors.background, shape = shape)
   }
 }
+
+fun themedBackgroundBrush(): Brush = Brush.linearGradient(
+  listOf(
+    CurrentColors.value.colors.background.darker(0.4f),
+    CurrentColors.value.colors.background.lighter(0.4f)
+  ),
+  Offset(0f, Float.POSITIVE_INFINITY),
+  Offset(Float.POSITIVE_INFINITY, 0f)
+)
 
 val DEFAULT_PADDING = 20.dp
 val DEFAULT_SPACE_AFTER_ICON = 4.dp

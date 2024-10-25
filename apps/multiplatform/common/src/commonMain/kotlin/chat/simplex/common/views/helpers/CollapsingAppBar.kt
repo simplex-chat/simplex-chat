@@ -4,9 +4,9 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.*
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.unit.Velocity
 
 val LocalAppBarHandler: ProvidableCompositionLocal<AppBarHandler?> = staticCompositionLocalOf { null }
 
@@ -23,6 +23,8 @@ class AppBarHandler(
     internal set
 
   val connection = CollapsingAppBarNestedScrollConnection()
+
+  var graphicsLayer: GraphicsLayer? = null
 
   companion object {
     var appBarMaxHeightPx: Int = 0

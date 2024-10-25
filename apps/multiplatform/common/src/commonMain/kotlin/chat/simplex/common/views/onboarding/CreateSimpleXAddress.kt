@@ -82,9 +82,7 @@ private fun CreateSimpleXAddressLayout(
   ) {
     ModalView({}, showClose = false) {
       ColumnWithScrollBar(
-        Modifier
-          .fillMaxSize()
-          .themedBackground(),
+        Modifier.themedBackground(),
         horizontalAlignment = Alignment.CenterHorizontally,
       ) {
         AppBarTitle(stringResource(MR.strings.simplex_address))

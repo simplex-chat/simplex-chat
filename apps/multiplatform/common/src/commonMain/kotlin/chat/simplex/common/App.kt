@@ -349,13 +349,20 @@ fun AndroidScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
 @Composable
 fun StartPartOfScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
   if (chatModel.setDeliveryReceipts.value) {
-    SetDeliveryReceiptsView(chatModel)
+    CompositionLocalProvider(LocalAppBarHandler provides remember { AppBarHandler() }) {
+      SetDeliveryReceiptsView(chatModel)
+    }
   } else {
     val stopped = chatModel.chatRunning.value == false
-    if (chatModel.sharedContent.value == null)
-      ChatListView(chatModel, userPickerState, AppLock::setPerformLA, stopped)
-    else
-      ShareListView(chatModel, stopped)
+    if (chatModel.sharedContent.value == null) {
+      CompositionLocalProvider(LocalAppBarHandler provides remember { AppBarHandler() }) {
+        ChatListView(chatModel, userPickerState, AppLock::setPerformLA, stopped)
+      }
+    } else {
+      CompositionLocalProvider(LocalAppBarHandler provides remember { AppBarHandler() }) {
+        ShareListView(chatModel, stopped)
+      }
+    }
   }
 }
 

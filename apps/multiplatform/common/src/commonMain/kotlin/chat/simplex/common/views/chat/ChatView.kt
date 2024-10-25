@@ -109,6 +109,7 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
       }
     }
     val clipboard = LocalClipboardManager.current
+    CompositionLocalProvider(LocalAppBarHandler provides remember(chatInfo.chatType) { AppBarHandler() }) {
     when (chatInfo) {
       is ChatInfo.Direct, is ChatInfo.Group, is ChatInfo.Local -> {
         val perChatTheme = remember(chatInfo, CurrentColors.value.base) { if (chatInfo is ChatInfo.Direct) chatInfo.contact.uiThemes?.preferredMode(!CurrentColors.value.colors.isLight) else if (chatInfo is ChatInfo.Group) chatInfo.groupInfo.uiThemes?.preferredMode(!CurrentColors.value.colors.isLight) else null }
@@ -528,10 +529,6 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
       }
       is ChatInfo.ContactConnection -> {
         val close = { chatModel.chatId.value = null }
-        val handler = remember { AppBarHandler() }
-        CompositionLocalProvider(
-          LocalAppBarHandler provides handler
-        ) {
           ModalView(close, showClose = appPlatform.isAndroid, content = {
             ContactConnectionInfoView(chatModel, chatRh, chatInfo.contactConnection.connReqInv, chatInfo.contactConnection, false, close)
           })
@@ -540,14 +537,9 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
             ModalManager.end.closeModals()
             chatModel.chatItems.clear()
           }
-        }
       }
       is ChatInfo.InvalidJSON -> {
         val close = { chatModel.chatId.value = null }
-        val handler = remember { AppBarHandler() }
-        CompositionLocalProvider(
-          LocalAppBarHandler provides handler
-        ) {
           ModalView(close, showClose = appPlatform.isAndroid, endButtons = listOf { ShareButton { clipboard.shareText(chatInfo.json) } }, content = {
             InvalidJSONView(chatInfo.json)
           })
@@ -556,9 +548,9 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
             ModalManager.end.closeModals()
             chatModel.chatItems.clear()
           }
-        }
       }
       else -> {}
+    }
     }
   }
 }
@@ -649,19 +641,11 @@ fun ChatLayout(
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
       println("LALAL RELOAD MODAL")
-      val wallpaperImage = MaterialTheme.wallpaper.type.image
-      val wallpaperType = MaterialTheme.wallpaper.type
-      val backgroundColor = MaterialTheme.wallpaper.background ?: wallpaperType.defaultBackgroundColor(CurrentColors.value.base, MaterialTheme.colors.background)
-      val tintColor = MaterialTheme.wallpaper.tint ?: wallpaperType.defaultTintColor(CurrentColors.value.base)
       val composeViewHeight = remember { mutableStateOf(0.dp) }
       Box(
         Modifier
           .fillMaxSize()
-          .background(MaterialTheme.colors.background)
-          .then(if (wallpaperImage != null)
-            Modifier.drawWithCache { chatViewBackground(wallpaperImage, wallpaperType, backgroundColor, tintColor) }
-          else
-            Modifier)
+          .chatViewBackgroundModifier(MaterialTheme.colors, MaterialTheme.wallpaper)
         ) {
         val remoteHostId = remember { remoteHostId }.value
         val chatInfo = remember { chatInfo }.value
@@ -693,7 +677,7 @@ fun ChatLayout(
         if (oneHandUI.value) {
           StatusBarBackground()
         } else {
-          NavigationBarBackground(true, oneHandUI.value)
+          NavigationBarBackground(true, oneHandUI.value, noAlpha = true)
         }
         Box(if (oneHandUI.value) Modifier.align(Alignment.BottomStart).imePadding() else Modifier) {
           if (selectedChatItems.value == null) {
@@ -1016,6 +1000,7 @@ fun BoxScope.ChatItemsList(
   )
   LazyColumnWithScrollBar(
     Modifier.align(Alignment.BottomCenter),
+    backgroundModifier = Modifier.chatViewBackgroundModifier(MaterialTheme.colors, MaterialTheme.wallpaper),
     state = listState,
     reverseLayout = true,
     contentPadding = PaddingValues(
@@ -1862,6 +1847,20 @@ private fun memberNames(member: GroupMember, prevMember: GroupMember?, memCount:
   } else {
     name
   }
+}
+
+fun Modifier.chatViewBackgroundModifier(colors: Colors, wallpaper: AppWallpaper): Modifier {
+  val wallpaperImage = wallpaper.type.image
+  val wallpaperType = wallpaper.type
+  val backgroundColor = wallpaper.background ?: wallpaperType.defaultBackgroundColor(CurrentColors.value.base, colors.background)
+  val tintColor = wallpaper.tint ?: wallpaperType.defaultTintColor(CurrentColors.value.base)
+
+  return this.background(colors.background)
+    .then(if (wallpaperImage != null)
+      Modifier.drawWithCache { chatViewBackground(wallpaperImage, wallpaperType, backgroundColor, tintColor) }
+    else
+      Modifier
+    )
 }
 
 fun chatViewItemsRange(currIndex: Int?, prevHidden: Int?): IntRange? =

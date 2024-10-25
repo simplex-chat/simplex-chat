@@ -97,10 +97,7 @@ fun SettingsLayout(
     hideKeyboard(view)
   }
   val uriHandler = LocalUriHandler.current
-  ColumnWithScrollBar(
-    Modifier
-      .fillMaxSize()
-  ) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.your_settings))
 
     SectionView(stringResource(MR.strings.settings_section_title_settings)) {

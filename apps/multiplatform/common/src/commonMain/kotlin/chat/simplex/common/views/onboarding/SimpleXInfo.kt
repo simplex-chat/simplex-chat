@@ -56,7 +56,6 @@ fun SimpleXInfoLayout(
 ) {
   ColumnWithScrollBar(
     Modifier
-      .fillMaxSize()
       .padding(horizontal = DEFAULT_PADDING),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {

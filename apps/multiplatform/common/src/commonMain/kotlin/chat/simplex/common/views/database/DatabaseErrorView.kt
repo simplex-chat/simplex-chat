@@ -77,10 +77,7 @@ fun DatabaseErrorView(
     Text(String.format(generalGetString(MR.strings.database_migrations), ms.joinToString(", ")))
   }
 
-  ColumnWithScrollBar(
-    Modifier.fillMaxSize(),
-    verticalArrangement = Arrangement.Center,
-  ) {
+  ColumnWithScrollBar(verticalArrangement = Arrangement.Center) {
     val buttonEnabled = validKey(dbKey.value) && !progressIndicator.value
     when (val status = chatDbStatus.value) {
       is DBMigrationResult.ErrorNotADatabase ->

@@ -6,18 +6,17 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.*
+import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.chatlist.NavigationBarBackground
 import chat.simplex.res.MR
 import kotlin.math.absoluteValue
 
@@ -38,9 +37,8 @@ fun DefaultTopAppBar(
     Modifier.clickable(enabled = onTitleClick != null, onClick = onTitleClick ?: { })
   } else Modifier
 
-  val background = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
+  val themeBackgroundMix = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
   val prefAlpha = remember { appPrefs.inAppBarsAlpha.state }.value
-  val themeBackgroundMix = background.copy(prefAlpha)
   val handler = LocalAppBarHandler.current
   val connection = LocalAppBarHandler.current?.connection
   val titleText = remember(handler?.title?.value, fixedTitleText) {
@@ -51,26 +49,40 @@ fun DefaultTopAppBar(
     }
   }
   Box(modifier) {
-    if (!onTop) {
-      NavigationBarBackground(true, true)
-    }
+    val graphicsLayer = handler?.graphicsLayer
+    val blurRadius = remember { appPrefs.appearanceBarsBlurRadius.state }
+    Box(Modifier
+      .matchParentSize()
+      .then(if (graphicsLayer != null && blurRadius.value > 0 && prefAlpha < 1f)
+        Modifier
+          .graphicsLayer {
+            renderEffect = if (blurRadius.value > 0) BlurEffect(blurRadius.value.toFloat(), blurRadius.value.toFloat()) else null
+            clip = blurRadius.value > 0
+          }
+          .drawBehind {
+            //drawRect(Color.Black)
+            clipRect {
+              translate(top = if (!onTop) size.height - graphicsLayer.size.height else 0f) {
+                drawLayer(graphicsLayer)
+              }
+            }
+          } else Modifier)
+      .drawWithCache {
+        val backgroundColor = if (title != null || fixedTitleText != null || connection == null || !onTop) {
+          themeBackgroundMix.copy(prefAlpha)
+        } else {
+          themeBackgroundMix.copy(topTitleAlpha(false, connection))
+        }
+        onDrawBehind {
+          drawRect(backgroundColor)
+        }
+      }
+    )
     Box(
       Modifier
         .fillMaxWidth()
         .then(if (!onTop) Modifier.navigationBarsPadding() else Modifier)
         .heightIn(min = AppBarHeight * fontSizeSqrtMultiplier)
-        .drawWithCache {
-          val backgroundColor = if (connection != null && onTop) {
-            themeBackgroundMix.copy(topTitleAlpha(false, connection))
-          } else if (title != null || fixedTitleText != null || connection != null) {
-            themeBackgroundMix.copy(prefAlpha)
-          } else {
-            Color.Transparent
-          }
-          onDrawBehind {
-            drawRect(backgroundColor)
-          }
-        }
     ) {
       TopAppBar(
         title = {
@@ -199,9 +211,7 @@ private fun TopAppBar(
       )
     }
     Row(
-      Modifier
-        .fillMaxHeight()
-        .fillMaxWidth(),
+      Modifier.fillMaxSize(),
       horizontalArrangement = Arrangement.End,
       verticalAlignment = Alignment.CenterVertically,
     ) {
