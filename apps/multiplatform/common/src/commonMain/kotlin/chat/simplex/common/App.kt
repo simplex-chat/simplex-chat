@@ -158,9 +158,7 @@ fun MainScreen() {
       showChatDatabaseError -> {
         // Prevent showing keyboard on Android when: passcode enabled and database password not saved
         if (!unauthorized.value && chatModel.chatDbStatus.value != null) {
-          CompositionLocalProvider(LocalAppBarHandler provides remember { AppBarHandler() }) {
-            DatabaseErrorView(chatModel.chatDbStatus, chatModel.controller.appPrefs)
-          }
+          DatabaseErrorView(chatModel.chatDbStatus, chatModel.controller.appPrefs)
         }
       }
       remember { chatModel.chatDbEncrypted }.value == null || localUserCreated == null -> SplashView()
