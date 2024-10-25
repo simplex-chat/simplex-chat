@@ -59,11 +59,15 @@ fun DefaultTopAppBar(
             renderEffect = if (blurRadius.value > 0) BlurEffect(blurRadius.value.toFloat(), blurRadius.value.toFloat()) else null
             clip = blurRadius.value > 0
           }
-          .drawBehind {
-            //drawRect(Color.Black)
-            clipRect {
-              translate(top = if (!onTop) size.height - graphicsLayer.size.height else 0f) {
-                drawLayer(graphicsLayer)
+          .drawWithCache {
+            // keep it here, forces redraw block to restart when size of the layer changes (in ChatView, for example)
+            handler.graphicsLayerSize.value
+            onDrawBehind {
+              //drawRect(Color.Black)
+              clipRect {
+                translate(top = if (!onTop) size.height - graphicsLayer.size.height else 0f) {
+                  drawLayer(graphicsLayer)
+                }
               }
             }
           } else Modifier)

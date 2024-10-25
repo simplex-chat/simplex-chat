@@ -72,6 +72,7 @@ actual fun LazyColumnWithScrollBar(
           this@drawWithContent.drawContent()
         }
         drawLayer(graphicsLayer)
+        handler.graphicsLayerSize.value = graphicsLayer.size
       }.then(backgroundModifier)
     } else Modifier
   }
@@ -207,6 +208,7 @@ actual fun ColumnWithScrollBar(
           this@drawWithContent.drawContent()
         }
         drawLayer(graphicsLayer)
+        handler.graphicsLayerSize.value = graphicsLayer.size
       }.then(backgroundModifier)
     } else Modifier
   }
