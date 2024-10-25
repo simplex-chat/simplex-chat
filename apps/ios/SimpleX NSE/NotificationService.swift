@@ -312,17 +312,11 @@ class NotificationService: UNNotificationServiceExtension {
 
     func processDroppedNotifications(_ entityId: String) {
         if !NSEThreads.shared.droppedNotifications.isEmpty {
-            var toRemove: Set<Int> = []
-            for i in 0..<NSEThreads.shared.droppedNotifications.count {
-                let (eId, ntf) = NSEThreads.shared.droppedNotifications[i]
-                if eId == entityId {
-                    if let t = threadId { logger.debug("NotificationService thread \(t, privacy: .private): entity \(entityId, privacy: .private): processing dropped notification \(i, privacy: .private)") }
-                    processReceivedNtf(entityId, ntf, signalReady: false)
-                    toRemove.insert(i)
-                }
-            }
-            for i in toRemove {
-                NSEThreads.shared.droppedNotifications.remove(at: i)
+            let messagesToProcess = NSEThreads.shared.droppedNotifications.filter { (eId, _) in eId == entityId }
+            NSEThreads.shared.droppedNotifications.removeAll(where: { (eId, _) in eId == entityId })
+            for (index, (_, ntf)) in messagesToProcess.enumerated() {
+                if let t = threadId { logger.debug("NotificationService thread \(t, privacy: .private): entity \(entityId, privacy: .private): processing dropped notification \(index, privacy: .private)") }
+                processReceivedNtf(entityId, ntf, signalReady: false)
             }
         }
     }
