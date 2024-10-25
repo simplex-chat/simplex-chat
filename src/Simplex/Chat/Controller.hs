@@ -330,8 +330,8 @@ data ChatCommand
   | APIRegisterToken DeviceToken NotificationsMode
   | APIVerifyToken DeviceToken C.CbNonce ByteString
   | APIDeleteToken DeviceToken
-  | APIGetNtfMessage {nonce :: C.CbNonce, encNtfInfo :: ByteString}
-  | ApiGetConnNtfMessage {connId :: AgentConnId}
+  | APIGetNtfConns {nonce :: C.CbNonce, encNtfInfo :: ByteString}
+  | ApiGetConnNtfMessages {connIds :: NonEmpty AgentConnId}
   | APIAddMember GroupId ContactId GroupMemberRole
   | APIJoinGroup GroupId
   | APIMemberRole GroupId GroupMemberId GroupMemberRole
@@ -745,8 +745,8 @@ data ChatResponse
   | CRUserContactLinkSubError {chatError :: ChatError} -- TODO delete
   | CRNtfTokenStatus {status :: NtfTknStatus}
   | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode, ntfServer :: NtfServer}
-  | CRNtfMessages {ntfMessages :: [NtfMessage]}
-  | CRConnNtfMessage {receivedMsg_ :: Maybe NtfMsgInfo}
+  | CRNtfConns {ntfConns :: [NtfConn]}
+  | CRConnNtfMessages {receivedMsgs :: NonEmpty (Maybe NtfMsgInfo)}
   | CRNtfMessage {user :: User, connEntity :: ConnectionEntity, ntfMessage :: NtfMsgAckInfo}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
@@ -1063,11 +1063,10 @@ instance FromJSON ComposedMessage where
   parseJSON invalid =
     JT.prependFailure "bad ComposedMessage, " (JT.typeMismatch "Object" invalid)
 
-data NtfMessage = NtfMessage
+data NtfConn = NtfConn
   { user_ :: Maybe User,
     connEntity_ :: Maybe ConnectionEntity,
-    expectedMsg_ :: Maybe NtfMsgInfo,
-    receivedMsg_ :: Maybe NtfMsgInfo
+    expectedMsg_ :: Maybe NtfMsgInfo
   }
   deriving (Show)
 
@@ -1543,7 +1542,7 @@ $(JQ.deriveJSON defaultJSON ''UserProfileUpdateSummary)
 
 $(JQ.deriveJSON defaultJSON ''NtfMsgInfo)
 
-$(JQ.deriveJSON defaultJSON ''NtfMessage)
+$(JQ.deriveJSON defaultJSON ''NtfConn)
 
 $(JQ.deriveJSON defaultJSON ''NtfMsgAckInfo)
 

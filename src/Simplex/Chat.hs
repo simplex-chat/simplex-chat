@@ -204,8 +204,8 @@ _defaultSMPServers =
 _defaultNtfServers :: [NtfServer]
 _defaultNtfServers =
   [ "ntf://FB-Uop7RTaZZEG0ZLD2CIaTjsPh-Fw0zFAnb7QyA8Ks=@ntf2.simplex.im,5ex3mupcazy3zlky64ab27phjhijpemsiby33qzq3pliejipbtx5xgad.onion"
-    -- "ntf://KmpZNNXiVZJx_G2T7jRUmDFxWXM3OAnunz3uLT0tqAA=@ntf3.simplex.im,pxculznuryunjdvtvh6s6szmanyadumpbmvevgdpe4wk5c65unyt4yid.onion",
-    -- "ntf://CJ5o7X6fCxj2FFYRU2KuCo70y4jSqz7td2HYhLnXWbU=@ntf4.simplex.im,wtvuhdj26jwprmomnyfu5wfuq2hjkzfcc72u44vi6gdhrwxldt6xauad.onion"
+  -- "ntf://KmpZNNXiVZJx_G2T7jRUmDFxWXM3OAnunz3uLT0tqAA=@ntf3.simplex.im,pxculznuryunjdvtvh6s6szmanyadumpbmvevgdpe4wk5c65unyt4yid.onion",
+  -- "ntf://CJ5o7X6fCxj2FFYRU2KuCo70y4jSqz7td2HYhLnXWbU=@ntf4.simplex.im,wtvuhdj26jwprmomnyfu5wfuq2hjkzfcc72u44vi6gdhrwxldt6xauad.onion"
   ]
 
 maxImageSize :: Integer
@@ -1457,32 +1457,31 @@ processChatCommand' vr = \case
     CRNtfTokenStatus <$> withAgent (\a -> registerNtfToken a token mode)
   APIVerifyToken token nonce code -> withUser $ \_ -> withAgent (\a -> verifyNtfToken a token nonce code) >> ok_
   APIDeleteToken token -> withUser $ \_ -> withAgent (`deleteNtfToken` token) >> ok_
-  APIGetNtfMessage nonce encNtfInfo -> withUser $ \user -> do
-    ntfInfos <- withAgent $ \a -> getNotificationMessage a nonce encNtfInfo
+  APIGetNtfConns nonce encNtfInfo -> withUser $ \user -> do
+    ntfInfos <- withAgent $ \a -> getNotificationConns a nonce encNtfInfo
     (errs, ntfMsgs) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (getMsgConn db) (L.toList ntfInfos))
     unless (null errs) $ toView $ CRChatErrors (Just user) errs
-    pure $ CRNtfMessages ntfMsgs
+    pure $ CRNtfConns ntfMsgs
     where
-      getMsgConn :: DB.Connection -> (NotificationInfo, Maybe SMP.SMPMsgMeta) -> IO NtfMessage
-      getMsgConn db (NotificationInfo {ntfConnId, ntfMsgMeta = nMsgMeta}, msg) = do
+      getMsgConn :: DB.Connection -> NotificationInfo -> IO NtfConn
+      getMsgConn db NotificationInfo {ntfConnId, ntfMsgMeta = nMsgMeta} = do
         let agentConnId = AgentConnId ntfConnId
         user_ <- getUserByAConnId db agentConnId
         connEntity_ <-
           pure user_ $>>= \user ->
             eitherToMaybe <$> runExceptT (getConnectionEntity db vr user agentConnId)
         pure $
-          NtfMessage
+          NtfConn
             { user_,
               connEntity_,
               -- Decrypted ntf meta of the expected message (the one notification was sent for)
-              expectedMsg_ = expectedMsgInfo <$> nMsgMeta,
-              -- Info of the first message retrieved by agent using GET
-              -- (may differ from the expected message due to, for example, coalescing or loss of notifications)
-              receivedMsg_ = receivedMsgInfo <$> msg
+              expectedMsg_ = expectedMsgInfo <$> nMsgMeta
             }
-  ApiGetConnNtfMessage (AgentConnId connId) -> withUser $ \_ -> do
-    msg <- withAgent $ \a -> getConnectionMessage a connId
-    pure $ CRConnNtfMessage (receivedMsgInfo <$> msg)
+  ApiGetConnNtfMessages connIds -> withUser $ \_ -> do
+    let acIds = L.map (\(AgentConnId acId) -> acId) connIds
+    msgs <- lift $ withAgent' $ \a -> getConnectionMessages a acIds
+    let ntfMsgs = L.map (\msg -> receivedMsgInfo <$> msg) msgs
+    pure $ CRConnNtfMessages ntfMsgs
   APIGetUserProtoServers userId (AProtocolType p) -> withUserId userId $ \user -> withServerProtocol p $ do
     cfg@ChatConfig {defaultServers} <- asks config
     servers <- withFastStore' (`getProtocolServers` user)
@@ -8068,8 +8067,8 @@ chatCommandP =
       "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP),
       "/_ntf verify " *> (APIVerifyToken <$> strP <* A.space <*> strP <* A.space <*> strP),
       "/_ntf delete " *> (APIDeleteToken <$> strP),
-      "/_ntf message " *> (APIGetNtfMessage <$> strP <* A.space <*> strP),
-      "/_ntf conn message " *> (ApiGetConnNtfMessage <$> strP),
+      "/_ntf conns " *> (APIGetNtfConns <$> strP <* A.space <*> strP),
+      "/_ntf conn messages " *> (ApiGetConnNtfMessages <$> strP),
       "/_add #" *> (APIAddMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_join #" *> (APIJoinGroup <$> A.decimal),
       "/_member role #" *> (APIMemberRole <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
