@@ -8302,7 +8302,7 @@ chatCommandP =
         <|> (CPAfter <$ "after=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
         <|> (CPBefore <$ "before=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
         <|> (CPAround <$ "around=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
-        <|> (CPInitial <$ "initial" <* A.space <*> A.decimal)
+        <|> (CPInitial <$ "initial=" <*> A.decimal)
     paginationByTimeP =
       (PTLast <$ "count=" <*> A.decimal)
         <|> (PTAfter <$ "after=" <*> strP <* A.space <* "count=" <*> A.decimal)
