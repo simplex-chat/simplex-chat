@@ -330,8 +330,8 @@ data ChatCommand
   | APIRegisterToken DeviceToken NotificationsMode
   | APIVerifyToken DeviceToken C.CbNonce ByteString
   | APIDeleteToken DeviceToken
-  | APIGetNtfMessage {nonce :: C.CbNonce, encNtfInfo :: ByteString}
-  | ApiGetConnNtfMessage {connId :: AgentConnId}
+  | APIGetNtfConns {nonce :: C.CbNonce, encNtfInfo :: ByteString}
+  | ApiGetConnNtfMessages {connIds :: NonEmpty AgentConnId}
   | APIAddMember GroupId ContactId GroupMemberRole
   | APIJoinGroup GroupId
   | APIMemberRole GroupId GroupMemberId GroupMemberRole
@@ -745,8 +745,8 @@ data ChatResponse
   | CRUserContactLinkSubError {chatError :: ChatError} -- TODO delete
   | CRNtfTokenStatus {status :: NtfTknStatus}
   | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode, ntfServer :: NtfServer}
-  | CRNtfMessages {user_ :: Maybe User, connEntity_ :: Maybe ConnectionEntity, expectedMsg_ :: Maybe NtfMsgInfo, receivedMsg_ :: Maybe NtfMsgInfo}
-  | CRConnNtfMessage {receivedMsg_ :: Maybe NtfMsgInfo}
+  | CRNtfConns {ntfConns :: [NtfConn]}
+  | CRConnNtfMessages {receivedMsgs :: NonEmpty (Maybe NtfMsgInfo)}
   | CRNtfMessage {user :: User, connEntity :: ConnectionEntity, ntfMessage :: NtfMsgAckInfo}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
@@ -1069,6 +1069,13 @@ instance FromJSON ComposedMessage where
     pure ComposedMessage {fileSource, quotedItemId, msgContent}
   parseJSON invalid =
     JT.prependFailure "bad ComposedMessage, " (JT.typeMismatch "Object" invalid)
+
+data NtfConn = NtfConn
+  { user_ :: Maybe User,
+    connEntity_ :: Maybe ConnectionEntity,
+    expectedMsg_ :: Maybe NtfMsgInfo
+  }
+  deriving (Show)
 
 data NtfMsgInfo = NtfMsgInfo {msgId :: Text, msgTs :: UTCTime}
   deriving (Show)
@@ -1541,6 +1548,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "AE") ''ArchiveError)
 $(JQ.deriveJSON defaultJSON ''UserProfileUpdateSummary)
 
 $(JQ.deriveJSON defaultJSON ''NtfMsgInfo)
+
+$(JQ.deriveJSON defaultJSON ''NtfConn)
 
 $(JQ.deriveJSON defaultJSON ''NtfMsgAckInfo)
 

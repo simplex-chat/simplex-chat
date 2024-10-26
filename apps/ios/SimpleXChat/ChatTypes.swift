@@ -2270,16 +2270,13 @@ public enum ConnectionEntity: Decodable, Hashable {
         case let .userContactConnection(entityConnection, _): entityConnection
         }
     }
+}
 
-    public var ntfsEnabled: Bool {
-        switch self {
-        case let .rcvDirectMsgConnection(_, contact): return contact?.chatSettings.enableNtfs == .all
-        case let .rcvGroupMsgConnection(_, groupInfo, _): return groupInfo.chatSettings.enableNtfs == .all
-        case .sndFileConnection: return false
-        case .rcvFileConnection: return false
-        case let .userContactConnection(_, userContact): return userContact.groupId == nil
-        }
-    }
+public struct NtfConn: Decodable, Hashable {
+    public var user_: User?
+    public var connEntity_: ConnectionEntity?
+    public var expectedMsg_: NtfMsgInfo?
+
 }
 
 public struct NtfMsgInfo: Decodable, Hashable {
