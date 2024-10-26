@@ -1688,6 +1688,11 @@ getAllChatItems db vr user@User {userId} pagination search_ = do
       CPAfter afterId count -> liftIO . getAllChatItemsAfter_ afterId count . aChatItemTs =<< getAChatItem_ afterId
       CPBefore beforeId count -> liftIO . getAllChatItemsBefore_ beforeId count . aChatItemTs =<< getAChatItem_ beforeId
       CPAround aroundId count -> liftIO . getAllChatItemsAround_ aroundId count . aChatItemTs =<< getAChatItem_ aroundId
+      CPInitial count -> do
+        firstUnreadItemId <- liftIO getFirstUnreadItemId_
+        case firstUnreadItemId of
+          Just itemId -> liftIO . getAllChatItemsAround_ itemId count . aChatItemTs =<< getAChatItem_ itemId
+          Nothing -> liftIO $ getAllChatItemsLast_ count
   mapM (uncurry (getAChatItem db vr user)) itemRefs
   where
     search = fromMaybe "" search_
@@ -1746,6 +1751,16 @@ getAllChatItems db vr user@User {userId} pagination search_ = do
       item <- getChatItem aroundId
       itemsAfter <- getAllChatItemsAfter_ aroundId fetchCountAfter aroundTs
       pure $ itemsBefore <> item <> itemsAfter
+    getFirstUnreadItemId_ =
+      maybeFirstRow fromOnly $
+        DB.query
+          db
+          [sql|
+            SELECT MIN(chat_item_id)
+            FROM chat_items
+            WHERE user_id = ? AND item_status = :rcv_new
+          |]
+          (Only userId)
 
 getChatItemIdsByAgentMsgId :: DB.Connection -> Int64 -> AgentMsgId -> IO [ChatItemId]
 getChatItemIdsByAgentMsgId db connId msgId =
