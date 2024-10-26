@@ -1093,15 +1093,15 @@ getDirectChatInitial_ db user@User {userId} ct@Contact {contactId} count = do
   where
     getDirectChatMinUnreadItemId_ :: IO (Maybe ChatItemId)
     getDirectChatMinUnreadItemId_ =
-      maybeFirstRow fromOnly $
+      fmap join . maybeFirstRow fromOnly $
         DB.query
           db
           [sql|
             SELECT MIN(chat_item_id)
             FROM chat_items
-            WHERE user_id = ? AND contact_id = ? AND item_status = :rcv_new
+            WHERE user_id = ? AND contact_id = ? AND item_status = ?
           |]
-          (userId, contactId)
+          (userId, contactId, CISRcvNew)
 
 getGroupChat :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTGroup, ChatSection)
 getGroupChat db vr user groupId pagination search_ = do
@@ -1248,15 +1248,15 @@ getGroupChatInitial_ db user@User {userId} g@GroupInfo {groupId} count = do
   where
     getGroupChatMinUnreadItemId_ :: IO (Maybe ChatItemId)
     getGroupChatMinUnreadItemId_ =
-      maybeFirstRow fromOnly $
+      fmap join . maybeFirstRow fromOnly $
         DB.query
           db
           [sql|
             SELECT MIN(chat_item_id)
             FROM chat_items
-            WHERE user_id = ? AND group_id = ? AND item_status = :rcv_new
+            WHERE user_id = ? AND group_id = ? AND item_status = ?
           |]
-          (userId, groupId)
+          (userId, groupId, CISRcvNew)
 
 getLocalChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTLocal, ChatSection)
 getLocalChat db user folderId pagination search_ = do
@@ -1387,15 +1387,15 @@ getLocalChatInitial_ db user@User {userId} nf@NoteFolder {noteFolderId} count = 
   where
     getLocalChatMinUnreadItemId_ :: IO (Maybe ChatItemId)
     getLocalChatMinUnreadItemId_ =
-      maybeFirstRow fromOnly $
+      fmap join . maybeFirstRow fromOnly $
         DB.query
           db
           [sql|
             SELECT MIN(chat_item_id)
             FROM chat_items
-            WHERE user_id = ? AND note_folder_id = ? AND item_status = :rcv_new
+            WHERE user_id = ? AND note_folder_id = ? AND item_status = ?
           |]
-          (userId, noteFolderId)
+          (userId, noteFolderId, CISRcvNew)
 
 toChatItemRef :: (ChatItemId, Maybe Int64, Maybe Int64, Maybe Int64) -> Either StoreError (ChatRef, ChatItemId)
 toChatItemRef = \case
@@ -1752,15 +1752,15 @@ getAllChatItems db vr user@User {userId} pagination search_ = do
       itemsAfter <- getAllChatItemsAfter_ aroundId fetchCountAfter aroundTs
       pure $ itemsBefore <> item <> itemsAfter
     getFirstUnreadItemId_ =
-      maybeFirstRow fromOnly $
+      fmap join . maybeFirstRow fromOnly $
         DB.query
           db
           [sql|
             SELECT MIN(chat_item_id)
             FROM chat_items
-            WHERE user_id = ? AND item_status = :rcv_new
+            WHERE user_id = ? AND item_status = ?
           |]
-          (Only userId)
+          (userId, CISRcvNew)
 
 getChatItemIdsByAgentMsgId :: DB.Connection -> Int64 -> AgentMsgId -> IO [ChatItemId]
 getChatItemIdsByAgentMsgId db connId msgId =
