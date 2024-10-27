@@ -11,4 +11,8 @@ package direct-sqlcipher
     extra-lib-dirs: /opt/homebrew/opt/openssl@1.1/lib
     flags: +openssl
 
+package rocksdb-haskell-jprupp
+    extra-include-dirs: /opt/homebrew/opt/rocksdb/include
+    extra-lib-dirs: /opt/homebrew/opt/rocksdb/lib
+
 test-show-details: direct

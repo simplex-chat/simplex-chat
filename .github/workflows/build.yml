@@ -132,7 +132,7 @@ jobs:
           echo "    extra-lib-dirs: /opt/homebrew/opt/openssl@1.1/lib"         >> cabal.project.local
           echo "    flags: +openssl"                                           >> cabal.project.local
           echo ""                                                              >> cabal.project.local
-          echo "package rocksdb"                                               >> cabal.project.local
+          echo "package rocksdb-haskell-jprupp"                                >> cabal.project.local
           echo "    extra-include-dirs: /opt/homebrew/opt/rocksdb/include"     >> cabal.project.local
           echo "    extra-lib-dirs: /opt/homebrew/opt/rocksdb/lib"             >> cabal.project.local
 
@@ -150,7 +150,7 @@ jobs:
           echo "    extra-lib-dirs: /usr/local/opt/openssl@1.1/lib"            >> cabal.project.local
           echo "    flags: +openssl"                                           >> cabal.project.local
           echo ""                                                              >> cabal.project.local
-          echo "package rocksdb"                                               >> cabal.project.local
+          echo "package rocksdb-haskell-jprupp"                                >> cabal.project.local
           echo "    extra-include-dirs: /opt/homebrew/opt/rocksdb/include"     >> cabal.project.local
           echo "    extra-lib-dirs: /opt/homebrew/opt/rocksdb/lib"             >> cabal.project.local
 
