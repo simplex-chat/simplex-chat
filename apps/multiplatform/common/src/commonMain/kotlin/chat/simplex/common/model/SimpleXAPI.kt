@@ -861,8 +861,12 @@ object ChatController {
   suspend fun apiGetChat(rh: Long?, type: ChatType, id: Long, pagination: ChatPagination = ChatPagination.Last(ChatPagination.INITIAL_COUNT), search: String = ""): Chat? {
     val r = sendCmd(rh, CC.ApiGetChat(type, id, pagination, search))
     if (r is CR.ApiChat) return if (rh == null) r.chat else r.chat.copy(remoteHostId = rh)
-    Log.e(TAG, "apiGetChat bad response: ${r.responseType} ${r.details}")
-    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_parse_chat_title), generalGetString(MR.strings.contact_developers))
+    if (r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.ChatItemNotFound) {
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_get_chat_item_not_found_title), generalGetString(MR.strings.failed_to_get_chat_item_not_found_description))
+    } else {
+      Log.e(TAG, "apiGetChat bad response: ${r.responseType} ${r.details}")
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_parse_chat_title), generalGetString(MR.strings.contact_developers))
+    }
     return null
   }
 
@@ -3461,11 +3465,13 @@ sealed class ChatPagination {
   class Last(val count: Int): ChatPagination()
   class After(val chatItemId: Long, val count: Int): ChatPagination()
   class Before(val chatItemId: Long, val count: Int): ChatPagination()
+  class Around(val chatItemId: Long, val count: Int): ChatPagination()
 
   val cmdString: String get() = when (this) {
     is Last -> "count=${this.count}"
     is After -> "after=${this.chatItemId} count=${this.count}"
     is Before -> "before=${this.chatItemId} count=${this.count}"
+    is Around -> "around=${this.chatItemId} count=${this.count}"
   }
 
   companion object {

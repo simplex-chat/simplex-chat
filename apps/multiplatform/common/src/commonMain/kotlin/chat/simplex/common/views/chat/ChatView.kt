@@ -983,8 +983,9 @@ fun BoxWithConstraintsScope.ChatItemsList(
       scope.launch { listState.scrollToItem(0) }
     }
   }
+  val preloadItems = remember { mutableStateOf(true) }
 
-  PreloadItems(chatInfo.id, listState, ChatPagination.UNTIL_PRELOAD_COUNT, loadPrevMessages)
+  PreloadItems(chatInfo.id, listState, ChatPagination.UNTIL_PRELOAD_COUNT, preloadItems.value, loadPrevMessages)
 
   Spacer(Modifier.size(8.dp))
   val reversedChatItems by remember { derivedStateOf { chatModel.chatItems.asReversed() } }
@@ -993,8 +994,21 @@ fun BoxWithConstraintsScope.ChatItemsList(
   val maxHeightRounded = with(LocalDensity.current) { maxHeight.roundToPx() }
   val scrollToItem: (Long) -> Unit = { itemId: Long ->
     val index = reversedChatItems.indexOfFirst { it.id == itemId }
+    println("here")
     if (index != -1) {
       scope.launch { listState.animateScrollToItem(kotlin.math.min(reversedChatItems.lastIndex, index + 1), -maxHeightRounded) }
+    } else {
+      preloadItems.value = false
+      withBGApi {
+          apiLoadMessagesAroundItem(rhId = remoteHostId, chatModel = chatModel, chatInfo = chatInfo, aroundItemId = itemId)
+        println("there")
+
+        val idx = reversedChatItems.indexOfFirst { it.id == itemId }
+          scope.launch { listState.animateScrollToItem(kotlin.math.min(reversedChatItems.lastIndex, idx + 1), -maxHeightRounded) }
+//        } finally {
+//          preloadItems.value = true
+//        }
+      }
     }
   }
   // TODO: Having this block on desktop makes ChatItemsList() to recompose twice on chatModel.chatId update instead of once
@@ -1419,6 +1433,7 @@ fun PreloadItems(
   chatId: String,
   listState: LazyListState,
   remaining: Int = 10,
+  enabled: Boolean,
   onLoadMore: (ChatId) -> Unit,
 ) {
   // Prevent situation when initial load and load more happens one after another after selecting a chat with long scroll position from previous selection
@@ -1446,7 +1461,9 @@ fun PreloadItems(
     }
       .filter { it > 0 }
       .collect {
-        onLoadMore.value(chatId.value)
+        if (enabled) {
+          onLoadMore.value(chatId.value)
+        }
       }
   }
 }

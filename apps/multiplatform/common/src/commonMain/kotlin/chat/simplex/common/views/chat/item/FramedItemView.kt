@@ -128,7 +128,13 @@ fun FramedItemView(
         .fillMaxWidth()
         .combinedClickable(
           onLongClick = { showMenu.value = true },
-          onClick = { scrollToItem(qi.itemId?: return@combinedClickable) }
+          onClick = {
+            if (qi.itemId == null) {
+              AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_get_chat_item_not_found_title), generalGetString(MR.strings.failed_to_get_chat_item_not_found_description))
+            } else {
+              scrollToItem(qi.itemId)
+            }
+          }
         )
         .onRightClick { showMenu.value = true }
     ) {

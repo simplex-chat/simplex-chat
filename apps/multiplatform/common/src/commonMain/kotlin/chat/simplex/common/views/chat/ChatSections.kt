@@ -2,6 +2,7 @@ package chat.simplex.common.views.chat
 
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import chat.simplex.common.model.*
+import java.util.UUID
 
 data class SectionItems (
   val mergeCategory: CIMergeCategory?,
@@ -83,4 +84,11 @@ fun List<ChatItem>.putIntoSections(revealedItems: Set<Long>): List<SectionItems>
   }
 
   return sections
+}
+
+suspend fun apiLoadMessagesAroundItem(chatInfo: ChatInfo, chatModel: ChatModel, aroundItemId: Long, rhId: Long?) {
+  val pagination = ChatPagination.Around(aroundItemId, ChatPagination.PRELOAD_COUNT)
+  val chat = chatModel.controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId, pagination) ?: return
+  if (chatModel.chatId.value != chat.id) return
+  chatModel.chatItems.addAll(0, chat.chatItems)
 }

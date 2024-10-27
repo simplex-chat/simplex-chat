@@ -101,6 +101,8 @@
   <string name="error_loading_xftp_servers">Error loading XFTP servers</string>
   <string name="error_setting_network_config">Error updating network configuration</string>
   <string name="failed_to_parse_chat_title">Failed to load chat</string>
+  <string name="failed_to_get_chat_item_not_found_title">Message no longer available</string>
+  <string name="failed_to_get_chat_item_not_found_description">The quoted message you are trying to access has been deleted.</string>
   <string name="failed_to_parse_chats_title">Failed to load chats</string>
   <string name="contact_developers">Please update the app and contact developers.</string>
   <string name="failed_to_create_user_title">Error creating profile!</string>
