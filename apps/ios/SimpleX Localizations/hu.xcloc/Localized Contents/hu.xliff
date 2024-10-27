@@ -5911,9 +5911,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>A keresősáv elfogadja a meghívó-hivatkozásokat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Search or paste SimpleX link" xml:space="preserve">
+      <trans-unit id="Search or paste SimpleX link" xml:space="preserve" approved="no">
         <source>Search or paste SimpleX link</source>
-        <target>Keresés, vagy SimpleX-hivatkozás beillesztése</target>
+        <target state="translated">Keresés vagy SimpleX-hivatkozás beillesztése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Secondary" xml:space="preserve">
@@ -7677,9 +7677,9 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
         <target>A kapcsolódás már folyamatban van ezen az egyszer használható hivatkozáson keresztül!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You are already in group %@." xml:space="preserve">
+      <trans-unit id="You are already in group %@." xml:space="preserve" approved="no">
         <source>You are already in group %@.</source>
-        <target>Már a(z) %@ csoport tagja.</target>
+        <target state="translated">Ön már a(z) %@ nevű csoport tagja.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already joining the group %@." xml:space="preserve">
@@ -7704,9 +7704,9 @@ Repeat join request?</source>
 Csatlakozáskérés megismétlése?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You are connected to the server used to receive messages from this contact." xml:space="preserve">
+      <trans-unit id="You are connected to the server used to receive messages from this contact." xml:space="preserve" approved="no">
         <source>You are connected to the server used to receive messages from this contact.</source>
-        <target>Már kapcsolódott ahhoz a kiszolgálóhoz, amely az adott ismerősétől érkező üzenetek fogadására szolgál.</target>
+        <target state="translated">Ön már kapcsolódott ahhoz a kiszolgálóhoz, amely az adott ismerősétől érkező üzenetek fogadására szolgál.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are invited to group" xml:space="preserve">
@@ -9002,9 +9002,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>meghívást kapott a csoportba</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="you are observer" xml:space="preserve">
+      <trans-unit id="you are observer" xml:space="preserve" approved="no">
         <source>you are observer</source>
-        <target>megfigyelő szerep</target>
+        <target state="translated">Ön megfigyelő</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you blocked %@" xml:space="preserve">
