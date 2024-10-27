@@ -51,6 +51,7 @@ import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Protocol (srvHostnamesSMPClientVersion)
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
+import Simplex.Messaging.Server.MsgStore.Types (AMSType (..), SMSType (..))
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Transport.Server (ServerCredentials (..), defaultTransportServerConfig)
 import Simplex.Messaging.Version
@@ -424,9 +425,9 @@ smpServerCfg =
       tbqSize = 1,
       -- serverTbqSize = 1,
       msgStoreType = AMSType SMSMemory,
-      storeLogFile = Nothing,
-      storeMsgsFile = Nothing,
       msgQueueQuota = 16,
+      maxJournalMsgCount = 16,
+      maxJournalStateLines = 16,
       queueIdBytes = 12,
       msgIdBytes = 6,
       storeLogFile = Nothing,
