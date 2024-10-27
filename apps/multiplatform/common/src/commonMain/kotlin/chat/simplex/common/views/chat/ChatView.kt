@@ -290,14 +290,20 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                 }
               }
             },
-            loadPrevMessages = { chatId ->
+            loadMessages = { chatId, scrollDirection ->
               val c = chatModel.getChat(chatId)
               if (chatModel.chatId.value != chatId) return@ChatLayout
-              val firstId = chatModel.chatItems.value.firstOrNull()?.id
-              if (c != null && firstId != null) {
-                withBGApi {
-                  apiLoadPrevMessages(c, chatModel, firstId, searchText.value)
+              when (scrollDirection) {
+                ScrollDirection.Up -> {
+                  val firstId = chatModel.chatItems.value.firstOrNull()?.id
+                  if (c != null && firstId != null) {
+                    withBGApi {
+                      apiLoadPrevMessages(c, chatModel, firstId, searchText.value)
+                    }
+                  }
                 }
+                ScrollDirection.Down -> {}
+                else -> {}
               }
             },
             deleteMessage = { itemId, mode ->
@@ -604,7 +610,7 @@ fun ChatLayout(
   back: () -> Unit,
   info: () -> Unit,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
-  loadPrevMessages: (ChatId) -> Unit,
+  loadMessages: (ChatId, ScrollDirection) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
   receiveFile: (Long) -> Unit,
@@ -710,7 +716,7 @@ fun ChatLayout(
             if (chatInfo != null) {
               ChatItemsList(
                 remoteHostId, chatInfo, unreadCount, composeState, searchValue,
-                useLinkPreviews, linkMode, selectedChatItems, showMemberInfo, loadPrevMessages, deleteMessage, deleteMessages,
+                useLinkPreviews, linkMode, selectedChatItems, showMemberInfo, loadMessages, deleteMessage, deleteMessages,
                 receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, openDirectChat, forwardItem,
                 updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
                 setReaction, showItemDetails, markRead, setFloatingButton, onComposed, developerTools, showViaProxy,
@@ -944,7 +950,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   linkMode: SimplexLinkMode,
   selectedChatItems: MutableState<Set<Long>?>,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
-  loadPrevMessages: (ChatId) -> Unit,
+  loadMessages: (ChatId, ScrollDirection) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
   receiveFile: (Long) -> Unit,
@@ -984,8 +990,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
     }
   }
   val preloadItems = remember { mutableStateOf(true) }
-
-  PreloadItems(chatInfo.id, listState, ChatPagination.UNTIL_PRELOAD_COUNT, preloadItems.value, loadPrevMessages)
+  PreloadItems(chatInfo.id, listState, ChatPagination.UNTIL_PRELOAD_COUNT, preloadItems.value, loadMessages)
 
   Spacer(Modifier.size(8.dp))
   val reversedChatItems by remember { derivedStateOf { chatModel.chatItems.asReversed() } }
@@ -1000,14 +1005,13 @@ fun BoxWithConstraintsScope.ChatItemsList(
     } else {
       preloadItems.value = false
       withBGApi {
+        try {
           apiLoadMessagesAroundItem(rhId = remoteHostId, chatModel = chatModel, chatInfo = chatInfo, aroundItemId = itemId)
-        println("there")
-
-        val idx = reversedChatItems.indexOfFirst { it.id == itemId }
+          val idx = reversedChatItems.indexOfFirst { it.id == itemId }
           scope.launch { listState.animateScrollToItem(kotlin.math.min(reversedChatItems.lastIndex, idx + 1), -maxHeightRounded) }
-//        } finally {
-//          preloadItems.value = true
-//        }
+        } finally {
+          preloadItems.value = true
+        }
       }
     }
   }
@@ -1434,12 +1438,33 @@ fun PreloadItems(
   listState: LazyListState,
   remaining: Int = 10,
   enabled: Boolean,
-  onLoadMore: (ChatId) -> Unit,
+  onLoadMore: (ChatId, ScrollDirection) -> Unit,
 ) {
   // Prevent situation when initial load and load more happens one after another after selecting a chat with long scroll position from previous selection
   val allowLoad = remember { mutableStateOf(false) }
   val chatId = rememberUpdatedState(chatId)
   val onLoadMore = rememberUpdatedState(onLoadMore)
+  var scrollDirection by remember { mutableStateOf(ScrollDirection.Idle) }
+  var previousIndex by remember { mutableStateOf(0) }
+  var previousScrollOffset by remember { mutableStateOf(0) }
+
+  LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
+    val currentIndex = listState.firstVisibleItemIndex
+    val currentScrollOffset = listState.firstVisibleItemScrollOffset
+    val threshold = 25
+
+    scrollDirection = when {
+      currentIndex > previousIndex -> ScrollDirection.Up
+      currentIndex < previousIndex -> ScrollDirection.Down
+      currentScrollOffset > previousScrollOffset + threshold -> ScrollDirection.Up
+      currentScrollOffset < previousScrollOffset - threshold -> ScrollDirection.Down
+      currentScrollOffset == previousScrollOffset -> ScrollDirection.Idle
+      else -> scrollDirection
+    }
+
+    previousIndex = currentIndex
+    previousScrollOffset = currentScrollOffset
+  }
   LaunchedEffect(Unit) {
     snapshotFlow { chatId.value }
       .filterNotNull()
@@ -1462,7 +1487,7 @@ fun PreloadItems(
       .filter { it > 0 }
       .collect {
         if (enabled) {
-          onLoadMore.value(chatId.value)
+          onLoadMore.value(chatId.value, scrollDirection)
         }
       }
   }
@@ -2116,7 +2141,7 @@ fun PreviewChatLayout() {
       back = {},
       info = {},
       showMemberInfo = { _, _ -> },
-      loadPrevMessages = {},
+      loadMessages = { _, _ -> },
       deleteMessage = { _, _ -> },
       deleteMessages = { _ -> },
       receiveFile = { _ -> },
@@ -2188,7 +2213,7 @@ fun PreviewGroupChatLayout() {
       back = {},
       info = {},
       showMemberInfo = { _, _ -> },
-      loadPrevMessages = {},
+      loadMessages = { _, _ -> },
       deleteMessage = { _, _ -> },
       deleteMessages = {},
       receiveFile = { _ -> },
