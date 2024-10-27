@@ -988,6 +988,8 @@ fun BoxWithConstraintsScope.ChatItemsList(
 
   Spacer(Modifier.size(8.dp))
   val reversedChatItems by remember { derivedStateOf { chatModel.chatItems.asReversed() } }
+  val revealedItems = rememberSaveable { mutableStateOf(setOf<Long>()) }
+  val sections by remember { derivedStateOf { (reversedChatItems).putIntoSections(revealedItems.value) } }
   val maxHeightRounded = with(LocalDensity.current) { maxHeight.roundToPx() }
   val scrollToItem: (Long) -> Unit = { itemId: Long ->
     val index = reversedChatItems.indexOfFirst { it.id == itemId }
@@ -1011,259 +1013,250 @@ fun BoxWithConstraintsScope.ChatItemsList(
       VideoPlayerHolder.releaseAll()
     }
   )
-  LazyColumnWithScrollBar(Modifier.align(Alignment.BottomCenter), state = listState, reverseLayout = true) {
-    itemsIndexed(reversedChatItems, key = { _, item -> item.id to item.meta.createdAt.toEpochMilliseconds() }) { i, cItem ->
-      CompositionLocalProvider(
-        // Makes horizontal and vertical scrolling to coexist nicely.
-        // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view
-        LocalViewConfiguration provides LocalViewConfiguration.current.bigTouchSlop()
-      ) {
-        val provider = {
-          providerForGallery(i, chatModel.chatItems.value, cItem.id) { indexInReversed ->
+  @Composable
+  fun ChatViewListItem(i: Int, section: SectionItems, showAvatar: Boolean, cItem: ChatItem) {
+    CompositionLocalProvider(
+      // Makes horizontal and vertical scrolling to coexist nicely.
+      // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view
+      LocalViewConfiguration provides LocalViewConfiguration.current.bigTouchSlop()
+    ) {
+      val provider = {
+        providerForGallery(i, chatModel.chatItems.value, cItem.id) { indexInReversed ->
+          scope.launch {
+            listState.scrollToItem(
+              kotlin.math.min(reversedChatItems.lastIndex, indexInReversed + 1),
+              -maxHeightRounded
+            )
+          }
+        }
+      }
+      val revealed = remember { mutableStateOf(false) }
+
+      @Composable
+      fun ChatItemViewShortHand(cItem: ChatItem, itemSeparation: ItemSeparation, range: IntRange?, fillMaxWidth: Boolean = true) {
+        tryOrShowError("${cItem.id}ChatItem", error = {
+          CIBrokenComposableView(if (cItem.chatDir.sent) Alignment.CenterEnd else Alignment.CenterStart)
+        }) {
+          ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp)
+        }
+      }
+
+      @Composable
+      fun ChatItemView(cItem: ChatItem, range: IntRange?, prevItem: ChatItem?, itemSeparation: ItemSeparation, previousItemSeparation: ItemSeparation?) {
+        val dismissState = rememberDismissState(initialValue = DismissValue.Default) {
+          if (it == DismissValue.DismissedToStart) {
             scope.launch {
-              listState.scrollToItem(
-                kotlin.math.min(reversedChatItems.lastIndex, indexInReversed + 1),
-                -maxHeightRounded
-              )
-            }
-          }
-        }
-
-        val revealed = remember { mutableStateOf(false) }
-
-        @Composable
-        fun ChatItemViewShortHand(cItem: ChatItem, itemSeparation: ItemSeparation, range: IntRange?, fillMaxWidth: Boolean = true) {
-          tryOrShowError("${cItem.id}ChatItem", error = {
-            CIBrokenComposableView(if (cItem.chatDir.sent) Alignment.CenterEnd else Alignment.CenterStart)
-          }) {
-            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp)
-          }
-        }
-
-        @Composable
-        fun ChatItemView(cItem: ChatItem, range: IntRange?, prevItem: ChatItem?, itemSeparation: ItemSeparation, previousItemSeparation: ItemSeparation?) {
-          val dismissState = rememberDismissState(initialValue = DismissValue.Default) {
-            if (it == DismissValue.DismissedToStart) {
-              scope.launch {
-                if ((cItem.content is CIContent.SndMsgContent || cItem.content is CIContent.RcvMsgContent) && chatInfo !is ChatInfo.Local) {
-                  if (composeState.value.editing) {
-                    composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
-                  } else if (cItem.id != ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-                    composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
-                  }
+              if ((cItem.content is CIContent.SndMsgContent || cItem.content is CIContent.RcvMsgContent) && chatInfo !is ChatInfo.Local) {
+                if (composeState.value.editing) {
+                  composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
+                } else if (cItem.id != ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
+                  composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
                 }
               }
             }
-            false
           }
-          val swipeableModifier = SwipeToDismissModifier(
-            state = dismissState,
-            directions = setOf(DismissDirection.EndToStart),
-            swipeDistance = with(LocalDensity.current) { 30.dp.toPx() },
-          )
-          val sent = cItem.chatDir.sent
+          false
+        }
+        val swipeableModifier = SwipeToDismissModifier(
+          state = dismissState,
+          directions = setOf(DismissDirection.EndToStart),
+          swipeDistance = with(LocalDensity.current) { 30.dp.toPx() },
+        )
+        val sent = cItem.chatDir.sent
 
-          @Composable
-          fun ChatItemBox(modifier: Modifier = Modifier, content: @Composable () -> Unit = { }) {
-            Box(
-              modifier = modifier.padding(
-                bottom = if (itemSeparation.largeGap) {
-                  if (i == 0) {
-                    8.dp
-                  } else {
-                    4.dp
-                  }
-                } else 1.dp, top = if (previousItemSeparation?.largeGap == true) 4.dp else 1.dp
-              ),
-              contentAlignment = Alignment.CenterStart
-            ) {
-              content()
-            }
+        @Composable
+        fun ChatItemBox(modifier: Modifier = Modifier, content: @Composable () -> Unit = { }) {
+          Box(
+            modifier = modifier.padding(
+              bottom = if (itemSeparation.largeGap) {
+                if (i == 0) {
+                  8.dp
+                } else {
+                  4.dp
+                }
+              } else 1.dp, top = if (previousItemSeparation?.largeGap == true) 4.dp else 1.dp
+            ),
+            contentAlignment = Alignment.CenterStart
+          ) {
+            content()
           }
+        }
 
-          @Composable
-          fun adjustTailPaddingOffset(originalPadding: Dp, start: Boolean): Dp {
-            val chatItemTail = remember { appPreferences.chatItemTail.state }
-            val style = shapeStyle(cItem, chatItemTail.value, itemSeparation.largeGap, true)
-            val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
+        @Composable
+        fun adjustTailPaddingOffset(originalPadding: Dp, start: Boolean): Dp {
+          val chatItemTail = remember { appPreferences.chatItemTail.state }
+          val style = shapeStyle(cItem, chatItemTail.value, itemSeparation.largeGap, true)
+          val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
 
-            return originalPadding + (if (tailRendered) 0.dp else if (start) msgTailWidthDp * 2 else msgTailWidthDp)
-          }
+          return originalPadding + (if (tailRendered) 0.dp else if (start) msgTailWidthDp * 2 else msgTailWidthDp)
+        }
 
-          Box {
-            val voiceWithTransparentBack = cItem.content.msgContent is MsgContent.MCVoice && cItem.content.text.isEmpty() && cItem.quotedItem == null && cItem.meta.itemForwarded == null
-            val selectionVisible = selectedChatItems.value != null && cItem.canBeDeletedForSelf
-            val selectionOffset by animateDpAsState(if (selectionVisible && !sent) 4.dp + 22.dp * fontSizeMultiplier else 0.dp)
-            val swipeableOrSelectionModifier = (if (selectionVisible) Modifier else swipeableModifier).graphicsLayer { translationX = selectionOffset.toPx() }
-            if (chatInfo is ChatInfo.Group) {
-              if (cItem.chatDir is CIDirection.GroupRcv) {
-                val member = cItem.chatDir.groupMember
-                val (prevMember, memCount) =
-                  if (range != null) {
-                    chatModel.getPrevHiddenMember(member, range)
-                  } else {
-                    null to 1
-                  }
-                if (prevItem == null || showMemberImage(member, prevItem) || prevMember != null) {
-                  Column(
-                    Modifier
-                      .padding(top = 8.dp)
-                      .padding(start = 8.dp, end = if (voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
-                      .fillMaxWidth()
-                      .then(swipeableModifier),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                    horizontalAlignment = Alignment.Start
-                  ) {
-                    @Composable
-                    fun MemberNameAndRole() {
-                      Row(Modifier.padding(bottom = 2.dp).graphicsLayer { translationX = selectionOffset.toPx() }, horizontalArrangement = Arrangement.SpaceBetween) {
+        Box {
+          val voiceWithTransparentBack = cItem.content.msgContent is MsgContent.MCVoice && cItem.content.text.isEmpty() && cItem.quotedItem == null && cItem.meta.itemForwarded == null
+          val selectionVisible = selectedChatItems.value != null && cItem.canBeDeletedForSelf
+          val selectionOffset by animateDpAsState(if (selectionVisible && !sent) 4.dp + 22.dp * fontSizeMultiplier else 0.dp)
+          val swipeableOrSelectionModifier = (if (selectionVisible) Modifier else swipeableModifier).graphicsLayer { translationX = selectionOffset.toPx() }
+          if (chatInfo is ChatInfo.Group) {
+            if (cItem.chatDir is CIDirection.GroupRcv) {
+              val member = cItem.chatDir.groupMember
+              val (prevMember, memCount) =
+                if (range != null) {
+                  chatModel.getPrevHiddenMember(member, range)
+                } else {
+                  null to 1
+                }
+
+              if (showMemberImage(member, prevItem) || showAvatar) {
+                Column(
+                  Modifier
+                    .padding(top = 8.dp)
+                    .padding(start = 8.dp, end = if (voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
+                    .fillMaxWidth()
+                    .then(swipeableModifier),
+                  verticalArrangement = Arrangement.spacedBy(4.dp),
+                  horizontalAlignment = Alignment.Start
+                ) {
+                  @Composable
+                  fun MemberNameAndRole() {
+                    Row(Modifier.padding(bottom = 2.dp).graphicsLayer { translationX = selectionOffset.toPx() }, horizontalArrangement = Arrangement.SpaceBetween) {
+                      Text(
+                        memberNames(member, prevMember, memCount),
+                        Modifier
+                          .padding(start = (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + DEFAULT_PADDING_HALF)
+                          .weight(1f, false),
+                        fontSize = 13.5.sp,
+                        color = MaterialTheme.colors.secondary,
+                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 1
+                      )
+                      if (memCount == 1 && member.memberRole > GroupMemberRole.Member) {
+                        val chatItemTail = remember { appPreferences.chatItemTail.state }
+                        val style = shapeStyle(cItem, chatItemTail.value, itemSeparation.largeGap, true)
+                        val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
+
                         Text(
-                          memberNames(member, prevMember, memCount),
-                          Modifier
-                            .padding(start = (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + DEFAULT_PADDING_HALF)
-                            .weight(1f, false),
+                          member.memberRole.text,
+                          Modifier.padding(start = DEFAULT_PADDING_HALF * 1.5f, end = DEFAULT_PADDING_HALF + if (tailRendered) msgTailWidthDp else 0.dp),
                           fontSize = 13.5.sp,
+                          fontWeight = FontWeight.Medium,
                           color = MaterialTheme.colors.secondary,
-                          overflow = TextOverflow.Ellipsis,
                           maxLines = 1
                         )
-                        if (memCount == 1 && member.memberRole > GroupMemberRole.Member) {
-                          val chatItemTail = remember { appPreferences.chatItemTail.state }
-                          val style = shapeStyle(cItem, chatItemTail.value, itemSeparation.largeGap, true)
-                          val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
-
-                          Text(
-                            member.memberRole.text,
-                            Modifier.padding(start = DEFAULT_PADDING_HALF * 1.5f, end = DEFAULT_PADDING_HALF + if (tailRendered) msgTailWidthDp else 0.dp),
-                            fontSize = 13.5.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colors.secondary,
-                            maxLines = 1
-                          )
-                        }
                       }
-                    }
-
-                    @Composable
-                    fun Item() {
-                      ChatItemBox(Modifier.layoutId(CHAT_BUBBLE_LAYOUT_ID)) {
-                        androidx.compose.animation.AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
-                          SelectedChatItem(Modifier, cItem.id, selectedChatItems)
-                        }
-                        Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
-                          Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
-                            MemberImage(member)
-                          }
-                          Box(modifier = Modifier.padding(top = 2.dp, start = 4.dp).chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)) {
-                            ChatItemViewShortHand(cItem, itemSeparation, range, false)
-                          }
-                        }
-                      }
-                    }
-                    if (cItem.content.showMemberName) {
-                      DependentLayout(Modifier, CHAT_BUBBLE_LAYOUT_ID) {
-                        MemberNameAndRole()
-                        Item()
-                      }
-                    } else {
-                      Item()
                     }
                   }
-                } else {
-                  ChatItemBox {
-                    AnimatedVisibility (selectionVisible, enter = fadeIn(), exit = fadeOut()) {
-                      SelectedChatItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
+
+                  @Composable
+                  fun Item() {
+                    ChatItemBox(Modifier.layoutId(CHAT_BUBBLE_LAYOUT_ID)) {
+                      androidx.compose.animation.AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
+                        SelectedChatItem(Modifier, cItem.id, selectedChatItems)
+                      }
+                      Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
+                        Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
+                          MemberImage(member)
+                        }
+                        Box(modifier = Modifier.padding(top = 2.dp, start = 4.dp).chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)) {
+                          ChatItemViewShortHand(cItem, itemSeparation, range, false)
+                        }
+                      }
                     }
-                    Row(
-                      Modifier
-                        .padding(start = 8.dp + (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + 4.dp, end = if (voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
-                        .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
-                        .then(swipeableOrSelectionModifier)
-                    ) {
-                      ChatItemViewShortHand(cItem, itemSeparation, range)
+                  }
+                  if (cItem.content.showMemberName) {
+                    DependentLayout(Modifier, CHAT_BUBBLE_LAYOUT_ID) {
+                      MemberNameAndRole()
+                      Item()
                     }
+                  } else {
+                    Item()
                   }
                 }
               } else {
                 ChatItemBox {
-                  AnimatedVisibility (selectionVisible, enter = fadeIn(), exit = fadeOut()) {
+                  AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                     SelectedChatItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
                   }
-                  Box(
+                  Row(
                     Modifier
-                      .padding(start = if (voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(104.dp, start = true), end = 12.dp)
+                      .padding(start = 8.dp + (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + 4.dp, end = if (voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
                       .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
-                      .then(if (selectionVisible) Modifier else swipeableModifier)
+                      .then(swipeableOrSelectionModifier)
                   ) {
                     ChatItemViewShortHand(cItem, itemSeparation, range)
                   }
                 }
               }
-            } else { // direct message
+            } else {
               ChatItemBox {
-                AnimatedVisibility (selectionVisible, enter = fadeIn(), exit = fadeOut()) {
+                AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                   SelectedChatItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
                 }
-
                 Box(
-                  Modifier.padding(
-                    start = if (sent && !voiceWithTransparentBack) adjustTailPaddingOffset(76.dp, start = true) else 12.dp,
-                    end = if (sent || voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(76.dp, start = false),
-                  )
+                  Modifier
+                    .padding(start = if (voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(104.dp, start = true), end = 12.dp)
                     .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
-                    .then(if (!selectionVisible || !sent) swipeableOrSelectionModifier else Modifier)
+                    .then(if (selectionVisible) Modifier else swipeableModifier)
                 ) {
                   ChatItemViewShortHand(cItem, itemSeparation, range)
                 }
               }
             }
-            if (selectionVisible) {
-              Box(Modifier.matchParentSize().clickable {
-                val checked = selectedChatItems.value?.contains(cItem.id) == true
-                selectUnselectChatItem(select = !checked, cItem, revealed, selectedChatItems)
-              })
+          } else { // direct message
+            ChatItemBox {
+              AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
+                SelectedChatItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
+              }
+
+              Box(
+                Modifier.padding(
+                  start = if (sent && !voiceWithTransparentBack) adjustTailPaddingOffset(76.dp, start = true) else 12.dp,
+                  end = if (sent || voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(76.dp, start = false),
+                )
+                  .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
+                  .then(if (!selectionVisible || !sent) swipeableOrSelectionModifier else Modifier)
+              ) {
+                ChatItemViewShortHand(cItem, itemSeparation, range)
+              }
             }
           }
-        }
-
-        val (currIndex, nextItem) = chatModel.getNextChatItem(cItem)
-        val ciCategory = cItem.mergeCategory
-        if (ciCategory != null && ciCategory == nextItem?.mergeCategory) {
-          // memberConnected events and deleted items are aggregated at the last chat item in a row, see ChatItemView
-        } else {
-          val (prevHidden, prevItem) = chatModel.getPrevShownChatItem(currIndex, ciCategory)
-
-          val itemSeparation = getItemSeparation(cItem, nextItem)
-          val previousItemSeparation = if (prevItem != null) getItemSeparation(prevItem, cItem) else null
-
-          if (itemSeparation.date != null) {
-            DateSeparator(itemSeparation.date)
-          }
-
-          val range = chatViewItemsRange(currIndex, prevHidden)
-          if (revealed.value && range != null) {
-            reversedChatItems.subList(range.first, range.last + 1).forEachIndexed { index, ci ->
-              val prev = if (index + range.first == prevHidden) prevItem else reversedChatItems[index + range.first + 1]
-              ChatItemView(ci, null, prev, itemSeparation, previousItemSeparation)
-            }
-          } else {
-            ChatItemView(cItem, range, prevItem, itemSeparation, previousItemSeparation)
-          }
-
-          if (i == reversedChatItems.lastIndex) {
-            DateSeparator(cItem.meta.itemTs)
+          if (selectionVisible) {
+            Box(Modifier.matchParentSize().clickable {
+              val checked = selectedChatItems.value?.contains(cItem.id) == true
+              selectUnselectChatItem(select = !checked, cItem, revealed, selectedChatItems)
+            })
           }
         }
+      }
 
-
-        if (cItem.isRcvNew && chatInfo.id == ChatModel.chatId.value) {
-          LaunchedEffect(cItem.id) {
-            scope.launch {
-              delay(600)
-              markRead(CC.ItemRange(cItem.id, cItem.id), null)
-            }
+      if (cItem.isRcvNew && chatInfo.id == ChatModel.chatId.value) {
+        LaunchedEffect(cItem.id) {
+          scope.launch {
+            delay(600)
+            markRead(CC.ItemRange(cItem.id, cItem.id), null)
           }
         }
+      }
+      val itemSeparation = getItemSeparation(cItem, null)
+      ChatItemView(cItem, null, section.getPreviousChatItem(cItem), itemSeparation, null)
+    }
+  }
+  LazyColumnWithScrollBar(Modifier.align(Alignment.BottomCenter), state = listState, reverseLayout = true) {
+    for (section in sections) {
+      if (section.revealed) {
+        itemsIndexed(section.items, key = { _, item -> (item.id to item.meta.createdAt.toEpochMilliseconds()).toString() }) { i, cItem ->
+          // index here is just temporary, should be removed at all or put in the section items
+          ChatViewListItem(section.itemPositions[cItem.id] ?: -1, section = section, showAvatar = section.showAvatar.contains(cItem.id), cItem)        }
+      } else {
+        val item = section.items.last()
+        item(key = { (item.id to item.meta.createdAt.toEpochMilliseconds()).toString() }) {
+          // here you make one collapsed item from multiple items (should be already in section items)
+          ChatViewListItem(section.itemPositions[item.id] ?: -1, section = section, showAvatar = section.showAvatar.contains(item.id), item)
+        }
+      }
+    }
+    if (reversedChatItems.isNotEmpty()) {
+      item {
+        DateSeparator(reversedChatItems.last().meta.itemTs)
       }
     }
   }
