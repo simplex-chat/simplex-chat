@@ -710,7 +710,7 @@
       </trans-unit>
       <trans-unit id="All profiles" xml:space="preserve">
         <source>All profiles</source>
-        <note>No comment provided by engineer.</note>
+        <note>profile dropdown</note>
       </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
         <source>All your contacts will remain connected.</source>
@@ -892,6 +892,10 @@
         <target>Sovelluksen pääsykoodi korvataan itsetuhoutuvalla pääsykoodilla.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="App session" xml:space="preserve">
+        <source>App session</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
         <source>App version</source>
         <target>Sovellusversio</target>
@@ -1018,8 +1022,16 @@
         <target>Virheellinen viestin tarkiste</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Better calls" xml:space="preserve">
+        <source>Better calls</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Better groups" xml:space="preserve">
         <source>Better groups</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Better message dates." xml:space="preserve">
+        <source>Better message dates.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better messages" xml:space="preserve">
@@ -1029,6 +1041,18 @@
       </trans-unit>
       <trans-unit id="Better networking" xml:space="preserve">
         <source>Better networking</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Better notifications" xml:space="preserve">
+        <source>Better notifications</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Better security ✅" xml:space="preserve">
+        <source>Better security ✅</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Better user experience" xml:space="preserve">
+        <source>Better user experience</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Black" xml:space="preserve">
@@ -1290,6 +1314,11 @@
       <trans-unit id="Chat preferences were changed." xml:space="preserve">
         <source>Chat preferences were changed.</source>
         <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="Chat profile" xml:space="preserve">
+        <source>Chat profile</source>
+        <target>Käyttäjäprofiili</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat theme" xml:space="preserve">
         <source>Chat theme</source>
@@ -1767,6 +1796,10 @@ This is your own one-time link!</source>
         <target>Mukautettu aika</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Customizable message shape." xml:space="preserve">
+        <source>Customizable message shape.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Customize theme" xml:space="preserve">
         <source>Customize theme</source>
         <note>No comment provided by engineer.</note>
@@ -2051,6 +2084,10 @@ This is your own one-time link!</source>
       <trans-unit id="Delete old database?" xml:space="preserve">
         <source>Delete old database?</source>
         <target>Poista vanha tietokanta?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delete or moderate up to 200 messages." xml:space="preserve">
+        <source>Delete or moderate up to 200 messages.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete pending connection?" xml:space="preserve">
@@ -2826,7 +2863,7 @@ This is your own one-time link!</source>
       <trans-unit id="Error switching profile!" xml:space="preserve">
         <source>Error switching profile!</source>
         <target>Virhe profiilin vaihdossa!</target>
-        <note>No comment provided by engineer.</note>
+        <note>alertTitle</note>
       </trans-unit>
       <trans-unit id="Error synchronizing connection" xml:space="preserve">
         <source>Error synchronizing connection</source>
@@ -2869,8 +2906,7 @@ This is your own one-time link!</source>
       <trans-unit id="Error: %@" xml:space="preserve">
         <source>Error: %@</source>
         <target>Virhe: %@</target>
-        <note>file error text
-   snd error text</note>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Error: URL is invalid" xml:space="preserve">
         <source>Error: URL is invalid</source>
@@ -3097,6 +3133,10 @@ This is your own one-time link!</source>
       <trans-unit id="Forward messages without files?" xml:space="preserve">
         <source>Forward messages without files?</source>
         <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="Forward up to 20 messages at once." xml:space="preserve">
+        <source>Forward up to 20 messages at once.</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Forwarded" xml:space="preserve">
         <source>Forwarded</source>
@@ -3462,6 +3502,11 @@ Error: %2$@</source>
       </trans-unit>
       <trans-unit id="Importing archive" xml:space="preserve">
         <source>Importing archive</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Improved delivery, reduced traffic usage.&#10;More improvements are coming soon!" xml:space="preserve">
+        <source>Improved delivery, reduced traffic usage.
+More improvements are coming soon!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Improved message delivery" xml:space="preserve">
@@ -4192,6 +4237,14 @@ This is your link for group %@!</source>
         <target>Uusi pääsykoodi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="New SOCKS credentials will be used every time you start the app." xml:space="preserve">
+        <source>New SOCKS credentials will be used every time you start the app.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="New SOCKS credentials will be used for each server." xml:space="preserve">
+        <source>New SOCKS credentials will be used for each server.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="New chat" xml:space="preserve">
         <source>New chat</source>
         <note>No comment provided by engineer.</note>
@@ -4303,6 +4356,14 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="No network connection" xml:space="preserve">
         <source>No network connection</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No permission to record speech" xml:space="preserve">
+        <source>No permission to record speech</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No permission to record video" xml:space="preserve">
+        <source>No permission to record video</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No permission to record voice message" xml:space="preserve">
@@ -5666,6 +5727,10 @@ Enable in *Network &amp; servers* settings.</source>
         <source>Sent via proxy</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Server" xml:space="preserve">
+        <source>Server</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Server address" xml:space="preserve">
         <source>Server address</source>
         <note>No comment provided by engineer.</note>
@@ -5942,6 +6007,10 @@ Enable in *Network &amp; servers* settings.</source>
         <target>SimpleX-kertakutsu</target>
         <note>simplex link type</note>
       </trans-unit>
+      <trans-unit id="SimpleX protocols reviewed by Trail of Bits." xml:space="preserve">
+        <source>SimpleX protocols reviewed by Trail of Bits.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Simplified incognito mode" xml:space="preserve">
         <source>Simplified incognito mode</source>
         <note>No comment provided by engineer.</note>
@@ -6099,6 +6168,14 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Support SimpleX Chat" xml:space="preserve">
         <source>Support SimpleX Chat</source>
         <target>SimpleX Chat tuki</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Switch audio and video during the call." xml:space="preserve">
+        <source>Switch audio and video during the call.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Switch chat profile for 1-time invitations." xml:space="preserve">
+        <source>Switch chat profile for 1-time invitations.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="System" xml:space="preserve">
@@ -6442,6 +6519,14 @@ You will be prompted to complete authentication before this feature is enabled.<
 Sinua kehotetaan suorittamaan todennus loppuun, ennen kuin tämä ominaisuus otetaan käyttöön.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="To record speech please grant permission to use Microphone." xml:space="preserve">
+        <source>To record speech please grant permission to use Microphone.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="To record video please grant permission to use Camera." xml:space="preserve">
+        <source>To record video please grant permission to use Camera.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="To record voice message please grant permission to use Microphone." xml:space="preserve">
         <source>To record voice message please grant permission to use Microphone.</source>
         <target>Jos haluat nauhoittaa ääniviestin, anna lupa käyttää mikrofonia.</target>
@@ -6751,11 +6836,6 @@ Jos haluat muodostaa yhteyden, pyydä kontaktiasi luomaan toinen yhteyslinkki ja
         <source>Use the app with one hand.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="User profile" xml:space="preserve">
-        <source>User profile</source>
-        <target>Käyttäjäprofiili</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="User selection" xml:space="preserve">
         <source>User selection</source>
         <note>No comment provided by engineer.</note>
@@ -6998,11 +7078,6 @@ Jos haluat muodostaa yhteyden, pyydä kontaktiasi luomaan toinen yhteyslinkki ja
       </trans-unit>
       <trans-unit id="XFTP server" xml:space="preserve">
         <source>XFTP server</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="You" xml:space="preserve">
-        <source>You</source>
-        <target>Sinä</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You **must not** use the same database on two devices." xml:space="preserve">

@@ -327,6 +327,7 @@ CREATE TABLE contact_requests(
   peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   pq_support INTEGER NOT NULL DEFAULT 0,
+  contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON UPDATE CASCADE
@@ -898,6 +899,10 @@ CREATE INDEX idx_chat_items_fwd_from_group_id ON chat_items(fwd_from_group_id);
 CREATE INDEX idx_chat_items_fwd_from_chat_item_id ON chat_items(
   fwd_from_chat_item_id
 );
+CREATE INDEX idx_received_probes_group_member_id on received_probes(
+  group_member_id
+);
+CREATE INDEX idx_contact_requests_contact_id ON contact_requests(contact_id);
 CREATE INDEX idx_protocol_servers_operators ON protocol_servers(
   server_operator_id
 );

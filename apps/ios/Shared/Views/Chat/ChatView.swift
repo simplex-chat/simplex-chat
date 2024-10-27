@@ -137,6 +137,14 @@ struct ChatView: View {
                 }
             }
         }
+        // it should be presented on top level in order to prevent a bug in SwiftUI on iOS 16 related to .focused() modifier in AddGroupMembersView's search field
+        .appSheet(isPresented: $showAddMembersSheet) {
+            Group {
+                if case let .group(groupInfo) = cInfo {
+                    AddGroupMembersView(chat: chat, groupInfo: groupInfo)
+                }
+            }
+        }
         .sheet(isPresented: Binding(
             get: { !forwardedChatItems.isEmpty },
             set: { isPresented in
@@ -304,9 +312,6 @@ struct ChatView: View {
                                         }
                                 } else {
                                     addMembersButton()
-                                        .appSheet(isPresented: $showAddMembersSheet) {
-                                            AddGroupMembersView(chat: chat, groupInfo: groupInfo)
-                                        }
                                 }
                             }
                             Menu {
@@ -1178,11 +1183,11 @@ struct ChatView: View {
                     chat: chat,
                     chatItem: ci,
                     maxWidth: maxWidth,
-                    revealed: .constant(revealed),
                     allowMenu: $allowMenu
                 )
+                .environment(\.revealed, revealed)
                 .environment(\.showTimestamp, itemSeparation.timestamp)
-                .modifier(ChatItemClipped(ci, tailVisible: itemSeparation.largeGap))
+                .modifier(ChatItemClipped(ci, tailVisible: itemSeparation.largeGap && (ci.meta.itemDeleted == nil || revealed)))
                 .contextMenu { menu(ci, range, live: composeState.liveMessage != nil) }
                 .accessibilityLabel("")
                 if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {

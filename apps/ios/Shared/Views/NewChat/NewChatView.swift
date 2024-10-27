@@ -45,10 +45,10 @@ enum NewChatOption: Identifiable {
     var id: Self { self }
 }
 
-func cleanupPendingConnection(chatModel: ChatModel, contactConnection: PendingContactConnection?) -> SomeAlert? {
+func cleanupPendingConnection(contactConnection: PendingContactConnection?) -> SomeAlert? {
     var alert: SomeAlert? = nil
 
-    if !(chatModel.showingInvitation?.connChatUsed ?? true),
+    if !(ChatModel.shared.showingInvitation?.connChatUsed ?? true),
        let conn = contactConnection {
         alert = SomeAlert(
             alert: Alert(
@@ -68,7 +68,7 @@ func cleanupPendingConnection(chatModel: ChatModel, contactConnection: PendingCo
         )
     }
     
-    chatModel.showingInvitation = nil
+    ChatModel.shared.showingInvitation = nil
 
     return alert
 }
@@ -97,6 +97,11 @@ struct NewChatView: View {
             }
             .pickerStyle(.segmented)
             .padding()
+            .onChange(of: $selection.wrappedValue) { opt in
+                if opt == NewChatOption.connect {
+                    showQRCodeScanner = true
+                }
+            }
 
             VStack {
                 // it seems there's a bug in iOS 15 if several views in switch (or if-else) statement have different transitions
@@ -152,7 +157,7 @@ struct NewChatView: View {
         }
         .onDisappear {
             if !choosingProfile {
-                parentAlert = cleanupPendingConnection(chatModel: m, contactConnection: contactConnection)
+                parentAlert = cleanupPendingConnection(contactConnection: contactConnection)
                 contactConnection = nil
             }
         }
@@ -241,7 +246,6 @@ private struct InviteView: View {
     @Binding var choosingProfile: Bool
 
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
-    @State private var showSettings: Bool = false
 
     var body: some View {
         List {
@@ -693,6 +697,7 @@ struct ScannerInView: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .foregroundColor(Color.clear)
                         switch cameraAuthorizationStatus {
+                        case .authorized, nil: EmptyView()
                         case .restricted: Text("Camera not available")
                         case .denied:  Label("Enable camera access", systemImage: "camera")
                         default: Label("Tap to scan", systemImage: "qrcode")
@@ -712,19 +717,24 @@ struct ScannerInView: View {
                 .disabled(cameraAuthorizationStatus == .restricted)
             }
         }
-        .onAppear {
+        .task {
             let status = AVCaptureDevice.authorizationStatus(for: .video)
             cameraAuthorizationStatus = status
             if showQRCodeScanner {
                 switch status {
-                case .notDetermined: askCameraAuthorization()
+                case .notDetermined: await askCameraAuthorizationAsync()
                 case .restricted: showQRCodeScanner = false
                 case .denied: showQRCodeScanner = false
                 case .authorized: ()
-                @unknown default: askCameraAuthorization()
+                @unknown default: await askCameraAuthorizationAsync()
                 }
             }
         }
+    }
+
+    func askCameraAuthorizationAsync() async {
+        await AVCaptureDevice.requestAccess(for: .video)
+        cameraAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
     }
 
     func askCameraAuthorization(_ cb: (() -> Void)? = nil) {

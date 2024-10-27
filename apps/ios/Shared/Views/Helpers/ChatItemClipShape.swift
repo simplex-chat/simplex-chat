@@ -36,12 +36,7 @@ struct ChatItemClipped: ViewModifier {
                     .sndMsgContent,
                     .rcvMsgContent,
                     .rcvDecryptionError,
-                    .sndDeleted,
-                    .rcvDeleted,
                     .rcvIntegrityError,
-                    .sndModerated,
-                    .rcvModerated,
-                    .rcvBlocked,
                     .invalidJSON:
                 let tail = if let mc = ci.content.msgContent, mc.isImageOrVideo && mc.text.isEmpty {
                     false

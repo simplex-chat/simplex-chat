@@ -164,18 +164,22 @@
       </trans-unit>
       <trans-unit id="%d file(s) are still being downloaded." xml:space="preserve">
         <source>%d file(s) are still being downloaded.</source>
+        <target>%d bestand(en) worden nog gedownload.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
       <trans-unit id="%d file(s) failed to download." xml:space="preserve">
         <source>%d file(s) failed to download.</source>
+        <target>%d bestand(en) konden niet worden gedownload.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
       <trans-unit id="%d file(s) were deleted." xml:space="preserve">
         <source>%d file(s) were deleted.</source>
+        <target>%d bestand(en) zijn verwijderd.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
       <trans-unit id="%d file(s) were not downloaded." xml:space="preserve">
         <source>%d file(s) were not downloaded.</source>
+        <target>%d bestand(en) zijn niet gedownload.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
       <trans-unit id="%d hours" xml:space="preserve">
@@ -185,6 +189,7 @@
       </trans-unit>
       <trans-unit id="%d messages not forwarded" xml:space="preserve">
         <source>%d messages not forwarded</source>
+        <target>%d berichten niet doorgestuurd</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="%d min" xml:space="preserve">
@@ -748,7 +753,7 @@
       <trans-unit id="All profiles" xml:space="preserve">
         <source>All profiles</source>
         <target>Alle profielen</target>
-        <note>No comment provided by engineer.</note>
+        <note>profile dropdown</note>
       </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
         <source>All your contacts will remain connected.</source>
@@ -940,6 +945,11 @@
         <target>De app-toegangscode wordt vervangen door een zelfvernietigings wachtwoord.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="App session" xml:space="preserve">
+        <source>App session</source>
+        <target>Appsessie</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
         <source>App version</source>
         <target>App versie</target>
@@ -1075,9 +1085,19 @@
         <target>Onjuiste bericht hash</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Better calls" xml:space="preserve">
+        <source>Better calls</source>
+        <target>Betere gesprekken</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Better groups" xml:space="preserve">
         <source>Better groups</source>
         <target>Betere groepen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Better message dates." xml:space="preserve">
+        <source>Better message dates.</source>
+        <target>Betere datums voor berichten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better messages" xml:space="preserve">
@@ -1088,6 +1108,21 @@
       <trans-unit id="Better networking" xml:space="preserve">
         <source>Better networking</source>
         <target>Beter netwerk</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Better notifications" xml:space="preserve">
+        <source>Better notifications</source>
+        <target>Betere meldingen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Better security ✅" xml:space="preserve">
+        <source>Better security ✅</source>
+        <target>Betere beveiliging ✅</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Better user experience" xml:space="preserve">
+        <source>Better user experience</source>
+        <target>Betere gebruikerservaring</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Black" xml:space="preserve">
@@ -1376,6 +1411,11 @@
         <target>Chatvoorkeuren zijn gewijzigd.</target>
         <note>alert message</note>
       </trans-unit>
+      <trans-unit id="Chat profile" xml:space="preserve">
+        <source>Chat profile</source>
+        <target>Gebruikers profiel</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Chat theme" xml:space="preserve">
         <source>Chat theme</source>
         <target>Chat thema</target>
@@ -1473,7 +1513,7 @@
       </trans-unit>
       <trans-unit id="Completed" xml:space="preserve">
         <source>Completed</source>
-        <target>voltooid</target>
+        <target>Voltooid</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Configure ICE servers" xml:space="preserve">
@@ -1905,6 +1945,11 @@ Dit is uw eigen eenmalige link!</target>
         <target>Aangepaste tijd</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Customizable message shape." xml:space="preserve">
+        <source>Customizable message shape.</source>
+        <target>Aanpasbare berichtvorm.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Customize theme" xml:space="preserve">
         <source>Customize theme</source>
         <target>Thema aanpassen</target>
@@ -2199,6 +2244,11 @@ Dit is uw eigen eenmalige link!</target>
         <target>Oude database verwijderen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Delete or moderate up to 200 messages." xml:space="preserve">
+        <source>Delete or moderate up to 200 messages.</source>
+        <target>Maximaal 200 berichten verwijderen of modereren.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Delete pending connection?" xml:space="preserve">
         <source>Delete pending connection?</source>
         <target>Wachtende verbinding verwijderen?</target>
@@ -2451,6 +2501,7 @@ Dit is uw eigen eenmalige link!</target>
       </trans-unit>
       <trans-unit id="Do not use credentials with proxy." xml:space="preserve">
         <source>Do not use credentials with proxy.</source>
+        <target>Gebruik geen inloggegevens met proxy.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Don't create address" xml:space="preserve">
@@ -2496,6 +2547,7 @@ Dit is uw eigen eenmalige link!</target>
       </trans-unit>
       <trans-unit id="Download files" xml:space="preserve">
         <source>Download files</source>
+        <target>‐Bestanden downloaden</target>
         <note>alert action</note>
       </trans-unit>
       <trans-unit id="Downloaded" xml:space="preserve">
@@ -3026,7 +3078,7 @@ Dit is uw eigen eenmalige link!</target>
       <trans-unit id="Error switching profile!" xml:space="preserve">
         <source>Error switching profile!</source>
         <target>Fout bij wisselen van profiel!</target>
-        <note>No comment provided by engineer.</note>
+        <note>alertTitle</note>
       </trans-unit>
       <trans-unit id="Error synchronizing connection" xml:space="preserve">
         <source>Error synchronizing connection</source>
@@ -3071,8 +3123,7 @@ Dit is uw eigen eenmalige link!</target>
       <trans-unit id="Error: %@" xml:space="preserve">
         <source>Error: %@</source>
         <target>Fout: %@</target>
-        <note>file error text
-   snd error text</note>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Error: URL is invalid" xml:space="preserve">
         <source>Error: URL is invalid</source>
@@ -3162,6 +3213,8 @@ Dit is uw eigen eenmalige link!</target>
       <trans-unit id="File errors:&#10;%@" xml:space="preserve">
         <source>File errors:
 %@</source>
+        <target>Bestandsfouten:
+%@</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="File not found - most likely file was deleted or cancelled." xml:space="preserve">
@@ -3301,6 +3354,7 @@ Dit is uw eigen eenmalige link!</target>
       </trans-unit>
       <trans-unit id="Forward %d message(s)?" xml:space="preserve">
         <source>Forward %d message(s)?</source>
+        <target>%d bericht(en) doorsturen?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Forward and save messages" xml:space="preserve">
@@ -3310,11 +3364,18 @@ Dit is uw eigen eenmalige link!</target>
       </trans-unit>
       <trans-unit id="Forward messages" xml:space="preserve">
         <source>Forward messages</source>
+        <target>Berichten doorsturen</target>
         <note>alert action</note>
       </trans-unit>
       <trans-unit id="Forward messages without files?" xml:space="preserve">
         <source>Forward messages without files?</source>
+        <target>Berichten doorsturen zonder bestanden?</target>
         <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="Forward up to 20 messages at once." xml:space="preserve">
+        <source>Forward up to 20 messages at once.</source>
+        <target>Stuur maximaal 20 berichten tegelijk door.</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Forwarded" xml:space="preserve">
         <source>Forwarded</source>
@@ -3328,6 +3389,7 @@ Dit is uw eigen eenmalige link!</target>
       </trans-unit>
       <trans-unit id="Forwarding %lld messages" xml:space="preserve">
         <source>Forwarding %lld messages</source>
+        <target>%lld berichten doorsturen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Forwarding server %@ failed to connect to destination server %@. Please try later." xml:space="preserve">
@@ -3626,6 +3688,7 @@ Fout: %2$@</target>
       </trans-unit>
       <trans-unit id="IP address" xml:space="preserve">
         <source>IP address</source>
+        <target>IP-adres</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you can't meet in person, show QR code in a video call, or share the link." xml:space="preserve">
@@ -3701,6 +3764,13 @@ Fout: %2$@</target>
       <trans-unit id="Importing archive" xml:space="preserve">
         <source>Importing archive</source>
         <target>Archief importeren</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Improved delivery, reduced traffic usage.&#10;More improvements are coming soon!" xml:space="preserve">
+        <source>Improved delivery, reduced traffic usage.
+More improvements are coming soon!</source>
+        <target>Verbeterde levering, minder data gebruik.
+Binnenkort meer verbeteringen!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Improved message delivery" xml:space="preserve">
@@ -4330,6 +4400,7 @@ Dit is jouw link voor groep %@!</target>
       </trans-unit>
       <trans-unit id="Messages were deleted after you selected them." xml:space="preserve">
         <source>Messages were deleted after you selected them.</source>
+        <target>Berichten zijn verwijderd nadat u ze had geselecteerd.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve">
@@ -4487,6 +4558,16 @@ Dit is jouw link voor groep %@!</target>
         <target>Nieuwe toegangscode</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="New SOCKS credentials will be used every time you start the app." xml:space="preserve">
+        <source>New SOCKS credentials will be used every time you start the app.</source>
+        <target>Elke keer dat u de app start, worden er nieuwe SOCKS-inloggegevens gebruikt.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="New SOCKS credentials will be used for each server." xml:space="preserve">
+        <source>New SOCKS credentials will be used for each server.</source>
+        <target>Voor elke server worden nieuwe SOCKS-inloggegevens gebruikt.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="New chat" xml:space="preserve">
         <source>New chat</source>
         <target>Nieuw gesprek</target>
@@ -4607,6 +4688,16 @@ Dit is jouw link voor groep %@!</target>
         <target>Geen netwerkverbinding</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="No permission to record speech" xml:space="preserve">
+        <source>No permission to record speech</source>
+        <target>Geen toestemming om spraak op te nemen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No permission to record video" xml:space="preserve">
+        <source>No permission to record video</source>
+        <target>Geen toestemming om video op te nemen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="No permission to record voice message" xml:space="preserve">
         <source>No permission to record voice message</source>
         <target>Geen toestemming om spraakbericht op te nemen</target>
@@ -4629,6 +4720,7 @@ Dit is jouw link voor groep %@!</target>
       </trans-unit>
       <trans-unit id="Nothing to forward!" xml:space="preserve">
         <source>Nothing to forward!</source>
+        <target>Niets om door te sturen!</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Notifications" xml:space="preserve">
@@ -4857,6 +4949,8 @@ Vereist het inschakelen van VPN.</target>
       <trans-unit id="Other file errors:&#10;%@" xml:space="preserve">
         <source>Other file errors:
 %@</source>
+        <target>Andere bestandsfouten:
+%@</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="PING count" xml:space="preserve">
@@ -4896,6 +4990,7 @@ Vereist het inschakelen van VPN.</target>
       </trans-unit>
       <trans-unit id="Password" xml:space="preserve">
         <source>Password</source>
+        <target>Wachtwoord</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Password to show" xml:space="preserve">
@@ -5049,6 +5144,7 @@ Fout: %@</target>
       </trans-unit>
       <trans-unit id="Port" xml:space="preserve">
         <source>Port</source>
+        <target>Poort</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve">
@@ -5240,6 +5336,7 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
       </trans-unit>
       <trans-unit id="Proxy requires password" xml:space="preserve">
         <source>Proxy requires password</source>
+        <target>Proxy vereist wachtwoord</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Push notifications" xml:space="preserve">
@@ -5650,6 +5747,7 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
       </trans-unit>
       <trans-unit id="SOCKS proxy" xml:space="preserve">
         <source>SOCKS proxy</source>
+        <target>SOCKS proxy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Safely receive files" xml:space="preserve">
@@ -5765,6 +5863,7 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
       </trans-unit>
       <trans-unit id="Saving %lld messages" xml:space="preserve">
         <source>Saving %lld messages</source>
+        <target>%lld berichten opslaan</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Scale" xml:space="preserve">
@@ -6067,6 +6166,11 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Verzonden via proxy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Server" xml:space="preserve">
+        <source>Server</source>
+        <target>Server</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Server address" xml:space="preserve">
         <source>Server address</source>
         <target>Server adres</target>
@@ -6367,6 +6471,11 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Eenmalige SimpleX uitnodiging</target>
         <note>simplex link type</note>
       </trans-unit>
+      <trans-unit id="SimpleX protocols reviewed by Trail of Bits." xml:space="preserve">
+        <source>SimpleX protocols reviewed by Trail of Bits.</source>
+        <target>SimpleX-protocollen beoordeeld door Trail of Bits.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Simplified incognito mode" xml:space="preserve">
         <source>Simplified incognito mode</source>
         <target>Vereenvoudigde incognitomodus</target>
@@ -6524,22 +6633,32 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
       </trans-unit>
       <trans-unit id="Subscribed" xml:space="preserve">
         <source>Subscribed</source>
-        <target>Ingeschreven</target>
+        <target>Subscribed</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Subscription errors" xml:space="preserve">
         <source>Subscription errors</source>
-        <target>Inschrijving fouten</target>
+        <target>Subscription fouten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Subscriptions ignored" xml:space="preserve">
         <source>Subscriptions ignored</source>
-        <target>Inschrijvingen genegeerd</target>
+        <target>Subscriptions genegeerd</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Support SimpleX Chat" xml:space="preserve">
         <source>Support SimpleX Chat</source>
         <target>Ondersteuning van SimpleX Chat</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Switch audio and video during the call." xml:space="preserve">
+        <source>Switch audio and video during the call.</source>
+        <target>Wisselen tussen audio en video tijdens het gesprek.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Switch chat profile for 1-time invitations." xml:space="preserve">
+        <source>Switch chat profile for 1-time invitations.</source>
+        <target>Wijzig chatprofiel voor eenmalige uitnodigingen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="System" xml:space="preserve">
@@ -6579,6 +6698,7 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
       </trans-unit>
       <trans-unit id="Tail" xml:space="preserve">
         <source>Tail</source>
+        <target>Staart</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Take picture" xml:space="preserve">
@@ -6905,6 +7025,16 @@ You will be prompted to complete authentication before this feature is enabled.<
 U wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingeschakeld.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="To record speech please grant permission to use Microphone." xml:space="preserve">
+        <source>To record speech please grant permission to use Microphone.</source>
+        <target>Geef toestemming om de microfoon te gebruiken om spraak op te nemen.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="To record video please grant permission to use Camera." xml:space="preserve">
+        <source>To record video please grant permission to use Camera.</source>
+        <target>Om video op te nemen, dient u toestemming te geven om de camera te gebruiken.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="To record voice message please grant permission to use Microphone." xml:space="preserve">
         <source>To record voice message please grant permission to use Microphone.</source>
         <target>Geef toestemming om de microfoon te gebruiken om een spraakbericht op te nemen.</target>
@@ -7174,6 +7304,7 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
       </trans-unit>
       <trans-unit id="Use SOCKS proxy" xml:space="preserve">
         <source>Use SOCKS proxy</source>
+        <target>Gebruik SOCKS proxy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use SimpleX Chat servers?" xml:space="preserve">
@@ -7241,11 +7372,6 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>Gebruik de app met één hand.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="User profile" xml:space="preserve">
-        <source>User profile</source>
-        <target>Gebruikers profiel</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="User selection" xml:space="preserve">
         <source>User selection</source>
         <target>Gebruikersselectie</target>
@@ -7253,6 +7379,7 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
       </trans-unit>
       <trans-unit id="Username" xml:space="preserve">
         <source>Username</source>
+        <target>Gebruikersnaam</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Using SimpleX Chat servers." xml:space="preserve">
@@ -7513,11 +7640,6 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
       <trans-unit id="XFTP server" xml:space="preserve">
         <source>XFTP server</source>
         <target>XFTP server</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="You" xml:space="preserve">
-        <source>You</source>
-        <target>Jij</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You **must not** use the same database on two devices." xml:space="preserve">
@@ -7901,6 +8023,7 @@ Verbindingsverzoek herhalen?</target>
       </trans-unit>
       <trans-unit id="Your credentials may be sent unencrypted." xml:space="preserve">
         <source>Your credentials may be sent unencrypted.</source>
+        <target>Uw inloggegevens worden mogelijk niet-versleuteld verzonden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your current chat database will be DELETED and REPLACED with the imported one." xml:space="preserve">
@@ -8881,7 +9004,7 @@ laatst ontvangen bericht: %2$@</target>
       </trans-unit>
       <trans-unit id="you are observer" xml:space="preserve">
         <source>you are observer</source>
-        <target>jij bent waarnemer</target>
+        <target>je bent waarnemer</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you blocked %@" xml:space="preserve">
@@ -8911,7 +9034,7 @@ laatst ontvangen bericht: %2$@</target>
       </trans-unit>
       <trans-unit id="you left" xml:space="preserve">
         <source>you left</source>
-        <target>jij bent vertrokken</target>
+        <target>je bent vertrokken</target>
         <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="you removed %@" xml:space="preserve">

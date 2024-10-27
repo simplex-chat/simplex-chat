@@ -454,7 +454,7 @@
 /* No comment provided by engineer. */
 "All new messages from %@ will be hidden!" = "Всі нові повідомлення від %@ будуть приховані!";
 
-/* No comment provided by engineer. */
+/* profile dropdown */
 "All profiles" = "Всі профілі";
 
 /* No comment provided by engineer. */
@@ -889,6 +889,9 @@
 
 /* No comment provided by engineer. */
 "Chat preferences" = "Налаштування чату";
+
+/* No comment provided by engineer. */
+"Chat profile" = "Профіль користувача";
 
 /* No comment provided by engineer. */
 "Chat theme" = "Тема чату";
@@ -1996,7 +1999,7 @@
 /* No comment provided by engineer. */
 "Error stopping chat" = "Помилка зупинки чату";
 
-/* No comment provided by engineer. */
+/* alertTitle */
 "Error switching profile!" = "Помилка перемикання профілю!";
 
 /* No comment provided by engineer. */
@@ -2023,8 +2026,7 @@
 /* No comment provided by engineer. */
 "Error: " = "Помилка: ";
 
-/* file error text
-   snd error text */
+/* alert message */
 "Error: %@" = "Помилка: %@";
 
 /* No comment provided by engineer. */
@@ -4699,9 +4701,6 @@
 "Use the app with one hand." = "Використовуйте додаток однією рукою.";
 
 /* No comment provided by engineer. */
-"User profile" = "Профіль користувача";
-
-/* No comment provided by engineer. */
 "User selection" = "Вибір користувача";
 
 /* No comment provided by engineer. */
@@ -4904,9 +4903,6 @@
 
 /* No comment provided by engineer. */
 "you" = "ти";
-
-/* No comment provided by engineer. */
-"You" = "Ти";
 
 /* No comment provided by engineer. */
 "You **must not** use the same database on two devices." = "Ви **не повинні використовувати** одну і ту ж базу даних на двох пристроях.";

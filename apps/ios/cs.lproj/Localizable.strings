@@ -645,6 +645,9 @@
 "Chat preferences" = "Předvolby chatu";
 
 /* No comment provided by engineer. */
+"Chat profile" = "Profil uživatele";
+
+/* No comment provided by engineer. */
 "Chats" = "Chaty";
 
 /* No comment provided by engineer. */
@@ -1422,7 +1425,7 @@
 /* No comment provided by engineer. */
 "Error stopping chat" = "Chyba při zastavení chatu";
 
-/* No comment provided by engineer. */
+/* alertTitle */
 "Error switching profile!" = "Chyba při přepínání profilu!";
 
 /* No comment provided by engineer. */
@@ -1443,8 +1446,7 @@
 /* No comment provided by engineer. */
 "Error: " = "Chyba: ";
 
-/* file error text
-   snd error text */
+/* alert message */
 "Error: %@" = "Chyba: %@";
 
 /* No comment provided by engineer. */
@@ -3231,9 +3233,6 @@
 "Use SimpleX Chat servers?" = "Používat servery SimpleX Chat?";
 
 /* No comment provided by engineer. */
-"User profile" = "Profil uživatele";
-
-/* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "Používat servery SimpleX Chat.";
 
 /* No comment provided by engineer. */
@@ -3349,9 +3348,6 @@
 
 /* pref value */
 "yes" = "ano";
-
-/* No comment provided by engineer. */
-"You" = "Vy";
 
 /* No comment provided by engineer. */
 "You accepted connection" = "Přijali jste spojení";

@@ -175,8 +175,23 @@
 /* time interval */
 "%d days" = "%d giorni";
 
+/* forward confirmation reason */
+"%d file(s) are still being downloaded." = "%d file è/sono ancora in scaricamento.";
+
+/* forward confirmation reason */
+"%d file(s) failed to download." = "%d file ha/hanno fallito lo scaricamento.";
+
+/* forward confirmation reason */
+"%d file(s) were deleted." = "%d file è/sono stato/i eliminato/i.";
+
+/* forward confirmation reason */
+"%d file(s) were not downloaded." = "%d file non è/sono stato/i scaricato/i.";
+
 /* time interval */
 "%d hours" = "%d ore";
+
+/* alert title */
+"%d messages not forwarded" = "%d messaggi non inoltrati";
 
 /* time interval */
 "%d min" = "%d min";
@@ -457,7 +472,7 @@
 /* No comment provided by engineer. */
 "All new messages from %@ will be hidden!" = "Tutti i nuovi messaggi da %@ verrranno nascosti!";
 
-/* No comment provided by engineer. */
+/* profile dropdown */
 "All profiles" = "Tutti gli profili";
 
 /* No comment provided by engineer. */
@@ -581,6 +596,9 @@
 "App passcode is replaced with self-destruct passcode." = "Il codice di accesso dell'app viene sostituito da un codice di autodistruzione.";
 
 /* No comment provided by engineer. */
+"App session" = "Sessione dell'app";
+
+/* No comment provided by engineer. */
 "App version" = "Versione dell'app";
 
 /* No comment provided by engineer. */
@@ -677,13 +695,28 @@
 "Bad message ID" = "ID del messaggio errato";
 
 /* No comment provided by engineer. */
+"Better calls" = "Chiamate migliorate";
+
+/* No comment provided by engineer. */
 "Better groups" = "Gruppi migliorati";
+
+/* No comment provided by engineer. */
+"Better message dates." = "Date dei messaggi migliorate.";
 
 /* No comment provided by engineer. */
 "Better messages" = "Messaggi migliorati";
 
 /* No comment provided by engineer. */
 "Better networking" = "Rete migliorata";
+
+/* No comment provided by engineer. */
+"Better notifications" = "Notifiche migliorate";
+
+/* No comment provided by engineer. */
+"Better security ✅" = "Sicurezza migliorata ✅";
+
+/* No comment provided by engineer. */
+"Better user experience" = "Esperienza utente migliorata";
 
 /* No comment provided by engineer. */
 "Black" = "Nero";
@@ -849,7 +882,7 @@
 "changed role of %@ to %@" = "ha cambiato il ruolo di %1$@ in %2$@";
 
 /* rcv group event chat item */
-"changed your role to %@" = "cambiato il tuo ruolo in %@";
+"changed your role to %@" = "ha cambiato il tuo ruolo in %@";
 
 /* chat item text */
 "changing address for %@…" = "cambio indirizzo per %@…";
@@ -898,6 +931,9 @@
 
 /* alert message */
 "Chat preferences were changed." = "Le preferenze della chat sono state cambiate.";
+
+/* No comment provided by engineer. */
+"Chat profile" = "Profilo utente";
 
 /* No comment provided by engineer. */
 "Chat theme" = "Tema della chat";
@@ -1272,6 +1308,9 @@
 "Custom time" = "Tempo personalizzato";
 
 /* No comment provided by engineer. */
+"Customizable message shape." = "Forma dei messaggi personalizzabile.";
+
+/* No comment provided by engineer. */
 "Customize theme" = "Personalizza il tema";
 
 /* No comment provided by engineer. */
@@ -1462,6 +1501,9 @@
 "Delete old database?" = "Eliminare il database vecchio?";
 
 /* No comment provided by engineer. */
+"Delete or moderate up to 200 messages." = "Elimina o modera fino a 200 messaggi.";
+
+/* No comment provided by engineer. */
 "Delete pending connection?" = "Eliminare la connessione in attesa?";
 
 /* No comment provided by engineer. */
@@ -1624,6 +1666,9 @@
 "Do NOT send messages directly, even if your or destination server does not support private routing." = "NON inviare messaggi direttamente, anche se il tuo server o quello di destinazione non supporta l'instradamento privato.";
 
 /* No comment provided by engineer. */
+"Do not use credentials with proxy." = "Non usare credenziali con proxy.";
+
+/* No comment provided by engineer. */
 "Do NOT use private routing." = "NON usare l'instradamento privato.";
 
 /* No comment provided by engineer. */
@@ -1653,6 +1698,9 @@
 
 /* server test step */
 "Download file" = "Scarica file";
+
+/* alert action */
+"Download files" = "Scarica i file";
 
 /* No comment provided by engineer. */
 "Downloaded" = "Scaricato";
@@ -2020,7 +2068,7 @@
 /* No comment provided by engineer. */
 "Error switching profile" = "Errore nel cambio di profilo";
 
-/* No comment provided by engineer. */
+/* alertTitle */
 "Error switching profile!" = "Errore nel cambio di profilo!";
 
 /* No comment provided by engineer. */
@@ -2047,8 +2095,7 @@
 /* No comment provided by engineer. */
 "Error: " = "Errore: ";
 
-/* file error text
-   snd error text */
+/* alert message */
 "Error: %@" = "Errore: %@";
 
 /* No comment provided by engineer. */
@@ -2107,6 +2154,9 @@
 
 /* No comment provided by engineer. */
 "File error" = "Errore del file";
+
+/* alert message */
+"File errors:\n%@" = "Errori di file:\n%@";
 
 /* file error text */
 "File not found - most likely file was deleted or cancelled." = "File non trovato - probabilmente è stato eliminato o annullato.";
@@ -2189,8 +2239,20 @@
 /* chat item action */
 "Forward" = "Inoltra";
 
+/* alert title */
+"Forward %d message(s)?" = "Inoltrare %d messaggio/i?";
+
 /* No comment provided by engineer. */
 "Forward and save messages" = "Inoltra e salva i messaggi";
+
+/* alert action */
+"Forward messages" = "Inoltra i messaggi";
+
+/* alert message */
+"Forward messages without files?" = "Inoltrare i messaggi senza file?";
+
+/* No comment provided by engineer. */
+"Forward up to 20 messages at once." = "Inoltra fino a 20 messaggi alla volta.";
 
 /* No comment provided by engineer. */
 "forwarded" = "inoltrato";
@@ -2200,6 +2262,9 @@
 
 /* No comment provided by engineer. */
 "Forwarded from" = "Inoltrato da";
+
+/* No comment provided by engineer. */
+"Forwarding %lld messages" = "Inoltro di %lld messaggi";
 
 /* No comment provided by engineer. */
 "Forwarding server %@ failed to connect to destination server %@. Please try later." = "Il server di inoltro %@ non è riuscito a connettersi al server di destinazione %@. Riprova più tardi.";
@@ -2430,6 +2495,9 @@
 "Importing archive" = "Importazione archivio";
 
 /* No comment provided by engineer. */
+"Improved delivery, reduced traffic usage.\nMore improvements are coming soon!" = "Consegna migliorata, utilizzo di traffico ridotto.\nAltri miglioramenti sono in arrivo!";
+
+/* No comment provided by engineer. */
 "Improved message delivery" = "Consegna dei messaggi migliorata";
 
 /* No comment provided by engineer. */
@@ -2587,6 +2655,9 @@
 
 /* No comment provided by engineer. */
 "iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications." = "Il portachiavi di iOS verrà usato per archiviare in modo sicuro la password dopo il riavvio dell'app o la modifica della password; consentirà di ricevere notifiche push.";
+
+/* No comment provided by engineer. */
+"IP address" = "Indirizzo IP";
 
 /* No comment provided by engineer. */
 "Irreversible message deletion" = "Eliminazione irreversibile del messaggio";
@@ -2873,6 +2944,9 @@
 /* No comment provided by engineer. */
 "Messages sent" = "Messaggi inviati";
 
+/* alert message */
+"Messages were deleted after you selected them." = "I messaggi sono stati eliminati dopo che li hai selezionati.";
+
 /* No comment provided by engineer. */
 "Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." = "I messaggi, i file e le chiamate sono protetti da **crittografia end-to-end** con perfect forward secrecy, ripudio e recupero da intrusione.";
 
@@ -3026,6 +3100,12 @@
 /* No comment provided by engineer. */
 "New passphrase…" = "Nuova password…";
 
+/* No comment provided by engineer. */
+"New SOCKS credentials will be used every time you start the app." = "Le nuove credenziali SOCKS verranno usate ogni volta che avvii l'app.";
+
+/* No comment provided by engineer. */
+"New SOCKS credentials will be used for each server." = "Le nuove credenziali SOCKS verranno usate per ogni server.";
+
 /* pref value */
 "no" = "no";
 
@@ -3069,6 +3149,12 @@
 "No network connection" = "Nessuna connessione di rete";
 
 /* No comment provided by engineer. */
+"No permission to record speech" = "Nessuna autorizzazione per registrare l'audio";
+
+/* No comment provided by engineer. */
+"No permission to record video" = "Nessuna autorizzazione per registrare il video";
+
+/* No comment provided by engineer. */
 "No permission to record voice message" = "Nessuna autorizzazione per registrare messaggi vocali";
 
 /* No comment provided by engineer. */
@@ -3082,6 +3168,9 @@
 
 /* No comment provided by engineer. */
 "Nothing selected" = "Nessuna selezione";
+
+/* alert title */
+"Nothing to forward!" = "Niente da inoltrare!";
 
 /* No comment provided by engineer. */
 "Notifications" = "Notifiche";
@@ -3235,6 +3324,9 @@
 /* No comment provided by engineer. */
 "other errors" = "altri errori";
 
+/* alert message */
+"Other file errors:\n%@" = "Altri errori di file:\n%@";
+
 /* member role */
 "owner" = "proprietario";
 
@@ -3255,6 +3347,9 @@
 
 /* No comment provided by engineer. */
 "Passcode set!" = "Codice di accesso impostato!";
+
+/* No comment provided by engineer. */
+"Password" = "Password";
 
 /* No comment provided by engineer. */
 "Password to show" = "Password per mostrare";
@@ -3351,6 +3446,9 @@
 
 /* No comment provided by engineer. */
 "Polish interface" = "Interfaccia polacca";
+
+/* No comment provided by engineer. */
+"Port" = "Porta";
 
 /* server test error */
 "Possibly, certificate fingerprint in server address is incorrect" = "Probabilmente l'impronta del certificato nell'indirizzo del server è sbagliata";
@@ -3462,6 +3560,9 @@
 
 /* No comment provided by engineer. */
 "Proxied servers" = "Server via proxy";
+
+/* No comment provided by engineer. */
+"Proxy requires password" = "Il proxy richiede una password";
 
 /* No comment provided by engineer. */
 "Push notifications" = "Notifiche push";
@@ -3805,6 +3906,9 @@
 "Saved WebRTC ICE servers will be removed" = "I server WebRTC ICE salvati verranno rimossi";
 
 /* No comment provided by engineer. */
+"Saving %lld messages" = "Salvataggio di %lld messaggi";
+
+/* No comment provided by engineer. */
 "Scale" = "Scala";
 
 /* No comment provided by engineer. */
@@ -4003,6 +4107,9 @@
 "Sent via proxy" = "Inviato via proxy";
 
 /* No comment provided by engineer. */
+"Server" = "Server";
+
+/* No comment provided by engineer. */
 "Server address" = "Indirizzo server";
 
 /* No comment provided by engineer. */
@@ -4192,6 +4299,9 @@
 "SimpleX one-time invitation" = "Invito SimpleX una tantum";
 
 /* No comment provided by engineer. */
+"SimpleX protocols reviewed by Trail of Bits." = "Protocolli di SimpleX esaminati da Trail of Bits.";
+
+/* No comment provided by engineer. */
 "Simplified incognito mode" = "Modalità incognito semplificata";
 
 /* No comment provided by engineer. */
@@ -4208,6 +4318,9 @@
 
 /* No comment provided by engineer. */
 "SMP server" = "Server SMP";
+
+/* No comment provided by engineer. */
+"SOCKS proxy" = "Proxy SOCKS";
 
 /* blur media */
 "Soft" = "Leggera";
@@ -4307,6 +4420,12 @@
 
 /* No comment provided by engineer. */
 "Support SimpleX Chat" = "Supporta SimpleX Chat";
+
+/* No comment provided by engineer. */
+"Switch audio and video during the call." = "Cambia tra audio e video durante la chiamata.";
+
+/* No comment provided by engineer. */
+"Switch chat profile for 1-time invitations." = "Cambia profilo di chat per inviti una tantum.";
 
 /* No comment provided by engineer. */
 "System" = "Sistema";
@@ -4528,6 +4647,12 @@
 "To protect your IP address, private routing uses your SMP servers to deliver messages." = "Per proteggere il tuo indirizzo IP, l'instradamento privato usa i tuoi server SMP per consegnare i messaggi.";
 
 /* No comment provided by engineer. */
+"To record speech please grant permission to use Microphone." = "Per registrare l'audio, concedi l'autorizzazione di usare il microfono.";
+
+/* No comment provided by engineer. */
+"To record video please grant permission to use Camera." = "Per registrare il video, concedi l'autorizzazione di usare la fotocamera.";
+
+/* No comment provided by engineer. */
 "To record voice message please grant permission to use Microphone." = "Per registrare un messaggio vocale, concedi l'autorizzazione all'uso del microfono.";
 
 /* No comment provided by engineer. */
@@ -4744,16 +4869,19 @@
 "Use SimpleX Chat servers?" = "Usare i server di SimpleX Chat?";
 
 /* No comment provided by engineer. */
+"Use SOCKS proxy" = "Usa proxy SOCKS";
+
+/* No comment provided by engineer. */
 "Use the app while in the call." = "Usa l'app mentre sei in chiamata.";
 
 /* No comment provided by engineer. */
 "Use the app with one hand." = "Usa l'app con una mano sola.";
 
 /* No comment provided by engineer. */
-"User profile" = "Profilo utente";
+"User selection" = "Selezione utente";
 
 /* No comment provided by engineer. */
-"User selection" = "Selezione utente";
+"Username" = "Nome utente";
 
 /* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "Utilizzo dei server SimpleX Chat.";
@@ -4955,9 +5083,6 @@
 
 /* No comment provided by engineer. */
 "you" = "tu";
-
-/* No comment provided by engineer. */
-"You" = "Tu";
 
 /* No comment provided by engineer. */
 "You **must not** use the same database on two devices." = "**Non devi** usare lo stesso database su due dispositivi.";
@@ -5210,6 +5335,9 @@
 
 /* No comment provided by engineer. */
 "Your contacts will remain connected." = "I tuoi contatti resteranno connessi.";
+
+/* No comment provided by engineer. */
+"Your credentials may be sent unencrypted." = "Le credenziali potrebbero essere inviate in chiaro.";
 
 /* No comment provided by engineer. */
 "Your current chat database will be DELETED and REPLACED with the imported one." = "Il tuo attuale database della chat verrà ELIMINATO e SOSTITUITO con quello importato.";

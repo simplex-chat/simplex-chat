@@ -54,7 +54,6 @@ import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDay, nominalDiffTimeToSeconds)
-import Data.Time.Clock.System (systemToUTCTime)
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Data.Word (Word32)
@@ -207,8 +206,9 @@ operatorSimpleXChat = Just 1
 
 _defaultNtfServers :: [NtfServer]
 _defaultNtfServers =
-  [ "ntf://KmpZNNXiVZJx_G2T7jRUmDFxWXM3OAnunz3uLT0tqAA=@ntf3.simplex.im,pxculznuryunjdvtvh6s6szmanyadumpbmvevgdpe4wk5c65unyt4yid.onion",
-    "ntf://CJ5o7X6fCxj2FFYRU2KuCo70y4jSqz7td2HYhLnXWbU=@ntf4.simplex.im,wtvuhdj26jwprmomnyfu5wfuq2hjkzfcc72u44vi6gdhrwxldt6xauad.onion"
+  [ "ntf://FB-Uop7RTaZZEG0ZLD2CIaTjsPh-Fw0zFAnb7QyA8Ks=@ntf2.simplex.im,5ex3mupcazy3zlky64ab27phjhijpemsiby33qzq3pliejipbtx5xgad.onion"
+  -- "ntf://KmpZNNXiVZJx_G2T7jRUmDFxWXM3OAnunz3uLT0tqAA=@ntf3.simplex.im,pxculznuryunjdvtvh6s6szmanyadumpbmvevgdpe4wk5c65unyt4yid.onion",
+  -- "ntf://CJ5o7X6fCxj2FFYRU2KuCo70y4jSqz7td2HYhLnXWbU=@ntf4.simplex.im,wtvuhdj26jwprmomnyfu5wfuq2hjkzfcc72u44vi6gdhrwxldt6xauad.onion"
   ]
 
 maxImageSize :: Integer
@@ -345,11 +345,11 @@ newChatController
               userServers user' = useServers config protocol <$> withTransaction chatStore (`getProtocolServers` user')
 
 updateNetworkConfig :: NetworkConfig -> SimpleNetCfg -> NetworkConfig
-updateNetworkConfig cfg SimpleNetCfg {socksProxy, socksMode, hostMode, requiredHostMode, smpProxyMode_, smpProxyFallback_, tcpTimeout_, logTLSErrors} =
+updateNetworkConfig cfg SimpleNetCfg {socksProxy, socksMode, hostMode, requiredHostMode, smpProxyMode_, smpProxyFallback_, smpWebPort, tcpTimeout_, logTLSErrors} =
   let cfg1 = maybe cfg (\smpProxyMode -> cfg {smpProxyMode}) smpProxyMode_
       cfg2 = maybe cfg1 (\smpProxyFallback -> cfg1 {smpProxyFallback}) smpProxyFallback_
       cfg3 = maybe cfg2 (\tcpTimeout -> cfg2 {tcpTimeout, tcpConnectTimeout = (tcpTimeout * 3) `div` 2}) tcpTimeout_
-   in cfg3 {socksProxy, socksMode, hostMode, requiredHostMode, logTLSErrors}
+   in cfg3 {socksProxy, socksMode, hostMode, requiredHostMode, smpWebPort, logTLSErrors}
 
 withChatLock :: String -> CM a -> CM a
 withChatLock name action = asks chatLock >>= \l -> withLock l name action
@@ -1303,12 +1303,18 @@ processChatCommand' vr = \case
   APIAcceptContact incognito connReqId -> withUser $ \_ -> do
     (user@User {userId}, cReq@UserContactRequest {userContactLinkId}) <- withFastStore $ \db -> getContactRequest' db connReqId
     withUserContactLock "acceptContact" userContactLinkId $ do
+      (ct, conn@Connection {connId}, sqSecured) <- acceptContactRequest user cReq incognito
       ucl <- withFastStore $ \db -> getUserContactLinkById db userId userContactLinkId
       let contactUsed = (\(_, groupId_, _) -> isNothing groupId_) ucl
-      -- [incognito] generate profile to send, create connection with incognito profile
-      incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
-      ct <- acceptContactRequest user cReq incognitoProfile contactUsed
-      pure $ CRAcceptingContactRequest user ct
+      ct' <- withStore' $ \db -> do
+        deleteContactRequestRec db user cReq
+        updateContactAccepted db user ct contactUsed
+        conn' <-
+          if sqSecured
+            then conn {connStatus = ConnSndReady} <$ updateConnectionStatusFromTo db connId ConnNew ConnSndReady
+            else pure conn
+        pure ct {contactUsed, activeConn = Just conn'}
+      pure $ CRAcceptingContactRequest user ct'
   APIRejectContact connReqId -> withUser $ \user -> do
     cReq@UserContactRequest {userContactLinkId, agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <-
       withFastStore $ \db ->
@@ -1454,15 +1460,31 @@ processChatCommand' vr = \case
     CRNtfTokenStatus <$> withAgent (\a -> registerNtfToken a token mode)
   APIVerifyToken token nonce code -> withUser $ \_ -> withAgent (\a -> verifyNtfToken a token nonce code) >> ok_
   APIDeleteToken token -> withUser $ \_ -> withAgent (`deleteNtfToken` token) >> ok_
-  APIGetNtfMessage nonce encNtfInfo -> withUser $ \_ -> do
-    (NotificationInfo {ntfConnId, ntfMsgMeta}, msg) <- withAgent $ \a -> getNotificationMessage a nonce encNtfInfo
-    let msgTs' = systemToUTCTime . (\SMP.NMsgMeta {msgTs} -> msgTs) <$> ntfMsgMeta
-        agentConnId = AgentConnId ntfConnId
-    user_ <- withStore' (`getUserByAConnId` agentConnId)
-    connEntity_ <-
-      pure user_ $>>= \user ->
-        withStore (\db -> Just <$> getConnectionEntity db vr user agentConnId) `catchChatError` (\e -> toView (CRChatError (Just user) e) $> Nothing)
-    pure CRNtfMessages {user_, connEntity_, msgTs = msgTs', ntfMessage_ = ntfMsgInfo <$> msg}
+  APIGetNtfConns nonce encNtfInfo -> withUser $ \user -> do
+    ntfInfos <- withAgent $ \a -> getNotificationConns a nonce encNtfInfo
+    (errs, ntfMsgs) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (getMsgConn db) (L.toList ntfInfos))
+    unless (null errs) $ toView $ CRChatErrors (Just user) errs
+    pure $ CRNtfConns ntfMsgs
+    where
+      getMsgConn :: DB.Connection -> NotificationInfo -> IO NtfConn
+      getMsgConn db NotificationInfo {ntfConnId, ntfMsgMeta = nMsgMeta} = do
+        let agentConnId = AgentConnId ntfConnId
+        user_ <- getUserByAConnId db agentConnId
+        connEntity_ <-
+          pure user_ $>>= \user ->
+            eitherToMaybe <$> runExceptT (getConnectionEntity db vr user agentConnId)
+        pure $
+          NtfConn
+            { user_,
+              connEntity_,
+              -- Decrypted ntf meta of the expected message (the one notification was sent for)
+              expectedMsg_ = expectedMsgInfo <$> nMsgMeta
+            }
+  ApiGetConnNtfMessages connIds -> withUser $ \_ -> do
+    let acIds = L.map (\(AgentConnId acId) -> acId) connIds
+    msgs <- lift $ withAgent' $ \a -> getConnectionMessages a acIds
+    let ntfMsgs = L.map (\msg -> receivedMsgInfo <$> msg) msgs
+    pure $ CRConnNtfMessages ntfMsgs
   APIGetUserProtoServers userId (AProtocolType p) -> withUserId userId $ \user -> withServerProtocol p $ do
     cfg@ChatConfig {defaultServers} <- asks config
     srvs <- withFastStore' (`getProtocolServers` user)
@@ -1760,7 +1782,7 @@ processChatCommand' vr = \case
         pure conn'
   APIConnectPlan userId cReqUri -> withUserId userId $ \user ->
     CRConnectionPlan user <$> connectPlan user cReqUri
-  APIConnect userId incognito (Just (ACR SCMInvitation cReq)) -> withUserId userId $ \user -> withInvitationLock "connect" (strEncode cReq) . procCmd $ do
+  APIConnect userId incognito (Just (ACR SCMInvitation cReq@(CRInvitationUri crData e2e))) -> withUserId userId $ \user -> withInvitationLock "connect" (strEncode cReq) . procCmd $ do
     subMode <- chatReadVar subscriptionMode
     -- [incognito] generate profile to send
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
@@ -1771,10 +1793,28 @@ processChatCommand' vr = \case
       Just (agentV, pqSup') -> do
         let chatV = agentToChatVersion agentV
         dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
-        connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup'
-        conn@PendingContactConnection {pccConnId} <- withFastStore' $ \db -> createDirectConnection db user connId cReq ConnJoined (incognitoProfile $> profileToSend) subMode chatV pqSup'
-        joinPreparedAgentConnection user pccConnId connId cReq dm pqSup' subMode
-        pure $ CRSentConfirmation user conn
+        withFastStore' (\db -> getConnectionEntityByConnReq db vr user cReqs) >>= \case
+          Nothing -> joinNewConn chatV dm
+          Just (RcvDirectMsgConnection conn@Connection {connId, connStatus, contactConnInitiated} Nothing)
+            | connStatus == ConnNew && contactConnInitiated -> joinNewConn chatV dm -- own connection link
+            | connStatus == ConnPrepared -> do
+                -- retrying join after error
+                pcc <- withFastStore $ \db -> getPendingContactConnection db userId connId
+                joinPreparedConn (aConnId conn) pcc dm
+          Just ent -> throwChatError $ CECommandError $ "connection exists: " <> show (connEntityInfo ent)
+        where
+          joinNewConn chatV dm = do
+            connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup'
+            pcc <- withFastStore' $ \db -> createDirectConnection db user connId cReq ConnPrepared (incognitoProfile $> profileToSend) subMode chatV pqSup'
+            joinPreparedConn connId pcc dm
+          joinPreparedConn connId pcc@PendingContactConnection {pccConnId} dm = do
+            void $ withAgent $ \a -> joinConnection a (aUserId user) connId True cReq dm pqSup' subMode
+            withFastStore' $ \db -> updateConnectionStatusFromTo db pccConnId ConnPrepared ConnJoined
+            pure $ CRSentConfirmation user pcc {pccConnStatus = ConnJoined}
+          cReqs =
+            ( CRInvitationUri crData {crScheme = SSSimplex} e2e,
+              CRInvitationUri crData {crScheme = simplexChat} e2e
+            )
   APIConnect userId incognito (Just (ACR SCMContact cReq)) -> withUserId userId $ \user -> connectViaContact user incognito cReq
   APIConnect _ _ Nothing -> throwChatError CEInvalidConnReq
   Connect incognito aCReqUri@(Just cReqUri) -> withUser $ \user@User {userId} -> do
@@ -2026,20 +2066,21 @@ processChatCommand' vr = \case
         Just Connection {peerChatVRange} -> do
           subMode <- chatReadVar subscriptionMode
           dm <- encodeConnInfo $ XGrpAcpt membershipMemId
-          agentConnId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True connRequest PQSupportOff
-          let chatV = vr `peerConnChatVersion` peerChatVRange
-          cId <- withFastStore' $ \db -> do
-            Connection {connId = cId} <- createMemberConnection db userId fromMember agentConnId chatV peerChatVRange subMode
+          agentConnId <- case memberConn fromMember of
+            Nothing -> do
+              agentConnId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True connRequest PQSupportOff
+              let chatV = vr `peerConnChatVersion` peerChatVRange
+              void $ withFastStore' $ \db -> createMemberConnection db userId fromMember agentConnId chatV peerChatVRange subMode
+              pure agentConnId
+            Just conn -> pure $ aConnId conn
+          withFastStore' $ \db -> do
             updateGroupMemberStatus db userId fromMember GSMemAccepted
             updateGroupMemberStatus db userId membership GSMemAccepted
-            pure cId
-          void (withAgent $ \a -> joinConnection a (aUserId user) (Just agentConnId) True connRequest dm PQSupportOff subMode)
+          void (withAgent $ \a -> joinConnection a (aUserId user) agentConnId True connRequest dm PQSupportOff subMode)
             `catchChatError` \e -> do
               withFastStore' $ \db -> do
-                deleteConnectionRecord db user cId
                 updateGroupMemberStatus db userId fromMember GSMemInvited
                 updateGroupMemberStatus db userId membership GSMemInvited
-              withAgent $ \a -> deleteConnectionAsync a False agentConnId
               throwError e
           updateCIGroupInvitationStatus user g CIGISAccepted `catchChatError` (toView . CRChatError (Just user))
           pure $ CRUserAcceptedGroupSent user g {membership = membership {memberStatus = GSMemAccepted}} Nothing
@@ -2612,7 +2653,7 @@ processChatCommand' vr = \case
       joinPreparedAgentConnection user pccConnId connId cReq dm pqSup subMode
     joinPreparedAgentConnection :: User -> Int64 -> ConnId -> ConnectionRequestUri m -> ByteString -> PQSupport -> SubscriptionMode -> CM ()
     joinPreparedAgentConnection user pccConnId connId cReq connInfo pqSup subMode = do
-      void (withAgent $ \a -> joinConnection a (aUserId user) (Just connId) True cReq connInfo pqSup subMode)
+      void (withAgent $ \a -> joinConnection a (aUserId user) connId True cReq connInfo pqSup subMode)
         `catchChatError` \e -> do
           withFastStore' $ \db -> deleteConnectionRecord db user pccConnId
           withAgent $ \a -> deleteConnectionAsync a False connId
@@ -2854,6 +2895,8 @@ processChatCommand' vr = \case
     connectPlan user (ACR SCMInvitation (CRInvitationUri crData e2e)) = do
       withFastStore' (\db -> getConnectionEntityByConnReq db vr user cReqSchemas) >>= \case
         Nothing -> pure $ CPInvitationLink ILPOk
+        Just (RcvDirectMsgConnection Connection {connStatus = ConnPrepared} Nothing) ->
+          pure $ CPInvitationLink ILPOk
         Just (RcvDirectMsgConnection conn ct_) -> do
           let Connection {connStatus, contactConnInitiated} = conn
           if
@@ -3661,29 +3704,41 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
               liftIO $ B.hPut h "" >> hFlush h
           | otherwise = liftIO $ B.writeFile fPath ""
 
-acceptContactRequest :: User -> UserContactRequest -> Maybe IncognitoProfile -> Bool -> CM Contact
-acceptContactRequest user UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = cp, userContactLinkId, xContactId, pqSupport} incognitoProfile contactUsed = do
+acceptContactRequest :: User -> UserContactRequest -> IncognitoEnabled -> CM (Contact, Connection, SndQueueSecured)
+acceptContactRequest user@User {userId} UserContactRequest {agentInvitationId = AgentInvId invId, contactId_, cReqChatVRange, localDisplayName = cName, profileId, profile = cp, userContactLinkId, xContactId, pqSupport} incognito = do
   subMode <- chatReadVar subscriptionMode
   let pqSup = PQSupportOn
-  vr <- chatVersionRange
-  let profileToSend = profileToSendOnAccept user incognitoProfile False
-      chatV = vr `peerConnChatVersion` cReqChatVRange
       pqSup' = pqSup `CR.pqSupportAnd` pqSupport
+  vr <- chatVersionRange
+  let chatV = vr `peerConnChatVersion` cReqChatVRange
+  (ct, conn, incognitoProfile) <- case contactId_ of
+    Nothing -> do
+      incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
+      connId <- withAgent $ \a -> prepareConnectionToAccept a True invId pqSup'
+      (ct, conn) <- withStore' $ \db -> createAcceptedContact db user connId chatV cReqChatVRange cName profileId cp userContactLinkId xContactId incognitoProfile subMode pqSup' False
+      pure (ct, conn, incognitoProfile)
+    Just contactId -> do
+      ct <- withFastStore $ \db -> getContact db vr user contactId
+      case contactConn ct of
+        Nothing -> throwChatError $ CECommandError "contact has no connection"
+        Just conn@Connection {customUserProfileId} -> do
+          incognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
+          pure (ct, conn, ExistingIncognito <$> incognitoProfile)
+  let profileToSend = profileToSendOnAccept user incognitoProfile False
   dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
-  (acId, sqSecured) <- withAgent $ \a -> acceptContact a True invId dm pqSup' subMode
-  let connStatus = if sqSecured then ConnSndReady else ConnNew
-  withStore' $ \db -> createAcceptedContact db user acId connStatus chatV cReqChatVRange cName profileId cp userContactLinkId xContactId incognitoProfile subMode pqSup' contactUsed
+  (ct,conn,) <$> withAgent (\a -> acceptContact a (aConnId conn) True invId dm pqSup' subMode)
 
 acceptContactRequestAsync :: User -> UserContactRequest -> Maybe IncognitoProfile -> Bool -> PQSupport -> CM Contact
-acceptContactRequestAsync user UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile contactUsed pqSup = do
+acceptContactRequestAsync user cReq@UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile contactUsed pqSup = do
   subMode <- chatReadVar subscriptionMode
   let profileToSend = profileToSendOnAccept user incognitoProfile False
   vr <- chatVersionRange
   let chatV = vr `peerConnChatVersion` cReqChatVRange
   (cmdId, acId) <- agentAcceptContactAsync user True invId (XInfo profileToSend) subMode pqSup chatV
   withStore' $ \db -> do
-    ct@Contact {activeConn} <- createAcceptedContact db user acId ConnNew chatV cReqChatVRange cName profileId p userContactLinkId xContactId incognitoProfile subMode pqSup contactUsed
-    forM_ activeConn $ \Connection {connId} -> setCommandConnId db user cmdId connId
+    (ct, Connection {connId}) <- createAcceptedContact db user acId chatV cReqChatVRange cName profileId p userContactLinkId xContactId incognitoProfile subMode pqSup contactUsed
+    deleteContactRequestRec db user cReq
+    setCommandConnId db user cmdId connId
     pure ct
 
 acceptGroupJoinRequestAsync :: User -> GroupInfo -> UserContactRequest -> GroupMemberRole -> Maybe IncognitoProfile -> CM GroupMember
@@ -4350,7 +4405,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     END -> case entity of
       RcvDirectMsgConnection _ (Just ct) -> toView $ CRContactAnotherClient user ct
       _ -> toView $ CRSubscriptionEnd user entity
-    MSGNTF smpMsgInfo -> toView $ CRNtfMessage user entity $ ntfMsgInfo smpMsgInfo
+    MSGNTF msgId msgTs_ -> toView $ CRNtfMessage user entity $ ntfMsgAckInfo msgId msgTs_
     _ -> case entity of
       RcvDirectMsgConnection conn contact_ ->
         processDirectMessage agentMessage entity conn contact_
@@ -4548,6 +4603,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               lift $ setContactNetworkStatus ct' NSConnected
               toView $ CRContactConnected user ct' (fmap fromLocalProfile incognitoProfile)
               when (directOrUsed ct') $ do
+                unless (contactUsed ct') $ withFastStore' $ \db -> updateContactUsed db user ct'
                 createInternalChatItem user (CDDirectRcv ct') (CIRcvDirectE2EEInfo $ E2EInfo pqEnc) Nothing
                 createFeatureEnabledItems ct'
               when (contactConnInitiated conn') $ do
@@ -8018,7 +8074,8 @@ chatCommandP =
       "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP),
       "/_ntf verify " *> (APIVerifyToken <$> strP <* A.space <*> strP <* A.space <*> strP),
       "/_ntf delete " *> (APIDeleteToken <$> strP),
-      "/_ntf message " *> (APIGetNtfMessage <$> strP <* A.space <*> strP),
+      "/_ntf conns " *> (APIGetNtfConns <$> strP <* A.space <*> strP),
+      "/_ntf conn messages " *> (ApiGetConnNtfMessages <$> strP),
       "/_add #" *> (APIAddMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_join #" *> (APIJoinGroup <$> A.decimal),
       "/_member role #" *> (APIMemberRole <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
@@ -8363,13 +8420,14 @@ chatCommandP =
       socksProxy <- "socks=" *> ("off" $> Nothing <|> "on" $> Just defaultSocksProxyWithAuth <|> Just <$> strP)
       socksMode <- " socks-mode=" *> strP <|> pure SMAlways
       hostMode <- " host-mode=" *> (textToHostMode . safeDecodeUtf8 <$?> A.takeTill (== ' ')) <|> pure (defaultHostMode socksProxy)
-      requiredHostMode <- " required-host-mode" *> onOffP <|> pure False
+      requiredHostMode <- (" required-host-mode" $> True) <|> pure False
       smpProxyMode_ <- optional $ " smp-proxy=" *> strP
       smpProxyFallback_ <- optional $ " smp-proxy-fallback=" *> strP
+      smpWebPort <- (" smp-web-port" $> True) <|> pure False
       t_ <- optional $ " timeout=" *> A.decimal
       logTLSErrors <- " log=" *> onOffP <|> pure False
       let tcpTimeout_ = (1000000 *) <$> t_
-      pure $ SimpleNetCfg {socksProxy, socksMode, hostMode, requiredHostMode, smpProxyMode_, smpProxyFallback_, tcpTimeout_, logTLSErrors}
+      pure $ SimpleNetCfg {socksProxy, socksMode, hostMode, requiredHostMode, smpProxyMode_, smpProxyFallback_, smpWebPort, tcpTimeout_, logTLSErrors}
     dbKeyP = nonEmptyKey <$?> strP
     nonEmptyKey k@(DBEncryptionKey s) = if BA.null s then Left "empty key" else Right k
     dbEncryptionConfig currentKey newKey = DBEncryptionConfig {currentKey, newKey, keepKey = Just False}

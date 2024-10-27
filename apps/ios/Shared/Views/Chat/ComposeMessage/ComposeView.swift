@@ -287,8 +287,8 @@ struct ComposeView: View {
     // this is a workaround to fire an explicit event in certain cases
     @State private var stopPlayback: Bool = false
 
-    @AppStorage(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
-    @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
+    @UserDefault(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
+    @UserDefault(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
 
     var body: some View {
         VStack(spacing: 0) {
@@ -459,7 +459,7 @@ struct ComposeView: View {
             Task {
                 var media: [(String, UploadContent)] = []
                 for content in selected {
-                    if let img = resizeImageToStrSize(content.uiImage, maxDataSize: 14000) {
+                    if let img = await resizeImageToStrSize(content.uiImage, maxDataSize: 14000) {
                         media.append((img, content))
                         await MainActor.run {
                             composeState = composeState.copy(preview: .mediaPreviews(mediaPreviews: media))
@@ -551,7 +551,7 @@ struct ComposeView: View {
     }
 
     private func addMediaContent(_ content: UploadContent) async {
-        if let img = resizeImageToStrSize(content.uiImage, maxDataSize: 14000) {
+        if let img = await resizeImageToStrSize(content.uiImage, maxDataSize: 14000) {
             var newMedia: [(String, UploadContent?)] = []
             if case var .mediaPreviews(media) = composeState.preview {
                 media.append((img, content))

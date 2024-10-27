@@ -262,4 +262,5 @@
     <string name="only_your_contact_can_make_calls">Hanya kontak kamu yang dapat melakukan panggilan.</string>
     <string name="allow_to_send_files">Izinkan untuk mengirim file dan media.</string>
     <string name="all_your_contacts_will_remain_connected">Semua kontak kamu akan tetap terhubung.</string>
+    <string name="forward_files_missing_desc">%1$d berkas telah dihapus.</string>
 </resources>

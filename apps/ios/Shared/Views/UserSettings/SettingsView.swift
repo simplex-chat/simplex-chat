@@ -257,22 +257,17 @@ let networkProxyDefault: CodableDefault<NetworkProxy> = CodableDefault(defaults:
 
 struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.dismiss) var dismiss
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var sceneDelegate: SceneDelegate
     @EnvironmentObject var theme: AppTheme
-    @Binding var showSettings: Bool
     @State private var showProgress: Bool = false
 
     var body: some View {
         ZStack {
-            NavigationView {
-                settingsView()
-            }
+            settingsView()
             if showProgress {
                 progressView()
-            }
-            if let la = chatModel.laRequest {
-                LocalAuthView(authRequest: la)
             }
         }
     }
@@ -336,7 +331,12 @@ struct SettingsView: View {
                     chatDatabaseRow()
                     NavigationLink {
                         MigrateFromDevice(showProgressOnSettings: $showProgress)
-                            .navigationTitle("Migrate device")
+                            .toolbar {
+                                // Redaction broken for `.navigationTitle` - using a toolbar item instead.
+                                ToolbarItem(placement: .principal) {
+                                    Text("Migrate device").font(.headline)
+                                }
+                            }
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
@@ -347,7 +347,7 @@ struct SettingsView: View {
                 Section(header: Text("Help").foregroundColor(theme.colors.secondary)) {
                     if let user = user {
                         NavigationLink {
-                            ChatHelp(showSettings: $showSettings)
+                            ChatHelp(dismissSettingsSheet: dismiss)
                                 .navigationTitle("Welcome \(user.displayName)!")
                                 .modifier(ThemedBackground())
                                 .frame(maxHeight: .infinity, alignment: .top)
@@ -372,7 +372,7 @@ struct SettingsView: View {
                     }
                     settingsRow("number", color: theme.colors.secondary) {
                         Button("Send questions and ideas") {
-                            showSettings = false
+                            dismiss()
                             DispatchQueue.main.async {
                                 UIApplication.shared.open(simplexTeamURL)
                             }
@@ -429,7 +429,7 @@ struct SettingsView: View {
     
     private func chatDatabaseRow() -> some View {
         NavigationLink {
-            DatabaseView(showSettings: $showSettings, chatItemTTL: chatModel.chatItemTTL)
+            DatabaseView(dismissSettingsSheet: dismiss, chatItemTTL: chatModel.chatItemTTL)
                 .navigationTitle("Your chat database")
                 .modifier(ThemedBackground(grouped: true))
         } label: {
@@ -525,9 +525,7 @@ struct SettingsView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
         chatModel.currentUser = User.sampleData
-        @State var showSettings = false
-
-        return SettingsView(showSettings: $showSettings)
+        return SettingsView()
             .environmentObject(chatModel)
     }
 }

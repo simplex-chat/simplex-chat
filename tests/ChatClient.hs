@@ -51,6 +51,7 @@ import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Protocol (srvHostnamesSMPClientVersion)
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
+import Simplex.Messaging.Server.MsgStore.Types (AMSType (..), SMSType (..))
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Transport.Server (ServerCredentials (..), defaultTransportServerConfig)
 import Simplex.Messaging.Version
@@ -422,8 +423,10 @@ smpServerCfg =
   ServerConfig
     { transports = [(serverPort, transport @TLS, False)],
       tbqSize = 1,
-      -- serverTbqSize = 1,
+      msgStoreType = AMSType SMSMemory,
       msgQueueQuota = 16,
+      maxJournalMsgCount = 24,
+      maxJournalStateLines = 4,
       queueIdBytes = 12,
       msgIdBytes = 6,
       storeLogFile = Nothing,
@@ -463,7 +466,7 @@ smpServerCfg =
 withSmpServer :: IO () -> IO ()
 withSmpServer = withSmpServer' smpServerCfg
 
-withSmpServer' :: ServerConfig -> IO () -> IO ()
+withSmpServer' :: ServerConfig -> IO a -> IO a
 withSmpServer' cfg = serverBracket (\started -> runSMPServerBlocking started cfg Nothing)
 
 xftpTestPort :: ServiceName
@@ -515,7 +518,7 @@ withXFTPServer' cfg =
         runXFTPServerBlocking started cfg Nothing
     )
 
-serverBracket :: (TMVar Bool -> IO ()) -> IO () -> IO ()
+serverBracket :: (TMVar Bool -> IO ()) -> IO a -> IO a
 serverBracket server f = do
   started <- newEmptyTMVarIO
   bracket

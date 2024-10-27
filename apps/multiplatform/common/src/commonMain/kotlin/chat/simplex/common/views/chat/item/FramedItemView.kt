@@ -2,12 +2,10 @@ package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
@@ -36,6 +34,7 @@ fun FramedItemView(
   showViaProxy: Boolean,
   showMenu: MutableState<Boolean>,
   showTimestamp: Boolean,
+  tailVisible: Boolean = false,
   receiveFile: (Long) -> Unit,
   onLinkLongClick: (link: String) -> Unit = {},
   scrollToItem: (Long) -> Unit = {},
@@ -190,7 +189,7 @@ fun FramedItemView(
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
   Box(Modifier
-    .clip(RoundedCornerShape(18.dp))
+    .clipChatItem(ci, tailVisible, revealed = true)
     .background(
       when {
         transparentBackground -> Color.Transparent
@@ -200,7 +199,14 @@ fun FramedItemView(
     )) {
     var metaColor = MaterialTheme.colors.secondary
     Box(contentAlignment = Alignment.BottomEnd) {
-      Column(Modifier.width(IntrinsicSize.Max)) {
+      val chatItemTail = remember { appPreferences.chatItemTail.state }
+      val style = shapeStyle(ci, chatItemTail.value, tailVisible, revealed = true)
+      val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
+      Column(
+        Modifier
+          .width(IntrinsicSize.Max)
+          .padding(start = if (tailRendered) msgTailWidthDp else 0.dp, end = if (sent && tailRendered) msgTailWidthDp else 0.dp)
+      ) {
         PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
           if (ci.meta.itemDeleted != null) {
             when (ci.meta.itemDeleted) {
@@ -279,7 +285,13 @@ fun FramedItemView(
           }
         }
       }
-      Box(Modifier.padding(bottom = 6.dp, end = 12.dp)) {
+      Box(
+        Modifier
+          .padding(
+            bottom = 6.dp,
+            end = 12.dp + if (tailRendered && sent) msgTailWidthDp else 0.dp,
+          )
+      ) {
         CIMetaView(ci, chatTTL, metaColor, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
       }
     }

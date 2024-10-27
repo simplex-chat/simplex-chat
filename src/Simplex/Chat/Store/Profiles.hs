@@ -562,7 +562,7 @@ getServerOperators db =
       db
       [sql|
         SELECT server_operator_id, name, preset, enabled, role_storage, role_proxy
-        FROM protocol_servers
+        FROM server_operators
         WHERE reserved = 0 AND deleted = 0;
       |]
   where

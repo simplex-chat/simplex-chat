@@ -219,6 +219,8 @@ class AppPreferences {
   }, settingsThemes)
   val themeOverrides = mkThemeOverridesPreference()
   val profileImageCornerRadius = mkFloatPreference(SHARED_PREFS_PROFILE_IMAGE_CORNER_RADIUS, 22.5f)
+  val chatItemRoundness = mkFloatPreference(SHARED_PREFS_CHAT_ITEM_ROUNDNESS, 0.75f)
+  val chatItemTail = mkBoolPreference(SHARED_PREFS_CHAT_ITEM_TAIL, true)
   val fontScale = mkFloatPreference(SHARED_PREFS_FONT_SCALE, 1f)
   val densityScale = mkFloatPreference(SHARED_PREFS_DENSITY_SCALE, 1f)
 
@@ -422,6 +424,8 @@ class AppPreferences {
     private const val SHARED_PREFS_THEMES_OLD = "Themes"
     private const val SHARED_PREFS_THEME_OVERRIDES = "ThemeOverrides"
     private const val SHARED_PREFS_PROFILE_IMAGE_CORNER_RADIUS = "ProfileImageCornerRadius"
+    private const val SHARED_PREFS_CHAT_ITEM_ROUNDNESS = "ChatItemRoundness"
+    private const val SHARED_PREFS_CHAT_ITEM_TAIL = "ChatItemTail"
     private const val SHARED_PREFS_FONT_SCALE = "FontScale"
     private const val SHARED_PREFS_DENSITY_SCALE = "DensityScale"
     private const val SHARED_PREFS_WHATS_NEW_VERSION = "WhatsNewVersion"
@@ -1219,6 +1223,15 @@ object ChatController {
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.connection_error_auth),
           generalGetString(MR.strings.connection_error_auth_desc)
+        )
+        return null
+      }
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
+          && r.chatError.agentError is AgentErrorType.SMP
+          && r.chatError.agentError.smpErr is SMPErrorType.QUOTA -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.connection_error_quota),
+          generalGetString(MR.strings.connection_error_quota_desc)
         )
         return null
       }
@@ -3650,7 +3663,7 @@ data class NetCfg(
   val socksMode: SocksMode = SocksMode.Always,
   val hostMode: HostMode = HostMode.OnionViaSocks,
   val requiredHostMode: Boolean = false,
-  val sessionMode: TransportSessionMode = TransportSessionMode.User,
+  val sessionMode: TransportSessionMode = TransportSessionMode.default,
   val smpProxyMode: SMPProxyMode = SMPProxyMode.Unknown,
   val smpProxyFallback: SMPProxyFallback = SMPProxyFallback.AllowProtected,
   val smpWebPort: Boolean = false,
@@ -3777,10 +3790,13 @@ enum class SMPProxyFallback {
 @Serializable
 enum class TransportSessionMode {
   @SerialName("user") User,
+  @SerialName("session") Session,
+  @SerialName("server") Server,
   @SerialName("entity") Entity;
 
   companion object {
-    val default = User
+    val default = Session
+    val safeValues = arrayOf(User, Session, Server)
   }
 }
 
@@ -6038,6 +6054,7 @@ sealed class SMPErrorType {
     is AUTH -> "AUTH"
     is CRYPTO -> "CRYPTO"
     is QUOTA -> "QUOTA"
+    is STORE -> "STORE ${storeErr}"
     is NO_MSG -> "NO_MSG"
     is LARGE_MSG -> "LARGE_MSG"
     is EXPIRED -> "EXPIRED"
@@ -6050,6 +6067,7 @@ sealed class SMPErrorType {
   @Serializable @SerialName("AUTH") class AUTH: SMPErrorType()
   @Serializable @SerialName("CRYPTO") class CRYPTO: SMPErrorType()
   @Serializable @SerialName("QUOTA") class QUOTA: SMPErrorType()
+  @Serializable @SerialName("STORE") class STORE(val storeErr: String): SMPErrorType()
   @Serializable @SerialName("NO_MSG") class NO_MSG: SMPErrorType()
   @Serializable @SerialName("LARGE_MSG") class LARGE_MSG: SMPErrorType()
   @Serializable @SerialName("EXPIRED") class EXPIRED: SMPErrorType()
@@ -6334,6 +6352,8 @@ data class AppSettings(
   var iosCallKitEnabled: Boolean? = null,
   var iosCallKitCallsInRecents: Boolean? = null,
   var uiProfileImageCornerRadius: Float? = null,
+  var uiChatItemRoundness: Float? = null,
+  var uiChatItemTail: Boolean? = null,
   var uiColorScheme: String? = null,
   var uiDarkColorScheme: String? = null,
   var uiCurrentThemeIds: Map<String, String>? = null,
@@ -6366,6 +6386,8 @@ data class AppSettings(
     if (iosCallKitEnabled != def.iosCallKitEnabled) { empty.iosCallKitEnabled = iosCallKitEnabled }
     if (iosCallKitCallsInRecents != def.iosCallKitCallsInRecents) { empty.iosCallKitCallsInRecents = iosCallKitCallsInRecents }
     if (uiProfileImageCornerRadius != def.uiProfileImageCornerRadius) { empty.uiProfileImageCornerRadius = uiProfileImageCornerRadius }
+    if (uiChatItemRoundness != def.uiChatItemRoundness) { empty.uiChatItemRoundness = uiChatItemRoundness }
+    if (uiChatItemTail != def.uiChatItemTail) { empty.uiChatItemTail = uiChatItemTail }
     if (uiColorScheme != def.uiColorScheme) { empty.uiColorScheme = uiColorScheme }
     if (uiDarkColorScheme != def.uiDarkColorScheme) { empty.uiDarkColorScheme = uiDarkColorScheme }
     if (uiCurrentThemeIds != def.uiCurrentThemeIds) { empty.uiCurrentThemeIds = uiCurrentThemeIds }
@@ -6409,6 +6431,8 @@ data class AppSettings(
     iosCallKitEnabled?.let { def.iosCallKitEnabled.set(it) }
     iosCallKitCallsInRecents?.let { def.iosCallKitCallsInRecents.set(it) }
     uiProfileImageCornerRadius?.let { def.profileImageCornerRadius.set(it) }
+    uiChatItemRoundness?.let { def.chatItemRoundness.set(it) }
+    uiChatItemTail?.let { def.chatItemTail.set(it) }
     uiColorScheme?.let { def.currentTheme.set(it) }
     uiDarkColorScheme?.let { def.systemDarkTheme.set(it) }
     uiCurrentThemeIds?.let { def.currentThemeIds.set(it) }
@@ -6442,6 +6466,8 @@ data class AppSettings(
         iosCallKitEnabled = true,
         iosCallKitCallsInRecents = false,
         uiProfileImageCornerRadius = 22.5f,
+        uiChatItemRoundness = 0.75f,
+        uiChatItemTail = true,
         uiColorScheme = DefaultTheme.SYSTEM_THEME_NAME,
         uiDarkColorScheme = DefaultTheme.SIMPLEX.themeName,
         uiCurrentThemeIds = null,
@@ -6476,6 +6502,8 @@ data class AppSettings(
           iosCallKitEnabled = def.iosCallKitEnabled.get(),
           iosCallKitCallsInRecents = def.iosCallKitCallsInRecents.get(),
           uiProfileImageCornerRadius = def.profileImageCornerRadius.get(),
+          uiChatItemRoundness = def.chatItemRoundness.get(),
+          uiChatItemTail = def.chatItemTail.get(),
           uiColorScheme = def.currentTheme.get() ?: DefaultTheme.SYSTEM_THEME_NAME,
           uiDarkColorScheme = def.systemDarkTheme.get() ?: DefaultTheme.SIMPLEX.themeName,
           uiCurrentThemeIds = def.currentThemeIds.get(),

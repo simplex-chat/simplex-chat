@@ -1,12 +1,12 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Migrations.M20241001_server_operators where
+module Simplex.Chat.Migrations.M20241027_server_operators where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
-m20241001_server_operators :: Query
-m20241001_server_operators =
+m20241027_server_operators :: Query
+m20241027_server_operators =
   [sql|
 CREATE TABLE server_operators (
   server_operator_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,8 +34,8 @@ INSERT INTO server_operators (server_operator_id, name, preset, reserved) VALUES
 UPDATE protocol_servers SET server_operator_id = 1 WHERE host LIKE "%.simplex.im" OR host LIKE "%.simplex.im,%";
 |]
 
-down_m20241001_server_operators :: Query
-down_m20241001_server_operators =
+down_m20241027_server_operators :: Query
+down_m20241027_server_operators =
   [sql|
 DROP INDEX idx_protocol_servers_operators;
 

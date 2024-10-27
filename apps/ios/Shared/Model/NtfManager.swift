@@ -29,17 +29,33 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     private var granted = false
     private var prevNtfTime: Dictionary<ChatId, Date> = [:]
 
+    override init() {
+        super.init()
+        UNUserNotificationCenter.current().delegate = self
+    }
+
     // Handle notification when app is in background
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse,
                                 withCompletionHandler handler: () -> Void) {
         logger.debug("NtfManager.userNotificationCenter: didReceive")
-        let content = response.notification.request.content
+        if appStateGroupDefault.get() == .active {
+            processNotificationResponse(response)
+        } else {
+            logger.debug("NtfManager.userNotificationCenter: remember response in model")
+            ChatModel.shared.notificationResponse = response
+        }
+        handler()
+    }
+
+    func processNotificationResponse(_ ntfResponse: UNNotificationResponse) {
         let chatModel = ChatModel.shared
-        let action = response.actionIdentifier
-        logger.debug("NtfManager.userNotificationCenter: didReceive: action \(action), categoryIdentifier \(content.categoryIdentifier)")
+        let content = ntfResponse.notification.request.content
+        let action = ntfResponse.actionIdentifier
+        logger.debug("NtfManager.processNotificationResponse: didReceive: action \(action), categoryIdentifier \(content.categoryIdentifier)")
         if let userId = content.userInfo["userId"] as? Int64,
            userId != chatModel.currentUser?.userId {
+            logger.debug("NtfManager.processNotificationResponse changeActiveUser")
             changeActiveUser(userId, viewPwd: nil)
         }
         if content.categoryIdentifier == ntfCategoryContactRequest && (action == ntfActionAcceptContact || action == ntfActionAcceptContactIncognito),
@@ -61,7 +77,6 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                 ItemsModel.shared.loadOpenChat(chatId)
             }
         }
-        handler()
     }
 
     private func ntfCallAction(_ content: UNNotificationContent, _ action: String) -> (ChatId, NtfCallAction)? {
@@ -75,7 +90,6 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         }
         return nil
     }
-
 
     // Handle notification when the app is in foreground
     func userNotificationCenter(_ center: UNUserNotificationCenter,
@@ -185,6 +199,12 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                 actions: [],
                 intentIdentifiers: [],
                 hiddenPreviewsBodyPlaceholder: NSLocalizedString("SimpleX encrypted message or connection event", comment: "notification")
+            ),
+            UNNotificationCategory(
+                identifier: ntfCategoryManyEvents,
+                actions: [],
+                intentIdentifiers: [],
+                hiddenPreviewsBodyPlaceholder: NSLocalizedString("New events", comment: "notification")
             )
         ])
     }
@@ -210,29 +230,28 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                 }
             }
         }
-        center.delegate = self
     }
 
     func notifyContactRequest(_ user: any UserLike, _ contactRequest: UserContactRequest) {
         logger.debug("NtfManager.notifyContactRequest")
-        addNotification(createContactRequestNtf(user, contactRequest))
+        addNotification(createContactRequestNtf(user, contactRequest, 0))
     }
 
     func notifyContactConnected(_ user: any UserLike, _ contact: Contact) {
         logger.debug("NtfManager.notifyContactConnected")
-        addNotification(createContactConnectedNtf(user, contact))
+        addNotification(createContactConnectedNtf(user, contact, 0))
     }
 
     func notifyMessageReceived(_ user: any UserLike, _ cInfo: ChatInfo, _ cItem: ChatItem) {
         logger.debug("NtfManager.notifyMessageReceived")
         if cInfo.ntfsEnabled {
-            addNotification(createMessageReceivedNtf(user, cInfo, cItem))
+            addNotification(createMessageReceivedNtf(user, cInfo, cItem, 0))
         }
     }
 
     func notifyCallInvitation(_ invitation: RcvCallInvitation) {
         logger.debug("NtfManager.notifyCallInvitation")
-        addNotification(createCallInvitationNtf(invitation))
+        addNotification(createCallInvitationNtf(invitation, 0))
     }
 
     func setNtfBadgeCount(_ count: Int) {
