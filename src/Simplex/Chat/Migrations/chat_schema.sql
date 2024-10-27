@@ -451,8 +451,6 @@ CREATE TABLE IF NOT EXISTS "protocol_servers"(
   updated_at TEXT NOT NULL DEFAULT(datetime('now')),
   protocol TEXT NOT NULL DEFAULT 'smp',
   server_operator_id INTEGER REFERENCES server_operators ON DELETE SET NULL,
-  role_storage INTEGER NOT NULL DEFAULT 1,
-  role_proxy INTEGER NOT NULL DEFAULT 1,
   UNIQUE(user_id, host, port)
 );
 CREATE TABLE xftp_file_descriptions(

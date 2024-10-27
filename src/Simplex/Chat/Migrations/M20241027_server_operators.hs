@@ -20,8 +20,6 @@ CREATE TABLE server_operators (
 );
 
 ALTER TABLE protocol_servers ADD COLUMN server_operator_id INTEGER REFERENCES server_operators ON DELETE SET NULL;
-ALTER TABLE protocol_servers ADD COLUMN role_storage INTEGER NOT NULL DEFAULT 1;
-ALTER TABLE protocol_servers ADD COLUMN role_proxy INTEGER NOT NULL DEFAULT 1;
 
 CREATE INDEX idx_protocol_servers_operators ON protocol_servers(server_operator_id);
 
@@ -40,8 +38,6 @@ down_m20241027_server_operators =
 DROP INDEX idx_protocol_servers_operators;
 
 ALTER TABLE protocol_servers DROP COLUMN server_operator_id;
-ALTER TABLE protocol_servers DROP COLUMN role_storage;
-ALTER TABLE protocol_servers DROP COLUMN role_proxy;
 
 DROP TABLE server_operators;
 |]

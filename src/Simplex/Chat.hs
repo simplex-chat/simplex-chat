@@ -587,7 +587,7 @@ processChatCommand' vr = \case
             pure (useServers cfg protocol servers, servers)
       storeServers user servers =
         unless (null servers) . withFastStore $
-          \db -> overwriteProtocolServers db user servers
+          \db -> void $ overwriteOperatorsAndServers db user Nothing servers
       coupleDaysAgo t = (`addUTCTime` t) . fromInteger . negate . (+ (2 * day)) <$> randomRIO (0, day)
       day = 86400
   ListUsers -> CRUsersList <$> withFastStore' getUsersInfo
@@ -1495,11 +1495,9 @@ processChatCommand' vr = \case
     processChatCommand $ APIGetUserProtoServers userId aProtocol
   APISetUserProtoServers userId (APSC p (ProtoServersConfig operators servers))
     | null servers || any (\ServerCfg {enabled} -> enabled) servers -> withUserId userId $ \user -> withServerProtocol p $ do
-        withFastStore $ \db -> do
-          liftIO $ mapM_ (updateServerOperators db) operators
-          overwriteProtocolServers db user servers
+        servers' <- withFastStore $ \db -> overwriteOperatorsAndServers db user operators servers
         cfg <- asks config
-        lift $ withAgent' $ \a -> setProtocolServers a (aUserId user) $ useServers cfg p servers
+        lift $ withAgent' $ \a -> setProtocolServers a (aUserId user) $ useServers cfg p servers'
         ok user
     | otherwise -> withUserId userId $ \user -> pure $ chatCmdError (Just user) "all servers are disabled"
   SetUserProtoServers serversConfig -> withUser $ \User {userId} ->
