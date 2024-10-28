@@ -31,7 +31,7 @@ fun Modifier.blurredBackgroundModifier(
     return this
 
   return if (appPlatform.isAndroid) {
-    this.desktopBlurredModifier(keyboardInset, blurRadius, keyboardCoversBar, onTop, graphicsLayer, backgroundGraphicsLayer, backgroundGraphicsLayerSize, density)
+    this.androidBlurredModifier(keyboardInset, blurRadius, keyboardCoversBar, onTop, graphicsLayer, backgroundGraphicsLayer, backgroundGraphicsLayerSize, density)
   } else {
     this.desktopBlurredModifier(keyboardInset, blurRadius, keyboardCoversBar, onTop, graphicsLayer, backgroundGraphicsLayer, backgroundGraphicsLayerSize, density)
   }
@@ -83,6 +83,17 @@ private fun Modifier.androidBlurredModifier(
         drawRect(CurrentColors.value.colors.background, size = Size(graphicsLayer.size.width.toFloat(), graphicsLayer.size.height.toFloat()))
       }
       drawLayer(graphicsLayer)
+    }
+  }
+  .graphicsLayer {
+    if (!onTop) {
+      val bgSize = when {
+        backgroundGraphicsLayerSize.value.height == 0 && backgroundGraphicsLayer.size.height != 0 -> backgroundGraphicsLayer.size.height
+        backgroundGraphicsLayerSize.value.height == 0 -> graphicsLayer.size.height
+        else -> backgroundGraphicsLayerSize.value.height
+      }
+      val keyboardHeightCovered = if (!keyboardCoversBar) keyboardInset.getBottom(density) else 0
+      translationY -= -bgSize + size.height + keyboardHeightCovered
     }
   }
 
