@@ -37,7 +37,7 @@ fun DefaultTopAppBar(
   } else Modifier
 
   val themeBackgroundMix = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
-  val prefAlpha = remember { appPrefs.inAppBarsAlpha.state }.value
+  val prefAlpha = remember { appPrefs.inAppBarsAlpha.state }
   val handler = LocalAppBarHandler.current
   val connection = LocalAppBarHandler.current?.connection
   val titleText = remember(handler?.title?.value, fixedTitleText) {
@@ -56,7 +56,7 @@ fun DefaultTopAppBar(
       .blurredBackgroundModifier(keyboardInset, handler, remember { appPrefs.appearanceBarsBlurRadius.state }, prefAlpha, handler?.keyboardCoversBar == true, onTop, density)
       .drawWithCache {
         val backgroundColor = if (title != null || fixedTitleText != null || connection == null || !onTop) {
-          themeBackgroundMix.copy(prefAlpha)
+          themeBackgroundMix.copy(prefAlpha.value)
         } else {
           themeBackgroundMix.copy(topTitleAlpha(false, connection))
         }
@@ -81,7 +81,7 @@ fun DefaultTopAppBar(
             Row(
               Modifier
                 .graphicsLayer {
-                  alpha = if (fixedTitleText != null) prefAlpha else topTitleAlpha(true, connection)
+                  alpha = if (fixedTitleText != null) prefAlpha.value else topTitleAlpha(true, connection)
                 }
             ) {
               Text(

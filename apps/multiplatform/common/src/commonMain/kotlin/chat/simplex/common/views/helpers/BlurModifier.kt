@@ -15,12 +15,11 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.ui.theme.CurrentColors
 
-@Composable
 fun Modifier.blurredBackgroundModifier(
   keyboardInset: WindowInsets,
   handler: AppBarHandler?,
   blurRadius: State<Int>,
-  prefAlpha: Float,
+  prefAlpha: State<Float>,
   keyboardCoversBar: Boolean,
   onTop: Boolean,
   density: Density
@@ -28,18 +27,17 @@ fun Modifier.blurredBackgroundModifier(
   val graphicsLayer = handler?.graphicsLayer
   val backgroundGraphicsLayer = handler?.backgroundGraphicsLayer
   val backgroundGraphicsLayerSize = handler?.backgroundGraphicsLayerSize
-  if (!(handler != null && graphicsLayer != null && backgroundGraphicsLayer != null && blurRadius.value > 0 && prefAlpha < 1f && backgroundGraphicsLayerSize != null))
+  if (!(handler != null && graphicsLayer != null && backgroundGraphicsLayer != null && blurRadius.value > 0 && prefAlpha.value < 1f && backgroundGraphicsLayerSize != null))
     return this
 
   return if (appPlatform.isAndroid) {
-    this.androidBlurredModifier(keyboardInset, blurRadius, keyboardCoversBar, onTop, graphicsLayer, backgroundGraphicsLayer, backgroundGraphicsLayerSize, density)
+    this.desktopBlurredModifier(keyboardInset, blurRadius, keyboardCoversBar, onTop, graphicsLayer, backgroundGraphicsLayer, backgroundGraphicsLayerSize, density)
   } else {
     this.desktopBlurredModifier(keyboardInset, blurRadius, keyboardCoversBar, onTop, graphicsLayer, backgroundGraphicsLayer, backgroundGraphicsLayerSize, density)
   }
 }
 
-@Composable
-fun Modifier.androidBlurredModifier(
+private fun Modifier.androidBlurredModifier(
   keyboardInset: WindowInsets,
   blurRadius: State<Int>,
   keyboardCoversBar: Boolean,
@@ -88,8 +86,7 @@ fun Modifier.androidBlurredModifier(
     }
   }
 
-@Composable
-fun Modifier.desktopBlurredModifier(
+private fun Modifier.desktopBlurredModifier(
   keyboardInset: WindowInsets,
   blurRadius: State<Int>,
   keyboardCoversBar: Boolean,
