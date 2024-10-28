@@ -200,9 +200,7 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
       Window(state = cWindowState, onCloseRequest = { hiddenUntilRestart = true }, title = stringResource(MR.strings.chat_console)) {
         val data = remember { ModalData() }
         SimpleXTheme {
-          CompositionLocalProvider(
-            LocalAppBarHandler provides data.appBarHandler
-          ) {
+          CompositionLocalProvider(LocalAppBarHandler provides data.appBarHandler) {
             ModalView({ hiddenUntilRestart = true }) {
               TerminalView(true)
             }

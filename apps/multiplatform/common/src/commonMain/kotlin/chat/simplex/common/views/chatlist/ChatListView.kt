@@ -667,7 +667,6 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   val blankSpaceSize = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else topPaddingToContent
   LazyColumnWithScrollBar(
     if (!oneHandUI.value) Modifier.imePadding() else Modifier,
-    backgroundModifier = Modifier.background(MaterialTheme.colors.background),
     listState,
     reverseLayout = oneHandUI.value
   ) {

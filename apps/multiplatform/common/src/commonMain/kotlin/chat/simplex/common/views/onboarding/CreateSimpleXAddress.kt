@@ -76,59 +76,54 @@ private fun CreateSimpleXAddressLayout(
   createAddress: () -> Unit,
   nextStep: () -> Unit,
 ) {
-  val handler = remember { AppBarHandler() }
-  CompositionLocalProvider(
-    LocalAppBarHandler provides handler
-  ) {
-    ModalView({}, showClose = false) {
-      ColumnWithScrollBar(
-        Modifier.themedBackground(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-      ) {
-        AppBarTitle(stringResource(MR.strings.simplex_address))
+  ModalView({}, showClose = false) {
+    ColumnWithScrollBarNoAppBar(
+      Modifier.themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer),
+      horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+      AppBarTitle(stringResource(MR.strings.simplex_address))
 
+      Spacer(Modifier.weight(1f))
+
+      if (userAddress != null) {
+        SimpleXLinkQRCode(userAddress.connReqContact)
+        Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+        Row {
+          ShareAddressButton { share(simplexChatLink(userAddress.connReqContact)) }
+          Spacer(Modifier.width(DEFAULT_PADDING * 2))
+          ShareViaEmailButton { sendEmail(userAddress) }
+        }
+        Spacer(Modifier.height(DEFAULT_PADDING))
+        Spacer(Modifier.weight(1f))
+        Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+          OnboardingActionButton(
+            modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+            labelId = MR.strings.continue_to_next_step,
+            onboarding = null,
+            onclick = nextStep
+          )
+          // Reserve space
+          TextButtonBelowOnboardingButton("", null)
+        }
+      } else {
+        Button(createAddress, Modifier, shape = CircleShape, contentPadding = PaddingValues()) {
+          Icon(painterResource(MR.images.ic_mail_filled), null, Modifier.size(100.dp).background(MaterialTheme.colors.primary, CircleShape).padding(25.dp), tint = Color.White)
+        }
+        Spacer(Modifier.height(DEFAULT_PADDING))
+        Spacer(Modifier.weight(1f))
+        Text(stringResource(MR.strings.create_simplex_address), style = MaterialTheme.typography.h3, fontWeight = FontWeight.Bold)
+        TextBelowButton(stringResource(MR.strings.you_can_make_address_visible_via_settings))
+        Spacer(Modifier.height(DEFAULT_PADDING))
         Spacer(Modifier.weight(1f))
 
-        if (userAddress != null) {
-          SimpleXLinkQRCode(userAddress.connReqContact)
-          Spacer(Modifier.height(DEFAULT_PADDING_HALF))
-          Row {
-            ShareAddressButton { share(simplexChatLink(userAddress.connReqContact)) }
-            Spacer(Modifier.width(DEFAULT_PADDING * 2))
-            ShareViaEmailButton { sendEmail(userAddress) }
-          }
-          Spacer(Modifier.height(DEFAULT_PADDING))
-          Spacer(Modifier.weight(1f))
-          Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
-            OnboardingActionButton(
-              modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
-              labelId = MR.strings.continue_to_next_step,
-              onboarding = null,
-              onclick = nextStep
-            )
-            // Reserve space
-            TextButtonBelowOnboardingButton("", null)
-          }
-        } else {
-          Button(createAddress, Modifier, shape = CircleShape, contentPadding = PaddingValues()) {
-            Icon(painterResource(MR.images.ic_mail_filled), null, Modifier.size(100.dp).background(MaterialTheme.colors.primary, CircleShape).padding(25.dp), tint = Color.White)
-          }
-          Spacer(Modifier.height(DEFAULT_PADDING))
-          Spacer(Modifier.weight(1f))
-          Text(stringResource(MR.strings.create_simplex_address), style = MaterialTheme.typography.h3, fontWeight = FontWeight.Bold)
-          TextBelowButton(stringResource(MR.strings.you_can_make_address_visible_via_settings))
-          Spacer(Modifier.height(DEFAULT_PADDING))
-          Spacer(Modifier.weight(1f))
-
-          Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
-            OnboardingActionButton(
-              modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
-              labelId = MR.strings.create_address_button,
-              onboarding = null,
-              onclick = createAddress
-            )
-            TextButtonBelowOnboardingButton(stringResource(MR.strings.dont_create_address), nextStep)
-          }
+        Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+          OnboardingActionButton(
+            modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+            labelId = MR.strings.create_address_button,
+            onboarding = null,
+            onclick = createAddress
+          )
+          TextButtonBelowOnboardingButton(stringResource(MR.strings.dont_create_address), nextStep)
         }
       }
     }

@@ -7,15 +7,11 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.layer.drawLayer
-import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
-import chat.simplex.common.ui.theme.themedBackground
 import chat.simplex.common.views.chatlist.NavigationBarBackground
 import chat.simplex.common.views.helpers.*
 import kotlinx.coroutines.flow.filter
@@ -24,7 +20,6 @@ import kotlin.math.absoluteValue
 @Composable
 actual fun LazyColumnWithScrollBar(
   modifier: Modifier,
-  backgroundModifier: Modifier,
   state: LazyListState?,
   contentPadding: PaddingValues,
   reverseLayout: Boolean,
@@ -65,24 +60,11 @@ actual fun LazyColumnWithScrollBar(
         }
     }
   }
-  val graphicsLayer = rememberGraphicsLayer()
-  val blurRadius = remember { appPrefs.appearanceBarsBlurRadius.state }
-  val drawScreenshot = remember(blurRadius.value > 0, backgroundModifier) {
-    if (blurRadius.value > 0) {
-      Modifier.drawWithContent {
-        graphicsLayer.record {
-          this@drawWithContent.drawContent()
-        }
-        drawLayer(graphicsLayer)
-        handler.graphicsLayerSize.value = graphicsLayer.size
-      }.then(backgroundModifier)
-    } else Modifier
-  }
   LazyColumn(
     if (fillMaxSize) {
-      Modifier.fillMaxSize().then(modifier).then(drawScreenshot).nestedScroll(connection)
+      Modifier.fillMaxSize().copyViewToAppBar(LocalAppBarHandler.current?.graphicsLayer).then(modifier).nestedScroll(connection)
     } else {
-      modifier.then(drawScreenshot).nestedScroll(connection)
+      Modifier.copyViewToAppBar(LocalAppBarHandler.current?.graphicsLayer).then(modifier).nestedScroll(connection)
     },
     state,
     contentPadding,
@@ -93,13 +75,6 @@ actual fun LazyColumnWithScrollBar(
     userScrollEnabled
   ) {
     content()
-  }
-  /** setting it in composition scope because in Disposable effect it comes too late and other side [DefaultTopAppBar] doesn't see it in time */
-  handler.graphicsLayer = graphicsLayer
-  DisposableEffect(Unit) {
-    onDispose {
-      handler.graphicsLayer = null
-    }
   }
 }
 
@@ -126,7 +101,6 @@ actual fun LazyColumnWithScrollBarNoAppBar(
 @Composable
 actual fun ColumnWithScrollBar(
   modifier: Modifier,
-  backgroundModifier: Modifier,
   verticalArrangement: Arrangement.Vertical,
   horizontalAlignment: Alignment.Horizontal,
   state: ScrollState?,
@@ -152,31 +126,11 @@ actual fun ColumnWithScrollBar(
   }
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   Box(Modifier.fillMaxHeight()) {
-    val graphicsLayer = rememberGraphicsLayer()
-    val blurRadius = remember { appPrefs.appearanceBarsBlurRadius.state }
-    val drawScreenshot = remember(blurRadius.value > 0, backgroundModifier) {
-      if (blurRadius.value > 0) {
-        Modifier.drawWithContent {
-          graphicsLayer.record {
-            this@drawWithContent.drawContent()
-          }
-          drawLayer(graphicsLayer)
-          handler.graphicsLayerSize.value = graphicsLayer.size
-        }.then(backgroundModifier)
-      } else Modifier
-    }
-    /** setting it in composition scope because in Disposable effect it comes too late and other side [DefaultTopAppBar] doesn't see it in time */
-    handler.graphicsLayer = graphicsLayer
-    DisposableEffect(Unit) {
-      onDispose {
-        handler.graphicsLayer = null
-      }
-    }
     Column(
       if (maxIntrinsicSize) {
-        modifier.then(drawScreenshot).nestedScroll(connection).verticalScroll(state).height(IntrinsicSize.Max)
+        Modifier.copyViewToAppBar(LocalAppBarHandler.current?.graphicsLayer).then(modifier).nestedScroll(connection).verticalScroll(state).height(IntrinsicSize.Max)
       } else {
-        modifier.then(drawScreenshot).nestedScroll(connection).verticalScroll(state)
+        Modifier.copyViewToAppBar(LocalAppBarHandler.current?.graphicsLayer).then(modifier).nestedScroll(connection).verticalScroll(state)
       }, verticalArrangement, horizontalAlignment
     ) {
       if (oneHandUI.value) {

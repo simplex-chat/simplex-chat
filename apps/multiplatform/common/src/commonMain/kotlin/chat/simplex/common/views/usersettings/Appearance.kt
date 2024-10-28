@@ -228,10 +228,11 @@ object AppearanceScope {
         Spacer(Modifier.width(15.dp))
         Slider(
           prefValue.toFloat(),
-          valueRange = 0f..100f,
-          steps = 101,
+          valueRange = 0f..200f,
+          steps = 41,
           onValueChange = {
-            pref.set(it.roundToInt())
+            val int = it.roundToInt()
+            pref.set(int - int % 5)
           },
           colors = SliderDefaults.colors(
             activeTickColor = Color.Transparent,
@@ -257,7 +258,7 @@ object AppearanceScope {
     Column(Modifier
       .drawWithCache {
         if (wallpaperImage != null && wallpaperType != null && backgroundColor != null && tintColor != null) {
-          chatViewBackground(wallpaperImage, wallpaperType, backgroundColor, tintColor)
+          chatViewBackground(wallpaperImage, wallpaperType, backgroundColor, tintColor, null, null)
         } else {
           onDrawBehind {
             drawRect(themeBackgroundColor)

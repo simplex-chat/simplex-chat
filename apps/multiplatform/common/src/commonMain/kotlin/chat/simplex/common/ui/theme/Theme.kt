@@ -1,14 +1,14 @@
 package chat.simplex.common.ui.theme
 
-import androidx.compose.foundation.background
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.*
 import chat.simplex.common.model.ChatController
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
@@ -587,11 +587,15 @@ data class ThemeModeOverride (
   }
 }
 
-fun Modifier.themedBackground(baseTheme: DefaultTheme = CurrentColors.value.base, shape: Shape = RectangleShape): Modifier {
-  return if (baseTheme == DefaultTheme.SIMPLEX) {
-    this.background(brush = themedBackgroundBrush(), shape = shape)
-  } else {
-    this.background(color = CurrentColors.value.colors.background, shape = shape)
+fun Modifier.themedBackground(baseTheme: DefaultTheme = CurrentColors.value.base, bgLayerSize: MutableState<IntSize>?, bgLayer: GraphicsLayer?/*, shape: Shape = RectangleShape*/): Modifier {
+  return drawBehind {
+    copyBackgroundToAppBar(bgLayerSize, bgLayer) {
+      if (baseTheme == DefaultTheme.SIMPLEX) {
+        drawRect(brush = themedBackgroundBrush())
+      } else {
+        drawRect(CurrentColors.value.colors.background)
+      }
+    }
   }
 }
 

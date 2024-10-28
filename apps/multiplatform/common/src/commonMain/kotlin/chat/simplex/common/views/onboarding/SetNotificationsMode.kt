@@ -25,12 +25,9 @@ import chat.simplex.res.MR
 
 @Composable
 fun SetNotificationsMode(m: ChatModel) {
-  val handler = remember { AppBarHandler() }
-  CompositionLocalProvider(
-    LocalAppBarHandler provides handler
-  ) {
+  CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
     ModalView({}, showClose = false) {
-      ColumnWithScrollBar(Modifier.themedBackground()) {
+      ColumnWithScrollBar(Modifier.themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer)) {
         Box(Modifier.align(Alignment.CenterHorizontally)) {
           AppBarTitle(stringResource(MR.strings.onboarding_notifications_mode_title))
         }

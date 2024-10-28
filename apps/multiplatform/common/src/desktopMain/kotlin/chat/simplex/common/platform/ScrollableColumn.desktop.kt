@@ -12,10 +12,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.layer.drawLayer
-import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.unit.Dp
@@ -30,7 +27,6 @@ import kotlin.math.*
 @Composable
 actual fun LazyColumnWithScrollBar(
   modifier: Modifier,
-  backgroundModifier: Modifier,
   state: LazyListState?,
   contentPadding: PaddingValues,
   reverseLayout: Boolean,
@@ -63,19 +59,6 @@ actual fun LazyColumnWithScrollBar(
         }
       }
   }
-  val graphicsLayer = rememberGraphicsLayer()
-  val blurRadius = remember { appPrefs.appearanceBarsBlurRadius.state }
-  val drawScreenshot = remember(blurRadius.value > 0, backgroundModifier) {
-    if (blurRadius.value > 0) {
-      Modifier.drawWithContent {
-        graphicsLayer.record {
-          this@drawWithContent.drawContent()
-        }
-        drawLayer(graphicsLayer)
-        handler.graphicsLayerSize.value = graphicsLayer.size
-      }.then(backgroundModifier)
-    } else Modifier
-  }
   val state = state ?: handler.listState
   val connection = handler.connection
   // When scroll bar is dragging, there is no scroll event in nested scroll modifier. So, listen for changes on lazy column state
@@ -106,16 +89,9 @@ actual fun LazyColumnWithScrollBar(
     }
   }
   val modifier = if (fillMaxSize) Modifier.fillMaxSize().then(modifier) else modifier
-  Box(Modifier.then(drawScreenshot).nestedScroll(connection)) {
+  Box(Modifier.copyViewToAppBar(LocalAppBarHandler.current?.graphicsLayer).nestedScroll(connection)) {
     LazyColumn(modifier.then(scrollModifier), state, contentPadding, reverseLayout, verticalArrangement, horizontalAlignment, flingBehavior, userScrollEnabled, content)
     ScrollBar(reverseLayout, state, scrollBarAlpha, scrollJob, scrollBarDraggingState, additionalBarOffset)
-  }
-  /** setting it in composition scope because in Disposable effect it comes too late and other side [DefaultTopAppBar] doesn't see it in time */
-  handler.graphicsLayer = graphicsLayer
-  DisposableEffect(Unit) {
-    onDispose {
-      handler.graphicsLayer = null
-    }
   }
 }
 
@@ -185,7 +161,6 @@ private fun ScrollBar(
 @Composable
 actual fun ColumnWithScrollBar(
   modifier: Modifier,
-  backgroundModifier: Modifier,
   verticalArrangement: Arrangement.Vertical,
   horizontalAlignment: Alignment.Horizontal,
   state: ScrollState?,
@@ -199,19 +174,6 @@ actual fun ColumnWithScrollBar(
   val scope = rememberCoroutineScope()
   val scrollBarAlpha = remember { Animatable(0f) }
   val scrollJob: MutableState<Job> = remember { mutableStateOf(Job()) }
-  val graphicsLayer = rememberGraphicsLayer()
-  val blurRadius = remember { appPrefs.appearanceBarsBlurRadius.state }
-  val drawScreenshot = remember(blurRadius.value > 0, backgroundModifier) {
-    if (blurRadius.value > 0) {
-      Modifier.drawWithContent {
-        graphicsLayer.record {
-          this@drawWithContent.drawContent()
-        }
-        drawLayer(graphicsLayer)
-        handler.graphicsLayerSize.value = graphicsLayer.size
-      }.then(backgroundModifier)
-    } else Modifier
-  }
   val scrollModifier = remember {
     Modifier
       .pointerInput(Unit) {
@@ -248,9 +210,9 @@ actual fun ColumnWithScrollBar(
     val padding = if (oneHandUI.value) PaddingValues(bottom = AppBarHeight * fontSizeSqrtMultiplier) else PaddingValues(top = AppBarHeight * fontSizeSqrtMultiplier)
     Column(
       if (maxIntrinsicSize) {
-        modifier.then(drawScreenshot).verticalScroll(state).height(IntrinsicSize.Max).then(scrollModifier)
+        modifier.copyViewToAppBar(LocalAppBarHandler.current?.graphicsLayer).verticalScroll(state).height(IntrinsicSize.Max).then(scrollModifier)
       } else {
-        modifier.then(scrollModifier).then(drawScreenshot).verticalScroll(state)
+        modifier.then(scrollModifier).copyViewToAppBar(LocalAppBarHandler.current?.graphicsLayer).verticalScroll(state)
       },
       verticalArrangement, horizontalAlignment
     ) {
@@ -262,13 +224,6 @@ actual fun ColumnWithScrollBar(
     }
     Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.CenterEnd) {
       DesktopScrollBar(rememberScrollbarAdapter(state), Modifier.fillMaxHeight(), scrollBarAlpha, scrollJob, false, scrollBarDraggingState)
-    }
-  }
-  /** setting it in composition scope because in Disposable effect it comes too late and other side [DefaultTopAppBar] doesn't see it in time */
-  handler.graphicsLayer = graphicsLayer
-  DisposableEffect(Unit) {
-    onDispose {
-      handler.graphicsLayer = null
     }
   }
 }

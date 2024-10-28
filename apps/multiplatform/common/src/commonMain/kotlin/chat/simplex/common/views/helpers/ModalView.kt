@@ -38,7 +38,7 @@ fun ModalView(
   }
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   Surface(Modifier.fillMaxSize(), contentColor = LocalContentColor.current) {
-    Box(if (background != Color.Unspecified) Modifier.background(background) else Modifier.themedBackground()) {
+    Box(if (background != Color.Unspecified) Modifier.background(background) else Modifier.themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer)) {
       Box(modifier = modifier) {
         content()
       }
@@ -73,7 +73,7 @@ class ModalData() {
   fun <T> stateGetOrPutNullable (key: String, default: () -> T?): MutableState<T?> =
     state.getOrPut(key) { mutableStateOf(default() as Any?) } as MutableState<T?>
 
-  val appBarHandler = AppBarHandler()
+  val appBarHandler = AppBarHandler(null, null)
 }
 
 class ModalManager(private val placement: ModalPlacement? = null) {
@@ -88,16 +88,14 @@ class ModalManager(private val placement: ModalPlacement? = null) {
   private var onTimePasscodeView: MutableStateFlow<(@Composable (close: () -> Unit) -> Unit)?> = MutableStateFlow(null)
 
   fun showModal(settings: Boolean = false, showClose: Boolean = true, endButtons: List<@Composable RowScope.() -> Unit> = emptyList(), content: @Composable ModalData.() -> Unit) {
-    val data = ModalData()
     showCustomModal { close ->
-      ModalView(close, showClose = showClose, endButtons = endButtons, content = { data.content() })
+      ModalView(close, showClose = showClose, endButtons = endButtons, content = { content() })
     }
   }
 
   fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, endButtons: List<@Composable RowScope.() -> Unit> = emptyList(), content: @Composable ModalData.(close: () -> Unit) -> Unit) {
-    val data = ModalData()
     showCustomModal { close ->
-      ModalView(close, showClose = showClose, endButtons = endButtons, content = { data.content(close) })
+      ModalView(close, showClose = showClose, endButtons = endButtons, content = { content(close) })
     }
   }
 
@@ -164,9 +162,7 @@ class ModalManager(private val placement: ModalPlacement? = null) {
     // Without animation
     if (modalCount.value > 0 && modalViews.lastOrNull()?.first == false) {
       modalViews.lastOrNull()?.let {
-        CompositionLocalProvider(
-          LocalAppBarHandler provides it.second.appBarHandler
-        ) {
+        CompositionLocalProvider(LocalAppBarHandler provides adjustAppBarHandler(it.second.appBarHandler)) {
           it.third(it.second, ::closeModal)
         }
       }
@@ -182,9 +178,7 @@ class ModalManager(private val placement: ModalPlacement? = null) {
       }
     ) {
       modalViews.getOrNull(it - 1)?.let {
-        CompositionLocalProvider(
-          LocalAppBarHandler provides it.second.appBarHandler
-        ) {
+        CompositionLocalProvider(LocalAppBarHandler provides adjustAppBarHandler(it.second.appBarHandler)) {
           it.third(it.second, ::closeModal)
         }
       }

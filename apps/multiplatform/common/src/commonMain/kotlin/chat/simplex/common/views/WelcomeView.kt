@@ -106,14 +106,11 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
   val scrollState = rememberScrollState()
   val keyboardState by getKeyboardState()
   var savedKeyboardState by remember { mutableStateOf(keyboardState) }
-  val handler = remember { AppBarHandler() }
-  CompositionLocalProvider(
-    LocalAppBarHandler provides handler
-  ) {
+  CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
       Column(
         modifier = Modifier
           .fillMaxSize()
-          .themedBackground(),
+          .themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer),
         horizontalAlignment = Alignment.CenterHorizontally
       ) {
         DefaultTopAppBar(

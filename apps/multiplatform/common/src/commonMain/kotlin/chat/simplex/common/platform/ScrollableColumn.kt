@@ -11,11 +11,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.ui.theme.themedBackground
+import chat.simplex.common.views.helpers.LocalAppBarHandler
 
 @Composable
 expect fun LazyColumnWithScrollBar(
   modifier: Modifier = Modifier,
-  backgroundModifier: Modifier = Modifier.themedBackground(),
   state: LazyListState? = null,
   contentPadding: PaddingValues = PaddingValues(0.dp),
   reverseLayout: Boolean = false,
@@ -49,7 +49,6 @@ expect fun LazyColumnWithScrollBarNoAppBar(
 @Composable
 expect fun ColumnWithScrollBar(
   modifier: Modifier = Modifier,
-  backgroundModifier: Modifier = Modifier.themedBackground(),
   verticalArrangement: Arrangement.Vertical = Arrangement.Top,
   horizontalAlignment: Alignment.Horizontal = Alignment.Start,
   state: ScrollState? = null,

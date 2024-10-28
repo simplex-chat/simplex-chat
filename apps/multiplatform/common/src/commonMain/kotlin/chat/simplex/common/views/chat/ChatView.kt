@@ -12,9 +12,9 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.*
@@ -109,7 +109,7 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
       }
     }
     val clipboard = LocalClipboardManager.current
-    CompositionLocalProvider(LocalAppBarHandler provides remember(chatInfo.chatType) { AppBarHandler() }) {
+    CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler(chatInfo.id, keyboardCoversBar = false)) {
     when (chatInfo) {
       is ChatInfo.Direct, is ChatInfo.Group, is ChatInfo.Local -> {
         val perChatTheme = remember(chatInfo, CurrentColors.value.base) { if (chatInfo is ChatInfo.Direct) chatInfo.contact.uiThemes?.preferredMode(!CurrentColors.value.colors.isLight) else if (chatInfo is ChatInfo.Group) chatInfo.groupInfo.uiThemes?.preferredMode(!CurrentColors.value.colors.isLight) else null }
@@ -642,11 +642,7 @@ fun ChatLayout(
     ) {
       println("LALAL RELOAD MODAL")
       val composeViewHeight = remember { mutableStateOf(0.dp) }
-      Box(
-        Modifier
-          .fillMaxSize()
-          .chatViewBackgroundModifier(MaterialTheme.colors, MaterialTheme.wallpaper)
-        ) {
+      Box(Modifier.fillMaxSize().chatViewBackgroundModifier(MaterialTheme.colors, MaterialTheme.wallpaper, LocalAppBarHandler.current?.backgroundGraphicsLayerSize, LocalAppBarHandler.current?.backgroundGraphicsLayer)) {
         val remoteHostId = remember { remoteHostId }.value
         val chatInfo = remember { chatInfo }.value
         AdaptingBottomPaddingLayout(Modifier, CHAT_COMPOSE_LAYOUT_ID, composeViewHeight) {
@@ -1000,7 +996,6 @@ fun BoxScope.ChatItemsList(
   )
   LazyColumnWithScrollBar(
     Modifier.align(Alignment.BottomCenter),
-    backgroundModifier = Modifier.chatViewBackgroundModifier(MaterialTheme.colors, MaterialTheme.wallpaper),
     state = listState,
     reverseLayout = true,
     contentPadding = PaddingValues(
@@ -1849,17 +1844,22 @@ private fun memberNames(member: GroupMember, prevMember: GroupMember?, memCount:
   }
 }
 
-fun Modifier.chatViewBackgroundModifier(colors: Colors, wallpaper: AppWallpaper): Modifier {
+fun Modifier.chatViewBackgroundModifier(
+  colors: Colors,
+  wallpaper: AppWallpaper,
+  backgroundGraphicsLayerSize: MutableState<IntSize>?,
+  backgroundGraphicsLayer: GraphicsLayer?
+): Modifier {
   val wallpaperImage = wallpaper.type.image
   val wallpaperType = wallpaper.type
   val backgroundColor = wallpaper.background ?: wallpaperType.defaultBackgroundColor(CurrentColors.value.base, colors.background)
   val tintColor = wallpaper.tint ?: wallpaperType.defaultTintColor(CurrentColors.value.base)
 
-  return this.background(colors.background)
+  return this
     .then(if (wallpaperImage != null)
-      Modifier.drawWithCache { chatViewBackground(wallpaperImage, wallpaperType, backgroundColor, tintColor) }
+      Modifier.drawWithCache { chatViewBackground(wallpaperImage, wallpaperType, backgroundColor, tintColor, backgroundGraphicsLayerSize, backgroundGraphicsLayer) }
     else
-      Modifier
+      Modifier.drawWithCache { onDrawBehind { copyBackgroundToAppBar(backgroundGraphicsLayerSize, backgroundGraphicsLayer) { drawRect(backgroundColor) } } }
     )
 }
 

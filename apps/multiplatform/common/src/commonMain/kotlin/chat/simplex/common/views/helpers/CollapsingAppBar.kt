@@ -3,16 +3,72 @@ package chat.simplex.common.views.helpers
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.CacheDrawScope
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.unit.IntSize
+import chat.simplex.common.model.ChatController.appPrefs
 
 val LocalAppBarHandler: ProvidableCompositionLocal<AppBarHandler?> = staticCompositionLocalOf { null }
 
+@Composable
+fun rememberAppBarHandler(key1: Any? = null, key2: Any? = null, keyboardCoversBar: Boolean = true): AppBarHandler {
+  val graphicsLayer = rememberGraphicsLayer()
+  val backgroundGraphicsLayer = rememberGraphicsLayer()
+  return remember(key1, key2) { AppBarHandler(graphicsLayer, backgroundGraphicsLayer, keyboardCoversBar) }
+}
+
+@Composable
+fun adjustAppBarHandler(handler: AppBarHandler): AppBarHandler {
+  println("LALAL HANDLER IS ${handler.graphicsLayer?.isReleased}")
+  val graphicsLayer = rememberGraphicsLayer()
+  val backgroundGraphicsLayer = rememberGraphicsLayer()
+  if (handler.graphicsLayer == null || handler.graphicsLayer?.isReleased == true || handler.backgroundGraphicsLayer?.isReleased == true) {
+    handler.graphicsLayer = graphicsLayer
+    handler.backgroundGraphicsLayer = backgroundGraphicsLayer
+  }
+  return handler
+}
+
+fun Modifier.copyViewToAppBar(graphicsLayer: GraphicsLayer?): Modifier {
+  val blurRadius = appPrefs.appearanceBarsBlurRadius.get()
+  return if (blurRadius > 0 && graphicsLayer != null) {
+    this.drawWithContent {
+      graphicsLayer.record {
+        this@drawWithContent.drawContent()
+      }
+      drawLayer(graphicsLayer)
+    }
+  } else this
+}
+
+fun DrawScope.copyBackgroundToAppBar(graphicsLayerSize: MutableState<IntSize>?, backgroundGraphicsLayer: GraphicsLayer?, scope: DrawScope.() -> Unit) {
+  println("LALAL MODIF2")
+  val blurRadius = appPrefs.appearanceBarsBlurRadius.get()
+  if (blurRadius > 0 && graphicsLayerSize != null && backgroundGraphicsLayer != null) {
+      backgroundGraphicsLayer.record {
+        scope()
+      }
+    graphicsLayerSize.value = backgroundGraphicsLayer.size
+    drawLayer(backgroundGraphicsLayer)
+    println("LALAL graphics SIZE ${backgroundGraphicsLayer.size}")
+  } else {
+    scope()
+  }
+}
+
 @Stable
 class AppBarHandler(
+  var graphicsLayer: GraphicsLayer?,
+  var backgroundGraphicsLayer: GraphicsLayer?,
+  val keyboardCoversBar: Boolean = true,
   listState: LazyListState = LazyListState(0, 0),
   scrollState: ScrollState = ScrollState(initial = 0)
 ) {
@@ -25,8 +81,7 @@ class AppBarHandler(
 
   val connection = CollapsingAppBarNestedScrollConnection()
 
-  var graphicsLayer: GraphicsLayer? = null
-  var graphicsLayerSize: MutableState<IntSize> = mutableStateOf(IntSize.Zero)
+  val backgroundGraphicsLayerSize: MutableState<IntSize> = mutableStateOf(IntSize.Zero)
 
   companion object {
     var appBarMaxHeightPx: Int = 0

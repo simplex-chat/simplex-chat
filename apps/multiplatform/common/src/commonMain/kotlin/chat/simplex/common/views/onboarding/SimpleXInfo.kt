@@ -31,15 +31,17 @@ import dev.icerock.moko.resources.StringResource
 @Composable
 fun SimpleXInfo(chatModel: ChatModel, onboarding: Boolean = true) {
   if (onboarding) {
-    ModalView({}, showClose = false, endButtons = listOf {
-      IconButton({ ModalManager.fullscreen.showModal { HowItWorks(chatModel.currentUser.value, null) }}) {
-        Icon(painterResource(MR.images.ic_info), null, Modifier.size(28.dp), tint = MaterialTheme.colors.primary)
+    CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
+      ModalView({}, showClose = false, endButtons = listOf {
+        IconButton({ ModalManager.fullscreen.showModal { HowItWorks(chatModel.currentUser.value, null) } }) {
+          Icon(painterResource(MR.images.ic_info), null, Modifier.size(28.dp), tint = MaterialTheme.colors.primary)
+        }
+      }) {
+        SimpleXInfoLayout(
+          user = chatModel.currentUser.value,
+          onboardingStage = chatModel.controller.appPrefs.onboardingStage
+        )
       }
-    }) {
-      SimpleXInfoLayout(
-        user = chatModel.currentUser.value,
-        onboardingStage = chatModel.controller.appPrefs.onboardingStage
-      )
     }
   } else {
     SimpleXInfoLayout(

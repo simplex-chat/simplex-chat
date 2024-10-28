@@ -59,7 +59,7 @@ private fun LinkAMobileLayout(
   staleQrCode: MutableState<Boolean>,
   updateDeviceName: (String) -> Unit,
 ) {
-  Column(Modifier.themedBackground()) {
+  Column(Modifier.themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer)) {
     DefaultTopAppBar(
       navigationButton = { NavigationButtonBack(onButtonClicked = { appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo) } ) },
       onTop = true

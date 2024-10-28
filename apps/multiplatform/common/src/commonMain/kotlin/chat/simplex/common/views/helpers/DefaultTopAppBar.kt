@@ -8,8 +8,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.graphics.drawscope.*
-import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
@@ -49,28 +48,12 @@ fun DefaultTopAppBar(
     }
   }
   Box(modifier) {
-    val graphicsLayer = handler?.graphicsLayer
-    val blurRadius = remember { appPrefs.appearanceBarsBlurRadius.state }
+    val density = LocalDensity.current
+    val keyboardInset = WindowInsets.ime
+    SideEffect { println("LALAL RELOAD ${keyboardInset.getBottom(density)}") }
     Box(Modifier
       .matchParentSize()
-      .then(if (graphicsLayer != null && blurRadius.value > 0 && prefAlpha < 1f)
-        Modifier
-          .graphicsLayer {
-            renderEffect = if (blurRadius.value > 0) BlurEffect(blurRadius.value.toFloat(), blurRadius.value.toFloat()) else null
-            clip = blurRadius.value > 0
-          }
-          .drawWithCache {
-            // keep it here, forces redraw block to restart when size of the layer changes (in ChatView, for example)
-            handler.graphicsLayerSize.value
-            onDrawBehind {
-              //drawRect(Color.Black)
-              clipRect {
-                translate(top = if (!onTop) size.height - graphicsLayer.size.height else 0f) {
-                  drawLayer(graphicsLayer)
-                }
-              }
-            }
-          } else Modifier)
+      .blurredBackgroundModifier(keyboardInset, handler, remember { appPrefs.appearanceBarsBlurRadius.state }, prefAlpha, handler?.keyboardCoversBar == true, onTop, density)
       .drawWithCache {
         val backgroundColor = if (title != null || fixedTitleText != null || connection == null || !onTop) {
           themeBackgroundMix.copy(prefAlpha)
