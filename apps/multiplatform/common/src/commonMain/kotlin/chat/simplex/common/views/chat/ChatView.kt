@@ -95,6 +95,7 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
             showSearch.value = false
             searchText.value = ""
             selectedChatItems.value = null
+            chatModel.chatItemsSectionArea = mutableMapOf<Long, ChatSectionArea>().also { it.putAll(chatModel.chatItems.value.associate { it.id to ChatSectionArea.Bottom }) }
           }
       }
     }
@@ -290,19 +291,35 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                 }
               }
             },
-            loadMessages = { chatId, scrollDirection ->
+            loadMessages = { chatId, scrollDirection, section ->
               val c = chatModel.getChat(chatId)
               if (chatModel.chatId.value != chatId) return@ChatLayout
               when (scrollDirection) {
                 ScrollDirection.Up -> {
-                  val firstId = chatModel.chatItems.value.firstOrNull()?.id
+                  println("requesting up ${section.area}")
+                  val firstSectionItemIdx = chatModel.chatItems.size - 1 - section.maxIndex
+                  val firstId = chatModel.chatItems.value.getOrNull(firstSectionItemIdx)?.id
+
                   if (c != null && firstId != null) {
                     withBGApi {
-                      apiLoadPrevMessages(c, chatModel, firstId, searchText.value)
+                      val chatSectionLoad = ChatSectionLoad(firstSectionItemIdx, section.area)
+                      apiLoadPrevMessages(c, chatModel, firstId, searchText.value, chatSectionLoad)
                     }
                   }
                 }
-                ScrollDirection.Down -> {}
+                ScrollDirection.Down -> {
+                  println("requesting down ${section.area}")
+
+                  val lastSectionItemIdx = chatModel.chatItems.size - 1 - section.minIndex
+                  val lastId = chatModel.chatItems.value.getOrNull(lastSectionItemIdx)?.id
+
+                  if (c != null && lastId != null) {
+                    withBGApi {
+                      val chatSectionLoad = ChatSectionLoad(lastSectionItemIdx, section.area)
+                      apiLoadAfterMessages(c, chatModel, lastId, searchText.value, chatSectionLoad)
+                    }
+                  }
+                }
                 else -> {}
               }
             },
@@ -610,7 +627,7 @@ fun ChatLayout(
   back: () -> Unit,
   info: () -> Unit,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
-  loadMessages: (ChatId, ScrollDirection) -> Unit,
+  loadMessages: (ChatId, ScrollDirection, ChatSectionAreaBoundary) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
   receiveFile: (Long) -> Unit,
@@ -638,7 +655,7 @@ fun ChatLayout(
   onComposed: suspend (chatId: String) -> Unit,
   developerTools: Boolean,
   showViaProxy: Boolean,
-  showSearch: MutableState<Boolean>
+  showSearch: MutableState<Boolean>,
 ) {
   val scope = rememberCoroutineScope()
   val attachmentDisabled = remember { derivedStateOf { composeState.value.attachmentDisabled } }
@@ -719,7 +736,7 @@ fun ChatLayout(
                 useLinkPreviews, linkMode, selectedChatItems, showMemberInfo, loadMessages, deleteMessage, deleteMessages,
                 receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, openDirectChat, forwardItem,
                 updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
-                setReaction, showItemDetails, markRead, setFloatingButton, onComposed, developerTools, showViaProxy,
+                setReaction, showItemDetails, markRead, setFloatingButton, onComposed, developerTools, showViaProxy
               )
             }
           }
@@ -950,7 +967,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   linkMode: SimplexLinkMode,
   selectedChatItems: MutableState<Set<Long>?>,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
-  loadMessages: (ChatId, ScrollDirection) -> Unit,
+  loadMessages: (ChatId, ScrollDirection, ChatSectionAreaBoundary) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
   receiveFile: (Long) -> Unit,
@@ -972,7 +989,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   setFloatingButton: (@Composable () -> Unit) -> Unit,
   onComposed: suspend (chatId: String) -> Unit,
   developerTools: Boolean,
-  showViaProxy: Boolean
+  showViaProxy: Boolean,
 ) {
   val listState = rememberLazyListState()
   val scope = rememberCoroutineScope()
@@ -989,27 +1006,42 @@ fun BoxWithConstraintsScope.ChatItemsList(
       scope.launch { listState.scrollToItem(0) }
     }
   }
-  val preloadItems = remember { mutableStateOf(true) }
-  PreloadItems(chatInfo.id, listState, ChatPagination.UNTIL_PRELOAD_COUNT, preloadItems.value, loadMessages)
 
   Spacer(Modifier.size(8.dp))
   val reversedChatItems by remember { derivedStateOf { chatModel.chatItems.asReversed() } }
   val revealedItems = rememberSaveable { mutableStateOf(setOf<Long>()) }
   val sections by remember { derivedStateOf { (reversedChatItems).putIntoSections(revealedItems.value) } }
+  val preloadItems = remember { mutableStateOf(true) }
+  val boundaries = remember { derivedStateOf { sections.map { it.boundary } } }
+
+  PreloadItems(chatInfo.id, listState, ChatPagination.UNTIL_PRELOAD_COUNT, preloadItems, boundaries, loadMessages)
+
   val maxHeightRounded = with(LocalDensity.current) { maxHeight.roundToPx() }
+  val animatedScrollToIndex: (Int) -> Unit = { idx ->
+    withBGApi {
+      scope.launch {
+        listState.animateScrollToItem(kotlin.math.min(reversedChatItems.lastIndex, idx + 1), -maxHeightRounded)
+      }.also {
+        it.join()
+        preloadItems.value = true
+      }
+    }
+  }
   val scrollToItem: (Long) -> Unit = { itemId: Long ->
     val index = reversedChatItems.indexOfFirst { it.id == itemId }
-    println("here")
+    preloadItems.value = false
+
     if (index != -1) {
-      scope.launch { listState.animateScrollToItem(kotlin.math.min(reversedChatItems.lastIndex, index + 1), -maxHeightRounded) }
+      animatedScrollToIndex(index)
     } else {
-      preloadItems.value = false
       withBGApi {
         try {
-          apiLoadMessagesAroundItem(rhId = remoteHostId, chatModel = chatModel, chatInfo = chatInfo, aroundItemId = itemId)
+          // TODO: If this section exists it should be removed.
+          val chatSectionLoad = ChatSectionLoad(0, ChatSectionArea.Destination)
+          apiLoadMessagesAroundItem(rhId = remoteHostId, chatModel = chatModel, chatInfo = chatInfo, aroundItemId = itemId, chatSectionLoad = chatSectionLoad)
           val idx = reversedChatItems.indexOfFirst { it.id == itemId }
-          scope.launch { listState.animateScrollToItem(kotlin.math.min(reversedChatItems.lastIndex, idx + 1), -maxHeightRounded) }
-        } finally {
+          animatedScrollToIndex(idx)
+        } catch (ex: Exception) {
           preloadItems.value = true
         }
       }
@@ -1259,16 +1291,18 @@ fun BoxWithConstraintsScope.ChatItemsList(
     }
   }
   LazyColumnWithScrollBar(Modifier.align(Alignment.BottomCenter), state = listState, reverseLayout = true) {
-    for (section in sections) {
-      if (section.revealed) {
-        itemsIndexed(section.items, key = { _, item -> (item.id to item.meta.createdAt.toEpochMilliseconds()).toString() }) { i, cItem ->
-          // index here is just temporary, should be removed at all or put in the section items
-          ChatViewListItem(section.itemPositions[cItem.id] ?: -1, section = section, showAvatar = section.showAvatar.contains(cItem.id), cItem)        }
-      } else {
-        val item = section.items.last()
-        item(key = { (item.id to item.meta.createdAt.toEpochMilliseconds()).toString() }) {
-          // here you make one collapsed item from multiple items (should be already in section items)
-          ChatViewListItem(section.itemPositions[item.id] ?: -1, section = section, showAvatar = section.showAvatar.contains(item.id), item)
+    for (area in sections) {
+      for (section in area.items) {
+        if (section.revealed) {
+          itemsIndexed(section.items, key = { _, item -> (item.id to item.meta.createdAt.toEpochMilliseconds()).toString() }) { i, cItem ->
+            // index here is just temporary, should be removed at all or put in the section items
+            ChatViewListItem(section.itemPositions[cItem.id] ?: -1, section = section, showAvatar = section.showAvatar.contains(cItem.id), cItem)        }
+        } else {
+          val item = section.items.last()
+          item(key = { (item.id to item.meta.createdAt.toEpochMilliseconds()).toString() }) {
+            // here you make one collapsed item from multiple items (should be already in section items)
+            ChatViewListItem(section.itemPositions[item.id] ?: -1, section = section, showAvatar = section.showAvatar.contains(item.id), item)
+          }
         }
       }
     }
@@ -1437,8 +1471,9 @@ fun PreloadItems(
   chatId: String,
   listState: LazyListState,
   remaining: Int = 10,
-  enabled: Boolean,
-  onLoadMore: (ChatId, ScrollDirection) -> Unit,
+  enabled: State<Boolean>,
+  boundaries: State<List<ChatSectionAreaBoundary>>,
+  onLoadMore: (ChatId, ScrollDirection, ChatSectionAreaBoundary) -> Unit,
 ) {
   // Prevent situation when initial load and load more happens one after another after selecting a chat with long scroll position from previous selection
   val allowLoad = remember { mutableStateOf(false) }
@@ -1479,16 +1514,32 @@ fun PreloadItems(
       val lInfo = listState.layoutInfo
       val totalItemsNumber = lInfo.totalItemsCount
       val lastVisibleItemIndex = (lInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) + 1
-      if (allowLoad.value && lastVisibleItemIndex > (totalItemsNumber - remaining) && totalItemsNumber >= ChatPagination.INITIAL_COUNT)
-        totalItemsNumber + ChatPagination.PRELOAD_COUNT
-      else
-        0
-    }
-      .filter { it > 0 }
-      .collect {
-        if (enabled) {
-          onLoadMore.value(chatId.value, scrollDirection)
+      println("boundaries: $boundaries")
+
+      val section = if (scrollDirection == ScrollDirection.Up) {
+        boundaries.value.find { listState.layoutInfo.visibleItemsInfo.lastIndex in it.minIndex..it.maxIndex }
+      } else {
+        boundaries.value.find { listState.firstVisibleItemIndex in it.minIndex..it.maxIndex }
+      }
+
+      if (allowLoad.value && section != null && enabled.value) {
+        val numberOfItemsInSection = section.maxIndex.minus(section.minIndex) + 1
+        println("checking: $numberOfItemsInSection $section")
+
+        if (scrollDirection == ScrollDirection.Up && lastVisibleItemIndex > (section.maxIndex - remaining) && numberOfItemsInSection >= ChatPagination.INITIAL_COUNT) {
+          section
+        } else if (scrollDirection == ScrollDirection.Down && listState.firstVisibleItemIndex < (section.minIndex + remaining) && totalItemsNumber > remaining) {
+          section
+        } else {
+          null
         }
+      } else {
+        null
+      }
+    }
+      .filterNotNull()
+      .collect {
+        onLoadMore.value(chatId.value, scrollDirection, it)
       }
   }
 }
@@ -2141,7 +2192,7 @@ fun PreviewChatLayout() {
       back = {},
       info = {},
       showMemberInfo = { _, _ -> },
-      loadMessages = { _, _ -> },
+      loadMessages = { _, _, _ -> },
       deleteMessage = { _, _ -> },
       deleteMessages = { _ -> },
       receiveFile = { _ -> },
@@ -2213,7 +2264,7 @@ fun PreviewGroupChatLayout() {
       back = {},
       info = {},
       showMemberInfo = { _, _ -> },
-      loadMessages = { _, _ -> },
+      loadMessages = { _, _, _ -> },
       deleteMessage = { _, _ -> },
       deleteMessages = {},
       receiveFile = { _ -> },

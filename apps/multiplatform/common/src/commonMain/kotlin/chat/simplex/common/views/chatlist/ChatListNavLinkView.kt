@@ -32,6 +32,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 
 @Composable
@@ -230,12 +231,30 @@ fun openLoadedChat(chat: Chat, chatModel: ChatModel) {
   chatModel.chatId.value = chat.chatInfo.id
 }
 
-suspend fun apiLoadPrevMessages(ch: Chat, chatModel: ChatModel, beforeChatItemId: Long, search: String) {
+suspend fun apiLoadPrevMessages(ch: Chat, chatModel: ChatModel, beforeChatItemId: Long, search: String, chatSectionLoad: ChatSectionLoad) {
   val chatInfo = ch.chatInfo
   val pagination = ChatPagination.Before(beforeChatItemId, ChatPagination.PRELOAD_COUNT)
   val chat = chatModel.controller.apiGetChat(ch.remoteHostId, chatInfo.chatType, chatInfo.apiId, pagination, search) ?: return
   if (chatModel.chatId.value != chat.id) return
-  chatModel.chatItems.addAll(0, chat.chatItems)
+  withContext(Dispatchers.Main) {
+    val itemsToAdd = chatSectionLoad.prepareItems(chat.chatItems)
+    if (itemsToAdd.isNotEmpty()) {
+      chatModel.chatItems.addAll(chatSectionLoad.position, itemsToAdd)
+    }
+  }
+}
+
+suspend fun apiLoadAfterMessages(ch: Chat, chatModel: ChatModel, afterChatItemId: Long, search: String, chatSectionLoad: ChatSectionLoad) {
+  val chatInfo = ch.chatInfo
+  val pagination = ChatPagination.After(afterChatItemId, ChatPagination.PRELOAD_COUNT)
+  val chat = chatModel.controller.apiGetChat(ch.remoteHostId, chatInfo.chatType, chatInfo.apiId, pagination, search) ?: return
+  if (chatModel.chatId.value != chat.id) return
+  withContext(Dispatchers.Main) {
+    val itemsToAdd = chatSectionLoad.prepareItems(chat.chatItems)
+    if (itemsToAdd.isNotEmpty()) {
+      chatModel.chatItems.addAll(chatSectionLoad.position, itemsToAdd)
+    }
+  }
 }
 
 suspend fun apiFindMessages(ch: Chat, chatModel: ChatModel, search: String) {
