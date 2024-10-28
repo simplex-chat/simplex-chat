@@ -912,10 +912,9 @@
 		5CB924DF27A8678B00ACCCDD /* UserSettings */ = {
 			isa = PBXGroup;
 			children = (
+				643B3B4C2CCFD34B0083A2CF /* NetworkAndServers */,
 				5CB924D627A8563F00ACCCDD /* SettingsView.swift */,
 				5CB346E62868D76D001FD2EF /* NotificationsView.swift */,
-				5C9C2DA6289957AE00CC63B1 /* AdvancedNetworkSettings.swift */,
-				5C9C2DA82899DA6F00CC63B1 /* NetworkAndServers.swift */,
 				5CADE79929211BB900072E13 /* PreferencesView.swift */,
 				5C5DB70D289ABDD200730FFF /* AppearanceSettings.swift */,
 				5C05DF522840AA1D00C683F9 /* CallSettings.swift */,
@@ -923,9 +922,6 @@
 				5CC036DF29C488D500C0EF20 /* HiddenProfileView.swift */,
 				5C577F7C27C83AA10006112D /* MarkdownHelp.swift */,
 				5C3F1D57284363C400EC8A82 /* PrivacySettings.swift */,
-				5C93292E29239A170090FFF9 /* ProtocolServersView.swift */,
-				5C93293029239BED0090FFF9 /* ProtocolServerView.swift */,
-				5C9329402929248A0090FFF9 /* ScanProtocolServer.swift */,
 				5CB2084E28DA4B4800D024EC /* RTCServers.swift */,
 				64F1CC3A28B39D8600CD1FB1 /* IncognitoHelp.swift */,
 				18415845648CA4F5A8BCA272 /* UserProfilesView.swift */,
@@ -1054,6 +1050,18 @@
 				5C9CC7AC28C55D7800BEF955 /* DatabaseEncryptionView.swift */,
 			);
 			path = Database;
+			sourceTree = "<group>";
+		};
+		643B3B4C2CCFD34B0083A2CF /* NetworkAndServers */ = {
+			isa = PBXGroup;
+			children = (
+				5C9329402929248A0090FFF9 /* ScanProtocolServer.swift */,
+				5C93293029239BED0090FFF9 /* ProtocolServerView.swift */,
+				5C93292E29239A170090FFF9 /* ProtocolServersView.swift */,
+				5C9C2DA6289957AE00CC63B1 /* AdvancedNetworkSettings.swift */,
+				5C9C2DA82899DA6F00CC63B1 /* NetworkAndServers.swift */,
+			);
+			path = NetworkAndServers;
 			sourceTree = "<group>";
 		};
 		6440CA01288AEC770062C672 /* Group */ = {
