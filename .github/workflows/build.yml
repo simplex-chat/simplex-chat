@@ -354,6 +354,10 @@ jobs:
           echo "    flags: +openssl" >> cabal.project.local
           echo "    extra-include-dirs: $openssl_windows_style_path\include" >> cabal.project.local
           echo "    extra-lib-dirs: $openssl_windows_style_path" >> cabal.project.local
+          echo ""                                                >> cabal.project.local
+          echo "package rocksdb-haskell-jprupp"                  >> cabal.project.local
+          echo "    extra-include-dirs: /mingw64/include"        >> cabal.project.local
+          echo "    extra-lib-dirs: /mingw64/lib"                >> cabal.project.local
 
           rm -rf dist-newstyle/src/direct-sq*
           sed -i "s/, unix /--, unix /" simplex-chat.cabal
