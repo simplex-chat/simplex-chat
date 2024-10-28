@@ -334,7 +334,7 @@ jobs:
             git
             perl
             make
-            mingw-w64-rocksdb
+            mingw-w64-x86_64-rocksdb
           pacboy: >-
             toolchain:p
             cmake:p
