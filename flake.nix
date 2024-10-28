@@ -26,9 +26,6 @@
             crossSystem = prev.lib.systems.examples.armv7a-android-prebuilt // { sdkVer = "26"; };
           };
         };
-        pcre2 = prev.pcre2.overrideAttrs (oldAttrs: rec {
-          configureFlags = oldAttrs.configureFlags or [] ++ [ "--enable-jit=no" ];
-        });
       }; in
       # `appendOverlays` with a singleton is identical to `extend`.
       let pkgs = haskellNix.legacyPackages.${system}.appendOverlays [android26]; in
