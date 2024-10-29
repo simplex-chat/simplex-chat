@@ -153,6 +153,7 @@
 		643B3B472CCBEB080083A2CF /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 643B3B422CCBEB080083A2CF /* libffi.a */; };
 		643B3B482CCBEB080083A2CF /* libHSsimplex-chat-6.1.1.0-KwHIA7FZqPI5ZTCAoi00n9.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 643B3B432CCBEB080083A2CF /* libHSsimplex-chat-6.1.1.0-KwHIA7FZqPI5ZTCAoi00n9.a */; };
 		643B3B492CCBEB080083A2CF /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 643B3B442CCBEB080083A2CF /* libgmp.a */; };
+		643B3B4E2CCFD6400083A2CF /* OperatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 643B3B4D2CCFD6400083A2CF /* OperatorView.swift */; };
 		6440CA00288857A10062C672 /* CIEventView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6440C9FF288857A10062C672 /* CIEventView.swift */; };
 		6440CA03288AECA70062C672 /* AddGroupMembersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6440CA02288AECA70062C672 /* AddGroupMembersView.swift */; };
 		6442E0BA287F169300CEC0F9 /* AddGroupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6442E0B9287F169300CEC0F9 /* AddGroupView.swift */; };
@@ -496,6 +497,7 @@
 		643B3B422CCBEB080083A2CF /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libffi.a; path = Libraries/libffi.a; sourceTree = "<group>"; };
 		643B3B432CCBEB080083A2CF /* libHSsimplex-chat-6.1.1.0-KwHIA7FZqPI5ZTCAoi00n9.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libHSsimplex-chat-6.1.1.0-KwHIA7FZqPI5ZTCAoi00n9.a"; path = "Libraries/libHSsimplex-chat-6.1.1.0-KwHIA7FZqPI5ZTCAoi00n9.a"; sourceTree = "<group>"; };
 		643B3B442CCBEB080083A2CF /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libgmp.a; path = Libraries/libgmp.a; sourceTree = "<group>"; };
+		643B3B4D2CCFD6400083A2CF /* OperatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperatorView.swift; sourceTree = "<group>"; };
 		6440C9FF288857A10062C672 /* CIEventView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIEventView.swift; sourceTree = "<group>"; };
 		6440CA02288AECA70062C672 /* AddGroupMembersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddGroupMembersView.swift; sourceTree = "<group>"; };
 		6442E0B9287F169300CEC0F9 /* AddGroupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddGroupView.swift; sourceTree = "<group>"; };
@@ -1058,6 +1060,7 @@
 				5C9329402929248A0090FFF9 /* ScanProtocolServer.swift */,
 				5C93293029239BED0090FFF9 /* ProtocolServerView.swift */,
 				5C93292E29239A170090FFF9 /* ProtocolServersView.swift */,
+				643B3B4D2CCFD6400083A2CF /* OperatorView.swift */,
 				5C9C2DA6289957AE00CC63B1 /* AdvancedNetworkSettings.swift */,
 				5C9C2DA82899DA6F00CC63B1 /* NetworkAndServers.swift */,
 			);
@@ -1537,6 +1540,7 @@
 				18415FEFE153C5920BFB7828 /* GroupWelcomeView.swift in Sources */,
 				18415F9A2D551F9757DA4654 /* CIVideoView.swift in Sources */,
 				184158C131FDB829D8A117EA /* VideoPlayerView.swift in Sources */,
+				643B3B4E2CCFD6400083A2CF /* OperatorView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

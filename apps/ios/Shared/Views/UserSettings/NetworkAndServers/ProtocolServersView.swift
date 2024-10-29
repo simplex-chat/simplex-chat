@@ -54,6 +54,8 @@ struct ProtocolServersView: View {
 
     private func protocolServersView() -> some View {
         List {
+            operatorsSection()
+
             if !configuredServers.isEmpty {
                 Section {
                     ForEach($configuredServers) { srv in
@@ -172,6 +174,34 @@ struct ProtocolServersView: View {
             } else {
                 partitionServers(allServers)
             }
+        }
+    }
+
+    @ViewBuilder private func operatorsSection() -> some View {
+        let operator1 = ServerOperator.sampleData1
+        let operator2 = ServerOperator.sampleData2
+        let servers = [ServerCfg.sampleData.preset, ServerCfg.sampleData.untested]
+        Section {
+            NavigationLink() {
+                OperatorView(serverProtocol: .smp, serverOperator: Binding.constant(operator1), servers: servers)
+                    .navigationBarTitle("\(operator1.name) servers")
+                    .modifier(ThemedBackground(grouped: true))
+                    .navigationBarTitleDisplayMode(.large)
+            } label: {
+                Text(operator1.name)
+            }
+
+            NavigationLink() {
+                OperatorView(serverProtocol: .smp, serverOperator: Binding.constant(operator2), servers: servers)
+                    .navigationBarTitle("\(operator2.name) servers")
+                    .modifier(ThemedBackground(grouped: true))
+                    .navigationBarTitleDisplayMode(.large)
+            } label: {
+                Text(operator2.name)
+            }
+        } header: {
+            Text("Operators")
+                .foregroundColor(theme.colors.secondary)
         }
     }
 
