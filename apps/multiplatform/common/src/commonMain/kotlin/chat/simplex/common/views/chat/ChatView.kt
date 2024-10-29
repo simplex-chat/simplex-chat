@@ -1061,7 +1061,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
     }
   )
   @Composable
-  fun ChatViewListItem(i: Int, section: SectionItems, showAvatar: Boolean, cItem: ChatItem) {
+  fun ChatViewListItem(i: Int, showAvatar: Boolean, cItem: ChatItem, prevItem: ChatItem?, nextItem: ChatItem?) {
     CompositionLocalProvider(
       // Makes horizontal and vertical scrolling to coexist nicely.
       // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view
@@ -1283,22 +1283,34 @@ fun BoxWithConstraintsScope.ChatItemsList(
           }
         }
       }
-      val itemSeparation = getItemSeparation(cItem, null)
-      ChatItemView(cItem, null, section.getPreviousChatItem(cItem), itemSeparation, null)
+
+      val itemSeparation = getItemSeparation(cItem, nextItem)
+      val previousItemSeparation = if (prevItem != null) getItemSeparation(prevItem, cItem) else null
+
+      if (itemSeparation.date != null) {
+        DateSeparator(itemSeparation.date)
+      }
+
+      ChatItemView(cItem, null, prevItem, itemSeparation, previousItemSeparation)
     }
   }
   LazyColumnWithScrollBar(Modifier.align(Alignment.BottomCenter), state = listState, reverseLayout = true) {
     for (area in sections) {
-      for (section in area.items) {
+      for ((sIdx, section) in area.items.withIndex()) {
         if (section.revealed) {
           itemsIndexed(section.items, key = { _, item -> (item.id to item.meta.createdAt.toEpochMilliseconds()).toString() }) { i, cItem ->
             // index here is just temporary, should be removed at all or put in the section items
-            ChatViewListItem(section.itemPositions[cItem.id] ?: -1, section = section, showAvatar = section.showAvatar.contains(cItem.id), cItem)        }
+            val prevItem = area.getPreviousShownItem(sIdx, i)
+            val nextItem = area.getNextShownItem(sIdx, i)
+            ChatViewListItem(section.itemPositions[cItem.id] ?: -1, showAvatar = section.showAvatar.contains(cItem.id), cItem, prevItem, nextItem)
+          }
         } else {
           val item = section.items.last()
           item(key = { (item.id to item.meta.createdAt.toEpochMilliseconds()).toString() }) {
             // here you make one collapsed item from multiple items (should be already in section items)
-            ChatViewListItem(section.itemPositions[item.id] ?: -1, section = section, showAvatar = section.showAvatar.contains(item.id), item)
+            val prevItem = area.getPreviousShownItem(sIdx, section.items.lastIndex)
+            val nextItem = area.getNextShownItem(sIdx, section.items.lastIndex)
+            ChatViewListItem(section.itemPositions[item.id] ?: -1, showAvatar = section.showAvatar.contains(item.id), item, prevItem, nextItem)
           }
         }
       }

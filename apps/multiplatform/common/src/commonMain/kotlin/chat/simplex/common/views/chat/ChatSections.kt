@@ -32,10 +32,24 @@ data class SectionItems (
   val itemPositions: MutableMap<Long, Int>
 )
 
-fun SectionItems.getPreviousChatItem(chatItem: ChatItem): ChatItem? {
-  val itemIndex = items.indexOfFirst { it.id == chatItem.id }
-  if (itemIndex == -1) return null
-  return items.getOrNull(itemIndex + 1)
+fun ChatSection.getPreviousShownItem(sectionIndex: Int, itemIndex: Int): ChatItem? {
+  val section = items.getOrNull(sectionIndex) ?: return null
+
+  return if (section.mergeCategory == null) {
+    section.items.getOrNull(itemIndex + 1) ?: items.getOrNull(sectionIndex + 1)?.items?.firstOrNull()
+  } else {
+    items.getOrNull(sectionIndex + 1)?.items?.firstOrNull()
+  }
+}
+
+fun ChatSection.getNextShownItem(sectionIndex: Int, itemIndex: Int): ChatItem? {
+  val section = items.getOrNull(sectionIndex) ?: return null
+
+  return if (section.mergeCategory == null) {
+    section.items.getOrNull(itemIndex - 1) ?: items.getOrNull(sectionIndex - 1)?.items?.lastOrNull()
+  } else {
+    items.getOrNull(sectionIndex - 1)?.items?.lastOrNull()
+  }
 }
 
 fun List<ChatItem>.putIntoSections(revealedItems: Set<Long>): List<ChatSection> {
