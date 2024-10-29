@@ -182,7 +182,6 @@ suspend fun apiLoadMessagesAroundItem(chatInfo: ChatInfo, chatModel: ChatModel, 
   if (chatModel.chatId.value != chat.id) return
   withContext(Dispatchers.Main) {
     val itemsToAdd = chatSectionLoad.prepareItems(chat.chatItems)
-    println("prepared items ${itemsToAdd.size}")
     if (itemsToAdd.isNotEmpty()) {
       chatModel.chatItems.addAll(chatSectionLoad.position, itemsToAdd)
     }

@@ -1008,10 +1008,21 @@ fun BoxWithConstraintsScope.ChatItemsList(
   val reversedChatItems by remember { derivedStateOf { chatModel.chatItems.asReversed() } }
   val revealedItems = rememberSaveable { mutableStateOf(setOf<Long>()) }
   val sections by remember { derivedStateOf { (reversedChatItems).putIntoSections(revealedItems.value) } }
-  val preloadItems = remember { mutableStateOf(true) }
+  val preloadItemsEnabled = remember { mutableStateOf(true) }
   val boundaries = remember { derivedStateOf { sections.map { it.boundary } } }
 
-  PreloadItems(chatInfo.id, listState, ChatPagination.UNTIL_PRELOAD_COUNT, preloadItems, boundaries, loadMessages)
+  PreloadItems(chatInfo.id, listState, ChatPagination.UNTIL_PRELOAD_COUNT, preloadItemsEnabled, boundaries, loadMessages)
+
+  LaunchedEffect(Unit) {
+    launch {
+      snapshotFlow { chatModel.chatId.value }
+        .distinctUntilChanged()
+        .collect {
+          revealedItems.value = setOf()
+          preloadItemsEnabled.value = true
+        }
+    }
+  }
 
   val maxHeightRounded = with(LocalDensity.current) { maxHeight.roundToPx() }
   val animatedScrollToIndex: (Int) -> Unit = { idx ->
@@ -1020,13 +1031,13 @@ fun BoxWithConstraintsScope.ChatItemsList(
         listState.animateScrollToItem(kotlin.math.min(reversedChatItems.lastIndex, idx + 1), -maxHeightRounded)
       }.also {
         it.join()
-        preloadItems.value = true
+        preloadItemsEnabled.value = true
       }
     }
   }
   val scrollToItem: (Long) -> Unit = { itemId: Long ->
     val index = reversedChatItems.indexOfFirst { it.id == itemId }
-    preloadItems.value = false
+    preloadItemsEnabled.value = false
 
     if (index != -1) {
       animatedScrollToIndex(index)
@@ -1039,7 +1050,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
           val idx = reversedChatItems.indexOfFirst { it.id == itemId }
           animatedScrollToIndex(idx)
         } catch (ex: Exception) {
-          preloadItems.value = true
+          preloadItemsEnabled.value = true
         }
       }
     }
@@ -1061,7 +1072,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
     }
   )
   @Composable
-  fun ChatViewListItem(i: Int, showAvatar: Boolean, cItem: ChatItem, prevItem: ChatItem?, nextItem: ChatItem?) {
+  fun ChatViewListItem(i: Int, sectionItems: SectionItems, cItem: ChatItem, prevItem: ChatItem?, nextItem: ChatItem?) {
     CompositionLocalProvider(
       // Makes horizontal and vertical scrolling to coexist nicely.
       // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view
@@ -1077,7 +1088,19 @@ fun BoxWithConstraintsScope.ChatItemsList(
           }
         }
       }
-      val revealed = remember { mutableStateOf(false) }
+      val revealed = remember { mutableStateOf(sectionItems.revealed) }
+
+      KeyChangeEffect(revealed.value) {
+        val revealId = if (cItem.mergeCategory == null) cItem.id else sectionItems.items.firstOrNull()?.id
+
+        if (revealId != null) {
+          if (revealed.value) {
+            revealedItems.value = revealedItems.value.toMutableSet().apply { add(revealId) }
+          } else {
+            revealedItems.value = revealedItems.value.toMutableSet().apply { remove(revealId) }
+          }
+        }
+      }
 
       @Composable
       fun ChatItemViewShortHand(cItem: ChatItem, itemSeparation: ItemSeparation, range: IntRange?, fillMaxWidth: Boolean = true) {
@@ -1153,7 +1176,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                   null to 1
                 }
 
-              if (showMemberImage(member, prevItem) || showAvatar) {
+              if (showMemberImage(member, prevItem) || sectionItems.showAvatar.contains(cItem.id)) {
                 Column(
                   Modifier
                     .padding(top = 8.dp)
@@ -1302,15 +1325,15 @@ fun BoxWithConstraintsScope.ChatItemsList(
             // index here is just temporary, should be removed at all or put in the section items
             val prevItem = area.getPreviousShownItem(sIdx, i)
             val nextItem = area.getNextShownItem(sIdx, i)
-            ChatViewListItem(section.itemPositions[cItem.id] ?: -1, showAvatar = section.showAvatar.contains(cItem.id), cItem, prevItem, nextItem)
+            ChatViewListItem(section.itemPositions[cItem.id] ?: -1, section, cItem, prevItem, nextItem)
           }
         } else {
-          val item = section.items.last()
+          val item = section.items.first()
           item(key = { (item.id to item.meta.createdAt.toEpochMilliseconds()).toString() }) {
             // here you make one collapsed item from multiple items (should be already in section items)
             val prevItem = area.getPreviousShownItem(sIdx, section.items.lastIndex)
             val nextItem = area.getNextShownItem(sIdx, section.items.lastIndex)
-            ChatViewListItem(section.itemPositions[item.id] ?: -1, showAvatar = section.showAvatar.contains(item.id), item, prevItem, nextItem)
+            ChatViewListItem(section.itemPositions[item.id] ?: -1, section, item, prevItem, nextItem)
           }
         }
       }
@@ -1543,15 +1566,12 @@ fun PreloadItems(
       } else {
         null
       }
-      //println("req: ${listState.firstVisibleItemIndex} ${scrollDirection} ${request} ${allowLoad.value} ${enabled.value} $section")
 
       request
     }
       .distinctUntilChanged()
       .filterNotNull()
       .collect {
-        println("requesting load more: $scrollDirection ${it.second}")
-
         onLoadMore.value(chatId.value, scrollDirection, it.first)
       }
   }
