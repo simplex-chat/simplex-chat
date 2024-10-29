@@ -156,7 +156,6 @@ data class ChatSectionLoad (
           .forEach { chatItemsSectionArea[it.key] = targetSection }
       }
     }
-    println("prepareItems ${itemsToAdd.size} ${sectionArea.name}")
     chatItemsSectionArea.putAll(itemsToAdd.associate { it.id to sectionArea })
 
     return itemsToAdd

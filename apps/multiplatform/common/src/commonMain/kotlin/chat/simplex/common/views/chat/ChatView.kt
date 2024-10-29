@@ -296,7 +296,6 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
               if (chatModel.chatId.value != chatId) return@ChatLayout
               when (scrollDirection) {
                 ScrollDirection.Up -> {
-                  println("requesting up ${section.area}")
                   val firstSectionItemIdx = chatModel.chatItems.size - 1 - section.maxIndex
                   val firstId = chatModel.chatItems.value.getOrNull(firstSectionItemIdx)?.id
 
@@ -308,14 +307,12 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                   }
                 }
                 ScrollDirection.Down -> {
-                  println("requesting down ${section.area}")
-
                   val lastSectionItemIdx = chatModel.chatItems.size - 1 - section.minIndex
                   val lastId = chatModel.chatItems.value.getOrNull(lastSectionItemIdx)?.id
 
                   if (c != null && lastId != null) {
                     withBGApi {
-                      val chatSectionLoad = ChatSectionLoad(lastSectionItemIdx, section.area)
+                      val chatSectionLoad = ChatSectionLoad(lastSectionItemIdx + 1, section.area)
                       apiLoadAfterMessages(c, chatModel, lastId, searchText.value, chatSectionLoad)
                     }
                   }
@@ -1509,37 +1506,41 @@ fun PreloadItems(
         allowLoad.value = true
       }
   }
-  KeyChangeEffect(allowLoad.value) {
+  KeyChangeEffect(allowLoad.value, enabled.value) {
     snapshotFlow {
       val lInfo = listState.layoutInfo
       val totalItemsNumber = lInfo.totalItemsCount
       val lastVisibleItemIndex = (lInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) + 1
-      println("boundaries: $boundaries")
-
       val section = if (scrollDirection == ScrollDirection.Up) {
-        boundaries.value.find { listState.layoutInfo.visibleItemsInfo.lastIndex in it.minIndex..it.maxIndex }
-      } else {
+        boundaries.value.find { lastVisibleItemIndex in it.minIndex..it.maxIndex }
+      } else if (scrollDirection == ScrollDirection.Down) {
         boundaries.value.find { listState.firstVisibleItemIndex in it.minIndex..it.maxIndex }
+      } else {
+        null
       }
 
-      if (allowLoad.value && section != null && enabled.value) {
+      val request = if (allowLoad.value && section != null && enabled.value) {
         val numberOfItemsInSection = section.maxIndex.minus(section.minIndex) + 1
-        println("checking: $numberOfItemsInSection $section")
-
         if (scrollDirection == ScrollDirection.Up && lastVisibleItemIndex > (section.maxIndex - remaining) && numberOfItemsInSection >= ChatPagination.INITIAL_COUNT) {
-          section
-        } else if (scrollDirection == ScrollDirection.Down && listState.firstVisibleItemIndex < (section.minIndex + remaining) && totalItemsNumber > remaining) {
-          section
+          section to totalItemsNumber
+        } else if (scrollDirection == ScrollDirection.Down && (listState.firstVisibleItemIndex < (section.minIndex + remaining)) && totalItemsNumber > remaining) {
+          section to totalItemsNumber
         } else {
           null
         }
       } else {
         null
       }
+      //println("req: ${listState.firstVisibleItemIndex} ${scrollDirection} ${request} ${allowLoad.value} ${enabled.value} $section")
+
+      request
     }
+      .distinctUntilChanged()
       .filterNotNull()
       .collect {
-        onLoadMore.value(chatId.value, scrollDirection, it)
+        println("requesting load more: $scrollDirection ${it.second}")
+
+        onLoadMore.value(chatId.value, scrollDirection, it.first)
       }
   }
 }
