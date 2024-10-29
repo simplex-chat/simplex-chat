@@ -16,13 +16,13 @@ struct OperatorView: View {
     @EnvironmentObject var theme: AppTheme
     let serverProtocol: ServerProtocol
     @Binding var serverOperator: ServerOperator // Binding
-    
+    @State var serverOperatorToEdit: ServerOperator
     var servers: [ServerCfg] // State / Binding
 
     var proto: String { serverProtocol.rawValue.uppercased() }
 
     var body: some View {
-        return VStack {
+        VStack {
             List {
                 Section(header: Text("Operator").foregroundColor(theme.colors.secondary)) {
                     Text(serverOperator.name)
@@ -32,6 +32,10 @@ struct OperatorView: View {
                 useOperatorSection()
             }
         }
+        .modifier(BackButton(disabled: Binding.constant(false)) {
+            serverOperator = serverOperatorToEdit
+            dismiss()
+        })
     }
 
     private func infoViewLink() -> some View {
@@ -48,19 +52,19 @@ struct OperatorView: View {
     private func useOperatorSection() -> some View {
         Section(header: Text("Use operator").foregroundColor(theme.colors.secondary)) {
             conditionsViewLink()
-            if let reviewDeadline = serverOperator.latestConditionsAcceptance.reviewDeadline {
+            if let reviewDeadline = serverOperatorToEdit.latestConditionsAcceptance.reviewDeadline {
                 infoRow("Review until", deadlineTimestamp(reviewDeadline))
             }
-            Toggle("Use operator", isOn: $serverOperator.enabled)
-                .disabled(!serverOperator.latestConditionsAcceptance.usageAllowed)
-                .foregroundColor(!serverOperator.latestConditionsAcceptance.usageAllowed ? theme.colors.secondary : theme.colors.onBackground)
+            Toggle("Use operator", isOn: $serverOperatorToEdit.enabled)
+                .disabled(!serverOperatorToEdit.latestConditionsAcceptance.usageAllowed)
+                .foregroundColor(!serverOperatorToEdit.latestConditionsAcceptance.usageAllowed ? theme.colors.secondary : theme.colors.onBackground)
             Group {
-                Toggle("for storage", isOn: $serverOperator.roles.storage)
-                Toggle("as proxy", isOn: $serverOperator.roles.proxy)
+                Toggle("for storage", isOn: $serverOperatorToEdit.roles.storage)
+                Toggle("as proxy", isOn: $serverOperatorToEdit.roles.proxy)
             }
             .padding(.leading, 24)
-            .disabled(!serverOperator.enabled)
-            .foregroundColor(!serverOperator.enabled ? theme.colors.secondary : theme.colors.onBackground)
+            .disabled(!serverOperatorToEdit.enabled)
+            .foregroundColor(!serverOperatorToEdit.enabled ? theme.colors.secondary : theme.colors.onBackground)
         }
     }
 
@@ -73,7 +77,7 @@ struct OperatorView: View {
 
     @ViewBuilder private func conditionsViewLink() -> some View {
         NavigationLink() {
-            UsageConditionsView(serverOperator: $serverOperator)
+            UsageConditionsView(serverOperator: $serverOperatorToEdit, serverOperatorToEdit: serverOperatorToEdit)
                 .navigationBarTitle("Conditions of use")
                 .modifier(ThemedBackground(grouped: true))
                 .navigationBarTitleDisplayMode(.large)
@@ -92,7 +96,7 @@ struct OperatorInfoView: View {
     var serverOperator: ServerOperator
 
     var body: some View {
-        return VStack {
+        VStack {
             List {
                 Section(header: Text("Description").foregroundColor(theme.colors.secondary)) {
                     Text(serverOperator.info.description)
@@ -109,6 +113,7 @@ struct UsageConditionsView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var theme: AppTheme
     @Binding var serverOperator: ServerOperator
+    @State var serverOperatorToEdit: ServerOperator
 
     let conditionsText = """
     Lorem ipsum odor amet, consectetuer adipiscing elit. Blandit mauris massa tempor ac; maximus accumsan magnis. Sollicitudin maximus tempor luctus sociosqu turpis dictum per imperdiet porttitor. Efficitur mattis fusce curae id efficitur. Non bibendum elementum faucibus vehicula morbi pulvinar. Accumsan habitant tincidunt sollicitudin taciti ad urna potenti velit. Primis laoreet pharetra magnis est dolor proin viverra.
@@ -123,7 +128,7 @@ struct UsageConditionsView: View {
     """
 
     var body: some View {
-        return VStack {
+        VStack {
             List {
                 Section {
                     Text(conditionsText)
@@ -136,7 +141,8 @@ struct UsageConditionsView: View {
                         Button {
                             // Should call api to save state here, not when saving all servers
                             // (It's counterintuitive to lose to closed sheet or Reset)
-                            serverOperator.latestConditionsAcceptance = .accepted
+                            serverOperatorToEdit.latestConditionsAcceptance = .accepted
+                            serverOperator = serverOperatorToEdit
                             dismiss()
                         } label: {
                             Text("Accept conditions")
@@ -152,6 +158,7 @@ struct UsageConditionsView: View {
     OperatorView(
         serverProtocol: .smp,
         serverOperator: Binding.constant(ServerOperator.sampleData1),
+        serverOperatorToEdit: ServerOperator.sampleData1,
         servers: [ServerCfg.sampleData.preset]
     )
 }
