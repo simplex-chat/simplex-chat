@@ -31,6 +31,34 @@ data class SectionItems (
   val itemPositions: MutableMap<Long, Int>
 )
 
+data class ChatSectionLoad (
+  val position: Int,
+  val sectionArea: ChatSectionArea
+) {
+  fun prepareItems(items: List<ChatItem>): List<ChatItem> {
+    val chatItemsSectionArea = chatModel.chatItemsSectionArea
+    val itemsToAdd = mutableListOf<ChatItem>()
+    for (cItem in items) {
+      val itemSectionArea = chatItemsSectionArea[cItem.id]
+      if (itemSectionArea == null) {
+        itemsToAdd.add(cItem)
+      } else if (itemSectionArea != this.sectionArea) {
+        val targetSection = when (itemSectionArea) {
+          ChatSectionArea.Bottom -> ChatSectionArea.Bottom
+          ChatSectionArea.Current -> if (this.sectionArea == ChatSectionArea.Bottom) ChatSectionArea.Bottom else ChatSectionArea.Current
+          ChatSectionArea.Destination -> if (this.sectionArea == ChatSectionArea.Bottom) ChatSectionArea.Bottom else ChatSectionArea.Destination
+        }
+
+        chatItemsSectionArea.filter { it.value == itemSectionArea }
+          .forEach { chatItemsSectionArea[it.key] = targetSection }
+      }
+    }
+    chatItemsSectionArea.putAll(itemsToAdd.associate { it.id to sectionArea })
+
+    return itemsToAdd
+  }
+}
+
 fun ChatSection.getPreviousShownItem(sectionIndex: Int, itemIndex: Int): ChatItem? {
   val section = items.getOrNull(sectionIndex) ?: return null
 
@@ -147,31 +175,12 @@ fun List<ChatItem>.putIntoSections(revealedItems: Set<Long>): List<ChatSection> 
   return sections
 }
 
-data class ChatSectionLoad (
-  val position: Int,
-  val sectionArea: ChatSectionArea
-) {
-  fun prepareItems(items: List<ChatItem>): List<ChatItem> {
-    val chatItemsSectionArea = chatModel.chatItemsSectionArea
-    val itemsToAdd = mutableListOf<ChatItem>()
-    for (cItem in items) {
-      val itemSectionArea = chatItemsSectionArea[cItem.id]
-      if (itemSectionArea == null) {
-        itemsToAdd.add(cItem)
-      } else if (itemSectionArea != this.sectionArea) {
-        val targetSection = when (itemSectionArea) {
-          ChatSectionArea.Bottom -> ChatSectionArea.Bottom
-          ChatSectionArea.Current -> if (this.sectionArea == ChatSectionArea.Bottom) ChatSectionArea.Bottom else ChatSectionArea.Current
-          ChatSectionArea.Destination -> if (this.sectionArea == ChatSectionArea.Bottom) ChatSectionArea.Bottom else ChatSectionArea.Destination
-        }
-
-        chatItemsSectionArea.filter { it.value == itemSectionArea }
-          .forEach { chatItemsSectionArea[it.key] = targetSection }
-      }
-    }
-    chatItemsSectionArea.putAll(itemsToAdd.associate { it.id to sectionArea })
-
-    return itemsToAdd
+fun List<ChatSection>.dropTemporarySections() {
+  val bottomSection = this.find { it.area == ChatSectionArea.Bottom }
+  if (bottomSection != null && this.size > 1) {
+    val removeTo = chatModel.chatItems.value.size - 1 - bottomSection.boundary.maxIndex
+    chatModel.chatItems.value.removeRange(fromIndex = 0, toIndex = removeTo)
+    chatModel.chatItemsSectionArea = mutableMapOf<Long, ChatSectionArea>().also { it.putAll(chatModel.chatItems.value.associate { it.id to ChatSectionArea.Bottom }) }
   }
 }
 
