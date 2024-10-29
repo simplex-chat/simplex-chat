@@ -39,22 +39,23 @@ struct OperatorView: View {
                         .foregroundColor(theme.colors.secondary)
                 } footer: {
                     switch (serverOperatorToEdit.latestConditionsAcceptance) {
-                    case let .accepted(date): Text("Accepted on: \(conditionsTimestamp(date)).")
-                    case let .reviewAvailable(deadline): Text("Review until: \(conditionsTimestamp(deadline)).")
+                    case let .accepted(date): Text("Conditions accepted on: \(conditionsTimestamp(date)).")
+                    case let .reviewAvailable(deadline): Text("Review conditions until: \(conditionsTimestamp(deadline)).")
                     case .reviewRequired: EmptyView()
                     }
                 }
 
                 if serverOperatorToEdit.enabled {
                     usageRolesSection()
+                    serversSection()
                 }
-
-                serversSection()
 
                 Section {
                     Button("Reset") { servers = currServers }
                         .disabled(Set(servers) == Set(currServers))
-                    Button("Test servers") {}
+                    if serverOperatorToEdit.enabled {
+                        Button("Test servers") {}
+                    }
                     Button("Save") {}
                         .disabled(true)
                 }
@@ -71,7 +72,7 @@ struct OperatorView: View {
                 justOpened = false
             }
         }
-        .sheet(isPresented: $showConditionsSheet) {
+        .sheet(isPresented: $showConditionsSheet, onDismiss: onUseToggleSheetDismissed) {
             UsageConditionsView(serverOperator: $serverOperatorToEdit, serverOperatorToEdit: serverOperatorToEdit)
                 .modifier(ThemedBackground(grouped: true))
         }
@@ -87,7 +88,6 @@ struct OperatorView: View {
             Text(serverOperator.name)
         }
     }
-
     
     private func useOperatorToggle() -> some View {
         Toggle("Use operator", isOn: $useOperator)
@@ -106,23 +106,27 @@ struct OperatorView: View {
             }
     }
 
+    private func onUseToggleSheetDismissed() {
+        if useOperator {
+            if case .reviewRequired = serverOperatorToEdit.latestConditionsAcceptance {
+                useOperatorToggleReset = true
+                useOperator = false
+            } else if serverOperatorToEdit.latestConditionsAcceptance.conditionsAccepted {
+                serverOperatorToEdit.enabled = true
+            }
+        }
+    }
+
     private func viewConditionsButton() -> some View {
         Button {
             showConditionsSheet = true
         } label: {
-            if case .accepted = serverOperator.latestConditionsAcceptance {
+            if case .accepted = serverOperatorToEdit.latestConditionsAcceptance {
                 Text("Conditions accepted")
             } else {
                 Text("Review conditions")
             }
         }
-    }
-
-    private func conditionsTimestamp(_ date: Date) -> String {
-        let localDateFormatter = DateFormatter()
-        localDateFormatter.dateStyle = .medium
-        localDateFormatter.timeStyle = .none
-        return localDateFormatter.string(from: date)
     }
 
     private func usageRolesSection() -> some View {
@@ -203,6 +207,13 @@ struct OperatorView: View {
     }
 }
 
+private func conditionsTimestamp(_ date: Date) -> String {
+    let localDateFormatter = DateFormatter()
+    localDateFormatter.dateStyle = .medium
+    localDateFormatter.timeStyle = .none
+    return localDateFormatter.string(from: date)
+}
+
 struct OperatorInfoView: View {
     @EnvironmentObject var theme: AppTheme
     var serverOperator: ServerOperator
@@ -264,26 +275,31 @@ struct UsageConditionsView: View {
             )
             .padding(.horizontal)
 
-            if !serverOperator.latestConditionsAcceptance.conditionsAccepted {
-                HStack {
-                    Spacer()
+            Group {
+                if case let .accepted(date) = serverOperator.latestConditionsAcceptance {
+                    Text("Conditions accepted on: \(conditionsTimestamp(date)).")
+                        .foregroundColor(theme.colors.secondary)
+                } else {
+                    HStack {
+                        Spacer()
 
-                    Button {
-                        // Should call api to save state here, not when saving all servers
-                        // (It's counterintuitive to lose to closed sheet or Reset)
-                        serverOperatorToEdit.latestConditionsAcceptance = .accepted(date: Date.now)
-                        serverOperator = serverOperatorToEdit
-                        dismiss()
-                    } label: {
-                        Text("Accept conditions")
+                        Button {
+                            // Should call api to save state here, not when saving all servers
+                            // (It's counterintuitive to lose to closed sheet or Reset)
+                            serverOperatorToEdit.latestConditionsAcceptance = .accepted(date: Date.now)
+                            serverOperator = serverOperatorToEdit
+                            dismiss()
+                        } label: {
+                            Text("Accept conditions")
+                        }
+                        .buttonStyle(.borderedProminent)
+
+                        Spacer()
                     }
-                    .buttonStyle(.borderedProminent)
-
-                    Spacer()
                 }
-                .padding(.horizontal)
-                .padding(.bottom)
             }
+            .padding(.horizontal)
+            .padding(.bottom)
         }
     }
 }
