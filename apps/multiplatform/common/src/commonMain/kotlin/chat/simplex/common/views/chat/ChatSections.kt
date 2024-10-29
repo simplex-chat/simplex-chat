@@ -1,6 +1,5 @@
 package chat.simplex.common.views.chat
 
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.chatModel
 import kotlinx.coroutines.Dispatchers
@@ -26,7 +25,7 @@ data class ChatSection (
 
 data class SectionItems (
   val mergeCategory: CIMergeCategory?,
-  val items: SnapshotStateList<ChatItem>,
+  val items: MutableList<ChatItem>,
   val revealed: Boolean,
   val showAvatar: MutableSet<Long>,
   val itemPositions: MutableMap<Long, Int>
@@ -60,7 +59,7 @@ fun List<ChatItem>.putIntoSections(revealedItems: Set<Long>): List<ChatSection> 
 
     SectionItems(
       mergeCategory = first.mergeCategory,
-      items = SnapshotStateList<ChatItem>().also { it.add(first) },
+      items = mutableListOf<ChatItem>().also { it.add(first) },
       revealed = first.mergeCategory == null || revealedItems.contains(first.id),
       showAvatar = mutableSetOf<Long>().also {
         if (first.chatDir is CIDirection.GroupRcv) {
@@ -105,7 +104,7 @@ fun List<ChatItem>.putIntoSections(revealedItems: Set<Long>): List<ChatSection> 
     if (existingSection == null) {
       val newSection = SectionItems(
         mergeCategory = item.mergeCategory,
-        items = SnapshotStateList<ChatItem>().also { it.add(item) },
+        items = mutableListOf<ChatItem>().also { it.add(item) },
         revealed = item.mergeCategory == null || revealedItems.contains(item.id),
         showAvatar = mutableSetOf<Long>().also {
           it.add(item.id)
@@ -128,7 +127,7 @@ fun List<ChatItem>.putIntoSections(revealedItems: Set<Long>): List<ChatSection> 
       } else {
         val newSectionItems = SectionItems(
           mergeCategory = item.mergeCategory,
-          items = SnapshotStateList<ChatItem>().also { it.add(item) },
+          items = mutableListOf<ChatItem>().also { it.add(item) },
           revealed = item.mergeCategory == null || revealedItems.contains(item.id),
           showAvatar = mutableSetOf<Long>().also {
             if (item.chatDir is CIDirection.GroupRcv && (prev.chatDir !is CIDirection.GroupRcv || (prev.chatDir as CIDirection.GroupRcv).groupMember.memberId != item.chatDir.groupMember.memberId)) {

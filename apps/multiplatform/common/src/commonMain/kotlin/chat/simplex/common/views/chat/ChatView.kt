@@ -1007,7 +1007,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   Spacer(Modifier.size(8.dp))
   val reversedChatItems by remember { derivedStateOf { chatModel.chatItems.asReversed() } }
   val revealedItems = rememberSaveable { mutableStateOf(setOf<Long>()) }
-  val sections by remember { derivedStateOf { (reversedChatItems).putIntoSections(revealedItems.value) } }
+  val sections by remember { derivedStateOf { reversedChatItems.putIntoSections(revealedItems.value) } }
   val preloadItemsEnabled = remember { mutableStateOf(true) }
   val boundaries = remember { derivedStateOf { sections.map { it.boundary } } }
 
