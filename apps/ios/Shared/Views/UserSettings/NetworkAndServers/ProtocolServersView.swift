@@ -17,6 +17,7 @@ struct ProtocolServersView: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.editMode) private var editMode
     let serverProtocol: ServerProtocol
+    @State private var serverOperators: [ServerOperator] = []
     @State private var currServers: [ServerCfg] = []
     @State private var presetServers: [ServerCfg] = []
     @State private var configuredServers: [ServerCfg] = []
@@ -160,6 +161,7 @@ struct ProtocolServersView: View {
             // this condition is needed to prevent re-setting the servers when exiting single server view
             if justOpened {
                 do {
+                    serverOperators = [ServerOperator.sampleData1, ServerOperator.sampleData2]
                     let r = try getUserProtoServers(serverProtocol)
                     currServers = r.protoServers
                     presetServers = r.presetServers
@@ -178,30 +180,31 @@ struct ProtocolServersView: View {
     }
 
     @ViewBuilder private func operatorsSection() -> some View {
-        let operator1 = ServerOperator.sampleData1
-        let operator2 = ServerOperator.sampleData2
         let servers = [ServerCfg.sampleData.preset, ServerCfg.sampleData.untested]
         Section {
-            NavigationLink() {
-                OperatorView(serverProtocol: .smp, serverOperator: Binding.constant(operator1), servers: servers)
-                    .navigationBarTitle("\(operator1.name) servers")
-                    .modifier(ThemedBackground(grouped: true))
-                    .navigationBarTitleDisplayMode(.large)
-            } label: {
-                Text(operator1.name)
-            }
-
-            NavigationLink() {
-                OperatorView(serverProtocol: .smp, serverOperator: Binding.constant(operator2), servers: servers)
-                    .navigationBarTitle("\(operator2.name) servers")
-                    .modifier(ThemedBackground(grouped: true))
-                    .navigationBarTitleDisplayMode(.large)
-            } label: {
-                Text(operator2.name)
+            ForEach($serverOperators) { srvOperator in
+                serverOperatorView(srvOperator, servers)
             }
         } header: {
             Text("Operators")
                 .foregroundColor(theme.colors.secondary)
+        }
+    }
+
+    @ViewBuilder private func serverOperatorView(_ serverOperator: Binding<ServerOperator>, _ servers: [ServerCfg]) -> some View {
+        let srvOperator = serverOperator.wrappedValue
+        NavigationLink() {
+            OperatorView(
+                serverProtocol: .smp,
+                serverOperator: serverOperator,
+                serverOperatorToEdit: srvOperator,
+                servers: servers
+            )
+            .navigationBarTitle("\(srvOperator.name) servers")
+            .modifier(ThemedBackground(grouped: true))
+            .navigationBarTitleDisplayMode(.large)
+        } label: {
+            Text(srvOperator.name)
         }
     }
 

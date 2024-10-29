@@ -1216,13 +1216,15 @@ public enum UsageConditionsAcceptance: Decodable, Hashable {
     }
 }
 
-public struct ServerOperator: Decodable {
+public struct ServerOperator: Identifiable, Decodable {
     public var operatorId: Int64
     public var name: String
     public var info: ServerOperatorInfo
     public var latestConditionsAcceptance: UsageConditionsAcceptance
     public var enabled: Bool
     public var roles: ServerRoles
+
+    public var id: Int64 { operatorId }
 
     public static var sampleData1 = ServerOperator(
         operatorId: 1,
