@@ -119,7 +119,7 @@ fun List<ChatItem>.putIntoSections(revealedItems: Set<Long>): List<ChatSection> 
       recent = existingSection.items.last()
       val category = item.mergeCategory
       if (recent.mergeCategory == category) {
-        if (item.chatDir is CIDirection.GroupRcv && prev.chatDir is CIDirection.GroupRcv && item.chatDir.groupMember != (prev.chatDir as CIDirection.GroupRcv).groupMember) {
+        if (item.chatDir is CIDirection.GroupRcv && prev.chatDir is CIDirection.GroupRcv && item.chatDir.groupMember.memberId != (prev.chatDir as CIDirection.GroupRcv).groupMember.memberId) {
           recent.showAvatar.add(item.id)
         }
 
@@ -131,7 +131,7 @@ fun List<ChatItem>.putIntoSections(revealedItems: Set<Long>): List<ChatSection> 
           items = SnapshotStateList<ChatItem>().also { it.add(item) },
           revealed = item.mergeCategory == null || revealedItems.contains(item.id),
           showAvatar = mutableSetOf<Long>().also {
-            if (item.chatDir is CIDirection.GroupRcv && (prev.chatDir !is CIDirection.GroupRcv || (prev.chatDir as CIDirection.GroupRcv).groupMember != item.chatDir.groupMember)) {
+            if (item.chatDir is CIDirection.GroupRcv && (prev.chatDir !is CIDirection.GroupRcv || (prev.chatDir as CIDirection.GroupRcv).groupMember.memberId != item.chatDir.groupMember.memberId)) {
               it.add(item.id)
             }
           },
