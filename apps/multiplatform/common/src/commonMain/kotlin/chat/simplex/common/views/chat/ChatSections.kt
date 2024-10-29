@@ -4,6 +4,9 @@ import chat.simplex.common.model.*
 import chat.simplex.common.platform.chatModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlin.math.max
+
+const val MAX_SECTION_SIZE = 500
 
 enum class ChatSectionArea {
   Bottom,
@@ -177,11 +180,16 @@ fun List<ChatItem>.putIntoSections(revealedItems: Set<Long>): List<ChatSection> 
 
 fun List<ChatSection>.dropTemporarySections() {
   val bottomSection = this.find { it.area == ChatSectionArea.Bottom }
-  if (bottomSection != null && this.size > 1) {
-    val removeTo = chatModel.chatItems.value.size - 1 - bottomSection.boundary.maxIndex
-    chatModel.chatItems.value.removeRange(fromIndex = 0, toIndex = removeTo)
-    chatModel.chatItemsSectionArea = mutableMapOf<Long, ChatSectionArea>().also { it.putAll(chatModel.chatItems.value.associate { it.id to ChatSectionArea.Bottom }) }
+  if (bottomSection != null) {
+    val items = chatModel.chatItems.value
+    val itemsOutsideOfSection = items.size - 1 - bottomSection.boundary.maxIndex
+    chatModel.chatItems.value.removeRange(fromIndex = 0, toIndex = itemsOutsideOfSection + bottomSection.excessItemCount())
+    chatModel.chatItemsSectionArea = mutableMapOf<Long, ChatSectionArea>().also { it.putAll(items.associate { it.id to ChatSectionArea.Bottom }) }
   }
+}
+
+fun ChatSection.excessItemCount(): Int {
+  return max(boundary.maxIndex.minus(boundary.minIndex) + 1 - MAX_SECTION_SIZE, 0)
 }
 
 suspend fun apiLoadMessagesAroundItem(chatInfo: ChatInfo, chatModel: ChatModel, aroundItemId: Long, rhId: Long?, chatSectionLoad: ChatSectionLoad) {
