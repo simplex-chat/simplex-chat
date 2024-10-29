@@ -146,7 +146,7 @@ fun UserPicker(
       .height(IntrinsicSize.Min)
       .fillMaxWidth()
       .then(if (newChat.isVisible()) Modifier.shadow(8.dp, clip = true, ambientColor = background) else Modifier)
-      .padding(top = if (appPlatform.isDesktop && oneHandUI.value) 14.dp else 0.dp)
+      .padding(top = if (appPlatform.isDesktop && oneHandUI.value) 7.dp else 0.dp)
       .background(background)
       .padding(bottom = USER_PICKER_SECTION_SPACING - DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
     pickerState = userPickerState
@@ -272,7 +272,7 @@ fun UserPicker(
               generalGetString(MR.strings.auth_open_chat_profiles),
               generalGetString(MR.strings.auth_log_in_using_credential)
             ) {
-              ModalManager.start.showCustomModal { close ->
+              ModalManager.start.showCustomModal(keyboardCoversBar = false) { close ->
                 val search = rememberSaveable { mutableStateOf("") }
                 val profileHidden = rememberSaveable { mutableStateOf(false) }
                 ModalView(

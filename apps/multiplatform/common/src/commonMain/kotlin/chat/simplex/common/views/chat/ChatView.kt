@@ -464,7 +464,7 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
               withBGApi {
                 var initialCiInfo = loadChatItemInfo() ?: return@withBGApi
                 ModalManager.end.closeModals()
-                ModalManager.end.showModalCloseable(endButtons = listOf {
+                ModalManager.end.showModalCloseable(endButtons = {
                   ShareButton {
                     clipboard.shareText(itemInfoShareText(chatModel, cItem, initialCiInfo, chatModel.controller.appPrefs.developerTools.get()))
                   }
@@ -540,7 +540,7 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
       }
       is ChatInfo.InvalidJSON -> {
         val close = { chatModel.chatId.value = null }
-          ModalView(close, showClose = appPlatform.isAndroid, endButtons = listOf { ShareButton { clipboard.shareText(chatInfo.json) } }, content = {
+          ModalView(close, showClose = appPlatform.isAndroid, endButtons = { ShareButton { clipboard.shareText(chatInfo.json) } }, content = {
             InvalidJSONView(chatInfo.json)
           })
           LaunchedEffect(chatInfo.id) {
@@ -850,7 +850,7 @@ fun BoxScope.ChatInfoToolbar(
     showSearch = showSearch.value,
     onTop = !oneHandUI.value,
     onSearchValueChanged = onSearchValueChanged,
-    buttons = barButtons
+    buttons = { barButtons.forEach { it() } }
   )
   Box(Modifier.fillMaxWidth().wrapContentSize(Alignment.TopEnd)) {
     val density = LocalDensity.current
@@ -967,7 +967,8 @@ fun BoxScope.ChatItemsList(
 
   Spacer(Modifier.size(8.dp))
   val reversedChatItems = remember { derivedStateOf { chatModel.chatItems.asReversed() } }
-  val maxHeight = remember { derivedStateOf { listState.layoutInfo.viewportSize.height } }
+  val topPaddingToContentPx = rememberUpdatedState(with(LocalDensity.current) { topPaddingToContent().roundToPx() })
+  val maxHeight = remember { derivedStateOf { listState.layoutInfo.viewportEndOffset - topPaddingToContentPx.value.also { println("LALAL RELOADED $it") } } }
   val scrollToItem: State<(Long) -> Unit> = remember {
     mutableStateOf(
       { itemId: Long ->

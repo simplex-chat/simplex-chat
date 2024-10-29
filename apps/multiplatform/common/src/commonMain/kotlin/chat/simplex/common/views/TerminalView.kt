@@ -181,7 +181,7 @@ fun TerminalLog(floating: Boolean, composeViewHeight: State<Dp>) {
             } else {
               ModalManager.start
             }
-            modalPlace.showModal(endButtons = listOf { ShareButton { clipboard.shareText(item.details) } }) {
+            modalPlace.showModal(endButtons = { ShareButton { clipboard.shareText(item.details) } }) {
               ColumnWithScrollBar {
                 SelectionContainer {
                   val details = item.details

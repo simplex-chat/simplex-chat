@@ -436,7 +436,7 @@ fun ActiveProfilePicker(
           }
         }
         item {
-          Spacer(Modifier.imePadding())
+          Spacer(Modifier.imePadding().padding(bottom = DEFAULT_BOTTOM_PADDING))
         }
       }
     }
@@ -476,7 +476,7 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
           end = 16.dp
         ),
         click = {
-          ModalManager.start.showCustomModal { close ->
+          ModalManager.start.showCustomModal(keyboardCoversBar = false) { close ->
             val search = rememberSaveable { mutableStateOf("") }
             ModalView(
               { close() },

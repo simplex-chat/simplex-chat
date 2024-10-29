@@ -227,12 +227,12 @@ object AppearanceScope {
         }
         Spacer(Modifier.width(15.dp))
         Slider(
-          prefValue.toFloat(),
-          valueRange = 0f..200f,
-          steps = 41,
+          prefValue.toFloat() / 100,
+          valueRange = 0f..1f,
+          steps = 21,
           onValueChange = {
-            val int = it.roundToInt()
-            pref.set(int - int % 5)
+            val diff = it % 0.05f
+            pref.set(((String.format(Locale.US, "%.2f", it + (if (diff >= 0.025f) -diff + 0.05f else -diff)).toFloatOrNull() ?: 1f) * 100).toInt())
           },
           colors = SliderDefaults.colors(
             activeTickColor = Color.Transparent,

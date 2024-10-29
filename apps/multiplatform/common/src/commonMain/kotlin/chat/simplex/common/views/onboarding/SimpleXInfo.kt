@@ -32,7 +32,7 @@ import dev.icerock.moko.resources.StringResource
 fun SimpleXInfo(chatModel: ChatModel, onboarding: Boolean = true) {
   if (onboarding) {
     CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
-      ModalView({}, showClose = false, endButtons = listOf {
+      ModalView({}, showClose = false, endButtons = {
         IconButton({ ModalManager.fullscreen.showModal { HowItWorks(chatModel.currentUser.value, null) } }) {
           Icon(painterResource(MR.images.ic_info), null, Modifier.size(28.dp), tint = MaterialTheme.colors.primary)
         }

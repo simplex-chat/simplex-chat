@@ -16,6 +16,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chat.item.CenteredRowLayout
 import chat.simplex.res.MR
 import kotlin.math.absoluteValue
 
@@ -29,12 +30,12 @@ fun DefaultTopAppBar(
   showSearch: Boolean = false,
   searchAlwaysVisible: Boolean = false,
   onSearchValueChanged: (String) -> Unit = {},
-  buttons: List<@Composable RowScope.() -> Unit> = emptyList(),
+  buttons: @Composable RowScope.() -> Unit = {},
 ) {
   // If I just disable clickable modifier when don't need it, it will stop passing clicks to search. Replacing the whole modifier
   val modifier = if (!showSearch) {
     Modifier.clickable(enabled = onTitleClick != null, onClick = onTitleClick ?: { })
-  } else Modifier
+  } else Modifier.imePadding()
 
   val themeBackgroundMix = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
   val prefAlpha = remember { appPrefs.inAppBarsAlpha.state }
@@ -47,20 +48,25 @@ fun DefaultTopAppBar(
       handler?.title ?: mutableStateOf("")
     }
   }
+  val keyboardInset = WindowInsets.ime
   Box(modifier) {
     val density = LocalDensity.current
-    val keyboardInset = WindowInsets.ime
     SideEffect { println("LALAL RELOAD ${keyboardInset.getBottom(density)}") }
+    val blurRadius = remember { appPrefs.appearanceBarsBlurRadius.state }
     Box(Modifier
       .matchParentSize()
-      .blurredBackgroundModifier(keyboardInset, handler, remember { appPrefs.appearanceBarsBlurRadius.state }, prefAlpha, handler?.keyboardCoversBar == true, onTop, density)
+      .blurredBackgroundModifier(keyboardInset, handler, blurRadius, prefAlpha, handler?.keyboardCoversBar == true, onTop, density)
       .drawWithCache {
+        println("LALAL 444")
+        // store it as a variable, don't put it inside if without holding it here. Compiler don't see it changes otherwise
+        val alpha = prefAlpha.value
         val backgroundColor = if (title != null || fixedTitleText != null || connection == null || !onTop) {
-          themeBackgroundMix.copy(prefAlpha.value)
+          themeBackgroundMix.copy(alpha)
         } else {
           themeBackgroundMix.copy(topTitleAlpha(false, connection))
         }
         onDrawBehind {
+          println("LALAL 555")
           drawRect(backgroundColor)
         }
       }
@@ -74,14 +80,14 @@ fun DefaultTopAppBar(
       TopAppBar(
         title = {
           if (showSearch) {
-            SearchTextField(Modifier.fillMaxWidth(), alwaysVisible = searchAlwaysVisible, onValueChange = onSearchValueChanged)
+            SearchTextField(Modifier.fillMaxWidth(), alwaysVisible = searchAlwaysVisible, reducedCloseButtonPadding = 12.dp, onValueChange = onSearchValueChanged)
           } else if (title != null) {
             title()
           } else if (titleText.value.isNotEmpty() && connection != null) {
             Row(
               Modifier
                 .graphicsLayer {
-                  alpha = if (fixedTitleText != null) prefAlpha.value else topTitleAlpha(true, connection)
+                  alpha = if (fixedTitleText != null) 1f else topTitleAlpha(true, connection)
                 }
             ) {
               Text(
@@ -94,11 +100,11 @@ fun DefaultTopAppBar(
           }
         },
         navigationIcon = navigationButton,
-        buttons = if (!showSearch) buttons else emptyList(),
+        buttons = if (!showSearch) buttons else {{}},
         centered = !showSearch && (title != null || !onTop),
         onTop = onTop,
       )
-      CloseBarDivider(onTop, connection)
+      CloseBarDivider(onTop, title != null || fixedTitleText != null, connection)
     }
   }
 }
@@ -156,14 +162,13 @@ fun NavigationButtonMenu(onButtonClicked: () -> Unit) {
 }
 
 @Composable
-private fun BoxScope.CloseBarDivider(onTop: Boolean, connection: CollapsingAppBarNestedScrollConnection?) {
+private fun BoxScope.CloseBarDivider(onTop: Boolean, fixedAlpha: Boolean, connection: CollapsingAppBarNestedScrollConnection?) {
   if (connection != null) {
-    val prefAlpha = appPrefs.inAppBarsAlpha.get()
     Divider(
       Modifier
         .align(if (onTop) Alignment.BottomStart else Alignment.TopStart)
         .graphicsLayer {
-          alpha = if (!onTop) prefAlpha else topTitleAlpha(false, connection)
+          alpha = if (!onTop || fixedAlpha) 1f else topTitleAlpha(false, connection, 1f)
         }
     )
   } else {
@@ -176,55 +181,86 @@ private fun TopAppBar(
   title: @Composable () -> Unit,
   modifier: Modifier = Modifier,
   navigationIcon: @Composable (RowScope.() -> Unit)? = null,
-  buttons: List<@Composable RowScope.() -> Unit> = emptyList(),
+  buttons: @Composable RowScope.() -> Unit = {},
   centered: Boolean,
   onTop: Boolean,
 ) {
-  Box(
-    modifier
-      .then(if (onTop) Modifier.statusBarsPadding() else Modifier)
-      .height(AppBarHeight * fontSizeSqrtMultiplier)
-      .fillMaxWidth()
-      .padding(horizontal = 4.dp),
-    contentAlignment = Alignment.CenterStart,
+  val adjustedModifier = modifier
+    .then(if (onTop) Modifier.statusBarsPadding() else Modifier)
+    .height(AppBarHeight * fontSizeSqrtMultiplier)
+    .fillMaxWidth()
+    .padding(horizontal = AppBarHorizontalPadding)
+  if (centered) {
+    AppBarCenterAligned(adjustedModifier, title, navigationIcon, buttons)
+  } else {
+    AppBarStartAligned(adjustedModifier, title, navigationIcon, buttons)
+  }
+}
+
+@Composable
+private fun AppBarStartAligned(
+  modifier: Modifier,
+  title: @Composable () -> Unit,
+  navigationIcon: @Composable (RowScope.() -> Unit)? = null,
+  buttons: @Composable RowScope.() -> Unit
+) {
+  Row(
+    modifier,
+    verticalAlignment = Alignment.CenterVertically
   ) {
     if (navigationIcon != null) {
-      Row(
-        Modifier
-          .fillMaxHeight()
-          .width(TitleInsetWithIcon - AppBarHorizontalPadding),
-        verticalAlignment = Alignment.CenterVertically,
-        content = navigationIcon
-      )
+      navigationIcon()
+      Spacer(Modifier.width(AppBarHorizontalPadding))
+    }
+    Row(Modifier
+      .weight(1f)
+      .padding(end = DEFAULT_PADDING_HALF)
+    ) {
+      title()
     }
     Row(
-      Modifier.fillMaxSize(),
       horizontalArrangement = Arrangement.End,
       verticalAlignment = Alignment.CenterVertically,
     ) {
-      buttons.forEach { it() }
-    }
-    val startPadding = if (navigationIcon != null) TitleInsetWithIcon else TitleInsetWithoutIcon
-    val endPadding = (buttons.size * 50f).dp
-    Box(
-      Modifier
-        .fillMaxWidth()
-        .padding(
-          start = if (centered) kotlin.math.max(startPadding.value, endPadding.value).dp else startPadding,
-          end = if (centered) kotlin.math.max(startPadding.value, endPadding.value).dp else endPadding
-        ),
-      contentAlignment = if (centered) Alignment.Center else Alignment.CenterStart
-    ) {
-      title()
+      buttons()
     }
   }
 }
 
-private fun topTitleAlpha(text: Boolean, connection: CollapsingAppBarNestedScrollConnection) =
+@Composable
+private fun AppBarCenterAligned(
+  modifier: Modifier,
+  title: @Composable () -> Unit,
+  navigationIcon: @Composable (RowScope.() -> Unit)? = null,
+  buttons: @Composable RowScope.() -> Unit,
+) {
+  CenteredRowLayout(modifier) {
+    if (navigationIcon != null) {
+      Row(
+        Modifier.padding(end = AppBarHorizontalPadding),
+        verticalAlignment = Alignment.CenterVertically,
+        content = navigationIcon
+      )
+    } else {
+      Spacer(Modifier)
+    }
+    Row(
+      Modifier.padding(end = DEFAULT_PADDING_HALF)
+    ) {
+      title()
+    }
+    Row(
+      horizontalArrangement = Arrangement.End,
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      buttons()
+    }
+  }
+}
+
+private fun topTitleAlpha(text: Boolean, connection: CollapsingAppBarNestedScrollConnection, alpha: Float = appPrefs.inAppBarsAlpha.get()) =
   if (connection.appBarOffset.absoluteValue < AppBarHandler.appBarMaxHeightPx / 3) 0f
-  else ((-connection.appBarOffset * 1.5f) / (AppBarHandler.appBarMaxHeightPx)).coerceIn(0f, if (text) 1f else appPrefs.inAppBarsAlpha.get())
+  else ((-connection.appBarOffset * 1.5f) / (AppBarHandler.appBarMaxHeightPx)).coerceIn(0f, if (text) 1f else alpha)
 
 val AppBarHeight = 56.dp
-val AppBarHorizontalPadding = 4.dp
-private val TitleInsetWithoutIcon = DEFAULT_PADDING - AppBarHorizontalPadding
-val TitleInsetWithIcon = 52.dp
+val AppBarHorizontalPadding = 2.dp

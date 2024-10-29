@@ -116,10 +116,10 @@ fun AppearanceScope.AppearanceLayout(
     MessageShapeSection()
 
     SectionDividerSpaced()
-    BarsAlphaSection(MR.strings.appearance_in_app_bars_alpha, appPrefs.inAppBarsAlpha, 0.95f)
+    BarsAlphaSection(MR.strings.appearance_in_app_bars_alpha, appPrefs.inAppBarsAlpha, 0.9f)
 
     SectionDividerSpaced(maxTopPadding = true)
-    BarsBlurSection(MR.strings.appearance_bars_blur_radius, appPrefs.appearanceBarsBlurRadius, 40)
+    BarsBlurSection(MR.strings.appearance_bars_blur_radius, appPrefs.appearanceBarsBlurRadius, 50)
 
     SectionDividerSpaced(maxTopPadding = true)
     ProfileImageSection()

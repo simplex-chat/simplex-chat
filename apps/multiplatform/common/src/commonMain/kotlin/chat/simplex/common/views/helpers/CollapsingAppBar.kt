@@ -53,10 +53,10 @@ fun DrawScope.copyBackgroundToAppBar(graphicsLayerSize: MutableState<IntSize>?, 
   println("LALAL MODIF2")
   val blurRadius = appPrefs.appearanceBarsBlurRadius.get()
   if (blurRadius > 0 && graphicsLayerSize != null && backgroundGraphicsLayer != null) {
-      backgroundGraphicsLayer.record {
-        scope()
-      }
     graphicsLayerSize.value = backgroundGraphicsLayer.size
+    backgroundGraphicsLayer.record {
+      scope()
+    }
     drawLayer(backgroundGraphicsLayer)
     println("LALAL graphics SIZE ${backgroundGraphicsLayer.size}")
   } else {

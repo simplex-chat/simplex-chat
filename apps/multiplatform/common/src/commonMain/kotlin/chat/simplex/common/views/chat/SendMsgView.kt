@@ -148,7 +148,7 @@ fun SendMsgView(
               && (cs.preview !is ComposePreview.VoicePreview || !stopRecOnNextClick.value)
               && cs.contextItem is ComposeContextItem.NoContextItem
             ) {
-              Spacer(Modifier.width(10.dp))
+              Spacer(Modifier.width(12.dp))
               StartLiveMessageButton(userCanSend) {
                 if (composeState.value.preview is ComposePreview.NoPreview) {
                   startLiveMessage(scope, sendLiveMessage, updateLiveMessage, sendButtonSize, sendButtonAlpha, composeState, liveMessageAlertShown)

@@ -69,6 +69,8 @@ fun SelectedItemsBottomToolbar(
       Modifier
         .matchParentSize()
         .background(MaterialTheme.colors.background)
+        .padding(horizontal = 2.dp)
+        .height(AppBarHeight * fontSizeSqrtMultiplier)
         .pointerInput(Unit) {
           detectGesture {
             true
@@ -104,6 +106,7 @@ fun SelectedItemsBottomToolbar(
         )
       }
     }
+    Divider(Modifier.align(Alignment.TopStart))
   }
   LaunchedEffect(chatInfo, chatItems, selectedChatItems.value) {
     recheckItems(chatInfo, chatItems, selectedChatItems, deleteEnabled, deleteForEveryoneEnabled, canModerate, moderateEnabled, forwardEnabled, deleteCountProhibited, forwardCountProhibited)

@@ -359,7 +359,8 @@ fun StartPartOfScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
         ChatListView(chatModel, userPickerState, AppLock::setPerformLA, stopped)
       }
     } else {
-      CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
+      // LALAL initial load of view doesn't show blur. Focusing text field shows it
+      CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler(keyboardCoversBar = false)) {
         ShareListView(chatModel, stopped)
       }
     }

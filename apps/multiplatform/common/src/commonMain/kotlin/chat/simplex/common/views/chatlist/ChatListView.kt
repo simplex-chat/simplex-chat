@@ -182,7 +182,7 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
   }
 
   if (searchText.value.text.isEmpty()) {
-    if (appPlatform.isDesktop) {
+    if (appPlatform.isDesktop && !oneHandUI.value) {
       val call = remember { chatModel.activeCall }.value
       if (call != null) {
         ActiveCallInteractiveArea(call)
@@ -266,6 +266,17 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
   if (oneHandUI.value) {
     val sp16 = with(LocalDensity.current) { 16.sp.toDp() }
 
+    if (appPlatform.isDesktop && oneHandUI.value) {
+      val call = remember { chatModel.activeCall }
+      if (call.value != null) {
+        barButtons.add {
+          val c = call.value
+          if (c != null) {
+            ActiveCallInteractiveArea(c)
+          }
+        }
+      }
+    }
     if (!stopped) {
       barButtons.add {
         IconButton(
@@ -356,8 +367,8 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
             ModalManager.start.closeModals()
             val summary = serversSummary.value
             ModalManager.start.showModalCloseable(
-              endButtons = if (summary != null) {
-                listOf {
+              endButtons = {
+                if (summary != null) {
                   ShareButton {
                     val json = Json {
                       prettyPrint = true
@@ -366,7 +377,7 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
                     clipboard.shareText(text)
                   }
                 }
-              } else emptyList()
+              }
             ) { ServersSummaryView(chatModel.currentRemoteHost.value, serversSummary) }
           }
         )
@@ -375,7 +386,7 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
     onTitleClick = if (canScrollToZero.value) { { scrollToBottom(scope, listState) } } else null,
     onTop = !oneHandUI.value,
     onSearchValueChanged = {},
-    buttons = barButtons
+    buttons = { barButtons.forEach { it() } }
   )
 }
 
@@ -730,6 +741,11 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
     StatusBarBackground()
   } else {
     NavigationBarBackground(oneHandUI.value, true)
+  }
+  if (!oneHandUICardShown.value) {
+    LaunchedEffect(chats.size) {
+      if (chats.size >= 3) appPrefs.oneHandUICardShown.set(true)
+    }
   }
 }
 

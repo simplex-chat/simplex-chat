@@ -30,10 +30,10 @@ fun ModalView(
   showSearch: Boolean = false,
   searchAlwaysVisible: Boolean = false,
   onSearchValueChanged: (String) -> Unit = {},
-  endButtons: List<@Composable RowScope.() -> Unit> = emptyList(),
+  endButtons: @Composable RowScope.() -> Unit = {},
   content: @Composable BoxScope.() -> Unit,
 ) {
-  if (showClose) {
+  if (showClose && showCloseBar) {
     BackHandler(enabled = enableClose, onBack = close)
   }
   val oneHandUI = remember { appPrefs.oneHandUI.state }
@@ -65,7 +65,7 @@ enum class ModalPlacement {
   START, CENTER, END, FULLSCREEN
 }
 
-class ModalData() {
+class ModalData(val keyboardCoversBar: Boolean = true) {
   private val state = mutableMapOf<String, MutableState<Any?>>()
   fun <T> stateGetOrPut (key: String, default: () -> T): MutableState<T> =
     state.getOrPut(key) { mutableStateOf(default() as Any) } as MutableState<T>
@@ -73,7 +73,7 @@ class ModalData() {
   fun <T> stateGetOrPutNullable (key: String, default: () -> T?): MutableState<T?> =
     state.getOrPut(key) { mutableStateOf(default() as Any?) } as MutableState<T?>
 
-  val appBarHandler = AppBarHandler(null, null)
+  val appBarHandler = AppBarHandler(null, null, keyboardCoversBar = keyboardCoversBar)
 }
 
 class ModalManager(private val placement: ModalPlacement? = null) {
@@ -87,21 +87,21 @@ class ModalManager(private val placement: ModalPlacement? = null) {
   private var passcodeView: MutableStateFlow<(@Composable (close: () -> Unit) -> Unit)?> = MutableStateFlow(null)
   private var onTimePasscodeView: MutableStateFlow<(@Composable (close: () -> Unit) -> Unit)?> = MutableStateFlow(null)
 
-  fun showModal(settings: Boolean = false, showClose: Boolean = true, endButtons: List<@Composable RowScope.() -> Unit> = emptyList(), content: @Composable ModalData.() -> Unit) {
+  fun showModal(settings: Boolean = false, showClose: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
     showCustomModal { close ->
       ModalView(close, showClose = showClose, endButtons = endButtons, content = { content() })
     }
   }
 
-  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, endButtons: List<@Composable RowScope.() -> Unit> = emptyList(), content: @Composable ModalData.(close: () -> Unit) -> Unit) {
+  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.(close: () -> Unit) -> Unit) {
     showCustomModal { close ->
       ModalView(close, showClose = showClose, endButtons = endButtons, content = { content(close) })
     }
   }
 
-  fun showCustomModal(animated: Boolean = true, modal: @Composable ModalData.(close: () -> Unit) -> Unit) {
+  fun showCustomModal(animated: Boolean = true, keyboardCoversBar: Boolean = true, modal: @Composable ModalData.(close: () -> Unit) -> Unit) {
     Log.d(TAG, "ModalManager.showCustomModal")
-    val data = ModalData()
+    val data = ModalData(keyboardCoversBar = keyboardCoversBar)
     // Means, animation is in progress or not started yet. Do not wait until animation finishes, just remove all from screen.
     // This is useful when invoking close() and ShowCustomModal one after another without delay. Otherwise, screen will hold prev view
     if (toRemove.isNotEmpty()) {

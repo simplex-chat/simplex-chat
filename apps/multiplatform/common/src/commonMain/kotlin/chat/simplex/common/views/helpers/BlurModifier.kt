@@ -1,7 +1,6 @@
 package chat.simplex.common.views.helpers
 
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -27,16 +26,18 @@ fun Modifier.blurredBackgroundModifier(
   val graphicsLayer = handler?.graphicsLayer
   val backgroundGraphicsLayer = handler?.backgroundGraphicsLayer
   val backgroundGraphicsLayerSize = handler?.backgroundGraphicsLayerSize
-  if (!(handler != null && graphicsLayer != null && backgroundGraphicsLayer != null && blurRadius.value > 0 && prefAlpha.value < 1f && backgroundGraphicsLayerSize != null))
+  if (handler == null || graphicsLayer == null || backgroundGraphicsLayer == null || blurRadius.value == 0 || prefAlpha.value == 1f || backgroundGraphicsLayerSize === null)
     return this
 
   return if (appPlatform.isAndroid) {
-    this.desktopBlurredModifier(keyboardInset, blurRadius, keyboardCoversBar, onTop, graphicsLayer, backgroundGraphicsLayer, backgroundGraphicsLayerSize, density)
+    this.androidBlurredModifier(keyboardInset, blurRadius, keyboardCoversBar, onTop, graphicsLayer, backgroundGraphicsLayer, backgroundGraphicsLayerSize, density)
   } else {
     this.desktopBlurredModifier(keyboardInset, blurRadius, keyboardCoversBar, onTop, graphicsLayer, backgroundGraphicsLayer, backgroundGraphicsLayerSize, density)
   }
 }
 
+// this is more performant version than for Android but can't be used on desktop because on first frame it shows transparent view
+// which is very noticeable on desktop and unnoticeable on Android
 private fun Modifier.androidBlurredModifier(
   keyboardInset: WindowInsets,
   blurRadius: State<Int>,
@@ -58,7 +59,6 @@ private fun Modifier.androidBlurredModifier(
         backgroundGraphicsLayerSize.value.height == 0 -> graphicsLayer.size.height
         else -> backgroundGraphicsLayerSize.value.height
       }
-      println("LALAL GRAPHICSLAYER ${graphicsLayer.size.height} ${backgroundGraphicsLayer.size.height} ${backgroundGraphicsLayerSize.value.height}")
       val keyboardHeightCovered = if (!keyboardCoversBar) keyboardInset.getBottom(density) else 0
       translationY = -bgSize + size.height + keyboardHeightCovered
     }
@@ -66,7 +66,6 @@ private fun Modifier.androidBlurredModifier(
   .drawBehind {
     drawRect(Color.Black)
     if (onTop) {
-      println("LALAL DRAWBEHIND0")
       clipRect {
         if (backgroundGraphicsLayer.size != IntSize.Zero) {
           drawLayer(backgroundGraphicsLayer)
@@ -76,13 +75,23 @@ private fun Modifier.androidBlurredModifier(
         drawLayer(graphicsLayer)
       }
     } else {
-      println("LALAL DRAWBEHIND1  ${graphicsLayer.size.height}  ${backgroundGraphicsLayer.size.height} ${backgroundGraphicsLayerSize.value}")
       if (backgroundGraphicsLayer.size != IntSize.Zero) {
         drawLayer(backgroundGraphicsLayer)
       } else {
         drawRect(CurrentColors.value.colors.background, size = Size(graphicsLayer.size.width.toFloat(), graphicsLayer.size.height.toFloat()))
       }
       drawLayer(graphicsLayer)
+    }
+  }
+  .graphicsLayer {
+    if (!onTop) {
+      val bgSize = when {
+        backgroundGraphicsLayerSize.value.height == 0 && backgroundGraphicsLayer.size.height != 0 -> backgroundGraphicsLayer.size.height
+        backgroundGraphicsLayerSize.value.height == 0 -> graphicsLayer.size.height
+        else -> backgroundGraphicsLayerSize.value.height
+      }
+      val keyboardHeightCovered = if (!keyboardCoversBar) keyboardInset.getBottom(density) else 0
+      translationY -= -bgSize + size.height + keyboardHeightCovered
     }
   }
 
@@ -100,22 +109,9 @@ private fun Modifier.desktopBlurredModifier(
     renderEffect = if (blurRadius.value > 0) BlurEffect(blurRadius.value.dp.toPx(), blurRadius.value.dp.toPx()) else null
     clip = blurRadius.value > 0
   }
-//  .graphicsLayer {
-//    if (!onTop) {
-//      val bgSize = when {
-//        backgroundGraphicsLayerSize.value.height == 0 && backgroundGraphicsLayer.size.height != 0 -> backgroundGraphicsLayer.size.height
-//        backgroundGraphicsLayerSize.value.height == 0 -> graphicsLayer.size.height
-//        else -> backgroundGraphicsLayerSize.value.height
-//      }
-//      println("LALAL GRAPHICSLAYER ${graphicsLayer.size.height} ${backgroundGraphicsLayer.size.height} ${backgroundGraphicsLayerSize.value.height}")
-//      val keyboardHeightCovered = if (keyboardCoversBar) keyboardInset.getBottom(density) else 0
-//      translationY = -bgSize + size.height + keyboardHeightCovered
-//    }
-//  }
   .drawBehind {
     drawRect(Color.Black)
     if (onTop) {
-      println("LALAL DRAWBEHIND0")
       clipRect {
         if (backgroundGraphicsLayer.size != IntSize.Zero) {
           drawLayer(backgroundGraphicsLayer)
@@ -130,7 +126,6 @@ private fun Modifier.desktopBlurredModifier(
         backgroundGraphicsLayerSize.value.height == 0 -> graphicsLayer.size.height
         else -> backgroundGraphicsLayerSize.value.height
       }
-      println("LALAL DRAWBEHIND1  ${graphicsLayer.size.height}  ${backgroundGraphicsLayer.size.height} ${backgroundGraphicsLayerSize.value}")
       val keyboardHeightCovered = if (!keyboardCoversBar) keyboardInset.getBottom(density) else 0
       translate(top = -bgSize + size.height + keyboardHeightCovered) {
         if (backgroundGraphicsLayer.size != IntSize.Zero) {

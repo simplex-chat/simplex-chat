@@ -48,10 +48,10 @@ fun ModalData.NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
     Column(modifier = Modifier.fillMaxSize()) {
       NewChatSheetLayout(
         addContact = {
-          ModalManager.start.showModalCloseable(endButtons = listOf { AddContactLearnMoreButton() }) { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = closeAll) }
+          ModalManager.start.showModalCloseable(endButtons = { AddContactLearnMoreButton() }) { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = closeAll) }
         },
         scanPaste = {
-          ModalManager.start.showModalCloseable(endButtons = listOf { AddContactLearnMoreButton() }) { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = closeAll) }
+          ModalManager.start.showModalCloseable(endButtons = { AddContactLearnMoreButton() }) { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = closeAll) }
         },
         createGroup = {
           ModalManager.start.showCustomModal { close -> AddGroupView(chatModel, chatModel.currentRemoteHost.value, close, closeAll) }
@@ -217,6 +217,9 @@ private fun ModalData.NewChatSheetLayout(
                   close = closeDeletedChats,
                   showCloseBar = !oneHandUI.value,
                 ) {
+                  if (oneHandUI.value) {
+                    BackHandler(onBack = closeDeletedChats)
+                  }
                   DeletedContactsView(rh = rh, closeDeletedChats = closeDeletedChats, close = {
                     ModalManager.start.closeModals()
                   })
