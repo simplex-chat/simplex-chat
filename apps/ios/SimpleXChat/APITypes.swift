@@ -1194,8 +1194,74 @@ public struct UserProtoServers: Decodable {
     public var presetServers: [ServerCfg]
 }
 
+public enum UsageConditionsAcceptance: Decodable, Hashable {
+    case accepted
+    case reviewAvailable(deadline: Date)
+    case reviewRequired
+
+    public var usageAllowed: Bool {
+        switch self {
+        case .accepted: true
+        case .reviewAvailable: true
+        case .reviewRequired: false
+        }
+    }
+
+    public var reviewDeadline: Date? {
+        switch self {
+        case .accepted: nil
+        case let .reviewAvailable(deadline): deadline
+        case .reviewRequired: nil
+        }
+    }
+}
+
+public struct ServerOperator: Decodable {
+    public var operatorId: Int64
+    public var name: String
+    public var info: ServerOperatorInfo
+    public var latestConditionsAcceptance: UsageConditionsAcceptance
+    public var enabled: Bool
+    public var roles: ServerRoles
+
+    public static var sampleData1 = ServerOperator(
+        operatorId: 1,
+        name: "SimpleX Chat",
+        info: ServerOperatorInfo(
+            description: "SimpleX Chat preset servers",
+            website: "https://simplex.chat"
+        ),
+        latestConditionsAcceptance: .reviewAvailable(deadline: Date.distantFuture),
+        enabled: true,
+        roles: ServerRoles(storage: true, proxy: true)
+    )
+
+    public static var sampleData2 = ServerOperator(
+        operatorId: 2,
+        name: "XYZ",
+        info: ServerOperatorInfo(
+            description: "XYZ servers",
+            website: "https://xyz.com"
+        ),
+        latestConditionsAcceptance: .reviewRequired,
+        enabled: false,
+        roles: ServerRoles(storage: true, proxy: true)
+    )
+}
+
+public struct ServerOperatorInfo: Decodable {
+    public var description: String
+    public var website: String
+}
+
+public struct ServerRoles: Decodable {
+    public var storage: Bool
+    public var proxy: Bool
+}
+
 public struct ServerCfg: Identifiable, Equatable, Codable, Hashable {
     public var server: String
+    public var operatorId: Int64?
     public var preset: Bool
     public var tested: Bool?
     public var enabled: Bool
