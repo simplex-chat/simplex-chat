@@ -1029,8 +1029,6 @@ fun BoxWithConstraintsScope.ChatItemsList(
     withBGApi {
       scope.launch {
         listState.animateScrollToItem(kotlin.math.min(reversedChatItems.lastIndex, idx + 1), -maxHeightRounded)
-      }.also {
-        it.join()
         preloadItemsEnabled.value = true
       }
     }
@@ -1344,7 +1342,14 @@ fun BoxWithConstraintsScope.ChatItemsList(
       }
     }
   }
-  FloatingButtons(chatModel.chatItems, unreadCount, remoteHostId, chatInfo, searchValue, markRead, setFloatingButton, listState)
+  FloatingButtons(chatModel.chatItems, unreadCount, remoteHostId, chatInfo, searchValue, markRead, setFloatingButton, listState) {
+    preloadItemsEnabled.value = false
+    scope.launch {
+      listState.animateScrollToItem(0)
+      preloadItemsEnabled.value = true
+      // TODO: Remove other sections and items.
+    }
+  }
 
   FloatingDate(
     Modifier.padding(top = 10.dp).align(Alignment.TopCenter),
@@ -1410,7 +1415,8 @@ fun BoxWithConstraintsScope.FloatingButtons(
   searchValue: State<String>,
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
   setFloatingButton: (@Composable () -> Unit) -> Unit,
-  listState: LazyListState
+  listState: LazyListState,
+  scrollToLatestItem: () -> Unit
 ) {
   val scope = rememberCoroutineScope()
   var firstVisibleIndex by remember { mutableStateOf(listState.firstVisibleItemIndex) }
@@ -1455,9 +1461,7 @@ fun BoxWithConstraintsScope.FloatingButtons(
         bottomUnreadCount,
         showButtonWithCounter,
         showButtonWithArrow,
-        onClickArrowDown = {
-          scope.launch { listState.animateScrollToItem(0) }
-        },
+        onClickArrowDown = scrollToLatestItem,
         onClickCounter = {
           scope.launch { listState.animateScrollToItem(kotlin.math.max(0, bottomUnreadCount - 1), firstVisibleOffset) }
         }
