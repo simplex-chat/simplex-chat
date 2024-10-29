@@ -1347,7 +1347,13 @@ fun BoxWithConstraintsScope.ChatItemsList(
     scope.launch {
       listState.animateScrollToItem(0)
       preloadItemsEnabled.value = true
-      // TODO: Remove other sections and items.
+
+      val bottomSection = sections.find { it.area == ChatSectionArea.Bottom }
+      if (bottomSection != null && sections.size > 1) {
+        val removeTo = chatModel.chatItems.value.size - 1 - bottomSection.boundary.maxIndex
+        chatModel.chatItems.value.removeRange(fromIndex = 0, toIndex = removeTo)
+        chatModel.chatItemsSectionArea = mutableMapOf<Long, ChatSectionArea>().also { it.putAll(chatModel.chatItems.value.associate { it.id to ChatSectionArea.Bottom }) }
+      }
     }
   }
 
