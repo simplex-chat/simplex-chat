@@ -14,10 +14,12 @@ import SimpleXChat
 struct OperatorView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var theme: AppTheme
-    @Environment(\.editMode) private var editMode
     let serverProtocol: ServerProtocol
     @Binding var serverOperator: ServerOperator
     @State var serverOperatorToEdit: ServerOperator
+    @State var useOperator: Bool
+    @State private var useOperatorToggleReset: Bool = false
+    @State private var showConditionsSheet: Bool = false
     @State var currServers: [ServerCfg]
     @State var servers: [ServerCfg] = []
     @State private var selectedServer: String? = nil
@@ -28,12 +30,24 @@ struct OperatorView: View {
     var body: some View {
         VStack {
             List {
-                Section(header: Text("Operator").foregroundColor(theme.colors.secondary)) {
-                    Text(serverOperator.name)
+                Section {
                     infoViewLink()
+                    useOperatorToggle()
+                    viewConditionsButton()
+                } header: {
+                    Text("Operator")
+                        .foregroundColor(theme.colors.secondary)
+                } footer: {
+                    switch (serverOperatorToEdit.latestConditionsAcceptance) {
+                    case let .accepted(date): Text("Accepted on: \(conditionsTimestamp(date)).")
+                    case let .reviewAvailable(deadline): Text("Review until: \(conditionsTimestamp(deadline)).")
+                    case .reviewRequired: EmptyView()
+                    }
                 }
 
-                useOperatorSection()
+                if serverOperatorToEdit.enabled {
+                    usageRolesSection()
+                }
 
                 serversSection()
 
@@ -41,7 +55,7 @@ struct OperatorView: View {
                     Button("Reset") { servers = currServers }
                         .disabled(Set(servers) == Set(currServers))
                     Button("Test servers") {}
-                    Button("Save servers") {}
+                    Button("Save") {}
                         .disabled(true)
                 }
             }
@@ -50,13 +64,16 @@ struct OperatorView: View {
             serverOperator = serverOperatorToEdit
             dismiss()
         })
-        .toolbar { EditButton() }
         .onAppear {
             // this condition is needed to prevent re-setting the servers when exiting single server view
             if justOpened {
                 servers = currServers
                 justOpened = false
             }
+        }
+        .sheet(isPresented: $showConditionsSheet) {
+            UsageConditionsView(serverOperator: $serverOperatorToEdit, serverOperatorToEdit: serverOperatorToEdit)
+                .modifier(ThemedBackground(grouped: true))
         }
     }
 
@@ -67,44 +84,33 @@ struct OperatorView: View {
                 .modifier(ThemedBackground(grouped: true))
                 .navigationBarTitleDisplayMode(.large)
         } label: {
-            Text("Information")
+            Text(serverOperator.name)
         }
     }
 
-    private func useOperatorSection() -> some View {
-        Section(header: Text("Use operator").foregroundColor(theme.colors.secondary)) {
-            conditionsViewLink()
-            if let reviewDeadline = serverOperatorToEdit.latestConditionsAcceptance.reviewDeadline {
-                infoRow("Review until", deadlineTimestamp(reviewDeadline))
+    
+    private func useOperatorToggle() -> some View {
+        Toggle("Use operator", isOn: $useOperator)
+            .onChange(of: useOperator) { useOperatorToggle in
+                if useOperatorToggleReset {
+                    useOperatorToggleReset = false
+                } else if useOperatorToggle {
+                    if serverOperatorToEdit.latestConditionsAcceptance.usageAllowed {
+                        serverOperatorToEdit.enabled = true
+                    } else {
+                        showConditionsSheet = true
+                    }
+                } else {
+                    serverOperatorToEdit.enabled = false
+                }
             }
-            Toggle("Use operator", isOn: $serverOperatorToEdit.enabled)
-                .disabled(!serverOperatorToEdit.latestConditionsAcceptance.usageAllowed)
-                .foregroundColor(!serverOperatorToEdit.latestConditionsAcceptance.usageAllowed ? theme.colors.secondary : theme.colors.onBackground)
-            Group {
-                Toggle("for storage", isOn: $serverOperatorToEdit.roles.storage)
-                Toggle("as proxy", isOn: $serverOperatorToEdit.roles.proxy)
-            }
-            .padding(.leading, 24)
-            .disabled(!serverOperatorToEdit.enabled)
-            .foregroundColor(!serverOperatorToEdit.enabled ? theme.colors.secondary : theme.colors.onBackground)
-        }
     }
 
-    private func deadlineTimestamp(_ date: Date) -> String {
-        let localDateFormatter = DateFormatter()
-        localDateFormatter.dateStyle = .medium
-        localDateFormatter.timeStyle = .none
-        return localDateFormatter.string(from: date)
-    }
-
-    @ViewBuilder private func conditionsViewLink() -> some View {
-        NavigationLink() {
-            UsageConditionsView(serverOperator: $serverOperatorToEdit, serverOperatorToEdit: serverOperatorToEdit)
-                .navigationBarTitle("Conditions of use")
-                .modifier(ThemedBackground(grouped: true))
-                .navigationBarTitleDisplayMode(.large)
+    private func viewConditionsButton() -> some View {
+        Button {
+            showConditionsSheet = true
         } label: {
-            if case .accepted = serverOperatorToEdit.latestConditionsAcceptance {
+            if case .accepted = serverOperator.latestConditionsAcceptance {
                 Text("Conditions accepted")
             } else {
                 Text("Review conditions")
@@ -112,16 +118,24 @@ struct OperatorView: View {
         }
     }
 
+    private func conditionsTimestamp(_ date: Date) -> String {
+        let localDateFormatter = DateFormatter()
+        localDateFormatter.dateStyle = .medium
+        localDateFormatter.timeStyle = .none
+        return localDateFormatter.string(from: date)
+    }
+
+    private func usageRolesSection() -> some View {
+        Section(header: Text("Use operator").foregroundColor(theme.colors.secondary)) {
+            Toggle("For storage", isOn: $serverOperatorToEdit.roles.storage)
+            Toggle("As proxy", isOn: $serverOperatorToEdit.roles.proxy)
+        }
+    }
+
     private func serversSection() -> some View {
         Section {
             ForEach($servers) { srv in
                 protocolServerView(srv)
-            }
-            .onMove { indexSet, offset in
-                servers.move(fromOffsets: indexSet, toOffset: offset)
-            }
-            .onDelete { indexSet in
-                servers.remove(atOffsets: indexSet)
             }
         } header: {
             Text("\(serverOperator.name) \(proto) servers")
@@ -141,7 +155,7 @@ struct OperatorView: View {
                 server: server,
                 serverToEdit: srv
             )
-            .navigationBarTitle(srv.preset ? "Preset server" : "Your server")
+            .navigationBarTitle("\(serverOperator.name) server")
             .modifier(ThemedBackground(grouped: true))
             .navigationBarTitleDisplayMode(.large)
         } label: {
@@ -226,27 +240,49 @@ struct UsageConditionsView: View {
     """
 
     var body: some View {
-        VStack {
-            List {
-                Section {
-                    Text(conditionsText)
-                }
+        VStack(alignment: .leading, spacing: 20) {
+            Text("Use operator \(serverOperator.name)")
+                .font(.largeTitle)
+                .bold()
+                .padding(.horizontal)
+                .padding(.top)
+                .padding(.top)
 
-                Section {
-                    if case .accepted = serverOperator.latestConditionsAcceptance {
-                        Text("Conditions accepted")
-                    } else {
-                        Button {
-                            // Should call api to save state here, not when saving all servers
-                            // (It's counterintuitive to lose to closed sheet or Reset)
-                            serverOperatorToEdit.latestConditionsAcceptance = .accepted
-                            serverOperator = serverOperatorToEdit
-                            dismiss()
-                        } label: {
-                            Text("Accept conditions")
-                        }
+            if !serverOperator.latestConditionsAcceptance.conditionsAccepted {
+                Text("In order to use operator \(serverOperator.name), accept conditions of use.")
+                    .foregroundColor(theme.colors.secondary)
+                    .padding(.horizontal)
+            }
+
+            ScrollView {
+                Text(conditionsText)
+                    .padding()
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color(uiColor: .secondarySystemGroupedBackground))
+            )
+            .padding(.horizontal)
+
+            if !serverOperator.latestConditionsAcceptance.conditionsAccepted {
+                HStack {
+                    Spacer()
+
+                    Button {
+                        // Should call api to save state here, not when saving all servers
+                        // (It's counterintuitive to lose to closed sheet or Reset)
+                        serverOperatorToEdit.latestConditionsAcceptance = .accepted(date: Date.now)
+                        serverOperator = serverOperatorToEdit
+                        dismiss()
+                    } label: {
+                        Text("Accept conditions")
                     }
+                    .buttonStyle(.borderedProminent)
+
+                    Spacer()
                 }
+                .padding(.horizontal)
+                .padding(.bottom)
             }
         }
     }
@@ -257,6 +293,7 @@ struct UsageConditionsView: View {
         serverProtocol: .smp,
         serverOperator: Binding.constant(ServerOperator.sampleData1),
         serverOperatorToEdit: ServerOperator.sampleData1,
+        useOperator: ServerOperator.sampleData1.enabled,
         currServers: [ServerCfg.sampleData.preset]
     )
 }

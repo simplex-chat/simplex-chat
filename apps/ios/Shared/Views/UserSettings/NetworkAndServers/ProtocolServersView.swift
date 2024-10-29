@@ -198,6 +198,7 @@ struct ProtocolServersView: View {
                 serverProtocol: .smp,
                 serverOperator: serverOperator,
                 serverOperatorToEdit: srvOperator,
+                useOperator: srvOperator.enabled,
                 currServers: servers
             )
             .navigationBarTitle("\(srvOperator.name) servers")
