@@ -14,10 +14,14 @@ import SimpleXChat
 struct OperatorView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.editMode) private var editMode
     let serverProtocol: ServerProtocol
-    @Binding var serverOperator: ServerOperator // Binding
+    @Binding var serverOperator: ServerOperator
     @State var serverOperatorToEdit: ServerOperator
-    var servers: [ServerCfg] // State / Binding
+    @State var currServers: [ServerCfg]
+    @State var servers: [ServerCfg] = []
+    @State private var selectedServer: String? = nil
+    @State private var justOpened = true
 
     var proto: String { serverProtocol.rawValue.uppercased() }
 
@@ -30,12 +34,30 @@ struct OperatorView: View {
                 }
 
                 useOperatorSection()
+
+                serversSection()
+
+                Section {
+                    Button("Reset") { servers = currServers }
+                        .disabled(Set(servers) == Set(currServers))
+                    Button("Test servers") {}
+                    Button("Save servers") {}
+                        .disabled(true)
+                }
             }
         }
         .modifier(BackButton(disabled: Binding.constant(false)) {
             serverOperator = serverOperatorToEdit
             dismiss()
         })
+        .toolbar { EditButton() }
+        .onAppear {
+            // this condition is needed to prevent re-setting the servers when exiting single server view
+            if justOpened {
+                servers = currServers
+                justOpened = false
+            }
+        }
     }
 
     private func infoViewLink() -> some View {
@@ -82,10 +104,86 @@ struct OperatorView: View {
                 .modifier(ThemedBackground(grouped: true))
                 .navigationBarTitleDisplayMode(.large)
         } label: {
-            if case .accepted = serverOperator.latestConditionsAcceptance {
+            if case .accepted = serverOperatorToEdit.latestConditionsAcceptance {
                 Text("Conditions accepted")
             } else {
                 Text("Review conditions")
+            }
+        }
+    }
+
+    private func serversSection() -> some View {
+        Section {
+            ForEach($servers) { srv in
+                protocolServerView(srv)
+            }
+            .onMove { indexSet, offset in
+                servers.move(fromOffsets: indexSet, toOffset: offset)
+            }
+            .onDelete { indexSet in
+                servers.remove(atOffsets: indexSet)
+            }
+        } header: {
+            Text("\(serverOperator.name) \(proto) servers")
+                .foregroundColor(theme.colors.secondary)
+        } footer: {
+            Text("The servers for new connections of your current chat profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
+                .foregroundColor(theme.colors.secondary)
+                .lineLimit(10)
+        }
+    }
+
+    private func protocolServerView(_ server: Binding<ServerCfg>) -> some View {
+        let srv = server.wrappedValue
+        return NavigationLink(tag: srv.id, selection: $selectedServer) {
+            ProtocolServerView(
+                serverProtocol: serverProtocol,
+                server: server,
+                serverToEdit: srv
+            )
+            .navigationBarTitle(srv.preset ? "Preset server" : "Your server")
+            .modifier(ThemedBackground(grouped: true))
+            .navigationBarTitleDisplayMode(.large)
+        } label: {
+            let address = parseServerAddress(srv.server)
+            HStack {
+                Group {
+                    if let address = address {
+                        if !address.valid || address.serverProtocol != serverProtocol {
+                            invalidServer()
+                        } else if !uniqueAddress(srv, address) {
+                            Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+                        } else if !srv.enabled {
+                            Image(systemName: "slash.circle").foregroundColor(theme.colors.secondary)
+                        } else {
+                            showTestStatus(server: srv)
+                        }
+                    } else {
+                        invalidServer()
+                    }
+                }
+                .frame(width: 16, alignment: .center)
+                .padding(.trailing, 4)
+
+                let v = Text(address?.hostnames.first ?? srv.server).lineLimit(1)
+                if srv.enabled {
+                    v
+                } else {
+                    v.foregroundColor(theme.colors.secondary)
+                }
+            }
+        }
+    }
+
+    private func invalidServer() -> some View {
+        Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+    }
+
+    // TODO all servers across all operators
+    private func uniqueAddress(_ s: ServerCfg, _ address: ServerAddress) -> Bool {
+        servers.allSatisfy { srv in
+            address.hostnames.allSatisfy { host in
+                srv.id == s.id || !srv.server.contains(host)
             }
         }
     }
@@ -159,6 +257,6 @@ struct UsageConditionsView: View {
         serverProtocol: .smp,
         serverOperator: Binding.constant(ServerOperator.sampleData1),
         serverOperatorToEdit: ServerOperator.sampleData1,
-        servers: [ServerCfg.sampleData.preset]
+        currServers: [ServerCfg.sampleData.preset]
     )
 }

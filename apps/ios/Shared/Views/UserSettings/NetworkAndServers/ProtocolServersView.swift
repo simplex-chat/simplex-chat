@@ -198,7 +198,7 @@ struct ProtocolServersView: View {
                 serverProtocol: .smp,
                 serverOperator: serverOperator,
                 serverOperatorToEdit: srvOperator,
-                servers: servers
+                currServers: servers
             )
             .navigationBarTitle("\(srvOperator.name) servers")
             .modifier(ThemedBackground(grouped: true))
@@ -234,6 +234,7 @@ struct ProtocolServersView: View {
         allServers.allSatisfy { !$0.enabled }
     }
 
+    // TODO remove
     private func protocolServerView(_ server: Binding<ServerCfg>) -> some View {
         let srv = server.wrappedValue
         return NavigationLink(tag: srv.id, selection: $selectedServer) {
