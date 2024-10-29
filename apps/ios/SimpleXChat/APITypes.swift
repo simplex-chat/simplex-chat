@@ -1195,23 +1195,23 @@ public struct UserProtoServers: Decodable {
 }
 
 public enum UsageConditionsAcceptance: Decodable, Hashable {
-    case accepted
+    case accepted(date: Date)
     case reviewAvailable(deadline: Date)
     case reviewRequired
+
+    public var conditionsAccepted: Bool {
+        switch self {
+        case .accepted: true
+        case .reviewAvailable: false
+        case .reviewRequired: false
+        }
+    }
 
     public var usageAllowed: Bool {
         switch self {
         case .accepted: true
         case .reviewAvailable: true
         case .reviewRequired: false
-        }
-    }
-
-    public var reviewDeadline: Date? {
-        switch self {
-        case .accepted: nil
-        case let .reviewAvailable(deadline): deadline
-        case .reviewRequired: nil
         }
     }
 }
