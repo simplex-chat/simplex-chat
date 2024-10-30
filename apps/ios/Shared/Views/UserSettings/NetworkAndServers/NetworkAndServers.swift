@@ -51,7 +51,7 @@ struct NetworkAndServers: View {
                 }
 
                 Section {
-                    Button("Save") {}
+                    Button("Save servers") {}
                         .disabled(true)
                 }
 
