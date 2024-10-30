@@ -14,18 +14,17 @@ import SimpleXChat
 struct OperatorView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var theme: AppTheme
-    let serverProtocol: ServerProtocol
     @Binding var serverOperator: ServerOperator
     @State var serverOperatorToEdit: ServerOperator
     @State var useOperator: Bool
     @State private var useOperatorToggleReset: Bool = false
     @State private var showConditionsSheet: Bool = false
-    @State var currServers: [ServerCfg]
-    @State var servers: [ServerCfg] = []
+    @State var currSMPServers: [ServerCfg]
+    @State var smpServers: [ServerCfg] = []
+    @State var currXFTPServers: [ServerCfg]
+    @State var xftpServers: [ServerCfg] = []
     @State private var selectedServer: String? = nil
     @State private var justOpened = true
-
-    var proto: String { serverProtocol.rawValue.uppercased() }
 
     var body: some View {
         VStack {
@@ -54,12 +53,19 @@ struct OperatorView: View {
 
                 if serverOperatorToEdit.enabled {
                     usageRolesSection()
-                    serversSection()
+                    serversSection($smpServers, .smp)
+                    serversSection($xftpServers, .xftp)
                 }
 
                 Section {
-                    Button("Reset") { servers = currServers }
-                        .disabled(Set(servers) == Set(currServers))
+                    Button("Reset") {
+                        smpServers = currSMPServers
+                        xftpServers = currXFTPServers
+                    }
+                    .disabled(
+                        Set(smpServers) == Set(currSMPServers) &&
+                        Set(xftpServers) == Set(currXFTPServers)
+                    )
                     if serverOperatorToEdit.enabled {
                         Button("Test servers") {}
                     }
@@ -76,7 +82,8 @@ struct OperatorView: View {
         .onAppear {
             // this condition is needed to prevent re-setting the servers when exiting single server view
             if justOpened {
-                servers = currServers
+                smpServers = currSMPServers
+                xftpServers = currXFTPServers
                 justOpened = false
             }
         }
@@ -102,7 +109,7 @@ struct OperatorView: View {
             }
         }
     }
-    
+
     private func useOperatorToggle() -> some View {
         Toggle("Use operator", isOn: $useOperator)
             .onChange(of: useOperator) { useOperatorToggle in
@@ -161,13 +168,14 @@ struct OperatorView: View {
         }
     }
 
-    private func serversSection() -> some View {
+    @ViewBuilder private func serversSection(_ servers: Binding<[ServerCfg]>, _ serverProtocol: ServerProtocol) -> some View {
+        let proto = serverProtocol.rawValue.uppercased()
         Section {
-            ForEach($servers) { srv in
-                protocolServerView(srv)
+            ForEach(servers) { srv in
+                protocolServerView(srv, serverProtocol)
             }
         } header: {
-            Text("\(serverOperator.name) \(proto) servers")
+            Text("\(proto) servers")
                 .foregroundColor(theme.colors.secondary)
         } footer: {
             Text("The servers for new connections of your current chat profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
@@ -176,13 +184,16 @@ struct OperatorView: View {
         }
     }
 
-    private func protocolServerView(_ server: Binding<ServerCfg>) -> some View {
+    // TODO Refactor (similar function in ProtocolServersView) / Keep modified for operator servers? (some things are not applicable)
+    // TODO Check all servers across all operators (uniqueAddress in ProtocolServersView) / Validate via api (per server?)
+    private func protocolServerView(_ server: Binding<ServerCfg>, _ serverProtocol: ServerProtocol) -> some View {
         let srv = server.wrappedValue
         return NavigationLink(tag: srv.id, selection: $selectedServer) {
             ProtocolServerView(
                 serverProtocol: serverProtocol,
                 server: server,
-                serverToEdit: srv
+                serverToEdit: srv,
+                backLabel: "\(serverOperator.name) servers"
             )
             .navigationBarTitle("\(serverOperator.name) server")
             .modifier(ThemedBackground(grouped: true))
@@ -191,42 +202,21 @@ struct OperatorView: View {
             let address = parseServerAddress(srv.server)
             HStack {
                 Group {
-                    if let address = address {
-                        if !address.valid || address.serverProtocol != serverProtocol {
-                            invalidServer()
-                        } else if !uniqueAddress(srv, address) {
-                            Image(systemName: "exclamationmark.circle").foregroundColor(.red)
-                        } else if !srv.enabled {
-                            Image(systemName: "slash.circle").foregroundColor(theme.colors.secondary)
-                        } else {
-                            showTestStatus(server: srv)
-                        }
+                    if !srv.enabled {
+                        Image(systemName: "slash.circle").foregroundColor(theme.colors.secondary)
                     } else {
-                        invalidServer()
+                        showTestStatus(server: srv)
                     }
                 }
-                .frame(width: 16, alignment: .center)
-                .padding(.trailing, 4)
-
-                let v = Text(address?.hostnames.first ?? srv.server).lineLimit(1)
-                if srv.enabled {
-                    v
-                } else {
-                    v.foregroundColor(theme.colors.secondary)
-                }
             }
-        }
-    }
+            .frame(width: 16, alignment: .center)
+            .padding(.trailing, 4)
 
-    private func invalidServer() -> some View {
-        Image(systemName: "exclamationmark.circle").foregroundColor(.red)
-    }
-
-    // TODO all servers across all operators
-    private func uniqueAddress(_ s: ServerCfg, _ address: ServerAddress) -> Bool {
-        servers.allSatisfy { srv in
-            address.hostnames.allSatisfy { host in
-                srv.id == s.id || !srv.server.contains(host)
+            let v = Text(address?.hostnames.first ?? srv.server).lineLimit(1)
+            if srv.enabled {
+                v
+            } else {
+                v.foregroundColor(theme.colors.secondary)
             }
         }
     }
@@ -378,10 +368,10 @@ struct UsageConditionsView: View {
 
 #Preview {
     OperatorView(
-        serverProtocol: .smp,
         serverOperator: Binding.constant(ServerOperator.sampleData1),
         serverOperatorToEdit: ServerOperator.sampleData1,
         useOperator: ServerOperator.sampleData1.enabled,
-        currServers: [ServerCfg.sampleData.preset]
+        currSMPServers: [ServerCfg.sampleData.preset],
+        currXFTPServers: [ServerCfg.sampleData.xftpPreset]
     )
 }

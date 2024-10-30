@@ -38,6 +38,13 @@ struct AllServersView: View {
                     Text("Other servers")
                         .foregroundColor(theme.colors.secondary)
                 }
+
+                Section {
+                    Button("Reset") {}
+                        .disabled(true)
+                    Button("Save") {}
+                        .disabled(true)
+                }
             }
         }
         .onAppear {
@@ -46,10 +53,11 @@ struct AllServersView: View {
     }
 
     @ViewBuilder private func operatorsSection() -> some View {
-        let servers = [ServerCfg.sampleData.preset, ServerCfg.sampleData.untested]
+        let smpServers = [ServerCfg.sampleData.preset, ServerCfg.sampleData.preset]
+        let xftpServers = [ServerCfg.sampleData.xftpPreset, ServerCfg.sampleData.xftpPreset]
         Section {
             ForEach($serverOperators) { srvOperator in
-                serverOperatorView(srvOperator, servers)
+                serverOperatorView(srvOperator, smpServers, xftpServers)
             }
         } header: {
             Text("Operators")
@@ -57,15 +65,19 @@ struct AllServersView: View {
         }
     }
 
-    @ViewBuilder private func serverOperatorView(_ serverOperator: Binding<ServerOperator>, _ servers: [ServerCfg]) -> some View {
+    @ViewBuilder private func serverOperatorView(
+        _ serverOperator: Binding<ServerOperator>,
+        _ smpServers: [ServerCfg],
+        _ xftpServers: [ServerCfg]
+    ) -> some View {
         let srvOperator = serverOperator.wrappedValue
         NavigationLink() {
             OperatorView(
-                serverProtocol: .smp,
                 serverOperator: serverOperator,
                 serverOperatorToEdit: srvOperator,
                 useOperator: srvOperator.enabled,
-                currServers: servers
+                currSMPServers: smpServers,
+                currXFTPServers: xftpServers
             )
             .navigationBarTitle("\(srvOperator.name) servers")
             .modifier(ThemedBackground(grouped: true))
