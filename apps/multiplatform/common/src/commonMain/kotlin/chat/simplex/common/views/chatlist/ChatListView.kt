@@ -12,12 +12,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.*
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.TextRange
@@ -273,6 +269,7 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
           val c = call.value
           if (c != null) {
             ActiveCallInteractiveArea(c)
+            Spacer(Modifier.width(5.dp))
           }
         }
       }
