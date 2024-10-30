@@ -1236,21 +1236,13 @@ public enum UsageConditionsAcceptance: Decodable, Hashable {
         case .reviewRequired: false
         }
     }
-
-    public var usageAllowed: Bool {
-        switch self {
-        case .accepted: true
-        case .reviewAvailable: true
-        case .reviewRequired: false
-        }
-    }
 }
 
 public struct ServerOperator: Identifiable, Decodable {
     public var operatorId: Int64
     public var name: String
     public var tag: OperatorTag
-    public var latestConditionsAcceptance: UsageConditionsAcceptance
+    public var conditionsAcceptance: UsageConditionsAcceptance
     public var enabled: Bool
     public var roles: ServerRoles
 
@@ -1264,7 +1256,7 @@ public struct ServerOperator: Identifiable, Decodable {
         operatorId: 1,
         name: "SimpleX Chat",
         tag: .simplex,
-        latestConditionsAcceptance: .reviewAvailable(deadline: Date.distantFuture),
+        conditionsAcceptance: .reviewAvailable(deadline: Date.distantFuture),
         enabled: true,
         roles: ServerRoles(storage: true, proxy: true)
     )
@@ -1273,7 +1265,7 @@ public struct ServerOperator: Identifiable, Decodable {
         operatorId: 2,
         name: "XYZ",
         tag: .xyz,
-        latestConditionsAcceptance: .reviewRequired,
+        conditionsAcceptance: .reviewRequired,
         enabled: false,
         roles: ServerRoles(storage: true, proxy: true)
     )
@@ -1282,7 +1274,7 @@ public struct ServerOperator: Identifiable, Decodable {
         operatorId: 3,
         name: "Demo",
         tag: .demo,
-        latestConditionsAcceptance: .reviewRequired,
+        conditionsAcceptance: .reviewRequired,
         enabled: false,
         roles: ServerRoles(storage: true, proxy: true)
     )
