@@ -7,6 +7,7 @@
 
 module Simplex.Chat.Mobile.File
   ( cChatWriteFile,
+    cChatWriteImage,
     cChatReadFile,
     cChatEncryptFile,
     cChatDecryptFile,
@@ -35,6 +36,8 @@ import Foreign.Ptr
 import Foreign.StablePtr
 import Foreign.Storable (poke, pokeByteOff)
 import Simplex.Chat.Controller (ChatController (..))
+import Simplex.Chat.Image (resizeImageToSize)
+import qualified Simplex.Chat.Image as Picture
 import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Util (chunkSize, encryptFile)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..), CryptoFileHandle, FTCryptoError (..))
@@ -56,6 +59,21 @@ cChatWriteFile cc cPath ptr len = do
   path <- peekCString cPath
   s <- getByteString ptr len
   r <- chatWriteFile c path s
+  newCStringFromLazyBS $ J.encode r
+
+cChatWriteImage :: StablePtr ChatController -> CLong -> CString -> Ptr Word8 -> CInt -> IO CJSONString
+cChatWriteImage cc maxSize cPath ptr len = do
+  c <- deRefStablePtr cc
+  path <- peekCString cPath
+  src <- getByteString ptr len
+  r <-
+    case Picture.decodeResizeable src of
+      Left e -> pure $ WFError e
+      Right (ri, _metadata) -> do
+        let resized = resizeImageToSize True (fromIntegral maxSize) ri
+        if LB.length resized > fromIntegral maxSize
+          then pure $ WFError "unable to fit"
+          else chatWriteFile c path (LB.toStrict resized)
   newCStringFromLazyBS $ J.encode r
 
 chatWriteFile :: ChatController -> FilePath -> ByteString -> IO WriteFileResult

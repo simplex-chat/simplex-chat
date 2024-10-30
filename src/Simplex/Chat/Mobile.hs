@@ -30,14 +30,14 @@ import Data.Word (Word8)
 import Database.SQLite.Simple (SQLError (..))
 import qualified Database.SQLite.Simple as DB
 import Foreign.C.String
-import Foreign.C.Types (CInt (..))
+import Foreign.C.Types (CInt (..), CLong (..))
 import Foreign.Ptr
 import Foreign.StablePtr
 import Foreign.Storable (poke)
 import GHC.IO.Encoding (setFileSystemEncoding, setForeignEncoding, setLocaleEncoding)
 import Simplex.Chat
 import Simplex.Chat.Controller
-import Simplex.Chat.Image (readResizeable, resizeImageToStrSize)
+import Simplex.Chat.Image (readResizeable, resizeImageToSize)
 import Simplex.Chat.Markdown (ParsedMarkdown (..), parseMaybeMarkdownList)
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Mobile.Shared
@@ -104,6 +104,8 @@ foreign export ccall "chat_encrypt_media" cChatEncryptMedia :: StablePtr ChatCon
 foreign export ccall "chat_decrypt_media" cChatDecryptMedia :: CString -> Ptr Word8 -> CInt -> IO CString
 
 foreign export ccall "chat_write_file" cChatWriteFile :: StablePtr ChatController -> CString -> Ptr Word8 -> CInt -> IO CJSONString
+
+foreign export ccall "chat_write_image" cChatWriteImage :: StablePtr ChatController -> CLong -> CString -> Ptr Word8 -> CInt -> IO CJSONString
 
 foreign export ccall "chat_read_file" cChatReadFile :: CString -> CString -> CString -> IO (Ptr Word8)
 
@@ -208,7 +210,7 @@ cChatResizeImageToStrSize fp' maxSize = do
   fp <- peekCString fp'
   res <- runExceptT $ do
     (ri, _) <- liftIOEither $ readResizeable fp
-    let resized = resizeImageToStrSize (fromIntegral maxSize) ri
+    let resized = resizeImageToSize True (fromIntegral maxSize) ri
     if LB.length resized > fromIntegral maxSize then throwError "unable to fit" else pure resized
   newCStringFromLazyBS $ fromRight "" res
 
