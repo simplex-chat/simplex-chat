@@ -32,9 +32,6 @@ struct OperatorView: View {
                 Section {
                     infoViewLink()
                     useOperatorToggle()
-                    if serverOperatorToEdit.enabled || serverOperatorToEdit.conditionsAcceptance.conditionsAccepted {
-                        viewConditionsButton()
-                    }
                 } header: {
                     Text("Operator")
                         .foregroundColor(theme.colors.secondary)
@@ -42,9 +39,11 @@ struct OperatorView: View {
                     switch (serverOperatorToEdit.conditionsAcceptance) {
                     case let .accepted(date):
                         Text("Conditions accepted on: \(conditionsTimestamp(date)).")
+                            .foregroundColor(theme.colors.secondary)
                     case let .reviewAvailable(deadline):
                         if serverOperatorToEdit.enabled {
                             Text("Review conditions until: \(conditionsTimestamp(deadline)).")
+                                .foregroundColor(theme.colors.secondary)
                         }
                     case .reviewRequired:
                         EmptyView()
@@ -138,18 +137,6 @@ struct OperatorView: View {
             } else if serverOperatorToEdit.conditionsAcceptance.conditionsAccepted {
                 serverOperatorToEdit.enabled = true
                 ChatModel.shared.updateServerOperator(serverOperatorToEdit)
-            }
-        }
-    }
-
-    private func viewConditionsButton() -> some View {
-        Button {
-            showConditionsSheet = true
-        } label: {
-            if case .accepted = serverOperatorToEdit.conditionsAcceptance {
-                Text("Conditions accepted")
-            } else {
-                Text("Review conditions")
             }
         }
     }
