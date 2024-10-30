@@ -187,6 +187,7 @@ struct OperatorView: View {
     // TODO Refactor (similar function in ProtocolServersView) / Keep modified for operator servers? (some things are not applicable)
     // TODO Check all servers across all operators (uniqueAddress in ProtocolServersView) / Validate via api (per server?)
     private func protocolServerView(_ server: Binding<ServerCfg>, _ serverProtocol: ServerProtocol) -> some View {
+        let proto = serverProtocol.rawValue.uppercased()
         let srv = server.wrappedValue
         return NavigationLink(tag: srv.id, selection: $selectedServer) {
             ProtocolServerView(
@@ -195,7 +196,7 @@ struct OperatorView: View {
                 serverToEdit: srv,
                 backLabel: "\(serverOperator.name) servers"
             )
-            .navigationBarTitle("\(serverOperator.name) server")
+            .navigationBarTitle("\(serverOperator.name) \(proto) server")
             .modifier(ThemedBackground(grouped: true))
             .navigationBarTitleDisplayMode(.large)
         } label: {
