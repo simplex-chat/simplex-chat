@@ -270,6 +270,7 @@ final class ChatModel: ObservableObject {
         }
     }
 
+    // TODO If conditions are accepted for operators currently not used, they should also be included into list.
     var usageConditionsAction: UsageConditionsAction? {
         let usedOperators = serverOperators.filter { $0.enabled }
         if usedOperators.isEmpty {
