@@ -859,7 +859,7 @@ fun BoxScope.ChatInfoToolbar(
       showMenu,
       modifier = Modifier.onSizeChanged { with(density) {
         width.value = it.width.toDp().coerceAtLeast(250.dp)
-        if (oneHandUI.value) height.value = it.height.toDp()
+        if (oneHandUI.value && (appPlatform.isDesktop || (platform.androidApiLevel ?: 0) >= 30)) height.value = it.height.toDp()
       } },
       offset = DpOffset(-width.value, if (oneHandUI.value) -height.value else AppBarHeight)
     ) {
