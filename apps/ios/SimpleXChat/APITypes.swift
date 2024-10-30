@@ -1236,6 +1236,14 @@ public enum UsageConditionsAcceptance: Decodable, Hashable {
         case .reviewRequired: false
         }
     }
+
+    public var reviewAvailableDeadline: Date? {
+        switch self {
+        case .accepted: nil
+        case let .reviewAvailable(deadline): deadline
+        case .reviewRequired: nil
+        }
+    }
 }
 
 public struct ServerOperator: Identifiable, Decodable {

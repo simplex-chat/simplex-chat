@@ -131,6 +131,11 @@ class ChatItemDummyModel: ObservableObject {
     func sendUpdate() { objectWillChange.send() }
 }
 
+enum UsageConditionsAction {
+    case reviewUpdatedConditions(acceptForOperators: [ServerOperator], deadline: Date?)
+    case viewAcceptedConditions(acceptedForOperators: [ServerOperator])
+}
+
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
     @Published var setDeliveryReceipts = false
@@ -262,6 +267,19 @@ final class ChatModel: ObservableObject {
     func updateServerOperator(_ updatedOperator: ServerOperator) {
         if let i = serverOperators.firstIndex(where: { $0.operatorId == updatedOperator.operatorId }) {
             serverOperators[i] = updatedOperator
+        }
+    }
+
+    var usageConditionsAction: UsageConditionsAction? {
+        let usedOperators = serverOperators.filter { $0.enabled }
+        if usedOperators.isEmpty {
+            return nil
+        } else if usedOperators.allSatisfy({ $0.conditionsAcceptance.conditionsAccepted }) {
+            return .viewAcceptedConditions(acceptedForOperators: usedOperators)
+        } else {
+            let acceptForOperators = usedOperators.filter { !$0.conditionsAcceptance.conditionsAccepted }
+            let deadline = usedOperators.compactMap { $0.conditionsAcceptance.reviewAvailableDeadline }.first
+            return .reviewUpdatedConditions(acceptForOperators: acceptForOperators, deadline: deadline)
         }
     }
 

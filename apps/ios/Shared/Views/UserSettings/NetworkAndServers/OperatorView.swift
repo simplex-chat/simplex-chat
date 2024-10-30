@@ -79,7 +79,7 @@ struct OperatorView: View {
             }
         }
         .sheet(isPresented: $showConditionsSheet, onDismiss: onUseToggleSheetDismissed) {
-            UsageConditionsView(serverOperator: $serverOperatorToEdit, serverOperatorToEdit: serverOperatorToEdit)
+            SingleOperatorUsageConditionsView(serverOperator: $serverOperatorToEdit, serverOperatorToEdit: serverOperatorToEdit)
                 .modifier(ThemedBackground(grouped: true))
         }
     }
@@ -203,7 +203,7 @@ struct OperatorView: View {
     }
 }
 
-private func conditionsTimestamp(_ date: Date) -> String {
+func conditionsTimestamp(_ date: Date) -> String {
     let localDateFormatter = DateFormatter()
     localDateFormatter.dateStyle = .medium
     localDateFormatter.timeStyle = .none
@@ -228,24 +228,35 @@ struct OperatorInfoView: View {
     }
 }
 
-struct UsageConditionsView: View {
+let conditionsText = """
+Lorem ipsum odor amet, consectetuer adipiscing elit. Blandit mauris massa tempor ac; maximus accumsan magnis. Sollicitudin maximus tempor luctus sociosqu turpis dictum per imperdiet porttitor. Efficitur mattis fusce curae id efficitur. Non bibendum elementum faucibus vehicula morbi pulvinar. Accumsan habitant tincidunt sollicitudin taciti ad urna potenti velit. Primis laoreet pharetra magnis est dolor proin viverra.
+
+Laoreet auctor morbi a varius rutrum diam porta? In ad erat condimentum erat leo ornare. Eu venenatis inceptos rhoncus urna fringilla dis proin ante. Cras dignissim rutrum et faucibus feugiat neque curae tempus. Tellus ligula id dapibus, diam sollicitudin velit odio aliquam lectus. Maecenas ullamcorper arcu interdum cubilia donec iaculis. Maximus penatibus turpis a; vel fermentum ridiculus magna phasellus pellentesque. Eros tellus libero varius potenti; lobortis iaculis.
+
+Mollis condimentum potenti velit at rutrum tellus maximus suscipit nec. Vehicula aenean dui netus enim aliquam. Aliquam libero rhoncus per pharetra accumsan eros. Urna non eu sem varius vivamus mus tellus aptent quam. Tristique mi natoque lectus volutpat facilisi commodo ac consequat. Proin parturient facilisi senectus egestas ultrices. Fringilla nisi urna convallis molestie lorem varius phasellus a ornare. Ullamcorper varius praesent facilisi habitasse massa.
+
+Potenti dolor ridiculus est faucibus leo. Euismod consequat ultricies fringilla sociosqu duis sollicitudin. Eget convallis lacinia lacus justo per habitasse parturient. Donec nunc himenaeos pretium donec cursus pharetra ac phasellus? Fringilla sodales egestas orci ligula per ligula semper pellentesque. Potenti non dignissim tempor; orci rutrum elit.
+
+Habitasse eu sapien eleifend gravida tortor potenti senectus euismod. Lectus enim fames turpis lectus facilisi efficitur elit porttitor facilisi. Nisl quam senectus quam augue integer leo. In aliquam tempor nibh proin felis tortor elementum sodales lacinia. Ut per placerat bibendum magna dapibus fermentum bibendum amet congue. Curae bibendum enim platea per faucibus imperdiet morbi hac varius. Conubia feugiat justo hac faucibus dis.
+"""
+
+func conditionsTextView() -> some View {
+    ScrollView {
+        Text(conditionsText)
+            .padding()
+    }
+    .background(
+        RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .fill(Color(uiColor: .secondarySystemGroupedBackground))
+    )
+}
+
+struct SingleOperatorUsageConditionsView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var theme: AppTheme
     @Binding var serverOperator: ServerOperator
     @State var serverOperatorToEdit: ServerOperator
     @State private var conditionsExpanded: Bool = false
-
-    let conditionsText = """
-    Lorem ipsum odor amet, consectetuer adipiscing elit. Blandit mauris massa tempor ac; maximus accumsan magnis. Sollicitudin maximus tempor luctus sociosqu turpis dictum per imperdiet porttitor. Efficitur mattis fusce curae id efficitur. Non bibendum elementum faucibus vehicula morbi pulvinar. Accumsan habitant tincidunt sollicitudin taciti ad urna potenti velit. Primis laoreet pharetra magnis est dolor proin viverra.
-
-    Laoreet auctor morbi a varius rutrum diam porta? In ad erat condimentum erat leo ornare. Eu venenatis inceptos rhoncus urna fringilla dis proin ante. Cras dignissim rutrum et faucibus feugiat neque curae tempus. Tellus ligula id dapibus, diam sollicitudin velit odio aliquam lectus. Maecenas ullamcorper arcu interdum cubilia donec iaculis. Maximus penatibus turpis a; vel fermentum ridiculus magna phasellus pellentesque. Eros tellus libero varius potenti; lobortis iaculis.
-
-    Mollis condimentum potenti velit at rutrum tellus maximus suscipit nec. Vehicula aenean dui netus enim aliquam. Aliquam libero rhoncus per pharetra accumsan eros. Urna non eu sem varius vivamus mus tellus aptent quam. Tristique mi natoque lectus volutpat facilisi commodo ac consequat. Proin parturient facilisi senectus egestas ultrices. Fringilla nisi urna convallis molestie lorem varius phasellus a ornare. Ullamcorper varius praesent facilisi habitasse massa.
-
-    Potenti dolor ridiculus est faucibus leo. Euismod consequat ultricies fringilla sociosqu duis sollicitudin. Eget convallis lacinia lacus justo per habitasse parturient. Donec nunc himenaeos pretium donec cursus pharetra ac phasellus? Fringilla sodales egestas orci ligula per ligula semper pellentesque. Potenti non dignissim tempor; orci rutrum elit.
-
-    Habitasse eu sapien eleifend gravida tortor potenti senectus euismod. Lectus enim fames turpis lectus facilisi efficitur elit porttitor facilisi. Nisl quam senectus quam augue integer leo. In aliquam tempor nibh proin felis tortor elementum sodales lacinia. Ut per placerat bibendum magna dapibus fermentum bibendum amet congue. Curae bibendum enim platea per faucibus imperdiet morbi hac varius. Conubia feugiat justo hac faucibus dis.
-    """
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -307,17 +318,6 @@ struct UsageConditionsView: View {
         .frame(maxHeight: .infinity)
     }
 
-    private func conditionsTextView() -> some View {
-        ScrollView {
-            Text(conditionsText)
-                .padding()
-        }
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color(uiColor: .secondarySystemGroupedBackground))
-        )
-    }
-
     @ViewBuilder private func conditionsAppliedToOtherOperatorsText() -> some View {
         let otherEnabledOperators = ChatModel.shared.enabledOperatorsWithConditionsNotAccepted.filter { $0.operatorId != serverOperator.operatorId }
         if !otherEnabledOperators.isEmpty {
@@ -336,6 +336,64 @@ struct UsageConditionsView: View {
                 ChatModel.shared.acceptConditionsForEnabledOperators(date)
                 serverOperatorToEdit.conditionsAcceptance = .accepted(date: date)
                 serverOperator = serverOperatorToEdit
+                dismiss()
+            } label: {
+                Text("Accept conditions")
+            }
+            .buttonStyle(.borderedProminent)
+
+            Spacer()
+        }
+    }
+}
+
+struct UsageConditionsView: View {
+    @Environment(\.dismiss) var dismiss: DismissAction
+    @EnvironmentObject var theme: AppTheme
+    var conditionsAction: UsageConditionsAction
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Group {
+                Text("Conditions of use")
+                    .font(.largeTitle)
+                    .bold()
+                    .padding(.top)
+                    .padding(.top)
+
+                switch conditionsAction {
+                case let .reviewUpdatedConditions(acceptForOperators, _):
+
+                    Text("Conditions will be accepted for following operator(s): \(acceptForOperators.map { $0.name }.joined(separator: ", ")).")
+
+                    conditionsTextView()
+
+                    acceptConditionsButton()
+                        .padding(.bottom)
+
+                case let .viewAcceptedConditions(acceptedForOperators):
+
+                    Text("Conditions are accepted for following operator(s): \(acceptedForOperators.map { $0.name }.joined(separator: ", ")).")
+
+                    conditionsTextView()
+                        .padding(.bottom)
+
+                }
+            }
+            .padding(.horizontal)
+        }
+        .frame(maxHeight: .infinity)
+    }
+
+    private func acceptConditionsButton() -> some View {
+        HStack {
+            Spacer()
+
+            Button {
+                // Should call api to save state here, not when saving all servers
+                // (It's counterintuitive to lose to closed sheet or Reset)
+                let date = Date.now
+                ChatModel.shared.acceptConditionsForEnabledOperators(date)
                 dismiss()
             } label: {
                 Text("Accept conditions")

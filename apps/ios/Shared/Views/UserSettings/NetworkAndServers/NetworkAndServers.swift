@@ -19,23 +19,49 @@ private enum NetworkAlert: Identifiable {
     }
 }
 
+private enum NetworkAndServersSheet: Identifiable {
+    case showConditions(conditionsAction: UsageConditionsAction)
+
+    var id: String {
+        switch self {
+        case .showConditions: return "showConditions"
+        }
+    }
+}
+
 struct NetworkAndServers: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @State private var serverOperators: [ServerOperator] = []
+    @State private var sheetItem: NetworkAndServersSheet? = nil
 
     var body: some View {
         VStack {
             List {
+                let conditionsAction = m.usageConditionsAction
                 let smpServers = [ServerCfg.sampleData.preset, ServerCfg.sampleData.preset]
                 let xftpServers = [ServerCfg.sampleData.xftpPreset, ServerCfg.sampleData.xftpPreset]
                 Section {
                     ForEach($serverOperators) { srvOperator in
                         serverOperatorView(srvOperator, smpServers, xftpServers)
                     }
+
+                    if let conditionsAction = conditionsAction {
+                        conditionsButton(conditionsAction)
+                    }
                 } header: {
                     Text("Preset servers")
                         .foregroundColor(theme.colors.secondary)
+                } footer: {
+                    switch conditionsAction {
+                    case let .reviewUpdatedConditions(_, deadline):
+                        if let deadline = deadline {
+                            Text("Review conditions until: \(conditionsTimestamp(deadline)).")
+                                .foregroundColor(theme.colors.secondary)
+                        }
+                    default:
+                        EmptyView()
+                    }
                 }
 
                 Section {
@@ -86,6 +112,13 @@ struct NetworkAndServers: View {
         .onAppear {
             serverOperators = ChatModel.shared.serverOperators
         }
+        .sheet(item: $sheetItem, onDismiss: { serverOperators = ChatModel.shared.serverOperators }) { item in
+            switch item {
+            case let .showConditions(conditionsAction):
+                UsageConditionsView(conditionsAction: conditionsAction)
+                    .modifier(ThemedBackground(grouped: true))
+            }
+        }
     }
 
     @ViewBuilder private func serverOperatorView(
@@ -114,6 +147,19 @@ struct NetworkAndServers: View {
                     .frame(width: 24, height: 24)
                 Text(srvOperator.name)
                     .foregroundColor(srvOperator.enabled ? theme.colors.onBackground : theme.colors.secondary)
+            }
+        }
+    }
+
+    private func conditionsButton(_ conditionsAction: UsageConditionsAction) -> some View {
+        Button {
+            sheetItem = .showConditions(conditionsAction: conditionsAction)
+        } label: {
+            switch conditionsAction {
+            case .reviewUpdatedConditions:
+                Text("Review conditions")
+            case .viewAcceptedConditions:
+                Text("Accepted conditions")
             }
         }
     }
