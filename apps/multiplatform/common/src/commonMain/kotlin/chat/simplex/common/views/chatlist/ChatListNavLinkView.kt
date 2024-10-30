@@ -205,23 +205,23 @@ suspend fun noteFolderChatAction(rhId: Long?, noteFolder: NoteFolder) {
 }
 
 suspend fun openDirectChat(rhId: Long?, contactId: Long, chatModel: ChatModel) = coroutineScope {
-  val chat = chatModel.controller.apiGetChat(rhId, ChatType.Direct, contactId)
+  val chat = chatModel.controller.apiGetChat(rhId, ChatType.Direct, contactId, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
   if (chat != null && isActive) {
-    openLoadedChat(chat, chatModel)
+    openLoadedChat(chat.first, chatModel)
   }
 }
 
 suspend fun openGroupChat(rhId: Long?, groupId: Long, chatModel: ChatModel) = coroutineScope {
-  val chat = chatModel.controller.apiGetChat(rhId, ChatType.Group, groupId)
+  val chat = chatModel.controller.apiGetChat(rhId, ChatType.Group, groupId, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
   if (chat != null && isActive) {
-    openLoadedChat(chat, chatModel)
+    openLoadedChat(chat.first, chatModel)
   }
 }
 
 suspend fun openChat(rhId: Long?, chatInfo: ChatInfo, chatModel: ChatModel) = coroutineScope {
-  val chat = chatModel.controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId)
+  val chat = chatModel.controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
   if (chat != null && isActive) {
-    openLoadedChat(chat, chatModel)
+    openLoadedChat(chat.first, chatModel)
   }
 }
 
@@ -234,7 +234,7 @@ fun openLoadedChat(chat: Chat, chatModel: ChatModel) {
 suspend fun apiLoadPrevMessages(ch: Chat, chatModel: ChatModel, beforeChatItemId: Long, search: String, chatSectionLoad: ChatSectionLoad) {
   val chatInfo = ch.chatInfo
   val pagination = ChatPagination.Before(beforeChatItemId, ChatPagination.PRELOAD_COUNT)
-  val chat = chatModel.controller.apiGetChat(ch.remoteHostId, chatInfo.chatType, chatInfo.apiId, pagination, search) ?: return
+  val (chat) = chatModel.controller.apiGetChat(ch.remoteHostId, chatInfo.chatType, chatInfo.apiId, pagination, search) ?: return
   if (chatModel.chatId.value != chat.id) return
   withContext(Dispatchers.Main) {
     val itemsToAdd = chatSectionLoad.prepareItems(chat.chatItems)
@@ -247,7 +247,7 @@ suspend fun apiLoadPrevMessages(ch: Chat, chatModel: ChatModel, beforeChatItemId
 suspend fun apiLoadAfterMessages(ch: Chat, chatModel: ChatModel, afterChatItemId: Long, search: String, chatSectionLoad: ChatSectionLoad) {
   val chatInfo = ch.chatInfo
   val pagination = ChatPagination.After(afterChatItemId, ChatPagination.PRELOAD_COUNT)
-  val chat = chatModel.controller.apiGetChat(ch.remoteHostId, chatInfo.chatType, chatInfo.apiId, pagination, search) ?: return
+  val (chat) = chatModel.controller.apiGetChat(ch.remoteHostId, chatInfo.chatType, chatInfo.apiId, pagination, search) ?: return
   if (chatModel.chatId.value != chat.id) return
   withContext(Dispatchers.Main) {
     val itemsToAdd = chatSectionLoad.prepareItems(chat.chatItems)
@@ -259,7 +259,7 @@ suspend fun apiLoadAfterMessages(ch: Chat, chatModel: ChatModel, afterChatItemId
 
 suspend fun apiFindMessages(ch: Chat, chatModel: ChatModel, search: String) {
   val chatInfo = ch.chatInfo
-  val chat = chatModel.controller.apiGetChat(ch.remoteHostId, chatInfo.chatType, chatInfo.apiId, search = search) ?: return
+  val (chat) = chatModel.controller.apiGetChat(ch.remoteHostId, chatInfo.chatType, chatInfo.apiId, search = search) ?: return
   if (chatModel.chatId.value != chat.id) return
   chatModel.chatItems.replaceAll(chat.chatItems)
 }

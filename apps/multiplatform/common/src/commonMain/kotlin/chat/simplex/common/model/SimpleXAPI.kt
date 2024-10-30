@@ -858,9 +858,9 @@ object ChatController {
     return emptyList()
   }
 
-  suspend fun apiGetChat(rh: Long?, type: ChatType, id: Long, pagination: ChatPagination = ChatPagination.Last(ChatPagination.INITIAL_COUNT), search: String = ""): Chat? {
+  suspend fun apiGetChat(rh: Long?, type: ChatType, id: Long, pagination: ChatPagination = ChatPagination.Last(ChatPagination.INITIAL_COUNT), search: String = ""): Pair<Chat, ChatLandingSection>? {
     val r = sendCmd(rh, CC.ApiGetChat(type, id, pagination, search))
-    if (r is CR.ApiChat) return if (rh == null) r.chat else r.chat.copy(remoteHostId = rh)
+    if (r is CR.ApiChat) return if (rh == null) Pair(r.chat, r.section) else Pair(r.chat.copy(remoteHostId = rh), r.section)
     if (r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.ChatItemNotFound) {
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_get_chat_item_not_found_title), generalGetString(MR.strings.failed_to_get_chat_item_not_found_description))
     } else {
@@ -3466,12 +3466,14 @@ sealed class ChatPagination {
   class After(val chatItemId: Long, val count: Int): ChatPagination()
   class Before(val chatItemId: Long, val count: Int): ChatPagination()
   class Around(val chatItemId: Long, val count: Int): ChatPagination()
+  class Initial(val count: Int): ChatPagination()
 
   val cmdString: String get() = when (this) {
     is Last -> "count=${this.count}"
     is After -> "after=${this.chatItemId} count=${this.count}"
     is Before -> "before=${this.chatItemId} count=${this.count}"
     is Around -> "around=${this.chatItemId} count=${this.count}"
+    is Initial -> "initial=${this.count}"
   }
 
   companion object {
@@ -4856,7 +4858,10 @@ class APIResponse(val resp: CR, val remoteHostId: Long?, val corr: String? = nul
             } else if (type == "apiChat") {
               val user: UserRef = json.decodeFromJsonElement(resp["user"]!!.jsonObject)
               val chat = parseChatData(resp["chat"]!!)
-              return APIResponse(CR.ApiChat(user, chat), remoteHostId, corr)
+              val section = resp["section"]?.jsonObject?.get("type")?.let {
+                json.decodeFromJsonElement<ChatLandingSection>(it)
+              } ?: ChatLandingSection.Latest
+              return APIResponse(CR.ApiChat(user, chat, section), remoteHostId, corr)
             } else if (type == "chatCmdError") {
               val userObject = resp["user_"]?.jsonObject
               val user = runCatching<UserRef?> { json.decodeFromJsonElement(userObject!!) }.getOrNull()
@@ -4913,7 +4918,7 @@ sealed class CR {
   @Serializable @SerialName("chatRunning") class ChatRunning: CR()
   @Serializable @SerialName("chatStopped") class ChatStopped: CR()
   @Serializable @SerialName("apiChats") class ApiChats(val user: UserRef, val chats: List<Chat>): CR()
-  @Serializable @SerialName("apiChat") class ApiChat(val user: UserRef, val chat: Chat): CR()
+  @Serializable @SerialName("apiChat") class ApiChat(val user: UserRef, val chat: Chat, val section: ChatLandingSection): CR()
   @Serializable @SerialName("chatItemInfo") class ApiChatItemInfo(val user: UserRef, val chatItem: AChatItem, val chatItemInfo: ChatItemInfo): CR()
   @Serializable @SerialName("userProtoServers") class UserProtoServers(val user: UserRef, val servers: UserProtocolServers): CR()
   @Serializable @SerialName("serverTestResult") class ServerTestResult(val user: UserRef, val testServer: String, val testFailure: ProtocolTestFailure? = null): CR()
@@ -5263,7 +5268,7 @@ sealed class CR {
     is ChatRunning -> noDetails()
     is ChatStopped -> noDetails()
     is ApiChats -> withUser(user, json.encodeToString(chats))
-    is ApiChat -> withUser(user, json.encodeToString(chat))
+    is ApiChat -> withUser(user, "section: ${json.encodeToString(section)}\n${json.encodeToString(chat)}")
     is ApiChatItemInfo -> withUser(user, "chatItem: ${json.encodeToString(chatItem)}\n${json.encodeToString(chatItemInfo)}")
     is UserProtoServers -> withUser(user, "servers: ${json.encodeToString(servers)}")
     is ServerTestResult -> withUser(user, "server: $testServer\nresult: ${json.encodeToString(testFailure)}")
@@ -5501,6 +5506,12 @@ sealed class GroupLinkPlan {
   @Serializable @SerialName("connectingConfirmReconnect") object ConnectingConfirmReconnect: GroupLinkPlan()
   @Serializable @SerialName("connectingProhibit") class ConnectingProhibit(val groupInfo_: GroupInfo? = null): GroupLinkPlan()
   @Serializable @SerialName("known") class Known(val groupInfo: GroupInfo): GroupLinkPlan()
+}
+
+@Serializable
+enum class ChatLandingSection {
+  @SerialName("latest") Latest,
+  @SerialName("unread") Unread,
 }
 
 abstract class TerminalItem {

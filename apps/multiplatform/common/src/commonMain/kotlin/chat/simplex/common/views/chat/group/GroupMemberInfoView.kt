@@ -70,8 +70,9 @@ fun GroupMemberInfoView(
       getContactChat = { chatModel.getContactChat(it) },
       openDirectChat = {
         withBGApi {
-          val c = chatModel.controller.apiGetChat(rhId, ChatType.Direct, it)
-          if (c != null) {
+          val r = chatModel.controller.apiGetChat(rhId, ChatType.Direct, it, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
+          if (r != null) {
+            val (c) = r
             withChats {
               if (chatModel.getContactChat(it) == null) {
                 addChat(c)

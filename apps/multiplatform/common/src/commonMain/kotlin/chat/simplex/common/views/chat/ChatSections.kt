@@ -194,7 +194,7 @@ fun ChatSection.excessItemCount(): Int {
 
 suspend fun apiLoadMessagesAroundItem(chatInfo: ChatInfo, chatModel: ChatModel, aroundItemId: Long, rhId: Long?, chatSectionLoad: ChatSectionLoad) {
   val pagination = ChatPagination.Around(aroundItemId, ChatPagination.PRELOAD_COUNT * 2)
-  val chat = chatModel.controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId, pagination) ?: return
+  val (chat) = chatModel.controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId, pagination) ?: return
   if (chatModel.chatId.value != chat.id) return
   withContext(Dispatchers.Main) {
     val itemsToAdd = chatSectionLoad.prepareItems(chat.chatItems)
