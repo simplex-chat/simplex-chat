@@ -456,7 +456,6 @@ fun CenteredRowLayout(
     val first = measureable[0].measure(constraints.copy(minWidth = 0, minHeight = 0))
     val third = measureable[2].measure(constraints.copy(minWidth = first.measuredWidth, minHeight = 0))
     val second = measureable[1].measure(constraints.copy(minWidth = 0, minHeight = 0, maxWidth = (constraints.maxWidth - first.measuredWidth - third.measuredWidth).coerceAtLeast(0)))
-    println("LALAL WIDTH ${first.measuredWidth} ${second.measuredWidth} ${third.measuredWidth}")
     // Limit width for every other element to width of important element and height for a sum of all elements.
     layout(constraints.maxWidth, constraints.maxHeight) {
       first.place(0, ((constraints.maxHeight - first.measuredHeight) / 2).coerceAtLeast(0))

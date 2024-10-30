@@ -51,13 +51,11 @@ fun DefaultAppBar(
   val keyboardInset = WindowInsets.ime
   Box(modifier) {
     val density = LocalDensity.current
-    SideEffect { println("LALAL RELOAD ${keyboardInset.getBottom(density)}") }
     val blurRadius = remember { appPrefs.appearanceBarsBlurRadius.state }
     Box(Modifier
       .matchParentSize()
       .blurredBackgroundModifier(keyboardInset, handler, blurRadius, prefAlpha, handler?.keyboardCoversBar == true, onTop, density)
       .drawWithCache {
-        println("LALAL 444")
         // store it as a variable, don't put it inside if without holding it here. Compiler don't see it changes otherwise
         val alpha = prefAlpha.value
         val backgroundColor = if (title != null || fixedTitleText != null || connection == null || !onTop) {
@@ -66,7 +64,6 @@ fun DefaultAppBar(
           themeBackgroundMix.copy(topTitleAlpha(false, connection))
         }
         onDrawBehind {
-          println("LALAL 555")
           drawRect(backgroundColor)
         }
       }

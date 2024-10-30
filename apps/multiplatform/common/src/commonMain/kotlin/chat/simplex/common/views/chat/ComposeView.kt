@@ -898,7 +898,7 @@ fun ComposeView(
         }
       }
     }
-    Box(Modifier.background(MaterialTheme.colors.background).onSizeChanged { println("LALAL SIZE0 $it") }) {
+    Box(Modifier.background(MaterialTheme.colors.background)) {
     Divider()
     Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
       val isGroupAndProhibitedFiles = chat.chatInfo is ChatInfo.Group && !chat.chatInfo.groupInfo.fullGroupPreferences.files.on(chat.chatInfo.groupInfo.membership)

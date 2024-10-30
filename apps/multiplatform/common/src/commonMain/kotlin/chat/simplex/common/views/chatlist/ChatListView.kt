@@ -505,7 +505,7 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: String, chatModel: ChatModel) {
 @Composable
 private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState<TextFieldValue>, searchShowingSimplexLink: MutableState<Boolean>, searchChatFilteredBySimplexLink: MutableState<String?>) {
   Box {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().onSizeChanged { println("LALAL SIZE-1 $it") }) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth() {
       val focusRequester = remember { FocusRequester() }
       var focused by remember { mutableStateOf(false) }
       Icon(

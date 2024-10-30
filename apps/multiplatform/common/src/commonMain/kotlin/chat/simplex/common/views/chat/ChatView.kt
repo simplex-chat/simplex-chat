@@ -640,7 +640,6 @@ fun ChatLayout(
       sheetState = attachmentBottomSheetState,
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
-      println("LALAL RELOAD MODAL")
       val composeViewHeight = remember { mutableStateOf(0.dp) }
       Box(Modifier.fillMaxSize().chatViewBackgroundModifier(MaterialTheme.colors, MaterialTheme.wallpaper, LocalAppBarHandler.current?.backgroundGraphicsLayerSize, LocalAppBarHandler.current?.backgroundGraphicsLayer)) {
         val remoteHostId = remember { remoteHostId }.value
@@ -946,7 +945,6 @@ fun BoxScope.ChatItemsList(
   developerTools: Boolean,
   showViaProxy: Boolean
 ) {
-  println("LALAL RELOAD CHAT LIST")
   val listState = rememberLazyListState()
   val scope = rememberCoroutineScope()
   ScrollToBottom(chatInfo.id, listState, chatModel.chatItems)
@@ -968,7 +966,7 @@ fun BoxScope.ChatItemsList(
   Spacer(Modifier.size(8.dp))
   val reversedChatItems = remember { derivedStateOf { chatModel.chatItems.asReversed() } }
   val topPaddingToContentPx = rememberUpdatedState(with(LocalDensity.current) { topPaddingToContent().roundToPx() })
-  val maxHeight = remember { derivedStateOf { listState.layoutInfo.viewportEndOffset - topPaddingToContentPx.value.also { println("LALAL RELOADED $it") } } }
+  val maxHeight = remember { derivedStateOf { listState.layoutInfo.viewportEndOffset - topPaddingToContentPx.value } }
   val scrollToItem: State<(Long) -> Unit> = remember {
     mutableStateOf(
       { itemId: Long ->
@@ -1006,7 +1004,6 @@ fun BoxScope.ChatItemsList(
     additionalBarOffset = composeViewHeight
   ) {
     itemsIndexed(reversedChatItems.value, key = { _, item -> item.id to item.meta.createdAt.toEpochMilliseconds() }) { i, cItem ->
-      println("LALAL RELOAD ITEM $i")
       val itemScope = rememberCoroutineScope()
       CompositionLocalProvider(
         // Makes horizontal and vertical scrolling to coexist nicely.
