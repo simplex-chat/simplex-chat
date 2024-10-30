@@ -27,7 +27,16 @@ struct NetworkAndServers: View {
     var body: some View {
         VStack {
             List {
-                presetServersSection()
+                let smpServers = [ServerCfg.sampleData.preset, ServerCfg.sampleData.preset]
+                let xftpServers = [ServerCfg.sampleData.xftpPreset, ServerCfg.sampleData.xftpPreset]
+                Section {
+                    ForEach($serverOperators) { srvOperator in
+                        serverOperatorView(srvOperator, smpServers, xftpServers)
+                    }
+                } header: {
+                    Text("Preset servers")
+                        .foregroundColor(theme.colors.secondary)
+                }
 
                 Section {
                     NavigationLink {
@@ -76,19 +85,6 @@ struct NetworkAndServers: View {
         }
         .onAppear {
             serverOperators = ChatModel.shared.serverOperators
-        }
-    }
-
-    @ViewBuilder private func presetServersSection() -> some View {
-        let smpServers = [ServerCfg.sampleData.preset, ServerCfg.sampleData.preset]
-        let xftpServers = [ServerCfg.sampleData.xftpPreset, ServerCfg.sampleData.xftpPreset]
-        Section {
-            ForEach($serverOperators) { srvOperator in
-                serverOperatorView(srvOperator, smpServers, xftpServers)
-            }
-        } header: {
-            Text("Preset servers")
-                .foregroundColor(theme.colors.secondary)
         }
     }
 
