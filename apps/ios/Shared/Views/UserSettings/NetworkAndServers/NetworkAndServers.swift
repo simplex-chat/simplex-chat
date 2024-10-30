@@ -129,8 +129,10 @@ struct NetworkAndServers: View {
                 Image(srvOperator.info.logo)
                     .resizable()
                     .scaledToFit()
+                    .grayscale(srvOperator.enabled ? 0.0 : 1.0)
                     .frame(width: 24, height: 24)
                 Text(srvOperator.name)
+                    .foregroundColor(srvOperator.enabled ? theme.colors.onBackground : theme.colors.secondary)
             }
         }
     }
