@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.*
+import android.view.View
 import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -24,6 +25,9 @@ import kotlinx.coroutines.*
 import java.lang.ref.WeakReference
 
 class MainActivity: FragmentActivity() {
+  companion object {
+    const val OLD_ANDROID_UI_FLAGS = View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+  }
 
   override fun onCreate(savedInstanceState: Bundle?) {
     mainActivity = WeakReference(this)
@@ -33,10 +37,8 @@ class MainActivity: FragmentActivity() {
     applyAppLocale(ChatModel.controller.appPrefs.appLanguage)
     // This flag makes status bar and navigation bar fully transparent. But on API level < 30 it breaks insets entirely
     // https://issuetracker.google.com/issues/236862874
-    if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q){
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
       window.setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
-    } else {
-      window.setFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION, WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION)
     }
     super.onCreate(savedInstanceState)
     // testJson()

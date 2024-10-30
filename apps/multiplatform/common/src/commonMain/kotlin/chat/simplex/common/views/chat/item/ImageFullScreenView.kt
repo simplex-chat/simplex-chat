@@ -57,7 +57,7 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
   val playersToRelease = rememberSaveable { mutableSetOf<URI>() }
   DisposableEffectOnGone(
     always = {
-      platform.androidSetStatusAndNavigationBarAppearance(false, false)
+      platform.androidSetStatusAndNavigationBarAppearance(false, false, blackNavBar = true)
       chatModel.fullscreenGalleryVisible.value = true
     },
     whenDispose = {

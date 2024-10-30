@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.view.ViewCompat
 import androidx.lifecycle.*
 import androidx.work.*
+import chat.simplex.app.MainActivity.Companion.OLD_ANDROID_UI_FLAGS
 import chat.simplex.app.model.NtfManager
 import chat.simplex.app.model.NtfManager.AcceptCallAction
 import chat.simplex.app.views.call.CallActivity
@@ -274,7 +275,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
         uiModeManager.setApplicationNightMode(mode)
       }
 
-      override fun androidSetStatusAndNavigationBarAppearance(isLightStatusBar: Boolean, isLightNavBar: Boolean) {
+      override fun androidSetStatusAndNavigationBarAppearance(isLightStatusBar: Boolean, isLightNavBar: Boolean, blackNavBar: Boolean, themeBackgroundColor: Color) {
         val window = mainActivity.get()?.window ?: return
         @Suppress("DEPRECATION")
         val statusLight = isLightStatusBar && chatModel.activeCall.value == null
@@ -289,14 +290,17 @@ class SimplexApp: Application(), LifecycleEventObserver {
         }
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
           window.decorView.systemUiVisibility = if (statusLight && navBarLight) {
-            View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+            View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR or OLD_ANDROID_UI_FLAGS
           } else if (statusLight) {
-            View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+            View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or OLD_ANDROID_UI_FLAGS
           } else if (navBarLight) {
-            View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+            View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR or OLD_ANDROID_UI_FLAGS
           } else {
-            0
+            OLD_ANDROID_UI_FLAGS
           }
+          window.navigationBarColor = if (blackNavBar) Color.Black.toArgb() else themeBackgroundColor.toArgb()
+        } else {
+          window.navigationBarColor = Color.Transparent.toArgb()
         }
       }
 
@@ -351,6 +355,8 @@ class SimplexApp: Application(), LifecycleEventObserver {
         }
         return true
       }
+
+      override val androidApiLevel: Int get() = Build.VERSION.SDK_INT
     }
   }
 }

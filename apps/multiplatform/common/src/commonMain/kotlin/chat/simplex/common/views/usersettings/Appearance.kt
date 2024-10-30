@@ -95,19 +95,19 @@ object AppearanceScope {
           Box(Modifier.weight(1f)) {
             Text(
               stringResource(MR.strings.appearance_in_app_bars_alpha),
-              Modifier.clickable { appPrefs.inAppBarsAlpha.set(0.9f) },
+              Modifier.clickable { appPrefs.inAppBarsAlpha.set(appPrefs.inAppBarsDefaultAlpha) },
               maxLines = 1
             )
           }
           Spacer(Modifier.padding(end = 10.dp))
           Slider(
-            1 - remember { appPrefs.inAppBarsAlpha.state }.value,
+            (1 - remember { appPrefs.inAppBarsAlpha.state }.value).coerceIn(0f, 0.5f),
             onValueChange = {
-              val diff = it % 0.05f
-              appPrefs.inAppBarsAlpha.set(1f - (String.format(Locale.US, "%.2f", it + (if (diff >= 0.025f) -diff + 0.05f else -diff)).toFloatOrNull() ?: 1f))
+              val diff = it % 0.025f
+              appPrefs.inAppBarsAlpha.set(1f - (String.format(Locale.US, "%.3f", it + (if (diff >= 0.0125f) -diff + 0.025f else -diff)).toFloatOrNull() ?: 1f))
             },
             Modifier.widthIn(max = (this@BoxWithConstraints.maxWidth - DEFAULT_PADDING * 2) * 0.618f),
-            valueRange = 0f..1f,
+            valueRange = 0f..0.5f,
             steps = 21,
             colors = SliderDefaults.colors(
               activeTickColor = Color.Transparent,
@@ -130,29 +130,31 @@ object AppearanceScope {
             pref.set(value)
           }
         }
-        SectionItemViewWithoutMinPadding {
-          Box(Modifier.weight(1f)) {
-            Text(
-              stringResource(MR.strings.appearance_bars_blur_radius),
-              Modifier.clickable { saveBlur(50) },
-              maxLines = 1
+        if (appPlatform.isDesktop || (platform.androidApiLevel ?: 0) >= 31) {
+          SectionItemViewWithoutMinPadding {
+            Box(Modifier.weight(1f)) {
+              Text(
+                stringResource(MR.strings.appearance_bars_blur_radius),
+                Modifier.clickable { saveBlur(50) },
+                maxLines = 1
+              )
+            }
+            Spacer(Modifier.padding(end = 10.dp))
+            Slider(
+              remember { appPrefs.appearanceBarsBlurRadius.state }.value.toFloat() / 100f,
+              onValueChange = {
+                val diff = it % 0.05f
+                saveBlur(((String.format(Locale.US, "%.2f", it + (if (diff >= 0.025f) -diff + 0.05f else -diff)).toFloatOrNull() ?: 1f) * 100).toInt())
+              },
+              Modifier.widthIn(max = (this@BoxWithConstraints.maxWidth - DEFAULT_PADDING * 2) * 0.618f),
+              valueRange = 0f..1f,
+              steps = 21,
+              colors = SliderDefaults.colors(
+                activeTickColor = Color.Transparent,
+                inactiveTickColor = Color.Transparent,
+              )
             )
           }
-          Spacer(Modifier.padding(end = 10.dp))
-          Slider(
-            remember { appPrefs.appearanceBarsBlurRadius.state }.value.toFloat() / 100f,
-            onValueChange = {
-              val diff = it % 0.05f
-              saveBlur(((String.format(Locale.US, "%.2f", it + (if (diff >= 0.025f) -diff + 0.05f else -diff)).toFloatOrNull() ?: 1f) * 100).toInt())
-            },
-            Modifier.widthIn(max = (this@BoxWithConstraints.maxWidth - DEFAULT_PADDING * 2) * 0.618f),
-            valueRange = 0f..1f,
-            steps = 21,
-            colors = SliderDefaults.colors(
-              activeTickColor = Color.Transparent,
-              inactiveTickColor = Color.Transparent,
-            )
-          )
         }
       }
     }
