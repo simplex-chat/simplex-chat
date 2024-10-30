@@ -33,15 +33,22 @@ struct OperatorView: View {
                 Section {
                     infoViewLink()
                     useOperatorToggle()
-                    viewConditionsButton()
+                    if serverOperatorToEdit.enabled || serverOperatorToEdit.latestConditionsAcceptance.conditionsAccepted {
+                        viewConditionsButton()
+                    }
                 } header: {
                     Text("Operator")
                         .foregroundColor(theme.colors.secondary)
                 } footer: {
                     switch (serverOperatorToEdit.latestConditionsAcceptance) {
-                    case let .accepted(date): Text("Conditions accepted on: \(conditionsTimestamp(date)).")
-                    case let .reviewAvailable(deadline): Text("Review conditions until: \(conditionsTimestamp(deadline)).")
-                    case .reviewRequired: EmptyView()
+                    case let .accepted(date):
+                        Text("Conditions accepted on: \(conditionsTimestamp(date)).")
+                    case let .reviewAvailable(deadline):
+                        if serverOperatorToEdit.enabled {
+                            Text("Review conditions until: \(conditionsTimestamp(deadline)).")
+                        }
+                    case .reviewRequired:
+                        EmptyView()
                     }
                 }
 
