@@ -201,14 +201,14 @@ struct ProtocolServersView: View {
         allServers.allSatisfy { !$0.enabled }
     }
 
-    // TODO remove
     private func protocolServerView(_ server: Binding<ServerCfg>) -> some View {
         let srv = server.wrappedValue
         return NavigationLink(tag: srv.id, selection: $selectedServer) {
             ProtocolServerView(
                 serverProtocol: serverProtocol,
                 server: server,
-                serverToEdit: srv
+                serverToEdit: srv,
+                backLabel: "Your \(proto) servers"
             )
             .navigationBarTitle(srv.preset ? "Preset server" : "Your server")
             .modifier(ThemedBackground(grouped: true))

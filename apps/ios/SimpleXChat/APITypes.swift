@@ -1319,6 +1319,7 @@ public struct ServerCfg: Identifiable, Equatable, Codable, Hashable {
         public var preset: ServerCfg
         public var custom: ServerCfg
         public var untested: ServerCfg
+        public var xftpPreset: ServerCfg
     }
 
     public static var sampleData = SampleData(
@@ -1338,6 +1339,12 @@ public struct ServerCfg: Identifiable, Equatable, Codable, Hashable {
             server: "smp://abcd@smp10.simplex.im",
             preset: false,
             tested: nil,
+            enabled: true
+        ),
+        xftpPreset: ServerCfg(
+            server: "xftp://abcd@xftp8.simplex.im",
+            preset: true,
+            tested: true,
             enabled: true
         )
     )

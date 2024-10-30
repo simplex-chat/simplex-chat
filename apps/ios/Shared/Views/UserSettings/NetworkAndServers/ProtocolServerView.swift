@@ -15,6 +15,7 @@ struct ProtocolServerView: View {
     let serverProtocol: ServerProtocol
     @Binding var server: ServerCfg
     @State var serverToEdit: ServerCfg
+    var backLabel: LocalizedStringKey
     @State private var showTestFailure = false
     @State private var testing = false
     @State private var testFailure: ProtocolTestFailure?
@@ -32,7 +33,7 @@ struct ProtocolServerView: View {
                 ProgressView().scaleEffect(2)
             }
         }
-        .modifier(BackButton(label: "Your \(proto) servers", disabled: Binding.constant(false)) {
+        .modifier(BackButton(label: backLabel, disabled: Binding.constant(false)) {
             server = serverToEdit
             dismiss()
         })
@@ -180,7 +181,8 @@ struct ProtocolServerView_Previews: PreviewProvider {
         ProtocolServerView(
             serverProtocol: .smp,
             server: Binding.constant(ServerCfg.sampleData.custom),
-            serverToEdit: ServerCfg.sampleData.custom
+            serverToEdit: ServerCfg.sampleData.custom,
+            backLabel: "Your SMP servers"
         )
     }
 }
