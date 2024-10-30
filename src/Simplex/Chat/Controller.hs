@@ -572,7 +572,7 @@ data ChatResponse
   | CRChatSuspended
   | CRApiChats {user :: User, chats :: [AChat]}
   | CRChats {chats :: [AChat]}
-  | CRApiChat {user :: User, chat :: AChat, section :: ChatSection}
+  | CRApiChat {user :: User, chat :: AChat, section :: ChatLandingSection}
   | CRChatItems {user :: User, chatName_ :: Maybe ChatName, chatItems :: [AChatItem]}
   | CRChatItemInfo {user :: User, chatItem :: AChatItem, chatItemInfo :: ChatItemInfo}
   | CRChatItemId User (Maybe ChatItemId)
@@ -843,9 +843,9 @@ data ChatPagination
   | CPInitial Int
   deriving (Show)
 
-data ChatSection
-  = CSBottom
-  | CSUnread
+data ChatLandingSection
+  = CLSLatest
+  | CLSUnread
   deriving (Show)
 
 data PaginationByTime
@@ -1598,7 +1598,7 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RCSR") ''RemoteCtrlStopReason)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RHSR") ''RemoteHostStopReason)
 
-$(JQ.deriveJSON defaultJSON ''ChatSection)
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CLS") ''ChatLandingSection)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
 
