@@ -16,6 +16,7 @@ EXPORTS
     chat_encrypt_media
     chat_decrypt_media
     chat_write_file
+    chat_write_image
     chat_read_file
     chat_encrypt_file
     chat_decrypt_file

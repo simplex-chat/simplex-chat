@@ -25,10 +25,12 @@ actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
   val imageString = base64ImageString
     .removePrefix("data:image/png;base64,")
     .removePrefix("data:image/jpg;base64,")
+    .removePrefix("data:image/jpeg;base64,")
   return try {
     ImageIO.read(ByteArrayInputStream(Base64.getMimeDecoder().decode(imageString))).toComposeImageBitmap()
-  } catch (e: IOException) {
-    Log.e(TAG, "base64ToBitmap error: $e")
+  } catch (e: Exception) { // ByteArrayInputStream returns null
+  // } catch (e: IOException) {
+    Log.e(TAG, "base64ToBitmap error: $e for $base64ImageString")
     errorBitmap()
   }
 }
