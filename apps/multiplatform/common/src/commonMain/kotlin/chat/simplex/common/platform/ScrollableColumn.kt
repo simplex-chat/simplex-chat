@@ -10,8 +10,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import chat.simplex.common.ui.theme.themedBackground
-import chat.simplex.common.views.helpers.LocalAppBarHandler
 
 @Composable
 expect fun LazyColumnWithScrollBar(

@@ -134,7 +134,7 @@ private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchVal
     }
   }
 
-  DefaultTopAppBar(
+  DefaultAppBar(
     navigationButton = navButton,
     title = {
       Row(verticalAlignment = Alignment.CenterVertically) {

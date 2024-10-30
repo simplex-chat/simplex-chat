@@ -89,7 +89,7 @@ actual fun LazyColumnWithScrollBar(
     }
   }
   val modifier = if (fillMaxSize) Modifier.fillMaxSize().then(modifier) else modifier
-  Box(Modifier.copyViewToAppBar(LocalAppBarHandler.current?.graphicsLayer).nestedScroll(connection)) {
+  Box(Modifier.copyViewToAppBar(remember { appPrefs.appearanceBarsBlurRadius.state }.value, LocalAppBarHandler.current?.graphicsLayer).nestedScroll(connection)) {
     LazyColumn(modifier.then(scrollModifier), state, contentPadding, reverseLayout, verticalArrangement, horizontalAlignment, flingBehavior, userScrollEnabled, content)
     ScrollBar(reverseLayout, state, scrollBarAlpha, scrollJob, scrollBarDraggingState, additionalBarOffset)
   }
@@ -210,9 +210,9 @@ actual fun ColumnWithScrollBar(
     val padding = if (oneHandUI.value) PaddingValues(bottom = AppBarHeight * fontSizeSqrtMultiplier) else PaddingValues(top = AppBarHeight * fontSizeSqrtMultiplier)
     Column(
       if (maxIntrinsicSize) {
-        modifier.copyViewToAppBar(LocalAppBarHandler.current?.graphicsLayer).verticalScroll(state).height(IntrinsicSize.Max).then(scrollModifier)
+        modifier.copyViewToAppBar(remember { appPrefs.appearanceBarsBlurRadius.state }.value, LocalAppBarHandler.current?.graphicsLayer).verticalScroll(state).height(IntrinsicSize.Max).then(scrollModifier)
       } else {
-        modifier.then(scrollModifier).copyViewToAppBar(LocalAppBarHandler.current?.graphicsLayer).verticalScroll(state)
+        modifier.then(scrollModifier).copyViewToAppBar(remember { appPrefs.appearanceBarsBlurRadius.state }.value, LocalAppBarHandler.current?.graphicsLayer).verticalScroll(state)
       },
       verticalArrangement, horizontalAlignment
     ) {

@@ -1755,8 +1755,9 @@
   <string name="theme_remove_image">Remove image</string>
   <string name="appearance_font_size">Font size</string>
   <string name="appearance_zoom">Zoom</string>
-  <string name="appearance_in_app_bars_alpha">In-app bars transparency</string>
-  <string name="appearance_bars_blur_radius">In-app bars blur radius</string>
+  <string name="appearance_app_toolbars">App toolbars</string>
+  <string name="appearance_in_app_bars_alpha">Transparency</string>
+  <string name="appearance_bars_blur_radius">Blur</string>
   <string name="system_mode_toast">System mode</string>
 
   <!-- Wallpapers -->

@@ -4,8 +4,7 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.CacheDrawScope
-import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.*
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.layer.GraphicsLayer
@@ -27,7 +26,6 @@ fun rememberAppBarHandler(key1: Any? = null, key2: Any? = null, keyboardCoversBa
 
 @Composable
 fun adjustAppBarHandler(handler: AppBarHandler): AppBarHandler {
-  println("LALAL HANDLER IS ${handler.graphicsLayer?.isReleased}")
   val graphicsLayer = rememberGraphicsLayer()
   val backgroundGraphicsLayer = rememberGraphicsLayer()
   if (handler.graphicsLayer == null || handler.graphicsLayer?.isReleased == true || handler.backgroundGraphicsLayer?.isReleased == true) {
@@ -37,8 +35,7 @@ fun adjustAppBarHandler(handler: AppBarHandler): AppBarHandler {
   return handler
 }
 
-fun Modifier.copyViewToAppBar(graphicsLayer: GraphicsLayer?): Modifier {
-  val blurRadius = appPrefs.appearanceBarsBlurRadius.get()
+fun Modifier.copyViewToAppBar(blurRadius: Int, graphicsLayer: GraphicsLayer?): Modifier {
   return if (blurRadius > 0 && graphicsLayer != null) {
     this.drawWithContent {
       graphicsLayer.record {
@@ -50,7 +47,6 @@ fun Modifier.copyViewToAppBar(graphicsLayer: GraphicsLayer?): Modifier {
 }
 
 fun DrawScope.copyBackgroundToAppBar(graphicsLayerSize: MutableState<IntSize>?, backgroundGraphicsLayer: GraphicsLayer?, scope: DrawScope.() -> Unit) {
-  println("LALAL MODIF2")
   val blurRadius = appPrefs.appearanceBarsBlurRadius.get()
   if (blurRadius > 0 && graphicsLayerSize != null && backgroundGraphicsLayer != null) {
     graphicsLayerSize.value = backgroundGraphicsLayer.size
@@ -58,7 +54,6 @@ fun DrawScope.copyBackgroundToAppBar(graphicsLayerSize: MutableState<IntSize>?, 
       scope()
     }
     drawLayer(backgroundGraphicsLayer)
-    println("LALAL graphics SIZE ${backgroundGraphicsLayer.size}")
   } else {
     scope()
   }

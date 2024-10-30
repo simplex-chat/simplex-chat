@@ -337,7 +337,7 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
   val clipboard = LocalClipboardManager.current
   val scope = rememberCoroutineScope()
   val canScrollToZero = remember { derivedStateOf { listState.firstVisibleItemIndex != 0 || listState.firstVisibleItemScrollOffset != 0 } }
-  DefaultTopAppBar(
+  DefaultAppBar(
     navigationButton = {
       if (chatModel.users.isEmpty() && !chatModel.desktopNoUserNoRemote) {
         NavigationButtonMenu {

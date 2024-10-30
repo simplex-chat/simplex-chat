@@ -6,8 +6,7 @@ import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.text.InputType
 import android.util.Log
-import android.view.OnReceiveContentListener
-import android.view.ViewGroup
+import android.view.*
 import android.view.inputmethod.*
 import android.widget.EditText
 import android.widget.TextView
@@ -139,6 +138,13 @@ actual fun PlatformTextField(
         f.set(editText, R.drawable.edit_text_cursor)
       } catch (e: Exception) {
         Log.e(TAG, e.stackTraceToString())
+      }
+    }
+    editText.onFocusChangeListener = View.OnFocusChangeListener { _, hasFocus ->
+      // shows keyboard when user had search field on ChatView focused before clicking on this text field
+      // it still produce weird animation of closing/opening keyboard but the solution is to replace this Android EditText with Compose BasicTextField
+      if (hasFocus) {
+        showKeyboard = true
       }
     }
     editText.doOnTextChanged { text, _, _, _ ->

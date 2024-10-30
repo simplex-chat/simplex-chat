@@ -21,7 +21,7 @@ import chat.simplex.res.MR
 import kotlin.math.absoluteValue
 
 @Composable
-fun DefaultTopAppBar(
+fun DefaultAppBar(
   navigationButton: (@Composable RowScope.() -> Unit)? = null,
   title: (@Composable () -> Unit)? = null,
   fixedTitleText: String? = null,
@@ -77,7 +77,7 @@ fun DefaultTopAppBar(
         .then(if (!onTop) Modifier.navigationBarsPadding() else Modifier)
         .heightIn(min = AppBarHeight * fontSizeSqrtMultiplier)
     ) {
-      TopAppBar(
+      AppBar(
         title = {
           if (showSearch) {
             SearchTextField(Modifier.fillMaxWidth(), alwaysVisible = searchAlwaysVisible, reducedCloseButtonPadding = 12.dp, onValueChange = onSearchValueChanged)
@@ -115,7 +115,7 @@ fun CallAppBar(
   title: @Composable () -> Unit,
   onBack: () -> Unit
 ) {
-  TopAppBar(
+  AppBar(
     title,
     navigationIcon = { NavigationButtonBack(tintColor = Color(0xFFFFFFD8), onButtonClicked = onBack) },
     centered = false,
@@ -177,7 +177,7 @@ private fun BoxScope.CloseBarDivider(onTop: Boolean, fixedAlpha: Boolean, connec
 }
 
 @Composable
-private fun TopAppBar(
+private fun AppBar(
   title: @Composable () -> Unit,
   modifier: Modifier = Modifier,
   navigationIcon: @Composable (RowScope.() -> Unit)? = null,
@@ -211,6 +211,8 @@ private fun AppBarStartAligned(
     if (navigationIcon != null) {
       navigationIcon()
       Spacer(Modifier.width(AppBarHorizontalPadding))
+    } else {
+      Spacer(Modifier.width(DEFAULT_PADDING))
     }
     Row(Modifier
       .weight(1f)

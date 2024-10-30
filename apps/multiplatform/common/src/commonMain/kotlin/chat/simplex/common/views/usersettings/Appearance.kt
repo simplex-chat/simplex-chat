@@ -4,6 +4,7 @@ import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewSpaceBetween
+import SectionItemViewWithoutMinPadding
 import SectionSpacer
 import SectionView
 import androidx.compose.foundation.*
@@ -87,27 +88,86 @@ object AppearanceScope {
   }
 
   @Composable
-  fun MessageShapeSection() {
-    SectionView(stringResource(MR.strings.settings_section_title_message_shape).uppercase(), contentPadding = PaddingValues()) {
-      Row(modifier = Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING + 4.dp ) ,verticalAlignment = Alignment.CenterVertically) {
-        Text(stringResource(MR.strings.settings_message_shape_corner), color = colors.onBackground)
-        Spacer(Modifier.width(10.dp))
-        Slider(
-          remember { appPreferences.chatItemRoundness.state }.value,
-          valueRange = 0f..1f,
-          steps = 20,
-          onValueChange = {
-            val diff = it % 0.05f
-            appPreferences.chatItemRoundness.set(it + (if (diff >= 0.025f) -diff + 0.05f else -diff))
-            saveThemeToDatabase(null)
-          },
-          colors = SliderDefaults.colors(
-            activeTickColor = Color.Transparent,
-            inactiveTickColor = Color.Transparent,
+  fun AppToolbarsSection() {
+    BoxWithConstraints {
+      SectionView(stringResource(MR.strings.appearance_app_toolbars).uppercase()) {
+        SectionItemViewWithoutMinPadding {
+          Box(Modifier.weight(1f)) {
+            Text(
+              stringResource(MR.strings.appearance_in_app_bars_alpha),
+              Modifier.clickable { appPrefs.inAppBarsAlpha.set(0.9f) },
+              maxLines = 1
+            )
+          }
+          Spacer(Modifier.padding(end = 10.dp))
+          Slider(
+            1 - remember { appPrefs.inAppBarsAlpha.state }.value,
+            onValueChange = {
+              val diff = it % 0.05f
+              appPrefs.inAppBarsAlpha.set(1f - (String.format(Locale.US, "%.2f", it + (if (diff >= 0.025f) -diff + 0.05f else -diff)).toFloatOrNull() ?: 1f))
+            },
+            Modifier.widthIn(max = (this@BoxWithConstraints.maxWidth - DEFAULT_PADDING * 2) * 0.618f),
+            valueRange = 0f..1f,
+            steps = 21,
+            colors = SliderDefaults.colors(
+              activeTickColor = Color.Transparent,
+              inactiveTickColor = Color.Transparent,
+            )
           )
-        )
+        }
+        SectionItemViewWithoutMinPadding {
+          Box(Modifier.weight(1f)) {
+            Text(
+              stringResource(MR.strings.appearance_bars_blur_radius),
+              Modifier.clickable { appPrefs.appearanceBarsBlurRadius.set(50) },
+              maxLines = 1
+            )
+          }
+          Spacer(Modifier.padding(end = 10.dp))
+          Slider(
+            remember { appPrefs.appearanceBarsBlurRadius.state }.value.toFloat() / 100f,
+            onValueChange = {
+              val diff = it % 0.05f
+              appPrefs.appearanceBarsBlurRadius.set(((String.format(Locale.US, "%.2f", it + (if (diff >= 0.025f) -diff + 0.05f else -diff)).toFloatOrNull() ?: 1f) * 100).toInt())
+            },
+            Modifier.widthIn(max = (this@BoxWithConstraints.maxWidth - DEFAULT_PADDING * 2) * 0.618f),
+            valueRange = 0f..1f,
+            steps = 21,
+            colors = SliderDefaults.colors(
+              activeTickColor = Color.Transparent,
+              inactiveTickColor = Color.Transparent,
+            )
+          )
+        }
       }
-      SettingsPreferenceItem(icon = null, stringResource(MR.strings.settings_message_shape_tail), appPreferences.chatItemTail)
+    }
+  }
+
+  @Composable
+  fun MessageShapeSection() {
+    BoxWithConstraints {
+      SectionView(stringResource(MR.strings.settings_section_title_message_shape).uppercase()) {
+        SectionItemViewWithoutMinPadding {
+          Text(stringResource(MR.strings.settings_message_shape_corner), Modifier.weight(1f))
+          Spacer(Modifier.width(10.dp))
+          Slider(
+            remember { appPreferences.chatItemRoundness.state }.value,
+            onValueChange = {
+              val diff = it % 0.05f
+              appPreferences.chatItemRoundness.set(it + (if (diff >= 0.025f) -diff + 0.05f else -diff))
+              saveThemeToDatabase(null)
+            },
+            Modifier.widthIn(max = (this@BoxWithConstraints.maxWidth - DEFAULT_PADDING * 2) * 0.618f),
+            valueRange = 0f..1f,
+            steps = 20,
+            colors = SliderDefaults.colors(
+              activeTickColor = Color.Transparent,
+              inactiveTickColor = Color.Transparent,
+            )
+          )
+        }
+        SettingsPreferenceItem(icon = null, stringResource(MR.strings.settings_message_shape_tail), appPreferences.chatItemTail)
+      }
     }
   }
 
@@ -167,78 +227,6 @@ object AppearanceScope {
             )
           )
         }
-      }
-    }
-  }
-
-  @Composable
-  fun BarsAlphaSection(sectionTitle: StringResource, pref: SharedPreference<Float>, defaultValue: Float) {
-    val prefValue = remember { pref.state }.value
-    SectionView(stringResource(sectionTitle).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
-      Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(50.dp)
-          .background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22))
-          .clip(RoundedCornerShape(percent = 22))
-          .clickable {
-            pref.set(defaultValue)
-          },
-          contentAlignment = Alignment.Center) {
-          Text(String.format(Locale.US, "%.2f", 1 - prefValue),
-            color = if (prefValue == defaultValue) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground,
-            fontSize = 12.sp,
-            maxLines = 1
-          )
-        }
-        Spacer(Modifier.width(15.dp))
-        Slider(
-          1 - prefValue,
-          valueRange = 0f..1f,
-          steps = 21,
-          onValueChange = {
-            val diff = it % 0.05f
-            pref.set(1f - (String.format(Locale.US, "%.2f", it + (if (diff >= 0.025f) -diff + 0.05f else -diff)).toFloatOrNull() ?: 1f))
-          },
-          colors = SliderDefaults.colors(
-            activeTickColor = Color.Transparent,
-            inactiveTickColor = Color.Transparent,
-          )
-        )
-      }
-    }
-  }
-
-  @Composable
-  fun BarsBlurSection(sectionTitle: StringResource, pref: SharedPreference<Int>, defaultValue: Int) {
-    val prefValue = remember { pref.state }.value
-    SectionView(stringResource(sectionTitle).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
-      Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(50.dp)
-          .background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22))
-          .clip(RoundedCornerShape(percent = 22))
-          .clickable {
-            pref.set(defaultValue)
-          },
-          contentAlignment = Alignment.Center) {
-          Text(String.format(Locale.US, prefValue.toString(), prefValue),
-            color = if (prefValue == defaultValue) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground,
-            fontSize = 12.sp,
-            maxLines = 1
-          )
-        }
-        Spacer(Modifier.width(15.dp))
-        Slider(
-          prefValue.toFloat() / 100,
-          valueRange = 0f..1f,
-          steps = 21,
-          onValueChange = {
-            val diff = it % 0.05f
-            pref.set(((String.format(Locale.US, "%.2f", it + (if (diff >= 0.025f) -diff + 0.05f else -diff)).toFloatOrNull() ?: 1f) * 100).toInt())
-          },
-          colors = SliderDefaults.colors(
-            activeTickColor = Color.Transparent,
-            inactiveTickColor = Color.Transparent,
-          )
-        )
       }
     }
   }

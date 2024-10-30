@@ -176,7 +176,15 @@ private fun ConnectMobileViewLayout(
   refreshQrCode: () -> Unit = {},
   UnderQrLayout: @Composable () -> Unit = {},
 ) {
-  ColumnWithScrollBar {
+  @Composable
+  fun ScrollableLayout(content: @Composable ColumnScope.() -> Unit) {
+    if (LocalAppBarHandler.current != null) {
+      ColumnWithScrollBar(content = content)
+    } else {
+      ColumnWithScrollBarNoAppBar(content = content)
+    }
+  }
+  ScrollableLayout {
     if (title != null) {
       AppBarTitle(title)
     }

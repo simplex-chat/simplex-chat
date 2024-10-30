@@ -30,7 +30,7 @@ fun Modifier.blurredBackgroundModifier(
     return this
 
   return if (appPlatform.isAndroid) {
-    this.androidBlurredModifier(keyboardInset, blurRadius, keyboardCoversBar, onTop, graphicsLayer, backgroundGraphicsLayer, backgroundGraphicsLayerSize, density)
+    this.androidBlurredModifier(keyboardInset, blurRadius.value, keyboardCoversBar, onTop, graphicsLayer, backgroundGraphicsLayer, backgroundGraphicsLayerSize, density)
   } else {
     this.desktopBlurredModifier(keyboardInset, blurRadius, keyboardCoversBar, onTop, graphicsLayer, backgroundGraphicsLayer, backgroundGraphicsLayerSize, density)
   }
@@ -40,7 +40,7 @@ fun Modifier.blurredBackgroundModifier(
 // which is very noticeable on desktop and unnoticeable on Android
 private fun Modifier.androidBlurredModifier(
   keyboardInset: WindowInsets,
-  blurRadius: State<Int>,
+  blurRadius: Int,
   keyboardCoversBar: Boolean,
   onTop: Boolean,
   graphicsLayer: GraphicsLayer,
@@ -49,8 +49,8 @@ private fun Modifier.androidBlurredModifier(
   density: Density
 ): Modifier = this
   .graphicsLayer {
-    renderEffect = if (blurRadius.value > 0) BlurEffect(blurRadius.value.dp.toPx(), blurRadius.value.dp.toPx()) else null
-    clip = blurRadius.value > 0
+    renderEffect = if (blurRadius > 0) BlurEffect(blurRadius.dp.toPx(), blurRadius.dp.toPx()) else null
+    clip = blurRadius > 0
   }
   .graphicsLayer {
     if (!onTop) {

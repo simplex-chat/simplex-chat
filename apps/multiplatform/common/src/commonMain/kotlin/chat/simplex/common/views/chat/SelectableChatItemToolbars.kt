@@ -26,7 +26,7 @@ fun BoxScope.SelectedItemsTopToolbar(selectedChatItems: MutableState<Set<Long>?>
   BackHandler(onBack = onBackClicked)
   val count = selectedChatItems.value?.size ?: 0
   val oneHandUI = remember { appPrefs.oneHandUI.state }
-  DefaultTopAppBar(
+  DefaultAppBar(
     navigationButton = { NavigationButtonClose(onButtonClicked = onBackClicked) },
     title = {
       Text(

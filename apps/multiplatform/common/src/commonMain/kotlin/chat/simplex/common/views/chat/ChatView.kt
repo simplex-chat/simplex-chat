@@ -843,7 +843,7 @@ fun BoxScope.ChatInfoToolbar(
     }
   }
   val oneHandUI = remember { appPrefs.oneHandUI.state }
-  DefaultTopAppBar(
+  DefaultAppBar(
     navigationButton = { if (appPlatform.isAndroid || showSearch.value) { NavigationButtonBack(onBackClicked) }  },
     title = { ChatInfoToolbarTitle(chatInfo) },
     onTitleClick = if (chatInfo is ChatInfo.Local) null else info,

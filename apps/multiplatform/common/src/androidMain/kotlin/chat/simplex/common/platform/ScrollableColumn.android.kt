@@ -62,9 +62,9 @@ actual fun LazyColumnWithScrollBar(
   }
   LazyColumn(
     if (fillMaxSize) {
-      Modifier.fillMaxSize().copyViewToAppBar(LocalAppBarHandler.current?.graphicsLayer).then(modifier).nestedScroll(connection)
+      Modifier.fillMaxSize().copyViewToAppBar(remember { appPrefs.appearanceBarsBlurRadius.state }.value, LocalAppBarHandler.current?.graphicsLayer).then(modifier).nestedScroll(connection)
     } else {
-      Modifier.copyViewToAppBar(LocalAppBarHandler.current?.graphicsLayer).then(modifier).nestedScroll(connection)
+      Modifier.copyViewToAppBar(remember { appPrefs.appearanceBarsBlurRadius.state }.value, LocalAppBarHandler.current?.graphicsLayer).then(modifier).nestedScroll(connection)
     },
     state,
     contentPadding,
@@ -128,9 +128,9 @@ actual fun ColumnWithScrollBar(
   Box(Modifier.fillMaxHeight()) {
     Column(
       if (maxIntrinsicSize) {
-        Modifier.copyViewToAppBar(LocalAppBarHandler.current?.graphicsLayer).then(modifier).nestedScroll(connection).verticalScroll(state).height(IntrinsicSize.Max)
+        Modifier.copyViewToAppBar(remember { appPrefs.appearanceBarsBlurRadius.state }.value, LocalAppBarHandler.current?.graphicsLayer).then(modifier).nestedScroll(connection).verticalScroll(state).height(IntrinsicSize.Max)
       } else {
-        Modifier.copyViewToAppBar(LocalAppBarHandler.current?.graphicsLayer).then(modifier).nestedScroll(connection).verticalScroll(state)
+        Modifier.copyViewToAppBar(remember { appPrefs.appearanceBarsBlurRadius.state }.value, LocalAppBarHandler.current?.graphicsLayer).then(modifier).nestedScroll(connection).verticalScroll(state)
       }, verticalArrangement, horizontalAlignment
     ) {
       if (oneHandUI.value) {

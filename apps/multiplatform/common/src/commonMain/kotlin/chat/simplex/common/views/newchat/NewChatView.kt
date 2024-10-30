@@ -29,6 +29,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
@@ -401,6 +402,10 @@ fun ActiveProfilePicker(
     ) {
       LazyColumnWithScrollBar(Modifier.padding(top = topPaddingToContent()), userScrollEnabled = !switchingProfile.value) {
         item {
+          val oneHandUI = remember { appPrefs.oneHandUI.state }
+          if (oneHandUI.value) {
+            Spacer(Modifier.padding(top = DEFAULT_PADDING + 5.dp))
+          }
           AppBarTitle(stringResource(MR.strings.select_chat_profile), hostDevice(rhId), bottomPadding = DEFAULT_PADDING)
         }
         val activeProfile = filteredProfiles.firstOrNull { it.activeUser }
