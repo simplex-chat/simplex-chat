@@ -46,8 +46,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.datetime.*
 import java.io.File
 import java.net.URI
-import kotlin.math.abs
-import kotlin.math.sign
+import kotlin.math.*
 
 data class ItemSeparation(val timestamp: Boolean, val largeGap: Boolean, val date: Instant?)
 
@@ -1025,28 +1024,44 @@ fun BoxWithConstraintsScope.ChatItemsList(
   }
 
   val maxHeightRounded = with(LocalDensity.current) { maxHeight.roundToPx() }
-  val animatedScrollToIndex: (Int) -> Unit = { idx ->
-    withBGApi {
-      scope.launch {
-        listState.animateScrollToItem(kotlin.math.min(reversedChatItems.lastIndex, idx + 1), -maxHeightRounded)
-        preloadItemsEnabled.value = true
-      }
-    }
-  }
   val scrollToItem: (Long) -> Unit = { itemId: Long ->
+    val scrollPosition: (Int) -> Int = { idx -> min(reversedChatItems.lastIndex, idx + 1) }
     val index = reversedChatItems.indexOfFirst { it.id == itemId }
     preloadItemsEnabled.value = false
 
     if (index != -1) {
-      animatedScrollToIndex(index)
+      scope.launch {
+        listState.animateScrollToItem(scrollPosition(index), -maxHeightRounded)
+        preloadItemsEnabled.value = true
+      }
     } else {
       withBGApi {
         try {
-          // TODO: If this section exists it should be removed.
+          val destinationSection = sections.find { it.area == ChatSectionArea.Destination }
+          val itemsToDrop = destinationSection?.items?.flatMap { it.items }?.toList()
+          withContext(Dispatchers.Main) {
+            itemsToDrop?.forEach {
+              chatModel.chatItemsSectionArea[it.id] = ChatSectionArea.Current
+            }
+          }
           val chatSectionLoad = ChatSectionLoad(0, ChatSectionArea.Destination)
           apiLoadMessagesAroundItem(rhId = remoteHostId, chatModel = chatModel, chatInfo = chatInfo, aroundItemId = itemId, chatSectionLoad = chatSectionLoad)
           val idx = reversedChatItems.indexOfFirst { it.id == itemId }
-          animatedScrollToIndex(idx)
+
+          scope.launch {
+            listState.animateScrollToItem(scrollPosition(idx), -maxHeightRounded)
+            withContext(Dispatchers.Main) {
+              if (!itemsToDrop.isNullOrEmpty()) {
+                itemsToDrop.forEach {
+                  chatModel.chatItemsSectionArea.remove(it.id)
+                }
+                chatModel.chatItems.value.removeIf { chatModel.chatItemsSectionArea[it.id] == null }
+                val newIdx = reversedChatItems.indexOfFirst { it.id == itemId }
+                listState.scrollToItem(scrollPosition(newIdx), -maxHeightRounded)
+              }
+            }
+            preloadItemsEnabled.value = true
+          }
         } catch (ex: Exception) {
           preloadItemsEnabled.value = true
         }
@@ -1576,7 +1591,7 @@ fun PreloadItems(
       .distinctUntilChanged()
       .filterNotNull()
       .collect {
-        onLoadMore.value(chatId.value, scrollDirection, it.first)
+         onLoadMore.value(chatId.value, scrollDirection, it.first)
       }
   }
 }
