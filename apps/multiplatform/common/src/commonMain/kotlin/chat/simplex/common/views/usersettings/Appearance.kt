@@ -130,7 +130,8 @@ object AppearanceScope {
             pref.set(value)
           }
         }
-        if (appPlatform.isDesktop || (platform.androidApiLevel ?: 0) >= 31) {
+        val blur = remember { appPrefs.appearanceBarsBlurRadius.state }
+        if (appPrefs.deviceSupportsBlur || blur.value > 0) {
           SectionItemViewWithoutMinPadding {
             Box(Modifier.weight(1f)) {
               Text(
@@ -141,7 +142,7 @@ object AppearanceScope {
             }
             Spacer(Modifier.padding(end = 10.dp))
             Slider(
-              remember { appPrefs.appearanceBarsBlurRadius.state }.value.toFloat() / 100f,
+              blur.value.toFloat() / 100f,
               onValueChange = {
                 val diff = it % 0.05f
                 saveBlur(((String.format(Locale.US, "%.2f", it + (if (diff >= 0.025f) -diff + 0.05f else -diff)).toFloatOrNull() ?: 1f) * 100).toInt())
