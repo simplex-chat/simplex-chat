@@ -1020,9 +1020,23 @@ fun BoxWithConstraintsScope.ChatItemsList(
         .collect {
           revealedItems.value = setOf()
           preloadItemsEnabled.value = true
-          val firstUnreadItemIndex = chatModel.chatItems.value.indexOfFirst { it.isRcvNew }
+          val firstUnreadItemIndex = reversedChatItems.indexOfLast{ it.isRcvNew }
           if (firstUnreadItemIndex != -1) {
-            listState.scrollToItem(scrollPosition(reversedChatItems.size - 1 - firstUnreadItemIndex), -maxHeightRounded)
+            listState.scrollToItem(scrollPosition(firstUnreadItemIndex), -maxHeightRounded)
+            val firstUnreadItem = chatModel.chatItems[firstUnreadItemIndex]
+            if (chatModel.chatItemsSectionArea[firstUnreadItem.id] != ChatSectionArea.Bottom) {
+              withBGApi {
+                val chat = chatController.apiGetChat(rh = remoteHostId, type = chatInfo.chatType, id = chatInfo.apiId)
+                if (chatModel.chatId.value != chatInfo.id || chat == null) return@withBGApi
+                withContext(Dispatchers.Main) {
+                  val chatSectionLoad = ChatSectionLoad(0, ChatSectionArea.Bottom)
+                  val itemsToAdd = chatSectionLoad.prepareItems(chat.first.chatItems)
+                  if (itemsToAdd.isNotEmpty()) {
+                    chatModel.chatItems.addAll(itemsToAdd)
+                  }
+                }
+              }
+            }
           }
         }
     }
