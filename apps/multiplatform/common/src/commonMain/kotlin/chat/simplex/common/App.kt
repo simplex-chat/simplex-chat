@@ -75,13 +75,6 @@ fun AppScreen() {
             MainScreen()
           }
         }
-//        Box(Modifier.width(paddingStart + cutoutMax)
-//          .fillMaxHeight()
-//          .drawBehind { drawRect(if (fullscreenGallery.value) Color.Black else CurrentColors.value.colors.background) })
-//        Box(Modifier.align(Alignment.CenterEnd)
-//          .width(paddingEnd + cutoutMax)
-//          .fillMaxHeight()
-//          .drawBehind { drawRect(if (fullscreenGallery.value) Color.Black else CurrentColors.value.colors.background) })
       }
     }
   }

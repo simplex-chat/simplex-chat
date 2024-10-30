@@ -9,11 +9,8 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layoutId
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
@@ -34,13 +31,6 @@ import kotlinx.coroutines.launch
 @Composable
 fun TerminalView(floating: Boolean = false) {
   val composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = false)) }
-  DisposableEffect(Unit) {
-    onDispose {
-      if (appPlatform.isDesktop) {
-        ModalManager.center.closeModals()
-      }
-    }
-  }
   TerminalLayout(
     composeState,
     floating,
