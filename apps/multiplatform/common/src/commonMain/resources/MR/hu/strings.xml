@@ -1141,7 +1141,7 @@
     <string name="restore_database_alert_title">Adatbázismentés visszaállítása?</string>
     <string name="simplex_service_notification_text">Üzenetek fogadása…</string>
     <string name="rcv_group_event_2_members_connected">%s és %s kapcsolódott</string>
-    <string name="you_are_observer">megfigyelő szerep</string>
+    <string name="you_are_observer">Ön megfigyelő</string>
     <string name="port_verb">Port</string>
     <string name="set_passcode">Jelkód beállítása</string>
     <string name="whats_new">Újdonságok</string>
@@ -1343,7 +1343,7 @@
     <string name="la_please_remember_to_store_password">Ne felejtse el, vagy tárolja biztonságosan – az elveszett jelszót nem lehet visszaállítani!</string>
     <string name="video_will_be_received_when_contact_completes_uploading">A videó akkor érkezik meg, amikor a küldője befejezte annak feltöltését.</string>
     <string name="description_you_shared_one_time_link_incognito">egyszer használható hivatkozást osztott meg inkognitóban</string>
-    <string name="connected_to_server_to_receive_messages_from_contact">Már kapcsolódott ahhoz a kiszolgálóhoz, amely az adott ismerősétől érkező üzenetek fogadására szolgál.</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">Ön már kapcsolódott ahhoz a kiszolgálóhoz, amely az adott ismerősétől érkező üzenetek fogadására szolgál.</string>
     <string name="you_can_enable_delivery_receipts_later">Később engedélyezheti a „Beállításokban”</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Akkor lesz kapcsolódva a csoporthoz, amikor a csoport tulajdonosának eszköze online lesz, várjon, vagy ellenőrizze később!</string>
     <string name="mtr_error_different">különböző átköltöztetés az alkalmazásban/adatbázisban: %s / %s</string>
@@ -1400,7 +1400,7 @@
     <string name="upgrade_and_open_chat">Fejlesztés és a csevegés megnyitása</string>
     <string name="you_need_to_allow_to_send_voice">Engedélyeznie kell a hangüzenetek küldését az ismerőse számára, hogy hangüzeneteket küldhessenek egymásnak.</string>
     <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Beállíthatja, hogy mely kiszolgáló(ko)n keresztül <b>fogadja</b> az üzeneteket, ismerősöket – a kiszolgálók, amelyeket az üzenetküldéshez használ.]]></string>
-    <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Már a(z) <b>%1$s</b> csoport tagja.]]></string>
+    <string name="connect_plan_you_are_already_in_group_vName">Ön már a(z) <b>%1$s</b> nevű csoport tagja.</string>
     <string name="snd_conn_event_switch_queue_phase_completed">cím megváltoztatva</string>
     <string name="v4_3_irreversible_message_deletion_desc">Az ismerősei engedélyezhetik a teljes üzenet törlést.</string>
     <string name="you_have_to_enter_passphrase_every_time">A jelmondatot minden alkalommal meg kell adnia, amikor az alkalmazás elindul - nem az eszközön kerül tárolásra.</string>
@@ -1538,7 +1538,7 @@
     <string name="or_scan_qr_code">Vagy QR-kód beolvasása</string>
     <string name="invalid_qr_code">Érvénytelen QR-kód</string>
     <string name="keep_invitation_link">Megtartás</string>
-    <string name="search_or_paste_simplex_link">Keresés, vagy SimpleX-hivatkozás beillesztése</string>
+    <string name="search_or_paste_simplex_link">Keresés vagy SimpleX-hivatkozás beillesztése</string>
     <string name="show_internal_errors">Belső hibák megjelenítése</string>
     <string name="agent_critical_error_title">Kritikus hiba</string>
     <string name="agent_internal_error_title">Belső hiba</string>
