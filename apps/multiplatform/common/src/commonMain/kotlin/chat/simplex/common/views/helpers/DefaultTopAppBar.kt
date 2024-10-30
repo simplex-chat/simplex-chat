@@ -101,7 +101,7 @@ fun DefaultAppBar(
         centered = !showSearch && (title != null || !onTop),
         onTop = onTop,
       )
-      CloseBarDivider(onTop, title != null || fixedTitleText != null, connection)
+      AppBarDivider(onTop, title != null || fixedTitleText != null, connection)
     }
   }
 }
@@ -159,7 +159,7 @@ fun NavigationButtonMenu(onButtonClicked: () -> Unit) {
 }
 
 @Composable
-private fun BoxScope.CloseBarDivider(onTop: Boolean, fixedAlpha: Boolean, connection: CollapsingAppBarNestedScrollConnection?) {
+private fun BoxScope.AppBarDivider(onTop: Boolean, fixedAlpha: Boolean, connection: CollapsingAppBarNestedScrollConnection?) {
   if (connection != null) {
     Divider(
       Modifier
