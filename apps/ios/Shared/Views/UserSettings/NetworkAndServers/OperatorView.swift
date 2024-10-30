@@ -196,7 +196,7 @@ struct OperatorView: View {
                 serverToEdit: srv,
                 backLabel: "\(serverOperator.name) servers"
             )
-            .navigationBarTitle("\(serverOperator.name) \(proto) server")
+            .navigationBarTitle("\(proto) server")
             .modifier(ThemedBackground(grouped: true))
             .navigationBarTitleDisplayMode(.large)
         } label: {
