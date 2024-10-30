@@ -40,8 +40,6 @@ struct AllServersView: View {
                 }
 
                 Section {
-                    Button("Reset") {}
-                        .disabled(true)
                     Button("Save") {}
                         .disabled(true)
                 }

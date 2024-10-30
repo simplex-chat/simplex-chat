@@ -58,14 +58,6 @@ struct OperatorView: View {
                 }
 
                 Section {
-                    Button("Reset") {
-                        smpServers = currSMPServers
-                        xftpServers = currXFTPServers
-                    }
-                    .disabled(
-                        Set(smpServers) == Set(currSMPServers) &&
-                        Set(xftpServers) == Set(currXFTPServers)
-                    )
                     if serverOperatorToEdit.enabled {
                         Button("Test servers") {}
                     }
@@ -104,6 +96,7 @@ struct OperatorView: View {
                 Image(serverOperator.info.logo)
                     .resizable()
                     .scaledToFit()
+                    .grayscale(serverOperatorToEdit.enabled ? 0.0 : 1.0)
                     .frame(width: 24, height: 24)
                 Text(serverOperator.name)
             }
