@@ -115,11 +115,26 @@ object AppearanceScope {
             )
           )
         }
+        // In Android in OneHandUI there is a problem with setting initial value of blur if it was 0 before entering the screen.
+        // So doing in two steps works ok
+        fun saveBlur(value: Int) {
+          val oneHandUI = appPrefs.oneHandUI.get()
+          val pref = appPrefs.appearanceBarsBlurRadius
+          if (pref.get() == 0 && appPlatform.isAndroid && oneHandUI) {
+            pref.set(if (value > 2) value - 1 else value + 1)
+            withApi {
+              delay(50)
+              pref.set(value)
+            }
+          } else {
+            pref.set(value)
+          }
+        }
         SectionItemViewWithoutMinPadding {
           Box(Modifier.weight(1f)) {
             Text(
               stringResource(MR.strings.appearance_bars_blur_radius),
-              Modifier.clickable { appPrefs.appearanceBarsBlurRadius.set(50) },
+              Modifier.clickable { saveBlur(50) },
               maxLines = 1
             )
           }
@@ -128,7 +143,7 @@ object AppearanceScope {
             remember { appPrefs.appearanceBarsBlurRadius.state }.value.toFloat() / 100f,
             onValueChange = {
               val diff = it % 0.05f
-              appPrefs.appearanceBarsBlurRadius.set(((String.format(Locale.US, "%.2f", it + (if (diff >= 0.025f) -diff + 0.05f else -diff)).toFloatOrNull() ?: 1f) * 100).toInt())
+              saveBlur(((String.format(Locale.US, "%.2f", it + (if (diff >= 0.025f) -diff + 0.05f else -diff)).toFloatOrNull() ?: 1f) * 100).toInt())
             },
             Modifier.widthIn(max = (this@BoxWithConstraints.maxWidth - DEFAULT_PADDING * 2) * 0.618f),
             valueRange = 0f..1f,
