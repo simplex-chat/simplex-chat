@@ -193,6 +193,8 @@ final class ChatModel: ObservableObject {
     @Published var draft: ComposeState?
     @Published var draftChatId: String?
     @Published var networkInfo = UserNetworkInfo(networkType: .other, online: true)
+    // server operators
+    @Published var serverOperators: [ServerOperator] = [ServerOperator.sampleData1, ServerOperator.sampleData2, ServerOperator.sampleData3]
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
@@ -236,6 +238,30 @@ final class ChatModel: ObservableObject {
     func removeUser(_ user: User) {
         if let i = getUserIndex(user) {
             users.remove(at: i)
+        }
+    }
+
+    var operatorsWithConditionsAccepted: [ServerOperator] {
+        serverOperators.filter { $0.conditionsAcceptance.conditionsAccepted }
+    }
+
+    var enabledOperatorsWithConditionsNotAccepted: [ServerOperator] {
+        serverOperators.filter { $0.enabled && !$0.conditionsAcceptance.conditionsAccepted }
+    }
+
+    func acceptConditionsForEnabledOperators(_ date: Date) {
+        for (i, serverOperator) in serverOperators.enumerated() {
+            if serverOperator.enabled && !serverOperator.conditionsAcceptance.conditionsAccepted {
+                var updatedOperator = serverOperator
+                updatedOperator.conditionsAcceptance = .accepted(date: date)
+                serverOperators[i] = updatedOperator
+            }
+        }
+    }
+
+    func updateServerOperator(_ updatedOperator: ServerOperator) {
+        if let i = serverOperators.firstIndex(where: { $0.operatorId == updatedOperator.operatorId }) {
+            serverOperators[i] = updatedOperator
         }
     }
 

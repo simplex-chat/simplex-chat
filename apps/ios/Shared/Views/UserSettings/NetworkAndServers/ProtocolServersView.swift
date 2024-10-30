@@ -158,10 +158,10 @@ struct ProtocolServersView: View {
             }
         }
         .onAppear {
+            serverOperators = ChatModel.shared.serverOperators
             // this condition is needed to prevent re-setting the servers when exiting single server view
             if justOpened {
                 do {
-                    serverOperators = [ServerOperator.sampleData1, ServerOperator.sampleData2, ServerOperator.sampleData3]
                     let r = try getUserProtoServers(serverProtocol)
                     currServers = r.protoServers
                     presetServers = r.presetServers
