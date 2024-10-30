@@ -120,7 +120,7 @@ object AppearanceScope {
         fun saveBlur(value: Int) {
           val oneHandUI = appPrefs.oneHandUI.get()
           val pref = appPrefs.appearanceBarsBlurRadius
-          if (pref.get() == 0 && appPlatform.isAndroid && oneHandUI) {
+          if (appPlatform.isAndroid && oneHandUI && pref.get() == 0) {
             pref.set(if (value > 2) value - 1 else value + 1)
             withApi {
               delay(50)
