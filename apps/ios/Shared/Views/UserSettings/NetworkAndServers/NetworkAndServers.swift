@@ -28,19 +28,11 @@ struct NetworkAndServers: View {
             List {
                 Section {
                     NavigationLink {
-                        ProtocolServersView(serverProtocol: .smp)
-                            .navigationTitle("Your SMP servers")
+                        AllServersView()
+                            .navigationTitle("Servers")
                             .modifier(ThemedBackground(grouped: true))
                     } label: {
-                        Text("Message servers")
-                    }
-
-                    NavigationLink {
-                        ProtocolServersView(serverProtocol: .xftp)
-                            .navigationTitle("Your XFTP servers")
-                            .modifier(ThemedBackground(grouped: true))
-                    } label: {
-                        Text("Media & file servers")
+                        Text("Servers")
                     }
 
                     NavigationLink {
