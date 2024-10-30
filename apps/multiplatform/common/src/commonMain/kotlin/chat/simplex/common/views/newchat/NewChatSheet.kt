@@ -215,7 +215,7 @@ private fun ModalData.NewChatSheetLayout(
               ModalManager.start.showCustomModal { closeDeletedChats ->
                 ModalView(
                   close = closeDeletedChats,
-                  showCloseBar = !oneHandUI.value,
+                  showAppBar = !oneHandUI.value,
                 ) {
                   if (oneHandUI.value) {
                     BackHandler(onBack = closeDeletedChats)

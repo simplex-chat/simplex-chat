@@ -23,7 +23,7 @@ import kotlin.math.sqrt
 fun ModalView(
   close: () -> Unit,
   showClose: Boolean = true,
-  showCloseBar: Boolean = true,
+  showAppBar: Boolean = true,
   enableClose: Boolean = true,
   background: Color = Color.Unspecified,
   modifier: Modifier = Modifier,
@@ -33,7 +33,7 @@ fun ModalView(
   endButtons: @Composable RowScope.() -> Unit = {},
   content: @Composable BoxScope.() -> Unit,
 ) {
-  if (showClose && showCloseBar) {
+  if (showClose && showAppBar) {
     BackHandler(enabled = enableClose, onBack = close)
   }
   val oneHandUI = remember { appPrefs.oneHandUI.state }
@@ -42,7 +42,7 @@ fun ModalView(
       Box(modifier = modifier) {
         content()
       }
-      if (showCloseBar) {
+      if (showAppBar) {
         if (oneHandUI.value) {
           StatusBarBackground()
         }

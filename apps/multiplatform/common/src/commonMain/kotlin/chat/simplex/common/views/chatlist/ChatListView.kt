@@ -54,7 +54,7 @@ private fun showNewChatSheet(oneHandUI: State<Boolean>) {
       chatModel.newChatSheetVisible.value = false
       close()
     }
-    ModalView(close, showCloseBar = !oneHandUI.value) {
+    ModalView(close, showAppBar = !oneHandUI.value) {
       if (appPlatform.isAndroid) {
         BackHandler {
           close()
