@@ -27,37 +27,17 @@ struct NetworkAndServers: View {
     var body: some View {
         VStack {
             List {
-                operatorsSection()
+                presetServersSection()
 
                 Section {
                     NavigationLink {
-                        ProtocolServersView(serverProtocol: .smp)
-                            .navigationTitle("SMP servers")
+                        YourServersView()
+                            .navigationTitle("Your servers")
                             .modifier(ThemedBackground(grouped: true))
                     } label: {
-                        Text("Message servers")
+                        Text("Your servers")
                     }
-
-                    NavigationLink {
-                        ProtocolServersView(serverProtocol: .xftp)
-                            .navigationTitle("XFTP servers")
-                            .modifier(ThemedBackground(grouped: true))
-                    } label: {
-                        Text("Media & file servers")
-                    }
-                } header: {
-                    Text("Other servers")
-                        .foregroundColor(theme.colors.secondary)
-                }
-
-                Section {
-                    Button("Reset") {}
-                        .disabled(true)
-                    Button("Save") {}
-                        .disabled(true)
-                }
-
-                Section {
+                    
                     NavigationLink {
                         AdvancedNetworkSettings()
                             .navigationTitle("Advanced settings")
@@ -68,6 +48,11 @@ struct NetworkAndServers: View {
                 } header: {
                     Text("Messages & files")
                         .foregroundColor(theme.colors.secondary)
+                }
+
+                Section {
+                    Button("Save") {}
+                        .disabled(true)
                 }
 
                 Section(header: Text("Calls").foregroundColor(theme.colors.secondary)) {
@@ -94,7 +79,7 @@ struct NetworkAndServers: View {
         }
     }
 
-    @ViewBuilder private func operatorsSection() -> some View {
+    @ViewBuilder private func presetServersSection() -> some View {
         let smpServers = [ServerCfg.sampleData.preset, ServerCfg.sampleData.preset]
         let xftpServers = [ServerCfg.sampleData.xftpPreset, ServerCfg.sampleData.xftpPreset]
         Section {
@@ -102,7 +87,7 @@ struct NetworkAndServers: View {
                 serverOperatorView(srvOperator, smpServers, xftpServers)
             }
         } header: {
-            Text("Operators")
+            Text("Preset servers")
                 .foregroundColor(theme.colors.secondary)
         }
     }
