@@ -207,28 +207,29 @@ suspend fun noteFolderChatAction(rhId: Long?, noteFolder: NoteFolder) {
 suspend fun openDirectChat(rhId: Long?, contactId: Long, chatModel: ChatModel) = coroutineScope {
   val chat = chatModel.controller.apiGetChat(rhId, ChatType.Direct, contactId, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
   if (chat != null && isActive) {
-    openLoadedChat(chat.first, chatModel)
+    openLoadedChat(chat.first, chatModel, chat.second)
   }
 }
 
 suspend fun openGroupChat(rhId: Long?, groupId: Long, chatModel: ChatModel) = coroutineScope {
   val chat = chatModel.controller.apiGetChat(rhId, ChatType.Group, groupId, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
   if (chat != null && isActive) {
-    openLoadedChat(chat.first, chatModel)
+    openLoadedChat(chat.first, chatModel, chat.second)
   }
 }
 
 suspend fun openChat(rhId: Long?, chatInfo: ChatInfo, chatModel: ChatModel) = coroutineScope {
   val chat = chatModel.controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
   if (chat != null && isActive) {
-    openLoadedChat(chat.first, chatModel)
+    openLoadedChat(chat.first, chatModel, chat.second)
   }
 }
 
-fun openLoadedChat(chat: Chat, chatModel: ChatModel) {
+fun openLoadedChat(chat: Chat, chatModel: ChatModel, landingSection: ChatLandingSection = ChatLandingSection.Latest) {
   chatModel.chatItemStatuses.clear()
   chatModel.chatItems.replaceAll(chat.chatItems)
   chatModel.chatId.value = chat.chatInfo.id
+  chatModel.chatItemsSectionArea = mutableMapOf<Long, ChatSectionArea>().also { map -> map.putAll(chatModel.chatItems.value.associate { it.id to landingSectionToArea(landingSection) }) }
 }
 
 suspend fun apiLoadPrevMessages(ch: Chat, chatModel: ChatModel, beforeChatItemId: Long, search: String, chatSectionLoad: ChatSectionLoad) {

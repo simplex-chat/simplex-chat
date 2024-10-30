@@ -192,6 +192,11 @@ fun ChatSection.excessItemCount(): Int {
   return max(boundary.maxIndex.minus(boundary.minIndex) + 1 - MAX_SECTION_SIZE, 0)
 }
 
+fun landingSectionToArea(chatLandingSection: ChatLandingSection) = when (chatLandingSection) {
+  ChatLandingSection.Latest -> ChatSectionArea.Bottom
+  ChatLandingSection.Unread -> ChatSectionArea.Current
+}
+
 suspend fun apiLoadMessagesAroundItem(chatInfo: ChatInfo, chatModel: ChatModel, aroundItemId: Long, rhId: Long?, chatSectionLoad: ChatSectionLoad) {
   val pagination = ChatPagination.Around(aroundItemId, ChatPagination.PRELOAD_COUNT * 2)
   val (chat) = chatModel.controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId, pagination) ?: return

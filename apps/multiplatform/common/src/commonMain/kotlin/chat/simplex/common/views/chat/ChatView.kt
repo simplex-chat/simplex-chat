@@ -94,7 +94,6 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
             showSearch.value = false
             searchText.value = ""
             selectedChatItems.value = null
-            chatModel.chatItemsSectionArea = mutableMapOf<Long, ChatSectionArea>().also { it.putAll(chatModel.chatItems.value.associate { it.id to ChatSectionArea.Bottom }) }
           }
       }
     }
@@ -1009,8 +1008,10 @@ fun BoxWithConstraintsScope.ChatItemsList(
   val sections by remember { derivedStateOf { reversedChatItems.putIntoSections(revealedItems.value) } }
   val preloadItemsEnabled = remember { mutableStateOf(true) }
   val boundaries = remember { derivedStateOf { sections.map { it.boundary } } }
+  val scrollPosition: (Int) -> Int = { idx -> min(reversedChatItems.lastIndex, idx + 1) }
 
   PreloadItems(chatInfo.id, listState, ChatPagination.UNTIL_PRELOAD_COUNT, preloadItemsEnabled, boundaries, loadMessages)
+  val maxHeightRounded = with(LocalDensity.current) { maxHeight.roundToPx() }
 
   LaunchedEffect(Unit) {
     launch {
@@ -1019,13 +1020,15 @@ fun BoxWithConstraintsScope.ChatItemsList(
         .collect {
           revealedItems.value = setOf()
           preloadItemsEnabled.value = true
+          val firstUnreadItemIndex = chatModel.chatItems.value.indexOfFirst { it.isRcvNew }
+          if (firstUnreadItemIndex != -1) {
+            listState.scrollToItem(scrollPosition(reversedChatItems.size - 1 - firstUnreadItemIndex), -maxHeightRounded)
+          }
         }
     }
   }
 
-  val maxHeightRounded = with(LocalDensity.current) { maxHeight.roundToPx() }
   val scrollToItem: (Long) -> Unit = { itemId: Long ->
-    val scrollPosition: (Int) -> Int = { idx -> min(reversedChatItems.lastIndex, idx + 1) }
     val index = reversedChatItems.indexOfFirst { it.id == itemId }
     preloadItemsEnabled.value = false
 
