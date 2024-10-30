@@ -92,7 +92,13 @@ struct OperatorView: View {
                 .modifier(ThemedBackground(grouped: true))
                 .navigationBarTitleDisplayMode(.large)
         } label: {
-            Text(serverOperator.name)
+            HStack {
+                Image(serverOperator.info.logo)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 24, height: 24)
+                Text(serverOperator.name)
+            }
         }
     }
     

@@ -1194,6 +1194,36 @@ public struct UserProtoServers: Decodable {
     public var presetServers: [ServerCfg]
 }
 
+public enum OperatorTag: Decodable {
+    case simplex
+    case xyz
+    case demo
+}
+
+public struct ServerOperatorInfo: Decodable {
+    public var description: String
+    public var website: String
+    public var logo: String
+}
+
+public let operatorsInfo: Dictionary<OperatorTag, ServerOperatorInfo> = [
+    .simplex: ServerOperatorInfo(
+        description: "SimpleX Chat preset servers",
+        website: "https://simplex.chat",
+        logo: "icon-transparent"
+    ),
+    .xyz: ServerOperatorInfo(
+        description: "XYZ servers",
+        website: "XYZ website",
+        logo: "shield"
+    ),
+    .demo: ServerOperatorInfo(
+        description: "Demo operator",
+        website: "Demo website",
+        logo: "privacy"
+    )
+]
+
 public enum UsageConditionsAcceptance: Decodable, Hashable {
     case accepted(date: Date)
     case reviewAvailable(deadline: Date)
@@ -1219,20 +1249,21 @@ public enum UsageConditionsAcceptance: Decodable, Hashable {
 public struct ServerOperator: Identifiable, Decodable {
     public var operatorId: Int64
     public var name: String
-    public var info: ServerOperatorInfo
+    public var tag: OperatorTag
     public var latestConditionsAcceptance: UsageConditionsAcceptance
     public var enabled: Bool
     public var roles: ServerRoles
 
     public var id: Int64 { operatorId }
 
+    public var info: ServerOperatorInfo {
+        operatorsInfo[tag] ?? ServerOperatorInfo(description: "Default", website: "Default", logo: "icon-transparent")
+    }
+
     public static var sampleData1 = ServerOperator(
         operatorId: 1,
         name: "SimpleX Chat",
-        info: ServerOperatorInfo(
-            description: "SimpleX Chat preset servers",
-            website: "https://simplex.chat"
-        ),
+        tag: .simplex,
         latestConditionsAcceptance: .reviewAvailable(deadline: Date.distantFuture),
         enabled: true,
         roles: ServerRoles(storage: true, proxy: true)
@@ -1241,19 +1272,20 @@ public struct ServerOperator: Identifiable, Decodable {
     public static var sampleData2 = ServerOperator(
         operatorId: 2,
         name: "XYZ",
-        info: ServerOperatorInfo(
-            description: "XYZ servers",
-            website: "https://xyz.com"
-        ),
+        tag: .xyz,
         latestConditionsAcceptance: .reviewRequired,
         enabled: false,
         roles: ServerRoles(storage: true, proxy: true)
     )
-}
 
-public struct ServerOperatorInfo: Decodable {
-    public var description: String
-    public var website: String
+    public static var sampleData3 = ServerOperator(
+        operatorId: 3,
+        name: "Demo",
+        tag: .demo,
+        latestConditionsAcceptance: .reviewRequired,
+        enabled: false,
+        roles: ServerRoles(storage: true, proxy: true)
+    )
 }
 
 public struct ServerRoles: Decodable {

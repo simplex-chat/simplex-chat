@@ -161,7 +161,7 @@ struct ProtocolServersView: View {
             // this condition is needed to prevent re-setting the servers when exiting single server view
             if justOpened {
                 do {
-                    serverOperators = [ServerOperator.sampleData1, ServerOperator.sampleData2]
+                    serverOperators = [ServerOperator.sampleData1, ServerOperator.sampleData2, ServerOperator.sampleData3]
                     let r = try getUserProtoServers(serverProtocol)
                     currServers = r.protoServers
                     presetServers = r.presetServers
@@ -205,7 +205,13 @@ struct ProtocolServersView: View {
             .modifier(ThemedBackground(grouped: true))
             .navigationBarTitleDisplayMode(.large)
         } label: {
-            Text(srvOperator.name)
+            HStack {
+                Image(srvOperator.info.logo)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 24, height: 24)
+                Text(srvOperator.name)
+            }
         }
     }
 
