@@ -300,7 +300,14 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                   if (c != null && firstId != null) {
                     withBGApi {
                       val chatSectionLoader = ChatSectionLoader(firstSectionItemIdx, section.area)
-                      apiLoadPrevMessages(c, chatModel, firstId, searchText.value, chatSectionLoader)
+                      apiLoadMessages(
+                        rhId = c.remoteHostId,
+                        chatInfo = c.chatInfo,
+                        chatModel = chatModel,
+                        itemId = firstId,
+                        search = "",
+                        chatSectionLoader = chatSectionLoader,
+                      )
                     }
                   }
                 }
@@ -311,7 +318,15 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                   if (c != null && lastId != null) {
                     withBGApi {
                       val chatSectionLoader = ChatSectionLoader(lastSectionItemIdx + 1, section.area)
-                      apiLoadAfterMessages(c, chatModel, lastId, searchText.value, chatSectionLoader)
+                      apiLoadMessages(
+                        rhId = c.remoteHostId,
+                        chatInfo = c.chatInfo,
+                        chatModel = chatModel,
+                        itemId = lastId,
+                        search = "",
+                        chatSectionLoader = chatSectionLoader,
+                        pagination = ChatPagination.After(lastId, ChatPagination.PRELOAD_COUNT)
+                      )
                     }
                   }
                 }
@@ -1066,9 +1081,17 @@ fun BoxWithConstraintsScope.ChatItemsList(
             }
           }
           val chatSectionLoader = ChatSectionLoader(0, ChatSectionArea.Destination)
-          apiLoadMessagesAroundItem(rhId = remoteHostId, chatModel = chatModel, chatInfo = chatInfo, aroundItemId = itemId, chatSectionLoader = chatSectionLoader)
-          val idx = sections.chatItemPosition(itemId)
+          apiLoadMessages(
+            rhId = remoteHostId,
+            chatInfo = chatInfo,
+            chatModel = chatModel,
+            itemId = itemId,
+            search = "",
+            chatSectionLoader = chatSectionLoader,
+            pagination = ChatPagination.Around(itemId, ChatPagination.PRELOAD_COUNT * 2)
+          )
 
+          val idx = sections.chatItemPosition(itemId)
           scope.launch {
             if (idx != null) {
               listState.animateScrollToItem(scrollPosition(idx), -maxHeightRounded)

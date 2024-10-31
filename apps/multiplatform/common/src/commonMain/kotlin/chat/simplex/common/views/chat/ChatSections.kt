@@ -232,18 +232,6 @@ fun landingSectionToArea(chatLandingSection: ChatLandingSection) = when (chatLan
   ChatLandingSection.Unread -> ChatSectionArea.Current
 }
 
-suspend fun apiLoadMessagesAroundItem(chatInfo: ChatInfo, chatModel: ChatModel, aroundItemId: Long, rhId: Long?, chatSectionLoader: ChatSectionLoader) {
-  val pagination = ChatPagination.Around(aroundItemId, ChatPagination.PRELOAD_COUNT * 2)
-  val (chat) = chatModel.controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId, pagination) ?: return
-  if (chatModel.chatId.value != chat.id) return
-  withContext(Dispatchers.Main) {
-    val itemsToAdd = chatSectionLoader.prepareItems(chat.chatItems)
-    if (itemsToAdd.isNotEmpty()) {
-      chatModel.chatItems.addAll(chatSectionLoader.position, itemsToAdd)
-    }
-  }
-}
-
 suspend fun apiLoadBottomSection(chatInfo: ChatInfo, chatModel: ChatModel, rhId: Long?) {
   val chat = chatController.apiGetChat(rh = rhId, type = chatInfo.chatType, id = chatInfo.apiId)
   if (chatModel.chatId.value != chatInfo.id || chat == null) return
