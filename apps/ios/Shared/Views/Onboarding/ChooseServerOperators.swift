@@ -14,42 +14,46 @@ struct ChooseServerOperators: View {
     @State private var showInfoSheet = false
     @State private var serverOperators: [ServerOperator] = []
     @State private var selectedOperators = Set<Int64>()
+    @State private var customServersNavLinkActive = false
 
     var body: some View {
-        GeometryReader { g in
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    Text("Choose operators")
-                        .font(.largeTitle)
-                        .bold()
-                        .padding(.top)
+        NavigationView {
+            GeometryReader { g in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        Text("Choose operators")
+                            .font(.largeTitle)
+                            .bold()
+                            .padding(.top)
 
-                    infoText()
+                        infoText()
 
-                    Spacer()
+                        Spacer()
 
-                    ForEach(serverOperators) { srvOperator in
-                        operatorCheckView(srvOperator)
-                            .padding(.horizontal)
+                        ForEach(serverOperators) { srvOperator in
+                            operatorCheckView(srvOperator)
+                        }
+
+                        customServersButton()
+
+                        Spacer()
+                        Spacer()
+
+                        reviewConditionsButton()
+                            .padding(.bottom)
                     }
-
-                    Spacer()
-                    Spacer()
-
-                    continueButton()
-                        .padding(.bottom)
+                    .frame(minHeight: g.size.height)
                 }
-                .frame(minHeight: g.size.height)
             }
-        }
-        .frame(maxHeight: .infinity)
-        .padding()
-        .onAppear {
-            serverOperators = ChatModel.shared.serverOperators
-            selectedOperators = Set(serverOperators.filter { $0.enabled }.map { $0.operatorId })
-        }
-        .sheet(isPresented: $showInfoSheet) {
-            Text("Info")
+            .frame(maxHeight: .infinity)
+            .padding()
+            .onAppear {
+                serverOperators = ChatModel.shared.serverOperators
+                selectedOperators = Set(serverOperators.filter { $0.enabled }.map { $0.operatorId })
+            }
+            .sheet(isPresented: $showInfoSheet) {
+                Text("Info")
+            }
         }
     }
 
@@ -87,6 +91,12 @@ struct ChooseServerOperators: View {
                 .foregroundColor(iconColor)
         }
         .background(Color(.systemBackground))
+        .padding()
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(Color(uiColor: .secondarySystemFill), lineWidth: 2)
+        )
         .onTapGesture {
             if checked {
                 selectedOperators.remove(serverOperator.operatorId)
@@ -96,17 +106,56 @@ struct ChooseServerOperators: View {
         }
     }
 
-    private func yourServersButton() -> some View {
-        NavigationLink {
-            YourServersView()
-                .navigationTitle("Your servers")
-                .modifier(ThemedBackground(grouped: true))
-        } label: {
-            Text("Your servers")
+    private func customServersButton() -> some View {
+        ZStack {
+            HStack(spacing: 10) {
+                ZStack {
+                    Image(systemName: "externaldrive.connected.to.line.below")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 22, height: 22)
+                        .foregroundColor(theme.colors.secondary)
+                }
+                .frame(width: 28, height: 28)
+
+                Text("Custom servers")
+                    .font(.title3)
+
+                Spacer()
+
+                Text("Configure…")
+                    .font(.callout)
+                    .foregroundColor(theme.colors.primary)
+            }
+            .background(Color(.systemBackground))
+            .padding()
+            .clipShape(RoundedRectangle(cornerRadius: 18))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18)
+                    .stroke(Color(uiColor: .secondarySystemFill), lineWidth: 2)
+            )
+            .padding(.horizontal, 2)
+            .onTapGesture {
+                customServersNavLinkActive = true
+            }
+
+            NavigationLink(isActive: $customServersNavLinkActive) {
+                customServersDestinationView()
+            } label: {
+                EmptyView()
+            }
+            .frame(width: 1, height: 1)
+            .hidden()
         }
     }
 
-    private func continueButton() -> some View {
+    private func customServersDestinationView() -> some View {
+        YourServersView()
+            .navigationTitle("Custom servers")
+            .modifier(ThemedBackground(grouped: true))
+    }
+
+    private func reviewConditionsButton() -> some View {
         HStack {
             Spacer()
             
@@ -116,12 +165,13 @@ struct ChooseServerOperators: View {
                     ChatModel.shared.onboardingStage = .step4_SetNotificationsMode
                 }
             } label: {
-                Text("Continue")
+                Text("Review conditions")
             }
             .buttonStyle(.borderedProminent)
             
             Spacer()
         }
+        .disabled(selectedOperators.isEmpty)
     }
 }
 
