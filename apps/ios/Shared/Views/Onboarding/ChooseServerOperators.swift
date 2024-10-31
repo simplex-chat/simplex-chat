@@ -63,7 +63,7 @@ struct ChooseServerOperators: View {
                 selectedOperators = Set(serverOperators.filter { $0.enabled }.map { $0.operatorId })
             }
             .sheet(isPresented: $showInfoSheet) {
-                Text("Info")
+                ChooseServerOperatorsInfoView()
             }
             .sheet(item: $sheetItem, onDismiss: onConditionsSheetDismissed) { item in
                 switch item {
@@ -200,6 +200,28 @@ struct ChooseServerOperators: View {
             Spacer()
         }
         .disabled(selectedOperators.isEmpty)
+    }
+}
+
+struct ChooseServerOperatorsInfoView: View {
+    var body: some View {
+        VStack(alignment: .leading) {
+            Text("Why choose multiple operators")
+                .font(.largeTitle)
+                .padding(.vertical)
+            ScrollView {
+                VStack(alignment: .leading) {
+                    Group {
+                        Text("Selecting multiple operators improves protection of your communication graph.")
+                        Text("TODO Better explanation")
+                    }
+                    .padding(.bottom)
+                }
+            }
+        }
+        .padding()
+        .frame(maxHeight: .infinity, alignment: .top)
+        .modifier(ThemedBackground())
     }
 }
 
