@@ -1598,7 +1598,7 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RCSR") ''RemoteCtrlStopReason)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RHSR") ''RemoteHostStopReason)
 
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CLS") ''ChatLandingSection)
+$(JQ.deriveJSON (enumJSON $ dropPrefix "CLS") ''ChatLandingSection)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
 
