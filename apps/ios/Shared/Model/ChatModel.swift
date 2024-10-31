@@ -264,6 +264,26 @@ final class ChatModel: ObservableObject {
         }
     }
 
+    func acceptConditionsForOperators(_ acceptForOperators: [ServerOperator], _ date: Date) {
+        for serverOperator in acceptForOperators {
+            if let i = serverOperators.firstIndex(where: { $0.operatorId == serverOperator.operatorId }) {
+                var updatedOperator = serverOperators[i]
+                updatedOperator.conditionsAcceptance = .accepted(date: date)
+                serverOperators[i] = updatedOperator
+            }
+        }
+    }
+
+    func enableServerOperators(_ operatorsToEnable: [ServerOperator]) {
+        for serverOperator in operatorsToEnable {
+            if let i = serverOperators.firstIndex(where: { $0.operatorId == serverOperator.operatorId }) {
+                var updatedOperator = serverOperators[i]
+                updatedOperator.enabled = true
+                serverOperators[i] = updatedOperator
+            }
+        }
+    }
+
     func updateServerOperator(_ updatedOperator: ServerOperator) {
         if let i = serverOperators.firstIndex(where: { $0.operatorId == updatedOperator.operatorId }) {
             serverOperators[i] = updatedOperator
