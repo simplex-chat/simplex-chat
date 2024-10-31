@@ -36,7 +36,6 @@ struct ChooseServerOperators: View {
                         Text("Choose operators")
                             .font(.largeTitle)
                             .bold()
-                            .padding(.top)
 
                         infoText()
 
