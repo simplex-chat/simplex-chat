@@ -1019,7 +1019,9 @@ fun BoxWithConstraintsScope.ChatItemsList(
       snapshotFlow { chatModel.chatId.value }
         .distinctUntilChanged()
         .collect {
-          revealedItems.value = setOf()
+          if (revealedItems.value.isNotEmpty()) {
+            revealedItems.value = setOf()
+          }
           preloadItemsEnabled.value = true
           val firstUnreadItem = reversedChatItems.findLast { it.isRcvNew }
           if (firstUnreadItem != null) {
