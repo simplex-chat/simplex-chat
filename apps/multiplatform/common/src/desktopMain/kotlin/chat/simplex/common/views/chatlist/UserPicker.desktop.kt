@@ -10,11 +10,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.User
 import chat.simplex.common.model.UserInfo
 import chat.simplex.common.platform.*
@@ -25,6 +27,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 @Composable
 actual fun UserPickerUsersSection(
   users: List<UserInfo>,
+  iconColor: Color,
   stopped: Boolean,
   onUserClicked: (user: User) -> Unit,
 ) {
@@ -37,7 +40,7 @@ actual fun UserPickerUsersSection(
       .padding(horizontal = horizontalPadding)
       .height((55.dp + 16.sp.toDp()) * rowsToDisplay + (if (rowsToDisplay > 1) DEFAULT_PADDING else 0.dp))
     ) {
-      ColumnWithScrollBar(
+      ColumnWithScrollBarNoAppBar(
         verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING)
       ) {
         val spaceBetween = (((DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier) - (horizontalPadding)) - (65.dp * 5)) / 5
@@ -57,7 +60,7 @@ actual fun UserPickerUsersSection(
               ) {
                 val user = u.user
                 Box {
-                  ProfileImage(size = 55.dp, image = user.profile.image, color = MaterialTheme.colors.secondaryVariant)
+                  ProfileImage(size = 55.dp, image = user.profile.image, color = iconColor)
 
                   if (u.unreadCount > 0 && !user.activeUser) {
                     unreadBadge(u.unreadCount, user.showNtfs, true)
@@ -95,7 +98,8 @@ actual fun PlatformUserPicker(modifier: Modifier, pickerState: MutableStateFlow<
         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = { pickerState.value = AnimatedViewState.HIDING }),
       contentAlignment = Alignment.TopStart
     ) {
-      ColumnWithScrollBar(modifier) {
+      val oneHandUI = remember { appPrefs.oneHandUI.state }
+      ColumnWithScrollBarNoAppBar(modifier.align(if (oneHandUI.value) Alignment.BottomCenter else Alignment.TopCenter)) {
         content()
       }
     }

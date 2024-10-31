@@ -12,6 +12,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.BackHandler
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.views.helpers.*
@@ -20,11 +21,12 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 
 @Composable
-fun SelectedItemsTopToolbar(selectedChatItems: MutableState<Set<Long>?>) {
+fun BoxScope.SelectedItemsTopToolbar(selectedChatItems: MutableState<Set<Long>?>) {
   val onBackClicked = { selectedChatItems.value = null }
   BackHandler(onBack = onBackClicked)
   val count = selectedChatItems.value?.size ?: 0
-  DefaultTopAppBar(
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  DefaultAppBar(
     navigationButton = { NavigationButtonClose(onButtonClicked = onBackClicked) },
     title = {
       Text(
@@ -39,10 +41,9 @@ fun SelectedItemsTopToolbar(selectedChatItems: MutableState<Set<Long>?>) {
       )
     },
     onTitleClick = null,
-    showSearch = false,
+    onTop = !oneHandUI.value,
     onSearchValueChanged = {},
   )
-  Divider(Modifier.padding(top = AppBarHeight * fontSizeSqrtMultiplier))
 }
 
 @Composable
@@ -68,6 +69,8 @@ fun SelectedItemsBottomToolbar(
       Modifier
         .matchParentSize()
         .background(MaterialTheme.colors.background)
+        .padding(horizontal = 2.dp)
+        .height(AppBarHeight * fontSizeSqrtMultiplier)
         .pointerInput(Unit) {
           detectGesture {
             true
@@ -103,6 +106,7 @@ fun SelectedItemsBottomToolbar(
         )
       }
     }
+    Divider(Modifier.align(Alignment.TopStart))
   }
   LaunchedEffect(chatInfo, chatItems, selectedChatItems.value) {
     recheckItems(chatInfo, chatItems, selectedChatItems, deleteEnabled, deleteForEveryoneEnabled, canModerate, moderateEnabled, forwardEnabled, deleteCountProhibited, forwardCountProhibited)
