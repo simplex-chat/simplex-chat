@@ -7,7 +7,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.*
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
@@ -423,6 +422,7 @@ private fun SendMsgButton(
   onLongClick: (() -> Unit)? = null
 ) {
   val interactionSource = remember { MutableInteractionSource() }
+  val ripple = remember { ripple(bounded = false, radius = 24.dp) }
   Box(
     modifier = Modifier.requiredSize(36.dp)
       .combinedClickable(
@@ -431,7 +431,7 @@ private fun SendMsgButton(
         enabled = enabled,
         role = Role.Button,
         interactionSource = interactionSource,
-        indication = rememberRipple(bounded = false, radius = 24.dp)
+        indication = ripple
       )
       .onRightClick { onLongClick?.invoke() },
     contentAlignment = Alignment.Center
@@ -454,6 +454,7 @@ private fun SendMsgButton(
 @Composable
 private fun StartLiveMessageButton(enabled: Boolean, onClick: () -> Unit) {
   val interactionSource = remember { MutableInteractionSource() }
+  val ripple = remember { ripple(bounded = false, radius = 24.dp) }
   Box(
     modifier = Modifier.requiredSize(36.dp)
       .clickable(
@@ -461,7 +462,7 @@ private fun StartLiveMessageButton(enabled: Boolean, onClick: () -> Unit) {
         enabled = enabled,
         role = Role.Button,
         interactionSource = interactionSource,
-        indication = rememberRipple(bounded = false, radius = 24.dp)
+        indication = ripple
       ),
     contentAlignment = Alignment.Center
   ) {
