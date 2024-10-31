@@ -289,22 +289,19 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                 }
               }
             },
-            loadMessages = { chatId, scrollDirection, section ->
+            loadMessages = { chatId, scrollDirection, (itemId, idx, area) ->
               val c = chatModel.getChat(chatId)
               if (chatModel.chatId.value != chatId) return@ChatLayout
               when (scrollDirection) {
                 ScrollDirection.Up -> {
-                  val firstSectionItemIdx = chatModel.chatItems.size - 1 - section.maxIndex
-                  val firstId = chatModel.chatItems.value.getOrNull(firstSectionItemIdx)?.id
-
-                  if (c != null && firstId != null) {
+                  if (c != null) {
                     withBGApi {
-                      val chatSectionLoader = ChatSectionLoader(firstSectionItemIdx, section.area)
+                      val chatSectionLoader = ChatSectionLoader(idx, area)
                       apiLoadMessages(
                         rhId = c.remoteHostId,
                         chatInfo = c.chatInfo,
                         chatModel = chatModel,
-                        itemId = firstId,
+                        itemId = itemId,
                         search = "",
                         chatSectionLoader = chatSectionLoader,
                       )
@@ -312,20 +309,17 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                   }
                 }
                 ScrollDirection.Down -> {
-                  val lastSectionItemIdx = chatModel.chatItems.size - 1 - section.minIndex
-                  val lastId = chatModel.chatItems.value.getOrNull(lastSectionItemIdx)?.id
-
-                  if (c != null && lastId != null) {
+                  if (c != null) {
                     withBGApi {
-                      val chatSectionLoader = ChatSectionLoader(lastSectionItemIdx + 1, section.area)
+                      val chatSectionLoader = ChatSectionLoader(idx + 1, area)
                       apiLoadMessages(
                         rhId = c.remoteHostId,
                         chatInfo = c.chatInfo,
                         chatModel = chatModel,
-                        itemId = lastId,
+                        itemId = itemId,
                         search = "",
                         chatSectionLoader = chatSectionLoader,
-                        pagination = ChatPagination.After(lastId, ChatPagination.PRELOAD_COUNT)
+                        pagination = ChatPagination.After(itemId, ChatPagination.PRELOAD_COUNT)
                       )
                     }
                   }
@@ -637,7 +631,7 @@ fun ChatLayout(
   back: () -> Unit,
   info: () -> Unit,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
-  loadMessages: (ChatId, ScrollDirection, ChatSectionAreaBoundary) -> Unit,
+  loadMessages: (ChatId, ScrollDirection, Triple<Long, Int, ChatSectionArea>) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
   receiveFile: (Long) -> Unit,
@@ -977,7 +971,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   linkMode: SimplexLinkMode,
   selectedChatItems: MutableState<Set<Long>?>,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
-  loadMessages: (ChatId, ScrollDirection, ChatSectionAreaBoundary) -> Unit,
+  loadMessages: (ChatId, ScrollDirection, Triple<Long, Int, ChatSectionArea>) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
   receiveFile: (Long) -> Unit,
@@ -1577,7 +1571,7 @@ fun PreloadItems(
   remaining: Int = 10,
   enabled: State<Boolean>,
   boundaries: State<List<ChatSectionAreaBoundary>>,
-  onLoadMore: (ChatId, ScrollDirection, ChatSectionAreaBoundary) -> Unit,
+  onLoadMore: (ChatId, ScrollDirection, Triple<Long, Int, ChatSectionArea>) -> Unit,
 ) {
   // Prevent situation when initial load and load more happens one after another after selecting a chat with long scroll position from previous selection
   val allowLoad = remember { mutableStateOf(false) }
@@ -1627,14 +1621,18 @@ fun PreloadItems(
       }
 
       val request = if (allowLoad.value && section != null && enabled.value) {
-        val numberOfItemsInSection = section.maxIndex.minus(section.minIndex) + 1
-        if (scrollDirection == ScrollDirection.Up && lastVisibleItemIndex > (section.maxIndex - remaining) && numberOfItemsInSection >= ChatPagination.INITIAL_COUNT) {
-          section to totalItemsNumber
-        } else if (scrollDirection == ScrollDirection.Down && (listState.firstVisibleItemIndex < (section.minIndex + remaining)) && totalItemsNumber > remaining) {
-          section to totalItemsNumber
-        } else {
-          null
+        val numberOfItemsInSection = section.maxIndex - section.minIndex + 1
+        val itemIdx = when {
+          scrollDirection == ScrollDirection.Up && lastVisibleItemIndex > (section.maxIndex - remaining) && numberOfItemsInSection >= ChatPagination.INITIAL_COUNT -> {
+            chatModel.chatItems.size - 1 - section.maxIndex
+          }
+          scrollDirection == ScrollDirection.Down && listState.firstVisibleItemIndex < (section.minIndex + remaining) && totalItemsNumber > remaining -> {
+            chatModel.chatItems.size - 1 - section.minIndex
+          }
+          else -> null
         }
+        val itemId = itemIdx?.let { chatModel.chatItems.value.getOrNull(it)?.id }
+        itemId?.let { Triple(it, itemIdx, section.area) }
       } else {
         null
       }
@@ -1644,7 +1642,7 @@ fun PreloadItems(
       .distinctUntilChanged()
       .filterNotNull()
       .collect {
-         onLoadMore.value(chatId.value, scrollDirection, it.first)
+         onLoadMore.value(chatId.value, scrollDirection, it)
       }
   }
 }
