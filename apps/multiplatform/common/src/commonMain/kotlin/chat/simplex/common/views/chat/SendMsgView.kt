@@ -14,6 +14,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.*
@@ -60,7 +61,8 @@ fun SendMsgView(
 ) {
   val showCustomDisappearingMessageDialog = remember { mutableStateOf(false) }
 
-  Box(Modifier.padding(vertical = if (appPlatform.isAndroid) 8.dp else 6.dp)) {
+  val padding = if (appPlatform.isAndroid) PaddingValues(vertical = 8.dp) else PaddingValues(top = 3.dp, bottom = 4.dp)
+  Box(Modifier.padding(padding)) {
     val cs = composeState.value
     var progressByTimeout by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(composeState.value.inProgress) {
@@ -146,7 +148,7 @@ fun SendMsgView(
               && (cs.preview !is ComposePreview.VoicePreview || !stopRecOnNextClick.value)
               && cs.contextItem is ComposeContextItem.NoContextItem
             ) {
-              Spacer(Modifier.width(10.dp))
+              Spacer(Modifier.width(12.dp))
               StartLiveMessageButton(userCanSend) {
                 if (composeState.value.preview is ComposePreview.NoPreview) {
                   startLiveMessage(scope, sendLiveMessage, updateLiveMessage, sendButtonSize, sendButtonAlpha, composeState, liveMessageAlertShown)

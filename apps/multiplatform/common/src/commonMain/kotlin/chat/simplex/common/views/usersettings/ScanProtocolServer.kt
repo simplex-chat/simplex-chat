@@ -7,6 +7,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ServerAddress.Companion.parseServerAddress
 import chat.simplex.common.model.ServerCfg
+import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.QRCodeScanner
@@ -17,10 +18,7 @@ expect fun ScanProtocolServer(rhId: Long?, onNext: (ServerCfg) -> Unit)
 
 @Composable
 fun ScanProtocolServerLayout(rhId: Long?, onNext: (ServerCfg) -> Unit) {
-  Column(
-    Modifier
-      .fillMaxSize()
-  ) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.smp_servers_scan_qr))
     QRCodeScanner { text ->
       val res = parseServerAddress(text)

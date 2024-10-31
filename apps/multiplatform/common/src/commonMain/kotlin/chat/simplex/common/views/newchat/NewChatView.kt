@@ -29,10 +29,12 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
@@ -398,8 +400,12 @@ fun ActiveProfilePicker(
         .fillMaxSize()
         .alpha(if (progressByTimeout) 0.6f else 1f)
     ) {
-      LazyColumnWithScrollBar(userScrollEnabled = !switchingProfile.value) {
+      LazyColumnWithScrollBar(Modifier.padding(top = topPaddingToContent()), userScrollEnabled = !switchingProfile.value) {
         item {
+          val oneHandUI = remember { appPrefs.oneHandUI.state }
+          if (oneHandUI.value) {
+            Spacer(Modifier.padding(top = DEFAULT_PADDING + 5.dp))
+          }
           AppBarTitle(stringResource(MR.strings.select_chat_profile), hostDevice(rhId), bottomPadding = DEFAULT_PADDING)
         }
         val activeProfile = filteredProfiles.firstOrNull { it.activeUser }
@@ -433,6 +439,9 @@ fun ActiveProfilePicker(
           itemsIndexed(filteredProfiles) { _, p ->
             ProfilePickerUserOption(p)
           }
+        }
+        item {
+          Spacer(Modifier.imePadding().padding(bottom = DEFAULT_BOTTOM_PADDING))
         }
       }
     }
@@ -472,13 +481,13 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
           end = 16.dp
         ),
         click = {
-          ModalManager.start.showCustomModal { close ->
+          ModalManager.start.showCustomModal(keyboardCoversBar = false) { close ->
             val search = rememberSaveable { mutableStateOf("") }
             ModalView(
               { close() },
-              endButtons = {
-                SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
-              },
+              showSearch = true,
+              searchAlwaysVisible = true,
+              onSearchValueChanged = { search.value = it },
               content = {
                 ActiveProfilePicker(
                   search = search,

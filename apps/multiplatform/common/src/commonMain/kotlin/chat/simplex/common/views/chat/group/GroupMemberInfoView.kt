@@ -313,10 +313,7 @@ fun GroupMemberInfoLayout(
     }
   }
 
-  ColumnWithScrollBar(
-    Modifier
-      .fillMaxWidth(),
-  ) {
+  ColumnWithScrollBar {
     Row(
       Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.Center

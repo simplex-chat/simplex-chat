@@ -47,6 +47,7 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.res.MR
 import com.google.accompanist.permissions.*
 import dev.icerock.moko.resources.StringResource
@@ -328,11 +329,14 @@ private fun ActiveCallOverlayLayout(
   flipCamera: () -> Unit
 ) {
   Column {
-    CloseSheetBar({ chatModel.activeCallViewIsCollapsed.value = true }, true, tintColor = Color(0xFFFFFFD8)) {
-      if (call.hasVideo) {
-        Text(call.contact.chatViewName, Modifier.fillMaxWidth().padding(end = DEFAULT_PADDING), color = Color(0xFFFFFFD8), style = MaterialTheme.typography.h2, overflow = TextOverflow.Ellipsis, maxLines = 1)
-      }
-    }
+    CallAppBar(
+      title = {
+        if (call.hasVideo) {
+          Text(call.contact.chatViewName, Modifier.offset(x = (-4).dp).padding(end = DEFAULT_PADDING), color = Color(0xFFFFFFD8), style = MaterialTheme.typography.h2, overflow = TextOverflow.Ellipsis, maxLines = 1)
+        }
+      },
+      onBack = { chatModel.activeCallViewIsCollapsed.value = true }
+    )
     Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
       @Composable
       fun SelectSoundDevice(size: Dp) {
@@ -590,8 +594,9 @@ fun CallPermissionsView(pipActive: Boolean, hasVideo: Boolean, cancel: () -> Uni
       }
     }
   } else {
-    ModalView(background = Color.Black, showClose = false, close = {}) {
-      ColumnWithScrollBar(Modifier.fillMaxSize()) {
+    ModalView(background = Color.Black, showAppBar = false, close = {}) {
+      Column {
+        Spacer(Modifier.height(AppBarHeight * fontSizeSqrtMultiplier))
         AppBarTitle(stringResource(MR.strings.permissions_required))
         Spacer(Modifier.weight(1f))
         val onClick = {

@@ -74,9 +74,7 @@ private fun ConnectDesktopLayout(deviceName: String, close: () -> Unit) {
   val sessionAddress = remember { mutableStateOf("") }
   val remoteCtrls = remember { mutableStateListOf<RemoteCtrlInfo>() }
   val session = remember { chatModel.remoteCtrlSession }.value
-  ColumnWithScrollBar(
-    Modifier.fillMaxWidth(),
-  ) {
+  ColumnWithScrollBar {
     val discovery = if (session == null) null else session.sessionState is UIRemoteCtrlSessionState.Searching
     if (discovery == true || (discovery == null && !showConnectScreen.value)) {
       SearchingDesktop(deviceName, remoteCtrls)
@@ -408,9 +406,7 @@ private fun DesktopAddressView(sessionAddress: MutableState<String>) {
 
 @Composable
 private fun LinkedDesktopsView(remoteCtrls: SnapshotStateList<RemoteCtrlInfo>) {
-  ColumnWithScrollBar(
-    Modifier.fillMaxWidth(),
-  ) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.linked_desktops))
     SectionView(stringResource(MR.strings.desktop_devices).uppercase()) {
       remoteCtrls.forEach { rc ->
