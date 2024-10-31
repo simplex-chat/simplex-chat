@@ -46,6 +46,7 @@ struct SetNotificationsMode: View {
                         }
                     }
                     .buttonStyle(OnboardingButtonStyle())
+                    .padding(.bottom)
                 }
                 .padding()
                 .frame(minHeight: g.size.height)
