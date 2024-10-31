@@ -1220,7 +1220,7 @@ public let operatorsInfo: Dictionary<OperatorTag, ServerOperatorInfo> = [
     .demo: ServerOperatorInfo(
         description: "Demo operator",
         website: "Demo website",
-        logo: "privacy"
+        logo: "icon-transparent"
     )
 ]
 
