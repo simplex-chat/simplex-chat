@@ -97,6 +97,7 @@ struct ChooseServerOperators: View {
             RoundedRectangle(cornerRadius: 18)
                 .stroke(Color(uiColor: .secondarySystemFill), lineWidth: 2)
         )
+        .padding(.horizontal, 2)
         .onTapGesture {
             if checked {
                 selectedOperators.remove(serverOperator.operatorId)
