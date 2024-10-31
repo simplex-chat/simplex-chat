@@ -299,8 +299,8 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
 
                   if (c != null && firstId != null) {
                     withBGApi {
-                      val chatSectionLoad = ChatSectionLoad(firstSectionItemIdx, section.area)
-                      apiLoadPrevMessages(c, chatModel, firstId, searchText.value, chatSectionLoad)
+                      val chatSectionLoader = ChatSectionLoader(firstSectionItemIdx, section.area)
+                      apiLoadPrevMessages(c, chatModel, firstId, searchText.value, chatSectionLoader)
                     }
                   }
                 }
@@ -310,8 +310,8 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
 
                   if (c != null && lastId != null) {
                     withBGApi {
-                      val chatSectionLoad = ChatSectionLoad(lastSectionItemIdx + 1, section.area)
-                      apiLoadAfterMessages(c, chatModel, lastId, searchText.value, chatSectionLoad)
+                      val chatSectionLoader = ChatSectionLoader(lastSectionItemIdx + 1, section.area)
+                      apiLoadAfterMessages(c, chatModel, lastId, searchText.value, chatSectionLoader)
                     }
                   }
                 }
@@ -1058,15 +1058,15 @@ fun BoxWithConstraintsScope.ChatItemsList(
     } else {
       withBGApi {
         try {
-          val destinationSection = sections.find { it.area == ChatSectionArea.Destination }
+          val destinationSection = sections.find { it.boundary.area == ChatSectionArea.Destination }
           val itemsToDrop = destinationSection?.items?.flatMap { it.items }?.toList()
           withContext(Dispatchers.Main) {
             itemsToDrop?.forEach {
               chatModel.chatItemsSectionArea[it.id] = ChatSectionArea.Current
             }
           }
-          val chatSectionLoad = ChatSectionLoad(0, ChatSectionArea.Destination)
-          apiLoadMessagesAroundItem(rhId = remoteHostId, chatModel = chatModel, chatInfo = chatInfo, aroundItemId = itemId, chatSectionLoad = chatSectionLoad)
+          val chatSectionLoader = ChatSectionLoader(0, ChatSectionArea.Destination)
+          apiLoadMessagesAroundItem(rhId = remoteHostId, chatModel = chatModel, chatInfo = chatInfo, aroundItemId = itemId, chatSectionLoader = chatSectionLoader)
           val idx = sections.chatItemPosition(itemId)
 
           scope.launch {

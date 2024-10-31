@@ -232,28 +232,28 @@ fun openLoadedChat(chat: Chat, chatModel: ChatModel, landingSection: ChatLanding
   chatModel.chatItemsSectionArea = mutableMapOf<Long, ChatSectionArea>().also { map -> map.putAll(chatModel.chatItems.value.associate { it.id to landingSectionToArea(landingSection) }) }
 }
 
-suspend fun apiLoadPrevMessages(ch: Chat, chatModel: ChatModel, beforeChatItemId: Long, search: String, chatSectionLoad: ChatSectionLoad) {
+suspend fun apiLoadPrevMessages(ch: Chat, chatModel: ChatModel, beforeChatItemId: Long, search: String, chatSectionLoader: ChatSectionLoader) {
   val chatInfo = ch.chatInfo
   val pagination = ChatPagination.Before(beforeChatItemId, ChatPagination.PRELOAD_COUNT)
   val (chat) = chatModel.controller.apiGetChat(ch.remoteHostId, chatInfo.chatType, chatInfo.apiId, pagination, search) ?: return
   if (chatModel.chatId.value != chat.id) return
   withContext(Dispatchers.Main) {
-    val itemsToAdd = chatSectionLoad.prepareItems(chat.chatItems)
+    val itemsToAdd = chatSectionLoader.prepareItems(chat.chatItems)
     if (itemsToAdd.isNotEmpty()) {
-      chatModel.chatItems.addAll(chatSectionLoad.position, itemsToAdd)
+      chatModel.chatItems.addAll(chatSectionLoader.position, itemsToAdd)
     }
   }
 }
 
-suspend fun apiLoadAfterMessages(ch: Chat, chatModel: ChatModel, afterChatItemId: Long, search: String, chatSectionLoad: ChatSectionLoad) {
+suspend fun apiLoadAfterMessages(ch: Chat, chatModel: ChatModel, afterChatItemId: Long, search: String, chatSectionLoader: ChatSectionLoader) {
   val chatInfo = ch.chatInfo
   val pagination = ChatPagination.After(afterChatItemId, ChatPagination.PRELOAD_COUNT)
   val (chat) = chatModel.controller.apiGetChat(ch.remoteHostId, chatInfo.chatType, chatInfo.apiId, pagination, search) ?: return
   if (chatModel.chatId.value != chat.id) return
   withContext(Dispatchers.Main) {
-    val itemsToAdd = chatSectionLoad.prepareItems(chat.chatItems)
+    val itemsToAdd = chatSectionLoader.prepareItems(chat.chatItems)
     if (itemsToAdd.isNotEmpty()) {
-      chatModel.chatItems.addAll(chatSectionLoad.position, itemsToAdd)
+      chatModel.chatItems.addAll(chatSectionLoader.position, itemsToAdd)
     }
   }
 }

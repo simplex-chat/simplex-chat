@@ -24,7 +24,6 @@ data class ChatSectionAreaBoundary (
 
 data class ChatSection (
   val items: MutableList<SectionItems>,
-  val area: ChatSectionArea,
   val boundary: ChatSectionAreaBoundary,
   val itemPositions: MutableMap<Long, Int>
 )
@@ -36,7 +35,7 @@ data class SectionItems (
   val showAvatar: MutableSet<Long>,
 )
 
-data class ChatSectionLoad (
+data class ChatSectionLoader (
   val position: Int,
   val sectionArea: ChatSectionArea
 ) {
@@ -117,7 +116,6 @@ fun List<ChatItem>.putIntoSections(revealedItems: Set<Long>): List<ChatSection> 
   sections.add(
     ChatSection(
       items = mutableListOf(recent),
-      area = area,
       boundary = ChatSectionAreaBoundary(minIndex = 0, maxIndex = 0, area = area),
       itemPositions = mutableMapOf(recent.items[0].id to 0)
     )
@@ -133,7 +131,7 @@ fun List<ChatItem>.putIntoSections(revealedItems: Set<Long>): List<ChatSection> 
     }
     val item = this[index]
     val itemArea = chatItemsSectionArea[item.id] ?: ChatSectionArea.Bottom
-    val existingSection = sections.find { it.area == itemArea }
+    val existingSection = sections.find { it.boundary.area == itemArea }
 
     if (existingSection == null) {
       positionInList++
@@ -148,7 +146,6 @@ fun List<ChatItem>.putIntoSections(revealedItems: Set<Long>): List<ChatSection> 
       sections.add(
         ChatSection(
           items = mutableListOf(newSection),
-          area = itemArea,
           boundary = ChatSectionAreaBoundary(minIndex = index, maxIndex = index, area = itemArea),
           itemPositions = mutableMapOf(item.id to positionInList)
         )
@@ -217,7 +214,7 @@ fun List<ChatSection>.revealedItemCount(): Int {
 }
 
 fun List<ChatSection>.dropTemporarySections() {
-  val bottomSection = this.find { it.area == ChatSectionArea.Bottom }
+  val bottomSection = this.find { it.boundary.area == ChatSectionArea.Bottom }
   if (bottomSection != null) {
     val items = chatModel.chatItems.value
     val itemsOutsideOfSection = items.size - 1 - bottomSection.boundary.maxIndex
@@ -235,14 +232,14 @@ fun landingSectionToArea(chatLandingSection: ChatLandingSection) = when (chatLan
   ChatLandingSection.Unread -> ChatSectionArea.Current
 }
 
-suspend fun apiLoadMessagesAroundItem(chatInfo: ChatInfo, chatModel: ChatModel, aroundItemId: Long, rhId: Long?, chatSectionLoad: ChatSectionLoad) {
+suspend fun apiLoadMessagesAroundItem(chatInfo: ChatInfo, chatModel: ChatModel, aroundItemId: Long, rhId: Long?, chatSectionLoader: ChatSectionLoader) {
   val pagination = ChatPagination.Around(aroundItemId, ChatPagination.PRELOAD_COUNT * 2)
   val (chat) = chatModel.controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId, pagination) ?: return
   if (chatModel.chatId.value != chat.id) return
   withContext(Dispatchers.Main) {
-    val itemsToAdd = chatSectionLoad.prepareItems(chat.chatItems)
+    val itemsToAdd = chatSectionLoader.prepareItems(chat.chatItems)
     if (itemsToAdd.isNotEmpty()) {
-      chatModel.chatItems.addAll(chatSectionLoad.position, itemsToAdd)
+      chatModel.chatItems.addAll(chatSectionLoader.position, itemsToAdd)
     }
   }
 }
