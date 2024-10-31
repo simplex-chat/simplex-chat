@@ -49,12 +49,12 @@ resizeImageToSize toURI maxSize (ResizeableImage fmt img encoder) = either resiz
             result = encode $ downscale img m
     resizeJPG enc
       | minSize > maxSize = halveAndRetry
-      | otherwise = fitQuality 33 99
+      | otherwise = fitQuality 50 99
       where
         encode q
           | toURI = toDataUri "jpg" $ enc q img -- the correct mime type is "jpeg", but only "jpg" is supported by older clients
           | otherwise = enc q img
-        minSize = LB.length $ encode 33
+        minSize = LB.length $ encode 50
         fitQuality l u
           | u - l <= 1 = encode l -- prefer higher compression
           | otherwise =

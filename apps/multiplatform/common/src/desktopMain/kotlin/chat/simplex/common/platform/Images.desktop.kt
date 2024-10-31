@@ -31,6 +31,7 @@ actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
   } catch (e: Exception) { // ByteArrayInputStream returns null
     Log.e(TAG, "base64ToBitmap error: $e for \"$base64ImageString\"")
     errorBitmap()
+  }
 }
 
 actual fun resizeImageToStrSize(image: ImageBitmap, maxDataSize: Long): String {
