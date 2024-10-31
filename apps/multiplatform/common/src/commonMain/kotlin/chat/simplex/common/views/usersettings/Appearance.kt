@@ -8,6 +8,7 @@ import SectionItemViewWithoutMinPadding
 import SectionSpacer
 import SectionView
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.CircleShape
@@ -95,7 +96,12 @@ object AppearanceScope {
           Box(Modifier.weight(1f)) {
             Text(
               stringResource(MR.strings.appearance_in_app_bars_alpha),
-              Modifier.clickable { appPrefs.inAppBarsAlpha.set(appPrefs.inAppBarsDefaultAlpha) },
+              Modifier.clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+              ) {
+                appPrefs.inAppBarsAlpha.set(appPrefs.inAppBarsDefaultAlpha)
+              },
               maxLines = 1
             )
           }
@@ -136,7 +142,12 @@ object AppearanceScope {
             Box(Modifier.weight(1f)) {
               Text(
                 stringResource(MR.strings.appearance_bars_blur_radius),
-                Modifier.clickable { saveBlur(50) },
+                Modifier.clickable(
+                  interactionSource = remember { MutableInteractionSource() },
+                  indication = null
+                ) {
+                  saveBlur(50)
+                },
                 maxLines = 1
               )
             }

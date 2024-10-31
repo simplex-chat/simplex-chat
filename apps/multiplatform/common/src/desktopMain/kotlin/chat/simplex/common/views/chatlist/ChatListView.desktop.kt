@@ -50,16 +50,20 @@ private fun ActiveCallInteractiveAreaOneHand(call: Call, showMenu: MutableState<
         }
       },
         onLongClick = { showMenu.value = true },
-        role = Role.Button
+        role = Role.Button,
+        interactionSource = remember { MutableInteractionSource() },
+        indication = remember { ripple(bounded = false, radius = 24.dp) }
       )
       .onRightClick { showMenu.value = true },
     contentAlignment = Alignment.Center
   ) {
-    Box(Modifier.background(MaterialTheme.colors.background, CircleShape)) {
-      ProfileImageForActiveCall(size = 33.dp * fontSizeSqrtMultiplier, image = call.contact.profile.image)
-    }
+    ProfileImage(
+      image = call.contact.profile.image,
+      size = 37.dp * fontSizeSqrtMultiplier,
+      color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f)
+    )
     Box(
-      Modifier.padding().background(SimplexGreen, CircleShape).padding(3.dp)
+      Modifier.offset(x = 1.dp, y = (-1).dp).background(SimplexGreen, CircleShape).padding(3.dp)
         .align(Alignment.TopEnd)
     ) {
       if (call.hasVideo) {

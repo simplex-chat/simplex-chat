@@ -647,38 +647,29 @@ private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats
 
     Box {
       val topPaddingToContent = topPaddingToContent()
-    LazyColumnWithScrollBar(
-      if (!oneHandUI.value) Modifier.imePadding() else Modifier,
-      contentPadding = PaddingValues(
-        top = if (!oneHandUI.value) topPaddingToContent else 0.dp,
-        bottom = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else 0.dp
-      ),
-      reverseLayout = oneHandUI.value,
-    ) {
-      item {
-        if (!oneHandUI.value) {
-          Box(contentAlignment = Alignment.Center) {
-            val bottomPadding = DEFAULT_PADDING
-            AppBarTitle(
-              stringResource(MR.strings.deleted_chats),
-              hostDevice(rh?.remoteHostId),
-              bottomPadding = bottomPadding
-            )
+      LazyColumnWithScrollBar(
+        if (!oneHandUI.value) Modifier.imePadding() else Modifier,
+        contentPadding = PaddingValues(
+          top = if (!oneHandUI.value) topPaddingToContent else 0.dp,
+          bottom = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else 0.dp
+        ),
+        reverseLayout = oneHandUI.value,
+      ) {
+        item {
+          if (!oneHandUI.value) {
+            Box(contentAlignment = Alignment.Center) {
+              val bottomPadding = DEFAULT_PADDING
+              AppBarTitle(
+                stringResource(MR.strings.deleted_chats),
+                hostDevice(rh?.remoteHostId),
+                bottomPadding = bottomPadding
+              )
+            }
           }
         }
-      }
-      item {
-        if (!oneHandUI.value) {
-          Divider()
-          ContactsSearchBar(
-            listState = listState,
-            searchText = searchText,
-            searchShowingSimplexLink = searchShowingSimplexLink,
-            searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
-            close = close,
-          )
-        } else {
-          Column(Modifier.consumeWindowInsets(WindowInsets.navigationBars).consumeWindowInsets(PaddingValues(bottom = AppBarHeight))) {
+        item {
+          if (!oneHandUI.value) {
+            Divider()
             ContactsSearchBar(
               listState = listState,
               searchText = searchText,
@@ -686,39 +677,48 @@ private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats
               searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
               close = close,
             )
-            Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
-          }
-        }
-        Divider()
-      }
-
-      item {
-        if (filteredContactChats.isEmpty() && allChats.isNotEmpty()) {
-          Column(Modifier.fillMaxSize().padding(DEFAULT_PADDING)) {
-            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-              Text(
-                generalGetString(MR.strings.no_filtered_contacts),
-                color = MaterialTheme.colors.secondary,
+          } else {
+            Column(Modifier.consumeWindowInsets(WindowInsets.navigationBars).consumeWindowInsets(PaddingValues(bottom = AppBarHeight))) {
+              ContactsSearchBar(
+                listState = listState,
+                searchText = searchText,
+                searchShowingSimplexLink = searchShowingSimplexLink,
+                searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
+                close = close,
               )
+              Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
+            }
+          }
+          Divider()
+        }
+
+        item {
+          if (filteredContactChats.isEmpty() && allChats.isNotEmpty()) {
+            Column(Modifier.fillMaxSize().padding(DEFAULT_PADDING)) {
+              Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Text(
+                  generalGetString(MR.strings.no_filtered_contacts),
+                  color = MaterialTheme.colors.secondary,
+                )
+              }
             }
           }
         }
-      }
 
-      itemsIndexed(filteredContactChats) { index, chat ->
-        val nextChatSelected = remember(chat.id, filteredContactChats) {
-          derivedStateOf {
-            chatModel.chatId.value != null && filteredContactChats.getOrNull(index + 1)?.id == chatModel.chatId.value
+        itemsIndexed(filteredContactChats) { index, chat ->
+          val nextChatSelected = remember(chat.id, filteredContactChats) {
+            derivedStateOf {
+              chatModel.chatId.value != null && filteredContactChats.getOrNull(index + 1)?.id == chatModel.chatId.value
+            }
+          }
+          ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = false)
+        }
+        if (appPlatform.isAndroid) {
+          item {
+            Spacer(if (oneHandUI.value) Modifier.windowInsetsTopHeight(WindowInsets.statusBars) else Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
           }
         }
-        ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = false)
       }
-      if (appPlatform.isAndroid) {
-        item {
-          Spacer(if (oneHandUI.value) Modifier.windowInsetsTopHeight(WindowInsets.statusBars) else Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
-        }
-      }
-    }
       if (oneHandUI.value) {
         StatusBarBackground()
       } else {
