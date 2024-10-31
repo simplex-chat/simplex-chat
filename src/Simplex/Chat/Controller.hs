@@ -846,7 +846,7 @@ data ChatPagination
 data ChatLandingSection
   = CLSLatest
   | CLSUnread
-  deriving (Show)
+  deriving (Show, Eq)
 
 data PaginationByTime
   = PTLast Int
