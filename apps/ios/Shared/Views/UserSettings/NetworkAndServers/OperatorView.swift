@@ -343,7 +343,7 @@ struct SingleOperatorUsageConditionsView: View {
             } label: {
                 Text("Accept conditions")
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(OnboardingButtonStyle())
 
             Spacer()
         }
@@ -411,7 +411,7 @@ struct UsageConditionsView: View {
             } label: {
                 Text("Accept conditions")
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(OnboardingButtonStyle())
 
             Spacer()
         }

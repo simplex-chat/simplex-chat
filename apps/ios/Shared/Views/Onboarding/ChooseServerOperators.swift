@@ -9,6 +9,20 @@
 import SwiftUI
 import SimpleXChat
 
+struct OnboardingButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 17, weight: .semibold))
+            .padding()
+            .frame(maxWidth: .infinity) // Makes button stretch horizontally
+            .background(Color.blue) // Apple blue color
+            .foregroundColor(.white) // White text color
+            .cornerRadius(10) // Rounded corners
+            .scaleEffect(configuration.isPressed ? 0.95 : 1.0) // Slight scale effect on press
+            .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2) // Subtle shadow
+    }
+}
+
 struct ChooseServerOperators: View {
     @EnvironmentObject var theme: AppTheme
     @State private var showInfoSheet = false
@@ -168,7 +182,7 @@ struct ChooseServerOperators: View {
                 } label: {
                     Text("Review conditions")
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(OnboardingButtonStyle())
 
                 Spacer()
             }
