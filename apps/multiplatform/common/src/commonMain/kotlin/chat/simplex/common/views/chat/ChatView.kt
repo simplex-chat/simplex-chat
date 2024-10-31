@@ -1020,7 +1020,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
         .collect {
           revealedItems.value = setOf()
           preloadItemsEnabled.value = true
-          val firstUnreadItemIndex = reversedChatItems.indexOfLast{ it.isRcvNew }
+          val firstUnreadItemIndex = reversedChatItems.indexOfLast { it.isRcvNew }
           if (firstUnreadItemIndex != -1) {
             listState.scrollToItem(scrollPosition(firstUnreadItemIndex), -maxHeightRounded)
             val firstUnreadItem = chatModel.chatItems[firstUnreadItemIndex]
@@ -1029,11 +1029,20 @@ fun BoxWithConstraintsScope.ChatItemsList(
                 val chat = chatController.apiGetChat(rh = remoteHostId, type = chatInfo.chatType, id = chatInfo.apiId)
                 if (chatModel.chatId.value != chatInfo.id || chat == null) return@withBGApi
                 withContext(Dispatchers.Main) {
-                  val chatSectionLoad = ChatSectionLoad(0, ChatSectionArea.Bottom)
-                  val itemsToAdd = chatSectionLoad.prepareItems(chat.first.chatItems)
-                  if (itemsToAdd.isNotEmpty()) {
-                    chatModel.chatItems.addAll(itemsToAdd)
+                  val updatedItems = chatModel.chatItems.value.toMutableStateList()
+                  var insertIndex = updatedItems.size
+
+                  for (cItem in chat.first.chatItems.asReversed()) {
+                    if (chatModel.chatItemsSectionArea[cItem.id] == null) {
+                      updatedItems.add(insertIndex, cItem)
+                      chatModel.chatItemsSectionArea[cItem.id] = ChatSectionArea.Bottom
+                    } else {
+                      chatModel.chatItemsSectionArea[cItem.id] = ChatSectionArea.Bottom
+                      insertIndex = max(0, insertIndex - 1)
+                    }
                   }
+
+                  chatModel.chatItems.replaceAll(updatedItems)
                 }
               }
             }
