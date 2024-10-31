@@ -1346,7 +1346,14 @@ fun BoxWithConstraintsScope.ChatItemsList(
         LaunchedEffect(cItem.id) {
           scope.launch {
             delay(600)
-            markRead(CC.ItemRange(cItem.id, cItem.id), null)
+            val range = if (sectionItems.mergeCategory != null) {
+              val firstItem = sectionItems.items.first()
+              val lastItem = sectionItems.items.last()
+              CC.ItemRange(lastItem.id, firstItem.id)
+            } else {
+              CC.ItemRange(cItem.id, cItem.id)
+            }
+            markRead(range, null)
           }
         }
       }
