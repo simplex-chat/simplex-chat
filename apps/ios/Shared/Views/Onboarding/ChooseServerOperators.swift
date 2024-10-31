@@ -10,12 +10,14 @@ import SwiftUI
 import SimpleXChat
 
 struct OnboardingButtonStyle: ButtonStyle {
+    @EnvironmentObject var theme: AppTheme
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 17, weight: .semibold))
             .padding()
             .frame(maxWidth: .infinity) // Makes button stretch horizontally
-            .background(Color.blue) // Apple blue color
+            .background(theme.colors.primary) // Apple blue color
             .foregroundColor(.white) // White text color
             .cornerRadius(10) // Rounded corners
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0) // Slight scale effect on press
@@ -30,6 +32,7 @@ struct ChooseServerOperators: View {
     @State private var selectedOperators = Set<Int64>()
     @State private var customServersNavLinkActive = false
     @State private var reviewConditionsNavLinkActive = false
+    @State private var justOpened = true
 
     var body: some View {
         NavigationView {
@@ -62,8 +65,11 @@ struct ChooseServerOperators: View {
             .frame(maxHeight: .infinity)
             .padding()
             .onAppear {
-                serverOperators = ChatModel.shared.serverOperators
-                selectedOperators = Set(serverOperators.filter { $0.enabled }.map { $0.operatorId })
+                if justOpened {
+                    serverOperators = ChatModel.shared.serverOperators
+                    selectedOperators = Set(serverOperators.filter { $0.enabled }.map { $0.operatorId })
+                    justOpened = false
+                }
             }
             .sheet(isPresented: $showInfoSheet) {
                 ChooseServerOperatorsInfoView()
