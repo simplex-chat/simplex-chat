@@ -319,7 +319,7 @@ private func getTimestamp() -> String {
 }
 
 public func dropImagePrefix(_ s: String) -> String {
-    dropPrefix(dropPrefix(s, "data:image/png;base64,"), "data:image/jpg;base64,")
+    dropPrefix(dropPrefix(dropPrefix(s, "data:image/png;base64,"), "data:image/jpg;base64,"), "data:image/jpeg;base64,")
 }
 
 private func dropPrefix(_ s: String, _ prefix: String) -> String {

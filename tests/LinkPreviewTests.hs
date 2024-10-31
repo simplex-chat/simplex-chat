@@ -20,8 +20,8 @@ linkPreviewTests = do
 resizeToStrTest :: FilePath -> FilePath -> IO ()
 resizeToStrTest inputPath tmp = do
   (ri@(ResizeableImage imgFormat _img encoder), metadata) <- either error pure =<< Image.readResizeable inputPath
-  logDebug $ tshow (metadata, imgFormat, either (const "png") (const "jpeg") encoder)
-  let res = Image.resizeImageToStrSize maxSize ri
+  logDebug $ tshow (metadata, imgFormat, either (const "png") (const "jpg") encoder)
+  let res = Image.resizeImageToSize True maxSize ri
       finalSize = LB.length res
   unless (finalSize <= maxSize) $ error $ "Final size larger than maximum size: " <> show (finalSize, maxSize)
   let (fmt, b64) = fmap (LB.drop 8) . LB.break (== ';') $ LB.drop 11 res
