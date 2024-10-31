@@ -1204,23 +1204,27 @@ public struct ServerOperatorInfo: Decodable {
     public var description: String
     public var website: String
     public var logo: String
+    public var largeLogo: String // TODO light/dark
 }
 
 public let operatorsInfo: Dictionary<OperatorTag, ServerOperatorInfo> = [
     .simplex: ServerOperatorInfo(
         description: "SimpleX Chat preset servers",
         website: "https://simplex.chat",
-        logo: "icon-transparent"
+        logo: "icon-transparent",
+        largeLogo: "logo"
     ),
     .xyz: ServerOperatorInfo(
         description: "XYZ servers",
         website: "XYZ website",
-        logo: "shield"
+        logo: "shield",
+        largeLogo: "logo"
     ),
     .demo: ServerOperatorInfo(
         description: "Demo operator",
         website: "Demo website",
-        logo: "icon-transparent"
+        logo: "icon-transparent",
+        largeLogo: "logo"
     )
 ]
 
@@ -1257,7 +1261,7 @@ public struct ServerOperator: Identifiable, Decodable {
     public var id: Int64 { operatorId }
 
     public var info: ServerOperatorInfo {
-        operatorsInfo[tag] ?? ServerOperatorInfo(description: "Default", website: "Default", logo: "icon-transparent")
+        operatorsInfo[tag] ?? ServerOperatorInfo(description: "Default", website: "Default", logo: "icon-transparent", largeLogo: "logo")
     }
 
     public static var sampleData1 = ServerOperator(

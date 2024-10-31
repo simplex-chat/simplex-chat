@@ -93,12 +93,10 @@ struct ChooseServerOperators: View {
         let icon = checked ? "checkmark.circle.fill" : "circle"
         let iconColor = checked ? theme.colors.primary : Color(uiColor: .tertiaryLabel).asAnotherColorFromSecondary(theme)
         HStack(spacing: 10) {
-            Image(serverOperator.info.logo)
+            Image(serverOperator.info.largeLogo)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 30, height: 30)
-            Text(serverOperator.name)
-                .font(.title2)
+                .frame(height: 48)
             Spacer()
             Image(systemName: icon)
                 .resizable()
