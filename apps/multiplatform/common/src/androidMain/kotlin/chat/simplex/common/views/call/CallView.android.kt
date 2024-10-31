@@ -594,8 +594,9 @@ fun CallPermissionsView(pipActive: Boolean, hasVideo: Boolean, cancel: () -> Uni
       }
     }
   } else {
-    ModalView(background = Color.Black, showClose = false, close = {}) {
-      ColumnWithScrollBar {
+    ModalView(background = Color.Black, showAppBar = false, close = {}) {
+      Column {
+        Spacer(Modifier.height(AppBarHeight * fontSizeSqrtMultiplier))
         AppBarTitle(stringResource(MR.strings.permissions_required))
         Spacer(Modifier.weight(1f))
         val onClick = {
