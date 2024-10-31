@@ -176,8 +176,8 @@ private func createProfile(_ displayName: String, showAlert: (UserProfileAlert) 
         if m.users.isEmpty || m.users.allSatisfy({ $0.user.hidden }) {
             try startChat()
             withAnimation {
-                onboardingStageDefault.set(.step3_CreateSimpleXAddress)
-                m.onboardingStage = .step3_CreateSimpleXAddress
+                onboardingStageDefault.set(.step3_ChooseServerOperators)
+                m.onboardingStage = .step3_ChooseServerOperators
             }
         } else {
             onboardingStageDefault.set(.onboardingComplete)
