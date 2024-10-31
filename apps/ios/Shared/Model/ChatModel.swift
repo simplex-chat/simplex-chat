@@ -199,7 +199,7 @@ final class ChatModel: ObservableObject {
     @Published var draftChatId: String?
     @Published var networkInfo = UserNetworkInfo(networkType: .other, online: true)
     // server operators
-    @Published var serverOperators: [ServerOperator] = [ServerOperator.sampleData1, ServerOperator.sampleData2, ServerOperator.sampleData3]
+    @Published var serverOperators: [ServerOperator] = [ServerOperator.sampleData1, ServerOperator.sampleData2] // ServerOperator.sampleData3
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
