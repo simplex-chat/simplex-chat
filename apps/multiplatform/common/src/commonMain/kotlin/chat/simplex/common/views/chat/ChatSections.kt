@@ -201,6 +201,21 @@ fun List<ChatSection>.chatItemPosition(chatItemId: Long): Int? {
   return null
 }
 
+fun List<ChatSection>.revealedItemCount(): Int {
+  var count = 0
+  for (section in this) {
+    for (item in section.items) {
+      if (item.revealed) {
+        count += item.items.size
+      } else {
+        count++
+      }
+    }
+  }
+
+  return count
+}
+
 fun List<ChatSection>.dropTemporarySections() {
   val bottomSection = this.find { it.area == ChatSectionArea.Bottom }
   if (bottomSection != null) {

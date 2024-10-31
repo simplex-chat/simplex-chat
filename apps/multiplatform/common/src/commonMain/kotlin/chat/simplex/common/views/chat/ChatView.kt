@@ -1009,7 +1009,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   val sections by remember { derivedStateOf { reversedChatItems.putIntoSections(revealedItems.value) } }
   val preloadItemsEnabled = remember { mutableStateOf(true) }
   val boundaries = remember { derivedStateOf { sections.map { it.boundary } } }
-  val scrollPosition: (Int) -> Int = { idx -> min(listState.layoutInfo.totalItemsCount - 1, idx + 1 ) }
+  val scrollPosition: (Int) -> Int = { idx -> min(sections.revealedItemCount() - 1, idx + 1 ) }
 
   PreloadItems(chatInfo.id, listState, ChatPagination.UNTIL_PRELOAD_COUNT, preloadItemsEnabled, boundaries, loadMessages)
   val maxHeightRounded = with(LocalDensity.current) { maxHeight.roundToPx() }
@@ -1067,9 +1067,9 @@ fun BoxWithConstraintsScope.ChatItemsList(
           }
           val chatSectionLoad = ChatSectionLoad(0, ChatSectionArea.Destination)
           apiLoadMessagesAroundItem(rhId = remoteHostId, chatModel = chatModel, chatInfo = chatInfo, aroundItemId = itemId, chatSectionLoad = chatSectionLoad)
+          val idx = sections.chatItemPosition(itemId)
 
           scope.launch {
-            val idx = sections.chatItemPosition(itemId)
             if (idx != null) {
               listState.animateScrollToItem(scrollPosition(idx), -maxHeightRounded)
               withContext(Dispatchers.Main) {
