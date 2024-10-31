@@ -107,7 +107,7 @@ public func resizeImageToStrSizeSync(_ image: UIImage, maxDataSize: Int64) -> St
     guard let d = image.pngData() else { return nil }
     if let _ = saveFile(d, tmpFile, encrypted: false) {
         defer { removeFile(tmpFile) }
-        let ptr = chat_resize_image_to_str_size(tmpFile, Int32(maxDataSize))
+        let ptr = chat_resize_image_to_str_size(tmpFile, maxDataSize)
         if let ptr = ptr {
             let str = fromCString(ptr)
             let dataSize = str.count

@@ -27,6 +27,7 @@ actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
   val imageString = base64ImageString
     .removePrefix("data:image/png;base64,")
     .removePrefix("data:image/jpg;base64,")
+    .removePrefix("data:image/jpeg;base64,")
   return try {
     val imageBytes = Base64.decode(imageString, Base64.NO_WRAP)
     BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size).asImageBitmap()
@@ -43,7 +44,7 @@ actual fun resizeImageToStrSize(image: ImageBitmap, maxDataSize: Long): String {
   compressImageData(image, true).writeTo(output)
   output.flush()
   output.close()
-  var str = chatResizeImageToStrSize(tmpFileName, maxDataSize.toInt())
+  var str = chatResizeImageToStrSize(tmpFileName, maxDataSize)
   removeFile(tmpFileName)
   return str
 }

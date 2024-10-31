@@ -113,7 +113,7 @@ foreign export ccall "chat_encrypt_file" cChatEncryptFile :: StablePtr ChatContr
 
 foreign export ccall "chat_decrypt_file" cChatDecryptFile :: CString -> CString -> CString -> CString -> IO CString
 
-foreign export ccall "chat_resize_image_to_str_size" cChatResizeImageToStrSize :: CString -> CInt -> IO CString
+foreign export ccall "chat_resize_image_to_str_size" cChatResizeImageToStrSize :: CString -> CLong -> IO CString
 
 -- | check / migrate database and initialize chat controller on success
 cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
@@ -205,7 +205,7 @@ cChatJsonLength s = fromIntegral . subtract 2 . LB.length . J.encode . safeDecod
 -- Returns data-uri/base64 encoded image as 0-terminated string.
 -- Empty result string means operation failure.
 -- The caller must free the result ptr.
-cChatResizeImageToStrSize :: CString -> CInt -> IO CString
+cChatResizeImageToStrSize :: CString -> CLong -> IO CString
 cChatResizeImageToStrSize fp' maxSize = do
   fp <- peekCString fp'
   res <- runExceptT $ do

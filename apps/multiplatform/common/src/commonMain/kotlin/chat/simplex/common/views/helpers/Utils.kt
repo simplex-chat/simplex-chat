@@ -365,7 +365,10 @@ fun formatBytes(bytes: Long): String {
 }
 
 fun removeFile(fileName: String): Boolean {
-  val file = File(getAppFilePath(fileName))
+  return removeFile(File(getAppFilePath(fileName)))
+}
+
+fun removeFile(file: File): Boolean {
   val fileDeleted = file.delete()
   if (!fileDeleted) {
     Log.e(TAG, "Util.kt removeFile error")

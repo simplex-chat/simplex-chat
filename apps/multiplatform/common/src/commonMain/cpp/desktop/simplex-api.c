@@ -45,7 +45,7 @@ extern char *chat_write_image(chat_ctrl ctrl, long max_size, const char *path, c
 extern char *chat_read_file(const char *path, const char *key, const char *nonce);
 extern char *chat_encrypt_file(chat_ctrl ctrl, const char *from_path, const char *to_path);
 extern char *chat_decrypt_file(const char *from_path, const char *key, const char *nonce, const char *to_path);
-extern char *chat_resize_image_to_str_size(const char *from_path, int max_size);
+extern char *chat_resize_image_to_str_size(const char *from_path, long max_size);
 
 // As a reference: https://stackoverflow.com/a/60002045
 jstring decode_to_utf8_string(JNIEnv *env, char *string) {
@@ -268,7 +268,7 @@ Java_chat_simplex_common_platform_CoreKt_chatDecryptFile(JNIEnv *env, jclass cla
 }
 
 JNIEXPORT jstring JNICALL
-Java_chat_simplex_common_platform_CoreKt_chatResizeImageToStrSize(JNIEnv *env, jclass clazz, jstring from_path, jint max_size) {
+Java_chat_simplex_common_platform_CoreKt_chatResizeImageToStrSize(JNIEnv *env, jclass clazz, jstring from_path, jlong max_size) {
     const char *_from_path = encode_to_utf8_chars(env, from_path);
     jstring res = decode_to_utf8_string(env, chat_resize_image_to_str_size(_from_path, max_size));
     (*env)->ReleaseStringUTFChars(env, from_path, _from_path);

@@ -29,10 +29,8 @@ actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
   return try {
     ImageIO.read(ByteArrayInputStream(Base64.getMimeDecoder().decode(imageString))).toComposeImageBitmap()
   } catch (e: Exception) { // ByteArrayInputStream returns null
-  // } catch (e: IOException) {
-    Log.e(TAG, "base64ToBitmap error: $e for $base64ImageString")
+    Log.e(TAG, "base64ToBitmap error: $e for \"$base64ImageString\"")
     errorBitmap()
-  }
 }
 
 actual fun resizeImageToStrSize(image: ImageBitmap, maxDataSize: Long): String {
@@ -42,8 +40,8 @@ actual fun resizeImageToStrSize(image: ImageBitmap, maxDataSize: Long): String {
   compressImageData(image, true).writeTo(output)
   output.flush()
   output.close()
-  var str = chatResizeImageToStrSize(tmpFileName, maxDataSize.toInt())
-  removeFile(tmpFileName)
+  var str = chatResizeImageToStrSize(tmpFile.absolutePath, maxDataSize)
+  removeFile(tmpFile)
   return str
 }
 
