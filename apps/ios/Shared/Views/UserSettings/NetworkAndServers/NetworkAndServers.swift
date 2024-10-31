@@ -34,6 +34,7 @@ struct NetworkAndServers: View {
     @EnvironmentObject var theme: AppTheme
     @State private var serverOperators: [ServerOperator] = []
     @State private var sheetItem: NetworkAndServersSheet? = nil
+    @State private var conditionsAccepted = false
 
     var body: some View {
         VStack {
@@ -112,12 +113,18 @@ struct NetworkAndServers: View {
         .onAppear {
             serverOperators = ChatModel.shared.serverOperators
         }
-        .sheet(item: $sheetItem, onDismiss: { serverOperators = ChatModel.shared.serverOperators }) { item in
+        .sheet(item: $sheetItem, onDismiss: onConditionsSheetDismissed) { item in
             switch item {
             case let .showConditions(conditionsAction):
-                UsageConditionsView(conditionsAction: conditionsAction)
+                UsageConditionsView(conditionsAction: conditionsAction, conditionsAccepted: $conditionsAccepted)
                     .modifier(ThemedBackground(grouped: true))
             }
+        }
+    }
+
+    private func onConditionsSheetDismissed() {
+        if conditionsAccepted {
+            serverOperators = ChatModel.shared.serverOperators
         }
     }
 
