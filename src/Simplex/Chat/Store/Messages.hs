@@ -960,26 +960,26 @@ getDirectChat db vr user contactId pagination search_ = do
 
 -- the last items in reverse order (the last item in the conversation is the first in the returned list)
 getDirectChatLast_ :: DB.Connection -> User -> Contact -> Int -> String -> IO (Chat 'CTDirect)
-getDirectChatLast_ db user@User {userId} ct@Contact {contactId} count search = do
+getDirectChatLast_ db user ct count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  chatItemIds <- getDirectChatItemIdsLast_
+  chatItemIds <- getDirectChatItemIdsLast_ db user ct count search
   currentTs <- getCurrentTime
   chatItems <- mapM (safeGetDirectItem db user ct currentTs) chatItemIds
   pure $ Chat (DirectChat ct) (reverse chatItems) stats
-  where
-    getDirectChatItemIdsLast_ :: IO [ChatItemId]
-    getDirectChatItemIdsLast_ =
-      map fromOnly
-        <$> DB.query
-          db
-          [sql|
-            SELECT chat_item_id
-            FROM chat_items
-            WHERE user_id = ? AND contact_id = ? AND item_text LIKE '%' || ? || '%'
-            ORDER BY created_at DESC, chat_item_id DESC
-            LIMIT ?
-          |]
-          (userId, contactId, search, count)
+
+getDirectChatItemIdsLast_ :: DB.Connection -> User -> Contact -> Int -> String -> IO [ChatItemId]
+getDirectChatItemIdsLast_ db User {userId} Contact {contactId} count search =
+  map fromOnly
+    <$> DB.query
+      db
+      [sql|
+        SELECT chat_item_id
+        FROM chat_items
+        WHERE user_id = ? AND contact_id = ? AND item_text LIKE '%' || ? || '%'
+        ORDER BY created_at DESC, chat_item_id DESC
+        LIMIT ?
+      |]
+      (userId, contactId, search, count)
 
 safeGetDirectItem :: DB.Connection -> User -> Contact -> UTCTime -> ChatItemId -> IO (CChatItem 'CTDirect)
 safeGetDirectItem db user ct currentTs itemId =
@@ -1088,7 +1088,13 @@ getDirectChatInitial_ :: DB.Connection -> User -> Contact -> Int -> ExceptT Stor
 getDirectChatInitial_ db user@User {userId} ct@Contact {contactId} count = do
   firstUnreadItem <- liftIO getDirectChatMinUnreadItemId_
   case firstUnreadItem of
-    Just firstUnreadItemId -> (,CLSUnread) <$> getDirectChatAround_ db user ct firstUnreadItemId count ""
+    Just firstUnreadItemId -> do
+      chat <- getDirectChatAround_ db user ct firstUnreadItemId count ""
+      let Chat {chatItems} = chat
+      let chatItemIds = map (cchatItemId) chatItems
+      lastItemId <- liftIO $ getDirectChatItemIdsLast_ db user ct 1 ""
+      let lastItemIdInChat = head lastItemId `elem` chatItemIds
+      pure (chat, if lastItemIdInChat then CLSLatest else CLSUnread)
     Nothing -> liftIO $ (,CLSLatest) <$> getDirectChatLast_ db user ct count ""
   where
     getDirectChatMinUnreadItemId_ :: IO (Maybe ChatItemId)
@@ -1115,26 +1121,26 @@ getGroupChat db vr user groupId pagination search_ = do
     CPInitial count -> getGroupChatInitial_ db user g count
 
 getGroupChatLast_ :: DB.Connection -> User -> GroupInfo -> Int -> String -> IO (Chat 'CTGroup)
-getGroupChatLast_ db user@User {userId} g@GroupInfo {groupId} count search = do
+getGroupChatLast_ db user g count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  chatItemIds <- getGroupChatItemIdsLast_
+  chatItemIds <- getGroupChatItemIdsLast_ db user g count search
   currentTs <- getCurrentTime
   chatItems <- mapM (safeGetGroupItem db user g currentTs) chatItemIds
   pure $ Chat (GroupChat g) (reverse chatItems) stats
-  where
-    getGroupChatItemIdsLast_ :: IO [ChatItemId]
-    getGroupChatItemIdsLast_ =
-      map fromOnly
-        <$> DB.query
-          db
-          [sql|
-            SELECT chat_item_id
-            FROM chat_items
-            WHERE user_id = ? AND group_id = ? AND item_text LIKE '%' || ? || '%'
-            ORDER BY item_ts DESC, chat_item_id DESC
-            LIMIT ?
-          |]
-          (userId, groupId, search, count)
+
+getGroupChatItemIdsLast_ :: DB.Connection -> User -> GroupInfo -> Int -> String -> IO [ChatItemId]
+getGroupChatItemIdsLast_ db User {userId} GroupInfo {groupId} count search =
+  map fromOnly
+    <$> DB.query
+      db
+      [sql|
+        SELECT chat_item_id
+        FROM chat_items
+        WHERE user_id = ? AND group_id = ? AND item_text LIKE '%' || ? || '%'
+        ORDER BY item_ts DESC, chat_item_id DESC
+        LIMIT ?
+      |]
+      (userId, groupId, search, count)
 
 safeGetGroupItem :: DB.Connection -> User -> GroupInfo -> UTCTime -> ChatItemId -> IO (CChatItem 'CTGroup)
 safeGetGroupItem db user g currentTs itemId =
@@ -1243,7 +1249,13 @@ getGroupChatInitial_ :: DB.Connection -> User -> GroupInfo -> Int -> ExceptT Sto
 getGroupChatInitial_ db user@User {userId} g@GroupInfo {groupId} count = do
   firstUnreadItem <- liftIO getGroupChatMinUnreadItemId_
   case firstUnreadItem of
-    Just firstUnreadItemId -> (,CLSUnread) <$> getGroupChatAround_ db user g firstUnreadItemId count ""
+    Just firstUnreadItemId -> do
+      chat <- getGroupChatAround_ db user g firstUnreadItemId count ""
+      let Chat {chatItems} = chat
+      let chatItemIds = map (cchatItemId) chatItems
+      lastItemId <- liftIO $ getGroupChatItemIdsLast_ db user g 1 ""
+      let lastItemIdInChat = head lastItemId `elem` chatItemIds
+      pure (chat, if lastItemIdInChat then CLSLatest else CLSUnread)
     Nothing -> liftIO $ (,CLSLatest) <$> getGroupChatLast_ db user g count ""
   where
     getGroupChatMinUnreadItemId_ :: IO (Maybe ChatItemId)
@@ -1270,26 +1282,26 @@ getLocalChat db user folderId pagination search_ = do
     CPInitial count -> getLocalChatInitial_ db user nf count
 
 getLocalChatLast_ :: DB.Connection -> User -> NoteFolder -> Int -> String -> IO (Chat 'CTLocal)
-getLocalChatLast_ db user@User {userId} nf@NoteFolder {noteFolderId} count search = do
+getLocalChatLast_ db user nf count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  chatItemIds <- getLocalChatItemIdsLast_
+  chatItemIds <- getLocalChatItemIdsLast_ db user nf count search
   currentTs <- getCurrentTime
   chatItems <- mapM (safeGetLocalItem db user nf currentTs) chatItemIds
   pure $ Chat (LocalChat nf) (reverse chatItems) stats
-  where
-    getLocalChatItemIdsLast_ :: IO [ChatItemId]
-    getLocalChatItemIdsLast_ =
-      map fromOnly
-        <$> DB.query
-          db
-          [sql|
-            SELECT chat_item_id
-            FROM chat_items
-            WHERE user_id = ? AND note_folder_id = ? AND item_text LIKE '%' || ? || '%'
-            ORDER BY created_at DESC, chat_item_id DESC
-            LIMIT ?
-          |]
-          (userId, noteFolderId, search, count)
+
+getLocalChatItemIdsLast_ :: DB.Connection -> User -> NoteFolder -> Int -> String -> IO [ChatItemId]
+getLocalChatItemIdsLast_ db User {userId} NoteFolder {noteFolderId} count search =
+  map fromOnly
+    <$> DB.query
+      db
+      [sql|
+        SELECT chat_item_id
+        FROM chat_items
+        WHERE user_id = ? AND note_folder_id = ? AND item_text LIKE '%' || ? || '%'
+        ORDER BY created_at DESC, chat_item_id DESC
+        LIMIT ?
+      |]
+      (userId, noteFolderId, search, count)
 
 safeGetLocalItem :: DB.Connection -> User -> NoteFolder -> UTCTime -> ChatItemId -> IO (CChatItem 'CTLocal)
 safeGetLocalItem db user NoteFolder {noteFolderId} currentTs itemId =
@@ -1382,7 +1394,13 @@ getLocalChatInitial_ :: DB.Connection -> User -> NoteFolder -> Int -> ExceptT St
 getLocalChatInitial_ db user@User {userId} nf@NoteFolder {noteFolderId} count = do
   firstUnreadItem <- liftIO getLocalChatMinUnreadItemId_
   case firstUnreadItem of
-    Just firstUnreadItemId -> (,CLSUnread) <$> getLocalChatAround_ db user nf firstUnreadItemId count ""
+    Just firstUnreadItemId -> do
+      chat <- getLocalChatAround_ db user nf firstUnreadItemId count ""
+      let Chat {chatItems} = chat
+      let chatItemIds = map (cchatItemId) chatItems
+      lastItemId <- liftIO $ getLocalChatItemIdsLast_ db user nf 1 ""
+      let lastItemIdInChat = head lastItemId `elem` chatItemIds
+      pure (chat, if lastItemIdInChat then CLSLatest else CLSUnread)
     Nothing -> liftIO $ (,CLSLatest) <$> getLocalChatLast_ db user nf count ""
   where
     getLocalChatMinUnreadItemId_ :: IO (Maybe ChatItemId)
