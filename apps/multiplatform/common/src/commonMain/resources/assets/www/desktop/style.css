@@ -47,6 +47,7 @@ body {
   position: absolute;
   width: 20%;
   max-width: 20%;
+  height: 15.03vw;
   object-fit: cover;
   margin: 16px;
   border-radius: 16px;

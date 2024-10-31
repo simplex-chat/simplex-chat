@@ -593,6 +593,7 @@ const processCommand = (function () {
             )
             const videos = getVideoElements()
             if (videos) {
+              setupLocalVideoRatio(videos.local)
               videos.local.srcObject = localStream
               videos.local.play().catch((e) => console.log(e))
             }
@@ -624,6 +625,7 @@ const processCommand = (function () {
           inactiveCallMediaSources.mic = true
           inactiveCallMediaSources.camera = command.media == CallMediaType.Video
           inactiveCallMediaSourcesChanged(inactiveCallMediaSources)
+          setupLocalVideoRatio(getVideoElements()!.local)
 
           const {media, iceServers, relay} = command
           const encryption = supportsInsertableStreams(useWorker)
@@ -925,28 +927,21 @@ const processCommand = (function () {
     }
     // Without doing it manually Firefox shows black screen but video can be played in Picture-in-Picture
     videos.local.play().catch((e) => console.log(e))
-    setupLocalVideoRatio(videos.local)
   }
 
   function setupLocalVideoRatio(local: HTMLVideoElement) {
-    const ratio = isDesktop ? 1.33 : 1 / 1.33
-    const currentRect = local.getBoundingClientRect()
-    // better to get percents from here than to hardcode values from styles (the styles can be changed)
-    const screenWidth = currentRect.left + currentRect.width
-    const percents = currentRect.width / screenWidth
-    local.style.width = `${percents * 100}%`
-    local.style.height = `${(percents / ratio) * 100}vw`
-
     local.addEventListener("loadedmetadata", function () {
       console.log("Local video videoWidth: " + local.videoWidth + "px,  videoHeight: " + local.videoHeight + "px")
       if (local.videoWidth == 0 || local.videoHeight == 0) return
-      local.style.height = `${(percents / (local.videoWidth / local.videoHeight)) * 100}vw`
+      const ratio = local.videoWidth > local.videoHeight ? 0.2 : 0.3
+      local.style.height = `${(ratio / (local.videoWidth / local.videoHeight)) * 100}vw`
     })
 
     local.onresize = function () {
       console.log("Local video size changed to " + local.videoWidth + "x" + local.videoHeight)
       if (local.videoWidth == 0 || local.videoHeight == 0) return
-      local.style.height = `${(percents / (local.videoWidth / local.videoHeight)) * 100}vw`
+      const ratio = local.videoWidth > local.videoHeight ? 0.2 : 0.3
+      local.style.height = `${(ratio / (local.videoWidth / local.videoHeight)) * 100}vw`
     }
   }
 
@@ -1614,6 +1609,9 @@ function changeLayout(layout: LayoutType) {
       break
   }
   videos.localScreen.style.visibility = localSources.screenVideo ? "visible" : "hidden"
+  if (!isDesktop && !localSources.camera) {
+    resetLocalVideoElementHeight(videos.local)
+  }
 }
 
 function getVideoElements(): VideoElements | undefined {
@@ -1635,6 +1633,12 @@ function getVideoElements(): VideoElements | undefined {
   )
     return
   return {local, localScreen, remote, remoteScreen}
+}
+
+// Allow CSS to figure out the size of view by itself on Android because rotating to different orientation
+// without dropping override will cause the view to have not normal proportion while no video is present
+function resetLocalVideoElementHeight(local: HTMLVideoElement) {
+  local.style.height = ""
 }
 
 function desktopShowPermissionsAlert(mediaType: CallMediaType) {

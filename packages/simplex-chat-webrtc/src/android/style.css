@@ -41,15 +41,32 @@ body {
   object-fit: cover;
 }
 
-#local-video-stream.inline {
-  position: absolute;
-  width: 30%;
-  max-width: 30%;
-  object-fit: cover;
-  margin: 16px;
-  border-radius: 16px;
-  top: 0;
-  right: 0;
+@media (orientation: portrait) {
+  #local-video-stream.inline {
+    position: absolute;
+    width: 30%;
+    max-width: 30%;
+    height: 39.9vw;
+    object-fit: cover;
+    margin: 16px;
+    border-radius: 16px;
+    top: 0;
+    right: 0;
+  }
+}
+
+@media (orientation: landscape) {
+  #local-video-stream.inline {
+    position: absolute;
+    width: 20%;
+    max-width: 20%;
+    height: 15.03vw;
+    object-fit: cover;
+    margin: 16px;
+    border-radius: 16px;
+    top: 0;
+    right: 0;
+  }
 }
 
 #local-screen-video-stream.inline {
