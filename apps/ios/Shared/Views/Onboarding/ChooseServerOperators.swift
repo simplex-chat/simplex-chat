@@ -117,7 +117,7 @@ struct ChooseServerOperators: View {
                         .frame(width: 22, height: 22)
                         .foregroundColor(theme.colors.secondary)
                 }
-                .frame(width: 28, height: 28)
+                .frame(width: 30, height: 30)
 
                 Text("Custom servers")
                     .font(.title3)
