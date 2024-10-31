@@ -4858,7 +4858,7 @@ class APIResponse(val resp: CR, val remoteHostId: Long?, val corr: String? = nul
             } else if (type == "apiChat") {
               val user: UserRef = json.decodeFromJsonElement(resp["user"]!!.jsonObject)
               val chat = parseChatData(resp["chat"]!!)
-              val section = resp["section"]?.jsonObject?.get("type")?.let {
+              val section = resp["section"]?.let {
                 json.decodeFromJsonElement<ChatLandingSection>(it)
               } ?: ChatLandingSection.Latest
               return APIResponse(CR.ApiChat(user, chat, section), remoteHostId, corr)
