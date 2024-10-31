@@ -276,7 +276,8 @@ struct SingleOperatorUsageConditionsView: View {
                     Text("Conditions accepted on: \(conditionsTimestamp(date)).")
                         .foregroundColor(theme.colors.secondary)
                         .padding(.bottom)
-                    
+                        .padding(.bottom)
+
                 } else if !operatorsWithConditionsAccepted.isEmpty {
                     
                     Text("You already accepted conditions of use for following operator(s): \(operatorsWithConditionsAccepted.map { $0.name }.joined(separator: ", ")).")
@@ -299,7 +300,8 @@ struct SingleOperatorUsageConditionsView: View {
                     
                     acceptConditionsButton()
                         .padding(.bottom)
-                    
+                        .padding(.bottom)
+
                 } else {
                     
                     Text("In order to use operator \(serverOperator.name), accept conditions of use.")
@@ -310,7 +312,8 @@ struct SingleOperatorUsageConditionsView: View {
                     
                     acceptConditionsButton()
                         .padding(.bottom)
-                    
+                        .padding(.bottom)
+
                 }
             }
             .padding(.horizontal)
@@ -350,17 +353,20 @@ struct SingleOperatorUsageConditionsView: View {
 struct UsageConditionsView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var theme: AppTheme
+    var showTitle: Bool
     var conditionsAction: UsageConditionsAction
-    @Binding var conditionsAccepted: Bool
+    var onAcceptAction: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             Group {
-                Text("Conditions of use")
-                    .font(.largeTitle)
-                    .bold()
-                    .padding(.top)
-                    .padding(.top)
+                if showTitle {
+                    Text("Conditions of use")
+                        .font(.largeTitle)
+                        .bold()
+                        .padding(.top)
+                        .padding(.top)
+                }
 
                 switch conditionsAction {
                 case let .reviewUpdatedConditions(acceptForOperators, _):
@@ -371,12 +377,14 @@ struct UsageConditionsView: View {
 
                     acceptConditionsButton(acceptForOperators)
                         .padding(.bottom)
+                        .padding(.bottom)
 
                 case let .viewAcceptedConditions(acceptedForOperators):
 
                     Text("Conditions are accepted for following operator(s): \(acceptedForOperators.map { $0.name }.joined(separator: ", ")).")
 
                     conditionsTextView()
+                        .padding(.bottom)
                         .padding(.bottom)
 
                 }
@@ -395,8 +403,11 @@ struct UsageConditionsView: View {
                 // (It's counterintuitive to lose to closed sheet or Reset)
                 let date = Date.now
                 ChatModel.shared.acceptConditionsForOperators(acceptForOperators, date)
-                conditionsAccepted = true
-                dismiss()
+                if let onAcceptAction = onAcceptAction {
+                    onAcceptAction()
+                } else {
+                    dismiss()
+                }
             } label: {
                 Text("Accept conditions")
             }

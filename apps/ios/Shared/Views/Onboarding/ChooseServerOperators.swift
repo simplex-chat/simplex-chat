@@ -9,24 +9,13 @@
 import SwiftUI
 import SimpleXChat
 
-private enum ChooseServerOperatorsSheet: Identifiable {
-    case showConditions(conditionsAction: UsageConditionsAction)
-
-    var id: String {
-        switch self {
-        case .showConditions: return "showConditions"
-        }
-    }
-}
-
 struct ChooseServerOperators: View {
     @EnvironmentObject var theme: AppTheme
     @State private var showInfoSheet = false
     @State private var serverOperators: [ServerOperator] = []
     @State private var selectedOperators = Set<Int64>()
     @State private var customServersNavLinkActive = false
-    @State private var sheetItem: ChooseServerOperatorsSheet? = nil
-    @State private var conditionsAccepted = false
+    @State private var reviewConditionsNavLinkActive = false
 
     var body: some View {
         NavigationView {
@@ -65,27 +54,10 @@ struct ChooseServerOperators: View {
             .sheet(isPresented: $showInfoSheet) {
                 ChooseServerOperatorsInfoView()
             }
-            .sheet(item: $sheetItem, onDismiss: onConditionsSheetDismissed) { item in
-                switch item {
-                case let .showConditions(conditionsAction):
-                    UsageConditionsView(conditionsAction: conditionsAction, conditionsAccepted: $conditionsAccepted)
-                        .modifier(ThemedBackground(grouped: true))
-                }
-            }
         }
     }
 
     var acceptForOperators: [ServerOperator] { serverOperators.filter { selectedOperators.contains($0.operatorId) } }
-
-    private func onConditionsSheetDismissed() {
-        if conditionsAccepted {
-            ChatModel.shared.enableServerOperators(acceptForOperators)
-            withAnimation {
-                onboardingStageDefault.set(.step4_SetNotificationsMode)
-                ChatModel.shared.onboardingStage = .step4_SetNotificationsMode
-            }
-        }
-    }
 
     private func infoText() -> some View {
         HStack(spacing: 12) {
@@ -187,19 +159,47 @@ struct ChooseServerOperators: View {
     }
 
     private func reviewConditionsButton() -> some View {
-        HStack {
-            Spacer()
-            
-            Button {
-                sheetItem = .showConditions(conditionsAction: .reviewUpdatedConditions(acceptForOperators: acceptForOperators, deadline: nil))
-            } label: {
-                Text("Review conditions")
+        ZStack {
+            HStack {
+                Spacer()
+
+                Button {
+                    reviewConditionsNavLinkActive = true
+                } label: {
+                    Text("Review conditions")
+                }
+                .buttonStyle(.borderedProminent)
+
+                Spacer()
             }
-            .buttonStyle(.borderedProminent)
-            
-            Spacer()
+            .disabled(selectedOperators.isEmpty)
+
+
+            NavigationLink(isActive: $reviewConditionsNavLinkActive) {
+                reviewConditionsDestinationView()
+            } label: {
+                EmptyView()
+            }
+            .frame(width: 1, height: 1)
+            .hidden()
         }
-        .disabled(selectedOperators.isEmpty)
+    }
+
+    private func reviewConditionsDestinationView() -> some View {
+        UsageConditionsView(
+            showTitle: false,
+            conditionsAction: .reviewUpdatedConditions(acceptForOperators: acceptForOperators, deadline: nil),
+            onAcceptAction: {
+                ChatModel.shared.enableServerOperators(acceptForOperators)
+                withAnimation {
+                    onboardingStageDefault.set(.step4_SetNotificationsMode)
+                    ChatModel.shared.onboardingStage = .step4_SetNotificationsMode
+                }
+            }
+        )
+        .navigationTitle("Conditions of use")
+        .navigationBarTitleDisplayMode(.large)
+        .modifier(ThemedBackground(grouped: true))
     }
 }
 
