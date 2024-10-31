@@ -1,6 +1,8 @@
 package chat.simplex.common.views.chat
 
+import androidx.compose.runtime.toMutableStateList
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.chatController
 import chat.simplex.common.platform.chatModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -227,5 +229,26 @@ suspend fun apiLoadMessagesAroundItem(chatInfo: ChatInfo, chatModel: ChatModel, 
     if (itemsToAdd.isNotEmpty()) {
       chatModel.chatItems.addAll(chatSectionLoad.position, itemsToAdd)
     }
+  }
+}
+
+suspend fun apiLoadBottomSection(chatInfo: ChatInfo, chatModel: ChatModel, rhId: Long?) {
+  val chat = chatController.apiGetChat(rh = rhId, type = chatInfo.chatType, id = chatInfo.apiId)
+  if (chatModel.chatId.value != chatInfo.id || chat == null) return
+  withContext(Dispatchers.Main) {
+    val updatedItems = chatModel.chatItems.value.toMutableStateList()
+    var insertIndex = updatedItems.size
+
+    for (cItem in chat.first.chatItems.asReversed()) {
+      if (chatModel.chatItemsSectionArea[cItem.id] == null) {
+        updatedItems.add(insertIndex, cItem)
+        chatModel.chatItemsSectionArea[cItem.id] = ChatSectionArea.Bottom
+      } else {
+        chatModel.chatItemsSectionArea[cItem.id] = ChatSectionArea.Bottom
+        insertIndex = max(0, insertIndex - 1)
+      }
+    }
+
+    chatModel.chatItems.replaceAll(updatedItems)
   }
 }

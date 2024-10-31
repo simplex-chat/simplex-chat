@@ -988,7 +988,8 @@ fun BoxWithConstraintsScope.ChatItemsList(
 ) {
   val listState = rememberLazyListState()
   val scope = rememberCoroutineScope()
-  ScrollToBottom(chatInfo.id, listState, chatModel.chatItems)
+  val scrollAdjustmentEnabled = remember { mutableStateOf(true) }
+  ScrollToBottom(chatInfo.id, listState, chatModel.chatItems, scrollAdjustmentEnabled)
   var prevSearchEmptiness by rememberSaveable { mutableStateOf(searchValue.value.isEmpty()) }
   // Scroll to bottom when search value changes from something to nothing and back
   LaunchedEffect(searchValue.value.isEmpty()) {
@@ -1008,7 +1009,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   val sections by remember { derivedStateOf { reversedChatItems.putIntoSections(revealedItems.value) } }
   val preloadItemsEnabled = remember { mutableStateOf(true) }
   val boundaries = remember { derivedStateOf { sections.map { it.boundary } } }
-  val scrollPosition: (Int) -> Int = { idx -> min(reversedChatItems.lastIndex, idx + 1) }
+  val scrollPosition: (Int) -> Int = { idx -> min(listState.layoutInfo.totalItemsCount - 1, idx + 1 ) }
 
   PreloadItems(chatInfo.id, listState, ChatPagination.UNTIL_PRELOAD_COUNT, preloadItemsEnabled, boundaries, loadMessages)
   val maxHeightRounded = with(LocalDensity.current) { maxHeight.roundToPx() }
@@ -1022,30 +1023,19 @@ fun BoxWithConstraintsScope.ChatItemsList(
           preloadItemsEnabled.value = true
           val firstUnreadItem = reversedChatItems.findLast { it.isRcvNew }
           if (firstUnreadItem != null) {
-            val firstUnreadItemIndexIdx = sections.find { it.area == ChatSectionArea.Current }?.itemPositions?.get(firstUnreadItem.id)
+            val firstUnreadItemIndexIdx = sections.chatItemPosition(firstUnreadItem.id)
             if (firstUnreadItemIndexIdx != null) {
               listState.scrollToItem(scrollPosition(firstUnreadItemIndexIdx), -maxHeightRounded)
             }
 
             if (chatModel.chatItemsSectionArea[firstUnreadItem.id] != ChatSectionArea.Bottom) {
               withBGApi {
-                val chat = chatController.apiGetChat(rh = remoteHostId, type = chatInfo.chatType, id = chatInfo.apiId)
-                if (chatModel.chatId.value != chatInfo.id || chat == null) return@withBGApi
-                withContext(Dispatchers.Main) {
-                  val updatedItems = chatModel.chatItems.value.toMutableStateList()
-                  var insertIndex = updatedItems.size
-
-                  for (cItem in chat.first.chatItems.asReversed()) {
-                    if (chatModel.chatItemsSectionArea[cItem.id] == null) {
-                      updatedItems.add(insertIndex, cItem)
-                      chatModel.chatItemsSectionArea[cItem.id] = ChatSectionArea.Bottom
-                    } else {
-                      chatModel.chatItemsSectionArea[cItem.id] = ChatSectionArea.Bottom
-                      insertIndex = max(0, insertIndex - 1)
-                    }
-                  }
-
-                  chatModel.chatItems.replaceAll(updatedItems)
+                scrollAdjustmentEnabled.value = false
+                try {
+                  apiLoadBottomSection(chatInfo, chatModel, remoteHostId)
+                } finally {
+                  delay(600)
+                  scrollAdjustmentEnabled.value = true
                 }
               }
             }
@@ -1418,7 +1408,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
 }
 
 @Composable
-private fun ScrollToBottom(chatId: ChatId, listState: LazyListState, chatItems: State<List<ChatItem>>) {
+private fun ScrollToBottom(chatId: ChatId, listState: LazyListState, chatItems: State<List<ChatItem>>, enabled: State<Boolean>) {
   val scope = rememberCoroutineScope()
   // Helps to scroll to bottom after moving from Group to Direct chat
   // and prevents scrolling to bottom on orientation change
@@ -1438,7 +1428,7 @@ private fun ScrollToBottom(chatId: ChatId, listState: LazyListState, chatItems: 
   LaunchedEffect(Unit) {
     snapshotFlow { chatItems.value.lastOrNull()?.id }
       .distinctUntilChanged()
-      .filter { listState.layoutInfo.visibleItemsInfo.firstOrNull()?.key != it }
+      .filter { listState.layoutInfo.visibleItemsInfo.firstOrNull()?.key != it && enabled.value }
       .collect {
         try {
           if (listState.firstVisibleItemIndex == 0 || (listState.firstVisibleItemIndex == 1 && listState.layoutInfo.totalItemsCount == chatItems.value.size)) {
