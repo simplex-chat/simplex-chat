@@ -23,7 +23,8 @@ data class ChatSectionAreaBoundary (
 data class ChatSection (
   val items: MutableList<SectionItems>,
   val area: ChatSectionArea,
-  val boundary: ChatSectionAreaBoundary
+  val boundary: ChatSectionAreaBoundary,
+  val itemPositions: MutableMap<Long, Int>
 )
 
 data class SectionItems (
@@ -31,7 +32,6 @@ data class SectionItems (
   val items: MutableList<ChatItem>,
   val revealed: Boolean,
   val showAvatar: MutableSet<Long>,
-  val itemPositions: MutableMap<Long, Int>
 )
 
 data class ChatSectionLoad (
@@ -104,8 +104,7 @@ fun List<ChatItem>.putIntoSections(revealedItems: Set<Long>): List<ChatSection> 
             it.add(first.id)
           }
         }
-      },
-      itemPositions = mutableMapOf(first.id to 0),
+      }
     )
   } else {
     return emptyList()
@@ -117,12 +116,14 @@ fun List<ChatItem>.putIntoSections(revealedItems: Set<Long>): List<ChatSection> 
     ChatSection(
       items = mutableListOf(recent),
       area = area,
-      boundary = ChatSectionAreaBoundary(minIndex = 0, maxIndex = 0, area = area)
+      boundary = ChatSectionAreaBoundary(minIndex = 0, maxIndex = 0, area = area),
+      itemPositions = mutableMapOf(recent.items[0].id to 0)
     )
   )
 
   var prev = this[0]
   var index = 0
+  var positionInList = 0;
   while (index < size) {
     if (index == 0) {
       index++
@@ -133,6 +134,7 @@ fun List<ChatItem>.putIntoSections(revealedItems: Set<Long>): List<ChatSection> 
     val existingSection = sections.find { it.area == itemArea }
 
     if (existingSection == null) {
+      positionInList++
       val newSection = SectionItems(
         mergeCategory = item.mergeCategory,
         items = mutableListOf<ChatItem>().also { it.add(item) },
@@ -140,22 +142,30 @@ fun List<ChatItem>.putIntoSections(revealedItems: Set<Long>): List<ChatSection> 
         showAvatar = mutableSetOf<Long>().also {
           it.add(item.id)
         },
-        itemPositions = mutableMapOf(item.id to index),
       )
       sections.add(
-        ChatSection(items = mutableListOf(newSection), area = itemArea, boundary = ChatSectionAreaBoundary(minIndex = index, maxIndex = index, area = itemArea))
+        ChatSection(
+          items = mutableListOf(newSection),
+          area = itemArea,
+          boundary = ChatSectionAreaBoundary(minIndex = index, maxIndex = index, area = itemArea),
+          itemPositions = mutableMapOf(item.id to positionInList)
+        )
       )
     } else {
       recent = existingSection.items.last()
       val category = item.mergeCategory
       if (recent.mergeCategory == category) {
+        if (category == null || recent.revealed || revealedItems.contains(item.id)) {
+          positionInList++
+        }
         if (item.chatDir is CIDirection.GroupRcv && prev.chatDir is CIDirection.GroupRcv && item.chatDir.groupMember.memberId != (prev.chatDir as CIDirection.GroupRcv).groupMember.memberId) {
           recent.showAvatar.add(item.id)
         }
 
         recent.items.add(item)
-        recent.itemPositions[item.id] = index
+        existingSection.itemPositions[item.id] = positionInList
       } else {
+        positionInList++
         val newSectionItems = SectionItems(
           mergeCategory = item.mergeCategory,
           items = mutableListOf<ChatItem>().also { it.add(item) },
@@ -165,8 +175,8 @@ fun List<ChatItem>.putIntoSections(revealedItems: Set<Long>): List<ChatSection> 
               it.add(item.id)
             }
           },
-          itemPositions = mutableMapOf(item.id to index),
         )
+        existingSection.itemPositions[item.id] = positionInList
         existingSection.items.add(newSectionItems)
       }
       existingSection.boundary.maxIndex = index
@@ -176,6 +186,17 @@ fun List<ChatItem>.putIntoSections(revealedItems: Set<Long>): List<ChatSection> 
   }
 
   return sections
+}
+
+fun List<ChatSection>.chatItemPosition(chatItemId: Long): Int? {
+  for (section in this) {
+    val position = section.itemPositions[chatItemId]
+    if (position != null) {
+      return position
+    }
+  }
+
+  return null
 }
 
 fun List<ChatSection>.dropTemporarySections() {

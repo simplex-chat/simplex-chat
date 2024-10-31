@@ -1020,10 +1020,13 @@ fun BoxWithConstraintsScope.ChatItemsList(
         .collect {
           revealedItems.value = setOf()
           preloadItemsEnabled.value = true
-          val firstUnreadItemIndex = reversedChatItems.indexOfLast { it.isRcvNew }
-          if (firstUnreadItemIndex != -1) {
-            listState.scrollToItem(scrollPosition(firstUnreadItemIndex), -maxHeightRounded)
-            val firstUnreadItem = chatModel.chatItems[firstUnreadItemIndex]
+          val firstUnreadItem = reversedChatItems.findLast { it.isRcvNew }
+          if (firstUnreadItem != null) {
+            val firstUnreadItemIndexIdx = sections.find { it.area == ChatSectionArea.Current }?.itemPositions?.get(firstUnreadItem.id)
+            if (firstUnreadItemIndexIdx != null) {
+              listState.scrollToItem(scrollPosition(firstUnreadItemIndexIdx), -maxHeightRounded)
+            }
+
             if (chatModel.chatItemsSectionArea[firstUnreadItem.id] != ChatSectionArea.Bottom) {
               withBGApi {
                 val chat = chatController.apiGetChat(rh = remoteHostId, type = chatInfo.chatType, id = chatInfo.apiId)
@@ -1052,10 +1055,10 @@ fun BoxWithConstraintsScope.ChatItemsList(
   }
 
   val scrollToItem: (Long) -> Unit = { itemId: Long ->
-    val index = reversedChatItems.indexOfFirst { it.id == itemId }
+    val index = sections.chatItemPosition(itemId)
     preloadItemsEnabled.value = false
 
-    if (index != -1) {
+    if (index != null) {
       scope.launch {
         listState.animateScrollToItem(scrollPosition(index), -maxHeightRounded)
         preloadItemsEnabled.value = true
@@ -1072,18 +1075,20 @@ fun BoxWithConstraintsScope.ChatItemsList(
           }
           val chatSectionLoad = ChatSectionLoad(0, ChatSectionArea.Destination)
           apiLoadMessagesAroundItem(rhId = remoteHostId, chatModel = chatModel, chatInfo = chatInfo, aroundItemId = itemId, chatSectionLoad = chatSectionLoad)
-          val idx = reversedChatItems.indexOfFirst { it.id == itemId }
 
           scope.launch {
-            listState.animateScrollToItem(scrollPosition(idx), -maxHeightRounded)
-            withContext(Dispatchers.Main) {
-              if (!itemsToDrop.isNullOrEmpty()) {
-                itemsToDrop.forEach {
-                  chatModel.chatItemsSectionArea.remove(it.id)
+            val idx = sections.chatItemPosition(itemId)
+            if (idx != null) {
+              listState.animateScrollToItem(scrollPosition(idx), -maxHeightRounded)
+              withContext(Dispatchers.Main) {
+                if (!itemsToDrop.isNullOrEmpty()) {
+                  itemsToDrop.forEach {
+                    chatModel.chatItemsSectionArea.remove(it.id)
+                  }
+                  chatModel.chatItems.value.removeIf { chatModel.chatItemsSectionArea[it.id] == null }
+                  val newIdx = reversedChatItems.indexOfFirst { it.id == itemId }
+                  listState.scrollToItem(scrollPosition(newIdx), -maxHeightRounded)
                 }
-                chatModel.chatItems.value.removeIf { chatModel.chatItemsSectionArea[it.id] == null }
-                val newIdx = reversedChatItems.indexOfFirst { it.id == itemId }
-                listState.scrollToItem(scrollPosition(newIdx), -maxHeightRounded)
               }
             }
             preloadItemsEnabled.value = true
@@ -1364,7 +1369,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
             // index here is just temporary, should be removed at all or put in the section items
             val prevItem = area.getPreviousShownItem(sIdx, i)
             val nextItem = area.getNextShownItem(sIdx, i)
-            ChatViewListItem(section.itemPositions[cItem.id] ?: -1, section, cItem, prevItem, nextItem)
+            ChatViewListItem(area.itemPositions[cItem.id] ?: -1, section, cItem, prevItem, nextItem)
           }
         } else {
           val item = section.items.first()
@@ -1372,7 +1377,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
             // here you make one collapsed item from multiple items (should be already in section items)
             val prevItem = area.getPreviousShownItem(sIdx, section.items.lastIndex)
             val nextItem = area.getNextShownItem(sIdx, section.items.lastIndex)
-            ChatViewListItem(section.itemPositions[item.id] ?: -1, section, item, prevItem, nextItem)
+            ChatViewListItem(area.itemPositions[item.id] ?: -1, section, item, prevItem, nextItem)
           }
         }
       }
