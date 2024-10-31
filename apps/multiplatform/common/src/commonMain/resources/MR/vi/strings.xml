@@ -1089,4 +1089,24 @@
     <string name="compose_message_placeholder">Tin nhắn</string>
     <string name="message_servers">Máy chủ tin nhắn</string>
     <string name="media_and_file_servers">Máy chủ tệp và phương tiện</string>
+    <string name="notification_preview_mode_message">Nội dung tin nhắn</string>
+    <string name="forward_files_messages_deleted_after_selection_desc">Tin nhắn đã bị xóa sau khi bạn chọn chúng.</string>
+    <string name="unblock_member_desc">Tin nhắn từ %s sẽ được hiển thị!</string>
+    <string name="info_row_message_status">Trạng thái tin nhắn</string>
+    <string name="servers_info_messages_received">Tin nhắn đã được nhận</string>
+    <string name="servers_info_messages_sent">Tin nhắn đã được gửi</string>
+    <string name="share_text_message_status">Trạng thái tin nhắn: %s</string>
+    <string name="message_too_large">Tin nhắn quá lớn</string>
+    <string name="e2ee_info_no_pq">Tin nhắn, tệp, và cuộc gọi được bảo vệ bởi <b>mã hóa đầu cuối</b>với bí mật chuyển tiếp hoàn hảo, sự cự tuyệt và khôi phục xâm nhập.</string>
+    <string name="delete_message_cannot_be_undone_warning">Tin nhắn sẽ bị xóa - việc này không thể được hoàn tác!</string>
+    <string name="migrate_from_another_device">Di chuyển từ một thiết bị khác</string>
+    <string name="delete_messages_cannot_be_undone_warning">Tin nhắn sẽ bị xóa - việc này không thể được hoàn tác!</string>
+    <string name="delete_message_mark_deleted_warning">Tin nhắn sẽ được đánh dấu để xóa. Người nhận sẽ có thể xem lại những tin nhắn này.</string>
+    <string name="e2ee_info_pq">Tin nhắn, tệp và cuộc gọi được bảo vệ bởi <b> mã hóa đầu cuối kháng lượng tử</b> với bí mật chuyển tiếp hoàn hảo, sự cự tuyệt và khôi phục xâm nhập.</string>
+    <string name="permissions_record_audio">Mic</string>
+    <string name="settings_section_title_message_shape">Hình dạng tin nhắn</string>
+    <string name="v5_7_forward_descr">Nguồn tin nhắn vẫn còn riêng tư.</string>
+    <string name="migrate_from_device_title">Di chuyển thiết bị</string>
+    <string name="delete_messages_mark_deleted_warning">Tin nhắn sẽ được đánh dấu để xóa. Người nhận sẽ có thể xem lại những tin nhắn này.</string>
+    <string name="migrate_to_device_title">Di chuyển tới đây</string>
 </resources>
