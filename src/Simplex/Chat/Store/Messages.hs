@@ -1086,15 +1086,12 @@ getDirectChatAround_ db user ct@Contact {contactId} aroundItemId count search = 
 
 getDirectChatInitial_ :: DB.Connection -> User -> Contact -> Int -> ExceptT StoreError IO (Chat 'CTDirect, ChatLandingSection)
 getDirectChatInitial_ db user@User {userId} ct@Contact {contactId} count = do
-  firstUnreadItem <- liftIO getDirectChatMinUnreadItemId_
-  case firstUnreadItem of
+  firstUnreadItemId_ <- liftIO getDirectChatMinUnreadItemId_
+  case firstUnreadItemId_ of
     Just firstUnreadItemId -> do
       chat <- getDirectChatAround_ db user ct firstUnreadItemId count ""
-      let Chat {chatItems} = chat
-      let chatItemIds = map (cchatItemId) chatItems
       lastItemId <- liftIO $ getDirectChatItemIdsLast_ db user ct 1 ""
-      let lastItemIdInChat = head lastItemId `elem` chatItemIds
-      pure (chat, if lastItemIdInChat then CLSLatest else CLSUnread)
+      pure (chat, landingSection chat lastItemId)
     Nothing -> liftIO $ (,CLSLatest) <$> getDirectChatLast_ db user ct count ""
   where
     getDirectChatMinUnreadItemId_ :: IO (Maybe ChatItemId)
@@ -1108,6 +1105,11 @@ getDirectChatInitial_ db user@User {userId} ct@Contact {contactId} count = do
             WHERE user_id = ? AND contact_id = ? AND item_status = ?
           |]
           (userId, contactId, CISRcvNew)
+    landingSection :: Chat 'CTDirect -> [ChatItemId] -> ChatLandingSection
+    landingSection Chat {chatItems} [lastItemId] = do
+      let lastItemIdInChat = foldr (\ci acc -> acc || cchatItemId ci == lastItemId) False chatItems
+      if lastItemIdInChat then CLSLatest else CLSUnread
+    landingSection _ _ = CLSUnread
 
 getGroupChat :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTGroup, ChatLandingSection)
 getGroupChat db vr user groupId pagination search_ = do
