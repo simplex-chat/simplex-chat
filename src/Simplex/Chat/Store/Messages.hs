@@ -1250,15 +1250,12 @@ getGroupChatAround_ db user g@GroupInfo {groupId} aroundItemId count search = do
 
 getGroupChatInitial_ :: DB.Connection -> User -> GroupInfo -> Int -> ExceptT StoreError IO (Chat 'CTGroup, ChatLandingSection)
 getGroupChatInitial_ db user@User {userId} g@GroupInfo {groupId} count = do
-  firstUnreadItem <- liftIO getGroupChatMinUnreadItemId_
-  case firstUnreadItem of
+  firstUnreadItemId_ <- liftIO getGroupChatMinUnreadItemId_
+  case firstUnreadItemId_ of
     Just firstUnreadItemId -> do
       chat <- getGroupChatAround_ db user g firstUnreadItemId count ""
-      let Chat {chatItems} = chat
-      let chatItemIds = map (cchatItemId) chatItems
       lastItemId <- liftIO $ getGroupChatItemIdsLast_ db user g 1 ""
-      let lastItemIdInChat = head lastItemId `elem` chatItemIds
-      pure (chat, if lastItemIdInChat then CLSLatest else CLSUnread)
+      pure (chat, landingSection chat lastItemId)
     Nothing -> liftIO $ (,CLSLatest) <$> getGroupChatLast_ db user g count ""
   where
     getGroupChatMinUnreadItemId_ :: IO (Maybe ChatItemId)
@@ -1395,15 +1392,12 @@ getLocalChatAround_ db user nf@NoteFolder {noteFolderId} aroundItemId count sear
 
 getLocalChatInitial_ :: DB.Connection -> User -> NoteFolder -> Int -> ExceptT StoreError IO (Chat 'CTLocal, ChatLandingSection)
 getLocalChatInitial_ db user@User {userId} nf@NoteFolder {noteFolderId} count = do
-  firstUnreadItem <- liftIO getLocalChatMinUnreadItemId_
-  case firstUnreadItem of
+  firstUnreadItemId_ <- liftIO getLocalChatMinUnreadItemId_
+  case firstUnreadItemId_ of
     Just firstUnreadItemId -> do
       chat <- getLocalChatAround_ db user nf firstUnreadItemId count ""
-      let Chat {chatItems} = chat
-      let chatItemIds = map (cchatItemId) chatItems
       lastItemId <- liftIO $ getLocalChatItemIdsLast_ db user nf 1 ""
-      let lastItemIdInChat = head lastItemId `elem` chatItemIds
-      pure (chat, if lastItemIdInChat then CLSLatest else CLSUnread)
+      pure (chat, landingSection chat lastItemId)
     Nothing -> liftIO $ (,CLSLatest) <$> getLocalChatLast_ db user nf count ""
   where
     getLocalChatMinUnreadItemId_ :: IO (Maybe ChatItemId)
