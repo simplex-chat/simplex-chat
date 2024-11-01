@@ -13,6 +13,7 @@ import SimpleXChat
 
 struct OperatorView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
+    @Environment(\.colorScheme) var colorScheme: ColorScheme
     @EnvironmentObject var theme: AppTheme
     @Binding var serverOperator: ServerOperator
     @State var serverOperatorToEdit: ServerOperator
@@ -92,7 +93,7 @@ struct OperatorView: View {
                 .navigationBarTitleDisplayMode(.large)
         } label: {
             HStack {
-                Image(serverOperator.info.logo)
+                Image(serverOperator.logo(colorScheme))
                     .resizable()
                     .scaledToFit()
                     .grayscale(serverOperatorToEdit.enabled ? 0.0 : 1.0)

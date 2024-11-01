@@ -31,6 +31,7 @@ private enum NetworkAndServersSheet: Identifiable {
 
 struct NetworkAndServers: View {
     @EnvironmentObject var m: ChatModel
+    @Environment(\.colorScheme) var colorScheme: ColorScheme
     @EnvironmentObject var theme: AppTheme
     @State private var serverOperators: [ServerOperator] = []
     @State private var sheetItem: NetworkAndServersSheet? = nil
@@ -150,7 +151,7 @@ struct NetworkAndServers: View {
             .navigationBarTitleDisplayMode(.large)
         } label: {
             HStack {
-                Image(srvOperator.info.logo)
+                Image(srvOperator.logo(colorScheme))
                     .resizable()
                     .scaledToFit()
                     .grayscale(srvOperator.enabled ? 0.0 : 1.0)
