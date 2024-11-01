@@ -46,6 +46,7 @@ struct SetNotificationsMode: View {
                         }
                     }
                     .buttonStyle(OnboardingButtonStyle())
+                    .padding(.horizontal)
                     .padding(.bottom)
                 }
                 .padding()
