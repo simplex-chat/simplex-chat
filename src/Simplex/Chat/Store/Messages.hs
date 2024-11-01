@@ -1105,11 +1105,12 @@ getDirectChatInitial_ db user@User {userId} ct@Contact {contactId} count = do
             WHERE user_id = ? AND contact_id = ? AND item_status = ?
           |]
           (userId, contactId, CISRcvNew)
-    landingSection :: Chat 'CTDirect -> [ChatItemId] -> ChatLandingSection
-    landingSection Chat {chatItems} [lastItemId] = do
-      let lastItemIdInChat = foldr (\ci acc -> acc || cchatItemId ci == lastItemId) False chatItems
-      if lastItemIdInChat then CLSLatest else CLSUnread
-    landingSection _ _ = CLSUnread
+
+landingSection :: Chat c -> [ChatItemId] -> ChatLandingSection
+landingSection Chat {chatItems} [lastItemId] = do
+  let lastItemIdInChat = foldr (\ci acc -> acc || cchatItemId ci == lastItemId) False chatItems
+  if lastItemIdInChat then CLSLatest else CLSUnread
+landingSection _ _ = CLSUnread
 
 getGroupChat :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTGroup, ChatLandingSection)
 getGroupChat db vr user groupId pagination search_ = do
