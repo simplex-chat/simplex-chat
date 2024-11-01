@@ -26,6 +26,7 @@ struct OnboardingButtonStyle: ButtonStyle {
 }
 
 struct ChooseServerOperators: View {
+    @Environment(\.colorScheme) var colorScheme: ColorScheme
     @EnvironmentObject var theme: AppTheme
     @State private var showInfoSheet = false
     @State private var serverOperators: [ServerOperator] = []
@@ -99,7 +100,7 @@ struct ChooseServerOperators: View {
         let icon = checked ? "checkmark.circle.fill" : "circle"
         let iconColor = checked ? theme.colors.primary : Color(uiColor: .tertiaryLabel).asAnotherColorFromSecondary(theme)
         HStack(spacing: 10) {
-            Image(serverOperator.info.largeLogo)
+            Image(serverOperator.largeLogo(colorScheme))
                 .resizable()
                 .scaledToFit()
                 .frame(height: 48)

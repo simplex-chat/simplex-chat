@@ -1204,27 +1204,35 @@ public struct ServerOperatorInfo: Decodable {
     public var description: String
     public var website: String
     public var logo: String
-    public var largeLogo: String // TODO light/dark
+    public var largeLogo: String
+    public var logoDarkMode: String
+    public var largeLogoDarkMode: String
 }
 
 public let operatorsInfo: Dictionary<OperatorTag, ServerOperatorInfo> = [
     .simplex: ServerOperatorInfo(
         description: "SimpleX Chat preset servers",
         website: "https://simplex.chat",
-        logo: "icon-transparent",
-        largeLogo: "logo"
+        logo: "decentralized",
+        largeLogo: "logo",
+        logoDarkMode: "decentralized-light",
+        largeLogoDarkMode: "logo-light"
     ),
     .xyz: ServerOperatorInfo(
         description: "XYZ servers",
         website: "XYZ website",
         logo: "shield",
-        largeLogo: "logo"
+        largeLogo: "logo",
+        logoDarkMode: "shield",
+        largeLogoDarkMode: "logo-light"
     ),
     .demo: ServerOperatorInfo(
         description: "Demo operator",
         website: "Demo website",
-        logo: "icon-transparent",
-        largeLogo: "logo"
+        logo: "decentralized",
+        largeLogo: "logo",
+        logoDarkMode: "decentralized-light",
+        largeLogoDarkMode: "logo-light"
     )
 ]
 
@@ -1261,7 +1269,23 @@ public struct ServerOperator: Identifiable, Decodable {
     public var id: Int64 { operatorId }
 
     public var info: ServerOperatorInfo {
-        operatorsInfo[tag] ?? ServerOperatorInfo(description: "Default", website: "Default", logo: "icon-transparent", largeLogo: "logo")
+        operatorsInfo[tag] ??
+        ServerOperatorInfo(
+            description: "Default",
+            website: "Default",
+            logo: "decentralized",
+            largeLogo: "logo",
+            logoDarkMode: "decentralized-light",
+            largeLogoDarkMode: "logo-light"
+        )
+    }
+
+    public func logo(_ colorScheme: ColorScheme) -> String {
+        colorScheme == .light ? info.logo : info.logoDarkMode
+    }
+
+    public func largeLogo(_ colorScheme: ColorScheme) -> String {
+        colorScheme == .light ? info.largeLogo : info.largeLogoDarkMode
     }
 
     public static var sampleData1 = ServerOperator(
