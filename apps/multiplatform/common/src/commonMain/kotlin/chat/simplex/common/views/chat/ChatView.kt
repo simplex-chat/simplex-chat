@@ -1034,6 +1034,7 @@ fun BoxScope.ChatItemsList(
         }
     }
   }
+  val chatInfoUpdated = rememberUpdatedState(chatInfo)
   val scrollToItem: State<(Long) -> Unit> = remember {
     mutableStateOf({ itemId: Long ->
       val index = sections.value.chatItemPosition(itemId)
@@ -1057,7 +1058,7 @@ fun BoxScope.ChatItemsList(
             val chatSectionLoader = ChatSectionLoader(0, ChatSectionArea.Destination)
             apiLoadMessages(
               rhId = remoteHostId,
-              chatInfo = chatInfo,
+              chatInfo = chatInfoUpdated.value,
               chatModel = chatModel,
               itemId = itemId,
               search = "",
