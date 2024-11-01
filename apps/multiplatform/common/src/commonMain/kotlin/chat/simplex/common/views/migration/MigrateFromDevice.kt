@@ -149,9 +149,7 @@ private fun MigrateFromDeviceLayout(
 ) {
   val tempDatabaseFile = rememberSaveable { mutableStateOf(fileForTemporaryDatabase()) }
 
-  ColumnWithScrollBar(
-    Modifier.fillMaxSize(), maxIntrinsicSize = true
-  ) {
+  ColumnWithScrollBar(maxIntrinsicSize = true) {
     AppBarTitle(stringResource(MR.strings.migrate_from_device_title))
     SectionByState(migrationState, tempDatabaseFile.value, chatReceiver)
     SectionBottomSpacer()

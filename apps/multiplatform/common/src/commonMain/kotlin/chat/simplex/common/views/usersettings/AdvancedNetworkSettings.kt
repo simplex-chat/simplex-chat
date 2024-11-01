@@ -202,10 +202,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
 ) {
   val secondsLabel = stringResource(MR.strings.network_option_seconds_label)
 
-  ColumnWithScrollBar(
-    Modifier
-      .fillMaxWidth(),
-  ) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.network_settings_title))
 
     if (currentRemoteHost == null) {
@@ -328,9 +325,7 @@ private fun SMPProxyModePicker(
     icon = painterResource(MR.images.ic_settings_ethernet),
     onSelected = {
       showModal {
-        ColumnWithScrollBar(
-          Modifier.fillMaxWidth(),
-        ) {
+        ColumnWithScrollBar {
           AppBarTitle(stringResource(MR.strings.network_smp_proxy_mode_private_routing))
           SectionViewSelectableCards(null, smpProxyMode, values, updateSMPProxyMode)
         }
@@ -365,9 +360,7 @@ private fun SMPProxyFallbackPicker(
     enabled = enabled,
     onSelected = {
       showModal {
-        ColumnWithScrollBar(
-          Modifier.fillMaxWidth(),
-        ) {
+        ColumnWithScrollBar {
           AppBarTitle(stringResource(MR.strings.network_smp_proxy_fallback_allow_downgrade))
           SectionViewSelectableCards(null, smpProxyFallback, values, updateSMPProxyFallback)
         }

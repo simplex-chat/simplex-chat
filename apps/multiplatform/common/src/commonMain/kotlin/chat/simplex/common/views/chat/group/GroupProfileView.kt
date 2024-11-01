@@ -82,10 +82,9 @@ fun GroupProfileLayout(
       }, close)
     }
   }
-  ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
     ModalBottomSheetLayout(
       scrimColor = Color.Black.copy(alpha = 0.12F),
-      modifier = Modifier.navigationBarsWithImePadding(),
+      modifier = Modifier.imePadding(),
       sheetContent = {
         GetImageBottomSheet(
           chosenImage,
@@ -98,9 +97,7 @@ fun GroupProfileLayout(
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
       ModalView(close = closeWithAlert) {
-        ColumnWithScrollBar(
-          Modifier
-        ) {
+        ColumnWithScrollBar {
           Column(
             Modifier.fillMaxWidth()
               .padding(horizontal = DEFAULT_PADDING)
@@ -177,7 +174,6 @@ fun GroupProfileLayout(
         }
       }
     }
-  }
 }
 
 private fun canUpdateProfile(displayName: String, groupProfile: GroupProfile): Boolean =
