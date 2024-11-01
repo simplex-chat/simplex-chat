@@ -1667,10 +1667,23 @@ instance ToJSON ChatVersionRange where
   toJSON (ChatVersionRange vr) = strToJSON vr
   toEncoding (ChatVersionRange vr) = strToJEncoding vr
 
+data ServerOperatorTag
+  = SOTSimplex
+  | SOTXyz
+  deriving (Show)
+
+data UsageConditionsAcceptance
+  = UCAAccepted {date :: UTCTime}
+  | UCAReviewAvailable {deadline :: UTCTime}
+  | UCAReviewRequired
+  deriving (Show)
+
 data ServerOperator = ServerOperator
   { operatorId :: Maybe OperatorId, -- it is Maybe to use this type to create new operators from the UI
     name :: Text,
-    preset :: Bool,
+    tag :: ServerOperatorTag,
+    conditionsAcceptance :: UsageConditionsAcceptance,
+    -- preset :: Bool,
     enabled :: Bool,
     roles :: ServerRoles
   }

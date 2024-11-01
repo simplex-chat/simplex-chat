@@ -346,8 +346,19 @@ data ChatCommand
   | APIGetGroupLink GroupId
   | APICreateMemberContact GroupId GroupMemberId
   | APISendMemberContactInvitation {contactId :: ContactId, msgContent_ :: Maybe MsgContent}
+  -- across all users possibly; or active, and show global indication per user;
+  -- response is CROperatorsInfo
+  | APIGetOperatorsInfo
+  -- same - for UserId?
+  -- response is CROk, or list of updated operators (not necessary as update in ui is trivial)
+  | APIAcceptConditionsForEnabledOperators UTCTime
+  -- same; in core could do only with this api -
+  -- acceptConditionsForEnabledOperators would go through it in UI;
+  -- Bool is whether operators should also be enabled (required on onboarding)
+  | APIAcceptConditionsForOperators (NonEmpty ServerOperator) UTCTime Bool
   | APIGetUserProtoServers UserId AProtocolType
   | GetUserProtoServers AProtocolType
+  | APIValidateUserServers UserId AProtoServersConfig -- response is CRUserServersValidation
   | APISetUserProtoServers UserId AProtoServersConfig
   | SetUserProtoServers AProtoServersConfig
   | APITestProtoServer UserId AProtoServerWithAuth
@@ -577,7 +588,11 @@ data ChatResponse
   | CRChatItemInfo {user :: User, chatItem :: AChatItem, chatItemInfo :: ChatItemInfo}
   | CRChatItemId User (Maybe ChatItemId)
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
+  | CROperatorsInfo {operator :: [ServerOperator]} -- for loading operators into ChatModel
+  | CRUserServersValidation ServersValidationResult
   | CRUserProtoServers {user :: User, servers :: AUserProtoServers, operators :: [ServerOperator]}
+  -- changed to:
+  -- | CRUserProtoServers {user :: User, servers :: Map (Maybe ServerOperator) UserServers}
   | CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure}
   | CRChatItemTTL {user :: User, chatItemTTL :: Maybe Int64}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
@@ -945,9 +960,32 @@ instance ToJSON AgentQueueId where
 data ProtoServersConfig p = ProtoServersConfig {operators :: Maybe [ServerOperator], servers :: [ServerCfg p]}
   deriving (Show)
 
+-- changed to:
+-- data ProtoServersConfig p = ProtoServersConfig {servers :: Map (Maybe ServerOperator) UserServers}
+--   deriving (Show)
+
 data AProtoServersConfig = forall p. ProtocolTypeI p => APSC (SProtocolType p) (ProtoServersConfig p)
 
 deriving instance Show AProtoServersConfig
+
+data UserServers = UserServers {
+  smpServers :: AUserProtoServers, -- possibly simplify type UserProtoServers type - preset are not needed
+  xftpServers :: AUserProtoServers
+}
+
+-- approximation
+data ServersValidationResult
+  = SVROk
+  | SVRServerErrors {smpValidation :: Map SMPServer ServerValidationResult, xftpValidation :: Map XFTPServer ServerValidationResult}
+  | SVRNoStorageRole -- no operator has storage role, and custom servers are not configured
+  | SVRNoProxyRole -- no operator has proxy role, and custom servers are not configured
+  deriving (Show)
+
+data ServerValidationResult
+  = SVRSrvOk
+  | SVRSrvInvalidAddress
+  | SVRSrvNotUnique
+  deriving (Show)
 
 data UserProtoServers p = UserProtoServers
   { serverProtocol :: SProtocolType p,
