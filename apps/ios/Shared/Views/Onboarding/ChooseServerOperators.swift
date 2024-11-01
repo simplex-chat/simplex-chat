@@ -206,9 +206,10 @@ struct ChooseServerOperators: View {
     private func reviewConditionsDestinationView() -> some View {
         UsageConditionsView(
             showTitle: false,
+            dismissOnAccept: false,
             conditionsAction: .reviewUpdatedConditions(acceptForOperators: acceptForOperators, deadline: nil),
-            onAcceptAction: {
-                ChatModel.shared.enableServerOperators(acceptForOperators)
+            onAcceptAction: { date in
+                ChatModel.shared.acceptConditionsForOperators(acceptForOperators, date, enable: true)
                 withAnimation {
                     onboardingStageDefault.set(.step4_SetNotificationsMode)
                     ChatModel.shared.onboardingStage = .step4_SetNotificationsMode

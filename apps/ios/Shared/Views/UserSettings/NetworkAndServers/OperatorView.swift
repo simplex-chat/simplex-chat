@@ -353,9 +353,10 @@ struct SingleOperatorUsageConditionsView: View {
 struct UsageConditionsView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var theme: AppTheme
-    var showTitle: Bool
+    var showTitle: Bool // When shown on sheet
+    var dismissOnAccept: Bool // When shown on sheet
     var conditionsAction: UsageConditionsAction
-    var onAcceptAction: (() -> Void)?
+    var onAcceptAction: ((Date) -> Void)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -401,11 +402,8 @@ struct UsageConditionsView: View {
             Button {
                 // Should call api to save state here, not when saving all servers
                 // (It's counterintuitive to lose to closed sheet or Reset)
-                let date = Date.now
-                ChatModel.shared.acceptConditionsForOperators(acceptForOperators, date)
-                if let onAcceptAction = onAcceptAction {
-                    onAcceptAction()
-                } else {
+                onAcceptAction(Date.now)
+                if dismissOnAccept{
                     dismiss()
                 }
             } label: {
