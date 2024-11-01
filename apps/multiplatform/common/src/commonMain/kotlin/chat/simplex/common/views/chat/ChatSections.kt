@@ -33,6 +33,7 @@ data class SectionItems (
   val items: MutableList<ChatItem>,
   val revealed: Boolean,
   val showAvatar: MutableSet<Long>,
+  var originalItemsRange: IntRange
 )
 
 data class ChatSectionLoader (
@@ -105,7 +106,8 @@ fun List<ChatItem>.putIntoSections(revealedItems: Set<Long>): List<ChatSection> 
             it.add(first.id)
           }
         }
-      }
+      },
+      originalItemsRange = 0..0
     )
   } else {
     return emptyList()
@@ -142,6 +144,7 @@ fun List<ChatItem>.putIntoSections(revealedItems: Set<Long>): List<ChatSection> 
         showAvatar = mutableSetOf<Long>().also {
           it.add(item.id)
         },
+        originalItemsRange = index..index
       )
       sections.add(
         ChatSection(
@@ -160,8 +163,8 @@ fun List<ChatItem>.putIntoSections(revealedItems: Set<Long>): List<ChatSection> 
         if (item.chatDir is CIDirection.GroupRcv && prev.chatDir is CIDirection.GroupRcv && item.chatDir.groupMember.memberId != (prev.chatDir as CIDirection.GroupRcv).groupMember.memberId) {
           recent.showAvatar.add(item.id)
         }
-
         recent.items.add(item)
+        recent.originalItemsRange = recent.originalItemsRange.first..index
         existingSection.itemPositions[item.id] = positionInList
       } else {
         positionInList++
@@ -174,6 +177,7 @@ fun List<ChatItem>.putIntoSections(revealedItems: Set<Long>): List<ChatSection> 
               it.add(item.id)
             }
           },
+          originalItemsRange = index..index
         )
         existingSection.itemPositions[item.id] = positionInList
         existingSection.items.add(newSectionItems)

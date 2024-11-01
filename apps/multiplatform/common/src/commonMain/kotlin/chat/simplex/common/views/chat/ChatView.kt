@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.CIDirection.GroupRcv
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.model.ChatModel.chatItems
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.ui.theme.*
@@ -1104,7 +1105,7 @@ fun BoxScope.ChatItemsList(
     }
   )
   @Composable
-  fun ChatViewListItem(i: Int, sectionItems: SectionItems, cItem: ChatItem, prevItem: ChatItem?, nextItem: ChatItem?) {
+  fun ChatViewListItem(i: Int, range: IntRange?, showAvatar: Boolean, cItem: ChatItem, prevItem: ChatItem?, nextItem: ChatItem?) {
       CompositionLocalProvider(
         // Makes horizontal and vertical scrolling to coexist nicely.
         // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view
@@ -1125,7 +1126,7 @@ fun BoxScope.ChatItemsList(
       val revealed = remember { mutableStateOf(revealedItems.value.contains(cItem.id)) }
 
       KeyChangeEffect(revealed.value) {
-        val revealIds = if (cItem.mergeCategory == null) setOf(cItem.id) else sectionItems.items.map { it.id }.toSet()
+        val revealIds = if (range == null) setOf(cItem.id) else reversedChatItems.value.subList(range.first, range.last + 1).map { it.id }.toSet()
 
         if (revealIds.isNotEmpty()) {
           if (revealed.value) {
@@ -1210,7 +1211,7 @@ fun BoxScope.ChatItemsList(
                   null to 1
                 }
 
-              if (showMemberImage(member, prevItem) || sectionItems.showAvatar.contains(cItem.id)) {
+              if (showMemberImage(member, prevItem) || showAvatar) {
                 Column(
                   Modifier
                     .padding(top = 8.dp)
@@ -1336,14 +1337,20 @@ fun BoxScope.ChatItemsList(
         LaunchedEffect(cItem.id) {
           itemScope.launch {
             delay(600)
-            val range = if (sectionItems.mergeCategory != null) {
-              val firstItem = sectionItems.items.first()
-              val lastItem = sectionItems.items.last()
-              CC.ItemRange(lastItem.id, firstItem.id)
+            val itemRange = if (range != null) {
+              val firstItem = reversedChatItems.value.getOrNull(range.first)
+              val lastItem = reversedChatItems.value.getOrNull(range.last)
+              if (lastItem != null && firstItem != null) {
+                CC.ItemRange(lastItem.id, firstItem.id)
+              } else {
+                null
+              }
             } else {
               CC.ItemRange(cItem.id, cItem.id)
             }
-            markRead(range, null)
+            if (itemRange != null) {
+              markRead(itemRange, null)
+            }
           }
         }
       }
@@ -1355,7 +1362,7 @@ fun BoxScope.ChatItemsList(
         DateSeparator(itemSeparation.date)
       }
 
-      ChatItemView(cItem, null, prevItem, itemSeparation, previousItemSeparation)
+      ChatItemView(cItem, range, prevItem, itemSeparation, previousItemSeparation)
     }
   }
   LazyColumnWithScrollBar(
@@ -1375,7 +1382,7 @@ fun BoxScope.ChatItemsList(
             // index here is just temporary, should be removed at all or put in the section items
             val prevItem = area.getPreviousShownItem(sIdx, i)
             val nextItem = area.getNextShownItem(sIdx, i)
-            ChatViewListItem(area.itemPositions[cItem.id] ?: -1, section, cItem, prevItem, nextItem)
+            ChatViewListItem(area.itemPositions[cItem.id] ?: -1, section.originalItemsRange.takeIf { cItem.mergeCategory != null }, section.showAvatar.contains(cItem.id), cItem, prevItem, nextItem, )
           }
         } else {
           val item = section.items.first()
@@ -1383,7 +1390,7 @@ fun BoxScope.ChatItemsList(
             // here you make one collapsed item from multiple items (should be already in section items)
             val prevItem = area.getPreviousShownItem(sIdx, section.items.lastIndex)
             val nextItem = area.getNextShownItem(sIdx, section.items.lastIndex)
-            ChatViewListItem(area.itemPositions[item.id] ?: -1, section, item, prevItem, nextItem)
+            ChatViewListItem(area.itemPositions[item.id] ?: -1, section.originalItemsRange, section.showAvatar.contains(item.id), item, prevItem, nextItem)
           }
         }
       }
