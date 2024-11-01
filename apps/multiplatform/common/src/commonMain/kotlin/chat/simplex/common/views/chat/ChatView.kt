@@ -1011,11 +1011,11 @@ fun BoxScope.ChatItemsList(
           if (revealedItems.value.isNotEmpty()) {
             revealedItems.value = setOf()
           }
-          preloadItemsEnabled.value = true
           val firstUnreadItem = reversedChatItems.value.findLast { it.isRcvNew }
           if (firstUnreadItem != null) {
             val firstUnreadItemIndexIdx = sections.value.chatItemPosition(firstUnreadItem.id)
             if (firstUnreadItemIndexIdx != null) {
+              scrollAdjustmentEnabled.value = false
               listState.scrollToItem(scrollPosition.value(firstUnreadItemIndexIdx), -maxHeight.value)
             }
 
@@ -1027,10 +1027,12 @@ fun BoxScope.ChatItemsList(
                 } finally {
                   delay(600)
                   scrollAdjustmentEnabled.value = true
+                  preloadItemsEnabled.value = true
                 }
               }
             }
           }
+          preloadItemsEnabled.value = true
         }
     }
   }
@@ -1431,7 +1433,7 @@ private fun ScrollToBottom(chatId: ChatId, listState: LazyListState, chatItems: 
   // and prevents scrolling to bottom on orientation change
   var shouldAutoScroll by rememberSaveable { mutableStateOf(true to chatId) }
   LaunchedEffect(chatId, shouldAutoScroll) {
-    if ((shouldAutoScroll.first || shouldAutoScroll.second != chatId) && listState.firstVisibleItemIndex != 0) {
+    if ((shouldAutoScroll.first || shouldAutoScroll.second != chatId) && listState.firstVisibleItemIndex != 0 && enabled.value) {
       scope.launch { listState.scrollToItem(0) }
     }
     // Don't autoscroll next time until it will be needed
@@ -1597,9 +1599,8 @@ fun PreloadItems(
       }
 
       val request = if (allowLoad.value && section != null && enabled.value) {
-        val numberOfItemsInSection = section.maxIndex - section.minIndex + 1
         val itemIdx = when {
-          scrollDirection == ScrollDirection.Up && lastVisibleItemIndex > (section.maxIndex - remaining) && numberOfItemsInSection >= ChatPagination.INITIAL_COUNT -> {
+          scrollDirection == ScrollDirection.Up && lastVisibleItemIndex > (section.maxIndex - remaining) -> {
             chatModel.chatItems.size - 1 - section.maxIndex
           }
           scrollDirection == ScrollDirection.Down && listState.firstVisibleItemIndex < (section.minIndex + remaining) && totalItemsNumber > remaining -> {
