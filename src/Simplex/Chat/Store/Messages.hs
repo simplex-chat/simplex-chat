@@ -956,7 +956,9 @@ getDirectChat db vr user contactId pagination search_ = do
     CPAfter afterId count -> (,CLSLatest) <$> getDirectChatAfter_ db user ct afterId count search
     CPBefore beforeId count -> (,CLSLatest) <$> getDirectChatBefore_ db user ct beforeId count search
     CPAround aroundId count -> (,CLSLatest) <$> getDirectChatAround_ db user ct aroundId count search
-    CPInitial count -> getDirectChatInitial_ db user ct count
+    CPInitial count -> do
+      unless (null search) $ throwError $ SEInternalError "initial chat pagination doesn't support search"
+      getDirectChatInitial_ db user ct count
 
 -- the last items in reverse order (the last item in the conversation is the first in the returned list)
 getDirectChatLast_ :: DB.Connection -> User -> Contact -> Int -> String -> IO (Chat 'CTDirect)
@@ -1121,7 +1123,9 @@ getGroupChat db vr user groupId pagination search_ = do
     CPAfter afterId count -> (,CLSLatest) <$> getGroupChatAfter_ db user g afterId count search
     CPBefore beforeId count -> (,CLSLatest) <$> getGroupChatBefore_ db user g beforeId count search
     CPAround aroundId count -> (,CLSLatest) <$> getGroupChatAround_ db user g aroundId count search
-    CPInitial count -> getGroupChatInitial_ db user g count
+    CPInitial count -> do
+      unless (null search) $ throwError $ SEInternalError "initial chat pagination doesn't support search"
+      getGroupChatInitial_ db user g count
 
 getGroupChatLast_ :: DB.Connection -> User -> GroupInfo -> Int -> String -> IO (Chat 'CTGroup)
 getGroupChatLast_ db user g count search = do
@@ -1279,7 +1283,9 @@ getLocalChat db user folderId pagination search_ = do
     CPAfter afterId count -> (,CLSLatest) <$> getLocalChatAfter_ db user nf afterId count search
     CPBefore beforeId count -> (,CLSLatest) <$> getLocalChatBefore_ db user nf beforeId count search
     CPAround aroundId count -> (,CLSLatest) <$> getLocalChatAround_ db user nf aroundId count search
-    CPInitial count -> getLocalChatInitial_ db user nf count
+    CPInitial count -> do
+      unless (null search) $ throwError $ SEInternalError "initial chat pagination doesn't support search"
+      getLocalChatInitial_ db user nf count
 
 getLocalChatLast_ :: DB.Connection -> User -> NoteFolder -> Int -> String -> IO (Chat 'CTLocal)
 getLocalChatLast_ db user nf count search = do
@@ -1704,6 +1710,7 @@ getAllChatItems db vr user@User {userId} pagination search_ = do
       CPBefore beforeId count -> liftIO . getAllChatItemsBefore_ beforeId count . aChatItemTs =<< getAChatItem_ beforeId
       CPAround aroundId count -> liftIO . getAllChatItemsAround_ aroundId count . aChatItemTs =<< getAChatItem_ aroundId
       CPInitial count -> do
+        unless (null search) $ throwError $ SEInternalError "initial chat pagination doesn't support search"
         firstUnreadItemId <- liftIO getFirstUnreadItemId_
         case firstUnreadItemId of
           Just itemId -> liftIO . getAllChatItemsAround_ itemId count . aChatItemTs =<< getAChatItem_ itemId
