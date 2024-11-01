@@ -220,10 +220,9 @@ fun List<ChatSection>.revealedItemCount(): Int {
 fun List<ChatSection>.dropTemporarySections() {
   val bottomSection = this.find { it.boundary.area == ChatSectionArea.Bottom }
   if (bottomSection != null) {
-    val items = chatModel.chatItems.value
-    val itemsOutsideOfSection = items.size - 1 - bottomSection.boundary.maxIndex
+    val itemsOutsideOfSection =  chatModel.chatItems.value.size - 1 - bottomSection.boundary.maxIndex
     chatModel.chatItems.removeRange(fromIndex = 0, toIndex = itemsOutsideOfSection + bottomSection.excessItemCount())
-    chatModel.chatItemsSectionArea = mutableMapOf<Long, ChatSectionArea>().also { it.putAll(items.associate { it.id to ChatSectionArea.Bottom }) }
+    chatModel.chatItemsSectionArea = mutableMapOf<Long, ChatSectionArea>().also { it.putAll(chatModel.chatItems.value.associate { it.id to ChatSectionArea.Bottom }) }
   }
 }
 
