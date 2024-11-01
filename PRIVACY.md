@@ -21,7 +21,7 @@ permalink: /privacy/index.html
 
 [Conditions of Use](#conditions-of-use-of-software-and-infrastructure) are the conditions you need to accept to use SimpleX Chat applications and the relay servers of preset operators. Their purpose is to protect the users and preset server operators.
 
-This summary is provided for convenience only, it is not part of the Privacy Policy and Conditions of Use.
+*Please note*: this summary and any links in this document are provided for information only - they are not a part of the Privacy Policy and Conditions of Use.
 
 ## Introduction
 
