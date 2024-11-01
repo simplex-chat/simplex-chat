@@ -217,6 +217,7 @@ struct ChooseServerOperators: View {
     }
 }
 
+// TODO fix padding, dark mode
 struct ChooseServerOperatorsInfoView: View {
     var body: some View {
         VStack(alignment: .leading) {
