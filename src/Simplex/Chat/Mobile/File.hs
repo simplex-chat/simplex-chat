@@ -48,7 +48,7 @@ import Simplex.Messaging.Util (catchAll)
 import UnliftIO (Handle, IOMode (..), atomically, withFile)
 
 data WriteFileResult
-  = WFResult {cryptoArgs :: CryptoFileArgs}
+  = WFResult {cryptoArgs :: Maybe CryptoFileArgs}
   | WFError {writeError :: String}
 
 $(JQ.deriveToJSON (sumTypeJSON $ dropPrefix "WF") ''WriteFileResult)
@@ -61,27 +61,32 @@ cChatWriteFile cc cPath ptr len = do
   r <- chatWriteFile c path s
   newCStringFromLazyBS $ J.encode r
 
-cChatWriteImage :: StablePtr ChatController -> CLong -> CString -> Ptr Word8 -> CInt -> IO CJSONString
-cChatWriteImage cc maxSize cPath ptr len = do
+chatWriteFile :: ChatController -> FilePath -> ByteString -> IO WriteFileResult
+chatWriteFile ChatController {random} path s = do
+  cfArgs <- atomically $ CF.randomArgs random
+  chatWriteFile_ (Just cfArgs) path s
+
+chatWriteFile_ :: Maybe CryptoFileArgs -> FilePath -> ByteString -> IO WriteFileResult
+chatWriteFile_ cfArgs_ path s = do
+  let file = CryptoFile path cfArgs_
+  either WFError (\_ -> WFResult cfArgs_)
+    <$> runCatchExceptT (withExceptT show $ CF.writeFile file $ LB.fromStrict s)
+
+cChatWriteImage :: StablePtr ChatController -> CLong -> CString -> Ptr Word8 -> CInt -> CBool -> IO CJSONString
+cChatWriteImage cc maxSize cPath ptr len encrypt = do
   c <- deRefStablePtr cc
   path <- peekCString cPath
   src <- getByteString ptr len
+  cfArgs_ <- if encrypt /= 0 then Just <$> atomically (CF.randomArgs $ random c) else pure Nothing
   r <-
     case Picture.decodeResizeable src of
       Left e -> pure $ WFError e
       Right (ri, _metadata) -> do
-        let resized = resizeImageToSize True (fromIntegral maxSize) ri
+        let resized = resizeImageToSize False (fromIntegral maxSize) ri
         if LB.length resized > fromIntegral maxSize
           then pure $ WFError "unable to fit"
-          else chatWriteFile c path (LB.toStrict resized)
+          else chatWriteFile_ cfArgs_ path (LB.toStrict resized)
   newCStringFromLazyBS $ J.encode r
-
-chatWriteFile :: ChatController -> FilePath -> ByteString -> IO WriteFileResult
-chatWriteFile ChatController {random} path s = do
-  cfArgs <- atomically $ CF.randomArgs random
-  let file = CryptoFile path $ Just cfArgs
-  either WFError (\_ -> WFResult cfArgs)
-    <$> runCatchExceptT (withExceptT show $ CF.writeFile file $ LB.fromStrict s)
 
 data ReadFileResult
   = RFResult {fileSize :: Int}
@@ -124,7 +129,7 @@ chatEncryptFile ChatController {random} fromPath toPath =
     encrypt = do
       cfArgs <- atomically $ CF.randomArgs random
       encryptFile fromPath toPath cfArgs
-      pure cfArgs
+      pure $ Just cfArgs
 
 cChatDecryptFile :: CString -> CString -> CString -> CString -> IO CString
 cChatDecryptFile cFromPath cKey cNonce cToPath = do

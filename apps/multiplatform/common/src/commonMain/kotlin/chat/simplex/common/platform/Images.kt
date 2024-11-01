@@ -9,9 +9,9 @@ import java.net.URI
 expect fun base64ToBitmap(base64ImageString: String): ImageBitmap
 // XXX: Not a part of platform services anymore?
 expect fun resizeImageToStrSize(image: ImageBitmap, maxDataSize: Long): String
-expect fun resizeImageToDataSize(image: ImageBitmap, usePng: Boolean, maxDataSize: Long): ByteArrayOutputStream
+// expect fun resizeImageToDataSize(image: ImageBitmap, usePng: Boolean, maxDataSize: Long): ByteArrayOutputStream
 expect fun cropToSquare(image: ImageBitmap): ImageBitmap
-expect fun compressImageStr(bitmap: ImageBitmap): String
+// expect fun compressImageStr(bitmap: ImageBitmap): String
 expect fun compressImageData(bitmap: ImageBitmap, usePng: Boolean): ByteArrayOutputStream
 
 expect fun GrayU8.toImageBitmap(): ImageBitmap

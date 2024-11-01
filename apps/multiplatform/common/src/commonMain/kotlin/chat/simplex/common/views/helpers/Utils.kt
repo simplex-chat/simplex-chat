@@ -169,24 +169,19 @@ fun saveImage(image: ImageBitmap): CryptoFile? {
   return try {
     val encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get()
     val ext = if (image.hasAlpha()) "png" else "jpg"
-    val dataResized = resizeImageToDataSize(image, ext == "png", maxDataSize = MAX_IMAGE_SIZE)
     val destFileName = generateNewFileName("IMG", ext, File(getAppFilePath("")))
     val destFile = File(getAppFilePath(destFileName))
-    if (encrypted) {
-      try {
-        val args = writeCryptoFile(destFile.absolutePath, dataResized.toByteArray())
+    try {
+      val args = writeCryptoImage(MAX_IMAGE_SIZE, image, destFile.absolutePath, encrypted)
+      if (encrypted) {
         CryptoFile(destFileName, args)
-      } catch (e: Exception) {
-        Log.e(TAG, "Unable to write crypto file: " + e.stackTraceToString())
-        AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error), text = e.stackTraceToString())
-        null
+      } else {
+        CryptoFile.plain(destFileName)
       }
-    } else {
-      val output = FileOutputStream(destFile)
-      dataResized.writeTo(output)
-      output.flush()
-      output.close()
-      CryptoFile.plain(destFileName)
+    } catch (e: Exception) {
+      Log.e(TAG, "Unable to write crypto file: " + e.stackTraceToString())
+      AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error), text = e.stackTraceToString())
+      null
     }
   } catch (e: Exception) {
     Log.e(TAG, "Util.kt saveImage error: ${e.stackTraceToString()}")
@@ -198,14 +193,10 @@ fun desktopSaveImageInTmp(uri: URI): CryptoFile? {
   val image = getBitmapFromUri(uri) ?: return null
   return try {
     val ext = if (image.hasAlpha()) "png" else "jpg"
-    val dataResized = resizeImageToDataSize(image, ext == "png", maxDataSize = MAX_IMAGE_SIZE)
     val destFileName = generateNewFileName("IMG", ext, tmpDir)
     val destFile = File(tmpDir, destFileName)
-    val output = FileOutputStream(destFile)
-    dataResized.writeTo(output)
-    output.flush()
-    output.close()
-    CryptoFile.plain(destFile.absolutePath)
+    val args = writeCryptoImage(MAX_IMAGE_SIZE, image, destFile.absolutePath, false)
+    CryptoFile(destFileName, args)
   } catch (e: Exception) {
     Log.e(TAG, "Util.kt desktopSaveImageInTmp error: ${e.stackTraceToString()}")
     null
@@ -301,11 +292,7 @@ fun saveWallpaperFile(uri: URI): String? {
 fun saveWallpaperFile(image: ImageBitmap): String {
   val destFileName = generateNewFileName("wallpaper", "jpg", File(getWallpaperFilePath("")))
   val destFile = File(getWallpaperFilePath(destFileName))
-  val dataResized = resizeImageToDataSize(image, false, maxDataSize = 5_000_000)
-  val output = FileOutputStream(destFile)
-  dataResized.use {
-    it.writeTo(output)
-  }
+  writeCryptoImage(5_000_000, image, destFile.absolutePath, false)
   return destFile.name
 }
 

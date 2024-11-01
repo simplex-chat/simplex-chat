@@ -32,6 +32,7 @@ external fun chatPasswordHash(pwd: String, salt: String): String
 external fun chatValidName(name: String): String
 external fun chatJsonLength(str: String): Int
 external fun chatWriteFile(ctrl: ChatCtrl, path: String, buffer: ByteBuffer): String
+external fun chatWriteImage(ctrl: ChatCtrl, maxSize: Long, path: String, buffer: ByteBuffer, encrypt: Boolean): String
 external fun chatReadFile(path: String, key: String, nonce: String): Array<Any>
 external fun chatEncryptFile(ctrl: ChatCtrl, fromPath: String, toPath: String): String
 external fun chatDecryptFile(fromPath: String, key: String, nonce: String, toPath: String): String

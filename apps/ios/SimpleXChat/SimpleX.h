@@ -35,7 +35,7 @@ extern char *chat_resize_image_to_str_size(const char *path, long maxSize);
 extern char *chat_write_file(chat_ctrl ctl, char *path, char *data, int len);
 
 // chat_write_image returns null-terminated string with JSON of WriteFileResult
-extern char *chat_write_image(chat_ctrl ctl, long maxSize, char *path, char *data, int len);
+extern char *chat_write_image(chat_ctrl ctl, long maxSize, char *path, char *data, int len, bool encrypted);
 
 // chat_read_file returns a buffer with:
 // result status (1 byte), then if

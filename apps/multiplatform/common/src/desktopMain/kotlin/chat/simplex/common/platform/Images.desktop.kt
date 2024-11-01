@@ -46,19 +46,19 @@ actual fun resizeImageToStrSize(image: ImageBitmap, maxDataSize: Long): String {
   return str
 }
 
-actual fun resizeImageToDataSize(image: ImageBitmap, usePng: Boolean, maxDataSize: Long): ByteArrayOutputStream {
-  var img = image
-  var stream = compressImageData(img, usePng)
-  while (stream.size() > maxDataSize) {
-    val ratio = sqrt(stream.size().toDouble() / maxDataSize.toDouble())
-    val clippedRatio = kotlin.math.min(ratio, 2.0)
-    val width = (img.width.toDouble() / clippedRatio).toInt()
-    val height = img.height * width / img.width
-    img = img.scale(width, height)
-    stream = compressImageData(img, usePng)
-  }
-  return stream
-}
+// actual fun resizeImageToDataSize(image: ImageBitmap, usePng: Boolean, maxDataSize: Long): ByteArrayOutputStream {
+//   var img = image
+//   var stream = compressImageData(img, usePng)
+//   while (stream.size() > maxDataSize) {
+//     val ratio = sqrt(stream.size().toDouble() / maxDataSize.toDouble())
+//     val clippedRatio = kotlin.math.min(ratio, 2.0)
+//     val width = (img.width.toDouble() / clippedRatio).toInt()
+//     val height = img.height * width / img.width
+//     img = img.scale(width, height)
+//     stream = compressImageData(img, usePng)
+//   }
+//   return stream
+// }
 
 actual fun cropToSquare(image: ImageBitmap): ImageBitmap {
   var xOffset = 0
@@ -73,17 +73,17 @@ actual fun cropToSquare(image: ImageBitmap): ImageBitmap {
   return image
 }
 
-actual fun compressImageStr(bitmap: ImageBitmap): String {
-  val usePng = bitmap.hasAlpha()
-  val ext = if (usePng) "png" else "jpg"
-  return try {
-    val encoded  = Base64.getEncoder().encodeToString(compressImageData(bitmap, usePng).toByteArray())
-    "data:image/$ext;base64,$encoded"
-  } catch (e: Exception) {
-    Log.e(TAG, "resizeImageToStrSize error: $e")
-    throw e
-  }
-}
+// actual fun compressImageStr(bitmap: ImageBitmap): String {
+//   val usePng = bitmap.hasAlpha()
+//   val ext = if (usePng) "png" else "jpg"
+//   return try {
+//     val encoded  = Base64.getEncoder().encodeToString(compressImageData(bitmap, usePng).toByteArray())
+//     "data:image/$ext;base64,$encoded"
+//   } catch (e: Exception) {
+//     Log.e(TAG, "resizeImageToStrSize error: $e")
+//     throw e
+//   }
+// }
 
 actual fun compressImageData(bitmap: ImageBitmap, usePng: Boolean): ByteArrayOutputStream {
   val writer = ImageIO.getImageWritersByFormatName(if (usePng) "png" else "jpg").next()

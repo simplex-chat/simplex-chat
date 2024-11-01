@@ -72,11 +72,11 @@ fun Bitmap.clipToCircle(): Bitmap {
   return circle
 }
 
-actual fun compressImageStr(bitmap: ImageBitmap): String {
-  val usePng = bitmap.hasAlpha()
-  val ext = if (usePng) "png" else "jpg"
-  return "data:image/$ext;base64," + Base64.encodeToString(compressImageData(bitmap, usePng).toByteArray(), Base64.NO_WRAP)
-}
+// actual fun compressImageStr(bitmap: ImageBitmap): String {
+//   val usePng = bitmap.hasAlpha()
+//   val ext = if (usePng) "png" else "jpg"
+//   return "data:image/$ext;base64," + Base64.encodeToString(compressImageData(bitmap, usePng).toByteArray(), Base64.NO_WRAP)
+// }
 
 actual fun compressImageData(bitmap: ImageBitmap, usePng: Boolean): ByteArrayOutputStream {
   val stream = ByteArrayOutputStream()
@@ -84,19 +84,19 @@ actual fun compressImageData(bitmap: ImageBitmap, usePng: Boolean): ByteArrayOut
   return stream
 }
 
-actual fun resizeImageToDataSize(image: ImageBitmap, usePng: Boolean, maxDataSize: Long): ByteArrayOutputStream {
-  var img = image
-  var stream = compressImageData(img, usePng)
-  while (stream.size() > maxDataSize) {
-    val ratio = sqrt(stream.size().toDouble() / maxDataSize.toDouble())
-    val clippedRatio = min(ratio, 2.0)
-    val width = (img.width.toDouble() / clippedRatio).toInt()
-    val height = img.height * width / img.width
-    img = Bitmap.createScaledBitmap(img.asAndroidBitmap(), width, height, true).asImageBitmap()
-    stream = compressImageData(img, usePng)
-  }
-  return stream
-}
+// actual fun resizeImageToDataSize(image: ImageBitmap, usePng: Boolean, maxDataSize: Long): ByteArrayOutputStream {
+//   var img = image
+//   var stream = compressImageData(img, usePng)
+//   while (stream.size() > maxDataSize) {
+//     val ratio = sqrt(stream.size().toDouble() / maxDataSize.toDouble())
+//     val clippedRatio = min(ratio, 2.0)
+//     val width = (img.width.toDouble() / clippedRatio).toInt()
+//     val height = img.height * width / img.width
+//     img = Bitmap.createScaledBitmap(img.asAndroidBitmap(), width, height, true).asImageBitmap()
+//     stream = compressImageData(img, usePng)
+//   }
+//   return stream
+// }
 
 actual fun GrayU8.toImageBitmap(): ImageBitmap = ConvertBitmap.grayToBitmap(this, Bitmap.Config.RGB_565).asImageBitmap()
 
