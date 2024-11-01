@@ -130,6 +130,7 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
     }
 
     func textView(_ textView: UITextView, editMenuForTextIn range: NSRange, suggestedActions: [UIMenuElement]) -> UIMenu? {
+        let suggestedActions = [formatMenu] + suggestedActions
         if !UIPasteboard.general.hasImages { return UIMenu(children: suggestedActions)}
         return UIMenu(children: suggestedActions.map { elem in
             if let elem = elem as? UIMenu {
@@ -208,6 +209,45 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
     func textViewDidEndEditing(_ textView: UITextView) {
         onFocusChanged(false)
     }
+
+    // MARK: Formatting
+
+    private var formatMenu: UIMenu {
+        func set(_ attribute: Any, for key: NSAttributedString.Key) {
+            textStorage.setAttributes([key: attribute], range: selectedRange)
+            delegate?.textViewDidChange?(self)
+        }
+
+        func systemImage(_ systemName: String, color: UIColor? = nil) -> UIImage? {
+            if let uiImage = UIImage(systemName: systemName) {
+                if let color {
+                    uiImage.withTintColor(color, renderingMode: .alwaysOriginal)
+                } else {
+                    uiImage
+                }
+            } else { nil }
+        }
+
+        return UIMenu(
+            title: "Format",
+            children: [
+                UIAction(image: systemImage("bold")) { _ in /*TODO*/ },
+                UIAction(image: systemImage("italic")) { _ in /*TODO*/ },
+                UIAction(image: systemImage("strikethrough")) { _ in /*TODO*/ },
+                UIAction(title: "Mono") { _ in /*TODO*/ },
+                UIMenu(
+                    title: "Color",
+                    children: Array<UIColor>([.red, .green, .blue, .yellow, .cyan, .magenta])
+                        .map { color in
+                            UIAction(image: systemImage("circle.fill", color: color)) { _ in
+                                set(color, for: .foregroundColor)
+                            }
+                        }
+                ),
+                UIAction(title: "Secret") { test in /*TODO*/ }
+            ]
+        )
+    }
 }
 
 struct NativeTextEditor_Previews: PreviewProvider{
@@ -221,4 +261,13 @@ struct NativeTextEditor_Previews: PreviewProvider{
         )
         .fixedSize(horizontal: false, vertical: true)
     }
+}
+
+
+func encodeMarkdown(_ string: String) -> NSAttributedString {
+
+}
+
+func decodeMarkdown(_ attributedString: NSAttributedString) -> String {
+
 }
