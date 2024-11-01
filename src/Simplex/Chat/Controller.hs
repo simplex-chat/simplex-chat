@@ -961,7 +961,7 @@ data ProtoServersConfig p = ProtoServersConfig {operators :: Maybe [ServerOperat
   deriving (Show)
 
 -- changed to:
--- data ProtoServersConfig p = ProtoServersConfig {servers :: Map (Maybe ServerOperator) UserServers}
+-- data ProtoServersConfig = ProtoServersConfig {servers :: Map (Maybe ServerOperator) UserServers}
 --   deriving (Show)
 
 data AProtoServersConfig = forall p. ProtocolTypeI p => APSC (SProtocolType p) (ProtoServersConfig p)
