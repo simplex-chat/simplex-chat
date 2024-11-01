@@ -105,7 +105,7 @@ class ModalManager(private val placement: ModalPlacement? = null) {
     // Means, animation is in progress or not started yet. Do not wait until animation finishes, just remove all from screen.
     // This is useful when invoking close() and ShowCustomModal one after another without delay. Otherwise, screen will hold prev view
     if (toRemove.isNotEmpty()) {
-      runAtomically { toRemove.removeIf { elem -> modalViews.removeAt(elem); true } }
+      runAtomically { toRemove.removeAll { elem -> modalViews.removeAt(elem); true } }
     }
     // Make animated appearance only on Android (everytime) and on Desktop (when it's on the start part of the screen or modals > 0)
     // to prevent unneeded animation on different situations
@@ -184,7 +184,7 @@ class ModalManager(private val placement: ModalPlacement? = null) {
       }
       // This is needed because if we delete from modalViews immediately on request, animation will be bad
       if (toRemove.isNotEmpty() && it == modalCount.value && transition.currentState == EnterExitState.Visible && !transition.isRunning) {
-        runAtomically { toRemove.removeIf { elem -> modalViews.removeAt(elem); true } }
+        runAtomically { toRemove.removeAll { elem -> modalViews.removeAt(elem); true } }
       }
     }
   }
