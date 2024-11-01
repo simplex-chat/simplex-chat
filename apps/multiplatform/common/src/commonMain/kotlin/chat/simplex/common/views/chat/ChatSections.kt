@@ -221,12 +221,15 @@ fun List<ChatSection>.chatItemPosition(chatItemId: Long): Int? {
 fun List<ChatSection>.revealedItemCount(): Int {
   var count = 0
   for (section in this) {
-    for (item in section.items) {
+    var i = 0;
+    while (i < section.items.size) {
+      val item = section.items[i]
       if (item.revealed) {
         count += item.items.size
       } else {
         count++
       }
+      i++
     }
   }
 
