@@ -43,22 +43,38 @@ data class ChatSectionLoader (
   fun prepareItems(items: List<ChatItem>): List<ChatItem> {
     val chatItemsSectionArea = chatModel.chatItemsSectionArea
     val itemsToAdd = mutableListOf<ChatItem>()
+    val sectionsToMerge = mutableMapOf<ChatSectionArea, ChatSectionArea>()
     for (cItem in items) {
       val itemSectionArea = chatItemsSectionArea[cItem.id]
       if (itemSectionArea == null) {
         itemsToAdd.add(cItem)
       } else if (itemSectionArea != this.sectionArea) {
-        val targetSection = when (itemSectionArea) {
-          ChatSectionArea.Bottom -> ChatSectionArea.Bottom
-          ChatSectionArea.Current -> if (this.sectionArea == ChatSectionArea.Bottom) ChatSectionArea.Bottom else ChatSectionArea.Current
-          ChatSectionArea.Destination -> if (this.sectionArea == ChatSectionArea.Bottom) ChatSectionArea.Bottom else ChatSectionArea.Destination
+        val (targetSection, sectionToDrop) = when (itemSectionArea) {
+          ChatSectionArea.Bottom -> ChatSectionArea.Bottom to this.sectionArea
+          ChatSectionArea.Current -> if (this.sectionArea == ChatSectionArea.Bottom) ChatSectionArea.Bottom to itemSectionArea else itemSectionArea to this.sectionArea
+          ChatSectionArea.Destination -> if (this.sectionArea == ChatSectionArea.Bottom) ChatSectionArea.Bottom to itemSectionArea else itemSectionArea to this.sectionArea
         }
 
-        chatItemsSectionArea.filter { it.value == itemSectionArea }
-          .forEach { chatItemsSectionArea[it.key] = targetSection }
+        if (targetSection != sectionToDrop) {
+          sectionsToMerge[sectionToDrop] = targetSection
+        }
       }
     }
-    chatItemsSectionArea.putAll(itemsToAdd.associate { it.id to sectionArea })
+
+    if (sectionsToMerge.isNotEmpty()) {
+      chatModel.chatItems.value.forEach {
+        val currentSection = chatItemsSectionArea[it.id]
+        val newSection = sectionsToMerge[currentSection]
+        if (newSection != null) {
+          chatItemsSectionArea[it.id] = newSection
+        }
+      }
+    }
+
+    itemsToAdd.forEach {
+      val targetSection = sectionsToMerge[sectionArea] ?: sectionArea
+      chatItemsSectionArea[it.id] = targetSection
+    }
 
     return itemsToAdd
   }
