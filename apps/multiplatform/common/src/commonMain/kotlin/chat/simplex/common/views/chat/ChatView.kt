@@ -29,7 +29,6 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.CIDirection.GroupRcv
 import chat.simplex.common.model.ChatController.appPrefs
-import chat.simplex.common.model.ChatModel.chatItems
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.ui.theme.*
@@ -1039,7 +1038,7 @@ fun BoxScope.ChatItemsList(
     mutableStateOf({ itemId: Long ->
       val index = sections.value.chatItemPosition(itemId)
       preloadItemsEnabled.value = false
-
+      
       if (index != null) {
         scope.launch {
           listState.animateScrollToItem(scrollPosition.value(index), -maxHeight.value)

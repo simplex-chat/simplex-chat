@@ -1,7 +1,6 @@
 package chat.simplex.common.views.chatlist
 
 import SectionItemView
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -229,7 +228,8 @@ fun openLoadedChat(chat: Chat, chatModel: ChatModel, landingSection: ChatLanding
   chatModel.chatItemStatuses.clear()
   chatModel.chatItems.replaceAll(chat.chatItems)
   chatModel.chatId.value = chat.chatInfo.id
-  chatModel.chatItemsSectionArea = mutableMapOf<Long, ChatSectionArea>().also { map -> map.putAll(chatModel.chatItems.value.associate { it.id to landingSectionToArea(landingSection) }) }
+  chatModel.chatItemsSectionArea.clear()
+  chat.chatItems.associateTo(chatModel.chatItemsSectionArea) { it.id to landingSectionToArea(landingSection) }
 }
 
 suspend fun apiLoadMessages(
