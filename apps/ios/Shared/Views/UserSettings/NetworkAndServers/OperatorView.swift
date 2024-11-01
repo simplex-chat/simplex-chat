@@ -282,7 +282,7 @@ struct SingleOperatorUsageConditionsView: View {
                     
                     Text("You already accepted conditions of use for following operator(s): **\(operatorsWithConditionsAccepted.map { $0.name }.joined(separator: ", "))**.")
 
-                    Text("Same conditions will apply to operator \(serverOperator.name).")
+                    Text("Same conditions will apply to operator **\(serverOperator.name)**.")
 
                     conditionsAppliedToOtherOperatorsText()
                     
@@ -304,8 +304,8 @@ struct SingleOperatorUsageConditionsView: View {
 
                 } else {
                     
-                    Text("In order to use operator \(serverOperator.name), accept conditions of use.")
-                    
+                    Text("In order to use operator **\(serverOperator.name)**, accept conditions of use.")
+
                     conditionsAppliedToOtherOperatorsText()
                     
                     conditionsTextView()
