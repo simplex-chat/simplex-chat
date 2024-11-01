@@ -229,7 +229,7 @@ fun openLoadedChat(chat: Chat, chatModel: ChatModel, landingSection: ChatLanding
   chatModel.chatItems.replaceAll(chat.chatItems)
   chatModel.chatId.value = chat.chatInfo.id
   chatModel.chatItemsSectionArea.clear()
-  chat.chatItems.associateTo(chatModel.chatItemsSectionArea) { it.id to landingSectionToArea(landingSection) }
+  chatModel.chatItems.value.associateTo(chatModel.chatItemsSectionArea) { it.id to landingSectionToArea(landingSection) }
 }
 
 suspend fun apiLoadMessages(

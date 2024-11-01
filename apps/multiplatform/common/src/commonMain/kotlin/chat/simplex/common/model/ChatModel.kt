@@ -331,6 +331,7 @@ object ChatModel {
         if (chatId.value == cInfo.id) {
           // Prevent situation when chat item already in the list received from backend
           if (chatItems.value.none { it.id == cItem.id }) {
+            chatItemsSectionArea[cItem.id] = ChatSectionArea.Bottom
             if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
               chatItems.add(kotlin.math.max(0, chatItems.value.lastIndex), cItem)
             } else {
@@ -379,6 +380,7 @@ object ChatModel {
             } else {
               cItem
             }
+            chatItemsSectionArea[ci.id] = ChatSectionArea.Bottom
             chatItems.add(ci)
             true
           }
@@ -610,6 +612,7 @@ object ChatModel {
     val cItem = ChatItem.liveDummy(chatInfo is ChatInfo.Direct)
     withContext(Dispatchers.Main) {
       chatItems.add(cItem)
+      chatItemsSectionArea[cItem.id] = ChatSectionArea.Bottom
     }
     return cItem
   }
@@ -617,6 +620,7 @@ object ChatModel {
   fun removeLiveDummy() {
     if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
       chatItems.removeLast()
+      chatItemsSectionArea.remove(ChatItem.TEMP_LIVE_CHAT_ITEM_ID)
     }
   }
 

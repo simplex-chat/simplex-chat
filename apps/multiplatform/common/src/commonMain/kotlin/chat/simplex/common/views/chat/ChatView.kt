@@ -1005,7 +1005,7 @@ fun BoxScope.ChatItemsList(
 
   LaunchedEffect(Unit) {
     launch {
-      snapshotFlow { chatModel.chatId.value }
+      snapshotFlow { chatInfoUpdated.value.id }
         .distinctUntilChanged()
         .collect {
           if (revealedItems.value.isNotEmpty()) {

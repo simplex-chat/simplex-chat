@@ -261,15 +261,21 @@ suspend fun apiLoadBottomSection(chatInfo: ChatInfo, rhId: Long?) {
   withContext(Dispatchers.Main) {
     val updatedItems = chatModel.chatItems.value.toMutableStateList()
     var insertIndex = updatedItems.size
+    var needsMerge = false
 
     for (cItem in chat.first.chatItems.asReversed()) {
       if (chatModel.chatItemsSectionArea[cItem.id] == null) {
         updatedItems.add(insertIndex, cItem)
         chatModel.chatItemsSectionArea[cItem.id] = ChatSectionArea.Bottom
       } else {
+        needsMerge = true
         chatModel.chatItemsSectionArea[cItem.id] = ChatSectionArea.Bottom
         insertIndex = max(0, insertIndex - 1)
       }
+    }
+
+    if (needsMerge) {
+      updatedItems.associateTo(chatModel.chatItemsSectionArea) { it.id to ChatSectionArea.Bottom }
     }
 
     chatModel.chatItems.replaceAll(updatedItems)
