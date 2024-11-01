@@ -236,7 +236,7 @@ fun landingSectionToArea(chatLandingSection: ChatLandingSection) = when (chatLan
   ChatLandingSection.Unread -> ChatSectionArea.Current
 }
 
-suspend fun apiLoadBottomSection(chatInfo: ChatInfo, chatModel: ChatModel, rhId: Long?) {
+suspend fun apiLoadBottomSection(chatInfo: ChatInfo, rhId: Long?) {
   val chat = chatController.apiGetChat(rh = rhId, type = chatInfo.chatType, id = chatInfo.apiId)
   if (chatModel.chatId.value != chatInfo.id || chat == null) return
   withContext(Dispatchers.Main) {

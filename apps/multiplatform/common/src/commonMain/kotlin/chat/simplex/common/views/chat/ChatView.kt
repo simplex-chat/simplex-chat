@@ -1002,6 +1002,7 @@ fun BoxScope.ChatItemsList(
 
   val topPaddingToContentPx = rememberUpdatedState(with(LocalDensity.current) { topPaddingToContent().roundToPx() })
   val maxHeight = remember { derivedStateOf { listState.layoutInfo.viewportEndOffset - topPaddingToContentPx.value } }
+  val chatInfoUpdated = rememberUpdatedState(chatInfo)
 
   LaunchedEffect(Unit) {
     launch {
@@ -1023,7 +1024,7 @@ fun BoxScope.ChatItemsList(
               withBGApi {
                 scrollAdjustmentEnabled.value = false
                 try {
-                  apiLoadBottomSection(chatInfo, chatModel, remoteHostId)
+                  apiLoadBottomSection(chatInfoUpdated.value, remoteHostId)
                 } finally {
                   delay(600)
                   scrollAdjustmentEnabled.value = true
@@ -1034,7 +1035,6 @@ fun BoxScope.ChatItemsList(
         }
     }
   }
-  val chatInfoUpdated = rememberUpdatedState(chatInfo)
   val scrollToItem: State<(Long) -> Unit> = remember {
     mutableStateOf({ itemId: Long ->
       val index = sections.value.chatItemPosition(itemId)
