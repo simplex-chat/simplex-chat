@@ -992,10 +992,10 @@ fun BoxScope.ChatItemsList(
   Spacer(Modifier.size(8.dp))
   val reversedChatItems = remember { derivedStateOf { chatModel.chatItems.asReversed() } }
   val revealedItems = rememberSaveable { mutableStateOf(setOf<Long>()) }
-  val sections by remember { derivedStateOf { reversedChatItems.value.putIntoSections(revealedItems.value) } }
+  val sections = remember { derivedStateOf { reversedChatItems.value.putIntoSections(revealedItems.value) } }
   val preloadItemsEnabled = remember { mutableStateOf(true) }
-  val boundaries = remember { derivedStateOf { sections.map { it.boundary } } }
-  val scrollPosition: (Int) -> Int = { idx -> min(sections.revealedItemCount() - 1, idx + 1 ) }
+  val boundaries = remember { derivedStateOf { sections.value.map { it.boundary } } }
+  val scrollPosition: State<(Int) -> Int> = remember { mutableStateOf({ idx -> min(sections.value.revealedItemCount() - 1, idx + 1 ) }) }
 
   PreloadItems(chatInfo.id, listState, ChatPagination.UNTIL_PRELOAD_COUNT, preloadItemsEnabled, boundaries, loadMessages)
 
@@ -1013,9 +1013,9 @@ fun BoxScope.ChatItemsList(
           preloadItemsEnabled.value = true
           val firstUnreadItem = reversedChatItems.value.findLast { it.isRcvNew }
           if (firstUnreadItem != null) {
-            val firstUnreadItemIndexIdx = sections.chatItemPosition(firstUnreadItem.id)
+            val firstUnreadItemIndexIdx = sections.value.chatItemPosition(firstUnreadItem.id)
             if (firstUnreadItemIndexIdx != null) {
-              listState.scrollToItem(scrollPosition(firstUnreadItemIndexIdx), -maxHeight.value)
+              listState.scrollToItem(scrollPosition.value(firstUnreadItemIndexIdx), -maxHeight.value)
             }
 
             if (chatModel.chatItemsSectionArea[firstUnreadItem.id] != ChatSectionArea.Bottom) {
@@ -1033,60 +1033,59 @@ fun BoxScope.ChatItemsList(
         }
     }
   }
+  val scrollToItem: State<(Long) -> Unit> = remember {
+    mutableStateOf({ itemId: Long ->
+      val index = sections.value.chatItemPosition(itemId)
+      preloadItemsEnabled.value = false
 
-  val scrollToItem: State<(Long) -> Unit> = remember { mutableStateOf({ itemId: Long ->
-    val index = sections.chatItemPosition(itemId)
-    preloadItemsEnabled.value = false
-
-    if (index != null) {
-      scope.launch {
-        listState.animateScrollToItem(scrollPosition(index), -maxHeight.value)
-        preloadItemsEnabled.value = true
-      }
-    } else {
-      withBGApi {
-        try {
-          val destinationSection = sections.find { it.boundary.area == ChatSectionArea.Destination }
-          val itemsToDrop = destinationSection?.items?.flatMap { it.items }?.toList()
-          withContext(Dispatchers.Main) {
-            itemsToDrop?.forEach {
-              chatModel.chatItemsSectionArea[it.id] = ChatSectionArea.Current
-            }
-          }
-          val chatSectionLoader = ChatSectionLoader(0, ChatSectionArea.Destination)
-          apiLoadMessages(
-            rhId = remoteHostId,
-            chatInfo = chatInfo,
-            chatModel = chatModel,
-            itemId = itemId,
-            search = "",
-            chatSectionLoader = chatSectionLoader,
-            pagination = ChatPagination.Around(itemId, ChatPagination.PRELOAD_COUNT * 2)
-          )
-
-          val idx = sections.chatItemPosition(itemId)
-          scope.launch {
-            if (idx != null) {
-              listState.animateScrollToItem(scrollPosition(idx), -maxHeight.value)
-              withContext(Dispatchers.Main) {
-                if (!itemsToDrop.isNullOrEmpty()) {
-                  itemsToDrop.forEach {
-                    chatModel.chatItemsSectionArea.remove(it.id)
-                  }
-                  chatModel.chatItems.value.removeIf { chatModel.chatItemsSectionArea[it.id] == null }
-                  val newIdx = reversedChatItems.value.indexOfFirst { it.id == itemId }
-                  listState.scrollToItem(scrollPosition(newIdx), -maxHeight.value)
-                }
-              }
-            }
-            preloadItemsEnabled.value = true
-          }
-        } catch (ex: Exception) {
+      if (index != null) {
+        scope.launch {
+          listState.animateScrollToItem(scrollPosition.value(index), -maxHeight.value)
           preloadItemsEnabled.value = true
         }
+      } else {
+        withBGApi {
+          try {
+            val destinationSection = sections.value.find { it.boundary.area == ChatSectionArea.Destination }
+            val itemsToDrop = destinationSection?.items?.flatMap { it.items }?.toList()
+            withContext(Dispatchers.Main) {
+              itemsToDrop?.forEach {
+                chatModel.chatItemsSectionArea[it.id] = ChatSectionArea.Current
+              }
+            }
+            val chatSectionLoader = ChatSectionLoader(0, ChatSectionArea.Destination)
+            apiLoadMessages(
+              rhId = remoteHostId,
+              chatInfo = chatInfo,
+              chatModel = chatModel,
+              itemId = itemId,
+              search = "",
+              chatSectionLoader = chatSectionLoader,
+              pagination = ChatPagination.Around(itemId, ChatPagination.PRELOAD_COUNT * 2)
+            )
+            val idx = sections.value.chatItemPosition(itemId)
+            scope.launch {
+              if (idx != null) {
+                listState.animateScrollToItem(scrollPosition.value(idx), -maxHeight.value)
+                withContext(Dispatchers.Main) {
+                  if (!itemsToDrop.isNullOrEmpty()) {
+                    itemsToDrop.forEach {
+                      chatModel.chatItemsSectionArea.remove(it.id)
+                    }
+                    chatModel.chatItems.value.removeIf { chatModel.chatItemsSectionArea[it.id] == null }
+                    val newIdx = reversedChatItems.value.indexOfFirst { it.id == itemId }
+                    listState.scrollToItem(scrollPosition.value(newIdx), -maxHeight.value)
+                  }
+                }
+              }
+              preloadItemsEnabled.value = true
+            }
+          } catch (ex: Exception) {
+            preloadItemsEnabled.value = true
+          }
+        }
       }
-    }
-  })
+    })
   }
   // TODO: Having this block on desktop makes ChatItemsList() to recompose twice on chatModel.chatId update instead of once
   LaunchedEffect(chatInfo.id) {
@@ -1369,7 +1368,7 @@ fun BoxScope.ChatItemsList(
     ),
     additionalBarOffset = composeViewHeight
   ) {
-    for (area in sections) {
+    for (area in sections.value) {
       for ((sIdx, section) in area.items.withIndex()) {
         if (section.revealed) {
           itemsIndexed(section.items, key = { _, item -> (item.id to item.meta.createdAt.toEpochMilliseconds()).toString() }) { i, cItem ->
@@ -1401,7 +1400,7 @@ fun BoxScope.ChatItemsList(
     scope.launch {
       listState.animateScrollToItem(0)
       preloadItemsEnabled.value = true
-      sections.dropTemporarySections()
+      sections.value.dropTemporarySections()
     }
   }
 
