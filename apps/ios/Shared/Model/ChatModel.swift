@@ -400,9 +400,6 @@ final class ChatModel: ObservableObject {
             }
             if case .rcvNew = cItem.meta.itemStatus {
                 unreadCollector.changeUnreadCounter(cInfo.id, by: 1)
-                if chats[i].chatStats.minUnreadItemId == 0 {
-                    chats[i].chatStats.minUnreadItemId = cItem.id
-                }
             }
             popChatCollector.throttlePopChat(cInfo.id, currentPosition: i)
         } else {
@@ -488,10 +485,6 @@ final class ChatModel: ObservableObject {
         if let chat = getChat(cInfo.id) {
             if let pItem = chat.chatItems.last, pItem.id == cItem.id {
                 chat.chatItems = [ChatItem.deletedItemDummy()]
-            }
-            if chat.chatStats.minUnreadItemId == cItem.id {
-                let oldestUnreadItem = chat.chatItems.last { $0.isRcvNew }
-                chat.chatStats.minUnreadItemId = oldestUnreadItem?.id ?? 0
             }
         }
         // remove from current chat
@@ -650,14 +643,6 @@ final class ChatModel: ObservableObject {
             }
         }
         self.unreadCollector.changeUnreadCounter(cInfo.id, by: -itemIds.count)
-        if let chat = getChat(cInfo.id), itemIds.contains(chat.chatStats.minUnreadItemId) {
-            let firstUnreadItem = im.reversedChatItems.last(where: { $0.isRcvNew})
-            chat.chatStats = ChatStats(
-                unreadCount: chat.chatStats.unreadCount,
-                minUnreadItemId: firstUnreadItem?.id ?? 0,
-                unreadChat: chat.chatStats.unreadChat
-            )
-        }
     }
 
     private let unreadCollector = UnreadCollector()
