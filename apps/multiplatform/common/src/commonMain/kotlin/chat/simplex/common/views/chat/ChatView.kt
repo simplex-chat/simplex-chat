@@ -1030,6 +1030,8 @@ fun BoxScope.ChatItemsList(
                   preloadItemsEnabled.value = true
                 }
               }
+            } else {
+              scrollAdjustmentEnabled.value = true
             }
           }
           preloadItemsEnabled.value = true
