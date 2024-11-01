@@ -74,10 +74,7 @@ private fun SetDeliveryReceiptsLayout(
   userCount: Int,
 ) {
   Box(Modifier.padding(top = DEFAULT_PADDING)) {
-    ColumnWithScrollBar(
-      Modifier.fillMaxSize(),
-      horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
+    ColumnWithScrollBar(horizontalAlignment = Alignment.CenterHorizontally) {
       AppBarTitle(stringResource(MR.strings.delivery_receipts_title))
 
       Spacer(Modifier.weight(1f))

@@ -10,6 +10,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.*
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.UriHandler
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -326,6 +327,8 @@ fun CIMarkdownText(
 
 const val CHAT_IMAGE_LAYOUT_ID = "chatImage"
 const val CHAT_BUBBLE_LAYOUT_ID = "chatBubble"
+const val CHAT_COMPOSE_LAYOUT_ID = "chatCompose"
+const val CONSOLE_COMPOSE_LAYOUT_ID = "consoleCompose"
 /**
  * Equal to [androidx.compose.ui.unit.Constraints.MaxFocusMask], which is 0x3FFFF - 1
  * Other values make a crash `java.lang.IllegalArgumentException: Can't represent a width of 123456 and height of 9909 in Constraints`
@@ -404,6 +407,70 @@ fun DependentLayout(
     }
   }
 }
+
+// The purpose of this layout is to make measuring of bottom compose view and adapt top lazy column to its size in the same frame (not on the next frame as you would expect).
+// So, steps are:
+// - measuring the layout: measured height of compose view before this step is 0, it's added to content padding of lazy column (so it's == 0)
+// - measured the layout: measured height of compose view now is correct, but it's not yet applied to lazy column content padding (so it's == 0) and lazy column is placed higher than compose view in view with respect to compose view's height
+// - on next frame measured height is correct and content padding is the same, lazy column placed to occupy all parent view's size
+// - every added/removed line in compose view goes through the same process.
+@Composable
+fun AdaptingBottomPaddingLayout(
+  modifier: Modifier = Modifier,
+  mainLayoutId: String,
+  expectedHeight: MutableState<Dp>,
+  content: @Composable () -> Unit
+) {
+  val expected = with(LocalDensity.current) { expectedHeight.value.roundToPx() }
+  Layout(
+    content = content,
+    modifier = modifier
+  ) { measureable, constraints ->
+    require(measureable.size <= 2) { "Should be exactly one or two elements in this layout, you have ${measureable.size}" }
+    val mainPlaceable = measureable.firstOrNull { it.layoutId == mainLayoutId }!!.measure(constraints)
+    val placeables: List<Placeable> = measureable.map {
+      if (it.layoutId == mainLayoutId)
+        mainPlaceable
+      else
+        it.measure(constraints.copy(maxHeight = if (expected != mainPlaceable.measuredHeight) constraints.maxHeight - mainPlaceable.measuredHeight + expected else constraints.maxHeight)) }
+    expectedHeight.value = mainPlaceable.measuredHeight.toDp()
+    layout(constraints.maxWidth, constraints.maxHeight) {
+      var y = 0
+      placeables.forEach {
+        if (it !== mainPlaceable) {
+          it.place(0, y)
+          y += it.measuredHeight
+        } else {
+          it.place(0, constraints.maxHeight - mainPlaceable.measuredHeight)
+          y += it.measuredHeight
+        }
+      }
+    }
+  }
+}
+
+@Composable
+fun CenteredRowLayout(
+  modifier: Modifier = Modifier,
+  content: @Composable () -> Unit
+) {
+  Layout(
+    content = content,
+    modifier = modifier
+  ) { measureable, constraints ->
+    require(measureable.size == 3) { "Should be exactly three elements in this layout, you have ${measureable.size}" }
+    val first = measureable[0].measure(constraints.copy(minWidth = 0, minHeight = 0))
+    val third = measureable[2].measure(constraints.copy(minWidth = first.measuredWidth, minHeight = 0))
+    val second = measureable[1].measure(constraints.copy(minWidth = 0, minHeight = 0, maxWidth = (constraints.maxWidth - first.measuredWidth - third.measuredWidth).coerceAtLeast(0)))
+    // Limit width for every other element to width of important element and height for a sum of all elements.
+    layout(constraints.maxWidth, constraints.maxHeight) {
+      first.place(0, ((constraints.maxHeight - first.measuredHeight) / 2).coerceAtLeast(0))
+      second.place((constraints.maxWidth - second.measuredWidth) / 2, ((constraints.maxHeight - second.measuredHeight) / 2).coerceAtLeast(0))
+      third.place(constraints.maxWidth - third.measuredWidth, ((constraints.maxHeight - third.measuredHeight) / 2).coerceAtLeast(0))
+    }
+  }
+}
+
 /*
 
 class EditedProvider: PreviewParameterProvider<Boolean> {

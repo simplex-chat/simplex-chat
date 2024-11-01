@@ -76,15 +76,9 @@ private fun CreateSimpleXAddressLayout(
   createAddress: () -> Unit,
   nextStep: () -> Unit,
 ) {
-  val handler = remember { AppBarHandler() }
-  CompositionLocalProvider(
-    LocalAppBarHandler provides handler
-  ) {
+  CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
     ModalView({}, showClose = false) {
       ColumnWithScrollBar(
-        Modifier
-          .fillMaxSize()
-          .themedBackground(),
         horizontalAlignment = Alignment.CenterHorizontally,
       ) {
         AppBarTitle(stringResource(MR.strings.simplex_address))

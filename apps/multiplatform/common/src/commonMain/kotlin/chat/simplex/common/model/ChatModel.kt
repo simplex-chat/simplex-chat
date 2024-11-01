@@ -92,6 +92,9 @@ object ChatModel {
   // Needed to check for bottom nav bar and to apply or not navigation bar color on Android
   val newChatSheetVisible = mutableStateOf(false)
 
+  // Needed to apply black color to left/right cutout area on Android
+  val fullscreenGalleryVisible = mutableStateOf(false)
+
   // preferences
   val notificationPreviewMode by lazy {
     mutableStateOf(
