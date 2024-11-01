@@ -218,7 +218,7 @@ fun List<ChatSection>.dropTemporarySections() {
   if (bottomSection != null) {
     val items = chatModel.chatItems.value
     val itemsOutsideOfSection = items.size - 1 - bottomSection.boundary.maxIndex
-    chatModel.chatItems.value.removeRange(fromIndex = 0, toIndex = itemsOutsideOfSection + bottomSection.excessItemCount())
+    chatModel.chatItems.removeRange(fromIndex = 0, toIndex = itemsOutsideOfSection + bottomSection.excessItemCount())
     chatModel.chatItemsSectionArea = mutableMapOf<Long, ChatSectionArea>().also { it.putAll(items.associate { it.id to ChatSectionArea.Bottom }) }
   }
 }

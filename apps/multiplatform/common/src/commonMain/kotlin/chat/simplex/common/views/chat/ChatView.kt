@@ -1072,7 +1072,7 @@ fun BoxScope.ChatItemsList(
                     itemsToDrop.forEach {
                       chatModel.chatItemsSectionArea.remove(it.id)
                     }
-                    chatModel.chatItems.value.removeIf { chatModel.chatItemsSectionArea[it.id] == null }
+                    chatModel.chatItems.removeAll { chatModel.chatItemsSectionArea[it.id] == null }
                     val newIdx = reversedChatItems.value.indexOfFirst { it.id == itemId }
                     listState.scrollToItem(scrollPosition.value(newIdx), -maxHeight.value)
                   }

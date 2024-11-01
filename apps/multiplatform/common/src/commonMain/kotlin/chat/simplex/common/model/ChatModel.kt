@@ -2309,6 +2309,10 @@ fun <T> MutableState<SnapshotStateList<T>>.removeAt(index: Int): T {
   return res
 }
 
+fun <T> MutableState<SnapshotStateList<T>>.removeRange(fromIndex: Int, toIndex: Int) {
+  value = SnapshotStateList<T>().apply { addAll(value); removeRange(fromIndex, toIndex) }
+}
+
 fun <T> MutableState<SnapshotStateList<T>>.removeLast() {
   value = SnapshotStateList<T>().apply { addAll(value); removeLast() }
 }
