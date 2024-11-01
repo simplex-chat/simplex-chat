@@ -7,18 +7,19 @@ permalink: /privacy/index.html
 
 ## Summary
 
-[Introduction](#introduction) and [General principles](#general-principles) cover SimpleX Chat network design, the network operators, and the general principles for privacy and security that SimpleX network provides.
+[Introduction](#introduction) and [General principles](#general-principles) cover SimpleX Chat network design, the network operators, and the principles of privacy and security provided by SimpleX network.
 
 [Privacy policy](#privacy-policy) covers:
-- data stored only on your device - [your profiles](#user-profiles), delivered [messages and files](#messages-and-files). This information can be transferred to another device, and you are responsible for its preservation - if you delete the app it will be lost.
-- [private message delivery](#private-message-delivery) that protects your IP address and contacts from the destination servers.
-- information is stored on the servers ([undelivered messages and files](#storage-of-messages-and-files-on-the-servers)). It also explains how [connections between users](#connections-with-other-users) work.
+- data stored only on your device - [your profiles](#user-profiles), delivered [messages and files](#messages-and-files). You can transfer this information to another device, and you are responsible for its preservation - if you delete the app it will be lost.
+- [private message delivery](#private-message-delivery) that protects your IP address and connection graph from the destination servers.
+- [undelivered messages and files](#storage-of-messages-and-files-on-the-servers) stored on the servers.
+- [how users connect](#connections-with-other-users) without any user profile identifiers.
 - [iOS push notifications](#ios-push-notifications) privacy limitations.
-- [User support](#user-support), [SimpleX directory](#simplex-directory) and [any other data](#another-information-stored-on-the-servers) that may be stored on the servers.
-- [Preset server operators](#preset-server-operators) and the [information they can share](#information-preset-operators-may-share)
-- [Source code license](#source-code-license) and [updates to this document](#updates).
+- [user support](#user-support), [SimpleX directory](#simplex-directory) and [any other data](#another-information-stored-on-the-servers) that may be stored on the servers.
+- [preset server operators](#preset-server-operators) and the [information they may share](#information-preset-server-operators-may-share).
+- [source code license](#source-code-license) and [updates to this document](#updates).
 
-[Conditions of Use of Software and Infrastructure](#conditions-of-use-of-software-and-infrastructure) cover the conditions you need to accept to use SimpleX Chat Applications and the relay servers of preset operators. Their purpose is to protect preset server operators and other users from any malicious actions of other users.
+[Conditions of Use](#conditions-of-use-of-software-and-infrastructure) are the conditions you need to accept to use SimpleX Chat applications and the relay servers of preset operators. Their purpose is to protect the users and preset server operators.
 
 This summary is provided for convenience only, it is not part of the Privacy Policy and Conditions of Use.
 
@@ -36,7 +37,7 @@ If you believe that any part of this document is not aligned with SimpleX networ
 
 ### General principles
 
-SimpleX network software uses the best industry practices for security and encryption to provide client and server software for secure [end-to-end encrypted](/docs/GLOSSARY.md#end-to-end-encryption) messaging via private connections. This encryption cannot be compromised by the relays servers, even if they are modified or compromised, via [man-in-the-middle attack](/docs/GLOSSARY.md#man-in-the-middle-attack), unlike most other communication platforms, services and networks.
+SimpleX network software uses the best industry practices for security and encryption to provide client and server software for secure [end-to-end encrypted](/docs/GLOSSARY.md#end-to-end-encryption) messaging via private connections. This encryption is protected from being compromised by the relays servers, even if they are modified or compromised, via [man-in-the-middle attack](/docs/GLOSSARY.md#man-in-the-middle-attack).
 
 SimpleX software is built on top of SimpleX messaging and application protocols, based on a new message routing protocol allowing to establish private connections without having identifiers assigned to its users - it does not use emails, phone numbers, usernames, identity keys or any other user profile identifiers to pass messages between the user applications.
 
@@ -68,9 +69,9 @@ Your message history is stored only on your own device and the devices of your c
 
 #### Private message delivery 
 
-You do not have control over which servers are used to send messages to your contacts - they are chosen by them. To send messages your client by default uses configured servers to forward messages to the destination servers, thus protecting your IP address from the servers chosen by your contacts.
+You do not have control over which servers are used to send messages to your contacts - these servers are chosen by your contacts. To send messages your client by default uses configured servers to forward messages to the destination servers, thus protecting your IP address from the servers chosen by your contacts.
 
-In case you use preset servers of more than one operator, the app will prefer to use the server of another operator to forward messages than the operator of the destination server, thus preventing destination server to correlate messages as belonging to one client.
+In case you use preset servers of more than one operator, the app will prefer to use a server of an operator different from the operator of the destination server to forward messages, preventing destination server to correlate messages as belonging to one client.
 
 You can additionally use VPN or some overlay network (e.g., Tor) to hide your IP address from the servers chosen by you.
 
@@ -78,7 +79,7 @@ You can additionally use VPN or some overlay network (e.g., Tor) to hide your IP
 
 #### Storage of messages and files on the servers
 
-The messages are removed from the used relay servers as soon as file they were stored in is fully delivered and saving messages switches to another file, as long as these servers use unmodified published code. Undelivered messages are also marked as delivered after the time that is configured in the messaging servers you use (21 days for preset messaging servers).
+The messages are removed from the relay servers as soon as all messages of the file they were stored in are delivered and saving new messages switches to another file, as long as these servers use unmodified published code. Undelivered messages are also marked as delivered after the time that is configured in the messaging servers you use (21 days for preset messaging servers).
 
 The files are stored on file relay servers for the time configured in the relay servers you use (48 hours for preset file servers).
 
@@ -191,7 +192,7 @@ You accept the Conditions of Use of Software and Infrastructure ("Conditions") b
 
 **Damage to SimpleX Chat Ltd and Preset Server Operators**. You must not (or assist others to) access, use, modify, distribute, transfer, or exploit SimpleX Chat Applications in unauthorized manners, or in ways that harm Software users, SimpleX Chat Ltd, other preset server operators, their Infrastructure, or any other systems. For example, you must not 1) access preset operators' Infrastructure or systems without authorization, in any way other than by using the Software; 2) disrupt the integrity or performance of preset operators' Infrastructure; 3) collect information about the users in any manner; or 4) sell, rent, or charge for preset operators' Infrastructure. This does not prohibit you from providing your own Infrastructure to others, whether free or for a fee, as long as you do not violate these Conditions and AGPLv3 license, including the requirement to publish any modifications of the relay server software.
 
-**Keeping your data secure**. SimpleX Chat is the first communication software that aims to be 100% private by design - server software neither has the ability to access your messages, nor it has information about who you communicate with. That means that you are solely responsible for keeping your device, your user profile and any data safe and secure. If you lose your phone or remove the Software from the device, you will not be able to recover the lost data, unless you made a back up. To protect the data you need to make regular backups, as using old backups may disrupt your communication with some of the contacts. SimpleX Chat Ltd and other preset responsibility have no responsibility for the data loss.
+**Keeping your data secure**. SimpleX Chat is the first communication software that aims to be 100% private by design - server software neither has the ability to access your messages, nor it has information about who you communicate with. That means that you are solely responsible for keeping your device, your user profile and any data safe and secure. If you lose your phone or remove the Software from the device, you will not be able to recover the lost data, unless you made a back up. To protect the data you need to make regular backups, as using old backups may disrupt your communication with some of the contacts. SimpleX Chat Ltd and other preset server operators are not responsible for any data loss.
 
 **Storing the messages on the device**. The messages are stored in the encrypted database on your device. Whether and how database passphrase is stored is determined by the configuration of the Software you use. The databases created prior to 2023 or in CLI (terminal) app may remain unencrypted, and it will be indicated in the app interface. In this case, if you make a backup of the data and store it unencrypted, the backup provider may be able to access the messages. Please note, that the desktop apps can be configured to store the database passphrase in the configuration file in plaintext, and unless you set the passphrase when first running the app, a random passphrase will be used and stored on the device. You can remove it from the device via the app settings.
 
