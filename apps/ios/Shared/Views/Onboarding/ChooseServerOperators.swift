@@ -16,12 +16,12 @@ struct OnboardingButtonStyle: ButtonStyle {
         configuration.label
             .font(.system(size: 17, weight: .semibold))
             .padding()
-            .frame(maxWidth: .infinity) // Makes button stretch horizontally
-            .background(theme.colors.primary) // Apple blue color
-            .foregroundColor(.white) // White text color
-            .cornerRadius(10) // Rounded corners
-            .scaleEffect(configuration.isPressed ? 0.95 : 1.0) // Slight scale effect on press
-            .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2) // Subtle shadow
+            .frame(maxWidth: .infinity)
+            .background(theme.colors.primary)
+            .foregroundColor(.white)
+            .cornerRadius(16)
+            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+            .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
     }
 }
 
@@ -178,20 +178,14 @@ struct ChooseServerOperators: View {
 
     private func reviewConditionsButton() -> some View {
         ZStack {
-            HStack {
-                Spacer()
-
-                Button {
-                    reviewConditionsNavLinkActive = true
-                } label: {
-                    Text("Review conditions")
-                }
-                .buttonStyle(OnboardingButtonStyle())
-
-                Spacer()
+            Button {
+                reviewConditionsNavLinkActive = true
+            } label: {
+                Text("Review conditions")
             }
+            .buttonStyle(OnboardingButtonStyle())
+            .padding(.horizontal)
             .disabled(selectedOperators.isEmpty)
-
 
             NavigationLink(isActive: $reviewConditionsNavLinkActive) {
                 reviewConditionsDestinationView()

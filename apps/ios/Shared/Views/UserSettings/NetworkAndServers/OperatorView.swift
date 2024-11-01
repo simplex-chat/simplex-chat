@@ -329,24 +329,18 @@ struct SingleOperatorUsageConditionsView: View {
     }
 
     private func acceptConditionsButton() -> some View {
-        HStack {
-            Spacer()
-
-            Button {
-                // Should call api to save state here, not when saving all servers
-                // (It's counterintuitive to lose to closed sheet or Reset)
-                let date = Date.now
-                ChatModel.shared.acceptConditionsForEnabledOperators(date)
-                serverOperatorToEdit.conditionsAcceptance = .accepted(date: date)
-                serverOperator = serverOperatorToEdit
-                dismiss()
-            } label: {
-                Text("Accept conditions")
-            }
-            .buttonStyle(OnboardingButtonStyle())
-
-            Spacer()
+        Button {
+            // Should call api to save state here, not when saving all servers
+            // (It's counterintuitive to lose to closed sheet or Reset)
+            let date = Date.now
+            ChatModel.shared.acceptConditionsForEnabledOperators(date)
+            serverOperatorToEdit.conditionsAcceptance = .accepted(date: date)
+            serverOperator = serverOperatorToEdit
+            dismiss()
+        } label: {
+            Text("Accept conditions")
         }
+        .buttonStyle(OnboardingButtonStyle())
     }
 }
 
@@ -360,59 +354,51 @@ struct UsageConditionsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Group {
-                if showTitle {
-                    Text("Conditions of use")
-                        .font(.largeTitle)
-                        .bold()
-                        .padding(.top)
-                        .padding(.top)
-                }
-
-                switch conditionsAction {
-                case let .reviewUpdatedConditions(acceptForOperators, _):
-
-                    Text("Conditions will be accepted for following operator(s): \(acceptForOperators.map { $0.name }.joined(separator: ", ")).")
-
-                    conditionsTextView()
-
-                    acceptConditionsButton(acceptForOperators)
-                        .padding(.bottom)
-                        .padding(.bottom)
-
-                case let .viewAcceptedConditions(acceptedForOperators):
-
-                    Text("Conditions are accepted for following operator(s): \(acceptedForOperators.map { $0.name }.joined(separator: ", ")).")
-
-                    conditionsTextView()
-                        .padding(.bottom)
-                        .padding(.bottom)
-
-                }
+            if showTitle {
+                Text("Conditions of use")
+                    .font(.largeTitle)
+                    .bold()
+                    .padding(.top)
+                    .padding(.top)
             }
-            .padding(.horizontal)
+            
+            switch conditionsAction {
+            case let .reviewUpdatedConditions(acceptForOperators, _):
+                
+                Text("Conditions will be accepted for following operator(s): \(acceptForOperators.map { $0.name }.joined(separator: ", ")).")
+                
+                conditionsTextView()
+                
+                acceptConditionsButton(acceptForOperators)
+                    .padding(.bottom)
+                    .padding(.bottom)
+                
+            case let .viewAcceptedConditions(acceptedForOperators):
+                
+                Text("Conditions are accepted for following operator(s): \(acceptedForOperators.map { $0.name }.joined(separator: ", ")).")
+                
+                conditionsTextView()
+                    .padding(.bottom)
+                    .padding(.bottom)
+                
+            }
         }
+        .padding(.horizontal)
         .frame(maxHeight: .infinity)
     }
 
     private func acceptConditionsButton(_ acceptForOperators: [ServerOperator]) -> some View {
-        HStack {
-            Spacer()
-
-            Button {
-                // Should call api to save state here, not when saving all servers
-                // (It's counterintuitive to lose to closed sheet or Reset)
-                onAcceptAction(Date.now)
-                if dismissOnAccept{
-                    dismiss()
-                }
-            } label: {
-                Text("Accept conditions")
+        Button {
+            // Should call api to save state here, not when saving all servers
+            // (It's counterintuitive to lose to closed sheet or Reset)
+            onAcceptAction(Date.now)
+            if dismissOnAccept{
+                dismiss()
             }
-            .buttonStyle(OnboardingButtonStyle())
-
-            Spacer()
+        } label: {
+            Text("Accept conditions")
         }
+        .buttonStyle(OnboardingButtonStyle())
     }
 }
 
