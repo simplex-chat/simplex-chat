@@ -280,7 +280,7 @@ struct SingleOperatorUsageConditionsView: View {
 
                 } else if !operatorsWithConditionsAccepted.isEmpty {
                     
-                    Text("You already accepted conditions of use for following operator(s): \(operatorsWithConditionsAccepted.map { $0.name }.joined(separator: ", ")).")
+                    Text("You already accepted conditions of use for following operator(s): **\(operatorsWithConditionsAccepted.map { $0.name }.joined(separator: ", "))**.")
 
                     Text("Same conditions will apply to operator \(serverOperator.name).")
 
@@ -324,7 +324,7 @@ struct SingleOperatorUsageConditionsView: View {
     @ViewBuilder private func conditionsAppliedToOtherOperatorsText() -> some View {
         let otherEnabledOperators = ChatModel.shared.enabledOperatorsWithConditionsNotAccepted.filter { $0.operatorId != serverOperator.operatorId }
         if !otherEnabledOperators.isEmpty {
-            Text("Conditions will also apply for following operator(s) you use: \(otherEnabledOperators.map { $0.name }.joined(separator: ", ")).")
+            Text("Conditions will also apply for following operator(s) you use: **\(otherEnabledOperators.map { $0.name }.joined(separator: ", "))**.")
         }
     }
 
@@ -365,8 +365,8 @@ struct UsageConditionsView: View {
             switch conditionsAction {
             case let .reviewUpdatedConditions(acceptForOperators, _):
                 
-                Text("Conditions will be accepted for following operator(s): \(acceptForOperators.map { $0.name }.joined(separator: ", ")).")
-                
+                Text("Conditions will be accepted for following operator(s): **\(acceptForOperators.map { $0.name }.joined(separator: ", "))**.")
+
                 conditionsTextView()
                 
                 acceptConditionsButton(acceptForOperators)
@@ -375,8 +375,8 @@ struct UsageConditionsView: View {
                 
             case let .viewAcceptedConditions(acceptedForOperators):
                 
-                Text("Conditions are accepted for following operator(s): \(acceptedForOperators.map { $0.name }.joined(separator: ", ")).")
-                
+                Text("Conditions are accepted for following operator(s): **\(acceptedForOperators.map { $0.name }.joined(separator: ", "))**.")
+
                 conditionsTextView()
                     .padding(.bottom)
                     .padding(.bottom)
