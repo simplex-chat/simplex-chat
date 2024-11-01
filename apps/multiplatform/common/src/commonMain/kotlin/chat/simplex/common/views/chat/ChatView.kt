@@ -1122,16 +1122,16 @@ fun BoxScope.ChatItemsList(
           }
         }
 
-      val revealed = remember { mutableStateOf(sectionItems.revealed) }
+      val revealed = remember { mutableStateOf(revealedItems.value.contains(cItem.id)) }
 
       KeyChangeEffect(revealed.value) {
-        val revealId = if (cItem.mergeCategory == null) cItem.id else sectionItems.items.firstOrNull()?.id
+        val revealIds = if (cItem.mergeCategory == null) setOf(cItem.id) else sectionItems.items.map { it.id }.toSet()
 
-        if (revealId != null) {
+        if (revealIds.isNotEmpty()) {
           if (revealed.value) {
-            revealedItems.value = revealedItems.value.toMutableSet().apply { add(revealId) }
+            revealedItems.value = revealedItems.value.toMutableSet().apply { addAll(revealIds) }
           } else {
-            revealedItems.value = revealedItems.value.toMutableSet().apply { remove(revealId) }
+            revealedItems.value = revealedItems.value.toMutableSet().apply { removeAll(revealIds) }
           }
         }
       }
