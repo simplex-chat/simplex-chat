@@ -115,8 +115,18 @@ struct NetworkAndServers: View {
         .sheet(item: $sheetItem, onDismiss: { serverOperators = ChatModel.shared.serverOperators }) { item in
             switch item {
             case let .showConditions(conditionsAction):
-                UsageConditionsView(showTitle: true, conditionsAction: conditionsAction)
-                    .modifier(ThemedBackground(grouped: true))
+                UsageConditionsView(
+                    showTitle: true,
+                    dismissOnAccept: true,
+                    conditionsAction: conditionsAction,
+                    onAcceptAction: { date in
+                        switch conditionsAction {
+                        case let .reviewUpdatedConditions(acceptForOperators, _): ChatModel.shared.acceptConditionsForOperators(acceptForOperators, date)
+                        default: break
+                        }
+                    }
+                )
+                .modifier(ThemedBackground(grouped: true))
             }
         }
     }
