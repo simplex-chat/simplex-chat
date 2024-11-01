@@ -40,6 +40,7 @@ import Simplex.Chat.Types (ContactName)
 data ChatOpts = ChatOpts
   { coreOptions :: CoreChatOpts,
     deviceName :: Maybe Text,
+    displayName :: Maybe ContactName,
     chatCmd :: String,
     chatCmdDelay :: Int,
     chatCmdLog :: ChatCmdLog,
@@ -57,7 +58,6 @@ data ChatOpts = ChatOpts
 data CoreChatOpts = CoreChatOpts
   { dbFilePrefix :: String,
     dbKey :: ScrubbedBytes,
-    displayName :: Maybe ContactName,
     smpServers :: [SMPServerWithAuth],
     xftpServers :: [XFTPServerWithAuth],
     simpleNetCfg :: SimpleNetCfg,
@@ -101,13 +101,6 @@ coreChatOptsP appDir defaultDbFileName = do
           <> help "Database encryption key/pass-phrase"
           <> value ""
       )
-  displayName <-
-    optional $
-      strOption
-        ( long "display-name"
-            <> metavar "DISPLAY_NAME"
-            <> help "Display name will be sent to your contacts when you connect and only stored on your device and you can change it later."
-        )
   smpServers <-
     option
       parseProtocolServers
@@ -253,7 +246,6 @@ coreChatOptsP appDir defaultDbFileName = do
     CoreChatOpts
       { dbFilePrefix,
         dbKey,
-        displayName,
         smpServers,
         xftpServers,
         simpleNetCfg =
@@ -295,6 +287,13 @@ chatOptsP appDir defaultDbFileName = do
         ( long "device-name"
             <> metavar "DEVICE"
             <> help "Device name to use in connections with remote hosts and controller"
+        )
+  displayName <-
+    optional $
+      strOption
+        ( long "display-name"
+            <> metavar "DISPLAY_NAME"
+            <> help "Display name will be sent to your contacts when you connect and only stored on your device and you can change it later."
         )
   chatCmd <-
     strOption
@@ -385,6 +384,7 @@ chatOptsP appDir defaultDbFileName = do
   pure
     ChatOpts
       { coreOptions,
+        displayName,
         deviceName,
         chatCmd,
         chatCmdDelay,

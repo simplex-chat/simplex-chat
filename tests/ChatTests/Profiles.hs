@@ -223,9 +223,9 @@ testMultiWordProfileNames =
       alice #> "@'Cath J' hi"
       cath <# "'Alice Jones'> hi"
   where
-    aliceProfile' = baseProfile {displayName = "Alice Jones"}
-    bobProfile' = baseProfile {displayName = "Bob James"}
-    cathProfile' = baseProfile {displayName = "Cath Johnson"}
+    aliceProfile' = (baseProfile :: Profile) {displayName = "Alice Jones"}
+    bobProfile' = (baseProfile :: Profile) {displayName = "Bob James"}
+    cathProfile' = (baseProfile :: Profile) {displayName = "Cath Johnson"}
     baseProfile = Profile {displayName = "", fullName = "", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
 
 testUserContactLink :: HasCallStack => FilePath -> IO ()

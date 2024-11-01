@@ -74,6 +74,7 @@ testOpts =
   ChatOpts
     { coreOptions = testCoreOpts,
       deviceName = Nothing,
+      displayName = Nothing,
       chatCmd = "",
       chatCmdDelay = 3,
       chatCmdLog = CCLNone,

@@ -76,6 +76,7 @@ mkChatOpts BroadcastBotOpts {coreOptions} =
   ChatOpts
     { coreOptions,
       deviceName = Nothing,
+      displayName = Nothing,
       chatCmd = "",
       chatCmdDelay = 3,
       chatCmdLog = CCLNone,
