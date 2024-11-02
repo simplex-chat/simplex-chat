@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.ui.theme.*
@@ -137,12 +138,16 @@ fun UserPicker(
     }
   }
 
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val iconColor = MaterialTheme.colors.secondaryVariant
+  val background = if (appPlatform.isAndroid) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, alpha = 1 - userPickerAlpha()) else MaterialTheme.colors.surface
   PlatformUserPicker(
     modifier = Modifier
       .height(IntrinsicSize.Min)
       .fillMaxWidth()
-      .then(if (newChat.isVisible()) Modifier.shadow(8.dp, clip = true) else Modifier)
-      .background(if (appPlatform.isAndroid) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, alpha = 1 - userPickerAlpha()) else MaterialTheme.colors.surface)
+      .then(if (newChat.isVisible()) Modifier.shadow(8.dp, clip = true, ambientColor = background) else Modifier)
+      .padding(top = if (appPlatform.isDesktop && oneHandUI.value) 7.dp else 0.dp)
+      .background(background)
       .padding(bottom = USER_PICKER_SECTION_SPACING - DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
     pickerState = userPickerState
   ) {
@@ -198,12 +203,13 @@ fun UserPicker(
           UserPickerUsersSection(
             users = users,
             onUserClicked = onUserClicked,
+            iconColor = iconColor,
             stopped = stopped
           )
         }
       } else if (currentUser != null) {
         SectionItemView({ onUserClicked(currentUser) }, 80.dp, padding = PaddingValues(start = 16.dp, end = DEFAULT_PADDING), disabled = stopped) {
-          ProfilePreview(currentUser.profile, stopped = stopped)
+          ProfilePreview(currentUser.profile, iconColor = iconColor, stopped = stopped)
         }
       }
     }
@@ -234,6 +240,7 @@ fun UserPicker(
           Column(modifier = Modifier.padding(vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)) {
             UserPickerUsersSection(
               users = inactiveUsers,
+              iconColor = iconColor,
               onUserClicked = onUserClicked,
               stopped = stopped
             )
@@ -265,13 +272,15 @@ fun UserPicker(
               generalGetString(MR.strings.auth_open_chat_profiles),
               generalGetString(MR.strings.auth_log_in_using_credential)
             ) {
-              ModalManager.start.showCustomModal { close ->
+              ModalManager.start.showCustomModal(keyboardCoversBar = false) { close ->
                 val search = rememberSaveable { mutableStateOf("") }
                 val profileHidden = rememberSaveable { mutableStateOf(false) }
                 ModalView(
                   { close() },
-                  endButtons = {
-                    SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
+                  showSearch = true,
+                  searchAlwaysVisible = true,
+                  onSearchValueChanged = {
+                    search.value = it
                   },
                   content = { UserProfilesView(chatModel, search, profileHidden) })
               }
@@ -519,6 +528,7 @@ private fun DevicePickerRow(
 @Composable
 expect fun UserPickerUsersSection(
   users: List<UserInfo>,
+  iconColor: Color,
   stopped: Boolean,
   onUserClicked: (user: User) -> Unit,
 )
