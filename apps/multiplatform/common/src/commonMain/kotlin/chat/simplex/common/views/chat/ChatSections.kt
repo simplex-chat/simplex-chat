@@ -44,10 +44,17 @@ data class ChatSectionLoader (
     val chatItemsSectionArea = chatModel.chatItemsSectionArea
     val itemsToAdd = mutableListOf<ChatItem>()
     val sectionsToMerge = mutableMapOf<ChatSectionArea, ChatSectionArea>()
+    val itemsThatCouldRequireMerge = mutableListOf<ChatItem>()
     for (cItem in items) {
       val itemSectionArea = chatItemsSectionArea[cItem.id]
       if (itemSectionArea == null) {
         itemsToAdd.add(cItem)
+        val targetSection = sectionsToMerge[sectionArea] ?: this.sectionArea
+        chatItemsSectionArea[cItem.id] = targetSection
+
+        if (targetSection == this.sectionArea) {
+          itemsThatCouldRequireMerge.add(cItem)
+        }
       } else if (itemSectionArea != this.sectionArea) {
         val (targetSection, sectionToDrop) = when (itemSectionArea) {
           ChatSectionArea.Bottom -> ChatSectionArea.Bottom to this.sectionArea
@@ -69,11 +76,11 @@ data class ChatSectionLoader (
           chatItemsSectionArea[it.id] = newSection
         }
       }
-    }
 
-    itemsToAdd.forEach {
-      val targetSection = sectionsToMerge[sectionArea] ?: sectionArea
-      chatItemsSectionArea[it.id] = targetSection
+      itemsThatCouldRequireMerge.forEach {
+        val targetSection = sectionsToMerge[sectionArea] ?: sectionArea
+        chatItemsSectionArea[it.id] = targetSection
+      }
     }
 
     return itemsToAdd
