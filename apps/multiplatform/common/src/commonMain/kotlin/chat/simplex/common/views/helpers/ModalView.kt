@@ -6,12 +6,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chatlist.StatusBarBackground
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.min
@@ -21,23 +23,39 @@ import kotlin.math.sqrt
 fun ModalView(
   close: () -> Unit,
   showClose: Boolean = true,
+  showAppBar: Boolean = true,
   enableClose: Boolean = true,
-  background: Color = MaterialTheme.colors.background,
+  background: Color = Color.Unspecified,
   modifier: Modifier = Modifier,
-  closeOnTop: Boolean = true,
+  showSearch: Boolean = false,
+  searchAlwaysVisible: Boolean = false,
+  onSearchValueChanged: (String) -> Unit = {},
   endButtons: @Composable RowScope.() -> Unit = {},
-  content: @Composable () -> Unit,
+  content: @Composable BoxScope.() -> Unit,
 ) {
-  if (showClose) {
+  if (showClose && showAppBar) {
     BackHandler(enabled = enableClose, onBack = close)
   }
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
   Surface(Modifier.fillMaxSize(), contentColor = LocalContentColor.current) {
-    Column(if (background != MaterialTheme.colors.background) Modifier.background(background) else Modifier.themedBackground()) {
-      if (closeOnTop) {
-        CloseSheetBar(if (enableClose) close else null, showClose, endButtons = endButtons)
-      }
+    Box(if (background != Color.Unspecified) Modifier.background(background) else Modifier.themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer)) {
       Box(modifier = modifier) {
         content()
+      }
+      if (showAppBar) {
+        if (oneHandUI.value) {
+          StatusBarBackground()
+        }
+        Box(Modifier.align(if (oneHandUI.value) Alignment.BottomStart else Alignment.TopStart)) {
+          DefaultAppBar(
+            navigationButton = if (showClose) {{ NavigationButtonBack(onButtonClicked = if (enableClose) close else null) }} else null,
+            onTop = !oneHandUI.value,
+            showSearch = showSearch,
+            searchAlwaysVisible = searchAlwaysVisible,
+            onSearchValueChanged = onSearchValueChanged,
+            buttons = endButtons
+          )
+        }
       }
     }
   }
@@ -47,7 +65,7 @@ enum class ModalPlacement {
   START, CENTER, END, FULLSCREEN
 }
 
-class ModalData() {
+class ModalData(val keyboardCoversBar: Boolean = true) {
   private val state = mutableMapOf<String, MutableState<Any?>>()
   fun <T> stateGetOrPut (key: String, default: () -> T): MutableState<T> =
     state.getOrPut(key) { mutableStateOf(default() as Any) } as MutableState<T>
@@ -55,7 +73,7 @@ class ModalData() {
   fun <T> stateGetOrPutNullable (key: String, default: () -> T?): MutableState<T?> =
     state.getOrPut(key) { mutableStateOf(default() as Any?) } as MutableState<T?>
 
-  val appBarHandler = AppBarHandler()
+  val appBarHandler = AppBarHandler(null, null, keyboardCoversBar = keyboardCoversBar)
 }
 
 class ModalManager(private val placement: ModalPlacement? = null) {
@@ -69,23 +87,21 @@ class ModalManager(private val placement: ModalPlacement? = null) {
   private var passcodeView: MutableStateFlow<(@Composable (close: () -> Unit) -> Unit)?> = MutableStateFlow(null)
   private var onTimePasscodeView: MutableStateFlow<(@Composable (close: () -> Unit) -> Unit)?> = MutableStateFlow(null)
 
-  fun showModal(settings: Boolean = false, showClose: Boolean = true, closeOnTop: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
-    val data = ModalData()
+  fun showModal(settings: Boolean = false, showClose: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
     showCustomModal { close ->
-      ModalView(close, showClose = showClose, closeOnTop = closeOnTop, endButtons = endButtons, content = { data.content() })
+      ModalView(close, showClose = showClose, endButtons = endButtons, content = { content() })
     }
   }
 
-  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, closeOnTop: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.(close: () -> Unit) -> Unit) {
-    val data = ModalData()
+  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.(close: () -> Unit) -> Unit) {
     showCustomModal { close ->
-      ModalView(close, showClose = showClose, endButtons = endButtons, closeOnTop = closeOnTop, content = { data.content(close) })
+      ModalView(close, showClose = showClose, endButtons = endButtons, content = { content(close) })
     }
   }
 
-  fun showCustomModal(animated: Boolean = true, modal: @Composable ModalData.(close: () -> Unit) -> Unit) {
+  fun showCustomModal(animated: Boolean = true, keyboardCoversBar: Boolean = true, modal: @Composable ModalData.(close: () -> Unit) -> Unit) {
     Log.d(TAG, "ModalManager.showCustomModal")
-    val data = ModalData()
+    val data = ModalData(keyboardCoversBar = keyboardCoversBar)
     // Means, animation is in progress or not started yet. Do not wait until animation finishes, just remove all from screen.
     // This is useful when invoking close() and ShowCustomModal one after another without delay. Otherwise, screen will hold prev view
     if (toRemove.isNotEmpty()) {
@@ -146,9 +162,7 @@ class ModalManager(private val placement: ModalPlacement? = null) {
     // Without animation
     if (modalCount.value > 0 && modalViews.lastOrNull()?.first == false) {
       modalViews.lastOrNull()?.let {
-        CompositionLocalProvider(
-          LocalAppBarHandler provides it.second.appBarHandler
-        ) {
+        CompositionLocalProvider(LocalAppBarHandler provides adjustAppBarHandler(it.second.appBarHandler)) {
           it.third(it.second, ::closeModal)
         }
       }
@@ -164,9 +178,7 @@ class ModalManager(private val placement: ModalPlacement? = null) {
       }
     ) {
       modalViews.getOrNull(it - 1)?.let {
-        CompositionLocalProvider(
-          LocalAppBarHandler provides it.second.appBarHandler
-        ) {
+        CompositionLocalProvider(LocalAppBarHandler provides adjustAppBarHandler(it.second.appBarHandler)) {
           it.third(it.second, ::closeModal)
         }
       }

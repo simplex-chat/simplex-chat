@@ -119,9 +119,7 @@ fun GroupLinkLayout(
     )
   }
 
-  ColumnWithScrollBar(
-    Modifier,
-  ) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.group_link))
     Text(
       stringResource(MR.strings.you_can_share_group_link_anybody_will_be_able_to_connect),
