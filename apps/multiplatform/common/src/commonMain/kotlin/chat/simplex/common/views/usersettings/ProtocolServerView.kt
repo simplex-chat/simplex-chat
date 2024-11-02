@@ -75,10 +75,7 @@ private fun ProtocolServerLayout(
   onUpdate: (ServerCfg) -> Unit,
   onDelete: () -> Unit,
 ) {
-  ColumnWithScrollBar(
-    Modifier
-      .fillMaxWidth()
-  ) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(if (server.preset) MR.strings.smp_servers_preset_server else MR.strings.smp_servers_your_server))
 
     if (server.preset) {
