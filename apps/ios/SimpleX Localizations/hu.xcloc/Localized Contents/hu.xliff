@@ -252,9 +252,9 @@
         <target>%lld üzenet letiltva</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld messages blocked by admin" xml:space="preserve">
+      <trans-unit id="%lld messages blocked by admin" xml:space="preserve" approved="no">
         <source>%lld messages blocked by admin</source>
-        <target>%lld üzenetet letiltott az admin</target>
+        <target state="translated">%lld üzenetet letiltott az adminisztrátor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld messages marked deleted" xml:space="preserve">
@@ -692,12 +692,12 @@
       </trans-unit>
       <trans-unit id="Admins can block a member for all." xml:space="preserve" approved="no">
         <source>Admins can block a member for all.</source>
-        <target state="translated">Az adminok egy tagot a csoport összes tagja számára letilthatnak.</target>
+        <target state="translated">Az adminisztrátorok egy tagot a csoport összes tagja számára letilthatnak.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Admins can create the links to join groups." xml:space="preserve">
+      <trans-unit id="Admins can create the links to join groups." xml:space="preserve" approved="no">
         <source>Admins can create the links to join groups.</source>
-        <target>Az adminok hivatkozásokat hozhatnak létre a csoportokhoz való kapcsolódáshoz.</target>
+        <target state="translated">Az adminisztrátorok hivatkozásokat hozhatnak létre a csoportokhoz való kapcsolódáshoz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Advanced network settings" xml:space="preserve">
@@ -1160,9 +1160,9 @@
         <target>Tag letiltása?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Blocked by admin" xml:space="preserve">
+      <trans-unit id="Blocked by admin" xml:space="preserve" approved="no">
         <source>Blocked by admin</source>
-        <target>Az admin letiltotta</target>
+        <target state="translated">Az adminisztrátor letiltotta</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Blur for better privacy." xml:space="preserve">
@@ -2665,9 +2665,9 @@ Ez az Ön egyszer használható hivatkozása!</target>
         <target>Engedélyezve</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enabled for" xml:space="preserve">
+      <trans-unit id="Enabled for" xml:space="preserve" approved="no">
         <source>Enabled for</source>
-        <target>Engedélyezve</target>
+        <target state="translated">Számukra engedélyezve:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Encrypt" xml:space="preserve">
@@ -4658,9 +4658,9 @@ Ez az Ön hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Nincs kiszüléktoken!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No direct connection yet, message is forwarded by admin." xml:space="preserve">
+      <trans-unit id="No direct connection yet, message is forwarded by admin." xml:space="preserve" approved="no">
         <source>No direct connection yet, message is forwarded by admin.</source>
-        <target>Még nincs közvetlen kapcsolat, az üzenetet az admin továbbítja.</target>
+        <target state="translated">Még nincs közvetlen kapcsolat, az üzenetet az adminisztrátor továbbítja.</target>
         <note>item status description</note>
       </trans-unit>
       <trans-unit id="No filtered chats" xml:space="preserve">
@@ -4733,11 +4733,11 @@ Ez az Ön hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Az értesítések le vannak tiltva!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Now admins can:&#10;- delete members' messages.&#10;- disable members (&quot;observer&quot; role)" xml:space="preserve">
+      <trans-unit id="Now admins can:&#10;- delete members' messages.&#10;- disable members (&quot;observer&quot; role)" xml:space="preserve" approved="no">
         <source>Now admins can:
 - delete members' messages.
 - disable members ("observer" role)</source>
-        <target>Most már az adminok is:
+        <target state="translated">Most már az adminisztrátorok is:
 - törölhetik a tagok üzeneteit.
 - letilthatnak tagokat („megfigyelő” szerepkör)</target>
         <note>No comment provided by engineer.</note>
@@ -4747,9 +4747,9 @@ Ez az Ön hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Rendben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Off" xml:space="preserve">
+      <trans-unit id="Off" xml:space="preserve" approved="no">
         <source>Off</source>
-        <target>Kikapcsolva</target>
+        <target state="translated">Kikapcsolva</target>
         <note>blur media</note>
       </trans-unit>
       <trans-unit id="Ok" xml:space="preserve">
@@ -5097,9 +5097,9 @@ Error: %@</source>
 Hiba: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please contact group admin." xml:space="preserve">
+      <trans-unit id="Please contact group admin." xml:space="preserve" approved="no">
         <source>Please contact group admin.</source>
-        <target>Lépjen kapcsolatba a csoport adminnal.</target>
+        <target state="translated">Lépjen kapcsolatba a csoport adminisztrátorával.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please enter correct current passphrase." xml:space="preserve">
@@ -7652,9 +7652,9 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
         <target>Kapcsolat létrehozása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You allow" xml:space="preserve">
+      <trans-unit id="You allow" xml:space="preserve" approved="no">
         <source>You allow</source>
-        <target>Engedélyezte</target>
+        <target state="translated">Ön engedélyezi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You already have a chat profile with the same display name. Please choose another name." xml:space="preserve">
@@ -8126,14 +8126,14 @@ Kapcsolatkérés megismétlése?</target>
         <target>elfogadott hívás</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="admin" xml:space="preserve">
+      <trans-unit id="admin" xml:space="preserve" approved="no">
         <source>admin</source>
-        <target>admin</target>
+        <target state="translated">adminisztrátor</target>
         <note>member role</note>
       </trans-unit>
-      <trans-unit id="admins" xml:space="preserve">
+      <trans-unit id="admins" xml:space="preserve" approved="no">
         <source>admins</source>
-        <target>adminok</target>
+        <target state="translated">adminisztrátorok</target>
         <note>feature role</note>
       </trans-unit>
       <trans-unit id="agreeing encryption for %@…" xml:space="preserve">
@@ -8196,9 +8196,9 @@ Kapcsolatkérés megismétlése?</target>
         <target>letiltotta %@-t</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="blocked by admin" xml:space="preserve">
+      <trans-unit id="blocked by admin" xml:space="preserve" approved="no">
         <source>blocked by admin</source>
-        <target>letiltva az admin által</target>
+        <target state="translated">letiltva az adminisztrátor által</target>
         <note>marked deleted chat item preview text</note>
       </trans-unit>
       <trans-unit id="bold" xml:space="preserve">
@@ -8426,9 +8426,9 @@ Kapcsolatkérés megismétlése?</target>
         <target>e2e titkosított</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="enabled" xml:space="preserve">
+      <trans-unit id="enabled" xml:space="preserve" approved="no">
         <source>enabled</source>
-        <target>engedélyezve</target>
+        <target state="translated">engedélyezve</target>
         <note>enabled status</note>
       </trans-unit>
       <trans-unit id="enabled for contact" xml:space="preserve">
@@ -8711,9 +8711,9 @@ Kapcsolatkérés megismétlése?</target>
         <target>megfigyelő</target>
         <note>member role</note>
       </trans-unit>
-      <trans-unit id="off" xml:space="preserve">
+      <trans-unit id="off" xml:space="preserve" approved="no">
         <source>off</source>
-        <target>kikapcsolva</target>
+        <target state="translated">kikapcsolva</target>
         <note>enabled status
    group pref value
    time to disappear</note>
@@ -8728,9 +8728,9 @@ Kapcsolatkérés megismétlése?</target>
         <target>ajánlotta %1$@: %2$@-kor</target>
         <note>feature offered item</note>
       </trans-unit>
-      <trans-unit id="on" xml:space="preserve">
+      <trans-unit id="on" xml:space="preserve" approved="no">
         <source>on</source>
-        <target>bekapcsolva</target>
+        <target state="translated">bekapcsolva</target>
         <note>group pref value</note>
       </trans-unit>
       <trans-unit id="other" xml:space="preserve">
