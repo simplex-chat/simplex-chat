@@ -282,8 +282,8 @@ testFileCApi fileName tmp = do
   ptr <- mallocBytes $ B.length src
   putByteString ptr src
   r <- peekCAString =<< cChatWriteFile cc cPath ptr cLen
-  Just (WFResult cfArgs@(CFArgs key nonce)) <- jDecode r
-  let encryptedFile = CryptoFile path $ Just cfArgs
+  Just (WFResult cfArgs@(Just (CFArgs key nonce))) <- jDecode r
+  let encryptedFile = CryptoFile path cfArgs
   CF.getFileContentsSize encryptedFile `shouldReturn` fromIntegral (B.length src)
   cKey <- encodedCString key
   cNonce <- encodedCString nonce
@@ -318,8 +318,8 @@ testFileEncryptionCApi fileName tmp = do
   let toPath = tmp </> (fileName <> ".encrypted.pdf")
   cToPath <- newCString toPath
   r <- peekCAString =<< cChatEncryptFile cc cFromPath cToPath
-  Just (WFResult cfArgs@(CFArgs key nonce)) <- jDecode r
-  CF.getFileContentsSize (CryptoFile toPath $ Just cfArgs) `shouldReturn` fromIntegral (B.length src)
+  Just (WFResult cfArgs@(Just (CFArgs key nonce))) <- jDecode r
+  CF.getFileContentsSize (CryptoFile toPath cfArgs) `shouldReturn` fromIntegral (B.length src)
   cKey <- encodedCString key
   cNonce <- encodedCString nonce
   let toPath' = tmp </> (fileName <> ".decrypted.pdf")
