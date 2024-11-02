@@ -47,6 +47,9 @@ struct FramedItemView: View {
                 }
 
                 if let qi = chatItem.quotedItem {
+                    let notFoundItemTitle = NSLocalizedString("Message no longer available", comment: "alert title")
+                    let notFoundItemMessage = NSLocalizedString("The quoted message you are trying to view has been deleted.", comment: "alert message")
+
                     ciQuoteView(qi)
                         .onTapGesture {
                             if let itemId = qi.itemId {
@@ -65,8 +68,22 @@ struct FramedItemView: View {
                                                 scrollModel.scrollToItem(id: itemId)
                                             }
                                         }
+                                    } else {
+                                        AlertManager.shared.showAlert(
+                                            Alert(
+                                                title: Text(notFoundItemTitle),
+                                                message: Text(notFoundItemMessage)
+                                            )
+                                        )
                                     }
                                 }
+                            } else {
+                                AlertManager.shared.showAlert(
+                                    Alert(
+                                        title: Text(notFoundItemTitle),
+                                        message: Text(notFoundItemMessage)
+                                    )
+                                )
                             }
                         }
                 } else if let itemForwarded = chatItem.meta.itemForwarded {

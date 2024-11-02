@@ -1947,34 +1947,16 @@ private func filtered(_ reversedChatItems: Array<ChatItem>) -> Array<ChatItem> {
 
 func loadItemsAround(_ cInfo: ChatInfo, _ chatItemId: Int64) async -> [ChatItem]? {
     do {
-        let im = ItemsModel.shared
         var reversedPage = Array<ChatItem>()
-        var chatItemsAvailable = true
-        // Load additional items until the page is +50 large after merging
-        while chatItemsAvailable && filtered(reversedPage).count < loadItemsPerPage {
-            let pagination: ChatPagination = .before(chatItemId: chatItemId, count: loadItemsPerPage / 2)
-            var chatItems = try await apiGetChatItems(
-                type: cInfo.chatType,
-                id: cInfo.apiId,
-                pagination: pagination,
-                search: ""
-            )
-            if let lastItem = chatItems.last {
-                let pagination: ChatPagination = .after(chatItemId: lastItem.id, count: loadItemsPerPage / 2)
-                let afterItems = try await apiGetChatItems(
-                    type: cInfo.chatType,
-                    id: cInfo.apiId,
-                    pagination: pagination,
-                    search: ""
-                )
-                chatItems.append(contentsOf: afterItems)
-            }
+        let pagination: ChatPagination = .around(chatItemId: chatItemId, count: loadItemsPerPage * 2)
+        var chatItems = try await apiGetChatItems(
+            type: cInfo.chatType,
+            id: cInfo.apiId,
+            pagination: pagination,
+            search: ""
+        )
             
-            chatItemsAvailable = !chatItems.isEmpty
-            reversedPage.append(contentsOf: chatItems.reversed())
-        }
-        
-        return reversedPage
+        return chatItems.reversed()
     } catch let error {
         logger.error("apiGetChat error: \(responseError(error))")
         return nil
