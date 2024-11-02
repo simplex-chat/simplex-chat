@@ -29,6 +29,7 @@ dependencies:
   - email-validate == 2.3.*
   - exceptions == 0.10.*
   - filepath == 1.4.*
+  - file-embed == 0.0.15.*
   - http-types == 0.12.*
   - http2 >= 4.2.2 && < 4.3
   - memory == 0.18.*
