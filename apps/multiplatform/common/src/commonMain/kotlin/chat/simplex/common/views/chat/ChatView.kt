@@ -991,7 +991,7 @@ fun BoxScope.ChatItemsList(
 
   Spacer(Modifier.size(8.dp))
   val reversedChatItems = remember { derivedStateOf { chatModel.chatItems.asReversed() } }
-  val revealedItems = rememberSaveable { mutableStateOf(setOf<Long>()) }
+  val revealedItems = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(setOf<Long>()) }
   val sections = remember { derivedStateOf { reversedChatItems.value.putIntoSections(revealedItems.value) } }
   val preloadItemsEnabled = remember { mutableStateOf(true) }
   val boundaries = remember { derivedStateOf { sections.value.map { it.boundary } } }
