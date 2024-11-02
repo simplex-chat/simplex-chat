@@ -238,7 +238,7 @@ remoteStoreFileTest =
       desktop ##> "/get remote file 1 {\"userId\": 1, \"fileId\": 1, \"sent\": true, \"fileSource\": {\"filePath\": \"test_1.pdf\"}}"
       hostError desktop "SEFileNotFound"
       -- send file not encrypted locally on mobile host
-      desktop ##> "/_send @2 json {\"filePath\": \"test_1.pdf\", \"msgContent\": {\"type\": \"file\", \"text\": \"sending a file\"}}"
+      desktop ##> "/_send @2 json [{\"filePath\": \"test_1.pdf\", \"msgContent\": {\"type\": \"file\", \"text\": \"sending a file\"}}]"
       desktop <# "@bob sending a file"
       desktop <# "/f @bob test_1.pdf"
       desktop <## "use /fc 1 to cancel sending"
@@ -268,7 +268,7 @@ remoteStoreFileTest =
       B.readFile (desktopHostStore </> "test_1.pdf") `shouldReturn` src
 
       -- send file encrypted locally on mobile host
-      desktop ##> ("/_send @2 json {\"fileSource\": {\"filePath\":\"test_2.pdf\", \"cryptoArgs\": " <> LB.unpack (J.encode cfArgs) <> "}, \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}")
+      desktop ##> ("/_send @2 json [{\"fileSource\": {\"filePath\":\"test_2.pdf\", \"cryptoArgs\": " <> LB.unpack (J.encode cfArgs) <> "}, \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}]")
       desktop <# "/f @bob test_2.pdf"
       desktop <## "use /fc 2 to cancel sending"
       bob <# "alice> sends file test_2.pdf (266.0 KiB / 272376 bytes)"

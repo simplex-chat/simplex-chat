@@ -2,6 +2,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
@@ -120,11 +121,27 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
   CRContactCode u ct code -> ttyUser u $ viewContactCode ct code testView
   CRGroupMemberCode u g m code -> ttyUser u $ viewGroupMemberCode g m code testView
-  CRNewChatItem u (AChatItem _ _ chat item) -> ttyUser u $ unmuted u chat item $ viewChatItem chat item False ts tz <> viewItemReactions item
+  CRNewChatItems u chatItems
+    | length chatItems > 20 ->
+        if
+          | all (\aci -> aChatItemDir aci == MDRcv) chatItems -> ttyUser u [sShow (length chatItems) <> " new messages"]
+          | all (\aci -> aChatItemDir aci == MDSnd) chatItems -> ttyUser u [sShow (length chatItems) <> " messages sent"]
+          | otherwise -> ttyUser u [sShow (length chatItems) <> " new messages created"]
+    | otherwise ->
+        concatMap
+          (\(AChatItem _ _ chat item) -> ttyUser u $ unmuted u chat item $ viewChatItem chat item False ts tz <> viewItemReactions item)
+          chatItems
   CRChatItems u _ chatItems -> ttyUser u $ concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True ts tz <> viewItemReactions item) chatItems
   CRChatItemInfo u ci ciInfo -> ttyUser u $ viewChatItemInfo ci ciInfo tz
   CRChatItemId u itemId -> ttyUser u [plain $ maybe "no item" show itemId]
-  CRChatItemStatusUpdated u ci -> ttyUser u $ viewChatItemStatusUpdated ci ts tz testView showReceipts
+  CRChatItemsStatusesUpdated u chatItems
+    | length chatItems <= 20 ->
+        concatMap
+          (\ci -> ttyUser u $ viewChatItemStatusUpdated ci ts tz testView showReceipts)
+          chatItems
+    | testView && showReceipts ->
+        ttyUser u [sShow (length chatItems) <> " message statuses updated"]
+    | otherwise -> []
   CRChatItemUpdated u (AChatItem _ _ chat item) -> ttyUser u $ unmuted u chat item $ viewItemUpdate chat item liveItems ts tz
   CRChatItemNotChanged u ci -> ttyUser u $ viewItemNotChanged ci
   CRChatItemsDeleted u deletions byUser timed -> case deletions of
@@ -193,6 +210,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRUnknownMemberBlocked u g byM um -> ttyUser u [ttyGroup' g <> ": " <> ttyMember byM <> " blocked an unknown member, creating unknown member record " <> ttyMember um]
   CRUnknownMemberAnnounced u g _ um m -> ttyUser u [ttyGroup' g <> ": unknown member " <> ttyMember um <> " updated to " <> ttyMember m]
   CRGroupDeletedUser u g -> ttyUser u [ttyGroup' g <> ": you deleted the group"]
+  CRForwardPlan u count itemIds fc -> ttyUser u $ viewForwardPlan count itemIds fc
   CRRcvFileDescrReady _ _ _ _ -> []
   CRRcvFileProgressXFTP {} -> []
   CRRcvFileAccepted u ci -> ttyUser u $ savingFile' ci
@@ -307,7 +325,8 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRContactConnectionDeleted u PendingContactConnection {pccConnId} -> ttyUser u ["connection :" <> sShow pccConnId <> " deleted"]
   CRNtfTokenStatus status -> ["device token status: " <> plain (smpEncode status)]
   CRNtfToken _ status mode srv -> ["device token status: " <> plain (smpEncode status) <> ", notifications mode: " <> plain (strEncode mode) <> ", server: " <> sShow srv]
-  CRNtfMessages {} -> []
+  CRNtfConns {} -> []
+  CRConnNtfMessages {} -> []
   CRNtfMessage {} -> []
   CRCurrentRemoteHost rhi_ ->
     [ maybe
@@ -919,6 +938,20 @@ viewUserContactLinkDeleted =
   [ "Your chat address is deleted - accepted contacts will remain connected.",
     "To create a new chat address use " <> highlight' "/ad"
   ]
+
+viewForwardPlan :: Int -> [ChatItemId] -> Maybe ForwardConfirmation -> [StyledString]
+viewForwardPlan count itemIds = maybe [forwardCount] $ \fc -> [confirmation fc, forwardCount]
+  where
+    confirmation = \case
+      FCFilesNotAccepted fileIds -> plain $ "Files can be received: " <> intercalate ", " (map show fileIds)
+      FCFilesInProgress cnt -> plain $ "Still receiving " <> show cnt <> " file(s)"
+      FCFilesMissing cnt -> plain $ show cnt <> " file(s) are missing"
+      FCFilesFailed cnt -> plain $ "Receiving " <> show cnt <> " file(s) failed"
+    forwardCount
+      | count == len = "all messages can be forwarded"
+      | len == 0 = "nothing to forward"
+      | otherwise = plain $ show len <> " message(s) out of " <> show count <> " can be forwarded"
+    len = length itemIds
 
 connReqContact_ :: StyledString -> ConnReqContact -> [StyledString]
 connReqContact_ intro cReq =
@@ -2024,8 +2057,7 @@ viewChatError isCmd logLevel testView = \case
     CEFallbackToSMPProhibited fileId -> ["recipient tried to accept file " <> sShow fileId <> " via old protocol, prohibited"]
     CEInlineFileProhibited _ -> ["A small file sent without acceptance - you can enable receiving such files with -f option."]
     CEInvalidQuote -> ["cannot reply to this message"]
-    CEInvalidForward -> ["cannot forward this message"]
-    CEForwardNoFile -> ["cannot forward this message, file not found"]
+    CEInvalidForward -> ["cannot forward message(s)"]
     CEInvalidChatItemUpdate -> ["cannot update this item"]
     CEInvalidChatItemDelete -> ["cannot delete this item"]
     CEHasCurrentCall -> ["call already in progress"]

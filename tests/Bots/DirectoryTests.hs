@@ -28,6 +28,8 @@ directoryServiceTests :: SpecWith FilePath
 directoryServiceTests = do
   it "should register group" testDirectoryService
   it "should suspend and resume group" testSuspendResume
+  it "should delete group registration" testDeleteGroup
+  it "should change initial member role" testSetRole
   it "should join found group via link" testJoinGroup
   it "should support group names with spaces" testGroupNameWithSpaces
   it "should return more groups in search, all and recent groups" testSearchGroups
@@ -139,6 +141,15 @@ testDirectoryService tmp =
         bob <# "SimpleX-Directory> Thank you! The group link for ID 1 (PSA) is added to the welcome message."
         bob <## "You will be notified once the group is added to the directory - it may take up to 24 hours."
         approvalRequested superUser welcomeWithLink' (1 :: Int)
+        superUser #> "@SimpleX-Directory /pending"
+        superUser <# "SimpleX-Directory> > /pending"
+        superUser <## "      1 registered group(s)"
+        superUser <# "SimpleX-Directory> 1. PSA (Privacy, Security & Anonymity)"
+        superUser <## "Welcome message:"
+        superUser <##. "Welcome! Link to join the group PSA: "
+        superUser <## "Owner: bob"
+        superUser <## "2 members"
+        superUser <## "Status: pending admin approval"
         superUser #> "@SimpleX-Directory /approve 1:PSA 1"
         superUser <# "SimpleX-Directory> > /approve 1:PSA 1"
         superUser <## "      Group approved!"
@@ -196,6 +207,47 @@ testSuspendResume tmp =
       superUser <## "      Group listing resumed!"
       bob <# "SimpleX-Directory> The group ID 1 (privacy) is listed in the directory again!"
       groupFound bob "privacy"
+
+testDeleteGroup :: HasCallStack => FilePath -> IO ()
+testDeleteGroup tmp =
+  withDirectoryService tmp $ \superUser dsLink ->
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      bob `connectVia` dsLink
+      registerGroup superUser bob "privacy" "Privacy"
+      groupFound bob "privacy"
+      bob #> "@SimpleX-Directory /delete 1:privacy"
+      bob <# "SimpleX-Directory> > /delete 1:privacy"
+      bob <## "      Your group privacy is deleted from the directory"
+      groupNotFound bob "privacy"
+
+testSetRole :: HasCallStack => FilePath -> IO ()
+testSetRole tmp =
+  withDirectoryService tmp $ \superUser dsLink ->
+    withNewTestChat tmp "bob" bobProfile $ \bob ->
+      withNewTestChat tmp "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        registerGroup superUser bob "privacy" "Privacy"
+        groupFound bob "privacy"
+        bob #> "@SimpleX-Directory /role 1:privacy observer"
+        bob <# "SimpleX-Directory> > /role 1:privacy observer"
+        bob <## "      The initial member role for the group privacy is set to observer"
+        bob <## ""
+        note <- getTermLine bob
+        let groupLink = dropStrPrefix "Please note: it applies only to members joining via this link: " note
+        cath ##> ("/c " <> groupLink)
+        cath <## "connection request sent!"
+        cath <## "#privacy: joining the group..."
+        cath <## "#privacy: you joined the group"
+        cath <#. "#privacy SimpleX-Directory> Link to join the group privacy: https://simplex.chat/"
+        cath <## "#privacy: member bob (Bob) is connected"
+        bob <## "#privacy: SimpleX-Directory added cath (Catherine) to the group (connecting...)"
+        bob <## "#privacy: new member cath is connected"
+        bob ##> "/ms #privacy"
+        bob <## "bob (Bob): owner, you, created group"
+        bob <## "SimpleX-Directory: admin, invited, connected"
+        bob <## "cath (Catherine): observer, connected"
+        cath ##> "#privacy hello"
+        cath <## "#privacy: you don't have permission to send messages"
 
 testJoinGroup :: HasCallStack => FilePath -> IO ()
 testJoinGroup tmp =

@@ -776,7 +776,7 @@
     <string name="v4_5_italian_interface_descr">Дякуємо користувачам – приєднуйтеся через Weblate!</string>
     <string name="v4_6_group_moderation_descr">Тепер адміністратори можуть:
 \n- видаляти повідомлення учасників.
-\n- вимикати учасників (роль спостерігач)</string>
+\n- вимикати учасників (роль спостерігача).</string>
     <string name="v4_6_group_welcome_message_descr">Встановіть повідомлення, яке показується новим учасникам!</string>
     <string name="v4_6_reduced_battery_usage">Додатково зменшено використання батареї</string>
     <string name="v4_6_reduced_battery_usage_descr">Більше поліпшень незабаром!</string>
@@ -2067,4 +2067,52 @@
     <string name="reset_all_hints">Скинути всі підказки</string>
     <string name="app_check_for_updates_update_available">Доступно оновлення: %s</string>
     <string name="app_check_for_updates_canceled">Завантаження оновлення скасовано</string>
+    <string name="settings_section_title_chat_database">БАЗА ДАНИХ ЧАТУ</string>
+    <string name="select_chat_profile">Вибрати профіль чату</string>
+    <string name="switching_profile_error_title">Помилка при зміні профілю</string>
+    <string name="delete_messages_cannot_be_undone_warning">Повідомлення будуть видалені — це не можна скасувати!</string>
+    <string name="migrate_from_device_remove_archive_question">Видалити архів?</string>
+    <string name="new_chat_share_profile">Поділитися профілем</string>
+    <string name="migrate_from_device_uploaded_archive_will_be_removed">Завантажений архів бази даних буде остаточно видалено з серверів.</string>
+    <string name="switching_profile_error_message">Ваше з\'єднання було перенесено на %s, але виникла несподівана помилка під час перенаправлення на профіль.</string>
+    <string name="system_mode_toast">Режим системи</string>
+    <string name="network_proxy_auth_mode_no_auth">Не використовуйте облікові дані з проксі.</string>
+    <string name="network_proxy_auth">Аутентифікація проксі</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_entity">Використовуйте різні облікові дані проксі для кожного з\'єднання.</string>
+    <string name="network_proxy_random_credentials">Використовувати випадкові облікові дані</string>
+    <string name="network_proxy_auth_mode_username_password">Ваші облікові дані можуть бути надіслані в незашифрованому вигляді.</string>
+    <string name="network_proxy_incorrect_config_title">Помилка під час збереження проксі</string>
+    <string name="network_proxy_incorrect_config_desc">Переконайтеся, що конфігурація проксі правильна.</string>
+    <string name="network_proxy_password">Пароль</string>
+    <string name="network_proxy_username">Ім\'я користувача</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_user">Використовуйте різні облікові дані проксі для кожного профілю.</string>
+    <string name="n_other_file_errors">%1$d інша(і) помилка(и) файлу.</string>
+    <string name="forward_files_failed_to_receive_desc">%1$d файл(и) не вдалося завантажити.</string>
+    <string name="forward_files_messages_deleted_after_selection_title">%1$s повідомлень не було переслано.</string>
+    <string name="forward_files_not_accepted_receive_files">Завантажити</string>
+    <string name="forward_alert_title_messages_to_forward">Переслати %1$s повідомлень?</string>
+    <string name="forward_multiple">Пересилаю повідомлення…</string>
+    <string name="forward_alert_forward_messages_without_files">Переслати повідомлення без файлів?</string>
+    <string name="forward_alert_title_nothing_to_forward">Немає нічого для пересилання!</string>
+    <string name="compose_save_messages_n">Зберігаю %1$s повідомлень.</string>
+    <string name="n_file_errors">%1$d помилка(и) файлу:
+\n%2$s</string>
+    <string name="forward_files_not_accepted_desc">%1$d файл(и) не були завантажені.</string>
+    <string name="forward_files_in_progress_desc">%1$d файл(и) ще завантажуються.</string>
+    <string name="forward_files_missing_desc">%1$d файл(и) були видалені.</string>
+    <string name="compose_forward_messages_n">Пересилаю %1$s повідомлень</string>
+    <string name="forward_files_messages_deleted_after_selection_desc">Повідомлення були видалені після того, як ви їх вибрали.</string>
+    <string name="error_forwarding_messages">Помилка при пересиланні повідомлень</string>
+    <string name="icon_descr_sound_muted">Звук вимкнено</string>
+    <string name="error_initializing_web_view_wrong_arch">Помилка ініціалізації WebView. Переконайтеся, що WebView встановлено, і його підтримувана архітектура — arm64.  \nПомилка: %s</string>
+    <string name="settings_message_shape_tail">Хвіст</string>
+    <string name="settings_message_shape_corner">Куточок</string>
+    <string name="settings_section_title_message_shape">Форма повідомлення</string>
+    <string name="network_session_mode_session">Сесія додатку</string>
+    <string name="network_session_mode_session_description">Нові облікові дані SOCKS будуть використовуватись щоразу, коли ви запускаєте додаток.</string>
+    <string name="network_session_mode_server_description">Нові облікові дані SOCKS будуть використовуватись для кожного сервера.</string>
+    <string name="network_session_mode_server">Сервер</string>
+    <string name="call_desktop_permission_denied_chrome">Натисніть кнопку інформації поруч із полем адреси, щоб дозволити використання мікрофона.</string>
+    <string name="call_desktop_permission_denied_safari">Відкрийте Налаштування Safari / Сайти / Мікрофон, а потім виберіть \"Дозволити для localhost\".</string>
+    <string name="call_desktop_permission_denied_title">Щоб здійснювати дзвінки, дозволіть використовувати ваш мікрофон. Завершіть дзвінок і спробуйте зателефонувати знову.</string>
 </resources>

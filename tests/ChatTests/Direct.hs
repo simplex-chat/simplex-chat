@@ -1,8 +1,12 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PostfixOperators #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -Wno-ambiguous-fields #-}
 
 module ChatTests.Direct where
 
@@ -17,15 +21,22 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.List (intercalate)
 import qualified Data.Text as T
+import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
-import Simplex.Chat.Controller (ChatConfig (..))
-import Simplex.Chat.Options (ChatOpts (..))
+import Simplex.Chat.Controller (ChatConfig (..), DefaultAgentServers (..))
+import Simplex.Chat.Messages (ChatItemId)
+import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
+import Simplex.Messaging.Agent.Env.SQLite
+import Simplex.Messaging.Agent.RetryInterval
+import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
+import Simplex.Messaging.Transport
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import Simplex.Messaging.Version
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
@@ -36,6 +47,9 @@ chatDirectTests :: SpecWith FilePath
 chatDirectTests = do
   describe "direct messages" $ do
     describe "add contact and send/receive messages" testAddContact
+    it "retry connecting via the same link" testRetryConnecting
+    xit'' "retry connecting via the same link with client timeout" testRetryConnectingClientTimeout
+    it "mark multiple messages as read" testMarkReadDirect
     it "clear chat with contact" testContactClear
     it "deleting contact deletes profile" testDeleteContactDeletesProfile
     it "delete contact keeping conversation" testDeleteContactKeepConversation
@@ -52,6 +66,11 @@ chatDirectTests = do
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
     it "should send multiline message" testMultilineMessage
     it "send large message" testLargeMessage
+  describe "batch send messages" $ do
+    it "send multiple messages api" testSendMulti
+    it "send multiple timed messages" testSendMultiTimed
+    it "send multiple messages, including quote" testSendMultiWithQuote
+    it "send multiple messages (many chat batches)" testSendMultiManyBatches
   describe "duplicate contacts" $ do
     it "duplicate contacts are separate (contacts don't merge)" testDuplicateContactsSeparate
     it "new contact is separate with multiple duplicate contacts (contacts don't merge)" testDuplicateContactsMultipleSeparate
@@ -204,6 +223,142 @@ testAddContact = versionTestMatrix2 runTestAddContact
           if pqExpected
             then chatFeatures
             else (0, e2eeInfoNoPQStr) : tail chatFeatures
+
+testRetryConnecting :: HasCallStack => FilePath -> IO ()
+testRetryConnecting tmp = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile test tmp
+  where
+    test alice bob = do
+      inv <- withSmpServer' serverCfg' $ do
+        alice ##> "/_connect 1"
+        getInvitation alice
+      alice <## "server disconnected localhost ()"
+      bob ##> ("/_connect plan 1 " <> inv)
+      bob <## "invitation link: ok to connect"
+      bob ##> ("/_connect 1 " <> inv)
+      bob <##. "smp agent error: BROKER"
+      withSmpServer' serverCfg' $ do
+        alice <## "server connected localhost ()"
+        bob ##> ("/_connect plan 1 " <> inv)
+        bob <## "invitation link: ok to connect"
+        bob ##> ("/_connect 1 " <> inv)
+        bob <## "confirmation sent!"
+        concurrently_
+          (bob <## "alice (Alice): contact is connected")
+          (alice <## "bob (Bob): contact is connected")
+        alice #> "@bob message 1"
+        bob <# "alice> message 1"
+        bob #> "@alice message 2"
+        alice <# "bob> message 2"
+      bob <## "server disconnected localhost (@alice)"
+      alice <## "server disconnected localhost (@bob)"
+    serverCfg' =
+      smpServerCfg
+        { transports = [("7003", transport @TLS, False)],
+          msgQueueQuota = 2,
+          storeLogFile = Just $ tmp <> "/smp-server-store.log",
+          storeMsgsFile = Just $ tmp <> "/smp-server-messages.log"
+        }
+    fastRetryInterval = defaultReconnectInterval {initialInterval = 50000} -- same as in agent tests
+    cfg' =
+      testCfg
+        { agentConfig =
+            testAgentCfg
+              { quotaExceededTimeout = 1,
+                messageRetryInterval = RetryInterval2 {riFast = fastRetryInterval, riSlow = fastRetryInterval}
+              }
+        }
+    opts' =
+      testOpts
+        { coreOptions =
+            testCoreOpts
+              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
+              }
+        }
+
+testRetryConnectingClientTimeout :: HasCallStack => FilePath -> IO ()
+testRetryConnectingClientTimeout tmp = do
+  inv <- withSmpServer' serverCfg' $ do
+    withNewTestChatCfgOpts tmp cfg' opts' "alice" aliceProfile $ \alice -> do
+      alice ##> "/_connect 1"
+      inv <- getInvitation alice
+
+      withNewTestChatCfgOpts tmp cfgZeroTimeout opts' "bob" bobProfile $ \bob -> do
+        bob ##> ("/_connect plan 1 " <> inv)
+        bob <## "invitation link: ok to connect"
+        bob ##> ("/_connect 1 " <> inv)
+        bob <## "smp agent error: BROKER {brokerAddress = \"smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7003\", brokerErr = TIMEOUT}"
+
+      pure inv
+
+  logFile <- readFile $ tmp <> "/smp-server-store.log"
+  logFile `shouldContain` "SECURE"
+
+  withSmpServer' serverCfg' $ do
+    withTestChatCfgOpts tmp cfg' opts' "alice" $ \alice -> do
+      withTestChatCfgOpts tmp cfg' opts' "bob" $ \bob -> do
+        bob ##> ("/_connect plan 1 " <> inv)
+        bob <## "invitation link: ok to connect"
+        bob ##> ("/_connect 1 " <> inv)
+        bob <## "confirmation sent!"
+
+        concurrently_
+          (bob <## "alice (Alice): contact is connected")
+          (alice <## "bob (Bob): contact is connected")
+        alice #> "@bob message 1"
+        bob <# "alice> message 1"
+        bob #> "@alice message 2"
+        alice <# "bob> message 2"
+  where
+    serverCfg' =
+      smpServerCfg
+        { transports = [("7003", transport @TLS, False)],
+          msgQueueQuota = 2,
+          storeLogFile = Just $ tmp <> "/smp-server-store.log",
+          storeMsgsFile = Just $ tmp <> "/smp-server-messages.log"
+        }
+    fastRetryInterval = defaultReconnectInterval {initialInterval = 50000} -- same as in agent tests
+    cfg' =
+      testCfg
+        { agentConfig =
+            testAgentCfg
+              { quotaExceededTimeout = 1,
+                messageRetryInterval = RetryInterval2 {riFast = fastRetryInterval, riSlow = fastRetryInterval}
+              }
+        }
+    cfgZeroTimeout =
+      (testCfg :: ChatConfig)
+        { agentConfig =
+            testAgentCfg
+              { quotaExceededTimeout = 1,
+                messageRetryInterval = RetryInterval2 {riFast = fastRetryInterval, riSlow = fastRetryInterval}
+              },
+          defaultServers =
+            let def@DefaultAgentServers {netCfg} = defaultServers testCfg
+             in def {netCfg = (netCfg :: NetworkConfig) {tcpTimeout = 10}}
+        }
+    opts' =
+      testOpts
+        { coreOptions =
+            testCoreOpts
+              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
+              }
+        }
+
+testMarkReadDirect :: HasCallStack => FilePath -> IO ()
+testMarkReadDirect = testChat2 aliceProfile bobProfile $ \alice bob -> do
+  connectUsers alice bob
+  alice #> "@bob 1"
+  alice #> "@bob 2"
+  alice #> "@bob 3"
+  alice #> "@bob 4"
+  bob <# "alice> 1"
+  bob <# "alice> 2"
+  bob <# "alice> 3"
+  bob <# "alice> 4"
+  bob ##> "/last_item_id"
+  i :: ChatItemId <- read <$> getTermLine bob
+  let itemIds = intercalate "," $ map show [i - 3 .. i]
+  bob #$> ("/_read chat items @2 " <> itemIds, id, "ok")
 
 testDuplicateContactsSeparate :: HasCallStack => FilePath -> IO ()
 testDuplicateContactsSeparate =
@@ -715,22 +870,27 @@ testDirectMessageDeleteMultipleManyBatches =
     \alice bob -> do
       connectUsers alice bob
 
-      alice #> "@bob message 0"
-      bob <# "alice> message 0"
-      msgIdFirst <- lastItemId alice
+      msgIdZero <- lastItemId alice
 
-      forM_ [(1 :: Int) .. 300] $ \i -> do
-        alice #> ("@bob message " <> show i)
-        bob <# ("alice> message " <> show i)
+      let cm i = "{\"msgContent\": {\"type\": \"text\", \"text\": \"message " <> show i <> "\"}}"
+          cms = intercalate ", " (map cm [1 .. 300 :: Int])
+
+      alice `send` ("/_send @2 json [" <> cms <> "]")
+      _ <- getTermLine alice
+
+      alice <## "300 messages sent"
       msgIdLast <- lastItemId alice
 
-      let mIdFirst = read msgIdFirst :: Int
+      forM_ [(1 :: Int) .. 300] $ \i -> do
+        bob <# ("alice> message " <> show i)
+
+      let mIdFirst = (read msgIdZero :: Int) + 1
           mIdLast = read msgIdLast :: Int
           deleteIds = intercalate "," (map show [mIdFirst .. mIdLast])
       alice `send` ("/_delete item @2 " <> deleteIds <> " broadcast")
       _ <- getTermLine alice
-      alice <## "301 messages deleted"
-      forM_ [(0 :: Int) .. 300] $ \i -> do
+      alice <## "300 messages deleted"
+      forM_ [(1 :: Int) .. 300] $ \i -> do
         bob <# ("alice> [marked deleted] message " <> show i)
 
 testDirectLiveMessage :: HasCallStack => FilePath -> IO ()
@@ -838,6 +998,112 @@ testLargeMessage =
       alice <## "user profile is changed to alice2 (your 1 contacts are notified)"
       bob <## "contact alice changed to alice2"
       bob <## "use @alice2 <message> to send messages"
+
+testSendMulti :: HasCallStack => FilePath -> IO ()
+testSendMulti =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+
+      alice ##> "/_send @2 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"test 1\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"test 2\"}}]"
+      alice <# "@bob test 1"
+      alice <# "@bob test 2"
+      bob <# "alice> test 1"
+      bob <# "alice> test 2"
+
+testSendMultiTimed :: HasCallStack => FilePath -> IO ()
+testSendMultiTimed =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+
+      alice ##> "/_send @2 ttl=1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"test 1\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"test 2\"}}]"
+      alice <# "@bob test 1"
+      alice <# "@bob test 2"
+      bob <# "alice> test 1"
+      bob <# "alice> test 2"
+
+      alice
+        <### [ "timed message deleted: test 1",
+               "timed message deleted: test 2"
+             ]
+      bob
+        <### [ "timed message deleted: test 1",
+               "timed message deleted: test 2"
+             ]
+
+testSendMultiWithQuote :: HasCallStack => FilePath -> IO ()
+testSendMultiWithQuote =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+
+      alice #> "@bob hello"
+      bob <# "alice> hello"
+      msgId1 <- lastItemId alice
+
+      threadDelay 1000000
+
+      bob #> "@alice hi"
+      alice <# "bob> hi"
+      msgId2 <- lastItemId alice
+
+      let cm1 = "{\"msgContent\": {\"type\": \"text\", \"text\": \"message 1\"}}"
+          cm2 = "{\"quotedItemId\": " <> msgId1 <> ", \"msgContent\": {\"type\": \"text\", \"text\": \"message 2\"}}"
+          cm3 = "{\"quotedItemId\": " <> msgId2 <> ", \"msgContent\": {\"type\": \"text\", \"text\": \"message 3\"}}"
+
+      alice ##> ("/_send @2 json [" <> cm1 <> ", " <> cm2 <> ", " <> cm3 <> "]")
+      alice <## "bad chat command: invalid multi send: live and more than one quote not supported"
+
+      alice ##> ("/_send @2 json [" <> cm1 <> ", " <> cm2 <> "]")
+
+      alice <# "@bob message 1"
+      alice <# "@bob >> hello"
+      alice <## "      message 2"
+
+      bob <# "alice> message 1"
+      bob <# "alice> >> hello"
+      bob <## "      message 2"
+
+      alice ##> ("/_send @2 json [" <> cm3 <> ", " <> cm1 <> "]")
+
+      alice <# "@bob > hi"
+      alice <## "      message 3"
+      alice <# "@bob message 1"
+
+      bob <# "alice> > hi"
+      bob <## "      message 3"
+      bob <# "alice> message 1"
+
+testSendMultiManyBatches :: HasCallStack => FilePath -> IO ()
+testSendMultiManyBatches =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+
+      threadDelay 1000000
+
+      msgIdAlice <- lastItemId alice
+      msgIdBob <- lastItemId bob
+
+      let cm i = "{\"msgContent\": {\"type\": \"text\", \"text\": \"message " <> show i <> "\"}}"
+          cms = intercalate ", " (map cm [1 .. 300 :: Int])
+
+      alice `send` ("/_send @2 json [" <> cms <> "]")
+      _ <- getTermLine alice
+
+      alice <## "300 messages sent"
+
+      forM_ [(1 :: Int) .. 300] $ \i ->
+        bob <# ("alice> message " <> show i)
+
+      aliceItemsCount <- withCCTransaction alice $ \db ->
+        DB.query db "SELECT count(1) FROM chat_items WHERE chat_item_id > ?" (Only msgIdAlice) :: IO [[Int]]
+      aliceItemsCount `shouldBe` [[300]]
+
+      bobItemsCount <- withCCTransaction bob $ \db ->
+        DB.query db "SELECT count(1) FROM chat_items WHERE chat_item_id > ?" (Only msgIdBob) :: IO [[Int]]
+      bobItemsCount `shouldBe` [[300]]
 
 testGetSetSMPServers :: HasCallStack => FilePath -> IO ()
 testGetSetSMPServers =
@@ -2162,7 +2428,7 @@ testSetChatItemTTL =
       -- chat item with file
       alice #$> ("/_files_folder ./tests/tmp/app_files", id, "ok")
       copyFile "./tests/fixtures/test.jpg" "./tests/tmp/app_files/test.jpg"
-      alice ##> "/_send @2 json {\"filePath\": \"test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}"
+      alice ##> "/_send @2 json [{\"filePath\": \"test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}]"
       alice <# "/f @bob test.jpg"
       alice <## "use /fc 1 to cancel sending"
       bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"

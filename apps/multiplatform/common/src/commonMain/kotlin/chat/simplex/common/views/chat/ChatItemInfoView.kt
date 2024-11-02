@@ -24,11 +24,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.chat.item.ItemAction
-import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.group.MemberProfileImage
+import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
@@ -75,7 +74,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
     Column {
       Box(
-        Modifier.clip(RoundedCornerShape(18.dp)).background(itemColor).padding(bottom = 3.dp)
+        Modifier.clipChatItem().background(itemColor).padding(bottom = 3.dp)
           .combinedClickable(onLongClick = { showMenu.value = true }, onClick = {})
           .onRightClick { showMenu.value = true }
       ) {
@@ -122,7 +121,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
     Column {
       Box(
-        Modifier.clip(RoundedCornerShape(18.dp)).background(quoteColor).padding(bottom = 3.dp)
+        Modifier.clipChatItem().background(quoteColor).padding(bottom = 3.dp)
           .combinedClickable(onLongClick = { showMenu.value = true }, onClick = {})
           .onRightClick { showMenu.value = true }
       ) {
@@ -277,7 +276,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
   @Composable
   fun HistoryTab() {
-    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+    ColumnWithScrollBar {
       Details()
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
       val versions = ciInfo.itemVersions
@@ -301,7 +300,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
   @Composable
   fun QuoteTab(qi: CIQuote) {
-    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+    ColumnWithScrollBar {
       Details()
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
       SectionView(contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
@@ -314,7 +313,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
   @Composable
   fun ForwardedFromTab(forwardedFromItem: AChatItem) {
-    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+    ColumnWithScrollBar {
       Details()
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
       SectionView {
@@ -376,7 +375,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
   @Composable
   fun DeliveryTab(memberDeliveryStatuses: List<MemberDeliveryStatus>) {
-    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+    ColumnWithScrollBar {
       Details()
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
       val mss = membersStatuses(chatModel, memberDeliveryStatuses)

@@ -17,7 +17,7 @@
 "Comment" = "Hozzászólás";
 
 /* No comment provided by engineer. */
-"Currently maximum supported file size is %@." = "Jelenleg a maximális támogatott fájlméret %@.";
+"Currently maximum supported file size is %@." = "Jelenleg a maximálisan támogatott fájlméret: %@.";
 
 /* No comment provided by engineer. */
 "Database downgrade required" = "Adatbázis visszafejlesztése szükséges";
@@ -26,13 +26,13 @@
 "Database encrypted!" = "Adatbázis titkosítva!";
 
 /* No comment provided by engineer. */
-"Database error" = "Adatbázis hiba";
+"Database error" = "Adatbázishiba";
 
 /* No comment provided by engineer. */
 "Database passphrase is different from saved in the keychain." = "Az adatbázis jelmondata eltér a kulcstartóban lévőtől.";
 
 /* No comment provided by engineer. */
-"Database passphrase is required to open chat." = "Adatbázis jelmondat szükséges a csevegés megnyitásához.";
+"Database passphrase is required to open chat." = "Adatbázis-jelmondat szükséges a csevegés megnyitásához.";
 
 /* No comment provided by engineer. */
 "Database upgrade required" = "Adatbázis fejlesztése szükséges";
@@ -50,13 +50,13 @@
 "File error" = "Fájlhiba";
 
 /* No comment provided by engineer. */
-"Incompatible database version" = "Nem kompatibilis adatbázis verzió";
+"Incompatible database version" = "Nem kompatibilis adatbázis-verzió";
 
 /* No comment provided by engineer. */
 "Invalid migration confirmation" = "Érvénytelen átköltöztetési visszaigazolás";
 
 /* No comment provided by engineer. */
-"Keychain error" = "Kulcstartó hiba";
+"Keychain error" = "Kulcstartóhiba";
 
 /* No comment provided by engineer. */
 "Large file!" = "Nagy fájl!";
@@ -95,7 +95,7 @@
 "Slow network?" = "Lassú internetkapcsolat?";
 
 /* No comment provided by engineer. */
-"Unknown database error: %@" = "Ismeretlen adatbázis hiba: %@";
+"Unknown database error: %@" = "Ismeretlen adatbázishiba: %@";
 
 /* No comment provided by engineer. */
 "Unsupported format" = "Nem támogatott formátum";
@@ -104,8 +104,8 @@
 "Wait" = "Várjon";
 
 /* No comment provided by engineer. */
-"Wrong database passphrase" = "Hibás adatbázis jelmondat";
+"Wrong database passphrase" = "Hibás adatbázis-jelmondat";
 
 /* No comment provided by engineer. */
-"You can allow sharing in Privacy & Security / SimpleX Lock settings." = "A megosztást az Adatvédelem és biztonság / SimpleX zár menüben engedélyezheti.";
+"You can allow sharing in Privacy & Security / SimpleX Lock settings." = "A megosztást az Adatvédelem és biztonság / SimpleX-zár menüben engedélyezheti.";
 

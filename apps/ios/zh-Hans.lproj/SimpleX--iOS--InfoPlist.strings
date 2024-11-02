@@ -7,6 +7,9 @@
 /* Privacy - Face ID Usage Description */
 "NSFaceIDUsageDescription" = "SimpleX 使用Face ID进行本地身份验证";
 
+/* Privacy - Local Network Usage Description */
+"NSLocalNetworkUsageDescription" = "SimpleX 使用本地网络访问，允许通过同一网络上的桌面应用程序使用用户聊天配置文件。";
+
 /* Privacy - Microphone Usage Description */
 "NSMicrophoneUsageDescription" = "SimpleX 需要麦克风访问权限才能进行音频和视频通话，以及录制语音消息。";
 

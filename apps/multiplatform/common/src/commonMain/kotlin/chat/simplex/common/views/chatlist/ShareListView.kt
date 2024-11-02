@@ -12,43 +12,20 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import chat.simplex.common.SettingsViewState
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.theme.themedBackground
+import chat.simplex.common.views.chat.topPaddingToContent
+import chat.simplex.common.views.newchat.ActiveProfilePicker
 import chat.simplex.res.MR
-import kotlinx.coroutines.flow.MutableStateFlow
 
 @Composable
-fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stopped: Boolean) {
+fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
   var searchInList by rememberSaveable { mutableStateOf("") }
-  val (userPickerState, scaffoldState) = settingsState
-  val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
   val oneHandUI = remember { appPrefs.oneHandUI.state }
-
-  Scaffold(
-    Modifier.padding(end = endPadding),
-    contentColor = LocalContentColor.current,
-    drawerContentColor = LocalContentColor.current,
-    scaffoldState = scaffoldState,
-    topBar = {
-      if (!oneHandUI.value) {
-        Column {
-          ShareListToolbar(chatModel, userPickerState, stopped) { searchInList = it.trim() }
-          Divider()
-        }
-      }
-    },
-    bottomBar = {
-      if (oneHandUI.value) {
-        Column {
-          Divider()
-          ShareListToolbar(chatModel, userPickerState, stopped) { searchInList = it.trim() }
-        }
-      }
-    }
-  ) {
+  Box(Modifier.fillMaxSize().themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer)) {
     val sharedContent = chatModel.sharedContent.value
     var isMediaOrFileAttachment = false
     var isVoice = false
@@ -65,46 +42,35 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
         hasSimplexLink = hasSimplexLink(sharedContent.text)
       }
       is SharedContent.Forward -> {
-        val mc = sharedContent.chatItem.content.msgContent
-        if (mc != null) {
-          isMediaOrFileAttachment = mc.isMediaOrFileAttachment
-          isVoice = mc.isVoice
-          hasSimplexLink = hasSimplexLink(mc.text)
+        sharedContent.chatItems.forEach { ci ->
+          val mc = ci.content.msgContent
+          if (mc != null) {
+            isMediaOrFileAttachment = isMediaOrFileAttachment || mc.isMediaOrFileAttachment
+            isVoice = isVoice || mc.isVoice
+            hasSimplexLink = hasSimplexLink || hasSimplexLink(mc.text)
+          }
         }
       }
       null -> {}
     }
-    Box(Modifier.padding(it)) {
-      Column(
-        modifier = Modifier.fillMaxSize()
-      ) {
-        if (chatModel.chats.value.isNotEmpty()) {
-          ShareList(
-            chatModel,
-            search = searchInList,
-            isMediaOrFileAttachment = isMediaOrFileAttachment,
-            isVoice = isVoice,
-            hasSimplexLink = hasSimplexLink,
-          )
-        } else {
-          EmptyList()
-        }
-      }
-    }
-  }
-  if (appPlatform.isAndroid) {
-    tryOrShowError("UserPicker", error = {}) {
-      UserPicker(
+    if (chatModel.chats.value.isNotEmpty()) {
+      ShareList(
         chatModel,
-        userPickerState,
-        showSettings = false,
-        showCancel = true,
-        contentAlignment = if (oneHandUI.value) Alignment.BottomStart else Alignment.TopStart,
-        cancelClicked = {
-          chatModel.sharedContent.value = null
-          userPickerState.value = AnimatedViewState.GONE
-        }
+        search = searchInList,
+        isMediaOrFileAttachment = isMediaOrFileAttachment,
+        isVoice = isVoice,
+        hasSimplexLink = hasSimplexLink,
       )
+    } else {
+      EmptyList()
+    }
+    if (oneHandUI.value) {
+      StatusBarBackground()
+    } else {
+      NavigationBarBackground(oneHandUI.value, true)
+    }
+    Box(Modifier.align(if (oneHandUI.value) Alignment.BottomStart else Alignment.TopStart)) {
+      ShareListToolbar(chatModel, stopped) { searchInList = it.trim() }
     }
   }
 }
@@ -122,13 +88,12 @@ private fun EmptyList() {
 }
 
 @Composable
-private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean, onSearchValueChanged: (String) -> Unit) {
+private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchValueChanged: (String) -> Unit) {
   var showSearch by rememberSaveable { mutableStateOf(false) }
   val hideSearchOnBack = { onSearchValueChanged(""); showSearch = false }
   if (showSearch) {
     BackHandler(onBack = hideSearchOnBack)
   }
-  val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val users by remember { derivedStateOf { chatModel.users.filter { u -> u.user.activeUser || !u.user.hidden } } }
   val navButton: @Composable RowScope.() -> Unit = {
     when {
@@ -138,7 +103,24 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
           .filter { u -> !u.user.activeUser && !u.user.hidden }
           .all { u -> u.unreadCount == 0 }
         UserProfileButton(chatModel.currentUser.value?.profile?.image, allRead) {
-          userPickerState.value = AnimatedViewState.VISIBLE
+          ModalManager.start.showCustomModal(keyboardCoversBar = false) { close ->
+            val search = rememberSaveable { mutableStateOf("") }
+            ModalView(
+              { close() },
+              showSearch = true,
+              searchAlwaysVisible = true,
+              onSearchValueChanged = { search.value = it },
+              content = {
+                ActiveProfilePicker(
+                  search = search,
+                  rhId = chatModel.remoteHostId,
+                  close = close,
+                  contactConnection = null,
+                  showIncognito = false
+                )
+              }
+            )
+          }
         }
       }
       else -> NavigationButtonBack(onButtonClicked = {
@@ -151,40 +133,17 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
       })
     }
   }
-  if (chatModel.chats.value.size >= 8) {
-    barButtons.add {
-      IconButton({ showSearch = true }) {
-        Icon(painterResource(MR.images.ic_search_500), stringResource(MR.strings.search_verb), tint = MaterialTheme.colors.primary)
-      }
-    }
-  }
-  if (stopped) {
-    barButtons.add {
-      IconButton(onClick = {
-        AlertManager.shared.showAlertMsg(
-          generalGetString(MR.strings.chat_is_stopped_indication),
-          generalGetString(MR.strings.you_can_start_chat_via_setting_or_by_restarting_the_app)
-        )
-      }) {
-        Icon(
-          painterResource(MR.images.ic_report_filled),
-          generalGetString(MR.strings.chat_is_stopped_indication),
-          tint = Color.Red,
-        )
-      }
-    }
-  }
 
-  DefaultTopAppBar(
+  DefaultAppBar(
     navigationButton = navButton,
     title = {
       Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
-          when (chatModel.sharedContent.value) {
+          when (val v = chatModel.sharedContent.value) {
             is SharedContent.Text -> stringResource(MR.strings.share_message)
             is SharedContent.Media -> stringResource(MR.strings.share_image)
             is SharedContent.File -> stringResource(MR.strings.share_file)
-            is SharedContent.Forward -> stringResource(MR.strings.forward_message)
+            is SharedContent.Forward -> if (v.chatItems.size > 1) stringResource(MR.strings.forward_multiple) else stringResource(MR.strings.forward_message)
             null -> stringResource(MR.strings.share_message)
           },
           color = MaterialTheme.colors.onBackground,
@@ -194,8 +153,29 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
     },
     onTitleClick = null,
     showSearch = showSearch,
+    onTop = !remember { appPrefs.oneHandUI.state }.value,
     onSearchValueChanged = onSearchValueChanged,
-    buttons = barButtons
+    buttons = {
+      if (chatModel.chats.value.size >= 8) {
+        IconButton({ showSearch = true }) {
+          Icon(painterResource(MR.images.ic_search_500), stringResource(MR.strings.search_verb), tint = MaterialTheme.colors.primary)
+        }
+      }
+      if (stopped) {
+        IconButton(onClick = {
+          AlertManager.shared.showAlertMsg(
+            generalGetString(MR.strings.chat_is_stopped_indication),
+            generalGetString(MR.strings.you_can_start_chat_via_setting_or_by_restarting_the_app)
+          )
+        }) {
+          Icon(
+            painterResource(MR.images.ic_report_filled),
+            generalGetString(MR.strings.chat_is_stopped_indication),
+            tint = Color.Red,
+          )
+        }
+      }
+    }
   )
 }
 
@@ -214,8 +194,13 @@ private fun ShareList(
       filteredChats(false, mutableStateOf(false), mutableStateOf(null), search, sorted)
     }
   }
+  val topPaddingToContent = topPaddingToContent()
   LazyColumnWithScrollBar(
-    modifier = Modifier.fillMaxSize(),
+    modifier = Modifier.then(if (oneHandUI.value) Modifier.consumeWindowInsets(WindowInsets.navigationBars.only(WindowInsetsSides.Vertical)) else Modifier).imePadding(),
+    contentPadding = PaddingValues(
+      top = if (oneHandUI.value) WindowInsets.statusBars.asPaddingValues().calculateTopPadding() else topPaddingToContent,
+      bottom = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else 0.dp
+    ),
     reverseLayout = oneHandUI.value
   ) {
     items(chats) { chat ->

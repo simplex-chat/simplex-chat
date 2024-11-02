@@ -3,6 +3,7 @@ body {
   padding: 0;
   margin: 0;
   background-color: black;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
 #remote-video-stream.inline {
@@ -12,7 +13,37 @@ body {
   object-fit: cover;
 }
 
+#remote-video-stream.collapsed {
+  position: absolute;
+  max-width: 20%;
+  max-height: 20%;
+  object-fit: cover;
+  margin: 16px;
+  border-radius: 16px;
+  bottom: 80px;
+  right: 0;
+}
+
+#remote-video-stream.collapsed-pip {
+  position: absolute;
+  max-width: 30%;
+  max-height: 30%;
+  object-fit: cover;
+  margin: 8px;
+  border-radius: 8px;
+  bottom: 0;
+  right: 0;
+}
+
+#remote-screen-video-stream.inline {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 #local-video-stream.inline {
+  background-color: black;
   position: absolute;
   width: 20%;
   max-width: 20%;
@@ -23,6 +54,17 @@ body {
   right: 0;
 }
 
+#local-screen-video-stream.inline {
+  position: absolute;
+  width: 20%;
+  max-width: 20%;
+  object-fit: cover;
+  margin: 16px;
+  border-radius: 16px;
+  top: 33%;
+  right: 0;
+}
+
 #remote-video-stream.fullscreen {
   position: absolute;
   height: 100%;
@@ -30,7 +72,21 @@ body {
   object-fit: cover;
 }
 
+#remote-screen-video-stream.fullscreen {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
 #local-video-stream.fullscreen {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
+#local-screen-video-stream.fullscreen {
   position: absolute;
   height: 100%;
   width: 100%;
@@ -57,19 +113,32 @@ body {
 #manage-call {
   position: absolute;
   width: fit-content;
-  top: 90%;
+  bottom: 15px;
   left: 50%;
   transform: translate(-50%, 0);
   display: grid;
   grid-auto-flow: column;
-  grid-column-gap: 30px;
+  grid-column-gap: 38px;
 }
 
 #manage-call button {
   border: none;
   cursor: pointer;
   appearance: none;
-  background-color: inherit;
+  background-color: #ffffff33;
+  border-radius: 50%;
+  padding: 13px;
+  width: 61px;
+  height: 61px;
+}
+
+#manage-call img {
+  width: 35px;
+  height: 35px;
+}
+
+#manage-call button .video {
+  background: #00000033;
 }
 
 #progress {
@@ -87,6 +156,23 @@ body {
   height: 100px;
   -webkit-animation: spin 2s linear infinite;
   animation: spin 2s linear infinite;
+}
+
+#permission-denied {
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  height: 100%;
+  align-content: center;
+  color: white;
+}
+
+#permission-denied-title {
+  font-weight: bold;
+}
+
+#permission-denied-desc {
+  font-style: italic;
 }
 
 @-webkit-keyframes spin {
@@ -110,10 +196,8 @@ body {
 #info-block {
   position: absolute;
   color: white;
-  line-height: 10px;
   opacity: 0.8;
   width: 200px;
-  font-family: Arial, Helvetica, sans-serif;
 }
 
 #info-block.audio {

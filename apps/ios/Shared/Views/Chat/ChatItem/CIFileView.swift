@@ -285,17 +285,18 @@ struct CIFileView_Previews: PreviewProvider {
             file: nil
         )
         Group {
-            ChatItemView(chat: Chat.sampleData, chatItem: sentFile, revealed: Binding.constant(false))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(), revealed: Binding.constant(false))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileName: "some_long_file_name_here", fileStatus: .rcvInvitation), revealed: Binding.constant(false))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvAccepted), revealed: Binding.constant(false))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)), revealed: Binding.constant(false))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvCancelled), revealed: Binding.constant(false))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileSize: 1_000_000_000, fileStatus: .rcvInvitation), revealed: Binding.constant(false))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(text: "Hello there", fileStatus: .rcvInvitation), revealed: Binding.constant(false))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", fileStatus: .rcvInvitation), revealed: Binding.constant(false))
-            ChatItemView(chat: Chat.sampleData, chatItem: fileChatItemWtFile, revealed: Binding.constant(false))
+            ChatItemView(chat: Chat.sampleData, chatItem: sentFile)
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample())
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileName: "some_long_file_name_here", fileStatus: .rcvInvitation))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvAccepted))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvCancelled))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileSize: 1_000_000_000, fileStatus: .rcvInvitation))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(text: "Hello there", fileStatus: .rcvInvitation))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", fileStatus: .rcvInvitation))
+            ChatItemView(chat: Chat.sampleData, chatItem: fileChatItemWtFile)
         }
+        .environment(\.revealed, false)
         .previewLayout(.fixed(width: 360, height: 360))
     }
 }

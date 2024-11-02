@@ -72,7 +72,7 @@ You must:
 
 Messages not following these rules will be deleted, the right to send messages may be revoked, and the access to the new members to the group may be temporarily restricted, to prevent re-joining under a different name - our imperfect group moderation does not have a better solution at the moment.
 
-You can join an English-speaking users group if you want to ask any questions: [#SimpleX users group](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2Fos8FftfoV8zjb2T89fUEjJtF7y64p5av%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAQqMgh0fw2lPhjn3PDIEfAKA_E0-gf8Hr8zzhYnDivRs%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22lBPiveK2mjfUH43SN77R0w%3D%3D%22%7D)
+You can join an English-speaking users group if you want to ask any questions: [#SimpleX users group](https://simplex.chat/contact#/?v=2-4&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2Fos8FftfoV8zjb2T89fUEjJtF7y64p5av%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAQqMgh0fw2lPhjn3PDIEfAKA_E0-gf8Hr8zzhYnDivRs%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22lBPiveK2mjfUH43SN77R0w%3D%3D%22%7D)
 
 There is also a group [#simplex-devs](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FvYCRjIflKNMGYlfTkuHe4B40qSlQ0439%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAHNdcqNbzXZhyMoSBjT2R0-Eb1EPaLyUg3KZjn-kmM1w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22PD20tcXjw7IpkkMCfR6HLA%3D%3D%22%7D) for developers who build on SimpleX platform:
 
@@ -83,7 +83,7 @@ There is also a group [#simplex-devs](https://simplex.chat/contact#/?v=1-4&smp=s
 
 There are groups in other languages, that we have the apps interface translated into. These groups are for testing, and asking questions to other SimpleX Chat users:
 
-[\#SimpleX-DE](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FkIEl7OQzcp-J6aDmjdlQbRJwqkcZE7XR%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAR16PCu02MobRmKAsjzhDWMZcWP9hS8l5AUZi-Gs8z18%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22puYPMCQt11yPUvgmI5jCiw%3D%3D%22%7D) (German-speaking), [\#SimpleX-ES](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FaJ8O1O8A8GbeoaHTo_V8dcefaCl7ouPb%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEA034qWTA3sWcTsi6aWhNf9BA34vKVCFaEBdP2R66z6Ao%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22wiZ1v_wNjLPlT-nCSB-bRA%3D%3D%22%7D) (Spanish-speaking), [\#SimpleX-FR](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FvIHQDxTor53nwnWWTy5cHNwQQAdWN5Hw%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAPdgK1eBnETmgiqEQufbUkydKBJafoRx4iRrtrC2NAGc%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%221FyUryBPza-1ZFFE80Ekbg%3D%3D%22%7D) (French-speaking), [\#SimpleX-RU](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FXZyt3hJmWsycpN7Dqve_wbrAqb6myk1R%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAMFVIoytozTEa_QXOgoZFq_oe0IwZBYKvW50trSFXzXo%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22xz05ngjA3pNIxLZ32a8Vxg%3D%3D%22%7D) (Russian-speaking), [\#SimpleX-IT](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2F0weR-ZgDUl7ruOtI_8TZwEsnJP6UiImA%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAq4PSThO9Fvb5ydF48wB0yNbpzCbuQJCW3vZ9BGUfcxk%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22e-iceLA0SctC62eARgYDWg%3D%3D%22%7D) (Italian-speaking).
+[\#SimpleX-DE](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FmfiivxDKWFuowXrQOp11jsY8TuP__rBL%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAiz3pKNwvKudckFYMUfgoT0s96B0jfZ7ALHAu7rtE9HQ%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22jZeJpXGrRXQJU_-MSJ_v2A%3D%3D%22%7D) (German-speaking), [\#SimpleX-ES](https://simplex.chat/contact#/?v=2-4&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FJ5ES83pJimY2BRklS8fvy_iQwIU37xra%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEA0F0STP6UqN_12_k2cjjTrIjFgBGeWhOAmbY1qlk3pnM%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22VmUU0fqmYdCRmVCyvStvHA%3D%3D%22%7D) (Spanish-speaking), [\#SimpleX-FR](https://simplex.chat/contact#/?v=2-7&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FxCHBE_6PBRMqNEpm4UQDHXb9cz-mN7dd%23%2F%3Fv%3D1-3%26dh%3DMCowBQYDK2VuAyEAetqlcM7zTCRw-iatnwCrvpJSto7lq5Yv6AsBMWv7GSM%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22foO5Xw4hhjOa_x7zET7otw%3D%3D%22%7D) (French-speaking), [\#SimpleX-RU](https://simplex.chat/contact#/?v=2-4&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FVXQTB0J2lLjYkgjWByhl6-1qmb5fgZHh%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAI6JaEWezfSwvcoTEkk6au-gkjrXR2ew2OqZYMYBvayk%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22ORH9OEe8Duissh-hslfeVg%3D%3D%22%7D) (Russian-speaking), [\#SimpleX-IT](https://simplex.chat/contact#/?v=2-7&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FqpHu0psOUdYfc11yQCzSyq5JhijrBzZT%23%2F%3Fv%3D1-3%26dh%3DMCowBQYDK2VuAyEACZ_7fbwlM45wl6cGif8cY47oPQ_AMdP0ATqOYLA6zHY%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%229uRQRTir3ealdcSfB0zsrw%3D%3D%22%7D) (Italian-speaking).
 
 You can join either by opening these links in the app or by opening them in a desktop browser and scanning the QR code.
 
@@ -233,13 +233,11 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Recent and important updates:
 
+[Oct 14, 2024. SimpleX network: security review of protocols design by Trail of Bits, v6.1 released with better calls and user experience.](./blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.md)
+
 [Aug 14, 2024. SimpleX network: the investment from Jack Dorsey and Asymmetric, v6.0 released with the new user experience and private message routing](./blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.md)
 
 [Jun 4, 2024. SimpleX network: private message routing, v5.8 released with IP address protection and chat themes](./blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.md)
-
-[Apr 26, 2024. SimpleX network: legally binding transparency, v5.7 released with better calls and messages.](./blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.md)
-
-[Mar 23, 2024. SimpleX network: real privacy and stable profits, non-profits for protocols, v5.6 released with quantum resistant e2e encryption and simple profile migration.](./blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.md)
 
 [Mar 14, 2024. SimpleX Chat v5.6 beta: adding quantum resistance to Signal double ratchet algorithm.](./blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.md)
 
@@ -248,10 +246,6 @@ Recent and important updates:
 [Nov 25, 2023. SimpleX Chat v5.4 released: link mobile and desktop apps via quantum resistant protocol, and much better groups](./blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.md).
 
 [Sep 25, 2023. SimpleX Chat v5.3 released: desktop app, local file encryption, improved groups and directory service](./blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.md).
-
-[Jul 22, 2023. SimpleX Chat: v5.2 released with message delivery receipts](./blog/20230722-simplex-chat-v5-2-message-delivery-receipts.md).
-
-[May 23, 2023. SimpleX Chat: v5.1 released with message reactions and self-destruct passcode](./blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.md).
 
 [Apr 22, 2023. SimpleX Chat: vision and funding, v5.0 released with videos and files up to 1gb](./blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.md).
 
@@ -409,7 +403,9 @@ Please also join [#simplex-devs](https://simplex.chat/contact#/?v=1-2&smp=smp%3A
 
 [SimpleX protocols and security model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) was reviewed, and had many breaking changes and improvements in v1.0.0.
 
-The security audit was performed in October 2022 by [Trail of Bits](https://www.trailofbits.com/about), and most fixes were released in v4.2.0 – see [the announcement](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
+The implementation security assessment of SimpleX cryptography and networking was done in October 2022 by [Trail of Bits](https://www.trailofbits.com/about) – see [the announcement](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
+
+The cryptographic review of SimpleX protocols was done in July 2024 by Trail of Bits – see [the announcement](./blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.md).
 
 SimpleX Chat is still a relatively early stage platform (the mobile apps were released in March 2022), so you may discover some bugs and missing features. We would really appreciate if you let us know anything that needs to be fixed or improved.
 

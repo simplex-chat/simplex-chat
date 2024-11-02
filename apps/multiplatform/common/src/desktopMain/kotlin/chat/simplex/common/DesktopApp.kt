@@ -198,8 +198,19 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
       val cWindowState = rememberWindowState(placement = WindowPlacement.Floating, width = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier, height =
       768.dp)
       Window(state = cWindowState, onCloseRequest = { hiddenUntilRestart = true }, title = stringResource(MR.strings.chat_console)) {
+        val data = remember { ModalData() }
         SimpleXTheme {
-          TerminalView(ChatModel) { hiddenUntilRestart = true }
+          CompositionLocalProvider(LocalAppBarHandler provides data.appBarHandler) {
+            ModalView({ hiddenUntilRestart = true }) {
+              TerminalView(true)
+            }
+            ModalManager.floatingTerminal.showInView()
+            DisposableEffect(Unit) {
+              onDispose {
+                ModalManager.floatingTerminal.closeModals()
+              }
+            }
+          }
         }
       }
     }

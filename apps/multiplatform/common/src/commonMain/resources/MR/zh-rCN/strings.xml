@@ -502,7 +502,7 @@
     <string name="show_call_on_lock_screen">显示</string>
     <string name="you_must_use_the_most_recent_version_of_database">您只能在一台设备上使用最新版本的聊天数据库，否则您可能会停止接收来自某些联系人的消息。</string>
     <string name="new_passphrase">新密码……</string>
-    <string name="member_role_will_be_changed_with_notification">该角色将更改为“%s”。群组中每个人都会收到通知。</string>
+    <string name="member_role_will_be_changed_with_notification">该角色将更改为 %s。群组中每个人都会收到通知。</string>
     <string name="chat_lock">SimpleX 锁定</string>
     <string name="periodic_notifications">定期通知</string>
     <string name="notifications_mode_periodic">定期启动</string>
@@ -733,7 +733,7 @@
     <string name="image_decoding_exception_desc">图像无法解码。 请尝试不同的图像或联系开发者。</string>
     <string name="theme">主题</string>
     <string name="delete_files_and_media_desc">此操作无法撤消——所有接收和发送的文件和媒体都将被删除。 低分辨率图片将保留。</string>
-    <string name="member_role_will_be_changed_with_invitation">角色将更改为“%s”。 该成员将收到新的邀请。</string>
+    <string name="member_role_will_be_changed_with_invitation">角色将更改为%s。 该成员将收到新的邀请。</string>
     <string name="enable_automatic_deletion_message">此操作无法撤消——早于所选的发送和接收的消息将被删除。 这可能需要几分钟时间。</string>
     <string name="this_QR_code_is_not_a_link">此二维码不是链接！</string>
     <string name="switch_receiving_address_desc">接收地址将变更到不同的服务器。地址更改将在发件人上线后完成。</string>
@@ -946,7 +946,7 @@
     <string name="moderate_message_will_be_deleted_warning">将为所有成员删除该消息。</string>
     <string name="moderate_message_will_be_marked_warning">该消息将对所有成员标记为已被管理员移除。</string>
     <string name="delete_member_message__question">删除成员消息？</string>
-    <string name="group_member_role_observer">观察者</string>
+    <string name="group_member_role_observer">观察员</string>
     <string name="you_are_observer">您是观察者</string>
     <string name="error_updating_link_for_group">更新群组链接错误</string>
     <string name="observer_cant_send_message_title">您无法发送消息！</string>
@@ -968,7 +968,7 @@
     <string name="v4_6_reduced_battery_usage_descr">更多改进即将推出！</string>
     <string name="v4_6_group_moderation_descr">现在管理员可以：
 \n- 删除成员的消息。
-\n- 禁用成员（“观察员”角色）</string>
+\n- 禁用成员（观察员角色）</string>
     <string name="v4_6_hidden_chat_profiles_descr">使用密码保护您的聊天资料！</string>
     <string name="confirm_password">确认密码</string>
     <string name="error_updating_user_privacy">更新用户隐私错误</string>
@@ -2068,4 +2068,62 @@
     <string name="new_message">新消息</string>
     <string name="error_parsing_uri_desc">请检查 Simple X 链接是否正确。</string>
     <string name="error_parsing_uri_title">无效链接</string>
+    <string name="settings_section_title_chat_database">聊天数据库</string>
+    <string name="system_mode_toast">系统模式</string>
+    <string name="migrate_from_device_uploaded_archive_will_be_removed">上传的数据库存档将永久性从服务器被删除。</string>
+    <string name="network_proxy_incorrect_config_desc">确保代理配置正确</string>
+    <string name="delete_messages_cannot_be_undone_warning">消息将被删除 - 此操作无法撤销！</string>
+    <string name="switching_profile_error_message">你的连接被移动到 %s，但在将你重定向到配置文件时发生了意料之外的错误。</string>
+    <string name="network_proxy_auth_mode_no_auth">代理不使用身份验证凭据</string>
+    <string name="switching_profile_error_title">切换配置文件出错</string>
+    <string name="network_proxy_auth">代理身份验证</string>
+    <string name="migrate_from_device_remove_archive_question">删除存档？</string>
+    <string name="select_chat_profile">选择聊天配置文件</string>
+    <string name="network_proxy_incorrect_config_title">保存代理出错</string>
+    <string name="network_proxy_password">密码</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_entity">每个连接使用不同的代理身份验证凭据。</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_user">每个配置文件使用不同的代理身份验证。</string>
+    <string name="network_proxy_auth_mode_username_password">你的凭据可能以未经加密的方式被发送。</string>
+    <string name="network_proxy_random_credentials">使用随机凭据</string>
+    <string name="network_proxy_username">用户名</string>
+    <string name="new_chat_share_profile">分享配置文件</string>
+    <string name="error_forwarding_messages">转发消息出错</string>
+    <string name="forward_files_messages_deleted_after_selection_desc">在你选中消息后这些消息被删除。</string>
+    <string name="n_file_errors">%1$d 个文件错误:
+\n%2$s</string>
+    <string name="n_other_file_errors">其他 %1$d 个文件错误。</string>
+    <string name="forward_files_not_accepted_desc">%1$d 个文件未被下载。</string>
+    <string name="forward_alert_title_messages_to_forward">转发 %1$s 条消息？</string>
+    <string name="forward_alert_forward_messages_without_files">仅转发消息不转发文件？</string>
+    <string name="forward_alert_title_nothing_to_forward">没什么可转发的！</string>
+    <string name="forward_files_in_progress_desc">仍有 %1$d 个文件在下载中。</string>
+    <string name="forward_files_failed_to_receive_desc">%1$d 个文件下载失败。</string>
+    <string name="forward_files_missing_desc">%1$d 个文件被删除了。</string>
+    <string name="forward_files_not_accepted_receive_files">下载</string>
+    <string name="forward_files_messages_deleted_after_selection_title">%1$s 条消息未被转发</string>
+    <string name="forward_multiple">转发消息…</string>
+    <string name="compose_forward_messages_n">转发 %1$s 条消息</string>
+    <string name="compose_save_messages_n">保存 %1$s 条消息</string>
+    <string name="icon_descr_sound_muted">已静音</string>
+    <string name="settings_section_title_message_shape">管理形状</string>
+    <string name="settings_message_shape_corner">拐角</string>
+    <string name="settings_message_shape_tail">尾部</string>
+    <string name="error_initializing_web_view_wrong_arch">初始化 WebView 出错。确保你安装了 WebView 且其支持的架构为 arm64。\n错误：%s</string>
+    <string name="network_session_mode_session">应用会话</string>
+    <string name="network_session_mode_session_description">每次启动应用都会使用新的 SOCKS5 凭据。</string>
+    <string name="network_session_mode_server">服务器</string>
+    <string name="call_desktop_permission_denied_safari">打开 Safari 设置/网站/麦克风，接着在 localhost 选择“允许”。</string>
+    <string name="call_desktop_permission_denied_title">要进行通话，请允许使用设备麦克风。结束通话并尝试再次呼叫。</string>
+    <string name="call_desktop_permission_denied_chrome">单击地址附近的\"信息\"按钮允许使用麦克风。</string>
+    <string name="network_session_mode_server_description">每个服务器都会使用新的 SOCKS5 凭据。</string>
+    <string name="v6_1_message_dates_descr">更好的消息日期。</string>
+    <string name="v6_1_better_security">更佳的安全性✅</string>
+    <string name="v6_1_better_user_experience">更佳的使用体验</string>
+    <string name="v6_1_customizable_message_descr">可自定义消息形状。</string>
+    <string name="v6_1_forward_many_messages_descr">一次性转发最多20条消息。</string>
+    <string name="v6_1_better_security_descr">Trail of Bits 审核了 SimpleX 协议。</string>
+    <string name="v6_1_better_calls_descr">通话期间切换音频和视频。</string>
+    <string name="v6_1_switch_chat_profile_descr">对一次性邀请切换聊天配置文件。</string>
+    <string name="v6_1_better_calls">更佳的通话</string>
+    <string name="v6_1_delete_many_messages_descr">允许自行删除或管理员移除最多200条消息。</string>
 </resources>

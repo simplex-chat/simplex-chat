@@ -44,7 +44,7 @@ import Data.String
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1)
 import Data.Time (NominalDiffTime, UTCTime)
-import Data.Time.Clock.System (systemToUTCTime)
+import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
 import Data.Version (showVersion)
 import Data.Word (Word16)
 import Database.SQLite.Simple (SQLError)
@@ -84,7 +84,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), CorrId, NtfServer, ProtocolType (..), ProtocolTypeI, QueueId, SMPMsgMeta (..), SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServer, userProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), CorrId, MsgId, NMsgMeta (..), NtfServer, ProtocolType (..), ProtocolTypeI, QueueId, SMPMsgMeta (..), SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServer, userProtocol)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, simplexMQVersion)
 import Simplex.Messaging.Transport.Client (SocksProxyWithAuth, TransportHost)
@@ -292,16 +292,18 @@ data ChatCommand
   | APIGetChat ChatRef ChatPagination (Maybe String)
   | APIGetChatItems ChatPagination (Maybe String)
   | APIGetChatItemInfo ChatRef ChatItemId
-  | APISendMessage {chatRef :: ChatRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessage :: ComposedMessage}
-  | APICreateChatItem {noteFolderId :: NoteFolderId, composedMessage :: ComposedMessage}
+  | APISendMessages {chatRef :: ChatRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessages :: NonEmpty ComposedMessage}
+  | APICreateChatItems {noteFolderId :: NoteFolderId, composedMessages :: NonEmpty ComposedMessage}
   | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, msgContent :: MsgContent}
   | APIDeleteChatItem ChatRef (NonEmpty ChatItemId) CIDeleteMode
   | APIDeleteMemberChatItem GroupId (NonEmpty ChatItemId)
   | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, add :: Bool, reaction :: MsgReaction}
-  | APIForwardChatItem {toChatRef :: ChatRef, fromChatRef :: ChatRef, chatItemId :: ChatItemId, ttl :: Maybe Int}
+  | APIPlanForwardChatItems {fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId}
+  | APIForwardChatItems {toChatRef :: ChatRef, fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId, ttl :: Maybe Int}
   | APIUserRead UserId
   | UserRead
   | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
+  | APIChatItemsRead ChatRef (NonEmpty ChatItemId)
   | APIChatUnread ChatRef Bool
   | APIDeleteChat ChatRef ChatDeleteMode -- currently delete mode settings are only applied to direct chats
   | APIClearChat ChatRef
@@ -328,7 +330,8 @@ data ChatCommand
   | APIRegisterToken DeviceToken NotificationsMode
   | APIVerifyToken DeviceToken C.CbNonce ByteString
   | APIDeleteToken DeviceToken
-  | APIGetNtfMessage {nonce :: C.CbNonce, encNtfInfo :: ByteString}
+  | APIGetNtfConns {nonce :: C.CbNonce, encNtfInfo :: ByteString}
+  | ApiGetConnNtfMessages {connIds :: NonEmpty AgentConnId}
   | APIAddMember GroupId ContactId GroupMemberRole
   | APIJoinGroup GroupId
   | APIMemberRole GroupId GroupMemberId GroupMemberRole
@@ -597,8 +600,8 @@ data ChatResponse
   | CRContactCode {user :: User, contact :: Contact, connectionCode :: Text}
   | CRGroupMemberCode {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionCode :: Text}
   | CRConnectionVerified {user :: User, verified :: Bool, expectedCode :: Text}
-  | CRNewChatItem {user :: User, chatItem :: AChatItem}
-  | CRChatItemStatusUpdated {user :: User, chatItem :: AChatItem}
+  | CRNewChatItems {user :: User, chatItems :: [AChatItem]}
+  | CRChatItemsStatusesUpdated {user :: User, chatItems :: [AChatItem]}
   | CRChatItemUpdated {user :: User, chatItem :: AChatItem}
   | CRChatItemNotChanged {user :: User, chatItem :: AChatItem}
   | CRChatItemReaction {user :: User, added :: Bool, reaction :: ACIReaction}
@@ -648,6 +651,7 @@ data ChatResponse
   | CRContactRequestAlreadyAccepted {user :: User, contact :: Contact}
   | CRLeftMemberUser {user :: User, groupInfo :: GroupInfo}
   | CRGroupDeletedUser {user :: User, groupInfo :: GroupInfo}
+  | CRForwardPlan {user :: User, itemsCount :: Int, chatItemIds :: [ChatItemId], forwardConfirmation :: Maybe ForwardConfirmation}
   | CRRcvFileDescrReady {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer, rcvFileDescr :: RcvFileDescr}
   | CRRcvFileAccepted {user :: User, chatItem :: AChatItem}
   | CRRcvFileAcceptedSndCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer}
@@ -741,8 +745,9 @@ data ChatResponse
   | CRUserContactLinkSubError {chatError :: ChatError} -- TODO delete
   | CRNtfTokenStatus {status :: NtfTknStatus}
   | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode, ntfServer :: NtfServer}
-  | CRNtfMessages {user_ :: Maybe User, connEntity_ :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessage_ :: Maybe NtfMsgInfo}
-  | CRNtfMessage {user :: User, connEntity :: ConnectionEntity, ntfMessage :: NtfMsgInfo}
+  | CRNtfConns {ntfConns :: [NtfConn]}
+  | CRConnNtfMessages {receivedMsgs :: NonEmpty (Maybe NtfMsgInfo)}
+  | CRNtfMessage {user :: User, connEntity :: ConnectionEntity, ntfMessage :: NtfMsgAckInfo}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
   | CRCurrentRemoteHost {remoteHost_ :: Maybe RemoteHostInfo}
@@ -904,6 +909,13 @@ connectionPlanProceed = \case
     GLPConnectingConfirmReconnect -> True
     _ -> False
 
+data ForwardConfirmation
+  = FCFilesNotAccepted {fileIds :: [FileTransferId]}
+  | FCFilesInProgress {filesCount :: Int}
+  | FCFilesMissing {filesCount :: Int}
+  | FCFilesFailed {filesCount :: Int}
+  deriving (Show)
+
 newtype UserPwd = UserPwd {unUserPwd :: Text}
   deriving (Eq, Show)
 
@@ -980,13 +992,25 @@ data SimpleNetCfg = SimpleNetCfg
     requiredHostMode :: Bool,
     smpProxyMode_ :: Maybe SMPProxyMode,
     smpProxyFallback_ :: Maybe SMPProxyFallback,
+    smpWebPort :: Bool,
     tcpTimeout_ :: Maybe Int,
     logTLSErrors :: Bool
   }
   deriving (Show)
 
 defaultSimpleNetCfg :: SimpleNetCfg
-defaultSimpleNetCfg = SimpleNetCfg Nothing SMAlways HMOnionViaSocks True Nothing Nothing Nothing False
+defaultSimpleNetCfg =
+  SimpleNetCfg
+    { socksProxy = Nothing,
+      socksMode = SMAlways,
+      hostMode = HMOnionViaSocks,
+      requiredHostMode = False,
+      smpProxyMode_ = Nothing,
+      smpProxyFallback_ = Nothing,
+      smpWebPort = False,
+      tcpTimeout_ = Nothing,
+      logTLSErrors = False
+    }
 
 data ContactSubStatus = ContactSubStatus
   { contact :: Contact,
@@ -1039,11 +1063,31 @@ instance FromJSON ComposedMessage where
   parseJSON invalid =
     JT.prependFailure "bad ComposedMessage, " (JT.typeMismatch "Object" invalid)
 
+data NtfConn = NtfConn
+  { user_ :: Maybe User,
+    connEntity_ :: Maybe ConnectionEntity,
+    expectedMsg_ :: Maybe NtfMsgInfo
+  }
+  deriving (Show)
+
 data NtfMsgInfo = NtfMsgInfo {msgId :: Text, msgTs :: UTCTime}
   deriving (Show)
 
-ntfMsgInfo :: SMPMsgMeta -> NtfMsgInfo
-ntfMsgInfo SMPMsgMeta {msgId, msgTs} = NtfMsgInfo {msgId = decodeLatin1 $ strEncode msgId, msgTs = systemToUTCTime msgTs}
+receivedMsgInfo :: SMPMsgMeta -> NtfMsgInfo
+receivedMsgInfo SMPMsgMeta {msgId, msgTs} = ntfMsgInfo_ msgId msgTs
+
+expectedMsgInfo :: NMsgMeta -> NtfMsgInfo
+expectedMsgInfo NMsgMeta {msgId, msgTs} = ntfMsgInfo_ msgId msgTs
+
+ntfMsgInfo_ :: MsgId -> SystemTime -> NtfMsgInfo
+ntfMsgInfo_ msgId msgTs = NtfMsgInfo {msgId = decodeLatin1 $ strEncode msgId, msgTs = systemToUTCTime msgTs}
+
+-- Acknowledged message info - used to correlate with expected message
+data NtfMsgAckInfo = NtfMsgAckInfo {msgId :: Text, msgTs_ :: Maybe UTCTime}
+  deriving (Show)
+
+ntfMsgAckInfo :: MsgId -> Maybe UTCTime -> NtfMsgAckInfo
+ntfMsgAckInfo msgId msgTs_ = NtfMsgAckInfo {msgId = decodeLatin1 $ strEncode msgId, msgTs_}
 
 crNtfToken :: (DeviceToken, NtfTknStatus, NotificationsMode, NtfServer) -> ChatResponse
 crNtfToken (token, status, ntfMode, ntfServer) = CRNtfToken {token, status, ntfMode, ntfServer}
@@ -1180,7 +1224,6 @@ data ChatErrorType
   | CEInlineFileProhibited {fileId :: FileTransferId}
   | CEInvalidQuote
   | CEInvalidForward
-  | CEForwardNoFile
   | CEInvalidChatItemUpdate
   | CEInvalidChatItemDelete
   | CEHasCurrentCall
@@ -1380,6 +1423,10 @@ catchStoreError :: ExceptT StoreError IO a -> (StoreError -> ExceptT StoreError 
 catchStoreError = catchAllErrors mkStoreError
 {-# INLINE catchStoreError #-}
 
+tryStoreError' :: ExceptT StoreError IO a -> IO (Either StoreError a)
+tryStoreError' = tryAllErrors' mkStoreError
+{-# INLINE tryStoreError' #-}
+
 mkStoreError :: SomeException -> StoreError
 mkStoreError = SEInternalError . show
 {-# INLINE mkStoreError #-}
@@ -1465,6 +1512,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GLP") ''GroupLinkPlan)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CP") ''ConnectionPlan)
 
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "FC") ''ForwardConfirmation)
+
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CE") ''ChatErrorType)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RHE") ''RemoteHostError)
@@ -1492,6 +1541,10 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "AE") ''ArchiveError)
 $(JQ.deriveJSON defaultJSON ''UserProfileUpdateSummary)
 
 $(JQ.deriveJSON defaultJSON ''NtfMsgInfo)
+
+$(JQ.deriveJSON defaultJSON ''NtfConn)
+
+$(JQ.deriveJSON defaultJSON ''NtfMsgAckInfo)
 
 $(JQ.deriveJSON defaultJSON ''SwitchProgress)
 

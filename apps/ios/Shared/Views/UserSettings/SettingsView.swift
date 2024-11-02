@@ -47,6 +47,8 @@ let DEFAULT_ACCENT_COLOR_GREEN = "accentColorGreen" // deprecated, only used for
 let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue" // deprecated, only used for migration
 let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle" // deprecated, only used for migration
 let DEFAULT_PROFILE_IMAGE_CORNER_RADIUS = "profileImageCornerRadius"
+let DEFAULT_CHAT_ITEM_ROUNDNESS = "chatItemRoundness"
+let DEFAULT_CHAT_ITEM_TAIL = "chatItemTail"
 let DEFAULT_ONE_HAND_UI_CARD_SHOWN = "oneHandUICardShown"
 let DEFAULT_TOOLBAR_MATERIAL = "toolbarMaterial"
 let DEFAULT_CONNECT_VIA_LINK_TAB = "connectViaLinkTab"
@@ -73,7 +75,11 @@ let DEFAULT_SYSTEM_DARK_THEME = "systemDarkTheme"
 let DEFAULT_CURRENT_THEME_IDS = "currentThemeIds"
 let DEFAULT_THEME_OVERRIDES = "themeOverrides"
 
+let DEFAULT_NETWORK_PROXY = "networkProxy"
+
 let ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN = "androidCallOnLockScreen"
+
+let defaultChatItemRoundness: Double = 0.75
 
 let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
@@ -98,6 +104,8 @@ let appDefaults: [String: Any] = [
     DEFAULT_DEVELOPER_TOOLS: false,
     DEFAULT_ENCRYPTION_STARTED: false,
     DEFAULT_PROFILE_IMAGE_CORNER_RADIUS: defaultProfileImageCorner,
+    DEFAULT_CHAT_ITEM_ROUNDNESS: defaultChatItemRoundness,
+    DEFAULT_CHAT_ITEM_TAIL: true,
     DEFAULT_ONE_HAND_UI_CARD_SHOWN: false,
     DEFAULT_TOOLBAR_MATERIAL: ToolbarMaterial.defaultMaterial,
     DEFAULT_CONNECT_VIA_LINK_TAB: ConnectViaLinkTab.scan.rawValue,
@@ -245,13 +253,14 @@ public class CodableDefault<T: Codable> {
     }
 }
 
+let networkProxyDefault: CodableDefault<NetworkProxy> = CodableDefault(defaults: UserDefaults.standard, forKey: DEFAULT_NETWORK_PROXY, withDefault: NetworkProxy.def)
 
 struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.dismiss) var dismiss
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var sceneDelegate: SceneDelegate
     @EnvironmentObject var theme: AppTheme
-    @Binding var showSettings: Bool
     @State private var showProgress: Bool = false
 
     var body: some View {
@@ -260,71 +269,12 @@ struct SettingsView: View {
             if showProgress {
                 progressView()
             }
-            if let la = chatModel.laRequest {
-                LocalAuthView(authRequest: la)
-            }
         }
     }
 
     @ViewBuilder func settingsView() -> some View {
         let user = chatModel.currentUser
-        NavigationView {
             List {
-                Section(header: Text("You").foregroundColor(theme.colors.secondary)) {
-                    if let user = user {
-                        NavigationLink {
-                            UserProfile()
-                                .navigationTitle("Your current profile")
-                                .modifier(ThemedBackground())
-                        } label: {
-                            ProfilePreview(profileOf: user)
-                                .padding(.leading, -8)
-                        }
-                    }
-
-                    NavigationLink {
-                        UserProfilesView(showSettings: $showSettings)
-                    } label: {
-                        settingsRow("person.crop.rectangle.stack", color: theme.colors.secondary) { Text("Your chat profiles") }
-                    }
-
-
-                    if let user = user {
-                        NavigationLink {
-                            UserAddressView(shareViaProfile: user.addressShared)
-                                .navigationTitle("SimpleX address")
-                                .modifier(ThemedBackground(grouped: true))
-                                .navigationBarTitleDisplayMode(.large)
-                        } label: {
-                            settingsRow("qrcode", color: theme.colors.secondary) { Text("Your SimpleX address") }
-                        }
-
-                        NavigationLink {
-                            PreferencesView(profile: user.profile, preferences: user.fullPreferences, currentPreferences: user.fullPreferences)
-                                .navigationTitle("Your preferences")
-                                .modifier(ThemedBackground(grouped: true))
-                        } label: {
-                            settingsRow("switch.2", color: theme.colors.secondary) { Text("Chat preferences") }
-                        }
-                    }
-
-                    NavigationLink {
-                        ConnectDesktopView(viaSettings: true)
-                    } label: {
-                        settingsRow("desktopcomputer", color: theme.colors.secondary) { Text("Use from desktop") }
-                    }
-
-                    NavigationLink {
-                        MigrateFromDevice(showSettings: $showSettings, showProgressOnSettings: $showProgress)
-                            .navigationTitle("Migrate device")
-                            .modifier(ThemedBackground(grouped: true))
-                            .navigationBarTitleDisplayMode(.large)
-                    } label: {
-                        settingsRow("tray.and.arrow.up", color: theme.colors.secondary) { Text("Migrate to another device") }
-                    }
-                }
-                .disabled(chatModel.chatRunning != true)
-
                 Section(header: Text("Settings").foregroundColor(theme.colors.secondary)) {
                     NavigationLink {
                         NotificationsView()
@@ -375,14 +325,29 @@ struct SettingsView: View {
                         }
                         .disabled(chatModel.chatRunning != true)
                     }
-                    
-                    chatDatabaseRow()
                 }
 
+                Section(header: Text("Chat database").foregroundColor(theme.colors.secondary)) {
+                    chatDatabaseRow()
+                    NavigationLink {
+                        MigrateFromDevice(showProgressOnSettings: $showProgress)
+                            .toolbar {
+                                // Redaction broken for `.navigationTitle` - using a toolbar item instead.
+                                ToolbarItem(placement: .principal) {
+                                    Text("Migrate device").font(.headline)
+                                }
+                            }
+                            .modifier(ThemedBackground(grouped: true))
+                            .navigationBarTitleDisplayMode(.large)
+                    } label: {
+                        settingsRow("tray.and.arrow.up", color: theme.colors.secondary) { Text("Migrate to another device") }
+                    }
+                }
+                
                 Section(header: Text("Help").foregroundColor(theme.colors.secondary)) {
                     if let user = user {
                         NavigationLink {
-                            ChatHelp(showSettings: $showSettings)
+                            ChatHelp(dismissSettingsSheet: dismiss)
                                 .navigationTitle("Welcome \(user.displayName)!")
                                 .modifier(ThemedBackground())
                                 .frame(maxHeight: .infinity, alignment: .top)
@@ -407,7 +372,7 @@ struct SettingsView: View {
                     }
                     settingsRow("number", color: theme.colors.secondary) {
                         Button("Send questions and ideas") {
-                            showSettings = false
+                            dismiss()
                             DispatchQueue.main.async {
                                 UIApplication.shared.open(simplexTeamURL)
                             }
@@ -456,16 +421,15 @@ struct SettingsView: View {
             }
             .navigationTitle("Your settings")
             .modifier(ThemedBackground(grouped: true))
-        }
-        .onDisappear {
-            chatModel.showingTerminal = false
-            chatModel.terminalItems = []
-        }
+            .onDisappear {
+                chatModel.showingTerminal = false
+                chatModel.terminalItems = []
+            }
     }
     
     private func chatDatabaseRow() -> some View {
         NavigationLink {
-            DatabaseView(showSettings: $showSettings, chatItemTTL: chatModel.chatItemTTL)
+            DatabaseView(dismissSettingsSheet: dismiss, chatItemTTL: chatModel.chatItemTTL)
                 .navigationTitle("Your chat database")
                 .modifier(ThemedBackground(grouped: true))
         } label: {
@@ -543,26 +507,25 @@ struct ProfilePreview: View {
         HStack {
             ProfileImage(imageStr: profileOf.image, size: 44, color: color)
                 .padding(.trailing, 6)
-                .padding(.vertical, 6)
-            VStack(alignment: .leading) {
-                Text(profileOf.displayName)
-                    .fontWeight(.bold)
-                    .font(.title2)
-                if profileOf.fullName != "" && profileOf.fullName != profileOf.displayName {
-                    Text(profileOf.fullName)
-                }
-            }
+            profileName(profileOf).lineLimit(1)
         }
     }
+}
+
+func profileName(_ profileOf: NamedChat) -> Text {
+    var t = Text(profileOf.displayName).fontWeight(.semibold).font(.title2)
+    if profileOf.fullName != "" && profileOf.fullName != profileOf.displayName {
+        t = t + Text(" (" + profileOf.fullName + ")")
+//                        .font(.callout)
+        }
+    return t
 }
 
 struct SettingsView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
         chatModel.currentUser = User.sampleData
-        @State var showSettings = false
-
-        return SettingsView(showSettings: $showSettings)
+        return SettingsView()
             .environmentObject(chatModel)
     }
 }

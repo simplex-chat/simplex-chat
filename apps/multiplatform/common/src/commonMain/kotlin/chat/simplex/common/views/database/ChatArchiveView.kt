@@ -46,9 +46,7 @@ fun ChatArchiveLayout(
   saveArchive: () -> Unit,
   deleteArchiveAlert: () -> Unit
 ) {
-  ColumnWithScrollBar(
-    Modifier.fillMaxWidth(),
-  ) {
+  ColumnWithScrollBar {
     AppBarTitle(title)
     SectionView(stringResource(MR.strings.chat_archive_section)) {
       SettingsActionItem(

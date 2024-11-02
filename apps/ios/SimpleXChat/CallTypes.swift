@@ -80,6 +80,14 @@ public enum CallMediaType: String, Codable, Equatable {
     case audio = "audio"
 }
 
+public enum CallMediaSource: String, Codable, Equatable {
+  case mic = "mic"
+  case camera = "camera"
+  case screenAudio = "screenAudio"
+  case screenVideo = "screenVideo"
+  case unknown = "unknown"
+}
+
 public enum VideoCamera: String, Codable, Equatable {
     case user = "user"
     case environment = "environment"

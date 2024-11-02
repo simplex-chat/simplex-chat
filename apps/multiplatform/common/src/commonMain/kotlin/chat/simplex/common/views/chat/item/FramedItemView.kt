@@ -2,16 +2,15 @@ package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.*
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.UriHandler
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -35,6 +34,8 @@ fun FramedItemView(
   linkMode: SimplexLinkMode,
   showViaProxy: Boolean,
   showMenu: MutableState<Boolean>,
+  showTimestamp: Boolean,
+  tailVisible: Boolean = false,
   receiveFile: (Long) -> Unit,
   onLinkLongClick: (link: String) -> Unit = {},
   scrollToItem: (Long) -> Unit = {},
@@ -47,7 +48,7 @@ fun FramedItemView(
   }
 
   @Composable
-  fun ciQuotedMsgTextView(qi: CIQuote, lines: Int) {
+  fun ciQuotedMsgTextView(qi: CIQuote, lines: Int, showTimestamp: Boolean) {
     MarkdownText(
       qi.text,
       qi.formattedText,
@@ -56,7 +57,8 @@ fun FramedItemView(
       overflow = TextOverflow.Ellipsis,
       style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface),
       linkMode = linkMode,
-      uriHandler = if (appPlatform.isDesktop) uriHandler else null
+      uriHandler = if (appPlatform.isDesktop) uriHandler else null,
+      showTimestamp = showTimestamp
     )
   }
 
@@ -76,10 +78,10 @@ fun FramedItemView(
             style = TextStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary),
             maxLines = 1
           )
-          ciQuotedMsgTextView(qi, lines = 2)
+          ciQuotedMsgTextView(qi, lines = 2,  showTimestamp = showTimestamp)
         }
       } else {
-        ciQuotedMsgTextView(qi, lines = 3)
+        ciQuotedMsgTextView(qi, lines = 3,  showTimestamp = showTimestamp)
       }
     }
   }
@@ -178,7 +180,7 @@ fun FramedItemView(
   fun ciFileView(ci: ChatItem, text: String) {
     CIFileView(ci.file, ci.meta.itemEdited, showMenu, false, receiveFile)
     if (text != "" || ci.meta.isLive) {
-      CIMarkdownText(ci, chatTTL, linkMode = linkMode, uriHandler, showViaProxy = showViaProxy)
+      CIMarkdownText(ci, chatTTL, linkMode = linkMode, uriHandler, showViaProxy = showViaProxy,  showTimestamp = showTimestamp)
     }
   }
 
@@ -188,7 +190,7 @@ fun FramedItemView(
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
   Box(Modifier
-    .clip(RoundedCornerShape(18.dp))
+    .clipChatItem(ci, tailVisible, revealed = true)
     .background(
       when {
         transparentBackground -> Color.Transparent
@@ -198,7 +200,14 @@ fun FramedItemView(
     )) {
     var metaColor = MaterialTheme.colors.secondary
     Box(contentAlignment = Alignment.BottomEnd) {
-      Column(Modifier.width(IntrinsicSize.Max)) {
+      val chatItemTail = remember { appPreferences.chatItemTail.state }
+      val style = shapeStyle(ci, chatItemTail.value, tailVisible, revealed = true)
+      val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
+      Column(
+        Modifier
+          .width(IntrinsicSize.Max)
+          .padding(start = if (tailRendered) msgTailWidthDp else 0.dp, end = if (sent && tailRendered) msgTailWidthDp else 0.dp)
+      ) {
         PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
           if (ci.meta.itemDeleted != null) {
             when (ci.meta.itemDeleted) {
@@ -242,7 +251,7 @@ fun FramedItemView(
                 if (mc.text == "" && !ci.meta.isLive) {
                   metaColor = Color.White
                 } else {
-                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy)
+                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 }
               }
               is MsgContent.MCVideo -> {
@@ -250,35 +259,41 @@ fun FramedItemView(
                 if (mc.text == "" && !ci.meta.isLive) {
                   metaColor = Color.White
                 } else {
-                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy)
+                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 }
               }
               is MsgContent.MCVoice -> {
-                CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = true, ci, timedMessagesTTL = chatTTL, showViaProxy = showViaProxy, longClick = { onLinkLongClick("") }, receiveFile = receiveFile)
+                CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = true, ci, timedMessagesTTL = chatTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp, longClick = { onLinkLongClick("") }, receiveFile = receiveFile)
                 if (mc.text != "") {
-                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy)
+                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 }
               }
               is MsgContent.MCFile -> ciFileView(ci, mc.text)
               is MsgContent.MCUnknown ->
                 if (ci.file == null) {
-                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy)
+                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 } else {
                   ciFileView(ci, mc.text)
                 }
               is MsgContent.MCLink -> {
                 ChatItemLinkView(mc.preview, showMenu, onLongClick = { showMenu.value = true })
                 Box(Modifier.widthIn(max = DEFAULT_MAX_IMAGE_WIDTH)) {
-                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy)
+                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 }
               }
-              else -> CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy)
+              else -> CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
             }
           }
         }
       }
-      Box(Modifier.padding(bottom = 6.dp, end = 12.dp)) {
-        CIMetaView(ci, chatTTL, metaColor, showViaProxy = showViaProxy)
+      Box(
+        Modifier
+          .padding(
+            bottom = 6.dp,
+            end = 12.dp + if (tailRendered && sent) msgTailWidthDp else 0.dp,
+          )
+      ) {
+        CIMetaView(ci, chatTTL, metaColor, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
       }
     }
   }
@@ -291,19 +306,23 @@ fun CIMarkdownText(
   linkMode: SimplexLinkMode,
   uriHandler: UriHandler?,
   onLinkLongClick: (link: String) -> Unit = {},
-  showViaProxy: Boolean
+  showViaProxy: Boolean,
+  showTimestamp: Boolean,
 ) {
-  Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
+  Box(Modifier.padding(vertical = 7.dp, horizontal = 12.dp)) {
     val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
     MarkdownText(
       text, if (text.isEmpty()) emptyList() else ci.formattedText, toggleSecrets = true,
       meta = ci.meta, chatTTL = chatTTL, linkMode = linkMode,
-      uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, showViaProxy = showViaProxy
+      uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp
     )
   }
 }
 
 const val CHAT_IMAGE_LAYOUT_ID = "chatImage"
+const val CHAT_BUBBLE_LAYOUT_ID = "chatBubble"
+const val CHAT_COMPOSE_LAYOUT_ID = "chatCompose"
+const val CONSOLE_COMPOSE_LAYOUT_ID = "consoleCompose"
 /**
  * Equal to [androidx.compose.ui.unit.Constraints.MaxFocusMask], which is 0x3FFFF - 1
  * Other values make a crash `java.lang.IllegalArgumentException: Can't represent a width of 123456 and height of 9909 in Constraints`
@@ -311,23 +330,23 @@ const val CHAT_IMAGE_LAYOUT_ID = "chatImage"
  * */
 const val MAX_SAFE_WIDTH = 0x3FFFF - 1
 
+/**
+ * Limiting max value for height + width in order to not crash the app, see [androidx.compose.ui.unit.Constraints.createConstraints]
+ * */
+private fun maxSafeHeight(width: Int) = when { // width bits + height bits should be <= 31
+  width < 0x1FFF /*MaxNonFocusMask*/ -> 0x3FFFF - 1 /* MaxFocusMask */ // 13 bits width + 18 bits height
+  width < 0x7FFF /*MinNonFocusMask*/ -> 0xFFFF - 1 /* MinFocusMask */ // 15 bits width + 16 bits height
+  width < 0xFFFF /*MinFocusMask*/ -> 0x7FFF - 1 /* MinFocusMask */ // 16 bits width + 15 bits height
+  width < 0x3FFFF /*MaxFocusMask*/ -> 0x1FFF - 1 /* MaxNonFocusMask */ // 18 bits width + 13 bits height
+  else -> 0x1FFF // shouldn't happen since width is limited already
+}
+
 @Composable
 fun PriorityLayout(
   modifier: Modifier = Modifier,
   priorityLayoutId: String,
   content: @Composable () -> Unit
 ) {
-  /**
-   * Limiting max value for height + width in order to not crash the app, see [androidx.compose.ui.unit.Constraints.createConstraints]
-   * */
-  fun maxSafeHeight(width: Int) = when { // width bits + height bits should be <= 31
-    width < 0x1FFF /*MaxNonFocusMask*/ -> 0x3FFFF - 1 /* MaxFocusMask */ // 13 bits width + 18 bits height
-    width < 0x7FFF /*MinNonFocusMask*/ -> 0xFFFF - 1 /* MinFocusMask */ // 15 bits width + 16 bits height
-    width < 0xFFFF /*MinFocusMask*/ -> 0x7FFF - 1 /* MinFocusMask */ // 16 bits width + 15 bits height
-    width < 0x3FFFF /*MaxFocusMask*/ -> 0x1FFF - 1 /* MaxNonFocusMask */ // 18 bits width + 13 bits height
-    else -> 0x1FFF // shouldn't happen since width is limited already
-  }
-
   Layout(
     content = content,
     modifier = modifier
@@ -352,6 +371,100 @@ fun PriorityLayout(
     }
   }
 }
+
+@Composable
+fun DependentLayout(
+  modifier: Modifier = Modifier,
+  mainLayoutId: String,
+  content: @Composable () -> Unit
+) {
+  Layout(
+    content = content,
+    modifier = modifier
+  ) { measureable, constraints ->
+    // Find important element which should tell what min width it needs to draw itself.
+    // Expecting only one such element. Can be less than one but not more
+    val mainPlaceable = measureable.firstOrNull { it.layoutId == mainLayoutId }?.measure(constraints)
+    val placeables: List<Placeable> = measureable.map {
+      if (it.layoutId == mainLayoutId)
+        mainPlaceable!!
+      else
+        it.measure(constraints.copy(minWidth = mainPlaceable?.width ?: 0, maxWidth = min(MAX_SAFE_WIDTH, constraints.maxWidth))) }
+    val width = mainPlaceable?.measuredWidth ?: min(MAX_SAFE_WIDTH, placeables.maxOf { it.width })
+    val height = minOf(maxSafeHeight(width), placeables.sumOf { it.height })
+    layout(width, height) {
+      var y = 0
+      placeables.forEach {
+        it.place(0, y)
+        y += it.measuredHeight
+      }
+    }
+  }
+}
+
+// The purpose of this layout is to make measuring of bottom compose view and adapt top lazy column to its size in the same frame (not on the next frame as you would expect).
+// So, steps are:
+// - measuring the layout: measured height of compose view before this step is 0, it's added to content padding of lazy column (so it's == 0)
+// - measured the layout: measured height of compose view now is correct, but it's not yet applied to lazy column content padding (so it's == 0) and lazy column is placed higher than compose view in view with respect to compose view's height
+// - on next frame measured height is correct and content padding is the same, lazy column placed to occupy all parent view's size
+// - every added/removed line in compose view goes through the same process.
+@Composable
+fun AdaptingBottomPaddingLayout(
+  modifier: Modifier = Modifier,
+  mainLayoutId: String,
+  expectedHeight: MutableState<Dp>,
+  content: @Composable () -> Unit
+) {
+  val expected = with(LocalDensity.current) { expectedHeight.value.roundToPx() }
+  Layout(
+    content = content,
+    modifier = modifier
+  ) { measureable, constraints ->
+    require(measureable.size <= 2) { "Should be exactly one or two elements in this layout, you have ${measureable.size}" }
+    val mainPlaceable = measureable.firstOrNull { it.layoutId == mainLayoutId }!!.measure(constraints)
+    val placeables: List<Placeable> = measureable.map {
+      if (it.layoutId == mainLayoutId)
+        mainPlaceable
+      else
+        it.measure(constraints.copy(maxHeight = if (expected != mainPlaceable.measuredHeight) constraints.maxHeight - mainPlaceable.measuredHeight + expected else constraints.maxHeight)) }
+    expectedHeight.value = mainPlaceable.measuredHeight.toDp()
+    layout(constraints.maxWidth, constraints.maxHeight) {
+      var y = 0
+      placeables.forEach {
+        if (it !== mainPlaceable) {
+          it.place(0, y)
+          y += it.measuredHeight
+        } else {
+          it.place(0, constraints.maxHeight - mainPlaceable.measuredHeight)
+          y += it.measuredHeight
+        }
+      }
+    }
+  }
+}
+
+@Composable
+fun CenteredRowLayout(
+  modifier: Modifier = Modifier,
+  content: @Composable () -> Unit
+) {
+  Layout(
+    content = content,
+    modifier = modifier
+  ) { measureable, constraints ->
+    require(measureable.size == 3) { "Should be exactly three elements in this layout, you have ${measureable.size}" }
+    val first = measureable[0].measure(constraints.copy(minWidth = 0, minHeight = 0))
+    val third = measureable[2].measure(constraints.copy(minWidth = first.measuredWidth, minHeight = 0))
+    val second = measureable[1].measure(constraints.copy(minWidth = 0, minHeight = 0, maxWidth = (constraints.maxWidth - first.measuredWidth - third.measuredWidth).coerceAtLeast(0)))
+    // Limit width for every other element to width of important element and height for a sum of all elements.
+    layout(constraints.maxWidth, constraints.maxHeight) {
+      first.place(0, ((constraints.maxHeight - first.measuredHeight) / 2).coerceAtLeast(0))
+      second.place((constraints.maxWidth - second.measuredWidth) / 2, ((constraints.maxHeight - second.measuredHeight) / 2).coerceAtLeast(0))
+      third.place(constraints.maxWidth - third.measuredWidth, ((constraints.maxHeight - third.measuredHeight) / 2).coerceAtLeast(0))
+    }
+  }
+}
+
 /*
 
 class EditedProvider: PreviewParameterProvider<Boolean> {

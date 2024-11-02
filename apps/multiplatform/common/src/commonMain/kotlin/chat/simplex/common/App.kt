@@ -6,18 +6,18 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.*
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.usersettings.SetDeliveryReceiptsView
 import chat.simplex.common.model.*
@@ -42,20 +42,39 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlin.math.sqrt
-
-data class SettingsViewState(
-  val userPickerState: MutableStateFlow<AnimatedViewState>,
-  val scaffoldState: ScaffoldState
-)
+import kotlin.math.absoluteValue
 
 @Composable
 fun AppScreen() {
   AppBarHandler.appBarMaxHeightPx = with(LocalDensity.current) { AppBarHeight.roundToPx() }
   SimpleXTheme {
-    ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
-      Surface(color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
-        MainScreen()
+    Surface(color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
+      // This padding applies to landscape view only taking care of navigation bar and holes in screen in status bar area
+      // (because nav bar and holes located on vertical sides of screen in landscape view)
+      val direction = LocalLayoutDirection.current
+      val safePadding = WindowInsets.safeDrawing.asPaddingValues()
+      val cutout = WindowInsets.displayCutout.asPaddingValues()
+      val cutoutStart = cutout.calculateStartPadding(direction)
+      val cutoutEnd = cutout.calculateEndPadding(direction)
+      val cutoutMax = maxOf(cutoutStart, cutoutEnd)
+      val paddingStartUntouched = safePadding.calculateStartPadding(direction)
+      val paddingStart = paddingStartUntouched - cutoutStart
+      val paddingEndUntouched = safePadding.calculateEndPadding(direction)
+      val paddingEnd = paddingEndUntouched - cutoutEnd
+      // Such a strange layout is needed because the main content should be covered by solid color in order to hide overflow
+      // of some elements that may have negative offset (so, can't use Row {}).
+      // To check: go to developer settings of Android, choose Display cutout -> Punch hole, and rotate the phone to landscape, open any chat
+      Box {
+        val fullscreenGallery = remember { chatModel.fullscreenGalleryVisible }
+        Box(Modifier.padding(start = paddingStart + cutoutMax, end = paddingEnd + cutoutMax).consumeWindowInsets(PaddingValues(start = paddingStartUntouched, end = paddingEndUntouched))) {
+          Box(Modifier.drawBehind {
+            if (fullscreenGallery.value) {
+              drawRect(Color.Black,  topLeft = Offset(-(paddingStart + cutoutMax).toPx(), 0f), Size(size.width + (paddingStart + cutoutMax).toPx() + (paddingEnd + cutoutMax).toPx(), size.height))
+            }
+          }) {
+            MainScreen()
+          }
+        }
       }
     }
   }
@@ -145,13 +164,13 @@ fun MainScreen() {
               userPickerState.value = AnimatedViewState.VISIBLE
             }
           }
-          val scaffoldState = rememberScaffoldState()
-          val settingsState = remember { SettingsViewState(userPickerState, scaffoldState) }
           SetupClipboardListener()
           if (appPlatform.isAndroid) {
-            AndroidScreen(settingsState)
+            AndroidWrapInCallLayout {
+              AndroidScreen(userPickerState)
+            }
           } else {
-            DesktopScreen(settingsState)
+            DesktopScreen(userPickerState)
           }
         }
       }
@@ -181,7 +200,9 @@ fun MainScreen() {
       }
     }
     if (appPlatform.isAndroid) {
-      ModalManager.fullscreen.showInView()
+      AndroidWrapInCallLayout {
+        ModalManager.fullscreen.showInView()
+      }
       SwitchingUsersView()
     }
 
@@ -249,20 +270,40 @@ fun MainScreen() {
 val ANDROID_CALL_TOP_PADDING = 40.dp
 
 @Composable
-fun AndroidScreen(settingsState: SettingsViewState) {
+fun AndroidWrapInCallLayout(content: @Composable () -> Unit) {
+  val call = remember { chatModel.activeCall}.value
+  val showCallArea = call != null && call.callState != CallState.WaitCapabilities && call.callState != CallState.InvitationAccepted
+  Box {
+    Box(Modifier.padding(top = if (showCallArea) ANDROID_CALL_TOP_PADDING else 0.dp)) {
+      content()
+    }
+    if (call != null && showCallArea) {
+      ActiveCallInteractiveArea(call)
+    }
+  }
+}
+
+@Composable
+fun AndroidScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
   BoxWithConstraints {
-    val call = remember { chatModel.activeCall} .value
-    val showCallArea = call != null && call.callState != CallState.WaitCapabilities && call.callState != CallState.InvitationAccepted
     val currentChatId = remember { mutableStateOf(chatModel.chatId.value) }
     val offset = remember { Animatable(if (chatModel.chatId.value == null) 0f else maxWidth.value) }
+    val cutout = WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal).asPaddingValues()
+    val direction = LocalLayoutDirection.current
+    val hasCutout = cutout.calculateStartPadding(direction) + cutout.calculateEndPadding(direction) > 0.dp
     Box(
       Modifier
+        // clipping only for devices with cutout currently visible on sides. It prevents showing chat list with open chat view
+        // In order cases it's not needed to use clip
+        .then(if (hasCutout) Modifier.clip(RectangleShape) else Modifier)
         .graphicsLayer {
-          translationX = -offset.value.dp.toPx()
+          // minOf thing is needed for devices with holes in screen while the user on ChatView rotates his phone from portrait to landscape
+          // because in this case (at least in emulator) maxWidth changes in two steps: big first, smaller on next frame.
+          // But offset is remembered already, so this is a better way than dropping a value of offset
+          translationX = -minOf(offset.value.dp, maxWidth).toPx()
         }
-        .padding(top = if (showCallArea) ANDROID_CALL_TOP_PADDING else 0.dp)
     ) {
-      StartPartOfScreen(settingsState)
+      StartPartOfScreen(userPickerState)
     }
     val scope = rememberCoroutineScope()
     val onComposed: suspend (chatId: String?) -> Unit = { chatId ->
@@ -282,51 +323,40 @@ fun AndroidScreen(settingsState: SettingsViewState) {
         snapshotFlow { chatModel.chatId.value }
           .distinctUntilChanged()
           .collect {
-            if (it == null) {
-              platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
-              onComposed(null)
-            }
+            if (it == null) onComposed(null)
             currentChatId.value = it
           }
       }
     }
-    LaunchedEffect(Unit) {
-      snapshotFlow { ModalManager.center.modalCount.value > 0 }
-        .filter { chatModel.chatId.value == null }
-        .collect { modalBackground ->
-          if (chatModel.newChatSheetVisible.value) {
-            platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, false, appPrefs.oneHandUI.get())
-          } else if (modalBackground) {
-            platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, false, false)
-          } else {
-            platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
-          }
-        }
-    }
     Box(Modifier
-      .graphicsLayer { translationX = maxWidth.toPx() - offset.value.dp.toPx() }
-      .padding(top = if (showCallArea) ANDROID_CALL_TOP_PADDING else 0.dp)
+      .then(if (hasCutout) Modifier.clip(RectangleShape) else Modifier)
+      .graphicsLayer { translationX = maxWidth.toPx() - minOf(offset.value.dp, maxWidth).toPx() }
     ) Box2@{
       currentChatId.value?.let {
         ChatView(currentChatId, onComposed)
       }
     }
-    if (call != null && showCallArea) {
-      ActiveCallInteractiveArea(call)
-    }
   }
 }
 
 @Composable
-fun StartPartOfScreen(settingsState: SettingsViewState) {
+fun StartPartOfScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
   if (chatModel.setDeliveryReceipts.value) {
-    SetDeliveryReceiptsView(chatModel)
+    CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
+      SetDeliveryReceiptsView(chatModel)
+    }
   } else {
     val stopped = chatModel.chatRunning.value == false
-    if (chatModel.sharedContent.value == null)
-      ChatListView(chatModel, settingsState, AppLock::setPerformLA, stopped)
-    else
-      ShareListView(chatModel, settingsState, stopped)
+    if (chatModel.sharedContent.value == null) {
+      CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
+        ChatListView(chatModel, userPickerState, AppLock::setPerformLA, stopped)
+      }
+    } else {
+      // LALAL initial load of view doesn't show blur. Focusing text field shows it
+      CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler(keyboardCoversBar = false)) {
+        ShareListView(chatModel, stopped)
+      }
+    }
   }
 }
 
@@ -367,49 +397,41 @@ fun EndPartOfScreen() {
 }
 
 @Composable
-fun DesktopScreen(settingsState: SettingsViewState) {
-  Box {
-    // 56.dp is a size of unused space of settings drawer
-    Box(Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier + 56.dp)) {
-      StartPartOfScreen(settingsState)
-    }
-    Box(Modifier.widthIn(max = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
-      ModalManager.start.showInView()
-      SwitchingUsersView()
-    }
-    Row(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier).clipToBounds()) {
-      Box(Modifier.widthIn(min = DEFAULT_MIN_CENTER_MODAL_WIDTH).weight(1f)) {
-        CenterPartOfScreen()
-      }
-      if (ModalManager.end.hasModalsOpen()) {
-        VerticalDivider()
-      }
-      Box(Modifier.widthIn(max = DEFAULT_END_MODAL_WIDTH * fontSizeSqrtMultiplier).clipToBounds()) {
-        EndPartOfScreen()
-      }
-    }
-    val (userPickerState, scaffoldState ) = settingsState
-    val scope = rememberCoroutineScope()
-    if (scaffoldState.drawerState.isOpen || (ModalManager.start.hasModalsOpen && !ModalManager.center.hasModalsOpen)) {
-      Box(
-        Modifier
-          .fillMaxSize()
-          .padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)
-          .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {
-            ModalManager.start.closeModals()
-            scope.launch { settingsState.scaffoldState.drawerState.close() }
-          })
-      )
-    }
-    VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier))
+fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
+  Box(Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
+    StartPartOfScreen(userPickerState)
     tryOrShowError("UserPicker", error = {}) {
-      UserPicker(chatModel, userPickerState) {
-        scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
-        userPickerState.value = AnimatedViewState.GONE
-      }
+      UserPicker(chatModel, userPickerState, setPerformLA = AppLock::setPerformLA)
     }
-    ModalManager.fullscreen.showInView()
   }
+  Box(Modifier.widthIn(max = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
+    ModalManager.start.showInView()
+    SwitchingUsersView()
+  }
+  Row(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier).clipToBounds()) {
+    Box(Modifier.widthIn(min = DEFAULT_MIN_CENTER_MODAL_WIDTH).weight(1f)) {
+      CenterPartOfScreen()
+    }
+    if (ModalManager.end.hasModalsOpen()) {
+      VerticalDivider()
+    }
+    Box(Modifier.widthIn(max = DEFAULT_END_MODAL_WIDTH * fontSizeSqrtMultiplier).clipToBounds()) {
+      EndPartOfScreen()
+    }
+  }
+  if (userPickerState.collectAsState().value.isVisible() || (ModalManager.start.hasModalsOpen && !ModalManager.center.hasModalsOpen)) {
+    Box(
+      Modifier
+        .fillMaxSize()
+        .padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)
+        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {
+          ModalManager.start.closeModals()
+          userPickerState.value = AnimatedViewState.HIDING
+        })
+    )
+  }
+  VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier))
+  ModalManager.fullscreen.showInView()
 }
 
 @Composable
