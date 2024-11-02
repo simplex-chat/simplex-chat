@@ -1382,7 +1382,7 @@ fun BoxScope.ChatItemsList(
     for (area in sections.value) {
       for ((sIdx, section) in area.items.withIndex()) {
         if (section.revealed) {
-          itemsIndexed(section.items, key = { _, item -> (item.id to item.meta.createdAt.toEpochMilliseconds()).toString() }) { i, cItem ->
+          itemsIndexed(section.items, key = { _, item -> item.id to item.meta.createdAt.toEpochMilliseconds() }) { i, cItem ->
             // index here is just temporary, should be removed at all or put in the section items
             val prevItem = area.getPreviousShownItem(sIdx, i)
             val nextItem = area.getNextShownItem(sIdx, i)
@@ -1390,7 +1390,7 @@ fun BoxScope.ChatItemsList(
           }
         } else {
           val item = section.items.first()
-          item(key = { (item.id to item.meta.createdAt.toEpochMilliseconds()).toString() }) {
+          item(key = item.id to item.meta.createdAt.toEpochMilliseconds()) {
             // here you make one collapsed item from multiple items (should be already in section items)
             val prevItem = area.getPreviousShownItem(sIdx, section.items.lastIndex)
             val nextItem = area.getNextShownItem(sIdx, section.items.lastIndex)
