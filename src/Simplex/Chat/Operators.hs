@@ -58,7 +58,7 @@ instance TextEncoding OperatorTag where
 
 data ConditionsAcceptance
   = CAAccepted {date :: UTCTime}
-  | CARequired {deadline :: Maybe UTCTime}
+  | CARequired {deadline :: Maybe UTCTime, acceptedConditionsCommit :: Maybe Text}
   deriving (Show)
 
 data ServerOperator = ServerOperator

@@ -1512,6 +1512,8 @@ processChatCommand' vr = \case
     pure $ chatCmdError (Just user) "not supported"
   APIValidateServers _userServers -> -- response is CRUserServersValidation
     pure $ chatCmdError Nothing "not supported"
+  APIGetUsageConditions ->
+    pure $ chatCmdError Nothing "not supported"
   APIAcceptConditions _ts _opIds ->
     pure $ chatCmdError Nothing "not supported"
   APISetChatItemTTL userId newTTL_ -> withUserId userId $ \user ->
