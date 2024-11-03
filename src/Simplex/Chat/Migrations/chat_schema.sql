@@ -592,22 +592,19 @@ CREATE TABLE note_folders(
 CREATE TABLE app_settings(app_settings TEXT NOT NULL);
 CREATE TABLE server_operators(
   server_operator_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  preset INTEGER NOT NULL DEFAULT 0,
-  reserved INTEGER NOT NULL DEFAULT 0,
-  deleted INTEGER NOT NULL DEFAULT 0,
+  server_operator_tag TEXT,
+  trade_name TEXT NOT NULL,
+  legal_name TEXT,
   enabled INTEGER NOT NULL DEFAULT 1,
   role_storage INTEGER NOT NULL DEFAULT 1,
   role_proxy INTEGER NOT NULL DEFAULT 1
 );
-CREATE TABLE usage_conditions(
-  usage_conditions_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  usage_conditions_date TEXT NOT NULL,
-  usage_conditions_text TEXT NOT NULL
-);
 CREATE TABLE usage_conditions_acceptance(
+  usage_conditions_acceptance_id INTEGER PRIMARY KEY AUTOINCREMENT,
   server_operator_id INTEGER REFERENCES server_operators(server_operator_id),
-  usage_conditions_id INTEGER REFERENCES usage_conditions(usage_conditions_id),
+  conditions_required_at TEXT NOT NULL,
+  conditions_accepted_at TEXT,
+  conditions_commit TEXT NOT NULL,
   accepted_at TEXT NOT NULL
 );
 CREATE INDEX contact_profiles_index ON contact_profiles(
@@ -914,9 +911,6 @@ CREATE INDEX idx_contact_requests_contact_id ON contact_requests(contact_id);
 CREATE INDEX idx_protocol_servers_operators ON protocol_servers(
   server_operator_id
 );
-CREATE INDEX idx_uc_acceptance_server_operators ON usage_conditions_acceptance(
+CREATE INDEX idx_usage_conditions_acceptance_server_operators ON usage_conditions_acceptance(
   server_operator_id
-);
-CREATE INDEX idx_uc_acceptance_usage_conditions ON usage_conditions_acceptance(
-  usage_conditions_id
 );

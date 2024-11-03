@@ -47,7 +47,8 @@ module Simplex.Chat.Store.Profiles
     getContactWithoutConnViaAddress,
     updateUserAddressAutoAccept,
     getProtocolServers,
-    overwriteOperatorsAndServers,
+    -- overwriteOperatorsAndServers,
+    overwriteProtocolServers,
     getServerOperators,
     createCall,
     deleteCalls,
@@ -67,10 +68,9 @@ import Control.Monad.IO.Class
 import qualified Data.Aeson.TH as J
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (partition)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
@@ -78,6 +78,7 @@ import Database.SQLite.Simple (NamedParam (..), Only (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Call
 import Simplex.Chat.Messages
+import Simplex.Chat.Operators
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
@@ -537,9 +538,11 @@ getProtocolServers db User {userId} =
           roles = ServerRoles {storage = fromMaybe True storage_, proxy = fromMaybe True proxy_}
        in ServerCfg {server, operator, preset, tested, enabled, roles}
 
-overwriteOperatorsAndServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> Maybe [ServerOperator] -> [ServerCfg p] -> ExceptT StoreError IO [ServerCfg p]
-overwriteOperatorsAndServers db user@User {userId} operators_ servers = do
-  liftIO $ mapM_ (updateServerOperators_ db) operators_
+-- overwriteOperatorsAndServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> Maybe [ServerOperator] -> [ServerCfg p] -> ExceptT StoreError IO [ServerCfg p]
+-- overwriteOperatorsAndServers db user@User {userId} operators_ servers = do
+overwriteProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> [ServerCfg p] -> ExceptT StoreError IO ()  
+overwriteProtocolServers db User {userId} servers =
+  -- liftIO $ mapM_ (updateServerOperators_ db) operators_
   checkConstraint SEUniqueID . ExceptT $ do
     currentTs <- getCurrentTime
     DB.execute db "DELETE FROM protocol_servers WHERE user_id = ? AND protocol = ? " (userId, protocol)
@@ -553,7 +556,8 @@ overwriteOperatorsAndServers db user@User {userId} operators_ servers = do
           VALUES (?,?,?,?,?,?,?,?,?,?,?)
         |]
         ((protocol, host, port, keyHash, safeDecodeUtf8 . unBasicAuth <$> auth_) :. (preset, tested, enabled, userId, currentTs, currentTs))
-    Right <$> getProtocolServers db user
+    pure $ Right ()
+    -- Right <$> getProtocolServers db user
   where
     protocol = decodeLatin1 $ strEncode $ protocolTypeI @p
 
@@ -563,51 +567,50 @@ getServerOperators db =
     <$> DB.query_
       db
       [sql|
-        SELECT server_operator_id, name, preset, enabled, role_storage, role_proxy
-        FROM server_operators
-        WHERE reserved = 0 AND deleted = 0;
+        SELECT server_operator_id, server_operator_tag, trade_name, legal_name, enabled, role_storage, role_proxy
+        FROM server_operators;
       |]
   where
-    toOperator (operatorId, name, preset, enabled, storage, proxy) =
+    toOperator (operatorId, operatorTag, tradeName, legalName, enabled, storage, proxy) =
       let roles = ServerRoles {storage, proxy}
-       in ServerOperator {operatorId, name, preset, enabled, roles}
+       in ServerOperator {operatorId, operatorTag, tradeName, legalName, acceptedConditions = Nothing, enabled, roles}
 
-updateServerOperators_ :: DB.Connection -> [ServerOperator] -> IO [ServerOperator]
-updateServerOperators_ db operators = do
-  DB.execute_ db "DELETE FROM server_operators WHERE preset = 0"
-  let (existing, new) = partition (isJust . operatorId) operators
-  existing' <- mapM (\op -> upsertExisting op $> op) existing
-  new' <- mapM insertNew new
-  pure $ existing' <> new'
-  where
-    upsertExisting ServerOperator {operatorId, name, preset, enabled, roles = ServerRoles {storage, proxy}}
-      | preset =
-          DB.execute
-            db
-            [sql|
-              UPDATE server_operators
-              SET enabled = ?, role_storage = ?, role_proxy = ?
-              WHERE server_operator_id = ?
-            |]
-            (enabled, storage, proxy, operatorId)
-      | otherwise =
-          DB.execute
-            db
-            [sql|
-              INSERT INTO server_operators (server_operator_id, name, preset, enabled, role_storage, role_proxy)
-              VALUES (?,?,?,?,?,?)
-            |]
-            (operatorId, name, preset, enabled, storage, proxy)
-    insertNew op@ServerOperator {name, preset, enabled, roles = ServerRoles {storage, proxy}} = do
-      DB.execute
-        db
-        [sql|
-          INSERT INTO server_operators (name, preset, enabled, role_storage, role_proxy)
-          VALUES (?,?,?,?,?)
-        |]
-        (name, preset, enabled, storage, proxy)
-      opId <- insertedRowId db
-      pure op {operatorId = Just opId}
+-- updateServerOperators_ :: DB.Connection -> [ServerOperator] -> IO [ServerOperator]
+-- updateServerOperators_ db operators = do
+--   DB.execute_ db "DELETE FROM server_operators WHERE preset = 0"
+--   let (existing, new) = partition (isJust . operatorId) operators
+--   existing' <- mapM (\op -> upsertExisting op $> op) existing
+--   new' <- mapM insertNew new
+--   pure $ existing' <> new'
+--   where
+--     upsertExisting ServerOperator {operatorId, name, preset, enabled, roles = ServerRoles {storage, proxy}}
+--       | preset =
+--           DB.execute
+--             db
+--             [sql|
+--               UPDATE server_operators
+--               SET enabled = ?, role_storage = ?, role_proxy = ?
+--               WHERE server_operator_id = ?
+--             |]
+--             (enabled, storage, proxy, operatorId)
+--       | otherwise =
+--           DB.execute
+--             db
+--             [sql|
+--               INSERT INTO server_operators (server_operator_id, name, preset, enabled, role_storage, role_proxy)
+--               VALUES (?,?,?,?,?,?)
+--             |]
+--             (operatorId, name, preset, enabled, storage, proxy)
+--     insertNew op@ServerOperator {name, preset, enabled, roles = ServerRoles {storage, proxy}} = do
+--       DB.execute
+--         db
+--         [sql|
+--           INSERT INTO server_operators (name, preset, enabled, role_storage, role_proxy)
+--           VALUES (?,?,?,?,?)
+--         |]
+--         (name, preset, enabled, storage, proxy)
+--       opId <- insertedRowId db
+--       pure op {operatorId = Just opId}
 
 createCall :: DB.Connection -> User -> Call -> UTCTime -> IO ()
 createCall db user@User {userId} Call {contactId, callId, callUUID, chatItemId, callState} callTs = do

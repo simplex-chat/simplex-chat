@@ -587,7 +587,7 @@ processChatCommand' vr = \case
             pure (useServers cfg protocol servers, servers)
       storeServers user servers =
         unless (null servers) . withFastStore $
-          \db -> void $ overwriteOperatorsAndServers db user Nothing servers
+          \db -> overwriteProtocolServers db user servers
       coupleDaysAgo t = (`addUTCTime` t) . fromInteger . negate . (+ (2 * day)) <$> randomRIO (0, day)
       day = 86400
   ListUsers -> CRUsersList <$> withFastStore' getUsersInfo
@@ -1493,11 +1493,11 @@ processChatCommand' vr = \case
     pure $ CRUserProtoServers {user, servers, operators} 
   GetUserProtoServers aProtocol -> withUser $ \User {userId} ->
     processChatCommand $ APIGetUserProtoServers userId aProtocol
-  APISetUserProtoServers userId (APSC p (ProtoServersConfig operators servers))
+  APISetUserProtoServers userId (APSC p (ProtoServersConfig servers))
     | null servers || any (\ServerCfg {enabled} -> enabled) servers -> withUserId userId $ \user -> withServerProtocol p $ do
-        servers' <- withFastStore $ \db -> overwriteOperatorsAndServers db user operators servers
+        withFastStore $ \db -> overwriteProtocolServers db user servers
         cfg <- asks config
-        lift $ withAgent' $ \a -> setProtocolServers a (aUserId user) $ useServers cfg p servers'
+        lift $ withAgent' $ \a -> setProtocolServers a (aUserId user) $ useServers cfg p servers
         ok user
     | otherwise -> withUserId userId $ \user -> pure $ chatCmdError (Just user) "all servers are disabled"
   SetUserProtoServers serversConfig -> withUser $ \User {userId} ->
@@ -1506,6 +1506,14 @@ processChatCommand' vr = \case
     lift $ CRServerTestResult user srv <$> withAgent' (\a -> testProtocolServer a (aUserId user) server)
   TestProtoServer srv -> withUser $ \User {userId} ->
     processChatCommand $ APITestProtoServer userId srv
+  APIGetUserServers userId -> withUserId userId $ \user ->
+    pure $ chatCmdError (Just user) "not supported"
+  APISetUserServers userId _userServers -> withUserId userId $ \user ->
+    pure $ chatCmdError (Just user) "not supported"
+  APIValidateServers _userServers -> -- response is CRUserServersValidation
+    pure $ chatCmdError Nothing "not supported"
+  APIAcceptConditions _ts _opIds ->
+    pure $ chatCmdError Nothing "not supported"
   APISetChatItemTTL userId newTTL_ -> withUserId userId $ \user ->
     checkStoreNotChanged $
       withChatLock "setChatItemTTL" $ do
@@ -8086,10 +8094,10 @@ chatCommandP =
       "/xftp test " *> (TestProtoServer . AProtoServerWithAuth SPXFTP <$> strP),
       "/ntf test " *> (TestProtoServer . AProtoServerWithAuth SPNTF <$> strP),
       "/_servers " *> (APISetUserProtoServers <$> A.decimal <* A.space <*> srvCfgP),
-      "/smp " *> (SetUserProtoServers . APSC SPSMP . ProtoServersConfig Nothing . map enabledServerCfg <$> protocolServersP),
-      "/smp default" $> SetUserProtoServers (APSC SPSMP $ ProtoServersConfig Nothing []),
-      "/xftp " *> (SetUserProtoServers . APSC SPXFTP . ProtoServersConfig Nothing . map enabledServerCfg <$> protocolServersP),
-      "/xftp default" $> SetUserProtoServers (APSC SPXFTP $ ProtoServersConfig Nothing []),
+      "/smp " *> (SetUserProtoServers . APSC SPSMP . ProtoServersConfig . map enabledServerCfg <$> protocolServersP),
+      "/smp default" $> SetUserProtoServers (APSC SPSMP $ ProtoServersConfig []),
+      "/xftp " *> (SetUserProtoServers . APSC SPXFTP . ProtoServersConfig . map enabledServerCfg <$> protocolServersP),
+      "/xftp default" $> SetUserProtoServers (APSC SPXFTP $ ProtoServersConfig []),
       "/_servers " *> (APIGetUserProtoServers <$> A.decimal <* A.space <*> strP),
       "/smp" $> GetUserProtoServers (AProtocolType SPSMP),
       "/xftp" $> GetUserProtoServers (AProtocolType SPXFTP),

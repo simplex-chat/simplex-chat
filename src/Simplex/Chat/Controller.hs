@@ -71,7 +71,7 @@ import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo)
 import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, SMPServerSubs, ServerQueueInfo, UserNetworkInfo)
-import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig, ServerCfg)
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig, OperatorId, ServerCfg)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration, withTransaction, withTransactionPriority)
@@ -353,6 +353,10 @@ data ChatCommand
   | SetUserProtoServers AProtoServersConfig
   | APITestProtoServer UserId AProtoServerWithAuth
   | TestProtoServer AProtoServerWithAuth
+  | APIGetUserServers UserId
+  | APISetUserServers UserId (NonEmpty UserServers)
+  | APIValidateServers (NonEmpty UserServers) -- response is CRUserServersValidation
+  | APIAcceptConditions UTCTime (NonEmpty OperatorId)
   | APISetChatItemTTL UserId (Maybe Int64)
   | SetChatItemTTL (Maybe Int64)
   | APIGetChatItemTTL UserId
@@ -580,6 +584,8 @@ data ChatResponse
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
   | CRUserProtoServers {user :: User, servers :: AUserProtoServers, operators :: [ServerOperator]}
   | CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure}
+  | CRUserServers {userServers :: [UserServers]}
+  | CRUserServersValidation {serverErrors :: [UserServersError]}
   | CRChatItemTTL {user :: User, chatItemTTL :: Maybe Int64}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
   | CRContactInfo {user :: User, contact :: Contact, connectionStats_ :: Maybe ConnectionStats, customUserProfile :: Maybe Profile}
@@ -942,13 +948,18 @@ instance ToJSON AgentQueueId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
--- operators = Nothing is used to avoid updating operators to support CLI.
-data ProtoServersConfig p = ProtoServersConfig {operators :: Maybe [ServerOperator], servers :: [ServerCfg p]}
+data ProtoServersConfig p = ProtoServersConfig {servers :: [ServerCfg p]}
   deriving (Show)
 
 data AProtoServersConfig = forall p. ProtocolTypeI p => APSC (SProtocolType p) (ProtoServersConfig p)
 
 deriving instance Show AProtoServersConfig
+
+data UserServersError
+  = USEStorageMissing
+  | USEProxyMissing
+  | USEDuplicate {server :: AProtoServerWithAuth}
+  deriving (Show)
 
 data UserProtoServers p = UserProtoServers
   { serverProtocol :: SProtocolType p,
@@ -1527,6 +1538,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SQLite") ''SQLiteError)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "DB") ''DatabaseError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "Chat") ''ChatError)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "USE") ''UserServersError)
 
 $(JQ.deriveJSON defaultJSON ''AppFilePathsConfig)
 
