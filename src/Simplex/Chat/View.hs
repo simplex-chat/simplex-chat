@@ -42,6 +42,7 @@ import Simplex.Chat.Help
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages hiding (NewChatItem (..))
 import Simplex.Chat.Messages.CIContent
+import Simplex.Chat.Operators
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote.AppVersion (AppVersion (..), pattern AppVersionRange)
 import Simplex.Chat.Remote.Types
@@ -97,6 +98,8 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRApiParsedMarkdown ft -> [viewJSON ft]
   CRUserProtoServers u userServers operators  -> ttyUser u $ viewUserServers userServers operators testView
   CRServerTestResult u srv testFailure -> ttyUser u $ viewServerTestResult srv testFailure
+  CRUserServers _ -> []
+  CRUserServersValidation _ -> []
   CRChatItemTTL u ttl -> ttyUser u $ viewChatItemTTL ttl
   CRNetworkConfig cfg -> viewNetworkConfig cfg
   CRContactInfo u ct cStats customUserProfile -> ttyUser u $ viewContactInfo ct cStats customUserProfile
@@ -1329,7 +1332,7 @@ viewConnectionStats ConnectionStats {rcvQueuesInfo, sndQueuesInfo} =
 viewServers :: ProtocolTypeI p => [ServerOperator] -> NonEmpty (ServerCfg p) -> [StyledString]
 viewServers operators = map (plain . (\ServerCfg {server, operator} -> B.unpack (strEncode server) <> viewOperator operator)) . L.toList
   where
-    ops :: Map (Maybe Int64) Text = foldl' (\m ServerOperator {operatorId, name} -> M.insert operatorId name m) M.empty operators
+    ops :: Map (Maybe Int64) Text = foldl' (\m ServerOperator {operatorId, tradeName} -> M.insert (Just operatorId) tradeName m) M.empty operators
     viewOperator = maybe "" $ \op -> " (operator " <> maybe (show op) T.unpack (M.lookup (Just op) ops) <> ")"
 
 viewRcvQueuesInfo :: [RcvQueueInfo] -> StyledString
