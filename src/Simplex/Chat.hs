@@ -67,6 +67,7 @@ import Simplex.Chat.Messages
 import Simplex.Chat.Messages.Batch (MsgBatch (..), batchMessages)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
+import Simplex.Chat.Operators
 import Simplex.Chat.Options
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
@@ -1512,8 +1513,7 @@ processChatCommand' vr = \case
     pure $ chatCmdError (Just user) "not supported"
   APIValidateServers _userServers -> -- response is CRUserServersValidation
     pure $ chatCmdError Nothing "not supported"
-  APIGetUsageConditions ->
-    pure $ chatCmdError Nothing "not supported"
+  APIGetUsageConditions -> pure CRUsageConditions {conditionsText = usageConditionsText, conditionsCommit = usageConditionsCommit}
   APIAcceptConditions _ts _opIds ->
     pure $ chatCmdError Nothing "not supported"
   APISetChatItemTTL userId newTTL_ -> withUserId userId $ \user ->

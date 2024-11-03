@@ -587,7 +587,7 @@ data ChatResponse
   | CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure}
   | CRUserServers {userServers :: [UserServers]}
   | CRUserServersValidation {serverErrors :: [UserServersError]}
-  | CRUsageConditions {usageConditions :: Text, conditionsCommit :: Text}
+  | CRUsageConditions {conditionsText :: Text, conditionsCommit :: Text}
   | CRChatItemTTL {user :: User, chatItemTTL :: Maybe Int64}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
   | CRContactInfo {user :: User, contact :: Contact, connectionStats_ :: Maybe ConnectionStats, customUserProfile :: Maybe Profile}

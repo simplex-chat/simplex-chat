@@ -24,11 +24,11 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, sumTy
 import Simplex.Messaging.Protocol (ProtocolType (..), ProtoServerWithAuth)
 import Simplex.Messaging.Util (safeDecodeUtf8)
 
-conditionsCommit :: Text
-conditionsCommit = "165143a1112308c035ac00ed669b96b60599aa1c"
+usageConditionsCommit :: Text
+usageConditionsCommit = "165143a1112308c035ac00ed669b96b60599aa1c"
 
-conditionsText :: Text
-conditionsText =
+usageConditionsText :: Text
+usageConditionsText =
   $( let s = $(embedFile =<< makeRelativeToProject "PRIVACY.md")
       in [| stripFrontMatter (safeDecodeUtf8 $(lift s)) |]
    )
