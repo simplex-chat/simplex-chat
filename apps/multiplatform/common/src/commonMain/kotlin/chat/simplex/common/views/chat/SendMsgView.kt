@@ -7,7 +7,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.*
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
@@ -15,6 +14,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.*
@@ -61,7 +61,8 @@ fun SendMsgView(
 ) {
   val showCustomDisappearingMessageDialog = remember { mutableStateOf(false) }
 
-  Box(Modifier.padding(vertical = if (appPlatform.isAndroid) 8.dp else 6.dp)) {
+  val padding = if (appPlatform.isAndroid) PaddingValues(vertical = 8.dp) else PaddingValues(top = 3.dp, bottom = 4.dp)
+  Box(Modifier.padding(padding)) {
     val cs = composeState.value
     var progressByTimeout by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(composeState.value.inProgress) {
@@ -147,7 +148,7 @@ fun SendMsgView(
               && (cs.preview !is ComposePreview.VoicePreview || !stopRecOnNextClick.value)
               && cs.contextItem is ComposeContextItem.NoContextItem
             ) {
-              Spacer(Modifier.width(10.dp))
+              Spacer(Modifier.width(12.dp))
               StartLiveMessageButton(userCanSend) {
                 if (composeState.value.preview is ComposePreview.NoPreview) {
                   startLiveMessage(scope, sendLiveMessage, updateLiveMessage, sendButtonSize, sendButtonAlpha, composeState, liveMessageAlertShown)
@@ -423,6 +424,7 @@ private fun SendMsgButton(
   onLongClick: (() -> Unit)? = null
 ) {
   val interactionSource = remember { MutableInteractionSource() }
+  val ripple = remember { ripple(bounded = false, radius = 24.dp) }
   Box(
     modifier = Modifier.requiredSize(36.dp)
       .combinedClickable(
@@ -431,7 +433,7 @@ private fun SendMsgButton(
         enabled = enabled,
         role = Role.Button,
         interactionSource = interactionSource,
-        indication = rememberRipple(bounded = false, radius = 24.dp)
+        indication = ripple
       )
       .onRightClick { onLongClick?.invoke() },
     contentAlignment = Alignment.Center
@@ -454,6 +456,7 @@ private fun SendMsgButton(
 @Composable
 private fun StartLiveMessageButton(enabled: Boolean, onClick: () -> Unit) {
   val interactionSource = remember { MutableInteractionSource() }
+  val ripple = remember { ripple(bounded = false, radius = 24.dp) }
   Box(
     modifier = Modifier.requiredSize(36.dp)
       .clickable(
@@ -461,7 +464,7 @@ private fun StartLiveMessageButton(enabled: Boolean, onClick: () -> Unit) {
         enabled = enabled,
         role = Role.Button,
         interactionSource = interactionSource,
-        indication = rememberRipple(bounded = false, radius = 24.dp)
+        indication = ripple
       ),
     contentAlignment = Alignment.Center
   ) {
