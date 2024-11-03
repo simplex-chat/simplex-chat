@@ -425,6 +425,7 @@ smpServerCfg =
       tbqSize = 1,
       msgStoreType = AMSType SMSMemory,
       msgQueueQuota = 16,
+      msgStoreType = AMSType SMSMemory,
       maxJournalMsgCount = 24,
       maxJournalStateLines = 4,
       queueIdBytes = 12,

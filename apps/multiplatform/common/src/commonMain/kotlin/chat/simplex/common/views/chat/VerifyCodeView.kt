@@ -56,11 +56,7 @@ private fun VerifyCodeLayout(
   connectionVerified: Boolean,
   verifyCode: (String?, cb: (Boolean) -> Unit) -> Unit,
 ) {
-  ColumnWithScrollBar(
-    Modifier
-      .fillMaxSize()
-      .padding(horizontal = DEFAULT_PADDING)
-  ) {
+  ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_PADDING)) {
     AppBarTitle(stringResource(MR.strings.security_code), withPadding = false)
     val splitCode = splitToParts(connectionCode, 24)
     Row(Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF), horizontalArrangement = Arrangement.Center) {

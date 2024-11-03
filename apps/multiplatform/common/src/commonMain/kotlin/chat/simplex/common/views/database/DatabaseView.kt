@@ -156,9 +156,7 @@ fun DatabaseLayout(
   val stopped = !runChat
   val operationsDisabled = (!stopped || progressIndicator) && !chatModel.desktopNoUserNoRemote
 
-  ColumnWithScrollBar(
-    Modifier.fillMaxWidth(),
-  ) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.your_chat_database))
 
     if (!chatModel.desktopNoUserNoRemote) {

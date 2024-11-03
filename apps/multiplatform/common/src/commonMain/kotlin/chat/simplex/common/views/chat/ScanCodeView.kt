@@ -1,9 +1,11 @@
 package chat.simplex.common.views.chat
 
+import SectionBottomSpacer
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.QRCodeScanner
@@ -12,9 +14,7 @@ import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
 fun ScanCodeView(verifyCode: (String?, cb: (Boolean) -> Unit) -> Unit, close: () -> Unit) {
-  Column(
-    Modifier.fillMaxSize()
-  ) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.scan_code))
     QRCodeScanner { text ->
       verifyCode(text) {
@@ -28,5 +28,6 @@ fun ScanCodeView(verifyCode: (String?, cb: (Boolean) -> Unit) -> Unit, close: ()
       }
     }
     Text(stringResource(MR.strings.scan_code_from_contacts_app), Modifier.padding(horizontal = DEFAULT_PADDING))
+    SectionBottomSpacer()
   }
 }
