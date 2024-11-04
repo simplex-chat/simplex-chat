@@ -50,6 +50,7 @@ module Simplex.Chat.Store.Profiles
     -- overwriteOperatorsAndServers,
     overwriteProtocolServers,
     getServerOperators,
+    getCurrentUsageConditions,
     createCall,
     deleteCalls,
     getCalls,
@@ -73,7 +74,8 @@ import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
-import Data.Time.Clock (UTCTime (..), getCurrentTime)
+import Data.Time (addUTCTime)
+import Data.Time.Clock (UTCTime (..), getCurrentTime, nominalDay)
 import Database.SQLite.Simple (NamedParam (..), Only (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Call
@@ -540,7 +542,7 @@ getProtocolServers db User {userId} =
 
 -- overwriteOperatorsAndServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> Maybe [ServerOperator] -> [ServerCfg p] -> ExceptT StoreError IO [ServerCfg p]
 -- overwriteOperatorsAndServers db user@User {userId} operators_ servers = do
-overwriteProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> [ServerCfg p] -> ExceptT StoreError IO ()  
+overwriteProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> [ServerCfg p] -> ExceptT StoreError IO ()
 overwriteProtocolServers db User {userId} servers =
   -- liftIO $ mapM_ (updateServerOperators_ db) operators_
   checkConstraint SEUniqueID . ExceptT $ do
@@ -556,25 +558,66 @@ overwriteProtocolServers db User {userId} servers =
           VALUES (?,?,?,?,?,?,?,?,?,?,?)
         |]
         ((protocol, host, port, keyHash, safeDecodeUtf8 . unBasicAuth <$> auth_) :. (preset, tested, enabled, userId, currentTs, currentTs))
-    pure $ Right ()
     -- Right <$> getProtocolServers db user
+    pure $ Right ()
   where
     protocol = decodeLatin1 $ strEncode $ protocolTypeI @p
 
-getServerOperators :: DB.Connection -> UTCTime -> IO [ServerOperator]
-getServerOperators db ts =
-  map toOperator
-    <$> DB.query_
-      db
-      [sql|
-        SELECT server_operator_id, server_operator_tag, trade_name, legal_name, server_domains, enabled, role_storage, role_proxy
-        FROM server_operators;
+getServerOperators :: DB.Connection -> ExceptT StoreError IO [ServerOperator]
+getServerOperators db = do
+  conditions <- getCurrentUsageConditions db
+  liftIO $
+    map (toOperator conditions)
+      <$> DB.query_
+        db
+        [sql|
+        SELECT
+          so.server_operator_id, so.server_operator_tag, so.trade_name, so.legal_name,
+          so.server_domains, so.enabled, so.role_storage, so.role_proxy,
+          LastOperatorConditions.conditions_commit, LastOperatorConditions.accepted_at
+        FROM server_operators so
+        LEFT JOIN (
+          SELECT server_operator_id, conditions_commit, accepted_at, MAX(operator_usage_conditions_id)
+          FROM operator_usage_conditions
+          GROUP BY server_operator_id
+        ) LastOperatorConditions ON LastOperatorConditions.server_operator_id = so.server_operator_id
       |]
   where
-    -- TODO get conditions state
-    toOperator (operatorId, operatorTag, tradeName, legalName, domains, enabled, storage, proxy) =
-      let roles = ServerRoles {storage, proxy}
-       in ServerOperator {operatorId, operatorTag, tradeName, legalName, serverDomains = [domains], acceptedConditions = CAAccepted ts, enabled, roles}
+    toOperator ::
+      UsageConditions ->
+      ( (OperatorId, Maybe OperatorTag, Text, Maybe Text, Text, Bool, Bool, Bool)
+          :. (Maybe Text, Maybe UTCTime)
+      ) ->
+      ServerOperator
+    toOperator
+      UsageConditions {conditionsCommit, createdAt}
+      ( (operatorId, operatorTag, tradeName, legalName, domains, enabled, storage, proxy)
+          :. (operatorConditionsCommit_, acceptedAt_)
+        ) =
+        let roles = ServerRoles {storage, proxy}
+            acceptedConditions = case (operatorConditionsCommit_, acceptedAt_) of
+              (Nothing, _) -> CARequired Nothing
+              (Just operatorConditionsCommit, Just acceptedAt)
+                | conditionsCommit == operatorConditionsCommit -> CAAccepted acceptedAt
+              _ -> CARequired (Just $ conditionsDeadline createdAt)
+         in ServerOperator {operatorId, operatorTag, tradeName, legalName, serverDomains = [domains], acceptedConditions, enabled, roles}
+    conditionsDeadline :: UTCTime -> UTCTime
+    conditionsDeadline = addUTCTime (31 * nominalDay)
+
+getCurrentUsageConditions :: DB.Connection -> ExceptT StoreError IO UsageConditions
+getCurrentUsageConditions db =
+  ExceptT . firstRow toUsageConditions SEUsageConditionsNotFound $
+    DB.query_
+      db
+      [sql|
+        SELECT usage_conditions_id, conditions_commit, notified_at, created_at
+        FROM usage_conditions
+        ORDER BY usage_conditions_id DESC LIMIT 1
+      |]
+
+toUsageConditions :: (Int64, Text, Maybe UTCTime, UTCTime) -> UsageConditions
+toUsageConditions (conditionsId, conditionsCommit, notifiedAt, createdAt) =
+  UsageConditions {conditionsId, conditionsCommit, notifiedAt, createdAt}
 
 -- updateServerOperators_ :: DB.Connection -> [ServerOperator] -> IO [ServerOperator]
 -- updateServerOperators_ db operators = do
