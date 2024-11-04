@@ -557,9 +557,9 @@ viewGroupSubscribed g = [membershipIncognito g <> ttyFullGroup g <> ": connected
 
 viewChatGap :: Maybe ChatGap -> [StyledString]
 viewChatGap Nothing = []
-viewChatGap (Just ChatGap {gapSize})
-  | gapSize < 1 = []
-  | otherwise = [sShow gapSize <> " newer message(s) available"]
+viewChatGap (Just ChatGap {size})
+  | size < 1 = []
+  | otherwise = [sShow size <> " newer message(s) available"]
 
 showSMPServer :: SMPServer -> String
 showSMPServer ProtocolServer {host} = B.unpack $ strEncode host

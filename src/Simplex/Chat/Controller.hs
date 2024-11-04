@@ -843,7 +843,7 @@ data ChatPagination
   | CPInitial Int
   deriving (Show)
 
-data ChatGap = ChatGap {gapIndex :: Maybe Int, gapSize :: Int}
+data ChatGap = ChatGap {index :: Maybe Int, size :: Int}
   deriving (Show)
 
 data PaginationByTime
