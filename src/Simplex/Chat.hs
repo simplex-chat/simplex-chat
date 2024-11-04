@@ -67,6 +67,7 @@ import Simplex.Chat.Messages
 import Simplex.Chat.Messages.Batch (MsgBatch (..), batchMessages)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
+import Simplex.Chat.Operators
 import Simplex.Chat.Options
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
@@ -97,7 +98,7 @@ import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.FileTransfer.Types (FileErrorType (..), RcvFileId, SndFileId)
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Client (SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, getFastNetworkConfig, ipAddressProtected, withLockMap)
-import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), ServerCfg (..), createAgentStore, defaultAgentConfig, enabledServerCfg, presetServerCfg)
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), OperatorId, ServerCfg (..), allRoles, createAgentStore, defaultAgentConfig, enabledServerCfg, presetServerCfg)
 import Simplex.Messaging.Agent.Lock (withLock)
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
@@ -152,7 +153,7 @@ defaultChatConfig =
           { smp = _defaultSMPServers,
             useSMP = 4,
             ntf = _defaultNtfServers,
-            xftp = L.map (presetServerCfg True) defaultXFTPServers,
+            xftp = L.map (presetServerCfg True allRoles operatorSimpleXChat) defaultXFTPServers,
             useXFTP = L.length defaultXFTPServers,
             netCfg = defaultNetworkConfig
           },
@@ -181,7 +182,7 @@ _defaultSMPServers :: NonEmpty (ServerCfg 'PSMP)
 _defaultSMPServers =
   L.fromList $
     map
-      (presetServerCfg True)
+      (presetServerCfg True allRoles operatorSimpleXChat)
       [ "smp://0YuTwO05YJWS8rkjn9eLJDjQhFKvIYd8d4xG8X1blIU=@smp8.simplex.im,beccx4yfxxbvyhqypaavemqurytl6hozr47wfc7uuecacjqdvwpw2xid.onion",
         "smp://SkIkI6EPd2D63F4xFKfHk7I1UGZVNn6k1QWZ5rcyr6w=@smp9.simplex.im,jssqzccmrcws6bhmn77vgmhfjmhwlyr3u7puw4erkyoosywgl67slqqd.onion",
         "smp://6iIcWT_dF2zN_w5xzZEY7HI2Prbh3ldP07YTyDexPjE=@smp10.simplex.im,rb2pbttocvnbrngnwziclp2f4ckjq65kebafws6g4hy22cdaiv5dwjqd.onion",
@@ -195,11 +196,14 @@ _defaultSMPServers =
         "smp://N_McQS3F9TGoh4ER0QstUf55kGnNSd-wXfNPZ7HukcM=@smp19.simplex.im,i53bbtoqhlc365k6kxzwdp5w3cdt433s7bwh3y32rcbml2vztiyyz5id.onion"
       ]
       <> map
-        (presetServerCfg False)
+        (presetServerCfg False allRoles operatorSimpleXChat)
         [ "smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im,o5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion",
           "smp://hpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg=@smp5.simplex.im,jjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion",
           "smp://PQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo=@smp6.simplex.im,bylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion"
         ]
+
+operatorSimpleXChat :: Maybe OperatorId
+operatorSimpleXChat = Just 1
 
 _defaultNtfServers :: [NtfServer]
 _defaultNtfServers =
@@ -1484,8 +1488,11 @@ processChatCommand' vr = \case
     pure $ CRConnNtfMessages ntfMsgs
   APIGetUserProtoServers userId (AProtocolType p) -> withUserId userId $ \user -> withServerProtocol p $ do
     cfg@ChatConfig {defaultServers} <- asks config
-    servers <- withFastStore' (`getProtocolServers` user)
-    pure $ CRUserProtoServers user $ AUPS $ UserProtoServers p (useServers cfg p servers) (cfgServers p defaultServers)
+    srvs <- withFastStore' (`getProtocolServers` user)
+    ts <- liftIO getCurrentTime
+    operators <- withFastStore' $ \db -> getServerOperators db ts
+    let servers = AUPS $ UserProtoServers p (useServers cfg p srvs) (cfgServers p defaultServers)
+    pure $ CRUserProtoServers {user, servers, operators}
   GetUserProtoServers aProtocol -> withUser $ \User {userId} ->
     processChatCommand $ APIGetUserProtoServers userId aProtocol
   APISetUserProtoServers userId (APSC p (ProtoServersConfig servers))
@@ -1501,6 +1508,37 @@ processChatCommand' vr = \case
     lift $ CRServerTestResult user srv <$> withAgent' (\a -> testProtocolServer a (aUserId user) server)
   TestProtoServer srv -> withUser $ \User {userId} ->
     processChatCommand $ APITestProtoServer userId srv
+  APIGetServerOperators -> pure $ chatCmdError Nothing "not supported"
+  APISetServerOperators _operators -> pure $ chatCmdError Nothing "not supported"
+  APIGetUserServers userId -> withUserId userId $ \user ->
+    pure $ chatCmdError (Just user) "not supported"
+  APISetUserServers userId _userServers -> withUserId userId $ \user ->
+    pure $ chatCmdError (Just user) "not supported"
+  APIValidateServers _userServers ->
+    -- response is CRUserServersValidation
+    pure $ chatCmdError Nothing "not supported"
+  APIGetUsageConditions -> do
+    -- TODO
+    -- get current conditions
+    -- get latest accepted conditions (from operators)
+    ts <- liftIO getCurrentTime
+    let usageConditions =
+          UsageConditions
+            { conditionsId = 1,
+              conditionsCommit = "abc",
+              notifiedAt = Nothing,
+              createdAt = ts
+            }
+    pure
+      CRUsageConditions
+        { usageConditions = usageConditions,
+          conditionsText = usageConditionsText,
+          acceptedConditions = Nothing
+        }
+  APISetConditionsNotified _conditionsId -> do
+    pure $ chatCmdError Nothing "not supported"
+  APIAcceptConditions _conditionsId _opIds ->
+    pure $ chatCmdError Nothing "not supported"
   APISetChatItemTTL userId newTTL_ -> withUserId userId $ \user ->
     checkStoreNotChanged $
       withChatLock "setChatItemTTL" $ do

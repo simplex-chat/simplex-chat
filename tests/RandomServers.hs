@@ -9,7 +9,7 @@ import Control.Monad (replicateM)
 import qualified Data.List.NonEmpty as L
 import Simplex.Chat (cfgServers, cfgServersToUse, defaultChatConfig, randomServers)
 import Simplex.Chat.Controller (ChatConfig (..))
-import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..))
+import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..))
 import Simplex.Messaging.Protocol (ProtoServerWithAuth (..), SProtocolType (..), UserProtocol)
 import Test.Hspec
 
@@ -17,6 +17,8 @@ randomServersTests :: Spec
 randomServersTests = describe "choosig random servers" $ do
   it "should choose 4 random SMP servers and keep the rest disabled" testRandomSMPServers
   it "should keep all 6 XFTP servers" testRandomXFTPServers
+
+deriving instance Eq ServerRoles
 
 deriving instance Eq (ServerCfg p)
 

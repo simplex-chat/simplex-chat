@@ -47,7 +47,9 @@ module Simplex.Chat.Store.Profiles
     getContactWithoutConnViaAddress,
     updateUserAddressAutoAccept,
     getProtocolServers,
+    -- overwriteOperatorsAndServers,
     overwriteProtocolServers,
+    getServerOperators,
     createCall,
     deleteCalls,
     getCalls,
@@ -76,6 +78,7 @@ import Database.SQLite.Simple (NamedParam (..), Only (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Call
 import Simplex.Chat.Messages
+import Simplex.Chat.Operators
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
@@ -83,7 +86,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..))
+import Simplex.Messaging.Agent.Env.SQLite (OperatorId, ServerCfg (..), ServerRoles (..))
 import Simplex.Messaging.Agent.Protocol (ACorrId, ConnId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
@@ -521,20 +524,25 @@ getProtocolServers db User {userId} =
     <$> DB.query
       db
       [sql|
-        SELECT host, port, key_hash, basic_auth, preset, tested, enabled
-        FROM protocol_servers
-        WHERE user_id = ? AND protocol = ?;
+        SELECT s.host, s.port, s.key_hash, s.basic_auth, s.server_operator_id, s.preset, s.tested, s.enabled, o.role_storage, o.role_proxy
+        FROM protocol_servers s
+        LEFT JOIN server_operators o USING (server_operator_id)
+        WHERE s.user_id = ? AND s.protocol = ?
       |]
       (userId, decodeLatin1 $ strEncode protocol)
   where
     protocol = protocolTypeI @p
-    toServerCfg :: (NonEmpty TransportHost, String, C.KeyHash, Maybe Text, Bool, Maybe Bool, Bool) -> ServerCfg p
-    toServerCfg (host, port, keyHash, auth_, preset, tested, enabled) =
+    toServerCfg :: (NonEmpty TransportHost, String, C.KeyHash, Maybe Text, Maybe OperatorId, Bool, Maybe Bool, Bool, Maybe Bool, Maybe Bool) -> ServerCfg p
+    toServerCfg (host, port, keyHash, auth_, operator, preset, tested, enabled, storage_, proxy_) =
       let server = ProtoServerWithAuth (ProtocolServer protocol host port keyHash) (BasicAuth . encodeUtf8 <$> auth_)
-       in ServerCfg {server, preset, tested, enabled}
+          roles = ServerRoles {storage = fromMaybe True storage_, proxy = fromMaybe True proxy_}
+       in ServerCfg {server, operator, preset, tested, enabled, roles}
 
-overwriteProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> [ServerCfg p] -> ExceptT StoreError IO ()
+-- overwriteOperatorsAndServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> Maybe [ServerOperator] -> [ServerCfg p] -> ExceptT StoreError IO [ServerCfg p]
+-- overwriteOperatorsAndServers db user@User {userId} operators_ servers = do
+overwriteProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> [ServerCfg p] -> ExceptT StoreError IO ()  
 overwriteProtocolServers db User {userId} servers =
+  -- liftIO $ mapM_ (updateServerOperators_ db) operators_
   checkConstraint SEUniqueID . ExceptT $ do
     currentTs <- getCurrentTime
     DB.execute db "DELETE FROM protocol_servers WHERE user_id = ? AND protocol = ? " (userId, protocol)
@@ -549,8 +557,61 @@ overwriteProtocolServers db User {userId} servers =
         |]
         ((protocol, host, port, keyHash, safeDecodeUtf8 . unBasicAuth <$> auth_) :. (preset, tested, enabled, userId, currentTs, currentTs))
     pure $ Right ()
+    -- Right <$> getProtocolServers db user
   where
     protocol = decodeLatin1 $ strEncode $ protocolTypeI @p
+
+getServerOperators :: DB.Connection -> UTCTime -> IO [ServerOperator]
+getServerOperators db ts =
+  map toOperator
+    <$> DB.query_
+      db
+      [sql|
+        SELECT server_operator_id, server_operator_tag, trade_name, legal_name, server_domains, enabled, role_storage, role_proxy
+        FROM server_operators;
+      |]
+  where
+    -- TODO get conditions state
+    toOperator (operatorId, operatorTag, tradeName, legalName, domains, enabled, storage, proxy) =
+      let roles = ServerRoles {storage, proxy}
+       in ServerOperator {operatorId, operatorTag, tradeName, legalName, serverDomains = [domains], acceptedConditions = CAAccepted ts, enabled, roles}
+
+-- updateServerOperators_ :: DB.Connection -> [ServerOperator] -> IO [ServerOperator]
+-- updateServerOperators_ db operators = do
+--   DB.execute_ db "DELETE FROM server_operators WHERE preset = 0"
+--   let (existing, new) = partition (isJust . operatorId) operators
+--   existing' <- mapM (\op -> upsertExisting op $> op) existing
+--   new' <- mapM insertNew new
+--   pure $ existing' <> new'
+--   where
+--     upsertExisting ServerOperator {operatorId, name, preset, enabled, roles = ServerRoles {storage, proxy}}
+--       | preset =
+--           DB.execute
+--             db
+--             [sql|
+--               UPDATE server_operators
+--               SET enabled = ?, role_storage = ?, role_proxy = ?
+--               WHERE server_operator_id = ?
+--             |]
+--             (enabled, storage, proxy, operatorId)
+--       | otherwise =
+--           DB.execute
+--             db
+--             [sql|
+--               INSERT INTO server_operators (server_operator_id, name, preset, enabled, role_storage, role_proxy)
+--               VALUES (?,?,?,?,?,?)
+--             |]
+--             (operatorId, name, preset, enabled, storage, proxy)
+--     insertNew op@ServerOperator {name, preset, enabled, roles = ServerRoles {storage, proxy}} = do
+--       DB.execute
+--         db
+--         [sql|
+--           INSERT INTO server_operators (name, preset, enabled, role_storage, role_proxy)
+--           VALUES (?,?,?,?,?)
+--         |]
+--         (name, preset, enabled, storage, proxy)
+--       opId <- insertedRowId db
+--       pure op {operatorId = Just opId}
 
 createCall :: DB.Connection -> User -> Call -> UTCTime -> IO ()
 createCall db user@User {userId} Call {contactId, callId, callUUID, chatItemId, callState} callTs = do
