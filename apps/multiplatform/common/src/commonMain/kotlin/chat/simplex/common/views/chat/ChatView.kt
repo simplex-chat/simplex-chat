@@ -1597,7 +1597,7 @@ fun PreloadItems(
           scrollDirection == ScrollDirection.Up && lastVisibleItemIndex > (section.maxIndex - remaining) -> {
             chatModel.chatItems.size - 1 - section.maxIndex
           }
-          scrollDirection == ScrollDirection.Down && listState.firstVisibleItemIndex < (section.minIndex + remaining) && totalItemsNumber > remaining -> {
+          scrollDirection == ScrollDirection.Down && section.area != ChatSectionArea.Bottom && listState.firstVisibleItemIndex < (section.minIndex + remaining) && totalItemsNumber > remaining -> {
             chatModel.chatItems.size - 1 - section.minIndex
           }
           else -> null
