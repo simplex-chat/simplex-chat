@@ -56,7 +56,7 @@ fun ChatItemView(
   imageProvider: (() -> ImageGalleryProvider)? = null,
   useLinkPreviews: Boolean,
   linkMode: SimplexLinkMode,
-  revealed: MutableState<Boolean>,
+  revealed: State<Boolean>,
   range: IntRange?,
   selectedChatItems: MutableState<Set<Long>?>,
   fillMaxWidth: Boolean = true,
@@ -79,6 +79,7 @@ fun ChatItemView(
   findModelMember: (String) -> GroupMember?,
   setReaction: (ChatInfo, ChatItem, Boolean, MsgReaction) -> Unit,
   showItemDetails: (ChatInfo, ChatItem) -> Unit,
+  reveal: (Boolean) -> Unit,
   developerTools: Boolean,
   showViaProxy: Boolean,
   showTimestamp: Boolean,
@@ -275,7 +276,7 @@ fun ChatItemView(
                 }
                 ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
                 if (revealed.value) {
-                  HideItemAction(revealed, showMenu)
+                  HideItemAction(revealed, showMenu, reveal)
                 }
                 if (cItem.meta.itemDeleted == null && cItem.file != null && cItem.file.cancelAction != null && !cItem.localNote) {
                   CancelFileItemAction(cItem.file.fileId, showMenu, cancelFile = cancelFile, cancelAction = cItem.file.cancelAction)
@@ -296,11 +297,11 @@ fun ChatItemView(
             cItem.meta.itemDeleted != null -> {
               DefaultDropdownMenu(showMenu) {
                 if (revealed.value) {
-                  HideItemAction(revealed, showMenu)
+                  HideItemAction(revealed, showMenu, reveal)
                 } else if (!cItem.isDeletedContent) {
-                  RevealItemAction(revealed, showMenu)
+                  RevealItemAction(revealed, showMenu, reveal)
                 } else if (range != null) {
-                  ExpandItemAction(revealed, showMenu)
+                  ExpandItemAction(revealed, showMenu, reveal)
                 }
                 ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
                 DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
@@ -323,9 +324,9 @@ fun ChatItemView(
             cItem.mergeCategory != null && ((range?.count() ?: 0) > 1 || revealed.value) -> {
               DefaultDropdownMenu(showMenu) {
                 if (revealed.value) {
-                  ShrinkItemAction(revealed, showMenu)
+                  ShrinkItemAction(revealed, showMenu, reveal)
                 } else {
-                  ExpandItemAction(revealed, showMenu)
+                  ExpandItemAction(revealed, showMenu, reveal)
                 }
                 DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                 if (cItem.canBeDeletedForSelf) {
@@ -350,7 +351,7 @@ fun ChatItemView(
         fun MarkedDeletedItemDropdownMenu() {
           DefaultDropdownMenu(showMenu) {
             if (!cItem.isDeletedContent) {
-              RevealItemAction(revealed, showMenu)
+              RevealItemAction(revealed, showMenu, reveal)
             }
             ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
             DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
@@ -623,7 +624,7 @@ fun ItemInfoAction(
 @Composable
 fun DeleteItemAction(
   cItem: ChatItem,
-  revealed: MutableState<Boolean>,
+  revealed: State<Boolean>,
   showMenu: MutableState<Boolean>,
   questionText: String,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
@@ -700,48 +701,48 @@ fun SelectItemAction(
 }
 
 @Composable
-private fun RevealItemAction(revealed: MutableState<Boolean>, showMenu: MutableState<Boolean>) {
+private fun RevealItemAction(revealed: State<Boolean>, showMenu: MutableState<Boolean>, reveal: (Boolean) -> Unit) {
   ItemAction(
     stringResource(MR.strings.reveal_verb),
     painterResource(MR.images.ic_visibility),
     onClick = {
-      revealed.value = true
+      reveal(true)
       showMenu.value = false
     }
   )
 }
 
 @Composable
-private fun HideItemAction(revealed: MutableState<Boolean>, showMenu: MutableState<Boolean>) {
+private fun HideItemAction(revealed: State<Boolean>, showMenu: MutableState<Boolean>, reveal: (Boolean) -> Unit) {
   ItemAction(
     stringResource(MR.strings.hide_verb),
     painterResource(MR.images.ic_visibility_off),
     onClick = {
-      revealed.value = false
+      reveal(false)
       showMenu.value = false
     }
   )
 }
 
 @Composable
-private fun ExpandItemAction(revealed: MutableState<Boolean>, showMenu: MutableState<Boolean>) {
+private fun ExpandItemAction(revealed: State<Boolean>, showMenu: MutableState<Boolean>, reveal: (Boolean) -> Unit) {
   ItemAction(
     stringResource(MR.strings.expand_verb),
     painterResource(MR.images.ic_expand_all),
     onClick = {
-      revealed.value = true
+      reveal(true)
       showMenu.value = false
     },
   )
 }
 
 @Composable
-private fun ShrinkItemAction(revealed: MutableState<Boolean>, showMenu: MutableState<Boolean>) {
+private fun ShrinkItemAction(revealed: State<Boolean>, showMenu: MutableState<Boolean>, reveal: (Boolean) -> Unit) {
   ItemAction(
     stringResource(MR.strings.hide_verb),
     painterResource(MR.images.ic_collapse_all),
     onClick = {
-      revealed.value = false
+      reveal(false)
       showMenu.value = false
     },
   )
@@ -1084,6 +1085,7 @@ fun PreviewChatItemView(
     findModelMember = { null },
     setReaction = { _, _, _, _ -> },
     showItemDetails = { _, _ -> },
+    reveal = {},
     developerTools = false,
     showViaProxy = false,
     showTimestamp = true,
@@ -1125,6 +1127,7 @@ fun PreviewChatItemViewDeletedContent() {
       findModelMember = { null },
       setReaction = { _, _, _, _ -> },
       showItemDetails = { _, _ -> },
+      reveal = {},
       developerTools = false,
       showViaProxy = false,
       preview = true,

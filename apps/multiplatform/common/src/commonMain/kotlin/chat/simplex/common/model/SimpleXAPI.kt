@@ -3468,11 +3468,15 @@ sealed class ChatPagination {
   class Last(val count: Int): ChatPagination()
   class After(val chatItemId: Long, val count: Int): ChatPagination()
   class Before(val chatItemId: Long, val count: Int): ChatPagination()
+  class Around(val chatItemId: Long, val count: Int): ChatPagination()
+  class Initial(val count: Int): ChatPagination()
 
   val cmdString: String get() = when (this) {
     is Last -> "count=${this.count}"
     is After -> "after=${this.chatItemId} count=${this.count}"
     is Before -> "before=${this.chatItemId} count=${this.count}"
+    is Around -> "around=${this.chatItemId} count=${this.count}"
+    is Initial -> "initial=${this.count}"
   }
 
   companion object {

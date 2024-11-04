@@ -965,6 +965,8 @@ fun BoxScope.ChatItemsList(
 
   Spacer(Modifier.size(8.dp))
   val reversedChatItems = remember { derivedStateOf { chatModel.chatItems.asReversed() } }
+  val revealedItems = rememberSaveable { mutableStateOf(setOf<Long>()) }
+  val groups by remember { derivedStateOf { reversedChatItems.value.putIntoGroups(revealedItems.value) } }
   val topPaddingToContentPx = rememberUpdatedState(with(LocalDensity.current) { topPaddingToContent().roundToPx() })
   val maxHeight = remember { derivedStateOf { listState.layoutInfo.viewportEndOffset - topPaddingToContentPx.value } }
   val scrollToItem: State<(Long) -> Unit> = remember {
@@ -993,17 +995,9 @@ fun BoxScope.ChatItemsList(
       VideoPlayerHolder.releaseAll()
     }
   )
-  LazyColumnWithScrollBar(
-    Modifier.align(Alignment.BottomCenter),
-    state = listState,
-    reverseLayout = true,
-    contentPadding = PaddingValues(
-      top = topPaddingToContent(),
-      bottom = composeViewHeight.value
-    ),
-    additionalBarOffset = composeViewHeight
-  ) {
-    itemsIndexed(reversedChatItems.value, key = { _, item -> item.id to item.meta.createdAt.toEpochMilliseconds() }) { i, cItem ->
+
+    @Composable
+    fun ChatViewListItem(i: Int, range: IntRange?, showAvatar: Boolean, cItem: ChatItem, prevItem: ChatItem?, nextItem: ChatItem?, revealed: State<Boolean>, reveal: (Boolean) -> Unit) {
       val itemScope = rememberCoroutineScope()
       CompositionLocalProvider(
         // Makes horizontal and vertical scrolling to coexist nicely.
@@ -1021,14 +1015,12 @@ fun BoxScope.ChatItemsList(
           }
         }
 
-        val revealed = remember { mutableStateOf(false) }
-
         @Composable
         fun ChatItemViewShortHand(cItem: ChatItem, itemSeparation: ItemSeparation, range: IntRange?, fillMaxWidth: Boolean = true) {
           tryOrShowError("${cItem.id}ChatItem", error = {
             CIBrokenComposableView(if (cItem.chatDir.sent) Alignment.CenterEnd else Alignment.CenterStart)
           }) {
-            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem.value, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp)
+            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem.value, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp)
           }
         }
 
@@ -1096,7 +1088,7 @@ fun BoxScope.ChatItemsList(
                   } else {
                     null to 1
                   }
-                if (prevItem == null || showMemberImage(member, prevItem) || prevMember != null) {
+                if (showMemberImage(member, prevItem) || showAvatar) {
                   Column(
                     Modifier
                       .padding(top = 8.dp)
@@ -1218,35 +1210,35 @@ fun BoxScope.ChatItemsList(
           }
         }
 
-        val (currIndex, nextItem) = chatModel.getNextChatItem(cItem)
-        val ciCategory = cItem.mergeCategory
-        if (ciCategory != null && ciCategory == nextItem?.mergeCategory) {
-          // memberConnected events and deleted items are aggregated at the last chat item in a row, see ChatItemView
-        } else {
-          val (prevHidden, prevItem) = chatModel.getPrevShownChatItem(currIndex, ciCategory)
-
-          val itemSeparation = getItemSeparation(cItem, nextItem)
-          val previousItemSeparation = if (prevItem != null) getItemSeparation(prevItem, cItem) else null
-
-          if (itemSeparation.date != null) {
-            DateSeparator(itemSeparation.date)
-          }
-
-          val range = chatViewItemsRange(currIndex, prevHidden)
-          val reversed = reversedChatItems.value
-          if (revealed.value && range != null) {
-            reversed.subList(range.first, range.last + 1).forEachIndexed { index, ci ->
-              val prev = if (index + range.first == prevHidden) prevItem else reversed[index + range.first + 1]
-              ChatItemView(ci, null, prev, itemSeparation, previousItemSeparation)
-            }
-          } else {
-            ChatItemView(cItem, range, prevItem, itemSeparation, previousItemSeparation)
-          }
-
-          if (i == reversed.lastIndex) {
-            DateSeparator(cItem.meta.itemTs)
-          }
-        }
+//        val (currIndex, nextItem) = chatModel.getNextChatItem(cItem)
+//        val ciCategory = cItem.mergeCategory
+//        if (ciCategory != null && ciCategory == nextItem?.mergeCategory) {
+//          // memberConnected events and deleted items are aggregated at the last chat item in a row, see ChatItemView
+//        } else {
+//          val (prevHidden, prevItem) = chatModel.getPrevShownChatItem(currIndex, ciCategory)
+//
+//          val itemSeparation = getItemSeparation(cItem, nextItem)
+//          val previousItemSeparation = if (prevItem != null) getItemSeparation(prevItem, cItem) else null
+//
+//          if (itemSeparation.date != null) {
+//            DateSeparator(itemSeparation.date)
+//          }
+//
+//          val range = chatViewItemsRange(currIndex, prevHidden)
+//          val reversed = reversedChatItems.value
+//          if (revealed.value && range != null) {
+//            reversed.subList(range.first, range.last + 1).forEachIndexed { index, ci ->
+//              val prev = if (index + range.first == prevHidden) prevItem else reversed[index + range.first + 1]
+//              ChatItemView(ci, null, prev, itemSeparation, previousItemSeparation)
+//            }
+//          } else {
+//            ChatItemView(cItem, range, prevItem, itemSeparation, previousItemSeparation)
+//          }
+//
+//          if (i == reversed.lastIndex) {
+//            DateSeparator(cItem.meta.itemTs)
+//          }
+//        }
 
 
         if (cItem.isRcvNew && chatInfo.id == ChatModel.chatId.value) {
@@ -1257,6 +1249,56 @@ fun BoxScope.ChatItemsList(
             }
           }
         }
+        val itemSeparation = getItemSeparation(cItem, nextItem)
+        val previousItemSeparation = if (prevItem != null) getItemSeparation(prevItem, cItem) else null
+        if (itemSeparation.date != null) {
+          DateSeparator(itemSeparation.date)
+        }
+        ChatItemView(cItem, range, prevItem, itemSeparation, previousItemSeparation)
+      }
+    }
+  LazyColumnWithScrollBar(
+    Modifier.align(Alignment.BottomCenter),
+    state = listState,
+    reverseLayout = true,
+    contentPadding = PaddingValues(
+      top = topPaddingToContent(),
+      bottom = composeViewHeight.value
+    ),
+    additionalBarOffset = composeViewHeight
+  ) {
+    for ((groupIndex, group) in groups.withIndex()) {
+      if (group.revealed.value) {
+        itemsIndexed(group.items, key = { _, item -> (item.id to item.meta.createdAt.toEpochMilliseconds()).toString() }) { i, item ->
+          val nextItem = if (i == 0) {
+            val gr = groups.getOrNull(groupIndex - 1)
+            if (gr != null) gr.items[gr.items.lastIndex] else null
+          } else {
+            group.items[i - 1]
+          }
+          val ciCategory = item.mergeCategory
+          val prevItem: ChatItem?
+          if (ciCategory != null && ciCategory == nextItem?.mergeCategory) {
+            // memberConnected events and deleted items are aggregated at the last chat item in a row, see ChatItemView
+            prevItem = null
+          } else {
+            prevItem = if (i == group.items.lastIndex) null else group.items[i + 1]
+          }
+          val range = if (ciCategory != null) group.startIndexInParentItems .. (group.startIndexInParentItems + group.items.lastIndex) else null
+//          println("LALAL RANGE $range")
+          ChatViewListItem(group.startIndexInParentItems + i, range, showAvatar = group.showAvatar.contains(item.id), item, prevItem, nextItem, remember { derivedStateOf { revealedItems.value.contains(item.id) } }) { group.reveal(it, revealedItems) }
+        }
+      } else {
+        val item = group.items.first()
+        item(key = (item.id to item.meta.createdAt.toEpochMilliseconds()).toString()) {
+          ChatViewListItem(group.startIndexInParentItems, group.startIndexInParentItems .. (group.startIndexInParentItems + group.items.size), showAvatar = group.showAvatar.contains(item.id), item, null, null, remember { derivedStateOf { revealedItems.value.contains(item.id) } }) { group.reveal(it, revealedItems) }
+        }
+      }
+    }
+    val last = reversedChatItems.value.lastOrNull()
+    if (last != null) {
+      item {
+        DateSeparator(last.meta.itemTs)
       }
     }
   }
