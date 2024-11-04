@@ -108,33 +108,31 @@ fun ChatSection.getNextShownItem(sectionIndex: Int, itemIndex: Int): ChatItem? {
 }
 
 fun List<ChatItem>.putIntoSections(revealedItems: Set<Long>): List<ChatSection> {
+  if (isEmpty()) return emptyList()
+
   val chatItemsSectionArea = chatModel.chatItemsSectionArea
   val sections = mutableListOf<ChatSection>()
-  var recent: SectionItems = if (isNotEmpty()) {
-    val first = this[0]
+  val first = this[0]
 
-    SectionItems(
-      mergeCategory = first.mergeCategory,
-      items = mutableListOf<ChatItem>().also { it.add(first) },
-      revealed = first.mergeCategory == null || revealedItems.contains(first.id),
-      showAvatar = mutableSetOf<Long>().also {
-        if (first.chatDir is CIDirection.GroupRcv) {
-          val second = getOrNull(1)
-
-          if (second != null) {
-            if (second.chatDir !is CIDirection.GroupRcv || second.chatDir.groupMember.memberId != first.chatDir.groupMember.memberId) {
-              it.add(first.id)
-            }
-          } else {
-            it.add(first.id)
-          }
-        }
-      },
-      originalItemsRange = 0..0
-    )
-  } else {
-    return emptyList()
+  val showAvatar = mutableSetOf<Long>()
+  if (first.chatDir is CIDirection.GroupRcv) {
+    val second = getOrNull(1)
+    if (second != null) {
+      if (second.chatDir !is CIDirection.GroupRcv || second.chatDir.groupMember.memberId != first.chatDir.groupMember.memberId) {
+        showAvatar.add(first.id)
+      }
+    } else {
+      showAvatar.add(first.id)
+    }
   }
+
+  var recent = SectionItems(
+    mergeCategory = first.mergeCategory,
+    items = mutableListOf(first),
+    revealed = first.mergeCategory == null || revealedItems.contains(first.id),
+    showAvatar = showAvatar,
+    originalItemsRange = 0..0
+  )
 
   val area = chatItemsSectionArea[recent.items[0].id] ?: ChatSectionArea.Bottom
 
@@ -162,11 +160,9 @@ fun List<ChatItem>.putIntoSections(revealedItems: Set<Long>): List<ChatSection> 
       positionInList++
       val newSection = SectionItems(
         mergeCategory = item.mergeCategory,
-        items = mutableListOf<ChatItem>().also { it.add(item) },
+        items = mutableListOf(item),
         revealed = item.mergeCategory == null || revealedItems.contains(item.id),
-        showAvatar = mutableSetOf<Long>().also {
-          it.add(item.id)
-        },
+        showAvatar = mutableSetOf(item.id),
         originalItemsRange = index..index
       )
       sections.add(
@@ -193,12 +189,12 @@ fun List<ChatItem>.putIntoSections(revealedItems: Set<Long>): List<ChatSection> 
         positionInList++
         val newSectionItems = SectionItems(
           mergeCategory = item.mergeCategory,
-          items = mutableListOf<ChatItem>().also { it.add(item) },
+          items = mutableListOf(item),
           revealed = item.mergeCategory == null || revealedItems.contains(item.id),
-          showAvatar = mutableSetOf<Long>().also {
-            if (item.chatDir is CIDirection.GroupRcv && (prev.chatDir !is CIDirection.GroupRcv || (prev.chatDir as CIDirection.GroupRcv).groupMember.memberId != item.chatDir.groupMember.memberId)) {
-              it.add(item.id)
-            }
+          showAvatar = if (item.chatDir is CIDirection.GroupRcv && (prev.chatDir !is CIDirection.GroupRcv || (prev.chatDir as CIDirection.GroupRcv).groupMember.memberId != item.chatDir.groupMember.memberId)) {
+            mutableSetOf(item.id)
+          } else {
+            mutableSetOf()
           },
           originalItemsRange = index..index
         )
@@ -246,7 +242,7 @@ fun List<ChatSection>.revealedItemCount(): Int {
 fun List<ChatSection>.dropTemporarySections() {
   val bottomSection = this.find { it.boundary.area == ChatSectionArea.Bottom }
   if (bottomSection != null) {
-    val itemsOutsideOfSection =  chatModel.chatItems.value.size - 1 - bottomSection.boundary.maxIndex
+    val itemsOutsideOfSection = chatModel.chatItems.value.lastIndex - bottomSection.boundary.maxIndex
     chatModel.chatItems.removeRange(fromIndex = 0, toIndex = itemsOutsideOfSection + bottomSection.excessItemCount())
     chatModel.chatItemsSectionArea.clear()
     chatModel.chatItems.value.associateTo(chatModel.chatItemsSectionArea) { it.id to ChatSectionArea.Bottom }
