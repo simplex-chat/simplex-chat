@@ -589,7 +589,7 @@ data ChatResponse
   | CRUserProtoServers {user :: User, servers :: AUserProtoServers, operators :: [ServerOperator]}
   | CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure}
   | CRServerOperators {operators :: [ServerOperator], conditionsAction :: UsageConditionsAction}
-  | CRUserServers {userServers :: [UserServers]}
+  | CRUserServers {user :: User, userServers :: [UserServers]}
   | CRUserServersValidation {serverErrors :: [UserServersError]}
   | CRUsageConditions {usageConditions :: UsageConditions, conditionsText :: Text, acceptedConditions :: Maybe UsageConditions}
   | CRChatItemTTL {user :: User, chatItemTTL :: Maybe Int64}

@@ -1489,8 +1489,7 @@ processChatCommand' vr = \case
   APIGetUserProtoServers userId (AProtocolType p) -> withUserId userId $ \user -> withServerProtocol p $ do
     cfg@ChatConfig {defaultServers} <- asks config
     srvs <- withFastStore' (`getProtocolServers` user)
-    ts <- liftIO getCurrentTime
-    operators <- withFastStore' $ \db -> getServerOperators db ts
+    operators <- withFastStore $ \db -> getServerOperators db
     let servers = AUPS $ UserProtoServers p (useServers cfg p srvs) (cfgServers p defaultServers)
     pure $ CRUserProtoServers {user, servers, operators}
   GetUserProtoServers aProtocol -> withUser $ \User {userId} ->
@@ -1508,27 +1507,31 @@ processChatCommand' vr = \case
     lift $ CRServerTestResult user srv <$> withAgent' (\a -> testProtocolServer a (aUserId user) server)
   TestProtoServer srv -> withUser $ \User {userId} ->
     processChatCommand $ APITestProtoServer userId srv
-  APIGetServerOperators -> pure $ chatCmdError Nothing "not supported"
+  APIGetServerOperators -> do
+    operators <- withFastStore $ \db -> getServerOperators db
+    let conditionsAction = usageConditionsAction operators
+    pure $ CRServerOperators operators conditionsAction
   APISetServerOperators _operators -> pure $ chatCmdError Nothing "not supported"
-  APIGetUserServers userId -> withUserId userId $ \user ->
-    pure $ chatCmdError (Just user) "not supported"
+  APIGetUserServers userId -> withUserId userId $ \user -> do
+    (operators, smpServers, xftpServers) <- withFastStore $ \db -> do
+      operators <- getServerOperators db
+      smpServers <- liftIO $ getServers db user SPSMP
+      xftpServers <- liftIO $ getServers db user SPXFTP
+      pure (operators, smpServers, xftpServers)
+    let userServers = groupByOperator operators smpServers xftpServers
+    pure $ CRUserServers user userServers
+    where
+      getServers :: (ProtocolTypeI p) => DB.Connection -> User -> SProtocolType p -> IO [ServerCfg p]
+      getServers db user _p = getProtocolServers db user
   APISetUserServers userId _userServers -> withUserId userId $ \user ->
     pure $ chatCmdError (Just user) "not supported"
   APIValidateServers _userServers ->
     -- response is CRUserServersValidation
     pure $ chatCmdError Nothing "not supported"
   APIGetUsageConditions -> do
+    usageConditions <- withFastStore $ \db -> getCurrentUsageConditions db
     -- TODO
-    -- get current conditions
     -- get latest accepted conditions (from operators)
-    ts <- liftIO getCurrentTime
-    let usageConditions =
-          UsageConditions
-            { conditionsId = 1,
-              conditionsCommit = "abc",
-              notifiedAt = Nothing,
-              createdAt = ts
-            }
     pure
       CRUsageConditions
         { usageConditions = usageConditions,

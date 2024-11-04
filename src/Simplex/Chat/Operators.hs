@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
@@ -12,7 +13,9 @@ import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
 import Data.FileEmbed
 import Data.Int (Int64)
-import Data.List.NonEmpty (NonEmpty)
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Database.SQLite.Simple.FromField (FromField (..))
@@ -20,10 +23,10 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import Language.Haskell.TH.Syntax (lift)
 import Simplex.Chat.Operators.Conditions
 import Simplex.Chat.Types.Util (textParseJSON)
-import Simplex.Messaging.Agent.Env.SQLite (OperatorId, ServerRoles)
+import Simplex.Messaging.Agent.Env.SQLite (OperatorId, ServerCfg (..), ServerRoles)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, sumTypeJSON)
-import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolType (..))
+import Simplex.Messaging.Protocol (ProtocolType (..))
 import Simplex.Messaging.Util (safeDecodeUtf8)
 
 usageConditionsCommit :: Text
@@ -72,8 +75,8 @@ data UsageConditionsAction
   deriving (Show)
 
 -- TODO UI logic
-usageConditionsAction :: UsageConditionsAction
-usageConditionsAction = UCAAccepted []
+usageConditionsAction :: [ServerOperator] -> UsageConditionsAction
+usageConditionsAction _operators = UCAAccepted []
 
 data ConditionsAcceptance
   = CAAccepted {acceptedAt :: UTCTime}
@@ -93,11 +96,30 @@ data ServerOperator = ServerOperator
   deriving (Show)
 
 data UserServers = UserServers
-  { operator :: ServerOperator,
-    smpServers :: NonEmpty (ProtoServerWithAuth 'PSMP),
-    xftpServers :: NonEmpty (ProtoServerWithAuth 'PXFTP)
+  { operator :: Maybe ServerOperator,
+    smpServers :: [ServerCfg 'PSMP],
+    xftpServers :: [ServerCfg 'PXFTP]
   }
   deriving (Show)
+
+groupByOperator :: [ServerOperator] -> [ServerCfg 'PSMP] -> [ServerCfg 'PXFTP] -> [UserServers]
+groupByOperator srvOperators smpSrvs xftpSrvs =
+  map createOperatorServers (M.toList combinedMap)
+  where
+    srvOperatorId :: ServerCfg p -> Maybe Int64
+    srvOperatorId ServerCfg {operator} = operator
+    operatorMap :: Map (Maybe Int64) (Maybe ServerOperator)
+    operatorMap = M.fromList [(Just (operatorId op), Just op) | op <- srvOperators] `M.union` M.singleton Nothing Nothing
+    initialMap :: Map (Maybe Int64) ([ServerCfg 'PSMP], [ServerCfg 'PXFTP])
+    initialMap = M.fromList [(key, ([], [])) | key <- M.keys operatorMap]
+    smpsMap = foldr (\server acc -> M.adjust (\(smps, xftps) -> (server : smps, xftps)) (srvOperatorId server) acc) initialMap smpSrvs
+    combinedMap = foldr (\server acc -> M.adjust (\(smps, xftps) -> (smps, server : xftps)) (srvOperatorId server) acc) smpsMap xftpSrvs
+    createOperatorServers (key, (groupedSmps, groupedXftps)) =
+      UserServers
+        { operator = fromMaybe Nothing (M.lookup key operatorMap),
+          smpServers = groupedSmps,
+          xftpServers = groupedXftps
+        }
 
 $(JQ.deriveJSON defaultJSON ''UsageConditions)
 
