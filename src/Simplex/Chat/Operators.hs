@@ -2,6 +2,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
@@ -13,6 +14,9 @@ import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
 import Data.FileEmbed
 import Data.Int (Int64)
+import Data.List (find)
+import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
@@ -26,7 +30,7 @@ import Simplex.Chat.Types.Util (textParseJSON)
 import Simplex.Messaging.Agent.Env.SQLite (OperatorId, ServerCfg (..), ServerRoles)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, sumTypeJSON)
-import Simplex.Messaging.Protocol (ProtocolType (..))
+import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolType (..))
 import Simplex.Messaging.Util (safeDecodeUtf8)
 
 usageConditionsCommit :: Text
@@ -118,6 +122,44 @@ data PresetServer p = PresetServer
   { useServer :: Bool,
     server :: ProtoServerWithAuth p
   }
+
+data UpdatedUsageConditions = UpdatedUsageConditions
+  { currentConditions :: UsageConditions,
+    conditionsToAdd :: [UsageConditions],
+    updatedConditions :: NonEmpty UsageConditions
+  }
+
+-- this function should be called inside DB transaction to update conditions in the database
+-- it returns (current conditions record in the final list, conditions to add, all conditions)
+usageConditionsToAdd :: Text -> Text -> UTCTime -> [UsageConditions] -> UpdatedUsageConditions
+usageConditionsToAdd prevCommit currCommit createdAt conds = case L.nonEmpty conds of
+  Nothing ->
+    UpdatedUsageConditions
+      { currentConditions = currCond,
+        conditionsToAdd = [prevCond, currCond],
+        updatedConditions = [prevCond, currCond]
+      }
+    where
+      prevCond = conditions 1 prevCommit 
+      currCond = conditions 2 currCommit
+  Just conds' -> case find ((currCommit ==) . conditionsCommit) conds of
+    Just currCond ->
+      UpdatedUsageConditions
+        { currentConditions = currCond,
+          conditionsToAdd = [],
+          updatedConditions = conds'
+        }
+    Nothing ->
+      UpdatedUsageConditions
+        { currentConditions = currCond,
+          conditionsToAdd = [currCond],
+          updatedConditions = conds' <> [currCond]
+        }
+      where
+        cId = maximum (map conditionsId conds) + 1
+        currCond = conditions cId currCommit
+  where
+    conditions cId commit = UsageConditions {conditionsId = cId, conditionsCommit = commit, notifiedAt = Nothing, createdAt}
 
 groupByOperator :: [ServerOperator] -> [ServerCfg 'PSMP] -> [ServerCfg 'PXFTP] -> [UserServers]
 groupByOperator srvOperators smpSrvs xftpSrvs =
