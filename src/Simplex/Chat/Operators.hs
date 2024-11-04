@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -65,6 +66,15 @@ data UsageConditions = UsageConditions
   }
   deriving (Show)
 
+data UsageConditionsAction
+  = UCAReviewConditions {acceptForOperators :: [ServerOperator], deadline :: Maybe UTCTime}
+  | UCAViewAcceptedConditions {acceptedForOperators :: [ServerOperator]}
+  deriving (Show)
+
+-- TODO UI logic
+usageConditionsAction :: UsageConditionsAction
+usageConditionsAction = UCAViewAcceptedConditions []
+
 data ConditionsAcceptance
   = CAAccepted {acceptedAt :: UTCTime}
   | CARequired {deadline :: Maybe UTCTime}
@@ -93,5 +103,7 @@ $(JQ.deriveJSON defaultJSON ''UsageConditions)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CA") ''ConditionsAcceptance)
 
 $(JQ.deriveJSON defaultJSON ''ServerOperator)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "UCA") ''UsageConditionsAction)
 
 $(JQ.deriveJSON defaultJSON ''UserServers)
