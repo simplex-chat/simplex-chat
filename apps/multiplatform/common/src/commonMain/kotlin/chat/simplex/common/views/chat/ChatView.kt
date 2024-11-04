@@ -1066,15 +1066,13 @@ fun BoxScope.ChatItemsList(
             scope.launch {
               if (idx != null) {
                 listState.animateScrollToItem(scrollPosition.value(idx), -maxHeight.value)
-                withContext(Dispatchers.Main) {
-                  if (!itemsToDrop.isNullOrEmpty()) {
-                    itemsToDrop.forEach {
-                      chatModel.chatItemsSectionArea.remove(it.id)
-                    }
-                    chatModel.chatItems.removeAll { chatModel.chatItemsSectionArea[it.id] == null }
-                    val newIdx = reversedChatItems.value.indexOfFirst { it.id == itemId }
-                    listState.scrollToItem(scrollPosition.value(newIdx), -maxHeight.value)
+                if (!itemsToDrop.isNullOrEmpty()) {
+                  itemsToDrop.forEach {
+                    chatModel.chatItemsSectionArea.remove(it.id)
                   }
+                  chatModel.chatItems.removeAll { chatModel.chatItemsSectionArea[it.id] == null }
+                  val newIdx = reversedChatItems.value.indexOfFirst { it.id == itemId }
+                  listState.scrollToItem(scrollPosition.value(newIdx), -maxHeight.value)
                 }
               }
               preloadItemsEnabled.value = true

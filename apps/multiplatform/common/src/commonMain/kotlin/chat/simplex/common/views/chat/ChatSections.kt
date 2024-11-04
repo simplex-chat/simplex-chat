@@ -249,8 +249,8 @@ fun List<ChatSection>.dropTemporarySections() {
   }
 }
 
-fun ChatSection.excessItemCount(): Int {
-  return max(boundary.maxIndex.minus(boundary.minIndex) + 1 - MAX_SECTION_SIZE, 0)
+private fun ChatSection.excessItemCount(): Int {
+  return max(boundary.maxIndex - boundary.minIndex + 1 - MAX_SECTION_SIZE, 0)
 }
 
 fun landingSectionToArea(chatLandingSection: ChatLandingSection) = when (chatLandingSection) {
