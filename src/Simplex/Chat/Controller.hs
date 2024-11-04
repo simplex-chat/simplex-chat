@@ -133,7 +133,7 @@ data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
     chatVRange :: VersionRangeChat,
     confirmMigrations :: MigrationConfirmation,
-    defaultServers :: DefaultAgentServers,
+    presetServers :: PresetServers,
     tbqSize :: Natural,
     fileChunkSize :: Integer,
     xftpDescrPartSize :: Int,
@@ -173,12 +173,9 @@ defaultChatHooks =
       eventHook = \_ -> pure
     }
 
-data DefaultAgentServers = DefaultAgentServers
-  { smp :: NonEmpty (ServerCfg 'PSMP),
-    useSMP :: Int,
+data PresetServers = PresetServers
+  { operators :: NonEmpty PresetOperatorServers,    
     ntf :: [NtfServer],
-    xftp :: NonEmpty (ServerCfg 'PXFTP),
-    useXFTP :: Int,
     netCfg :: NetworkConfig
   }
 

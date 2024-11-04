@@ -29,10 +29,13 @@ import Simplex.Messaging.Util (safeDecodeUtf8)
 usageConditionsCommit :: Text
 usageConditionsCommit = "165143a1112308c035ac00ed669b96b60599aa1c"
 
+previousConditionsCommit :: Text
+previousConditionsCommit = "edf99fcd1d7d38d2501d19608b94c084cf00f2ac"
+
 usageConditionsText :: Text
 usageConditionsText =
   $( let s = $(embedFile =<< makeRelativeToProject "PRIVACY.md")
-      in [|stripFrontMatter (safeDecodeUtf8 $(lift s))|]
+      in [| stripFrontMatter (safeDecodeUtf8 $(lift s)) |]
    )
 
 data OperatorTag = OTSimplex | OTXyz
@@ -83,6 +86,7 @@ data ConditionsAcceptance
 data ServerOperator = ServerOperator
   { operatorId :: OperatorId,
     operatorTag :: Maybe OperatorTag,
+    appVendor :: Bool,
     tradeName :: Text,
     legalName :: Maybe Text,
     serverDomains :: [Text],
@@ -93,11 +97,24 @@ data ServerOperator = ServerOperator
   deriving (Show)
 
 data UserServers = UserServers
-  { operator :: ServerOperator,
-    smpServers :: NonEmpty (ProtoServerWithAuth 'PSMP),
-    xftpServers :: NonEmpty (ProtoServerWithAuth 'PXFTP)
+  { operator :: Maybe ServerOperator,
+    smpServers :: [ServerCfg 'PSMP],
+    xftpServers :: [ServerCfg 'PXFTP]
   }
   deriving (Show)
+
+data PresetOperatorServers = PresetOperatorServers
+  { operator :: ServerOperator,
+    smpServers :: NonEmpty (PresetServer 'PSMP),
+    xftpServers :: NonEmpty (PresetServer 'PXFTP),
+    useSMP :: Int,
+    useXFTP :: Int
+  }
+
+data PresetServer p = PresetServer
+  { useServer :: Bool,
+    server :: ProtoServerWithAuth p
+  }
 
 $(JQ.deriveJSON defaultJSON ''UsageConditions)
 

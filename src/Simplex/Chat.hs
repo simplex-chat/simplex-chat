@@ -138,6 +138,34 @@ import qualified UnliftIO.Exception as E
 import UnliftIO.IO (hClose, hSeek, hTell, openFile)
 import UnliftIO.STM
 
+operatorSimpleXChat :: ServerOperator
+operatorSimpleXChat =
+  ServerOperator
+    { operatorId = Nothing,
+      operatorTag = Just OTSimplex,
+      appVendor = True,
+      tradeName = "SimpleX Chat",
+      legalName = Just "SimpleX Chat Ltd",
+      serverDomains = ["simplex.im"],
+      acceptedConditions = CARequired Nothing,
+      enabled = True,
+      roles = allRoles
+    }
+
+operatorXYZ :: ServerOperator
+operatorXYZ =
+  ServerOperator
+    { operatorId = Nothing,
+      operatorTag = Just OTXyz,
+      appVendor = False,
+      tradeName = "XYZ",
+      legalName = Just "XYZ Ltd",
+      serverDomains = ["xyz.com"],
+      acceptedConditions = CARequired Nothing,
+      enabled = False,
+      roles = ServerRoles {storage = False, proxy = True}
+    }
+
 defaultChatConfig :: ChatConfig
 defaultChatConfig =
   ChatConfig
@@ -148,13 +176,25 @@ defaultChatConfig =
           },
       chatVRange = supportedChatVRange,
       confirmMigrations = MCConsole,
-      defaultServers =
-        DefaultAgentServers
-          { smp = _defaultSMPServers,
-            useSMP = 4,
+      presetServers =
+        PresetServers
+          { operators =
+              [ PresetOperatorServers
+                  { operator = operatorSimpleXChat,
+                    smpServers = simplexChatSMPServers,
+                    useSMP = 4,
+                    xftpServers = L.map (PresetServer True) defaultXFTPServers,
+                    useXFTP = 3
+                  },
+                PresetOperatorServers
+                  { operator = operatorXYZ,
+                    smpServers = xyzSMPServers,
+                    useSMP = 3,
+                    xftpServers = xyzXFTPServers,
+                    useXFTP = 3,
+                  }
+              ],
             ntf = _defaultNtfServers,
-            xftp = L.map (presetServerCfg True allRoles operatorSimpleXChat) defaultXFTPServers,
-            useXFTP = L.length defaultXFTPServers,
             netCfg = defaultNetworkConfig
           },
       tbqSize = 1024,
@@ -178,32 +218,52 @@ defaultChatConfig =
       chatHooks = defaultChatHooks
     }
 
-_defaultSMPServers :: NonEmpty (ServerCfg 'PSMP)
-_defaultSMPServers =
-  L.fromList $
-    map
-      (presetServerCfg True allRoles operatorSimpleXChat)
-      [ "smp://0YuTwO05YJWS8rkjn9eLJDjQhFKvIYd8d4xG8X1blIU=@smp8.simplex.im,beccx4yfxxbvyhqypaavemqurytl6hozr47wfc7uuecacjqdvwpw2xid.onion",
-        "smp://SkIkI6EPd2D63F4xFKfHk7I1UGZVNn6k1QWZ5rcyr6w=@smp9.simplex.im,jssqzccmrcws6bhmn77vgmhfjmhwlyr3u7puw4erkyoosywgl67slqqd.onion",
-        "smp://6iIcWT_dF2zN_w5xzZEY7HI2Prbh3ldP07YTyDexPjE=@smp10.simplex.im,rb2pbttocvnbrngnwziclp2f4ckjq65kebafws6g4hy22cdaiv5dwjqd.onion",
-        "smp://1OwYGt-yqOfe2IyVHhxz3ohqo3aCCMjtB-8wn4X_aoY=@smp11.simplex.im,6ioorbm6i3yxmuoezrhjk6f6qgkc4syabh7m3so74xunb5nzr4pwgfqd.onion",
-        "smp://UkMFNAXLXeAAe0beCa4w6X_zp18PwxSaSjY17BKUGXQ=@smp12.simplex.im,ie42b5weq7zdkghocs3mgxdjeuycheeqqmksntj57rmejagmg4eor5yd.onion",
-        "smp://enEkec4hlR3UtKx2NMpOUK_K4ZuDxjWBO1d9Y4YXVaA=@smp14.simplex.im,aspkyu2sopsnizbyfabtsicikr2s4r3ti35jogbcekhm3fsoeyjvgrid.onion",
-        "smp://h--vW7ZSkXPeOUpfxlFGgauQmXNFOzGoizak7Ult7cw=@smp15.simplex.im,oauu4bgijybyhczbnxtlggo6hiubahmeutaqineuyy23aojpih3dajad.onion",
-        "smp://hejn2gVIqNU6xjtGM3OwQeuk8ZEbDXVJXAlnSBJBWUA=@smp16.simplex.im,p3ktngodzi6qrf7w64mmde3syuzrv57y55hxabqcq3l5p6oi7yzze6qd.onion",
-        "smp://ZKe4uxF4Z_aLJJOEsC-Y6hSkXgQS5-oc442JQGkyP8M=@smp17.simplex.im,ogtwfxyi3h2h5weftjjpjmxclhb5ugufa5rcyrmg7j4xlch7qsr5nuqd.onion",
-        "smp://PtsqghzQKU83kYTlQ1VKg996dW4Cw4x_bvpKmiv8uns=@smp18.simplex.im,lyqpnwbs2zqfr45jqkncwpywpbtq7jrhxnib5qddtr6npjyezuwd3nqd.onion",
-        "smp://N_McQS3F9TGoh4ER0QstUf55kGnNSd-wXfNPZ7HukcM=@smp19.simplex.im,i53bbtoqhlc365k6kxzwdp5w3cdt433s7bwh3y32rcbml2vztiyyz5id.onion"
+simplexChatSMPServers :: NonEmpty (PresetServer 'PSMP)
+simplexChatSMPServers = 
+  L.map
+    (PresetServer True)
+    [ "smp://0YuTwO05YJWS8rkjn9eLJDjQhFKvIYd8d4xG8X1blIU=@smp8.simplex.im,beccx4yfxxbvyhqypaavemqurytl6hozr47wfc7uuecacjqdvwpw2xid.onion",
+      "smp://SkIkI6EPd2D63F4xFKfHk7I1UGZVNn6k1QWZ5rcyr6w=@smp9.simplex.im,jssqzccmrcws6bhmn77vgmhfjmhwlyr3u7puw4erkyoosywgl67slqqd.onion",
+      "smp://6iIcWT_dF2zN_w5xzZEY7HI2Prbh3ldP07YTyDexPjE=@smp10.simplex.im,rb2pbttocvnbrngnwziclp2f4ckjq65kebafws6g4hy22cdaiv5dwjqd.onion",
+      "smp://1OwYGt-yqOfe2IyVHhxz3ohqo3aCCMjtB-8wn4X_aoY=@smp11.simplex.im,6ioorbm6i3yxmuoezrhjk6f6qgkc4syabh7m3so74xunb5nzr4pwgfqd.onion",
+      "smp://UkMFNAXLXeAAe0beCa4w6X_zp18PwxSaSjY17BKUGXQ=@smp12.simplex.im,ie42b5weq7zdkghocs3mgxdjeuycheeqqmksntj57rmejagmg4eor5yd.onion",
+      "smp://enEkec4hlR3UtKx2NMpOUK_K4ZuDxjWBO1d9Y4YXVaA=@smp14.simplex.im,aspkyu2sopsnizbyfabtsicikr2s4r3ti35jogbcekhm3fsoeyjvgrid.onion",
+      "smp://h--vW7ZSkXPeOUpfxlFGgauQmXNFOzGoizak7Ult7cw=@smp15.simplex.im,oauu4bgijybyhczbnxtlggo6hiubahmeutaqineuyy23aojpih3dajad.onion",
+      "smp://hejn2gVIqNU6xjtGM3OwQeuk8ZEbDXVJXAlnSBJBWUA=@smp16.simplex.im,p3ktngodzi6qrf7w64mmde3syuzrv57y55hxabqcq3l5p6oi7yzze6qd.onion",
+      "smp://ZKe4uxF4Z_aLJJOEsC-Y6hSkXgQS5-oc442JQGkyP8M=@smp17.simplex.im,ogtwfxyi3h2h5weftjjpjmxclhb5ugufa5rcyrmg7j4xlch7qsr5nuqd.onion",
+      "smp://PtsqghzQKU83kYTlQ1VKg996dW4Cw4x_bvpKmiv8uns=@smp18.simplex.im,lyqpnwbs2zqfr45jqkncwpywpbtq7jrhxnib5qddtr6npjyezuwd3nqd.onion",
+      "smp://N_McQS3F9TGoh4ER0QstUf55kGnNSd-wXfNPZ7HukcM=@smp19.simplex.im,i53bbtoqhlc365k6kxzwdp5w3cdt433s7bwh3y32rcbml2vztiyyz5id.onion"
+    ]
+    <> L.map
+      (PresetServer False)
+      [ "smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im,o5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion",
+        "smp://hpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg=@smp5.simplex.im,jjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion",
+        "smp://PQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo=@smp6.simplex.im,bylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion"
       ]
-      <> map
-        (presetServerCfg False allRoles operatorSimpleXChat)
-        [ "smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im,o5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion",
-          "smp://hpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg=@smp5.simplex.im,jjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion",
-          "smp://PQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo=@smp6.simplex.im,bylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion"
-        ]
 
-operatorSimpleXChat :: Maybe OperatorId
-operatorSimpleXChat = Just 1
+xyzSMPServers :: NonEmpty (PresetServer 'PSMP)
+xyzSMPServers =
+  L.map
+    (PresetServer True)
+    [ "smp://abcd@smp1.xyz.com",
+      "smp://abcd@smp2.xyz.com",
+      "smp://abcd@smp3.xyz.com",
+      "smp://abcd@smp4.xyz.com",
+      "smp://abcd@smp5.xyz.com",
+      "smp://abcd@smp6.xyz.com"
+    ]
+
+xyzXFTPServers :: NonEmpty (PresetServer 'PXFTP)
+xyzXFTPServers =
+  L.map
+    (PresetServer True)
+    [ "xftp://abcd@xftp1.xyz.com",
+      "xftp://abcd@xftp2.xyz.com",
+      "xftp://abcd@xftp3.xyz.com",
+      "xftp://abcd@xftp4.xyz.com",
+      "xftp://abcd@xftp5.xyz.com",
+      "xftp://abcd@xftp6.xyz.com"
+    ]
 
 _defaultNtfServers :: [NtfServer]
 _defaultNtfServers =
