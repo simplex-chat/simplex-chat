@@ -567,14 +567,14 @@ getServerOperators db ts =
     <$> DB.query_
       db
       [sql|
-        SELECT server_operator_id, server_operator_tag, trade_name, legal_name, enabled, role_storage, role_proxy
+        SELECT server_operator_id, server_operator_tag, trade_name, legal_name, server_domains, enabled, role_storage, role_proxy
         FROM server_operators;
       |]
   where
     -- TODO get conditions state
-    toOperator (operatorId, operatorTag, tradeName, legalName, enabled, storage, proxy) =
+    toOperator (operatorId, operatorTag, tradeName, legalName, domains, enabled, storage, proxy) =
       let roles = ServerRoles {storage, proxy}
-       in ServerOperator {operatorId, operatorTag, tradeName, legalName, acceptedConditions = CAAccepted ts, enabled, roles}
+       in ServerOperator {operatorId, operatorTag, tradeName, legalName, serverDomains = [domains], acceptedConditions = CAAccepted ts, enabled, roles}
 
 -- updateServerOperators_ :: DB.Connection -> [ServerOperator] -> IO [ServerOperator]
 -- updateServerOperators_ db operators = do

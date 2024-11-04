@@ -1508,6 +1508,8 @@ processChatCommand' vr = \case
     lift $ CRServerTestResult user srv <$> withAgent' (\a -> testProtocolServer a (aUserId user) server)
   TestProtoServer srv -> withUser $ \User {userId} ->
     processChatCommand $ APITestProtoServer userId srv
+  APIGetServerOperators -> pure $ chatCmdError Nothing "not supported"
+  APISetServerOperators _operators -> pure $ chatCmdError Nothing "not supported"
   APIGetUserServers userId -> withUserId userId $ \user ->
     pure $ chatCmdError (Just user) "not supported"
   APISetUserServers userId _userServers -> withUserId userId $ \user ->

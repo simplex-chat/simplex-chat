@@ -67,13 +67,13 @@ data UsageConditions = UsageConditions
   deriving (Show)
 
 data UsageConditionsAction
-  = UCAReviewConditions {acceptForOperators :: [ServerOperator], deadline :: Maybe UTCTime}
-  | UCAViewAcceptedConditions {acceptedForOperators :: [ServerOperator]}
+  = UCAReview {operators :: [ServerOperator], deadline :: Maybe UTCTime, showNotice :: Bool}
+  | UCAAccepted {operators :: [ServerOperator]}
   deriving (Show)
 
 -- TODO UI logic
 usageConditionsAction :: UsageConditionsAction
-usageConditionsAction = UCAViewAcceptedConditions []
+usageConditionsAction = UCAAccepted []
 
 data ConditionsAcceptance
   = CAAccepted {acceptedAt :: UTCTime}
@@ -85,6 +85,7 @@ data ServerOperator = ServerOperator
     operatorTag :: Maybe OperatorTag,
     tradeName :: Text,
     legalName :: Maybe Text,
+    serverDomains :: [Text],
     acceptedConditions :: ConditionsAcceptance,
     enabled :: Bool,
     roles :: ServerRoles

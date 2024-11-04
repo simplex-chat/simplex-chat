@@ -46,11 +46,11 @@ CREATE INDEX idx_operator_usage_conditions_server_operator_id ON operator_usage_
 CREATE UNIQUE INDEX idx_operator_usage_conditions_conditions_commit ON operator_usage_conditions(server_operator_id, conditions_commit);
 
 INSERT INTO server_operators
-  (server_operator_id, server_operator_tag, trade_name, legal_name, server_domains)
-  VALUES (1, 'simplex', 'SimpleX Chat', 'SimpleX Chat Ltd', 'simplex.im');
+  (server_operator_id, server_operator_tag, trade_name, legal_name, server_domains, enabled)
+  VALUES (1, 'simplex', 'SimpleX Chat', 'SimpleX Chat Ltd', 'simplex.im', 1);
 INSERT INTO server_operators
-  (server_operator_id, server_operator_tag, trade_name, legal_name, server_domains)
-  VALUES (2, 'xyz', 'XYZ', 'XYZ Ltd', 'xyz.com');
+  (server_operator_id, server_operator_tag, trade_name, legal_name, server_domains, enabled)
+  VALUES (2, 'xyz', 'XYZ', 'XYZ Ltd', 'xyz.com', 0);
 
 -- UPDATE protocol_servers SET server_operator_id = 1 WHERE host LIKE "%.simplex.im" OR host LIKE "%.simplex.im,%";
 |]

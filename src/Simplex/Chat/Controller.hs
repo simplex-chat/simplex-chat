@@ -353,6 +353,8 @@ data ChatCommand
   | SetUserProtoServers AProtoServersConfig
   | APITestProtoServer UserId AProtoServerWithAuth
   | TestProtoServer AProtoServerWithAuth
+  | APIGetServerOperators
+  | APISetServerOperators (NonEmpty (OperatorId, Bool))
   | APIGetUserServers UserId
   | APISetUserServers UserId (NonEmpty UserServers)
   | APIValidateServers (NonEmpty UserServers) -- response is CRUserServersValidation
@@ -586,7 +588,8 @@ data ChatResponse
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
   | CRUserProtoServers {user :: User, servers :: AUserProtoServers, operators :: [ServerOperator]}
   | CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure}
-  | CRUserServers {userServers :: [UserServers], conditionsAction :: UsageConditionsAction}
+  | CRServerOperators {operators :: [ServerOperator], conditionsAction :: UsageConditionsAction}
+  | CRUserServers {userServers :: [UserServers]}
   | CRUserServersValidation {serverErrors :: [UserServersError]}
   | CRUsageConditions {usageConditions :: UsageConditions, conditionsText :: Text, acceptedConditions :: Maybe UsageConditions}
   | CRChatItemTTL {user :: User, chatItemTTL :: Maybe Int64}
