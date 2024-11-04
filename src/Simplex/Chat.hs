@@ -1512,8 +1512,17 @@ processChatCommand' vr = \case
     let conditionsAction = usageConditionsAction operators
     pure $ CRServerOperators operators conditionsAction
   APISetServerOperators _operators -> pure $ chatCmdError Nothing "not supported"
-  APIGetUserServers userId -> withUserId userId $ \user ->
-    pure $ chatCmdError (Just user) "not supported"
+  APIGetUserServers userId -> withUserId userId $ \user -> do
+    (operators, smpServers, xftpServers) <- withFastStore $ \db -> do
+      operators <- getServerOperators db
+      smpServers <- liftIO $ getServers db user SPSMP
+      xftpServers <- liftIO $ getServers db user SPXFTP
+      pure (operators, smpServers, xftpServers)
+    let userServers = groupByOperator operators smpServers xftpServers
+    pure $ CRUserServers user userServers
+    where
+      getServers :: (ProtocolTypeI p) => DB.Connection -> User -> SProtocolType p -> IO [ServerCfg p]
+      getServers db user _p = getProtocolServers db user
   APISetUserServers userId _userServers -> withUserId userId $ \user ->
     pure $ chatCmdError (Just user) "not supported"
   APIValidateServers _userServers ->
