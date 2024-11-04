@@ -16,7 +16,6 @@ import Data.FileEmbed
 import Data.Int (Int64)
 import Data.List (find)
 import Data.List.NonEmpty (NonEmpty)
-import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
@@ -123,38 +122,17 @@ data PresetServer p = PresetServer
     server :: ProtoServerWithAuth p
   }
 
-data UpdatedUsageConditions = UpdatedUsageConditions
-  { currentConditions :: UsageConditions,
-    conditionsToAdd :: [UsageConditions],
-    updatedConditions :: NonEmpty UsageConditions
-  }
-
 -- this function should be called inside DB transaction to update conditions in the database
 -- it returns (current conditions record in the final list, conditions to add, all conditions)
-usageConditionsToAdd :: Text -> Text -> UTCTime -> [UsageConditions] -> UpdatedUsageConditions
-usageConditionsToAdd prevCommit currCommit createdAt conds = case L.nonEmpty conds of
-  Nothing ->
-    UpdatedUsageConditions
-      { currentConditions = currCond,
-        conditionsToAdd = [prevCond, currCond],
-        updatedConditions = [prevCond, currCond]
-      }
+usageConditionsToAdd :: Text -> Text -> UTCTime -> [UsageConditions] -> (UsageConditions, [UsageConditions])
+usageConditionsToAdd prevCommit currCommit createdAt = \case
+  [] -> (currCond, [prevCond, currCond])
     where
       prevCond = conditions 1 prevCommit 
       currCond = conditions 2 currCommit
-  Just conds' -> case find ((currCommit ==) . conditionsCommit) conds of
-    Just currCond ->
-      UpdatedUsageConditions
-        { currentConditions = currCond,
-          conditionsToAdd = [],
-          updatedConditions = conds'
-        }
-    Nothing ->
-      UpdatedUsageConditions
-        { currentConditions = currCond,
-          conditionsToAdd = [currCond],
-          updatedConditions = conds' <> [currCond]
-        }
+  conds -> case find ((currCommit ==) . conditionsCommit) conds of
+    Just currCond -> (currCond, [])
+    Nothing -> (currCond, [currCond])
       where
         cId = maximum (map conditionsId conds) + 1
         currCond = conditions cId currCommit
