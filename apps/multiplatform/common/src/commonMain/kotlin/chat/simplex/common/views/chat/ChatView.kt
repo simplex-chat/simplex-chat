@@ -292,41 +292,35 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
               }
             },
             loadMessages = { chatId, scrollDirection, (itemId, idx, area) ->
-              val c = chatModel.getChat(chatId)
+              val c = chatModel.getChat(chatId) ?: return@ChatLayout
               if (chatModel.chatId.value != chatId) return@ChatLayout
-              when (scrollDirection) {
-                ScrollDirection.Up -> {
-                  if (c != null) {
-                    withBGApi {
-                      val chatSectionLoader = ChatSectionLoader(idx, area)
-                      apiLoadMessages(
-                        rhId = c.remoteHostId,
-                        chatInfo = c.chatInfo,
-                        chatModel = chatModel,
-                        itemId = itemId,
-                        search = "",
-                        chatSectionLoader = chatSectionLoader,
-                      )
-                    }
+              withBGApi {
+                when (scrollDirection) {
+                  ScrollDirection.Up -> {
+                    val chatSectionLoader = ChatSectionLoader(idx, area)
+                    apiLoadMessages(
+                      rhId = c.remoteHostId,
+                      chatInfo = c.chatInfo,
+                      chatModel = chatModel,
+                      itemId = itemId,
+                      search = "",
+                      chatSectionLoader = chatSectionLoader,
+                    )
                   }
-                }
-                ScrollDirection.Down -> {
-                  if (c != null) {
-                    withBGApi {
-                      val chatSectionLoader = ChatSectionLoader(idx + 1, area)
-                      apiLoadMessages(
-                        rhId = c.remoteHostId,
-                        chatInfo = c.chatInfo,
-                        chatModel = chatModel,
-                        itemId = itemId,
-                        search = "",
-                        chatSectionLoader = chatSectionLoader,
-                        pagination = ChatPagination.After(itemId, ChatPagination.PRELOAD_COUNT)
-                      )
-                    }
+                  ScrollDirection.Down -> {
+                    val chatSectionLoader = ChatSectionLoader(idx + 1, area)
+                    apiLoadMessages(
+                      rhId = c.remoteHostId,
+                      chatInfo = c.chatInfo,
+                      chatModel = chatModel,
+                      itemId = itemId,
+                      search = "",
+                      chatSectionLoader = chatSectionLoader,
+                      pagination = ChatPagination.After(itemId, ChatPagination.PRELOAD_COUNT)
+                    )
                   }
+                  else -> {}
                 }
-                else -> {}
               }
             },
             deleteMessage = { itemId, mode ->
