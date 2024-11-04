@@ -66,6 +66,7 @@ object ChatModel {
   // current chat
   val chatId = mutableStateOf<String?>(null)
   val chatItems = mutableStateOf(SnapshotStateList<ChatItem>())
+  // chatItemId, SectionArea
   val chatItemsSectionArea = mutableMapOf<Long, ChatSectionArea>()
   // rhId, chatId
   val deletedChats = mutableStateOf<List<Pair<Long?, String>>>(emptyList())

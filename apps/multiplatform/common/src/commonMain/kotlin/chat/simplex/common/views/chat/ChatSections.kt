@@ -25,6 +25,7 @@ data class ChatSectionAreaBoundary (
 data class ChatSection (
   val items: MutableList<SectionItems>,
   val boundary: ChatSectionAreaBoundary,
+  // chatItemId, index in rendered LazyColumn
   val itemPositions: MutableMap<Long, Int>
 )
 
