@@ -595,17 +595,28 @@ CREATE TABLE server_operators(
   server_operator_tag TEXT,
   trade_name TEXT NOT NULL,
   legal_name TEXT,
+  server_domains TEXT,
   enabled INTEGER NOT NULL DEFAULT 1,
   role_storage INTEGER NOT NULL DEFAULT 1,
-  role_proxy INTEGER NOT NULL DEFAULT 1
+  role_proxy INTEGER NOT NULL DEFAULT 1,
+  accepted_conditions_commit TEXT,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
-CREATE TABLE usage_conditions_acceptance(
-  usage_conditions_acceptance_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  server_operator_id INTEGER REFERENCES server_operators(server_operator_id),
-  conditions_required_at TEXT NOT NULL,
-  conditions_accepted_at TEXT,
+CREATE TABLE usage_conditions(
+  usage_conditions_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  conditions_commit TEXT NOT NULL UNIQUE,
+  notified_at TEXT,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+);
+CREATE TABLE operator_usage_conditions(
+  operator_usage_conditions_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  server_operator_id INTEGER REFERENCES server_operators(server_operator_id) ON DELETE SET NULL ON UPDATE CASCADE,
+  server_operator_tag TEXT,
   conditions_commit TEXT NOT NULL,
-  accepted_at TEXT NOT NULL
+  accepted_at TEXT,
+  created_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
@@ -908,9 +919,13 @@ CREATE INDEX idx_received_probes_group_member_id on received_probes(
   group_member_id
 );
 CREATE INDEX idx_contact_requests_contact_id ON contact_requests(contact_id);
-CREATE INDEX idx_protocol_servers_operators ON protocol_servers(
+CREATE INDEX idx_protocol_servers_server_operator_id ON protocol_servers(
   server_operator_id
 );
-CREATE INDEX idx_usage_conditions_acceptance_server_operators ON usage_conditions_acceptance(
+CREATE INDEX idx_operator_usage_conditions_server_operator_id ON operator_usage_conditions(
   server_operator_id
+);
+CREATE UNIQUE INDEX idx_operator_usage_conditions_conditions_commit ON operator_usage_conditions(
+  server_operator_id,
+  conditions_commit
 );

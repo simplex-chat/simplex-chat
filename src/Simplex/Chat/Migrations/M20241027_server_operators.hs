@@ -13,7 +13,7 @@ CREATE TABLE server_operators (
   server_operator_tag TEXT,
   trade_name TEXT NOT NULL,
   legal_name TEXT,
-  server_domains TEXT
+  server_domains TEXT,
   enabled INTEGER NOT NULL DEFAULT 1,
   role_storage INTEGER NOT NULL DEFAULT 1,
   role_proxy INTEGER NOT NULL DEFAULT 1,
@@ -33,7 +33,7 @@ CREATE TABLE usage_conditions (
 );
 
 CREATE TABLE operator_usage_conditions (
-  usage_conditions_acceptance_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  operator_usage_conditions_id INTEGER PRIMARY KEY AUTOINCREMENT,
   server_operator_id INTEGER REFERENCES server_operators (server_operator_id) ON DELETE SET NULL ON UPDATE CASCADE,
   server_operator_tag TEXT,
   conditions_commit TEXT NOT NULL,
@@ -41,9 +41,9 @@ CREATE TABLE operator_usage_conditions (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE INDEX idx_protocol_servers_operators ON protocol_servers(server_operator_id);
-CREATE INDEX idx_usage_conditions_acceptance_server_operators ON usage_conditions_acceptance(server_operator_id);
-CREATE UNIQUE INDEX idx_usage_conditions_acceptance_conditions_commit ON usage_conditions_acceptance(server_operator_id, conditions_commit);
+CREATE INDEX idx_protocol_servers_server_operator_id ON protocol_servers(server_operator_id);
+CREATE INDEX idx_operator_usage_conditions_server_operator_id ON operator_usage_conditions(server_operator_id);
+CREATE UNIQUE INDEX idx_operator_usage_conditions_conditions_commit ON operator_usage_conditions(server_operator_id, conditions_commit);
 
 INSERT INTO server_operators
   (server_operator_id, server_operator_tag, trade_name, legal_name, server_domains)
@@ -58,13 +58,13 @@ INSERT INTO server_operators
 down_m20241027_server_operators :: Query
 down_m20241027_server_operators =
   [sql|
-DROP INDEX idx_usage_conditions_acceptance_conditions_commit;
-DROP INDEX idx_usage_conditions_acceptance_server_operators;
-DROP INDEX idx_protocol_servers_operators;
+DROP INDEX idx_operator_usage_conditions_conditions_commit;
+DROP INDEX idx_operator_usage_conditions_server_operator_id;
+DROP INDEX idx_protocol_servers_server_operator_id;
 
 ALTER TABLE protocol_servers DROP COLUMN server_operator_id;
 
-DROP TABLE usage_conditions_acceptance;
+DROP TABLE operator_usage_conditions;
 DROP TABLE usage_conditions;
 DROP TABLE server_operators;
 |]
