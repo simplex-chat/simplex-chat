@@ -10,6 +10,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
 import Data.FileEmbed
+import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
@@ -21,7 +22,7 @@ import Simplex.Chat.Types.Util (textParseJSON)
 import Simplex.Messaging.Agent.Env.SQLite (OperatorId, ServerRoles)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, sumTypeJSON)
-import Simplex.Messaging.Protocol (ProtocolType (..), ProtoServerWithAuth)
+import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolType (..))
 import Simplex.Messaging.Util (safeDecodeUtf8)
 
 usageConditionsCommit :: Text
@@ -30,7 +31,7 @@ usageConditionsCommit = "165143a1112308c035ac00ed669b96b60599aa1c"
 usageConditionsText :: Text
 usageConditionsText =
   $( let s = $(embedFile =<< makeRelativeToProject "PRIVACY.md")
-      in [| stripFrontMatter (safeDecodeUtf8 $(lift s)) |]
+      in [|stripFrontMatter (safeDecodeUtf8 $(lift s))|]
    )
 
 data OperatorTag = OTSimplex | OTXyz
@@ -62,6 +63,7 @@ data UsageConditions = UsageConditions
     notifiedAt :: Maybe UTCTime,
     createdAt :: UTCTime
   }
+  deriving (Show)
 
 data ConditionsAcceptance
   = CAAccepted {acceptedAt :: UTCTime}
@@ -85,6 +87,8 @@ data UserServers = UserServers
     xftpServers :: NonEmpty (ProtoServerWithAuth 'PXFTP)
   }
   deriving (Show)
+
+$(JQ.deriveJSON defaultJSON ''UsageConditions)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CA") ''ConditionsAcceptance)
 

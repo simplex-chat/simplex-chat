@@ -561,8 +561,8 @@ overwriteProtocolServers db User {userId} servers =
   where
     protocol = decodeLatin1 $ strEncode $ protocolTypeI @p
 
-getServerOperators :: DB.Connection -> IO [ServerOperator]
-getServerOperators db =
+getServerOperators :: DB.Connection -> UTCTime -> IO [ServerOperator]
+getServerOperators db ts =
   map toOperator
     <$> DB.query_
       db
@@ -571,9 +571,10 @@ getServerOperators db =
         FROM server_operators;
       |]
   where
+    -- TODO get conditions state
     toOperator (operatorId, operatorTag, tradeName, legalName, enabled, storage, proxy) =
       let roles = ServerRoles {storage, proxy}
-       in ServerOperator {operatorId, operatorTag, tradeName, legalName, acceptedConditions = Nothing, enabled, roles}
+       in ServerOperator {operatorId, operatorTag, tradeName, legalName, acceptedConditions = CAAccepted ts, enabled, roles}
 
 -- updateServerOperators_ :: DB.Connection -> [ServerOperator] -> IO [ServerOperator]
 -- updateServerOperators_ db operators = do

@@ -100,7 +100,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRServerTestResult u srv testFailure -> ttyUser u $ viewServerTestResult srv testFailure
   CRUserServers _ -> []
   CRUserServersValidation _ -> []
-  CRUsageConditions _ _ -> []
+  CRUsageConditions {} -> []
   CRChatItemTTL u ttl -> ttyUser u $ viewChatItemTTL ttl
   CRNetworkConfig cfg -> viewNetworkConfig cfg
   CRContactInfo u ct cStats customUserProfile -> ttyUser u $ viewContactInfo ct cStats customUserProfile

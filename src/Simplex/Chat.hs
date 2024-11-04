@@ -1489,9 +1489,10 @@ processChatCommand' vr = \case
   APIGetUserProtoServers userId (AProtocolType p) -> withUserId userId $ \user -> withServerProtocol p $ do
     cfg@ChatConfig {defaultServers} <- asks config
     srvs <- withFastStore' (`getProtocolServers` user)
-    operators <- withFastStore' getServerOperators
+    ts <- liftIO getCurrentTime
+    operators <- withFastStore' $ \db -> getServerOperators db ts
     let servers = AUPS $ UserProtoServers p (useServers cfg p srvs) (cfgServers p defaultServers)
-    pure $ CRUserProtoServers {user, servers, operators} 
+    pure $ CRUserProtoServers {user, servers, operators}
   GetUserProtoServers aProtocol -> withUser $ \User {userId} ->
     processChatCommand $ APIGetUserProtoServers userId aProtocol
   APISetUserProtoServers userId (APSC p (ProtoServersConfig servers))
@@ -1511,10 +1512,30 @@ processChatCommand' vr = \case
     pure $ chatCmdError (Just user) "not supported"
   APISetUserServers userId _userServers -> withUserId userId $ \user ->
     pure $ chatCmdError (Just user) "not supported"
-  APIValidateServers _userServers -> -- response is CRUserServersValidation
+  APIValidateServers _userServers ->
+    -- response is CRUserServersValidation
     pure $ chatCmdError Nothing "not supported"
-  APIGetUsageConditions -> pure CRUsageConditions {conditionsText = usageConditionsText, conditionsCommit = usageConditionsCommit}
-  APIAcceptConditions _ts _opIds ->
+  APIGetUsageConditions -> do
+    -- TODO
+    -- get current conditions
+    -- get latest accepted conditions (from operators)
+    ts <- liftIO getCurrentTime
+    let usageConditions =
+          UsageConditions
+            { conditionsId = 1,
+              conditionsCommit = "abc",
+              notifiedAt = Nothing,
+              createdAt = ts
+            }
+    pure
+      CRUsageConditions
+        { usageConditions = usageConditions,
+          conditionsText = usageConditionsText,
+          acceptedConditions = Nothing
+        }
+  APISetConditionsNotified _conditionsId -> do
+    pure $ chatCmdError Nothing "not supported"
+  APIAcceptConditions _conditionsId _opIds ->
     pure $ chatCmdError Nothing "not supported"
   APISetChatItemTTL userId newTTL_ -> withUserId userId $ \user ->
     checkStoreNotChanged $
