@@ -72,8 +72,8 @@ data UsageConditionsAction
   deriving (Show)
 
 -- TODO UI logic
-usageConditionsAction :: UsageConditionsAction
-usageConditionsAction = UCAAccepted []
+usageConditionsAction :: [ServerOperator] -> UsageConditionsAction
+usageConditionsAction _operators = UCAAccepted []
 
 data ConditionsAcceptance
   = CAAccepted {acceptedAt :: UTCTime}
