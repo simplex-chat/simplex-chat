@@ -56,9 +56,16 @@ instance TextEncoding OperatorTag where
     OTSimplex -> "simplex"
     OTXyz -> "xyz"
 
+data UsageConditions = UsageConditions
+  { conditionsId :: Int64,
+    conditionsCommit :: Text,
+    notifiedAt :: Maybe UTCTime,
+    createdAt :: UTCTime
+  }
+
 data ConditionsAcceptance
-  = CAAccepted {date :: UTCTime}
-  | CARequired {deadline :: Maybe UTCTime, acceptedConditionsCommit :: Maybe Text}
+  = CAAccepted {acceptedAt :: UTCTime}
+  | CARequired {deadline :: Maybe UTCTime}
   deriving (Show)
 
 data ServerOperator = ServerOperator
@@ -66,7 +73,7 @@ data ServerOperator = ServerOperator
     operatorTag :: Maybe OperatorTag,
     tradeName :: Text,
     legalName :: Maybe Text,
-    acceptedConditions :: Maybe ConditionsAcceptance,
+    acceptedConditions :: ConditionsAcceptance,
     enabled :: Bool,
     roles :: ServerRoles
   }

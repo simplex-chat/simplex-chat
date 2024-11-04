@@ -357,7 +357,8 @@ data ChatCommand
   | APISetUserServers UserId (NonEmpty UserServers)
   | APIValidateServers (NonEmpty UserServers) -- response is CRUserServersValidation
   | APIGetUsageConditions
-  | APIAcceptConditions UTCTime (NonEmpty OperatorId)
+  | APISetConditionsNotified Int64
+  | APIAcceptConditions Int64 (NonEmpty OperatorId)
   | APISetChatItemTTL UserId (Maybe Int64)
   | SetChatItemTTL (Maybe Int64)
   | APIGetChatItemTTL UserId
@@ -587,7 +588,7 @@ data ChatResponse
   | CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure}
   | CRUserServers {userServers :: [UserServers]}
   | CRUserServersValidation {serverErrors :: [UserServersError]}
-  | CRUsageConditions {conditionsText :: Text, conditionsCommit :: Text}
+  | CRUsageConditions {usageConditions :: UsageConditions, usageConditionsText :: Text, acceptedConditions :: Maybe UsageConditions}
   | CRChatItemTTL {user :: User, chatItemTTL :: Maybe Int64}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
   | CRContactInfo {user :: User, contact :: Contact, connectionStats_ :: Maybe ConnectionStats, customUserProfile :: Maybe Profile}
