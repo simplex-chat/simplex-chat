@@ -51,7 +51,7 @@ echo "    ghc-options: -shared -threaded -optl-L$openssl_windows_style_path -opt
 # Very important! Without it the build fails on linking step since the linker can't find exported symbols.
 # It looks like GHC bug because with such random path the build ends successfully
 sed -i "s/ld.lld.exe/abracadabra.exe/" `ghc --print-libdir`/settings
-cabal build lib:simplex-chat
+cabal build lib:simplex-chat --constraint 'simplexmq +client_library'
 
 rm -rf apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 rm -rf apps/multiplatform/desktop/build/cmake
