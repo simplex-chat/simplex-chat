@@ -98,7 +98,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRApiParsedMarkdown ft -> [viewJSON ft]
   CRUserProtoServers u userServers operators  -> ttyUser u $ viewUserServers userServers operators testView
   CRServerTestResult u srv testFailure -> ttyUser u $ viewServerTestResult srv testFailure
-  CRUserServers _ -> []
+  CRUserServers {} -> []
   CRUserServersValidation _ -> []
   CRUsageConditions {} -> []
   CRChatItemTTL u ttl -> ttyUser u $ viewChatItemTTL ttl
