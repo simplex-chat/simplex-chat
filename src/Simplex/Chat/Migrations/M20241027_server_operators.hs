@@ -37,7 +37,6 @@ CREATE TABLE operator_usage_conditions (
   server_operator_id INTEGER REFERENCES server_operators (server_operator_id) ON DELETE SET NULL ON UPDATE CASCADE,
   server_operator_tag TEXT,
   conditions_commit TEXT NOT NULL,
-  conditions_accepted INTEGER NOT NULL,
   accepted_at TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
