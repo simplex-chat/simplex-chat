@@ -28,20 +28,22 @@ data class SectionItems (
   }
 }
 fun List<ChatItem>.putIntoGroups(revealedItems: Set<Long>): List<SectionItems> {
-  println("LALAL LENGTH ${size}")
   if (isEmpty()) return emptyList()
-  val start = System.currentTimeMillis()
+
   val groups = ArrayList<SectionItems>()
   val first = this[0]
   var recent = SectionItems(
     mergeCategory = first.mergeCategory,
     items = arrayListOf(first),
     revealed = mutableStateOf(first.mergeCategory == null || revealedItems.contains(first.id)),
-    showAvatar = mutableSetOf<Long>().also { if (first.chatDir is CIDirection.GroupRcv) it.add(first.id) },
+    showAvatar = if (shouldShowAvatar(first, getOrNull(1))) {
+      mutableSetOf(first.id)
+    } else {
+      mutableSetOf()
+    },
     startIndexInParentItems = 0
   )
   groups.add(recent)
-  var prev = this[0]
   var index = 0
   while (index < size) {
     if (index == 0) {
@@ -49,10 +51,11 @@ fun List<ChatItem>.putIntoGroups(revealedItems: Set<Long>): List<SectionItems> {
       continue
     }
     val item = this[index]
+    val next = getOrNull(index + 1)
     val category = item.mergeCategory
     if (recent.mergeCategory == category) {
       recent.items.add(item)
-      if (item.chatDir is CIDirection.GroupRcv && prev.chatDir is CIDirection.GroupRcv && item.chatDir.groupMember == (prev.chatDir as CIDirection.GroupRcv).groupMember) {
+      if (shouldShowAvatar(item, next)) {
         recent.showAvatar.add(item.id)
       }
     } else {
@@ -60,7 +63,7 @@ fun List<ChatItem>.putIntoGroups(revealedItems: Set<Long>): List<SectionItems> {
         mergeCategory = item.mergeCategory,
         items = arrayListOf(item),
         revealed = mutableStateOf(item.mergeCategory == null || revealedItems.contains(item.id)),
-        showAvatar = if (item.chatDir is CIDirection.GroupRcv && (prev.chatDir !is CIDirection.GroupRcv || (prev.chatDir as CIDirection.GroupRcv).groupMember != item.chatDir.groupMember)) {
+        showAvatar = if (shouldShowAvatar(item, next)) {
           mutableSetOf(item.id)
         } else {
           mutableSetOf()
@@ -69,9 +72,10 @@ fun List<ChatItem>.putIntoGroups(revealedItems: Set<Long>): List<SectionItems> {
       )
       groups.add(recent)
     }
-    prev = item
     index++
   }
-  println("LALAL RES ${System.currentTimeMillis() - start}, groups: ${groups.size}")
   return groups
 }
+
+private fun shouldShowAvatar(current: ChatItem, older: ChatItem?) =
+  current.chatDir is CIDirection.GroupRcv && (older == null || (older.chatDir !is CIDirection.GroupRcv || older.chatDir.groupMember.memberId != current.chatDir.groupMember.memberId))

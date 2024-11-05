@@ -1081,14 +1081,7 @@ fun BoxScope.ChatItemsList(
             val swipeableOrSelectionModifier = (if (selectionVisible) Modifier else swipeableModifier).graphicsLayer { translationX = selectionOffset.toPx() }
             if (chatInfo is ChatInfo.Group) {
               if (cItem.chatDir is CIDirection.GroupRcv) {
-                val member = cItem.chatDir.groupMember
-                val (prevMember, memCount) =
-                  if (range != null) {
-                    chatModel.getPrevHiddenMember(member, range)
-                  } else {
-                    null to 1
-                  }
-                if (showMemberImage(member, prevItem) || showAvatar) {
+                if (showAvatar) {
                   Column(
                     Modifier
                       .padding(top = 8.dp)
@@ -1101,6 +1094,13 @@ fun BoxScope.ChatItemsList(
                     @Composable
                     fun MemberNameAndRole() {
                       Row(Modifier.padding(bottom = 2.dp).graphicsLayer { translationX = selectionOffset.toPx() }, horizontalArrangement = Arrangement.SpaceBetween) {
+                        val member = cItem.chatDir.groupMember
+                        val (prevMember, memCount) =
+                          if (range != null) {
+                            chatModel.getPrevHiddenMember(member, range)
+                          } else {
+                            null to 1
+                          }
                         Text(
                           memberNames(member, prevMember, memCount),
                           Modifier
@@ -1135,6 +1135,7 @@ fun BoxScope.ChatItemsList(
                           SelectedChatItem(Modifier, cItem.id, selectedChatItems)
                         }
                         Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
+                          val member = cItem.chatDir.groupMember
                           Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
                             MemberImage(member)
                           }
@@ -1284,14 +1285,19 @@ fun BoxScope.ChatItemsList(
           } else {
             prevItem = if (i == group.items.lastIndex) null else group.items[i + 1]
           }
-          val range = if (ciCategory != null) group.startIndexInParentItems .. (group.startIndexInParentItems + group.items.lastIndex) else null
+          val range = if (ciCategory != null && item.chatDir !is CIDirection.GroupRcv) {
+            group.startIndexInParentItems .. (group.startIndexInParentItems + group.items.lastIndex)
+          } else {
+            null
+          }
 //          println("LALAL RANGE $range")
           ChatViewListItem(group.startIndexInParentItems + i, range, showAvatar = group.showAvatar.contains(item.id), item, prevItem, nextItem, remember { derivedStateOf { revealedItems.value.contains(item.id) } }) { group.reveal(it, revealedItems) }
         }
       } else {
         val item = group.items.first()
         item(key = (item.id to item.meta.createdAt.toEpochMilliseconds()).toString()) {
-          ChatViewListItem(group.startIndexInParentItems, group.startIndexInParentItems .. (group.startIndexInParentItems + group.items.size), showAvatar = group.showAvatar.contains(item.id), item, null, null, remember { derivedStateOf { revealedItems.value.contains(item.id) } }) { group.reveal(it, revealedItems) }
+          val range = if (item.mergeCategory != null) group.startIndexInParentItems .. (group.startIndexInParentItems + group.items.lastIndex) else null
+          ChatViewListItem(group.startIndexInParentItems, range, showAvatar = group.showAvatar.contains(item.id) || item.mergeCategory != null, item, null, null, remember { derivedStateOf { revealedItems.value.contains(item.id) } }) { group.reveal(it, revealedItems) }
         }
       }
     }
