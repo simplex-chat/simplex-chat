@@ -89,7 +89,7 @@ data ServerOperator = ServerOperator
     tradeName :: Text,
     legalName :: Maybe Text,
     serverDomains :: [Text],
-    acceptedConditions :: ConditionsAcceptance,
+    conditionsAcceptance :: ConditionsAcceptance,
     enabled :: Bool,
     roles :: ServerRoles
   }

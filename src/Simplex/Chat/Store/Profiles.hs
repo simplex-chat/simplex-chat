@@ -567,9 +567,11 @@ overwriteProtocolServers db User {userId} servers =
 
 getServerOperators :: DB.Connection -> ExceptT StoreError IO [ServerOperator]
 getServerOperators db = do
-  conditions <- getCurrentUsageConditions db
+  currentTs <- liftIO getCurrentTime
+  currentConditions <- getCurrentUsageConditions db
+  acceptedConditions <- getLatestAcceptedConditions db
   liftIO $
-    map (toOperator conditions)
+    map (toOperator currentTs currentConditions acceptedConditions)
       <$> DB.query_
         db
         [sql|
@@ -586,25 +588,49 @@ getServerOperators db = do
       |]
   where
     toOperator ::
+      UTCTime ->
       UsageConditions ->
+      Maybe UsageConditions ->
       ( (OperatorId, Maybe OperatorTag, Text, Maybe Text, Text, Bool, Bool, Bool)
           :. (Maybe Text, Maybe UTCTime)
       ) ->
       ServerOperator
     toOperator
-      UsageConditions {conditionsCommit, createdAt}
+      currentTs
+      UsageConditions {conditionsCommit = currentCommit, createdAt, notifiedAt}
+      acceptedConditions_
       ( (operatorId, operatorTag, tradeName, legalName, domains, enabled, storage, proxy)
-          :. (operatorConditionsCommit_, acceptedAt_)
+          :. (operatorCommit_, acceptedAt_)
         ) =
         let roles = ServerRoles {storage, proxy}
-            acceptedConditions = case operatorConditionsCommit_ of
-              Nothing -> CARequired Nothing
-              Just operatorConditionsCommit
-                | conditionsCommit == operatorConditionsCommit -> CAAccepted acceptedAt_
-              _ -> CARequired (Just $ conditionsDeadline createdAt)
-         in ServerOperator {operatorId, operatorTag, tradeName, legalName, serverDomains = [domains], acceptedConditions, enabled, roles}
-    conditionsDeadline :: UTCTime -> UTCTime
-    conditionsDeadline = addUTCTime (31 * nominalDay)
+            conditionsAcceptance = case (acceptedConditions_, operatorCommit_) of
+              -- no conditions were ever accepted for any operator
+              -- (shouldn't happen as there should always be record for SimpleX Chat)
+              (Nothing, _) -> CARequired Nothing
+              -- conditions were never accepted for operator
+              (_, Nothing) -> CARequired Nothing
+              (Just UsageConditions {conditionsCommit = acceptedCommit}, Just operatorCommit)
+                | acceptedCommit == currentCommit ->
+                    if operatorCommit == acceptedCommit
+                      then -- current conditions were accepted for operator
+                        CAAccepted acceptedAt_
+                      else -- current conditions were not accepted for operator, but were accepted for other operator(s)
+                        CARequired Nothing
+                | otherwise ->
+                    if operatorCommit == acceptedCommit
+                      then -- new conditions available, last accepted conditions were accepted for operator
+                        conditionsRequiredOrDeadline createdAt (fromMaybe currentTs notifiedAt)
+                      else -- new conditions available, last accepted [for some other operator(s)] conditions were not accepted for operator
+                        CARequired Nothing
+         in ServerOperator {operatorId, operatorTag, tradeName, legalName, serverDomains = [domains], conditionsAcceptance, enabled, roles}
+    conditionsRequiredOrDeadline :: UTCTime -> UTCTime -> ConditionsAcceptance
+    conditionsRequiredOrDeadline currentCreatedAt currentNotifiedAt =
+      if currentNotifiedAt < addUTCTime (14 * nominalDay) currentCreatedAt
+        then CARequired (Just $ conditionsDeadline currentNotifiedAt)
+        else CARequired Nothing
+      where
+        conditionsDeadline :: UTCTime -> UTCTime
+        conditionsDeadline = addUTCTime (31 * nominalDay)
 
 setServerOperators :: DB.Connection -> NonEmpty OperatorEnabled -> ExceptT StoreError IO [ServerOperator]
 setServerOperators db operatorsEnabled = do
