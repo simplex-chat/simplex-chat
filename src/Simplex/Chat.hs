@@ -1528,6 +1528,7 @@ processChatCommand' vr = \case
     let errors = validateUserServers userServers
     unless (null errors) $ throwChatError (CECommandError $ "user servers validation error(s): " <> show errors)
     withFastStore $ \db -> setUserServers db user userServers
+    -- TODO set protocol servers for agent
     ok_
   APIValidateServers userServers -> do
     let errors = validateUserServers userServers
