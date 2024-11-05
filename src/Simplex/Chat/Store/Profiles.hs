@@ -576,30 +576,30 @@ getServerOperators db = do
         SELECT
           so.server_operator_id, so.server_operator_tag, so.trade_name, so.legal_name,
           so.server_domains, so.enabled, so.role_storage, so.role_proxy,
-          OperatorConditions.conditions_commit, OperatorConditions.conditions_accepted, OperatorConditions.accepted_at
+          AcceptedConditions.conditions_commit, AcceptedConditions.accepted_at
         FROM server_operators so
         LEFT JOIN (
           SELECT server_operator_id, conditions_commit, accepted_at, MAX(operator_usage_conditions_id)
           FROM operator_usage_conditions
           GROUP BY server_operator_id
-        ) OperatorConditions ON OperatorConditions.server_operator_id = so.server_operator_id
+        ) AcceptedConditions ON AcceptedConditions.server_operator_id = so.server_operator_id
       |]
   where
     toOperator ::
       UsageConditions ->
       ( (OperatorId, Maybe OperatorTag, Text, Maybe Text, Text, Bool, Bool, Bool)
-          :. (Maybe Text, Maybe Bool, Maybe UTCTime)
+          :. (Maybe Text, Maybe UTCTime)
       ) ->
       ServerOperator
     toOperator
       UsageConditions {conditionsCommit, createdAt}
       ( (operatorId, operatorTag, tradeName, legalName, domains, enabled, storage, proxy)
-          :. (operatorConditionsCommit_, accepted_, acceptedAt_)
+          :. (operatorConditionsCommit_, acceptedAt_)
         ) =
         let roles = ServerRoles {storage, proxy}
-            acceptedConditions = case (operatorConditionsCommit_, accepted_) of
-              (Nothing, _) -> CARequired Nothing
-              (Just operatorConditionsCommit, Just True)
+            acceptedConditions = case operatorConditionsCommit_ of
+              Nothing -> CARequired Nothing
+              Just operatorConditionsCommit
                 | conditionsCommit == operatorConditionsCommit -> CAAccepted acceptedAt_
               _ -> CARequired (Just $ conditionsDeadline createdAt)
          in ServerOperator {operatorId, operatorTag, tradeName, legalName, serverDomains = [domains], acceptedConditions, enabled, roles}
