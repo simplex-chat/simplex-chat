@@ -71,7 +71,7 @@ import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo)
 import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, SMPServerSubs, ServerQueueInfo, UserNetworkInfo)
-import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig, OperatorId, ServerCfg)
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig, ServerCfg)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration, withTransaction, withTransactionPriority)
@@ -357,7 +357,7 @@ data ChatCommand
   | APIValidateServers (NonEmpty UserServers) -- response is CRUserServersValidation
   | APIGetUsageConditions
   | APISetConditionsNotified Int64
-  | APIAcceptConditions Int64 (NonEmpty OperatorId)
+  | APIAcceptConditions Int64 (NonEmpty ServerOperator)
   | APISetChatItemTTL UserId (Maybe Int64)
   | SetChatItemTTL (Maybe Int64)
   | APIGetChatItemTTL UserId
@@ -585,7 +585,7 @@ data ChatResponse
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
   | CRUserProtoServers {user :: User, servers :: AUserProtoServers, operators :: [ServerOperator]}
   | CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure}
-  | CRServerOperators {operators :: [ServerOperator], conditionsAction :: UsageConditionsAction}
+  | CRServerOperators {operators :: [ServerOperator], conditionsAction :: Maybe UsageConditionsAction}
   | CRUserServers {user :: User, userServers :: [UserServers]}
   | CRUserServersValidation {serverErrors :: [UserServersError]}
   | CRUsageConditions {usageConditions :: UsageConditions, conditionsText :: Text, acceptedConditions :: Maybe UsageConditions}
@@ -957,12 +957,6 @@ data ProtoServersConfig p = ProtoServersConfig {servers :: [ServerCfg p]}
 data AProtoServersConfig = forall p. ProtocolTypeI p => APSC (SProtocolType p) (ProtoServersConfig p)
 
 deriving instance Show AProtoServersConfig
-
-data UserServersError
-  = USEStorageMissing
-  | USEProxyMissing
-  | USEDuplicate {server :: AProtoServerWithAuth}
-  deriving (Show)
 
 data UserProtoServers p = UserProtoServers
   { serverProtocol :: SProtocolType p,
@@ -1541,8 +1535,6 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SQLite") ''SQLiteError)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "DB") ''DatabaseError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "Chat") ''ChatError)
-
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "USE") ''UserServersError)
 
 $(JQ.deriveJSON defaultJSON ''AppFilePathsConfig)
 

@@ -1549,7 +1549,7 @@ processChatCommand' vr = \case
   APIGetUserProtoServers userId (AProtocolType p) -> withUserId userId $ \user -> withServerProtocol p $ do
     cfg@ChatConfig {defaultServers} <- asks config
     srvs <- withFastStore' (`getProtocolServers` user)
-    operators <- withFastStore $ \db -> getServerOperators db
+    (operators, _) <- withFastStore $ \db -> getServerOperators db
     let servers = AUPS $ UserProtoServers p (useServers cfg p srvs) (cfgServers p defaultServers)
     pure $ CRUserProtoServers {user, servers, operators}
   GetUserProtoServers aProtocol -> withUser $ \User {userId} ->
@@ -1568,44 +1568,51 @@ processChatCommand' vr = \case
   TestProtoServer srv -> withUser $ \User {userId} ->
     processChatCommand $ APITestProtoServer userId srv
   APIGetServerOperators -> do
-    operators <- withFastStore $ \db -> getServerOperators db
-    let conditionsAction = usageConditionsAction operators
+    (operators, conditionsAction) <- withFastStore $ \db -> getServerOperators db
     pure $ CRServerOperators operators conditionsAction
   APISetServerOperators operatorsEnabled -> do
-    operators <- withFastStore $ \db -> setServerOperators db operatorsEnabled
-    let conditionsAction = usageConditionsAction operators
+    (operators, conditionsAction) <- withFastStore $ \db -> setServerOperators db operatorsEnabled
     pure $ CRServerOperators operators conditionsAction
   APIGetUserServers userId -> withUserId userId $ \user -> do
     (operators, smpServers, xftpServers) <- withFastStore $ \db -> do
-      operators <- getServerOperators db
+      (operators, _) <- getServerOperators db
       smpServers <- liftIO $ getServers db user SPSMP
       xftpServers <- liftIO $ getServers db user SPXFTP
       pure (operators, smpServers, xftpServers)
     let userServers = groupByOperator operators smpServers xftpServers
     pure $ CRUserServers user userServers
     where
-      getServers :: (ProtocolTypeI p) => DB.Connection -> User -> SProtocolType p -> IO [ServerCfg p]
+      getServers :: ProtocolTypeI p => DB.Connection -> User -> SProtocolType p -> IO [ServerCfg p]
       getServers db user _p = getProtocolServers db user
-  APISetUserServers userId _userServers -> withUserId userId $ \user ->
-    pure $ chatCmdError (Just user) "not supported"
-  APIValidateServers _userServers ->
-    -- response is CRUserServersValidation
-    pure $ chatCmdError Nothing "not supported"
+  APISetUserServers userId userServers -> withUserId userId $ \user -> do
+    let errors = validateUserServers userServers
+    unless (null errors) $ throwChatError (CECommandError $ "user servers validation error(s): " <> show errors)
+    withFastStore $ \db -> setUserServers db user userServers
+    -- TODO set protocol servers for agent
+    ok_
+  APIValidateServers userServers -> do
+    let errors = validateUserServers userServers
+    pure $ CRUserServersValidation errors
   APIGetUsageConditions -> do
     (usageConditions, acceptedConditions) <- withFastStore $ \db -> do
       usageConditions <- getCurrentUsageConditions db
       acceptedConditions <- getLatestAcceptedConditions db
       pure (usageConditions, acceptedConditions)
+    -- TODO if db commit is different from source commit, conditionsText should be nothing in response
     pure
       CRUsageConditions
         { usageConditions,
           conditionsText = usageConditionsText,
           acceptedConditions
         }
-  APISetConditionsNotified _conditionsId -> do
-    pure $ chatCmdError Nothing "not supported"
-  APIAcceptConditions _conditionsId _opIds ->
-    pure $ chatCmdError Nothing "not supported"
+  APISetConditionsNotified conditionsId -> do
+    currentTs <- liftIO getCurrentTime
+    withFastStore' $ \db -> setConditionsNotified db conditionsId currentTs
+    ok_
+  APIAcceptConditions conditionsId operators -> do
+    currentTs <- liftIO getCurrentTime
+    (operators', conditionsAction) <- withFastStore $ \db -> acceptConditions db conditionsId operators currentTs
+    pure $ CRServerOperators operators' conditionsAction
   APISetChatItemTTL userId newTTL_ -> withUserId userId $ \user ->
     checkStoreNotChanged $
       withChatLock "setChatItemTTL" $ do

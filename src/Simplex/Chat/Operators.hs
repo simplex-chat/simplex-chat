@@ -24,16 +24,17 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isNothing)
 import Data.Text (Text)
-import Data.Time.Clock (UTCTime)
+import Data.Time (addUTCTime)
+import Data.Time.Clock (UTCTime, nominalDay)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import Language.Haskell.TH.Syntax (lift)
 import Simplex.Chat.Operators.Conditions
 import Simplex.Chat.Types.Util (textParseJSON)
-import Simplex.Messaging.Agent.Env.SQLite (OperatorId, ServerRoles)
+import Simplex.Messaging.Agent.Env.SQLite (OperatorId, ServerCfg (..), ServerRoles (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, sumTypeJSON)
-import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolType (..), ProtocolTypeI)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, ProtoServerWithAuth, ProtocolType (..), ProtocolTypeI)
 import Simplex.Messaging.Util (safeDecodeUtf8)
 
 usageConditionsCommit :: Text
@@ -84,9 +85,30 @@ data UsageConditionsAction
   | UCAAccepted {operators :: [ServerOperator]}
   deriving (Show)
 
--- TODO UI logic
-usageConditionsAction :: [ServerOperator] -> UsageConditionsAction
-usageConditionsAction _operators = UCAAccepted []
+usageConditionsAction :: [ServerOperator] -> UsageConditions -> UTCTime -> Maybe UsageConditionsAction
+usageConditionsAction operators UsageConditions {createdAt, notifiedAt} now = do
+  let enabledOperators = filter (\ServerOperator {enabled} -> enabled) operators
+  if null enabledOperators
+    then Nothing
+    else
+      if all conditionsAccepted enabledOperators
+        then
+          let acceptedForOperators = filter conditionsAccepted operators
+           in Just $ UCAAccepted acceptedForOperators
+        else
+          let acceptForOperators = filter (not . conditionsAccepted) enabledOperators
+              deadline = conditionsRequiredOrDeadline createdAt (fromMaybe now notifiedAt)
+              showNotice = isNothing notifiedAt
+           in Just $ UCAReview acceptForOperators deadline showNotice
+
+conditionsRequiredOrDeadline :: UTCTime -> UTCTime -> Maybe UTCTime
+conditionsRequiredOrDeadline createdAt notifiedAtOrNow =
+  if notifiedAtOrNow < addUTCTime (14 * nominalDay) createdAt
+    then Just $ conditionsDeadline notifiedAtOrNow
+    else Nothing -- required
+  where
+    conditionsDeadline :: UTCTime -> UTCTime
+    conditionsDeadline = addUTCTime (31 * nominalDay)
 
 data ConditionsAcceptance
   = CAAccepted {acceptedAt :: Maybe UTCTime}
@@ -105,6 +127,11 @@ data ServerOperator = ServerOperator
     roles :: ServerRoles
   }
   deriving (Show)
+
+conditionsAccepted :: ServerOperator -> Bool
+conditionsAccepted ServerOperator {conditionsAcceptance} = case conditionsAcceptance of
+  CAAccepted {} -> True
+  _ -> False
 
 data OperatorEnabled = OperatorEnabled
   { operatorId' :: OperatorId,
@@ -242,6 +269,27 @@ updatedUserServers presetSrvs storedOps smpSrvs xftpSrvs = do
 --           xftpServers = groupedXftps
 --         }
 
+data UserServersError
+  = USEStorageMissing
+  | USEProxyMissing
+  | USEDuplicate {server :: AProtoServerWithAuth}
+  deriving (Show)
+
+validateUserServers :: NonEmpty UserServers -> [UserServersError]
+validateUserServers userServers =
+  let storageMissing_ = if any (canUseForRole storage) userServers then [] else [USEStorageMissing]
+      proxyMissing_ = if any (canUseForRole proxy) userServers then [] else [USEProxyMissing]
+      -- TODO duplicate errors
+      -- allSMPServers =
+      --   map (\ServerCfg {server} -> server) $
+      --     concatMap (\UserServers {smpServers} -> smpServers) userServers
+   in storageMissing_ <> proxyMissing_ -- <> duplicateErrors
+  where
+    canUseForRole :: (ServerRoles -> Bool) -> UserServers -> Bool
+    canUseForRole roleSel UserServers {operator, smpServers, xftpServers} = case operator of
+      Just ServerOperator {roles} -> roleSel roles
+      Nothing -> not (null smpServers) && not (null xftpServers)
+
 $(JQ.deriveJSON defaultJSON ''UsageConditions)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CA") ''ConditionsAcceptance)
@@ -258,3 +306,5 @@ instance ProtocolTypeI p => FromJSON (UserServer p) where
   parseJSON = $(JQ.mkParseJSON defaultJSON ''UserServer)
 
 $(JQ.deriveJSON defaultJSON ''UserServers)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "USE") ''UserServersError)
