@@ -354,7 +354,7 @@ data ChatCommand
   | APITestProtoServer UserId AProtoServerWithAuth
   | TestProtoServer AProtoServerWithAuth
   | APIGetServerOperators
-  | APISetServerOperators (NonEmpty (OperatorId, Bool))
+  | APISetServerOperators (NonEmpty OperatorEnabled)
   | APIGetUserServers UserId
   | APISetUserServers UserId (NonEmpty UserServers)
   | APIValidateServers (NonEmpty UserServers) -- response is CRUserServersValidation

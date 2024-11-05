@@ -50,7 +50,9 @@ module Simplex.Chat.Store.Profiles
     -- overwriteOperatorsAndServers,
     overwriteProtocolServers,
     getServerOperators,
+    setServerOperators,
     getCurrentUsageConditions,
+    getLatestAcceptedConditions,
     createCall,
     deleteCalls,
     getCalls,
@@ -574,35 +576,44 @@ getServerOperators db = do
         SELECT
           so.server_operator_id, so.server_operator_tag, so.trade_name, so.legal_name,
           so.server_domains, so.enabled, so.role_storage, so.role_proxy,
-          LastOperatorConditions.conditions_commit, LastOperatorConditions.accepted_at
+          OperatorConditions.conditions_commit, OperatorConditions.conditions_accepted, OperatorConditions.accepted_at
         FROM server_operators so
         LEFT JOIN (
           SELECT server_operator_id, conditions_commit, accepted_at, MAX(operator_usage_conditions_id)
           FROM operator_usage_conditions
           GROUP BY server_operator_id
-        ) LastOperatorConditions ON LastOperatorConditions.server_operator_id = so.server_operator_id
+        ) OperatorConditions ON OperatorConditions.server_operator_id = so.server_operator_id
       |]
   where
     toOperator ::
       UsageConditions ->
       ( (OperatorId, Maybe OperatorTag, Text, Maybe Text, Text, Bool, Bool, Bool)
-          :. (Maybe Text, Maybe UTCTime)
+          :. (Maybe Text, Maybe Bool, Maybe UTCTime)
       ) ->
       ServerOperator
     toOperator
       UsageConditions {conditionsCommit, createdAt}
       ( (operatorId, operatorTag, tradeName, legalName, domains, enabled, storage, proxy)
-          :. (operatorConditionsCommit_, acceptedAt_)
+          :. (operatorConditionsCommit_, accepted_, acceptedAt_)
         ) =
         let roles = ServerRoles {storage, proxy}
-            acceptedConditions = case (operatorConditionsCommit_, acceptedAt_) of
+            acceptedConditions = case (operatorConditionsCommit_, accepted_) of
               (Nothing, _) -> CARequired Nothing
-              (Just operatorConditionsCommit, Just acceptedAt)
-                | conditionsCommit == operatorConditionsCommit -> CAAccepted acceptedAt
+              (Just operatorConditionsCommit, Just True)
+                | conditionsCommit == operatorConditionsCommit -> CAAccepted acceptedAt_
               _ -> CARequired (Just $ conditionsDeadline createdAt)
          in ServerOperator {operatorId, operatorTag, tradeName, legalName, serverDomains = [domains], acceptedConditions, enabled, roles}
     conditionsDeadline :: UTCTime -> UTCTime
     conditionsDeadline = addUTCTime (31 * nominalDay)
+
+setServerOperators :: DB.Connection -> NonEmpty OperatorEnabled -> ExceptT StoreError IO [ServerOperator]
+setServerOperators db operatorsEnabled = do
+  liftIO $ forM_ operatorsEnabled $ \OperatorEnabled {operatorId, enabled, roles = ServerRoles {storage, proxy}} ->
+    DB.execute
+      db
+      "UPDATE server_operators SET enabled = ?, role_storage = ?, role_proxy = ? WHERE server_operator_id = ?"
+      (enabled, storage, proxy, operatorId)
+  getServerOperators db
 
 getCurrentUsageConditions :: DB.Connection -> ExceptT StoreError IO UsageConditions
 getCurrentUsageConditions db =
@@ -618,6 +629,31 @@ getCurrentUsageConditions db =
 toUsageConditions :: (Int64, Text, Maybe UTCTime, UTCTime) -> UsageConditions
 toUsageConditions (conditionsId, conditionsCommit, notifiedAt, createdAt) =
   UsageConditions {conditionsId, conditionsCommit, notifiedAt, createdAt}
+
+getLatestAcceptedConditions :: DB.Connection -> ExceptT StoreError IO (Maybe UsageConditions)
+getLatestAcceptedConditions db = do
+  (latestAcceptedCommit_ :: Maybe Text) <-
+    liftIO $
+      maybeFirstRow fromOnly $
+        DB.query_
+          db
+          [sql|
+          SELECT conditions_commit
+          FROM operator_usage_conditions
+          WHERE conditions_accepted = 1
+          ORDER BY accepted_at DESC
+          LIMIT 1
+        |]
+  forM latestAcceptedCommit_ $ \latestAcceptedCommit ->
+    ExceptT . firstRow toUsageConditions SEUsageConditionsNotFound $
+      DB.query
+        db
+        [sql|
+          SELECT usage_conditions_id, conditions_commit, notified_at, created_at
+          FROM usage_conditions
+          WHERE conditions_commit = ?
+        |]
+        (Only latestAcceptedCommit)
 
 -- updateServerOperators_ :: DB.Connection -> [ServerOperator] -> IO [ServerOperator]
 -- updateServerOperators_ db operators = do

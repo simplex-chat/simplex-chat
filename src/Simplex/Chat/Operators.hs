@@ -79,7 +79,7 @@ usageConditionsAction :: [ServerOperator] -> UsageConditionsAction
 usageConditionsAction _operators = UCAAccepted []
 
 data ConditionsAcceptance
-  = CAAccepted {acceptedAt :: UTCTime}
+  = CAAccepted {acceptedAt :: Maybe UTCTime}
   | CARequired {deadline :: Maybe UTCTime}
   deriving (Show)
 
@@ -90,6 +90,13 @@ data ServerOperator = ServerOperator
     legalName :: Maybe Text,
     serverDomains :: [Text],
     acceptedConditions :: ConditionsAcceptance,
+    enabled :: Bool,
+    roles :: ServerRoles
+  }
+  deriving (Show)
+
+data OperatorEnabled = OperatorEnabled
+  { operatorId :: OperatorId,
     enabled :: Bool,
     roles :: ServerRoles
   }
@@ -106,10 +113,10 @@ groupByOperator :: [ServerOperator] -> [ServerCfg 'PSMP] -> [ServerCfg 'PXFTP] -
 groupByOperator srvOperators smpSrvs xftpSrvs =
   map createOperatorServers (M.toList combinedMap)
   where
-    srvOperatorId :: ServerCfg p -> Maybe Int64
     srvOperatorId ServerCfg {operator} = operator
+    opId ServerOperator {operatorId} = operatorId
     operatorMap :: Map (Maybe Int64) (Maybe ServerOperator)
-    operatorMap = M.fromList [(Just (operatorId op), Just op) | op <- srvOperators] `M.union` M.singleton Nothing Nothing
+    operatorMap = M.fromList [(Just (opId op), Just op) | op <- srvOperators] `M.union` M.singleton Nothing Nothing
     initialMap :: Map (Maybe Int64) ([ServerCfg 'PSMP], [ServerCfg 'PXFTP])
     initialMap = M.fromList [(key, ([], [])) | key <- M.keys operatorMap]
     smpsMap = foldr (\server acc -> M.adjust (\(smps, xftps) -> (server : smps, xftps)) (srvOperatorId server) acc) initialMap smpSrvs

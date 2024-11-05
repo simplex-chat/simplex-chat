@@ -11,13 +11,13 @@ m20241027_server_operators =
 CREATE TABLE server_operators (
   server_operator_id INTEGER PRIMARY KEY AUTOINCREMENT,
   server_operator_tag TEXT,
+  app_vendor INTEGER NOT NULL,
   trade_name TEXT NOT NULL,
   legal_name TEXT,
   server_domains TEXT,
   enabled INTEGER NOT NULL DEFAULT 1,
   role_storage INTEGER NOT NULL DEFAULT 1,
   role_proxy INTEGER NOT NULL DEFAULT 1,
-  accepted_conditions_commit TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -37,6 +37,7 @@ CREATE TABLE operator_usage_conditions (
   server_operator_id INTEGER REFERENCES server_operators (server_operator_id) ON DELETE SET NULL ON UPDATE CASCADE,
   server_operator_tag TEXT,
   conditions_commit TEXT NOT NULL,
+  conditions_accepted INTEGER NOT NULL,
   accepted_at TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -46,11 +47,11 @@ CREATE INDEX idx_operator_usage_conditions_server_operator_id ON operator_usage_
 CREATE UNIQUE INDEX idx_operator_usage_conditions_conditions_commit ON operator_usage_conditions(server_operator_id, conditions_commit);
 
 INSERT INTO server_operators
-  (server_operator_id, server_operator_tag, trade_name, legal_name, server_domains, enabled)
-  VALUES (1, 'simplex', 'SimpleX Chat', 'SimpleX Chat Ltd', 'simplex.im', 1);
+  (server_operator_id, server_operator_tag, app_vendor, trade_name, legal_name, server_domains, enabled)
+  VALUES (1, 'simplex', 1, 'SimpleX Chat', 'SimpleX Chat Ltd', 'simplex.im', 1);
 INSERT INTO server_operators
-  (server_operator_id, server_operator_tag, trade_name, legal_name, server_domains, enabled)
-  VALUES (2, 'xyz', 'XYZ', 'XYZ Ltd', 'xyz.com', 0);
+  (server_operator_id, server_operator_tag, app_vendor, trade_name, legal_name, server_domains, enabled)
+  VALUES (2, 'xyz', 0, 'XYZ', 'XYZ Ltd', 'xyz.com', 0);
 
 -- UPDATE protocol_servers SET server_operator_id = 1 WHERE host LIKE "%.simplex.im" OR host LIKE "%.simplex.im,%";
 |]
