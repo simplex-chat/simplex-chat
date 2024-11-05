@@ -74,7 +74,7 @@ import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
-import Data.Text (Text)
+import Data.Text (Text, splitOn)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime (..), getCurrentTime, nominalDay)
@@ -567,11 +567,11 @@ overwriteProtocolServers db User {userId} servers =
 
 getServerOperators :: DB.Connection -> ExceptT StoreError IO [ServerOperator]
 getServerOperators db = do
-  currentTs <- liftIO getCurrentTime
+  now <- liftIO getCurrentTime
   currentConditions <- getCurrentUsageConditions db
   latestAcceptedConditions <- getLatestAcceptedConditions db
   liftIO $
-    map (toOperator currentTs currentConditions latestAcceptedConditions)
+    map (toOperator now currentConditions latestAcceptedConditions)
       <$> DB.query_
         db
         [sql|
@@ -596,37 +596,38 @@ getServerOperators db = do
       ) ->
       ServerOperator
     toOperator
-      currentTs
+      now
       UsageConditions {conditionsCommit = currentCommit, createdAt, notifiedAt}
       latestAcceptedConditions_
       ( (operatorId, operatorTag, tradeName, legalName, domains, enabled, storage, proxy)
           :. (operatorCommit_, acceptedAt_)
         ) =
         let roles = ServerRoles {storage, proxy}
+            serverDomains = splitOn "," domains
             conditionsAcceptance = case (latestAcceptedConditions_, operatorCommit_) of
-              -- no conditions were ever accepted for any operator
+              -- no conditions were ever accepted for any operator(s)
               -- (shouldn't happen as there should always be record for SimpleX Chat)
               (Nothing, _) -> CARequired Nothing
-              -- conditions were never accepted for operator
+              -- no conditions were ever accepted for this operator
               (_, Nothing) -> CARequired Nothing
               (Just UsageConditions {conditionsCommit = latestAcceptedCommit}, Just operatorCommit)
                 | latestAcceptedCommit == currentCommit ->
                     if operatorCommit == latestAcceptedCommit
                       then -- current conditions were accepted for operator
                         CAAccepted acceptedAt_
-                      else -- current conditions were not accepted for operator, but were accepted for other operator(s)
+                      else -- current conditions were NOT accepted for operator, but were accepted for other operator(s)
                         CARequired Nothing
                 | otherwise ->
                     if operatorCommit == latestAcceptedCommit
-                      then -- new conditions available, last accepted conditions were accepted for operator
-                        conditionsRequiredOrDeadline createdAt (fromMaybe currentTs notifiedAt)
-                      else -- new conditions available, last accepted [for some other operator(s)] conditions were not accepted for operator
+                      then -- new conditions available, latest accepted conditions were accepted for operator
+                        conditionsRequiredOrDeadline createdAt (fromMaybe now notifiedAt)
+                      else -- new conditions available, latest accepted conditions were NOT accepted for operator (were accepted for other operator(s))
                         CARequired Nothing
-         in ServerOperator {operatorId, operatorTag, tradeName, legalName, serverDomains = [domains], conditionsAcceptance, enabled, roles}
+         in ServerOperator {operatorId, operatorTag, tradeName, legalName, serverDomains, conditionsAcceptance, enabled, roles}
     conditionsRequiredOrDeadline :: UTCTime -> UTCTime -> ConditionsAcceptance
-    conditionsRequiredOrDeadline currentCreatedAt currentNotifiedAt =
-      if currentNotifiedAt < addUTCTime (14 * nominalDay) currentCreatedAt
-        then CARequired (Just $ conditionsDeadline currentNotifiedAt)
+    conditionsRequiredOrDeadline createdAt notifiedAtOrNow =
+      if notifiedAtOrNow < addUTCTime (14 * nominalDay) createdAt
+        then CARequired (Just $ conditionsDeadline notifiedAtOrNow)
         else CARequired Nothing
       where
         conditionsDeadline :: UTCTime -> UTCTime
