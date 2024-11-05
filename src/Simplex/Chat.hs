@@ -1489,7 +1489,7 @@ processChatCommand' vr = \case
   APIGetUserProtoServers userId (AProtocolType p) -> withUserId userId $ \user -> withServerProtocol p $ do
     cfg@ChatConfig {defaultServers} <- asks config
     srvs <- withFastStore' (`getProtocolServers` user)
-    operators <- withFastStore $ \db -> getServerOperators db
+    (operators, _) <- withFastStore $ \db -> getServerOperators db
     let servers = AUPS $ UserProtoServers p (useServers cfg p srvs) (cfgServers p defaultServers)
     pure $ CRUserProtoServers {user, servers, operators}
   GetUserProtoServers aProtocol -> withUser $ \User {userId} ->
@@ -1508,16 +1508,14 @@ processChatCommand' vr = \case
   TestProtoServer srv -> withUser $ \User {userId} ->
     processChatCommand $ APITestProtoServer userId srv
   APIGetServerOperators -> do
-    operators <- withFastStore $ \db -> getServerOperators db
-    let conditionsAction = usageConditionsAction operators
+    (operators, conditionsAction) <- withFastStore $ \db -> getServerOperators db
     pure $ CRServerOperators operators conditionsAction
   APISetServerOperators operatorsEnabled -> do
-    operators <- withFastStore $ \db -> setServerOperators db operatorsEnabled
-    let conditionsAction = usageConditionsAction operators
+    (operators, conditionsAction) <- withFastStore $ \db -> setServerOperators db operatorsEnabled
     pure $ CRServerOperators operators conditionsAction
   APIGetUserServers userId -> withUserId userId $ \user -> do
     (operators, smpServers, xftpServers) <- withFastStore $ \db -> do
-      operators <- getServerOperators db
+      (operators, _) <- getServerOperators db
       smpServers <- liftIO $ getServers db user SPSMP
       xftpServers <- liftIO $ getServers db user SPXFTP
       pure (operators, smpServers, xftpServers)
@@ -1550,8 +1548,7 @@ processChatCommand' vr = \case
     ok_
   APIAcceptConditions conditionsId operators -> do
     currentTs <- liftIO getCurrentTime
-    operators' <- withFastStore $ \db -> acceptConditions db conditionsId operators currentTs
-    let conditionsAction = usageConditionsAction operators'
+    (operators', conditionsAction) <- withFastStore $ \db -> acceptConditions db conditionsId operators currentTs
     pure $ CRServerOperators operators' conditionsAction
   APISetChatItemTTL userId newTTL_ -> withUserId userId $ \user ->
     checkStoreNotChanged $

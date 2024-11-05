@@ -79,8 +79,7 @@ import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
 import Data.Text (Text, splitOn)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
-import Data.Time (addUTCTime)
-import Data.Time.Clock (UTCTime (..), getCurrentTime, nominalDay)
+import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Database.SQLite.Simple (NamedParam (..), Only (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Call
@@ -569,27 +568,29 @@ overwriteProtocolServers db User {userId} servers =
   where
     protocol = decodeLatin1 $ strEncode $ protocolTypeI @p
 
-getServerOperators :: DB.Connection -> ExceptT StoreError IO [ServerOperator]
+getServerOperators :: DB.Connection -> ExceptT StoreError IO ([ServerOperator], Maybe UsageConditionsAction)
 getServerOperators db = do
   now <- liftIO getCurrentTime
   currentConditions <- getCurrentUsageConditions db
   latestAcceptedConditions <- getLatestAcceptedConditions db
-  liftIO $
-    map (toOperator now currentConditions latestAcceptedConditions)
-      <$> DB.query_
-        db
-        [sql|
-        SELECT
-          so.server_operator_id, so.server_operator_tag, so.trade_name, so.legal_name,
-          so.server_domains, so.enabled, so.role_storage, so.role_proxy,
-          AcceptedConditions.conditions_commit, AcceptedConditions.accepted_at
-        FROM server_operators so
-        LEFT JOIN (
-          SELECT server_operator_id, conditions_commit, accepted_at, MAX(operator_usage_conditions_id)
-          FROM operator_usage_conditions
-          GROUP BY server_operator_id
-        ) AcceptedConditions ON AcceptedConditions.server_operator_id = so.server_operator_id
-      |]
+  operators <-
+    liftIO $
+      map (toOperator now currentConditions latestAcceptedConditions)
+        <$> DB.query_
+          db
+          [sql|
+            SELECT
+              so.server_operator_id, so.server_operator_tag, so.trade_name, so.legal_name,
+              so.server_domains, so.enabled, so.role_storage, so.role_proxy,
+              AcceptedConditions.conditions_commit, AcceptedConditions.accepted_at
+            FROM server_operators so
+            LEFT JOIN (
+              SELECT server_operator_id, conditions_commit, accepted_at, MAX(operator_usage_conditions_id)
+              FROM operator_usage_conditions
+              GROUP BY server_operator_id
+            ) AcceptedConditions ON AcceptedConditions.server_operator_id = so.server_operator_id
+          |]
+  pure (operators, usageConditionsAction operators currentConditions now)
   where
     toOperator ::
       UTCTime ->
@@ -624,20 +625,12 @@ getServerOperators db = do
                 | otherwise ->
                     if operatorCommit == latestAcceptedCommit
                       then -- new conditions available, latest accepted conditions were accepted for operator
-                        conditionsRequiredOrDeadline createdAt (fromMaybe now notifiedAt)
+                        CARequired $ conditionsRequiredOrDeadline createdAt (fromMaybe now notifiedAt)
                       else -- new conditions available, latest accepted conditions were NOT accepted for operator (were accepted for other operator(s))
                         CARequired Nothing
          in ServerOperator {operatorId, operatorTag, tradeName, legalName, serverDomains, conditionsAcceptance, enabled, roles}
-    conditionsRequiredOrDeadline :: UTCTime -> UTCTime -> ConditionsAcceptance
-    conditionsRequiredOrDeadline createdAt notifiedAtOrNow =
-      if notifiedAtOrNow < addUTCTime (14 * nominalDay) createdAt
-        then CARequired (Just $ conditionsDeadline notifiedAtOrNow)
-        else CARequired Nothing
-      where
-        conditionsDeadline :: UTCTime -> UTCTime
-        conditionsDeadline = addUTCTime (31 * nominalDay)
 
-setServerOperators :: DB.Connection -> NonEmpty OperatorEnabled -> ExceptT StoreError IO [ServerOperator]
+setServerOperators :: DB.Connection -> NonEmpty OperatorEnabled -> ExceptT StoreError IO ([ServerOperator], Maybe UsageConditionsAction)
 setServerOperators db operatorsEnabled = do
   liftIO $ forM_ operatorsEnabled $ \OperatorEnabled {operatorId, enabled, roles = ServerRoles {storage, proxy}} ->
     DB.execute
@@ -689,7 +682,7 @@ setConditionsNotified :: DB.Connection -> Int64 -> UTCTime -> IO ()
 setConditionsNotified db conditionsId notifiedAt =
   DB.execute db "UPDATE usage_conditions SET notified_at = ? WHERE usage_conditions_id = ?" (notifiedAt, conditionsId)
 
-acceptConditions :: DB.Connection -> Int64 -> NonEmpty ServerOperator -> UTCTime -> ExceptT StoreError IO [ServerOperator]
+acceptConditions :: DB.Connection -> Int64 -> NonEmpty ServerOperator -> UTCTime -> ExceptT StoreError IO ([ServerOperator], Maybe UsageConditionsAction)
 acceptConditions db conditionsId operators acceptedAt = do
   UsageConditions {conditionsCommit} <- getUsageConditionsById_ db conditionsId
   liftIO $ forM_ operators $ \ServerOperator {operatorId, operatorTag} ->

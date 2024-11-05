@@ -588,7 +588,7 @@ data ChatResponse
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
   | CRUserProtoServers {user :: User, servers :: AUserProtoServers, operators :: [ServerOperator]}
   | CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure}
-  | CRServerOperators {operators :: [ServerOperator], conditionsAction :: UsageConditionsAction}
+  | CRServerOperators {operators :: [ServerOperator], conditionsAction :: Maybe UsageConditionsAction}
   | CRUserServers {user :: User, userServers :: [UserServers]}
   | CRUserServersValidation {serverErrors :: [UserServersError]}
   | CRUsageConditions {usageConditions :: UsageConditions, conditionsText :: Text, acceptedConditions :: Maybe UsageConditions}

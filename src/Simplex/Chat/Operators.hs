@@ -15,9 +15,10 @@ import Data.FileEmbed
 import Data.Int (Int64)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isNothing)
 import Data.Text (Text)
-import Data.Time.Clock (UTCTime)
+import Data.Time (addUTCTime)
+import Data.Time.Clock (UTCTime, nominalDay)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import Language.Haskell.TH.Syntax (lift)
@@ -74,9 +75,30 @@ data UsageConditionsAction
   | UCAAccepted {operators :: [ServerOperator]}
   deriving (Show)
 
--- TODO UI logic
-usageConditionsAction :: [ServerOperator] -> UsageConditionsAction
-usageConditionsAction _operators = UCAAccepted []
+usageConditionsAction :: [ServerOperator] -> UsageConditions -> UTCTime -> Maybe UsageConditionsAction
+usageConditionsAction operators UsageConditions {createdAt, notifiedAt} now = do
+  let enabledOperators = filter (\ServerOperator {enabled} -> enabled) operators
+  if null enabledOperators
+    then Nothing
+    else
+      if all conditionsAccepted enabledOperators
+        then
+          let acceptedForOperators = filter conditionsAccepted operators
+           in Just $ UCAAccepted acceptedForOperators
+        else
+          let acceptForOperators = filter (not . conditionsAccepted) enabledOperators
+              deadline = conditionsRequiredOrDeadline createdAt (fromMaybe now notifiedAt)
+              showNotice = isNothing notifiedAt
+           in Just $ UCAReview acceptForOperators deadline showNotice
+
+conditionsRequiredOrDeadline :: UTCTime -> UTCTime -> Maybe UTCTime
+conditionsRequiredOrDeadline createdAt notifiedAtOrNow =
+  if notifiedAtOrNow < addUTCTime (14 * nominalDay) createdAt
+    then Just $ conditionsDeadline notifiedAtOrNow
+    else Nothing -- required
+  where
+    conditionsDeadline :: UTCTime -> UTCTime
+    conditionsDeadline = addUTCTime (31 * nominalDay)
 
 data ConditionsAcceptance
   = CAAccepted {acceptedAt :: Maybe UTCTime}
@@ -94,6 +116,11 @@ data ServerOperator = ServerOperator
     roles :: ServerRoles
   }
   deriving (Show)
+
+conditionsAccepted :: ServerOperator -> Bool
+conditionsAccepted ServerOperator {conditionsAcceptance} = case conditionsAcceptance of
+  CAAccepted {} -> True
+  _ -> False
 
 data OperatorEnabled = OperatorEnabled
   { operatorId :: OperatorId,
