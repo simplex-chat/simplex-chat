@@ -71,7 +71,7 @@ import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo)
 import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, SMPServerSubs, ServerQueueInfo, UserNetworkInfo)
-import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig, OperatorId, ServerCfg)
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig, ServerCfg)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration, withTransaction, withTransactionPriority)
@@ -360,7 +360,7 @@ data ChatCommand
   | APIValidateServers (NonEmpty UserServers) -- response is CRUserServersValidation
   | APIGetUsageConditions
   | APISetConditionsNotified Int64
-  | APIAcceptConditions Int64 (NonEmpty OperatorId)
+  | APIAcceptConditions Int64 (NonEmpty ServerOperator)
   | APISetChatItemTTL UserId (Maybe Int64)
   | SetChatItemTTL (Maybe Int64)
   | APIGetChatItemTTL UserId

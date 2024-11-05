@@ -53,6 +53,8 @@ module Simplex.Chat.Store.Profiles
     setServerOperators,
     getCurrentUsageConditions,
     getLatestAcceptedConditions,
+    setConditionsNotified,
+    acceptConditions,
     createCall,
     deleteCalls,
     getCalls,
@@ -667,7 +669,6 @@ getLatestAcceptedConditions db = do
           [sql|
           SELECT conditions_commit
           FROM operator_usage_conditions
-          WHERE conditions_accepted = 1
           ORDER BY accepted_at DESC
           LIMIT 1
         |]
@@ -681,6 +682,36 @@ getLatestAcceptedConditions db = do
           WHERE conditions_commit = ?
         |]
         (Only latestAcceptedCommit)
+
+setConditionsNotified :: DB.Connection -> Int64 -> UTCTime -> IO ()
+setConditionsNotified db conditionsId notifiedAt =
+  DB.execute db "UPDATE usage_conditions SET notified_at = ? WHERE usage_conditions_id = ?" (notifiedAt, conditionsId)
+
+acceptConditions :: DB.Connection -> Int64 -> NonEmpty ServerOperator -> UTCTime -> ExceptT StoreError IO [ServerOperator]
+acceptConditions db conditionsId operators acceptedAt = do
+  UsageConditions {conditionsCommit} <- getUsageConditionsById_ db conditionsId
+  liftIO $ forM_ operators $ \ServerOperator {operatorId, operatorTag} ->
+    DB.execute
+      db
+      [sql|
+        INSERT INTO operator_usage_conditions
+          (server_operator_id, server_operator_tag, conditions_commit, accepted_at)
+        VALUES (?,?,?,?)
+      |]
+      (operatorId, operatorTag, conditionsCommit, acceptedAt)
+  getServerOperators db
+
+getUsageConditionsById_ :: DB.Connection -> Int64 -> ExceptT StoreError IO UsageConditions
+getUsageConditionsById_ db conditionsId =
+  ExceptT . firstRow toUsageConditions SEUsageConditionsNotFound $
+    DB.query
+      db
+      [sql|
+        SELECT usage_conditions_id, conditions_commit, notified_at, created_at
+        FROM usage_conditions
+        WHERE usage_conditions_id = ?
+      |]
+      (Only conditionsId)
 
 -- updateServerOperators_ :: DB.Connection -> [ServerOperator] -> IO [ServerOperator]
 -- updateServerOperators_ db operators = do

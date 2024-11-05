@@ -1536,16 +1536,22 @@ processChatCommand' vr = \case
       usageConditions <- getCurrentUsageConditions db
       acceptedConditions <- getLatestAcceptedConditions db
       pure (usageConditions, acceptedConditions)
+    -- TODO if db commit is different from source commit, conditionsText should be nothing in response
     pure
       CRUsageConditions
         { usageConditions,
           conditionsText = usageConditionsText,
           acceptedConditions
         }
-  APISetConditionsNotified _conditionsId -> do
-    pure $ chatCmdError Nothing "not supported"
-  APIAcceptConditions _conditionsId _opIds ->
-    pure $ chatCmdError Nothing "not supported"
+  APISetConditionsNotified conditionsId -> do
+    currentTs <- liftIO getCurrentTime
+    withFastStore' $ \db -> setConditionsNotified db conditionsId currentTs
+    ok_
+  APIAcceptConditions conditionsId operators -> do
+    currentTs <- liftIO getCurrentTime
+    operators' <- withFastStore $ \db -> acceptConditions db conditionsId operators currentTs
+    let conditionsAction = usageConditionsAction operators'
+    pure $ CRServerOperators operators' conditionsAction
   APISetChatItemTTL userId newTTL_ -> withUserId userId $ \user ->
     checkStoreNotChanged $
       withChatLock "setChatItemTTL" $ do
