@@ -48,10 +48,18 @@ struct FramedItemView: View {
                 if let qi = chatItem.quotedItem {
                     ciQuoteView(qi)
                         .onTapGesture {
-                            if let ci = ItemsModel.shared.reversedChatItems.first(where: { $0.id == qi.itemId }) {
-                                withAnimation {
-                                    scrollModel.scrollToItem(id: ci.id)
+                            if let itemId = qi.itemId {
+                                if !scrollToItem(itemId) {
+                                    Task {
+                                        if await loadItemsAround(chat.chatInfo, itemId) != nil {
+                                            await MainActor.run {
+                                                let _ = scrollToItem(itemId)
+                                            }
+                                        }
+                                    }
                                 }
+                            } else {
+                                itemNotFoundAlert()
                             }
                         }
                 } else if let itemForwarded = chatItem.meta.itemForwarded {
@@ -321,6 +329,42 @@ struct FramedItemView: View {
             return imgWidth
         } else {
             return videoWidth
+        }
+    }
+    
+    // Scroll to an item, if success returns true otherwise false
+    private func scrollToItem(_ itemId: Int64) -> Bool {
+        if let ci = ItemsModel.shared.reversedChatItems.first(where: { $0.id == itemId }) {
+            withAnimation {
+                scrollModel.scrollToItem(id: ci.id)
+            }
+            return true
+        } else {
+            return false
+        }
+    }
+    
+    private func loadItemsAround(_ cInfo: ChatInfo, _ chatItemId: Int64) async -> [ChatItem]? {
+        do {
+            var reversedPage = Array<ChatItem>()
+            let pagination: ChatPagination = .around(chatItemId: chatItemId, count: loadItemsPerPage * 2)
+            let (chatItems, _) = try await apiGetChatItems(
+                type: cInfo.chatType,
+                id: cInfo.apiId,
+                pagination: pagination,
+                search: ""
+            )
+            
+            reversedPage.append(contentsOf: chatItems.reversed())
+
+            await MainActor.run {
+                ItemsModel.shared.reversedChatItems.append(contentsOf: reversedPage)
+            }
+            
+            return reversedPage
+        } catch let error {
+            logger.error("apiGetChat error: \(responseError(error))")
+            return nil
         }
     }
 }

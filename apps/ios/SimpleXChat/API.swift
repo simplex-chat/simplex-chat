@@ -214,7 +214,8 @@ public func chatResponse(_ s: String) -> ChatResponse {
                    let user: UserRef = try? decodeObject(jApiChat["user"] as Any),
                    let jChat = jApiChat["chat"] as? NSDictionary,
                    let chat = try? parseChatData(jChat) {
-                    return .apiChat(user: user, chat: chat)
+                    let gap: ChatGap? = try? decodeObject(jApiChat["gap"] as Any)
+                    return .apiChat(user: user, chat: chat, gap: gap)
                 }
             } else if type == "chatCmdError" {
                 if let jError = jResp["chatCmdError"] as? NSDictionary {
