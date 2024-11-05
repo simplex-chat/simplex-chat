@@ -569,9 +569,9 @@ getServerOperators :: DB.Connection -> ExceptT StoreError IO [ServerOperator]
 getServerOperators db = do
   currentTs <- liftIO getCurrentTime
   currentConditions <- getCurrentUsageConditions db
-  acceptedConditions <- getLatestAcceptedConditions db
+  latestAcceptedConditions <- getLatestAcceptedConditions db
   liftIO $
-    map (toOperator currentTs currentConditions acceptedConditions)
+    map (toOperator currentTs currentConditions latestAcceptedConditions)
       <$> DB.query_
         db
         [sql|
@@ -598,26 +598,26 @@ getServerOperators db = do
     toOperator
       currentTs
       UsageConditions {conditionsCommit = currentCommit, createdAt, notifiedAt}
-      acceptedConditions_
+      latestAcceptedConditions_
       ( (operatorId, operatorTag, tradeName, legalName, domains, enabled, storage, proxy)
           :. (operatorCommit_, acceptedAt_)
         ) =
         let roles = ServerRoles {storage, proxy}
-            conditionsAcceptance = case (acceptedConditions_, operatorCommit_) of
+            conditionsAcceptance = case (latestAcceptedConditions_, operatorCommit_) of
               -- no conditions were ever accepted for any operator
               -- (shouldn't happen as there should always be record for SimpleX Chat)
               (Nothing, _) -> CARequired Nothing
               -- conditions were never accepted for operator
               (_, Nothing) -> CARequired Nothing
-              (Just UsageConditions {conditionsCommit = acceptedCommit}, Just operatorCommit)
-                | acceptedCommit == currentCommit ->
-                    if operatorCommit == acceptedCommit
+              (Just UsageConditions {conditionsCommit = latestAcceptedCommit}, Just operatorCommit)
+                | latestAcceptedCommit == currentCommit ->
+                    if operatorCommit == latestAcceptedCommit
                       then -- current conditions were accepted for operator
                         CAAccepted acceptedAt_
                       else -- current conditions were not accepted for operator, but were accepted for other operator(s)
                         CARequired Nothing
                 | otherwise ->
-                    if operatorCommit == acceptedCommit
+                    if operatorCommit == latestAcceptedCommit
                       then -- new conditions available, last accepted conditions were accepted for operator
                         conditionsRequiredOrDeadline createdAt (fromMaybe currentTs notifiedAt)
                       else -- new conditions available, last accepted [for some other operator(s)] conditions were not accepted for operator
