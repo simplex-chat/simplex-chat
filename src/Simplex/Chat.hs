@@ -1511,7 +1511,10 @@ processChatCommand' vr = \case
     operators <- withFastStore $ \db -> getServerOperators db
     let conditionsAction = usageConditionsAction operators
     pure $ CRServerOperators operators conditionsAction
-  APISetServerOperators _operators -> pure $ chatCmdError Nothing "not supported"
+  APISetServerOperators operatorsEnabled -> do
+    operators <- withFastStore $ \db -> setServerOperators db operatorsEnabled
+    let conditionsAction = usageConditionsAction operators
+    pure $ CRServerOperators operators conditionsAction
   APIGetUserServers userId -> withUserId userId $ \user -> do
     (operators, smpServers, xftpServers) <- withFastStore $ \db -> do
       operators <- getServerOperators db
@@ -1529,14 +1532,15 @@ processChatCommand' vr = \case
     -- response is CRUserServersValidation
     pure $ chatCmdError Nothing "not supported"
   APIGetUsageConditions -> do
-    usageConditions <- withFastStore $ \db -> getCurrentUsageConditions db
-    -- TODO
-    -- get latest accepted conditions (from operators)
+    (usageConditions, acceptedConditions) <- withFastStore $ \db -> do
+      usageConditions <- getCurrentUsageConditions db
+      acceptedConditions <- getLatestAcceptedConditions db
+      pure (usageConditions, acceptedConditions)
     pure
       CRUsageConditions
-        { usageConditions = usageConditions,
+        { usageConditions,
           conditionsText = usageConditionsText,
-          acceptedConditions = Nothing
+          acceptedConditions
         }
   APISetConditionsNotified _conditionsId -> do
     pure $ chatCmdError Nothing "not supported"
