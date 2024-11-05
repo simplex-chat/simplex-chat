@@ -55,6 +55,7 @@ module Simplex.Chat.Store.Profiles
     getLatestAcceptedConditions,
     setConditionsNotified,
     acceptConditions,
+    setUserServers,
     createCall,
     deleteCalls,
     getCalls,
@@ -544,6 +545,7 @@ getProtocolServers db User {userId} =
           roles = ServerRoles {storage = fromMaybe True storage_, proxy = fromMaybe True proxy_}
        in ServerCfg {server, operator, preset, tested, enabled, roles}
 
+-- TODO remove
 -- overwriteOperatorsAndServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> Maybe [ServerOperator] -> [ServerCfg p] -> ExceptT StoreError IO [ServerCfg p]
 -- overwriteOperatorsAndServers db user@User {userId} operators_ servers = do
 overwriteProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> [ServerCfg p] -> ExceptT StoreError IO ()
@@ -713,42 +715,46 @@ getUsageConditionsById_ db conditionsId =
       |]
       (Only conditionsId)
 
--- updateServerOperators_ :: DB.Connection -> [ServerOperator] -> IO [ServerOperator]
--- updateServerOperators_ db operators = do
---   DB.execute_ db "DELETE FROM server_operators WHERE preset = 0"
---   let (existing, new) = partition (isJust . operatorId) operators
---   existing' <- mapM (\op -> upsertExisting op $> op) existing
---   new' <- mapM insertNew new
---   pure $ existing' <> new'
---   where
---     upsertExisting ServerOperator {operatorId, name, preset, enabled, roles = ServerRoles {storage, proxy}}
---       | preset =
---           DB.execute
---             db
---             [sql|
---               UPDATE server_operators
---               SET enabled = ?, role_storage = ?, role_proxy = ?
---               WHERE server_operator_id = ?
---             |]
---             (enabled, storage, proxy, operatorId)
---       | otherwise =
---           DB.execute
---             db
---             [sql|
---               INSERT INTO server_operators (server_operator_id, name, preset, enabled, role_storage, role_proxy)
---               VALUES (?,?,?,?,?,?)
---             |]
---             (operatorId, name, preset, enabled, storage, proxy)
---     insertNew op@ServerOperator {name, preset, enabled, roles = ServerRoles {storage, proxy}} = do
---       DB.execute
---         db
---         [sql|
---           INSERT INTO server_operators (name, preset, enabled, role_storage, role_proxy)
---           VALUES (?,?,?,?,?)
---         |]
---         (name, preset, enabled, storage, proxy)
---       opId <- insertedRowId db
---       pure op {operatorId = Just opId}
+setUserServers :: DB.Connection -> User -> NonEmpty UserServers -> ExceptT StoreError IO ()
+setUserServers db User {userId} userServers = do
+  currentTs <- liftIO getCurrentTime
+  forM_ userServers $ do
+    \UserServers {operator, smpServers, xftpServers} -> do
+      forM_ operator $ \op -> liftIO $ updateOperator currentTs op
+      overwriteServers currentTs operator smpServers
+      overwriteServers currentTs operator xftpServers
+  where
+    updateOperator :: UTCTime -> ServerOperator -> IO ()
+    updateOperator currentTs ServerOperator {operatorId, enabled, roles = ServerRoles {storage, proxy}} =
+      DB.execute
+        db
+        [sql|
+          UPDATE server_operators
+          SET enabled = ?, role_storage = ?, role_proxy = ?, updated_at = ?
+          WHERE server_operator_id = ?
+        |]
+        (enabled, storage, proxy, operatorId, currentTs)
+    overwriteServers :: forall p. ProtocolTypeI p => UTCTime -> Maybe ServerOperator -> [ServerCfg p] -> ExceptT StoreError IO ()
+    overwriteServers currentTs serverOperator servers =
+      checkConstraint SEUniqueID . ExceptT $ do
+        case serverOperator of
+          Nothing ->
+            DB.execute db "DELETE FROM protocol_servers WHERE user_id = ? AND server_operator_id IS NULL AND protocol = ?" (userId, protocol)
+          Just ServerOperator {operatorId} ->
+            DB.execute db "DELETE FROM protocol_servers WHERE user_id = ? AND server_operator_id = ? AND protocol = ?" (userId, operatorId, protocol)
+        forM_ servers $ \ServerCfg {server, operator, preset, tested, enabled} -> do
+          let ProtoServerWithAuth ProtocolServer {host, port, keyHash} auth_ = server
+          DB.execute
+            db
+            [sql|
+              INSERT INTO protocol_servers
+                (protocol, host, port, key_hash, basic_auth, operator, preset, tested, enabled, user_id, created_at, updated_at)
+              VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+            |]
+            ((protocol, host, port, keyHash, safeDecodeUtf8 . unBasicAuth <$> auth_, operator) :. (preset, tested, enabled, userId, currentTs, currentTs))
+        pure $ Right ()
+      where
+        protocol = decodeLatin1 $ strEncode $ protocolTypeI @p
 
 createCall :: DB.Connection -> User -> Call -> UTCTime -> IO ()
 createCall db user@User {userId} Call {contactId, callId, callUUID, chatItemId, callState} callTs = do
