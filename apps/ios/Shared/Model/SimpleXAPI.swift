@@ -320,15 +320,24 @@ private func apiChatsResponse(_ r: ChatResponse) throws -> [ChatData] {
 
 let loadItemsPerPage = 50
 
-func apiGetChat(type: ChatType, id: Int64, search: String = "") async throws -> Chat {
+func apiGetChat(type: ChatType, id: Int64, search: String = "") async throws -> (Chat, ChatGap?) {
     let r = await chatSendCmd(.apiGetChat(type: type, id: id, pagination: .last(count: loadItemsPerPage), search: search))
-    if case let .apiChat(_, chat) = r { return Chat.init(chat) }
+    if case let .apiChat(_, chat, gap) = r { return (Chat.init(chat), gap) }
     throw r
 }
 
-func apiGetChatItems(type: ChatType, id: Int64, pagination: ChatPagination, search: String = "") async throws -> [ChatItem] {
+func apiGetChatItems(type: ChatType, id: Int64, pagination: ChatPagination, search: String = "") async throws -> ([ChatItem], ChatGap?) {
     let r = await chatSendCmd(.apiGetChat(type: type, id: id, pagination: pagination, search: search))
-    if case let .apiChat(_, chat) = r { return chat.chatItems }
+    if case let .apiChat(_, chat, gap) = r { return (chat.chatItems, gap) }
+    if case .chatCmdError(_, _) = r {
+        if case .chatError(_, let chatError) = r {
+            if case .errorStore(let storeError) = chatError {
+                if case .chatItemNotFound(let itemId) = storeError {
+                    itemNotFoundAlert()
+                }
+            }
+        }
+    }
     throw r
 }
 
@@ -341,7 +350,7 @@ func loadChat(chat: Chat, search: String = "", clearItems: Bool = true) async {
         if clearItems {
             await MainActor.run { im.reversedChatItems = [] }
         }
-        let chat = try await apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
+        let (chat, _) = try await apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
         await MainActor.run {
             im.reversedChatItems = chat.chatItems.reversed()
             m.updateChatInfo(chat.chatInfo)
@@ -416,6 +425,13 @@ func apiCreateChatItems(noteFolderId: Int64, composedMessages: [ComposedMessage]
     if case let .newChatItems(_, aChatItems) = r { return aChatItems.map { $0.chatItem } }
     createChatItemsErrorAlert(r)
     return nil
+}
+
+func itemNotFoundAlert() {
+    AlertManager.shared.showAlertMsg(
+        title: "Message no longer available",
+        message: "The quoted message you are trying to view has been deleted."
+    )
 }
 
 private func sendMessageErrorAlert(_ r: ChatResponse) {

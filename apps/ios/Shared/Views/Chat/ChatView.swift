@@ -854,7 +854,7 @@ struct ChatView: View {
                         } else {
                             .last(count: loadItemsPerPage)
                         }
-                    let chatItems = try await apiGetChatItems(
+                    let (chatItems, _) = try await apiGetChatItems(
                         type: cInfo.chatType,
                         id: cInfo.apiId,
                         pagination: pagination,
