@@ -13,6 +13,7 @@ import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
 import Data.FileEmbed
 import Data.Int (Int64)
+import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isNothing)
@@ -24,10 +25,10 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import Language.Haskell.TH.Syntax (lift)
 import Simplex.Chat.Operators.Conditions
 import Simplex.Chat.Types.Util (textParseJSON)
-import Simplex.Messaging.Agent.Env.SQLite (OperatorId, ServerCfg (..), ServerRoles)
+import Simplex.Messaging.Agent.Env.SQLite (OperatorId, ServerCfg (..), ServerRoles (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, sumTypeJSON)
-import Simplex.Messaging.Protocol (ProtocolType (..))
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, ProtocolType (..))
 import Simplex.Messaging.Util (safeDecodeUtf8)
 
 usageConditionsCommit :: Text
@@ -155,6 +156,27 @@ groupByOperator srvOperators smpSrvs xftpSrvs =
           xftpServers = groupedXftps
         }
 
+data UserServersError
+  = USEStorageMissing
+  | USEProxyMissing
+  | USEDuplicate {server :: AProtoServerWithAuth}
+  deriving (Show)
+
+validateUserServers :: NonEmpty UserServers -> [UserServersError]
+validateUserServers userServers =
+  let storageMissing_ = if any (canUseForRole storage) userServers then [] else [USEStorageMissing]
+      proxyMissing_ = if any (canUseForRole proxy) userServers then [] else [USEProxyMissing]
+   in -- TODO duplicate errors
+      -- allSMPServers =
+      --   map (\ServerCfg {server} -> server) $
+      --     concatMap (\UserServers {smpServers} -> smpServers) userServers
+      storageMissing_ <> proxyMissing_ -- <> duplicateErrors
+  where
+    canUseForRole :: (ServerRoles -> Bool) -> UserServers -> Bool
+    canUseForRole roleSel UserServers {operator, smpServers, xftpServers} = case operator of
+      Just ServerOperator {roles} -> roleSel roles
+      Nothing -> not (null smpServers) && not (null xftpServers)
+
 $(JQ.deriveJSON defaultJSON ''UsageConditions)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CA") ''ConditionsAcceptance)
@@ -164,3 +186,5 @@ $(JQ.deriveJSON defaultJSON ''ServerOperator)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "UCA") ''UsageConditionsAction)
 
 $(JQ.deriveJSON defaultJSON ''UserServers)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "USE") ''UserServersError)

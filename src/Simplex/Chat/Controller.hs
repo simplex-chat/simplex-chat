@@ -961,12 +961,6 @@ data AProtoServersConfig = forall p. ProtocolTypeI p => APSC (SProtocolType p) (
 
 deriving instance Show AProtoServersConfig
 
-data UserServersError
-  = USEStorageMissing
-  | USEProxyMissing
-  | USEDuplicate {server :: AProtoServerWithAuth}
-  deriving (Show)
-
 data UserProtoServers p = UserProtoServers
   { serverProtocol :: SProtocolType p,
     protoServers :: NonEmpty (ServerCfg p),
@@ -1544,8 +1538,6 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SQLite") ''SQLiteError)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "DB") ''DatabaseError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "Chat") ''ChatError)
-
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "USE") ''UserServersError)
 
 $(JQ.deriveJSON defaultJSON ''AppFilePathsConfig)
 

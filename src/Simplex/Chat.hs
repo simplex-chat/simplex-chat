@@ -1525,11 +1525,13 @@ processChatCommand' vr = \case
       getServers :: ProtocolTypeI p => DB.Connection -> User -> SProtocolType p -> IO [ServerCfg p]
       getServers db user _p = getProtocolServers db user
   APISetUserServers userId userServers -> withUserId userId $ \user -> do
+    let errors = validateUserServers userServers
+    unless (null errors) $ throwChatError (CECommandError $ "user servers validation error(s): " <> show errors)
     withFastStore $ \db -> setUserServers db user userServers
     ok_
-  APIValidateServers _userServers ->
-    -- response is CRUserServersValidation
-    pure $ chatCmdError Nothing "not supported"
+  APIValidateServers userServers -> do
+    let errors = validateUserServers userServers
+    pure $ CRUserServersValidation errors
   APIGetUsageConditions -> do
     (usageConditions, acceptedConditions) <- withFastStore $ \db -> do
       usageConditions <- getCurrentUsageConditions db
