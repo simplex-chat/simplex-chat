@@ -166,11 +166,11 @@ validateUserServers :: NonEmpty UserServers -> [UserServersError]
 validateUserServers userServers =
   let storageMissing_ = if any (canUseForRole storage) userServers then [] else [USEStorageMissing]
       proxyMissing_ = if any (canUseForRole proxy) userServers then [] else [USEProxyMissing]
-   in -- TODO duplicate errors
+      -- TODO duplicate errors
       -- allSMPServers =
       --   map (\ServerCfg {server} -> server) $
       --     concatMap (\UserServers {smpServers} -> smpServers) userServers
-      storageMissing_ <> proxyMissing_ -- <> duplicateErrors
+   in storageMissing_ <> proxyMissing_ -- <> duplicateErrors
   where
     canUseForRole :: (ServerRoles -> Bool) -> UserServers -> Bool
     canUseForRole roleSel UserServers {operator, smpServers, xftpServers} = case operator of
