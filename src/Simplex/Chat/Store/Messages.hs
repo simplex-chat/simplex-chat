@@ -994,7 +994,6 @@ getDirectChatItemGapToLatest_ db User {userId} Contact {contactId} chatItem sear
         FROM chat_items
         WHERE user_id = :userId AND contact_id = :contactId AND item_text LIKE '%' || :search || '%'
           AND (created_at > :itemCreatedAt OR (created_at = :itemCreatedAt AND chat_item_id > :chatItemId))
-        ORDER BY created_at DESC, chat_item_id DESC
       |]
         [ ":userId" := userId,
           ":contactId" := contactId,
@@ -1193,7 +1192,6 @@ getGroupChatItemGapToLatest_ db User {userId} GroupInfo {groupId} chatItem searc
         FROM chat_items
         WHERE user_id = :userId AND group_id = :groupId AND item_text LIKE '%' || :search || '%'
           AND (created_at > :itemCreatedAt OR (created_at = :itemCreatedAt AND chat_item_id > :chatItemId))
-        ORDER BY created_at DESC, chat_item_id DESC
       |]
         [ ":userId" := userId,
           ":groupId" := groupId,
@@ -1392,7 +1390,6 @@ getLocalChatItemGapToLatest_ db User {userId} NoteFolder {noteFolderId} chatItem
         FROM chat_items
         WHERE user_id = :userId AND note_folder_id = :noteFolderId AND item_text LIKE '%' || :search || '%'
           AND (created_at > :itemCreatedAt OR (created_at = :itemCreatedAt AND chat_item_id > :chatItemId))
-        ORDER BY created_at DESC, chat_item_id DESC
       |]
         [ ":userId" := userId,
           ":noteFolderId" := noteFolderId,
