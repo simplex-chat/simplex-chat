@@ -557,7 +557,7 @@ viewGroupSubscribed g = [membershipIncognito g <> ttyFullGroup g <> ": connected
 
 viewChatGap :: Maybe ChatGap -> [StyledString]
 viewChatGap Nothing = []
-viewChatGap (Just ChatGap {size})
+viewChatGap (Just size)
   | size < 1 = []
   | otherwise = [sShow size <> " newer message(s) available"]
 

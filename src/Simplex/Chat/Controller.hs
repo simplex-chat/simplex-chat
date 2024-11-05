@@ -843,8 +843,7 @@ data ChatPagination
   | CPInitial Int
   deriving (Show)
 
-data ChatGap = ChatGap {index :: Maybe Int, size :: Int}
-  deriving (Show)
+type ChatGap = Int
 
 data PaginationByTime
   = PTLast Int
@@ -1595,8 +1594,6 @@ $(JQ.deriveJSON defaultJSON ''RemoteCtrlInfo)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RCSR") ''RemoteCtrlStopReason)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RHSR") ''RemoteHostStopReason)
-
-$(JQ.deriveJSON defaultJSON ''ChatGap)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
 

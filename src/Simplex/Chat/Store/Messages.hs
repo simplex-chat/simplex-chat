@@ -138,7 +138,7 @@ import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Database.SQLite.Simple (NamedParam (..), Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
-import Simplex.Chat.Controller (ChatGap (ChatGap, index, size), ChatListQuery (..), ChatPagination (..), PaginationByTime (..))
+import Simplex.Chat.Controller (ChatGap, ChatListQuery (..), ChatPagination (..), PaginationByTime (..))
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
@@ -1053,7 +1053,7 @@ getDirectChatAfter_ db user ct@Contact {contactId} afterChatItemId count search 
   currentTs <- liftIO getCurrentTime
   chatItems <- liftIO $ mapM (safeGetDirectItem db user ct currentTs) chatItemIds
   gapToLatest <- liftIO $ getDirectChatItemGapToLatest_ db user ct (last chatItems) search
-  let chatGap = if gapToLatest > 0 then Just $ ChatGap {size = gapToLatest, index = Nothing} else Nothing
+  let chatGap = if gapToLatest > 0 then Just gapToLatest else Nothing
   pure (Chat (DirectChat ct) chatItems stats, chatGap)
 
 getDirectChatItemIdsAfter_ :: DB.Connection -> User -> Contact -> ChatItemId -> Int -> String -> UTCTime -> IO [ChatItemId]
@@ -1107,7 +1107,7 @@ getDirectChatAround_ db user ct@Contact {contactId} aroundItemId count search = 
   afterChatItems <- liftIO $ mapM (safeGetDirectItem db user ct currentTs) afterIds
   let chatItems = beforeChatItems <> [middleChatItem] <> afterChatItems
   gapToLatest <- liftIO $ getDirectChatItemGapToLatest_ db user ct (last chatItems) search
-  let chatGap = if gapToLatest > 0 then Just $ ChatGap {size = gapToLatest, index = Nothing} else Nothing
+  let chatGap = if gapToLatest > 0 then Just gapToLatest else Nothing
   pure (Chat (DirectChat ct) chatItems stats, chatGap)
 
 getDirectChatInitial_ :: DB.Connection -> User -> Contact -> Int -> ExceptT StoreError IO (Chat 'CTDirect, Maybe ChatGap)
@@ -1117,7 +1117,7 @@ getDirectChatInitial_ db user@User {userId} ct@Contact {contactId} count = do
     Just firstUnreadItemId -> do
       (chat, gap) <- getDirectChatAround_ db user ct firstUnreadItemId count ""
       case gap of
-        Just ChatGap {size} -> do
+        Just size -> do
           if size > snd (divideFetchCountAround_ count)
             then getLatestItems_ chat size
             else pure (chat, Nothing)
@@ -1132,7 +1132,7 @@ getDirectChatInitial_ db user@User {userId} ct@Contact {contactId} count = do
       let allItems = chatItems <> latestItems
       let chat = c {chatItems = allItems}
       if gapToLatest > length latestItems
-        then pure (chat, Just $ ChatGap {size = gapToLatest - length latestItems, index = Just $ length chatItems})
+        then pure (chat, Just $ gapToLatest - length latestItems)
         else pure (chat, Nothing)
     getDirectChatMinUnreadItemId_ :: IO (Maybe ChatItemId)
     getDirectChatMinUnreadItemId_ =
@@ -1251,7 +1251,7 @@ getGroupChatAfter_ db user g@GroupInfo {groupId} afterChatItemId count search = 
   currentTs <- liftIO getCurrentTime
   chatItems <- liftIO $ mapM (safeGetGroupItem db user g currentTs) chatItemIds
   gapToLatest <- liftIO $ getGroupChatItemGapToLatest_ db user g (head chatItems) search
-  let chatGap = if gapToLatest > 0 then Just $ ChatGap {size = gapToLatest, index = Nothing} else Nothing
+  let chatGap = if gapToLatest > 0 then Just gapToLatest else Nothing
   pure (Chat (GroupChat g) chatItems stats, chatGap)
 
 getGroupChatItemIdsAfter_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> Int -> String -> UTCTime -> IO [ChatItemId]
@@ -1305,7 +1305,7 @@ getGroupChatAround_ db user g@GroupInfo {groupId} aroundItemId count search = do
   afterChatItems <- liftIO $ mapM (safeGetGroupItem db user g currentTs) afterIds
   let chatItems = beforeChatItems <> [middleChatItem] <> afterChatItems
   gapToLatest <- liftIO $ getGroupChatItemGapToLatest_ db user g (last chatItems) search
-  let chatGap = if gapToLatest > 0 then Just $ ChatGap {size = gapToLatest, index = Nothing} else Nothing
+  let chatGap = if gapToLatest > 0 then Just gapToLatest else Nothing
   pure (Chat (GroupChat g) chatItems stats, chatGap)
 
 getGroupChatInitial_ :: DB.Connection -> User -> GroupInfo -> Int -> ExceptT StoreError IO (Chat 'CTGroup, Maybe ChatGap)
@@ -1315,7 +1315,7 @@ getGroupChatInitial_ db user@User {userId} g@GroupInfo {groupId} count = do
     Just firstUnreadItemId -> do
       (chat, gap) <- getGroupChatAround_ db user g firstUnreadItemId count ""
       case gap of
-        Just ChatGap {size} -> do
+        Just size -> do
           if size > snd (divideFetchCountAround_ count)
             then getLatestItems_ chat size
             else pure (chat, Nothing)
@@ -1341,7 +1341,7 @@ getGroupChatInitial_ db user@User {userId} g@GroupInfo {groupId} count = do
       let allItems = chatItems <> latestItems
       let chat = c {chatItems = allItems}
       if gapToLatest > length latestItems
-        then pure (chat, Just $ ChatGap {size = gapToLatest - length latestItems, index = Just $ length chatItems})
+        then pure (chat, Just $ gapToLatest - length latestItems)
         else pure (chat, Nothing)
 
 getLocalChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTLocal, Maybe ChatGap)
@@ -1433,7 +1433,7 @@ getLocalChatAfter_ db user nf@NoteFolder {noteFolderId} afterChatItemId count se
   currentTs <- liftIO getCurrentTime
   chatItems <- liftIO $ mapM (safeGetLocalItem db user nf currentTs) chatItemIds
   gapToLatest <- liftIO $ getLocalChatItemGapToLatest_ db user nf (head chatItems) search
-  let chatGap = if gapToLatest > 0 then Just $ ChatGap {size = gapToLatest, index = Nothing} else Nothing
+  let chatGap = if gapToLatest > 0 then Just gapToLatest else Nothing
   pure (Chat (LocalChat nf) chatItems stats, chatGap)
 
 getLocalChatItemIdsAfter_ :: DB.Connection -> User -> NoteFolder -> ChatItemId -> Int -> String -> UTCTime -> IO [ChatItemId]
@@ -1487,7 +1487,7 @@ getLocalChatAround_ db user nf@NoteFolder {noteFolderId} aroundItemId count sear
   afterChatItems <- liftIO $ mapM (safeGetLocalItem db user nf currentTs) afterIds
   let chatItems = beforeChatItems <> [middleChatItem] <> afterChatItems
   gapToLatest <- liftIO $ getLocalChatItemGapToLatest_ db user nf (head chatItems) search
-  let chatGap = if gapToLatest > 0 then Just $ ChatGap {size = gapToLatest, index = Nothing} else Nothing
+  let chatGap = if gapToLatest > 0 then Just gapToLatest else Nothing
   pure (Chat (LocalChat nf) chatItems stats, chatGap)
 
 getLocalChatInitial_ :: DB.Connection -> User -> NoteFolder -> Int -> ExceptT StoreError IO (Chat 'CTLocal, Maybe ChatGap)
@@ -1497,7 +1497,7 @@ getLocalChatInitial_ db user@User {userId} nf@NoteFolder {noteFolderId} count = 
     Just firstUnreadItemId -> do
       (chat, gap) <- getLocalChatAround_ db user nf firstUnreadItemId count ""
       case gap of
-        Just ChatGap {size} -> do
+        Just size -> do
           if size > snd (divideFetchCountAround_ count)
             then getLatestItems_ chat size
             else pure (chat, Nothing)
@@ -1523,7 +1523,7 @@ getLocalChatInitial_ db user@User {userId} nf@NoteFolder {noteFolderId} count = 
       let allItems = chatItems <> latestItems
       let chat = c {chatItems = allItems}
       if gapToLatest > length latestItems
-        then pure (chat, Just $ ChatGap {size = gapToLatest - length latestItems, index = Just $ length chatItems})
+        then pure (chat, Just $ gapToLatest - length latestItems)
         else pure (chat, Nothing)
 
 toChatItemRef :: (ChatItemId, Maybe Int64, Maybe Int64, Maybe Int64) -> Either StoreError (ChatRef, ChatItemId)
