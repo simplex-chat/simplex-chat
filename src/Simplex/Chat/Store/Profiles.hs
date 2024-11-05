@@ -749,6 +749,43 @@ setUserServers db User {userId} userServers = do
       where
         protocol = decodeLatin1 $ strEncode $ protocolTypeI @p
 
+-- updateServerOperators_ :: DB.Connection -> [ServerOperator] -> IO [ServerOperator]
+-- updateServerOperators_ db operators = do
+--   DB.execute_ db "DELETE FROM server_operators WHERE preset = 0"
+--   let (existing, new) = partition (isJust . operatorId) operators
+--   existing' <- mapM (\op -> upsertExisting op $> op) existing
+--   new' <- mapM insertNew new
+--   pure $ existing' <> new'
+--   where
+--     upsertExisting ServerOperator {operatorId, name, preset, enabled, roles = ServerRoles {storage, proxy}}
+--       | preset =
+--           DB.execute
+--             db
+--             [sql|
+--               UPDATE server_operators
+--               SET enabled = ?, role_storage = ?, role_proxy = ?
+--               WHERE server_operator_id = ?
+--             |]
+--             (enabled, storage, proxy, operatorId)
+--       | otherwise =
+--           DB.execute
+--             db
+--             [sql|
+--               INSERT INTO server_operators (server_operator_id, name, preset, enabled, role_storage, role_proxy)
+--               VALUES (?,?,?,?,?,?)
+--             |]
+--             (operatorId, name, preset, enabled, storage, proxy)
+--     insertNew op@ServerOperator {name, preset, enabled, roles = ServerRoles {storage, proxy}} = do
+--       DB.execute
+--         db
+--         [sql|
+--           INSERT INTO server_operators (name, preset, enabled, role_storage, role_proxy)
+--           VALUES (?,?,?,?,?)
+--         |]
+--         (name, preset, enabled, storage, proxy)
+--       opId <- insertedRowId db
+--       pure op {operatorId = Just opId}
+
 createCall :: DB.Connection -> User -> Call -> UTCTime -> IO ()
 createCall db user@User {userId} Call {contactId, callId, callUUID, chatItemId, callState} callTs = do
   currentTs <- getCurrentTime
