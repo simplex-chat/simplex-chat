@@ -363,6 +363,11 @@ struct ChatView: View {
             }
         }
         ChatView.FloatingButtonModel.shared.totalUnread = chat.chatStats.unreadCount
+        Task {
+            if let firstunreadItem = self.getFirstUnreadItem() {
+                scrollModel.scrollToUnread(id: firstunreadItem.id)
+            }
+        }
     }
 
     private func searchToolbar() -> some View {
@@ -470,6 +475,19 @@ struct ChatView: View {
         } else {
             EmptyView()
         }
+    }
+    
+    private func getFirstUnreadItem() -> ChatItem? {
+        logger.error("[scrolling] \(im.reversedChatItems.count)")
+
+        for i in stride(from: im.reversedChatItems.count - 1, through: 0, by: -1) {
+            let item = im.reversedChatItems[i]
+            if item.isRcvNew {
+                logger.error("[scrolling] First unread item: \(item.text)")
+                return item
+            }
+        }
+        return nil
     }
 
     class FloatingButtonModel: ObservableObject {

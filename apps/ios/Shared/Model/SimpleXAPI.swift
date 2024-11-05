@@ -320,19 +320,19 @@ private func apiChatsResponse(_ r: ChatResponse) throws -> [ChatData] {
 
 let loadItemsPerPage = 50
 
-func apiGetChat(type: ChatType, id: Int64, search: String = "") async throws -> (Chat, ChatGap?) {
-    let r = await chatSendCmd(.apiGetChat(type: type, id: id, pagination: .last(count: loadItemsPerPage), search: search))
+func apiGetChat(type: ChatType, id: Int64, search: String = "") async throws -> (Chat, Int?) {
+    let r = await chatSendCmd(.apiGetChat(type: type, id: id, pagination: .initial(count: loadItemsPerPage), search: search))
     if case let .apiChat(_, chat, gap) = r { return (Chat.init(chat), gap) }
     throw r
 }
 
-func apiGetChatItems(type: ChatType, id: Int64, pagination: ChatPagination, search: String = "") async throws -> ([ChatItem], ChatGap?) {
+func apiGetChatItems(type: ChatType, id: Int64, pagination: ChatPagination, search: String = "") async throws -> ([ChatItem], Int?) {
     let r = await chatSendCmd(.apiGetChat(type: type, id: id, pagination: pagination, search: search))
     if case let .apiChat(_, chat, gap) = r { return (chat.chatItems, gap) }
     if case .chatCmdError(_, _) = r {
         if case .chatError(_, let chatError) = r {
             if case .errorStore(let storeError) = chatError {
-                if case .chatItemNotFound(let itemId) = storeError {
+                if case .chatItemNotFound(_) = storeError {
                     itemNotFoundAlert()
                 }
             }
