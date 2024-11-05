@@ -43,6 +43,11 @@ private func addTermItem(_ items: inout [TerminalItem], _ item: TerminalItem) {
     items.append(item)
 }
 
+struct ChatGap {
+    let index: Int
+    let size: Int
+}
+
 class ItemsModel: ObservableObject {
     static let shared = ItemsModel()
     private let publisher = ObservableObjectPublisher()
@@ -51,6 +56,9 @@ class ItemsModel: ObservableObject {
         willSet { publisher.send() }
     }
     var itemAdded = false {
+        willSet { publisher.send() }
+    }
+    var gap: ChatGap? = nil {
         willSet { publisher.send() }
     }
     

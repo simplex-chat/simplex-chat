@@ -2339,6 +2339,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
 
     public var viewTimestamp = Date.now
     public var isLiveDummy: Bool = false
+    public var isPlaceholder: Bool = false
 
     private enum CodingKeys: String, CodingKey {
         case chatDir, meta, content, formattedText, quotedItem, reactions, file
@@ -2664,6 +2665,30 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         return item
     }
 
+    public static func placeholder(_ idx: Int) -> ChatItem {
+        var item = ChatItem(
+            chatDir: CIDirection.directSnd,
+            meta: CIMeta(
+                itemId: Int64(idx * -10),
+                itemTs: .now,
+                itemText: "",
+                itemStatus: .rcvRead,
+                createdAt: .now,
+                updatedAt: .now,
+                itemDeleted: nil,
+                itemEdited: false,
+                itemLive: true,
+                deletable: false,
+                editable: false
+            ),
+            content: .sndMsgContent(msgContent: .text("")),
+            quotedItem: nil,
+            file: nil
+        )
+        item.isPlaceholder = true
+        return item
+    }
+    
     public static func invalidJSON(chatDir: CIDirection?, meta: CIMeta?, json: String) -> ChatItem {
         ChatItem(
             chatDir: chatDir ?? .directSnd,

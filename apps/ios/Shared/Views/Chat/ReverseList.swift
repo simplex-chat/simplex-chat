@@ -13,6 +13,7 @@ import SimpleXChat
 /// A List, which displays it's items in reverse order - from bottom to top
 struct ReverseList<Content: View>: UIViewControllerRepresentable {
     let items: Array<ChatItem>
+    let gap: ChatGap?
 
     @Binding var scrollState: ReverseListScrollModel.State
 
@@ -33,15 +34,15 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             case .nextPage:
                 controller.scrollToNextPage()
             case let .item(id):
-                controller.scroll(to: items.firstIndex(where: { $0.id == id }), position: .bottom)
+                controller.scrollToItem(to: items.first(where: { $0.id == id }), position: .bottom)
             case .bottom:
                 controller.scroll(to: 0, position: .top)
             case let .unread(id):
-                controller.scrollToUnread(to: items.firstIndex(where: { $0.id == id }))
+                controller.scrollToUnread(to: items.first(where: { $0.id == id }))
             }
         } else {
-            logger.error("[scrolling] not scrolling")
-            controller.update(items: items)
+            logger.error("[scrolling] not scrolling gap: (\(gap?.index ?? -1), \(gap?.size ?? 0)")
+            controller.update(items: items, gap: gap)
         }
     }
 
@@ -81,9 +82,15 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             self.dataSource = UITableViewDiffableDataSource<Section, ChatItem>(
                 tableView: tableView
             ) { (tableView, indexPath, item) -> UITableViewCell? in
-                if indexPath.item > self.itemCount - 8, self.representer.scrollState == .atDestination {
-                    logger.error("[scrolling] requesting page")
-                    self.representer.loadPage()
+                if self.representer.scrollState == .atDestination {
+                    if indexPath.item > self.itemCount - preloadItem, let item = self.getItemAtPath(indexPath: IndexPath(row: self.itemCount - 1, section: 0)) {
+                        logger.error("[scrolling] requesting page \(item.text)")
+                        self.representer.loadPage()
+                    } else if let item = self.getFirstItemBeforePlacholder(indexPath) {
+                        logger.error("[scrolling] needs items in top \(item.text)")
+                    } else if let item = self.getFirstItemAfterPlacholder(indexPath) {
+                        logger.error("[scrolling] needs items in bottom \(item.text)")
+                    }
                 }
                 let cell = tableView.dequeueReusableCell(withIdentifier: cellReuseId, for: indexPath)
                 if #available(iOS 16.0, *) {
@@ -166,15 +173,23 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             Task { representer.scrollState = .atDestination }
         }
         
-        func scrollToUnread(to index: Int?) {
-            if let index = index {
-                if isVisible(indexPath: IndexPath(row: index, section: 0)) {
+        func scrollToUnread(to cItem: ChatItem?) {
+            if let it = cItem, let indexPath = dataSource.indexPath(for: it) {
+                if isVisible(indexPath: indexPath) {
                     self.scroll(to: 0, position: .top)
                 } else {
-                    self.scroll(to: index, position: .bottom)
+                    self.scroll(to: indexPath.row, position: .bottom)
                 }
             } else {
-                self.scroll(to: index, position: .bottom)
+                self.scroll(to: nil, position: .bottom)
+            }
+        }
+        
+        func scrollToItem(to cItem: ChatItem?,  position: UITableView.ScrollPosition) {
+            if let it = cItem, let indexPath = dataSource.indexPath(for: it) {
+                self.scroll(to: indexPath.row, position: position)
+            } else {
+                scroll(to: nil, position: position)
             }
         }
 
@@ -200,14 +215,23 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             Task { representer.scrollState = .atDestination }
         }
 
-        func update(items: [ChatItem]) {
+        func update(items: [ChatItem], gap: ChatGap?) {
             var snapshot = NSDiffableDataSourceSnapshot<Section, ChatItem>()
+            let cItems: [ChatItem]
+            if let gap = gap {
+                var itemsCopy = items
+                let blanks = (0..<gap.size).map { index in ChatItem.placeholder(index + 1) }
+                itemsCopy.insert(contentsOf: blanks, at: gap.index)
+                cItems = itemsCopy
+            } else {
+                cItems = items
+            }
             snapshot.appendSections([.main])
-            snapshot.appendItems(items)
+            snapshot.appendItems(cItems)
             dataSource.defaultRowAnimation = .none
             dataSource.apply(
                 snapshot,
-                animatingDifferences: itemCount != 0 && abs(items.count - itemCount) == 1
+                animatingDifferences: itemCount != 0 && abs(cItems.count - itemCount) == 1
             )
             // Sets content offset on initial load
             if itemCount == 0 {
@@ -216,7 +240,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     animated: false
                 )
             }
-            itemCount = items.count
+            itemCount = cItems.count
             updateFloatingButtons.send()
         }
 
@@ -253,6 +277,68 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 relativeFrame.maxY > InvertedTableView.inset &&
                 relativeFrame.minY < tableView.frame.height - InvertedTableView.inset
             } else { false }
+        }
+        
+        private func getItemAtPath(indexPath: IndexPath) -> ChatItem? {
+            return if let firstItem = self.dataSource.itemIdentifier(for: indexPath) {
+                firstItem
+            } else {
+                nil
+            }
+        }
+        
+        private func getFirstItemAfterPlacholder(_ indexPath: IndexPath) -> ChatItem? {
+            if indexPath.row < preloadItem {
+                return nil
+            }
+            
+            let closesPlaceholderRow = (0..<preloadItem).first { index in
+                if let item = getItemAtPath(indexPath: IndexPath(row: indexPath.row - index, section: 0)) {
+                    return item.isPlaceholder
+                }
+                return false
+            }
+            
+            if let closesPlaceholderRow {
+                var rowIndex = indexPath.row - closesPlaceholderRow
+                while rowIndex < self.tableView.numberOfRows(inSection: 0) {
+                    if let item = getItemAtPath(indexPath: IndexPath(row: rowIndex, section: 0)), !item.isPlaceholder {
+                        return item
+                    }
+                    rowIndex += 1
+                }
+                
+                return nil
+            } else {
+                return nil
+            }
+        }
+        
+        private func getFirstItemBeforePlacholder(_ indexPath: IndexPath) -> ChatItem? {
+            if indexPath.row + preloadItem >= itemCount {
+                return nil
+            }
+            
+            let closesPlaceholderRow = (0..<preloadItem).first { index in
+                if let item = getItemAtPath(indexPath: IndexPath(row: indexPath.row + index, section: 0)) {
+                    return item.isPlaceholder
+                }
+                return false
+            }
+            
+            if let closesPlaceholderRow {
+                var rowIndex = indexPath.row + closesPlaceholderRow
+                while rowIndex >= 0 {
+                    if let item = getItemAtPath(indexPath: IndexPath(row: rowIndex, section: 0)), !item.isPlaceholder {
+                        return item
+                    }
+                    rowIndex -= 1
+                }
+                
+                return nil
+            } else {
+                return nil
+            }
         }
     }
 

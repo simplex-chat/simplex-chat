@@ -423,7 +423,7 @@ struct ChatView: View {
         let cInfo = chat.chatInfo
         let mergedItems = filtered(im.reversedChatItems)
         return GeometryReader { g in
-            ReverseList(items: mergedItems, scrollState: $scrollModel.state) { ci in
+            ReverseList(items: mergedItems, gap: im.gap, scrollState: $scrollModel.state) { ci in
                 let voiceNoFrame = voiceWithoutFrame(ci)
                 let maxWidth = cInfo.chatType == .group
                                 ? voiceNoFrame

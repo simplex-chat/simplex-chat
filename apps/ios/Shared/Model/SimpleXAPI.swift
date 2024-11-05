@@ -319,6 +319,7 @@ private func apiChatsResponse(_ r: ChatResponse) throws -> [ChatData] {
 }
 
 let loadItemsPerPage = 50
+let preloadItem = 8
 
 func apiGetChat(type: ChatType, id: Int64, search: String = "") async throws -> (Chat, Int?) {
     let r = await chatSendCmd(.apiGetChat(type: type, id: id, pagination: .initial(count: loadItemsPerPage), search: search))
@@ -350,9 +351,14 @@ func loadChat(chat: Chat, search: String = "", clearItems: Bool = true) async {
         if clearItems {
             await MainActor.run { im.reversedChatItems = [] }
         }
-        let (chat, _) = try await apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
+        let (chat, gap) = try await apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
         await MainActor.run {
             im.reversedChatItems = chat.chatItems.reversed()
+            if let gap = gap {
+                im.gap = ChatGap(index: loadItemsPerPage, size: gap)
+            } else {
+                im.gap = nil
+            }
             m.updateChatInfo(chat.chatInfo)
         }
     } catch let error {

@@ -348,7 +348,7 @@ struct FramedItemView: View {
         do {
             var reversedPage = Array<ChatItem>()
             let pagination: ChatPagination = .around(chatItemId: chatItemId, count: loadItemsPerPage * 2)
-            let (chatItems, _) = try await apiGetChatItems(
+            let (chatItems, gap) = try await apiGetChatItems(
                 type: cInfo.chatType,
                 id: cInfo.apiId,
                 pagination: pagination,
@@ -359,6 +359,9 @@ struct FramedItemView: View {
 
             await MainActor.run {
                 ItemsModel.shared.reversedChatItems.append(contentsOf: reversedPage)
+                if let size = gap {
+                    ItemsModel.shared.gap = ChatGap(index: reversedPage.count, size: size)
+                }
             }
             
             return reversedPage
