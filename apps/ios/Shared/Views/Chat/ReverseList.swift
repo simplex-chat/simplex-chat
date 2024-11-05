@@ -36,8 +36,11 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 controller.scroll(to: items.firstIndex(where: { $0.id == id }), position: .bottom)
             case .bottom:
                 controller.scroll(to: 0, position: .top)
+            case let .unread(id):
+                controller.scrollToUnread(to: items.firstIndex(where: { $0.id == id }))
             }
         } else {
+            logger.error("[scrolling] not scrolling")
             controller.update(items: items)
         }
     }
@@ -78,7 +81,8 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             self.dataSource = UITableViewDiffableDataSource<Section, ChatItem>(
                 tableView: tableView
             ) { (tableView, indexPath, item) -> UITableViewCell? in
-                if indexPath.item > self.itemCount - 8 {
+                if indexPath.item > self.itemCount - 8, self.representer.scrollState == .atDestination {
+                    logger.error("[scrolling] requesting page")
                     self.representer.loadPage()
                 }
                 let cell = tableView.dequeueReusableCell(withIdentifier: cellReuseId, for: indexPath)
@@ -161,6 +165,18 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             )
             Task { representer.scrollState = .atDestination }
         }
+        
+        func scrollToUnread(to index: Int?) {
+            if let index = index {
+                if isVisible(indexPath: IndexPath(row: index, section: 0)) {
+                    self.scroll(to: 0, position: .top)
+                } else {
+                    self.scroll(to: index, position: .bottom)
+                }
+            } else {
+                self.scroll(to: index, position: .bottom)
+            }
+        }
 
         /// Scrolls to Item at index path
         /// - Parameter indexPath: Item to scroll to - will scroll to beginning of the list, if `nil`
@@ -169,7 +185,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             if #available(iOS 16.0, *) {
                 animated = true
             }
-            if let index, tableView.numberOfRows(inSection: 0) != 0 {
+            if let index, tableView.numberOfRows(inSection: 0) != 0, !isVisible(indexPath: IndexPath(row: index, section: 0)) {
                 tableView.scrollToRow(
                     at: IndexPath(row: index, section: 0),
                     at: position,
@@ -294,6 +310,7 @@ class ReverseListScrollModel: ObservableObject {
             case nextPage
             case item(ChatItem.ID)
             case bottom
+            case unread(ChatItem.ID)
         }
 
         case scrollingTo(Destination)
@@ -303,15 +320,24 @@ class ReverseListScrollModel: ObservableObject {
     @Published var state: State = .atDestination
 
     func scrollToNextPage() {
+        logger.error("[scrolling] to next page")
+
         state = .scrollingTo(.nextPage)
     }
 
     func scrollToBottom() {
+        logger.error("[scrolling] to bottom")
         state = .scrollingTo(.bottom)
     }
 
     func scrollToItem(id: ChatItem.ID) {
+        logger.error("[scrolling] to item \(id)")
         state = .scrollingTo(.item(id))
+    }
+    
+    func scrollToUnread(id: ChatItem.ID) {
+        logger.error("[scrolling] to unread")
+        state = .scrollingTo(.unread(id))
     }
 }
 

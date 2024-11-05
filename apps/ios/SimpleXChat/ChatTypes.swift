@@ -1529,11 +1529,6 @@ public struct ChatStats: Decodable, Hashable {
     public var unreadChat: Bool = false
 }
 
-public struct ChatGap: Decodable, Hashable {
-    public var index: Int?
-    public var size: Int
-}
-
 public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var contactId: Int64
     var localDisplayName: ContactName

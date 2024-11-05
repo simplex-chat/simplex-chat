@@ -546,7 +546,7 @@ public enum ChatResponse: Decodable, Error {
     case chatStopped
     case chatSuspended
     case apiChats(user: UserRef, chats: [ChatData])
-    case apiChat(user: UserRef, chat: ChatData, gap: ChatGap?)
+    case apiChat(user: UserRef, chat: ChatData, gap: Int?)
     case chatItemInfo(user: UserRef, chatItem: AChatItem, chatItemInfo: ChatItemInfo)
     case userProtoServers(user: UserRef, servers: UserProtoServers)
     case serverTestResult(user: UserRef, testServer: String, testFailure: ProtocolTestFailure?)
