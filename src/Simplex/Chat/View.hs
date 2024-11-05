@@ -93,7 +93,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRChatSuspended -> ["chat suspended"]
   CRApiChats u chats -> ttyUser u $ if testView then testViewChats chats else [viewJSON chats]
   CRChats chats -> viewChats ts tz chats
-  CRApiChat u chat -> ttyUser u $ if testView then testViewChat chat else [viewJSON chat]
+  CRApiChat u chat gap -> ttyUser u $ if testView then testViewChat chat else [viewJSON chat] <> viewChatGap gap
   CRApiParsedMarkdown ft -> [viewJSON ft]
   CRUserProtoServers u userServers -> ttyUser u $ viewUserServers userServers testView
   CRServerTestResult u srv testFailure -> ttyUser u $ viewServerTestResult srv testFailure
@@ -554,6 +554,12 @@ viewUsersList us =
 
 viewGroupSubscribed :: GroupInfo -> [StyledString]
 viewGroupSubscribed g = [membershipIncognito g <> ttyFullGroup g <> ": connected to server(s)"]
+
+viewChatGap :: Maybe ChatGap -> [StyledString]
+viewChatGap Nothing = []
+viewChatGap (Just size)
+  | size < 1 = []
+  | otherwise = [sShow size <> " newer message(s) available"]
 
 showSMPServer :: SMPServer -> String
 showSMPServer ProtocolServer {host} = B.unpack $ strEncode host
