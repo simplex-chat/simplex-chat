@@ -77,5 +77,18 @@ fun List<ChatItem>.putIntoGroups(revealedItems: Set<Long>): List<SectionItems> {
   return groups
 }
 
+fun List<SectionItems>.indexInParentItems(itemId: Long): Int {
+  var collapsedItemsCount = 0
+  for (group in this) {
+    val index = group.items.indexOfFirst { it.id == itemId }
+    if (index != -1) {
+      return group.startIndexInParentItems + index - collapsedItemsCount
+    } else if (!group.revealed.value) {
+      collapsedItemsCount += group.items.size - 1
+    }
+  }
+  return -1
+}
+
 private fun shouldShowAvatar(current: ChatItem, older: ChatItem?) =
   current.chatDir is CIDirection.GroupRcv && (older == null || (older.chatDir !is CIDirection.GroupRcv || older.chatDir.groupMember.memberId != current.chatDir.groupMember.memberId))

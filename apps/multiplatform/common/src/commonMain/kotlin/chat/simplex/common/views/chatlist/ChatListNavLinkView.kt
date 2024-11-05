@@ -1,7 +1,6 @@
 package chat.simplex.common.views.chatlist
 
 import SectionItemView
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -14,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -204,21 +204,21 @@ suspend fun noteFolderChatAction(rhId: Long?, noteFolder: NoteFolder) {
 }
 
 suspend fun openDirectChat(rhId: Long?, contactId: Long, chatModel: ChatModel) = coroutineScope {
-  val chat = chatModel.controller.apiGetChat(rhId, ChatType.Direct, contactId)
+  val chat = chatModel.controller.apiGetChat(rhId, ChatType.Direct, contactId, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
   if (chat != null && isActive) {
     openLoadedChat(chat, chatModel)
   }
 }
 
 suspend fun openGroupChat(rhId: Long?, groupId: Long, chatModel: ChatModel) = coroutineScope {
-  val chat = chatModel.controller.apiGetChat(rhId, ChatType.Group, groupId)
+  val chat = chatModel.controller.apiGetChat(rhId, ChatType.Group, groupId, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
   if (chat != null && isActive) {
     openLoadedChat(chat, chatModel)
   }
 }
 
 suspend fun openChat(rhId: Long?, chatInfo: ChatInfo, chatModel: ChatModel) = coroutineScope {
-  val chat = chatModel.controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId)
+  val chat = chatModel.controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
   if (chat != null && isActive) {
     openLoadedChat(chat, chatModel)
   }
@@ -230,12 +230,71 @@ fun openLoadedChat(chat: Chat, chatModel: ChatModel) {
   chatModel.chatId.value = chat.chatInfo.id
 }
 
-suspend fun apiLoadPrevMessages(ch: Chat, chatModel: ChatModel, beforeChatItemId: Long, search: String) {
+suspend fun apiLoadMessages(ch: Chat, pagination: ChatPagination, search: String, ) {
   val chatInfo = ch.chatInfo
-  val pagination = ChatPagination.Before(beforeChatItemId, ChatPagination.PRELOAD_COUNT)
   val chat = chatModel.controller.apiGetChat(ch.remoteHostId, chatInfo.chatType, chatInfo.apiId, pagination, search) ?: return
-  if (chatModel.chatId.value != chat.id) return
-  chatModel.chatItems.addAll(0, chat.chatItems)
+  if (chatModel.chatId.value != chat.id || chat.chatItems.isEmpty()) return
+  val oldItems = chatModel.chatItems.value
+  val newItems = SnapshotStateList<ChatItem>()
+  newItems.addAll(chatModel.chatItems.value)
+  when (pagination) {
+    is ChatPagination.Last -> chatModel.chatItems.replaceAll(chat.chatItems)
+    is ChatPagination.After -> {
+      val indexInCurrentItems: Int = oldItems.indexOfFirst { it.id == pagination.chatItemId }
+      if (indexInCurrentItems == -1) return
+      val newIds = mutableSetOf<Long>()
+      var i = 0
+      while (i < chat.chatItems.size) {
+        newIds.add(chat.chatItems[i].id)
+        i++
+      }
+      newItems.removeAll { newIds.contains(it.id) }
+      newItems.addAll(indexInCurrentItems + 1, chat.chatItems)
+      chatModel.chatItems.replaceAll(newItems)
+    }
+    is ChatPagination.Before -> {
+      val indexInCurrentItems: Int = oldItems.indexOfFirst { it.id == pagination.chatItemId }
+      if (indexInCurrentItems == -1) return
+      val newIds = mutableSetOf<Long>()
+      var i = 0
+      while (i < chat.chatItems.size) {
+        newIds.add(chat.chatItems[i].id)
+        i++
+      }
+      newItems.removeAll { newIds.contains(it.id) }
+      newItems.addAll(indexInCurrentItems, chat.chatItems)
+      chatModel.chatItems.replaceAll(newItems)
+    }
+    is ChatPagination.Around -> {
+      val newIds = mutableSetOf<Long>()
+      var i = 0
+      while (i < chat.chatItems.size) {
+        newIds.add(chat.chatItems[i].id)
+        i++
+      }
+      //val sizeBeforeRemove = newItems.size
+      newItems.removeAll { newIds.contains(it.id) }
+      //if (sizeBeforeRemove == newItems.size) {
+        // nothing was removed which means items weren't intersected and needs to be deleted after scroll position changes
+      //}
+      // currently, items will always be added on top, which is index 0
+      newItems.addAll(0, chat.chatItems)
+      chatModel.chatItems.replaceAll(newItems)
+    }
+    is ChatPagination.Initial -> {
+      val newIds = mutableSetOf<Long>()
+      var i = 0
+      while (i < chat.chatItems.size) {
+        newIds.add(chat.chatItems[i].id)
+        i++
+      }
+      newItems.removeAll { newIds.contains(it.id) }
+      val oldestNewItem = chat.chatItems.first()
+      val indexToAddAt = newItems.indexOfFirst { it.meta.itemTs > oldestNewItem.meta.itemTs }
+      newItems.addAll(if (indexToAddAt == -1) newItems.lastIndex + 1 else indexToAddAt, chat.chatItems)
+      chatModel.chatItems.replaceAll(newItems)
+    }
+  }
 }
 
 suspend fun apiFindMessages(ch: Chat, chatModel: ChatModel, search: String) {
