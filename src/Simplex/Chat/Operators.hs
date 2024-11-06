@@ -14,6 +14,7 @@ import qualified Data.Aeson.TH as JQ
 import Data.FileEmbed
 import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isNothing)
@@ -28,7 +29,7 @@ import Simplex.Chat.Types.Util (textParseJSON)
 import Simplex.Messaging.Agent.Env.SQLite (OperatorId, ServerCfg (..), ServerRoles (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, ProtocolType (..))
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), SProtocolType (..))
 import Simplex.Messaging.Util (safeDecodeUtf8)
 
 usageConditionsCommit :: Text
@@ -159,23 +160,34 @@ groupByOperator srvOperators smpSrvs xftpSrvs =
 data UserServersError
   = USEStorageMissing
   | USEProxyMissing
-  | USEDuplicate {server :: AProtoServerWithAuth}
+  | USEDuplicateSMP {server :: AProtoServerWithAuth}
+  | USEDuplicateXFTP {server :: AProtoServerWithAuth}
   deriving (Show)
 
 validateUserServers :: NonEmpty UserServers -> [UserServersError]
 validateUserServers userServers =
   let storageMissing_ = if any (canUseForRole storage) userServers then [] else [USEStorageMissing]
       proxyMissing_ = if any (canUseForRole proxy) userServers then [] else [USEProxyMissing]
-      -- TODO duplicate errors
-      -- allSMPServers =
-      --   map (\ServerCfg {server} -> server) $
-      --     concatMap (\UserServers {smpServers} -> smpServers) userServers
-   in storageMissing_ <> proxyMissing_ -- <> duplicateErrors
+
+      allSMPServers = map (\ServerCfg {server} -> server) $ concatMap (\UserServers {smpServers} -> smpServers) userServers
+      duplicateSMPServers = findDuplicatesByHost allSMPServers
+      duplicateSMPErrors = map (USEDuplicateSMP . AProtoServerWithAuth SPSMP) duplicateSMPServers
+
+      allXFTPServers = map (\ServerCfg {server} -> server) $ concatMap (\UserServers {xftpServers} -> xftpServers) userServers
+      duplicateXFTPServers = findDuplicatesByHost allXFTPServers
+      duplicateXFTPErrors = map (USEDuplicateXFTP . AProtoServerWithAuth SPXFTP) duplicateXFTPServers
+   in storageMissing_ <> proxyMissing_ <> duplicateSMPErrors <> duplicateXFTPErrors
   where
     canUseForRole :: (ServerRoles -> Bool) -> UserServers -> Bool
     canUseForRole roleSel UserServers {operator, smpServers, xftpServers} = case operator of
       Just ServerOperator {roles} -> roleSel roles
       Nothing -> not (null smpServers) && not (null xftpServers)
+    findDuplicatesByHost :: [ProtoServerWithAuth p] -> [ProtoServerWithAuth p]
+    findDuplicatesByHost servers =
+      let allHosts = concatMap (L.toList . host . protoServer) servers
+          hostCounts = M.fromListWith (+) [(host, 1 :: Int) | host <- allHosts]
+          duplicateHosts = M.keys $ M.filter (> 1) hostCounts
+       in filter (\srv -> any (`elem` duplicateHosts) (L.toList $ host . protoServer $ srv)) servers
 
 $(JQ.deriveJSON defaultJSON ''UsageConditions)
 
