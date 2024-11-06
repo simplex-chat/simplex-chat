@@ -2665,13 +2665,13 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         return item
     }
 
-    public static func placeholder(_ idx: Int) -> ChatItem {
+    public static func placeholder(idx: Int, text: String, chatDir: CIDirection) -> ChatItem {
         var item = ChatItem(
-            chatDir: CIDirection.directSnd,
+            chatDir: chatDir,
             meta: CIMeta(
                 itemId: Int64(idx * -10),
                 itemTs: .now,
-                itemText: "",
+                itemText: text,
                 itemStatus: .rcvRead,
                 createdAt: .now,
                 updatedAt: .now,
@@ -2681,7 +2681,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 deletable: false,
                 editable: false
             ),
-            content: .sndMsgContent(msgContent: .text("")),
+            content: .sndMsgContent(msgContent: .text(text)),
             quotedItem: nil,
             file: nil
         )

@@ -220,7 +220,11 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             var snapshot = NSDiffableDataSourceSnapshot<Section, ChatItem>()
             if let gap = gap {
                 var itemsCopy = items
-                let blanks = (0..<gap.size).map { index in ChatItem.placeholder(index + 1) }
+                let blanks = (0..<gap.size).map { index in
+                    // Using existing text instead of random rumble or empty text does make long scroll look natural.
+                    let sourceItem = items[index % items.count]
+                    return ChatItem.placeholder(idx: index + 1, text: sourceItem.text, chatDir: sourceItem.chatDir)
+                }
                 itemsCopy.insert(contentsOf: blanks, at: gap.index)
                 renderedItems = itemsCopy
             } else {

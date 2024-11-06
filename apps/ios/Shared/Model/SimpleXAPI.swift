@@ -318,8 +318,8 @@ private func apiChatsResponse(_ r: ChatResponse) throws -> [ChatData] {
     throw r
 }
 
-let loadItemsPerPage = 50
-let preloadItem = 8
+let loadItemsPerPage = 100
+let preloadItem = 25
 let idealChatListSize = 500
 
 func apiGetChat(type: ChatType, id: Int64, search: String = "") async throws -> (Chat, Int?) {
