@@ -18,7 +18,6 @@ struct ProtocolServersView: View {
     @Environment(\.editMode) private var editMode
     let serverProtocol: ServerProtocol
     @State private var currServers: [UserServer] = []
-    @State private var presetServers: [UserServer] = []
     @State private var servers: [UserServer] = []
     @State private var selectedServer: String? = nil
     @State private var showAddServer = false
@@ -92,8 +91,6 @@ struct ProtocolServersView: View {
                 selectedServer = servers.last?.id
             }
             Button("Scan server QR code") { showScanProtoServer = true }
-            Button("Add preset servers", action: addAllPresets)
-                .disabled(hasAllPresets())
         }
         .sheet(isPresented: $showScanProtoServer) {
             ScanProtocolServer(servers: $servers)
@@ -137,7 +134,6 @@ struct ProtocolServersView: View {
                 do {
                     let r = try getUserProtoServers(serverProtocol)
                     currServers = r.protoServers
-                    presetServers = r.presetServers
                     servers = currServers
                 } catch let error {
                     alert = .error(
@@ -234,22 +230,6 @@ struct ProtocolServersView: View {
                 srv.id == s.id || !srv.server.contains(host)
             }
         }
-    }
-
-    private func hasAllPresets() -> Bool {
-        presetServers.allSatisfy { hasPreset($0) }
-    }
-
-    private func addAllPresets() {
-        for srv in presetServers {
-            if !hasPreset(srv) {
-                servers.append(srv)
-            }
-        }
-    }
-
-    private func hasPreset(_ srv: UserServer) -> Bool {
-        servers.contains(where: { $0.server == srv.server })
     }
 
     private func testServers() {
