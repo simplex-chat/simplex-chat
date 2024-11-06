@@ -6,7 +6,7 @@ import * as CR from "../src/response"
 
 describe.skip("ChatClient (expects SimpleX Chat server with a user, without contacts, on localhost:5225)", () => {
   test("connect, send message to themselves, delete contact", async () => {
-    const c = await ChatClient.create("ws://localhost:5225")
+    const c = await ChatClient.create("ws://127.0.0.1:5225")
     assert.strictEqual((await c.msgQ.dequeue()).type, "contactSubSummary")
     assert.strictEqual((await c.msgQ.dequeue()).type, "memberSubErrors")
     assert.strictEqual((await c.msgQ.dequeue()).type, "pendingSubSummary")
@@ -43,5 +43,25 @@ describe.skip("ChatClient (expects SimpleX Chat server with a user, without cont
         r.chatItems[0].chatItem.content.msgContent.text === "hello"
       )
     }
+  }, 20000)
+
+  test("connect, create a new group successfully", async () => {
+    const c = await ChatClient.create("ws://127.0.0.1:5225")
+    const user = await c.apiGetActiveUser()
+    assert.notEqual(user, null)
+
+    const newGroupProfile = {
+      displayName: "test1234",
+      fullName: "test1234",
+    }
+
+    if (user == null) throw new Error("Cannot reach")
+    const newGroup = await c.apiNewGroup(user.userId, newGroupProfile)
+    assert.strictEqual(typeof newGroup.groupId, "number")
+    assert.strictEqual(newGroup.groupProfile.displayName, newGroupProfile.displayName)
+
+    // reset
+    await c.apiLeaveGroup(newGroup.groupId)
+    await c.disconnect()
   }, 20000)
 })

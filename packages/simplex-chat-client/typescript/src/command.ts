@@ -362,6 +362,7 @@ export interface APIParseMarkdown extends IChatCommand {
 
 export interface NewGroup extends IChatCommand {
   type: "newGroup"
+  userId: number
   groupProfile: GroupProfile
 }
 
@@ -735,7 +736,7 @@ export function cmdString(cmd: ChatCommand): string {
     case "apiParseMarkdown":
       return `/_parse ${cmd.text}`
     case "newGroup":
-      return `/_group ${JSON.stringify(cmd.groupProfile)}`
+      return `/_group ${cmd.userId} ${JSON.stringify(cmd.groupProfile)}`
     case "apiAddMember":
       return `/_add #${cmd.groupId} ${cmd.contactId} ${cmd.memberRole}`
     case "apiJoinGroup":

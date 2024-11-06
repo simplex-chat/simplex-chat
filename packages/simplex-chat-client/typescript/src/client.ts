@@ -304,8 +304,8 @@ export class ChatClient {
     throw new ChatCommandError("error receiving file", r)
   }
 
-  async apiNewGroup(groupProfile: CR.GroupProfile): Promise<CR.GroupInfo> {
-    const r = await this.sendChatCommand({type: "newGroup", groupProfile})
+  async apiNewGroup(userId: number, groupProfile: CR.GroupProfile): Promise<CR.GroupInfo> {
+    const r = await this.sendChatCommand({type: "newGroup", userId, groupProfile})
     if (r.type === "groupCreated") return r.groupInfo
     throw new ChatCommandError("error creating group", r)
   }
