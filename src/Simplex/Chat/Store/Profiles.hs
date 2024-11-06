@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -596,7 +597,7 @@ getServerOperators db = do
       UTCTime ->
       UsageConditions ->
       Maybe UsageConditions ->
-      ( (OperatorId, Maybe OperatorTag, Text, Maybe Text, Text, Bool, Bool, Bool)
+      ( (DBEntityId, Maybe OperatorTag, Text, Maybe Text, Text, Bool, Bool, Bool)
           :. (Maybe Text, Maybe UTCTime)
       ) ->
       ServerOperator
@@ -628,15 +629,16 @@ getServerOperators db = do
                         CARequired $ conditionsRequiredOrDeadline createdAt (fromMaybe now notifiedAt)
                       else -- new conditions available, latest accepted conditions were NOT accepted for operator (were accepted for other operator(s))
                         CARequired Nothing
-         in ServerOperator {operatorId, operatorTag, tradeName, legalName, serverDomains, conditionsAcceptance, enabled, roles}
+         in ServerOperator {operatorId, operatorTag, appVendor = False, tradeName, legalName, serverDomains, conditionsAcceptance, enabled, roles}
+         -- TODO appVendor
 
 setServerOperators :: DB.Connection -> NonEmpty OperatorEnabled -> ExceptT StoreError IO ([ServerOperator], Maybe UsageConditionsAction)
 setServerOperators db operatorsEnabled = do
-  liftIO $ forM_ operatorsEnabled $ \OperatorEnabled {operatorId, enabled, roles = ServerRoles {storage, proxy}} ->
+  liftIO $ forM_ operatorsEnabled $ \OperatorEnabled {operatorId', enabled', roles' = ServerRoles {storage, proxy}} ->
     DB.execute
       db
       "UPDATE server_operators SET enabled = ?, role_storage = ?, role_proxy = ? WHERE server_operator_id = ?"
-      (enabled, storage, proxy, operatorId)
+      (enabled', storage, proxy, operatorId')
   getServerOperators db
 
 getCurrentUsageConditions :: DB.Connection -> ExceptT StoreError IO UsageConditions
@@ -727,7 +729,7 @@ setUserServers db User {userId} userServers = do
           WHERE server_operator_id = ?
         |]
         (enabled, storage, proxy, operatorId, currentTs)
-    overwriteServers :: forall p. ProtocolTypeI p => UTCTime -> Maybe ServerOperator -> [ServerCfg p] -> ExceptT StoreError IO ()
+    overwriteServers :: forall p. ProtocolTypeI p => UTCTime -> Maybe ServerOperator -> [UserServer p] -> ExceptT StoreError IO ()
     overwriteServers currentTs serverOperator servers =
       checkConstraint SEUniqueID . ExceptT $ do
         case serverOperator of
@@ -735,7 +737,7 @@ setUserServers db User {userId} userServers = do
             DB.execute db "DELETE FROM protocol_servers WHERE user_id = ? AND server_operator_id IS NULL AND protocol = ?" (userId, protocol)
           Just ServerOperator {operatorId} ->
             DB.execute db "DELETE FROM protocol_servers WHERE user_id = ? AND server_operator_id = ? AND protocol = ?" (userId, operatorId, protocol)
-        forM_ servers $ \ServerCfg {server, operator, preset, tested, enabled} -> do
+        forM_ servers $ \UserServer {server, serverOperatorId, tested, enabled} -> do
           let ProtoServerWithAuth ProtocolServer {host, port, keyHash} auth_ = server
           DB.execute
             db
@@ -744,7 +746,8 @@ setUserServers db User {userId} userServers = do
                 (protocol, host, port, key_hash, basic_auth, operator, preset, tested, enabled, user_id, created_at, updated_at)
               VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
             |]
-            ((protocol, host, port, keyHash, safeDecodeUtf8 . unBasicAuth <$> auth_, operator) :. (preset, tested, enabled, userId, currentTs, currentTs))
+            ((protocol, host, port, keyHash, safeDecodeUtf8 . unBasicAuth <$> auth_, serverOperatorId) :. (False, tested, enabled, userId, currentTs, currentTs))
+            -- take preset from operator
         pure $ Right ()
       where
         protocol = decodeLatin1 $ strEncode $ protocolTypeI @p

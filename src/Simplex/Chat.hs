@@ -191,7 +191,7 @@ defaultChatConfig =
                     smpServers = xyzSMPServers,
                     useSMP = 3,
                     xftpServers = xyzXFTPServers,
-                    useXFTP = 3,
+                    useXFTP = 3
                   }
               ],
             ntf = _defaultNtfServers,
