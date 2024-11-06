@@ -12,7 +12,7 @@ import CodeScanner
 
 struct ScanProtocolServer: View {
     @Environment(\.dismiss) var dismiss: DismissAction
-    @Binding var servers: [ServerCfg]
+    @Binding var servers: [UserServer]
     @State private var showAddressError = false
 
     var body: some View {
@@ -40,7 +40,7 @@ struct ScanProtocolServer: View {
         switch resp {
         case let .success(r):
             if parseServerAddress(r.string) != nil {
-                servers.append(ServerCfg(server: r.string, preset: false, tested: nil, enabled: false))
+                servers.append(UserServer(server: r.string, tested: nil, enabled: false))
                 dismiss()
             } else {
                 showAddressError = true

@@ -40,8 +40,8 @@ struct NetworkAndServers: View {
         VStack {
             List {
                 let conditionsAction = m.usageConditionsAction
-                let smpServers = [ServerCfg.sampleData.preset, ServerCfg.sampleData.preset]
-                let xftpServers = [ServerCfg.sampleData.xftpPreset, ServerCfg.sampleData.xftpPreset]
+                let smpServers = [UserServer.sampleData.preset, UserServer.sampleData.preset]
+                let xftpServers = [UserServer.sampleData.xftpPreset, UserServer.sampleData.xftpPreset]
                 Section {
                     ForEach($serverOperators) { srvOperator in
                         serverOperatorView(srvOperator, smpServers, xftpServers)
@@ -134,8 +134,8 @@ struct NetworkAndServers: View {
 
     @ViewBuilder private func serverOperatorView(
         _ serverOperator: Binding<ServerOperator>,
-        _ smpServers: [ServerCfg],
-        _ xftpServers: [ServerCfg]
+        _ smpServers: [UserServer],
+        _ xftpServers: [UserServer]
     ) -> some View {
         let srvOperator = serverOperator.wrappedValue
         NavigationLink() {

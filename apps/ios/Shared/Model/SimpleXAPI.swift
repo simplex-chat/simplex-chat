@@ -507,7 +507,7 @@ func getUserProtoServers(_ serverProtocol: ServerProtocol) throws -> UserProtoSe
     throw r
 }
 
-func setUserProtoServers(_ serverProtocol: ServerProtocol, servers: [ServerCfg]) async throws {
+func setUserProtoServers(_ serverProtocol: ServerProtocol, servers: [UserServer]) async throws {
     let userId = try currentUserId("setUserProtoServers")
     try await sendCommandOkResp(.apiSetUserProtoServers(userId: userId, serverProtocol: serverProtocol, servers: servers))
 }
