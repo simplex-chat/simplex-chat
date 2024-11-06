@@ -73,7 +73,7 @@ public enum ChatCommand {
     case apiCreateMemberContact(groupId: Int64, groupMemberId: Int64)
     case apiSendMemberContactInvitation(contactId: Int64, msg: MsgContent)
     case apiGetUserProtoServers(userId: Int64, serverProtocol: ServerProtocol)
-    case apiSetUserProtoServers(userId: Int64, serverProtocol: ServerProtocol, servers: [ServerCfg])
+    case apiSetUserProtoServers(userId: Int64, serverProtocol: ServerProtocol, servers: [UserServer])
     case apiTestProtoServer(userId: Int64, server: String)
     case apiSetChatItemTTL(userId: Int64, seconds: Int64?)
     case apiGetChatItemTTL(userId: Int64)
@@ -476,7 +476,7 @@ public enum ChatCommand {
         ids.map { "\($0)" }.joined(separator: ",")
     }
     
-    func protoServersStr(_ servers: [ServerCfg]) -> String {
+    func protoServersStr(_ servers: [UserServer]) -> String {
         encodeJSON(ProtoServersConfig(servers: servers))
     }
 
@@ -1176,7 +1176,7 @@ public struct DBEncryptionConfig: Codable {
 }
 
 struct SMPServersConfig: Encodable {
-    var smpServers: [ServerCfg]
+    var smpServers: [UserServer]
 }
 
 public enum ServerProtocol: String, Decodable {
@@ -1185,13 +1185,13 @@ public enum ServerProtocol: String, Decodable {
 }
 
 public struct ProtoServersConfig: Codable {
-    public var servers: [ServerCfg]
+    public var servers: [UserServer]
 }
 
 public struct UserProtoServers: Decodable {
     public var serverProtocol: ServerProtocol
-    public var protoServers: [ServerCfg]
-    public var presetServers: [ServerCfg]
+    public var protoServers: [UserServer]
+    public var presetServers: [UserServer]
 }
 
 public enum OperatorTag: Decodable {
@@ -1321,65 +1321,55 @@ public struct ServerRoles: Decodable {
     public var proxy: Bool
 }
 
-public struct ServerCfg: Identifiable, Equatable, Codable, Hashable {
+public struct UserServer: Identifiable, Equatable, Codable, Hashable {
     public var server: String
-    public var operatorId: Int64?
-    public var preset: Bool
     public var tested: Bool?
     public var enabled: Bool
     var createdAt = Date()
-//    public var sendEnabled: Bool // can we potentially want to prevent sending on the servers we use to receive?
-// Even if we don't see the use case, it's probably better to allow it in the model
-// In any case, "trusted/known" servers are out of scope of this change
 
-    public init(server: String, preset: Bool, tested: Bool?, enabled: Bool) {
+    public init(server: String, tested: Bool?, enabled: Bool) {
         self.server = server
-        self.preset = preset
         self.tested = tested
         self.enabled = enabled
     }
 
-    public static func == (l: ServerCfg, r: ServerCfg) -> Bool {
-        l.server == r.server && l.preset == r.preset && l.tested == r.tested && l.enabled == r.enabled
+    public static func == (l: UserServer, r: UserServer) -> Bool {
+        l.server == r.server && l.tested == r.tested && l.enabled == r.enabled
     }
 
     public var id: String { "\(server) \(createdAt)" }
 
-    public static var empty = ServerCfg(server: "", preset: false, tested: nil, enabled: false)
+    public static var empty = UserServer(server: "", tested: nil, enabled: false)
 
     public var isEmpty: Bool {
         server.trimmingCharacters(in: .whitespaces) == ""
     }
 
     public struct SampleData {
-        public var preset: ServerCfg
-        public var custom: ServerCfg
-        public var untested: ServerCfg
-        public var xftpPreset: ServerCfg
+        public var preset: UserServer
+        public var custom: UserServer
+        public var untested: UserServer
+        public var xftpPreset: UserServer
     }
 
     public static var sampleData = SampleData(
-        preset: ServerCfg(
+        preset: UserServer(
             server: "smp://abcd@smp8.simplex.im",
-            preset: true,
             tested: true,
             enabled: true
         ),
-        custom: ServerCfg(
+        custom: UserServer(
             server: "smp://abcd@smp9.simplex.im",
-            preset: false,
             tested: false,
             enabled: false
         ),
-        untested: ServerCfg(
+        untested: UserServer(
             server: "smp://abcd@smp10.simplex.im",
-            preset: false,
             tested: nil,
             enabled: true
         ),
-        xftpPreset: ServerCfg(
+        xftpPreset: UserServer(
             server: "xftp://abcd@xftp8.simplex.im",
-            preset: true,
             tested: true,
             enabled: true
         )
@@ -1387,7 +1377,7 @@ public struct ServerCfg: Identifiable, Equatable, Codable, Hashable {
 
     enum CodingKeys: CodingKey {
         case server
-        case preset
+
         case tested
         case enabled
     }

@@ -20,10 +20,10 @@ struct OperatorView: View {
     @State var useOperator: Bool
     @State private var useOperatorToggleReset: Bool = false
     @State private var showConditionsSheet: Bool = false
-    @State var currSMPServers: [ServerCfg]
-    @State var smpServers: [ServerCfg] = []
-    @State var currXFTPServers: [ServerCfg]
-    @State var xftpServers: [ServerCfg] = []
+    @State var currSMPServers: [UserServer]
+    @State var smpServers: [UserServer] = []
+    @State var currXFTPServers: [UserServer]
+    @State var xftpServers: [UserServer] = []
     @State private var selectedServer: String? = nil
     @State private var justOpened = true
 
@@ -149,7 +149,7 @@ struct OperatorView: View {
         }
     }
 
-    @ViewBuilder private func serversSection(_ servers: Binding<[ServerCfg]>, _ serverProtocol: ServerProtocol) -> some View {
+    @ViewBuilder private func serversSection(_ servers: Binding<[UserServer]>, _ serverProtocol: ServerProtocol) -> some View {
         let proto = serverProtocol.rawValue.uppercased()
         Section {
             ForEach(servers) { srv in
@@ -167,7 +167,7 @@ struct OperatorView: View {
 
     // TODO Refactor (similar function in ProtocolServersView) / Keep modified for operator servers? (some things are not applicable)
     // TODO Check all servers across all operators (uniqueAddress in ProtocolServersView) / Validate via api (per server?)
-    private func protocolServerView(_ server: Binding<ServerCfg>, _ serverProtocol: ServerProtocol) -> some View {
+    private func protocolServerView(_ server: Binding<UserServer>, _ serverProtocol: ServerProtocol) -> some View {
         let proto = serverProtocol.rawValue.uppercased()
         let srv = server.wrappedValue
         return NavigationLink(tag: srv.id, selection: $selectedServer) {
@@ -175,6 +175,7 @@ struct OperatorView: View {
                 serverProtocol: serverProtocol,
                 server: server,
                 serverToEdit: srv,
+                preset: true,
                 backLabel: "\(serverOperator.name) servers"
             )
             .navigationBarTitle("\(proto) server")
@@ -408,7 +409,7 @@ struct UsageConditionsView: View {
         serverOperator: Binding.constant(ServerOperator.sampleData1),
         serverOperatorToEdit: ServerOperator.sampleData1,
         useOperator: ServerOperator.sampleData1.enabled,
-        currSMPServers: [ServerCfg.sampleData.preset],
-        currXFTPServers: [ServerCfg.sampleData.xftpPreset]
+        currSMPServers: [UserServer.sampleData.preset],
+        currXFTPServers: [UserServer.sampleData.xftpPreset]
     )
 }
