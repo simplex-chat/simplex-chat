@@ -31,7 +31,6 @@ struct ChatView: View {
     @State private var customUserProfile: Profile?
     @State private var connectionCode: String?
     @State private var loadingItems = false
-    @State private var firstPage = false
     @State private var revealedChatItem: ChatItem?
     @State private var searchMode = false
     @State private var searchText: String = ""
@@ -859,7 +858,7 @@ struct ChatView: View {
 
     private func loadChatItems(_ cInfo: ChatInfo, _ pagination: ChatPagination = .initial(count: loadItemsPerPage)) {
         Task {
-            if loadingItems || firstPage { return }
+            if loadingItems { return }
             loadingItems = true
             do {
                 var reversedPage = Array<ChatItem>()
@@ -885,18 +884,18 @@ struct ChatView: View {
                     reversedPage.append(contentsOf: chatItems.reversed())
                 }
                 let dedupedreversePage = reversedPage.filter { !im.chatItemIds.contains($0.id) }
-                await MainActor.run {
-                    if reversedPage.count == 0 {
-                        firstPage = true
-                    } else {
+                                    
+                logger.error("[scrolling] deduped: \(dedupedreversePage.count) \(reversedPage.count)")
 
+                await MainActor.run {
+                    if dedupedreversePage.count > 0 {
                         switch pagination {
                         case .before, .last, .initial:
                             im.reversedChatItems.append(contentsOf: dedupedreversePage)
                         case let .after(chatItemId, _):
                             let index = im.reversedChatItems.firstIndex { $0.id == chatItemId }
                             logger.error("[scrolling] setting: \(dedupedreversePage.count) \(index ?? -1)")
-
+                            
                             if let index {
                                 if let gap = im.gap {
                                     let size = gap.size - dedupedreversePage.count
