@@ -346,6 +346,7 @@ struct FramedItemView: View {
     
     private func loadItemsAround(_ cInfo: ChatInfo, _ chatItemId: Int64) async -> [ChatItem]? {
         do {
+            let im = ItemsModel.shared
             var reversedPage = Array<ChatItem>()
             let pagination: ChatPagination = .around(chatItemId: chatItemId, count: loadItemsPerPage * 2)
             let (chatItems, gap) = try await apiGetChatItems(
@@ -355,13 +356,15 @@ struct FramedItemView: View {
                 search: ""
             )
             
-            reversedPage.append(contentsOf: chatItems.reversed())
+            let dedupedChatItems = chatItems.filter { !im.chatItemIds.contains($0.id) }
+            reversedPage.append(contentsOf: dedupedChatItems.reversed())
 
             await MainActor.run {
-                ItemsModel.shared.reversedChatItems.append(contentsOf: reversedPage)
-                if let size = gap {
-                    ItemsModel.shared.gap = ChatGap(index: reversedPage.count, size: size)
+                let itemCount = im.reversedChatItems.count
+                if let size = gap, size - itemCount > 0  {
+                    im.gap = ChatGap(index: itemCount, size: size - itemCount)
                 }
+                im.reversedChatItems.append(contentsOf: reversedPage)
             }
             
             return reversedPage

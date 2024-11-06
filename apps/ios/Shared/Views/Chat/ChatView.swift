@@ -443,8 +443,8 @@ struct ChatView: View {
                     forwardedChatItems: $forwardedChatItems
                 )
                 .id(ci.id) // Required to trigger `onAppear` on iOS15
-            } loadPage: {
-                loadChatItems(cInfo)
+            } loadPage: { pagination in
+                loadChatItems(cInfo, pagination)
             }
             .opacity(ItemsModel.shared.isLoading ? 0 : 1)
             .padding(.vertical, -InvertedTableView.inset)
@@ -857,7 +857,7 @@ struct ChatView: View {
         }
     }
 
-    private func loadChatItems(_ cInfo: ChatInfo) {
+    private func loadChatItems(_ cInfo: ChatInfo, _ pagination: ChatPagination = .initial(count: loadItemsPerPage)) {
         Task {
             if loadingItems || firstPage { return }
             loadingItems = true
@@ -866,26 +866,50 @@ struct ChatView: View {
                 var chatItemsAvailable = true
                 // Load additional items until the page is +50 large after merging
                 while chatItemsAvailable && filtered(reversedPage).count < loadItemsPerPage {
-                    let pagination: ChatPagination =
-                        if let lastItem = reversedPage.last ?? im.reversedChatItems.last {
-                            .before(chatItemId: lastItem.id, count: loadItemsPerPage)
-                        } else {
-                            .last(count: loadItemsPerPage)
-                        }
+                    let chatPagination: ChatPagination = switch pagination {
+                    case let .before(chatItemId, count): .before(chatItemId: reversedPage.last?.id ?? chatItemId, count: count)
+                    case let .last(count): .last(count: count)
+                    case let .initial(count): .initial(count: count)
+                    case let .after(chatItemId, count):
+                            .after(chatItemId: reversedPage.first?.id ?? chatItemId, count: count)
+                    case .around(_, _): throw RuntimeError("Unsupported pagination type for loading chat items: \(pagination)")
+                    }
+                    
                     let (chatItems, _) = try await apiGetChatItems(
                         type: cInfo.chatType,
                         id: cInfo.apiId,
-                        pagination: pagination,
+                        pagination: chatPagination,
                         search: searchText
                     )
                     chatItemsAvailable = !chatItems.isEmpty
                     reversedPage.append(contentsOf: chatItems.reversed())
                 }
+                let dedupedreversePage = reversedPage.filter { !im.chatItemIds.contains($0.id) }
                 await MainActor.run {
                     if reversedPage.count == 0 {
                         firstPage = true
                     } else {
-                        im.reversedChatItems.append(contentsOf: reversedPage)
+
+                        switch pagination {
+                        case .before, .last, .initial:
+                            im.reversedChatItems.append(contentsOf: dedupedreversePage)
+                        case let .after(chatItemId, _):
+                            let index = im.reversedChatItems.firstIndex { $0.id == chatItemId }
+                            logger.error("[scrolling] setting: \(dedupedreversePage.count) \(index ?? -1)")
+
+                            if let index {
+                                if let gap = im.gap {
+                                    let size = gap.size - dedupedreversePage.count
+                                    if size > 0 {
+                                        im.gap = ChatGap(index: gap.index, size: size)
+                                    } else {
+                                        im.gap = nil
+                                    }
+                                }
+                                im.reversedChatItems.insert(contentsOf: dedupedreversePage, at: index)
+                            }
+                        case .around(_, _): break
+                        }
                     }
                     loadingItems = false
                 }

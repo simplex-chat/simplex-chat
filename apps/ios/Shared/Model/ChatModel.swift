@@ -52,8 +52,13 @@ class ItemsModel: ObservableObject {
     static let shared = ItemsModel()
     private let publisher = ObservableObjectPublisher()
     private var bag = Set<AnyCancellable>()
+    var chatItemIds = Set<ChatItem.ID>()
     var reversedChatItems: [ChatItem] = [] {
-        willSet { publisher.send() }
+        willSet {
+            chatItemIds.removeAll()
+            chatItemIds.formUnion(newValue.map { $0.id })
+            publisher.send()
+        }
     }
     var itemAdded = false {
         willSet { publisher.send() }

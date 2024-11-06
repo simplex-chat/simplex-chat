@@ -20,7 +20,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
     /// Closure, that returns user interface for a given item
     let content: (ChatItem) -> Content
 
-    let loadPage: () -> Void
+    let loadPage: (_ pagination: ChatPagination) -> Void
 
     func makeUIViewController(context: Context) -> Controller {
         Controller(representer: self)
@@ -41,7 +41,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 controller.scrollToUnread(to: items.first(where: { $0.id == id }))
             }
         } else {
-            logger.error("[scrolling] not scrolling gap: (\(gap?.index ?? -1), \(gap?.size ?? 0)")
+            logger.error("[scrolling] not scrolling gap: (\(gap?.index ?? -1), \(gap?.size ?? 0))")
             controller.update(items: items, gap: gap)
         }
     }
@@ -85,11 +85,12 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 if self.representer.scrollState == .atDestination {
                     if indexPath.item > self.itemCount - preloadItem, let item = self.getItemAtPath(indexPath: IndexPath(row: self.itemCount - 1, section: 0)) {
                         logger.error("[scrolling] requesting page \(item.text)")
-                        self.representer.loadPage()
+                        self.representer.loadPage(.before(chatItemId: item.id, count: loadItemsPerPage))
                     } else if let item = self.getFirstItemBeforePlacholder(indexPath) {
-                        logger.error("[scrolling] needs items in top \(item.text)")
+                        // TODO: Cleanup, this should never be possible
                     } else if let item = self.getFirstItemAfterPlacholder(indexPath) {
                         logger.error("[scrolling] needs items in bottom \(item.text)")
+                        self.representer.loadPage(.after(chatItemId: item.id, count: loadItemsPerPage))
                     }
                 }
                 let cell = tableView.dequeueReusableCell(withIdentifier: cellReuseId, for: indexPath)
