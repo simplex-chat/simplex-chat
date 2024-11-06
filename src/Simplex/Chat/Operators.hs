@@ -42,7 +42,7 @@ import Simplex.Chat.Types.Util (textParseJSON)
 import Simplex.Messaging.Agent.Env.SQLite (OperatorId, ServerCfg (..), ServerRoles (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, ProtoServerWithAuth, ProtocolType (..), ProtocolTypeI)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI, SProtocolType (..))
 import Simplex.Messaging.Util (safeDecodeUtf8)
 
 usageConditionsCommit :: Text
@@ -54,7 +54,7 @@ previousConditionsCommit = "edf99fcd1d7d38d2501d19608b94c084cf00f2ac"
 usageConditionsText :: Text
 usageConditionsText =
   $( let s = $(embedFile =<< makeRelativeToProject "PRIVACY.md")
-      in [| stripFrontMatter (safeDecodeUtf8 $(lift s)) |]
+      in [|stripFrontMatter (safeDecodeUtf8 $(lift s))|]
    )
 
 data EntityStored = ESStored | ESNew
@@ -234,7 +234,7 @@ usageConditionsToAdd newUser prevCommit sourceCommit createdAt = \case
     | newUser -> (Just sourceCond, [sourceCond])
     | otherwise -> (Just prevCond, [prevCond, sourceCond])
     where
-      prevCond = conditions 1 prevCommit 
+      prevCond = conditions 1 prevCommit
       sourceCond = conditions 2 sourceCommit
   conds -> (Nothing, if hasSourceCond then [] else [sourceCond])
     where
@@ -275,20 +275,19 @@ updatedUserServers' presetSrvs storedSrvs = (userServers, agentSMPServers, agent
     knownPresetOps :: Set (Maybe OperatorTag)
     knownPresetOps = foldl' (\s PresetOperatorServers {operator} -> S.insert (operatorTag operator) s) S.empty presetSrvs
 
-    -- make map domain -> operator
-    -- storedSrvs:
-    --  - remove preset operators with tags not present in presets)
-    --  - flatten
-    --  - set correct operators based on domains
-    --  - split servers to with/without preset operators
-    --  - make Map (protoserver, stored server record) from servers with preset operators
-    -- presetSrvs: flatten, update using map above, prepare agent servers, reassemble to userServers
-    -- add other operators and servers without operator
-    --
-    -- (storedPresets, storedOthers) = partition (isJust . operatorTag . operator) storedSrvs
-    -- (storedOthersKeep, storeOthersPresets)
-    -- userServers = foldr addOther (foldr addPreset [] presetSrvs) storedOthers
-
+-- make map domain -> operator
+-- storedSrvs:
+--  - remove preset operators with tags not present in presets)
+--  - flatten
+--  - set correct operators based on domains
+--  - split servers to with/without preset operators
+--  - make Map (protoserver, stored server record) from servers with preset operators
+-- presetSrvs: flatten, update using map above, prepare agent servers, reassemble to userServers
+-- add other operators and servers without operator
+--
+-- (storedPresets, storedOthers) = partition (isJust . operatorTag . operator) storedSrvs
+-- (storedOthersKeep, storeOthersPresets)
+-- userServers = foldr addOther (foldr addPreset [] presetSrvs) storedOthers
 
 -- updatedUserServers :: NonEmpty PresetOperatorServers -> [ServerOperator] -> [UserServer 'PSMP] -> [UserServer 'PXFTP] -> Either String ([UserServer 'PSMP], [UserServer 'PXFTP])
 -- updatedUserServers presetSrvs storedOps smpSrvs xftpSrvs = do
@@ -320,14 +319,13 @@ updatedUserServers' presetSrvs storedSrvs = (userServers, agentSMPServers, agent
 --         enabledSrvs :: [(Bool, UserServer p)] -> [UserServer p]
 --         enabledSrvs = undefined
 
-    -- addSrv srv@ServerCfg {server = ProtocolServerWithAuth ProtocolServer {host}} uss =
-    --   case find (\us -> any [\h -> any (\d -> d `T.isSuffixOf` ) serverDomains (operator us)] host) uss of
-    --     Just opId 
-    --   where
-    --     hasOperatorDomain ServerCfg {server = ProtocolServerWithAuth ProtocolServer {host}} us
+-- addSrv srv@ServerCfg {server = ProtocolServerWithAuth ProtocolServer {host}} uss =
+--   case find (\us -> any [\h -> any (\d -> d `T.isSuffixOf` ) serverDomains (operator us)] host) uss of
+--     Just opId
+--   where
+--     hasOperatorDomain ServerCfg {server = ProtocolServerWithAuth ProtocolServer {host}} us
 
-
-    --   addSrv srv uss = ... а тут просто найти оператора в списке и вставить ему сервер через add и как то ругнуться если его нет (но такого не должно быть). Либо вообще есть вариант сразу читать в этом формате - сначала прочитать операторов и в цикле читать серверы каждого - это вот может быть еще проще
+--   addSrv srv uss = ... а тут просто найти оператора в списке и вставить ему сервер через add и как то ругнуться если его нет (но такого не должно быть). Либо вообще есть вариант сразу читать в этом формате - сначала прочитать операторов и в цикле читать серверы каждого - это вот может быть еще проще
 
 -- groupByOperator :: [ServerOperator] -> [ServerCfg 'PSMP] -> [ServerCfg 'PXFTP] -> [UserServers]
 -- groupByOperator srvOperators smpSrvs xftpSrvs =
@@ -350,23 +348,34 @@ updatedUserServers' presetSrvs storedSrvs = (userServers, agentSMPServers, agent
 data UserServersError
   = USEStorageMissing
   | USEProxyMissing
-  | USEDuplicate {server :: AProtoServerWithAuth}
+  | USEDuplicateSMP {server :: AProtoServerWithAuth}
+  | USEDuplicateXFTP {server :: AProtoServerWithAuth}
   deriving (Show)
 
 validateUserServers :: NonEmpty UserServers -> [UserServersError]
 validateUserServers userServers =
   let storageMissing_ = if any (canUseForRole storage) userServers then [] else [USEStorageMissing]
       proxyMissing_ = if any (canUseForRole proxy) userServers then [] else [USEProxyMissing]
-      -- TODO duplicate errors
-      -- allSMPServers =
-      --   map (\ServerCfg {server} -> server) $
-      --     concatMap (\UserServers {smpServers} -> smpServers) userServers
-   in storageMissing_ <> proxyMissing_ -- <> duplicateErrors
+
+      allSMPServers = map (\UserServer {server} -> server) $ concatMap (\UserServers {smpServers} -> smpServers) userServers
+      duplicateSMPServers = findDuplicatesByHost allSMPServers
+      duplicateSMPErrors = map (USEDuplicateSMP . AProtoServerWithAuth SPSMP) duplicateSMPServers
+
+      allXFTPServers = map (\UserServer {server} -> server) $ concatMap (\UserServers {xftpServers} -> xftpServers) userServers
+      duplicateXFTPServers = findDuplicatesByHost allXFTPServers
+      duplicateXFTPErrors = map (USEDuplicateXFTP . AProtoServerWithAuth SPXFTP) duplicateXFTPServers
+   in storageMissing_ <> proxyMissing_ <> duplicateSMPErrors <> duplicateXFTPErrors
   where
     canUseForRole :: (ServerRoles -> Bool) -> UserServers -> Bool
     canUseForRole roleSel UserServers {operator, smpServers, xftpServers} = case operator of
       Just ServerOperator {roles} -> roleSel roles
       Nothing -> not (null smpServers) && not (null xftpServers)
+    findDuplicatesByHost :: [ProtoServerWithAuth p] -> [ProtoServerWithAuth p]
+    findDuplicatesByHost servers =
+      let allHosts = concatMap (L.toList . host . protoServer) servers
+          hostCounts = M.fromListWith (+) [(host, 1 :: Int) | host <- allHosts]
+          duplicateHosts = M.keys $ M.filter (> 1) hostCounts
+       in filter (\srv -> any (`elem` duplicateHosts) (L.toList $ host . protoServer $ srv)) servers
 
 instance ToJSON DBEntityId where
   toEncoding (DBEntityId i) = toEncoding i
