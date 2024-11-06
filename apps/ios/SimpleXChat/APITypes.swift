@@ -72,9 +72,17 @@ public enum ChatCommand {
     case apiGetGroupLink(groupId: Int64)
     case apiCreateMemberContact(groupId: Int64, groupMemberId: Int64)
     case apiSendMemberContactInvitation(contactId: Int64, msg: MsgContent)
-    case apiGetUserProtoServers(userId: Int64, serverProtocol: ServerProtocol)
-    case apiSetUserProtoServers(userId: Int64, serverProtocol: ServerProtocol, servers: [UserServer])
+    case apiGetUserProtoServers(userId: Int64, serverProtocol: ServerProtocol) // TODO remove
+    case apiSetUserProtoServers(userId: Int64, serverProtocol: ServerProtocol, servers: [UserServer]) // TODO remove
     case apiTestProtoServer(userId: Int64, server: String)
+    case apiGetServerOperators
+    case apiSetServerOperators(operatorsEnabled: [OperatorEnabled])
+    case apiGetUserServers(userId: Int64)
+    case apiSetUserServers(userId: Int64, userServers: [UserServers])
+    case apiValidateServers(userServers: [UserServers])
+    case apiGetUsageConditions
+    case apiSetConditionsNotified(conditionsId: Int64)
+    case apiAcceptConditions(conditionsId: Int64, operators: [ServerOperator])
     case apiSetChatItemTTL(userId: Int64, seconds: Int64?)
     case apiGetChatItemTTL(userId: Int64)
     case apiSetNetworkConfig(networkConfig: NetCfg)
@@ -234,6 +242,14 @@ public enum ChatCommand {
             case let .apiGetUserProtoServers(userId, serverProtocol): return "/_servers \(userId) \(serverProtocol)"
             case let .apiSetUserProtoServers(userId, serverProtocol, servers): return "/_servers \(userId) \(serverProtocol) \(protoServersStr(servers))"
             case let .apiTestProtoServer(userId, server): return "/_server test \(userId) \(server)"
+            case .apiGetServerOperators: return "TODO"
+            case let .apiSetServerOperators(operatorsEnabled): return "TODO"
+            case let .apiGetUserServers(userId): return "TODO"
+            case let .apiSetUserServers(userId, userServers): return "TODO"
+            case let .apiValidateServers(userServers): return "TODO"
+            case .apiGetUsageConditions: return "TODO"
+            case let .apiSetConditionsNotified(conditionsId): return "TODO"
+            case let .apiAcceptConditions(conditionsId, operators): return "TODO"
             case let .apiSetChatItemTTL(userId, seconds): return "/_ttl \(userId) \(chatItemTTLStr(seconds: seconds))"
             case let .apiGetChatItemTTL(userId): return "/_ttl \(userId)"
             case let .apiSetNetworkConfig(networkConfig): return "/_network \(encodeJSON(networkConfig))"
@@ -389,6 +405,14 @@ public enum ChatCommand {
             case .apiGetUserProtoServers: return "apiGetUserProtoServers"
             case .apiSetUserProtoServers: return "apiSetUserProtoServers"
             case .apiTestProtoServer: return "apiTestProtoServer"
+            case .apiGetServerOperators: return "apiGetServerOperators"
+            case .apiSetServerOperators: return "apiSetServerOperators"
+            case .apiGetUserServers: return "apiGetUserServers"
+            case .apiSetUserServers: return "apiSetUserServers"
+            case .apiValidateServers: return "apiValidateServers"
+            case .apiGetUsageConditions: return "apiGetUsageConditions"
+            case .apiSetConditionsNotified: return "apiSetConditionsNotified"
+            case .apiAcceptConditions: return "apiAcceptConditions"
             case .apiSetChatItemTTL: return "apiSetChatItemTTL"
             case .apiGetChatItemTTL: return "apiGetChatItemTTL"
             case .apiSetNetworkConfig: return "apiSetNetworkConfig"
@@ -548,8 +572,12 @@ public enum ChatResponse: Decodable, Error {
     case apiChats(user: UserRef, chats: [ChatData])
     case apiChat(user: UserRef, chat: ChatData)
     case chatItemInfo(user: UserRef, chatItem: AChatItem, chatItemInfo: ChatItemInfo)
-    case userProtoServers(user: UserRef, servers: UserProtoServers)
+    case userProtoServers(user: UserRef, servers: UserProtoServers) // TODO remove
     case serverTestResult(user: UserRef, testServer: String, testFailure: ProtocolTestFailure?)
+    case serverOperators(operators: [ServerOperator], conditionsAction: UsageConditionsAction?)
+    case userServers(user: UserRef, userServers: [UserServers])
+    case userServersValidation(serverErrors: [UserServersError])
+    case usageConditions(usageConditions: UsageConditions, conditionsText: String, acceptedConditions: UsageConditions?)
     case chatItemTTL(user: UserRef, chatItemTTL: Int64?)
     case networkConfig(networkConfig: NetCfg)
     case contactInfo(user: UserRef, contact: Contact, connectionStats_: ConnectionStats?, customUserProfile: Profile?)
@@ -723,6 +751,10 @@ public enum ChatResponse: Decodable, Error {
             case .chatItemInfo: return "chatItemInfo"
             case .userProtoServers: return "userProtoServers"
             case .serverTestResult: return "serverTestResult"
+            case .serverOperators: return "serverOperators"
+            case .userServers: return "userServers"
+            case .userServersValidation: return "userServersValidation"
+            case .usageConditions: return "usageConditions"
             case .chatItemTTL: return "chatItemTTL"
             case .networkConfig: return "networkConfig"
             case .contactInfo: return "contactInfo"
@@ -892,6 +924,10 @@ public enum ChatResponse: Decodable, Error {
             case let .chatItemInfo(u, chatItem, chatItemInfo): return withUser(u, "chatItem: \(String(describing: chatItem))\nchatItemInfo: \(String(describing: chatItemInfo))")
             case let .userProtoServers(u, servers): return withUser(u, "servers: \(String(describing: servers))")
             case let .serverTestResult(u, server, testFailure): return withUser(u, "server: \(server)\nresult: \(String(describing: testFailure))")
+            case let .serverOperators(operators, conditionsAction): return "operators: \(String(describing: operators))\nconditionsAction: \(String(describing: conditionsAction))"
+            case let .userServers(u, userServers): return withUser(u, "userServers: \(String(describing: userServers))")
+            case let .userServersValidation(serverErrors): return "serverErrors: \(String(describing: serverErrors))"
+            case let .usageConditions(usageConditions, _, acceptedConditions): return "usageConditions: \(String(describing: usageConditions))\nacceptedConditions: \(String(describing: acceptedConditions))"
             case let .chatItemTTL(u, chatItemTTL): return withUser(u, String(describing: chatItemTTL))
             case let .networkConfig(networkConfig): return String(describing: networkConfig)
             case let .contactInfo(u, contact, connectionStats_, customUserProfile): return withUser(u, "contact: \(String(describing: contact))\nconnectionStats_: \(String(describing: connectionStats_))\ncustomUserProfile: \(String(describing: customUserProfile))")
@@ -1243,7 +1279,7 @@ public struct UsageConditions: Decodable {
     public var createdAt: Date
 }
 
-public enum UsageConditionsAction {
+public enum UsageConditionsAction: Decodable {
     case review(operators: [ServerOperator], deadline: Date?, showNotice: Bool)
     case accepted(operators: [ServerOperator])
 }
@@ -1354,6 +1390,13 @@ public struct UserServers: Decodable {
     public var serverOperator: ServerOperator?
     public var smpServers: [UserServer]
     public var xftpServers: [UserServer]
+}
+
+public enum UserServersError: Decodable {
+    case storageMissing
+    case proxyMissing
+    case duplicateSMP(server: String)
+    case duplicateXFTP(server: String)
 }
 
 public struct UserServer: Identifiable, Equatable, Codable, Hashable {
