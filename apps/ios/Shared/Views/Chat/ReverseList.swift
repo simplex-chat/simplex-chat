@@ -38,6 +38,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             case .bottom:
                 controller.scroll(to: 0, position: .top)
             case let .unread(id):
+                logger.error("[scrolling] to unread id: (\(id)) size: \(items.count)")
                 controller.scrollToUnread(to: items.first(where: { $0.id == id }))
             }
         } else {
@@ -177,20 +178,23 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         func scrollToUnread(to cItem: ChatItem?) {
             if let it = cItem, let indexPath = dataSource.indexPath(for: it) {
                 if isVisible(indexPath: indexPath) {
-                    self.scroll(to: 0, position: .top)
+                    logger.error("[scrolling] unread visible")
+                    self.scroll(to: 0, position: .bottom)
                 } else {
-                    self.scroll(to: indexPath.row, position: .bottom)
+                    logger.error("[scrolling] unread not visible and at line index: \(indexPath.row)")
+                    self.scrollToItem(to: cItem, position: .bottom)
                 }
             } else {
-                self.scroll(to: nil, position: .bottom)
+                logger.error("[scrolling] unread not found")
+                self.scroll(to: nil, position: .top)
             }
         }
         
-        func scrollToItem(to cItem: ChatItem?,  position: UITableView.ScrollPosition) {
+        func scrollToItem(to cItem: ChatItem?, position: UITableView.ScrollPosition) {
             if let it = cItem, let indexPath = dataSource.indexPath(for: it) {
                 self.scroll(to: indexPath.row, position: position)
             } else {
-                scroll(to: nil, position: position)
+                self.scroll(to: nil, position: position)
             }
         }
 
@@ -201,7 +205,10 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             if #available(iOS 16.0, *) {
                 animated = true
             }
-            if let index, tableView.numberOfRows(inSection: 0) != 0, !isVisible(indexPath: IndexPath(row: index, section: 0)) {
+            logger.error("[scrolling] requesting scroll")
+
+            if let index, tableView.numberOfRows(inSection: 0) != 0 {
+                logger.error("[scrolling] requesting scroll to index: \(index) position: \(position.rawValue)")
                 tableView.scrollToRow(
                     at: IndexPath(row: index, section: 0),
                     at: position,

@@ -363,8 +363,10 @@ struct ChatView: View {
         }
         ChatView.FloatingButtonModel.shared.totalUnread = chat.chatStats.unreadCount
         Task {
-            if let firstunreadItem = self.getFirstUnreadItem() {
-                scrollModel.scrollToUnread(id: firstunreadItem.id)
+            DispatchQueue.main.async {
+                if let firstunreadItem = self.getFirstUnreadItem() {
+                    scrollModel.scrollToUnread(id: firstunreadItem.id)
+                }
             }
         }
     }
