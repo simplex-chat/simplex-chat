@@ -1118,8 +1118,8 @@ getDirectChatInitial_ db user@User {userId} ct@Contact {contactId} count = do
       (chat, gap) <- getDirectChatAround_ db user ct firstUnreadItemId count ""
       case gap of
         Just size -> do
-          if size > snd (divideFetchCountAround_ count)
-            then getLatestItems_ chat size
+          if size > 0
+            then getLatestItems_ chat (size + 1)
             else pure (chat, Nothing)
         Nothing -> pure (chat, Nothing)
     Nothing -> liftIO $ (,Nothing) <$> getDirectChatLast_ db user ct count ""
@@ -1316,8 +1316,8 @@ getGroupChatInitial_ db user@User {userId} g@GroupInfo {groupId} count = do
       (chat, gap) <- getGroupChatAround_ db user g firstUnreadItemId count ""
       case gap of
         Just size -> do
-          if size > snd (divideFetchCountAround_ count)
-            then getLatestItems_ chat size
+          if size > 0
+            then getLatestItems_ chat (size + 1)
             else pure (chat, Nothing)
         Nothing -> pure (chat, Nothing)
     Nothing -> liftIO $ (,Nothing) <$> getGroupChatLast_ db user g count ""
@@ -1498,8 +1498,8 @@ getLocalChatInitial_ db user@User {userId} nf@NoteFolder {noteFolderId} count = 
       (chat, gap) <- getLocalChatAround_ db user nf firstUnreadItemId count ""
       case gap of
         Just size -> do
-          if size > snd (divideFetchCountAround_ count)
-            then getLatestItems_ chat size
+          if size > 0
+            then getLatestItems_ chat (size + 1)
             else pure (chat, Nothing)
         Nothing -> pure (chat, Nothing)
     Nothing -> liftIO $ (,Nothing) <$> getLocalChatLast_ db user nf count ""
