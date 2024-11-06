@@ -131,11 +131,6 @@ class ChatItemDummyModel: ObservableObject {
     func sendUpdate() { objectWillChange.send() }
 }
 
-enum UsageConditionsAction {
-    case reviewUpdatedConditions(acceptForOperators: [ServerOperator], deadline: Date?)
-    case viewAcceptedConditions(acceptedForOperators: [ServerOperator])
-}
-
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
     @Published var setDeliveryReceipts = false
@@ -246,10 +241,6 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    var operatorsWithConditionsAccepted: [ServerOperator] {
-        serverOperators.filter { $0.conditionsAcceptance.conditionsAccepted }
-    }
-
     var enabledOperatorsWithConditionsNotAccepted: [ServerOperator] {
         serverOperators.filter { $0.enabled && !$0.conditionsAcceptance.conditionsAccepted }
     }
@@ -258,7 +249,7 @@ final class ChatModel: ObservableObject {
         for (i, serverOperator) in serverOperators.enumerated() {
             if serverOperator.enabled && !serverOperator.conditionsAcceptance.conditionsAccepted {
                 var updatedOperator = serverOperator
-                updatedOperator.conditionsAcceptance = .accepted(date: date)
+                updatedOperator.conditionsAcceptance = .accepted(acceptedAt: date)
                 serverOperators[i] = updatedOperator
             }
         }
@@ -268,7 +259,7 @@ final class ChatModel: ObservableObject {
         for serverOperator in acceptForOperators {
             if let i = serverOperators.firstIndex(where: { $0.operatorId == serverOperator.operatorId }) {
                 var updatedOperator = serverOperators[i]
-                updatedOperator.conditionsAcceptance = .accepted(date: date)
+                updatedOperator.conditionsAcceptance = .accepted(acceptedAt: date)
                 if enable {
                     updatedOperator.enabled = true
                 }
@@ -283,17 +274,16 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    // TODO If conditions are accepted for operators currently not used, they should also be included into list.
+    // TODO remove
     var usageConditionsAction: UsageConditionsAction? {
         let usedOperators = serverOperators.filter { $0.enabled }
         if usedOperators.isEmpty {
             return nil
         } else if usedOperators.allSatisfy({ $0.conditionsAcceptance.conditionsAccepted }) {
-            return .viewAcceptedConditions(acceptedForOperators: usedOperators)
+            return .accepted(operators: usedOperators)
         } else {
             let acceptForOperators = usedOperators.filter { !$0.conditionsAcceptance.conditionsAccepted }
-            let deadline = usedOperators.compactMap { $0.conditionsAcceptance.reviewAvailableDeadline }.first
-            return .reviewUpdatedConditions(acceptForOperators: acceptForOperators, deadline: deadline)
+            return .review(operators: acceptForOperators, deadline: Date.distantFuture, showNotice: false)
         }
     }
 
