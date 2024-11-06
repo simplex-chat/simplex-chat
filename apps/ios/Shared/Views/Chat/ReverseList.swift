@@ -85,7 +85,6 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             ) { (tableView, indexPath, item) -> UITableViewCell? in
                 if self.representer.scrollState == .atDestination {
                     if indexPath.item > self.itemCount - preloadItem, let item = self.getItemAtPath(indexPath: IndexPath(row: self.itemCount - 1, section: 0)) {
-                        logger.error("[scrolling] requesting page \(item.text)")
                         self.representer.loadPage(.before(chatItemId: item.id, count: loadItemsPerPage))
                     } else if let item = self.getFirstItemBeforePlacholder(indexPath) {
                         // TODO: Cleanup, this should never be possible

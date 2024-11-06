@@ -1309,7 +1309,7 @@ struct ChatView: View {
 
         @ViewBuilder
         private func menu(_ ci: ChatItem, _ range: ClosedRange<Int>?, live: Bool) -> some View {
-            if let mc = ci.content.msgContent, ci.meta.itemDeleted == nil || revealed {
+            if let mc = ci.content.msgContent, ci.meta.itemDeleted == nil || revealed, !ci.isPlaceholder {
                 if chat.chatInfo.featureEnabled(.reactions) && ci.allowAddReaction,
                    availableReactions.count > 0 {
                     reactionsGroup

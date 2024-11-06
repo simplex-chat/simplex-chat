@@ -62,6 +62,8 @@ struct ChatItemView: View {
                 CIVoiceView(chat: chat, chatItem: ci, recordingFile: ci.file, duration: duration, allowMenu: $allowMenu)
             } else if ci.content.msgContent == nil {
                 ChatItemContentView(chat: chat, chatItem: chatItem, msgContentView: { Text(ci.text) }) // msgContent is unreachable branch in this case
+            } else if ci.isPlaceholder {
+                EmptyView()
             } else {
                 framedItemView()
             }

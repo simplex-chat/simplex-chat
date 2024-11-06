@@ -2468,7 +2468,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     }
 
     public var allowAddReaction: Bool {
-        meta.itemDeleted == nil && !isLiveDummy && reactions.filter({ $0.userReacted }).count < 3
+        meta.itemDeleted == nil && !isLiveDummy && !isPlaceholder && reactions.filter({ $0.userReacted }).count < 3
     }
 
     public func autoReceiveFile() -> CIFile? {
@@ -2677,7 +2677,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 updatedAt: .now,
                 itemDeleted: nil,
                 itemEdited: false,
-                itemLive: true,
+                itemLive: false,
                 deletable: false,
                 editable: false
             ),
