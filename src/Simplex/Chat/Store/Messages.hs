@@ -1129,7 +1129,7 @@ getDirectChatInitial_ db user@User {userId} ct@Contact {contactId} count = do
       currentTs <- liftIO getCurrentTime
       latestItemIds <- liftIO $ getDirectChatItemIdsLast_ db user ct (min count gapToLatest) ""
       latestItems <- liftIO $ mapM (safeGetDirectItem db user ct currentTs) latestItemIds
-      let allItems = chatItems <> latestItems
+      let allItems = chatItems <> reverse latestItems
       let chat = c {chatItems = allItems}
       if gapToLatest > length latestItems
         then pure (chat, Just $ gapToLatest - length latestItems)
@@ -1338,7 +1338,7 @@ getGroupChatInitial_ db user@User {userId} g@GroupInfo {groupId} count = do
       currentTs <- liftIO getCurrentTime
       latestItemIds <- liftIO $ getGroupChatItemIdsLast_ db user g (min count gapToLatest) ""
       latestItems <- liftIO $ mapM (safeGetGroupItem db user g currentTs) latestItemIds
-      let allItems = chatItems <> latestItems
+      let allItems = chatItems <> reverse latestItems
       let chat = c {chatItems = allItems}
       if gapToLatest > length latestItems
         then pure (chat, Just $ gapToLatest - length latestItems)
@@ -1520,7 +1520,7 @@ getLocalChatInitial_ db user@User {userId} nf@NoteFolder {noteFolderId} count = 
       currentTs <- liftIO getCurrentTime
       latestItemIds <- liftIO $ getLocalChatItemIdsLast_ db user nf (min count gapToLatest) ""
       latestItems <- liftIO $ mapM (safeGetLocalItem db user nf currentTs) latestItemIds
-      let allItems = chatItems <> latestItems
+      let allItems = chatItems <> reverse latestItems
       let chat = c {chatItems = allItems}
       if gapToLatest > length latestItems
         then pure (chat, Just $ gapToLatest - length latestItems)
