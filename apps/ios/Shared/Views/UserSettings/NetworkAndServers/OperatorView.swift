@@ -38,16 +38,19 @@ struct OperatorView: View {
                         .foregroundColor(theme.colors.secondary)
                 } footer: {
                     switch (serverOperatorToEdit.conditionsAcceptance) {
-                    case let .accepted(date):
-                        Text("Conditions accepted on: \(conditionsTimestamp(date)).")
-                            .foregroundColor(theme.colors.secondary)
-                    case let .reviewAvailable(deadline):
-                        if serverOperatorToEdit.enabled {
-                            Text("Review conditions until: \(conditionsTimestamp(deadline)).")
+                    case let .accepted(acceptedAt):
+                        if let acceptedAt = acceptedAt {
+                            Text("Conditions accepted on: \(conditionsTimestamp(acceptedAt)).")
+                                .foregroundColor(theme.colors.secondary)
+                        } else {
+                            Text("Conditions accepted.")
                                 .foregroundColor(theme.colors.secondary)
                         }
-                    case .reviewRequired:
-                        EmptyView()
+                    case let .required(deadline):
+                        if serverOperatorToEdit.enabled, let deadline = deadline {
+                            Text("Conditions will be considered accepted after: \(conditionsTimestamp(deadline)).")
+                                .foregroundColor(theme.colors.secondary)
+                        }
                     }
                 }
 
@@ -98,7 +101,7 @@ struct OperatorView: View {
                     .scaledToFit()
                     .grayscale(serverOperatorToEdit.enabled ? 0.0 : 1.0)
                     .frame(width: 24, height: 24)
-                Text(serverOperator.name)
+                Text(serverOperator.tradeName)
             }
         }
     }
@@ -113,15 +116,13 @@ struct OperatorView: View {
                     case .accepted:
                         serverOperatorToEdit.enabled = true
                         ChatModel.shared.updateServerOperator(serverOperatorToEdit)
-                    case .reviewAvailable:
-                        if !ChatModel.shared.operatorsWithConditionsAccepted.isEmpty {
+                    case let .required(deadline):
+                        if deadline == nil {
                             showConditionsSheet = true
                         } else {
                             serverOperatorToEdit.enabled = true
                             ChatModel.shared.updateServerOperator(serverOperatorToEdit)
                         }
-                    case .reviewRequired:
-                        showConditionsSheet = true
                     }
                 } else {
                     serverOperatorToEdit.enabled = false
@@ -132,12 +133,12 @@ struct OperatorView: View {
 
     private func onUseToggleSheetDismissed() {
         if useOperator && !serverOperatorToEdit.enabled {
-            if case .reviewRequired = serverOperatorToEdit.conditionsAcceptance {
-                useOperatorToggleReset = true
-                useOperator = false
-            } else if serverOperatorToEdit.conditionsAcceptance.conditionsAccepted {
+            if serverOperatorToEdit.conditionsAcceptance.usageAllowed {
                 serverOperatorToEdit.enabled = true
                 ChatModel.shared.updateServerOperator(serverOperatorToEdit)
+            } else {
+                useOperatorToggleReset = true
+                useOperator = false
             }
         }
     }
@@ -176,7 +177,7 @@ struct OperatorView: View {
                 server: server,
                 serverToEdit: srv,
                 preset: true,
-                backLabel: "\(serverOperator.name) servers"
+                backLabel: "\(serverOperator.tradeName) servers"
             )
             .navigationBarTitle("\(proto) server")
             .modifier(ThemedBackground(grouped: true))
@@ -263,28 +264,30 @@ struct SingleOperatorUsageConditionsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             Group {
-                Text("Use operator \(serverOperator.name)")
+                Text("Use operator \(serverOperator.tradeName)")
                     .font(.largeTitle)
                     .bold()
                     .padding(.top)
                     .padding(.top)
                 
-                let operatorsWithConditionsAccepted = ChatModel.shared.operatorsWithConditionsAccepted
-                
-                if case let .accepted(date) = serverOperator.conditionsAcceptance {
-                    
-                    conditionsTextView()
-                    
-                    Text("Conditions accepted on: \(conditionsTimestamp(date)).")
-                        .foregroundColor(theme.colors.secondary)
-                        .padding(.bottom)
-                        .padding(.bottom)
+                let operatorsWithConditionsAccepted = ChatModel.shared.serverOperators.filter { $0.conditionsAcceptance.conditionsAccepted }
+
+                if case let .accepted(acceptedAt) = serverOperator.conditionsAcceptance {
+
+                    conditionsTextView() // TODO invisible element for all cases with bottom padding?
+
+                    if let acceptedAt = acceptedAt {
+                        Text("Conditions accepted on: \(conditionsTimestamp(acceptedAt)).")
+                            .foregroundColor(theme.colors.secondary)
+                            .padding(.bottom)
+                            .padding(.bottom)
+                    }
 
                 } else if !operatorsWithConditionsAccepted.isEmpty {
                     
-                    Text("You already accepted conditions of use for following operator(s): **\(operatorsWithConditionsAccepted.map { $0.name }.joined(separator: ", "))**.")
+                    Text("You already accepted conditions of use for following operator(s): **\(operatorsWithConditionsAccepted.map { $0.conditionsName }.joined(separator: ", "))**.")
 
-                    Text("Same conditions will apply to operator **\(serverOperator.name)**.")
+                    Text("Same conditions will apply to operator **\(serverOperator.conditionsName)**.")
 
                     conditionsAppliedToOtherOperatorsText()
                     
@@ -306,7 +309,7 @@ struct SingleOperatorUsageConditionsView: View {
 
                 } else {
                     
-                    Text("In order to use operator **\(serverOperator.name)**, accept conditions of use.")
+                    Text("In order to use operator **\(serverOperator.conditionsName)**, accept conditions of use.")
 
                     conditionsAppliedToOtherOperatorsText()
                     
@@ -326,7 +329,7 @@ struct SingleOperatorUsageConditionsView: View {
     @ViewBuilder private func conditionsAppliedToOtherOperatorsText() -> some View {
         let otherEnabledOperators = ChatModel.shared.enabledOperatorsWithConditionsNotAccepted.filter { $0.operatorId != serverOperator.operatorId }
         if !otherEnabledOperators.isEmpty {
-            Text("Conditions will also apply for following operator(s) you use: **\(otherEnabledOperators.map { $0.name }.joined(separator: ", "))**.")
+            Text("Conditions will also apply for following operator(s) you use: **\(otherEnabledOperators.map { $0.conditionsName }.joined(separator: ", "))**.")
         }
     }
 
@@ -334,9 +337,9 @@ struct SingleOperatorUsageConditionsView: View {
         Button {
             // Should call api to save state here, not when saving all servers
             // (It's counterintuitive to lose to closed sheet or Reset)
-            let date = Date.now
-            ChatModel.shared.acceptConditionsForEnabledOperators(date)
-            serverOperatorToEdit.conditionsAcceptance = .accepted(date: date)
+            let acceptedAt = Date.now
+            ChatModel.shared.acceptConditionsForEnabledOperators(acceptedAt)
+            serverOperatorToEdit.conditionsAcceptance = .accepted(acceptedAt: acceptedAt)
             serverOperator = serverOperatorToEdit
             dismiss()
         } label: {
@@ -365,19 +368,19 @@ struct UsageConditionsView: View {
             }
             
             switch conditionsAction {
-            case let .reviewUpdatedConditions(acceptForOperators, _):
-                
-                Text("Conditions will be accepted for following operator(s): **\(acceptForOperators.map { $0.name }.joined(separator: ", "))**.")
+            case let .review(operators, _, _):
+
+                Text("Conditions will be accepted for following operator(s): **\(operators.map { $0.conditionsName }.joined(separator: ", "))**.")
 
                 conditionsTextView()
                 
-                acceptConditionsButton(acceptForOperators)
+                acceptConditionsButton(operators)
                     .padding(.bottom)
                     .padding(.bottom)
                 
-            case let .viewAcceptedConditions(acceptedForOperators):
-                
-                Text("Conditions are accepted for following operator(s): **\(acceptedForOperators.map { $0.name }.joined(separator: ", "))**.")
+            case let .accepted(operators):
+
+                Text("Conditions are accepted for following operator(s): **\(operators.map { $0.conditionsName }.joined(separator: ", "))**.")
 
                 conditionsTextView()
                     .padding(.bottom)
@@ -389,7 +392,7 @@ struct UsageConditionsView: View {
         .frame(maxHeight: .infinity)
     }
 
-    private func acceptConditionsButton(_ acceptForOperators: [ServerOperator]) -> some View {
+    private func acceptConditionsButton(_ operators: [ServerOperator]) -> some View {
         Button {
             // Should call api to save state here, not when saving all servers
             // (It's counterintuitive to lose to closed sheet or Reset)

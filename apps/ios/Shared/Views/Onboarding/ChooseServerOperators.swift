@@ -202,7 +202,7 @@ struct ChooseServerOperators: View {
         UsageConditionsView(
             showTitle: false,
             dismissOnAccept: false,
-            conditionsAction: .reviewUpdatedConditions(acceptForOperators: acceptForOperators, deadline: nil),
+            conditionsAction: .review(operators: acceptForOperators, deadline: nil, showNotice: false),
             onAcceptAction: { date in
                 ChatModel.shared.acceptConditionsForOperators(acceptForOperators, date, enable: true)
                 withAnimation {

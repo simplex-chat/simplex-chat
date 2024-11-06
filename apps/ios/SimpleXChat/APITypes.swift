@@ -1236,40 +1236,57 @@ public let operatorsInfo: Dictionary<OperatorTag, ServerOperatorInfo> = [
     )
 ]
 
-public enum UsageConditionsAcceptance: Decodable, Hashable {
-    case accepted(date: Date)
-    case reviewAvailable(deadline: Date)
-    case reviewRequired
+public struct UsageConditions: Decodable {
+    public var conditionsId: Int64
+    public var conditionsCommit: String
+    public var notifiedAt: Date?
+    public var createdAt: Date
+}
+
+public enum UsageConditionsAction {
+    case review(operators: [ServerOperator], deadline: Date?, showNotice: Bool)
+    case accepted(operators: [ServerOperator])
+}
+
+public enum ConditionsAcceptance: Decodable, Hashable {
+    case accepted(acceptedAt: Date?)
+    // If deadline is present, it means there's a grace period to review and accept conditions during which user can continue to use the operator.
+    // No deadline indicates it's required to accept conditions for the operator to start using it.
+    case required(deadline: Date?)
 
     public var conditionsAccepted: Bool {
         switch self {
         case .accepted: true
-        case .reviewAvailable: false
-        case .reviewRequired: false
+        case .required: false
         }
     }
 
-    public var reviewAvailableDeadline: Date? {
+    public var usageAllowed: Bool {
         switch self {
-        case .accepted: nil
-        case let .reviewAvailable(deadline): deadline
-        case .reviewRequired: nil
+        case .accepted: true
+        case let .required(deadline): deadline != nil
         }
     }
 }
 
 public struct ServerOperator: Identifiable, Decodable {
     public var operatorId: Int64
-    public var name: String
-    public var tag: OperatorTag
-    public var conditionsAcceptance: UsageConditionsAcceptance
+    public var operatorTag: OperatorTag
+    public var tradeName: String
+    public var legalName: String?
+    public var serverDomains: [String]
+    public var conditionsAcceptance: ConditionsAcceptance
     public var enabled: Bool
     public var roles: ServerRoles
 
     public var id: Int64 { operatorId }
 
+    public var conditionsName: String {
+        legalName ?? tradeName
+    }
+
     public var info: ServerOperatorInfo {
-        operatorsInfo[tag] ??
+        operatorsInfo[operatorTag] ??
         ServerOperatorInfo(
             description: "Default",
             website: "Default",
@@ -1290,35 +1307,53 @@ public struct ServerOperator: Identifiable, Decodable {
 
     public static var sampleData1 = ServerOperator(
         operatorId: 1,
-        name: "SimpleX Chat",
-        tag: .simplex,
-        conditionsAcceptance: .reviewAvailable(deadline: Date.distantFuture),
+        operatorTag: .simplex,
+        tradeName: "SimpleX Chat",
+        legalName: "SimpleX Chat Ltd",
+        serverDomains: ["simplex.im"],
+        conditionsAcceptance: .required(deadline: Date.distantFuture),
         enabled: true,
         roles: ServerRoles(storage: true, proxy: true)
     )
 
     public static var sampleData2 = ServerOperator(
         operatorId: 2,
-        name: "XYZ",
-        tag: .xyz,
-        conditionsAcceptance: .reviewRequired,
+        operatorTag: .xyz,
+        tradeName: "XYZ",
+        legalName: nil,
+        serverDomains: ["xyz.com"],
+        conditionsAcceptance: .required(deadline: nil),
         enabled: false,
         roles: ServerRoles(storage: true, proxy: true)
     )
 
     public static var sampleData3 = ServerOperator(
         operatorId: 3,
-        name: "Demo",
-        tag: .demo,
-        conditionsAcceptance: .reviewRequired,
+        operatorTag: .demo,
+        tradeName: "Demo",
+        legalName: nil,
+        serverDomains: ["demo.com"],
+        conditionsAcceptance: .required(deadline: nil),
         enabled: false,
         roles: ServerRoles(storage: true, proxy: true)
     )
 }
 
-public struct ServerRoles: Decodable {
+public struct ServerRoles: Codable {
     public var storage: Bool
     public var proxy: Bool
+}
+
+public struct OperatorEnabled: Codable {
+    public var operatorId: Int64
+    public var enabled: Bool
+    public var roles: ServerRoles
+}
+
+public struct UserServers: Decodable {
+    public var serverOperator: ServerOperator?
+    public var smpServers: [UserServer]
+    public var xftpServers: [UserServer]
 }
 
 public struct UserServer: Identifiable, Equatable, Codable, Hashable {
@@ -1377,7 +1412,6 @@ public struct UserServer: Identifiable, Equatable, Codable, Hashable {
 
     enum CodingKeys: CodingKey {
         case server
-
         case tested
         case enabled
     }

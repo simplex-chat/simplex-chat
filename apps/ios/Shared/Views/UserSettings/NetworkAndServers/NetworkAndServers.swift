@@ -55,7 +55,7 @@ struct NetworkAndServers: View {
                         .foregroundColor(theme.colors.secondary)
                 } footer: {
                     switch conditionsAction {
-                    case let .reviewUpdatedConditions(_, deadline):
+                    case let .review(_, deadline, _):
                         if let deadline = deadline {
                             Text("Review conditions until: \(conditionsTimestamp(deadline)).")
                                 .foregroundColor(theme.colors.secondary)
@@ -122,7 +122,7 @@ struct NetworkAndServers: View {
                     conditionsAction: conditionsAction,
                     onAcceptAction: { date in
                         switch conditionsAction {
-                        case let .reviewUpdatedConditions(acceptForOperators, _): ChatModel.shared.acceptConditionsForOperators(acceptForOperators, date)
+                        case let .review(operators, _, _): ChatModel.shared.acceptConditionsForOperators(operators, date)
                         default: break
                         }
                     }
@@ -146,7 +146,7 @@ struct NetworkAndServers: View {
                 currSMPServers: smpServers,
                 currXFTPServers: xftpServers
             )
-            .navigationBarTitle("\(srvOperator.name) servers")
+            .navigationBarTitle("\(srvOperator.tradeName) servers")
             .modifier(ThemedBackground(grouped: true))
             .navigationBarTitleDisplayMode(.large)
         } label: {
@@ -156,7 +156,7 @@ struct NetworkAndServers: View {
                     .scaledToFit()
                     .grayscale(srvOperator.enabled ? 0.0 : 1.0)
                     .frame(width: 24, height: 24)
-                Text(srvOperator.name)
+                Text(srvOperator.tradeName)
                     .foregroundColor(srvOperator.enabled ? theme.colors.onBackground : theme.colors.secondary)
             }
         }
@@ -167,9 +167,9 @@ struct NetworkAndServers: View {
             sheetItem = .showConditions(conditionsAction: conditionsAction)
         } label: {
             switch conditionsAction {
-            case .reviewUpdatedConditions:
+            case .review:
                 Text("Review conditions")
-            case .viewAcceptedConditions:
+            case .accepted:
                 Text("Accepted conditions")
             }
         }
