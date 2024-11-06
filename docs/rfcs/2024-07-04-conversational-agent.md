@@ -44,12 +44,25 @@ Overall, this appears to be the simplest and the most effective approach.
 
 Conversation(s) with the agent would be stored in the usual database, and the agent would be interactive - it will be called by the code when the message is added to this conversation.
 
-Questions to consider:
-- ux:
+## Questions to consider
+
+- UX:
   - should it be one conversation for all user profiles or separate conversations per profile? The latter seems safer from privacy and security points of view.
+  - assistant should support navigating to other sections of the app.
+  - assistant should be able to present some interface elements in its UI.
 - types:
   - conversation type. Could use "direct" or may be a special type.
   - chat item types. Currently we do not parameterize chat items by conversation types, even though some chat items are only possible in specific conversations.
 - UI protocol:
   - currently we do not have a pattern when the core executes commands in the UI. We could use the event with some correlation ID and another API call to pass the response from the UI.
   - alternatively, because all UI changes will be triggered by the user action of choosing one of the multiple choice answers we may instead attach UI commands to the buttons to avoid round trip of sending this choice to the agent and then have the agent call UI command.
+- Translations:
+  - we cannot have partially translated assistant messages, so it means:
+    - it has to be a separate translation component from the rest of the UI.
+    - we are likely to support much fewer languages.
+    - we have to work with some specific translators more closely so they align their translations with our releases.
+  - we would need to externalize strings into JSON files, using the same format as for website, and embed them into Haskell code.
+- Other information about the app:
+  - Should assistant complement or should it replace the current guide (I think it should replace).
+  - It would still have the links to the external technical documents.
+  - Showing images.
