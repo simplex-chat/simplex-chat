@@ -320,6 +320,7 @@ private func apiChatsResponse(_ r: ChatResponse) throws -> [ChatData] {
 
 let loadItemsPerPage = 50
 let preloadItem = 8
+let idealChatListSize = 500
 
 func apiGetChat(type: ChatType, id: Int64, search: String = "") async throws -> (Chat, Int?) {
     let r = await chatSendCmd(.apiGetChat(type: type, id: id, pagination: .initial(count: loadItemsPerPage), search: search))

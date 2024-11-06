@@ -75,7 +75,7 @@ struct ChatView: View {
             VStack(spacing: 0) {
                 ZStack(alignment: .bottomTrailing) {
                     chatItemsList()
-                    FloatingButtons(theme: theme, scrollModel: scrollModel, chat: chat)
+                    FloatingButtons(theme: theme, scrollModel: scrollModel, chat: chat, onScrollToBottom: onScrollToBottom)
                 }
                 connectingText()
                 if selectedChatItems == nil {
@@ -476,6 +476,15 @@ struct ChatView: View {
         }
     }
     
+    private func onScrollToBottom() {
+        scrollModel.scrollToBottom()
+        if let g = im.gap {
+            let sliceSize = min(g.index, idealChatListSize)
+            im.gap = nil
+            im.reversedChatItems = Array(im.reversedChatItems[..<sliceSize])
+        }
+    }
+    
     private func getFirstUnreadItem() -> ChatItem? {
         logger.error("[scrolling] \(im.reversedChatItems.count)")
 
@@ -571,6 +580,7 @@ struct ChatView: View {
         let theme: AppTheme
         let scrollModel: ReverseListScrollModel
         let chat: Chat
+        let onScrollToBottom: () -> Void
         @ObservedObject var model = FloatingButtonModel.shared
 
         var body: some View {
@@ -611,14 +621,14 @@ struct ChatView: View {
                                 .foregroundColor(theme.colors.primary)
                         }
                         .onTapGesture {
-                            scrollModel.scrollToBottom()
+                            onScrollToBottom()
                         }
                     } else if !model.isNearBottom {
                         circleButton {
                             Image(systemName: "chevron.down")
                                 .foregroundColor(theme.colors.primary)
                         }
-                        .onTapGesture { scrollModel.scrollToBottom() }
+                        .onTapGesture { onScrollToBottom() }
                     }
                 }
                 .padding()
