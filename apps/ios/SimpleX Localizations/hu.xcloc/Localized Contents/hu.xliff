@@ -1635,9 +1635,9 @@ Ez az Ön egyszer használható hivatkozása!</target>
         <target>Kapcsolódás egyszer használható hivatkozáson keresztül</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect with %@" xml:space="preserve">
+      <trans-unit id="Connect with %@" xml:space="preserve" approved="no">
         <source>Connect with %@</source>
-        <target>Kapcsolódás ezzel: %@</target>
+        <target state="translated">Kapcsolódás a következővel: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connected" xml:space="preserve" approved="no">
@@ -3601,9 +3601,9 @@ Hiba: %2$@</target>
         <target>A csoport törlésre kerül az Ön számára - ez a művelet nem vonható vissza!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Help" xml:space="preserve">
+      <trans-unit id="Help" xml:space="preserve" approved="no">
         <source>Help</source>
-        <target>Segítség</target>
+        <target state="translated">Súgó</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Hidden" xml:space="preserve">
@@ -4223,9 +4223,9 @@ Ez az Ön hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target state="translated">Jelölje meg az összes tag számára töröltként</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Mark read" xml:space="preserve">
+      <trans-unit id="Mark read" xml:space="preserve" approved="no">
         <source>Mark read</source>
-        <target>Olvasottnak jelölés</target>
+        <target state="translated">Megjelölés olvasottként</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Mark verified" xml:space="preserve">
@@ -5075,9 +5075,9 @@ Minden további problémát osszon meg a fejlesztőkkel.</target>
         <target>Ellenőrizze, hogy a megfelelő hivatkozást használta-e, vagy kérje meg az ismerősét, hogy küldjön egy másikat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please check your network connection with %@ and try again." xml:space="preserve">
+      <trans-unit id="Please check your network connection with %@ and try again." xml:space="preserve" approved="no">
         <source>Please check your network connection with %@ and try again.</source>
-        <target>Ellenőrizze a hálózati kapcsolatát a(z) %@ segítségével, és próbálja újra.</target>
+        <target state="translated">Ellenőrizze a hálózati kapcsolatát a következővel: %@, és próbálja újra.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please check yours and your contact preferences." xml:space="preserve">
@@ -5369,9 +5369,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>Reagálj…</target>
         <note>chat item menu</note>
       </trans-unit>
-      <trans-unit id="Read" xml:space="preserve">
+      <trans-unit id="Read" xml:space="preserve" approved="no">
         <source>Read</source>
-        <target>Olvasd el</target>
+        <target state="translated">Olvasott</target>
         <note>swipe action</note>
       </trans-unit>
       <trans-unit id="Read more" xml:space="preserve">
@@ -7008,9 +7008,9 @@ Ez valamilyen hiba, vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target state="translated">Az adatvédelem érdekében (a más csevegési platformokon megszokott felhasználó-azonosítók helyett) a SimpleX csak az üzenetek sorbaállításához használ azonosítókat, az összes ismerőséhez különbözőt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To protect timezone, image/voice files use UTC." xml:space="preserve">
+      <trans-unit id="To protect timezone, image/voice files use UTC." xml:space="preserve" approved="no">
         <source>To protect timezone, image/voice files use UTC.</source>
-        <target>Az időzóna védelme érdekében a kép-/hangfájlok UTC-t használnak.</target>
+        <target state="translated">Az időzóna védelmének érdekében a kép-/hangfájlok UTC-t használnak.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To protect your IP address, private routing uses your SMP servers to deliver messages." xml:space="preserve">
@@ -7227,9 +7227,9 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
         <target>Némítás megszüntetése</target>
         <note>swipe action</note>
       </trans-unit>
-      <trans-unit id="Unread" xml:space="preserve">
+      <trans-unit id="Unread" xml:space="preserve" approved="no">
         <source>Unread</source>
-        <target>Olvasatlan</target>
+        <target state="translated">Olvasatlan</target>
         <note>swipe action</note>
       </trans-unit>
       <trans-unit id="Up to 100 last messages are sent to new members." xml:space="preserve">
