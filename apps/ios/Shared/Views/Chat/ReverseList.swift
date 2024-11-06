@@ -54,6 +54,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         private var itemCount: Int = 0
         private let updateFloatingButtons = PassthroughSubject<Void, Never>()
         private var bag = Set<AnyCancellable>()
+        private var renderedItems = Array<ChatItem>()
 
         init(representer: ReverseList) {
             self.representer = representer
@@ -218,21 +219,20 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
 
         func update(items: [ChatItem], gap: ChatGap?) {
             var snapshot = NSDiffableDataSourceSnapshot<Section, ChatItem>()
-            let cItems: [ChatItem]
             if let gap = gap {
                 var itemsCopy = items
                 let blanks = (0..<gap.size).map { index in ChatItem.placeholder(index + 1) }
                 itemsCopy.insert(contentsOf: blanks, at: gap.index)
-                cItems = itemsCopy
+                renderedItems = itemsCopy
             } else {
-                cItems = items
+                renderedItems = items
             }
             snapshot.appendSections([.main])
-            snapshot.appendItems(cItems)
+            snapshot.appendItems(renderedItems)
             dataSource.defaultRowAnimation = .none
             dataSource.apply(
                 snapshot,
-                animatingDifferences: itemCount != 0 && abs(cItems.count - itemCount) == 1
+                animatingDifferences: itemCount != 0 && abs(renderedItems.count - itemCount) == 1
             )
             // Sets content offset on initial load
             if itemCount == 0 {
@@ -241,7 +241,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     animated: false
                 )
             }
-            itemCount = cItems.count
+            itemCount = renderedItems.count
             updateFloatingButtons.send()
         }
 
@@ -251,17 +251,17 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
 
         func getListState() -> ListState? {
             if let visibleRows = tableView.indexPathsForVisibleRows,
-                visibleRows.last?.item ?? 0 < representer.items.count {
+                visibleRows.last?.item ?? 0 < renderedItems.count {
                 let scrollOffset: Double = tableView.contentOffset.y + InvertedTableView.inset
                 let topItemDate: Date? =
                     if let lastVisible = visibleRows.last(where: { isVisible(indexPath: $0) }) {
-                        representer.items[lastVisible.item].meta.itemTs
+                        renderedItems[lastVisible.item].meta.itemTs
                     } else {
                         nil
                     }
                 let bottomItemId: ChatItem.ID? =
                     if let firstVisible = visibleRows.first(where: { isVisible(indexPath: $0) }) {
-                        representer.items[firstVisible.item].id
+                        renderedItems[firstVisible.item].id
                     } else {
                         nil
                     }
