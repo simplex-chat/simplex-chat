@@ -20,19 +20,26 @@ struct OperatorView: View {
     @State var useOperator: Bool
     @State private var useOperatorToggleReset: Bool = false
     @State private var showConditionsSheet: Bool = false
-    @State var currSMPServers: [UserServer]
-    @State var smpServers: [UserServer] = []
-    @State var currXFTPServers: [UserServer]
-    @State var xftpServers: [UserServer] = []
+    @Binding var currSMPServers: [UserServer]
+    @Binding var smpServers: [UserServer]
+    @Binding var currXFTPServers: [UserServer]
+    @Binding var xftpServers: [UserServer]
     @State private var selectedServer: String? = nil
-    @State private var justOpened = true
     @State private var testing = false
-    @State private var alert: ServerAlert? = nil
 
-    let smpProto: String = ServerProtocol.smp.rawValue.uppercased()
-    let xftpProto: String = ServerProtocol.xftp.rawValue.uppercased()
+    let smpStr: String = ServerProtocol.smp.rawValue.uppercased()
+    let xftpStr: String = ServerProtocol.xftp.rawValue.uppercased()
 
     var body: some View {
+        ZStack {
+            operatorView()
+            if testing {
+                ProgressView().scaleEffect(2)
+            }
+        }
+    }
+
+    private func operatorView() -> some View {
         VStack {
             List {
                 Section {
@@ -76,7 +83,7 @@ struct OperatorView: View {
                             )
                         }
                     } header: {
-                        Text("\(smpProto) servers")
+                        Text("\(smpStr) servers")
                             .foregroundColor(theme.colors.secondary)
                     } footer: {
                         Text("The servers for new connections of your current chat profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
@@ -95,7 +102,7 @@ struct OperatorView: View {
                             )
                         }
                     } header: {
-                        Text("\(xftpProto) servers")
+                        Text("\(xftpStr) servers")
                             .foregroundColor(theme.colors.secondary)
                     } footer: {
                         Text("The servers for new files of your current chat profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
@@ -107,8 +114,7 @@ struct OperatorView: View {
                         TestServersButton(
                             smpServers: $smpServers,
                             xftpServers: $xftpServers,
-                            testing: $testing,
-                            alert: $alert
+                            testing: $testing
                         )
                     }
                 }
@@ -119,14 +125,6 @@ struct OperatorView: View {
             ChatModel.shared.updateServerOperator(serverOperatorToEdit)
             dismiss()
         })
-        .onAppear {
-            // this condition is needed to prevent re-setting the servers when exiting single server view
-            if justOpened {
-                smpServers = currSMPServers
-                xftpServers = currXFTPServers
-                justOpened = false
-            }
-        }
         .sheet(isPresented: $showConditionsSheet, onDismiss: onUseToggleSheetDismissed) {
             SingleOperatorUsageConditionsView(serverOperator: $serverOperatorToEdit, serverOperatorToEdit: serverOperatorToEdit)
                 .modifier(ThemedBackground(grouped: true))
@@ -395,7 +393,9 @@ struct UsageConditionsView: View {
         serverOperator: Binding.constant(ServerOperator.sampleData1),
         serverOperatorToEdit: ServerOperator.sampleData1,
         useOperator: ServerOperator.sampleData1.enabled,
-        currSMPServers: [UserServer.sampleData.preset],
-        currXFTPServers: [UserServer.sampleData.xftpPreset]
+        currSMPServers: Binding.constant([UserServer.sampleData.preset]),
+        smpServers: Binding.constant([UserServer.sampleData.preset]),
+        currXFTPServers: Binding.constant([UserServer.sampleData.xftpPreset]),
+        xftpServers: Binding.constant([UserServer.sampleData.xftpPreset])
     )
 }

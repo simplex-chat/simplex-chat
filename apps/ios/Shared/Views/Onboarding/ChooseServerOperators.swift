@@ -33,6 +33,10 @@ struct ChooseServerOperators: View {
     @State private var selectedOperators = Set<Int64>()
     @State private var customServersNavLinkActive = false
     @State private var reviewConditionsNavLinkActive = false
+    @State private var currSMPServers: [UserServer] = []
+    @State private var smpServers: [UserServer] = []
+    @State private var currXFTPServers: [UserServer] = []
+    @State private var xftpServers: [UserServer] = []
     @State private var justOpened = true
 
     var body: some View {
@@ -172,9 +176,14 @@ struct ChooseServerOperators: View {
     }
 
     private func customServersDestinationView() -> some View {
-        YourServersView()
-            .navigationTitle("Custom servers")
-            .modifier(ThemedBackground(grouped: true))
+        YourServersView(
+            currSMPServers: $currSMPServers,
+            smpServers: $smpServers,
+            currXFTPServers: $currXFTPServers,
+            xftpServers: $xftpServers
+        )
+        .navigationTitle("Custom servers")
+        .modifier(ThemedBackground(grouped: true))
     }
 
     private func reviewConditionsButton() -> some View {

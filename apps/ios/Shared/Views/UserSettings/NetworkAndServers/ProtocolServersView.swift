@@ -11,48 +11,32 @@ import SimpleXChat
 
 private let howToUrl = URL(string: "https://simplex.chat/docs/server.html")!
 
-enum ServerAlert: Identifiable {
-    case testsFailed(failures: [String: ProtocolTestFailure])
-    case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
-
-    var id: String {
-        switch self {
-        case .testsFailed: return "testsFailed"
-        case let .error(title, _): return "error \(title)"
-        }
-    }
-}
-
 struct YourServersView: View {
-    @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject private var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.editMode) private var editMode
-    @State private var currSMPServers: [UserServer] = []
-    @State private var smpServers: [UserServer] = []
-    @State private var currXFTPServers: [UserServer] = []
-    @State private var xftpServers: [UserServer] = []
+    @Binding var currSMPServers: [UserServer]
+    @Binding var smpServers: [UserServer]
+    @Binding var currXFTPServers: [UserServer]
+    @Binding var xftpServers: [UserServer]
     @State private var selectedServer: String? = nil
     @State private var showAddServer = false
     @State private var showScanProtoServer = false
-    @State private var justOpened = true
     @State private var testing = false
-    @State private var alert: ServerAlert? = nil
-    @State private var showSaveDialog = false
 
-    let smpProto: String = ServerProtocol.smp.rawValue.uppercased()
-    let xftpProto: String = ServerProtocol.xftp.rawValue.uppercased()
+    let smpStr: String = ServerProtocol.smp.rawValue.uppercased()
+    let xftpStr: String = ServerProtocol.xftp.rawValue.uppercased()
 
     var body: some View {
         ZStack {
-            protocolServersView()
+            yourServersView()
             if testing {
                 ProgressView().scaleEffect(2)
             }
         }
     }
 
-    private func protocolServersView() -> some View {
+    private func yourServersView() -> some View {
         List {
             if !smpServers.isEmpty {
                 Section {
@@ -72,7 +56,7 @@ struct YourServersView: View {
                         smpServers.remove(atOffsets: indexSet)
                     }
                 } header: {
-                    Text("\(smpProto) servers")
+                    Text("\(smpStr) servers")
                         .foregroundColor(theme.colors.secondary)
                 } footer: {
                     Text("The servers for new connections of your current chat profile **\(m.currentUser?.displayName ?? "")**.")
@@ -99,7 +83,7 @@ struct YourServersView: View {
                         xftpServers.remove(atOffsets: indexSet)
                     }
                 } header: {
-                    Text("\(xftpProto) servers")
+                    Text("\(xftpStr) servers")
                         .foregroundColor(theme.colors.secondary)
                 } footer: {
                     Text("The servers for new files of your current chat profile **\(m.currentUser?.displayName ?? "")**.")
@@ -115,19 +99,11 @@ struct YourServersView: View {
             }
 
             Section {
-                Button("Reset") {
-                    smpServers = currSMPServers
-                    xftpServers = currXFTPServers
-                }
-                .disabled((smpServers == currSMPServers && xftpServers == currXFTPServers) || testing)
                 TestServersButton(
                     smpServers: $smpServers,
                     xftpServers: $xftpServers,
-                    testing: $testing,
-                    alert: $alert
+                    testing: $testing
                 )
-                Button("Save servers", action: saveServers)
-                    .disabled(saveDisabled)
                 howToButton()
             }
         }
@@ -147,66 +123,6 @@ struct YourServersView: View {
             ScanProtocolServer(smpServers: $smpServers, xftpServers: $xftpServers)
                 .modifier(ThemedBackground(grouped: true))
         }
-        .modifier(BackButton(disabled: Binding.constant(false)) {
-            if saveDisabled {
-                dismiss()
-                justOpened = false
-            } else {
-                showSaveDialog = true
-            }
-        })
-        .confirmationDialog("Save servers?", isPresented: $showSaveDialog, titleVisibility: .visible) {
-            Button("Save") {
-                saveServers()
-                dismiss()
-                justOpened = false
-            }
-            Button("Exit without saving") { dismiss() }
-        }
-        .alert(item: $alert) { a in
-            switch a {
-            case let .testsFailed(fs):
-                let msg = fs.map { (srv, f) in
-                    "\(srv): \(f.localizedDescription)"
-                }.joined(separator: "\n")
-                return Alert(
-                    title: Text("Tests failed!"),
-                    message: Text("Some servers failed the test:\n" + msg)
-                )
-            case .error:
-                return Alert(
-                    title: Text("Error")
-                )
-            }
-        }
-        .onAppear {
-            // this condition is needed to prevent re-setting the servers when exiting single server view
-            if justOpened {
-                do {
-                    // TODO single getUserServers api call for both SMP and XFTP;
-                    //      api call would be made in parent view, with servers returned per operator,
-                    //      this view will take servers of "null operator" (no operator)
-                    let rSMP = try getUserProtoServers(.smp)
-                    currSMPServers = rSMP.protoServers
-                    smpServers = currSMPServers
-
-                    let rXFTP = try getUserProtoServers(.xftp)
-                    currXFTPServers = rXFTP.protoServers
-                    xftpServers = currXFTPServers
-                } catch let error {
-                    alert = .error(
-                        title: "Error loading servers",
-                        error: "Error: \(responseError(error))"
-                    )
-                }
-                justOpened = false
-            }
-        }
-    }
-
-    private var saveDisabled: Bool {
-        (smpServers == currSMPServers && xftpServers == currXFTPServers) ||
-        testing
     }
 
     func howToButton() -> some View {
@@ -218,30 +134,6 @@ struct YourServersView: View {
             HStack {
                 Text("How to use your servers")
                 Image(systemName: "arrow.up.right.circle")
-            }
-        }
-    }
-
-    func saveServers() {
-        Task {
-            do {
-                // TODO Single api call - setUserServers
-                try await setUserProtoServers(.smp, servers: smpServers)
-                try await setUserProtoServers(.xftp, servers: xftpServers)
-                await MainActor.run {
-                    currSMPServers = smpServers
-                    currXFTPServers = xftpServers
-                    editMode?.wrappedValue = .inactive
-                }
-            } catch let error {
-                let err = responseError(error)
-                logger.error("saveServers setUserProtocolServers error: \(err)")
-                await MainActor.run {
-                    alert = .error(
-                        title: "Error saving servers",
-                        error: "Make sure server addresses are in correct format, line separated and are not duplicated (\(responseError(error)))."
-                    )
-                }
             }
         }
     }
@@ -310,7 +202,6 @@ struct TestServersButton: View {
     @Binding var smpServers: [UserServer]
     @Binding var xftpServers: [UserServer]
     @Binding var testing: Bool
-    @Binding var alert: ServerAlert?
 
     var body: some View {
         Button("Test servers", action: testServers)
@@ -329,7 +220,13 @@ struct TestServersButton: View {
             await MainActor.run {
                 testing = false
                 if !fs.isEmpty {
-                    alert = .testsFailed(failures: fs)
+                    let msg = fs.map { (srv, f) in
+                        "\(srv): \(f.localizedDescription)"
+                    }.joined(separator: "\n")
+                    showAlert(
+                        NSLocalizedString("Tests failed!", comment: "alert title"),
+                        message: String.localizedStringWithFormat(NSLocalizedString("Some servers failed the test:\n%@", comment: "alert message"), msg)
+                    )
                 }
             }
         }
@@ -372,6 +269,11 @@ struct TestServersButton: View {
 
 struct YourServersView_Previews: PreviewProvider {
     static var previews: some View {
-        YourServersView()
+        YourServersView(
+            currSMPServers: Binding.constant([UserServer.sampleData.preset]),
+            smpServers: Binding.constant([UserServer.sampleData.preset]),
+            currXFTPServers: Binding.constant([UserServer.sampleData.xftpPreset]),
+            xftpServers: Binding.constant([UserServer.sampleData.xftpPreset])
+        )
     }
 }
