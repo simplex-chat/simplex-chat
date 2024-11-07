@@ -45,6 +45,7 @@ struct ChatView: View {
     @State private var selectedChatItems: Set<Int64>? = nil
     @State private var showDeleteSelectedMessages: Bool = false
     @State private var allowToDeleteSelectedMessagesForAll: Bool = false
+    @State private var initialChatItem: ChatItem? = nil
 
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
 
@@ -365,7 +366,7 @@ struct ChatView: View {
         Task {
             DispatchQueue.main.async {
                 if let firstunreadItem = self.getFirstUnreadItem() {
-                    scrollModel.scrollToUnread(id: firstunreadItem.id)
+                    initialChatItem = firstunreadItem
                 }
             }
         }
@@ -424,7 +425,7 @@ struct ChatView: View {
         let cInfo = chat.chatInfo
         let mergedItems = filtered(im.reversedChatItems)
         return GeometryReader { g in
-            ReverseList(items: mergedItems, gap: im.gap, scrollState: $scrollModel.state) { ci in
+            ReverseList(items: mergedItems, gap: im.gap, scrollState: $scrollModel.state, initialChatItem: $initialChatItem) { ci in
                 let voiceNoFrame = voiceWithoutFrame(ci)
                 let maxWidth = cInfo.chatType == .group
                                 ? voiceNoFrame

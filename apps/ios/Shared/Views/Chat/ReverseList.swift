@@ -16,6 +16,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
     let gap: ChatGap?
 
     @Binding var scrollState: ReverseListScrollModel.State
+    @Binding var initialChatItem: ChatItem?
 
     /// Closure, that returns user interface for a given item
     let content: (ChatItem) -> Content
@@ -37,9 +38,6 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 controller.scrollToItem(to: items.first(where: { $0.id == id }), position: .bottom)
             case .bottom:
                 controller.scroll(to: 0, position: .top)
-            case let .unread(id):
-                logger.error("[scrolling] to unread id: (\(id)) size: \(items.count)")
-                controller.scrollToUnread(to: items.first(where: { $0.id == id }))
             }
         } else {
             logger.error("[scrolling] not scrolling gap: (\(gap?.index ?? -1), \(gap?.size ?? 0))")
@@ -162,6 +160,24 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             tableView.clipsToBounds = false
             parent?.viewIfLoaded?.clipsToBounds = false
         }
+        
+        override func viewDidLayoutSubviews() {
+            super.viewDidLayoutSubviews()
+            if let cItem = self.representer.initialChatItem, let indexPath = dataSource.indexPath(for: cItem) {
+                if !isVisible(indexPath: indexPath) {
+                    if tableView.numberOfRows(inSection: indexPath.section) > indexPath.row {
+                        let cellRect = tableView.rectForRow(at: indexPath)
+                        logger.error("[scrolling] minY: \(cellRect.minY), maxY: \(cellRect.maxY) y: \(cellRect.origin.y)")
+                        tableView.setContentOffset(CGPoint(x: 0, y: cellRect.maxY - tableView.bounds.height), animated: false)
+                    }
+                }
+                Task {
+                    DispatchQueue.main.async {
+                        self.representer.initialChatItem = nil
+                    }
+                }
+            }
+        }
 
         /// Scrolls up
         func scrollToNextPage() {
@@ -173,21 +189,6 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 animated: true
             )
             Task { representer.scrollState = .atDestination }
-        }
-        
-        func scrollToUnread(to cItem: ChatItem?) {
-            if let it = cItem, let indexPath = dataSource.indexPath(for: it) {
-                if isVisible(indexPath: indexPath) {
-                    logger.error("[scrolling] unread visible")
-                    self.scroll(to: 0, position: .bottom)
-                } else {
-                    logger.error("[scrolling] unread not visible and at line index: \(indexPath.row)")
-                    self.scrollToItem(to: cItem, position: .bottom)
-                }
-            } else {
-                logger.error("[scrolling] unread not found")
-                self.scroll(to: nil, position: .top)
-            }
         }
         
         func scrollToItem(to cItem: ChatItem?, position: UITableView.ScrollPosition) {
@@ -263,6 +264,8 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             if let visibleRows = tableView.indexPathsForVisibleRows,
                 visibleRows.last?.item ?? 0 < renderedItems.count {
                 let scrollOffset: Double = tableView.contentOffset.y + InvertedTableView.inset
+                
+                logger.error("[scrolling] scroll offset: \(scrollOffset)")
                 let topItemDate: Date? =
                     if let lastVisible = visibleRows.last(where: { isVisible(indexPath: $0) }) {
                         renderedItems[lastVisible.item].meta.itemTs
@@ -407,7 +410,6 @@ class ReverseListScrollModel: ObservableObject {
             case nextPage
             case item(ChatItem.ID)
             case bottom
-            case unread(ChatItem.ID)
         }
 
         case scrollingTo(Destination)
@@ -430,11 +432,6 @@ class ReverseListScrollModel: ObservableObject {
     func scrollToItem(id: ChatItem.ID) {
         logger.error("[scrolling] to item \(id)")
         state = .scrollingTo(.item(id))
-    }
-    
-    func scrollToUnread(id: ChatItem.ID) {
-        logger.error("[scrolling] to unread")
-        state = .scrollingTo(.unread(id))
     }
 }
 
