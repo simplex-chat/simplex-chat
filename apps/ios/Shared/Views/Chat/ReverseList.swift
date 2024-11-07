@@ -40,7 +40,6 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 controller.scroll(to: 0, position: .top)
             }
         } else {
-            logger.error("[scrolling] not scrolling gap: (\(gap?.index ?? -1), \(gap?.size ?? 0))")
             controller.update(items: items, gap: gap)
         }
     }
@@ -204,10 +203,8 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             if #available(iOS 16.0, *) {
                 animated = true
             }
-            logger.error("[scrolling] requesting scroll")
 
             if let index, tableView.numberOfRows(inSection: 0) != 0 {
-                logger.error("[scrolling] requesting scroll to index: \(index) position: \(position.rawValue)")
                 tableView.scrollToRow(
                     at: IndexPath(row: index, section: 0),
                     at: position,

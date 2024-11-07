@@ -1080,7 +1080,7 @@ struct ChatView: View {
             Task {
                 _ = try? await Task.sleep(nanoseconds: 600_000000)
                 let currIndex = m.getChatItemIndex(chatItem)                
-                if let currIndex = currIndex, currIndex >= ChatView.FloatingButtonModel.shared.bottomItemIndex {
+                if let currIndex = currIndex, currIndex >= ChatView.FloatingButtonModel.shared.bottomItemIndex - 3 {
                     if m.chatId == chat.chatInfo.id {
                         await op()
                     }
