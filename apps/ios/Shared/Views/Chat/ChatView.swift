@@ -491,12 +491,9 @@ struct ChatView: View {
     }
     
     private func getFirstUnreadItem() -> ChatItem? {
-        logger.error("[scrolling] \(im.reversedChatItems.count)")
-
         for i in stride(from: im.reversedChatItems.count - 1, through: 0, by: -1) {
             let item = im.reversedChatItems[i]
             if item.isRcvNew {
-                logger.error("[scrolling] First unread item: \(item.text)")
                 return item
             }
         }

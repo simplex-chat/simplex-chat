@@ -166,7 +166,6 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 if !isVisible(indexPath: indexPath) {
                     if tableView.numberOfRows(inSection: indexPath.section) > indexPath.row {
                         let cellRect = tableView.rectForRow(at: indexPath)
-                        logger.error("[scrolling] minY: \(cellRect.minY), maxY: \(cellRect.maxY) y: \(cellRect.origin.y)")
                         tableView.setContentOffset(CGPoint(x: 0, y: cellRect.maxY - tableView.bounds.height), animated: false)
                     }
                 }
@@ -269,7 +268,6 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 visibleRows.last?.item ?? 0 < renderedItems.count {
                 let scrollOffset: Double = tableView.contentOffset.y + InvertedTableView.inset
                 
-                logger.error("[scrolling] scroll offset: \(scrollOffset)")
                 let topItemDate: Date? =
                     if let lastVisible = visibleRows.last(where: { isVisible(indexPath: $0) }) {
                         renderedItems[lastVisible.item].meta.itemTs
@@ -423,18 +421,14 @@ class ReverseListScrollModel: ObservableObject {
     @Published var state: State = .atDestination
 
     func scrollToNextPage() {
-        logger.error("[scrolling] to next page")
-
         state = .scrollingTo(.nextPage)
     }
 
     func scrollToBottom() {
-        logger.error("[scrolling] to bottom")
         state = .scrollingTo(.bottom)
     }
 
     func scrollToItem(id: ChatItem.ID) {
-        logger.error("[scrolling] to item \(id)")
         state = .scrollingTo(.item(id))
     }
 }
