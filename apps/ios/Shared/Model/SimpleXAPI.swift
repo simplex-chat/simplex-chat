@@ -524,6 +524,64 @@ func testProtoServer(server: String) async throws -> Result<(), ProtocolTestFail
     throw r
 }
 
+func getServerOperators() async throws -> ([ServerOperator], UsageConditionsAction?) {
+    let r = await chatSendCmd(.apiGetServerOperators)
+    if case let .serverOperators(operators, conditionsAction) = r { return (operators, conditionsAction) }
+    logger.error("getServerOperators error: \(String(describing: r))")
+    throw r
+}
+
+func setServerOperators(operatorsEnabled: [OperatorEnabled]) async throws -> ([ServerOperator], UsageConditionsAction?) {
+    let r = await chatSendCmd(.apiSetServerOperators(operatorsEnabled: operatorsEnabled))
+    if case let .serverOperators(operators, conditionsAction) = r { return (operators, conditionsAction) }
+    logger.error("setServerOperators error: \(String(describing: r))")
+    throw r
+}
+
+func getUserServers() async throws -> [UserServers] {
+    let userId = try currentUserId("getUserServers")
+    let r = await chatSendCmd(.apiGetUserServers(userId: userId))
+    if case let .userServers(_, userServers) = r { return userServers }
+    logger.error("getUserServers error: \(String(describing: r))")
+    throw r
+}
+
+func setUserServers(userServers: [UserServers]) async throws {
+    let userId = try currentUserId("setUserServers")
+    let r = await chatSendCmd(.apiSetUserServers(userId: userId, userServers: userServers))
+    if case .cmdOk = r { return }
+    logger.error("setUserServers error: \(String(describing: r))")
+    throw r
+}
+
+func validateServers(userServers: [UserServers]) async throws -> [UserServersError] {
+    let r = await chatSendCmd(.apiValidateServers(userServers: userServers))
+    if case let .userServersValidation(serverErrors) = r { return serverErrors }
+    logger.error("validateServers error: \(String(describing: r))")
+    throw r
+}
+
+func getUsageConditions() async throws -> (UsageConditions, String, UsageConditions?) {
+    let r = await chatSendCmd(.apiGetUsageConditions)
+    if case let .usageConditions(usageConditions, conditionsText, acceptedConditions) = r { return (usageConditions, conditionsText, acceptedConditions) }
+    logger.error("getUsageConditions error: \(String(describing: r))")
+    throw r
+}
+
+func setConditionsNotified(conditionsId: Int64) async throws {
+    let r = await chatSendCmd(.apiSetConditionsNotified(conditionsId: conditionsId))
+    if case .cmdOk = r { return }
+    logger.error("setConditionsNotified error: \(String(describing: r))")
+    throw r
+}
+
+func acceptConditions(conditionsId: Int64, operators: [ServerOperator]) async throws -> ([ServerOperator], UsageConditionsAction?) {
+    let r = await chatSendCmd(.apiAcceptConditions(conditionsId: conditionsId, operators: operators))
+    if case let .serverOperators(updatedOperators, conditionsAction) = r { return (updatedOperators, conditionsAction) }
+    logger.error("acceptConditions error: \(String(describing: r))")
+    throw r
+}
+
 func getChatItemTTL() throws -> ChatItemTTL {
     let userId = try currentUserId("getChatItemTTL")
     return try chatItemTTLResponse(chatSendCmdSync(.apiGetChatItemTTL(userId: userId)))
