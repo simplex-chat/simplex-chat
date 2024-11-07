@@ -32,7 +32,7 @@ struct OperatorView: View {
 
     var body: some View {
         operatorView()
-            .allowsHitTesting(!testing)
+            .opacity(testing ? 0.4 : 1)
             .overlay {
                 if testing {
                     ProgressView()
@@ -40,6 +40,7 @@ struct OperatorView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
+            .allowsHitTesting(!testing)
     }
 
     private func operatorView() -> some View {

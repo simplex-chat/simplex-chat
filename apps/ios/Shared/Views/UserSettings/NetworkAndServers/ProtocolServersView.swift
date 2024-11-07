@@ -29,7 +29,7 @@ struct YourServersView: View {
 
     var body: some View {
         yourServersView()
-            .allowsHitTesting(!testing)
+            .opacity(testing ? 0.4 : 1)
             .overlay {
                 if testing {
                     ProgressView()
@@ -37,6 +37,7 @@ struct YourServersView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
+            .allowsHitTesting(!testing)
     }
 
     private func yourServersView() -> some View {
