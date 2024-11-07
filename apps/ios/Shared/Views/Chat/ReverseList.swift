@@ -82,13 +82,12 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             self.dataSource = UITableViewDiffableDataSource<Section, ChatItem>(
                 tableView: tableView
             ) { (tableView, indexPath, item) -> UITableViewCell? in
-                if self.representer.scrollState == .atDestination {
+                if self.representer.scrollState == .atDestination, self.representer.initialChatItem == nil {
                     if indexPath.item > self.itemCount - preloadItem, let item = self.getItemAtPath(indexPath: IndexPath(row: self.itemCount - 1, section: 0)) {
                         self.representer.loadPage(.before(chatItemId: item.id, count: loadItemsPerPage))
                     } else if let item = self.getFirstItemBeforePlacholder(indexPath) {
                         // TODO: Cleanup, this should never be possible
                     } else if let item = self.getFirstItemAfterPlacholder(indexPath) {
-                        logger.error("[scrolling] needs items in bottom \(item.text)")
                         self.representer.loadPage(.after(chatItemId: item.id, count: loadItemsPerPage))
                     }
                 }

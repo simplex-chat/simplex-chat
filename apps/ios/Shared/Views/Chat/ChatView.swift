@@ -524,7 +524,7 @@ struct ChatView: View {
                     -1
                 }
             
-            let unreadBelow =
+            var unreadBelow =
                 if bottomItemIndex != -1 {
                  im.reversedChatItems[..<bottomItemIndex].reduce(into: 0) { unread, chatItem in
                      if chatItem.isRcvNew { unread += 1 }
@@ -532,6 +532,9 @@ struct ChatView: View {
                 } else {
                     0
                 }
+            if unreadBelow > 0, let g = im.gap, g.size > 0, g.index < bottomItemIndex {
+                unreadBelow += g.size
+            }
             let date: Date? =
                 if let topItemDate = listState.topItemDate {
                     Calendar.current.startOfDay(for: topItemDate)
