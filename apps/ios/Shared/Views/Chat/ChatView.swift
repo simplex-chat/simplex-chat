@@ -31,6 +31,7 @@ struct ChatView: View {
     @State private var customUserProfile: Profile?
     @State private var connectionCode: String?
     @State private var loadingItems = false
+    @State private var firstPage = false
     @State private var revealedChatItem: ChatItem?
     @State private var searchMode = false
     @State private var searchText: String = ""
@@ -167,6 +168,7 @@ struct ChatView: View {
         }
         .onChange(of: chatModel.chatId) { cId in
             showChatInfoSheet = false
+            firstPage = false
             selectedChatItems = nil
             scrollModel.scrollToBottom()
             stopAudioPlayer()
@@ -880,6 +882,7 @@ struct ChatView: View {
     private func loadChatItems(_ cInfo: ChatInfo, _ pagination: ChatPagination = .initial(count: loadItemsPerPage)) {
         Task {
             if loadingItems { return }
+            if case .before = pagination, firstPage { return }
             loadingItems = true
             do {
                 var reversedPage = Array<ChatItem>()
@@ -907,11 +910,11 @@ struct ChatView: View {
                     reversedPage.append(contentsOf: chatItems.reversed())
                 }
                 let dedupedreversePage = reversedPage.filter { !im.chatItemIds.contains($0.id) }
-                                    
-                logger.error("[scrolling] deduped: \(dedupedreversePage.count) \(reversedPage.count)")
 
                 await MainActor.run {
-                    if dedupedreversePage.count > 0 {
+                    if reversedPage.count == 0 {
+                        firstPage = true
+                    } else if dedupedreversePage.count > 0 {
                         switch pagination {
                         case .before, .last, .initial:
                             im.reversedChatItems.append(contentsOf: dedupedreversePage)
