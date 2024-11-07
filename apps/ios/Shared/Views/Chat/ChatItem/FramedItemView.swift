@@ -359,12 +359,28 @@ struct FramedItemView: View {
             let dedupedChatItems = chatItems.filter { !im.chatItemIds.contains($0.id) }
             reversedPage.append(contentsOf: dedupedChatItems.reversed())
 
+            var itemsToDrop = Set<Int64>()
             await MainActor.run {
+                if let g = im.gap {
+                    itemsToDrop = Set(im.reversedChatItems.suffix(g.size).map { $0.id })
+                }
+                
                 let itemCount = im.reversedChatItems.count
                 if let size = gap, size - itemCount > 0  {
                     im.gap = ChatGap(index: itemCount, size: size - itemCount)
                 }
                 im.reversedChatItems.append(contentsOf: reversedPage)
+            }
+            
+            if (itemsToDrop.count > 0) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    Task {
+                        if let g = im.gap {
+                            im.gap = ChatGap(index: g.index - itemsToDrop.count, size: g.size + itemsToDrop.count)
+                        }
+                        im.reversedChatItems.removeAll(where: { itemsToDrop.contains($0.id) })
+                    }
+                }
             }
             
             return reversedPage
