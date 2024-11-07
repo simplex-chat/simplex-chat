@@ -36,6 +36,7 @@ chatGroupTests = do
   describe "chat groups" $ do
     describe "add contacts, create group and send/receive messages" testGroupMatrix
     it "mark multiple messages as read" testMarkReadGroup
+    it "initial chat pagination" testChatPaginationInitial
     it "v1: add contacts, create group and send/receive messages" testGroup
     it "v1: add contacts, create group and send/receive messages, check messages" testGroupCheckMessages
     it "send large message" testGroupLargeMessage
@@ -374,6 +375,49 @@ testMarkReadGroup = testChat2 aliceProfile bobProfile $ \alice bob -> do
   i :: ChatItemId <- read <$> getTermLine bob
   let itemIds = intercalate "," $ map show [i - 3 .. i]
   bob #$> ("/_read chat items #1 " <> itemIds, id, "ok")
+
+testChatPaginationInitial :: HasCallStack => FilePath -> IO ()
+testChatPaginationInitial = testChatOpts2 opts aliceProfile bobProfile $ \alice bob -> do
+  createGroup2 "team" alice bob
+  -- Wait, otherwise ids are going to be wrong.
+  threadDelay 1000000
+  lastEventId <- (read :: String -> Int) <$> lastItemId bob
+
+  -- Send messages from alice to bob
+  forM_ ([1 .. 10] :: [Int]) $ \n -> alice #> ("#team " <> show n)
+
+  -- Bob receives the messages.
+  forM_ ([1 .. 10] :: [Int]) $ \n -> bob <# ("#team alice> " <> show n)
+
+  -- Read events up to first message
+  let eventIds = intercalate "," $ map show [1 .. lastEventId + 1]
+  bob #$> ("/_read chat items #1 " <> eventIds, id, "ok")
+  -- All messages are for bob, should return first 2 unread, and last 2 items
+  bob #$> ("/_get chat #1 initial=2", chat, [(0, "1"), (0, "2"), (0, "9"), (0, "10")])
+
+  -- Read first 2 items
+  let itemIds = intercalate "," $ map show [lastEventId + 2 .. lastEventId + 3]
+  bob #$> ("/_read chat items #1 " <> itemIds, id, "ok")
+  bob #$> ("/_get chat #1 initial=2", chat, [(0, "3"), (0, "4"), (0, "9"), (0, "10")])
+
+  -- Read items until gap = 0
+  let itemIds2 = intercalate "," $ map show [lastEventId + 4 .. lastEventId + 7]
+  bob #$> ("/_read chat items #1 " <> itemIds2, id, "ok")
+  bob #$> ("/_get chat #1 initial=2", chat, [(0, "7"), (0, "8"), (0, "9"), (0, "10")])
+
+  -- Read items until intersection
+  bob #$> ("/_read chat items #1 " <> show (lastEventId + 8), id, "ok")
+  bob #$> ("/_get chat #1 initial=2", chat, [(0, "8"), (0, "9"), (0, "10")])
+
+  -- Read all items
+  bob #$> ("/_read chat #1", id, "ok")
+  bob #$> ("/_get chat #1 initial=2", chat, [(0, "9"), (0, "10")])
+  bob #$> ("/_get chat #1 initial=5", chat, [(0, "6"), (0, "7"), (0, "8"), (0, "9"), (0, "10")])
+  where
+    opts =
+      testOpts
+        { markRead = False
+        }
 
 testGroupLargeMessage :: HasCallStack => FilePath -> IO ()
 testGroupLargeMessage =

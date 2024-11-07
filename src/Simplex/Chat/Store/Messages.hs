@@ -1001,7 +1001,7 @@ getDirectChatItemGapToLatest_ db User {userId} Contact {contactId} chatItem sear
           ":itemCreatedAt" := chatItemCreatedAt chatItem,
           ":chatItemId" := cchatItemId chatItem
         ]
-  pure $ maybe 0 (\c -> max 0 (c - 1)) count
+  pure $ fromMaybe 0 count
 
 safeGetDirectItem :: DB.Connection -> User -> Contact -> UTCTime -> ChatItemId -> IO (CChatItem 'CTDirect)
 safeGetDirectItem db user ct currentTs itemId =
@@ -1119,7 +1119,7 @@ getDirectChatInitial_ db user@User {userId} ct@Contact {contactId} count = do
       case gap of
         Just size -> do
           if size > 0
-            then getLatestItems_ chat (size + 1)
+            then getLatestItems_ chat size
             else pure (chat, Nothing)
         Nothing -> pure (chat, Nothing)
     Nothing -> liftIO $ (,Nothing) <$> getDirectChatLast_ db user ct count ""
@@ -1199,7 +1199,7 @@ getGroupChatItemGapToLatest_ db User {userId} GroupInfo {groupId} chatItem searc
           ":itemCreatedAt" := chatItemCreatedAt chatItem,
           ":chatItemId" := cchatItemId chatItem
         ]
-  pure $ maybe 0 (\c -> max 0 (c - 1)) count
+  pure $ fromMaybe 0 count
 
 safeGetGroupItem :: DB.Connection -> User -> GroupInfo -> UTCTime -> ChatItemId -> IO (CChatItem 'CTGroup)
 safeGetGroupItem db user g currentTs itemId =
@@ -1317,7 +1317,7 @@ getGroupChatInitial_ db user@User {userId} g@GroupInfo {groupId} count = do
       case gap of
         Just size -> do
           if size > 0
-            then getLatestItems_ chat (size + 1)
+            then getLatestItems_ chat size
             else pure (chat, Nothing)
         Nothing -> pure (chat, Nothing)
     Nothing -> liftIO $ (,Nothing) <$> getGroupChatLast_ db user g count ""
@@ -1397,7 +1397,7 @@ getLocalChatItemGapToLatest_ db User {userId} NoteFolder {noteFolderId} chatItem
           ":itemCreatedAt" := chatItemCreatedAt chatItem,
           ":chatItemId" := cchatItemId chatItem
         ]
-  pure $ maybe 0 (\c -> max 0 (c - 1)) count
+  pure $ fromMaybe 0 count
 
 safeGetLocalItem :: DB.Connection -> User -> NoteFolder -> UTCTime -> ChatItemId -> IO (CChatItem 'CTLocal)
 safeGetLocalItem db user NoteFolder {noteFolderId} currentTs itemId =
@@ -1499,7 +1499,7 @@ getLocalChatInitial_ db user@User {userId} nf@NoteFolder {noteFolderId} count = 
       case gap of
         Just size -> do
           if size > 0
-            then getLatestItems_ chat (size + 1)
+            then getLatestItems_ chat size
             else pure (chat, Nothing)
         Nothing -> pure (chat, Nothing)
     Nothing -> liftIO $ (,Nothing) <$> getLocalChatLast_ db user nf count ""
