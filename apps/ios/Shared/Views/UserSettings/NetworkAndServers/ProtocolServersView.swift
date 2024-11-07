@@ -11,14 +11,15 @@ import SimpleXChat
 
 private let howToUrl = URL(string: "https://simplex.chat/docs/server.html")!
 
-struct ProtocolServersView: View {
+struct YourServersView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject private var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.editMode) private var editMode
-    let serverProtocol: ServerProtocol
-    @State private var currServers: [UserServer] = []
-    @State private var servers: [UserServer] = []
+    @State private var currSMPServers: [UserServer] = []
+    @State private var smpServers: [UserServer] = []
+    @State private var currXFTPServers: [UserServer] = []
+    @State private var xftpServers: [UserServer] = []
     @State private var selectedServer: String? = nil
     @State private var showAddServer = false
     @State private var showScanProtoServer = false
@@ -27,7 +28,8 @@ struct ProtocolServersView: View {
     @State private var alert: ServerAlert? = nil
     @State private var showSaveDialog = false
 
-    var proto: String { serverProtocol.rawValue.uppercased() }
+    let smpProto: String = ServerProtocol.smp.rawValue.uppercased()
+    let xftpProto: String = ServerProtocol.xftp.rawValue.uppercased()
 
     var body: some View {
         ZStack {
@@ -52,31 +54,60 @@ struct ProtocolServersView: View {
 
     private func protocolServersView() -> some View {
         List {
-            Section {
-                ForEach($servers) { srv in
-                    protocolServerView(srv)
+            if !smpServers.isEmpty {
+                Section {
+                    ForEach($smpServers) { srv in
+                        protocolServerView(srv, .smp)
+                    }
+                    .onMove { indexSet, offset in
+                        smpServers.move(fromOffsets: indexSet, toOffset: offset)
+                    }
+                    .onDelete { indexSet in
+                        smpServers.remove(atOffsets: indexSet)
+                    }
+                } header: {
+                    Text("\(smpProto) servers")
+                        .foregroundColor(theme.colors.secondary)
+                } footer: {
+                    Text("The servers for new connections of your current chat profile **\(m.currentUser?.displayName ?? "")**.")
+                        .foregroundColor(theme.colors.secondary)
+                        .lineLimit(10)
                 }
-                .onMove { indexSet, offset in
-                    servers.move(fromOffsets: indexSet, toOffset: offset)
+            }
+
+            if !xftpServers.isEmpty {
+                Section {
+                    ForEach($xftpServers) { srv in
+                        protocolServerView(srv, .xftp)
+                    }
+                    .onMove { indexSet, offset in
+                        xftpServers.move(fromOffsets: indexSet, toOffset: offset)
+                    }
+                    .onDelete { indexSet in
+                        xftpServers.remove(atOffsets: indexSet)
+                    }
+                } header: {
+                    Text("\(xftpProto) servers")
+                        .foregroundColor(theme.colors.secondary)
+                } footer: {
+                    Text("The servers for new files of your current chat profile **\(m.currentUser?.displayName ?? "")**.")
+                        .foregroundColor(theme.colors.secondary)
+                        .lineLimit(10)
                 }
-                .onDelete { indexSet in
-                    servers.remove(atOffsets: indexSet)
-                }
-                Button("Add server") {
-                    showAddServer = true
-                }
-            } header: {
-                Text("\(proto) servers")
-                    .foregroundColor(theme.colors.secondary)
-            } footer: {
-                Text("The servers for new connections of your current chat profile **\(m.currentUser?.displayName ?? "")**.")
-                    .foregroundColor(theme.colors.secondary)
-                    .lineLimit(10)
             }
 
             Section {
-                Button("Reset") { servers = currServers }
-                    .disabled(servers == currServers || testing)
+                Button("Add server") {
+                    showAddServer = true
+                }
+            }
+
+            Section {
+                Button("Reset") {
+                    smpServers = currSMPServers
+                    xftpServers = currXFTPServers
+                }
+                .disabled((smpServers == currSMPServers && xftpServers == currXFTPServers) || testing)
                 Button("Test servers", action: testServers)
                     .disabled(testing || allServersDisabled)
                 Button("Save servers", action: saveServers)
@@ -86,14 +117,18 @@ struct ProtocolServersView: View {
         }
         .toolbar { EditButton() }
         .confirmationDialog("Add server", isPresented: $showAddServer, titleVisibility: .hidden) {
-            Button("Enter server manually") {
-                servers.append(UserServer.empty)
-                selectedServer = servers.last?.id
+            Button("Enter SMP server manually") {
+                smpServers.append(UserServer.empty)
+                selectedServer = smpServers.last?.id
+            }
+            Button("Enter XFTP server manually") {
+                xftpServers.append(UserServer.empty)
+                selectedServer = xftpServers.last?.id
             }
             Button("Scan server QR code") { showScanProtoServer = true }
         }
         .sheet(isPresented: $showScanProtoServer) {
-            ScanProtocolServer(servers: $servers)
+            ScanProtocolServer(smpServers: $smpServers, xftpServers: $xftpServers)
                 .modifier(ThemedBackground(grouped: true))
         }
         .modifier(BackButton(disabled: Binding.constant(false)) {
@@ -132,12 +167,19 @@ struct ProtocolServersView: View {
             // this condition is needed to prevent re-setting the servers when exiting single server view
             if justOpened {
                 do {
-                    let r = try getUserProtoServers(serverProtocol)
-                    currServers = r.protoServers
-                    servers = currServers
+                    // TODO single getUserServers api call for both SMP and XFTP;
+                    //      api call would be made in parent view, with servers returned per operator,
+                    //      this view will take servers of "null operator" (no operator)
+                    let rSMP = try getUserProtoServers(.smp)
+                    currSMPServers = rSMP.protoServers
+                    smpServers = currSMPServers
+
+                    let rXFTP = try getUserProtoServers(.xftp)
+                    currXFTPServers = rXFTP.protoServers
+                    xftpServers = currXFTPServers
                 } catch let error {
                     alert = .error(
-                        title: "Error loading \(proto) servers",
+                        title: "Error loading servers",
                         error: "Error: \(responseError(error))"
                     )
                 }
@@ -147,23 +189,15 @@ struct ProtocolServersView: View {
     }
 
     private var saveDisabled: Bool {
-        servers.isEmpty ||
-        servers == currServers ||
-        testing ||
-        !servers.allSatisfy { srv in
-            if let address = parseServerAddress(srv.server) {
-                return uniqueAddress(srv, address)
-            }
-            return false
-        } ||
-        allServersDisabled
+        (smpServers == currSMPServers && xftpServers == currXFTPServers) ||
+        testing
     }
 
     private var allServersDisabled: Bool {
-        servers.allSatisfy { !$0.enabled }
+        smpServers.allSatisfy { !$0.enabled } && xftpServers.allSatisfy { !$0.enabled }
     }
 
-    private func protocolServerView(_ server: Binding<UserServer>) -> some View {
+    private func protocolServerView(_ server: Binding<UserServer>, _ serverProtocol: ServerProtocol) -> some View {
         let srv = server.wrappedValue
         return NavigationLink(tag: srv.id, selection: $selectedServer) {
             ProtocolServerView(
@@ -171,7 +205,7 @@ struct ProtocolServersView: View {
                 server: server,
                 serverToEdit: srv,
                 preset: false,
-                backLabel: "Your \(proto) servers"
+                backLabel: "Your servers"
             )
             .navigationBarTitle("Your server")
             .modifier(ThemedBackground(grouped: true))
@@ -183,8 +217,9 @@ struct ProtocolServersView: View {
                     if let address = address {
                         if !address.valid || address.serverProtocol != serverProtocol {
                             invalidServer()
-                        } else if !uniqueAddress(srv, address) {
-                            Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+                        // TODO Show based on validateServers
+//                        } else if !uniqueAddress(srv, address) {
+//                            Image(systemName: "exclamationmark.circle").foregroundColor(.red)
                         } else if !srv.enabled {
                             Image(systemName: "slash.circle").foregroundColor(theme.colors.secondary)
                         } else {
@@ -224,14 +259,6 @@ struct ProtocolServersView: View {
         Image(systemName: "exclamationmark.circle").foregroundColor(.red)
     }
 
-    private func uniqueAddress(_ s: UserServer, _ address: ServerAddress) -> Bool {
-        servers.allSatisfy { srv in
-            address.hostnames.allSatisfy { host in
-                srv.id == s.id || !srv.server.contains(host)
-            }
-        }
-    }
-
     private func testServers() {
         resetTestStatus()
         testing = true
@@ -247,19 +274,33 @@ struct ProtocolServersView: View {
     }
 
     private func resetTestStatus() {
-        for i in 0..<servers.count {
-            if servers[i].enabled {
-                servers[i].tested = nil
+        for i in 0..<smpServers.count {
+            if smpServers[i].enabled {
+                smpServers[i].tested = nil
+            }
+        }
+
+        for i in 0..<xftpServers.count {
+            if xftpServers[i].enabled {
+                xftpServers[i].tested = nil
             }
         }
     }
 
     private func runServersTest() async -> [String: ProtocolTestFailure] {
         var fs: [String: ProtocolTestFailure] = [:]
-        for i in 0..<servers.count {
-            if servers[i].enabled {
-                if let f = await testServerConnection(server: $servers[i]) {
-                    fs[serverHostname(servers[i].server)] = f
+        for i in 0..<smpServers.count {
+            if smpServers[i].enabled {
+                if let f = await testServerConnection(server: $smpServers[i]) {
+                    fs[serverHostname(smpServers[i].server)] = f
+                }
+            }
+        }
+
+        for i in 0..<xftpServers.count {
+            if xftpServers[i].enabled {
+                if let f = await testServerConnection(server: $xftpServers[i]) {
+                    fs[serverHostname(xftpServers[i].server)] = f
                 }
             }
         }
@@ -269,9 +310,12 @@ struct ProtocolServersView: View {
     func saveServers() {
         Task {
             do {
-                try await setUserProtoServers(serverProtocol, servers: servers)
+                // TODO Single api call - setUserServers
+                try await setUserProtoServers(.smp, servers: smpServers)
+                try await setUserProtoServers(.xftp, servers: xftpServers)
                 await MainActor.run {
-                    currServers = servers
+                    currSMPServers = smpServers
+                    currXFTPServers = xftpServers
                     editMode?.wrappedValue = .inactive
                 }
             } catch let error {
@@ -279,8 +323,8 @@ struct ProtocolServersView: View {
                 logger.error("saveServers setUserProtocolServers error: \(err)")
                 await MainActor.run {
                     alert = .error(
-                        title: "Error saving \(proto) servers",
-                        error: "Make sure \(proto) server addresses are in correct format, line separated and are not duplicated (\(responseError(error)))."
+                        title: "Error saving servers",
+                        error: "Make sure server addresses are in correct format, line separated and are not duplicated (\(responseError(error)))."
                     )
                 }
             }
@@ -288,8 +332,8 @@ struct ProtocolServersView: View {
     }
 }
 
-struct ProtocolServersView_Previews: PreviewProvider {
+struct YourServersView_Previews: PreviewProvider {
     static var previews: some View {
-        ProtocolServersView(serverProtocol: .smp)
+        YourServersView()
     }
 }
