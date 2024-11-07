@@ -507,17 +507,24 @@ struct ChatView: View {
         @Published var isNearBottom: Bool = true
         @Published var date: Date?
         @Published var isDateVisible: Bool = false
+        @Published var bottomItemIndex: Int = 0
         var totalUnread: Int = 0
         var isReallyNearBottom: Bool = true
         var hideDateWorkItem: DispatchWorkItem?
 
         func updateOnListChange(_ listState: ListState) {
             let im = ItemsModel.shared
-            let unreadBelow =
+            let bottomItemIndex =
                 if let id = listState.bottomItemId,
-                   let index = im.reversedChatItems.firstIndex(where: { $0.id == id })
-                {
-                 im.reversedChatItems[..<index].reduce(into: 0) { unread, chatItem in
+                   let index = im.reversedChatItems.firstIndex(where: { $0.id == id }) {
+                    index
+                } else {
+                    -1
+                }
+            
+            let unreadBelow =
+                if bottomItemIndex != -1 {
+                 im.reversedChatItems[..<bottomItemIndex].reduce(into: 0) { unread, chatItem in
                      if chatItem.isRcvNew { unread += 1 }
                  }
                 } else {
@@ -537,6 +544,7 @@ struct ChatView: View {
                 it.unreadBelow = unreadBelow
                 it.date = date
                 it.isReallyNearBottom = listState.scrollOffset > 0 && listState.scrollOffset < 500
+                it.bottomItemIndex = bottomItemIndex
             }
             
             // set floating button indication mode
@@ -988,7 +996,26 @@ struct ChatView: View {
             let range = itemsRange(currIndex, prevHidden)
             let timeSeparation = getItemSeparation(chatItem, at: currIndex)
             let im = ItemsModel.shared
-            Group {
+            func markAsRead() {
+                if markedRead {
+                    return
+                } else {
+                    markedRead = true
+                }
+                if let range {
+                    let itemIds = unreadItemIds(range)
+                    if !itemIds.isEmpty {
+                        waitToMarkRead {
+                            await apiMarkChatItemsRead(chat.chatInfo, itemIds)
+                        }
+                    }
+                } else if chatItem.isRcvNew  {
+                    waitToMarkRead {
+                        await apiMarkChatItemRead(chat.chatInfo, chatItem)
+                    }
+                }
+            }
+            return Group {
                 if revealed, let range = range {
                     let items = Array(zip(Array(range), im.reversedChatItems[range]))
                     VStack(spacing: 0) {
@@ -1027,23 +1054,10 @@ struct ChatView: View {
                 }
             }
             .onAppear {
-                if markedRead {
-                    return
-                } else {
-                    markedRead = true
-                }
-                if let range {
-                    let itemIds = unreadItemIds(range)
-                    if !itemIds.isEmpty {
-                        waitToMarkRead {
-                            await apiMarkChatItemsRead(chat.chatInfo, itemIds)
-                        }
-                    }
-                } else if chatItem.isRcvNew  {
-                    waitToMarkRead {
-                        await apiMarkChatItemRead(chat.chatInfo, chatItem)
-                    }
-                }
+                markAsRead()
+            }
+            .onChange(of: ChatView.FloatingButtonModel.shared.bottomItemIndex) { _ in
+                markAsRead()
             }
         }
 
@@ -1062,8 +1076,13 @@ struct ChatView: View {
         private func waitToMarkRead(_ op: @Sendable @escaping () async -> Void) {
             Task {
                 _ = try? await Task.sleep(nanoseconds: 600_000000)
-                if m.chatId == chat.chatInfo.id {
-                    await op()
+                let currIndex = m.getChatItemIndex(chatItem)                
+                if let currIndex = currIndex, currIndex >= ChatView.FloatingButtonModel.shared.bottomItemIndex {
+                    if m.chatId == chat.chatInfo.id {
+                        await op()
+                    }
+                } else {
+                    markedRead = false
                 }
             }
         }
