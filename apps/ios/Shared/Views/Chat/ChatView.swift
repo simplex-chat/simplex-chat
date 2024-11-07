@@ -925,6 +925,9 @@ struct ChatView: View {
                                     let size = max(0, (apiGap ?? 0) - index - reversedPage.count)
                                     if size > 0 {
                                         im.gap = ChatGap(index: gap.index, size: size)
+                                        if im.reversedChatItems.count + dedupedreversePage.count - gap.index > idealChatListSize {
+                                            im.reversedChatItems.removeLast(dedupedreversePage.count)
+                                        }
                                     } else {
                                         im.gap = nil
                                     }
