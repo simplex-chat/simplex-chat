@@ -144,7 +144,6 @@
 		5CFE0922282EEAF60002594B /* ZoomableScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CFE0920282EEAF60002594B /* ZoomableScrollView.swift */; };
 		640417CD2B29B8C200CCB412 /* NewChatMenuButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 640417CB2B29B8C200CCB412 /* NewChatMenuButton.swift */; };
 		640417CE2B29B8C200CCB412 /* NewChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 640417CC2B29B8C200CCB412 /* NewChatView.swift */; };
-		6407435F2CD2922400158442 /* YourServersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6407435E2CD2922400158442 /* YourServersView.swift */; };
 		640743612CD360E600158442 /* ChooseServerOperators.swift in Sources */ = {isa = PBXBuildFile; fileRef = 640743602CD360E600158442 /* ChooseServerOperators.swift */; };
 		6407BA83295DA85D0082BA18 /* CIInvalidJSONView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6407BA82295DA85D0082BA18 /* CIInvalidJSONView.swift */; };
 		6419EC562AB8BC8B004A607A /* ContextInvitingContactMemberView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6419EC552AB8BC8B004A607A /* ContextInvitingContactMemberView.swift */; };
@@ -490,7 +489,6 @@
 		5CFE0920282EEAF60002594B /* ZoomableScrollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ZoomableScrollView.swift; path = Shared/Views/ZoomableScrollView.swift; sourceTree = SOURCE_ROOT; };
 		640417CB2B29B8C200CCB412 /* NewChatMenuButton.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NewChatMenuButton.swift; sourceTree = "<group>"; };
 		640417CC2B29B8C200CCB412 /* NewChatView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NewChatView.swift; sourceTree = "<group>"; };
-		6407435E2CD2922400158442 /* YourServersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YourServersView.swift; sourceTree = "<group>"; };
 		640743602CD360E600158442 /* ChooseServerOperators.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChooseServerOperators.swift; sourceTree = "<group>"; };
 		6407BA82295DA85D0082BA18 /* CIInvalidJSONView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIInvalidJSONView.swift; sourceTree = "<group>"; };
 		6419EC552AB8BC8B004A607A /* ContextInvitingContactMemberView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextInvitingContactMemberView.swift; sourceTree = "<group>"; };
@@ -1065,7 +1063,6 @@
 				5C9329402929248A0090FFF9 /* ScanProtocolServer.swift */,
 				5C93293029239BED0090FFF9 /* ProtocolServerView.swift */,
 				5C93292E29239A170090FFF9 /* ProtocolServersView.swift */,
-				6407435E2CD2922400158442 /* YourServersView.swift */,
 				643B3B4D2CCFD6400083A2CF /* OperatorView.swift */,
 				5C9C2DA6289957AE00CC63B1 /* AdvancedNetworkSettings.swift */,
 				5C9C2DA82899DA6F00CC63B1 /* NetworkAndServers.swift */,
@@ -1425,7 +1422,6 @@
 				5CB2084F28DA4B4800D024EC /* RTCServers.swift in Sources */,
 				5CB634AF29E4BB7D0066AD6B /* SetAppPasscodeView.swift in Sources */,
 				5C10D88828EED12E00E58BF0 /* ContactConnectionInfo.swift in Sources */,
-				6407435F2CD2922400158442 /* YourServersView.swift in Sources */,
 				5CBE6C12294487F7002D9531 /* VerifyCodeView.swift in Sources */,
 				3CDBCF4227FAE51000354CDD /* ComposeLinkView.swift in Sources */,
 				648679AB2BC96A74006456E7 /* ChatItemForwardingView.swift in Sources */,

@@ -12,7 +12,8 @@ import CodeScanner
 
 struct ScanProtocolServer: View {
     @Environment(\.dismiss) var dismiss: DismissAction
-    @Binding var servers: [UserServer]
+    @Binding var smpServers: [UserServer]
+    @Binding var xftpServers: [UserServer]
     @State private var showAddressError = false
 
     var body: some View {
@@ -39,8 +40,12 @@ struct ScanProtocolServer: View {
     func processQRCode(_ resp: Result<ScanResult, ScanError>) {
         switch resp {
         case let .success(r):
-            if parseServerAddress(r.string) != nil {
-                servers.append(UserServer(server: r.string, tested: nil, enabled: false))
+            if let serverAddress = parseServerAddress(r.string) {
+                if serverAddress.serverProtocol == .smp {
+                    smpServers.append(UserServer(server: r.string, tested: nil, enabled: false))
+                } else {
+                    xftpServers.append(UserServer(server: r.string, tested: nil, enabled: false))
+                }
                 dismiss()
             } else {
                 showAddressError = true
@@ -54,6 +59,9 @@ struct ScanProtocolServer: View {
 
 struct ScanProtocolServer_Previews: PreviewProvider {
     static var previews: some View {
-        ScanProtocolServer(servers: Binding.constant([]))
+        ScanProtocolServer(
+            smpServers: Binding.constant([]),
+            xftpServers: Binding.constant([])
+        )
     }
 }
