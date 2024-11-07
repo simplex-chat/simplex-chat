@@ -28,12 +28,15 @@ struct YourServersView: View {
     let xftpStr: String = ServerProtocol.xftp.rawValue.uppercased()
 
     var body: some View {
-        ZStack {
-            yourServersView()
-            if testing {
-                ProgressView().scaleEffect(2)
+        yourServersView()
+            .allowsHitTesting(!testing)
+            .overlay {
+                if testing {
+                    ProgressView()
+                        .scaleEffect(2)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
             }
-        }
     }
 
     private func yourServersView() -> some View {
