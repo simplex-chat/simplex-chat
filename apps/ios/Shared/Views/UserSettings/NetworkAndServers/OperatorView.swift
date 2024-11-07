@@ -31,12 +31,15 @@ struct OperatorView: View {
     let xftpStr: String = ServerProtocol.xftp.rawValue.uppercased()
 
     var body: some View {
-        ZStack {
-            operatorView()
-            if testing {
-                ProgressView().scaleEffect(2)
+        operatorView()
+            .allowsHitTesting(!testing)
+            .overlay {
+                if testing {
+                    ProgressView()
+                        .scaleEffect(2)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
             }
-        }
     }
 
     private func operatorView() -> some View {
