@@ -8,10 +8,12 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
+import chat.simplex.common.model.ChatModel.chatItemsChangesListener
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.ComposeState
+import chat.simplex.common.views.chatlist.apiLoadMessages
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.migration.MigrationToDeviceState
 import chat.simplex.common.views.migration.MigrationToState
@@ -35,6 +37,7 @@ import java.net.URI
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.*
+import kotlin.collections.ArrayList
 import kotlin.random.Random
 import kotlin.time.*
 
@@ -64,7 +67,13 @@ object ChatModel {
 
   // current chat
   val chatId = mutableStateOf<String?>(null)
+  /** if you modify the items by adding/removing them, use helpers methods like [addAndNotify], [removeLastAndNotify], [removeAllAndNotify], [clearAndNotify] and so on.
+   * If some helper is missing, create it. Notify is needed to track state of items that we added manually (not via api call). See [apiLoadMessages].
+   * If you use api call to get the items, use just [add] instead of [addAndNotify].
+   * Never modify underlying list directly because it produces unexpected results in ChatView's LazyColumn (setting by index is ok) */
   val chatItems = mutableStateOf(SnapshotStateList<ChatItem>())
+  // set listener here that will be notified on every add/delete of a chat item
+  var chatItemsChangesListener: ChatItemsChangesListener? = null
   // rhId, chatId
   val deletedChats = mutableStateOf<List<Pair<Long?, String>>>(emptyList())
   val chatItemStatuses = mutableMapOf<Long, CIStatus>()
@@ -330,9 +339,9 @@ object ChatModel {
           // Prevent situation when chat item already in the list received from backend
           if (chatItems.value.none { it.id == cItem.id }) {
             if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-              chatItems.add(kotlin.math.max(0, chatItems.value.lastIndex), cItem)
+              chatItems.addAndNotify(kotlin.math.max(0, chatItems.value.lastIndex), cItem)
             } else {
-              chatItems.add(cItem)
+              chatItems.addAndNotify(cItem)
             }
           }
         }
@@ -377,7 +386,7 @@ object ChatModel {
             } else {
               cItem
             }
-            chatItems.add(ci)
+            chatItems.addAndNotify(ci)
             true
           }
         } else {
@@ -416,7 +425,7 @@ object ChatModel {
       }
       // remove from current chat
       if (chatId.value == cInfo.id) {
-        chatItems.removeAll {
+        chatItems.removeAllAndNotify {
           // We delete taking into account meta.createdAt to make sure we will not be in situation when two items with the same id will be deleted
           // (it can happen if already deleted chat item in backend still in the list and new one came with the same (re-used) chat item id)
           val remove = it.id == cItem.id && it.meta.createdAt == cItem.meta.createdAt
@@ -436,7 +445,7 @@ object ChatModel {
       // clear current chat
       if (chatId.value == cInfo.id) {
         chatItemStatuses.clear()
-        chatItems.clear()
+        chatItems.clearAndNotify()
       }
     }
 
@@ -607,14 +616,14 @@ object ChatModel {
   suspend fun addLiveDummy(chatInfo: ChatInfo): ChatItem {
     val cItem = ChatItem.liveDummy(chatInfo is ChatInfo.Direct)
     withContext(Dispatchers.Main) {
-      chatItems.add(cItem)
+      chatItems.addAndNotify(cItem)
     }
     return cItem
   }
 
   fun removeLiveDummy() {
     if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-      chatItems.removeLast()
+      chatItems.removeLastAndNotify()
     }
   }
 
@@ -738,7 +747,7 @@ object ChatModel {
   fun replaceConnReqView(id: String, withId: String) {
     if (id == showingInvitation.value?.connId) {
       showingInvitation.value = null
-      chatModel.chatItems.clear()
+      chatModel.chatItems.clearAndNotify()
       chatModel.chatId.value = withId
       ModalManager.start.closeModals()
       ModalManager.end.closeModals()
@@ -748,7 +757,7 @@ object ChatModel {
   fun dismissConnReqView(id: String) {
     if (id == showingInvitation.value?.connId) {
       showingInvitation.value = null
-      chatModel.chatItems.clear()
+      chatModel.chatItems.clearAndNotify()
       chatModel.chatId.value = null
       // Close NewChatView
       ModalManager.start.closeModals()
@@ -796,6 +805,12 @@ object ChatModel {
 
   val connectedToRemote: Boolean @Composable get() = currentRemoteHost.value != null || remoteCtrlSession.value?.active == true
   fun connectedToRemote(): Boolean = currentRemoteHost.value != null || remoteCtrlSession.value?.active == true
+}
+
+interface ChatItemsChangesListener {
+  fun added(itemId: Long, index: Int)
+  fun removed(itemIds: List<Pair<Long, Int>>, newItems: List<ChatItem>)
+  fun cleared()
 }
 
 data class ShowingInvitation(
@@ -2279,12 +2294,21 @@ data class ChatItem (
   }
 }
 
-fun <T> MutableState<SnapshotStateList<T>>.add(index: Int, elem: T) {
-  value = SnapshotStateList<T>().apply { addAll(value); add(index, elem) }
+fun MutableState<SnapshotStateList<Chat>>.add(index: Int, elem: Chat) {
+  value = SnapshotStateList<Chat>().apply { addAll(value); add(index, elem) }
 }
 
-fun <T> MutableState<SnapshotStateList<T>>.add(elem: T) {
-  value = SnapshotStateList<T>().apply { addAll(value); add(elem) }
+fun MutableState<SnapshotStateList<ChatItem>>.addAndNotify(index: Int, elem: ChatItem) {
+  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(index, elem); chatItemsChangesListener?.added(elem.id, index) }
+}
+
+fun MutableState<SnapshotStateList<Chat>>.add(elem: Chat) {
+  value = SnapshotStateList<Chat>().apply { addAll(value); add(elem) }
+}
+
+// Adds item to chatItems and notifies a listener about newly added item
+fun MutableState<SnapshotStateList<ChatItem>>.addAndNotify(elem: ChatItem) {
+  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(elem); chatItemsChangesListener?.added(elem.id, lastIndex) }
 }
 
 fun <T> MutableState<SnapshotStateList<T>>.addAll(index: Int, elems: List<T>) {
@@ -2295,28 +2319,57 @@ fun <T> MutableState<SnapshotStateList<T>>.addAll(elems: List<T>) {
   value = SnapshotStateList<T>().apply { addAll(value); addAll(elems) }
 }
 
-fun <T> MutableState<SnapshotStateList<T>>.removeAll(block: (T) -> Boolean) {
-  value = SnapshotStateList<T>().apply { addAll(value); removeAll(block) }
+fun MutableState<SnapshotStateList<Chat>>.removeAll(block: (Chat) -> Boolean) {
+  value = SnapshotStateList<Chat>().apply { addAll(value); removeAll(block) }
 }
 
-fun <T> MutableState<SnapshotStateList<T>>.removeAt(index: Int): T {
-  val new = SnapshotStateList<T>()
+// Removes item(s) from chatItems and notifies a listener about removed item(s)
+fun MutableState<SnapshotStateList<ChatItem>>.removeAllAndNotify(block: (ChatItem) -> Boolean) {
+  val toRemove = ArrayList<Pair<Long, Int>>()
+  value = SnapshotStateList<ChatItem>().apply {
+    addAll(value)
+    var i = 0
+    removeAll {
+      val remove = block(it)
+      if (remove) toRemove.add(it.id to i)
+      i++
+      remove
+    }
+  }
+  if (toRemove.isNotEmpty()) {
+    chatItemsChangesListener?.removed(toRemove, value)
+  }
+}
+
+fun MutableState<SnapshotStateList<Chat>>.removeAt(index: Int): Chat {
+  val new = SnapshotStateList<Chat>()
   new.addAll(value)
   val res = new.removeAt(index)
   value = new
   return res
 }
 
-fun <T> MutableState<SnapshotStateList<T>>.removeLast() {
-  value = SnapshotStateList<T>().apply { addAll(value); removeLast() }
+fun MutableState<SnapshotStateList<ChatItem>>.removeLastAndNotify() {
+  val removed: Pair<Long, Int>
+  value = SnapshotStateList<ChatItem>().apply {
+    addAll(value)
+    removed = removeLast().id to lastIndex + 1
+  }
+  chatItemsChangesListener?.removed(listOf(removed), value)
 }
 
 fun <T> MutableState<SnapshotStateList<T>>.replaceAll(elems: List<T>) {
   value = SnapshotStateList<T>().apply { addAll(elems) }
 }
 
-fun <T> MutableState<SnapshotStateList<T>>.clear() {
-  value = SnapshotStateList<T>()
+fun MutableState<SnapshotStateList<Chat>>.clear() {
+  value = SnapshotStateList()
+}
+
+// Removes all chatItems and notifies a listener about it
+fun MutableState<SnapshotStateList<ChatItem>>.clearAndNotify() {
+  value = SnapshotStateList()
+  chatItemsChangesListener?.cleared()
 }
 
 fun <T> State<SnapshotStateList<T>>.asReversed(): MutableList<T> = value.asReversed()

@@ -429,8 +429,8 @@ fun ComposeView(
         ttl = ttl
       )
 
-      chatItems?.forEach { chatItem ->
-        withChats {
+      withChats {
+        chatItems?.forEach { chatItem ->
           addChatItem(rhId, chat.chatInfo, chatItem)
         }
       }
@@ -658,6 +658,13 @@ fun ComposeView(
       sendMessageAsync(null, false, ttl)
     }
   }
+
+  // LALAL
+//  LaunchedEffect(Unit) {
+//    for (i in 0..400) {
+//      sendMessageAsync(i.toString(), false, null)
+//    }
+//  }
 
   fun onMessageChange(s: String) {
     composeState.value = composeState.value.copy(message = s)

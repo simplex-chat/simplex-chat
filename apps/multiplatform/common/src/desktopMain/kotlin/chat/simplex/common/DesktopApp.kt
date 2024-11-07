@@ -56,7 +56,7 @@ fun showApp() {
             } else {
               // The last possible cause that can be closed
               chatModel.chatId.value = null
-              chatModel.chatItems.clear()
+              chatModel.chatItems.clearAndNotify()
             }
             chatModel.activeCall.value?.let {
               withBGApi {

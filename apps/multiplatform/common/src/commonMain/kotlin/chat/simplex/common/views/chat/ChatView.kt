@@ -11,7 +11,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
@@ -292,11 +291,11 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                 }
               }
             },
-            loadMessages = { chatId, pagination ->
+            loadMessages = { chatId, pagination, gaps ->
               val c = chatModel.getChat(chatId)
               if (chatModel.chatId.value != chatId) return@ChatLayout
               if (c != null) {
-                apiLoadMessages(c, pagination, searchText.value)
+                apiLoadMessages(c, pagination, searchText.value, gaps)
               }
             },
             deleteMessage = { itemId, mode ->
@@ -532,7 +531,7 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
           LaunchedEffect(chatInfo.id) {
             onComposed(chatInfo.id)
             ModalManager.end.closeModals()
-            chatModel.chatItems.clear()
+            chatModel.chatItems.clearAndNotify()
           }
       }
       is ChatInfo.InvalidJSON -> {
@@ -543,7 +542,7 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
           LaunchedEffect(chatInfo.id) {
             onComposed(chatInfo.id)
             ModalManager.end.closeModals()
-            chatModel.chatItems.clear()
+            chatModel.chatItems.clearAndNotify()
           }
       }
       else -> {}
@@ -580,7 +579,7 @@ fun ChatLayout(
   back: () -> Unit,
   info: () -> Unit,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
-  loadMessages: suspend (ChatId, ChatPagination) -> Unit,
+  loadMessages: suspend (ChatId, ChatPagination, MutableState<List<Long>>) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
   receiveFile: (Long) -> Unit,
@@ -919,7 +918,7 @@ fun BoxScope.ChatItemsList(
   linkMode: SimplexLinkMode,
   selectedChatItems: MutableState<Set<Long>?>,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
-  loadMessages: suspend (ChatId, ChatPagination) -> Unit,
+  loadMessages: suspend (ChatId, ChatPagination, MutableState<List<Long>>) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
   receiveFile: (Long) -> Unit,
@@ -958,43 +957,44 @@ fun BoxScope.ChatItemsList(
     }
   }
 
-  val loadingMoreItems = remember { mutableStateOf(false) }
-  if (!loadingMoreItems.value) {
-    PreloadItems(chatInfo.id, listState, ChatPagination.UNTIL_PRELOAD_COUNT) { chatId, pagination ->
-      if (!loadingMoreItems.value) loadMessages(chatId, pagination) }
-  }
-
   Spacer(Modifier.size(8.dp))
   val reversedChatItems = remember { derivedStateOf { chatModel.chatItems.asReversed() } }
-  val revealedItems = rememberSaveable(chatInfo.id, stateSaver = serializableSaver()) { mutableStateOf(setOf<Long>()) }
-  val groups = remember { derivedStateOf { reversedChatItems.value.putIntoGroups(revealedItems.value) } }
+  val revealedItems = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(setOf<Long>()) }
+  val gaps = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf<List<Long>>(emptyList()) }
+  val groups = remember { derivedStateOf { reversedChatItems.value.putIntoGroups(revealedItems.value, gaps.value) } }
   val topPaddingToContentPx = rememberUpdatedState(with(LocalDensity.current) { topPaddingToContent().roundToPx() })
   val maxHeight = remember { derivedStateOf { listState.layoutInfo.viewportEndOffset - topPaddingToContentPx.value } }
+  val loadingMoreItems = remember { mutableStateOf(false) }
+  if (!loadingMoreItems.value) {
+    PreloadItems(chatInfo.id, groups, listState, ChatPagination.UNTIL_PRELOAD_COUNT) { chatId, pagination ->
+      if (loadingMoreItems.value) return@PreloadItems
+      try {
+        loadingMoreItems.value = true
+        loadMessages(chatId, pagination, gaps)
+      } finally {
+        loadingMoreItems.value = false
+      }
+    }
+  }
   ScrollToUnreadOrBottom(chatInfo.id, groups, maxHeight, listState, chatModel.chatItems)
   val scrollToItem: State<(Long) -> Unit> = remember {
     mutableStateOf(
       { itemId: Long ->
         withBGApi {
-          var deleteEverythingUpToItemId: Long? = null
           try {
-//            println("LALAL WAS size ${chatModel.chatItems.value.size}")
-            var index = groups.value.indexInParentItems(itemId)
+            var index = groups.value.sections.indexInParentItems(itemId)
             println("LALAL INDEX0 $index")
             if (index == -1) {
               loadingMoreItems.value = true
               val pagination = ChatPagination.Around(itemId, ChatPagination.PRELOAD_COUNT * 2)
               val oldSize = reversedChatItems.value.size
-              deleteEverythingUpToItemId = reversedChatItems.value.lastOrNull()?.id
-              loadMessages(chatInfoUpdated.value.id, pagination)
+              loadMessages(chatInfoUpdated.value.id, pagination, gaps)
               var repeatsLeft = 50
               while (oldSize == reversedChatItems.value.size && repeatsLeft > 0) {
                 delay(20)
                 repeatsLeft--
               }
-              if (oldSize == reversedChatItems.value.size) {
-                deleteEverythingUpToItemId = null
-              }
-              index = groups.value.indexInParentItems(itemId)
+              index = groups.value.sections.indexInParentItems(itemId)
               println("LALAL INDEX1 $index")
             }
             if (index != -1) {
@@ -1003,18 +1003,6 @@ fun BoxScope.ChatItemsList(
               }
             }
           } finally {
-            if (deleteEverythingUpToItemId != null) {
-              val items = chatModel.chatItems.value
-              val endIndex = items.indexOfLast { it.id == deleteEverythingUpToItemId }
-              if (endIndex != -1) {
-                val newItems = SnapshotStateList<ChatItem>()
-//                println("LALAL DELETING endIndex $endIndex, size ${items.size}")
-                newItems.addAll(items.subList(0, endIndex))
-                withContext(Dispatchers.Main) {
-                  chatModel.chatItems.replaceAll(newItems)
-                }
-              }
-            }
             loadingMoreItems.value = false
           }
         }
@@ -1023,6 +1011,8 @@ fun BoxScope.ChatItemsList(
   }
   // TODO: Having this block on desktop makes ChatItemsList() to recompose twice on chatModel.chatId update instead of once
   LaunchedEffect(chatInfo.id) {
+    revealedItems.value = emptySet()
+    gaps.value = emptyList()
     var stopListening = false
     snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastIndex }
       .distinctUntilChanged()
@@ -1033,13 +1023,26 @@ fun BoxScope.ChatItemsList(
       }
   }
   DisposableEffectOnGone(
+    always = {
+      chatModel.chatItemsChangesListener = recalculateGapsPositions(gaps)
+    },
     whenGone = {
       VideoPlayerHolder.releaseAll()
+      chatModel.chatItemsChangesListener = null
     }
   )
 
     @Composable
-    fun ChatViewListItem(i: Int, range: IntRange?, showAvatar: Boolean, cItem: ChatItem, prevItem: ChatItem?, nextItem: ChatItem?, revealed: State<Boolean>, reveal: (Boolean) -> Unit) {
+    fun ChatViewListItem(
+      i: Int,
+      range: IntRange?,
+      showAvatar: Boolean,
+      cItem: ChatItem,
+      itemSeparation: ItemSeparation,
+      previousItemSeparationLargeGap: Boolean,
+      revealed: State<Boolean>,
+      reveal: (Boolean) -> Unit
+    ) {
       val itemScope = rememberCoroutineScope()
       CompositionLocalProvider(
         // Makes horizontal and vertical scrolling to coexist nicely.
@@ -1067,7 +1070,7 @@ fun BoxScope.ChatItemsList(
         }
 
         @Composable
-        fun ChatItemView(cItem: ChatItem, range: IntRange?, prevItem: ChatItem?, itemSeparation: ItemSeparation, previousItemSeparation: ItemSeparation?) {
+        fun ChatItemView(cItem: ChatItem, range: IntRange?, itemSeparation: ItemSeparation, previousItemSeparationLargeGap: Boolean) {
           val dismissState = rememberDismissState(initialValue = DismissValue.Default) {
             if (it == DismissValue.DismissedToStart) {
               itemScope.launch {
@@ -1099,7 +1102,7 @@ fun BoxScope.ChatItemsList(
                   } else {
                     4.dp
                   }
-                } else 1.dp, top = if (previousItemSeparation?.largeGap == true) 4.dp else 1.dp
+                } else 1.dp, top = if (previousItemSeparationLargeGap) 4.dp else 1.dp
               ),
               contentAlignment = Alignment.CenterStart
             ) {
@@ -1292,12 +1295,10 @@ fun BoxScope.ChatItemsList(
             }
           }
         }
-        val itemSeparation = getItemSeparation(cItem, nextItem)
-        val previousItemSeparation = if (prevItem != null) getItemSeparation(prevItem, cItem) else null
         if (itemSeparation.date != null) {
           DateSeparator(itemSeparation.date)
         }
-        ChatItemView(cItem, range, prevItem, itemSeparation, previousItemSeparation)
+        ChatItemView(cItem, range, itemSeparation, previousItemSeparationLargeGap)
       }
     }
   LazyColumnWithScrollBar(
@@ -1310,11 +1311,14 @@ fun BoxScope.ChatItemsList(
     ),
     additionalBarOffset = composeViewHeight
   ) {
-    for ((groupIndex, group) in groups.value.withIndex()) {
+    val groupsValue = groups.value
+    for ((groupIndex, group) in groupsValue.sections.withIndex()) {
+      val isLastGroup = groupIndex == groupsValue.sections.lastIndex
+      val last = if (isLastGroup) reversedChatItems.value.lastOrNull() else null
       if (group.revealed.value) {
         itemsIndexed(group.items, key = { _, item -> (item.id to item.meta.createdAt.toEpochMilliseconds()).toString() }) { i, item ->
           val nextItem = if (i == 0) {
-            val gr = groups.value.getOrNull(groupIndex - 1)
+            val gr = groups.value.sections.getOrNull(groupIndex - 1)
             if (gr != null) gr.items[gr.items.lastIndex] else null
           } else {
             group.items[i - 1]
@@ -1333,20 +1337,33 @@ fun BoxScope.ChatItemsList(
             null
           }
 //          println("LALAL RANGE $range")
-          ChatViewListItem(group.startIndexInParentItems + i, range, showAvatar = group.showAvatar.contains(item.id), item, prevItem, nextItem, remember { derivedStateOf { revealedItems.value.contains(item.id) } }) { group.reveal(it, revealedItems) }
+          val showAvatar = group.showAvatar.contains(item.id)
+          val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
+          val itemSeparation = getItemSeparation(item, nextItem)
+          val previousItemSeparationLargeGap = if (prevItem == null) false else getItemSeparationLargeGap(prevItem, item)
+          ChatViewListItem(group.startIndexInParentItems + i, range, showAvatar, item, itemSeparation, previousItemSeparationLargeGap, isRevealed) {
+            group.reveal(it, revealedItems)
+          }
+          if (last != null && i == group.items.lastIndex) {
+            // no using separate item(){} block in order to have total number of items in LazyColumn match number of items in groups
+            DateSeparator(last.meta.itemTs)
+          }
         }
       } else {
         val item = group.items.first()
         item(key = (item.id to item.meta.createdAt.toEpochMilliseconds()).toString()) {
           val range = if (item.mergeCategory != null) group.startIndexInParentItems .. (group.startIndexInParentItems + group.items.lastIndex) else null
-          ChatViewListItem(group.startIndexInParentItems, range, showAvatar = group.showAvatar.contains(item.id) || item.mergeCategory != null, item, null, null, remember { derivedStateOf { revealedItems.value.contains(item.id) } }) { group.reveal(it, revealedItems) }
+          val showAvatar = group.showAvatar.contains(item.id) || item.mergeCategory != null
+          val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
+          val itemSeparation = getItemSeparation(item, null)
+          ChatViewListItem(group.startIndexInParentItems, range, showAvatar, item, itemSeparation, false, isRevealed) {
+            group.reveal(it, revealedItems)
+          }
+          if (last != null) {
+            // no using separate item(){} block in order to have total number of items in LazyColumn match number of items in groups
+            DateSeparator(last.meta.itemTs)
+          }
         }
-      }
-    }
-    val last = reversedChatItems.value.lastOrNull()
-    if (last != null) {
-      item {
-        DateSeparator(last.meta.itemTs)
       }
     }
   }
@@ -1366,7 +1383,7 @@ fun BoxScope.ChatItemsList(
 }
 
 @Composable
-private fun ScrollToUnreadOrBottom(chatId: ChatId, groups: State<List<SectionItems>>, maxHeight: State<Int>, listState: LazyListState, chatItems: State<List<ChatItem>>) {
+private fun ScrollToUnreadOrBottom(chatId: ChatId, groups: State<SectionGroups>, maxHeight: State<Int>, listState: LazyListState, chatItems: State<List<ChatItem>>) {
   val scope = rememberCoroutineScope()
   // Helps to scroll to bottom after moving from Group to Direct chat
   // and prevents scrolling to bottom on orientation change
@@ -1376,7 +1393,7 @@ private fun ScrollToUnreadOrBottom(chatId: ChatId, groups: State<List<SectionIte
       val item = chatItems.value.firstOrNull { it.isRcvNew }
       var index = 0
       if (item != null) {
-        index = groups.value.indexInParentItems(item.id)
+        index = groups.value.sections.indexInParentItems(item.id)
       }
       if (index <= 0) {
         scope.launch { listState.scrollToItem(0) }
@@ -1499,6 +1516,7 @@ fun BoxScope.FloatingButtons(
 @Composable
 fun PreloadItems(
   chatId: String,
+  groups: State<SectionGroups>,
   listState: LazyListState,
   remaining: Int,
   loadItems: suspend (ChatId, ChatPagination) -> Unit,
@@ -1537,19 +1555,40 @@ fun PreloadItems(
       var bottomLoadingIsDisabled = false
       snapshotFlow { listState.firstVisibleItemIndex }
 //        .filter { it + remaining < itemIndexAfterReloadTime }
-        .filter { !bottomLoadingIsDisabled }
-        .filter { it <= remaining }
-        .collect {
+        .map { firstVisibleIndex ->
+          val items = chatModel.chatItems.value
+          val gaps = groups.value.gaps
+          val gap = gaps.lastOrNull { it.indexRangeInParentItems.contains(firstVisibleIndex) }
+          println("LALAL RANGE $gaps firstVisibleIndex $firstVisibleIndex")
+          if (gap != null) {
+            // we're inside a range of a gap (top --- [end of the gap --- we're here --- start of the gap] --- bottom)
+            val index = groups.value.sections.indexInParentItems(gap.itemId)
+            println("LALAL GAPS1 $firstVisibleIndex indexInParent $index ${gap.indexRange.first} ${gap.indexRange.last}")
+            if (index + remaining > firstVisibleIndex) items.lastIndex - gap.indexRange.first to true else null
+          } else if (!bottomLoadingIsDisabled) {
+            // no gaps at all, just clear list that can be loaded from top and bottom just taking edges to start loading items with
+            // OR
+            // there are gaps, but they are higher in the list (gap(s) --- we're here (== bottom))
+            println("LALAL GAPS0 $firstVisibleIndex ${items.lastIndex}")
+            if (remaining > firstVisibleIndex) items.lastIndex to false else null
+          } else null
+        }
+        .filterNotNull()
+        .collect { (loadFromIndex, insideGap) ->
 //          if (initiallyLoaded) {
 //            initiallyLoaded = false
 //            return@collect
 //          }
-          withBGApi {
-            val last = chatModel.chatItems.value.lastOrNull()
-            if (last != null) {
-              val oldSize = chatModel.chatItems.size
-              onLoadMore.value(chatId.value, ChatPagination.After(last.id, ChatPagination.PRELOAD_COUNT))
-              if (oldSize + ChatPagination.PRELOAD_COUNT > chatModel.chatItems.size) {
+          val items = chatModel.chatItems.value
+          val item = items.getOrNull(loadFromIndex)
+          println("LALAL GAP $loadFromIndex lastIndex ${items.lastIndex} ${item?.id}, firstVisible ${listState.firstVisibleItemIndex}")
+          if (item != null) {
+            // stop this coroutine to not make any parallel calls while this one is executing. The coroutine will be restarted later, see
+            //cancel()
+            withBGApi {
+              val oldSize = items.size
+              onLoadMore.value(chatId.value, ChatPagination.After(item.id, ChatPagination.PRELOAD_COUNT))
+              if (!insideGap && oldSize + ChatPagination.PRELOAD_COUNT > chatModel.chatItems.size) {
                 bottomLoadingIsDisabled = true
               }
             }
@@ -1560,23 +1599,44 @@ fun PreloadItems(
   KeyChangeEffect(allowLoad.value) {
     snapshotFlow {
       val lInfo = listState.layoutInfo
-      val totalItemsNumber = lInfo.totalItemsCount
-      val lastVisibleItemIndex = (lInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) + 1
-      (if (allowLoad.value && lastVisibleItemIndex > (totalItemsNumber - remaining)/* && totalItemsNumber >= ChatPagination.INITIAL_COUNT*/)
-        totalItemsNumber + ChatPagination.PRELOAD_COUNT
-      else
-        0)
+      val gaps = groups.value.gaps
+      val firstVisibleIndex = listState.firstVisibleItemIndex
+      var lastIndexToLoadFrom: Int? = null
+      val lastVisibleItemIndex = (lInfo.visibleItemsInfo.lastOrNull()?.index ?: 0)
+      for (gap in gaps) {
+        // before any gap
+        if (gap.indexRangeInParentItems.first > firstVisibleIndex) {
+          if (lastVisibleItemIndex > (gap.indexRangeInParentItems.first - remaining)) {
+            lastIndexToLoadFrom = gap.indexRange.first - 1
+            println("LALAL FIRST lastVisibleItemIndex $lastVisibleItemIndex last ${gap.indexRangeInParentItems.last} ${gap}")
+          }
+          break
+        }
+        val containsInRange = gap.indexRangeInParentItems.contains(listState.firstVisibleItemIndex)
+        if (containsInRange) {
+          if (lastVisibleItemIndex > (gap.indexRangeInParentItems.last - remaining)) {
+            println("LALAL SECOND lastVisibleItemIndex $lastVisibleItemIndex last ${gap.indexRangeInParentItems.last} ${gap}")
+            lastIndexToLoadFrom = gap.indexRange.last
+          }
+          break
+        }
+      }
+      val items = chatModel.chatItems.value
+      if (gaps.isEmpty() && lastVisibleItemIndex > items.size - remaining) {
+        lastIndexToLoadFrom = items.lastIndex
+      }
+      (if (allowLoad.value && lastIndexToLoadFrom != null/* && lastVisibleItemIndex + 1 >= ChatPagination.INITIAL_COUNT*/) {
+        items.getOrNull(items.lastIndex - lastIndexToLoadFrom)?.id
+      } else null)
         .also {
-          println("LALAL RES ${allowLoad.value} ${lastVisibleItemIndex} ${totalItemsNumber} ${remaining} $it")
+          println("LALAL RES ${allowLoad.value} lastVisibleItemIndex $lastVisibleItemIndex lastIndexToLoadFrom $lastIndexToLoadFrom $remaining res $it")
         }
     }
-      .filter { it > 0 }
-      .collect {
+      .filterNotNull()
+      .collect { loadFromItemId ->
         withBGApi {
-          val first = chatModel.chatItems.value.firstOrNull()
-          if (first != null) {
-            onLoadMore.value(chatId.value, ChatPagination.Before(first.id, ChatPagination.PRELOAD_COUNT))
-          }
+          println("LALAL ITEM ID $loadFromItemId")
+          onLoadMore.value(chatId.value, ChatPagination.Before(loadFromItemId, ChatPagination.PRELOAD_COUNT))
         }
       }
   }
@@ -1637,8 +1697,11 @@ private fun FloatingDate(
     derivedStateOf {
       if (listState.layoutInfo.visibleItemsInfo.lastIndex >= 0) {
         val lastFullyVisibleOffset = listState.layoutInfo.viewportEndOffset
-        val lastVisibleChatItemIndex = chatModel.chatItems.value.lastIndex - (listState.layoutInfo.visibleItemsInfo.lastOrNull { item -> item.offset + item.size <= lastFullyVisibleOffset && item.size > 0 }?.index ?: 0)
-        val item = chatModel.chatItems.value.getOrNull(lastVisibleChatItemIndex)
+        val items = chatModel.chatItems.value
+        val lastVisibleChatItemIndex = items.lastIndex - (listState.layoutInfo.visibleItemsInfo.lastOrNull { item ->
+          item.offset + item.size <= lastFullyVisibleOffset && item.size > 0
+        }?.index ?: listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1)
+        val item = items.getOrNull(lastVisibleChatItemIndex)
         val timeZone = TimeZone.currentSystemDefault()
         item?.meta?.itemTs?.toLocalDateTime(timeZone)?.date?.atStartOfDayIn(timeZone)
       } else {
@@ -2205,6 +2268,17 @@ private fun getItemSeparation(chatItem: ChatItem, nextItem: ChatItem?): ItemSepa
   )
 }
 
+private fun getItemSeparationLargeGap(chatItem: ChatItem, nextItem: ChatItem?): Boolean {
+  if (nextItem == null) {
+    return true
+  }
+
+  val sameMemberAndDirection = if (nextItem.chatDir is GroupRcv && chatItem.chatDir is GroupRcv) {
+    chatItem.chatDir.groupMember.groupMemberId == nextItem.chatDir.groupMember.groupMemberId
+  } else chatItem.chatDir.sent == nextItem.chatDir.sent
+  return !sameMemberAndDirection || (abs(nextItem.meta.createdAt.epochSeconds - chatItem.meta.createdAt.epochSeconds) >= 60)
+}
+
 @Preview/*(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
   showBackground = true,
@@ -2248,7 +2322,7 @@ fun PreviewChatLayout() {
       back = {},
       info = {},
       showMemberInfo = { _, _ -> },
-      loadMessages = { _, _ -> },
+      loadMessages = { _, _, _ -> },
       deleteMessage = { _, _ -> },
       deleteMessages = { _ -> },
       receiveFile = { _ -> },
@@ -2320,7 +2394,7 @@ fun PreviewGroupChatLayout() {
       back = {},
       info = {},
       showMemberInfo = { _, _ -> },
-      loadMessages = { _, _ -> },
+      loadMessages = { _, _, _ -> },
       deleteMessage = { _, _ -> },
       deleteMessages = {},
       receiveFile = { _ -> },
