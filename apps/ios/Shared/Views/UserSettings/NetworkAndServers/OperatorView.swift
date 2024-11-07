@@ -26,6 +26,11 @@ struct OperatorView: View {
     @State var xftpServers: [UserServer] = []
     @State private var selectedServer: String? = nil
     @State private var justOpened = true
+    @State private var testing = false
+    @State private var alert: ServerAlert? = nil
+
+    let smpProto: String = ServerProtocol.smp.rawValue.uppercased()
+    let xftpProto: String = ServerProtocol.xftp.rawValue.uppercased()
 
     var body: some View {
         VStack {
@@ -55,17 +60,57 @@ struct OperatorView: View {
                 }
 
                 if serverOperatorToEdit.enabled {
-                    usageRolesSection()
-                    serversSection($smpServers, .smp)
-                    serversSection($xftpServers, .xftp)
-                }
-
-                Section {
-                    if serverOperatorToEdit.enabled {
-                        Button("Test servers") {}
+                    Section(header: Text("Use operator").foregroundColor(theme.colors.secondary)) {
+                        Toggle("For storage", isOn: $serverOperatorToEdit.roles.storage)
+                        Toggle("As proxy", isOn: $serverOperatorToEdit.roles.proxy)
                     }
-                    Button("Save") {}
-                        .disabled(true)
+
+                    Section {
+                        ForEach($smpServers) { srv in
+                            ProtocolServerViewLink(
+                                server: srv,
+                                serverProtocol: .smp,
+                                preset: true,
+                                backLabel: "\(serverOperator.tradeName) servers",
+                                selectedServer: $selectedServer
+                            )
+                        }
+                    } header: {
+                        Text("\(smpProto) servers")
+                            .foregroundColor(theme.colors.secondary)
+                    } footer: {
+                        Text("The servers for new connections of your current chat profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
+                            .foregroundColor(theme.colors.secondary)
+                            .lineLimit(10)
+                    }
+
+                    Section {
+                        ForEach($xftpServers) { srv in
+                            ProtocolServerViewLink(
+                                server: srv,
+                                serverProtocol: .xftp,
+                                preset: true,
+                                backLabel: "\(serverOperator.tradeName) servers",
+                                selectedServer: $selectedServer
+                            )
+                        }
+                    } header: {
+                        Text("\(xftpProto) servers")
+                            .foregroundColor(theme.colors.secondary)
+                    } footer: {
+                        Text("The servers for new files of your current chat profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
+                            .foregroundColor(theme.colors.secondary)
+                            .lineLimit(10)
+                    }
+
+                    Section {
+                        TestServersButton(
+                            smpServers: $smpServers,
+                            xftpServers: $xftpServers,
+                            testing: $testing,
+                            alert: $alert
+                        )
+                    }
                 }
             }
         }
@@ -139,68 +184,6 @@ struct OperatorView: View {
             } else {
                 useOperatorToggleReset = true
                 useOperator = false
-            }
-        }
-    }
-
-    private func usageRolesSection() -> some View {
-        Section(header: Text("Use operator").foregroundColor(theme.colors.secondary)) {
-            Toggle("For storage", isOn: $serverOperatorToEdit.roles.storage)
-            Toggle("As proxy", isOn: $serverOperatorToEdit.roles.proxy)
-        }
-    }
-
-    @ViewBuilder private func serversSection(_ servers: Binding<[UserServer]>, _ serverProtocol: ServerProtocol) -> some View {
-        let proto = serverProtocol.rawValue.uppercased()
-        Section {
-            ForEach(servers) { srv in
-                protocolServerView(srv, serverProtocol)
-            }
-        } header: {
-            Text("\(proto) servers")
-                .foregroundColor(theme.colors.secondary)
-        } footer: {
-            Text("The servers for new connections of your current chat profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
-                .foregroundColor(theme.colors.secondary)
-                .lineLimit(10)
-        }
-    }
-
-    // TODO Refactor (similar function in ProtocolServersView) / Keep modified for operator servers? (some things are not applicable)
-    // TODO Check all servers across all operators (uniqueAddress in ProtocolServersView) / Validate via api (per server?)
-    private func protocolServerView(_ server: Binding<UserServer>, _ serverProtocol: ServerProtocol) -> some View {
-        let proto = serverProtocol.rawValue.uppercased()
-        let srv = server.wrappedValue
-        return NavigationLink(tag: srv.id, selection: $selectedServer) {
-            ProtocolServerView(
-                serverProtocol: serverProtocol,
-                server: server,
-                serverToEdit: srv,
-                preset: true,
-                backLabel: "\(serverOperator.tradeName) servers"
-            )
-            .navigationBarTitle("\(proto) server")
-            .modifier(ThemedBackground(grouped: true))
-            .navigationBarTitleDisplayMode(.large)
-        } label: {
-            let address = parseServerAddress(srv.server)
-            HStack {
-                Group {
-                    if !srv.enabled {
-                        Image(systemName: "slash.circle").foregroundColor(theme.colors.secondary)
-                    } else {
-                        showTestStatus(server: srv)
-                    }
-                }
-            }
-            .frame(width: 16, alignment: .center)
-            .padding(.trailing, 4)
-
-            let v = Text(address?.hostnames.first ?? srv.server).lineLimit(1)
-            if srv.enabled {
-                v
-            } else {
-                v.foregroundColor(theme.colors.secondary)
             }
         }
     }

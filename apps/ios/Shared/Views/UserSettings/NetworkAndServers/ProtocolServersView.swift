@@ -11,6 +11,18 @@ import SimpleXChat
 
 private let howToUrl = URL(string: "https://simplex.chat/docs/server.html")!
 
+enum ServerAlert: Identifiable {
+    case testsFailed(failures: [String: ProtocolTestFailure])
+    case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
+
+    var id: String {
+        switch self {
+        case .testsFailed: return "testsFailed"
+        case let .error(title, _): return "error \(title)"
+        }
+    }
+}
+
 struct YourServersView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject private var m: ChatModel
@@ -40,24 +52,18 @@ struct YourServersView: View {
         }
     }
 
-    enum ServerAlert: Identifiable {
-        case testsFailed(failures: [String: ProtocolTestFailure])
-        case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
-
-        var id: String {
-            switch self {
-            case .testsFailed: return "testsFailed"
-            case let .error(title, _): return "error \(title)"
-            }
-        }
-    }
-
     private func protocolServersView() -> some View {
         List {
             if !smpServers.isEmpty {
                 Section {
                     ForEach($smpServers) { srv in
-                        protocolServerView(srv, .smp)
+                        ProtocolServerViewLink(
+                            server: srv,
+                            serverProtocol: .smp,
+                            preset: false,
+                            backLabel: "Your servers",
+                            selectedServer: $selectedServer
+                        )
                     }
                     .onMove { indexSet, offset in
                         smpServers.move(fromOffsets: indexSet, toOffset: offset)
@@ -78,7 +84,13 @@ struct YourServersView: View {
             if !xftpServers.isEmpty {
                 Section {
                     ForEach($xftpServers) { srv in
-                        protocolServerView(srv, .xftp)
+                        ProtocolServerViewLink(
+                            server: srv,
+                            serverProtocol: .xftp,
+                            preset: false,
+                            backLabel: "Your servers",
+                            selectedServer: $selectedServer
+                        )
                     }
                     .onMove { indexSet, offset in
                         xftpServers.move(fromOffsets: indexSet, toOffset: offset)
@@ -108,8 +120,12 @@ struct YourServersView: View {
                     xftpServers = currXFTPServers
                 }
                 .disabled((smpServers == currSMPServers && xftpServers == currXFTPServers) || testing)
-                Button("Test servers", action: testServers)
-                    .disabled(testing || allServersDisabled)
+                TestServersButton(
+                    smpServers: $smpServers,
+                    xftpServers: $xftpServers,
+                    testing: $testing,
+                    alert: $alert
+                )
                 Button("Save servers", action: saveServers)
                     .disabled(saveDisabled)
                 howToButton()
@@ -193,55 +209,6 @@ struct YourServersView: View {
         testing
     }
 
-    private var allServersDisabled: Bool {
-        smpServers.allSatisfy { !$0.enabled } && xftpServers.allSatisfy { !$0.enabled }
-    }
-
-    private func protocolServerView(_ server: Binding<UserServer>, _ serverProtocol: ServerProtocol) -> some View {
-        let srv = server.wrappedValue
-        return NavigationLink(tag: srv.id, selection: $selectedServer) {
-            ProtocolServerView(
-                serverProtocol: serverProtocol,
-                server: server,
-                serverToEdit: srv,
-                preset: false,
-                backLabel: "Your servers"
-            )
-            .navigationBarTitle("Your server")
-            .modifier(ThemedBackground(grouped: true))
-            .navigationBarTitleDisplayMode(.large)
-        } label: {
-            let address = parseServerAddress(srv.server)
-            HStack {
-                Group {
-                    if let address = address {
-                        if !address.valid || address.serverProtocol != serverProtocol {
-                            invalidServer()
-                        // TODO Show based on validateServers
-//                        } else if !uniqueAddress(srv, address) {
-//                            Image(systemName: "exclamationmark.circle").foregroundColor(.red)
-                        } else if !srv.enabled {
-                            Image(systemName: "slash.circle").foregroundColor(theme.colors.secondary)
-                        } else {
-                            showTestStatus(server: srv)
-                        }
-                    } else {
-                        invalidServer()
-                    }
-                }
-                .frame(width: 16, alignment: .center)
-                .padding(.trailing, 4)
-
-                let v = Text(address?.hostnames.first ?? srv.server).lineLimit(1)
-                if srv.enabled {
-                    v
-                } else {
-                    v.foregroundColor(theme.colors.secondary)
-                }
-            }
-        }
-    }
-
     func howToButton() -> some View {
         Button {
             DispatchQueue.main.async {
@@ -255,8 +222,103 @@ struct YourServersView: View {
         }
     }
 
+    func saveServers() {
+        Task {
+            do {
+                // TODO Single api call - setUserServers
+                try await setUserProtoServers(.smp, servers: smpServers)
+                try await setUserProtoServers(.xftp, servers: xftpServers)
+                await MainActor.run {
+                    currSMPServers = smpServers
+                    currXFTPServers = xftpServers
+                    editMode?.wrappedValue = .inactive
+                }
+            } catch let error {
+                let err = responseError(error)
+                logger.error("saveServers setUserProtocolServers error: \(err)")
+                await MainActor.run {
+                    alert = .error(
+                        title: "Error saving servers",
+                        error: "Make sure server addresses are in correct format, line separated and are not duplicated (\(responseError(error)))."
+                    )
+                }
+            }
+        }
+    }
+}
+
+struct ProtocolServerViewLink: View {
+    @EnvironmentObject var theme: AppTheme
+    @Binding var server: UserServer
+    var serverProtocol: ServerProtocol
+    var preset: Bool
+    var backLabel: LocalizedStringKey
+    @Binding var selectedServer: String?
+
+    var body: some View {
+        let proto = serverProtocol.rawValue.uppercased()
+
+        NavigationLink(tag: server.id, selection: $selectedServer) {
+            ProtocolServerView(
+                serverProtocol: serverProtocol,
+                server: $server,
+                serverToEdit: server,
+                preset: preset,
+                backLabel: backLabel
+            )
+            .navigationBarTitle("\(proto) server")
+            .modifier(ThemedBackground(grouped: true))
+            .navigationBarTitleDisplayMode(.large)
+        } label: {
+            let address = parseServerAddress(server.server)
+            HStack {
+                Group {
+                    if let address = address {
+                        if !address.valid || address.serverProtocol != serverProtocol {
+                            invalidServer()
+                            // TODO Show based on validateServers
+                            // } else if !uniqueAddress(srv, address) {
+                            //     Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+                        } else if !server.enabled {
+                            Image(systemName: "slash.circle").foregroundColor(theme.colors.secondary)
+                        } else {
+                            showTestStatus(server: server)
+                        }
+                    } else {
+                        invalidServer()
+                    }
+                }
+                .frame(width: 16, alignment: .center)
+                .padding(.trailing, 4)
+
+                let v = Text(address?.hostnames.first ?? server.server).lineLimit(1)
+                if server.enabled {
+                    v
+                } else {
+                    v.foregroundColor(theme.colors.secondary)
+                }
+            }
+        }
+    }
+
     private func invalidServer() -> some View {
         Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+    }
+}
+
+struct TestServersButton: View {
+    @Binding var smpServers: [UserServer]
+    @Binding var xftpServers: [UserServer]
+    @Binding var testing: Bool
+    @Binding var alert: ServerAlert?
+
+    var body: some View {
+        Button("Test servers", action: testServers)
+            .disabled(testing || allServersDisabled)
+    }
+
+    private var allServersDisabled: Bool {
+        smpServers.allSatisfy { !$0.enabled } && xftpServers.allSatisfy { !$0.enabled }
     }
 
     private func testServers() {
@@ -305,30 +367,6 @@ struct YourServersView: View {
             }
         }
         return fs
-    }
-
-    func saveServers() {
-        Task {
-            do {
-                // TODO Single api call - setUserServers
-                try await setUserProtoServers(.smp, servers: smpServers)
-                try await setUserProtoServers(.xftp, servers: xftpServers)
-                await MainActor.run {
-                    currSMPServers = smpServers
-                    currXFTPServers = xftpServers
-                    editMode?.wrappedValue = .inactive
-                }
-            } catch let error {
-                let err = responseError(error)
-                logger.error("saveServers setUserProtocolServers error: \(err)")
-                await MainActor.run {
-                    alert = .error(
-                        title: "Error saving servers",
-                        error: "Make sure server addresses are in correct format, line separated and are not duplicated (\(responseError(error)))."
-                    )
-                }
-            }
-        }
     }
 }
 
