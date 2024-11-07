@@ -21,7 +21,6 @@ struct OnboardingButtonStyle: ButtonStyle {
             .foregroundColor(theme.colors.isLight ? .white : .black) // TODO review
             .cornerRadius(16)
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
-            .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
     }
 }
 
