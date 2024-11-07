@@ -84,8 +84,6 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 if self.representer.scrollState == .atDestination, self.representer.initialChatItem == nil {
                     if indexPath.item > self.itemCount - preloadItem, let item = self.getItemAtPath(indexPath: IndexPath(row: self.itemCount - 1, section: 0)) {
                         self.representer.loadPage(.before(chatItemId: item.id, count: loadItemsPerPage))
-                    } else if let item = self.getFirstItemBeforePlacholder(indexPath) {
-                        // TODO: Cleanup, this should never be possible
                     } else if let item = self.getFirstItemAfterPlacholder(indexPath) {
                         self.representer.loadPage(.after(chatItemId: item.id, count: loadItemsPerPage))
                     }
@@ -319,33 +317,6 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                         return item
                     }
                     rowIndex += 1
-                }
-                
-                return nil
-            } else {
-                return nil
-            }
-        }
-        
-        private func getFirstItemBeforePlacholder(_ indexPath: IndexPath) -> ChatItem? {
-            if indexPath.row + preloadItem >= itemCount {
-                return nil
-            }
-            
-            let closesPlaceholderRow = (0..<preloadItem).first { index in
-                if let item = getItemAtPath(indexPath: IndexPath(row: indexPath.row + index, section: 0)) {
-                    return item.isPlaceholder
-                }
-                return false
-            }
-            
-            if let closesPlaceholderRow {
-                var rowIndex = indexPath.row + closesPlaceholderRow
-                while rowIndex >= 0 {
-                    if let item = getItemAtPath(indexPath: IndexPath(row: rowIndex, section: 0)), !item.isPlaceholder {
-                        return item
-                    }
-                    rowIndex -= 1
                 }
                 
                 return nil
