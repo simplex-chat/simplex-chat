@@ -276,7 +276,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
   @Composable
   fun HistoryTab() {
-    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+    ColumnWithScrollBar {
       Details()
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
       val versions = ciInfo.itemVersions
@@ -300,7 +300,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
   @Composable
   fun QuoteTab(qi: CIQuote) {
-    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+    ColumnWithScrollBar {
       Details()
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
       SectionView(contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
@@ -313,7 +313,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
   @Composable
   fun ForwardedFromTab(forwardedFromItem: AChatItem) {
-    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+    ColumnWithScrollBar {
       Details()
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
       SectionView {
@@ -375,7 +375,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
   @Composable
   fun DeliveryTab(memberDeliveryStatuses: List<MemberDeliveryStatus>) {
-    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+    ColumnWithScrollBar {
       Details()
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
       val mss = membersStatuses(chatModel, memberDeliveryStatuses)

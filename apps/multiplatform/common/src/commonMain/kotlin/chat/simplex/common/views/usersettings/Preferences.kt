@@ -66,9 +66,7 @@ private fun PreferencesLayout(
   reset: () -> Unit,
   savePrefs: () -> Unit,
 ) {
-  ColumnWithScrollBar(
-    Modifier.fillMaxWidth(),
-  ) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.your_preferences))
     val timedMessages = remember(preferences) { mutableStateOf(preferences.timedMessages.allow) }
     TimedMessagesFeatureSection(timedMessages) {

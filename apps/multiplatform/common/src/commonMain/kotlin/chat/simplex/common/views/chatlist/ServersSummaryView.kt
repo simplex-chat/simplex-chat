@@ -620,9 +620,7 @@ fun ModalData.SMPServerSummaryView(
   ModalView(
     close = close
   ) {
-    ColumnWithScrollBar(
-      Modifier.fillMaxSize(),
-    ) {
+    ColumnWithScrollBar {
       val bottomPadding = DEFAULT_PADDING
       AppBarTitle(
         stringResource(MR.strings.smp_server),
@@ -645,9 +643,7 @@ fun ModalData.DetailedXFTPStatsView(
   ModalView(
     close = close
   ) {
-    ColumnWithScrollBar(
-      Modifier.fillMaxSize(),
-    ) {
+    ColumnWithScrollBar {
       Box(contentAlignment = Alignment.Center) {
         val bottomPadding = DEFAULT_PADDING
         AppBarTitle(
@@ -671,9 +667,7 @@ fun ModalData.DetailedSMPStatsView(
   ModalView(
     close = close
   ) {
-    ColumnWithScrollBar(
-      Modifier.fillMaxSize(),
-    ) {
+    ColumnWithScrollBar {
       Box(contentAlignment = Alignment.Center) {
         val bottomPadding = DEFAULT_PADDING
         AppBarTitle(
@@ -697,9 +691,7 @@ fun ModalData.XFTPServerSummaryView(
   ModalView(
     close = close
   ) {
-    ColumnWithScrollBar(
-      Modifier.fillMaxSize(),
-    ) {
+    ColumnWithScrollBar {
       Box(contentAlignment = Alignment.Center) {
         val bottomPadding = DEFAULT_PADDING
         AppBarTitle(
@@ -715,9 +707,7 @@ fun ModalData.XFTPServerSummaryView(
 
 @Composable
 fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableState<PresentedServersSummary?>) {
-  ColumnWithScrollBar(
-    Modifier.fillMaxSize(),
-  ) {
+  ColumnWithScrollBar {
     var showUserSelection by remember { mutableStateOf(false) }
     val selectedUserCategory =
       remember { stateGetOrPut("selectedUserCategory") { PresentedUserCategory.ALL_USERS } }

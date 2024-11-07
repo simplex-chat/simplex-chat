@@ -109,7 +109,7 @@ fun NetworkAndServersView() {
   toggleSocksProxy: (Boolean) -> Unit,
 ) {
   val m = chatModel
-  ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+  ColumnWithScrollBar {
     val showModal = { it: @Composable ModalData.() -> Unit ->  ModalManager.start.showModal(content = it) }
     val showCustomModal = { it: @Composable (close: () -> Unit) -> Unit -> ModalManager.start.showCustomModal { close -> it(close) }}
 
@@ -304,10 +304,7 @@ fun SocksProxySettings(
       }
     },
   ) {
-    ColumnWithScrollBar(
-      Modifier
-        .fillMaxWidth()
-    ) {
+    ColumnWithScrollBar {
       AppBarTitle(generalGetString(MR.strings.network_socks_proxy_settings))
       SectionView(stringResource(MR.strings.network_socks_proxy).uppercase()) {
         Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
@@ -479,9 +476,7 @@ fun SessionModePicker(
     icon = painterResource(MR.images.ic_safety_divider),
     onSelected = {
       showModal {
-        ColumnWithScrollBar(
-          Modifier.fillMaxWidth(),
-        ) {
+        ColumnWithScrollBar {
           AppBarTitle(stringResource(MR.strings.network_session_mode_transport_isolation))
           SectionViewSelectable(null, sessionMode, values, updateSessionMode)
         }
