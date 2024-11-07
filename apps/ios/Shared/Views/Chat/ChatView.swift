@@ -916,7 +916,17 @@ struct ChatView: View {
                         firstPage = true
                     } else if dedupedreversePage.count > 0 {
                         switch pagination {
-                        case .before, .last, .initial:
+                        case .last, .initial:
+                            im.reversedChatItems.append(contentsOf: dedupedreversePage)
+                        case .before(_, _):
+                            if im.reversedChatItems.count + dedupedreversePage.count > idealChatListSize {
+                                if let gap = im.gap {
+                                    im.gap = ChatGap(index: gap.index, size: gap.size + dedupedreversePage.count)
+                                } else {
+                                    im.gap = ChatGap(index: loadItemsPerPage, size: dedupedreversePage.count)
+                                }
+                                im.reversedChatItems.removeSubrange(loadItemsPerPage..<loadItemsPerPage + dedupedreversePage.count)
+                            }
                             im.reversedChatItems.append(contentsOf: dedupedreversePage)
                         case let .after(chatItemId, _):
                             let index = im.reversedChatItems.firstIndex { $0.id == chatItemId }
