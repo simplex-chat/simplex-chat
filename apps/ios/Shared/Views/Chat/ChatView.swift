@@ -875,6 +875,7 @@ struct ChatView: View {
             loadingItems = true
             do {
                 var reversedPage = Array<ChatItem>()
+                var apiGap: Int? = nil
                 var chatItemsAvailable = true
                 // Load additional items until the page is +50 large after merging
                 while chatItemsAvailable && filtered(reversedPage).count < loadItemsPerPage {
@@ -887,12 +888,13 @@ struct ChatView: View {
                     case .around(_, _): throw RuntimeError("Unsupported pagination type for loading chat items: \(pagination)")
                     }
                     
-                    let (chatItems, _) = try await apiGetChatItems(
+                    let (chatItems, gap) = try await apiGetChatItems(
                         type: cInfo.chatType,
                         id: cInfo.apiId,
                         pagination: chatPagination,
                         search: searchText
                     )
+                    apiGap = gap
                     chatItemsAvailable = !chatItems.isEmpty
                     reversedPage.append(contentsOf: chatItems.reversed())
                 }
@@ -907,11 +909,9 @@ struct ChatView: View {
                             im.reversedChatItems.append(contentsOf: dedupedreversePage)
                         case let .after(chatItemId, _):
                             let index = im.reversedChatItems.firstIndex { $0.id == chatItemId }
-                            logger.error("[scrolling] setting: \(dedupedreversePage.count) \(index ?? -1)")
-                            
                             if let index {
                                 if let gap = im.gap {
-                                    let size = gap.size - dedupedreversePage.count
+                                    let size = max(0, (apiGap ?? 0) - index)
                                     if size > 0 {
                                         im.gap = ChatGap(index: gap.index, size: size)
                                     } else {
