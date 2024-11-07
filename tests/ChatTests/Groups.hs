@@ -382,6 +382,7 @@ testChatPaginationInitial = testChatOpts2 opts aliceProfile bobProfile $ \alice 
   -- Wait, otherwise ids are going to be wrong.
   threadDelay 1000000
   lastEventId <- (read :: String -> Int) <$> lastItemId bob
+  let groupItemId n = show $ lastEventId + n
 
   -- Send messages from alice to bob
   forM_ ([1 .. 10] :: [Int]) $ \n -> alice #> ("#team " <> show n)
@@ -389,29 +390,26 @@ testChatPaginationInitial = testChatOpts2 opts aliceProfile bobProfile $ \alice 
   -- Bob receives the messages.
   forM_ ([1 .. 10] :: [Int]) $ \n -> bob <# ("#team alice> " <> show n)
 
-  -- Read events up to first message
-  let eventIds = intercalate "," $ map show [1 .. lastEventId + 1]
-  bob #$> ("/_read chat items #1 " <> eventIds, id, "ok")
-  -- All messages are for bob, should return first 2 unread, and last 2 items
-  bob #$> ("/_get chat #1 initial=2", chat, [(0, "1"), (0, "2"), (0, "9"), (0, "10")])
+  -- All messages are unread for bob, should return area around unread (connected chat event + 1,2nd unread message), and last 2 items
+  bob #$> ("/_get chat #1 initial=3", chat, [(0, "connected"), (0, "1"), (0, "2"), (0, "8"), (0, "9"), (0, "10")])
 
-  -- Read first 2 items
-  let itemIds = intercalate "," $ map show [lastEventId + 2 .. lastEventId + 3]
+  -- Read next 2 items
+  let itemIds = intercalate "," $ map groupItemId [1 .. 2]
   bob #$> ("/_read chat items #1 " <> itemIds, id, "ok")
-  bob #$> ("/_get chat #1 initial=2", chat, [(0, "3"), (0, "4"), (0, "9"), (0, "10")])
+  bob #$> ("/_get chat #1 initial=3", chat, [(0, "2"), (0, "3"), (0, "4"), (0, "8"), (0, "9"), (0, "10")])
 
   -- Read items until gap = 0
-  let itemIds2 = intercalate "," $ map show [lastEventId + 4 .. lastEventId + 7]
+  let itemIds2 = intercalate "," $ map groupItemId [3 .. 5]
   bob #$> ("/_read chat items #1 " <> itemIds2, id, "ok")
-  bob #$> ("/_get chat #1 initial=2", chat, [(0, "7"), (0, "8"), (0, "9"), (0, "10")])
+  bob #$> ("/_get chat #1 initial=3", chat, [(0, "5"), (0, "6"), (0, "7"), (0, "8"), (0, "9"), (0, "10")])
 
   -- Read items until intersection
-  bob #$> ("/_read chat items #1 " <> show (lastEventId + 8), id, "ok")
-  bob #$> ("/_get chat #1 initial=2", chat, [(0, "8"), (0, "9"), (0, "10")])
+  bob #$> ("/_read chat items #1 " <> groupItemId 6, id, "ok")
+  bob #$> ("/_get chat #1 initial=3", chat, [(0, "6"), (0, "7"), (0, "8"), (0, "9"), (0, "10")])
 
   -- Read all items
   bob #$> ("/_read chat #1", id, "ok")
-  bob #$> ("/_get chat #1 initial=2", chat, [(0, "9"), (0, "10")])
+  bob #$> ("/_get chat #1 initial=3", chat, [(0, "8"), (0, "9"), (0, "10")])
   bob #$> ("/_get chat #1 initial=5", chat, [(0, "6"), (0, "7"), (0, "8"), (0, "9"), (0, "10")])
   where
     opts =
