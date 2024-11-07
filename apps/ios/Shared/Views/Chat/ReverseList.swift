@@ -221,7 +221,12 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     animated: animated
                 )
             }
-            Task { representer.scrollState = .atDestination }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                Task {
+                    self.representer.scrollState = .atDestination
+                }
+            }
         }
 
         func update(items: [ChatItem], gap: ChatGap?) {
