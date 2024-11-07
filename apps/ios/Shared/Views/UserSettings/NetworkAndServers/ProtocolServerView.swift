@@ -114,10 +114,7 @@ struct ProtocolServerView: View {
                 Spacer()
                 showTestStatus(server: serverToEdit)
             }
-            let useForNewDisabled = serverToEdit.tested != true && !preset
             Toggle("Use for new connections", isOn: $serverToEdit.enabled)
-                .disabled(useForNewDisabled)
-                .foregroundColor(useForNewDisabled ? theme.colors.secondary : theme.colors.onBackground)
         }
     }
 }
