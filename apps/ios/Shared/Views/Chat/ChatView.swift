@@ -491,10 +491,17 @@ struct ChatView: View {
     }
     
     private func getFirstUnreadItem() -> ChatItem? {
+        var maybeItem: ChatItem? = nil
         for i in stride(from: im.reversedChatItems.count - 1, through: 0, by: -1) {
             let item = im.reversedChatItems[i]
             if item.isRcvNew {
-                return item
+                if item.mergeCategory == nil {
+                    return maybeItem ?? item
+                } else {
+                    maybeItem = item
+                }
+            } else if maybeItem != nil {
+                return maybeItem
             }
         }
         return nil
