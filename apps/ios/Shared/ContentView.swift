@@ -276,7 +276,9 @@ struct ContentView: View {
                             let showWhatsNew = shouldShowWhatsNew()
                             let showOperatorsNotice = chatModel.usageConditionsAction?.showNotice ?? false
                             noticesShown = showWhatsNew || showOperatorsNotice
-                            noticesSheetItem = .notices(showWhatsNew: showWhatsNew, showOperatorsNotice: showOperatorsNotice)
+                            if noticesShown {
+                                noticesSheetItem = .notices(showWhatsNew: showWhatsNew, showOperatorsNotice: showOperatorsNotice)
+                            }
                         }
                     }
                 }

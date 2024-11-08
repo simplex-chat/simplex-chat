@@ -525,6 +525,7 @@ struct WhatsNewView: View {
 
     var body: some View {
         viewBody()
+            .interactiveDismissDisabled(showOperatorsNotice)
     }
 
     @ViewBuilder private func viewBody() -> some View {
