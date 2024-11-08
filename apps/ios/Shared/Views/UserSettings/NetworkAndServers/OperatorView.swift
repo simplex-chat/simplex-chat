@@ -239,8 +239,7 @@ struct ConditionsTextView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .task {
                 do {
-                    // conditionsData = try await getUsageConditions()
-                    conditionsData = (UsageConditions.sampleData, conditionsText, nil)
+                    conditionsData = try await getUsageConditions()
                 } catch let error {
                     logger.error("ConditionsTextView getUsageConditions error: \(responseError(error))")
                     failedToLoad = true
@@ -252,7 +251,7 @@ struct ConditionsTextView: View {
         if let (usageConditions, conditionsText, acceptedConditions) = conditionsData {
             if let conditionsText = conditionsText {
                 ScrollView {
-                    Text(conditionsText)
+                    Text(conditionsText.trimmingCharacters(in: .whitespacesAndNewlines))
                         .padding()
                 }
                 .background(
