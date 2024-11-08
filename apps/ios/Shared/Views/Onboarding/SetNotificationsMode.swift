@@ -45,8 +45,7 @@ struct SetNotificationsMode: View {
                             Text("Enable notifications")
                         }
                     }
-                    .buttonStyle(OnboardingButtonStyle())
-                    .padding(.horizontal)
+                    .buttonStyle(OnboardingButtonStyle(isDisabled: false))
                     .padding(.bottom)
                 }
                 .padding()
