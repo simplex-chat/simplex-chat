@@ -228,15 +228,58 @@ Potenti dolor ridiculus est faucibus leo. Euismod consequat ultricies fringilla 
 Habitasse eu sapien eleifend gravida tortor potenti senectus euismod. Lectus enim fames turpis lectus facilisi efficitur elit porttitor facilisi. Nisl quam senectus quam augue integer leo. In aliquam tempor nibh proin felis tortor elementum sodales lacinia. Ut per placerat bibendum magna dapibus fermentum bibendum amet congue. Curae bibendum enim platea per faucibus imperdiet morbi hac varius. Conubia feugiat justo hac faucibus dis.
 """
 
-func conditionsTextView() -> some View {
-    ScrollView {
-        Text(conditionsText)
-            .padding()
+struct ConditionsTextView: View {
+    @State private var conditionsData: (UsageConditions, String?, UsageConditions?)?
+    @State private var failedToLoad: Bool = false
+
+    let defaultConditionsLink = "https://github.com/simplex-chat/simplex-chat/blob/stable/PRIVACY.md"
+
+    var body: some View {
+        viewBody()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .task {
+                do {
+                    // conditionsData = try await getUsageConditions()
+                    conditionsData = (UsageConditions.sampleData, conditionsText, nil)
+                } catch let error {
+                    logger.error("ConditionsTextView getUsageConditions error: \(responseError(error))")
+                    failedToLoad = true
+                }
+            }
     }
-    .background(
-        RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .fill(Color(uiColor: .secondarySystemGroupedBackground))
-    )
+
+    @ViewBuilder private func viewBody() -> some View {
+        if let (usageConditions, conditionsText, acceptedConditions) = conditionsData {
+            if let conditionsText = conditionsText {
+                ScrollView {
+                    Text(conditionsText)
+                        .padding()
+                }
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color(uiColor: .secondarySystemGroupedBackground))
+                )
+            } else {
+                let conditionsLink = "https://github.com/simplex-chat/simplex-chat/blob/\(usageConditions.conditionsCommit)/PRIVACY.md"
+                conditionsLinkView(conditionsLink)
+            }
+        } else if failedToLoad {
+            conditionsLinkView(defaultConditionsLink)
+        } else {
+            ProgressView()
+                .scaleEffect(2)
+        }
+    }
+
+    private func conditionsLinkView(_ conditionsLink: String) -> some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text("Current conditions text couldn't be loaded, you can review conditions via this link:")
+            Link(destination: URL(string: conditionsLink)!) {
+                Text(conditionsLink)
+                    .multilineTextAlignment(.leading)
+            }
+        }
+    }
 }
 
 struct SingleOperatorUsageConditionsView: View {
@@ -257,16 +300,12 @@ struct SingleOperatorUsageConditionsView: View {
                 
                 let operatorsWithConditionsAccepted = ChatModel.shared.serverOperators.filter { $0.conditionsAcceptance.conditionsAccepted }
 
-                if case let .accepted(acceptedAt) = serverOperator.conditionsAcceptance {
+                if case .accepted = serverOperator.conditionsAcceptance {
+                    // In current UI this branch doesn't get shown - as conditions can't be opened from inside operator once accepted
 
-                    conditionsTextView() // TODO invisible element for all cases with bottom padding?
-
-                    if let acceptedAt = acceptedAt {
-                        Text("Conditions accepted on: \(conditionsTimestamp(acceptedAt)).")
-                            .foregroundColor(theme.colors.secondary)
-                            .padding(.bottom)
-                            .padding(.bottom)
-                    }
+                    ConditionsTextView()
+                        .padding(.bottom)
+                        .padding(.bottom)
 
                 } else if !operatorsWithConditionsAccepted.isEmpty {
                     
@@ -285,7 +324,7 @@ struct SingleOperatorUsageConditionsView: View {
 
                         Spacer()
                     } else {
-                        conditionsTextView()
+                        ConditionsTextView()
                     }
                     
                     acceptConditionsButton()
@@ -298,8 +337,8 @@ struct SingleOperatorUsageConditionsView: View {
 
                     conditionsAppliedToOtherOperatorsText()
                     
-                    conditionsTextView()
-                    
+                    ConditionsTextView()
+
                     acceptConditionsButton()
                         .padding(.bottom)
                         .padding(.bottom)
@@ -357,8 +396,8 @@ struct UsageConditionsView: View {
 
                 Text("Conditions will be accepted for following operator(s): **\(operators.map { $0.conditionsName }.joined(separator: ", "))**.")
 
-                conditionsTextView()
-                
+                ConditionsTextView()
+
                 acceptConditionsButton(operators)
                     .padding(.bottom)
                     .padding(.bottom)
@@ -367,7 +406,7 @@ struct UsageConditionsView: View {
 
                 Text("Conditions are accepted for following operator(s): **\(operators.map { $0.conditionsName }.joined(separator: ", "))**.")
 
-                conditionsTextView()
+                ConditionsTextView()
                     .padding(.bottom)
                     .padding(.bottom)
                 
