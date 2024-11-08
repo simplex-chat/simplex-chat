@@ -1489,9 +1489,9 @@ processChatCommand' vr = \case
   APIGetUserProtoServers userId (AProtocolType p) -> withUserId userId $ \user -> withServerProtocol p $ do
     cfg@ChatConfig {defaultServers} <- asks config
     srvs <- withFastStore' (`getProtocolServers` user)
-    (operators, _) <- withFastStore $ \db -> getServerOperators db
+    -- (operators, _) <- withFastStore $ \db -> getServerOperators db
     let servers = AUPS $ UserProtoServers p (useServers cfg p srvs) (cfgServers p defaultServers)
-    pure $ CRUserProtoServers {user, servers, operators}
+    pure $ CRUserProtoServers {user, servers, operators = []}
   GetUserProtoServers aProtocol -> withUser $ \User {userId} ->
     processChatCommand $ APIGetUserProtoServers userId aProtocol
   APISetUserProtoServers userId (APSC p (ProtoServersConfig servers))
