@@ -1387,7 +1387,7 @@ public struct OperatorEnabled: Codable {
 }
 
 public struct UserServers: Decodable {
-    public var serverOperator: ServerOperator?
+    public var `operator`: ServerOperator?
     public var smpServers: [UserServer]
     public var xftpServers: [UserServer]
 }
