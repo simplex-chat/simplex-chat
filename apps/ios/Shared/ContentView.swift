@@ -9,6 +9,16 @@ import SwiftUI
 import Intents
 import SimpleXChat
 
+private enum NoticesSheet: Identifiable {
+    case notices(showWhatsNew: Bool, showOperatorsNotice: Bool)
+
+    var id: String {
+        switch self {
+        case .notices: return "notices"
+        }
+    }
+}
+
 struct ContentView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var alertManager = AlertManager.shared
@@ -30,7 +40,8 @@ struct ContentView: View {
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
     @AppStorage(DEFAULT_NOTIFICATION_ALERT_SHOWN) private var notificationAlertShown = false
-    @State private var showWhatsNew = false
+    @State private var noticesShown = false
+    @State private var noticesSheetItem: NoticesSheet? = nil
     @State private var showChooseLAMode = false
     @State private var showSetPasscode = false
     @State private var waitingForOrPassedAuth = true
@@ -261,8 +272,11 @@ struct ContentView: View {
                     alertManager.showAlert(laNoticeAlert())
                 } else if !chatModel.showCallView && CallController.shared.activeCallInvitation == nil {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                        if !showWhatsNew {
-                            showWhatsNew = shouldShowWhatsNew()
+                        if !noticesShown {
+                            let showWhatsNew = shouldShowWhatsNew()
+                            let showOperatorsNotice = chatModel.usageConditionsAction?.showNotice ?? false
+                            noticesShown = showWhatsNew || showOperatorsNotice
+                            noticesSheetItem = .notices(showWhatsNew: showWhatsNew, showOperatorsNotice: showOperatorsNotice)
                         }
                     }
                 }
@@ -270,8 +284,11 @@ struct ContentView: View {
                 connectViaUrl()
             }
             .onChange(of: chatModel.appOpenUrl) { _ in connectViaUrl() }
-            .sheet(isPresented: $showWhatsNew) {
-                WhatsNewView()
+            .sheet(item: $noticesSheetItem) { item in
+                switch item {
+                case let .notices(showWhatsNew, showOperatorsNotice):
+                    WhatsNewView(showWhatsNew: showWhatsNew, showOperatorsNotice: showOperatorsNotice)
+                }
             }
             if chatModel.setDeliveryReceipts {
                 SetDeliveryReceiptsView()

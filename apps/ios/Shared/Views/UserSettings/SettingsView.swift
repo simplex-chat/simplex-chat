@@ -359,7 +359,7 @@ struct SettingsView: View {
                         }
                     }
                     NavigationLink {
-                        WhatsNewView(viaSettings: true)
+                        WhatsNewView(viaSettings: true, showWhatsNew: true, showOperatorsNotice: false)
                             .modifier(ThemedBackground())
                             .navigationBarTitleDisplayMode(.inline)
                     } label: {

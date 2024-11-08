@@ -520,8 +520,23 @@ struct WhatsNewView: View {
     @State var currentVersion = versionDescriptions.count - 1
     @State var currentVersionNav = versionDescriptions.count - 1
     var viaSettings = false
+    @State var showWhatsNew: Bool
+    var showOperatorsNotice: Bool
 
     var body: some View {
+        viewBody()
+    }
+
+    @ViewBuilder private func viewBody() -> some View {
+        if showWhatsNew {
+            whatsNewView()
+        } else if showOperatorsNotice {
+            // TODO better view details
+            ChooseServerOperators(onboarding: false)
+        }
+    }
+
+    private func whatsNewView() -> some View {
         VStack {
             TabView(selection: $currentVersion) {
                 ForEach(Array(versionDescriptions.enumerated()), id: \.0) { (i, v) in
@@ -546,11 +561,21 @@ struct WhatsNewView: View {
                             }
                             if !viaSettings {
                                 Spacer()
-                                Button("Ok") {
-                                    dismiss()
+
+                                if showOperatorsNotice {
+                                    Button("View updated conditions") {
+                                        showWhatsNew = false
+                                    }
+                                    .font(.title3)
+                                    .frame(maxWidth: .infinity, alignment: .center)
+                                } else {
+                                    Button("Ok") {
+                                        dismiss()
+                                    }
+                                    .font(.title3)
+                                    .frame(maxWidth: .infinity, alignment: .center)
                                 }
-                                .font(.title3)
-                                .frame(maxWidth: .infinity, alignment: .center)
+
                                 Spacer()
                             }
                         }
@@ -636,6 +661,6 @@ struct WhatsNewView: View {
 
 struct NewFeaturesView_Previews: PreviewProvider {
     static var previews: some View {
-        WhatsNewView()
+        WhatsNewView(showWhatsNew: true, showOperatorsNotice: false)
     }
 }

@@ -1289,6 +1289,13 @@ public struct UsageConditions: Decodable {
 public enum UsageConditionsAction: Decodable {
     case review(operators: [ServerOperator], deadline: Date?, showNotice: Bool)
     case accepted(operators: [ServerOperator])
+
+    public var showNotice: Bool {
+        switch self {
+        case let .review(_, _, showNotice): showNotice
+        case .accepted: false
+        }
+    }
 }
 
 public enum ConditionsAcceptance: Codable, Hashable {

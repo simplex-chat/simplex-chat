@@ -355,9 +355,13 @@ struct SingleOperatorUsageConditionsView: View {
     }
 
     @ViewBuilder private func conditionsAppliedToOtherOperatorsText() -> some View {
-        let otherEnabledOperators = ChatModel.shared.enabledOperatorsWithConditionsNotAccepted.filter { $0.operatorId != serverOperator.operatorId }
-        if !otherEnabledOperators.isEmpty {
-            Text("Conditions will also apply for following operator(s) you use: **\(otherEnabledOperators.map { $0.conditionsName }.joined(separator: ", "))**.")
+        let otherOperatorsToApply = ChatModel.shared.serverOperators.filter {
+            $0.enabled &&
+            !$0.conditionsAcceptance.conditionsAccepted &&
+            $0.operatorId != serverOperator.operatorId
+        }
+        if !otherOperatorsToApply.isEmpty {
+            Text("Conditions will also apply for following operator(s) you use: **\(otherOperatorsToApply.map { $0.conditionsName }.joined(separator: ", "))**.")
         }
     }
 
