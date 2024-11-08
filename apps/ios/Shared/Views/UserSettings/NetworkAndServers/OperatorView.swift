@@ -286,67 +286,75 @@ struct SingleOperatorUsageConditionsView: View {
     @EnvironmentObject var theme: AppTheme
     @Binding var serverOperator: ServerOperator
     @State var serverOperatorToEdit: ServerOperator
-    @State private var conditionsExpanded: Bool = false
+    @State private var usageConditionsNavLinkActive: Bool = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Group {
-                Text("Use operator \(serverOperator.tradeName)")
-                    .font(.largeTitle)
-                    .bold()
-                    .padding(.top)
-                    .padding(.top)
-                
-                let operatorsWithConditionsAccepted = ChatModel.shared.serverOperators.filter { $0.conditionsAcceptance.conditionsAccepted }
+        viewBody()
+    }
 
-                if case .accepted = serverOperator.conditionsAcceptance {
-                    // In current UI this branch doesn't get shown - as conditions can't be opened from inside operator once accepted
+    @ViewBuilder private func viewBody() -> some View {
+        let operatorsWithConditionsAccepted = ChatModel.shared.serverOperators.filter { $0.conditionsAcceptance.conditionsAccepted }
+        if case .accepted = serverOperator.conditionsAcceptance {
 
+            // In current UI implementation this branch doesn't get shown - as conditions can't be opened from inside operator once accepted
+            VStack(alignment: .leading, spacing: 20) {
+                Group {
+                    viewHeader()
                     ConditionsTextView()
                         .padding(.bottom)
                         .padding(.bottom)
+                }
+                .padding(.horizontal)
+            }
+            .frame(maxHeight: .infinity)
 
-                } else if !operatorsWithConditionsAccepted.isEmpty {
-                    
-                    Text("You already accepted conditions of use for following operator(s): **\(operatorsWithConditionsAccepted.map { $0.conditionsName }.joined(separator: ", "))**.")
+        } else if !operatorsWithConditionsAccepted.isEmpty {
 
-                    Text("Same conditions will apply to operator **\(serverOperator.conditionsName)**.")
-
-                    conditionsAppliedToOtherOperatorsText()
-                    
-                    if !conditionsExpanded {
-                        Button {
-                            conditionsExpanded = true
-                        } label: {
-                            Text("View conditions")
-                        }
+            NavigationView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Group {
+                        viewHeader()
+                        Text("You already accepted conditions of use for following operator(s): **\(operatorsWithConditionsAccepted.map { $0.conditionsName }.joined(separator: ", "))**.")
+                        Text("Same conditions will apply to operator **\(serverOperator.conditionsName)**.")
+                        conditionsAppliedToOtherOperatorsText()
+                        usageConditionsNavLinkButton()
 
                         Spacer()
-                    } else {
-                        ConditionsTextView()
+
+                        acceptConditionsButton()
+                            .padding(.bottom)
+                            .padding(.bottom)
                     }
-                    
-                    acceptConditionsButton()
-                        .padding(.bottom)
-                        .padding(.bottom)
-
-                } else {
-                    
-                    Text("In order to use operator **\(serverOperator.conditionsName)**, accept conditions of use.")
-
-                    conditionsAppliedToOtherOperatorsText()
-                    
-                    ConditionsTextView()
-
-                    acceptConditionsButton()
-                        .padding(.bottom)
-                        .padding(.bottom)
-
+                    .padding(.horizontal)
                 }
+                .frame(maxHeight: .infinity)
             }
-            .padding(.horizontal)
+
+        } else {
+
+            VStack(alignment: .leading, spacing: 20) {
+                Group {
+                    viewHeader()
+                    Text("In order to use operator **\(serverOperator.conditionsName)**, accept conditions of use.")
+                    conditionsAppliedToOtherOperatorsText()
+                    ConditionsTextView()
+                    acceptConditionsButton()
+                        .padding(.bottom)
+                        .padding(.bottom)
+                }
+                .padding(.horizontal)
+            }
+            .frame(maxHeight: .infinity)
+
         }
-        .frame(maxHeight: .infinity)
+    }
+
+    private func viewHeader() -> some View {
+        Text("Use operator \(serverOperator.tradeName)")
+            .font(.largeTitle)
+            .bold()
+            .padding(.top)
+            .padding(.top)
     }
 
     @ViewBuilder private func conditionsAppliedToOtherOperatorsText() -> some View {
@@ -369,6 +377,39 @@ struct SingleOperatorUsageConditionsView: View {
             Text("Accept conditions")
         }
         .buttonStyle(OnboardingButtonStyle())
+    }
+
+    private func usageConditionsNavLinkButton() -> some View {
+        ZStack {
+            Button {
+                usageConditionsNavLinkActive = true
+            } label: {
+                Text("View conditions")
+            }
+
+            NavigationLink(isActive: $usageConditionsNavLinkActive) {
+                usageConditionsDestinationView()
+            } label: {
+                EmptyView()
+            }
+            .frame(width: 1, height: 1)
+            .hidden()
+        }
+    }
+
+    private func usageConditionsDestinationView() -> some View {
+        VStack(spacing: 20) {
+            ConditionsTextView()
+                .padding(.top)
+
+            acceptConditionsButton()
+                .padding(.bottom)
+                .padding(.bottom)
+        }
+        .padding(.horizontal)
+        .navigationTitle("Conditions of use")
+        .navigationBarTitleDisplayMode(.large)
+        .modifier(ThemedBackground(grouped: true))
     }
 }
 

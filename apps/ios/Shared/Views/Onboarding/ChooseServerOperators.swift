@@ -30,12 +30,7 @@ struct ChooseServerOperators: View {
     @State private var showInfoSheet = false
     @State private var serverOperators: [ServerOperator] = []
     @State private var selectedOperators = Set<Int64>()
-    @State private var customServersNavLinkActive = false
     @State private var reviewConditionsNavLinkActive = false
-    @State private var currSMPServers: [UserServer] = []
-    @State private var smpServers: [UserServer] = []
-    @State private var currXFTPServers: [UserServer] = []
-    @State private var xftpServers: [UserServer] = []
     @State private var justOpened = true
 
     var body: some View {
@@ -54,8 +49,6 @@ struct ChooseServerOperators: View {
                         ForEach(serverOperators) { srvOperator in
                             operatorCheckView(srvOperator)
                         }
-
-                        customServersButton()
 
                         Spacer()
                         Spacer()
@@ -129,60 +122,6 @@ struct ChooseServerOperators: View {
                 selectedOperators.insert(serverOperator.operatorId)
             }
         }
-    }
-
-    private func customServersButton() -> some View {
-        ZStack {
-            HStack(spacing: 10) {
-                ZStack {
-                    Image(systemName: "externaldrive.connected.to.line.below")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 22, height: 22)
-                        .foregroundColor(theme.colors.secondary)
-                }
-                .frame(width: 30, height: 30)
-
-                Text("Custom servers")
-                    .font(.title3)
-
-                Spacer()
-
-                Text("Configure…")
-                    .font(.callout)
-                    .foregroundColor(theme.colors.primary)
-            }
-            .background(Color(.systemBackground))
-            .padding()
-            .clipShape(RoundedRectangle(cornerRadius: 18))
-            .overlay(
-                RoundedRectangle(cornerRadius: 18)
-                    .stroke(Color(uiColor: .secondarySystemFill), lineWidth: 2)
-            )
-            .padding(.horizontal, 2)
-            .onTapGesture {
-                customServersNavLinkActive = true
-            }
-
-            NavigationLink(isActive: $customServersNavLinkActive) {
-                customServersDestinationView()
-            } label: {
-                EmptyView()
-            }
-            .frame(width: 1, height: 1)
-            .hidden()
-        }
-    }
-
-    private func customServersDestinationView() -> some View {
-        YourServersView(
-            currSMPServers: $currSMPServers,
-            smpServers: $smpServers,
-            currXFTPServers: $currXFTPServers,
-            xftpServers: $xftpServers
-        )
-        .navigationTitle("Custom servers")
-        .modifier(ThemedBackground(grouped: true))
     }
 
     private func reviewConditionsButton() -> some View {
