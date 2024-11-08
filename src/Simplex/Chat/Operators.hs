@@ -395,6 +395,8 @@ instance ToJSON ServerOperator where
 instance FromJSON ServerOperator where
   parseJSON = $(JQ.mkParseJSON defaultJSON ''ServerOperator')
 
+$(JQ.deriveJSON defaultJSON ''OperatorEnabled)
+
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "UCA") ''UsageConditionsAction)
 
 instance ProtocolTypeI p => ToJSON (UserServer p) where
