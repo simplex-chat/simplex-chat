@@ -561,7 +561,7 @@ func validateServers(userServers: [UserServers]) async throws -> [UserServersErr
     throw r
 }
 
-func getUsageConditions() async throws -> (UsageConditions, String, UsageConditions?) {
+func getUsageConditions() async throws -> (UsageConditions, String?, UsageConditions?) {
     let r = await chatSendCmd(.apiGetUsageConditions)
     if case let .usageConditions(usageConditions, conditionsText, acceptedConditions) = r { return (usageConditions, conditionsText, acceptedConditions) }
     logger.error("getUsageConditions error: \(String(describing: r))")

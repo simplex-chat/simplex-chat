@@ -1277,6 +1277,13 @@ public struct UsageConditions: Decodable {
     public var conditionsCommit: String
     public var notifiedAt: Date?
     public var createdAt: Date
+
+    public static var sampleData = UsageConditions(
+        conditionsId: 1,
+        conditionsCommit: "11a44dc1fd461a93079f897048b46998db55da5c",
+        notifiedAt: nil,
+        createdAt: Date.now
+    )
 }
 
 public enum UsageConditionsAction: Decodable {
