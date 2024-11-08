@@ -70,15 +70,19 @@ struct ChooseServerOperators: View {
                         }
 
                         Spacer()
-                        Spacer()
 
-                        if selectedOperators.allSatisfy({ $0.conditionsAcceptance.conditionsAccepted }) {
-                            continueButton()
-                                .padding(.bottom)
-                        } else {
-                            reviewConditionsButton()
-                                .padding(.bottom)
+                        VStack(spacing: 8) {
+                            if selectedOperators.allSatisfy({ $0.conditionsAcceptance.conditionsAccepted }) {
+                                continueButton()
+                            } else {
+                                reviewConditionsButton()
+                            }
+                            Text("You can disable operators and configure your servers in Network & servers settings.")
+                                .multilineTextAlignment(.center)
+                                .font(.footnote)
+                                .padding(.horizontal, 32)
                         }
+                        .padding(.bottom)
                     }
                     .frame(minHeight: g.size.height)
                 }

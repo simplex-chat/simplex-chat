@@ -1328,10 +1328,6 @@ public struct ServerOperator: Identifiable, Codable {
         legalName ?? tradeName
     }
 
-    public var appVendor: Bool {
-        operatorTag == .simplex
-    }
-
     public var info: ServerOperatorInfo {
         operatorsInfo[operatorTag] ??
         ServerOperatorInfo(
