@@ -1328,6 +1328,10 @@ public struct ServerOperator: Identifiable, Codable {
         legalName ?? tradeName
     }
 
+    public var appVendor: Bool {
+        operatorTag == .simplex
+    }
+
     public var info: ServerOperatorInfo {
         operatorsInfo[operatorTag] ??
         ServerOperatorInfo(
@@ -1354,7 +1358,7 @@ public struct ServerOperator: Identifiable, Codable {
         tradeName: "SimpleX Chat",
         legalName: "SimpleX Chat Ltd",
         serverDomains: ["simplex.im"],
-        conditionsAcceptance: .required(deadline: Date.distantFuture),
+        conditionsAcceptance: .accepted(acceptedAt: nil),
         enabled: true,
         roles: ServerRoles(storage: true, proxy: true)
     )

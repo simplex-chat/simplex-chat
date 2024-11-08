@@ -58,9 +58,6 @@ struct OperatorView: View {
                         if let acceptedAt = acceptedAt {
                             Text("Conditions accepted on: \(conditionsTimestamp(acceptedAt)).")
                                 .foregroundColor(theme.colors.secondary)
-                        } else {
-                            Text("Conditions accepted.")
-                                .foregroundColor(theme.colors.secondary)
                         }
                     case let .required(deadline):
                         if serverOperatorToEdit.enabled, let deadline = deadline {
@@ -314,7 +311,7 @@ struct SingleOperatorUsageConditionsView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     Group {
                         viewHeader()
-                        Text("You already accepted conditions of use for following operator(s): **\(operatorsWithConditionsAccepted.map { $0.conditionsName }.joined(separator: ", "))**.")
+                        Text("Conditions are already accepted for following operator(s): **\(operatorsWithConditionsAccepted.map { $0.conditionsName }.joined(separator: ", "))**.")
                         Text("Same conditions will apply to operator **\(serverOperator.conditionsName)**.")
                         conditionsAppliedToOtherOperatorsText()
                         usageConditionsNavLinkButton()
@@ -376,7 +373,7 @@ struct SingleOperatorUsageConditionsView: View {
         } label: {
             Text("Accept conditions")
         }
-        .buttonStyle(OnboardingButtonStyle())
+        .buttonStyle(OnboardingButtonStyle(isDisabled: false))
     }
 
     private func usageConditionsNavLinkButton() -> some View {
@@ -467,7 +464,7 @@ struct UsageConditionsView: View {
         } label: {
             Text("Accept conditions")
         }
-        .buttonStyle(OnboardingButtonStyle())
+        .buttonStyle(OnboardingButtonStyle(isDisabled: false))
     }
 }
 
