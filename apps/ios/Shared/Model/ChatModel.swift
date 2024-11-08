@@ -195,6 +195,7 @@ final class ChatModel: ObservableObject {
     @Published var networkInfo = UserNetworkInfo(networkType: .other, online: true)
     // server operators
     @Published var serverOperators: [ServerOperator] = [ServerOperator.sampleData1, ServerOperator.sampleData2, ServerOperator.sampleData3]
+    @Published var usageConditionsAction: UsageConditionsAction? = .review(operators: [ServerOperator.sampleData1], deadline: Date.distantFuture, showNotice: true)
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
@@ -240,11 +241,7 @@ final class ChatModel: ObservableObject {
             users.remove(at: i)
         }
     }
-
-    var enabledOperatorsWithConditionsNotAccepted: [ServerOperator] {
-        serverOperators.filter { $0.enabled && !$0.conditionsAcceptance.conditionsAccepted }
-    }
-
+    
     func acceptConditionsForEnabledOperators(_ date: Date) {
         for (i, serverOperator) in serverOperators.enumerated() {
             if serverOperator.enabled && !serverOperator.conditionsAcceptance.conditionsAccepted {
@@ -253,6 +250,7 @@ final class ChatModel: ObservableObject {
                 serverOperators[i] = updatedOperator
             }
         }
+        updateUsageConditionsAction()
     }
 
     func acceptConditionsForOperators(_ acceptForOperators: [ServerOperator], _ date: Date, enable: Bool = false) {
@@ -266,24 +264,26 @@ final class ChatModel: ObservableObject {
                 serverOperators[i] = updatedOperator
             }
         }
+        updateUsageConditionsAction()
     }
 
     func updateServerOperator(_ updatedOperator: ServerOperator) {
         if let i = serverOperators.firstIndex(where: { $0.operatorId == updatedOperator.operatorId }) {
             serverOperators[i] = updatedOperator
         }
+        updateUsageConditionsAction()
     }
 
     // TODO remove
-    var usageConditionsAction: UsageConditionsAction? {
+    private func updateUsageConditionsAction() {
         let usedOperators = serverOperators.filter { $0.enabled }
         if usedOperators.isEmpty {
-            return nil
+            usageConditionsAction = nil
         } else if usedOperators.allSatisfy({ $0.conditionsAcceptance.conditionsAccepted }) {
-            return .accepted(operators: usedOperators)
+            usageConditionsAction = .accepted(operators: usedOperators)
         } else {
             let acceptForOperators = usedOperators.filter { !$0.conditionsAcceptance.conditionsAccepted }
-            return .review(operators: acceptForOperators, deadline: Date.distantFuture, showNotice: false)
+            usageConditionsAction = .review(operators: acceptForOperators, deadline: Date.distantFuture, showNotice: false)
         }
     }
 

@@ -42,8 +42,10 @@ struct OnboardingButtonStyle: ButtonStyle {
 }
 
 struct ChooseServerOperators: View {
+    @Environment(\.dismiss) var dismiss: DismissAction
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     @EnvironmentObject var theme: AppTheme
+    var onboarding: Bool
     @State private var showInfoSheet = false
     @State private var serverOperators: [ServerOperator] = []
     @State private var selectedOperatorIds = Set<Int64>()
@@ -197,10 +199,14 @@ struct ChooseServerOperators: View {
     }
 
     private func continueToNextStep() {
-        // TODO setServerOperators (to enable/disable operator(s) and set roles)
-        withAnimation {
-            onboardingStageDefault.set(.step4_SetNotificationsMode)
-            ChatModel.shared.onboardingStage = .step4_SetNotificationsMode
+        if onboarding {
+            // TODO setServerOperators (to enable/disable operator(s) and set roles)
+            withAnimation {
+                onboardingStageDefault.set(.step4_SetNotificationsMode)
+                ChatModel.shared.onboardingStage = .step4_SetNotificationsMode
+            }
+        } else {
+            dismiss()
         }
     }
 }
@@ -229,5 +235,5 @@ struct ChooseServerOperatorsInfoView: View {
 }
 
 #Preview {
-    ChooseServerOperators()
+    ChooseServerOperators(onboarding: true)
 }
