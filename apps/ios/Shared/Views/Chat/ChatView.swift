@@ -926,7 +926,8 @@ struct ChatView: View {
                         case .last, .initial:
                             im.reversedChatItems.append(contentsOf: dedupedreversePage)
                         case .before(_, _):
-                            if im.reversedChatItems.count + dedupedreversePage.count > idealChatListSize {
+                            if im.reversedChatItems.count + dedupedreversePage.count > idealChatListSize,
+                               dedupedreversePage.count <= loadItemsPerPage {
                                 if let gap = im.gap {
                                     im.gap = ChatGap(index: gap.index, size: gap.size + dedupedreversePage.count)
                                 } else {
