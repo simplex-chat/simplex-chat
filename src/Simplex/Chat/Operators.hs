@@ -195,6 +195,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CA") ''ConditionsAcceptance)
 
 $(JQ.deriveJSON defaultJSON ''ServerOperator)
 
+$(JQ.deriveJSON defaultJSON ''OperatorEnabled)
+
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "UCA") ''UsageConditionsAction)
 
 $(JQ.deriveJSON defaultJSON ''UserServers)
