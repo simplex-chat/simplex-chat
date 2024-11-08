@@ -1534,16 +1534,23 @@ processChatCommand' vr = \case
     let errors = validateUserServers userServers
     pure $ CRUserServersValidation errors
   APIGetUsageConditions -> do
-    (usageConditions, acceptedConditions) <- withFastStore $ \db -> do
-      usageConditions <- getCurrentUsageConditions db
-      acceptedConditions <- getLatestAcceptedConditions db
-      pure (usageConditions, acceptedConditions)
+    -- (usageConditions, acceptedConditions) <- withFastStore $ \db -> do
+    --   usageConditions <- getCurrentUsageConditions db
+    --   acceptedConditions <- getLatestAcceptedConditions db
+    --   pure (usageConditions, acceptedConditions)
     -- TODO if db commit is different from source commit, conditionsText should be nothing in response
+    ts <- liftIO getCurrentTime
+    let usageConditions = UsageConditions {
+      conditionsId = 1,
+      conditionsCommit = "11a44dc1fd461a93079f897048b46998db55da5c",
+      notifiedAt = Nothing,
+      createdAt = ts
+    }
     pure
       CRUsageConditions
         { usageConditions,
           conditionsText = usageConditionsText,
-          acceptedConditions
+          acceptedConditions = Nothing
         }
   APISetConditionsNotified conditionsId -> do
     currentTs <- liftIO getCurrentTime
