@@ -712,10 +712,10 @@ setUserServers :: DB.Connection -> User -> NonEmpty UserServers -> ExceptT Store
 setUserServers db User {userId} userServers = do
   currentTs <- liftIO getCurrentTime
   forM_ userServers $ do
-    \UserServers {operator, smpServers, xftpServers} -> do
-      forM_ operator $ \op -> liftIO $ updateOperator currentTs op
-      overwriteServers currentTs operator smpServers
-      overwriteServers currentTs operator xftpServers
+    \UserServers {serverOperator, smpServers, xftpServers} -> do
+      forM_ serverOperator $ \op -> liftIO $ updateOperator currentTs op
+      overwriteServers currentTs serverOperator smpServers
+      overwriteServers currentTs serverOperator xftpServers
   where
     updateOperator :: UTCTime -> ServerOperator -> IO ()
     updateOperator currentTs ServerOperator {operatorId, enabled, roles = ServerRoles {storage, proxy}} =

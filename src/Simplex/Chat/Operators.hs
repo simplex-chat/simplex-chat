@@ -132,7 +132,7 @@ data OperatorEnabled = OperatorEnabled
   deriving (Show)
 
 data UserServers = UserServers
-  { operator :: Maybe ServerOperator,
+  { serverOperator :: Maybe ServerOperator,
     smpServers :: [ServerCfg 'PSMP],
     xftpServers :: [ServerCfg 'PXFTP]
   }
@@ -152,7 +152,7 @@ groupByOperator srvOperators smpSrvs xftpSrvs =
     combinedMap = foldr (\server acc -> M.adjust (\(smps, xftps) -> (smps, server : xftps)) (srvOperatorId server) acc) smpsMap xftpSrvs
     createOperatorServers (key, (groupedSmps, groupedXftps)) =
       UserServers
-        { operator = fromMaybe Nothing (M.lookup key operatorMap),
+        { serverOperator = fromMaybe Nothing (M.lookup key operatorMap),
           smpServers = groupedSmps,
           xftpServers = groupedXftps
         }
@@ -179,7 +179,7 @@ validateUserServers userServers =
    in storageMissing_ <> proxyMissing_ <> duplicateSMPErrors <> duplicateXFTPErrors
   where
     canUseForRole :: (ServerRoles -> Bool) -> UserServers -> Bool
-    canUseForRole roleSel UserServers {operator, smpServers, xftpServers} = case operator of
+    canUseForRole roleSel UserServers {serverOperator, smpServers, xftpServers} = case serverOperator of
       Just ServerOperator {roles} -> roleSel roles
       Nothing -> not (null smpServers) && not (null xftpServers)
     findDuplicatesByHost :: [ProtoServerWithAuth p] -> [ProtoServerWithAuth p]
