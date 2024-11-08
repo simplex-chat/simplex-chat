@@ -242,14 +242,14 @@ public enum ChatCommand {
             case let .apiGetUserProtoServers(userId, serverProtocol): return "/_servers \(userId) \(serverProtocol)"
             case let .apiSetUserProtoServers(userId, serverProtocol, servers): return "/_servers \(userId) \(serverProtocol) \(protoServersStr(servers))"
             case let .apiTestProtoServer(userId, server): return "/_server test \(userId) \(server)"
-            case .apiGetServerOperators: return "TODO"
-            case let .apiSetServerOperators(operatorsEnabled): return "TODO"
-            case let .apiGetUserServers(userId): return "TODO"
-            case let .apiSetUserServers(userId, userServers): return "TODO"
-            case let .apiValidateServers(userServers): return "TODO"
-            case .apiGetUsageConditions: return "TODO"
-            case let .apiSetConditionsNotified(conditionsId): return "TODO"
-            case let .apiAcceptConditions(conditionsId, operators): return "TODO"
+            case .apiGetServerOperators: return "/_operators"
+            case let .apiSetServerOperators(operatorsEnabled): return "/_operators \(encodeJSON(operatorsEnabled))"
+            case let .apiGetUserServers(userId): return "/_user_servers \(userId)"
+            case let .apiSetUserServers(userId, userServers): return "/_user_servers \(userId) \(encodeJSON(userServers))"
+            case let .apiValidateServers(userServers): return "/_validate_servers \(encodeJSON(userServers))"
+            case .apiGetUsageConditions: return "/_conditions"
+            case let .apiSetConditionsNotified(conditionsId): return "/_conditions_notified \(conditionsId)"
+            case let .apiAcceptConditions(conditionsId, operators): return "/_accept_conditions \(conditionsId) \(operators)"
             case let .apiSetChatItemTTL(userId, seconds): return "/_ttl \(userId) \(chatItemTTLStr(seconds: seconds))"
             case let .apiGetChatItemTTL(userId): return "/_ttl \(userId)"
             case let .apiSetNetworkConfig(networkConfig): return "/_network \(encodeJSON(networkConfig))"
@@ -1230,7 +1230,7 @@ public struct UserProtoServers: Decodable {
     public var presetServers: [UserServer]
 }
 
-public enum OperatorTag: Decodable {
+public enum OperatorTag: Codable {
     case simplex
     case xyz
     case demo
@@ -1284,7 +1284,7 @@ public enum UsageConditionsAction: Decodable {
     case accepted(operators: [ServerOperator])
 }
 
-public enum ConditionsAcceptance: Decodable, Hashable {
+public enum ConditionsAcceptance: Codable, Hashable {
     case accepted(acceptedAt: Date?)
     // If deadline is present, it means there's a grace period to review and accept conditions during which user can continue to use the operator.
     // No deadline indicates it's required to accept conditions for the operator to start using it.
@@ -1305,7 +1305,7 @@ public enum ConditionsAcceptance: Decodable, Hashable {
     }
 }
 
-public struct ServerOperator: Identifiable, Decodable {
+public struct ServerOperator: Identifiable, Codable {
     public var operatorId: Int64
     public var operatorTag: OperatorTag
     public var tradeName: String
@@ -1386,7 +1386,7 @@ public struct OperatorEnabled: Codable {
     public var roles: ServerRoles
 }
 
-public struct UserServers: Decodable {
+public struct UserServers: Codable {
     public var `operator`: ServerOperator?
     public var smpServers: [UserServer]
     public var xftpServers: [UserServer]
