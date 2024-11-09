@@ -661,7 +661,7 @@ fun ComposeView(
 
   // LALAL
 //  LaunchedEffect(Unit) {
-//    for (i in 0..400) {
+//    for (i in 0..1000) {
 //      sendMessageAsync(i.toString(), false, null)
 //    }
 //  }

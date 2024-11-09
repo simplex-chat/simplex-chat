@@ -1550,11 +1550,8 @@ fun PreloadItems(
 //        }
 //    }
     launch {
-      // prevent loading of bottom items right on chat opening
-//      var initiallyLoaded = true
       var bottomLoadingIsDisabled = false
       snapshotFlow { listState.firstVisibleItemIndex }
-//        .filter { it + remaining < itemIndexAfterReloadTime }
         .map { firstVisibleIndex ->
           val items = chatModel.chatItems.value
           val gaps = groups.value.gaps
@@ -1622,7 +1619,8 @@ fun PreloadItems(
         }
       }
       val items = chatModel.chatItems.value
-      if (gaps.isEmpty() && lastVisibleItemIndex > items.size - remaining) {
+      println("LALAL lastVisibleItemIndex $lastVisibleItemIndex ${items.size} ${items.size - remaining}     ${groups.value.sections.lastIndexInParentItems()}")
+      if (gaps.isEmpty() && items.isNotEmpty() && lastVisibleItemIndex > groups.value.sections.lastIndexInParentItems() + 1 - remaining) {
         lastIndexToLoadFrom = items.lastIndex
       }
       (if (allowLoad.value && lastIndexToLoadFrom != null/* && lastVisibleItemIndex + 1 >= ChatPagination.INITIAL_COUNT*/) {

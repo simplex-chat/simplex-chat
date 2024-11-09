@@ -77,7 +77,7 @@ fun List<ChatItem>.putIntoGroups(revealedItems: Set<Long>, itemGaps: List<Long>)
         } else {
           mutableSetOf()
         },
-        startIndexInParentItems = index
+        startIndexInParentItems = visibleItemIndexInParent
       )
       groups.add(recent)
     }
@@ -107,12 +107,21 @@ fun List<SectionItems>.indexInParentItems(itemId: Long): Int {
   for (group in this) {
     val index = group.items.indexOfFirst { it.id == itemId }
     if (index != -1) {
-      return group.startIndexInParentItems + index - collapsedItemsCount
+      return group.startIndexInParentItems - collapsedItemsCount + if (group.revealed.value) index else 0
     } else if (!group.revealed.value) {
       collapsedItemsCount += group.items.size - 1
     }
   }
   return -1
+}
+
+fun List<SectionItems>.lastIndexInParentItems(): Int {
+  val last = lastOrNull() ?: return -1
+  return if (last.revealed.value) {
+    last.startIndexInParentItems + last.items.lastIndex
+  } else {
+    last.startIndexInParentItems
+  }
 }
 
 fun recalculateGapsPositions(gaps: MutableState<List<Long>>) = object: ChatItemsChangesListener {
