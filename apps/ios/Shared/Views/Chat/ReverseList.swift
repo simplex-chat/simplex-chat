@@ -13,7 +13,6 @@ import SimpleXChat
 /// A List, which displays it's items in reverse order - from bottom to top
 struct ReverseList<Content: View>: UIViewControllerRepresentable {
     let items: Array<ChatItem>
-    let gap: ChatGap?
 
     @Binding var scrollState: ReverseListScrollModel.State
     @Binding var initialChatItem: ChatItem?
@@ -40,7 +39,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 controller.scroll(to: 0, position: .top)
             }
         } else {
-            controller.update(items: items, gap: gap)
+            controller.update(items: items)
         }
     }
 
@@ -52,7 +51,6 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         private var itemCount: Int = 0
         private let updateFloatingButtons = PassthroughSubject<Void, Never>()
         private var bag = Set<AnyCancellable>()
-        private var renderedItems = Array<ChatItem>()
 
         init(representer: ReverseList) {
             self.representer = representer
@@ -222,27 +220,15 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             }
         }
 
-        func update(items: [ChatItem], gap: ChatGap?) {
+        func update(items: [ChatItem]) {
             var snapshot = NSDiffableDataSourceSnapshot<Section, ChatItem>()
-            let originalSize = renderedItems.count
-            if let gap = gap {
-                var itemsCopy = items
-                let blanks = (0..<20).map { index in
-                    // Using existing text instead of random rumble or empty text does make long scroll look natural.
-                    let sourceItem = items[index % items.count]
-                    return ChatItem.placeholder(idx: index + 1, text: sourceItem.text, chatDir: sourceItem.chatDir)
-                }
-                itemsCopy.insert(contentsOf: blanks, at: gap.index)
-                renderedItems = itemsCopy
-            } else {
-                renderedItems = items
-            }
+            let originalSize = tableView.numberOfRows(inSection: 0)
             snapshot.appendSections([.main])
-            snapshot.appendItems(renderedItems)
+            snapshot.appendItems(items)
             dataSource.defaultRowAnimation = .none
             
-            let countDiff = max(0, renderedItems.count - originalSize)
-            if tableView.contentOffset.y == 0, originalSize > countDiff {
+            let countDiff = max(0, items.count - originalSize)
+            if tableView.contentOffset.y == 100, originalSize < items.count, originalSize > 0 {
                 dataSource.apply(
                     snapshot,
                     animatingDifferences: false
@@ -269,7 +255,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     animated: false
                 )
             }
-            itemCount = renderedItems.count
+            itemCount = items.count
             updateFloatingButtons.send()
         }
 
@@ -279,18 +265,18 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
 
         func getListState() -> ListState? {
             if let visibleRows = tableView.indexPathsForVisibleRows,
-                visibleRows.last?.item ?? 0 < renderedItems.count {
+               visibleRows.last?.item ?? 0 < representer.items.count {
                 let scrollOffset: Double = tableView.contentOffset.y + InvertedTableView.inset
                 
                 let topItemDate: Date? =
                     if let lastVisible = visibleRows.last(where: { isVisible(indexPath: $0) }) {
-                        renderedItems[lastVisible.item].meta.itemTs
+                        representer.items[lastVisible.item].meta.itemTs
                     } else {
                         nil
                     }
                 let bottomItemId: ChatItem.ID? =
                     if let firstVisible = visibleRows.first(where: { isVisible(indexPath: $0) }) {
-                        renderedItems[firstVisible.item].id
+                        representer.items[firstVisible.item].id
                     } else {
                         nil
                     }

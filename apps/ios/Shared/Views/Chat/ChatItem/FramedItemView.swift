@@ -349,7 +349,7 @@ struct FramedItemView: View {
             let im = ItemsModel.shared
             var reversedPage = Array<ChatItem>()
             let pagination: ChatPagination = .around(chatItemId: chatItemId, count: loadItemsPerPage * 2)
-            let (chatItems, gap) = try await apiGetChatItems(
+            let chatItems = try await apiGetChatItems(
                 type: cInfo.chatType,
                 id: cInfo.apiId,
                 pagination: pagination,
@@ -366,18 +366,12 @@ struct FramedItemView: View {
                 }
                 
                 let itemCount = im.reversedChatItems.count
-                if let size = gap, size - itemCount > 0  {
-                    im.gap = ChatGap(index: itemCount, size: size - itemCount)
-                }
                 im.reversedChatItems.append(contentsOf: reversedPage)
             }
             
             if (itemsToDrop.count > 0) {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                     Task {
-                        if let g = im.gap {
-                            im.gap = ChatGap(index: g.index - itemsToDrop.count, size: g.size + itemsToDrop.count)
-                        }
                         im.reversedChatItems.removeAll(where: { itemsToDrop.contains($0.id) })
                     }
                 }

@@ -427,7 +427,7 @@ struct ChatView: View {
         let cInfo = chat.chatInfo
         let mergedItems = filtered(im.reversedChatItems)
         return GeometryReader { g in
-            ReverseList(items: mergedItems, gap: im.gap, scrollState: $scrollModel.state, initialChatItem: $initialChatItem) { ci in
+            ReverseList(items: mergedItems, scrollState: $scrollModel.state, initialChatItem: $initialChatItem) { ci in
                 let voiceNoFrame = voiceWithoutFrame(ci)
                 let maxWidth = cInfo.chatType == .group
                                 ? voiceNoFrame
@@ -485,7 +485,6 @@ struct ChatView: View {
         scrollModel.scrollToBottom()
         if let g = im.gap {
             let sliceSize = min(g.index, idealChatListSize)
-            im.gap = nil
             im.reversedChatItems = Array(im.reversedChatItems[..<sliceSize])
         }
     }
@@ -893,7 +892,6 @@ struct ChatView: View {
             loadingItems = true
             do {
                 var reversedPage = Array<ChatItem>()
-                var apiGap: Int? = nil
                 var chatItemsAvailable = true
                 // Load additional items until the page is +50 large after merging
                 while chatItemsAvailable && filtered(reversedPage).count < loadItemsPerPage {
@@ -906,13 +904,12 @@ struct ChatView: View {
                     case .around(_, _): throw RuntimeError("Unsupported pagination type for loading chat items: \(pagination)")
                     }
                     
-                    let (chatItems, gap) = try await apiGetChatItems(
+                    let chatItems = try await apiGetChatItems(
                         type: cInfo.chatType,
                         id: cInfo.apiId,
                         pagination: chatPagination,
                         search: searchText
                     )
-                    apiGap = gap
                     chatItemsAvailable = !chatItems.isEmpty
                     reversedPage.append(contentsOf: chatItems.reversed())
                 }
@@ -928,28 +925,12 @@ struct ChatView: View {
                         case .before(_, _):
                             if im.reversedChatItems.count + dedupedreversePage.count > idealChatListSize,
                                dedupedreversePage.count <= loadItemsPerPage {
-                                if let gap = im.gap {
-                                    im.gap = ChatGap(index: gap.index, size: gap.size + dedupedreversePage.count)
-                                } else {
-                                    im.gap = ChatGap(index: loadItemsPerPage, size: dedupedreversePage.count)
-                                }
                                 im.reversedChatItems.removeSubrange(loadItemsPerPage..<loadItemsPerPage + dedupedreversePage.count)
                             }
                             im.reversedChatItems.append(contentsOf: dedupedreversePage)
                         case let .after(chatItemId, _):
                             let index = im.reversedChatItems.firstIndex { $0.id == chatItemId }
                             if let index {
-                                if let gap = im.gap {
-                                    let size = max(0, (apiGap ?? 0) - index)
-                                    if size > 0 {
-                                        im.gap = ChatGap(index: gap.index, size: size)
-                                        if im.reversedChatItems.count + dedupedreversePage.count - gap.index > idealChatListSize {
-                                            im.reversedChatItems.removeLast(dedupedreversePage.count)
-                                        }
-                                    } else {
-                                        im.gap = nil
-                                    }
-                                }
                                 im.reversedChatItems.insert(contentsOf: dedupedreversePage, at: index)
                             }
                         case .around(_, _): break
