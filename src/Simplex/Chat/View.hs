@@ -19,7 +19,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace, toUpper)
 import Data.Function (on)
 import Data.Int (Int64)
-import Data.List (foldl', groupBy, intercalate, intersperse, partition, sortOn)
+import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -42,7 +42,6 @@ import Simplex.Chat.Help
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages hiding (NewChatItem (..))
 import Simplex.Chat.Messages.CIContent
-import Simplex.Chat.Operators
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote.AppVersion (AppVersion (..), pattern AppVersionRange)
 import Simplex.Chat.Remote.Types
@@ -54,7 +53,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..), SubscriptionsInfo (..))
-import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..), ServerCfg (..))
+import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import Simplex.Messaging.Client (SMPProxyFallback, SMPProxyMode (..), SocksMode (..))
@@ -96,7 +95,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRChats chats -> viewChats ts tz chats
   CRApiChat u chat -> ttyUser u $ if testView then testViewChat chat else [viewJSON chat]
   CRApiParsedMarkdown ft -> [viewJSON ft]
-  CRUserProtoServers u userServers operators  -> ttyUser u $ viewUserServers userServers operators testView
+  -- CRUserProtoServers u userServers operators  -> ttyUser u $ viewUserServers userServers operators testView
   CRServerTestResult u srv testFailure -> ttyUser u $ viewServerTestResult srv testFailure
   CRServerOperators {} -> []
   CRUserServers {} -> []
@@ -1214,27 +1213,27 @@ viewUserPrivacy User {userId} User {userId = userId', localDisplayName = n', sho
     "profile is " <> if isJust viewPwdHash then "hidden" else "visible"
   ]
 
-viewUserServers :: AUserProtoServers -> [ServerOperator] -> Bool -> [StyledString]
-viewUserServers (AUPS UserProtoServers {serverProtocol = p, protoServers, presetServers}) operators testView =
-  customServers
-    <> if testView
-      then []
-      else
-        [ "",
-          "use " <> highlight (srvCmd <> " test <srv>") <> " to test " <> pName <> " server connection",
-          "use " <> highlight (srvCmd <> " <srv1[,srv2,...]>") <> " to configure " <> pName <> " servers",
-          "use " <> highlight (srvCmd <> " default") <> " to remove configured " <> pName <> " servers and use presets"
-        ]
-          <> case p of
-            SPSMP -> ["(chat option " <> highlight' "-s" <> " (" <> highlight' "--server" <> ") has precedence over saved SMP servers for chat session)"]
-            SPXFTP -> ["(chat option " <> highlight' "-xftp-servers" <> " has precedence over saved XFTP servers for chat session)"]
-  where
-    srvCmd = "/" <> strEncode p
-    pName = protocolName p
-    customServers =
-      if null protoServers
-        then ("no " <> pName <> " servers saved, using presets: ") : viewServers operators presetServers
-        else viewServers operators protoServers
+-- viewUserServers :: AUserProtoServers -> [ServerOperator] -> Bool -> [StyledString]
+-- viewUserServers (AUPS UserProtoServers {serverProtocol = p, protoServers, presetServers}) operators testView =
+--   customServers
+--     <> if testView
+--       then []
+--       else
+--         [ "",
+--           "use " <> highlight (srvCmd <> " test <srv>") <> " to test " <> pName <> " server connection",
+--           "use " <> highlight (srvCmd <> " <srv1[,srv2,...]>") <> " to configure " <> pName <> " servers",
+--           "use " <> highlight (srvCmd <> " default") <> " to remove configured " <> pName <> " servers and use presets"
+--         ]
+--           <> case p of
+--             SPSMP -> ["(chat option " <> highlight' "-s" <> " (" <> highlight' "--server" <> ") has precedence over saved SMP servers for chat session)"]
+--             SPXFTP -> ["(chat option " <> highlight' "-xftp-servers" <> " has precedence over saved XFTP servers for chat session)"]
+--   where
+--     srvCmd = "/" <> strEncode p
+--     pName = protocolName p
+--     customServers =
+--       if null protoServers
+--         then ("no " <> pName <> " servers saved, using presets: ") : viewServers operators presetServers
+--         else viewServers operators protoServers
 
 protocolName :: ProtocolTypeI p => SProtocolType p -> StyledString
 protocolName = plain . map toUpper . T.unpack . decodeLatin1 . strEncode
@@ -1331,11 +1330,11 @@ viewConnectionStats ConnectionStats {rcvQueuesInfo, sndQueuesInfo} =
   ["receiving messages via: " <> viewRcvQueuesInfo rcvQueuesInfo | not $ null rcvQueuesInfo]
     <> ["sending messages via: " <> viewSndQueuesInfo sndQueuesInfo | not $ null sndQueuesInfo]
 
-viewServers :: ProtocolTypeI p => [ServerOperator] -> NonEmpty (ServerCfg p) -> [StyledString]
-viewServers operators = map (plain . (\ServerCfg {server, operator} -> B.unpack (strEncode server) <> viewOperator operator)) . L.toList
-  where
-    ops :: Map (Maybe Int64) Text = foldl' (\m ServerOperator {operatorId, tradeName} -> M.insert (Just operatorId) tradeName m) M.empty operators
-    viewOperator = maybe "" $ \op -> " (operator " <> maybe (show op) T.unpack (M.lookup (Just op) ops) <> ")"
+-- viewServers :: ProtocolTypeI p => [ServerOperator] -> NonEmpty (ServerCfg p) -> [StyledString]
+-- viewServers operators = map (plain . (\ServerCfg {server, operator} -> B.unpack (strEncode server) <> viewOperator operator)) . L.toList
+--   where
+--     ops :: Map (Maybe DBEntityId) Text = foldl' (\m ServerOperator {operatorId, tradeName} -> M.insert (Just operatorId) tradeName m) M.empty operators
+--     viewOperator = maybe "" $ \op -> " (operator " <> maybe (show op) T.unpack (M.lookup (Just op) ops) <> ")"
 
 viewRcvQueuesInfo :: [RcvQueueInfo] -> StyledString
 viewRcvQueuesInfo = plain . intercalate ", " . map showQueueInfo

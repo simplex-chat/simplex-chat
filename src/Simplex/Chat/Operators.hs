@@ -4,6 +4,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -20,10 +21,9 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
 import Data.FileEmbed
-import Data.Foldable1 (fold1)
+import Data.IORef
 import Data.Int (Int64)
-import Data.Kind (Type)
-import Data.List (find, foldl')
+import Data.List (find)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -32,6 +32,7 @@ import Data.Maybe (fromMaybe, isNothing)
 import Data.Set (Set)
 import qualified Data.Set as S
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime, nominalDay)
 import Database.SQLite.Simple.FromField (FromField (..))
@@ -39,10 +40,11 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import Language.Haskell.TH.Syntax (lift)
 import Simplex.Chat.Operators.Conditions
 import Simplex.Chat.Types.Util (textParseJSON)
-import Simplex.Messaging.Agent.Env.SQLite (OperatorId, ServerCfg (..), ServerRoles (..))
+import Simplex.Messaging.Agent.Env.SQLite (OperatorId, ServerCfg (..), ServerRoles (..), allRoles)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI, SProtocolType (..))
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
+import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (safeDecodeUtf8)
 
 usageConditionsCommit :: Text
@@ -57,29 +59,29 @@ usageConditionsText =
       in [|stripFrontMatter (safeDecodeUtf8 $(lift s))|]
    )
 
-data EntityStored = ESStored | ESNew
+data DBStored = DBStored | DBNew
 
-data SEntityStored (s :: EntityStored) where
-  SESStored :: SEntityStored 'ESStored
-  SESNew :: SEntityStored 'ESNew
+data SDBStored (s :: DBStored) where
+  SDBStored :: SDBStored 'DBStored
+  SDBNew :: SDBStored 'DBNew
 
-data DBEntityId' (s :: EntityStored) where
-  DBEntityId :: Int64 -> DBEntityId' 'ESStored
-  NewDBEntity :: DBEntityId' 'ESNew
+data DBEntityId' (s :: DBStored) where
+  DBEntityId :: Int64 -> DBEntityId' 'DBStored
+  DBNewEntity :: DBEntityId' 'DBNew
 
 deriving instance Show (DBEntityId' s)
 
-type DBEntityId = DBEntityId' 'ESStored
+type DBEntityId = DBEntityId' 'DBStored
 
-type NewDBEntity = DBEntityId' 'ESNew
+type DBNewEntity = DBEntityId' 'DBNew
 
-data ADBEntityId = forall s. AEI (SEntityStored s) (DBEntityId' s)
+data ADBEntityId = forall s. AEI (SDBStored s) (DBEntityId' s)
 
 pattern ADBEntityId :: Int64 -> ADBEntityId
-pattern ADBEntityId i = AEI SESStored (DBEntityId i)
+pattern ADBEntityId i = AEI SDBStored (DBEntityId i)
 
-pattern ANewDBEntity :: ADBEntityId
-pattern ANewDBEntity = AEI SESNew NewDBEntity
+pattern ADBNewEntity :: ADBEntityId
+pattern ADBNewEntity = AEI SDBNew DBNewEntity
 
 data OperatorTag = OTSimplex | OTXyz
   deriving (Eq, Ord, Show)
@@ -126,18 +128,16 @@ data UsageConditionsAction
 usageConditionsAction :: [ServerOperator] -> UsageConditions -> UTCTime -> Maybe UsageConditionsAction
 usageConditionsAction operators UsageConditions {createdAt, notifiedAt} now = do
   let enabledOperators = filter (\ServerOperator {enabled} -> enabled) operators
-  if null enabledOperators
-    then Nothing
-    else
-      if all conditionsAccepted enabledOperators
-        then
-          let acceptedForOperators = filter conditionsAccepted operators
-           in Just $ UCAAccepted acceptedForOperators
-        else
-          let acceptForOperators = filter (not . conditionsAccepted) enabledOperators
-              deadline = conditionsRequiredOrDeadline createdAt (fromMaybe now notifiedAt)
-              showNotice = isNothing notifiedAt
-           in Just $ UCAReview acceptForOperators deadline showNotice
+  if
+    | null enabledOperators -> Nothing
+    | all conditionsAccepted enabledOperators ->
+        let acceptedForOperators = filter conditionsAccepted operators
+         in Just $ UCAAccepted acceptedForOperators
+    | otherwise ->
+        let acceptForOperators = filter (not . conditionsAccepted) enabledOperators
+            deadline = conditionsRequiredOrDeadline createdAt (fromMaybe now notifiedAt)
+            showNotice = isNothing notifiedAt
+         in Just $ UCAReview acceptForOperators deadline showNotice
 
 conditionsRequiredOrDeadline :: UTCTime -> UTCTime -> Maybe UTCTime
 conditionsRequiredOrDeadline createdAt notifiedAtOrNow =
@@ -153,16 +153,15 @@ data ConditionsAcceptance
   | CARequired {deadline :: Maybe UTCTime}
   deriving (Show)
 
-type ServerOperator = ServerOperator' DBEntityId
+type ServerOperator = ServerOperator' 'DBStored
 
-type NewServerOperator = ServerOperator' NewDBEntity
+type NewServerOperator = ServerOperator' 'DBNew
 
-type AServerOperator = ServerOperator' ADBEntityId
+data AServerOperator = forall s. ASO (SDBStored s) (ServerOperator' s)
 
 data ServerOperator' s = ServerOperator
-  { operatorId :: s,
+  { operatorId :: DBEntityId' s,
     operatorTag :: Maybe OperatorTag,
-    appVendor :: Bool,
     tradeName :: Text,
     legalName :: Maybe Text,
     serverDomains :: [Text],
@@ -171,9 +170,6 @@ data ServerOperator' s = ServerOperator
     roles :: ServerRoles
   }
   deriving (Show)
-
-aServerOperator :: ServerOperator -> AServerOperator
-aServerOperator op@ServerOperator {operatorId = DBEntityId opId} = op {operatorId = ADBEntityId opId}
 
 conditionsAccepted :: ServerOperator -> Bool
 conditionsAccepted ServerOperator {conditionsAcceptance} = case conditionsAcceptance of
@@ -187,56 +183,67 @@ data OperatorEnabled = OperatorEnabled
   }
   deriving (Show)
 
-type UserServers = UserServers' DBEntityId
-
-type AUserServers = UserServers' ADBEntityId
-
-data UserServers' s = UserServers
-  { operator :: Maybe (ServerOperator' s),
-    smpServers :: [UserServer' s 'PSMP],
-    xftpServers :: [UserServer' s 'PXFTP]
+data UserOperatorServers = UserOperatorServers
+  { operator :: Maybe ServerOperator,
+    smpServers :: [UserServer 'PSMP],
+    xftpServers :: [UserServer 'PXFTP]
   }
   deriving (Show)
 
-type UserServer p = UserServer' DBEntityId p
+type UserServer p = UserServer' 'DBStored p
 
-type NewUserServer p = UserServer' NewDBEntity p
+type NewUserServer p = UserServer' 'DBNew p
 
-type AUserServer p = UserServer' ADBEntityId p
+data AUserServer p = forall s. AUS (SDBStored s) (UserServer' s p)
 
 data UserServer' s p = UserServer
-  { serverId :: s,
-    serverOperatorId :: Maybe OperatorId,
+  { serverId :: DBEntityId' s,
     server :: ProtoServerWithAuth p,
+    preset :: Bool,
     tested :: Maybe Bool,
     enabled :: Bool
   }
   deriving (Show)
 
-data PresetOperatorServers = PresetOperatorServers
+data PresetOperator = PresetOperator
   { operator :: NewServerOperator,
-    presetSMPServers :: NonEmpty (PresetServer 'PSMP),
-    presetXFTPServers :: NonEmpty (PresetServer 'PXFTP),
+    smp :: NonEmpty (NewUserServer 'PSMP),
     useSMP :: Int,
+    xftp :: NonEmpty (NewUserServer 'PXFTP),
     useXFTP :: Int
   }
 
-data PresetServer p = PresetServer
-  { useServer :: Bool,
-    server :: ProtoServerWithAuth p
-  }
+operatorServers :: UserProtocol p => SProtocolType p -> PresetOperator -> NonEmpty (NewUserServer p)
+operatorServers p PresetOperator {smp, xftp} = case p of
+  SPSMP -> smp
+  SPXFTP -> xftp
+
+operatorServersToUse :: UserProtocol p => SProtocolType p -> PresetOperator -> Int
+operatorServersToUse p PresetOperator {useSMP, useXFTP} = case p of
+  SPSMP -> useSMP
+  SPXFTP -> useXFTP
+
+presetServer :: Bool -> ProtoServerWithAuth p -> NewUserServer p
+presetServer enabled server =
+  UserServer {serverId = DBNewEntity, server, preset = True, tested = Nothing, enabled}
 
 -- This function should be used inside DB transaction to update conditions in the database
 -- it returns (conditions to mark as accepted to SimpleX operator, conditions to add)
-usageConditionsToAdd :: Bool -> Text -> Text -> UTCTime -> [UsageConditions] -> (Maybe UsageConditions, [UsageConditions])
-usageConditionsToAdd newUser prevCommit sourceCommit createdAt = \case
+usageConditionsToAdd :: Bool -> UTCTime -> [UsageConditions] -> (Maybe UsageConditions, UsageConditions, [UsageConditions])
+usageConditionsToAdd = usageConditionsToAdd' previousConditionsCommit usageConditionsCommit
+
+-- This function is used in unit tests
+usageConditionsToAdd' :: Text -> Text -> Bool -> UTCTime -> [UsageConditions] -> (Maybe UsageConditions, UsageConditions, [UsageConditions])
+usageConditionsToAdd' prevCommit sourceCommit newUser createdAt = \case
   []
-    | newUser -> (Just sourceCond, [sourceCond])
-    | otherwise -> (Just prevCond, [prevCond, sourceCond])
+    | newUser -> (Just sourceCond, sourceCond, [sourceCond])
+    | otherwise -> (Just prevCond, sourceCond, [prevCond, sourceCond])
     where
       prevCond = conditions 1 prevCommit
       sourceCond = conditions 2 sourceCommit
-  conds -> (Nothing, if hasSourceCond then [] else [sourceCond])
+  conds
+    | hasSourceCond -> (Nothing, last conds, [])
+    | otherwise -> (Nothing, sourceCond, [sourceCond])
     where
       hasSourceCond = any ((sourceCommit ==) . conditionsCommit) conds
       sourceCond = conditions cId sourceCommit
@@ -247,103 +254,88 @@ usageConditionsToAdd newUser prevCommit sourceCommit createdAt = \case
 -- This function should be used inside DB transaction to update operators.
 -- It allows to add/remove/update preset operators in the database preserving enabled and roles settings,
 -- and preserves custom operators without tags for forward compatibility.
-updatedServerOperators :: NonEmpty PresetOperatorServers -> [ServerOperator] -> [AServerOperator]
-updatedServerOperators presetSrvs storedOps =
-  foldr addPreset [] presetSrvs
-    <> map aServerOperator (filter (isNothing . operatorTag) storedOps) -- TODO remove domains of preset operators from custom
+updatedServerOperators :: NonEmpty PresetOperator -> [ServerOperator] -> [AServerOperator]
+updatedServerOperators presetOps storedOps =
+  foldr addPreset [] presetOps
+    <> map (ASO SDBStored) (filter (isNothing . operatorTag) storedOps)
   where
-    addPreset PresetOperatorServers {operator = presetOp} = (storedOp' :)
+    -- TODO remove domains of preset operators from custom
+    addPreset PresetOperator {operator = presetOp} = (storedOp' :)
       where
         storedOp' = case find ((operatorTag presetOp ==) . operatorTag) storedOps of
-          Just ServerOperator {operatorId = DBEntityId opId, conditionsAcceptance, enabled, roles} ->
-            presetOp {operatorId = ADBEntityId opId, conditionsAcceptance, enabled, roles}
-          Nothing -> presetOp {operatorId = ANewDBEntity}
+          Just ServerOperator {operatorId, conditionsAcceptance, enabled, roles} ->
+            ASO SDBStored presetOp {operatorId, conditionsAcceptance, enabled, roles}
+          Nothing -> ASO SDBNew presetOp
 
 -- This function should be used inside DB transaction to update servers.
 -- It assumes that the list of operators was amended using updatedServerOperators,
 -- that [ServerOperator] has the same operators as [PresetOperatorServers],
 -- and that they all have serverOperatorId set.
---
---                     presets                        -> stored or user-supplied servers, possibly with incorrect operators
-updatedUserServers' :: NonEmpty PresetOperatorServers -> [UserServers] -> ([AUserServers], NonEmpty (ServerCfg 'PSMP), NonEmpty (ServerCfg 'PXFTP))
-updatedUserServers' presetSrvs storedSrvs = (userServers, agentSMPServers, agentXFTPServers)
+updatedUserServers :: forall p. NonEmpty PresetOperator -> NonEmpty (NewUserServer p) -> [UserServer p] -> NonEmpty (AUserServer p)
+updatedUserServers _presetOps randomSrvs = \case
+  [] -> L.map (AUS SDBNew) randomSrvs
+  srvs ->
+    L.map userChanges allPresetServers
+      `L.appendList` map (AUS SDBStored) (filter customServer srvs)
   where
-    userServers = undefined
-    agentSMPServers = undefined
-    agentXFTPServers = undefined
-    -- make set of known tags of preset operators
-    knownPresetOps :: Set (Maybe OperatorTag)
-    knownPresetOps = foldl' (\s PresetOperatorServers {operator} -> S.insert (operatorTag operator) s) S.empty presetSrvs
+    customServer UserServer {preset, server = ProtoServerWithAuth srv _} =
+      not preset && all (`S.notMember` allPresetHosts) (host srv)
+    allPresetServers :: NonEmpty (NewUserServer p)
+    allPresetServers = undefined
+    allPresetHosts :: Set TransportHost
+    allPresetHosts = undefined
+    userChanges :: NewUserServer p -> AUserServer p -- apply changes from stored servers
+    userChanges = undefined
 
--- make map domain -> operator
--- storedSrvs:
---  - remove preset operators with tags not present in presets)
---  - flatten
---  - set correct operators based on domains
---  - split servers to with/without preset operators
---  - make Map (protoserver, stored server record) from servers with preset operators
--- presetSrvs: flatten, update using map above, prepare agent servers, reassemble to userServers
--- add other operators and servers without operator
---
--- (storedPresets, storedOthers) = partition (isJust . operatorTag . operator) storedSrvs
--- (storedOthersKeep, storeOthersPresets)
--- userServers = foldr addOther (foldr addPreset [] presetSrvs) storedOthers
+randomPresetServers :: NonEmpty PresetOperator -> IO (NonEmpty (NewUserServer p))
+randomPresetServers = undefined
 
--- updatedUserServers :: NonEmpty PresetOperatorServers -> [ServerOperator] -> [UserServer 'PSMP] -> [UserServer 'PXFTP] -> Either String ([UserServer 'PSMP], [UserServer 'PXFTP])
--- updatedUserServers presetSrvs storedOps smpSrvs xftpSrvs = do
---   smpSrvs' <- updatedSrvs useSMP smpSrvs =<< presetSrvsToStore presetSMPServers
---   xftpSrvs' <- updatedSrvs useXFTP xftpSrvs =<< presetSrvsToStore presetXFTPServers
---   pure (smpSrvs', xftpSrvs')
+-- randomServers :: forall p. UserProtocol p => SProtocolType p -> ChatConfig -> IO (NonEmpty (ServerCfg p), [ServerCfg p])
+-- randomServers p ChatConfig {defaultServers} = do
+--   let srvs = operatorServers p defaultServers
+--       (enbldSrvs, dsbldSrvs) = L.partition (\ServerCfg {enabled} -> enabled) srvs
+--       toUse = cfgServersToUse p defaultServers
+--   if length enbldSrvs <= toUse
+--     then pure (srvs, [])
+--     else do
+--       (enbldSrvs', srvsToDisable) <- splitAt toUse <$> shuffle enbldSrvs
+--       let dsbldSrvs' = map (\srv -> (srv :: ServerCfg p) {enabled = False}) srvsToDisable
+--           srvs' = sortOn server' $ enbldSrvs' <> dsbldSrvs' <> dsbldSrvs
+--       pure (fromMaybe srvs $ L.nonEmpty srvs', srvs')
 --   where
---     presetSrvsToStore :: forall p. (PresetOperatorServers -> NonEmpty (PresetServer p)) -> Either String (NonEmpty (Bool, UserServer p))
---     presetSrvsToStore presetSel = fold1 <$> mapM operatorSrvs presetSrvs
---       where
---         operatorSrvs :: PresetOperatorServers -> Either String (NonEmpty (Bool, UserServer p))
---         operatorSrvs op@PresetOperatorServers {operator} = case find ((operatorTag operator ==) . operatorTag) storedOps of
---           Nothing -> Left "preset operator not stored"
---           Just op' -> Right $ L.map (userSrv op') (presetSel op)
---         userSrv op PresetServer {server, useServer} =
---           let srv = UserServer {serverId = Nothing, serverOperatorId = operatorId op, server, tested = Nothing, enabled = False}
---            in (useServer, srv)
+--     server' ServerCfg {server = ProtoServerWithAuth srv _} = srv
 
---     updatedSrvs :: forall p. (PresetOperatorServers -> Int) -> [UserServer p] -> NonEmpty (Bool, UserServer p) -> Either String [UserServer p]
---     updatedSrvs useSel storedSrvs presetSrvs =
---       fmap enabledSrvs . addOtherServers =<< foldM updatedSrv (storedSrvs', []) presetSrvs
---       where
---         storedSrvs' :: Map (ProtoServerWithAuth p) (UserServer p)
---         storedSrvs' = foldl' (\m us@UserServer {server} -> M.insert server us m) M.empty storedSrvs
---         updatedSrv :: (Map (ProtoServerWithAuth p) (UserServer p), [(Bool, UserServer p)]) -> (Bool, UserServer p) -> Either String (Map (ProtoServerWithAuth p) (UserServer p), [(Bool, UserServer p)])
---         updatedSrv srvs srv = undefined
---         addOtherServers :: (Map (ProtoServerWithAuth p) (UserServer p), [(Bool, UserServer p)]) -> Either String [(Bool, UserServer p)]
---         addOtherServers = undefined
---         enabledSrvs :: [(Bool, UserServer p)] -> [UserServer p]
---         enabledSrvs = undefined
+useServers :: [(Text, ServerOperator)] -> NonEmpty (UserServer' s p) -> NonEmpty (ServerCfg p)
+useServers opDomains = L.map agentServer
+  where
+    agentServer :: UserServer' s p -> ServerCfg p
+    agentServer UserServer {server = server@(ProtoServerWithAuth ProtocolServer {host} _), enabled} =
+      case snd <$> find (\(d, _) -> any (matchingHost d) host) opDomains of
+        Just ServerOperator {operatorId = DBEntityId opId, enabled = opEnabled, roles} ->
+          ServerCfg {server, operator = Just opId, enabled = opEnabled && enabled, roles}
+        Nothing ->
+          ServerCfg {server, operator = Nothing, enabled, roles = allRoles}
+      where
+        matchingHost d = \case
+          THDomainName h -> d `T.isSuffixOf` T.pack h
+          _ -> False
 
--- addSrv srv@ServerCfg {server = ProtocolServerWithAuth ProtocolServer {host}} uss =
---   case find (\us -> any [\h -> any (\d -> d `T.isSuffixOf` ) serverDomains (operator us)] host) uss of
---     Just opId
---   where
---     hasOperatorDomain ServerCfg {server = ProtocolServerWithAuth ProtocolServer {host}} us
+operatorDomains :: [ServerOperator] -> [(Text, ServerOperator)]
+operatorDomains = foldr (\op ds -> foldr (\d -> ((d, op) :)) ds (serverDomains op)) []
 
---   addSrv srv uss = ... а тут просто найти оператора в списке и вставить ему сервер через add и как то ругнуться если его нет (но такого не должно быть). Либо вообще есть вариант сразу читать в этом формате - сначала прочитать операторов и в цикле читать серверы каждого - это вот может быть еще проще
-
--- groupByOperator :: [ServerOperator] -> [ServerCfg 'PSMP] -> [ServerCfg 'PXFTP] -> [UserServers]
--- groupByOperator srvOperators smpSrvs xftpSrvs =
---   map createOperatorServers (M.toList combinedMap)
---   where
---     srvOperatorId ServerCfg {operator} = DBEntityId <$> operator
---     operatorMap :: Map (Maybe DBEntityId) (Maybe ServerOperator)
---     operatorMap = M.fromList [(Just (operatorId op), Just op) | op <- srvOperators] `M.union` M.singleton Nothing Nothing
---     initialMap :: Map (Maybe DBEntityId) ([ServerCfg 'PSMP], [ServerCfg 'PXFTP])
---     initialMap = M.fromList [(key, ([], [])) | key <- M.keys operatorMap]
---     smpsMap = foldr (\server acc -> M.adjust (\(smps, xftps) -> (server : smps, xftps)) (srvOperatorId server) acc) initialMap smpSrvs
---     combinedMap = foldr (\server acc -> M.adjust (\(smps, xftps) -> (smps, server : xftps)) (srvOperatorId server) acc) smpsMap xftpSrvs
---     createOperatorServers (key, (groupedSmps, groupedXftps)) =
---       UserServers
---         { operator = fromMaybe Nothing (M.lookup key operatorMap),
---           smpServers = groupedSmps,
---           xftpServers = groupedXftps
---         }
+groupByOperator :: [ServerOperator] -> [UserServer 'PSMP] -> [UserServer 'PXFTP] -> IO [UserOperatorServers]
+groupByOperator ops smpSrvs xftpSrvs = do
+  ss <- mapM (\op -> newIORef $ UserOperatorServers (Just op) [] []) ops
+  custom <- newIORef $ UserOperatorServers Nothing [] []
+  domains <- foldM addOpDomains M.empty ss
+  mapM_ (addServer ss custom domains) smpSrvs
+  mapM_ (addServer ss custom domains) xftpSrvs
+  mapM readIORef ss
+  where
+    addOpDomains :: Map Text (IORef UserOperatorServers) -> IORef UserOperatorServers -> IO (Map Text (IORef UserOperatorServers))
+    addOpDomains _domains _s = undefined
+    addServer :: [IORef UserOperatorServers] -> IORef UserOperatorServers -> Map Text (IORef UserOperatorServers) -> UserServer p -> IO ()
+    addServer _ss _custom _domains = undefined
 
 data UserServersError
   = USEStorageMissing
@@ -352,22 +344,21 @@ data UserServersError
   | USEDuplicateXFTP {server :: AProtoServerWithAuth}
   deriving (Show)
 
-validateUserServers :: NonEmpty UserServers -> [UserServersError]
+validateUserServers :: NonEmpty UserOperatorServers -> [UserServersError]
 validateUserServers userServers =
   let storageMissing_ = if any (canUseForRole storage) userServers then [] else [USEStorageMissing]
       proxyMissing_ = if any (canUseForRole proxy) userServers then [] else [USEProxyMissing]
-
-      allSMPServers = map (\UserServer {server} -> server) $ concatMap (\UserServers {smpServers} -> smpServers) userServers
+      allSMPServers = map (\UserServer {server} -> server) $ concatMap (\UserOperatorServers {smpServers} -> smpServers) userServers
       duplicateSMPServers = findDuplicatesByHost allSMPServers
       duplicateSMPErrors = map (USEDuplicateSMP . AProtoServerWithAuth SPSMP) duplicateSMPServers
 
-      allXFTPServers = map (\UserServer {server} -> server) $ concatMap (\UserServers {xftpServers} -> xftpServers) userServers
+      allXFTPServers = map (\UserServer {server} -> server) $ concatMap (\UserOperatorServers {xftpServers} -> xftpServers) userServers
       duplicateXFTPServers = findDuplicatesByHost allXFTPServers
       duplicateXFTPErrors = map (USEDuplicateXFTP . AProtoServerWithAuth SPXFTP) duplicateXFTPServers
    in storageMissing_ <> proxyMissing_ <> duplicateSMPErrors <> duplicateXFTPErrors
   where
-    canUseForRole :: (ServerRoles -> Bool) -> UserServers -> Bool
-    canUseForRole roleSel UserServers {operator, smpServers, xftpServers} = case operator of
+    canUseForRole :: (ServerRoles -> Bool) -> UserOperatorServers -> Bool
+    canUseForRole roleSel UserOperatorServers {operator, smpServers, xftpServers} = case operator of
       Just ServerOperator {roles} -> roleSel roles
       Nothing -> not (null smpServers) && not (null xftpServers)
     findDuplicatesByHost :: [ProtoServerWithAuth p] -> [ProtoServerWithAuth p]
@@ -406,11 +397,6 @@ instance ProtocolTypeI p => ToJSON (UserServer p) where
 instance ProtocolTypeI p => FromJSON (UserServer p) where
   parseJSON = $(JQ.mkParseJSON defaultJSON ''UserServer')
 
-instance ToJSON UserServers where
-  toEncoding = $(JQ.mkToEncoding defaultJSON ''UserServers')
-  toJSON = $(JQ.mkToJSON defaultJSON ''UserServers')
-
-instance FromJSON UserServers where
-  parseJSON = $(JQ.mkParseJSON defaultJSON ''UserServers')
+$(JQ.deriveJSON defaultJSON ''UserOperatorServers)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "USE") ''UserServersError)

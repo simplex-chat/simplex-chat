@@ -35,7 +35,6 @@ import qualified Data.ByteArray as BA
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (ord)
-import Data.Constraint (Dict (..))
 import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
@@ -71,7 +70,7 @@ import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo)
 import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, SMPServerSubs, ServerQueueInfo, UserNetworkInfo)
-import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig, ServerCfg)
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration, withTransaction, withTransactionPriority)
@@ -85,7 +84,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), CorrId, MsgId, NMsgMeta (..), NtfServer, ProtocolTypeI, QueueId, SMPMsgMeta (..), SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServer, userProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), CorrId, MsgId, NMsgMeta (..), NtfServer, QueueId, SMPMsgMeta (..), SubscriptionMode (..), XFTPServer)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, simplexMQVersion)
 import Simplex.Messaging.Transport.Client (SocksProxyWithAuth, TransportHost)
@@ -174,7 +173,7 @@ defaultChatHooks =
     }
 
 data PresetServers = PresetServers
-  { operators :: NonEmpty PresetOperatorServers,    
+  { operators :: NonEmpty PresetOperator,
     ntf :: [NtfServer],
     netCfg :: NetworkConfig
   }
@@ -344,20 +343,20 @@ data ChatCommand
   | APIGetGroupLink GroupId
   | APICreateMemberContact GroupId GroupMemberId
   | APISendMemberContactInvitation {contactId :: ContactId, msgContent_ :: Maybe MsgContent}
-  | APIGetUserProtoServers UserId AProtocolType
-  | GetUserProtoServers AProtocolType
-  | APISetUserProtoServers UserId AProtoServersConfig
-  | SetUserProtoServers AProtoServersConfig
-  | APITestProtoServer UserId AProtoServerWithAuth
+  | -- | APIGetUserProtoServers UserId AProtocolType
+    -- | GetUserProtoServers AProtocolType
+    -- | APISetUserProtoServers UserId AProtoServersConfig
+    -- | SetUserProtoServers AProtoServersConfig
+    APITestProtoServer UserId AProtoServerWithAuth
   | TestProtoServer AProtoServerWithAuth
   | APIGetServerOperators
   | APISetServerOperators (NonEmpty OperatorEnabled)
   | APIGetUserServers UserId
-  | APISetUserServers UserId (NonEmpty UserServers)
-  | APIValidateServers (NonEmpty UserServers) -- response is CRUserServersValidation
+  | APISetUserServers UserId (NonEmpty UserOperatorServers)
+  | APIValidateServers (NonEmpty UserOperatorServers) -- response is CRUserServersValidation
   | APIGetUsageConditions
   | APISetConditionsNotified Int64
-  | APIAcceptConditions Int64 (NonEmpty ServerOperator)
+  | APIAcceptConditions Int64 (NonEmpty ServerOperator) -- TODO replace with IDs
   | APISetChatItemTTL UserId (Maybe Int64)
   | SetChatItemTTL (Maybe Int64)
   | APIGetChatItemTTL UserId
@@ -583,10 +582,10 @@ data ChatResponse
   | CRChatItemInfo {user :: User, chatItem :: AChatItem, chatItemInfo :: ChatItemInfo}
   | CRChatItemId User (Maybe ChatItemId)
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
-  | CRUserProtoServers {user :: User, servers :: AUserProtoServers, operators :: [ServerOperator]}
-  | CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure}
+  | -- | CRUserProtoServers {user :: User, servers :: AUserProtoServers, operators :: [ServerOperator]}
+    CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure}
   | CRServerOperators {operators :: [ServerOperator], conditionsAction :: Maybe UsageConditionsAction}
-  | CRUserServers {user :: User, userServers :: [UserServers]}
+  | CRUserServers {user :: User, userServers :: [UserOperatorServers]}
   | CRUserServersValidation {serverErrors :: [UserServersError]}
   | CRUsageConditions {usageConditions :: UsageConditions, conditionsText :: Text, acceptedConditions :: Maybe UsageConditions}
   | CRChatItemTTL {user :: User, chatItemTTL :: Maybe Int64}
@@ -951,23 +950,23 @@ instance ToJSON AgentQueueId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-data ProtoServersConfig p = ProtoServersConfig {servers :: [ServerCfg p]}
-  deriving (Show)
+-- data ProtoServersConfig p = ProtoServersConfig {servers :: [ServerCfg p]}
+--   deriving (Show)
 
-data AProtoServersConfig = forall p. ProtocolTypeI p => APSC (SProtocolType p) (ProtoServersConfig p)
+-- data AProtoServersConfig = forall p. ProtocolTypeI p => APSC (SProtocolType p) (ProtoServersConfig p)
 
-deriving instance Show AProtoServersConfig
+-- deriving instance Show AProtoServersConfig
 
-data UserProtoServers p = UserProtoServers
-  { serverProtocol :: SProtocolType p,
-    protoServers :: NonEmpty (ServerCfg p),
-    presetServers :: NonEmpty (ServerCfg p)
-  }
-  deriving (Show)
+-- data UserProtoServers p = UserProtoServers
+--   { serverProtocol :: SProtocolType p,
+--     protoServers :: NonEmpty (ServerCfg p),
+--     presetServers :: NonEmpty (ServerCfg p)
+--   }
+--   deriving (Show)
 
-data AUserProtoServers = forall p. (ProtocolTypeI p, UserProtocol p) => AUPS (UserProtoServers p)
+-- data AUserProtoServers = forall p. (ProtocolTypeI p, UserProtocol p) => AUPS (UserProtoServers p)
 
-deriving instance Show AUserProtoServers
+-- deriving instance Show AUserProtoServers
 
 data ArchiveConfig = ArchiveConfig {archivePath :: FilePath, disableCompression :: Maybe Bool, parentTempDirectory :: Maybe FilePath}
   deriving (Show)
@@ -1570,28 +1569,28 @@ $(JQ.deriveJSON defaultJSON ''CoreVersionInfo)
 
 $(JQ.deriveJSON defaultJSON ''SlowSQLQuery)
 
-instance ProtocolTypeI p => FromJSON (ProtoServersConfig p) where
-  parseJSON = $(JQ.mkParseJSON defaultJSON ''ProtoServersConfig)
+-- instance ProtocolTypeI p => FromJSON (ProtoServersConfig p) where
+--   parseJSON = $(JQ.mkParseJSON defaultJSON ''ProtoServersConfig)
 
-instance ProtocolTypeI p => FromJSON (UserProtoServers p) where
-  parseJSON = $(JQ.mkParseJSON defaultJSON ''UserProtoServers)
+-- instance ProtocolTypeI p => FromJSON (UserProtoServers p) where
+--   parseJSON = $(JQ.mkParseJSON defaultJSON ''UserProtoServers)
 
-instance ProtocolTypeI p => ToJSON (UserProtoServers p) where
-  toJSON = $(JQ.mkToJSON defaultJSON ''UserProtoServers)
-  toEncoding = $(JQ.mkToEncoding defaultJSON ''UserProtoServers)
+-- instance ProtocolTypeI p => ToJSON (UserProtoServers p) where
+--   toJSON = $(JQ.mkToJSON defaultJSON ''UserProtoServers)
+--   toEncoding = $(JQ.mkToEncoding defaultJSON ''UserProtoServers)
 
-instance FromJSON AUserProtoServers where
-  parseJSON v = J.withObject "AUserProtoServers" parse v
-    where
-      parse o = do
-        AProtocolType (p :: SProtocolType p) <- o .: "serverProtocol"
-        case userProtocol p of
-          Just Dict -> AUPS <$> J.parseJSON @(UserProtoServers p) v
-          Nothing -> fail $ "AUserProtoServers: unsupported protocol " <> show p
+-- instance FromJSON AUserProtoServers where
+--   parseJSON v = J.withObject "AUserProtoServers" parse v
+--     where
+--       parse o = do
+--         AProtocolType (p :: SProtocolType p) <- o .: "serverProtocol"
+--         case userProtocol p of
+--           Just Dict -> AUPS <$> J.parseJSON @(UserProtoServers p) v
+--           Nothing -> fail $ "AUserProtoServers: unsupported protocol " <> show p
 
-instance ToJSON AUserProtoServers where
-  toJSON (AUPS s) = $(JQ.mkToJSON defaultJSON ''UserProtoServers) s
-  toEncoding (AUPS s) = $(JQ.mkToEncoding defaultJSON ''UserProtoServers) s
+-- instance ToJSON AUserProtoServers where
+--   toJSON (AUPS s) = $(JQ.mkToJSON defaultJSON ''UserProtoServers) s
+--   toEncoding (AUPS s) = $(JQ.mkToEncoding defaultJSON ''UserProtoServers) s
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RCS") ''RemoteCtrlSessionState)
 
