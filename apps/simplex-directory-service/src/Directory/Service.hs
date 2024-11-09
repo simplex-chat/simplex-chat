@@ -556,8 +556,10 @@ directoryService st DirectoryOpts {adminUsers, superUsers, serviceName, searchRe
                           getGroupRolesStatus g gr >>= \case
                             Just GRSOk -> do
                               setGroupStatus st gr GRSActive
+                              let approved = "The group " <> userGroupReference' gr n <> " is approved"
+                              notifyOwner gr $ approved <> " and listed in directory!\nPlease note: if you change the group profile it will be hidden from directory until it is re-approved."
                               sendReply "Group approved!"
-                              notifyOwner gr $ "The group " <> userGroupReference' gr n <> " is approved and listed in directory!\nPlease note: if you change the group profile it will be hidden from directory until it is re-approved."
+                              notifyOtherSuperUsers $ approved <> " by " <> viewName (localDisplayName' ct)
                             Just GRSServiceNotAdmin -> replyNotApproved serviceNotAdmin
                             Just GRSContactNotOwner -> replyNotApproved "user is not an owner."
                             Just GRSBadRoles -> replyNotApproved $ "user is not an owner, " <> serviceNotAdmin
@@ -576,8 +578,10 @@ directoryService st DirectoryOpts {adminUsers, superUsers, serviceName, searchRe
               readTVarIO (groupRegStatus gr) >>= \case
                 GRSActive -> do
                   setGroupStatus st gr GRSSuspended
-                  notifyOwner gr $ "The group " <> userGroupReference' gr gName <> " is suspended and hidden from directory. Please contact the administrators."
+                  let suspended = "The group " <> userGroupReference' gr gName <> " is suspended"
+                  notifyOwner gr $ suspended <> " and hidden from directory. Please contact the administrators."
                   sendReply "Group suspended!"
+                  notifyOtherSuperUsers $ suspended <> " by " <> viewName (localDisplayName' ct)
                 _ -> sendReply $ "The group " <> groupRef <> " is not active, can't be suspended."
           DCResumeGroup groupId gName -> do
             let groupRef = groupReference' groupId gName
@@ -585,8 +589,10 @@ directoryService st DirectoryOpts {adminUsers, superUsers, serviceName, searchRe
               readTVarIO (groupRegStatus gr) >>= \case
                 GRSSuspended -> do
                   setGroupStatus st gr GRSActive
-                  notifyOwner gr $ "The group " <> userGroupReference' gr gName <> " is listed in the directory again!"
+                  let groupStr = "The group " <> userGroupReference' gr gName
+                  notifyOwner gr $ groupStr <> " is listed in the directory again!"
                   sendReply "Group listing resumed!"
+                  notifyOtherSuperUsers $ groupStr <> " listing resumed by " <> viewName (localDisplayName' ct)
                 _ -> sendReply $ "The group " <> groupRef <> " is not suspended, can't be resumed."
           DCListLastGroups count -> listGroups count False
           DCListPendingGroups count -> listGroups count True
@@ -620,6 +626,7 @@ directoryService st DirectoryOpts {adminUsers, superUsers, serviceName, searchRe
       where
         knownCt = knownContact ct
         sendReply = mkSendReply ct ciId
+        notifyOtherSuperUsers s = withSuperUsers $ \ctId -> unless (ctId == contactId' ct) $ sendMessage' cc ctId s
         listGroups count pending =
           readTVarIO (groupRegs st) >>= \groups -> do
             grs <-
