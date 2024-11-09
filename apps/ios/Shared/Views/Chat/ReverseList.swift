@@ -254,14 +254,12 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     animated: false
                 )
             } else {
-                UITableView.performWithoutAnimation {
-                    tableView.beginUpdates()
-                    dataSource.apply(
-                        snapshot,
-                        animatingDifferences: false
-                    )
-                    tableView.endUpdates()
-                }
+                tableView.beginUpdates()
+                dataSource.apply(
+                    snapshot,
+                    animatingDifferences: false
+                )
+                tableView.endUpdates()
             }
 
             // Sets content offset on initial load
