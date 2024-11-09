@@ -224,9 +224,10 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
 
         func update(items: [ChatItem], gap: ChatGap?) {
             var snapshot = NSDiffableDataSourceSnapshot<Section, ChatItem>()
+            let originalSize = renderedItems.count
             if let gap = gap {
                 var itemsCopy = items
-                let blanks = (0..<gap.size).map { index in
+                let blanks = (0..<20).map { index in
                     // Using existing text instead of random rumble or empty text does make long scroll look natural.
                     let sourceItem = items[index % items.count]
                     return ChatItem.placeholder(idx: index + 1, text: sourceItem.text, chatDir: sourceItem.chatDir)
@@ -239,10 +240,30 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             snapshot.appendSections([.main])
             snapshot.appendItems(renderedItems)
             dataSource.defaultRowAnimation = .none
-            dataSource.apply(
-                snapshot,
-                animatingDifferences: itemCount != 0 && abs(renderedItems.count - itemCount) == 1
-            )
+            
+            let countDiff = max(0, renderedItems.count - originalSize)
+            if tableView.contentOffset.y == 0, originalSize > countDiff {
+                dataSource.apply(
+                    snapshot,
+                    animatingDifferences: false
+                )
+                
+                tableView.scrollToRow(
+                    at: IndexPath(row: countDiff, section: 0),
+                    at: .top,
+                    animated: false
+                )
+            } else {
+                UITableView.performWithoutAnimation {
+                    tableView.beginUpdates()
+                    dataSource.apply(
+                        snapshot,
+                        animatingDifferences: false
+                    )
+                    tableView.endUpdates()
+                }
+            }
+
             // Sets content offset on initial load
             if itemCount == 0 {
                 tableView.setContentOffset(
