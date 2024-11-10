@@ -9,6 +9,7 @@ module Main where
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad
+import Data.Text (Text)
 import qualified Data.Text as T
 import Simplex.Chat.Bot
 import Simplex.Chat.Controller
@@ -18,6 +19,7 @@ import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Options
 import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Chat.Types
+import Simplex.Messaging.Util (tshow)
 import System.Directory (getAppUserDataDirectory)
 import Text.Read
 
@@ -34,7 +36,7 @@ welcomeGetOpts = do
   putStrLn $ "db: " <> dbFilePrefix <> "_chat.db, " <> dbFilePrefix <> "_agent.db"
   pure opts
 
-welcomeMessage :: String
+welcomeMessage :: Text
 welcomeMessage = "Hello! I am a simple squaring bot.\nIf you send me a number, I will calculate its square"
 
 mySquaringBot :: User -> ChatController -> IO ()
@@ -47,10 +49,10 @@ mySquaringBot _user cc = do
         contactConnected contact
         sendMessage cc contact welcomeMessage
       CRNewChatItems {chatItems = (AChatItem _ SMDRcv (DirectChat contact) ChatItem {content = mc@CIRcvMsgContent {}}) : _} -> do
-        let msg = T.unpack $ ciContentToText mc
-            number_ = readMaybe msg :: Maybe Integer
+        let msg = ciContentToText mc
+            number_ = readMaybe (T.unpack msg) :: Maybe Integer
         sendMessage cc contact $ case number_ of
-          Just n -> msg <> " * " <> msg <> " = " <> show (n * n)
+          Just n -> msg <> " * " <> msg <> " = " <> tshow (n * n)
           _ -> "\"" <> msg <> "\" is not a number"
       _ -> pure ()
   where

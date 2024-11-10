@@ -7,6 +7,7 @@
 module Broadcast.Options where
 
 import Data.Maybe (fromMaybe)
+import Data.Text (Text)
 import Options.Applicative
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
@@ -15,14 +16,14 @@ import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts, coreC
 data BroadcastBotOpts = BroadcastBotOpts
   { coreOptions :: CoreChatOpts,
     publishers :: [KnownContact],
-    welcomeMessage :: String,
-    prohibitedMessage :: String
+    welcomeMessage :: Text,
+    prohibitedMessage :: Text
   }
 
-defaultWelcomeMessage :: [KnownContact] -> String
+defaultWelcomeMessage :: [KnownContact] -> Text
 defaultWelcomeMessage ps = "Hello! I am a broadcast bot.\nI broadcast messages to all connected users from " <> knownContactNames ps <> "."
 
-defaultProhibitedMessage :: [KnownContact] -> String
+defaultProhibitedMessage :: [KnownContact] -> Text
 defaultProhibitedMessage ps = "Sorry, only these users can broadcast messages: " <> knownContactNames ps <> ". Your message is deleted."
 
 broadcastBotOpts :: FilePath -> FilePath -> Parser BroadcastBotOpts
