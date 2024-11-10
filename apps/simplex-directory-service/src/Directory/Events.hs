@@ -227,7 +227,7 @@ directoryCmdP =
         refChar c = c > ' ' && c /= '#' && c /= '@'
 
 viewName :: Text -> Text
-viewName n = if ' ' `T.elem` n then "'" <> n <> "'" else n
+viewName n = if any (== ' ') (T.unpack n) then "'" <> n <> "'" else n
 
 directoryCmdTag :: DirectoryCmd r -> Text
 directoryCmdTag = \case
