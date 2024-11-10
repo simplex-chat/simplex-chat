@@ -737,7 +737,7 @@
     <string name="new_member_role">Új tag szerepköre</string>
     <string name="la_mode_off">Kikapcsolva</string>
     <string name="invalid_contact_link">Érvénytelen hivatkozás!</string>
-    <string name="new_in_version">Újdonságok a %s verzióban</string>
+    <string name="new_in_version">A(z) %s verzió változásnaplója</string>
     <string name="smp_servers_invalid_address">Érvénytelen kiszolgálócím!</string>
     <string name="thousand_abbreviation">k</string>
     <string name="chat_item_ttl_none">soha</string>
@@ -1142,7 +1142,7 @@
     <string name="you_are_observer">Ön megfigyelő</string>
     <string name="port_verb">Port</string>
     <string name="set_passcode">Jelkód beállítása</string>
-    <string name="whats_new">Újdonságok</string>
+    <string name="whats_new">Változásnapló</string>
     <string name="connect_plan_open_group">Csoport megnyitása</string>
     <string name="info_row_sent_at">Elküldve ekkor:</string>
     <string name="prohibit_sending_voice">A hangüzenetek küldése le van tiltva.</string>
@@ -1415,7 +1415,7 @@
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">A csevegési szolgáltatás elindítható a „Beállítások / Adatbázis” menüben vagy az alkalmazás újraindításával.</string>
     <string name="verify_code_on_mobile">Kód hitelesítése a hordozható eszközön</string>
     <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Csatlakozott ehhez a csoporthoz. Kapcsolódás a meghívó csoporttaghoz.</string>
-    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Kapcsolatba léphet <font color="#0088ff">a SimpleX Chat fejlesztőivel, ahol bármiről kérdezhet és értesülhet az újdonságokról</font>.]]></string>
+    <string name="you_can_connect_to_simplex_chat_founder">Kapcsolatba léphet &lt;font color=#0088ff&gt;a SimpleX Chat fejlesztőivel, ahol bármiről kérdezhet és értesülhet a friss hírekről&lt;/font&gt;.</string>
     <string name="v4_2_auto_accept_contact_requests_desc">Nem kötelező üdvözlőüzenettel.</string>
     <string name="unknown_database_error_with_info">Ismeretlen adatbázishiba: %s</string>
     <string name="you_can_hide_or_mute_user_profile">Elrejtheti vagy lenémíthatja a felhasználó-profiljait - koppintson (vagy számítógép-alkalmazásban kattintson) hosszan a profilra a felugró menühöz.</string>
