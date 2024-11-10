@@ -189,8 +189,7 @@ mobileChatOpts dbFilePrefix =
         CoreChatOpts
           { dbFilePrefix,
             dbKey = "", -- for API database is already opened, and the key in options is not used
-            smpServers = [],
-            xftpServers = [],
+            optionsServers = OptionsServers [] [],
             simpleNetCfg = defaultSimpleNetCfg,
             logLevel = CLLImportant,
             logConnections = False,

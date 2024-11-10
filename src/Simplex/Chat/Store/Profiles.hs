@@ -548,7 +548,7 @@ getUpdateUserServers db p presetOps randomSrvs user = do
         [sql|
           UPDATE protocol_servers
           SET protocol = ?, host = ?, port = ?, key_hash = ?, basic_auth = ?,
-              preset = ?, tested = ?, enabled = ?, updated_at
+              preset = ?, tested = ?, enabled = ?, updated_at = ?
           WHERE smp_server_id = ?
         |]
         (serverColumns p server :. (preset, tested, enabled, ts, serverId))

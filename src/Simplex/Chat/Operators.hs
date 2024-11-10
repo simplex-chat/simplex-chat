@@ -290,8 +290,8 @@ updatedUserServers p presetOps randomSrvs = \case
 srvHost :: UserServer' s p -> NonEmpty TransportHost
 srvHost UserServer {server = ProtoServerWithAuth srv _} = host srv
 
-useServers :: [(Text, ServerOperator)] -> NonEmpty (UserServer' s p) -> NonEmpty (ServerCfg p)
-useServers opDomains = L.map agentServer
+serverCfgs :: [(Text, ServerOperator)] -> NonEmpty (UserServer' s p) -> NonEmpty (ServerCfg p)
+serverCfgs opDomains = L.map agentServer
   where
     agentServer :: UserServer' s p -> ServerCfg p
     agentServer srv@UserServer {server, enabled} =
