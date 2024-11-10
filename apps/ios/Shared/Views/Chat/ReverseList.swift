@@ -222,13 +222,12 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
 
         func update(items: [ChatItem]) {
             var snapshot = NSDiffableDataSourceSnapshot<Section, ChatItem>()
-            let originalSize = tableView.numberOfRows(inSection: 0)
             snapshot.appendSections([.main])
             snapshot.appendItems(items)
             dataSource.defaultRowAnimation = .none
             
-            let countDiff = max(0, items.count - originalSize)
-            if tableView.contentOffset.y == 100, originalSize < items.count, originalSize > 0 {
+            let countDiff = max(0, items.count - itemCount)
+            if tableView.contentOffset.y == 100, itemCount < items.count, itemCount > 0 {
                 dataSource.apply(
                     snapshot,
                     animatingDifferences: false

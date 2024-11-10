@@ -119,7 +119,7 @@ struct SelectedItemsBottomToolbar: View {
                     dee = dee && ci.meta.deletable && !ci.localNote
                     onlyOwnGroupItems = onlyOwnGroupItems && ci.chatDir == .groupSnd
                     me = me && ci.content.msgContent != nil && ci.memberToModerate(chatInfo) != nil
-                    fe = fe && ci.content.msgContent != nil && ci.meta.itemDeleted == nil && !ci.isLiveDummy && !ci.isPlaceholder
+                    fe = fe && ci.content.msgContent != nil && ci.meta.itemDeleted == nil && !ci.isLiveDummy
                     sel.insert(ci.id) // we are collecting new selected items here to account for any changes in chat items list
                     return (de, dee, me, onlyOwnGroupItems, fe, sel)
                 } else {

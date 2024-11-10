@@ -77,7 +77,7 @@ struct ChatView: View {
             VStack(spacing: 0) {
                 ZStack(alignment: .bottomTrailing) {
                     chatItemsList()
-                    FloatingButtons(theme: theme, scrollModel: scrollModel, chat: chat, onScrollToBottom: onScrollToBottom)
+                    FloatingButtons(theme: theme, scrollModel: scrollModel, chat: chat)
                 }
                 connectingText()
                 if selectedChatItems == nil {
@@ -481,14 +481,6 @@ struct ChatView: View {
         }
     }
     
-    private func onScrollToBottom() {
-        scrollModel.scrollToBottom()
-        if let g = im.gap {
-            let sliceSize = min(g.index, idealChatListSize)
-            im.reversedChatItems = Array(im.reversedChatItems[..<sliceSize])
-        }
-    }
-    
     private func getFirstUnreadItem() -> ChatItem? {
         var maybeItem: ChatItem? = nil
         for i in stride(from: im.reversedChatItems.count - 1, through: 0, by: -1) {
@@ -535,9 +527,6 @@ struct ChatView: View {
                 } else {
                     0
                 }
-            if unreadBelow > 0, let g = im.gap, g.size > 0, g.index < bottomItemIndex {
-                unreadBelow += g.size
-            }
             let date: Date? =
                 if let topItemDate = listState.topItemDate {
                     Calendar.current.startOfDay(for: topItemDate)
@@ -599,7 +588,6 @@ struct ChatView: View {
         let theme: AppTheme
         let scrollModel: ReverseListScrollModel
         let chat: Chat
-        let onScrollToBottom: () -> Void
         @ObservedObject var model = FloatingButtonModel.shared
 
         var body: some View {
@@ -640,14 +628,14 @@ struct ChatView: View {
                                 .foregroundColor(theme.colors.primary)
                         }
                         .onTapGesture {
-                            onScrollToBottom()
+                            scrollModel.scrollToBottom()
                         }
                     } else if !model.isNearBottom {
                         circleButton {
                             Image(systemName: "chevron.down")
                                 .foregroundColor(theme.colors.primary)
                         }
-                        .onTapGesture { onScrollToBottom() }
+                        .onTapGesture { scrollModel.scrollToBottom() }
                     }
                 }
                 .padding()
@@ -888,56 +876,119 @@ struct ChatView: View {
     private func loadChatItems(_ cInfo: ChatInfo, _ pagination: ChatPagination = .initial(count: loadItemsPerPage)) {
         Task {
             if loadingItems { return }
-            if case .before = pagination, firstPage { return }
             loadingItems = true
+            
             do {
-                var reversedPage = Array<ChatItem>()
-                var chatItemsAvailable = true
-                // Load additional items until the page is +50 large after merging
-                while chatItemsAvailable && filtered(reversedPage).count < loadItemsPerPage {
-                    let chatPagination: ChatPagination = switch pagination {
-                    case let .before(chatItemId, count): .before(chatItemId: reversedPage.last?.id ?? chatItemId, count: count)
-                    case let .last(count): .last(count: count)
-                    case let .initial(count): .initial(count: count)
-                    case let .after(chatItemId, count):
-                            .after(chatItemId: reversedPage.first?.id ?? chatItemId, count: count)
-                    case .around(_, _): throw RuntimeError("Unsupported pagination type for loading chat items: \(pagination)")
+                let (chatItems, gap) = try await apiGetChatItems(
+                    type: cInfo.chatType,
+                    id: cInfo.apiId,
+                    pagination: pagination,
+                    search: searchText
+                )
+                
+                if (cInfo.id != chatModel.chatId) {
+                    await MainActor.run { loadingItems = false }
+                    return
+                }
+                
+                let im = ItemsModel.shared
+                var newItems = im.reversedChatItems
+                
+                switch pagination {
+                case .last:
+                    await MainActor.run {
+                        im.reversedChatItems = chatItems.reversed()
+                        im.gaps = []
+                        loadingItems = false
+                    }
+                case let .initial(count):
+                    await MainActor.run {
+                        im.reversedChatItems = chatItems.reversed()
+
+                        if gap != nil {
+                            let firstBottomItem = chatItems[count]
+                            im.gaps = [firstBottomItem.id]
+                        } else {
+                            im.gaps = []
+                        }
+                        loadingItems = false
+                    }
+                case let .after(chatItemId, _):
+                    guard let indexInCurrentItems = im.reversedChatItems.firstIndex(where: { $0.id == chatItemId }) else {
+                        return
                     }
                     
-                    let chatItems = try await apiGetChatItems(
-                        type: cInfo.chatType,
-                        id: cInfo.apiId,
-                        pagination: chatPagination,
-                        search: searchText
-                    )
-                    chatItemsAvailable = !chatItems.isEmpty
-                    reversedPage.append(contentsOf: chatItems.reversed())
-                }
-                let dedupedreversePage = reversedPage.filter { !im.chatItemIds.contains($0.id) }
-
-                await MainActor.run {
-                    if reversedPage.count == 0 {
-                        firstPage = true
-                    } else if dedupedreversePage.count > 0 {
-                        switch pagination {
-                        case .last, .initial:
-                            im.reversedChatItems.append(contentsOf: dedupedreversePage)
-                        case .before(_, _):
-                            if im.reversedChatItems.count + dedupedreversePage.count > idealChatListSize,
-                               dedupedreversePage.count <= loadItemsPerPage {
-                                im.reversedChatItems.removeSubrange(loadItemsPerPage..<loadItemsPerPage + dedupedreversePage.count)
-                            }
-                            im.reversedChatItems.append(contentsOf: dedupedreversePage)
-                        case let .after(chatItemId, _):
-                            let index = im.reversedChatItems.firstIndex { $0.id == chatItemId }
-                            if let index {
-                                im.reversedChatItems.insert(contentsOf: dedupedreversePage, at: index)
-                            }
-                        case .around(_, _): break
-                        }
+                    let wasSize = newItems.count
+                    let newItemIds = Set(chatItems.map { $0.id })
+                    let indexInGaps = im.gaps.firstIndex { $0 == chatItemId }
+                    var gapsAfterChatItem: [Int64] = []
+                    if let indexInGaps = indexInGaps, indexInGaps + 1 <= im.gaps.count {
+                        gapsAfterChatItem = Array(im.gaps[indexInGaps + 1..<im.gaps.count])
                     }
-                    loadingItems = false
+                    var gapsToRemove = Set<Int64>()
+                    var reachedBottom: Bool = false
+                    
+                    newItems.removeAll { item in
+                        let isDuplicate = newItemIds.contains(item.id)
+                        if indexInGaps != nil && newItemIds.contains(item.id) {
+                            if gapsAfterChatItem.contains(item.id) {
+                                gapsAfterChatItem.removeAll { $0 == item.id }
+                                gapsToRemove.insert(item.id)
+                            } else if reachedBottom == false && gapsAfterChatItem.isEmpty {
+                                // We passed all gaps and found a duplicated item below all of them, indicating no more gaps below the loaded items.
+                                reachedBottom = true
+                            }
+                        }
+                        return isDuplicate
+                    }
+                    
+                    let insertAt = indexInCurrentItems - (wasSize - newItems.count)
+                    newItems.insert(contentsOf: chatItems.reversed(), at: insertAt)
+                    
+                    await MainActor.run {
+                        im.reversedChatItems = newItems
+                        var newGaps = im.gaps.filter { !gapsToRemove.contains($0) }
+                        
+                        if reachedBottom {
+                            newGaps = []
+                        } else {
+                            if let enlargedGapIndex = im.gaps.firstIndex(where: { $0 == chatItemId }) {
+                                // Move the gap to the end of the loaded items.
+                                newGaps[enlargedGapIndex] = chatItems.last?.id ?? newGaps[enlargedGapIndex]
+                            }
+                        }
+                        
+                        im.gaps = newGaps
+                        loadingItems = false
+                    }
+                case let .before(chatItemId, _):
+                    guard let indexInCurrentItems = im.reversedChatItems.firstIndex(where: { $0.id == chatItemId }) else {
+                        return
+                    }
+                    let newItemIds = Set(chatItems.map { $0.id })
+                    newItems.removeAll { newItemIds.contains($0.id) }
+                    
+                    newItems.insert(contentsOf: chatItems.reversed(), at: min(indexInCurrentItems + 1, newItems.count))
+                                        
+                    await MainActor.run {
+                        im.reversedChatItems = newItems
+                        im.gaps = im.gaps.filter { !newItemIds.contains($0) }
+                        loadingItems = false
+                    }
+                case .around(_, _):
+                    let newItemIds = Set(chatItems.map { $0.id })
+                    newItems.removeAll { newItemIds.contains($0.id) }
+                    newItems.insert(contentsOf: chatItems, at: 0)
+                    
+                    await MainActor.run {
+                        im.reversedChatItems = newItems
+                        if let lastItemId = chatItems.last?.id {
+                            im.gaps.insert(lastItemId, at: 0)
+                        }
+                        loadingItems = false
+                    }
                 }
+                
             } catch let error {
                 logger.error("apiGetChat error: \(responseError(error))")
                 await MainActor.run { loadingItems = false }
@@ -1336,7 +1387,7 @@ struct ChatView: View {
 
         @ViewBuilder
         private func menu(_ ci: ChatItem, _ range: ClosedRange<Int>?, live: Bool) -> some View {
-            if let mc = ci.content.msgContent, ci.meta.itemDeleted == nil || revealed, !ci.isPlaceholder {
+            if let mc = ci.content.msgContent, ci.meta.itemDeleted == nil || revealed {
                 if chat.chatInfo.featureEnabled(.reactions) && ci.allowAddReaction,
                    availableReactions.count > 0 {
                     reactionsGroup

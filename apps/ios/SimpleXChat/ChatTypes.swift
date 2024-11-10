@@ -2339,7 +2339,6 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
 
     public var viewTimestamp = Date.now
     public var isLiveDummy: Bool = false
-    public var isPlaceholder: Bool = false
 
     private enum CodingKeys: String, CodingKey {
         case chatDir, meta, content, formattedText, quotedItem, reactions, file
@@ -2468,7 +2467,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     }
 
     public var allowAddReaction: Bool {
-        meta.itemDeleted == nil && !isLiveDummy && !isPlaceholder && reactions.filter({ $0.userReacted }).count < 3
+        meta.itemDeleted == nil && !isLiveDummy && reactions.filter({ $0.userReacted }).count < 3
     }
 
     public func autoReceiveFile() -> CIFile? {
@@ -2662,30 +2661,6 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
             file: nil
         )
         item.isLiveDummy = true
-        return item
-    }
-
-    public static func placeholder(idx: Int, text: String, chatDir: CIDirection) -> ChatItem {
-        var item = ChatItem(
-            chatDir: chatDir,
-            meta: CIMeta(
-                itemId: Int64(idx * -10),
-                itemTs: .now,
-                itemText: text,
-                itemStatus: .rcvRead,
-                createdAt: .now,
-                updatedAt: .now,
-                itemDeleted: nil,
-                itemEdited: false,
-                itemLive: false,
-                deletable: false,
-                editable: false
-            ),
-            content: .sndMsgContent(msgContent: .text(text)),
-            quotedItem: nil,
-            file: nil
-        )
-        item.isPlaceholder = true
         return item
     }
     

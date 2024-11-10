@@ -51,11 +51,11 @@ struct FramedItemView: View {
                             if let itemId = qi.itemId {
                                 if !scrollToItem(itemId) {
                                     Task {
-                                        if await loadItemsAround(chat.chatInfo, itemId) != nil {
-                                            await MainActor.run {
-                                                let _ = scrollToItem(itemId)
-                                            }
-                                        }
+                                        //if await loadItemsAround(chat.chatInfo, itemId) != nil {
+                                          //  await MainActor.run {
+                                            //    let _ = scrollToItem(itemId)
+                                            //}
+                                        //}
                                     }
                                 }
                             } else {
@@ -342,47 +342,7 @@ struct FramedItemView: View {
         } else {
             return false
         }
-    }
-    
-    private func loadItemsAround(_ cInfo: ChatInfo, _ chatItemId: Int64) async -> [ChatItem]? {
-        do {
-            let im = ItemsModel.shared
-            var reversedPage = Array<ChatItem>()
-            let pagination: ChatPagination = .around(chatItemId: chatItemId, count: loadItemsPerPage * 2)
-            let chatItems = try await apiGetChatItems(
-                type: cInfo.chatType,
-                id: cInfo.apiId,
-                pagination: pagination,
-                search: ""
-            )
-            
-            let dedupedChatItems = chatItems.filter { !im.chatItemIds.contains($0.id) }
-            reversedPage.append(contentsOf: dedupedChatItems.reversed())
-
-            var itemsToDrop = Set<Int64>()
-            await MainActor.run {
-                if let g = im.gap {
-                    itemsToDrop = Set(im.reversedChatItems.suffix(g.size).map { $0.id })
-                }
-                
-                let itemCount = im.reversedChatItems.count
-                im.reversedChatItems.append(contentsOf: reversedPage)
-            }
-            
-            if (itemsToDrop.count > 0) {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                    Task {
-                        im.reversedChatItems.removeAll(where: { itemsToDrop.contains($0.id) })
-                    }
-                }
-            }
-            
-            return reversedPage
-        } catch let error {
-            logger.error("apiGetChat error: \(responseError(error))")
-            return nil
-        }
-    }
+    }    
 }
 
 @ViewBuilder func toggleSecrets<V: View>(_ ft: [FormattedText]?, _ showSecrets: Binding<Bool>, _ v: V) -> some View {
