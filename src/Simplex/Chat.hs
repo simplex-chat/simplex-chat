@@ -40,6 +40,7 @@ import Data.Constraint (Dict (..))
 import Data.Either (fromRight, lefts, partitionEithers, rights)
 import Data.Fixed (div')
 import Data.Foldable (foldr')
+import Data.Foldable1 (fold1)
 import Data.Functor (($>))
 import Data.Functor.Identity
 import Data.Int (Int64)
@@ -391,12 +392,12 @@ newChatController
         pure InitialAgentServers {smp = smp', xftp = xftp', ntf, netCfg}
         where
           getUserServers :: forall p. (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> [User] -> [(Text, ServerOperator)] -> [ProtoServerWithAuth p] -> IO (Map UserId (NonEmpty (ServerCfg p)))
-          getUserServers protocol users opDomains = maybe get srvCfgs . L.nonEmpty
+          getUserServers p users opDomains = maybe get srvCfgs . L.nonEmpty
             where
               get = do
-                randomSrvs <- randomPresetServers presetOps
+                randomSrvs <- randomPresetServers p presetOps
                 fmap M.fromList $ forM users $ \u ->
-                  (aUserId u,) . useServers opDomains <$> getUpdateUserServers db presetOps randomSrvs u
+                  (aUserId u,) . useServers opDomains <$> getUpdateUserServers db p presetOps randomSrvs u
               srvCfgs ss = pure $ M.fromList $ map (\u -> (aUserId u, L.map srvCfg ss)) users
               srvCfg server = ServerCfg {server, operator = Nothing, enabled = True, roles = allRoles}
 
@@ -440,6 +441,23 @@ withUserContactLock name = withEntityLock name . CLUserContact
 withFileLock :: String -> Int64 -> CM a -> CM a
 withFileLock name = withEntityLock name . CLFile
 {-# INLINE withFileLock #-}
+
+randomPresetServers :: forall p. UserProtocol p => SProtocolType p -> NonEmpty PresetOperator -> IO (NonEmpty (NewUserServer p))
+randomPresetServers p = fmap fold1 . mapM opSrvs
+  where
+    opSrvs :: PresetOperator -> IO (NonEmpty (NewUserServer p))
+    opSrvs op = do
+      let srvs = operatorServers p op
+          (enbldSrvs, dsbldSrvs) = L.partition (\UserServer {enabled} -> enabled) srvs
+          toUse = operatorServersToUse p op
+      if length enbldSrvs <= toUse
+        then pure srvs
+        else do
+          (enbldSrvs', srvsToDisable) <- splitAt toUse <$> shuffle enbldSrvs
+          let dsbldSrvs' = map (\srv -> (srv :: NewUserServer p) {enabled = False}) srvsToDisable
+              srvs' = sortOn server' $ enbldSrvs' <> dsbldSrvs' <> dsbldSrvs
+          pure $ fromMaybe srvs $ L.nonEmpty srvs'
+    server' UserServer {server = ProtoServerWithAuth srv _} = srv
 
 -- enableSndFiles has no effect when mainApp is True
 startChatController :: Bool -> Bool -> CM' (Async ())
@@ -596,8 +614,8 @@ processChatCommand' vr = \case
     createPresetContactCards user `catchChatError` \_ -> pure ()
     withFastStore $ \db -> do
       createNoteFolder db user
-      liftIO $ mapM_ (mapM_ (insertProtocolServer db user ts)) smpServers_
-      liftIO $ mapM_ (mapM_ (insertProtocolServer db user ts)) xftpServers_
+      liftIO $ mapM_ (mapM_ (insertProtocolServer db SPSMP user ts)) smpServers_
+      liftIO $ mapM_ (mapM_ (insertProtocolServer db SPXFTP user ts)) xftpServers_
     atomically . writeTVar u $ Just user
     pure $ CRActiveUser user
     where
@@ -607,13 +625,13 @@ processChatCommand' vr = \case
           createContact db user simplexStatusContactProfile
           createContact db user simplexTeamContactProfile
       chooseServers :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> [(Text, ServerOperator)] -> CM (NonEmpty (ServerCfg p), Maybe (NonEmpty (NewUserServer p)))
-      chooseServers protocol opDomains = do
+      chooseServers p opDomains = do
         PresetServers {operators = presetOps} <- asks $ presetServers . config
-        randomSrvs <- liftIO $ randomPresetServers presetOps
+        randomSrvs <- liftIO $ randomPresetServers p presetOps
         chatReadVar currentUser >>= \case
           Nothing -> pure (useServers opDomains randomSrvs, Just randomSrvs)
           Just user -> do
-            srvs <- withFastStore' $ \db -> getUpdateUserServers db presetOps randomSrvs user
+            srvs <- withFastStore' $ \db -> getUpdateUserServers db p presetOps randomSrvs user
             pure (useServers opDomains srvs, Nothing)
       coupleDaysAgo t = (`addUTCTime` t) . fromInteger . negate . (+ (2 * day)) <$> randomRIO (0, day)
       day = 86400

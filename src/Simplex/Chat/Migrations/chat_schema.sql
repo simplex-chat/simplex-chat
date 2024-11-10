@@ -450,7 +450,6 @@ CREATE TABLE IF NOT EXISTS "protocol_servers"(
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now')),
   protocol TEXT NOT NULL DEFAULT 'smp',
-  server_operator_id INTEGER REFERENCES server_operators ON DELETE SET NULL,
   UNIQUE(user_id, host, port)
 );
 CREATE TABLE xftp_file_descriptions(
@@ -593,7 +592,6 @@ CREATE TABLE app_settings(app_settings TEXT NOT NULL);
 CREATE TABLE server_operators(
   server_operator_id INTEGER PRIMARY KEY AUTOINCREMENT,
   server_operator_tag TEXT,
-  app_vendor INTEGER NOT NULL,
   trade_name TEXT NOT NULL,
   legal_name TEXT,
   server_domains TEXT,
@@ -919,13 +917,10 @@ CREATE INDEX idx_received_probes_group_member_id on received_probes(
   group_member_id
 );
 CREATE INDEX idx_contact_requests_contact_id ON contact_requests(contact_id);
-CREATE INDEX idx_protocol_servers_server_operator_id ON protocol_servers(
-  server_operator_id
-);
 CREATE INDEX idx_operator_usage_conditions_server_operator_id ON operator_usage_conditions(
   server_operator_id
 );
 CREATE UNIQUE INDEX idx_operator_usage_conditions_conditions_commit ON operator_usage_conditions(
-  server_operator_id,
-  conditions_commit
+  conditions_commit,
+  server_operator_id
 );

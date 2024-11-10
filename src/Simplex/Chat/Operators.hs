@@ -12,18 +12,20 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections #-}
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat.Operators where
 
-import Control.Monad (foldM)
 import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
 import Data.FileEmbed
+import Data.Foldable1 (foldMap1)
 import Data.IORef
 import Data.Int (Int64)
-import Data.List (find)
+import Data.List (find, foldl')
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -45,7 +47,7 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
-import Simplex.Messaging.Util (safeDecodeUtf8)
+import Simplex.Messaging.Util (atomicModifyIORef'_, safeDecodeUtf8)
 
 usageConditionsCommit :: Text
 usageConditionsCommit = "165143a1112308c035ac00ed669b96b60599aa1c"
@@ -228,7 +230,7 @@ presetServer enabled server =
   UserServer {serverId = DBNewEntity, server, preset = True, tested = Nothing, enabled}
 
 -- This function should be used inside DB transaction to update conditions in the database
--- it returns (conditions to mark as accepted to SimpleX operator, conditions to add)
+-- it evaluates to (conditions to mark as accepted to SimpleX operator, current conditions, and conditions to add)
 usageConditionsToAdd :: Bool -> UTCTime -> [UsageConditions] -> (Maybe UsageConditions, UsageConditions, [UsageConditions])
 usageConditionsToAdd = usageConditionsToAdd' previousConditionsCommit usageConditionsCommit
 
@@ -268,74 +270,59 @@ updatedServerOperators presetOps storedOps =
           Nothing -> ASO SDBNew presetOp
 
 -- This function should be used inside DB transaction to update servers.
--- It assumes that the list of operators was amended using updatedServerOperators,
--- that [ServerOperator] has the same operators as [PresetOperatorServers],
--- and that they all have serverOperatorId set.
-updatedUserServers :: forall p. NonEmpty PresetOperator -> NonEmpty (NewUserServer p) -> [UserServer p] -> NonEmpty (AUserServer p)
-updatedUserServers _presetOps randomSrvs = \case
+updatedUserServers :: forall p. UserProtocol p => SProtocolType p -> NonEmpty PresetOperator -> NonEmpty (NewUserServer p) -> [UserServer p] -> NonEmpty (AUserServer p)
+updatedUserServers p presetOps randomSrvs = \case
   [] -> L.map (AUS SDBNew) randomSrvs
   srvs ->
-    L.map userChanges allPresetServers
+    L.map (userServer storedSrvs) presetSrvs
       `L.appendList` map (AUS SDBStored) (filter customServer srvs)
+    where
+      storedSrvs = foldl' (\ss srv@UserServer {server} -> M.insert server srv ss) M.empty srvs
   where
-    customServer UserServer {preset, server = ProtoServerWithAuth srv _} =
-      not preset && all (`S.notMember` allPresetHosts) (host srv)
-    allPresetServers :: NonEmpty (NewUserServer p)
-    allPresetServers = undefined
-    allPresetHosts :: Set TransportHost
-    allPresetHosts = undefined
-    userChanges :: NewUserServer p -> AUserServer p -- apply changes from stored servers
-    userChanges = undefined
+    customServer srv = not (preset srv) && all (`S.notMember` presetHosts) (srvHost srv)
+    presetSrvs :: NonEmpty (NewUserServer p)
+    presetSrvs = foldMap1 (operatorServers p) presetOps
+    presetHosts :: Set TransportHost
+    presetHosts = foldMap1 (S.fromList . L.toList . srvHost) presetSrvs
+    userServer :: Map (ProtoServerWithAuth p) (UserServer p) -> NewUserServer p -> AUserServer p
+    userServer storedSrvs srv@UserServer {server} = maybe (AUS SDBNew srv) (AUS SDBStored) (M.lookup server storedSrvs)
 
-randomPresetServers :: NonEmpty PresetOperator -> IO (NonEmpty (NewUserServer p))
-randomPresetServers = undefined
-
--- randomServers :: forall p. UserProtocol p => SProtocolType p -> ChatConfig -> IO (NonEmpty (ServerCfg p), [ServerCfg p])
--- randomServers p ChatConfig {defaultServers} = do
---   let srvs = operatorServers p defaultServers
---       (enbldSrvs, dsbldSrvs) = L.partition (\ServerCfg {enabled} -> enabled) srvs
---       toUse = cfgServersToUse p defaultServers
---   if length enbldSrvs <= toUse
---     then pure (srvs, [])
---     else do
---       (enbldSrvs', srvsToDisable) <- splitAt toUse <$> shuffle enbldSrvs
---       let dsbldSrvs' = map (\srv -> (srv :: ServerCfg p) {enabled = False}) srvsToDisable
---           srvs' = sortOn server' $ enbldSrvs' <> dsbldSrvs' <> dsbldSrvs
---       pure (fromMaybe srvs $ L.nonEmpty srvs', srvs')
---   where
---     server' ServerCfg {server = ProtoServerWithAuth srv _} = srv
+srvHost :: UserServer' s p -> NonEmpty TransportHost
+srvHost UserServer {server = ProtoServerWithAuth srv _} = host srv
 
 useServers :: [(Text, ServerOperator)] -> NonEmpty (UserServer' s p) -> NonEmpty (ServerCfg p)
 useServers opDomains = L.map agentServer
   where
     agentServer :: UserServer' s p -> ServerCfg p
-    agentServer UserServer {server = server@(ProtoServerWithAuth ProtocolServer {host} _), enabled} =
-      case snd <$> find (\(d, _) -> any (matchingHost d) host) opDomains of
-        Just ServerOperator {operatorId = DBEntityId opId, enabled = opEnabled, roles} ->
+    agentServer srv@UserServer {server, enabled} =
+      case find (\(d, _) -> any (matchingHost d) (srvHost srv)) opDomains of
+        Just (_, ServerOperator {operatorId = DBEntityId opId, enabled = opEnabled, roles}) ->
           ServerCfg {server, operator = Just opId, enabled = opEnabled && enabled, roles}
         Nothing ->
           ServerCfg {server, operator = Nothing, enabled, roles = allRoles}
-      where
-        matchingHost d = \case
-          THDomainName h -> d `T.isSuffixOf` T.pack h
-          _ -> False
+
+matchingHost :: Text -> TransportHost -> Bool
+matchingHost d = \case
+  THDomainName h -> d `T.isSuffixOf` T.pack h
+  _ -> False
 
 operatorDomains :: [ServerOperator] -> [(Text, ServerOperator)]
 operatorDomains = foldr (\op ds -> foldr (\d -> ((d, op) :)) ds (serverDomains op)) []
 
 groupByOperator :: [ServerOperator] -> [UserServer 'PSMP] -> [UserServer 'PXFTP] -> IO [UserOperatorServers]
 groupByOperator ops smpSrvs xftpSrvs = do
-  ss <- mapM (\op -> newIORef $ UserOperatorServers (Just op) [] []) ops
+  ss <- mapM (\op -> (serverDomains op,) <$> newIORef (UserOperatorServers (Just op) [] [])) ops
   custom <- newIORef $ UserOperatorServers Nothing [] []
-  domains <- foldM addOpDomains M.empty ss
-  mapM_ (addServer ss custom domains) smpSrvs
-  mapM_ (addServer ss custom domains) xftpSrvs
-  mapM readIORef ss
+  mapM_ (addServer ss custom addSMP) (reverse smpSrvs)
+  mapM_ (addServer ss custom addXFTP) (reverse xftpSrvs)
+  mapM (readIORef . snd) ss
   where
-    addOpDomains :: Map Text (IORef UserOperatorServers) -> IORef UserOperatorServers -> IO (Map Text (IORef UserOperatorServers))
-    addOpDomains _domains _s = undefined
-    addServer :: [IORef UserOperatorServers] -> IORef UserOperatorServers -> Map Text (IORef UserOperatorServers) -> UserServer p -> IO ()
-    addServer _ss _custom _domains = undefined
+    addServer :: [([Text], IORef UserOperatorServers)] -> IORef UserOperatorServers -> (UserServer p -> UserOperatorServers -> UserOperatorServers) -> UserServer p -> IO ()
+    addServer ss custom add srv = 
+      let v = maybe custom snd $ find (\(ds, _) -> any (\d -> any (matchingHost d) (srvHost srv)) ds) ss
+       in atomicModifyIORef'_ v $ add srv
+    addSMP srv s@UserOperatorServers {smpServers} = s {smpServers = srv : smpServers}
+    addXFTP srv s@UserOperatorServers {xftpServers} = s {xftpServers = srv : xftpServers}
 
 data UserServersError
   = USEStorageMissing

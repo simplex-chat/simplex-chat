@@ -25,7 +25,7 @@ import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
-import Simplex.Chat.Controller (ChatConfig (..), DefaultAgentServers (..))
+import Simplex.Chat.Controller (ChatConfig (..), PresetServers (..))
 import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
@@ -332,8 +332,8 @@ testRetryConnectingClientTimeout tmp = do
               { quotaExceededTimeout = 1,
                 messageRetryInterval = RetryInterval2 {riFast = fastRetryInterval, riSlow = fastRetryInterval}
               },
-          defaultServers =
-            let def@DefaultAgentServers {netCfg} = defaultServers testCfg
+          presetServers =
+            let def@PresetServers {netCfg} = presetServers testCfg
              in def {netCfg = (netCfg :: NetworkConfig) {tcpTimeout = 10}}
         }
     opts' =
