@@ -113,6 +113,8 @@ class ItemsModel: ObservableObject {
 //                try? await Task.sleep(nanoseconds: 5000_000000)
                 if let gap = await loadChat(chat: chat) {
                     self.gaps = [gap]
+                } else {
+                    self.gaps = []
                 }
                 navigationTimeout.cancel()
                 progressTimeout.cancel()

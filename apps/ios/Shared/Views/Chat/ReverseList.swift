@@ -303,30 +303,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         }
         
         private func getFirstItemAfterPlacholder(_ indexPath: IndexPath) -> ChatItem? {
-            if indexPath.row < preloadItem {
-                return nil
-            }
-            
-            let closesPlaceholderRow = (0..<preloadItem).first { index in
-                if let item = getItemAtPath(indexPath: IndexPath(row: indexPath.row - index, section: 0)) {
-                    return item.isPlaceholder
-                }
-                return false
-            }
-            
-            if let closesPlaceholderRow {
-                var rowIndex = indexPath.row - closesPlaceholderRow
-                while rowIndex < self.tableView.numberOfRows(inSection: 0) {
-                    if let item = getItemAtPath(indexPath: IndexPath(row: rowIndex, section: 0)), !item.isPlaceholder {
-                        return item
-                    }
-                    rowIndex += 1
-                }
-                
-                return nil
-            } else {
-                return nil
-            }
+            return nil
         }
     }
 
