@@ -4603,9 +4603,9 @@ Ez az Ön hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Új megjelenítési név</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New in %@" xml:space="preserve">
+      <trans-unit id="New in %@" xml:space="preserve" approved="no">
         <source>New in %@</source>
-        <target>Újdonságok a(z) %@ verzióban</target>
+        <target state="translated">A(z) %@ verzió változásnaplója</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New media options" xml:space="preserve">
@@ -7552,9 +7552,9 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
         <target>Az üdvözlőüzenet túl hosszú</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="What's new" xml:space="preserve">
+      <trans-unit id="What's new" xml:space="preserve" approved="no">
         <source>What's new</source>
-        <target>Milyen újdonságok vannak</target>
+        <target state="translated">Változásnapló</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="When available" xml:space="preserve">
