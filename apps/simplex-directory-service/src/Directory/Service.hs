@@ -277,7 +277,7 @@ directoryService st DirectoryOpts {adminUsers, superUsers, serviceName, searchRe
             _ -> do
               let gaId = 1
               setGroupStatus st gr $ GRSPendingApproval gaId
-              notifyOwner gr $ "Thank you! The group link for " <> userGroupReference gr toGroup <> " is added to the welcome message.\nYou will be notified once the group is added to the directory - it may take up to 24 hours."
+              notifyOwner gr $ "Thank you! The group link for " <> userGroupReference gr toGroup <> " is added to the welcome message.\nYou will be notified once the group is added to the directory - it may take up to 48 hours."
               checkRolesSendToApprove gr gaId
         processProfileChange gr n' = do
           setGroupStatus st gr GRSPendingUpdate
@@ -426,7 +426,7 @@ directoryService st DirectoryOpts {adminUsers, superUsers, serviceName, searchRe
             <> serviceName
             <> " bot will create a public group link for the new members to join even when you are offline.\n\
                \3. You will then need to add this link to the group welcome message.\n\
-               \4. Once the link is added, service admins will approve the group (it can take up to 24 hours), and everybody will be able to find it in directory.\n\n\
+               \4. Once the link is added, service admins will approve the group (it can take up to 48 hours), and everybody will be able to find it in directory.\n\n\
                \Start from inviting the bot to your group as admin - it will guide you through the process"
       DCSearchGroup s -> withFoundListedGroups (Just s) $ sendSearchResults s
       DCSearchNext ->

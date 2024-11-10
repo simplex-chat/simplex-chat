@@ -116,7 +116,7 @@ testDirectoryService tmp =
         -- putStrLn "*** update profile so that it has link"
         updateGroupProfile bob welcomeWithLink
         bob <# "SimpleX-Directory> Thank you! The group link for ID 1 (PSA) is added to the welcome message."
-        bob <## "You will be notified once the group is added to the directory - it may take up to 24 hours."
+        bob <## "You will be notified once the group is added to the directory - it may take up to 48 hours."
         approvalRequested superUser welcomeWithLink (1 :: Int)
         -- putStrLn "*** update profile so that it still has link"
         let welcomeWithLink' = "Welcome! " <> welcomeWithLink
@@ -144,7 +144,7 @@ testDirectoryService tmp =
         -- putStrLn "*** update profile so that it has link again"
         updateGroupProfile bob welcomeWithLink'
         bob <# "SimpleX-Directory> Thank you! The group link for ID 1 (PSA) is added to the welcome message."
-        bob <## "You will be notified once the group is added to the directory - it may take up to 24 hours."
+        bob <## "You will be notified once the group is added to the directory - it may take up to 48 hours."
         approvalRequested superUser welcomeWithLink' (1 :: Int)
         superUser #> "@SimpleX-Directory /pending"
         superUser <# "SimpleX-Directory> > /pending"
@@ -666,7 +666,7 @@ testRegOwnerRemovedLink tmp =
         bob <## "description changed to:"
         bob <## welcomeWithLink
         bob <# "SimpleX-Directory> Thank you! The group link for ID 1 (privacy) is added to the welcome message."
-        bob <## "You will be notified once the group is added to the directory - it may take up to 24 hours."
+        bob <## "You will be notified once the group is added to the directory - it may take up to 48 hours."
         cath <## "bob updated group #privacy:"
         cath <## "description changed to:"
         cath <## welcomeWithLink
@@ -708,7 +708,7 @@ testAnotherOwnerRemovedLink tmp =
         bob <## "description changed to:"
         bob <## (welcomeWithLink <> " - welcome!")
         bob <# "SimpleX-Directory> Thank you! The group link for ID 1 (privacy) is added to the welcome message."
-        bob <## "You will be notified once the group is added to the directory - it may take up to 24 hours."
+        bob <## "You will be notified once the group is added to the directory - it may take up to 48 hours."
         cath <## "bob updated group #privacy:"
         cath <## "description changed to:"
         cath <## (welcomeWithLink <> " - welcome!")
@@ -790,7 +790,7 @@ testDuplicateProhibitWhenUpdated tmp =
         cath ##> "/gp privacy security Security"
         cath <## "changed to #security (Security)"
         cath <# "SimpleX-Directory> Thank you! The group link for ID 2 (security) is added to the welcome message."
-        cath <## "You will be notified once the group is added to the directory - it may take up to 24 hours."
+        cath <## "You will be notified once the group is added to the directory - it may take up to 48 hours."
         notifySuperUser superUser cath "security" "Security" welcomeWithLink' 2
         approveRegistration superUser cath "security" 2
         groupFound bob "security"
@@ -1051,7 +1051,7 @@ updateProfileWithLink u n welcomeWithLink ugId = do
   u <## "description changed to:"
   u <## welcomeWithLink
   u <# ("SimpleX-Directory> Thank you! The group link for ID " <> show ugId <> " (" <> n <> ") is added to the welcome message.")
-  u <## "You will be notified once the group is added to the directory - it may take up to 24 hours."
+  u <## "You will be notified once the group is added to the directory - it may take up to 48 hours."
 
 notifySuperUser :: TestCC -> TestCC -> String -> String -> String -> Int -> IO ()
 notifySuperUser su u n fn welcomeWithLink gId = do
