@@ -39,6 +39,7 @@ dependencies:
   - optparse-applicative >= 0.15 && < 0.17
   - random >= 1.1 && < 1.3
   - record-hasfield == 1.0.*
+  - scientific ==0.3.7.*
   - simple-logger == 0.1.*
   - simplexmq >= 5.0
   - socks == 0.6.*

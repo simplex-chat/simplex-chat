@@ -79,10 +79,10 @@ chatDirectTests = do
     it "own invitation link" testPlanInvitationLinkOwn
     it "connecting via invitation link" testPlanInvitationLinkConnecting
   describe "SMP servers" $ do
-    xit "get and set SMP servers" testGetSetSMPServers
+    it "get and set SMP servers" testGetSetSMPServers
     it "test SMP server connection" testTestSMPServerConnection
   describe "XFTP servers" $ do
-    xit "get and set XFTP servers" testGetSetXFTPServers
+    it "get and set XFTP servers" testGetSetXFTPServers
     it "test XFTP server connection" testTestXFTPServer
   describe "async connection handshake" $ do
     describe "connect when initiating client goes offline" $ do
@@ -116,7 +116,7 @@ chatDirectTests = do
     it "create second user" testCreateSecondUser
     it "multiple users subscribe and receive messages after restart" testUsersSubscribeAfterRestart
     it "both users have contact link" testMultipleUserAddresses
-    xit "create user with same servers" testCreateUserSameServers
+    it "create user with same servers" testCreateUserSameServers
     it "delete user" testDeleteUser
     it "users have different chat item TTL configuration, chat items expire" testUsersDifferentCIExpirationTTL
     it "chat items expire after restart for all users according to per user configuration" testUsersRestartCIExpiration

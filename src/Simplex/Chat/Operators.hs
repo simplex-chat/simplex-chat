@@ -13,10 +13,12 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat.Operators where
 
+import Control.Applicative ((<|>))
 import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
@@ -30,13 +32,15 @@ import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe, isNothing)
+import Data.Maybe (fromMaybe, isNothing, mapMaybe)
+import Data.Scientific (floatingOrInteger)
 import Data.Set (Set)
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime, nominalDay)
+import Data.Type.Equality
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import Language.Haskell.TH.Syntax (lift)
@@ -45,9 +49,9 @@ import Simplex.Chat.Types.Util (textParseJSON)
 import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
-import Simplex.Messaging.Util (atomicModifyIORef'_, safeDecodeUtf8)
+import Simplex.Messaging.Util (atomicModifyIORef'_, safeDecodeUtf8, (<$?>))
 
 usageConditionsCommit :: Text
 usageConditionsCommit = "165143a1112308c035ac00ed669b96b60599aa1c"
@@ -67,6 +71,19 @@ data SDBStored (s :: DBStored) where
   SDBStored :: SDBStored 'DBStored
   SDBNew :: SDBStored 'DBNew
 
+deriving instance Show (SDBStored s)
+
+class DBStoredI s where sdbStored :: SDBStored s
+
+instance DBStoredI 'DBStored where sdbStored = SDBStored
+
+instance DBStoredI 'DBNew where sdbStored = SDBNew
+
+instance TestEquality SDBStored where
+  testEquality SDBStored SDBStored = Just Refl
+  testEquality SDBNew SDBNew = Just Refl
+  testEquality _ _ = Nothing
+
 data DBEntityId' (s :: DBStored) where
   DBEntityId :: Int64 -> DBEntityId' 'DBStored
   DBNewEntity :: DBEntityId' 'DBNew
@@ -77,7 +94,7 @@ type DBEntityId = DBEntityId' 'DBStored
 
 type DBNewEntity = DBEntityId' 'DBNew
 
-data ADBEntityId = forall s. AEI (SDBStored s) (DBEntityId' s)
+data ADBEntityId = forall s. DBStoredI s => AEI (SDBStored s) (DBEntityId' s)
 
 pattern ADBEntityId :: Int64 -> ADBEntityId
 pattern ADBEntityId i = AEI SDBStored (DBEntityId i)
@@ -161,6 +178,8 @@ type NewServerOperator = ServerOperator' 'DBNew
 
 data AServerOperator = forall s. ASO (SDBStored s) (ServerOperator' s)
 
+deriving instance Show AServerOperator
+
 data ServerOperator' s = ServerOperator
   { operatorId :: DBEntityId' s,
     operatorTag :: Maybe OperatorTag,
@@ -185,18 +204,33 @@ data UserOperatorServers = UserOperatorServers
   }
   deriving (Show)
 
+data UpdatedUserOperatorServers = UpdatedUserOperatorServers
+  { operator :: Maybe ServerOperator,
+    smpServers :: [AUserServer 'PSMP],
+    xftpServers :: [AUserServer 'PXFTP]
+  }
+  deriving (Show)
+
+updatedServers :: UserProtocol p => UpdatedUserOperatorServers -> SProtocolType p -> [AUserServer p]
+updatedServers UpdatedUserOperatorServers {smpServers, xftpServers} = \case
+  SPSMP -> smpServers
+  SPXFTP -> xftpServers
+
 type UserServer p = UserServer' 'DBStored p
 
 type NewUserServer p = UserServer' 'DBNew p
 
 data AUserServer p = forall s. AUS (SDBStored s) (UserServer' s p)
 
+deriving instance Show (AUserServer p)
+
 data UserServer' s p = UserServer
   { serverId :: DBEntityId' s,
     server :: ProtoServerWithAuth p,
     preset :: Bool,
     tested :: Maybe Bool,
-    enabled :: Bool
+    enabled :: Bool,
+    deleted :: Bool
   }
   deriving (Show)
 
@@ -220,7 +254,7 @@ operatorServersToUse p PresetOperator {useSMP, useXFTP} = case p of
 
 presetServer :: Bool -> ProtoServerWithAuth p -> NewUserServer p
 presetServer enabled server =
-  UserServer {serverId = DBNewEntity, server, preset = True, tested = Nothing, enabled}
+  UserServer {serverId = DBNewEntity, server, preset = True, tested = Nothing, enabled, deleted = False}
 
 -- This function should be used inside DB transaction to update conditions in the database
 -- it evaluates to (conditions to mark as accepted to SimpleX operator, current conditions, and conditions to add)
@@ -268,9 +302,9 @@ updatedServerOperators presetOps storedOps =
 updatedUserServers :: forall p. UserProtocol p => SProtocolType p -> NonEmpty PresetOperator -> NonEmpty (NewUserServer p) -> [UserServer p] -> NonEmpty (AUserServer p)
 updatedUserServers _ _ randomSrvs [] = L.map (AUS SDBNew) randomSrvs
 updatedUserServers p presetOps randomSrvs srvs = 
-  fromMaybe (L.map (AUS SDBNew) randomSrvs) (L.nonEmpty updatedServers)
+  fromMaybe (L.map (AUS SDBNew) randomSrvs) (L.nonEmpty updatedSrvs)
   where
-    updatedServers = map userServer presetSrvs <> map (AUS SDBStored) (filter customServer srvs)
+    updatedSrvs = map userServer presetSrvs <> map (AUS SDBStored) (filter customServer srvs)
     storedSrvs :: Map (ProtoServerWithAuth p) (UserServer p)
     storedSrvs = foldl' (\ss srv@UserServer {server} -> M.insert server srv ss) M.empty srvs
     customServer :: UserServer p -> Bool
@@ -304,8 +338,8 @@ matchingHost d = \case
 operatorDomains :: [ServerOperator] -> [(Text, ServerOperator)]
 operatorDomains = foldr (\op ds -> foldr (\d -> ((d, op) :)) ds (serverDomains op)) []
 
-groupByOperator :: [ServerOperator] -> [UserServer 'PSMP] -> [UserServer 'PXFTP] -> IO [UserOperatorServers]
-groupByOperator ops smpSrvs xftpSrvs = do
+groupByOperator :: ([ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP]) -> IO [UserOperatorServers]
+groupByOperator (ops, smpSrvs, xftpSrvs) = do
   ss <- mapM (\op -> (serverDomains op,) <$> newIORef (UserOperatorServers (Just op) [] [])) ops
   custom <- newIORef $ UserOperatorServers Nothing [] []
   mapM_ (addServer ss custom addSMP) (reverse smpSrvs)
@@ -316,67 +350,98 @@ groupByOperator ops smpSrvs xftpSrvs = do
     addServer ss custom add srv = 
       let v = maybe custom snd $ find (\(ds, _) -> any (\d -> any (matchingHost d) (srvHost srv)) ds) ss
        in atomicModifyIORef'_ v $ add srv
-    addSMP srv s@UserOperatorServers {smpServers} = s {smpServers = srv : smpServers}
-    addXFTP srv s@UserOperatorServers {xftpServers} = s {xftpServers = srv : xftpServers}
+    addSMP srv s@UserOperatorServers {smpServers} = (s :: UserOperatorServers) {smpServers = srv : smpServers}
+    addXFTP srv s@UserOperatorServers {xftpServers} = (s :: UserOperatorServers) {xftpServers = srv : xftpServers}
 
 data UserServersError
-  = USEStorageMissing
-  | USEProxyMissing
-  | USEDuplicateSMP {server :: AProtoServerWithAuth}
-  | USEDuplicateXFTP {server :: AProtoServerWithAuth}
+  = USEStorageMissing {protocol :: AProtocolType}
+  | USEProxyMissing {protocol :: AProtocolType}
+  | USEDuplicateServer {protocol :: AProtocolType, duplicateServer :: AProtoServerWithAuth, duplicateHost :: TransportHost}
   deriving (Show)
 
-validateUserServers :: NonEmpty UserOperatorServers -> [UserServersError]
-validateUserServers userServers =
-  let storageMissing_ = if any (canUseForRole storage) userServers then [] else [USEStorageMissing]
-      proxyMissing_ = if any (canUseForRole proxy) userServers then [] else [USEProxyMissing]
-      allSMPServers = map (\UserServer {server} -> server) $ concatMap (\UserOperatorServers {smpServers} -> smpServers) userServers
-      duplicateSMPServers = findDuplicatesByHost allSMPServers
-      duplicateSMPErrors = map (USEDuplicateSMP . AProtoServerWithAuth SPSMP) duplicateSMPServers
-
-      allXFTPServers = map (\UserServer {server} -> server) $ concatMap (\UserOperatorServers {xftpServers} -> xftpServers) userServers
-      duplicateXFTPServers = findDuplicatesByHost allXFTPServers
-      duplicateXFTPErrors = map (USEDuplicateXFTP . AProtoServerWithAuth SPXFTP) duplicateXFTPServers
-   in storageMissing_ <> proxyMissing_ <> duplicateSMPErrors <> duplicateXFTPErrors
+validateUserServers :: NonEmpty UpdatedUserOperatorServers -> [UserServersError]
+validateUserServers uss =
+  missingRolesErr SPSMP storage USEStorageMissing
+    <> missingRolesErr SPSMP proxy USEProxyMissing
+    <> missingRolesErr SPXFTP storage USEStorageMissing
+    <> duplicatServerErrs SPSMP
+    <> duplicatServerErrs SPXFTP
   where
-    canUseForRole :: (ServerRoles -> Bool) -> UserOperatorServers -> Bool
-    canUseForRole roleSel UserOperatorServers {operator, smpServers, xftpServers} = case operator of
-      Just ServerOperator {roles} -> roleSel roles
-      Nothing -> not (null smpServers) && not (null xftpServers)
-    findDuplicatesByHost :: [ProtoServerWithAuth p] -> [ProtoServerWithAuth p]
-    findDuplicatesByHost servers =
-      let allHosts = concatMap (L.toList . host . protoServer) servers
-          hostCounts = M.fromListWith (+) [(host, 1 :: Int) | host <- allHosts]
-          duplicateHosts = M.keys $ M.filter (> 1) hostCounts
-       in filter (\srv -> any (`elem` duplicateHosts) (L.toList $ host . protoServer $ srv)) servers
+    missingRolesErr :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> (ServerRoles -> Bool) -> (AProtocolType -> UserServersError) -> [UserServersError]
+    missingRolesErr p roleSel err = [err (AProtocolType p) | hasRole]
+      where
+        hasRole =
+          any (\(AUS _ UserServer {deleted, enabled}) -> enabled && not deleted) $
+            concatMap (`updatedServers` p) $ filter roleEnabled (L.toList uss)
+        roleEnabled UpdatedUserOperatorServers {operator} =
+          maybe True (\ServerOperator {enabled, roles} -> enabled && roleSel roles) operator
+    duplicatServerErrs :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> [UserServersError]
+    duplicatServerErrs p = mapMaybe duplicateErr_ srvs
+      where
+        srvs =
+          filter (\(AUS _ UserServer {deleted}) -> not deleted) $
+            concatMap (`updatedServers` p) (L.toList uss)
+        duplicateErr_ (AUS _ srv@UserServer {server}) =
+          USEDuplicateServer (AProtocolType p) (AProtoServerWithAuth p server)
+            <$> find (`S.member` duplicateHosts) (srvHost srv)
+        duplicateHosts = snd $ foldl' (\acc (AUS _ srv) -> foldl' addHost acc $ srvHost srv) (S.empty, S.empty) srvs
+        addHost (hs, dups) h
+          | h `S.member` hs = (hs, S.insert h dups)
+          | otherwise = (S.insert h hs, dups)
 
-instance ToJSON DBEntityId where
-  toEncoding (DBEntityId i) = toEncoding i
-  toJSON (DBEntityId i) = toJSON i
+instance ToJSON ADBEntityId where
+  toEncoding (AEI _ dbId) = toEncoding dbId
+  toJSON (AEI _ dbId) = toJSON dbId
 
-instance FromJSON DBEntityId where
-  parseJSON v = DBEntityId <$> parseJSON v
+instance ToJSON (DBEntityId' s) where
+  toEncoding = \case
+    DBEntityId i -> toEncoding i
+    DBNewEntity -> JE.null_
+  toJSON = \case
+    DBEntityId i -> toJSON i
+    DBNewEntity -> J.Null
+
+instance FromJSON ADBEntityId where
+  parseJSON (J.Null) = pure $ AEI SDBNew DBNewEntity
+  parseJSON (J.Number n) = case floatingOrInteger n of
+    Left (_ :: Double) -> fail "bad ADBEntityId"
+    Right i -> pure $ AEI SDBStored (DBEntityId $ fromInteger i)
+  parseJSON _ = fail "bad ADBEntityId"
+
+instance DBStoredI s => FromJSON (DBEntityId' s) where
+  parseJSON v = (\(AEI _ dbId) -> checkDBStored dbId) <$?> parseJSON v
+
+checkDBStored :: forall t s s'. (DBStoredI s, DBStoredI s') => t s' -> Either String (t s)
+checkDBStored x = case testEquality (sdbStored @s) (sdbStored @s') of
+  Just Refl -> Right x
+  Nothing -> Left "bad DBStored"
 
 $(JQ.deriveJSON defaultJSON ''UsageConditions)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CA") ''ConditionsAcceptance)
 
-instance ToJSON ServerOperator where
+instance ToJSON (ServerOperator' s) where
   toEncoding = $(JQ.mkToEncoding defaultJSON ''ServerOperator')
   toJSON = $(JQ.mkToJSON defaultJSON ''ServerOperator')
 
-instance FromJSON ServerOperator where
+instance DBStoredI s => FromJSON (ServerOperator' s) where
   parseJSON = $(JQ.mkParseJSON defaultJSON ''ServerOperator')
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "UCA") ''UsageConditionsAction)
 
-instance ProtocolTypeI p => ToJSON (UserServer p) where
+instance ProtocolTypeI p => ToJSON (UserServer' s p) where
   toEncoding = $(JQ.mkToEncoding defaultJSON ''UserServer')
   toJSON = $(JQ.mkToJSON defaultJSON ''UserServer')
 
-instance ProtocolTypeI p => FromJSON (UserServer p) where
+instance (DBStoredI s, ProtocolTypeI p) => FromJSON (UserServer' s p) where
   parseJSON = $(JQ.mkParseJSON defaultJSON ''UserServer')
 
+instance ProtocolTypeI p => FromJSON (AUserServer p) where
+  parseJSON v = (AUS SDBStored <$> parseJSON v) <|> (AUS SDBNew <$> parseJSON v)
+
 $(JQ.deriveJSON defaultJSON ''UserOperatorServers)
+
+instance FromJSON UpdatedUserOperatorServers where
+  parseJSON = $(JQ.mkParseJSON defaultJSON ''UpdatedUserOperatorServers)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "USE") ''UserServersError)

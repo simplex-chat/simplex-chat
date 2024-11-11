@@ -76,7 +76,7 @@ chatProfileTests = do
     it "change user for pending connection" testChangePCCUser
     it "change from incognito profile connects as new user" testChangePCCUserFromIncognito
     it "change user for pending connection and later set incognito connects as incognito in changed profile" testChangePCCUserAndThenIncognito
-    xit "change user for user without matching servers creates new connection" testChangePCCUserDiffSrv
+    it "change user for user without matching servers creates new connection" testChangePCCUserDiffSrv
   describe "preferences" $ do
     it "set contact preferences" testSetContactPrefs
     it "feature offers" testFeatureOffers

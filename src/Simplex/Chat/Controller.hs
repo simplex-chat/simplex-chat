@@ -349,17 +349,15 @@ data ChatCommand
   | APIGetGroupLink GroupId
   | APICreateMemberContact GroupId GroupMemberId
   | APISendMemberContactInvitation {contactId :: ContactId, msgContent_ :: Maybe MsgContent}
-  | -- | APIGetUserProtoServers UserId AProtocolType
-    -- | GetUserProtoServers AProtocolType
-    -- | APISetUserProtoServers UserId AProtoServersConfig
-    -- | SetUserProtoServers AProtoServersConfig
-    APITestProtoServer UserId AProtoServerWithAuth
+  | GetUserProtoServers AProtocolType
+  | SetUserProtoServers AProtocolType [AProtoServerWithAuth]
+  | APITestProtoServer UserId AProtoServerWithAuth
   | TestProtoServer AProtoServerWithAuth
   | APIGetServerOperators
   | APISetServerOperators (NonEmpty ServerOperator)
   | APIGetUserServers UserId
-  | APISetUserServers UserId (NonEmpty UserOperatorServers)
-  | APIValidateServers (NonEmpty UserOperatorServers) -- response is CRUserServersValidation
+  | APISetUserServers UserId (NonEmpty UpdatedUserOperatorServers)
+  | APIValidateServers (NonEmpty UpdatedUserOperatorServers) -- response is CRUserServersValidation
   | APIGetUsageConditions
   | APISetConditionsNotified Int64
   | APIAcceptConditions Int64 (NonEmpty Int64)
@@ -588,8 +586,7 @@ data ChatResponse
   | CRChatItemInfo {user :: User, chatItem :: AChatItem, chatItemInfo :: ChatItemInfo}
   | CRChatItemId User (Maybe ChatItemId)
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
-  | -- | CRUserProtoServers {user :: User, servers :: AUserProtoServers, operators :: [ServerOperator]}
-    CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure}
+  | CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure}
   | CRServerOperators {operators :: [ServerOperator], conditionsAction :: Maybe UsageConditionsAction}
   | CRUserServers {user :: User, userServers :: [UserOperatorServers]}
   | CRUserServersValidation {serverErrors :: [UserServersError]}
