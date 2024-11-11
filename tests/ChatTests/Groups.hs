@@ -412,6 +412,9 @@ testChatPaginationInitial = testChatOpts2 opts aliceProfile bobProfile $ \alice 
   let newItemIds = intercalate "," $ map groupItemId [11 .. 12] -- Read, 1, 2
   bob #$> ("/_read chat items #1 " <> newItemIds, id, "ok")
   bob #$> ("/_get chat #1 initial=5", chat, [(0, "1"), (0, "2"), (0, "3"), (0, "4"), (0, "5")])
+  let allButLastId = intercalate "," $ map groupItemId [13 .. 19] -- Read all but last
+  bob #$> ("/_read chat items #1 " <> allButLastId, id, "ok")
+  bob #$> ("/_get chat #1 initial=5", chat, [(0, "6"), (0, "7"), (0, "8"), (0, "9"), (0, "10")])
   where
     opts =
       testOpts
