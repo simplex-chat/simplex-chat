@@ -1090,7 +1090,16 @@ getDirectChatInitial_ :: DB.Connection -> User -> Contact -> Int -> ExceptT Stor
 getDirectChatInitial_ db user@User {userId} ct@Contact {contactId} count = do
   firstUnreadItemId_ <- liftIO getDirectChatMinUnreadItemId_
   case firstUnreadItemId_ of
-    Just firstUnreadItemId -> getDirectChatAround_ db user ct firstUnreadItemId count ""
+    Just firstUnreadItemId -> do
+      chat <- getDirectChatAround_ db user ct firstUnreadItemId count ""
+      let items = chatItems chat
+      if null items || length items == count
+        then pure chat
+        else do
+          let remainingCount = count - length items
+          let afterId = cchatItemId $ last items
+          after <- getDirectChatAfter_ db user ct afterId remainingCount ""
+          pure $ chat {chatItems = chatItems chat <> chatItems after}
     Nothing -> liftIO $ getDirectChatLast_ db user ct count ""
   where
     getDirectChatMinUnreadItemId_ :: IO (Maybe ChatItemId)
@@ -1247,7 +1256,16 @@ getGroupChatInitial_ :: DB.Connection -> User -> GroupInfo -> Int -> ExceptT Sto
 getGroupChatInitial_ db user@User {userId} g@GroupInfo {groupId} count = do
   firstUnreadItemId_ <- liftIO getGroupChatMinUnreadItemId_
   case firstUnreadItemId_ of
-    Just firstUnreadItemId -> getGroupChatAround_ db user g firstUnreadItemId count ""
+    Just firstUnreadItemId -> do
+      chat <- getGroupChatAround_ db user g firstUnreadItemId count ""
+      let items = chatItems chat
+      if null items || length items == count
+        then pure chat
+        else do
+          let remainingCount = count - length items
+          let afterId = cchatItemId $ last items
+          after <- getGroupChatAfter_ db user g afterId remainingCount ""
+          pure $ chat {chatItems = chatItems chat <> chatItems after}
     Nothing -> liftIO $ getGroupChatLast_ db user g count ""
   where
     getGroupChatMinUnreadItemId_ :: IO (Maybe ChatItemId)
@@ -1388,7 +1406,16 @@ getLocalChatInitial_ :: DB.Connection -> User -> NoteFolder -> Int -> ExceptT St
 getLocalChatInitial_ db user@User {userId} nf@NoteFolder {noteFolderId} count = do
   firstUnreadItemId_ <- liftIO getLocalChatMinUnreadItemId_
   case firstUnreadItemId_ of
-    Just firstUnreadItemId -> getLocalChatAround_ db user nf firstUnreadItemId count ""
+    Just firstUnreadItemId -> do
+      chat <- getLocalChatAround_ db user nf firstUnreadItemId count ""
+      let items = chatItems chat
+      if null items || length items == count
+        then pure chat
+        else do
+          let remainingCount = count - length items
+          let afterId = cchatItemId $ last items
+          after <- getLocalChatAfter_ db user nf afterId remainingCount ""
+          pure $ chat {chatItems = chatItems chat <> chatItems after}
     Nothing -> liftIO $ getLocalChatLast_ db user nf count ""
   where
     getLocalChatMinUnreadItemId_ :: IO (Maybe ChatItemId)

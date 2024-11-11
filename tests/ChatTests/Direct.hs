@@ -66,7 +66,7 @@ chatDirectTests = do
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
     it "should send multiline message" testMultilineMessage
     it "send large message" testLargeMessage
-    fit "initial chat pagination" testChatPaginationInitial
+    it "initial chat pagination" testChatPaginationInitial
   describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
     it "send multiple timed messages" testSendMultiTimed
@@ -386,6 +386,16 @@ testChatPaginationInitial = testChatOpts2 opts aliceProfile bobProfile $ \alice 
   bob #$> ("/_read chat @2", id, "ok")
   bob #$> ("/_get chat @2 initial=3", chat, [(0, "8"), (0, "9"), (0, "10")])
   bob #$> ("/_get chat @2 initial=5", chat, [(0, "6"), (0, "7"), (0, "8"), (0, "9"), (0, "10")])
+
+  -- Clear chat, send a few extra message and assert page size is consistent
+  bob #$> ("/clear alice", id, "alice: all messages are removed locally ONLY")
+  forM_ ([1 .. 10] :: [Int]) $ \n -> alice #> ("@bob " <> show n)
+  forM_ ([1 .. 10] :: [Int]) $ \n -> bob <# ("alice> " <> show n)
+
+  bob #$> ("/_get chat @2 initial=5", chat, [(0, "1"), (0, "2"), (0, "3"), (0, "4"), (0, "5")])
+  let newItemIds = intercalate "," $ map itemId [11 .. 12] -- Read, 1, 2
+  bob #$> ("/_read chat items @2 " <> newItemIds, id, "ok")
+  bob #$> ("/_get chat @2 initial=5", chat, [(0, "1"), (0, "2"), (0, "3"), (0, "4"), (0, "5")])
   where
     opts =
       testOpts
