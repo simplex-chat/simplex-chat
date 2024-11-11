@@ -322,15 +322,15 @@ let loadItemsPerPage = 100
 let preloadItem = 25
 let idealChatListSize = 300
 
-func apiGetChat(type: ChatType, id: Int64, search: String = "") async throws -> (Chat, Int?) {
+func apiGetChat(type: ChatType, id: Int64, search: String = "") async throws -> Chat {
     let r = await chatSendCmd(.apiGetChat(type: type, id: id, pagination: .initial(count: loadItemsPerPage), search: search))
-    if case let .apiChat(_, chat, gap) = r { return (Chat.init(chat), gap) }
+    if case let .apiChat(_, chat) = r { return Chat.init(chat) }
     throw r
 }
 
-func apiGetChatItems(type: ChatType, id: Int64, pagination: ChatPagination, search: String = "") async throws -> ([ChatItem], Int?) {
+func apiGetChatItems(type: ChatType, id: Int64, pagination: ChatPagination, search: String = "") async throws -> [ChatItem] {
     let r = await chatSendCmd(.apiGetChat(type: type, id: id, pagination: pagination, search: search))
-    if case let .apiChat(_, chat, gap) = r { return (chat.chatItems, gap) }
+    if case let .apiChat(_, chat) = r { return chat.chatItems }
     if case .chatCmdError(_, _) = r {
         if case .chatError(_, let chatError) = r {
             if case .errorStore(let storeError) = chatError {
@@ -343,7 +343,7 @@ func apiGetChatItems(type: ChatType, id: Int64, pagination: ChatPagination, sear
     throw r
 }
 
-func loadChat(chat: Chat, search: String = "", clearItems: Bool = true) async -> ChatItem.ID? {
+func loadChat(chat: Chat, search: String = "", clearItems: Bool = true) async {
     do {
         let cInfo = chat.chatInfo
         let m = ChatModel.shared
@@ -354,21 +354,14 @@ func loadChat(chat: Chat, search: String = "", clearItems: Bool = true) async ->
                 im.reversedChatItems = []
             }
         }
-        let (chat, gap) = try await apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
+        let chat = try await apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
         await MainActor.run {
             im.reversedChatItems = chat.chatItems.reversed()
             m.updateChatInfo(chat.chatInfo)
         }
-        
-        return if gap != nil {
-            chat.chatItems[loadItemsPerPage].id
-        } else {
-            nil
-        }
     } catch let error {
         logger.error("loadChat error: \(responseError(error))")
     }
-    return nil
 }
 
 func apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64) async throws -> ChatItemInfo {

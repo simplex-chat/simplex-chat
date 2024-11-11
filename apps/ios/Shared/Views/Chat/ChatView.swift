@@ -364,6 +364,10 @@ struct ChatView: View {
                 await markChatUnread(chat, unreadChat: false)
             }
         }
+        if im.reversedChatItems.count == loadItemsPerPage {
+            loadChatItems(chat.chatInfo, .last(count: loadItemsPerPage))
+        }
+
         ChatView.FloatingButtonModel.shared.totalUnread = chat.chatStats.unreadCount
         Task {
             DispatchQueue.main.async {
@@ -879,7 +883,7 @@ struct ChatView: View {
             loadingItems = true
             
             do {
-                let (chatItems, gap) = try await apiGetChatItems(
+                let chatItems = try await apiGetChatItems(
                     type: cInfo.chatType,
                     id: cInfo.apiId,
                     pagination: pagination,
@@ -897,20 +901,28 @@ struct ChatView: View {
                 switch pagination {
                 case .last:
                     await MainActor.run {
-                        im.reversedChatItems = chatItems.reversed()
-                        im.gaps = []
+                        let newItemIds = Set(chatItems.map { $0.id })
+                        var duplicateFound = false
+                        newItems.removeAll {
+                            let isDuplicate = newItemIds.contains($0.id)
+                            duplicateFound = duplicateFound || isDuplicate
+                            return isDuplicate
+                        }
+                        
+                        if !duplicateFound {
+                            if let existingItem = im.reversedChatItems.first {
+                                im.gaps = [existingItem.id]
+                            }
+                        }
+                        
+                        newItems.insert(contentsOf: chatItems.reversed(), at: 0)
+                        im.reversedChatItems = newItems
                         loadingItems = false
                     }
-                case let .initial(count):
+                case .initial:
                     await MainActor.run {
                         im.reversedChatItems = chatItems.reversed()
-
-                        if gap != nil {
-                            let firstBottomItem = chatItems[count]
-                            im.gaps = [firstBottomItem.id]
-                        } else {
-                            im.gaps = []
-                        }
+                        im.gaps = []
                         loadingItems = false
                     }
                 case let .after(chatItemId, _):

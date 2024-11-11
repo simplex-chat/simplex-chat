@@ -111,11 +111,7 @@ class ItemsModel: ObservableObject {
             if let chat = ChatModel.shared.getChat(chatId) {
                 await MainActor.run { self.isLoading = true }
 //                try? await Task.sleep(nanoseconds: 5000_000000)
-                if let gap = await loadChat(chat: chat) {
-                    self.gaps = [gap]
-                } else {
-                    self.gaps = []
-                }
+                await loadChat(chat: chat)
                 navigationTimeout.cancel()
                 progressTimeout.cancel()
                 await MainActor.run {

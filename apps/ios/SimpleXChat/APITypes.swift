@@ -546,7 +546,7 @@ public enum ChatResponse: Decodable, Error {
     case chatStopped
     case chatSuspended
     case apiChats(user: UserRef, chats: [ChatData])
-    case apiChat(user: UserRef, chat: ChatData, gap: Int?)
+    case apiChat(user: UserRef, chat: ChatData)
     case chatItemInfo(user: UserRef, chatItem: AChatItem, chatItemInfo: ChatItemInfo)
     case userProtoServers(user: UserRef, servers: UserProtoServers)
     case serverTestResult(user: UserRef, testServer: String, testFailure: ProtocolTestFailure?)
@@ -888,7 +888,7 @@ public enum ChatResponse: Decodable, Error {
             case .chatStopped: return noDetails
             case .chatSuspended: return noDetails
             case let .apiChats(u, chats): return withUser(u, String(describing: chats))
-            case let .apiChat(u, chat, gap): return withUser(u, "gap: \(String(describing: gap)) \(String(describing: chat))")
+            case let .apiChat(u, chat): return withUser(u, String(describing: chat))
             case let .chatItemInfo(u, chatItem, chatItemInfo): return withUser(u, "chatItem: \(String(describing: chatItem))\nchatItemInfo: \(String(describing: chatItemInfo))")
             case let .userProtoServers(u, servers): return withUser(u, "servers: \(String(describing: servers))")
             case let .serverTestResult(u, server, testFailure): return withUser(u, "server: \(server)\nresult: \(String(describing: testFailure))")

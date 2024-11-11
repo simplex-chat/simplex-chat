@@ -340,7 +340,7 @@ struct GroupMemberInfoView: View {
         InfoViewButton(image: "message.fill", title: "message", width: width) {
             Task {
                 do {
-                    let (chat, _) = try await apiGetChat(type: .direct, id: contactId)
+                    let chat = try await apiGetChat(type: .direct, id: contactId)
                     chatModel.addChat(chat)
                     ItemsModel.shared.loadOpenChat(chat.id) {
                         dismissAllSheets(animated: true)
