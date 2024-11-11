@@ -512,6 +512,13 @@ func testProtoServer(server: String) async throws -> Result<(), ProtocolTestFail
     throw r
 }
 
+func getServerOperatorsSync() throws -> ([ServerOperator], UsageConditionsAction?) {
+    let r = chatSendCmdSync(.apiGetServerOperators)
+    if case let .serverOperators(operators, conditionsAction) = r { return (operators, conditionsAction) }
+    logger.error("getServerOperatorsSync error: \(String(describing: r))")
+    throw r
+}
+
 func getServerOperators() async throws -> ([ServerOperator], UsageConditionsAction?) {
     let r = await chatSendCmd(.apiGetServerOperators)
     if case let .serverOperators(operators, conditionsAction) = r { return (operators, conditionsAction) }
@@ -1603,6 +1610,7 @@ func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = ni
     try apiSetAppFilePaths(filesFolder: getAppFilesDirectory().path, tempFolder: getTempFilesDirectory().path, assetsFolder: getWallpaperDirectory().deletingLastPathComponent().path)
     try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
     m.chatInitialized = true
+    (m.serverOperators, m.usageConditionsAction) = try getServerOperatorsSync()
     m.currentUser = try apiGetActiveUser()
     if m.currentUser == nil {
         onboardingStageDefault.set(.step1_SimpleXInfo)

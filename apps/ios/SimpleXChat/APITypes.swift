@@ -1383,6 +1383,11 @@ public struct ServerOperator: Identifiable, Equatable, Codable {
 public struct ServerRoles: Equatable, Codable {
     public var storage: Bool
     public var proxy: Bool
+
+    enum CodingKeys: CodingKey {
+        case storage
+        case proxy
+    }
 }
 
 public struct UserOperatorServers: Identifiable, Equatable, Codable {
