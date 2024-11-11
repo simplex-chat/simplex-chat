@@ -572,7 +572,7 @@ data ChatResponse
   | CRChatSuspended
   | CRApiChats {user :: User, chats :: [AChat]}
   | CRChats {chats :: [AChat]}
-  | CRApiChat {user :: User, chat :: AChat, gap :: Maybe ChatGap}
+  | CRApiChat {user :: User, chat :: AChat}
   | CRChatItems {user :: User, chatName_ :: Maybe ChatName, chatItems :: [AChatItem]}
   | CRChatItemInfo {user :: User, chatItem :: AChatItem, chatItemInfo :: ChatItemInfo}
   | CRChatItemId User (Maybe ChatItemId)
@@ -842,8 +842,6 @@ data ChatPagination
   | CPAround ChatItemId Int
   | CPInitial Int
   deriving (Show)
-
-type ChatGap = Int
 
 data PaginationByTime
   = PTLast Int
