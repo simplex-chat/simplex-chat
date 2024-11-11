@@ -15,17 +15,11 @@ struct YourServersView: View {
     @EnvironmentObject private var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.editMode) private var editMode
-    @Binding var currSMPServers: [UserServer]
-    @Binding var smpServers: [UserServer]
-    @Binding var currXFTPServers: [UserServer]
-    @Binding var xftpServers: [UserServer]
+    @Binding var customServers: UserOperatorServers // nil operator is passed to this view
     @State private var selectedServer: String? = nil
     @State private var showAddServer = false
     @State private var showScanProtoServer = false
     @State private var testing = false
-
-    let smpStr: String = ServerProtocol.smp.rawValue.uppercased()
-    let xftpStr: String = ServerProtocol.xftp.rawValue.uppercased()
 
     var body: some View {
         yourServersView()
@@ -42,9 +36,9 @@ struct YourServersView: View {
 
     private func yourServersView() -> some View {
         List {
-            if !smpServers.isEmpty {
+            if !customServers.smpServers.isEmpty {
                 Section {
-                    ForEach($smpServers) { srv in
+                    ForEach($customServers.smpServers) { srv in
                         ProtocolServerViewLink(
                             server: srv,
                             serverProtocol: .smp,
@@ -54,13 +48,13 @@ struct YourServersView: View {
                         )
                     }
                     .onMove { indexSet, offset in
-                        smpServers.move(fromOffsets: indexSet, toOffset: offset)
+                        customServers.smpServers.move(fromOffsets: indexSet, toOffset: offset)
                     }
                     .onDelete { indexSet in
-                        smpServers.remove(atOffsets: indexSet)
+                        customServers.smpServers.remove(atOffsets: indexSet)
                     }
                 } header: {
-                    Text("\(smpStr) servers")
+                    Text("Message servers")
                         .foregroundColor(theme.colors.secondary)
                 } footer: {
                     Text("The servers for new connections of your current chat profile **\(m.currentUser?.displayName ?? "")**.")
@@ -69,9 +63,9 @@ struct YourServersView: View {
                 }
             }
 
-            if !xftpServers.isEmpty {
+            if !customServers.xftpServers.isEmpty {
                 Section {
-                    ForEach($xftpServers) { srv in
+                    ForEach($customServers.xftpServers) { srv in
                         ProtocolServerViewLink(
                             server: srv,
                             serverProtocol: .xftp,
@@ -81,13 +75,13 @@ struct YourServersView: View {
                         )
                     }
                     .onMove { indexSet, offset in
-                        xftpServers.move(fromOffsets: indexSet, toOffset: offset)
+                        customServers.xftpServers.move(fromOffsets: indexSet, toOffset: offset)
                     }
                     .onDelete { indexSet in
-                        xftpServers.remove(atOffsets: indexSet)
+                        customServers.xftpServers.remove(atOffsets: indexSet)
                     }
                 } header: {
-                    Text("\(xftpStr) servers")
+                    Text("Media & file servers")
                         .foregroundColor(theme.colors.secondary)
                 } footer: {
                     Text("The servers for new files of your current chat profile **\(m.currentUser?.displayName ?? "")**.")
@@ -104,8 +98,8 @@ struct YourServersView: View {
 
             Section {
                 TestServersButton(
-                    smpServers: $smpServers,
-                    xftpServers: $xftpServers,
+                    smpServers: $customServers.smpServers,
+                    xftpServers: $customServers.xftpServers,
                     testing: $testing
                 )
                 howToButton()
@@ -114,17 +108,17 @@ struct YourServersView: View {
         .toolbar { EditButton() }
         .confirmationDialog("Add server", isPresented: $showAddServer, titleVisibility: .hidden) {
             Button("Enter SMP server manually") {
-                smpServers.append(UserServer.empty)
-                selectedServer = smpServers.last?.id
+                customServers.smpServers.append(UserServer.empty)
+                selectedServer = customServers.smpServers.last?.id
             }
             Button("Enter XFTP server manually") {
-                xftpServers.append(UserServer.empty)
-                selectedServer = xftpServers.last?.id
+                customServers.xftpServers.append(UserServer.empty)
+                selectedServer = customServers.xftpServers.last?.id
             }
             Button("Scan server QR code") { showScanProtoServer = true }
         }
         .sheet(isPresented: $showScanProtoServer) {
-            ScanProtocolServer(smpServers: $smpServers, xftpServers: $xftpServers)
+            ScanProtocolServer(smpServers: $customServers.smpServers, xftpServers: $customServers.xftpServers)
                 .modifier(ThemedBackground(grouped: true))
         }
     }
@@ -274,10 +268,7 @@ struct TestServersButton: View {
 struct YourServersView_Previews: PreviewProvider {
     static var previews: some View {
         YourServersView(
-            currSMPServers: Binding.constant([UserServer.sampleData.preset]),
-            smpServers: Binding.constant([UserServer.sampleData.preset]),
-            currXFTPServers: Binding.constant([UserServer.sampleData.xftpPreset]),
-            xftpServers: Binding.constant([UserServer.sampleData.xftpPreset])
+            customServers: Binding.constant(UserOperatorServers.sampleDataNilOperator)
         )
     }
 }

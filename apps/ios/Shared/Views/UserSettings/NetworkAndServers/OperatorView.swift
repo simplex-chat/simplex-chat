@@ -15,20 +15,13 @@ struct OperatorView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     @EnvironmentObject var theme: AppTheme
-    @Binding var serverOperator: ServerOperator
+    @Binding var userOperatorServers: UserOperatorServers
     @State var serverOperatorToEdit: ServerOperator
     @State var useOperator: Bool
     @State private var useOperatorToggleReset: Bool = false
     @State private var showConditionsSheet: Bool = false
-    @Binding var currSMPServers: [UserServer]
-    @Binding var smpServers: [UserServer]
-    @Binding var currXFTPServers: [UserServer]
-    @Binding var xftpServers: [UserServer]
     @State private var selectedServer: String? = nil
     @State private var testing = false
-
-    let smpStr: String = ServerProtocol.smp.rawValue.uppercased()
-    let xftpStr: String = ServerProtocol.xftp.rawValue.uppercased()
 
     var body: some View {
         operatorView()
@@ -73,48 +66,52 @@ struct OperatorView: View {
                         Toggle("As proxy", isOn: $serverOperatorToEdit.roles.proxy)
                     }
 
-                    Section {
-                        ForEach($smpServers) { srv in
-                            ProtocolServerViewLink(
-                                server: srv,
-                                serverProtocol: .smp,
-                                preset: true,
-                                backLabel: "\(serverOperator.tradeName) servers",
-                                selectedServer: $selectedServer
-                            )
+                    if !userOperatorServers.smpServers.isEmpty {
+                        Section {
+                            ForEach($userOperatorServers.smpServers) { srv in
+                                ProtocolServerViewLink(
+                                    server: srv,
+                                    serverProtocol: .smp,
+                                    preset: true,
+                                    backLabel: "\(serverOperatorToEdit.tradeName) servers",
+                                    selectedServer: $selectedServer
+                                )
+                            }
+                        } header: {
+                            Text("Message servers")
+                                .foregroundColor(theme.colors.secondary)
+                        } footer: {
+                            Text("The servers for new connections of your current chat profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
+                                .foregroundColor(theme.colors.secondary)
+                                .lineLimit(10)
                         }
-                    } header: {
-                        Text("\(smpStr) servers")
-                            .foregroundColor(theme.colors.secondary)
-                    } footer: {
-                        Text("The servers for new connections of your current chat profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
-                            .foregroundColor(theme.colors.secondary)
-                            .lineLimit(10)
                     }
 
-                    Section {
-                        ForEach($xftpServers) { srv in
-                            ProtocolServerViewLink(
-                                server: srv,
-                                serverProtocol: .xftp,
-                                preset: true,
-                                backLabel: "\(serverOperator.tradeName) servers",
-                                selectedServer: $selectedServer
-                            )
+                    if !userOperatorServers.xftpServers.isEmpty {
+                        Section {
+                            ForEach($userOperatorServers.xftpServers) { srv in
+                                ProtocolServerViewLink(
+                                    server: srv,
+                                    serverProtocol: .xftp,
+                                    preset: true,
+                                    backLabel: "\(serverOperatorToEdit.tradeName) servers",
+                                    selectedServer: $selectedServer
+                                )
+                            }
+                        } header: {
+                            Text("Media & file servers")
+                                .foregroundColor(theme.colors.secondary)
+                        } footer: {
+                            Text("The servers for new files of your current chat profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
+                                .foregroundColor(theme.colors.secondary)
+                                .lineLimit(10)
                         }
-                    } header: {
-                        Text("\(xftpStr) servers")
-                            .foregroundColor(theme.colors.secondary)
-                    } footer: {
-                        Text("The servers for new files of your current chat profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
-                            .foregroundColor(theme.colors.secondary)
-                            .lineLimit(10)
                     }
 
                     Section {
                         TestServersButton(
-                            smpServers: $smpServers,
-                            xftpServers: $xftpServers,
+                            smpServers: $userOperatorServers.smpServers,
+                            xftpServers: $userOperatorServers.xftpServers,
                             testing: $testing
                         )
                     }
@@ -122,7 +119,7 @@ struct OperatorView: View {
             }
         }
         .modifier(BackButton(disabled: Binding.constant(false)) {
-            serverOperator = serverOperatorToEdit
+            userOperatorServers.operator = serverOperatorToEdit
             ChatModel.shared.updateServerOperator(serverOperatorToEdit)
             dismiss()
         })
@@ -134,18 +131,18 @@ struct OperatorView: View {
 
     private func infoViewLink() -> some View {
         NavigationLink() {
-            OperatorInfoView(serverOperator: serverOperator)
+            OperatorInfoView(serverOperator: serverOperatorToEdit)
                 .navigationBarTitle("Operator information")
                 .modifier(ThemedBackground(grouped: true))
                 .navigationBarTitleDisplayMode(.large)
         } label: {
             HStack {
-                Image(serverOperator.logo(colorScheme))
+                Image(serverOperatorToEdit.logo(colorScheme))
                     .resizable()
                     .scaledToFit()
                     .grayscale(serverOperatorToEdit.enabled ? 0.0 : 1.0)
                     .frame(width: 24, height: 24)
-                Text(serverOperator.tradeName)
+                Text(serverOperatorToEdit.tradeName)
             }
         }
     }
@@ -474,12 +471,8 @@ struct UsageConditionsView: View {
 
 #Preview {
     OperatorView(
-        serverOperator: Binding.constant(ServerOperator.sampleData1),
+        userOperatorServers: Binding.constant(UserOperatorServers.sampleData1),
         serverOperatorToEdit: ServerOperator.sampleData1,
-        useOperator: ServerOperator.sampleData1.enabled,
-        currSMPServers: Binding.constant([UserServer.sampleData.preset]),
-        smpServers: Binding.constant([UserServer.sampleData.preset]),
-        currXFTPServers: Binding.constant([UserServer.sampleData.xftpPreset]),
-        xftpServers: Binding.constant([UserServer.sampleData.xftpPreset])
+        useOperator: ServerOperator.sampleData1.enabled
     )
 }

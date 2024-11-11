@@ -72,17 +72,15 @@ public enum ChatCommand {
     case apiGetGroupLink(groupId: Int64)
     case apiCreateMemberContact(groupId: Int64, groupMemberId: Int64)
     case apiSendMemberContactInvitation(contactId: Int64, msg: MsgContent)
-    case apiGetUserProtoServers(userId: Int64, serverProtocol: ServerProtocol) // TODO remove
-    case apiSetUserProtoServers(userId: Int64, serverProtocol: ServerProtocol, servers: [UserServer]) // TODO remove
     case apiTestProtoServer(userId: Int64, server: String)
     case apiGetServerOperators
-    case apiSetServerOperators(operatorsEnabled: [OperatorEnabled])
+    case apiSetServerOperators(operators: [ServerOperator])
     case apiGetUserServers(userId: Int64)
-    case apiSetUserServers(userId: Int64, userServers: [UserServers])
-    case apiValidateServers(userServers: [UserServers])
+    case apiSetUserServers(userId: Int64, userServers: [UserOperatorServers])
+    case apiValidateServers(userServers: [UserOperatorServers])
     case apiGetUsageConditions
     case apiSetConditionsNotified(conditionsId: Int64)
-    case apiAcceptConditions(conditionsId: Int64, operators: [ServerOperator])
+    case apiAcceptConditions(conditionsId: Int64, operatorIds: [Int64])
     case apiSetChatItemTTL(userId: Int64, seconds: Int64?)
     case apiGetChatItemTTL(userId: Int64)
     case apiSetNetworkConfig(networkConfig: NetCfg)
@@ -239,17 +237,15 @@ public enum ChatCommand {
             case let .apiGetGroupLink(groupId): return "/_get link #\(groupId)"
             case let .apiCreateMemberContact(groupId, groupMemberId): return "/_create member contact #\(groupId) \(groupMemberId)"
             case let .apiSendMemberContactInvitation(contactId, mc): return "/_invite member contact @\(contactId) \(mc.cmdString)"
-            case let .apiGetUserProtoServers(userId, serverProtocol): return "/_servers \(userId) \(serverProtocol)"
-            case let .apiSetUserProtoServers(userId, serverProtocol, servers): return "/_servers \(userId) \(serverProtocol) \(protoServersStr(servers))"
             case let .apiTestProtoServer(userId, server): return "/_server test \(userId) \(server)"
             case .apiGetServerOperators: return "/_operators"
-            case let .apiSetServerOperators(operatorsEnabled): return "/_operators \(encodeJSON(operatorsEnabled))"
-            case let .apiGetUserServers(userId): return "/_user_servers \(userId)"
-            case let .apiSetUserServers(userId, userServers): return "/_user_servers \(userId) \(encodeJSON(userServers))"
+            case let .apiSetServerOperators(operators): return "/_operators \(encodeJSON(operators))"
+            case let .apiGetUserServers(userId): return "/_servers \(userId)"
+            case let .apiSetUserServers(userId, userServers): return "/_servers \(userId) \(encodeJSON(userServers))"
             case let .apiValidateServers(userServers): return "/_validate_servers \(encodeJSON(userServers))"
             case .apiGetUsageConditions: return "/_conditions"
             case let .apiSetConditionsNotified(conditionsId): return "/_conditions_notified \(conditionsId)"
-            case let .apiAcceptConditions(conditionsId, operators): return "/_accept_conditions \(conditionsId) \(operators)"
+            case let .apiAcceptConditions(conditionsId, operatorIds): return "/_accept_conditions \(conditionsId) \(operatorIds)"
             case let .apiSetChatItemTTL(userId, seconds): return "/_ttl \(userId) \(chatItemTTLStr(seconds: seconds))"
             case let .apiGetChatItemTTL(userId): return "/_ttl \(userId)"
             case let .apiSetNetworkConfig(networkConfig): return "/_network \(encodeJSON(networkConfig))"
@@ -402,8 +398,6 @@ public enum ChatCommand {
             case .apiGetGroupLink: return "apiGetGroupLink"
             case .apiCreateMemberContact: return "apiCreateMemberContact"
             case .apiSendMemberContactInvitation: return "apiSendMemberContactInvitation"
-            case .apiGetUserProtoServers: return "apiGetUserProtoServers"
-            case .apiSetUserProtoServers: return "apiSetUserProtoServers"
             case .apiTestProtoServer: return "apiTestProtoServer"
             case .apiGetServerOperators: return "apiGetServerOperators"
             case .apiSetServerOperators: return "apiSetServerOperators"
@@ -572,10 +566,9 @@ public enum ChatResponse: Decodable, Error {
     case apiChats(user: UserRef, chats: [ChatData])
     case apiChat(user: UserRef, chat: ChatData)
     case chatItemInfo(user: UserRef, chatItem: AChatItem, chatItemInfo: ChatItemInfo)
-    case userProtoServers(user: UserRef, servers: UserProtoServers) // TODO remove
     case serverTestResult(user: UserRef, testServer: String, testFailure: ProtocolTestFailure?)
     case serverOperators(operators: [ServerOperator], conditionsAction: UsageConditionsAction?)
-    case userServers(user: UserRef, userServers: [UserServers])
+    case userServers(user: UserRef, userServers: [UserOperatorServers])
     case userServersValidation(serverErrors: [UserServersError])
     case usageConditions(usageConditions: UsageConditions, conditionsText: String, acceptedConditions: UsageConditions?)
     case chatItemTTL(user: UserRef, chatItemTTL: Int64?)
@@ -749,7 +742,6 @@ public enum ChatResponse: Decodable, Error {
             case .apiChats: return "apiChats"
             case .apiChat: return "apiChat"
             case .chatItemInfo: return "chatItemInfo"
-            case .userProtoServers: return "userProtoServers"
             case .serverTestResult: return "serverTestResult"
             case .serverOperators: return "serverOperators"
             case .userServers: return "userServers"
@@ -922,7 +914,6 @@ public enum ChatResponse: Decodable, Error {
             case let .apiChats(u, chats): return withUser(u, String(describing: chats))
             case let .apiChat(u, chat): return withUser(u, String(describing: chat))
             case let .chatItemInfo(u, chatItem, chatItemInfo): return withUser(u, "chatItem: \(String(describing: chatItem))\nchatItemInfo: \(String(describing: chatItemInfo))")
-            case let .userProtoServers(u, servers): return withUser(u, "servers: \(String(describing: servers))")
             case let .serverTestResult(u, server, testFailure): return withUser(u, "server: \(server)\nresult: \(String(describing: testFailure))")
             case let .serverOperators(operators, conditionsAction): return "operators: \(String(describing: operators))\nconditionsAction: \(String(describing: conditionsAction))"
             case let .userServers(u, userServers): return withUser(u, "userServers: \(String(describing: userServers))")
@@ -1298,7 +1289,7 @@ public enum UsageConditionsAction: Decodable {
     }
 }
 
-public enum ConditionsAcceptance: Codable, Hashable {
+public enum ConditionsAcceptance: Equatable, Codable, Hashable {
     case accepted(acceptedAt: Date?)
     // If deadline is present, it means there's a grace period to review and accept conditions during which user can continue to use the operator.
     // No deadline indicates it's required to accept conditions for the operator to start using it.
@@ -1319,7 +1310,7 @@ public enum ConditionsAcceptance: Codable, Hashable {
     }
 }
 
-public struct ServerOperator: Identifiable, Codable {
+public struct ServerOperator: Identifiable, Equatable, Codable {
     public var operatorId: Int64
     public var operatorTag: OperatorTag
     public var tradeName: String
@@ -1389,21 +1380,35 @@ public struct ServerOperator: Identifiable, Codable {
     )
 }
 
-public struct ServerRoles: Codable {
+public struct ServerRoles: Equatable, Codable {
     public var storage: Bool
     public var proxy: Bool
 }
 
-public struct OperatorEnabled: Codable {
-    public var operatorId: Int64
-    public var enabled: Bool
-    public var roles: ServerRoles
-}
-
-public struct UserServers: Codable {
+public struct UserOperatorServers: Identifiable, Equatable, Codable {
     public var `operator`: ServerOperator?
     public var smpServers: [UserServer]
     public var xftpServers: [UserServer]
+
+    public var id: String {
+        if let op = self.operator {
+            "\(op.operatorId)"
+        } else {
+            "nil operator"
+        }
+    }
+
+    public static var sampleData1 = UserOperatorServers(
+        operator: ServerOperator.sampleData1,
+        smpServers: [UserServer.sampleData.preset],
+        xftpServers: [UserServer.sampleData.xftpPreset]
+    )
+
+    public static var sampleDataNilOperator = UserOperatorServers(
+        operator: nil,
+        smpServers: [UserServer.sampleData.preset],
+        xftpServers: [UserServer.sampleData.xftpPreset]
+    )
 }
 
 public enum UserServersError: Decodable {
