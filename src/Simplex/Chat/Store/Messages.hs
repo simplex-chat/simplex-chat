@@ -1081,20 +1081,20 @@ getDirectChatAround_ db user ct@Contact {contactId} aroundItemId count search = 
   beforeIds <- liftIO $ getDirectChatItemsIdsBefore_ db user ct aroundItemId fetchCountBefore search (chatItemCreatedAt middleChatItem)
   afterIds <- liftIO $ getDirectChatItemIdsAfter_ db user ct aroundItemId fetchCountAfter search (chatItemCreatedAt middleChatItem)
   currentTs <- liftIO getCurrentTime
-  beforeChatItems <- do
-    let remainingAfterCount = fetchCountAfter - length afterIds
-    items <- liftIO $ mapM (safeGetDirectItem db user ct currentTs) beforeIds
+  let remainingAfterCount = fetchCountAfter - length afterIds
+  let remainingBeforeCount = fetchCountBefore - length beforeIds
 
-    if remainingAfterCount <= 0
+  beforeChatItems <- do
+    items <- liftIO $ mapM (safeGetDirectItem db user ct currentTs) beforeIds
+    if remainingAfterCount <= 0 || remainingBeforeCount > 0
       then pure $ reverse items
       else do
         extraIds <- liftIO $ getDirectChatItemsIdsBefore_ db user ct (last beforeIds) remainingAfterCount search (chatItemCreatedAt (last items))
         extraItems <- liftIO $ mapM (safeGetDirectItem db user ct currentTs) extraIds
         pure $ reverse $ items <> extraItems
   afterChatItems <- do
-    let remainingBeforeCount = fetchCountBefore - length beforeIds
     items <- liftIO $ mapM (safeGetDirectItem db user ct currentTs) afterIds
-    if remainingBeforeCount <= 0
+    if remainingBeforeCount <= 0 || remainingAfterCount > 0
       then pure items
       else do
         extraIds <- liftIO $ getDirectChatItemIdsAfter_ db user ct (last afterIds) remainingBeforeCount search (chatItemCreatedAt (last items))
@@ -1255,19 +1255,19 @@ getGroupChatAround_ db user g@GroupInfo {groupId} aroundItemId count search = do
   beforeIds <- liftIO $ getGroupChatItemIdsBefore_ db user g aroundItemId fetchCountBefore search (chatItemTs middleChatItem)
   afterIds <- liftIO $ getGroupChatItemIdsAfter_ db user g aroundItemId fetchCountAfter search (chatItemTs middleChatItem)
   currentTs <- liftIO getCurrentTime
+  let remainingAfterCount = fetchCountAfter - length afterIds
+  let remainingBeforeCount = fetchCountBefore - length beforeIds
   beforeChatItems <- do
-    let remainingAfterCount = fetchCountAfter - length afterIds
     items <- liftIO $ mapM (safeGetGroupItem db user g currentTs) beforeIds
-    if remainingAfterCount <= 0
+    if remainingAfterCount <= 0 || remainingBeforeCount > 0
       then pure $ reverse items
       else do
         extraIds <- liftIO $ getGroupChatItemIdsBefore_ db user g (last beforeIds) remainingAfterCount search (chatItemTs (last items))
         extraItems <- liftIO $ mapM (safeGetGroupItem db user g currentTs) extraIds
         pure $ reverse $ items <> extraItems
   afterChatItems <- do
-    let remainingBeforeCount = fetchCountBefore - length beforeIds
     items <- liftIO $ mapM (safeGetGroupItem db user g currentTs) afterIds
-    if remainingBeforeCount <= 0
+    if remainingBeforeCount <= 0 || remainingAfterCount > 0
       then pure items
       else do
         extraIds <- liftIO $ getGroupChatItemIdsAfter_ db user g (last afterIds) remainingBeforeCount search (chatItemTs (last items))
@@ -1412,19 +1412,19 @@ getLocalChatAround_ db user nf@NoteFolder {noteFolderId} aroundItemId count sear
   beforeIds <- liftIO $ getLocalChatItemIdsBefore_ db user nf aroundItemId fetchCountBefore search (chatItemCreatedAt middleChatItem)
   afterIds <- liftIO $ getLocalChatItemIdsAfter_ db user nf aroundItemId fetchCountAfter search (chatItemCreatedAt middleChatItem)
   currentTs <- liftIO getCurrentTime
+  let remainingAfterCount = fetchCountAfter - length afterIds
+  let remainingBeforeCount = fetchCountBefore - length beforeIds
   beforeChatItems <- do
-    let remainingAfterCount = fetchCountAfter - length afterIds
     items <- liftIO $ mapM (safeGetLocalItem db user nf currentTs) beforeIds
-    if remainingAfterCount <= 0
+    if remainingAfterCount <= 0 || remainingBeforeCount > 0
       then pure $ reverse items
       else do
         extraIds <- liftIO $ getLocalChatItemIdsBefore_ db user nf (last beforeIds) remainingAfterCount search (chatItemCreatedAt (last items))
         extraItems <- liftIO $ mapM (safeGetLocalItem db user nf currentTs) extraIds
         pure $ reverse $ items <> extraItems
   afterChatItems <- do
-    let remainingBeforeCount = fetchCountBefore - length beforeIds
     items <- liftIO $ mapM (safeGetLocalItem db user nf currentTs) afterIds
-    if remainingBeforeCount <= 0
+    if remainingBeforeCount <= 0 || remainingAfterCount > 0
       then pure items
       else do
         extraIds <- liftIO $ getLocalChatItemIdsAfter_ db user nf (last afterIds) remainingBeforeCount search (chatItemCreatedAt (last items))
