@@ -493,10 +493,6 @@ public enum ChatCommand {
     func joinedIds(_ ids: [Int64]) -> String {
         ids.map { "\($0)" }.joined(separator: ",")
     }
-    
-    func protoServersStr(_ servers: [UserServer]) -> String {
-        encodeJSON(ProtoServersConfig(servers: servers))
-    }
 
     func chatItemTTLStr(seconds: Int64?) -> String {
         if let seconds = seconds {
@@ -1202,23 +1198,9 @@ public struct DBEncryptionConfig: Codable {
     public var newKey: String
 }
 
-struct SMPServersConfig: Encodable {
-    var smpServers: [UserServer]
-}
-
 public enum ServerProtocol: String, Decodable {
     case smp
     case xftp
-}
-
-public struct ProtoServersConfig: Codable {
-    public var servers: [UserServer]
-}
-
-public struct UserProtoServers: Decodable {
-    public var serverProtocol: ServerProtocol
-    public var protoServers: [UserServer]
-    public var presetServers: [UserServer]
 }
 
 public enum OperatorTag: Codable {
@@ -1275,6 +1257,13 @@ public struct UsageConditions: Decodable {
         notifiedAt: nil,
         createdAt: Date.now
     )
+
+    enum CodingKeys: CodingKey {
+        case conditionsId
+        case conditionsCommit
+        case notifiedAt
+        case createdAt
+    }
 }
 
 public enum UsageConditionsAction: Decodable {
@@ -1378,6 +1367,17 @@ public struct ServerOperator: Identifiable, Equatable, Codable {
         enabled: false,
         roles: ServerRoles(storage: true, proxy: true)
     )
+
+    enum CodingKeys: CodingKey {
+        case operatorId
+        case operatorTag
+        case tradeName
+        case legalName
+        case serverDomains
+        case conditionsAcceptance
+        case enabled
+        case roles
+    }
 }
 
 public struct ServerRoles: Equatable, Codable {
@@ -1409,6 +1409,12 @@ public struct UserOperatorServers: Identifiable, Equatable, Codable {
         smpServers: [UserServer.sampleData.preset],
         xftpServers: [UserServer.sampleData.xftpPreset]
     )
+
+    enum CodingKeys: CodingKey {
+        case `operator`
+        case smpServers
+        case xftpServers
+    }
 }
 
 public enum UserServersError: Decodable {
