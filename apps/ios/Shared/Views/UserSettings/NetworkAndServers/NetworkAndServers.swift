@@ -34,15 +34,8 @@ struct NetworkAndServers: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     @EnvironmentObject var theme: AppTheme
-    // *** TODO Use UserServers for state:
-    // @State private var currUserServers: [UserServer] = []
-    // @State private var userServers: [UserServer] = []
-    @State private var serverOperators: [ServerOperator] = []
-    @State private var currSMPServers: [UserServer] = []
-    @State private var smpServers: [UserServer] = []
-    @State private var currXFTPServers: [UserServer] = []
-    @State private var xftpServers: [UserServer] = []
-    // ***
+    @State private var currUserServers: [UserOperatorServers] = []
+    @State private var userServers: [UserOperatorServers] = []
     @State private var sheetItem: NetworkAndServersSheet? = nil
     @State private var justOpened = true
     @State private var showSaveDialog = false
@@ -51,11 +44,9 @@ struct NetworkAndServers: View {
         VStack {
             List {
                 let conditionsAction = m.usageConditionsAction
-                let smpServers = [UserServer.sampleData.preset, UserServer.sampleData.preset]
-                let xftpServers = [UserServer.sampleData.xftpPreset, UserServer.sampleData.xftpPreset]
                 Section {
-                    ForEach($serverOperators) { srvOperator in
-                        serverOperatorView(srvOperator, smpServers, xftpServers)
+                    ForEach($userServers.filter { $0.operator != nil }) { userOperatorServers in
+                        serverOperatorView(userOperatorServers)
                     }
 
                     if let conditionsAction = conditionsAction {
@@ -77,17 +68,15 @@ struct NetworkAndServers: View {
                 }
 
                 Section {
-                    NavigationLink {
-                        YourServersView(
-                            currSMPServers: $currSMPServers,
-                            smpServers: $smpServers,
-                            currXFTPServers: $currXFTPServers,
-                            xftpServers: $xftpServers
-                        )
-                        .navigationTitle("Your servers")
-                        .modifier(ThemedBackground(grouped: true))
-                    } label: {
-                        Text("Your servers")
+                    let customServers = $userServers.first(where: { $0.operator.wrappedValue == nil })
+                    if let customServers = customServers {
+                        NavigationLink {
+                            YourServersView(customServers: customServers)
+                                .navigationTitle("Your servers")
+                                .modifier(ThemedBackground(grouped: true))
+                        } label: {
+                            Text("Your servers")
+                        }
                     }
 
                     NavigationLink {
@@ -126,23 +115,12 @@ struct NetworkAndServers: View {
                 }
             }
         }
-        .onAppear {
-            // TODO move inside justOpened?
-            serverOperators = ChatModel.shared.serverOperators
-
+        .task {
             // this condition is needed to prevent re-setting the servers when exiting single server view
             if justOpened {
                 do {
-                    // TODO single getUserServers api call for both SMP and XFTP;
-                    //      api call would be made in parent view, with servers returned per operator,
-                    //      this view will take servers of "null operator" (no operator)
-                    let rSMP = try getUserProtoServers(.smp)
-                    currSMPServers = rSMP.protoServers
-                    smpServers = currSMPServers
-
-                    let rXFTP = try getUserProtoServers(.xftp)
-                    currXFTPServers = rXFTP.protoServers
-                    xftpServers = currXFTPServers
+                    currUserServers = try await getUserServers()
+                    userServers = currUserServers
                 } catch let error {
                     showAlert(
                         NSLocalizedString("Error loading servers", comment: "alert title"),
@@ -168,7 +146,9 @@ struct NetworkAndServers: View {
             }
             Button("Exit without saving") { dismiss() }
         }
-        .sheet(item: $sheetItem, onDismiss: { serverOperators = ChatModel.shared.serverOperators }) { item in
+        // TODO smarter onDismiss - apply model operators conditions state to currUserServers/userServers
+        // .sheet(item: $sheetItem, onDismiss: { serverOperators = ChatModel.shared.serverOperators }) { item in
+        .sheet(item: $sheetItem) { item in
             switch item {
             case let .showConditions(conditionsAction):
                 UsageConditionsView(
@@ -187,34 +167,28 @@ struct NetworkAndServers: View {
         }
     }
 
-    @ViewBuilder private func serverOperatorView(
-        _ serverOperator: Binding<ServerOperator>,
-        _ smpServers: [UserServer],
-        _ xftpServers: [UserServer]
-    ) -> some View {
-        let srvOperator = serverOperator.wrappedValue
-        NavigationLink() {
-            OperatorView(
-                serverOperator: serverOperator,
-                serverOperatorToEdit: srvOperator,
-                useOperator: srvOperator.enabled,
-                currSMPServers: $currSMPServers,
-                smpServers: $smpServers,
-                currXFTPServers: $currXFTPServers,
-                xftpServers: $xftpServers
-            )
-            .navigationBarTitle("\(srvOperator.tradeName) servers")
-            .modifier(ThemedBackground(grouped: true))
-            .navigationBarTitleDisplayMode(.large)
-        } label: {
-            HStack {
-                Image(srvOperator.logo(colorScheme))
-                    .resizable()
-                    .scaledToFit()
-                    .grayscale(srvOperator.enabled ? 0.0 : 1.0)
-                    .frame(width: 24, height: 24)
-                Text(srvOperator.tradeName)
-                    .foregroundColor(srvOperator.enabled ? theme.colors.onBackground : theme.colors.secondary)
+    @ViewBuilder private func serverOperatorView(_ userOperatorServers: Binding<UserOperatorServers>) -> some View {
+        let userOperatorSrvs = userOperatorServers.wrappedValue
+        if let srvOperator = userOperatorSrvs.operator {
+            NavigationLink() {
+                OperatorView(
+                    userOperatorServers: userOperatorServers,
+                    serverOperatorToEdit: srvOperator,
+                    useOperator: srvOperator.enabled
+                )
+                .navigationBarTitle("\(srvOperator.tradeName) servers")
+                .modifier(ThemedBackground(grouped: true))
+                .navigationBarTitleDisplayMode(.large)
+            } label: {
+                HStack {
+                    Image(srvOperator.logo(colorScheme))
+                        .resizable()
+                        .scaledToFit()
+                        .grayscale(srvOperator.enabled ? 0.0 : 1.0)
+                        .frame(width: 24, height: 24)
+                    Text(srvOperator.tradeName)
+                        .foregroundColor(srvOperator.enabled ? theme.colors.onBackground : theme.colors.secondary)
+                }
             }
         }
     }
@@ -234,8 +208,7 @@ struct NetworkAndServers: View {
 
 
     private var saveDisabled: Bool {
-        // TODO userServers == currUserServersz
-        (smpServers == currSMPServers && xftpServers == currXFTPServers)
+        userServers == currUserServers
     }
 
     func saveServers() {
@@ -243,12 +216,9 @@ struct NetworkAndServers: View {
             do {
                 // TODO validateServers
                 // TODO Apply validation result to userServers state
-                // TODO Single api call - setUserServers
-                try await setUserProtoServers(.smp, servers: smpServers)
-                try await setUserProtoServers(.xftp, servers: xftpServers)
+                try await setUserServers(userServers: userServers)
                 await MainActor.run {
-                    currSMPServers = smpServers
-                    currXFTPServers = xftpServers
+                    currUserServers = userServers
                 }
             } catch let error {
                 let err = responseError(error)
