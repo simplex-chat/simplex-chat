@@ -27,7 +27,6 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
-import chat.simplex.common.model.CIDirection.GroupRcv
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.withChats
@@ -291,11 +290,11 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                 }
               }
             },
-            loadMessages = { chatId, pagination, anchors ->
+            loadMessages = { chatId, pagination, anchors, visibleItemIndexes ->
               val c = chatModel.getChat(chatId)
               if (chatModel.chatId.value != chatId) return@ChatLayout
               if (c != null) {
-                apiLoadMessages(c, pagination, searchText.value, anchors)
+                apiLoadMessages(c, pagination, searchText.value, anchors, visibleItemIndexes)
               }
             },
             deleteMessage = { itemId, mode ->
@@ -579,7 +578,7 @@ fun ChatLayout(
   back: () -> Unit,
   info: () -> Unit,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
-  loadMessages: suspend (ChatId, ChatPagination, MutableState<List<Long>>) -> Unit,
+  loadMessages: suspend (ChatId, ChatPagination, MutableState<List<Long>>, visibleItemIndexesNonReversed: () -> IntRange) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
   receiveFile: (Long) -> Unit,
@@ -918,7 +917,7 @@ fun BoxScope.ChatItemsList(
   linkMode: SimplexLinkMode,
   selectedChatItems: MutableState<Set<Long>?>,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
-  loadMessages: suspend (ChatId, ChatPagination, MutableState<List<Long>>) -> Unit,
+  loadMessages: suspend (ChatId, ChatPagination, MutableState<List<Long>>, visibleItemIndexesNonReversed: () -> IntRange) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
   receiveFile: (Long) -> Unit,
@@ -970,7 +969,9 @@ fun BoxScope.ChatItemsList(
       if (loadingMoreItems.value) return@PreloadItems
       try {
         loadingMoreItems.value = true
-        loadMessages(chatId, pagination, anchors)
+        loadMessages(chatId, pagination, anchors) {
+          visibleItemIndexesNonReversed(groups, listState)
+        }
       } finally {
         loadingMoreItems.value = false
       }
@@ -989,7 +990,9 @@ fun BoxScope.ChatItemsList(
               val pagination = ChatPagination.Around(itemId, ChatPagination.PRELOAD_COUNT * 2)
               val oldSize = reversedChatItems.value.size
               withContext(Dispatchers.Default) {
-                loadMessages(chatInfoUpdated.value.id, pagination, anchors)
+                loadMessages(chatInfoUpdated.value.id, pagination, anchors) {
+                  visibleItemIndexesNonReversed(groups, listState)
+                }
               }
               var repeatsLeft = 50
               while (oldSize == reversedChatItems.value.size && repeatsLeft > 0) {
@@ -1319,32 +1322,16 @@ fun BoxScope.ChatItemsList(
       val isLastGroup = groupIndex == groupsValue.sections.lastIndex
       val last = if (isLastGroup) reversedChatItems.value.lastOrNull() else null
       if (group.revealed.value) {
-        itemsIndexed(group.items, key = { _, item -> (item.id to item.meta.createdAt.toEpochMilliseconds()).toString() }) { i, item ->
-          val nextItem = if (i == 0) {
-            val gr = groups.value.sections.getOrNull(groupIndex - 1)
-            if (gr != null) gr.items[gr.items.lastIndex] else null
-          } else {
-            group.items[i - 1]
-          }
-          val ciCategory = item.mergeCategory
-          val prevItem: ChatItem?
-          if (ciCategory != null && ciCategory == nextItem?.mergeCategory) {
-            // memberConnected events and deleted items are aggregated at the last chat item in a row, see ChatItemView
-            prevItem = null
-          } else {
-            prevItem = if (i == group.items.lastIndex) null else group.items[i + 1]
-          }
-          val range = if (ciCategory != null && item.chatDir !is CIDirection.GroupRcv) {
+        itemsIndexed(group.items, key = { _, item -> (item.item.id to item.item.meta.createdAt.toEpochMilliseconds()).toString() }) { i, item ->
+          val ciCategory = item.item.mergeCategory
+          val range = if (ciCategory != null && item.item.chatDir !is CIDirection.GroupRcv) {
             group.startIndexInParentItems .. (group.startIndexInParentItems + group.items.lastIndex)
           } else {
             null
           }
-//          println("LALAL RANGE $range")
-          val showAvatar = group.showAvatar.contains(item.id)
-          val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
-          val itemSeparation = getItemSeparation(item, nextItem)
-          val previousItemSeparationLargeGap = if (prevItem == null) false else getItemSeparationLargeGap(prevItem, item)
-          ChatViewListItem(group.startIndexInParentItems + i, range, showAvatar, item, itemSeparation, previousItemSeparationLargeGap, isRevealed) {
+          val showAvatar = group.showAvatar.contains(item.item.id)
+          val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.item.id) } }
+          ChatViewListItem(group.startIndexInParentItems + i, range, showAvatar, item.item, item.separation, item.prevItemSeparationLargeGap, isRevealed) {
             group.reveal(it, revealedItems)
           }
           if (last != null && i == group.items.lastIndex) {
@@ -1353,13 +1340,13 @@ fun BoxScope.ChatItemsList(
           }
         }
       } else {
-        val item = group.items.first()
-        item(key = (item.id to item.meta.createdAt.toEpochMilliseconds()).toString()) {
+        val listItem = group.items.first()
+        item(key = (listItem.item.id to listItem.item.meta.createdAt.toEpochMilliseconds()).toString()) {
+          val item = listItem.item
           val range = if (item.mergeCategory != null) group.startIndexInParentItems .. (group.startIndexInParentItems + group.items.lastIndex) else null
           val showAvatar = group.showAvatar.contains(item.id) || item.mergeCategory != null
           val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
-          val itemSeparation = getItemSeparation(item, null)
-          ChatViewListItem(group.startIndexInParentItems, range, showAvatar, item, itemSeparation, false, isRevealed) {
+          ChatViewListItem(group.startIndexInParentItems, range, showAvatar, item, listItem.separation, listItem.prevItemSeparationLargeGap, isRevealed) {
             group.reveal(it, revealedItems)
           }
           if (last != null) {
@@ -1374,6 +1361,7 @@ fun BoxScope.ChatItemsList(
 
   FloatingDate(
     Modifier.padding(top = 10.dp + topPaddingToContent()).align(Alignment.TopCenter),
+    groups,
     listState,
   )
 
@@ -1564,6 +1552,7 @@ fun PreloadItems(
             // we're inside an anchoredRange (top --- [end of the anchoredRange --- we're here --- start of the anchoredRange] --- bottom)
             val index = groups.value.sections.indexInParentItems(anchor.itemId)
             println("LALAL GAPS1 $firstVisibleIndex indexInParent $index ${anchor.indexRange.first} ${anchor.indexRange.last}")
+            println("LALAL FROM INDEX ${items.lastIndex - anchor.indexRange.first}  elem ${items.getOrNull(items.lastIndex - anchor.indexRange.first)?.id}")
             if (index + remaining > firstVisibleIndex) items.lastIndex - anchor.indexRange.first to true else null
           } else if (!bottomLoadingIsDisabled) {
             // no anchoredRanges at all, just clear list that can be loaded from top and bottom just taking edges to start loading items with
@@ -1694,6 +1683,7 @@ fun topPaddingToContent(): Dp {
 @Composable
 private fun FloatingDate(
   modifier: Modifier,
+  groups: State<SectionGroups>,
   listState: LazyListState,
 ) {
   var nearBottomIndex by remember { mutableStateOf(-1) }
@@ -1702,13 +1692,11 @@ private fun FloatingDate(
     derivedStateOf {
       if (listState.layoutInfo.visibleItemsInfo.lastIndex >= 0) {
         val lastFullyVisibleOffset = listState.layoutInfo.viewportEndOffset
-        val items = chatModel.chatItems.value
-        val lastVisibleChatItemIndex = items.lastIndex - (listState.layoutInfo.visibleItemsInfo.lastOrNull { item ->
+        val lastVisibleChatItem = groups.value.sections.newestItemAtParentIndexOrNull((listState.layoutInfo.visibleItemsInfo.lastOrNull { item ->
           item.offset + item.size <= lastFullyVisibleOffset && item.size > 0
-        }?.index ?: listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1)
-        val item = items.getOrNull(lastVisibleChatItemIndex)
+        }?.index ?: listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index) ?: -1)
         val timeZone = TimeZone.currentSystemDefault()
-        item?.meta?.itemTs?.toLocalDateTime(timeZone)?.date?.atStartOfDayIn(timeZone)
+        lastVisibleChatItem?.meta?.itemTs?.toLocalDateTime(timeZone)?.date?.atStartOfDayIn(timeZone)
       } else {
         null
       }
@@ -2256,34 +2244,6 @@ private fun handleForwardConfirmation(
   )
 }
 
-private fun getItemSeparation(chatItem: ChatItem, nextItem: ChatItem?): ItemSeparation {
-  if (nextItem == null) {
-    return ItemSeparation(timestamp = true, largeGap = true, date = null)
-  }
-
-  val sameMemberAndDirection = if (nextItem.chatDir is GroupRcv && chatItem.chatDir is GroupRcv) {
-    chatItem.chatDir.groupMember.groupMemberId == nextItem.chatDir.groupMember.groupMemberId
-  } else chatItem.chatDir.sent == nextItem.chatDir.sent
-  val largeGap = !sameMemberAndDirection || (abs(nextItem.meta.createdAt.epochSeconds - chatItem.meta.createdAt.epochSeconds) >= 60)
-
-  return ItemSeparation(
-    timestamp = largeGap || nextItem.meta.timestampText != chatItem.meta.timestampText,
-    largeGap = largeGap,
-    date = if (getTimestampDateText(chatItem.meta.itemTs) == getTimestampDateText(nextItem.meta.itemTs)) null else nextItem.meta.itemTs
-  )
-}
-
-private fun getItemSeparationLargeGap(chatItem: ChatItem, nextItem: ChatItem?): Boolean {
-  if (nextItem == null) {
-    return true
-  }
-
-  val sameMemberAndDirection = if (nextItem.chatDir is GroupRcv && chatItem.chatDir is GroupRcv) {
-    chatItem.chatDir.groupMember.groupMemberId == nextItem.chatDir.groupMember.groupMemberId
-  } else chatItem.chatDir.sent == nextItem.chatDir.sent
-  return !sameMemberAndDirection || (abs(nextItem.meta.createdAt.epochSeconds - chatItem.meta.createdAt.epochSeconds) >= 60)
-}
-
 @Preview/*(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
   showBackground = true,
@@ -2327,7 +2287,7 @@ fun PreviewChatLayout() {
       back = {},
       info = {},
       showMemberInfo = { _, _ -> },
-      loadMessages = { _, _, _ -> },
+      loadMessages = { _, _, _, _ -> },
       deleteMessage = { _, _ -> },
       deleteMessages = { _ -> },
       receiveFile = { _ -> },
@@ -2399,7 +2359,7 @@ fun PreviewGroupChatLayout() {
       back = {},
       info = {},
       showMemberInfo = { _, _ -> },
-      loadMessages = { _, _, _ -> },
+      loadMessages = { _, _, _, _ -> },
       deleteMessage = { _, _ -> },
       deleteMessages = {},
       receiveFile = { _ -> },

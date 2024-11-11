@@ -231,7 +231,13 @@ fun openLoadedChat(chat: Chat, chatModel: ChatModel) {
   chatModel.chatId.value = chat.chatInfo.id
 }
 
-suspend fun apiLoadMessages(ch: Chat, pagination: ChatPagination, search: String, anchors: MutableState<List<Long>>) {
+suspend fun apiLoadMessages(
+  ch: Chat,
+  pagination: ChatPagination,
+  search: String,
+  anchors: MutableState<List<Long>>,
+  visibleItemIndexesNonReversed: () -> IntRange
+) {
   val chatInfo = ch.chatInfo
   val chat = chatModel.controller.apiGetChat(ch.remoteHostId, chatInfo.chatType, chatInfo.apiId, pagination, search) ?: return
   if (chatModel.chatId.value != chat.id || chat.chatItems.isEmpty()) return
@@ -264,6 +270,7 @@ suspend fun apiLoadMessages(ch: Chat, pagination: ChatPagination, search: String
       newItems.removeAll {
         val duplicate = newIds.contains(it.id)
         if (loadingFromAnchoredRange && duplicate) {
+          println("LALAL duplicate ${it.id}  $newIds")
           if (anchorsToMerge.contains(it.id)) {
             anchorsToMerge.remove(it.id)
             anchorsToRemove.add(it.id)
@@ -310,14 +317,45 @@ suspend fun apiLoadMessages(ch: Chat, pagination: ChatPagination, search: String
         i++
       }
       val wasSize = newItems.size
-      newItems.removeAll { newIds.contains(it.id) }
-      val insertAt = indexInCurrentItems - (wasSize - newItems.size)
+      val visibleItemIndexes = visibleItemIndexesNonReversed()
+      val trimmedIds = mutableSetOf<Long>()
+      var lastAnchorIndexTrimmed = -1
+      var index = 0
+      newItems.removeAll {
+        // keep the newest 200 items (bottom area) and oldest 200 items, trim others
+        val invisibleItemToTrim = index > 200 && newItems.size - index > 200 && visibleItemIndexes.last < index
+        val prevItemWasTrimmed = index - 1 > 200 && newItems.size - index + 1 > 200 && visibleItemIndexes.last < index - 1
+        val indexInAnchors = anchors.value.indexOf(it.id)
+        if (indexInAnchors != -1) {
+          lastAnchorIndexTrimmed = indexInAnchors
+        }
+        if (invisibleItemToTrim) {
+          if (prevItemWasTrimmed) {
+            trimmedIds.add(it.id)
+          } else {
+            // prev item is not supposed to be trimmed, so exclude current one from trimming and set an anchor here instead.
+            // this allows to define anchoredRange of the oldest items and to start loading trimmed items when user scrolls in the opposite direction
+            if (lastAnchorIndexTrimmed == -1) {
+              anchors.value = listOf(it.id) + anchors.value
+            } else {
+              val newAnchors = ArrayList(anchors.value)
+              newAnchors[lastAnchorIndexTrimmed] = it.id
+              anchors.value = newAnchors
+            }
+          }
+        }
+        index++
+        (invisibleItemToTrim && prevItemWasTrimmed) || newIds.contains(it.id)
+      }
+      println("LALAL TRIMMED ITEMS ${trimmedIds}")
+      val insertAt = indexInCurrentItems - (wasSize - newItems.size) + trimmedIds.size
       newItems.addAll(insertAt, chat.chatItems)
+      println("LALAL TRIMMED LEFT ${newItems.map { it.id }}")
       withContext(Dispatchers.Main) {
         chatModel.chatItems.replaceAll(newItems)
         println("LALAL GAPS2 ${anchors.value}  ${newIds} insertAt $insertAt indexInCurrentItems $indexInCurrentItems wasSize $wasSize")
         // will remove any anchors that now becomes obsolete because items were merged
-        anchors.value = anchors.value.filterNot { anchor -> newIds.contains(anchor).also { if (it) println("LALAL GAP WAS REMOVED $anchor") } }
+        anchors.value = anchors.value.filterNot { anchor -> (newIds.contains(anchor) || trimmedIds.contains(anchor)).also { if (it) println("LALAL GAP WAS REMOVED $anchor") } }
       }
     }
     is ChatPagination.Around -> {

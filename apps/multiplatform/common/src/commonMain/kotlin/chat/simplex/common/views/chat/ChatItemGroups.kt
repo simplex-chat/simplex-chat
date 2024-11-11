@@ -1,8 +1,12 @@
 package chat.simplex.common.views.chat
 
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.CIDirection.GroupRcv
+import chat.simplex.common.platform.chatModel
 import chat.simplex.common.views.chatlist.apiLoadMessages
+import kotlin.math.abs
 
 data class SectionGroups(
   val sections: List<SectionItems>,
@@ -20,9 +24,15 @@ data class AnchoredRange(
   val indexRangeInParentItems: IntRange
 )
 
+data class ListItem(
+  val item: ChatItem,
+  val separation: ItemSeparation,
+  val prevItemSeparationLargeGap: Boolean
+)
+
 data class SectionItems (
   val mergeCategory: CIMergeCategory?,
-  val items: ArrayList<ChatItem>,
+  val items: ArrayList<ListItem>,
   val revealed: MutableState<Boolean>,
   val showAvatar: MutableSet<Long>,
   val startIndexInParentItems: Int,
@@ -34,9 +44,9 @@ data class SectionItems (
     while (i < items.size) {
       val item = items[i]
       if (reveal) {
-        newRevealed.add(item.id)
+        newRevealed.add(item.item.id)
       } else {
-        newRevealed.remove(item.id)
+        newRevealed.remove(item.item.id)
       }
       i++
     }
@@ -63,20 +73,45 @@ fun List<ChatItem>.putIntoGroups(revealedItems: Set<Long>, itemAnchors: List<Lon
     val next = getOrNull(index + 1)
     val category = item.mergeCategory
     val itemIsAnchor = itemAnchors.contains(item.id)
+
+    val itemSeparation: ItemSeparation
+    val prevItemSeparationLargeGap: Boolean
     if (index > 0 && recent!!.mergeCategory == category && !itemIsAnchor) {
-      recent.items.add(item)
+      if (recent.revealed.value) {
+        val prev = getOrNull(index - 1)
+        itemSeparation = getItemSeparation(item, prev)
+        val nextForGap = if ((category != null && category == prev?.mergeCategory) || index + 1 == size) null else next
+        prevItemSeparationLargeGap = if (nextForGap == null) false else getItemSeparationLargeGap(nextForGap, item)
+
+        visibleItemIndexInParent++
+      } else {
+        itemSeparation = getItemSeparation(item, null)
+        prevItemSeparationLargeGap = false
+      }
+      val listItem = ListItem(item, itemSeparation, prevItemSeparationLargeGap)
+
+      recent.items.add(listItem)
       if (shouldShowAvatar(item, next)) {
         recent.showAvatar.add(item.id)
       }
-      if (recent.revealed.value) {
-        visibleItemIndexInParent++
-      }
     } else {
+      val revealed = item.mergeCategory == null || revealedItems.contains(item.id)
       visibleItemIndexInParent++
+
+      if (revealed) {
+        val prev = getOrNull(index - 1)
+        itemSeparation = getItemSeparation(item, prev)
+        val nextForGap = if ((category != null && category == prev?.mergeCategory) || index + 1 == size) null else next
+        prevItemSeparationLargeGap = if (nextForGap == null) false else getItemSeparationLargeGap(nextForGap, item)
+      } else {
+        itemSeparation = getItemSeparation(item, null)
+        prevItemSeparationLargeGap = false
+      }
+      val listItem = ListItem(item, itemSeparation, prevItemSeparationLargeGap)
       recent = SectionItems(
         mergeCategory = item.mergeCategory,
-        items = arrayListOf(item),
-        revealed = mutableStateOf(item.mergeCategory == null || revealedItems.contains(item.id)),
+        items = arrayListOf(listItem),
+        revealed = mutableStateOf(revealed),
         showAvatar = if (shouldShowAvatar(item, next)) {
           mutableSetOf(item.id)
         } else {
@@ -107,7 +142,7 @@ fun List<ChatItem>.putIntoGroups(revealedItems: Set<Long>, itemAnchors: List<Lon
 
 fun List<SectionItems>.indexInParentItems(itemId: Long): Int {
   for (group in this) {
-    val index = group.items.indexOfFirst { it.id == itemId }
+    val index = group.items.indexOfFirst { it.item.id == itemId }
     if (index != -1) {
       return group.startIndexInParentItems + if (group.revealed.value) index else 0
     }
@@ -122,6 +157,64 @@ fun List<SectionItems>.lastIndexInParentItems(): Int {
   } else {
     last.startIndexInParentItems
   }
+}
+
+fun List<SectionItems>.newestItemAtParentIndexOrNull(parentIndex: Int): ChatItem? {
+  for (group in this) {
+    val range = group.startIndexInParentItems..group.startIndexInParentItems + group.items.lastIndex
+    if (range.contains(parentIndex)) {
+      return if (group.revealed.value) {
+        group.items[parentIndex - group.startIndexInParentItems].item
+      } else {
+        group.items.first().item
+      }
+    }
+  }
+  return null
+}
+
+// returns index of newest item in reveredChatItems on that row by receiving index from LazyColumn
+private fun List<SectionItems>.newestItemIndexAtParentIndexOrNull(parentIndex: Int): Int? {
+  for (group in this) {
+    val range = group.startIndexInParentItems..group.startIndexInParentItems + group.items.lastIndex
+    if (range.contains(parentIndex)) {
+      return if (group.revealed.value) {
+        parentIndex - group.startIndexInParentItems
+      } else {
+        group.startIndexInParentItems
+      }
+    }
+  }
+  return null
+}
+
+// returns index of oldest item in reversedChatItems on that row by receiving index from LazyColumn
+private fun List<SectionItems>.oldestItemIndexAtParentIndexOrNull(parentIndex: Int): Int? {
+  for (group in this) {
+    val range = group.startIndexInParentItems..group.startIndexInParentItems + group.items.lastIndex
+    if (range.contains(parentIndex)) {
+      return if (group.revealed.value) {
+        parentIndex - group.startIndexInParentItems
+      } else {
+        group.startIndexInParentItems + group.items.lastIndex
+      }
+    }
+  }
+  return null
+}
+
+fun visibleItemIndexesNonReversed(groups: State<SectionGroups>, listState: LazyListState): IntRange {
+  val zero = 0 .. 0
+  if (listState.layoutInfo.totalItemsCount == 0) return zero
+  val newest = groups.value.sections.newestItemIndexAtParentIndexOrNull(listState.firstVisibleItemIndex)
+  val oldest = groups.value.sections.oldestItemIndexAtParentIndexOrNull(listState.layoutInfo.visibleItemsInfo.last().index)
+  if (newest == null || oldest == null) return zero
+  val size = chatModel.chatItems.value.size
+  val range = size - oldest .. size - newest
+  if (range.first < 0 || range.last < 0) return zero
+
+  // visible items mapped to their underlying data structure which is chatModel.chatItems
+  return range
 }
 
 fun recalculateAnchorPositions(anchors: MutableState<List<Long>>) = object: ChatItemsChangesListener {
@@ -145,11 +238,33 @@ fun recalculateAnchorPositions(anchors: MutableState<List<Long>>) = object: Chat
   override fun cleared() { anchors.value = emptyList() }
 }
 
-//object: ChatItemsChangesListener {
-//  override fun added(itemId: Long) { manuallyAddedItems.value += itemId }
-//  override fun removed(vararg itemId: Long) { manuallyAddedItems.value = manuallyAddedItems.value.subtract(itemId.toSet()) }
-//  override fun cleared() { manuallyAddedItems.value = emptySet() }
-//}
+private fun getItemSeparation(chatItem: ChatItem, nextItem: ChatItem?): ItemSeparation {
+  if (nextItem == null) {
+    return ItemSeparation(timestamp = true, largeGap = true, date = null)
+  }
+
+  val sameMemberAndDirection = if (nextItem.chatDir is GroupRcv && chatItem.chatDir is GroupRcv) {
+    chatItem.chatDir.groupMember.groupMemberId == nextItem.chatDir.groupMember.groupMemberId
+  } else chatItem.chatDir.sent == nextItem.chatDir.sent
+  val largeGap = !sameMemberAndDirection || (abs(nextItem.meta.createdAt.epochSeconds - chatItem.meta.createdAt.epochSeconds) >= 60)
+
+  return ItemSeparation(
+    timestamp = largeGap || nextItem.meta.timestampText != chatItem.meta.timestampText,
+    largeGap = largeGap,
+    date = if (getTimestampDateText(chatItem.meta.itemTs) == getTimestampDateText(nextItem.meta.itemTs)) null else nextItem.meta.itemTs
+  )
+}
+
+private fun getItemSeparationLargeGap(chatItem: ChatItem, nextItem: ChatItem?): Boolean {
+  if (nextItem == null) {
+    return true
+  }
+
+  val sameMemberAndDirection = if (nextItem.chatDir is GroupRcv && chatItem.chatDir is GroupRcv) {
+    chatItem.chatDir.groupMember.groupMemberId == nextItem.chatDir.groupMember.groupMemberId
+  } else chatItem.chatDir.sent == nextItem.chatDir.sent
+  return !sameMemberAndDirection || (abs(nextItem.meta.createdAt.epochSeconds - chatItem.meta.createdAt.epochSeconds) >= 60)
+}
 
 private fun shouldShowAvatar(current: ChatItem, older: ChatItem?) =
   current.chatDir is CIDirection.GroupRcv && (older == null || (older.chatDir !is CIDirection.GroupRcv || older.chatDir.groupMember.memberId != current.chatDir.groupMember.memberId))
