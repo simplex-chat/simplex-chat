@@ -22,7 +22,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
 import Data.FileEmbed
-import Data.Foldable1 (foldMap1)
+import Data.Foldable (foldMap')
 import Data.IORef
 import Data.Int (Int64)
 import Data.List (find, foldl')
@@ -42,7 +42,7 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import Language.Haskell.TH.Syntax (lift)
 import Simplex.Chat.Operators.Conditions
 import Simplex.Chat.Types.Util (textParseJSON)
-import Simplex.Messaging.Agent.Env.SQLite (OperatorId, ServerCfg (..), ServerRoles (..), allRoles)
+import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
@@ -201,14 +201,14 @@ data UserServer' s p = UserServer
   deriving (Show)
 
 data PresetOperator = PresetOperator
-  { operator :: NewServerOperator,
-    smp :: NonEmpty (NewUserServer 'PSMP),
+  { operator :: Maybe NewServerOperator,
+    smp :: [NewUserServer 'PSMP],
     useSMP :: Int,
-    xftp :: NonEmpty (NewUserServer 'PXFTP),
+    xftp :: [NewUserServer 'PXFTP],
     useXFTP :: Int
   }
 
-operatorServers :: UserProtocol p => SProtocolType p -> PresetOperator -> NonEmpty (NewUserServer p)
+operatorServers :: UserProtocol p => SProtocolType p -> PresetOperator -> [NewUserServer p]
 operatorServers p PresetOperator {smp, xftp} = case p of
   SPSMP -> smp
   SPXFTP -> xftp
@@ -255,36 +255,38 @@ updatedServerOperators presetOps storedOps =
     <> map (ASO SDBStored) (filter (isNothing . operatorTag) storedOps)
   where
     -- TODO remove domains of preset operators from custom
-    addPreset PresetOperator {operator = presetOp} = (storedOp' :)
-      where
-        storedOp' = case find ((operatorTag presetOp ==) . operatorTag) storedOps of
-          Just ServerOperator {operatorId, conditionsAcceptance, enabled, roles} ->
-            ASO SDBStored presetOp {operatorId, conditionsAcceptance, enabled, roles}
-          Nothing -> ASO SDBNew presetOp
+    addPreset PresetOperator {operator} = case operator of
+      Nothing -> id
+      Just presetOp -> (storedOp' :)
+        where
+          storedOp' = case find ((operatorTag presetOp ==) . operatorTag) storedOps of
+            Just ServerOperator {operatorId, conditionsAcceptance, enabled, roles} ->
+              ASO SDBStored presetOp {operatorId, conditionsAcceptance, enabled, roles}
+            Nothing -> ASO SDBNew presetOp
 
 -- This function should be used inside DB transaction to update servers.
 updatedUserServers :: forall p. UserProtocol p => SProtocolType p -> NonEmpty PresetOperator -> NonEmpty (NewUserServer p) -> [UserServer p] -> NonEmpty (AUserServer p)
-updatedUserServers p presetOps randomSrvs = \case
-  [] -> L.map (AUS SDBNew) randomSrvs
-  srvs ->
-    L.map (userServer storedSrvs) presetSrvs
-      `L.appendList` map (AUS SDBStored) (filter customServer srvs)
-    where
-      storedSrvs = foldl' (\ss srv@UserServer {server} -> M.insert server srv ss) M.empty srvs
+updatedUserServers _ _ randomSrvs [] = L.map (AUS SDBNew) randomSrvs
+updatedUserServers p presetOps randomSrvs srvs = 
+  fromMaybe (L.map (AUS SDBNew) randomSrvs) (L.nonEmpty updatedServers)
   where
+    updatedServers = map userServer presetSrvs <> map (AUS SDBStored) (filter customServer srvs)
+    storedSrvs :: Map (ProtoServerWithAuth p) (UserServer p)
+    storedSrvs = foldl' (\ss srv@UserServer {server} -> M.insert server srv ss) M.empty srvs
+    customServer :: UserServer p -> Bool
     customServer srv = not (preset srv) && all (`S.notMember` presetHosts) (srvHost srv)
-    presetSrvs :: NonEmpty (NewUserServer p)
-    presetSrvs = foldMap1 (operatorServers p) presetOps
+    presetSrvs :: [NewUserServer p]
+    presetSrvs = concatMap (operatorServers p) presetOps
     presetHosts :: Set TransportHost
-    presetHosts = foldMap1 (S.fromList . L.toList . srvHost) presetSrvs
-    userServer :: Map (ProtoServerWithAuth p) (UserServer p) -> NewUserServer p -> AUserServer p
-    userServer storedSrvs srv@UserServer {server} = maybe (AUS SDBNew srv) (AUS SDBStored) (M.lookup server storedSrvs)
+    presetHosts = foldMap' (S.fromList . L.toList . srvHost) presetSrvs
+    userServer :: NewUserServer p -> AUserServer p
+    userServer srv@UserServer {server} = maybe (AUS SDBNew srv) (AUS SDBStored) (M.lookup server storedSrvs)
 
 srvHost :: UserServer' s p -> NonEmpty TransportHost
 srvHost UserServer {server = ProtoServerWithAuth srv _} = host srv
 
-serverCfgs :: [(Text, ServerOperator)] -> NonEmpty (UserServer' s p) -> NonEmpty (ServerCfg p)
-serverCfgs opDomains = L.map agentServer
+agentServerCfgs :: [(Text, ServerOperator)] -> NonEmpty (UserServer' s p) -> NonEmpty (ServerCfg p)
+agentServerCfgs opDomains = L.map agentServer
   where
     agentServer :: UserServer' s p -> ServerCfg p
     agentServer srv@UserServer {server, enabled} =

@@ -17,7 +17,7 @@ import qualified Data.ByteString.Char8 as B
 import Data.List (intercalate, isInfixOf)
 import qualified Data.Text as T
 import Database.SQLite.Simple (Only (..))
-import Simplex.Chat.Controller (ChatConfig (..), OptionsServers (..))
+import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
@@ -6504,7 +6504,7 @@ testGroupMemberInactive tmp = do
     opts' =
       testOpts
         { coreOptions =
-            (testCoreOpts :: CoreChatOpts)
-              { optionsServers = testOptsServers {smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]}
+            testCoreOpts
+              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
               }
         }

@@ -15,7 +15,7 @@ import Control.Monad.Except
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
-import Simplex.Chat.Controller (ChatConfig (..), OptionsServers (..))
+import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Options
 import Simplex.Chat.Store.Shared (createContact)
 import Simplex.Chat.Types (ConnStatus (..), Profile (..))
@@ -314,8 +314,8 @@ testRetryAcceptingViaContactLink tmp = testChatCfgOpts2 cfg' opts' aliceProfile 
     opts' =
       testOpts
         { coreOptions =
-            (testCoreOpts :: CoreChatOpts)
-              { optionsServers = testOptsServers {smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]}
+            testCoreOpts
+              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
               }
         }
 

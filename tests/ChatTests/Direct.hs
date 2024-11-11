@@ -25,7 +25,7 @@ import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
-import Simplex.Chat.Controller (ChatConfig (..), OptionsServers (..), PresetServers (..))
+import Simplex.Chat.Controller (ChatConfig (..), PresetServers (..))
 import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
@@ -271,7 +271,7 @@ testRetryConnecting tmp = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile te
       testOpts
         { coreOptions =
             testCoreOpts
-              { optionsServers = testOptsServers {smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]}
+              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
               }
         }
 
@@ -340,7 +340,7 @@ testRetryConnectingClientTimeout tmp = do
       testOpts
         { coreOptions =
             testCoreOpts
-              { optionsServers = testOptsServers {smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]}
+              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
               }
         }
 

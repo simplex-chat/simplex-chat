@@ -27,12 +27,12 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Numeric.Natural (Natural)
 import Options.Applicative
-import Simplex.Chat.Controller (ChatLogLevel (..), OptionsServers (..), SimpleNetCfg (..), updateStr, versionNumber, versionString)
+import Simplex.Chat.Controller (ChatLogLevel (..), SimpleNetCfg (..), updateStr, versionNumber, versionString)
 import Simplex.FileTransfer.Description (mb)
 import Simplex.Messaging.Client (HostMode (..), SocksMode (..), textToHostMode)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
-import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI)
+import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI, SMPServerWithAuth, XFTPServerWithAuth)
 import Simplex.Messaging.Transport.Client (SocksProxyWithAuth (..), SocksAuth (..), defaultSocksProxyWithAuth)
 import System.FilePath (combine)
 
@@ -56,7 +56,8 @@ data ChatOpts = ChatOpts
 data CoreChatOpts = CoreChatOpts
   { dbFilePrefix :: String,
     dbKey :: ScrubbedBytes,
-    optionsServers :: OptionsServers,
+    smpServers :: [SMPServerWithAuth],
+    xftpServers :: [XFTPServerWithAuth],
     simpleNetCfg :: SimpleNetCfg,
     logLevel :: ChatLogLevel,
     logConnections :: Bool,
@@ -243,7 +244,8 @@ coreChatOptsP appDir defaultDbFileName = do
     CoreChatOpts
       { dbFilePrefix,
         dbKey,
-        optionsServers = OptionsServers {smpServers, xftpServers},
+        smpServers,
+        xftpServers,
         simpleNetCfg =
           SimpleNetCfg
             { socksProxy,

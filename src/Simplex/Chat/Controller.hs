@@ -84,7 +84,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), CorrId, MsgId, NMsgMeta (..), NtfServer, QueueId, XFTPServerWithAuth, SMPMsgMeta (..), SubscriptionMode (..), XFTPServer)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), CorrId, MsgId, NMsgMeta (..), NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SubscriptionMode (..), XFTPServer)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, simplexMQVersion)
 import Simplex.Messaging.Transport.Client (SocksProxyWithAuth, TransportHost)
@@ -133,7 +133,6 @@ data ChatConfig = ChatConfig
     chatVRange :: VersionRangeChat,
     confirmMigrations :: MigrationConfirmation,
     presetServers :: PresetServers,
-    optionsServers :: OptionsServers,
     tbqSize :: Natural,
     fileChunkSize :: Integer,
     xftpDescrPartSize :: Int,
@@ -155,9 +154,9 @@ data ChatConfig = ChatConfig
     chatHooks :: ChatHooks
   }
 
-data OptionsServers = OptionsServers
-  { smpServers :: [SMPServerWithAuth],
-    xftpServers :: [XFTPServerWithAuth]
+data RandomServers = RandomServers
+  { smpServers :: NonEmpty (NewUserServer 'PSMP),
+    xftpServers :: NonEmpty (NewUserServer 'PXFTP)
   }
 
 -- The hooks can be used to extend or customize chat core in mobile or CLI clients.
@@ -206,6 +205,7 @@ data ChatDatabase = ChatDatabase {chatStore :: SQLiteStore, agentStore :: SQLite
 
 data ChatController = ChatController
   { currentUser :: TVar (Maybe User),
+    randomServers :: RandomServers,
     currentRemoteHost :: TVar (Maybe RemoteHostId),
     firstTime :: Bool,
     smpAgent :: AgentClient,

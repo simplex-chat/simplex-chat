@@ -34,16 +34,16 @@ terminalChatConfig =
         PresetServers
           { operators =
               [ PresetOperator
-                  { operator = operatorSimpleXChat,
+                  { operator = Just operatorSimpleXChat,
                     smp =
-                      L.map
+                      map
                         (presetServer True)
                         [ "smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im,o5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion",
                           "smp://hpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg=@smp5.simplex.im,jjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion",
                           "smp://PQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo=@smp6.simplex.im,bylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion"
                         ],
                     useSMP = 3,
-                    xftp = L.map (presetServer True) defaultXFTPServers,
+                    xftp = map (presetServer True) $ L.toList defaultXFTPServers,
                     useXFTP = 3
                   }
               ],
