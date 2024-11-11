@@ -911,7 +911,7 @@ struct ChatView: View {
                         
                         if !duplicateFound {
                             if let existingItem = im.reversedChatItems.first {
-                                im.gaps = [existingItem.id]
+                                im.anchors = [existingItem.id]
                             }
                         }
                         
@@ -922,7 +922,7 @@ struct ChatView: View {
                 case .initial:
                     await MainActor.run {
                         im.reversedChatItems = chatItems.reversed()
-                        im.gaps = []
+                        im.anchors = []
                         loadingItems = false
                     }
                 case let .after(chatItemId, _):
@@ -932,22 +932,22 @@ struct ChatView: View {
                     
                     let wasSize = newItems.count
                     let newItemIds = Set(chatItems.map { $0.id })
-                    let indexInGaps = im.gaps.firstIndex { $0 == chatItemId }
-                    var gapsAfterChatItem: [Int64] = []
-                    if let indexInGaps = indexInGaps, indexInGaps + 1 <= im.gaps.count {
-                        gapsAfterChatItem = Array(im.gaps[indexInGaps + 1..<im.gaps.count])
+                    let indexInAnchors = im.anchors.firstIndex { $0 == chatItemId }
+                    var anchorAfterChatItem: [Int64] = []
+                    if let indexInAnchors = indexInAnchors, indexInAnchors + 1 <= im.anchors.count {
+                        anchorAfterChatItem = Array(im.anchors[indexInAnchors + 1..<im.anchors.count])
                     }
-                    var gapsToRemove = Set<Int64>()
+                    var anchorsToRemove = Set<Int64>()
                     var reachedBottom: Bool = false
                     
                     newItems.removeAll { item in
                         let isDuplicate = newItemIds.contains(item.id)
-                        if indexInGaps != nil && newItemIds.contains(item.id) {
-                            if gapsAfterChatItem.contains(item.id) {
-                                gapsAfterChatItem.removeAll { $0 == item.id }
-                                gapsToRemove.insert(item.id)
-                            } else if reachedBottom == false && gapsAfterChatItem.isEmpty {
-                                // We passed all gaps and found a duplicated item below all of them, indicating no more gaps below the loaded items.
+                        if indexInAnchors != nil && newItemIds.contains(item.id) {
+                            if anchorAfterChatItem.contains(item.id) {
+                                anchorAfterChatItem.removeAll { $0 == item.id }
+                                anchorsToRemove.insert(item.id)
+                            } else if reachedBottom == false && anchorAfterChatItem.isEmpty {
+                                // We passed all anchors and found a duplicated item below all of them, indicating no more anchors below the loaded items.
                                 reachedBottom = true
                             }
                         }
@@ -959,18 +959,18 @@ struct ChatView: View {
                     
                     await MainActor.run {
                         im.reversedChatItems = newItems
-                        var newGaps = im.gaps.filter { !gapsToRemove.contains($0) }
+                        var newAnchors = im.anchors.filter { !anchorsToRemove.contains($0) }
                         
                         if reachedBottom {
-                            newGaps = []
+                            newAnchors = []
                         } else {
-                            if let enlargedGapIndex = im.gaps.firstIndex(where: { $0 == chatItemId }) {
-                                // Move the gap to the end of the loaded items.
-                                newGaps[enlargedGapIndex] = chatItems.last?.id ?? newGaps[enlargedGapIndex]
+                            if let enlargedAnchorIndex = im.anchors.firstIndex(where: { $0 == chatItemId }) {
+                                // Move the anchor to the end of the loaded items.
+                                newAnchors[enlargedAnchorIndex] = chatItems.last?.id ?? newAnchors[enlargedAnchorIndex]
                             }
                         }
                         
-                        im.gaps = newGaps
+                        im.anchors = newAnchors
                         loadingItems = false
                     }
                 case let .before(chatItemId, _):
@@ -984,7 +984,7 @@ struct ChatView: View {
                                         
                     await MainActor.run {
                         im.reversedChatItems = newItems
-                        im.gaps = im.gaps.filter { !newItemIds.contains($0) }
+                        im.anchors = im.anchors.filter { !newItemIds.contains($0) }
                         loadingItems = false
                     }
                 case .around(_, _):
@@ -995,7 +995,7 @@ struct ChatView: View {
                     await MainActor.run {
                         im.reversedChatItems = newItems
                         if let lastItemId = chatItems.last?.id {
-                            im.gaps.insert(lastItemId, at: 0)
+                            im.anchors.insert(lastItemId, at: 0)
                         }
                         loadingItems = false
                     }
