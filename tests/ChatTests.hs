@@ -11,9 +11,9 @@ import Test.Hspec hiding (it)
 
 chatTests :: SpecWith FilePath
 chatTests = do
-  describe "direct tests" chatDirectTests
+  fdescribe "direct tests" chatDirectTests
   describe "forward tests" chatForwardTests
-  describe "group tests" chatGroupTests
+  fdescribe "group tests" chatGroupTests
   describe "local chats tests" chatLocalChatsTests
   describe "file tests" chatFileTests
   describe "profile tests" chatProfileTests

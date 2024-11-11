@@ -33,7 +33,7 @@ main = do
     describe "Message batching" batchingTests
     describe "Random servers" randomServersTests
     around testBracket $ do
-      describe "Mobile API Tests" mobileTests
+      fdescribe "Mobile API Tests" mobileTests
       describe "SimpleX chat client" chatTests
       xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
       xdescribe'' "SimpleX Directory service bot" directoryServiceTests

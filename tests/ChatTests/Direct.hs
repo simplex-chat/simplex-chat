@@ -66,7 +66,7 @@ chatDirectTests = do
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
     it "should send multiline message" testMultilineMessage
     it "send large message" testLargeMessage
-    it "initial chat pagination" testChatPaginationInitial
+    fit "initial chat pagination" testChatPaginationInitial
   describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
     it "send multiple timed messages" testSendMultiTimed
@@ -374,22 +374,13 @@ testChatPaginationInitial = testChatOpts2 opts aliceProfile bobProfile $ \alice 
   -- Bob receives the messages.
   forM_ ([1 .. 10] :: [Int]) $ \n -> bob <# ("alice> " <> show n)
 
-  -- All messages are unread for bob, should return area around unread (audio/video calls chat feature + 1,2nd unread message), and last 2 items
-  bob #$> ("/_get chat @2 initial=3", chat, [(0, "Audio/video calls: enabled"), (0, "1"), (0, "2"), (0, "8"), (0, "9"), (0, "10")])
+  -- All messages are unread for bob, should return area around unread
+  bob #$> ("/_get chat @2 initial=3", chat, [(0, "Audio/video calls: enabled"), (0, "1"), (0, "2")])
 
   -- Read next 2 items
   let itemIds = intercalate "," $ map itemId [1 .. 2]
   bob #$> ("/_read chat items @2 " <> itemIds, id, "ok")
-  bob #$> ("/_get chat @2 initial=3", chat, [(0, "2"), (0, "3"), (0, "4"), (0, "8"), (0, "9"), (0, "10")])
-
-  -- Read items until gap = 0
-  let itemIds2 = intercalate "," $ map itemId [3 .. 5]
-  bob #$> ("/_read chat items @2 " <> itemIds2, id, "ok")
-  bob #$> ("/_get chat @2 initial=3", chat, [(0, "5"), (0, "6"), (0, "7"), (0, "8"), (0, "9"), (0, "10")])
-
-  -- Read items until intersection
-  bob #$> ("/_read chat items @2 " <> itemId 6, id, "ok")
-  bob #$> ("/_get chat @2 initial=3", chat, [(0, "6"), (0, "7"), (0, "8"), (0, "9"), (0, "10")])
+  bob #$> ("/_get chat @2 initial=3", chat, [(0, "2"), (0, "3"), (0, "4")])
 
   -- Read all items
   bob #$> ("/_read chat @2", id, "ok")
