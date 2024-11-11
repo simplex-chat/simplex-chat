@@ -43,36 +43,12 @@ private func addTermItem(_ items: inout [TerminalItem], _ item: TerminalItem) {
     items.append(item)
 }
 
-/// Represents an anchor  in a list of chat items, indicating where data is missing and should be loaded.
-///
-/// - Parameters:
-///   - itemId: The unique identifier of the last item in the loaded list before the anchor.
-///     This ID corresponds to an item in the chat history, ordered from older to newer items.
-///     It is typically used when loading items via .around or .initial pagination when loading items
-///   - indexRange: The range of indexes within `reversedChatItems` array that
-///     represents the anchor. The first index in this range is the position of the anchor itself.
-///     For instance, if the array `[0, 1, 2, -100-, 101]` has an anchor at index 3, `indexRange`
-///     would be `3..<5`, indicating the anchor starts at index 3.
-///   - indexRangeInParentItems: The range of indexes in the `ReverseList` or parent UI component
-///     that considers revealed or hidden items, showing where the anchor appears in the visible list.
-///     The first index in this range points to where the anchor starts in the UI.
-struct AnchoredRange {
-    let itemId: Int64
-    let indexRange: Range<Int>
-    let indexRangeInParentItems: Range<Int>
-}
-
 class ItemsModel: ObservableObject {
     static let shared = ItemsModel()
     private let publisher = ObservableObjectPublisher()
     private var bag = Set<AnyCancellable>()
-    var chatItemIds = Set<ChatItem.ID>()
     var reversedChatItems: [ChatItem] = [] {
-        willSet {
-            chatItemIds.removeAll()
-            chatItemIds.formUnion(newValue.map { $0.id })
-            publisher.send()
-        }
+        willSet { publisher.send() }
     }
     var itemAdded = false {
         willSet { publisher.send() }
