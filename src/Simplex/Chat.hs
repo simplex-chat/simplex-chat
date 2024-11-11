@@ -735,14 +735,14 @@ processChatCommand' vr = \case
   APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
     -- TODO optimize queries calculating ChatStats, currently they're disabled
     CTDirect -> do
-      (directChat, gap) <- withFastStore (\db -> getDirectChat db vr user cId pagination search)
-      pure $ CRApiChat user (AChat SCTDirect directChat) gap
+      directChat <- withFastStore (\db -> getDirectChat db vr user cId pagination search)
+      pure $ CRApiChat user (AChat SCTDirect directChat)
     CTGroup -> do
-      (groupChat, gap) <- withFastStore (\db -> getGroupChat db vr user cId pagination search)
-      pure $ CRApiChat user (AChat SCTGroup groupChat) gap
+      groupChat <- withFastStore (\db -> getGroupChat db vr user cId pagination search)
+      pure $ CRApiChat user (AChat SCTGroup groupChat)
     CTLocal -> do
-      (localChat, gap) <- withFastStore (\db -> getLocalChat db user cId pagination search)
-      pure $ CRApiChat user (AChat SCTLocal localChat) gap
+      localChat <- withFastStore (\db -> getLocalChat db user cId pagination search)
+      pure $ CRApiChat user (AChat SCTLocal localChat)
     CTContactRequest -> pure $ chatCmdError (Just user) "not implemented"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
   APIGetChatItems pagination search -> withUser $ \user -> do
