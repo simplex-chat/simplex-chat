@@ -178,13 +178,6 @@ conditionsAccepted ServerOperator {conditionsAcceptance} = case conditionsAccept
   CAAccepted {} -> True
   _ -> False
 
-data OperatorEnabled = OperatorEnabled
-  { operatorId' :: OperatorId,
-    enabled' :: Bool,
-    roles' :: ServerRoles
-  }
-  deriving (Show)
-
 data UserOperatorServers = UserOperatorServers
   { operator :: Maybe ServerOperator,
     smpServers :: [UserServer 'PSMP],
@@ -372,8 +365,6 @@ instance ToJSON ServerOperator where
 
 instance FromJSON ServerOperator where
   parseJSON = $(JQ.mkParseJSON defaultJSON ''ServerOperator')
-
-$(JQ.deriveJSON defaultJSON ''OperatorEnabled)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "UCA") ''UsageConditionsAction)
 

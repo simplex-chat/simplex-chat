@@ -356,13 +356,13 @@ data ChatCommand
     APITestProtoServer UserId AProtoServerWithAuth
   | TestProtoServer AProtoServerWithAuth
   | APIGetServerOperators
-  | APISetServerOperators (NonEmpty OperatorEnabled)
+  | APISetServerOperators (NonEmpty ServerOperator)
   | APIGetUserServers UserId
   | APISetUserServers UserId (NonEmpty UserOperatorServers)
   | APIValidateServers (NonEmpty UserOperatorServers) -- response is CRUserServersValidation
   | APIGetUsageConditions
   | APISetConditionsNotified Int64
-  | APIAcceptConditions Int64 (NonEmpty ServerOperator) -- TODO replace with IDs
+  | APIAcceptConditions Int64 (NonEmpty Int64)
   | APISetChatItemTTL UserId (Maybe Int64)
   | SetChatItemTTL (Maybe Int64)
   | APIGetChatItemTTL UserId

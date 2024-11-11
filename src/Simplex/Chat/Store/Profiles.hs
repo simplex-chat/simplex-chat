@@ -620,13 +620,13 @@ getServerOperators db = do
     operators <- mapM getConds =<< getServerOperators_ db
     pure (operators, usageConditionsAction operators currentConds now)
 
-setServerOperators :: DB.Connection -> NonEmpty OperatorEnabled -> IO ()
+setServerOperators :: DB.Connection -> NonEmpty ServerOperator -> IO ()
 setServerOperators db =
-  mapM_ $ \OperatorEnabled {operatorId', enabled', roles' = ServerRoles {storage, proxy}} ->
+  mapM_ $ \ServerOperator {operatorId, enabled, roles = ServerRoles {storage, proxy}} ->
     DB.execute
       db
       "UPDATE server_operators SET enabled = ?, role_storage = ?, role_proxy = ? WHERE server_operator_id = ?"
-      (enabled', storage, proxy, operatorId')
+      (enabled, storage, proxy, operatorId)
 
 getUpdateServerOperators :: DB.Connection -> NonEmpty PresetOperator -> Bool -> IO [ServerOperator]
 getUpdateServerOperators db presetOps newUser = do
@@ -685,28 +685,29 @@ getUpdateServerOperators db presetOps newUser = do
       acceptConditions_ db op conditionsCommit Nothing
         $> op {conditionsAcceptance = CAAccepted Nothing}
 
+serverOperatorQuery :: Query
+serverOperatorQuery =
+  [sql|
+    SELECT server_operator_id, server_operator_tag, trade_name, legal_name,
+      server_domains, enabled, role_storage, role_proxy
+    FROM server_operators
+  |]
+
 getServerOperators_ :: DB.Connection -> IO [ServerOperator]
-getServerOperators_ db =
-  map toOperator
-    <$> DB.query_
-      db
-      [sql|
-        SELECT server_operator_id, server_operator_tag, trade_name, legal_name,
-          server_domains, enabled, role_storage, role_proxy
-        FROM server_operators
-      |]
-  where
-    toOperator (operatorId, operatorTag, tradeName, legalName, domains, enabled, storage, proxy) =
-      ServerOperator
-        { operatorId,
-          operatorTag,
-          tradeName,
-          legalName,
-          serverDomains = T.splitOn "," domains,
-          conditionsAcceptance = CARequired Nothing,
-          enabled,
-          roles = ServerRoles {storage, proxy}
-        }
+getServerOperators_ db = map toServerOperator <$> DB.query_ db serverOperatorQuery
+
+toServerOperator :: (DBEntityId, Maybe OperatorTag, Text, Maybe Text, Text, Bool, Bool, Bool) -> ServerOperator
+toServerOperator (operatorId, operatorTag, tradeName, legalName, domains, enabled, storage, proxy) =
+  ServerOperator
+    { operatorId,
+      operatorTag,
+      tradeName,
+      legalName,
+      serverDomains = T.splitOn "," domains,
+      conditionsAcceptance = CARequired Nothing,
+      enabled,
+      roles = ServerRoles {storage, proxy}
+    }
 
 getOperatorConditions_ :: DB.Connection -> ServerOperator -> UsageConditions -> Maybe UsageConditions -> UTCTime -> IO ConditionsAcceptance
 getOperatorConditions_ db ServerOperator {operatorId} UsageConditions {conditionsCommit = currentCommit, createdAt, notifiedAt} latestAcceptedConds_ now = do
@@ -766,15 +767,19 @@ getLatestAcceptedConditions db =
       |]
 
 setConditionsNotified :: DB.Connection -> Int64 -> UTCTime -> IO ()
-setConditionsNotified db conditionsId notifiedAt =
-  DB.execute db "UPDATE usage_conditions SET notified_at = ? WHERE usage_conditions_id = ?" (notifiedAt, conditionsId)
+setConditionsNotified db condId notifiedAt =
+  DB.execute db "UPDATE usage_conditions SET notified_at = ? WHERE usage_conditions_id = ?" (notifiedAt, condId)
 
-acceptConditions :: DB.Connection -> Int64 -> NonEmpty ServerOperator -> UTCTime -> ExceptT StoreError IO (NonEmpty ServerOperator)
-acceptConditions db conditionsId operators acceptedAt = do
-  UsageConditions {conditionsCommit} <- getUsageConditionsById_ db conditionsId
+acceptConditions :: DB.Connection -> Int64 -> NonEmpty Int64 -> UTCTime -> ExceptT StoreError IO ()
+acceptConditions db condId opIds acceptedAt = do
+  UsageConditions {conditionsCommit} <- getUsageConditionsById_ db condId
+  operators <- mapM getServerOperator_ opIds
   let ts = Just acceptedAt
-  liftIO $ forM operators $ \op ->
-    acceptConditions_ db op conditionsCommit ts $> op {conditionsAcceptance = CAAccepted ts}
+  liftIO $ forM_ operators $ \op -> acceptConditions_ db op conditionsCommit ts
+  where
+    getServerOperator_ opId =
+      ExceptT $ firstRow toServerOperator (SEOperatorNotFound opId) $
+        DB.query db (serverOperatorQuery <> " WHERE operator_id = ?") (Only opId)
 
 acceptConditions_ :: DB.Connection -> ServerOperator -> Text -> Maybe UTCTime -> IO ()
 acceptConditions_ db ServerOperator {operatorId, operatorTag} conditionsCommit acceptedAt =
