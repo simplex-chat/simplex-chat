@@ -231,7 +231,7 @@ fun openLoadedChat(chat: Chat, chatModel: ChatModel) {
   chatModel.chatId.value = chat.chatInfo.id
 }
 
-suspend fun apiLoadMessages(ch: Chat, pagination: ChatPagination, search: String, gaps: MutableState<List<Long>>) {
+suspend fun apiLoadMessages(ch: Chat, pagination: ChatPagination, search: String, anchors: MutableState<List<Long>>) {
   val chatInfo = ch.chatInfo
   val chat = chatModel.controller.apiGetChat(ch.remoteHostId, chatInfo.chatType, chatInfo.apiId, pagination, search) ?: return
   if (chatModel.chatId.value != chat.id || chat.chatItems.isEmpty()) return
@@ -242,8 +242,8 @@ suspend fun apiLoadMessages(ch: Chat, pagination: ChatPagination, search: String
     is ChatPagination.Last -> {
       withContext(Dispatchers.Main) {
         chatModel.chatItems.replaceAll(chat.chatItems)
+        anchors.value = emptyList()
       }
-      gaps.value = emptyList()
     }
     is ChatPagination.After -> {
       val indexInCurrentItems: Int = oldItems.indexOfFirst { it.id == pagination.chatItemId }
@@ -254,51 +254,51 @@ suspend fun apiLoadMessages(ch: Chat, pagination: ChatPagination, search: String
         newIds.add(chat.chatItems[i].id)
         i++
       }
-      val indexInGaps = gaps.value.indexOf(pagination.chatItemId)
-      val loadingFromGap = indexInGaps != -1
-      val gapsToMerge = if (loadingFromGap && indexInGaps + 1 <= gaps.size) ArrayList(gaps.value.subList(indexInGaps + 1, gaps.size)) else ArrayList()
-      println("LALAL GAPS TO MERGE $gapsToMerge")
-      println("LALAL ALL GAPS ${gaps.value}")
-      val gapsToRemove = ArrayList<Long>()
-      var firstItemIdBelowAllGaps: Long? = null
+      val indexInAnchoredRanges = anchors.value.indexOf(pagination.chatItemId)
+      val loadingFromAnchoredRange = indexInAnchoredRanges != -1
+      val anchorsToMerge = if (loadingFromAnchoredRange && indexInAnchoredRanges + 1 <= anchors.size) ArrayList(anchors.value.subList(indexInAnchoredRanges + 1, anchors.size)) else ArrayList()
+      println("LALAL GAPS TO MERGE $anchorsToMerge")
+      println("LALAL ALL GAPS ${anchors.value}")
+      val anchorsToRemove = ArrayList<Long>()
+      var firstItemIdBelowAllAnchors: Long? = null
       newItems.removeAll {
         val duplicate = newIds.contains(it.id)
-        if (loadingFromGap && duplicate) {
-          if (gapsToMerge.contains(it.id)) {
-            gapsToMerge.remove(it.id)
-            gapsToRemove.add(it.id)
-          } else if (firstItemIdBelowAllGaps == null && gapsToMerge.isEmpty()) {
-            // we passed all gaps and found duplicated item below all of them, which means no gaps anymore below the loaded items
+        if (loadingFromAnchoredRange && duplicate) {
+          if (anchorsToMerge.contains(it.id)) {
+            anchorsToMerge.remove(it.id)
+            anchorsToRemove.add(it.id)
+          } else if (firstItemIdBelowAllAnchors == null && anchorsToMerge.isEmpty()) {
+            // we passed all anchors and found duplicated item below all of them, which means no anchors anymore below the loaded items
             println("LALAL FOUND firstItemIdBelowAllGaps ${it.id}")
-            firstItemIdBelowAllGaps = it.id
+            firstItemIdBelowAllAnchors = it.id
           }
         }
         duplicate
       }
-      println("LALAL GAPS TO REMOVE $gapsToRemove")
+      println("LALAL GAPS TO REMOVE $anchorsToRemove")
       newItems.addAll(min(indexInCurrentItems + 1, newItems.size), chat.chatItems)
       withContext(Dispatchers.Main) {
         chatModel.chatItems.replaceAll(newItems)
-      }
-      if (gapsToRemove.isNotEmpty()) {
-        val newGaps = ArrayList(gaps.value)
-        newGaps.removeAll(gapsToRemove.toSet())
-        gaps.value = newGaps
-      }
-      if (firstItemIdBelowAllGaps != null) {
-        // no gaps anymore, all were merged with bottom items
-        gaps.value = emptyList()
-      } else {
-        val enlargedGap = gaps.value.indexOf(pagination.chatItemId)
-        if (enlargedGap != -1) {
-          // move the gap to the end of loaded items
-          val newGaps = ArrayList(gaps.value)
-          newGaps[enlargedGap] = chat.chatItems.last().id
-          gaps.value = newGaps
-          println("LALAL ENLARGED GAPS TO ${gaps.value}")
+        if (anchorsToRemove.isNotEmpty()) {
+          val newAnchors = ArrayList(anchors.value)
+          newAnchors.removeAll(anchorsToRemove.toSet())
+          anchors.value = newAnchors
         }
+        if (firstItemIdBelowAllAnchors != null) {
+          // no anchors anymore, all were merged with bottom items
+          anchors.value = emptyList()
+        } else {
+          val enlargedAnchor = anchors.value.indexOf(pagination.chatItemId)
+          if (enlargedAnchor != -1) {
+            // move the anchor to the end of loaded items
+            val newAnchors = ArrayList(anchors.value)
+            newAnchors[enlargedAnchor] = chat.chatItems.last().id
+            anchors.value = newAnchors
+            println("LALAL ENLARGED GAPS TO ${anchors.value}")
+          }
+        }
+        println("LALAL GAPSss1 ${anchors.value}  ${newIds}")
       }
-      println("LALAL GAPSss1 ${gaps.value}  ${newIds}")
     }
     is ChatPagination.Before -> {
       val indexInCurrentItems: Int = oldItems.indexOfFirst { it.id == pagination.chatItemId }
@@ -315,10 +315,10 @@ suspend fun apiLoadMessages(ch: Chat, pagination: ChatPagination, search: String
       newItems.addAll(insertAt, chat.chatItems)
       withContext(Dispatchers.Main) {
         chatModel.chatItems.replaceAll(newItems)
+        println("LALAL GAPS2 ${anchors.value}  ${newIds} insertAt $insertAt indexInCurrentItems $indexInCurrentItems wasSize $wasSize")
+        // will remove any anchors that now becomes obsolete because items were merged
+        anchors.value = anchors.value.filterNot { anchor -> newIds.contains(anchor).also { if (it) println("LALAL GAP WAS REMOVED $anchor") } }
       }
-      println("LALAL GAPS2 ${gaps.value}  ${newIds} insertAt $insertAt indexInCurrentItems $indexInCurrentItems wasSize $wasSize")
-      // will remove any gaps that now becomes obsolete because items were merged
-      gaps.value = gaps.value.filterNot { gap -> newIds.contains(gap).also { if (it) println("LALAL GAP WAS REMOVED $gap") } }
     }
     is ChatPagination.Around -> {
       val newIds = mutableSetOf<Long>()
@@ -336,9 +336,9 @@ suspend fun apiLoadMessages(ch: Chat, pagination: ChatPagination, search: String
       newItems.addAll(0, chat.chatItems)
       withContext(Dispatchers.Main) {
         chatModel.chatItems.replaceAll(newItems)
+        anchors.value = listOf(chat.chatItems.last().id) + anchors.value
       }
-      gaps.value = listOf(chat.chatItems.last().id) + gaps.value
-      println("LALAL GAPS0 ${gaps.value}  ${newIds}")
+      println("LALAL GAPS0 ${anchors.value}  ${newIds}")
     }
     is ChatPagination.Initial -> {
       val newIds = mutableSetOf<Long>()
@@ -353,8 +353,8 @@ suspend fun apiLoadMessages(ch: Chat, pagination: ChatPagination, search: String
       newItems.addAll(if (indexToAddAt == -1) newItems.lastIndex + 1 else indexToAddAt, chat.chatItems)
       withContext(Dispatchers.Main) {
         chatModel.chatItems.replaceAll(newItems)
+        anchors.value = emptyList()
       }
-      gaps.value = emptyList()
     }
   }
 }

@@ -291,11 +291,11 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                 }
               }
             },
-            loadMessages = { chatId, pagination, gaps ->
+            loadMessages = { chatId, pagination, anchors ->
               val c = chatModel.getChat(chatId)
               if (chatModel.chatId.value != chatId) return@ChatLayout
               if (c != null) {
-                apiLoadMessages(c, pagination, searchText.value, gaps)
+                apiLoadMessages(c, pagination, searchText.value, anchors)
               }
             },
             deleteMessage = { itemId, mode ->
@@ -960,8 +960,8 @@ fun BoxScope.ChatItemsList(
   Spacer(Modifier.size(8.dp))
   val reversedChatItems = remember { derivedStateOf { chatModel.chatItems.asReversed() } }
   val revealedItems = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(setOf<Long>()) }
-  val gaps = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf<List<Long>>(emptyList()) }
-  val groups = remember { derivedStateOf { reversedChatItems.value.putIntoGroups(revealedItems.value, gaps.value) } }
+  val anchors = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf<List<Long>>(emptyList()) }
+  val groups = remember { derivedStateOf { reversedChatItems.value.putIntoGroups(revealedItems.value, anchors.value) } }
   val topPaddingToContentPx = rememberUpdatedState(with(LocalDensity.current) { topPaddingToContent().roundToPx() })
   val maxHeight = remember { derivedStateOf { listState.layoutInfo.viewportEndOffset - topPaddingToContentPx.value } }
   val loadingMoreItems = remember { mutableStateOf(false) }
@@ -970,7 +970,7 @@ fun BoxScope.ChatItemsList(
       if (loadingMoreItems.value) return@PreloadItems
       try {
         loadingMoreItems.value = true
-        loadMessages(chatId, pagination, gaps)
+        loadMessages(chatId, pagination, anchors)
       } finally {
         loadingMoreItems.value = false
       }
@@ -980,22 +980,25 @@ fun BoxScope.ChatItemsList(
   val scrollToItem: State<(Long) -> Unit> = remember {
     mutableStateOf(
       { itemId: Long ->
-        withBGApi {
+        withApi {
           try {
             var index = groups.value.sections.indexInParentItems(itemId)
-            println("LALAL INDEX0 $index")
+            println("LALAL INDEX0 $index of itemId ${itemId}")
             if (index == -1) {
               loadingMoreItems.value = true
               val pagination = ChatPagination.Around(itemId, ChatPagination.PRELOAD_COUNT * 2)
               val oldSize = reversedChatItems.value.size
-              loadMessages(chatInfoUpdated.value.id, pagination, gaps)
+              withContext(Dispatchers.Default) {
+                loadMessages(chatInfoUpdated.value.id, pagination, anchors)
+              }
               var repeatsLeft = 50
               while (oldSize == reversedChatItems.value.size && repeatsLeft > 0) {
                 delay(20)
                 repeatsLeft--
               }
               index = groups.value.sections.indexInParentItems(itemId)
-              println("LALAL INDEX1 $index")
+              println("LALAL INDEX1 $index of itemId ${itemId}")
+//              println("LALAL groups ${groups.value.sections}")
             }
             if (index != -1) {
               withContext(scope.coroutineContext) {
@@ -1012,7 +1015,7 @@ fun BoxScope.ChatItemsList(
   // TODO: Having this block on desktop makes ChatItemsList() to recompose twice on chatModel.chatId update instead of once
   LaunchedEffect(chatInfo.id) {
     revealedItems.value = emptySet()
-    gaps.value = emptyList()
+    anchors.value = emptyList()
     var stopListening = false
     snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastIndex }
       .distinctUntilChanged()
@@ -1024,7 +1027,7 @@ fun BoxScope.ChatItemsList(
   }
   DisposableEffectOnGone(
     always = {
-      chatModel.chatItemsChangesListener = recalculateGapsPositions(gaps)
+      chatModel.chatItemsChangesListener = recalculateAnchorPositions(anchors)
     },
     whenGone = {
       VideoPlayerHolder.releaseAll()
@@ -1554,24 +1557,24 @@ fun PreloadItems(
       snapshotFlow { listState.firstVisibleItemIndex }
         .map { firstVisibleIndex ->
           val items = chatModel.chatItems.value
-          val gaps = groups.value.gaps
-          val gap = gaps.lastOrNull { it.indexRangeInParentItems.contains(firstVisibleIndex) }
-          println("LALAL RANGE $gaps firstVisibleIndex $firstVisibleIndex")
-          if (gap != null) {
-            // we're inside a range of a gap (top --- [end of the gap --- we're here --- start of the gap] --- bottom)
-            val index = groups.value.sections.indexInParentItems(gap.itemId)
-            println("LALAL GAPS1 $firstVisibleIndex indexInParent $index ${gap.indexRange.first} ${gap.indexRange.last}")
-            if (index + remaining > firstVisibleIndex) items.lastIndex - gap.indexRange.first to true else null
+          val anchors = groups.value.anchoredRanges
+          val anchor = anchors.lastOrNull { it.indexRangeInParentItems.contains(firstVisibleIndex) }
+          println("LALAL RANGE $anchors firstVisibleIndex $firstVisibleIndex")
+          if (anchor != null) {
+            // we're inside an anchoredRange (top --- [end of the anchoredRange --- we're here --- start of the anchoredRange] --- bottom)
+            val index = groups.value.sections.indexInParentItems(anchor.itemId)
+            println("LALAL GAPS1 $firstVisibleIndex indexInParent $index ${anchor.indexRange.first} ${anchor.indexRange.last}")
+            if (index + remaining > firstVisibleIndex) items.lastIndex - anchor.indexRange.first to true else null
           } else if (!bottomLoadingIsDisabled) {
-            // no gaps at all, just clear list that can be loaded from top and bottom just taking edges to start loading items with
+            // no anchoredRanges at all, just clear list that can be loaded from top and bottom just taking edges to start loading items with
             // OR
-            // there are gaps, but they are higher in the list (gap(s) --- we're here (== bottom))
+            // there are anchoredRanges, but they are higher in the list (anchoredRange(s) --- we're here (== bottom))
             println("LALAL GAPS0 $firstVisibleIndex ${items.lastIndex}")
             if (remaining > firstVisibleIndex) items.lastIndex to false else null
           } else null
         }
         .filterNotNull()
-        .collect { (loadFromIndex, insideGap) ->
+        .collect { (loadFromIndex, insideAnchoredRange) ->
 //          if (initiallyLoaded) {
 //            initiallyLoaded = false
 //            return@collect
@@ -1585,7 +1588,7 @@ fun PreloadItems(
             withBGApi {
               val oldSize = items.size
               onLoadMore.value(chatId.value, ChatPagination.After(item.id, ChatPagination.PRELOAD_COUNT))
-              if (!insideGap && oldSize + ChatPagination.PRELOAD_COUNT > chatModel.chatItems.size) {
+              if (!insideAnchoredRange && oldSize + ChatPagination.PRELOAD_COUNT > chatModel.chatItems.size) {
                 bottomLoadingIsDisabled = true
               }
             }
@@ -1593,34 +1596,34 @@ fun PreloadItems(
         }
     }
   }
-  KeyChangeEffect(allowLoad.value) {
+  KeyChangeEffect(allowLoad.value, chatId.value) {
     snapshotFlow {
       val lInfo = listState.layoutInfo
-      val gaps = groups.value.gaps
+      val anchors = groups.value.anchoredRanges
       val firstVisibleIndex = listState.firstVisibleItemIndex
       var lastIndexToLoadFrom: Int? = null
       val lastVisibleItemIndex = (lInfo.visibleItemsInfo.lastOrNull()?.index ?: 0)
-      for (gap in gaps) {
-        // before any gap
-        if (gap.indexRangeInParentItems.first > firstVisibleIndex) {
-          if (lastVisibleItemIndex > (gap.indexRangeInParentItems.first - remaining)) {
-            lastIndexToLoadFrom = gap.indexRange.first - 1
-            println("LALAL FIRST lastVisibleItemIndex $lastVisibleItemIndex last ${gap.indexRangeInParentItems.last} ${gap}")
+      for (anchor in anchors) {
+        // before any anchor
+        if (anchor.indexRangeInParentItems.first > firstVisibleIndex) {
+          if (lastVisibleItemIndex > (anchor.indexRangeInParentItems.first - remaining)) {
+            lastIndexToLoadFrom = anchor.indexRange.first - 1
+            println("LALAL FIRST lastVisibleItemIndex $lastVisibleItemIndex last ${anchor.indexRangeInParentItems.last} ${anchor}")
           }
           break
         }
-        val containsInRange = gap.indexRangeInParentItems.contains(listState.firstVisibleItemIndex)
+        val containsInRange = anchor.indexRangeInParentItems.contains(listState.firstVisibleItemIndex)
         if (containsInRange) {
-          if (lastVisibleItemIndex > (gap.indexRangeInParentItems.last - remaining)) {
-            println("LALAL SECOND lastVisibleItemIndex $lastVisibleItemIndex last ${gap.indexRangeInParentItems.last} ${gap}")
-            lastIndexToLoadFrom = gap.indexRange.last
+          if (lastVisibleItemIndex > (anchor.indexRangeInParentItems.last - remaining)) {
+            println("LALAL SECOND lastVisibleItemIndex $lastVisibleItemIndex last ${anchor.indexRangeInParentItems.last} ${anchor}")
+            lastIndexToLoadFrom = anchor.indexRange.last
           }
           break
         }
       }
       val items = chatModel.chatItems.value
       println("LALAL lastVisibleItemIndex $lastVisibleItemIndex ${items.size} ${items.size - remaining}     ${groups.value.sections.lastIndexInParentItems()}")
-      if (gaps.isEmpty() && items.isNotEmpty() && lastVisibleItemIndex > groups.value.sections.lastIndexInParentItems() + 1 - remaining) {
+      if (anchors.isEmpty() && items.isNotEmpty() && lastVisibleItemIndex > groups.value.sections.lastIndexInParentItems() + 1 - remaining) {
         lastIndexToLoadFrom = items.lastIndex
       }
       (if (allowLoad.value && lastIndexToLoadFrom != null/* && lastVisibleItemIndex + 1 >= ChatPagination.INITIAL_COUNT*/) {
@@ -1630,10 +1633,14 @@ fun PreloadItems(
           println("LALAL RES ${allowLoad.value} lastVisibleItemIndex $lastVisibleItemIndex lastIndexToLoadFrom $lastIndexToLoadFrom $remaining res $it")
         }
     }
+      .onEach {
+        println("LALAL ITEM-1 ON EACH $it")
+      }
       .filterNotNull()
       .collect { loadFromItemId ->
+        println("LALAL ITEM0 ID $loadFromItemId")
         withBGApi {
-          println("LALAL ITEM ID $loadFromItemId")
+          println("LALAL ITEM1 ID $loadFromItemId")
           onLoadMore.value(chatId.value, ChatPagination.Before(loadFromItemId, ChatPagination.PRELOAD_COUNT))
         }
       }
