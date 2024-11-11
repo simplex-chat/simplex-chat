@@ -73,18 +73,36 @@ struct ChooseServerOperators: View {
 
                         Spacer()
 
+                        let reviewForOperators = selectedOperators.filter { !$0.conditionsAcceptance.conditionsAccepted }
+                        let canReviewLater = reviewForOperators.allSatisfy { $0.conditionsAcceptance.usageAllowed }
+
                         VStack(spacing: 8) {
-                            if selectedOperators.allSatisfy({ $0.conditionsAcceptance.conditionsAccepted }) {
-                                continueButton()
-                            } else {
+                            if !reviewForOperators.isEmpty {
                                 reviewConditionsButton()
+                            } else {
+                                continueButton()
                             }
-                            Text("You can disable operators and configure your servers in Network & servers settings.")
-                                .multilineTextAlignment(.center)
-                                .font(.footnote)
-                                .padding(.horizontal, 32)
+                            if onboarding {
+                                Text("You can disable operators and configure your servers in Network & servers settings.")
+                                    .multilineTextAlignment(.center)
+                                    .font(.footnote)
+                                    .padding(.horizontal, 32)
+                            }
                         }
                         .padding(.bottom)
+
+                        if !onboarding && !reviewForOperators.isEmpty {
+                            VStack(spacing: 8) {
+                                reviewLaterButton()
+                                Text("Conditions will be considered accepted for used operators after 30 days.")
+                                    .multilineTextAlignment(.center)
+                                    .font(.footnote)
+                                    .foregroundColor(canReviewLater ? theme.colors.onBackground : Color.clear)
+                                    .padding(.horizontal, 32)
+                            }
+                            .disabled(!canReviewLater)
+                            .padding(.bottom)
+                        }
                     }
                     .frame(minHeight: g.size.height)
                 }
@@ -196,6 +214,15 @@ struct ChooseServerOperators: View {
         }
         .buttonStyle(OnboardingButtonStyle(isDisabled: selectedOperatorIds.isEmpty))
         .disabled(selectedOperatorIds.isEmpty)
+    }
+
+    private func reviewLaterButton() -> some View {
+        Button {
+            continueToNextStep()
+        } label: {
+            Text("Review later")
+        }
+        .buttonStyle(.borderless)
     }
 
     private func continueToNextStep() {
