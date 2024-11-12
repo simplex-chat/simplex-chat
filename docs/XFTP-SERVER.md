@@ -363,7 +363,7 @@ Feb 27 19:21:11 localhost xftp-server[2350]: [INFO 2023-02-27 19:21:11 +0000 src
 
 ### Control port
 
-Enabling control port in the configuration allows administrator to see information about the smp-server in real-time. Additionally, it allows to delete queues for content moderation and see the debug info about the clients, sockets, etc. Enabling the control port requires setting the `admin` and `user` passwords.
+Enabling control port in the configuration allows administrator to see information about the smp-server in real-time. Additionally, it allows to delete file chunks for content moderation and see the debug info about the clients, sockets, etc. Enabling the control port requires setting the `admin` and `user` passwords.
 
 1. Generate two passwords for each user:
 
@@ -421,12 +421,12 @@ auth my_generated_password
 
 Here's the full list of commands, their descriptions and who can access them.
 
-| Command          | Description                                                                     | Can be accessed by         |
+| Command          | Description                                                                     | Requires `admin` role      |
 | ---------------- | ------------------------------------------------------------------------------- | -------------------------- |
-| `stats-rts`      | GHC/Haskell statistics. Can be enabled with `+RTS -T -RTS` option               | `user`,`admin`             |
-| `delete`         | Delete known queue. Useful for content moderation.                              | `user`,`admin`             |
-| `help`           | Help menu.                                                                      | `user`,`admin`             |
-| `quit`           | Exit the control port.                                                          | `user`,`admin`             |
+| `stats-rts`      | GHC/Haskell statistics. Can be enabled with `+RTS -T -RTS` option               | -                          |
+| `delete`         | Delete known file chunk. Useful for content moderation.                         | -                          |
+| `help`           | Help menu.                                                                      | -                          |
+| `quit`           | Exit the control port.                                                          | -                          |
 
 ### Daily statistics
 

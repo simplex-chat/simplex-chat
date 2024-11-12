@@ -1140,19 +1140,19 @@ auth my_generated_password
 
 Here's the full list of commands, their descriptions and who can access them.
 
-| Command          | Description                                                                     | Can be accessed by         |
+| Command          | Description                                                                     | Requires `admin` role      |
 | ---------------- | ------------------------------------------------------------------------------- | -------------------------- |
-| `stats`          | Real-time statistics. Fields described in [Daily statistics](#daily-statistics) | `user`,`admin`             |
-| `stats-rts`      | GHC/Haskell statistics. Can be enabled with `+RTS -T -RTS` option               | `user`,`admin`             |
-| `clients`        | Clients information. Useful for debugging.                                      | `admin`                    |
-| `sockets`        | General sockets information.                                                    | `user`,`admin`             |
-| `socket-threads` | Thread infomation per socket. Useful for debugging.                             | `admin`                    |
-| `threads`        | Threads information. Useful for debugging.                                      | `admin`                    |
-| `server-info`    | Aggregated server infomation.                                                   | `user`,`admin`             |
-| `delete`         | Delete known queue. Useful for content moderation.                              | `user`,`admin`             |
-| `save`           | Save queues/messages from memory.                                               | `user`,`admin`             |
-| `help`           | Help menu.                                                                      | `user`,`admin`             |
-| `quit`           | Exit the control port.                                                          | `user`,`admin`             |
+| `stats`          | Real-time statistics. Fields described in [Daily statistics](#daily-statistics) | -                          |
+| `stats-rts`      | GHC/Haskell statistics. Can be enabled with `+RTS -T -RTS` option               | -                          |
+| `clients`        | Clients information. Useful for debugging.                                      | yes                        |
+| `sockets`        | General sockets information.                                                    | -                          |
+| `socket-threads` | Thread infomation per socket. Useful for debugging.                             | yes                        |
+| `threads`        | Threads information. Useful for debugging.                                      | yes                        |
+| `server-info`    | Aggregated server infomation.                                                   | -                          |
+| `delete`         | Delete known queue. Useful for content moderation.                              | -                          |
+| `save`           | Save queues/messages from memory.                                               | yes                        |
+| `help`           | Help menu.                                                                      | -                          |
+| `quit`           | Exit the control port.                                                          | -                          |
 
 #### Daily statistics
 
