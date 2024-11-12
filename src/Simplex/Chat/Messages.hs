@@ -227,8 +227,8 @@ data CChatItem c = forall d. MsgDirectionI d => CChatItem (SMsgDirection d) (Cha
 
 deriving instance Show (CChatItem c)
 
-cchatItemId :: CChatItem c -> ChatItemId
-cchatItemId (CChatItem _ ci) = chatItemId' ci
+cChatItemId :: CChatItem c -> ChatItemId
+cChatItemId (CChatItem _ ci) = chatItemId' ci
 
 chatItemId' :: ChatItem c d -> ChatItemId
 chatItemId' ChatItem {meta = CIMeta {itemId}} = itemId
@@ -239,11 +239,11 @@ chatItemTs (CChatItem _ ci) = chatItemTs' ci
 chatItemTs' :: ChatItem c d -> UTCTime
 chatItemTs' ChatItem {meta = CIMeta {itemTs}} = itemTs
 
-chatItemCreatedAt :: CChatItem c -> UTCTime
-chatItemCreatedAt (CChatItem _ ci) = chatItemCreatedAt' ci
+ciCreatedAt :: CChatItem c -> UTCTime
+ciCreatedAt (CChatItem _ ci) = ciCreatedAt' ci
 
-chatItemCreatedAt' :: ChatItem c d -> UTCTime
-chatItemCreatedAt' ChatItem {meta = CIMeta {createdAt}} = createdAt
+ciCreatedAt' :: ChatItem c d -> UTCTime
+ciCreatedAt' ChatItem {meta = CIMeta {createdAt}} = createdAt
 
 chatItemTimed :: ChatItem c d -> Maybe CITimed
 chatItemTimed ChatItem {meta = CIMeta {itemTimed}} = itemTimed
