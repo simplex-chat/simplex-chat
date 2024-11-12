@@ -1584,6 +1584,32 @@ processChatCommand' vr = \case
     lift $ CRServerTestResult user srv <$> withAgent' (\a -> testProtocolServer a (aUserId user) server)
   TestProtoServer srv -> withUser $ \User {userId} ->
     processChatCommand $ APITestProtoServer userId srv
+  APITestServerOperator -> do
+    let serverOperator = ServerOperator {
+      operatorId = DBEntityId 1,
+      operatorTag = Just OTSimplex,
+      tradeName = "Simplex",
+      legalName = Just "Simplex",
+      serverDomains = ["simplex.im"],
+      conditionsAcceptance = CAAccepted Nothing,
+      enabled = True,
+      roles = ServerRoles {storage = True, proxy = True}
+    }
+    pure $ CRTestOperator serverOperator
+  APITestUsageConditionsAction -> do
+    ts <- liftIO getCurrentTime
+    let conditionsAction = Just $ UCAReview {
+      operators = [],
+      deadline = Just ts,
+      showNotice = True
+    }
+    pure $ CRTestUsageConditionsAction conditionsAction
+  APITestConditionsAcceptance -> do
+    let acceptance = CAAccepted Nothing
+    pure $ CRTestConditionsAcceptance acceptance
+  APITestServerRoles -> do
+    let serverRoles = ServerRoles {storage = True, proxy = True}
+    pure $ CRTestServerRoles serverRoles
   APIGetServerOperators -> uncurry CRServerOperators <$> withFastStore getServerOperators
   APISetServerOperators operatorsEnabled -> withFastStore $ \db -> do
     liftIO $ setServerOperators db operatorsEnabled
@@ -8204,6 +8230,10 @@ chatCommandP =
       "/smp test " *> (TestProtoServer . AProtoServerWithAuth SPSMP <$> strP),
       "/xftp test " *> (TestProtoServer . AProtoServerWithAuth SPXFTP <$> strP),
       "/ntf test " *> (TestProtoServer . AProtoServerWithAuth SPNTF <$> strP),
+      "/_dec_operator" $> APITestServerOperator,
+      "/_dec_conditions_action" $> APITestUsageConditionsAction,
+      "/_dec_acceptance" $> APITestConditionsAcceptance,
+      "/_dec_roles" $> APITestServerRoles,
       "/smp " *> (SetUserProtoServers (AProtocolType SPSMP) . map (AProtoServerWithAuth SPSMP) <$> protocolServersP),
       "/smp default" $> SetUserProtoServers (AProtocolType SPSMP) [],
       "/xftp " *> (SetUserProtoServers (AProtocolType SPXFTP) . map (AProtoServerWithAuth SPXFTP) <$> protocolServersP),

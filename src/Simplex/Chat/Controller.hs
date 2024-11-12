@@ -70,7 +70,7 @@ import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo)
 import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, SMPServerSubs, ServerQueueInfo, UserNetworkInfo)
-import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig)
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig, ServerRoles)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration, withTransaction, withTransactionPriority)
@@ -353,6 +353,10 @@ data ChatCommand
   | SetUserProtoServers AProtocolType [AProtoServerWithAuth]
   | APITestProtoServer UserId AProtoServerWithAuth
   | TestProtoServer AProtoServerWithAuth
+  | APITestServerOperator
+  | APITestUsageConditionsAction
+  | APITestConditionsAcceptance
+  | APITestServerRoles
   | APIGetServerOperators
   | APISetServerOperators (NonEmpty ServerOperator)
   | APIGetUserServers UserId
@@ -587,6 +591,10 @@ data ChatResponse
   | CRChatItemId User (Maybe ChatItemId)
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
   | CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure}
+  | CRTestOperator {operator :: ServerOperator}
+  | CRTestUsageConditionsAction {conditionsAction :: Maybe UsageConditionsAction}
+  | CRTestConditionsAcceptance {acceptance :: ConditionsAcceptance}
+  | CRTestServerRoles {roles :: ServerRoles}
   | CRServerOperators {operators :: [ServerOperator], conditionsAction :: Maybe UsageConditionsAction}
   | CRUserServers {user :: User, userServers :: [UserOperatorServers]}
   | CRUserServersValidation {serverErrors :: [UserServersError]}
