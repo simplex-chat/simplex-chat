@@ -512,6 +512,34 @@ func testProtoServer(server: String) async throws -> Result<(), ProtocolTestFail
     throw r
 }
 
+func testOperator() throws -> ServerOperator {
+    let r = chatSendCmdSync(.apiTestServerOperator)
+    if case let .testOperator(`operator`) = r { return (`operator`) }
+    logger.error("apiTestServerOperator error: \(String(describing: r))")
+    throw r
+}
+
+func testUsageConditionsAction() throws -> UsageConditionsAction? {
+    let r = chatSendCmdSync(.apiTestUsageConditionsAction)
+    if case let .testUsageConditionsAction(conditionsAction) = r { return (conditionsAction) }
+    logger.error("apiTestUsageConditionsAction error: \(String(describing: r))")
+    throw r
+}
+
+func testConditionsAcceptance() throws -> ConditionsAcceptance {
+    let r = chatSendCmdSync(.apiTestConditionsAcceptance)
+    if case let .testConditionsAcceptance(acceptance) = r { return (acceptance) }
+    logger.error("apiTestConditionsAcceptance error: \(String(describing: r))")
+    throw r
+}
+
+func testServerRoles() throws -> ServerRoles {
+    let r = chatSendCmdSync(.apiTestServerRoles)
+    if case let .testServerRoles(roles) = r { return (roles) }
+    logger.error("apiTestServerRoles error: \(String(describing: r))")
+    throw r
+}
+
 func getServerOperatorsSync() throws -> ([ServerOperator], UsageConditionsAction?) {
     let r = chatSendCmdSync(.apiGetServerOperators)
     if case let .serverOperators(operators, conditionsAction) = r { return (operators, conditionsAction) }
@@ -1610,6 +1638,12 @@ func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = ni
     try apiSetAppFilePaths(filesFolder: getAppFilesDirectory().path, tempFolder: getTempFilesDirectory().path, assetsFolder: getWallpaperDirectory().deletingLastPathComponent().path)
     try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
     m.chatInitialized = true
+
+    let _ = try testConditionsAcceptance()
+    let _ = try testServerRoles()
+    let _ = try testUsageConditionsAction()
+    let _ = try testOperator()
+
     (m.serverOperators, m.usageConditionsAction) = try getServerOperatorsSync()
     m.currentUser = try apiGetActiveUser()
     if m.currentUser == nil {

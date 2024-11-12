@@ -73,6 +73,10 @@ public enum ChatCommand {
     case apiCreateMemberContact(groupId: Int64, groupMemberId: Int64)
     case apiSendMemberContactInvitation(contactId: Int64, msg: MsgContent)
     case apiTestProtoServer(userId: Int64, server: String)
+    case apiTestServerOperator
+    case apiTestUsageConditionsAction
+    case apiTestConditionsAcceptance
+    case apiTestServerRoles
     case apiGetServerOperators
     case apiSetServerOperators(operators: [ServerOperator])
     case apiGetUserServers(userId: Int64)
@@ -238,6 +242,10 @@ public enum ChatCommand {
             case let .apiCreateMemberContact(groupId, groupMemberId): return "/_create member contact #\(groupId) \(groupMemberId)"
             case let .apiSendMemberContactInvitation(contactId, mc): return "/_invite member contact @\(contactId) \(mc.cmdString)"
             case let .apiTestProtoServer(userId, server): return "/_server test \(userId) \(server)"
+            case .apiTestServerOperator: return "/_dec_operator"
+            case .apiTestUsageConditionsAction: return "/_dec_conditions_action"
+            case .apiTestConditionsAcceptance: return "/_dec_acceptance"
+            case .apiTestServerRoles: return "/_dec_roles"
             case .apiGetServerOperators: return "/_operators"
             case let .apiSetServerOperators(operators): return "/_operators \(encodeJSON(operators))"
             case let .apiGetUserServers(userId): return "/_servers \(userId)"
@@ -399,6 +407,10 @@ public enum ChatCommand {
             case .apiCreateMemberContact: return "apiCreateMemberContact"
             case .apiSendMemberContactInvitation: return "apiSendMemberContactInvitation"
             case .apiTestProtoServer: return "apiTestProtoServer"
+            case .apiTestServerOperator: return "apiTestServerOperator"
+            case .apiTestUsageConditionsAction: return "apiTestUsageConditionsAction"
+            case .apiTestConditionsAcceptance: return "apiTestConditionsAcceptance"
+            case .apiTestServerRoles: return "apiTestServerRoles"
             case .apiGetServerOperators: return "apiGetServerOperators"
             case .apiSetServerOperators: return "apiSetServerOperators"
             case .apiGetUserServers: return "apiGetUserServers"
@@ -563,6 +575,10 @@ public enum ChatResponse: Decodable, Error {
     case apiChat(user: UserRef, chat: ChatData)
     case chatItemInfo(user: UserRef, chatItem: AChatItem, chatItemInfo: ChatItemInfo)
     case serverTestResult(user: UserRef, testServer: String, testFailure: ProtocolTestFailure?)
+    case testOperator(operator: ServerOperator)
+    case testUsageConditionsAction(conditionsAction: UsageConditionsAction?)
+    case testConditionsAcceptance(acceptance: ConditionsAcceptance)
+    case testServerRoles(roles: ServerRoles)
     case serverOperators(operators: [ServerOperator], conditionsAction: UsageConditionsAction?)
     case userServers(user: UserRef, userServers: [UserOperatorServers])
     case userServersValidation(serverErrors: [UserServersError])
@@ -739,6 +755,10 @@ public enum ChatResponse: Decodable, Error {
             case .apiChat: return "apiChat"
             case .chatItemInfo: return "chatItemInfo"
             case .serverTestResult: return "serverTestResult"
+            case .testOperator: return "testOperator"
+            case .testUsageConditionsAction: return "testUsageConditionsAction"
+            case .testConditionsAcceptance: return "testConditionsAcceptance"
+            case .testServerRoles: return "testServerRoles"
             case .serverOperators: return "serverOperators"
             case .userServers: return "userServers"
             case .userServersValidation: return "userServersValidation"
@@ -911,6 +931,10 @@ public enum ChatResponse: Decodable, Error {
             case let .apiChat(u, chat): return withUser(u, String(describing: chat))
             case let .chatItemInfo(u, chatItem, chatItemInfo): return withUser(u, "chatItem: \(String(describing: chatItem))\nchatItemInfo: \(String(describing: chatItemInfo))")
             case let .serverTestResult(u, server, testFailure): return withUser(u, "server: \(server)\nresult: \(String(describing: testFailure))")
+            case let .testOperator(`operator`): return "operator: \(String(describing: `operator`))"
+            case let .testUsageConditionsAction(conditionsAction): return "conditionsAction: \(String(describing: conditionsAction))"
+            case let .testConditionsAcceptance(acceptance): return "acceptance: \(String(describing: acceptance))"
+            case let .testServerRoles(roles): return "roles: \(String(describing: roles))"
             case let .serverOperators(operators, conditionsAction): return "operators: \(String(describing: operators))\nconditionsAction: \(String(describing: conditionsAction))"
             case let .userServers(u, userServers): return withUser(u, "userServers: \(String(describing: userServers))")
             case let .userServersValidation(serverErrors): return "serverErrors: \(String(describing: serverErrors))"
