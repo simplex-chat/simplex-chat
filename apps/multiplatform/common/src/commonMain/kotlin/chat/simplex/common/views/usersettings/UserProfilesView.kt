@@ -128,14 +128,16 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
       }
     },
     showHiddenProfile = { user ->
-      ModalManager.start.showModalCloseable(true) { close ->
-        HiddenProfileView(m, user) {
-          profileHidden.value = true
-          withBGApi {
-            delay(10_000)
-            profileHidden.value = false
+      doWithAuthProfileChanges {
+        ModalManager.start.showModalCloseable(true) { close ->
+          HiddenProfileView(m, user) {
+            profileHidden.value = true
+            withBGApi {
+              delay(10_000)
+              profileHidden.value = false
+            }
+            close()
           }
-          close()
         }
       }
     }
