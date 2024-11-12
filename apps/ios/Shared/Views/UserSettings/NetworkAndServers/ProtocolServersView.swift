@@ -12,10 +12,13 @@ import SimpleXChat
 private let howToUrl = URL(string: "https://simplex.chat/docs/server.html")!
 
 struct YourServersView: View {
+    @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject private var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.editMode) private var editMode
-    @Binding var customServers: UserOperatorServers // nil operator is passed to this view
+    @Binding var userServers: [UserOperatorServers]
+    var operatorServersIndex: Int
+    @State var customServers: UserOperatorServers // nil operator is passed to this view
     @State private var selectedServer: String? = nil
     @State private var showAddServer = false
     @State private var showScanProtoServer = false
@@ -46,9 +49,6 @@ struct YourServersView: View {
                             backLabel: "Your servers",
                             selectedServer: $selectedServer
                         )
-                    }
-                    .onMove { indexSet, offset in
-                        customServers.smpServers.move(fromOffsets: indexSet, toOffset: offset)
                     }
                     .onDelete { indexSet in
                         customServers.smpServers.remove(atOffsets: indexSet)
@@ -106,6 +106,10 @@ struct YourServersView: View {
             }
         }
         .toolbar { EditButton() }
+        .modifier(BackButton(disabled: Binding.constant(false)) {
+            userServers[operatorServersIndex] = customServers
+            dismiss()
+        })
         .confirmationDialog("Add server", isPresented: $showAddServer, titleVisibility: .hidden) {
             Button("Enter SMP server manually") {
                 customServers.smpServers.append(UserServer.empty)
@@ -268,7 +272,9 @@ struct TestServersButton: View {
 struct YourServersView_Previews: PreviewProvider {
     static var previews: some View {
         YourServersView(
-            customServers: Binding.constant(UserOperatorServers.sampleDataNilOperator)
+            userServers: Binding.constant([UserOperatorServers.sampleDataNilOperator]),
+            operatorServersIndex: 1,
+            customServers: UserOperatorServers.sampleDataNilOperator
         )
     }
 }

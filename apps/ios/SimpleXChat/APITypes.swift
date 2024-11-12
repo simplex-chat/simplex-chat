@@ -1429,7 +1429,8 @@ public struct UserServer: Identifiable, Equatable, Codable, Hashable {
     }
 
     public static func == (l: UserServer, r: UserServer) -> Bool {
-        l.server == r.server && l.preset == r.preset && l.tested == r.tested && l.enabled == r.enabled
+        l.serverId == r.serverId && l.server == r.server && l.preset == r.preset && l.tested == r.tested &&
+        l.enabled == r.enabled && l.deleted == r.deleted
     }
 
     public var id: String { "\(server) \(createdAt)" }
