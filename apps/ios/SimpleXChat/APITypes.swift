@@ -1440,17 +1440,21 @@ public enum UserServersError: Decodable {
 }
 
 public struct UserServer: Identifiable, Equatable, Codable, Hashable {
+    public var serverId: Int64?
     public var server: String
     public var preset: Bool
     public var tested: Bool?
     public var enabled: Bool
+    public var deleted: Bool
     var createdAt = Date()
 
-    public init(server: String, preset: Bool, tested: Bool?, enabled: Bool) {
+    public init(serverId: Int64?, server: String, preset: Bool, tested: Bool?, enabled: Bool, deleted: Bool) {
+        self.serverId = serverId
         self.server = server
         self.preset = preset
         self.tested = tested
         self.enabled = enabled
+        self.deleted = deleted
     }
 
     public static func == (l: UserServer, r: UserServer) -> Bool {
@@ -1459,7 +1463,7 @@ public struct UserServer: Identifiable, Equatable, Codable, Hashable {
 
     public var id: String { "\(server) \(createdAt)" }
 
-    public static var empty = UserServer(server: "", preset: false, tested: nil, enabled: false)
+    public static var empty = UserServer(serverId: nil, server: "", preset: false, tested: nil, enabled: false, deleted: false)
 
     public var isEmpty: Bool {
         server.trimmingCharacters(in: .whitespaces) == ""
@@ -1474,36 +1478,46 @@ public struct UserServer: Identifiable, Equatable, Codable, Hashable {
 
     public static var sampleData = SampleData(
         preset: UserServer(
+            serverId: 1,
             server: "smp://abcd@smp8.simplex.im",
             preset: true,
             tested: true,
-            enabled: true
+            enabled: true,
+            deleted: false
         ),
         custom: UserServer(
+            serverId: 2,
             server: "smp://abcd@smp9.simplex.im",
             preset: false,
             tested: false,
-            enabled: false
+            enabled: false,
+            deleted: false
         ),
         untested: UserServer(
+            serverId: 3,
             server: "smp://abcd@smp10.simplex.im",
             preset: false,
             tested: nil,
-            enabled: true
+            enabled: true,
+            deleted: false
         ),
         xftpPreset: UserServer(
+            serverId: 4,
             server: "xftp://abcd@xftp8.simplex.im",
             preset: true,
             tested: true,
-            enabled: true
+            enabled: true,
+            deleted: false
         )
     )
 
     enum CodingKeys: CodingKey {
+        case serverId
         case server
         case preset
         case tested
         case enabled
+        case deleted
     }
 }
 
