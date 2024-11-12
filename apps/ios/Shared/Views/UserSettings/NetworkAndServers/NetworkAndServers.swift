@@ -68,12 +68,15 @@ struct NetworkAndServers: View {
                 }
 
                 Section {
-                    let customServers = $userServers.first(where: { $0.operator.wrappedValue == nil })
-                    if let customServers = customServers {
+                    if let idx = userServers.firstIndex(where: { $0.operator == nil }) {
                         NavigationLink {
-                            YourServersView(customServers: customServers)
-                                .navigationTitle("Your servers")
-                                .modifier(ThemedBackground(grouped: true))
+                            YourServersView(
+                                userServers: $userServers,
+                                operatorServersIndex: idx,
+                                customServers: userServers[idx]
+                            )
+                            .navigationTitle("Your servers")
+                            .modifier(ThemedBackground(grouped: true))
                         } label: {
                             Text("Your servers")
                         }
