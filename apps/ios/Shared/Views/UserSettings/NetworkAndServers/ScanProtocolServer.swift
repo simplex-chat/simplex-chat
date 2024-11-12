@@ -42,9 +42,9 @@ struct ScanProtocolServer: View {
         case let .success(r):
             if let serverAddress = parseServerAddress(r.string) {
                 if serverAddress.serverProtocol == .smp {
-                    smpServers.append(UserServer(server: r.string, preset: false, tested: nil, enabled: false))
+                    smpServers.append(UserServer(serverId: nil, server: r.string, preset: false, tested: nil, enabled: false, deleted: false))
                 } else {
-                    xftpServers.append(UserServer(server: r.string, preset: false, tested: nil, enabled: false))
+                    xftpServers.append(UserServer(serverId: nil, server: r.string, preset: false, tested: nil, enabled: false, deleted: false))
                 }
                 dismiss()
             } else {
