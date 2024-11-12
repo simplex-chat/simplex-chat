@@ -308,8 +308,8 @@ struct SingleOperatorUsageConditionsView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     Group {
                         viewHeader()
-                        Text("Conditions are already accepted for following operator(s): **\(operatorsWithConditionsAccepted.map { $0.conditionsName }.joined(separator: ", "))**.")
-                        Text("Same conditions will apply to operator **\(serverOperator.conditionsName)**.")
+                        Text("Conditions are already accepted for following operator(s): **\(operatorsWithConditionsAccepted.map { $0.legalName_ }.joined(separator: ", "))**.")
+                        Text("Same conditions will apply to operator **\(serverOperator.legalName_)**.")
                         conditionsAppliedToOtherOperatorsText()
                         usageConditionsNavLinkButton()
 
@@ -329,7 +329,7 @@ struct SingleOperatorUsageConditionsView: View {
             VStack(alignment: .leading, spacing: 20) {
                 Group {
                     viewHeader()
-                    Text("In order to use operator **\(serverOperator.conditionsName)**, accept conditions of use.")
+                    Text("In order to use operator **\(serverOperator.legalName_)**, accept conditions of use.")
                     conditionsAppliedToOtherOperatorsText()
                     ConditionsTextView()
                     acceptConditionsButton()
@@ -358,7 +358,7 @@ struct SingleOperatorUsageConditionsView: View {
             $0.operatorId != serverOperator.operatorId
         }
         if !otherOperatorsToApply.isEmpty {
-            Text("Conditions will also apply for following operator(s) you use: **\(otherOperatorsToApply.map { $0.conditionsName }.joined(separator: ", "))**.")
+            Text("Conditions will also apply for following operator(s) you use: **\(otherOperatorsToApply.map { $0.legalName_ }.joined(separator: ", "))**.")
         }
     }
 
@@ -432,7 +432,7 @@ struct UsageConditionsView: View {
             switch conditionsAction {
             case let .review(operators, _, _):
 
-                Text("Conditions will be accepted for following operator(s): **\(operators.map { $0.conditionsName }.joined(separator: ", "))**.")
+                Text("Conditions will be accepted for following operator(s): **\(operators.map { $0.legalName_ }.joined(separator: ", "))**.")
 
                 ConditionsTextView()
 
@@ -442,7 +442,7 @@ struct UsageConditionsView: View {
                 
             case let .accepted(operators):
 
-                Text("Conditions are accepted for following operator(s): **\(operators.map { $0.conditionsName }.joined(separator: ", "))**.")
+                Text("Conditions are accepted for following operator(s): **\(operators.map { $0.legalName_ }.joined(separator: ", "))**.")
 
                 ConditionsTextView()
                     .padding(.bottom)
