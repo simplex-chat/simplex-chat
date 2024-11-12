@@ -82,11 +82,13 @@ cChatWriteImage cc maxSize cPath ptr len encrypt = do
     case Picture.decodeResizeable src of
       Left e -> pure $ WFError e
       Right (ri, _metadata) -> do
-        let resized = resizeImageToSize False (fromIntegral maxSize) ri
+        let resized = resizeImageToSize False storeMinQuality (fromIntegral maxSize) ri
         if LB.length resized > fromIntegral maxSize
           then pure $ WFError "unable to fit"
           else chatWriteFile_ cfArgs_ path (LB.toStrict resized)
   newCStringFromLazyBS $ J.encode r
+  where
+    storeMinQuality = 20
 
 data ReadFileResult
   = RFResult {fileSize :: Int}

@@ -10,7 +10,7 @@
 module Simplex.Chat.Image where
 
 import qualified Codec.Picture as Picture
-import Codec.Picture.Jpg (encodeDirectJpegAtQualityWithMetadata)
+import qualified Codec.Picture.JPEGTurbo as JT
 import Codec.Picture.Metadata (Metadatas)
 import Codec.Picture.Png (encodePng)
 import qualified Codec.Picture.STBIR as STBIR
@@ -21,12 +21,12 @@ import qualified Data.ByteString.Base64.Lazy as LB64
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
 import Data.Monoid (All (..))
-import Data.Word (Word8)
+import System.IO.Unsafe (unsafePerformIO)
 
-resizeImageToSize :: Bool -> Int64 -> ResizeableImage -> LB.ByteString
-resizeImageToSize toURI maxSize (ResizeableImage fmt img encoder) = either resizePNG resizeJPG encoder
+resizeImageToSize :: Bool -> Int -> Int64 -> ResizeableImage -> LB.ByteString
+resizeImageToSize toURI minJpegQuality maxSize (ResizeableImage fmt img encoder) = either resizePNG resizeJPG encoder
   where
-    halveAndRetry = resizeImageToSize toURI maxSize $ ResizeableImage fmt imgHalved encoder
+    halveAndRetry = resizeImageToSize toURI minJpegQuality maxSize (ResizeableImage fmt imgHalved encoder)
     imgHalved = downscale img 2.0
     resizePNG enc
       | LB.length encoded <= maxSize = encoded
@@ -49,12 +49,12 @@ resizeImageToSize toURI maxSize (ResizeableImage fmt img encoder) = either resiz
             result = encode $ downscale img m
     resizeJPG enc
       | minSize > maxSize = halveAndRetry
-      | otherwise = fitQuality 50 99
+      | otherwise = fitQuality minJpegQuality 95
       where
         encode q
           | toURI = toDataUri "jpg" $ enc q img -- the correct mime type is "jpeg", but only "jpg" is supported by older clients
           | otherwise = enc q img
-        minSize = LB.length $ encode 50
+        minSize = LB.length $ encode minJpegQuality
         fitQuality l u
           | u - l <= 1 = encode l -- prefer higher compression
           | otherwise =
@@ -107,21 +107,21 @@ data ResizeableImage where
 
 type ImageEncoder a = Either (PNGEncoder a) (JPGEncoder a)
 type PNGEncoder a = Picture.Image a -> LB.ByteString
-type JPGEncoder a = Word8 -> Picture.Image a -> LB.ByteString
+type JPGEncoder a = Int -> Picture.Image a -> LB.ByteString
 
 resizeableImage :: Picture.DynamicImage -> Maybe ResizeableImage
 resizeableImage dyn = case dyn of
-  Picture.ImageY8 img -> Just $ ResizeableImage "Y8" img $ Right $ \q -> encodeDirectJpegAtQualityWithMetadata q mempty
+  Picture.ImageY8 img -> Just $ ResizeableImage "Y8" img $ Right $ \q -> LB.fromStrict . unsafePerformIO . JT.encodeRGB q . Picture.convertRGB8 . Picture.ImageY8 -- TODO: directly
   Picture.ImageY16 img -> Just $ ResizeableImage "Y16" img $ Left encodePng
   Picture.ImageY32 _ -> Nothing
   Picture.ImageYF _ -> Nothing
   Picture.ImageYA8 img -> Just $ ResizeableImage "YA8" img $ Left encodePng
   Picture.ImageYA16 img -> Just $ ResizeableImage "YA16" img $ Left encodePng
-  Picture.ImageRGB8 img -> Just $ ResizeableImage "RGB8" img $ Right $ \q -> encodeDirectJpegAtQualityWithMetadata q mempty
+  Picture.ImageRGB8 img -> Just $ ResizeableImage "RGB8" img $ Right $ \q -> LB.fromStrict . unsafePerformIO . JT.encodeRGB q
   Picture.ImageRGB16 img -> Just $ ResizeableImage "RGB16" img $ Left encodePng
   Picture.ImageRGBF _ -> Nothing
   Picture.ImageRGBA8 img -> Just $ ResizeableImage "RGBA8" img $ Left encodePng
   Picture.ImageRGBA16 img -> Just $ ResizeableImage "RGBA16" img $ Left encodePng
-  Picture.ImageYCbCr8 img -> Just $ ResizeableImage "YCbCr8" img $ Right $ \q -> encodeDirectJpegAtQualityWithMetadata q mempty
-  Picture.ImageCMYK8 img -> Just $ ResizeableImage "CMYK8" img $ Right $ \q -> encodeDirectJpegAtQualityWithMetadata q mempty
+  Picture.ImageYCbCr8 img -> Just $ ResizeableImage "YCbCr8" img $ Right $ \q -> LB.fromStrict . unsafePerformIO . JT.encodeRGB q . Picture.convertRGB8 . Picture.ImageYCbCr8 -- TODO: JT.encodeYUV
+  Picture.ImageCMYK8 img -> Just $ ResizeableImage "CMYK8" img $ Right $ \q -> LB.fromStrict . unsafePerformIO . JT.encodeRGB q . Picture.convertRGB8 . Picture.ImageCMYK8
   Picture.ImageCMYK16 _ -> Nothing

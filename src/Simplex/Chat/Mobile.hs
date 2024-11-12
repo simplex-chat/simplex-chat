@@ -210,9 +210,11 @@ cChatResizeImageToStrSize fp' maxSize = do
   fp <- peekCString fp'
   res <- runExceptT $ do
     (ri, _) <- liftIOEither $ readResizeable fp
-    let resized = resizeImageToSize True (fromIntegral maxSize) ri
+    let resized = resizeImageToSize True previewMinQuality (fromIntegral maxSize) ri
     if LB.length resized > fromIntegral maxSize then throwError "unable to fit" else pure resized
   newCStringFromLazyBS $ fromRight "" res
+  where
+    previewMinQuality = 20
 
 -- -- | Strip EXIF etc metadata from image, inlplace
 -- cChatStripImageMetadata :: CString -> IO CBool
