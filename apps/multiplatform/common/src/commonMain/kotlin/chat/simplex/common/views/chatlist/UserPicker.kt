@@ -271,6 +271,7 @@ fun UserPicker(
             ModalManager.start.showCustomModal(keyboardCoversBar = false) { close ->
               val search = rememberSaveable { mutableStateOf("") }
               val profileHidden = rememberSaveable { mutableStateOf(false) }
+              val authorized = remember { stateGetOrPut("authorized") { false } }
               ModalView(
                 { close() },
                 showSearch = true,
@@ -278,7 +279,21 @@ fun UserPicker(
                 onSearchValueChanged = {
                   search.value = it
                 },
-                content = { UserProfilesView(chatModel, search, profileHidden) })
+                content = {
+                  UserProfilesView(chatModel, search, profileHidden) { block ->
+                      if (authorized.value) {
+                        block()
+                      } else {
+                        doWithAuth(
+                          generalGetString(MR.strings.auth_change_chat_profiles),
+                          generalGetString(MR.strings.auth_log_in_using_credential)
+                        ) {
+                          authorized.value = true
+                          block()
+                        }
+                      }
+                    }
+                })
             }
           },
           disabled = stopped

@@ -36,7 +36,7 @@ import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 
 @Composable
-fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: MutableState<Boolean>) {
+fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: MutableState<Boolean>, withAuth: (block: () -> Unit) -> Unit) {
   val searchTextOrPassword = rememberSaveable { search }
   val users by remember { derivedStateOf { m.users.map { it.user } } }
   val filteredUsers by remember { derivedStateOf { filteredUsers(m, searchTextOrPassword.value) } }
@@ -48,7 +48,7 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
     showHiddenProfilesNotice = m.controller.appPrefs.showHiddenProfilesNotice,
     visibleUsersCount = visibleUsersCount(m),
     addUser = {
-      doWithAuthProfileChanges {
+      withAuth {
         ModalManager.center.showModalCloseable { close ->
           CreateProfile(m, close)
         }
@@ -66,7 +66,7 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
       }
     },
     removeUser = { user ->
-      doWithAuthProfileChanges {
+      withAuth {
         val text = buildAnnotatedString {
           append(generalGetString(MR.strings.users_delete_all_chats_deleted) + "\n\n" + generalGetString(MR.strings.users_delete_profile_for) + " ")
           withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
@@ -98,7 +98,7 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
       }
     },
     unhideUser = { user ->
-      doWithAuthProfileChanges {
+      withAuth {
         if (passwordEntryRequired(user, searchTextOrPassword.value)) {
           ModalManager.start.showModalCloseable(true) { close ->
             ProfileActionView(UserProfileAction.UNHIDE, user) { pwd ->
@@ -114,7 +114,7 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
       }
     },
     muteUser = { user ->
-      doWithAuthProfileChanges {
+      withAuth {
         withBGApi {
           setUserPrivacy(m, onSuccess = {
             if (m.controller.appPrefs.showMuteProfileAlert.get()) showMuteProfileAlert(m.controller.appPrefs.showMuteProfileAlert)
@@ -123,12 +123,12 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
       }
     },
     unmuteUser = { user ->
-      doWithAuthProfileChanges {
+      withAuth {
         withBGApi { setUserPrivacy(m) { m.controller.apiUnmuteUser(user) } }
       }
     },
     showHiddenProfile = { user ->
-      doWithAuthProfileChanges {
+      withAuth {
         ModalManager.start.showModalCloseable(true) { close ->
           HiddenProfileView(m, user) {
             profileHidden.value = true
@@ -395,13 +395,4 @@ private fun showMuteProfileAlert(showMuteProfileAlert: SharedPreference<Boolean>
       showMuteProfileAlert.set(false)
     },
   )
-}
-
-private fun doWithAuthProfileChanges(block: () -> Unit) {
-  doWithAuth(
-    generalGetString(MR.strings.auth_change_chat_profiles),
-    generalGetString(MR.strings.auth_log_in_using_credential)
-  ) {
-    block()
-  }
 }
