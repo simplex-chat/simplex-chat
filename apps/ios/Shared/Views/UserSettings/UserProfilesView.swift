@@ -208,17 +208,6 @@ struct UserProfilesView: View {
         m.users.filter({ u in !u.user.hidden }).count
     }
     
-    private func unreadBadge(_ u: UserInfo) -> some View {
-        let size = dynamicSize(userFont).chatInfoSize
-        return unreadCountText(u.unreadCount)
-            .font(userFont <= .xxxLarge ? .caption  : .caption2)
-            .foregroundColor(.white)
-            .padding(.horizontal, dynamicSize(userFont).unreadPadding)
-            .frame(minWidth: size, minHeight: size)
-            .background(u.user.showNtfs ? theme.colors.primary : theme.colors.secondary)
-            .cornerRadius(dynamicSize(userFont).unreadCorner)
-    }
-    
     private func withAuth(_ action: @escaping () -> Void) {
         if authorized {
             action()
@@ -376,12 +365,16 @@ struct UserProfilesView: View {
                     Image(systemName: "checkmark").foregroundColor(theme.colors.onBackground)
                 } else {
                     if userInfo.unreadCount > 0 {
-                        unreadBadge(userInfo)
+                        UnreadBadge(userInfo: userInfo)
                     }
                     if user.hidden {
                         Image(systemName: "lock").foregroundColor(theme.colors.secondary)
                     } else if userInfo.unreadCount == 0 {
-                        Image(systemName: "checkmark").foregroundColor(.clear)
+                        if !user.showNtfs {
+                            Image(systemName: "speaker.slash").foregroundColor(theme.colors.secondary)
+                        } else {
+                            Image(systemName: "checkmark").foregroundColor(.clear)
+                        }
                     }
                 }
             }
