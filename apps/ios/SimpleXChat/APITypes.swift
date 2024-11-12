@@ -1309,7 +1309,7 @@ public struct ServerOperator: Identifiable, Equatable, Codable {
         l.serverDomains == r.serverDomains && l.conditionsAcceptance == r.conditionsAcceptance && l.enabled == r.enabled && l.roles == r.roles
     }
 
-    public var conditionsName: String {
+    public var legalName_: String {
         legalName ?? tradeName
     }
 
