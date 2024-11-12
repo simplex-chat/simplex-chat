@@ -438,17 +438,17 @@ fun UserProfilePickerItem(
                 .badgeLayout()
             )
           }
+
+          if (u.hidden) {
+            Spacer(Modifier.width(8.dp))
+            Icon(painterResource(MR.images.ic_lock), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
+          }
+        } else if (u.hidden) {
+          Icon(painterResource(MR.images.ic_lock), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
         } else if (!u.showNtfs) {
           Icon(painterResource(MR.images.ic_notifications_off), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
         } else {
           Box(Modifier.size(20.dp))
-        }
-
-        if (u.hidden) {
-          if (unreadCount > 0) {
-            Spacer(Modifier.width(8.dp))
-          }
-          Icon(painterResource(MR.images.ic_lock), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
         }
       }
     }
