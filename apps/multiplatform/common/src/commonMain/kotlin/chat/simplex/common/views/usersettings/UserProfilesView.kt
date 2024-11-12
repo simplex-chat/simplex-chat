@@ -48,8 +48,10 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
     showHiddenProfilesNotice = m.controller.appPrefs.showHiddenProfilesNotice,
     visibleUsersCount = visibleUsersCount(m),
     addUser = {
-      ModalManager.center.showModalCloseable { close ->
-        CreateProfile(m, close)
+      doWithAuthProfileChanges {
+        ModalManager.center.showModalCloseable { close ->
+          CreateProfile(m, close)
+        }
       }
     },
     activateUser = { user ->
@@ -64,58 +66,66 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
       }
     },
     removeUser = { user ->
-      val text = buildAnnotatedString {
-        append(generalGetString(MR.strings.users_delete_all_chats_deleted) + "\n\n" + generalGetString(MR.strings.users_delete_profile_for) + " ")
-        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-          append(user.displayName)
+      doWithAuthProfileChanges {
+        val text = buildAnnotatedString {
+          append(generalGetString(MR.strings.users_delete_all_chats_deleted) + "\n\n" + generalGetString(MR.strings.users_delete_profile_for) + " ")
+          withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+            append(user.displayName)
+          }
+          append(":")
         }
-        append(":")
-      }
-      AlertManager.shared.showAlertDialogButtonsColumn(
-        title = generalGetString(MR.strings.users_delete_question),
-        text = text,
-        buttons = {
-          Column {
-            SectionItemView({
-              AlertManager.shared.hideAlert()
-              removeUser(m, user, users, true, searchTextOrPassword.value.trim())
-            }) {
-              Text(stringResource(MR.strings.users_delete_with_connections), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
-            }
-            SectionItemView({
-              AlertManager.shared.hideAlert()
-              removeUser(m, user, users, false, searchTextOrPassword.value.trim())
-            }
-            ) {
-              Text(stringResource(MR.strings.users_delete_data_only), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+        AlertManager.shared.showAlertDialogButtonsColumn(
+          title = generalGetString(MR.strings.users_delete_question),
+          text = text,
+          buttons = {
+            Column {
+              SectionItemView({
+                AlertManager.shared.hideAlert()
+                removeUser(m, user, users, true, searchTextOrPassword.value.trim())
+              }) {
+                Text(stringResource(MR.strings.users_delete_with_connections), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+              }
+              SectionItemView({
+                AlertManager.shared.hideAlert()
+                removeUser(m, user, users, false, searchTextOrPassword.value.trim())
+              }
+              ) {
+                Text(stringResource(MR.strings.users_delete_data_only), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+              }
             }
           }
-        }
-      )
+        )
+      }
     },
     unhideUser = { user ->
-      if (passwordEntryRequired(user, searchTextOrPassword.value)) {
-        ModalManager.start.showModalCloseable(true) { close ->
-          ProfileActionView(UserProfileAction.UNHIDE, user) { pwd ->
-            withBGApi {
-              setUserPrivacy(m) { m.controller.apiUnhideUser(user, pwd) }
-              close()
+      doWithAuthProfileChanges {
+        if (passwordEntryRequired(user, searchTextOrPassword.value)) {
+          ModalManager.start.showModalCloseable(true) { close ->
+            ProfileActionView(UserProfileAction.UNHIDE, user) { pwd ->
+              withBGApi {
+                setUserPrivacy(m) { m.controller.apiUnhideUser(user, pwd) }
+                close()
+              }
             }
           }
+        } else {
+          withBGApi { setUserPrivacy(m) { m.controller.apiUnhideUser(user, searchTextOrPassword.value.trim()) } }
         }
-      } else {
-        withBGApi { setUserPrivacy(m) { m.controller.apiUnhideUser(user, searchTextOrPassword.value.trim()) } }
       }
     },
     muteUser = { user ->
-      withBGApi {
-        setUserPrivacy(m, onSuccess = {
-          if (m.controller.appPrefs.showMuteProfileAlert.get()) showMuteProfileAlert(m.controller.appPrefs.showMuteProfileAlert)
-        }) { m.controller.apiMuteUser(user) }
+      doWithAuthProfileChanges {
+        withBGApi {
+          setUserPrivacy(m, onSuccess = {
+            if (m.controller.appPrefs.showMuteProfileAlert.get()) showMuteProfileAlert(m.controller.appPrefs.showMuteProfileAlert)
+          }) { m.controller.apiMuteUser(user) }
+        }
       }
     },
     unmuteUser = { user ->
-      withBGApi { setUserPrivacy(m) { m.controller.apiUnmuteUser(user) } }
+      doWithAuthProfileChanges {
+        withBGApi { setUserPrivacy(m) { m.controller.apiUnmuteUser(user) } }
+      }
     },
     showHiddenProfile = { user ->
       ModalManager.start.showModalCloseable(true) { close ->
@@ -382,4 +392,13 @@ private fun showMuteProfileAlert(showMuteProfileAlert: SharedPreference<Boolean>
       showMuteProfileAlert.set(false)
     },
   )
+}
+
+private fun doWithAuthProfileChanges(block: () -> Unit) {
+  doWithAuth(
+    generalGetString(MR.strings.auth_change_chat_profiles),
+    generalGetString(MR.strings.auth_log_in_using_credential)
+  ) {
+    block()
+  }
 }

@@ -268,22 +268,17 @@ fun UserPicker(
           painterResource(MR.images.ic_manage_accounts),
           stringResource(MR.strings.your_chat_profiles),
           {
-            doWithAuth(
-              generalGetString(MR.strings.auth_open_chat_profiles),
-              generalGetString(MR.strings.auth_log_in_using_credential)
-            ) {
-              ModalManager.start.showCustomModal(keyboardCoversBar = false) { close ->
-                val search = rememberSaveable { mutableStateOf("") }
-                val profileHidden = rememberSaveable { mutableStateOf(false) }
-                ModalView(
-                  { close() },
-                  showSearch = true,
-                  searchAlwaysVisible = true,
-                  onSearchValueChanged = {
-                    search.value = it
-                  },
-                  content = { UserProfilesView(chatModel, search, profileHidden) })
-              }
+            ModalManager.start.showCustomModal(keyboardCoversBar = false) { close ->
+              val search = rememberSaveable { mutableStateOf("") }
+              val profileHidden = rememberSaveable { mutableStateOf(false) }
+              ModalView(
+                { close() },
+                showSearch = true,
+                searchAlwaysVisible = true,
+                onSearchValueChanged = {
+                  search.value = it
+                },
+                content = { UserProfilesView(chatModel, search, profileHidden) })
             }
           },
           disabled = stopped
