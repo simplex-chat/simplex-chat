@@ -15,7 +15,9 @@ struct OperatorView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     @EnvironmentObject var theme: AppTheme
-    @Binding var userOperatorServers: UserOperatorServers
+    @Binding var userServers: [UserOperatorServers]
+    var operatorServersIndex: Int
+    @State var userOperatorServers: UserOperatorServers
     @State var serverOperatorToEdit: ServerOperator
     @State var useOperator: Bool
     @State private var useOperatorToggleReset: Bool = false
@@ -120,6 +122,7 @@ struct OperatorView: View {
         }
         .modifier(BackButton(disabled: Binding.constant(false)) {
             userOperatorServers.operator = serverOperatorToEdit
+            userServers[operatorServersIndex] = userOperatorServers
             ChatModel.shared.updateServerOperator(serverOperatorToEdit)
             dismiss()
         })
@@ -471,7 +474,9 @@ struct UsageConditionsView: View {
 
 #Preview {
     OperatorView(
-        userOperatorServers: Binding.constant(UserOperatorServers.sampleData1),
+        userServers: Binding.constant([UserOperatorServers.sampleData1]),
+        operatorServersIndex: 1,
+        userOperatorServers: UserOperatorServers.sampleData1,
         serverOperatorToEdit: ServerOperator.sampleData1,
         useOperator: ServerOperator.sampleData1.enabled
     )

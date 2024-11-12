@@ -45,8 +45,8 @@ struct NetworkAndServers: View {
             List {
                 let conditionsAction = m.usageConditionsAction
                 Section {
-                    ForEach($userServers.filter { $0.operator != nil }) { userOperatorServers in
-                        serverOperatorView(userOperatorServers)
+                    ForEach(userServers.enumerated().filter { $0.element.operator != nil }, id: \.offset) { idx, userOperatorServers in
+                        serverOperatorView(idx, userOperatorServers)
                     }
 
                     if let conditionsAction = conditionsAction {
@@ -167,11 +167,12 @@ struct NetworkAndServers: View {
         }
     }
 
-    @ViewBuilder private func serverOperatorView(_ userOperatorServers: Binding<UserOperatorServers>) -> some View {
-        let userOperatorSrvs = userOperatorServers.wrappedValue
-        if let srvOperator = userOperatorSrvs.operator {
+    @ViewBuilder private func serverOperatorView(_ operatorServersIndex: Int, _ userOperatorServers: UserOperatorServers) -> some View {
+        if let srvOperator = userOperatorServers.operator {
             NavigationLink() {
                 OperatorView(
+                    userServers: $userServers,
+                    operatorServersIndex: operatorServersIndex,
                     userOperatorServers: userOperatorServers,
                     serverOperatorToEdit: srvOperator,
                     useOperator: srvOperator.enabled
