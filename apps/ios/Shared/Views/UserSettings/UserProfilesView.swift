@@ -380,8 +380,6 @@ struct UserProfilesView: View {
                     }
                     if user.hidden {
                         Image(systemName: "lock").foregroundColor(theme.colors.secondary)
-                    } else if !user.showNtfs {
-                        Image(systemName: "speaker.slash").foregroundColor(theme.colors.secondary)
                     } else if userInfo.unreadCount == 0 {
                         Image(systemName: "checkmark").foregroundColor(.clear)
                     }
