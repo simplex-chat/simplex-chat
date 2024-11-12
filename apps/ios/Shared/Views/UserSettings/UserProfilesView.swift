@@ -24,7 +24,8 @@ struct UserProfilesView: View {
     @State private var profileHidden = false
     @State private var profileAction: UserProfileAction?
     @State private var actionPassword = ""
-    @State private var redactionCheckTask: DispatchWorkItem?
+    @State private var pendingAuthAction: (() -> Void)?
+    @State private var navigateToProfileCreate = false
 
     var trimmedSearchTextOrPassword: String { searchTextOrPassword.trimmingCharacters(in: .whitespaces)}
 
@@ -59,14 +60,12 @@ struct UserProfilesView: View {
     }
 
     var body: some View {
-        userProfilesView()
-            .onDisappear {
-                redactionCheckTask?.cancel()
-                redactionCheckTask = nil
-            }
+        let redaction = appSheetState.redactionReasons(protectScreen)
+        
+        userProfilesView(redaction)
     }
 
-    private func userProfilesView() -> some View {
+    private func userProfilesView(_ redaction: RedactionReasons) -> some View {
         List {
             if profileHidden {
                 Button {
@@ -93,12 +92,22 @@ struct UserProfilesView: View {
                 }
 
                 if trimmedSearchTextOrPassword == "" {
-                    NavigationLink {
-                        CreateProfile()
-                    } label: {
+                    NavigationLink(
+                        destination: CreateProfile(),
+                        isActive: $navigateToProfileCreate
+                    ) {
                         Label("Add profile", systemImage: "plus")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .frame(height: 38)
+                            .padding(.leading, 16).padding(.vertical, 8).padding(.trailing, 32)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                withAuth {
+                                    self.navigateToProfileCreate = true
+                                }
+                            }
+                            .padding(.leading, -16).padding(.vertical, -8).padding(.trailing, -32)
                     }
-                    .frame(height: 38)
                 }
             } footer: {
                 Text("Tap to activate profile.")
@@ -176,6 +185,12 @@ struct UserProfilesView: View {
                 return mkAlert(title: title, message: error)
             }
         }
+        .onChange(of: redaction) { newRedaction in
+            if newRedaction.isEmpty {
+                self.pendingAuthAction?()
+                self.pendingAuthAction = nil
+            }
+        }
     }
 
     private func filteredUsers() -> [UserInfo] {
@@ -209,17 +224,13 @@ struct UserProfilesView: View {
             action()
         } else {
             authenticate(
-                reason: NSLocalizedString("Open user profiles", comment: "authentication reason")
+                reason: NSLocalizedString("Change user profiles", comment: "authentication reason")
             ) { laResult in
                 switch laResult {
                 case .success, .unavailable:
-                    startRedactionCheck(maxWaitTime: 2.0) { success in
-                        if success {
-                            authorized = true
-                            action()
-                        } else {
-                            print("Redaction did not clear within the maximum wait time.")
-                        }
+                    authorized = true
+                    pendingAuthAction = {
+                        action()
                     }
                 case .failed: authorized = false
                 }
@@ -227,32 +238,6 @@ struct UserProfilesView: View {
         }
     }
     
-    private func startRedactionCheck(maxWaitTime: TimeInterval, completion: @escaping (Bool) -> Void) {
-        let pollingFrequency: TimeInterval = 0.1
-        let startTime = Date()
-
-        redactionCheckTask?.cancel()
-
-        redactionCheckTask = DispatchWorkItem {
-            let elapsedTime = Date().timeIntervalSince(startTime)
-            let redaction = appSheetState.redactionReasons(protectScreen)
-
-            if redaction.isEmpty {
-                completion(true)
-            } else if elapsedTime >= maxWaitTime {
-                completion(false)
-            } else {
-                DispatchQueue.main.asyncAfter(deadline: .now() + pollingFrequency) {
-                    redactionCheckTask?.perform()
-                }
-            }
-        }
-
-        if let task = redactionCheckTask {
-            DispatchQueue.main.async(execute: task)
-        }
-    }
-
     private func correctPassword(_ user: User, _ pwd: String) -> Bool {
         if let ph = user.viewPwdHash {
             return pwd != "" && chatPasswordHash(pwd, ph.salt) == ph.hash
