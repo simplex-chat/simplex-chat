@@ -97,7 +97,6 @@ struct ChooseServerOperators: View {
                                 Text("Conditions will be considered accepted for used operators after 30 days.")
                                     .multilineTextAlignment(.center)
                                     .font(.footnote)
-                                    .foregroundColor(canReviewLater ? theme.colors.onBackground : Color.clear)
                                     .padding(.horizontal, 32)
                             }
                             .disabled(!canReviewLater)
