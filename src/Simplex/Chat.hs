@@ -55,6 +55,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDay, nominalDiffTimeToSeconds)
+import Data.Type.Equality
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Data.Word (Word32)
@@ -392,32 +393,34 @@ newChatController
           netCfg' = updateNetworkConfig netCfg simpleNetCfg
           operators' = case (smpServers, xftpServers) of
             ([], []) -> operators
-            (smpSrvs, []) -> L.map removeSMP operators <> [custom smpSrvs []]
-            ([], xftpSrvs) -> L.map removeXFTP operators <> [custom [] xftpSrvs]
+            (smpSrvs, []) -> L.map disableSMP operators <> [custom smpSrvs []]
+            ([], xftpSrvs) -> L.map disableXFTP operators <> [custom [] xftpSrvs]
             (smpSrvs, xftpSrvs) -> [custom smpSrvs xftpSrvs]
-          removeSMP op = (op :: PresetOperator) {smp = []}
-          removeXFTP op = (op :: PresetOperator) {xftp = []}
+          disableSMP op@PresetOperator {smp} = (op :: PresetOperator) {smp = map disableSrv smp}
+          disableXFTP op@PresetOperator {xftp} = (op :: PresetOperator) {xftp = map disableSrv xftp}
+          disableSrv :: forall p. NewUserServer p -> NewUserServer p
+          disableSrv srv = (srv :: NewUserServer p) {enabled = False}
           custom smpSrvs xftpSrvs =
             PresetOperator
               { operator = Nothing,
-                smp = map (presetServer True) smpSrvs,
+                smp = map newUserServer smpSrvs,
                 useSMP = 0,
-                xftp = map (presetServer True) xftpSrvs,
+                xftp = map newUserServer xftpSrvs,
                 useXFTP = 0
               }
       agentServers :: DB.Connection -> ChatConfig -> RandomServers -> IO InitialAgentServers
       agentServers db ChatConfig {presetServers = PresetServers {operators = presetOps, ntf, netCfg}} randomServers = do
         users <- getUsers db
         opDomains <- operatorDomains <$> getUpdateServerOperators db presetOps (null users)
-        smp' <- getUserServers SPSMP users opDomains
-        xftp' <- getUserServers SPXFTP users opDomains
+        smp' <- getServers SPSMP users opDomains
+        xftp' <- getServers SPXFTP users opDomains
         pure InitialAgentServers {smp = smp', xftp = xftp', ntf, netCfg}
         where
-          getUserServers :: forall p. (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> [User] -> [(Text, ServerOperator)] -> IO (Map UserId (NonEmpty (ServerCfg p)))
-          getUserServers p users opDomains = do
+          getServers :: forall p. (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> [User] -> [(Text, ServerOperator)] -> IO (Map UserId (NonEmpty (ServerCfg p)))
+          getServers p users opDomains = do
             let randomSrvs = rndServers p randomServers
             fmap M.fromList $ forM users $ \u ->
-              (aUserId u,) . agentServerCfgs opDomains <$> getUpdateUserServers db p presetOps randomSrvs u
+              (aUserId u,) . agentServerCfgs opDomains randomSrvs <$> getUpdateUserServers db p presetOps randomSrvs u
 
 updateNetworkConfig :: NetworkConfig -> SimpleNetCfg -> NetworkConfig
 updateNetworkConfig cfg SimpleNetCfg {socksProxy, socksMode, hostMode, requiredHostMode, smpProxyMode_, smpProxyFallback_, smpWebPort, tcpTimeout_, logTLSErrors} =
@@ -641,16 +644,17 @@ processChatCommand' vr = \case
       when (n == displayName) . throwChatError $
         if activeUser || isNothing viewPwdHash then CEUserExists displayName else CEInvalidDisplayName {displayName, validName = ""}
     opDomains <- operatorDomains . fst <$> withFastStore getServerOperators
-    let smp = agentServerCfgs opDomains smpServers
-        xftp = agentServerCfgs opDomains xftpServers
+    rs <- asks randomServers
+    let smp = agentServerCfgs opDomains (rndServers SPSMP rs) smpServers
+        xftp = agentServerCfgs opDomains (rndServers SPXFTP rs) xftpServers
     auId <- withAgent (\a -> createUser a smp xftp)
     ts <- liftIO $ getCurrentTime >>= if pastTimestamp then coupleDaysAgo else pure
     user <- withFastStore $ \db -> createUserRecordAt db (AgentUserId auId) p True ts
     createPresetContactCards user `catchChatError` \_ -> pure ()
     withFastStore $ \db -> do
       createNoteFolder db user
-      liftIO $ mapM_ (insertProtocolServer db SPSMP user ts) smpServers
-      liftIO $ mapM_ (insertProtocolServer db SPXFTP user ts) xftpServers
+      liftIO $ mapM_ (insertProtocolServer db SPSMP user ts) $ useServers SPSMP rs smpServers
+      liftIO $ mapM_ (insertProtocolServer db SPXFTP user ts) $ useServers SPXFTP rs xftpServers
     atomically . writeTVar u $ Just user
     pure $ CRActiveUser user
     where
@@ -659,11 +663,10 @@ processChatCommand' vr = \case
         withFastStore $ \db -> do
           createContact db user simplexStatusContactProfile
           createContact db user simplexTeamContactProfile
-      chooseServers :: forall p. (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> CM (NonEmpty (NewUserServer p))
+      chooseServers :: forall p. ProtocolTypeI p => SProtocolType p -> CM [UserServer p]
       chooseServers p = do
-        rs <- asks randomServers
         srvs <- chatReadVar currentUser >>= mapM (\user -> withFastStore' $ \db -> getProtocolServers db p user)
-        pure $ useServers p rs $ fromMaybe [] srvs
+        pure $ fromMaybe [] srvs
       coupleDaysAgo t = (`addUTCTime` t) . fromInteger . negate . (+ (2 * day)) <$> randomRIO (0, day)
       day = 86400
   ListUsers -> CRUsersList <$> withFastStore' getUsersInfo
@@ -1561,25 +1564,36 @@ processChatCommand' vr = \case
     msgs <- lift $ withAgent' $ \a -> getConnectionMessages a acIds
     let ntfMsgs = L.map (\msg -> receivedMsgInfo <$> msg) msgs
     pure $ CRConnNtfMessages ntfMsgs
-  GetUserProtoServers (AProtocolType p) -> withUser $ \user@User {userId} -> withServerProtocol p $ do
+  GetUserProtoServers (AProtocolType p) -> withUser $ \user -> withServerProtocol p $ do
     (operators, smpServers, xftpServers) <- withFastStore (`getUserServers` user)
     userServers <- liftIO $ groupByOperator $ case p of
       SPSMP -> (operators, smpServers, [])
       SPXFTP -> (operators, [], xftpServers)
     pure $ CRUserServers user userServers
-  SetUserProtoServers (AProtocolType p) servers -> withUser $ \user@User {userId} -> withServerProtocol p $ do
-    userServers <- liftIO . groupByOperator =<< withFastStore (`getUserServers` user)
-    -- disable operators servers and repace (or add) custom servers, or restore random defaults if empty list
-    case L.nonEmpty userServers of
-      Just srvs -> processChatCommand $ APISetUserServers userId $ L.map updated srvs
-        where
-          updated UserOperatorServers {operator, smpServers, xftpServers} =
-            UpdatedUserOperatorServers
-              { operator,
-                smpServers = map (AUS SDBStored) smpServers,
-                xftpServers = map (AUS SDBStored) xftpServers
-              }
+  SetUserProtoServers (AProtocolType (p :: SProtocolType p)) srvs -> withUser $ \user@User {userId} -> withServerProtocol p $ do
+    srvs' <- mapM aUserServer srvs
+    userServers_ <- liftIO . groupByOperator =<< withFastStore (`getUserServers` user)
+    case L.nonEmpty userServers_ of
       Nothing -> throwChatError $ CECommandError "no servers"
+      Just userServers -> case srvs of
+        [] -> throwChatError $ CECommandError "no servers"
+        _ -> processChatCommand $ APISetUserServers userId $ L.map updatedSrvs userServers
+          where
+            -- disable preset and replace custom servers (groupByOperator always adds custom)
+            updatedSrvs UserOperatorServers {operator, smpServers, xftpServers} = case p of
+              SPSMP -> u (updateSrvs smpServers, map (AUS SDBStored) xftpServers)
+              SPXFTP -> u (map (AUS SDBStored) smpServers, updateSrvs xftpServers)
+              where
+                u = uncurry $ UpdatedUserOperatorServers operator
+                updateSrvs :: [UserServer p] -> [AUserServer p]
+                updateSrvs pSrvs = map disableSrv pSrvs <> maybe srvs' (const []) operator
+                disableSrv srv@UserServer {preset} =
+                  AUS SDBStored $ if preset then srv {enabled = False} else srv {deleted = True}
+    where
+      aUserServer ::  AProtoServerWithAuth -> CM (AUserServer p)
+      aUserServer (AProtoServerWithAuth p' srv) = case testEquality p p' of
+        Just Refl -> pure $ AUS SDBNew $ newUserServer srv
+        Nothing -> throwChatError $ CECommandError $ "incorrect server protocol: " <> B.unpack (strEncode srv)
   APITestProtoServer userId srv@(AProtoServerWithAuth _ server) -> withUserId userId $ \user ->
     lift $ CRServerTestResult user srv <$> withAgent' (\a -> testProtocolServer a (aUserId user) server)
   TestProtoServer srv -> withUser $ \User {userId} ->
@@ -1600,8 +1614,8 @@ processChatCommand' vr = \case
     rs <- asks randomServers
     lift $ withAgent' $ \a -> do
       let auId = aUserId user
-      setProtocolServers a auId $ agentServerCfgs opDomains $ useServers SPSMP rs smpServers
-      setProtocolServers a auId $ agentServerCfgs opDomains $ useServers SPXFTP rs xftpServers
+      setProtocolServers a auId $ agentServerCfgs opDomains (rndServers SPSMP rs) smpServers
+      setProtocolServers a auId $ agentServerCfgs opDomains (rndServers SPXFTP rs) xftpServers
     ok_
   APIValidateServers userServers -> pure $ CRUserServersValidation $ validateUserServers userServers
   APIGetUsageConditions -> do
@@ -1876,7 +1890,13 @@ processChatCommand' vr = \case
       canKeepLink (CRInvitationUri crData _) newUser = do
         let ConnReqUriData {crSmpQueues = q :| _} = crData
             SMPQueueUri {queueAddress = SMPQueueAddress {smpServer}} = q
-        newUserServers <- map (\UserServer {server} -> protoServer server) <$> withFastStore' (\db -> getProtocolServers db SPSMP newUser)
+        rs <- asks randomServers
+        newUserServers <- withFastStore $ \db -> do
+          opDomains <- operatorDomains . fst <$> getServerOperators db
+          L.map (\ServerCfg {server} -> protoServer server)
+            . agentServerCfgs opDomains (rndServers SPSMP rs)
+            . filter (\UserServer {enabled} -> enabled)
+            <$> liftIO (getProtocolServers db SPSMP newUser)
         pure $ smpServer `elem` newUserServers
       updateConnRecord user@User {userId} conn@PendingContactConnection {customUserProfileId} newUser = do
         withAgent $ \a -> changeConnectionUser a (aUserId user) (aConnId' conn) (aUserId newUser)
@@ -2615,7 +2635,7 @@ processChatCommand' vr = \case
       let presentedServersSummary = toPresentedServersSummary agentServersSummary users user smpServers xftpServers _defaultNtfServers
       pure $ CRAgentServersSummary user presentedServersSummary
     where
-      getServers :: (ProtocolTypeI p, UserProtocol p) => DB.Connection -> User -> SProtocolType p -> IO [ProtocolServer p]
+      getServers :: ProtocolTypeI p => DB.Connection -> User -> SProtocolType p -> IO [ProtocolServer p]
       getServers db user p = map (\UserServer {server} -> protoServer server) <$> getProtocolServers db p user
   ResetAgentServersStats -> withAgent resetAgentServersStats >> ok_
   GetAgentWorkers -> lift $ CRAgentWorkersSummary <$> withAgent' getAgentWorkersSummary
@@ -8205,9 +8225,7 @@ chatCommandP =
       "/xftp test " *> (TestProtoServer . AProtoServerWithAuth SPXFTP <$> strP),
       "/ntf test " *> (TestProtoServer . AProtoServerWithAuth SPNTF <$> strP),
       "/smp " *> (SetUserProtoServers (AProtocolType SPSMP) . map (AProtoServerWithAuth SPSMP) <$> protocolServersP),
-      "/smp default" $> SetUserProtoServers (AProtocolType SPSMP) [],
       "/xftp " *> (SetUserProtoServers (AProtocolType SPXFTP) . map (AProtoServerWithAuth SPXFTP) <$> protocolServersP),
-      "/xftp default" $> SetUserProtoServers (AProtocolType SPXFTP) [],
       "/smp" $> GetUserProtoServers (AProtocolType SPSMP),
       "/xftp" $> GetUserProtoServers (AProtocolType SPXFTP),
       "/_operators" $> APIGetServerOperators,

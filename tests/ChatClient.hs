@@ -154,7 +154,7 @@ testCfg =
         (presetServers defaultChatConfig)
           { operators =
               [ PresetOperator
-                  { operator = Just operatorSimpleXChat,
+                  { operator = Nothing,
                     smp = map (presetServer True) ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"],
                     useSMP = 1,
                     xftp = map (presetServer True) ["xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002"],

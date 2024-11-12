@@ -158,6 +158,7 @@ data RandomServers = RandomServers
   { smpServers :: NonEmpty (NewUserServer 'PSMP),
     xftpServers :: NonEmpty (NewUserServer 'PXFTP)
   }
+  deriving (Show)
 
 -- The hooks can be used to extend or customize chat core in mobile or CLI clients.
 data ChatHooks = ChatHooks

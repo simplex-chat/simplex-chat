@@ -532,11 +532,11 @@ updateUserAddressAutoAccept db user@User {userId} autoAccept = do
       Just AutoAccept {acceptIncognito, autoReply} -> (True, acceptIncognito, autoReply)
       _ -> (False, False, Nothing)
 
-getUpdateUserServers :: forall p. (ProtocolTypeI p, UserProtocol p) => DB.Connection -> SProtocolType p -> NonEmpty PresetOperator -> NonEmpty (NewUserServer p) -> User -> IO (NonEmpty (UserServer p))
+getUpdateUserServers :: forall p. (ProtocolTypeI p, UserProtocol p) => DB.Connection -> SProtocolType p -> NonEmpty PresetOperator -> NonEmpty (NewUserServer p) -> User -> IO [UserServer p]
 getUpdateUserServers db p presetOps randomSrvs user = do
   ts <- getCurrentTime
   srvs <- getProtocolServers db p user
-  let srvs' = updatedUserServers p presetOps randomSrvs srvs
+  let srvs' = L.toList $ updatedUserServers p presetOps randomSrvs srvs
   mapM (upsertServer ts) srvs'
   where
     upsertServer :: UTCTime -> AUserServer p -> IO (UserServer p)
@@ -831,7 +831,9 @@ setUserServers db user@User {userId} userServers = checkConstraint SEUniqueID $ 
   where
     upsertOrDelete :: ProtocolTypeI p => SProtocolType p -> UTCTime -> AUserServer p -> IO ()
     upsertOrDelete p ts (AUS _ s@UserServer {serverId, deleted}) = case serverId of
-      DBNewEntity -> void $ insertProtocolServer db p user ts s
+      DBNewEntity
+        | deleted -> pure ()
+        | otherwise -> void $ insertProtocolServer db p user ts s
       DBEntityId srvId
         | deleted -> DB.execute db "DELETE FROM protocol_servers WHERE user_id = ? AND smp_server_id = ? AND preset = ?" (userId, srvId, False)
         | otherwise -> updateProtocolServer db p ts s

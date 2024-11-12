@@ -8,7 +8,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -40,7 +39,6 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime, nominalDay)
-import Data.Type.Equality
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import Language.Haskell.TH.Syntax (lift)
@@ -51,7 +49,7 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
-import Simplex.Messaging.Util (atomicModifyIORef'_, safeDecodeUtf8, (<$?>))
+import Simplex.Messaging.Util (atomicModifyIORef'_, safeDecodeUtf8)
 
 usageConditionsCommit :: Text
 usageConditionsCommit = "165143a1112308c035ac00ed669b96b60599aa1c"
@@ -79,11 +77,6 @@ instance DBStoredI 'DBStored where sdbStored = SDBStored
 
 instance DBStoredI 'DBNew where sdbStored = SDBNew
 
-instance TestEquality SDBStored where
-  testEquality SDBStored SDBStored = Just Refl
-  testEquality SDBNew SDBNew = Just Refl
-  testEquality _ _ = Nothing
-
 data DBEntityId' (s :: DBStored) where
   DBEntityId :: Int64 -> DBEntityId' 'DBStored
   DBNewEntity :: DBEntityId' 'DBNew
@@ -93,14 +86,6 @@ deriving instance Show (DBEntityId' s)
 type DBEntityId = DBEntityId' 'DBStored
 
 type DBNewEntity = DBEntityId' 'DBNew
-
-data ADBEntityId = forall s. DBStoredI s => AEI (SDBStored s) (DBEntityId' s)
-
-pattern ADBEntityId :: Int64 -> ADBEntityId
-pattern ADBEntityId i = AEI SDBStored (DBEntityId i)
-
-pattern ADBNewEntity :: ADBEntityId
-pattern ADBNewEntity = AEI SDBNew DBNewEntity
 
 data OperatorTag = OTSimplex | OTXyz
   deriving (Eq, Ord, Show)
@@ -253,8 +238,14 @@ operatorServersToUse p PresetOperator {useSMP, useXFTP} = case p of
   SPXFTP -> useXFTP
 
 presetServer :: Bool -> ProtoServerWithAuth p -> NewUserServer p
-presetServer enabled server =
-  UserServer {serverId = DBNewEntity, server, preset = True, tested = Nothing, enabled, deleted = False}
+presetServer = newUserServer_ True
+
+newUserServer :: ProtoServerWithAuth p -> NewUserServer p
+newUserServer = newUserServer_ False True
+
+newUserServer_ :: Bool -> Bool -> ProtoServerWithAuth p -> NewUserServer p
+newUserServer_ preset enabled server =
+  UserServer {serverId = DBNewEntity, server, preset, tested = Nothing, enabled, deleted = False}
 
 -- This function should be used inside DB transaction to update conditions in the database
 -- it evaluates to (conditions to mark as accepted to SimpleX operator, current conditions, and conditions to add)
@@ -319,16 +310,21 @@ updatedUserServers p presetOps randomSrvs srvs =
 srvHost :: UserServer' s p -> NonEmpty TransportHost
 srvHost UserServer {server = ProtoServerWithAuth srv _} = host srv
 
-agentServerCfgs :: [(Text, ServerOperator)] -> NonEmpty (UserServer' s p) -> NonEmpty (ServerCfg p)
-agentServerCfgs opDomains = L.map agentServer
+agentServerCfgs :: [(Text, ServerOperator)] -> NonEmpty (NewUserServer p) -> [UserServer' s p] -> NonEmpty (ServerCfg p)
+agentServerCfgs opDomains randomSrvs =
+  fromMaybe fallbackSrvs . L.nonEmpty . mapMaybe enabledOpAgentServer
   where
-    agentServer :: UserServer' s p -> ServerCfg p
+    fallbackSrvs = L.map (snd . agentServer) randomSrvs
+    enabledOpAgentServer srv =
+      let (opEnabled, srvCfg) = agentServer srv
+       in if opEnabled then Just srvCfg else Nothing
+    agentServer :: UserServer' s p -> (Bool, ServerCfg p)
     agentServer srv@UserServer {server, enabled} =
       case find (\(d, _) -> any (matchingHost d) (srvHost srv)) opDomains of
         Just (_, ServerOperator {operatorId = DBEntityId opId, enabled = opEnabled, roles}) ->
-          ServerCfg {server, operator = Just opId, enabled = opEnabled && enabled, roles}
+          (opEnabled, ServerCfg {server, enabled, operator = Just opId, roles})
         Nothing ->
-          ServerCfg {server, operator = Nothing, enabled, roles = allRoles}
+          (True, ServerCfg {server, enabled, operator = Nothing, roles = allRoles})
 
 matchingHost :: Text -> TransportHost -> Bool
 matchingHost d = \case
@@ -344,7 +340,9 @@ groupByOperator (ops, smpSrvs, xftpSrvs) = do
   custom <- newIORef $ UserOperatorServers Nothing [] []
   mapM_ (addServer ss custom addSMP) (reverse smpSrvs)
   mapM_ (addServer ss custom addXFTP) (reverse xftpSrvs)
-  mapM (readIORef . snd) ss
+  opSrvs <- mapM (readIORef . snd) ss
+  customSrvs <- readIORef custom
+  pure $ opSrvs <> [customSrvs]
   where
     addServer :: [([Text], IORef UserOperatorServers)] -> IORef UserOperatorServers -> (UserServer p -> UserOperatorServers -> UserOperatorServers) -> UserServer p -> IO ()
     addServer ss custom add srv = 
@@ -368,7 +366,7 @@ validateUserServers uss =
     <> duplicatServerErrs SPXFTP
   where
     missingRolesErr :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> (ServerRoles -> Bool) -> (AProtocolType -> UserServersError) -> [UserServersError]
-    missingRolesErr p roleSel err = [err (AProtocolType p) | hasRole]
+    missingRolesErr p roleSel err = [err (AProtocolType p) | not hasRole]
       where
         hasRole =
           any (\(AUS _ UserServer {deleted, enabled}) -> enabled && not deleted) $
@@ -384,14 +382,11 @@ validateUserServers uss =
         duplicateErr_ (AUS _ srv@UserServer {server}) =
           USEDuplicateServer (AProtocolType p) (AProtoServerWithAuth p server)
             <$> find (`S.member` duplicateHosts) (srvHost srv)
-        duplicateHosts = snd $ foldl' (\acc (AUS _ srv) -> foldl' addHost acc $ srvHost srv) (S.empty, S.empty) srvs
+        duplicateHosts = snd $ foldl' addHost (S.empty, S.empty) allHosts
+        allHosts = concatMap (\(AUS _ srv) -> L.toList $ srvHost srv) srvs
         addHost (hs, dups) h
           | h `S.member` hs = (hs, S.insert h dups)
           | otherwise = (S.insert h hs, dups)
-
-instance ToJSON ADBEntityId where
-  toEncoding (AEI _ dbId) = toEncoding dbId
-  toJSON (AEI _ dbId) = toJSON dbId
 
 instance ToJSON (DBEntityId' s) where
   toEncoding = \case
@@ -401,20 +396,16 @@ instance ToJSON (DBEntityId' s) where
     DBEntityId i -> toJSON i
     DBNewEntity -> J.Null
 
-instance FromJSON ADBEntityId where
-  parseJSON (J.Null) = pure $ AEI SDBNew DBNewEntity
-  parseJSON (J.Number n) = case floatingOrInteger n of
-    Left (_ :: Double) -> fail "bad ADBEntityId"
-    Right i -> pure $ AEI SDBStored (DBEntityId $ fromInteger i)
-  parseJSON _ = fail "bad ADBEntityId"
-
 instance DBStoredI s => FromJSON (DBEntityId' s) where
-  parseJSON v = (\(AEI _ dbId) -> checkDBStored dbId) <$?> parseJSON v
-
-checkDBStored :: forall t s s'. (DBStoredI s, DBStoredI s') => t s' -> Either String (t s)
-checkDBStored x = case testEquality (sdbStored @s) (sdbStored @s') of
-  Just Refl -> Right x
-  Nothing -> Left "bad DBStored"
+  parseJSON v = case (v, sdbStored @s) of
+    (J.Null, SDBNew) -> pure DBNewEntity
+    (J.Number n, SDBStored) -> case floatingOrInteger n of
+      Left (_ :: Double) -> fail "bad DBEntityId"
+      Right i -> pure $ DBEntityId (fromInteger i)
+    _ -> fail "bad DBEntityId"
+  omittedField = case sdbStored @s of
+    SDBStored -> Nothing
+    SDBNew -> Just DBNewEntity
 
 $(JQ.deriveJSON defaultJSON ''UsageConditions)
 
