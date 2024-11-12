@@ -1890,13 +1890,9 @@ processChatCommand' vr = \case
       canKeepLink (CRInvitationUri crData _) newUser = do
         let ConnReqUriData {crSmpQueues = q :| _} = crData
             SMPQueueUri {queueAddress = SMPQueueAddress {smpServer}} = q
-        rs <- asks randomServers
-        newUserServers <- withFastStore $ \db -> do
-          opDomains <- operatorDomains . fst <$> getServerOperators db
-          L.map (\ServerCfg {server} -> protoServer server)
-            . agentServerCfgs opDomains (rndServers SPSMP rs)
-            . filter (\UserServer {enabled} -> enabled)
-            <$> liftIO (getProtocolServers db SPSMP newUser)
+        newUserServers <- 
+          map protoServer' . filter (\ServerCfg {enabled} -> enabled)
+            <$> getKnownAgentServers SPSMP newUser
         pure $ smpServer `elem` newUserServers
       updateConnRecord user@User {userId} conn@PendingContactConnection {customUserProfileId} newUser = do
         withAgent $ \a -> changeConnectionUser a (aUserId user) (aConnId' conn) (aUserId newUser)
@@ -3754,7 +3750,7 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
       S.toList $ S.fromList $ concatMap (\FD.FileChunk {replicas} -> map (\FD.FileChunkReplica {server} -> server) replicas) chunks
     getUnknownSrvs :: [XFTPServer] -> CM [XFTPServer]
     getUnknownSrvs srvs = do
-      knownSrvs <- map (\UserServer {server} -> protoServer server) <$> withStore' (\db -> getProtocolServers db SPXFTP user)
+      knownSrvs <- map protoServer' <$> getKnownAgentServers SPXFTP user
       pure $ filter (`notElem` knownSrvs) srvs
     ipProtectedForSrvs :: [XFTPServer] -> CM Bool
     ipProtectedForSrvs srvs = do
@@ -3767,6 +3763,17 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
         cleanupACIFile aci
         toView $ CRChatItemUpdated user aci
       throwChatError $ CEFileNotApproved fileId unknownSrvs
+
+getKnownAgentServers :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> User -> CM [ServerCfg p]
+getKnownAgentServers p user = do
+  rs <- asks randomServers
+  withStore $ \db -> do
+    opDomains <- operatorDomains . fst <$> getServerOperators db
+    srvs <- liftIO $ getProtocolServers db p user
+    pure $ L.toList $ agentServerCfgs opDomains (rndServers p rs) srvs
+
+protoServer' :: ServerCfg p -> ProtocolServer p
+protoServer' ServerCfg {server} = protoServer server
 
 getNetworkConfig :: CM' NetworkConfig
 getNetworkConfig = withAgent' $ liftIO . getFastNetworkConfig
