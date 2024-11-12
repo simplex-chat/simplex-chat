@@ -10,8 +10,11 @@ struct UserProfilesView: View {
     @EnvironmentObject private var m: ChatModel
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.editMode) private var editMode
+    @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
     @AppStorage(DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE) private var showHiddenProfilesNotice = true
     @AppStorage(DEFAULT_SHOW_MUTE_PROFILE_ALERT) private var showMuteProfileAlert = true
+    @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
+    @ObservedObject var appSheetState: AppSheetState = AppSheetState.shared
     @State private var showDeleteConfirmation = false
     @State private var userToDelete: User?
     @State private var alert: UserProfilesAlert?
@@ -21,6 +24,7 @@ struct UserProfilesView: View {
     @State private var profileHidden = false
     @State private var profileAction: UserProfileAction?
     @State private var actionPassword = ""
+    @State private var redactionCheckTask: DispatchWorkItem?
 
     var trimmedSearchTextOrPassword: String { searchTextOrPassword.trimmingCharacters(in: .whitespaces)}
 
@@ -55,15 +59,12 @@ struct UserProfilesView: View {
     }
 
     var body: some View {
-        if authorized {
-            userProfilesView()
-        } else {
-            Button(action: runAuth) { Label("Unlock", systemImage: "lock") }
-            .onAppear(perform: runAuth)
-        }
+        userProfilesView()
+            .onDisappear {
+                redactionCheckTask?.cancel()
+                redactionCheckTask = nil
+            }
     }
-
-    private func runAuth() { authorize(NSLocalizedString("Open user profiles", comment: "authentication reason"), $authorized) }
 
     private func userProfilesView() -> some View {
         List {
@@ -77,12 +78,14 @@ struct UserProfilesView: View {
             Section {
                 let users = filteredUsers()
                 let v = ForEach(users) { u in
-                    userView(u.user)
+                    userView(u)
                 }
                 if #available(iOS 16, *) {
                     v.onDelete { indexSet in
-                        if let i = indexSet.first {
-                            confirmDeleteUser(users[i].user)
+                        withAuth {
+                            if let i = indexSet.first {
+                                confirmDeleteUser(users[i].user)
+                            }
                         }
                     }
                 } else {
@@ -189,6 +192,66 @@ struct UserProfilesView: View {
     private var visibleUsersCount: Int {
         m.users.filter({ u in !u.user.hidden }).count
     }
+    
+    private func unreadBadge(_ u: UserInfo) -> some View {
+        let size = dynamicSize(userFont).chatInfoSize
+        return unreadCountText(u.unreadCount)
+            .font(userFont <= .xxxLarge ? .caption  : .caption2)
+            .foregroundColor(.white)
+            .padding(.horizontal, dynamicSize(userFont).unreadPadding)
+            .frame(minWidth: size, minHeight: size)
+            .background(u.user.showNtfs ? theme.colors.primary : theme.colors.secondary)
+            .cornerRadius(dynamicSize(userFont).unreadCorner)
+    }
+    
+    private func withAuth(_ action: @escaping () -> Void) {
+        if authorized {
+            action()
+        } else {
+            authenticate(
+                reason: NSLocalizedString("Open user profiles", comment: "authentication reason")
+            ) { laResult in
+                switch laResult {
+                case .success, .unavailable:
+                    startRedactionCheck(maxWaitTime: 2.0) { success in
+                        if success {
+                            authorized = true
+                            action()
+                        } else {
+                            print("Redaction did not clear within the maximum wait time.")
+                        }
+                    }
+                case .failed: authorized = false
+                }
+            }
+        }
+    }
+    
+    private func startRedactionCheck(maxWaitTime: TimeInterval, completion: @escaping (Bool) -> Void) {
+        let pollingFrequency: TimeInterval = 0.1
+        let startTime = Date()
+
+        redactionCheckTask?.cancel()
+
+        redactionCheckTask = DispatchWorkItem {
+            let elapsedTime = Date().timeIntervalSince(startTime)
+            let redaction = appSheetState.redactionReasons(protectScreen)
+
+            if redaction.isEmpty {
+                completion(true)
+            } else if elapsedTime >= maxWaitTime {
+                completion(false)
+            } else {
+                DispatchQueue.main.asyncAfter(deadline: .now() + pollingFrequency) {
+                    redactionCheckTask?.perform()
+                }
+            }
+        }
+
+        if let task = redactionCheckTask {
+            DispatchQueue.main.async(execute: task)
+        }
+    }
 
     private func correctPassword(_ user: User, _ pwd: String) -> Bool {
         if let ph = user.viewPwdHash {
@@ -213,8 +276,10 @@ struct UserProfilesView: View {
                     passwordField
                     settingsRow("trash", color: theme.colors.secondary) {
                         Button("Delete chat profile", role: .destructive) {
-                            profileAction = nil
-                            Task { await removeUser(user, delSMPQueues, viewPwd: actionPassword) }
+                            withAuth {
+                                profileAction = nil
+                                Task { await removeUser(user, delSMPQueues, viewPwd: actionPassword) }
+                            }
                         }
                         .disabled(!actionEnabled(user))
                     }
@@ -231,8 +296,10 @@ struct UserProfilesView: View {
                     passwordField
                     settingsRow("lock.open", color: theme.colors.secondary) {
                         Button("Unhide chat profile") {
-                            profileAction = nil
-                            setUserPrivacy(user) { try await apiUnhideUser(user.userId, viewPwd: actionPassword) }
+                            withAuth{
+                                profileAction = nil
+                                setUserPrivacy(user) { try await apiUnhideUser(user.userId, viewPwd: actionPassword) }
+                            }
                         }
                         .disabled(!actionEnabled(user))
                     }
@@ -255,11 +322,13 @@ struct UserProfilesView: View {
 
     private func deleteModeButton(_ title: LocalizedStringKey, _ delSMPQueues: Bool) -> some View {
         Button(title, role: .destructive) {
-            if let user = userToDelete {
-                if passwordEntryRequired(user) {
-                    profileAction = .deleteUser(user: user, delSMPQueues: delSMPQueues)
-                } else {
-                    alert = .deleteUser(user: user, delSMPQueues: delSMPQueues)
+            withAuth {
+                if let user = userToDelete {
+                    if passwordEntryRequired(user) {
+                        profileAction = .deleteUser(user: user, delSMPQueues: delSMPQueues)
+                    } else {
+                        alert = .deleteUser(user: user, delSMPQueues: delSMPQueues)
+                    }
                 }
             }
         }
@@ -301,7 +370,8 @@ struct UserProfilesView: View {
         }
     }
 
-    @ViewBuilder private func userView(_ user: User) -> some View {
+    @ViewBuilder private func userView(_ userInfo: UserInfo) -> some View {
+        let user = userInfo.user
         let v = Button {
             Task {
                 do {
@@ -319,12 +389,17 @@ struct UserProfilesView: View {
                 Spacer()
                 if user.activeUser {
                     Image(systemName: "checkmark").foregroundColor(theme.colors.onBackground)
-                } else if user.hidden {
-                    Image(systemName: "lock").foregroundColor(theme.colors.secondary)
-                } else if !user.showNtfs {
-                    Image(systemName: "speaker.slash").foregroundColor(theme.colors.secondary)
                 } else {
-                    Image(systemName: "checkmark").foregroundColor(.clear)
+                    if userInfo.unreadCount > 0 {
+                        unreadBadge(userInfo)
+                    }
+                    if user.hidden {
+                        Image(systemName: "lock").foregroundColor(theme.colors.secondary)
+                    } else if !user.showNtfs {
+                        Image(systemName: "speaker.slash").foregroundColor(theme.colors.secondary)
+                    } else if userInfo.unreadCount == 0 {
+                        Image(systemName: "checkmark").foregroundColor(.clear)
+                    }
                 }
             }
         }
@@ -332,30 +407,38 @@ struct UserProfilesView: View {
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             if user.hidden {
                 Button("Unhide") {
-                    if passwordEntryRequired(user) {
-                        profileAction = .unhideUser(user: user)
-                    } else {
-                        setUserPrivacy(user) { try await apiUnhideUser(user.userId, viewPwd: trimmedSearchTextOrPassword) }
+                    withAuth {
+                        if passwordEntryRequired(user) {
+                            profileAction = .unhideUser(user: user)
+                        } else {
+                            setUserPrivacy(user) { try await apiUnhideUser(user.userId, viewPwd: trimmedSearchTextOrPassword) }
+                        }
                     }
                 }
                 .tint(.green)
             } else {
                 if visibleUsersCount > 1 {
                     Button("Hide") {
-                        selectedUser = user
+                        withAuth {
+                            selectedUser = user
+                        }
                     }
                     .tint(.gray)
                 }
                 Group {
                     if user.showNtfs {
                         Button("Mute") {
-                            setUserPrivacy(user, successAlert: showMuteProfileAlert ? .muteProfileAlert : nil) {
-                                try await apiMuteUser(user.userId)
+                            withAuth {
+                                setUserPrivacy(user, successAlert: showMuteProfileAlert ? .muteProfileAlert : nil) {
+                                    try await apiMuteUser(user.userId)
+                                }
                             }
                         }
                     } else {
                         Button("Unmute") {
-                            setUserPrivacy(user) { try await apiUnmuteUser(user.userId) }
+                            withAuth {
+                                setUserPrivacy(user) { try await apiUnmuteUser(user.userId) }
+                            }
                         }
                     }
                 }
@@ -367,7 +450,9 @@ struct UserProfilesView: View {
         } else {
             v.swipeActions(edge: .trailing, allowsFullSwipe: true) {
                 Button("Delete", role: .destructive) {
-                    confirmDeleteUser(user)
+                    withAuth {
+                        confirmDeleteUser(user)
+                    }
                 }
             }
         }
