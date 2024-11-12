@@ -51,6 +51,7 @@ struct YourServersView: View {
                         )
                     }
                     .onDelete { indexSet in
+                        // TODO set delete if serverId is not null
                         customServers.smpServers.remove(atOffsets: indexSet)
                     }
                 } header: {
@@ -74,10 +75,8 @@ struct YourServersView: View {
                             selectedServer: $selectedServer
                         )
                     }
-                    .onMove { indexSet, offset in
-                        customServers.xftpServers.move(fromOffsets: indexSet, toOffset: offset)
-                    }
                     .onDelete { indexSet in
+                        // TODO set delete if serverId is not null
                         customServers.xftpServers.remove(atOffsets: indexSet)
                     }
                 } header: {
@@ -105,7 +104,11 @@ struct YourServersView: View {
                 howToButton()
             }
         }
-        .toolbar { EditButton() }
+        .toolbar {
+            if !customServers.smpServers.filter({ !$0.deleted }).isEmpty || !customServers.xftpServers.filter({ !$0.deleted }).isEmpty {
+                EditButton()
+            }
+        }
         .modifier(BackButton(disabled: Binding.constant(false)) {
             userServers[operatorServersIndex] = customServers
             dismiss()
