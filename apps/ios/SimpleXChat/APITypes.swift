@@ -1203,10 +1203,10 @@ public enum ServerProtocol: String, Decodable {
     case xftp
 }
 
-public enum OperatorTag: Codable {
-    case simplex
-    case xyz
-    case demo
+public enum OperatorTag: String, Codable {
+    case simplex = "simplex"
+    case xyz = "xyz"
+    case demo = "demo"
 }
 
 public struct ServerOperatorInfo: Decodable {
