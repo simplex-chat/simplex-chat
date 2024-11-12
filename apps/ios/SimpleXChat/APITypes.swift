@@ -1431,23 +1431,25 @@ public enum UserServersError: Decodable {
 
 public struct UserServer: Identifiable, Equatable, Codable, Hashable {
     public var server: String
+    public var preset: Bool
     public var tested: Bool?
     public var enabled: Bool
     var createdAt = Date()
 
-    public init(server: String, tested: Bool?, enabled: Bool) {
+    public init(server: String, preset: Bool, tested: Bool?, enabled: Bool) {
         self.server = server
+        self.preset = preset
         self.tested = tested
         self.enabled = enabled
     }
 
     public static func == (l: UserServer, r: UserServer) -> Bool {
-        l.server == r.server && l.tested == r.tested && l.enabled == r.enabled
+        l.server == r.server && l.preset == r.preset && l.tested == r.tested && l.enabled == r.enabled
     }
 
     public var id: String { "\(server) \(createdAt)" }
 
-    public static var empty = UserServer(server: "", tested: nil, enabled: false)
+    public static var empty = UserServer(server: "", preset: false, tested: nil, enabled: false)
 
     public var isEmpty: Bool {
         server.trimmingCharacters(in: .whitespaces) == ""
@@ -1463,21 +1465,25 @@ public struct UserServer: Identifiable, Equatable, Codable, Hashable {
     public static var sampleData = SampleData(
         preset: UserServer(
             server: "smp://abcd@smp8.simplex.im",
+            preset: true,
             tested: true,
             enabled: true
         ),
         custom: UserServer(
             server: "smp://abcd@smp9.simplex.im",
+            preset: false,
             tested: false,
             enabled: false
         ),
         untested: UserServer(
             server: "smp://abcd@smp10.simplex.im",
+            preset: false,
             tested: nil,
             enabled: true
         ),
         xftpPreset: UserServer(
             server: "xftp://abcd@xftp8.simplex.im",
+            preset: true,
             tested: true,
             enabled: true
         )
@@ -1485,6 +1491,7 @@ public struct UserServer: Identifiable, Equatable, Codable, Hashable {
 
     enum CodingKeys: CodingKey {
         case server
+        case preset
         case tested
         case enabled
     }
