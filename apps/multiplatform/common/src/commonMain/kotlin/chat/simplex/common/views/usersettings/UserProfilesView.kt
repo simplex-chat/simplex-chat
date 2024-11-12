@@ -148,7 +148,7 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
 @Composable
 private fun UserProfilesLayout(
   users: List<User>,
-  filteredUsers: List<User>,
+  filteredUsers: List<UserInfo>,
   searchTextOrPassword: MutableState<String>,
   profileHidden: MutableState<Boolean>,
   visibleUsersCount: Int,
@@ -205,7 +205,7 @@ private fun UserProfilesLayout(
 
 @Composable
 private fun UserView(
-  user: User,
+  userInfo: UserInfo,
   visibleUsersCount: Int,
   activateUser: (User) -> Unit,
   removeUser: (User) -> Unit,
@@ -215,7 +215,8 @@ private fun UserView(
   showHiddenProfile: (User) -> Unit,
 ) {
   val showMenu = remember { mutableStateOf(false) }
-  UserProfilePickerItem(user, onLongClick = { showMenu.value = true }) {
+  val user = userInfo.user
+  UserProfilePickerItem(user, onLongClick = { showMenu.value = true }, unreadCount = userInfo.unreadCount) {
     activateUser(user)
   }
   Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
@@ -300,7 +301,7 @@ private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (
   }
 }
 
-fun filteredUsers(m: ChatModel, searchTextOrPassword: String): List<User> {
+fun filteredUsers(m: ChatModel, searchTextOrPassword: String): List<UserInfo> {
   val s = searchTextOrPassword.trim()
   val lower = s.lowercase()
   return m.users.filter { u ->
@@ -309,7 +310,7 @@ fun filteredUsers(m: ChatModel, searchTextOrPassword: String): List<User> {
     } else {
       correctPassword(u.user, s)
     }
-  }.map { it.user }
+  }
 }
 
 private fun visibleUsersCount(m: ChatModel): Int = m.users.filter { u -> !u.user.hidden }.size

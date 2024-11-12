@@ -407,26 +407,35 @@ fun UserProfilePickerItem(
     UserProfileRow(u, enabled)
     if (u.activeUser) {
       Icon(painterResource(MR.images.ic_done_filled), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
-    } else if (u.hidden) {
-      Icon(painterResource(MR.images.ic_lock), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
-    } else if (unreadCount > 0) {
-      Box(
-        contentAlignment = Alignment.Center
-      ) {
-        Text(
-          unreadCountStr(unreadCount),
-          color = Color.White,
-          fontSize = 10.sp,
-          modifier = Modifier
-            .background(MaterialTheme.colors.primaryVariant, shape = CircleShape)
-            .padding(2.dp)
-            .badgeLayout()
-        )
-      }
-    } else if (!u.showNtfs) {
-      Icon(painterResource(MR.images.ic_notifications_off), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
     } else {
-      Box(Modifier.size(20.dp))
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        if (unreadCount > 0) {
+          Box(
+            contentAlignment = Alignment.Center,
+          ) {
+            Text(
+              unreadCountStr(unreadCount),
+              color = Color.White,
+              fontSize = 10.sp,
+              modifier = Modifier
+                .background(if (u.showNtfs) MaterialTheme.colors.primaryVariant else MaterialTheme.colors.secondary, shape = CircleShape)
+                .padding(2.dp)
+                .badgeLayout()
+            )
+          }
+        } else if (!u.showNtfs) {
+          Icon(painterResource(MR.images.ic_notifications_off), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
+        } else {
+          Box(Modifier.size(20.dp))
+        }
+
+        if (u.hidden) {
+          if (unreadCount > 0) {
+            Spacer(Modifier.width(8.dp))
+          }
+          Icon(painterResource(MR.images.ic_lock), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
+        }
+      }
     }
   }
 }
