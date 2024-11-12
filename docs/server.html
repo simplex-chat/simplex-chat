@@ -892,7 +892,8 @@ window.addEventListener('scroll',changeHeaderBg);
 <ul>
 <li><a href="#smp-server-address">SMP server address</a></li>
 <li><a href="#systemd-commands">Systemd commands</a></li>
-<li><a href="#monitoring">Monitoring</a></li>
+<li><a href="#control-port">Control port</a></li>
+<li><a href="#daily-statistics">Daily statistics</a></li>
 </ul>
 </li>
 <li><a href="#updating-your-smp-server">Updating your SMP server</a></li>
@@ -1818,12 +1819,121 @@ Nov 23 19:23:21 5588ab759e80 smp-server[30878]: Listening on port 5223 (TLS)...
 Nov 23 19:23:21 5588ab759e80 smp-server[30878]: not expiring inactive clients
 Nov 23 19:23:21 5588ab759e80 smp-server[30878]: creating new queues requires password
 </code></pre>
-<h4 id="monitoring" tabindex="-1">Monitoring</h4>
+<h4 id="control-port" tabindex="-1">Control port</h4>
+<p>Enabling control port in the configuration allows administrator to see information about the smp-server in real-time. Additionally, it allows to delete queues for content moderation and see the debug info about the clients, sockets, etc. Enabling the control port requires setting the <code>admin</code> and <code>user</code> passwords.</p>
+<ol>
+<li>
+<p>Generate two passwords for each user:</p>
+<pre><code class="language-sh">tr -dc A-Za-z0-9 &lt;/dev/urandom | head -c 20; echo
+</code></pre>
+</li>
+<li>
+<p>Open the configuration file:</p>
+<pre><code class="language-sh">vim /etc/opt/simplex/smp-server.ini
+</code></pre>
+</li>
+<li>
+<p>Configure the control port and replace the passwords:</p>
+<pre><code class="language-ini">[AUTH]
+control_port_admin_password: &lt;your_randomly_generated_admin_password&gt;
+control_port_user_password: &lt;your_randomly_generated_user_password&gt;
+
+[TRANSPORT]
+control_port: 5224
+</code></pre>
+</li>
+<li>
+<p>Restart the server:</p>
+<pre><code class="language-sh">systemctl restart smp-server
+</code></pre>
+</li>
+</ol>
+<p>To access the control port, use:</p>
+<pre><code class="language-sh">nc 127.0.0.1 5224
+</code></pre>
+<p>or:</p>
+<pre><code class="language-sh">telnet 127.0.0.1 5224
+</code></pre>
+<p>Upon connecting, the control port should print:</p>
+<pre><code class="language-sh">SMP server control port
+'help' for supported commands
+</code></pre>
+<p>To authenticate, type the following and hit enter. Change the <code>my_generated_password</code> with the <code>user</code> or <code>admin</code> password from the configuration:</p>
+<pre><code class="language-sh">auth my_generated_password
+</code></pre>
+<p>Here's the full list of commands, their descriptions and who can access them.</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+<th>Requires <code>admin</code> role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>stats</code></td>
+<td>Real-time statistics. Fields described in <a href="#daily-statistics">Daily statistics</a></td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>stats-rts</code></td>
+<td>GHC/Haskell statistics. Can be enabled with <code>+RTS -T -RTS</code> option</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>clients</code></td>
+<td>Clients information. Useful for debugging.</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>sockets</code></td>
+<td>General sockets information.</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>socket-threads</code></td>
+<td>Thread infomation per socket. Useful for debugging.</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>threads</code></td>
+<td>Threads information. Useful for debugging.</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>server-info</code></td>
+<td>Aggregated server infomation.</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>delete</code></td>
+<td>Delete known queue. Useful for content moderation.</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>save</code></td>
+<td>Save queues/messages from memory.</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>help</code></td>
+<td>Help menu.</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>quit</code></td>
+<td>Exit the control port.</td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+<h4 id="daily-statistics" tabindex="-1">Daily statistics</h4>
 <p>You can enable <code>smp-server</code> statistics for <code>Grafana</code> dashboard by setting value <code>on</code> in <code>/etc/opt/simplex/smp-server.ini</code>, under <code>[STORE_LOG]</code> section in <code>log_stats:</code> field.</p>
 <p>Logs will be stored as <code>csv</code> file in <code>/var/opt/simplex/smp-server-stats.daily.log</code>. Fields for the <code>csv</code> file are:</p>
 <pre><code class="language-sh">fromTime,qCreated,qSecured,qDeleted,msgSent,msgRecv,dayMsgQueues,weekMsgQueues,monthMsgQueues,msgSentNtf,msgRecvNtf,dayCountNtf,weekCountNtf,monthCountNtf,qCount,msgCount,msgExpired,qDeletedNew,qDeletedSecured,pRelays_pRequests,pRelays_pSuccesses,pRelays_pErrorsConnect,pRelays_pErrorsCompat,pRelays_pErrorsOther,pRelaysOwn_pRequests,pRelaysOwn_pSuccesses,pRelaysOwn_pErrorsConnect,pRelaysOwn_pErrorsCompat,pRelaysOwn_pErrorsOther,pMsgFwds_pRequests,pMsgFwds_pSuccesses,pMsgFwds_pErrorsConnect,pMsgFwds_pErrorsCompat,pMsgFwds_pErrorsOther,pMsgFwdsOwn_pRequests,pMsgFwdsOwn_pSuccesses,pMsgFwdsOwn_pErrorsConnect,pMsgFwdsOwn_pErrorsCompat,pMsgFwdsOwn_pErrorsOther,pMsgFwdsRecv,qSub,qSubAuth,qSubDuplicate,qSubProhibited,msgSentAuth,msgSentQuota,msgSentLarge,msgNtfs,msgNtfNoSub,msgNtfLost,qSubNoMsg,msgRecvGet,msgGet,msgGetNoMsg,msgGetAuth,msgGetDuplicate,msgGetProhibited,psSubDaily,psSubWeekly,psSubMonthly,qCount2,ntfCreated,ntfDeleted,ntfSub,ntfSubAuth,ntfSubDuplicate,ntfCount,qDeletedAllB,qSubAllB,qSubEnd,qSubEndB,ntfDeletedB,ntfSubB,msgNtfsB,msgNtfExpired
 </code></pre>
-<h4 id="fields-description" tabindex="-1">Fields description</h4>
+<p><strong>Fields description</strong></p>
 <table>
 <thead>
 <tr>

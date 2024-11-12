@@ -1048,7 +1048,81 @@ Feb 27 19:21:11 localhost xftp-server[2350]: Uploading new files allowed.
 Feb 27 19:21:11 localhost xftp-server[2350]: Listening on port 443...
 Feb 27 19:21:11 localhost xftp-server[2350]: [INFO 2023-02-27 19:21:11 +0000 src/Simplex/FileTransfer/Server/Env.hs:85] Total / available storage: 64424509440 / 64424509440
 </code></pre>
-<h3 id="monitoring" tabindex="-1">Monitoring</h3>
+<h3 id="control-port" tabindex="-1">Control port</h3>
+<p>Enabling control port in the configuration allows administrator to see information about the smp-server in real-time. Additionally, it allows to delete file chunks for content moderation and see the debug info about the clients, sockets, etc. Enabling the control port requires setting the <code>admin</code> and <code>user</code> passwords.</p>
+<ol>
+<li>
+<p>Generate two passwords for each user:</p>
+<pre><code class="language-sh">tr -dc A-Za-z0-9 &lt;/dev/urandom | head -c 20; echo
+</code></pre>
+</li>
+<li>
+<p>Open the configuration file:</p>
+<pre><code class="language-sh">vim /etc/opt/simplex-xftp/file-server.ini
+</code></pre>
+</li>
+<li>
+<p>Configure the control port and replace the passwords:</p>
+<pre><code class="language-ini">[AUTH]
+control_port_admin_password: &lt;your_randomly_generated_admin_password&gt;
+control_port_user_password: &lt;your_randomly_generated_user_password&gt;
+
+[TRANSPORT]
+control_port: 5224
+</code></pre>
+</li>
+<li>
+<p>Restart the server:</p>
+<pre><code class="language-sh">systemctl restart xftp-server
+</code></pre>
+</li>
+</ol>
+<p>To access the control port, use:</p>
+<pre><code class="language-sh">nc 127.0.0.1 5224
+</code></pre>
+<p>or:</p>
+<pre><code class="language-sh">telnet 127.0.0.1 5224
+</code></pre>
+<p>Upon connecting, the control port should print:</p>
+<pre><code class="language-sh">XFTP server control port
+'help' for supported commands
+</code></pre>
+<p>To authenticate, type the following and hit enter. Change the <code>my_generated_password</code> with the <code>user</code> or <code>admin</code> password from the configuration:</p>
+<pre><code class="language-sh">auth my_generated_password
+</code></pre>
+<p>Here's the full list of commands, their descriptions and who can access them.</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+<th>Requires <code>admin</code> role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>stats-rts</code></td>
+<td>GHC/Haskell statistics. Can be enabled with <code>+RTS -T -RTS</code> option</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>delete</code></td>
+<td>Delete known file chunk. Useful for content moderation.</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>help</code></td>
+<td>Help menu.</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>quit</code></td>
+<td>Exit the control port.</td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+<h3 id="daily-statistics" tabindex="-1">Daily statistics</h3>
 <p>You can enable <code>xftp-server</code> statistics for <code>Grafana</code> dashboard by setting value <code>on</code> in <code>/etc/opt/simplex-xftp/file-server.ini</code>, under <code>[STORE_LOG]</code> section in <code>log_stats:</code> field.</p>
 <p>Logs will be stored as <code>csv</code> file in <code>/var/opt/simplex-xftp/file-server-stats.daily.log</code>. Fields for the <code>csv</code> file are:</p>
 <pre><code class="language-sh">fromTime,filesCreated,fileRecipients,filesUploaded,filesDeleted,dayCount,weekCount,monthCount,fileDownloads,fileDownloadAcks,filesCount,filesSize
