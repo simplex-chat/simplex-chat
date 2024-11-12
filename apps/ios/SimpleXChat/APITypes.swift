@@ -1271,7 +1271,6 @@ public let operatorsInfo: Dictionary<OperatorTag, ServerOperatorInfo> = [
 
 public struct UsageConditions: Decodable {
     public var conditionsId: Int64
-    public var conditionsId: Int64
     public var conditionsCommit: String
     public var notifiedAt: Date?
     public var createdAt: Date
