@@ -1257,13 +1257,6 @@ public struct UsageConditions: Decodable {
         notifiedAt: nil,
         createdAt: Date.now
     )
-
-    enum CodingKeys: CodingKey {
-        case conditionsId
-        case conditionsCommit
-        case notifiedAt
-        case createdAt
-    }
 }
 
 public enum UsageConditionsAction: Decodable {
@@ -1322,13 +1315,13 @@ public struct ServerOperator: Identifiable, Equatable, Codable {
 
     public var info: ServerOperatorInfo {
         return if let operatorTag = operatorTag {
-            operatorsInfo[operatorTag] ?? dummyOperatorInfo
+            operatorsInfo[operatorTag] ?? ServerOperator.dummyOperatorInfo
         } else {
-            dummyOperatorInfo
+            ServerOperator.dummyOperatorInfo
         }
     }
 
-    private let dummyOperatorInfo = ServerOperatorInfo(
+    private static let dummyOperatorInfo = ServerOperatorInfo(
         description: "Default",
         website: "Default",
         logo: "decentralized",
@@ -1377,27 +1370,11 @@ public struct ServerOperator: Identifiable, Equatable, Codable {
         enabled: false,
         roles: ServerRoles(storage: true, proxy: true)
     )
-
-    enum CodingKeys: CodingKey {
-        case operatorId
-        case operatorTag
-        case tradeName
-        case legalName
-        case serverDomains
-        case conditionsAcceptance
-        case enabled
-        case roles
-    }
 }
 
 public struct ServerRoles: Equatable, Codable {
     public var storage: Bool
     public var proxy: Bool
-
-    enum CodingKeys: CodingKey {
-        case storage
-        case proxy
-    }
 }
 
 public struct UserOperatorServers: Identifiable, Equatable, Codable {
@@ -1424,12 +1401,6 @@ public struct UserOperatorServers: Identifiable, Equatable, Codable {
         smpServers: [UserServer.sampleData.preset],
         xftpServers: [UserServer.sampleData.xftpPreset]
     )
-
-    enum CodingKeys: CodingKey {
-        case `operator`
-        case smpServers
-        case xftpServers
-    }
 }
 
 public enum UserServersError: Decodable {
