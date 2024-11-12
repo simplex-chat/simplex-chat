@@ -285,7 +285,7 @@ fun UserPicker(
                         block()
                       } else {
                         doWithAuth(
-                          generalGetString(MR.strings.auth_change_chat_profiles),
+                          generalGetString(MR.strings.auth_open_chat_profiles),
                           generalGetString(MR.strings.auth_log_in_using_credential)
                         ) {
                           authorized.value = true
