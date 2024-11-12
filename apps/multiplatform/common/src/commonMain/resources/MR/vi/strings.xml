@@ -1161,4 +1161,24 @@
     <string name="migrate_from_device_migration_complete">Quá trình di chuyển hoàn tất</string>
     <string name="remote_host_error_inactive">Thiết bị di động <b>%s</b> đang không hoạt động</string>
     <string name="remote_host_error_disconnected">Thiết bị di động <b>%s</b> đã bị ngắt kết nối</string>
+    <string name="no_info_on_delivery">Không có thông tin chuyển gửi</string>
+    <string name="message_forwarded_desc">Chưa có kết nối trực tiếp, tin nhắn được chuyển tiếp bởi quản trị viên.</string>
+    <string name="no_contacts_to_add">Không có liên hệ để thêm</string>
+    <string name="no_connected_mobile">Không có thiết bị di động nào được kết nối</string>
+    <string name="chat_preferences_no">không</string>
+    <string name="no_details">không có thông tin</string>
+    <string name="new_passphrase">Mật khẩu mới…</string>
+    <string name="network_session_mode_session_description">Thông tin xác thực SOCKS mới sẽ được sử dụng mỗi khi bạn khởi động ứng dụng.</string>
+    <string name="network_smp_proxy_fallback_prohibit">Không</string>
+    <string name="no_contacts_selected">Không có liên hệ nào được chọn</string>
+    <string name="system_restricted_background_in_call_title">Không có cuộc gọi nền</string>
+    <string name="la_no_app_password">Không có mã truy cập ứng dụng</string>
+    <string name="no_filtered_chats">Không có cuộc trò chuyện nào được lọc</string>
+    <string name="no_history">Không có lịch sử</string>
+    <string name="no_filtered_contacts">Không có liên hệ nào được lọc</string>
+    <string name="message_queue_info_none">không</string>
+    <string name="network_use_onion_hosts_no">Không</string>
+    <string name="network_session_mode_server_description">Thông tin xác thực SOCKS mới sẽ được sử dụng cho mỗi máy chủ.</string>
+    <string name="status_no_e2e_encryption">không có mã hóa đầu cuối</string>
+    <string name="servers_info_missing">Không có thông tin, hãy thử tải lại</string>
 </resources>
