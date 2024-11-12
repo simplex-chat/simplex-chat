@@ -1271,6 +1271,7 @@ public let operatorsInfo: Dictionary<OperatorTag, ServerOperatorInfo> = [
 
 public struct UsageConditions: Decodable {
     public var conditionsId: Int64
+    public var conditionsId: Int64
     public var conditionsCommit: String
     public var notifiedAt: Date?
     public var createdAt: Date
@@ -1325,7 +1326,7 @@ public enum ConditionsAcceptance: Equatable, Codable, Hashable {
 
 public struct ServerOperator: Identifiable, Equatable, Codable {
     public var operatorId: Int64
-    public var operatorTag: OperatorTag
+    public var operatorTag: OperatorTag?
     public var tradeName: String
     public var legalName: String?
     public var serverDomains: [String]
@@ -1335,21 +1336,31 @@ public struct ServerOperator: Identifiable, Equatable, Codable {
 
     public var id: Int64 { operatorId }
 
+    public static func == (l: ServerOperator, r: ServerOperator) -> Bool {
+        l.operatorId == r.operatorId && l.operatorTag == r.operatorTag && l.tradeName == r.tradeName && l.legalName == r.legalName &&
+        l.serverDomains == r.serverDomains && l.conditionsAcceptance == r.conditionsAcceptance && l.enabled == r.enabled && l.roles == r.roles
+    }
+
     public var conditionsName: String {
         legalName ?? tradeName
     }
 
     public var info: ServerOperatorInfo {
-        operatorsInfo[operatorTag] ??
-        ServerOperatorInfo(
-            description: "Default",
-            website: "Default",
-            logo: "decentralized",
-            largeLogo: "logo",
-            logoDarkMode: "decentralized-light",
-            largeLogoDarkMode: "logo-light"
-        )
+        return if let operatorTag = operatorTag {
+            operatorsInfo[operatorTag] ?? dummyOperatorInfo
+        } else {
+            dummyOperatorInfo
+        }
     }
+
+    private let dummyOperatorInfo = ServerOperatorInfo(
+        description: "Default",
+        website: "Default",
+        logo: "decentralized",
+        largeLogo: "logo",
+        logoDarkMode: "decentralized-light",
+        largeLogoDarkMode: "logo-light"
+    )
 
     public func logo(_ colorScheme: ColorScheme) -> String {
         colorScheme == .light ? info.logo : info.logoDarkMode
