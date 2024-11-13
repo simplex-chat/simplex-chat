@@ -75,6 +75,46 @@ extern char *chat_encrypt_file(chat_ctrl ctrl, const char *from_path, const char
 extern char *chat_decrypt_file(const char *from_path, const char *key, const char *nonce, const char *to_path);
 extern char *chat_resize_image_to_str_size(const char *from_path, long max_size);
 
+char * encode_to_utf8_chars(JNIEnv *env, jstring string) {
+    if (!string) return "";
+
+    const jclass cls_string = (*env)->FindClass(env, "java/lang/String");
+    const jmethodID mid_getBytes = (*env)->GetMethodID(env, cls_string, "getBytes", "(Ljava/lang/String;)[B");
+    const jbyteArray jbyte_array = (jbyteArray) (*env)->CallObjectMethod(env, string, mid_getBytes, (*env)->NewStringUTF(env, "UTF-8"));
+    jint length = (jint) (*env)->GetArrayLength(env, jbyte_array);
+    jbyte *jbytes = malloc(length + 1);
+    (*env)->GetByteArrayRegion(env, jbyte_array, 0, length, jbytes);
+    // char * should be null terminated but jbyte * isn't. Terminate it with \0. Otherwise, Haskell will not see the end of string
+    jbytes[length] = '\0';
+
+    //for (int i = 0; i < length; ++i)
+    //    fprintf(stderr, "%d: %02x\n", i, jbytes[i]);
+
+    (*env)->DeleteLocalRef(env, jbyte_array);
+    (*env)->DeleteLocalRef(env, cls_string);
+    return (char *) jbytes;
+}
+
+// As a reference: https://stackoverflow.com/a/60002045
+jstring decode_to_utf8_string(JNIEnv *env, char *string) {
+    jobject bb = (*env)->NewDirectByteBuffer(env, (void *)string, strlen(string));
+    jclass cls_charset = (*env)->FindClass(env, "java/nio/charset/Charset");
+    jmethodID mid_charset_forName = (*env)->GetStaticMethodID(env, cls_charset, "forName", "(Ljava/lang/String;)Ljava/nio/charset/Charset;");
+    jobject charset = (*env)->CallStaticObjectMethod(env, cls_charset, mid_charset_forName, (*env)->NewStringUTF(env, "UTF-8"));
+
+    jmethodID mid_decode = (*env)->GetMethodID(env, cls_charset, "decode", "(Ljava/nio/ByteBuffer;)Ljava/nio/CharBuffer;");
+    jobject cb = (*env)->CallObjectMethod(env, charset, mid_decode, bb);
+
+    jclass cls_char_buffer = (*env)->FindClass(env, "java/nio/CharBuffer");
+    jmethodID mid_to_string = (*env)->GetMethodID(env, cls_char_buffer, "toString", "()Ljava/lang/String;");
+    jstring res = (*env)->CallObjectMethod(env, cb, mid_to_string);
+
+    (*env)->DeleteLocalRef(env, bb);
+    (*env)->DeleteLocalRef(env, charset);
+    (*env)->DeleteLocalRef(env, cb);
+    return res;
+}
+
 JNIEXPORT jobjectArray JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatMigrateInit(JNIEnv *env, __unused jclass clazz, jstring dbPath, jstring dbKey, jstring confirm) {
     const char *_dbPath = (*env)->GetStringUTFChars(env, dbPath, JNI_FALSE);
