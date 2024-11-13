@@ -1564,12 +1564,15 @@ processChatCommand' vr = \case
     msgs <- lift $ withAgent' $ \a -> getConnectionMessages a acIds
     let ntfMsgs = L.map (\msg -> receivedMsgInfo <$> msg) msgs
     pure $ CRConnNtfMessages ntfMsgs
-  GetUserProtoServers (AProtocolType (p :: SProtocolType p)) -> withUser $ \user -> withServerProtocol p $ do
-    (operators, smpServers, xftpServers) <- withFastStore (`getUserServers` user)
-    userServers <- liftIO $ groupByOperator $ case p of
-      SPSMP -> (operators, smpServers, [])
-      SPXFTP -> (operators, [], xftpServers)
-    pure $ CRUserServers user userServers
+  GetUserProtoServers (AProtocolType p) -> withUser $ \user -> withServerProtocol p $
+    CRUserServers user <$> groupedServers p user
+    where
+      groupedServers :: UserProtocol p => SProtocolType p -> User -> CM [UserOperatorServers]
+      groupedServers p' user = do
+        (operators, smpServers, xftpServers) <- withFastStore (`getUserServers` user)
+        liftIO $ groupByOperator $ case p of
+          SPSMP -> (operators, smpServers, [])
+          SPXFTP -> (operators, [], xftpServers)
   SetUserProtoServers (AProtocolType (p :: SProtocolType p)) srvs -> withUser $ \user@User {userId} -> withServerProtocol p $ do
     srvs' <- mapM aUserServer srvs
     userServers_ <- liftIO . groupByOperator =<< withFastStore (`getUserServers` user)
@@ -1583,6 +1586,7 @@ processChatCommand' vr = \case
             updatedSrvs UserOperatorServers {operator, smpServers, xftpServers} = case p of
               SPSMP -> u (updateSrvs smpServers, map (AUS SDBStored) xftpServers)
               SPXFTP -> u (map (AUS SDBStored) smpServers, updateSrvs xftpServers)
+              SPNTF -> u ([], []) -- pattern match for ghc 8.10.7
               where
                 u = uncurry $ UpdatedUserOperatorServers operator
                 updateSrvs :: [UserServer p] -> [AUserServer p]
