@@ -9,5 +9,5 @@
   "https://github.com/simplex-chat/zip.git"."bd421c6b19cc4c465cd7af1f6f26169fb8ee1ebc" = "1csqfjhvc8wb5h4kxxndmb6iw7b4ib9ff2n81hrizsmnf45a6gg0";
   "https://github.com/yesodweb/wai.git"."ec5e017d896a78e787a5acea62b37a4e677dec2e" = "1ckcpmpjfy9jiqrb52q20lj7ln4hmq9v2jk6kpkf3m68c1m9c2bx";
   "https://github.com/simplex-chat/wai.git"."2f6e5aa5f05ba9140ac99e195ee647b4f7d926b0" = "199g4rjdf1zp1fcw8nqdsyr1h36hmg424qqx03071jk7j00z7ay4";
-  "https://gitlab.com/dpwiz/hs-jpeg-turbo"."a1e36acb16bb66a9284358cfcd305d0084e245fe" = "0vxwcbrsqgb2al5l495ac5gm4waychvq7v9ff30q7in2ms67h2p6";
+  "https://gitlab.com/dpwiz/hs-jpeg-turbo"."044f10e687d2c475c40204f12738cdcf63ddb708" = "1p36g5yk700qilp1qaq1rg5478k4sy899di7p8w7yhgqdzjvdncm";
 }
