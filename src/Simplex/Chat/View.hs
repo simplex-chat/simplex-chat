@@ -93,7 +93,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRChatSuspended -> ["chat suspended"]
   CRApiChats u chats -> ttyUser u $ if testView then testViewChats chats else [viewJSON chats]
   CRChats chats -> viewChats ts tz chats
-  CRApiChat u chat -> ttyUser u $ if testView then testViewChat chat else [viewJSON chat]
+  CRApiChat u chat _ -> ttyUser u $ if testView then testViewChat chat else [viewJSON chat]
   CRApiParsedMarkdown ft -> [viewJSON ft]
   CRUserProtoServers u userServers -> ttyUser u $ viewUserServers userServers testView
   CRServerTestResult u srv testFailure -> ttyUser u $ viewServerTestResult srv testFailure

@@ -948,14 +948,14 @@ getContactConnectionChatPreviews_ db User {userId} pagination clq = case clq of
           aChat = AChat SCTContactConnection $ Chat (ContactConnection conn) [] stats
        in ACPD SCTContactConnection $ ContactConnectionPD updatedAt aChat
 
-getDirectChat :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTDirect)
+getDirectChat :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTDirect, Maybe NavigationInfo)
 getDirectChat db vr user contactId pagination search_ = do
   let search = fromMaybe "" search_
   ct <- getContact db vr user contactId
   case pagination of
-    CPLast count -> liftIO $ getDirectChatLast_ db user ct count search
-    CPAfter afterId count -> getDirectChatAfter_ db user ct afterId count search
-    CPBefore beforeId count -> getDirectChatBefore_ db user ct beforeId count search
+    CPLast count -> liftIO $ (,Nothing) <$> getDirectChatLast_ db user ct count search
+    CPAfter afterId count -> (,Nothing) <$> getDirectChatAfter_ db user ct afterId count search
+    CPBefore beforeId count -> (,Nothing) <$> getDirectChatBefore_ db user ct beforeId count search
     CPAround aroundId count -> getDirectChatAround_ db user ct aroundId count search
     CPInitial count -> do
       unless (null search) $ throwError $ SEInternalError "initial chat pagination doesn't support search"
@@ -965,10 +965,10 @@ getDirectChat db vr user contactId pagination search_ = do
 getDirectChatLast_ :: DB.Connection -> User -> Contact -> Int -> String -> IO (Chat 'CTDirect)
 getDirectChatLast_ db user ct count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  chatItemIds <- getDirectChatItemIdsLast_ db user ct count search
-  currentTs <- getCurrentTime
-  chatItems <- mapM (safeGetDirectItem db user ct currentTs) chatItemIds
-  pure $ Chat (DirectChat ct) (reverse chatItems) stats
+  ciIds <- getDirectChatItemIdsLast_ db user ct count search
+  ts <- getCurrentTime
+  cis <- mapM (safeGetDirectItem db user ct ts) ciIds
+  pure $ Chat (DirectChat ct) (reverse cis) stats
 
 getDirectChatItemIdsLast_ :: DB.Connection -> User -> Contact -> Int -> String -> IO [ChatItemId]
 getDirectChatItemIdsLast_ db User {userId} Contact {contactId} count search =
@@ -1027,16 +1027,16 @@ getDirectChatItemLast db user@User {userId} contactId = do
   getDirectChatItem db user contactId chatItemId
 
 getDirectChatAfter_ :: DB.Connection -> User -> Contact -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
-getDirectChatAfter_ db user ct@Contact {contactId} afterChatItemId count search = do
+getDirectChatAfter_ db user ct@Contact {contactId} afterId count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  afterChatItem <- getDirectChatItem db user contactId afterChatItemId
-  chatItemIds <- liftIO $ getDirectChatItemIdsAfter_ db user ct afterChatItemId count search (chatItemCreatedAt afterChatItem)
-  currentTs <- liftIO getCurrentTime
-  chatItems <- liftIO $ mapM (safeGetDirectItem db user ct currentTs) chatItemIds
-  pure $ Chat (DirectChat ct) chatItems stats
+  afterCI <- getDirectChatItem db user contactId afterId
+  ciIds <- liftIO $ getDirectCIsAfter_ db user ct afterCI count search
+  ts <- liftIO getCurrentTime
+  cis <- liftIO $ mapM (safeGetDirectItem db user ct ts) ciIds
+  pure $ Chat (DirectChat ct) cis stats
 
-getDirectChatItemIdsAfter_ :: DB.Connection -> User -> Contact -> ChatItemId -> Int -> String -> UTCTime -> IO [ChatItemId]
-getDirectChatItemIdsAfter_ db User {userId} Contact {contactId} afterChatItemId count search afterChatItemCreatedAt =
+getDirectCIsAfter_ :: DB.Connection -> User -> Contact -> CChatItem 'CTDirect -> Int -> String -> IO [ChatItemId]
+getDirectCIsAfter_ db User {userId} Contact {contactId} afterCI count search =
   map fromOnly
     <$> DB.query
       db
@@ -1048,19 +1048,19 @@ getDirectChatItemIdsAfter_ db User {userId} Contact {contactId} afterChatItemId 
         ORDER BY created_at ASC, chat_item_id ASC
         LIMIT ?
       |]
-      (userId, contactId, search, afterChatItemCreatedAt, afterChatItemCreatedAt, afterChatItemId, count)
+      (userId, contactId, search, ciCreatedAt afterCI, ciCreatedAt afterCI, cChatItemId afterCI, count)
 
 getDirectChatBefore_ :: DB.Connection -> User -> Contact -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
-getDirectChatBefore_ db user ct@Contact {contactId} beforeChatItemId count search = do
+getDirectChatBefore_ db user ct@Contact {contactId} beforeId count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  beforeChatItem <- getDirectChatItem db user contactId beforeChatItemId
-  chatItemIds <- liftIO $ getDirectChatItemsIdsBefore_ db user ct beforeChatItemId count search (chatItemCreatedAt beforeChatItem)
-  currentTs <- liftIO getCurrentTime
-  chatItems <- liftIO $ mapM (safeGetDirectItem db user ct currentTs) chatItemIds
-  pure $ Chat (DirectChat ct) (reverse chatItems) stats
+  beforeCI <- getDirectChatItem db user contactId beforeId
+  ciIds <- liftIO $ getDirectCIsBefore_ db user ct beforeCI count search
+  ts <- liftIO getCurrentTime
+  cis <- liftIO $ mapM (safeGetDirectItem db user ct ts) ciIds
+  pure $ Chat (DirectChat ct) (reverse cis) stats
 
-getDirectChatItemsIdsBefore_ :: DB.Connection -> User -> Contact -> ChatItemId -> Int -> String -> UTCTime -> IO [ChatItemId]
-getDirectChatItemsIdsBefore_ db User {userId} Contact {contactId} beforeChatItemId count search beforeChatItemCreatedAt =
+getDirectCIsBefore_ :: DB.Connection -> User -> Contact -> CChatItem 'CTDirect -> Int -> String -> IO [ChatItemId]
+getDirectCIsBefore_ db User {userId} Contact {contactId} beforeCI count search =
   map fromOnly
     <$> DB.query
       db
@@ -1072,59 +1072,109 @@ getDirectChatItemsIdsBefore_ db User {userId} Contact {contactId} beforeChatItem
         ORDER BY created_at DESC, chat_item_id DESC
         LIMIT ?
       |]
-      (userId, contactId, search, beforeChatItemCreatedAt, beforeChatItemCreatedAt, beforeChatItemId, count)
+      (userId, contactId, search, ciCreatedAt beforeCI, ciCreatedAt beforeCI, cChatItemId beforeCI, count)
 
-getDirectChatAround_ :: DB.Connection -> User -> Contact -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
-getDirectChatAround_ db user ct@Contact {contactId} aroundItemId count search = do
-  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  let (fetchCountBefore, fetchCountAfter) = divideFetchCountAround_ (count - 1)
-  middleChatItem <- getDirectChatItem db user contactId aroundItemId
-  beforeIds <- liftIO $ getDirectChatItemsIdsBefore_ db user ct aroundItemId fetchCountBefore search (chatItemCreatedAt middleChatItem)
-  afterIds <- liftIO $ getDirectChatItemIdsAfter_ db user ct aroundItemId fetchCountAfter search (chatItemCreatedAt middleChatItem)
-  currentTs <- liftIO getCurrentTime
-  beforeChatItems <- liftIO $ mapM (safeGetDirectItem db user ct currentTs) beforeIds
-  afterChatItems <- liftIO $ mapM (safeGetDirectItem db user ct currentTs) afterIds
-  let remainingAfter = fetchCountAfter - length afterIds
-  let remainingBefore = fetchCountBefore - length beforeIds
-  if
-    | remainingBefore > 0 && remainingAfter <= 0 -> do
-        extraAfterIds <- liftIO $ getDirectChatItemIdsAfter_ db user ct (last afterIds) remainingBefore search (chatItemCreatedAt (last afterChatItems))
-        extraAfterItems <- liftIO $ mapM (safeGetDirectItem db user ct currentTs) extraAfterIds
-        pure $ Chat (DirectChat ct) (reverse beforeChatItems <> [middleChatItem] <> afterChatItems <> extraAfterItems) stats
-    | remainingAfter > 0 && remainingBefore <= 0 -> do
-        extraBeforeIds <- liftIO $ getDirectChatItemsIdsBefore_ db user ct (last beforeIds) remainingAfter search (chatItemCreatedAt (last beforeChatItems))
-        extraBeforeItems <- liftIO $ mapM (safeGetDirectItem db user ct currentTs) extraBeforeIds
-        pure $ Chat (DirectChat ct) (reverse (beforeChatItems <> extraBeforeItems) <> [middleChatItem] <> afterChatItems) stats
-    | otherwise ->
-        pure $ Chat (DirectChat ct) (reverse beforeChatItems <> [middleChatItem] <> afterChatItems) stats
+getDirectChatAround_ :: DB.Connection -> User -> Contact -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect, Maybe NavigationInfo)
+getDirectChatAround_ db user ct aroundId count search = do
+  stats <- liftIO $ getContactStats_ db user ct
+  getDirectChatAround' db user ct aroundId count search stats
 
-getDirectChatInitial_ :: DB.Connection -> User -> Contact -> Int -> ExceptT StoreError IO (Chat 'CTDirect)
-getDirectChatInitial_ db user@User {userId} ct@Contact {contactId} count = do
-  firstUnreadItemId_ <- liftIO getDirectChatMinUnreadItemId_
-  case firstUnreadItemId_ of
-    Just firstUnreadItemId -> getDirectChatAround_ db user ct firstUnreadItemId count ""
-    Nothing -> liftIO $ getDirectChatLast_ db user ct count ""
+getDirectChatAround' :: DB.Connection -> User -> Contact -> ChatItemId -> Int -> String -> ChatStats -> ExceptT StoreError IO (Chat 'CTDirect, Maybe NavigationInfo)
+getDirectChatAround' db user ct@Contact {contactId} aroundId count search stats = do
+  aroundCI <- getDirectChatItem db user contactId aroundId
+  beforeIds <- liftIO $ getDirectCIsBefore_ db user ct aroundCI count search
+  afterIds <- liftIO $ getDirectCIsAfter_ db user ct aroundCI count search
+  ts <- liftIO getCurrentTime
+  beforeCIs <- liftIO $ mapM (safeGetDirectItem db user ct ts) beforeIds
+  afterCIs <- liftIO $ mapM (safeGetDirectItem db user ct ts) afterIds
+  let cis = reverse beforeCIs <> [aroundCI] <> afterCIs
+  navInfo <- liftIO $ getNavInfo cis
+  pure (Chat (DirectChat ct) cis stats, Just navInfo)
   where
-    getDirectChatMinUnreadItemId_ :: IO (Maybe ChatItemId)
-    getDirectChatMinUnreadItemId_ =
-      fmap join . maybeFirstRow fromOnly $
-        DB.query
+    getNavInfo cis_ = case cis_ of
+      [] -> pure $ NavigationInfo 0 0
+      cis -> getContactNavInfo_ db user ct (last cis)
+
+getDirectChatInitial_ :: DB.Connection -> User -> Contact -> Int -> ExceptT StoreError IO (Chat 'CTDirect, Maybe NavigationInfo)
+getDirectChatInitial_ db user ct count = do
+  liftIO (getContactMinUnreadId_ db user ct) >>= \case
+    Just minUnreadItemId -> do
+      unreadCount <- liftIO $ getContactUnreadCount_ db user ct
+      let stats = ChatStats {unreadCount, minUnreadItemId, unreadChat = False}
+      getDirectChatAround' db user ct minUnreadItemId count "" stats
+    Nothing -> liftIO $ (,Just $ NavigationInfo 0 0) <$> getDirectChatLast_ db user ct count ""
+
+getContactStats_ :: DB.Connection -> User -> Contact -> IO ChatStats
+getContactStats_ db user ct = do
+  minUnreadItemId <- fromMaybe 0 <$> getContactMinUnreadId_ db user ct
+  unreadCount <- getContactUnreadCount_ db user ct
+  pure ChatStats {unreadCount, minUnreadItemId, unreadChat = False}
+
+getContactMinUnreadId_ :: DB.Connection -> User -> Contact -> IO (Maybe ChatItemId)
+getContactMinUnreadId_ db User {userId} Contact {contactId} =
+  fmap join . maybeFirstRow fromOnly $
+    DB.query
+      db
+      [sql|
+        SELECT chat_item_id
+        FROM chat_items
+        WHERE user_id = ? AND contact_id = ? AND item_status = ?
+        ORDER BY created_at ASC, chat_item_id ASC
+        LIMIT 1
+      |]
+      (userId, contactId, CISRcvNew)
+
+getContactUnreadCount_ :: DB.Connection -> User -> Contact -> IO Int
+getContactUnreadCount_ db User {userId} Contact {contactId} =
+  fromOnly . head
+    <$> DB.query
+      db
+      [sql|
+        SELECT COUNT(1)
+        FROM chat_items
+        WHERE user_id = ? AND contact_id = ? AND item_status = ?
+      |]
+      (userId, contactId, CISRcvNew)
+
+getContactNavInfo_ :: DB.Connection -> User -> Contact -> CChatItem 'CTDirect -> IO NavigationInfo
+getContactNavInfo_ db User {userId} Contact {contactId} afterCI = do
+  afterUnread <- getAfterUnreadCount
+  afterTotal <- getAfterTotalCount
+  pure NavigationInfo {afterUnread, afterTotal}
+  where
+    getAfterUnreadCount :: IO Int
+    getAfterUnreadCount =
+      fromOnly . head
+        <$> DB.query
           db
           [sql|
-            SELECT MIN(chat_item_id)
+            SELECT COUNT(1)
             FROM chat_items
             WHERE user_id = ? AND contact_id = ? AND item_status = ?
+              AND (created_at > ? OR (created_at = ? AND chat_item_id > ?))
           |]
-          (userId, contactId, CISRcvNew)
+          (userId, contactId, CISRcvNew, ciCreatedAt afterCI, ciCreatedAt afterCI, cChatItemId afterCI)
+    getAfterTotalCount :: IO Int
+    getAfterTotalCount =
+      fromOnly . head
+        <$> DB.query
+          db
+          [sql|
+            SELECT COUNT(1)
+            FROM chat_items
+            WHERE user_id = ? AND contact_id = ?
+              AND (created_at > ? OR (created_at = ? AND chat_item_id > ?))
+          |]
+          (userId, contactId, ciCreatedAt afterCI, ciCreatedAt afterCI, cChatItemId afterCI)
 
-getGroupChat :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTGroup)
+getGroupChat :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
 getGroupChat db vr user groupId pagination search_ = do
   let search = fromMaybe "" search_
   g <- getGroupInfo db vr user groupId
   case pagination of
-    CPLast count -> liftIO $ getGroupChatLast_ db user g count search
-    CPAfter afterId count -> getGroupChatAfter_ db user g afterId count search
-    CPBefore beforeId count -> getGroupChatBefore_ db user g beforeId count search
+    CPLast count -> liftIO $ (,Nothing) <$> getGroupChatLast_ db user g count search
+    CPAfter afterId count -> (,Nothing) <$> getGroupChatAfter_ db user g afterId count search
+    CPBefore beforeId count -> (,Nothing) <$> getGroupChatBefore_ db user g beforeId count search
     CPAround aroundId count -> getGroupChatAround_ db user g aroundId count search
     CPInitial count -> do
       unless (null search) $ throwError $ SEInternalError "initial chat pagination doesn't support search"
@@ -1133,10 +1183,10 @@ getGroupChat db vr user groupId pagination search_ = do
 getGroupChatLast_ :: DB.Connection -> User -> GroupInfo -> Int -> String -> IO (Chat 'CTGroup)
 getGroupChatLast_ db user g count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  chatItemIds <- getGroupChatItemIdsLast_ db user g count search
-  currentTs <- getCurrentTime
-  chatItems <- mapM (safeGetGroupItem db user g currentTs) chatItemIds
-  pure $ Chat (GroupChat g) (reverse chatItems) stats
+  ciIds <- getGroupChatItemIdsLast_ db user g count search
+  ts <- getCurrentTime
+  cis <- mapM (safeGetGroupItem db user g ts) ciIds
+  pure $ Chat (GroupChat g) (reverse cis) stats
 
 getGroupChatItemIdsLast_ :: DB.Connection -> User -> GroupInfo -> Int -> String -> IO [ChatItemId]
 getGroupChatItemIdsLast_ db User {userId} GroupInfo {groupId} count search =
@@ -1195,16 +1245,16 @@ getGroupMemberChatItemLast db user@User {userId} groupId groupMemberId = do
   getGroupChatItem db user groupId chatItemId
 
 getGroupChatAfter_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
-getGroupChatAfter_ db user g@GroupInfo {groupId} afterChatItemId count search = do
+getGroupChatAfter_ db user g@GroupInfo {groupId} afterId count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  afterChatItem <- getGroupChatItem db user groupId afterChatItemId
-  chatItemIds <- liftIO $ getGroupChatItemIdsAfter_ db user g afterChatItemId count search (chatItemTs afterChatItem)
-  currentTs <- liftIO getCurrentTime
-  chatItems <- liftIO $ mapM (safeGetGroupItem db user g currentTs) chatItemIds
-  pure $ Chat (GroupChat g) chatItems stats
+  afterCI <- getGroupChatItem db user groupId afterId
+  ciIds <- liftIO $ getGroupCIsAfter_ db user g afterCI count search
+  ts <- liftIO getCurrentTime
+  cis <- liftIO $ mapM (safeGetGroupItem db user g ts) ciIds
+  pure $ Chat (GroupChat g) cis stats
 
-getGroupChatItemIdsAfter_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> Int -> String -> UTCTime -> IO [ChatItemId]
-getGroupChatItemIdsAfter_ db User {userId} GroupInfo {groupId} afterChatItemId count search afterChatItemTs =
+getGroupCIsAfter_ :: DB.Connection -> User -> GroupInfo -> CChatItem 'CTGroup -> Int -> String -> IO [ChatItemId]
+getGroupCIsAfter_ db User {userId} GroupInfo {groupId} afterCI count search =
   map fromOnly
     <$> DB.query
       db
@@ -1216,19 +1266,19 @@ getGroupChatItemIdsAfter_ db User {userId} GroupInfo {groupId} afterChatItemId c
         ORDER BY item_ts ASC, chat_item_id ASC
         LIMIT ?
       |]
-      (userId, groupId, search, afterChatItemTs, afterChatItemTs, afterChatItemId, count)
+      (userId, groupId, search, chatItemTs afterCI, chatItemTs afterCI, cChatItemId afterCI, count)
 
 getGroupChatBefore_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
-getGroupChatBefore_ db user g@GroupInfo {groupId} beforeChatItemId count search = do
+getGroupChatBefore_ db user g@GroupInfo {groupId} beforeId count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  beforeChatItem <- getGroupChatItem db user groupId beforeChatItemId
-  chatItemIds <- liftIO $ getGroupChatItemIdsBefore_ db user g beforeChatItemId count search (chatItemTs beforeChatItem)
-  currentTs <- liftIO getCurrentTime
-  chatItems <- liftIO $ mapM (safeGetGroupItem db user g currentTs) chatItemIds
-  pure $ Chat (GroupChat g) (reverse chatItems) stats
+  beforeCI <- getGroupChatItem db user groupId beforeId
+  ciIds <- liftIO $ getGroupCIsBefore_ db user g beforeCI count search
+  ts <- liftIO getCurrentTime
+  cis <- liftIO $ mapM (safeGetGroupItem db user g ts) ciIds
+  pure $ Chat (GroupChat g) (reverse cis) stats
 
-getGroupChatItemIdsBefore_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> Int -> String -> UTCTime -> IO [ChatItemId]
-getGroupChatItemIdsBefore_ db User {userId} GroupInfo {groupId} beforeChatItemId count search beforeChatItemTs =
+getGroupCIsBefore_ :: DB.Connection -> User -> GroupInfo -> CChatItem 'CTGroup -> Int -> String -> IO [ChatItemId]
+getGroupCIsBefore_ db User {userId} GroupInfo {groupId} beforeCI count search =
   map fromOnly
     <$> DB.query
       db
@@ -1240,59 +1290,109 @@ getGroupChatItemIdsBefore_ db User {userId} GroupInfo {groupId} beforeChatItemId
         ORDER BY item_ts DESC, chat_item_id DESC
         LIMIT ?
       |]
-      (userId, groupId, search, beforeChatItemTs, beforeChatItemTs, beforeChatItemId, count)
+      (userId, groupId, search, chatItemTs beforeCI, chatItemTs beforeCI, cChatItemId beforeCI, count)
 
-getGroupChatAround_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
-getGroupChatAround_ db user g@GroupInfo {groupId} aroundItemId count search = do
-  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  let (fetchCountBefore, fetchCountAfter) = divideFetchCountAround_ (count - 1)
-  middleChatItem <- getGroupChatItem db user groupId aroundItemId
-  beforeIds <- liftIO $ getGroupChatItemIdsBefore_ db user g aroundItemId fetchCountBefore search (chatItemTs middleChatItem)
-  afterIds <- liftIO $ getGroupChatItemIdsAfter_ db user g aroundItemId fetchCountAfter search (chatItemTs middleChatItem)
-  currentTs <- liftIO getCurrentTime
-  beforeChatItems <- liftIO $ mapM (safeGetGroupItem db user g currentTs) beforeIds
-  afterChatItems <- liftIO $ mapM (safeGetGroupItem db user g currentTs) afterIds
-  let remainingAfter = fetchCountAfter - length afterIds
-  let remainingBefore = fetchCountBefore - length beforeIds
-  if
-    | remainingBefore > 0 && remainingAfter <= 0 -> do
-        extraAfterIds <- liftIO $ getGroupChatItemIdsAfter_ db user g (last afterIds) remainingBefore search (chatItemTs (last afterChatItems))
-        extraAfterItems <- liftIO $ mapM (safeGetGroupItem db user g currentTs) extraAfterIds
-        pure $ Chat (GroupChat g) (reverse beforeChatItems <> [middleChatItem] <> afterChatItems <> extraAfterItems) stats
-    | remainingAfter > 0 && remainingBefore <= 0 -> do
-        extraBeforeIds <- liftIO $ getGroupChatItemIdsBefore_ db user g (last beforeIds) remainingAfter search (chatItemTs (last beforeChatItems))
-        extraBeforeItems <- liftIO $ mapM (safeGetGroupItem db user g currentTs) extraBeforeIds
-        pure $ Chat (GroupChat g) (reverse (beforeChatItems <> extraBeforeItems) <> [middleChatItem] <> afterChatItems) stats
-    | otherwise ->
-        pure $ Chat (GroupChat g) (reverse beforeChatItems <> [middleChatItem] <> afterChatItems) stats
+getGroupChatAround_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
+getGroupChatAround_ db user g aroundId count search = do
+  stats <- liftIO $ getGroupStats_ db user g
+  getGroupChatAround' db user g aroundId count search stats
 
-getGroupChatInitial_ :: DB.Connection -> User -> GroupInfo -> Int -> ExceptT StoreError IO (Chat 'CTGroup)
-getGroupChatInitial_ db user@User {userId} g@GroupInfo {groupId} count = do
-  firstUnreadItemId_ <- liftIO getGroupChatMinUnreadItemId_
-  case firstUnreadItemId_ of
-    Just firstUnreadItemId -> getGroupChatAround_ db user g firstUnreadItemId count ""
-    Nothing -> liftIO $ getGroupChatLast_ db user g count ""
+getGroupChatAround' :: DB.Connection -> User -> GroupInfo -> ChatItemId -> Int -> String -> ChatStats -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
+getGroupChatAround' db user g@GroupInfo {groupId} aroundId count search stats = do
+  aroundCI <- getGroupChatItem db user groupId aroundId
+  beforeIds <- liftIO $ getGroupCIsBefore_ db user g aroundCI count search
+  afterIds <- liftIO $ getGroupCIsAfter_ db user g aroundCI count search
+  ts <- liftIO getCurrentTime
+  beforeCIs <- liftIO $ mapM (safeGetGroupItem db user g ts) beforeIds
+  afterCIs <- liftIO $ mapM (safeGetGroupItem db user g ts) afterIds
+  let cis = reverse beforeCIs <> [aroundCI] <> afterCIs
+  navInfo <- liftIO $ getNavInfo cis
+  pure (Chat (GroupChat g) cis stats, Just navInfo)
   where
-    getGroupChatMinUnreadItemId_ :: IO (Maybe ChatItemId)
-    getGroupChatMinUnreadItemId_ =
-      fmap join . maybeFirstRow fromOnly $
-        DB.query
+    getNavInfo cis_ = case cis_ of
+      [] -> pure $ NavigationInfo 0 0
+      cis -> getGroupNavInfo_ db user g (last cis)
+
+getGroupChatInitial_ :: DB.Connection -> User -> GroupInfo -> Int -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
+getGroupChatInitial_ db user g count =
+  liftIO (getGroupMinUnreadId_ db user g) >>= \case
+    Just minUnreadItemId -> do
+      unreadCount <- liftIO $ getGroupUnreadCount_ db user g
+      let stats = ChatStats {unreadCount, minUnreadItemId, unreadChat = False}
+      getGroupChatAround' db user g minUnreadItemId count "" stats
+    Nothing -> liftIO $ (,Just $ NavigationInfo 0 0) <$> getGroupChatLast_ db user g count ""
+
+getGroupStats_ :: DB.Connection -> User -> GroupInfo -> IO ChatStats
+getGroupStats_ db user g = do
+  minUnreadItemId <- fromMaybe 0 <$> getGroupMinUnreadId_ db user g
+  unreadCount <- getGroupUnreadCount_ db user g
+  pure ChatStats {unreadCount, minUnreadItemId, unreadChat = False}
+
+getGroupMinUnreadId_ :: DB.Connection -> User -> GroupInfo -> IO (Maybe ChatItemId)
+getGroupMinUnreadId_ db User {userId} GroupInfo {groupId} =
+  fmap join . maybeFirstRow fromOnly $
+    DB.query
+      db
+      [sql|
+        SELECT chat_item_id
+        FROM chat_items
+        WHERE user_id = ? AND group_id = ? AND item_status = ?
+        ORDER BY item_ts ASC, chat_item_id ASC
+        LIMIT 1
+      |]
+      (userId, groupId, CISRcvNew)
+
+getGroupUnreadCount_ :: DB.Connection -> User -> GroupInfo -> IO Int
+getGroupUnreadCount_ db User {userId} GroupInfo {groupId} =
+  fromOnly . head
+    <$> DB.query
+      db
+      [sql|
+        SELECT COUNT(1)
+        FROM chat_items
+        WHERE user_id = ? AND group_id = ? AND item_status = ?
+      |]
+      (userId, groupId, CISRcvNew)
+
+getGroupNavInfo_ :: DB.Connection -> User -> GroupInfo -> CChatItem 'CTGroup -> IO NavigationInfo
+getGroupNavInfo_ db User {userId} GroupInfo {groupId} afterCI = do
+  afterUnread <- getAfterUnreadCount
+  afterTotal <- getAfterTotalCount
+  pure NavigationInfo {afterUnread, afterTotal}
+  where
+    getAfterUnreadCount :: IO Int
+    getAfterUnreadCount =
+      fromOnly . head
+        <$> DB.query
           db
           [sql|
-            SELECT MIN(chat_item_id)
+            SELECT COUNT(1)
             FROM chat_items
             WHERE user_id = ? AND group_id = ? AND item_status = ?
+              AND (item_ts > ? OR (item_ts = ? AND chat_item_id > ?))
           |]
-          (userId, groupId, CISRcvNew)
+          (userId, groupId, CISRcvNew, chatItemTs afterCI, chatItemTs afterCI, cChatItemId afterCI)
+    getAfterTotalCount :: IO Int
+    getAfterTotalCount =
+      fromOnly . head
+        <$> DB.query
+          db
+          [sql|
+            SELECT COUNT(1)
+            FROM chat_items
+            WHERE user_id = ? AND group_id = ?
+              AND (item_ts > ? OR (item_ts = ? AND chat_item_id > ?))
+          |]
+          (userId, groupId, chatItemTs afterCI, chatItemTs afterCI, cChatItemId afterCI)
 
-getLocalChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTLocal)
+getLocalChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTLocal, Maybe NavigationInfo)
 getLocalChat db user folderId pagination search_ = do
   let search = fromMaybe "" search_
   nf <- getNoteFolder db user folderId
   case pagination of
-    CPLast count -> liftIO $ getLocalChatLast_ db user nf count search
-    CPAfter afterId count -> getLocalChatAfter_ db user nf afterId count search
-    CPBefore beforeId count -> getLocalChatBefore_ db user nf beforeId count search
+    CPLast count -> liftIO $ (,Nothing) <$> getLocalChatLast_ db user nf count search
+    CPAfter afterId count -> (,Nothing) <$> getLocalChatAfter_ db user nf afterId count search
+    CPBefore beforeId count -> (,Nothing) <$> getLocalChatBefore_ db user nf beforeId count search
     CPAround aroundId count -> getLocalChatAround_ db user nf aroundId count search
     CPInitial count -> do
       unless (null search) $ throwError $ SEInternalError "initial chat pagination doesn't support search"
@@ -1301,10 +1401,10 @@ getLocalChat db user folderId pagination search_ = do
 getLocalChatLast_ :: DB.Connection -> User -> NoteFolder -> Int -> String -> IO (Chat 'CTLocal)
 getLocalChatLast_ db user nf count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  chatItemIds <- getLocalChatItemIdsLast_ db user nf count search
-  currentTs <- getCurrentTime
-  chatItems <- mapM (safeGetLocalItem db user nf currentTs) chatItemIds
-  pure $ Chat (LocalChat nf) (reverse chatItems) stats
+  ciIds <- getLocalChatItemIdsLast_ db user nf count search
+  ts <- getCurrentTime
+  cis <- mapM (safeGetLocalItem db user nf ts) ciIds
+  pure $ Chat (LocalChat nf) (reverse cis) stats
 
 getLocalChatItemIdsLast_ :: DB.Connection -> User -> NoteFolder -> Int -> String -> IO [ChatItemId]
 getLocalChatItemIdsLast_ db User {userId} NoteFolder {noteFolderId} count search =
@@ -1347,16 +1447,16 @@ safeToLocalItem currentTs itemId = \case
               }
 
 getLocalChatAfter_ :: DB.Connection -> User -> NoteFolder -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTLocal)
-getLocalChatAfter_ db user nf@NoteFolder {noteFolderId} afterChatItemId count search = do
+getLocalChatAfter_ db user nf@NoteFolder {noteFolderId} afterId count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  afterChatItem <- getLocalChatItem db user noteFolderId afterChatItemId
-  chatItemIds <- liftIO $ getLocalChatItemIdsAfter_ db user nf afterChatItemId count search (chatItemCreatedAt afterChatItem)
-  currentTs <- liftIO getCurrentTime
-  chatItems <- liftIO $ mapM (safeGetLocalItem db user nf currentTs) chatItemIds
-  pure $ Chat (LocalChat nf) chatItems stats
+  afterCI <- getLocalChatItem db user noteFolderId afterId
+  ciIds <- liftIO $ getLocalCIsAfter_ db user nf afterCI count search
+  ts <- liftIO getCurrentTime
+  cis <- liftIO $ mapM (safeGetLocalItem db user nf ts) ciIds
+  pure $ Chat (LocalChat nf) cis stats
 
-getLocalChatItemIdsAfter_ :: DB.Connection -> User -> NoteFolder -> ChatItemId -> Int -> String -> UTCTime -> IO [ChatItemId]
-getLocalChatItemIdsAfter_ db User {userId} NoteFolder {noteFolderId} afterChatItemId count search afterChatItemCreatedAt =
+getLocalCIsAfter_ :: DB.Connection -> User -> NoteFolder -> CChatItem 'CTLocal -> Int -> String -> IO [ChatItemId]
+getLocalCIsAfter_ db User {userId} NoteFolder {noteFolderId} afterCI count search =
   map fromOnly
     <$> DB.query
       db
@@ -1368,19 +1468,19 @@ getLocalChatItemIdsAfter_ db User {userId} NoteFolder {noteFolderId} afterChatIt
         ORDER BY created_at ASC, chat_item_id ASC
         LIMIT ?
       |]
-      (userId, noteFolderId, search, afterChatItemCreatedAt, afterChatItemCreatedAt, afterChatItemId, count)
+      (userId, noteFolderId, search, ciCreatedAt afterCI, ciCreatedAt afterCI, cChatItemId afterCI, count)
 
 getLocalChatBefore_ :: DB.Connection -> User -> NoteFolder -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTLocal)
-getLocalChatBefore_ db user nf@NoteFolder {noteFolderId} beforeChatItemId count search = do
+getLocalChatBefore_ db user nf@NoteFolder {noteFolderId} beforeId count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  beforeChatItem <- getLocalChatItem db user noteFolderId beforeChatItemId
-  chatItemIds <- liftIO $ getLocalChatItemIdsBefore_ db user nf beforeChatItemId count search (chatItemCreatedAt beforeChatItem)
-  currentTs <- liftIO getCurrentTime
-  chatItems <- liftIO $ mapM (safeGetLocalItem db user nf currentTs) chatItemIds
-  pure $ Chat (LocalChat nf) (reverse chatItems) stats
+  beforeCI <- getLocalChatItem db user noteFolderId beforeId
+  ciIds <- liftIO $ getLocalCIsBefore_ db user nf beforeCI count search
+  ts <- liftIO getCurrentTime
+  cis <- liftIO $ mapM (safeGetLocalItem db user nf ts) ciIds
+  pure $ Chat (LocalChat nf) (reverse cis) stats
 
-getLocalChatItemIdsBefore_ :: DB.Connection -> User -> NoteFolder -> ChatItemId -> Int -> String -> UTCTime -> IO [ChatItemId]
-getLocalChatItemIdsBefore_ db User {userId} NoteFolder {noteFolderId} beforeChatItemId count search beforeChatItemCreatedAt =
+getLocalCIsBefore_ :: DB.Connection -> User -> NoteFolder -> CChatItem 'CTLocal -> Int -> String -> IO [ChatItemId]
+getLocalCIsBefore_ db User {userId} NoteFolder {noteFolderId} beforeCI count search =
   map fromOnly
     <$> DB.query
       db
@@ -1392,59 +1492,100 @@ getLocalChatItemIdsBefore_ db User {userId} NoteFolder {noteFolderId} beforeChat
         ORDER BY created_at DESC, chat_item_id DESC
         LIMIT ?
       |]
-      (userId, noteFolderId, search, beforeChatItemCreatedAt, beforeChatItemCreatedAt, beforeChatItemId, count)
+      (userId, noteFolderId, search, ciCreatedAt beforeCI, ciCreatedAt beforeCI, cChatItemId beforeCI, count)
 
-getLocalChatAround_ :: DB.Connection -> User -> NoteFolder -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTLocal)
-getLocalChatAround_ db user nf@NoteFolder {noteFolderId} aroundItemId count search = do
-  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  let (fetchCountBefore, fetchCountAfter) = divideFetchCountAround_ (count - 1)
-  middleChatItem <- getLocalChatItem db user noteFolderId aroundItemId
-  beforeIds <- liftIO $ getLocalChatItemIdsBefore_ db user nf aroundItemId fetchCountBefore search (chatItemCreatedAt middleChatItem)
-  afterIds <- liftIO $ getLocalChatItemIdsAfter_ db user nf aroundItemId fetchCountAfter search (chatItemCreatedAt middleChatItem)
-  currentTs <- liftIO getCurrentTime
-  beforeChatItems <- liftIO $ mapM (safeGetLocalItem db user nf currentTs) beforeIds
-  afterChatItems <- liftIO $ mapM (safeGetLocalItem db user nf currentTs) afterIds
-  let remainingAfter = fetchCountAfter - length afterIds
-  let remainingBefore = fetchCountBefore - length beforeIds
-  if
-    | remainingBefore > 0 && remainingAfter <= 0 -> do
-        extraAfterIds <- liftIO $ getLocalChatItemIdsAfter_ db user nf (last afterIds) remainingBefore search (chatItemCreatedAt (last afterChatItems))
-        extraAfterItems <- liftIO $ mapM (safeGetLocalItem db user nf currentTs) extraAfterIds
-        pure $ Chat (LocalChat nf) (reverse beforeChatItems <> [middleChatItem] <> afterChatItems <> extraAfterItems) stats
-    | remainingAfter > 0 && remainingBefore <= 0 -> do
-        extraBeforeIds <- liftIO $ getLocalChatItemIdsBefore_ db user nf (last beforeIds) remainingAfter search (chatItemCreatedAt (last beforeChatItems))
-        extraBeforeItems <- liftIO $ mapM (safeGetLocalItem db user nf currentTs) extraBeforeIds
-        pure $ Chat (LocalChat nf) (reverse (beforeChatItems <> extraBeforeItems) <> [middleChatItem] <> afterChatItems) stats
-    | otherwise ->
-        pure $ Chat (LocalChat nf) (reverse beforeChatItems <> [middleChatItem] <> afterChatItems) stats
+getLocalChatAround_ :: DB.Connection -> User -> NoteFolder -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTLocal, Maybe NavigationInfo)
+getLocalChatAround_ db user nf aroundId count search = do
+  stats <- liftIO $ getLocalStats_ db user nf
+  getLocalChatAround' db user nf aroundId count search stats
 
-getLocalChatInitial_ :: DB.Connection -> User -> NoteFolder -> Int -> ExceptT StoreError IO (Chat 'CTLocal)
-getLocalChatInitial_ db user@User {userId} nf@NoteFolder {noteFolderId} count = do
-  firstUnreadItemId_ <- liftIO getLocalChatMinUnreadItemId_
-  case firstUnreadItemId_ of
-    Just firstUnreadItemId -> do
-      chat <- getLocalChatAround_ db user nf firstUnreadItemId count ""
-      let items = chatItems chat
-      if null items || length items == count
-        then pure chat
-        else do
-          let remainingCount = count - length items
-          let afterId = cchatItemId $ last items
-          after <- getLocalChatAfter_ db user nf afterId remainingCount ""
-          pure $ chat {chatItems = chatItems chat <> chatItems after}
-    Nothing -> liftIO $ getLocalChatLast_ db user nf count ""
+getLocalChatAround' :: DB.Connection -> User -> NoteFolder -> ChatItemId -> Int -> String -> ChatStats -> ExceptT StoreError IO (Chat 'CTLocal, Maybe NavigationInfo)
+getLocalChatAround' db user nf@NoteFolder {noteFolderId} aroundId count search stats = do
+  aroundCI <- getLocalChatItem db user noteFolderId aroundId
+  beforeIds <- liftIO $ getLocalCIsBefore_ db user nf aroundCI count search
+  afterIds <- liftIO $ getLocalCIsAfter_ db user nf aroundCI count search
+  ts <- liftIO getCurrentTime
+  beforeCIs <- liftIO $ mapM (safeGetLocalItem db user nf ts) beforeIds
+  afterCIs <- liftIO $ mapM (safeGetLocalItem db user nf ts) afterIds
+  let cis = reverse beforeCIs <> [aroundCI] <> afterCIs
+  navInfo <- liftIO $ getNavInfo cis
+  pure (Chat (LocalChat nf) cis stats, Just navInfo)
   where
-    getLocalChatMinUnreadItemId_ :: IO (Maybe ChatItemId)
-    getLocalChatMinUnreadItemId_ =
-      fmap join . maybeFirstRow fromOnly $
-        DB.query
+    getNavInfo cis_ = case cis_ of
+      [] -> pure $ NavigationInfo 0 0
+      cis -> getLocalNavInfo_ db user nf (last cis)
+
+getLocalChatInitial_ :: DB.Connection -> User -> NoteFolder -> Int -> ExceptT StoreError IO (Chat 'CTLocal, Maybe NavigationInfo)
+getLocalChatInitial_ db user nf count = do
+  liftIO (getLocalMinUnreadId_ db user nf) >>= \case
+    Just minUnreadItemId -> do
+      unreadCount <- liftIO $ getLocalUnreadCount_ db user nf
+      let stats = ChatStats {unreadCount, minUnreadItemId, unreadChat = False}
+      getLocalChatAround' db user nf minUnreadItemId count "" stats
+    Nothing -> liftIO $ (,Just $ NavigationInfo 0 0) <$> getLocalChatLast_ db user nf count ""
+
+getLocalStats_ :: DB.Connection -> User -> NoteFolder -> IO ChatStats
+getLocalStats_ db user nf = do
+  minUnreadItemId <- fromMaybe 0 <$> getLocalMinUnreadId_ db user nf
+  unreadCount <- getLocalUnreadCount_ db user nf
+  pure ChatStats {unreadCount, minUnreadItemId, unreadChat = False}
+
+getLocalMinUnreadId_ :: DB.Connection -> User -> NoteFolder -> IO (Maybe ChatItemId)
+getLocalMinUnreadId_ db User {userId} NoteFolder {noteFolderId} =
+  fmap join . maybeFirstRow fromOnly $
+    DB.query
+      db
+      [sql|
+        SELECT chat_item_id
+        FROM chat_items
+        WHERE user_id = ? AND note_folder_id = ? AND item_status = ?
+        ORDER BY created_at ASC, chat_item_id ASC
+        LIMIT 1
+      |]
+      (userId, noteFolderId, CISRcvNew)
+
+getLocalUnreadCount_ :: DB.Connection -> User -> NoteFolder -> IO Int
+getLocalUnreadCount_ db User {userId} NoteFolder {noteFolderId} =
+  fromOnly . head
+    <$> DB.query
+      db
+      [sql|
+        SELECT COUNT(1)
+        FROM chat_items
+        WHERE user_id = ? AND note_folder_id = ? AND item_status = ?
+      |]
+      (userId, noteFolderId, CISRcvNew)
+
+getLocalNavInfo_ :: DB.Connection -> User -> NoteFolder -> CChatItem 'CTLocal -> IO NavigationInfo
+getLocalNavInfo_ db User {userId} NoteFolder {noteFolderId} afterCI = do
+  afterUnread <- getAfterUnreadCount
+  afterTotal <- getAfterTotalCount
+  pure NavigationInfo {afterUnread, afterTotal}
+  where
+    getAfterUnreadCount :: IO Int
+    getAfterUnreadCount =
+      fromOnly . head
+        <$> DB.query
           db
           [sql|
-            SELECT MIN(chat_item_id)
+            SELECT COUNT(1)
             FROM chat_items
             WHERE user_id = ? AND note_folder_id = ? AND item_status = ?
+              AND (created_at > ? OR (created_at = ? AND chat_item_id > ?))
           |]
-          (userId, noteFolderId, CISRcvNew)
+          (userId, noteFolderId, CISRcvNew, ciCreatedAt afterCI, ciCreatedAt afterCI, cChatItemId afterCI)
+    getAfterTotalCount :: IO Int
+    getAfterTotalCount =
+      fromOnly . head
+        <$> DB.query
+          db
+          [sql|
+            SELECT COUNT(1)
+            FROM chat_items
+            WHERE user_id = ? AND note_folder_id = ?
+              AND (created_at > ? OR (created_at = ? AND chat_item_id > ?))
+          |]
+          (userId, noteFolderId, ciCreatedAt afterCI, ciCreatedAt afterCI, cChatItemId afterCI)
 
 toChatItemRef :: (ChatItemId, Maybe Int64, Maybe Int64, Maybe Int64) -> Either StoreError (ChatRef, ChatItemId)
 toChatItemRef = \case
@@ -1739,8 +1880,7 @@ getAllChatItems db vr user@User {userId} pagination search_ = do
       CPAround aroundId count -> liftIO . getAllChatItemsAround_ aroundId count . aChatItemTs =<< getAChatItem_ aroundId
       CPInitial count -> do
         unless (null search) $ throwError $ SEInternalError "initial chat pagination doesn't support search"
-        firstUnreadItemId <- liftIO getFirstUnreadItemId_
-        case firstUnreadItemId of
+        liftIO getFirstUnreadItemId_ >>= \case
           Just itemId -> liftIO . getAllChatItemsAround_ itemId count . aChatItemTs =<< getAChatItem_ itemId
           Nothing -> liftIO $ getAllChatItemsLast_ count
   mapM (uncurry (getAChatItem db vr user)) itemRefs
@@ -1796,10 +1936,9 @@ getAllChatItems db vr user@User {userId} pagination search_ = do
         |]
         (Only chatId)
     getAllChatItemsAround_ aroundId count aroundTs = do
-      let (fetchCountBefore, fetchCountAfter) = divideFetchCountAround_ (count - 1)
-      itemsBefore <- getAllChatItemsBefore_ aroundId fetchCountBefore aroundTs
+      itemsBefore <- getAllChatItemsBefore_ aroundId count aroundTs
       item <- getChatItem aroundId
-      itemsAfter <- getAllChatItemsAfter_ aroundId fetchCountAfter aroundTs
+      itemsAfter <- getAllChatItemsAfter_ aroundId count aroundTs
       pure $ itemsBefore <> item <> itemsAfter
     getFirstUnreadItemId_ =
       fmap join . maybeFirstRow fromOnly $
@@ -2818,9 +2957,9 @@ getGroupSndStatusCounts db itemId =
 
 getGroupHistoryItems :: DB.Connection -> User -> GroupInfo -> Int -> IO [Either StoreError (CChatItem 'CTGroup)]
 getGroupHistoryItems db user@User {userId} GroupInfo {groupId} count = do
-  chatItemIds <- getLastItemIds_
+  ciIds <- getLastItemIds_
   -- use getGroupCIWithReactions to read reactions data
-  reverse <$> mapM (runExceptT . getGroupChatItem db user groupId) chatItemIds
+  reverse <$> mapM (runExceptT . getGroupChatItem db user groupId) ciIds
   where
     getLastItemIds_ :: IO [ChatItemId]
     getLastItemIds_ =
@@ -2837,10 +2976,3 @@ getGroupHistoryItems db user@User {userId} GroupInfo {groupId} count = do
             LIMIT ?
           |]
           (userId, groupId, rcvMsgContentTag, sndMsgContentTag, count)
-
-divideFetchCountAround_ :: Int -> (Int, Int)
-divideFetchCountAround_ count =
-  let fetchCountEachSide = count `div` 2
-      fetchCountBefore = fetchCountEachSide + if count `mod` 2 /= 0 then 1 else 0
-      fetchCountAfter = fetchCountEachSide
-   in (fetchCountBefore, fetchCountAfter)
