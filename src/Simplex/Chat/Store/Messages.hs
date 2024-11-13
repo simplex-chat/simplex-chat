@@ -1089,11 +1089,11 @@ getDirectChatAround' db user ct@Contact {contactId} aroundId count search stats 
   afterCIs <- liftIO $ mapM (safeGetDirectItem db user ct ts) afterIds
   let cis = reverse beforeCIs <> [aroundCI] <> afterCIs
   navInfo <- liftIO $ getNavInfo cis
-  pure (Chat (DirectChat ct) cis stats, navInfo)
+  pure (Chat (DirectChat ct) cis stats, Just navInfo)
   where
     getNavInfo cis_ = case cis_ of
-      [] -> pure Nothing
-      cis -> Just <$> getContactNavInfo_ db user ct (last cis)
+      [] -> pure $ NavigationInfo 0 0
+      cis -> getContactNavInfo_ db user ct (last cis)
 
 getDirectChatInitial_ :: DB.Connection -> User -> Contact -> Int -> ExceptT StoreError IO (Chat 'CTDirect, Maybe NavigationInfo)
 getDirectChatInitial_ db user ct count = do
@@ -1102,7 +1102,7 @@ getDirectChatInitial_ db user ct count = do
       unreadCount <- liftIO $ getContactUnreadCount_ db user ct
       let stats = ChatStats {unreadCount, minUnreadItemId, unreadChat = False}
       getDirectChatAround' db user ct minUnreadItemId count "" stats
-    Nothing -> liftIO $ (,Nothing) <$> getDirectChatLast_ db user ct count ""
+    Nothing -> liftIO $ (,Just $ NavigationInfo 0 0) <$> getDirectChatLast_ db user ct count ""
 
 getContactStats_ :: DB.Connection -> User -> Contact -> IO ChatStats
 getContactStats_ db user ct = do
@@ -1307,11 +1307,11 @@ getGroupChatAround' db user g@GroupInfo {groupId} aroundId count search stats = 
   afterCIs <- liftIO $ mapM (safeGetGroupItem db user g ts) afterIds
   let cis = reverse beforeCIs <> [aroundCI] <> afterCIs
   navInfo <- liftIO $ getNavInfo cis
-  pure (Chat (GroupChat g) cis stats, navInfo)
+  pure (Chat (GroupChat g) cis stats, Just navInfo)
   where
     getNavInfo cis_ = case cis_ of
-      [] -> pure Nothing
-      cis -> Just <$> getGroupNavInfo_ db user g (last cis)
+      [] -> pure $ NavigationInfo 0 0
+      cis -> getGroupNavInfo_ db user g (last cis)
 
 getGroupChatInitial_ :: DB.Connection -> User -> GroupInfo -> Int -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
 getGroupChatInitial_ db user g count =
@@ -1320,7 +1320,7 @@ getGroupChatInitial_ db user g count =
       unreadCount <- liftIO $ getGroupUnreadCount_ db user g
       let stats = ChatStats {unreadCount, minUnreadItemId, unreadChat = False}
       getGroupChatAround' db user g minUnreadItemId count "" stats
-    Nothing -> liftIO $ (,Nothing) <$> getGroupChatLast_ db user g count ""
+    Nothing -> liftIO $ (,Just $ NavigationInfo 0 0) <$> getGroupChatLast_ db user g count ""
 
 getGroupStats_ :: DB.Connection -> User -> GroupInfo -> IO ChatStats
 getGroupStats_ db user g = do
@@ -1509,11 +1509,11 @@ getLocalChatAround' db user nf@NoteFolder {noteFolderId} aroundId count search s
   afterCIs <- liftIO $ mapM (safeGetLocalItem db user nf ts) afterIds
   let cis = reverse beforeCIs <> [aroundCI] <> afterCIs
   navInfo <- liftIO $ getNavInfo cis
-  pure (Chat (LocalChat nf) cis stats, navInfo)
+  pure (Chat (LocalChat nf) cis stats, Just navInfo)
   where
     getNavInfo cis_ = case cis_ of
-      [] -> pure Nothing
-      cis -> Just <$> getLocalNavInfo_ db user nf (last cis)
+      [] -> pure $ NavigationInfo 0 0
+      cis -> getLocalNavInfo_ db user nf (last cis)
 
 getLocalChatInitial_ :: DB.Connection -> User -> NoteFolder -> Int -> ExceptT StoreError IO (Chat 'CTLocal, Maybe NavigationInfo)
 getLocalChatInitial_ db user nf count = do
@@ -1522,7 +1522,7 @@ getLocalChatInitial_ db user nf count = do
       unreadCount <- liftIO $ getLocalUnreadCount_ db user nf
       let stats = ChatStats {unreadCount, minUnreadItemId, unreadChat = False}
       getLocalChatAround' db user nf minUnreadItemId count "" stats
-    Nothing -> liftIO $ (,Nothing) <$> getLocalChatLast_ db user nf count ""
+    Nothing -> liftIO $ (,Just $ NavigationInfo 0 0) <$> getLocalChatLast_ db user nf count ""
 
 getLocalStats_ :: DB.Connection -> User -> NoteFolder -> IO ChatStats
 getLocalStats_ db user nf = do
