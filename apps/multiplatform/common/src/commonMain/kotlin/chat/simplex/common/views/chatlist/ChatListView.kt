@@ -34,7 +34,9 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.Call
 import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.chat.topPaddingToContent
+import chat.simplex.common.views.mkValidName
 import chat.simplex.common.views.newchat.*
+import chat.simplex.common.views.showInvalidNameAlert
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
@@ -123,6 +125,82 @@ fun ToggleChatListCard() {
             appPrefs.oneHandUI,
             enabled = true
           )
+        }
+      }
+    }
+  }
+}
+
+@Composable
+fun AddressCreationCard() {
+  Column(
+    modifier = Modifier
+      .padding(16.dp)
+      .clip(RoundedCornerShape(18.dp))
+  ) {
+    Box(
+      modifier = Modifier
+        .background(MaterialTheme.appColors.sentMessage)
+        .clickable {
+          ModalManager.start.showModal {
+            UserAddressLearnMore()
+          }
+        }
+    ) {
+      Box(
+        modifier = Modifier.fillMaxWidth().matchParentSize().padding(5.dp),
+        contentAlignment = Alignment.TopEnd
+      ) {
+        IconButton(
+          onClick = {
+            appPrefs.addressCreationCardShown.set(true)
+            AlertManager.shared.showAlertMsg(
+              title = generalGetString(MR.strings.simplex_address),
+              text = generalGetString(MR.strings.address_creation_instruction),
+            )
+          }
+        ) {
+          Icon(
+            painterResource(MR.images.ic_close), stringResource(MR.strings.back), tint = MaterialTheme.colors.secondary
+          )
+        }
+      }
+      Row(
+        Modifier
+          .fillMaxWidth()
+          .padding(
+            start = DEFAULT_PADDING,
+            end = DEFAULT_PADDING - 5.dp,
+            top = DEFAULT_PADDING,
+            bottom = DEFAULT_PADDING_HALF
+          )
+      ) {
+        Box(Modifier.background(MaterialTheme.colors.primary, CircleShape).padding(16.dp)) {
+          ProfileImage(size = 37.dp, null, icon = MR.images.ic_mail_filled, color = Color.White, backgroundColor = Color.Red)
+        }
+        Column(modifier = Modifier.padding(start = DEFAULT_PADDING)) {
+          Text(stringResource(MR.strings.your_simplex_contact_address), style = MaterialTheme.typography.h3)
+          Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+          Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
+            Row(modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)) {
+              Text(stringResource(MR.strings.how_to_use_simplex_chat), Modifier.padding(end = DEFAULT_SPACE_AFTER_ICON), style = MaterialTheme.typography.body1)
+              Icon(
+                painterResource(MR.images.ic_info),
+                null,
+                tint = MaterialTheme.colors.primary
+              )
+            }
+            Spacer(Modifier.weight(1f))
+            TextButton(
+              onClick = {
+                ModalManager.start.showModalCloseable { close ->
+                  UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = close)
+                }
+              },
+            ) {
+              Text(stringResource(MR.strings.create_address_button), style = MaterialTheme.typography.body1)
+            }
+          }
         }
       }
     }
@@ -641,6 +719,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   val keyboardState by getKeyboardState()
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val oneHandUICardShown = remember { appPrefs.oneHandUICardShown.state }
+  val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
 
   LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
     val currentIndex = listState.firstVisibleItemIndex
@@ -714,6 +793,11 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         ToggleChatListCard()
       }
     }
+    if (!addressCreationCardShown.value && chats.size > 1) {
+      item {
+        AddressCreationCard()
+      }
+    }
     itemsIndexed(chats, key = { _, chat -> chat.remoteHostId to chat.id }) { index, chat ->
       val nextChatSelected = remember(chat.id, chats) { derivedStateOf {
         chatModel.chatId.value != null && chats.getOrNull(index + 1)?.id == chatModel.chatId.value
@@ -723,6 +807,11 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
     if (!oneHandUICardShown.value && chats.size <= 1) {
       item {
         ToggleChatListCard()
+      }
+    }
+    if (!addressCreationCardShown.value && chats.size <= 1) {
+      item {
+        AddressCreationCard()
       }
     }
     if (appPlatform.isAndroid) {
@@ -739,9 +828,20 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   } else {
     NavigationBarBackground(oneHandUI.value, true)
   }
-  if (!oneHandUICardShown.value) {
+  if (!oneHandUICardShown.value || !addressCreationCardShown.value) {
     LaunchedEffect(chats.size) {
-      if (chats.size >= 3) appPrefs.oneHandUICardShown.set(true)
+      if (chats.size >= 3) {
+        appPrefs.oneHandUICardShown.set(true)
+        appPrefs.addressCreationCardShown.set(true)
+      }
+    }
+  }
+
+  if (!addressCreationCardShown.value) {
+    LaunchedEffect(chatModel.userAddress.value) {
+      if (chatModel.userAddress.value != null) {
+        appPrefs.addressCreationCardShown.set(true)
+      }
     }
   }
 }
