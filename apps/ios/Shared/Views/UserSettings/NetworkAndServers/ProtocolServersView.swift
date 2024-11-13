@@ -127,7 +127,7 @@ struct YourServersView: View {
             Button("Scan server QR code") { showScanProtoServer = true }
         }
         .sheet(isPresented: $showScanProtoServer) {
-            ScanProtocolServer(smpServers: $userServers[operatorServersIndex].smpServers, xftpServers: $userServers[operatorServersIndex].xftpServers)
+            ScanProtocolServer(userServers: $userServers)
                 .modifier(ThemedBackground(grouped: true))
         }
     }
