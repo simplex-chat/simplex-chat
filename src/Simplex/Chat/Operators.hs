@@ -60,7 +60,7 @@ previousConditionsCommit = "edf99fcd1d7d38d2501d19608b94c084cf00f2ac"
 usageConditionsText :: Text
 usageConditionsText =
   $( let s = $(embedFile =<< makeRelativeToProject "PRIVACY.md")
-      in [|stripFrontMatter (safeDecodeUtf8 $(lift s))|]
+      in [|stripFrontMatter $(lift (safeDecodeUtf8 s))|]
    )
 
 data DBStored = DBStored | DBNew

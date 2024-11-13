@@ -409,7 +409,7 @@ newChatController
                 useXFTP = 0
               }
       agentServers :: DB.Connection -> ChatConfig -> RandomServers -> IO InitialAgentServers
-      agentServers db ChatConfig {presetServers = PresetServers {operators = presetOps, ntf, netCfg}} randomServers = do
+      agentServers db ChatConfig {presetServers = PresetServers {operators = presetOps, ntf, netCfg}} rs = do
         users <- getUsers db
         opDomains <- operatorDomains <$> getUpdateServerOperators db presetOps (null users)
         smp' <- getServers SPSMP users opDomains
@@ -418,9 +418,9 @@ newChatController
         where
           getServers :: forall p. (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> [User] -> [(Text, ServerOperator)] -> IO (Map UserId (NonEmpty (ServerCfg p)))
           getServers p users opDomains = do
-            let randomSrvs = rndServers p randomServers
+            let rs' = rndServers p rs
             fmap M.fromList $ forM users $ \u ->
-              (aUserId u,) . agentServerCfgs opDomains randomSrvs <$> getUpdateUserServers db p presetOps randomSrvs u
+              (aUserId u,) . agentServerCfgs opDomains rs' <$> getUpdateUserServers db p presetOps rs' u
 
 updateNetworkConfig :: NetworkConfig -> SimpleNetCfg -> NetworkConfig
 updateNetworkConfig cfg SimpleNetCfg {socksProxy, socksMode, hostMode, requiredHostMode, smpProxyMode_, smpProxyFallback_, smpWebPort, tcpTimeout_, logTLSErrors} =
