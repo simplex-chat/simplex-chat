@@ -203,7 +203,7 @@ struct UserProfilesView: View {
                 case .success, .unavailable:
                     authorized = true
                     AppSheetState.shared.scenePhaseActive = true
-                    DispatchQueue.main.async(execute: action)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: action)
                 case .failed: authorized = false
                 }
             }
