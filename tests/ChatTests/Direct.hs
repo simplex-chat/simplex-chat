@@ -124,7 +124,7 @@ chatDirectTests = do
     it "chat items only expire for users who configured expiration" testEnableCIExpirationOnlyForOneUser
     it "disabling chat item expiration doesn't disable it for other users" testDisableCIExpirationOnlyForOneUser
     it "both users have configured timed messages with contacts, messages expire, restart" testUsersTimedMessages
-    it "user profile privacy: hide profiles and notificaitons" testUserPrivacy
+    it "user profile privacy: hide profiles and notifications" testUserPrivacy
   describe "settings" $ do
     it "set chat item expiration TTL" testSetChatItemTTL
     it "save/get app settings" testAppSettings
@@ -211,7 +211,7 @@ testAddContact = versionTestMatrix2 runTestAddContact
           -- pagination
           alice #$> ("/_get chat @2 after=" <> itemId 1 <> " count=100", chat, [(0, "hello there"), (0, "how are you?")])
           alice #$> ("/_get chat @2 before=" <> itemId 2 <> " count=100", chat, features <> [(1, "hello there 🙂")])
-          alice #$> ("/_get chat @2 around=" <> itemId 2 <> " count=3", chat, [(1, "hello there 🙂"), (0, "hello there"), (0, "how are you?")])
+          alice #$> ("/_get chat @2 around=" <> itemId 2 <> " count=2", chat, [(0, "Audio/video calls: enabled"), (1, "hello there 🙂"), (0, "hello there"), (0, "how are you?")])
           -- search
           alice #$> ("/_get chat @2 count=100 search=ello ther", chat, [(1, "hello there 🙂"), (0, "hello there")])
           -- read messages
@@ -375,29 +375,16 @@ testChatPaginationInitial = testChatOpts2 opts aliceProfile bobProfile $ \alice 
   forM_ ([1 .. 10] :: [Int]) $ \n -> bob <# ("alice> " <> show n)
 
   -- All messages are unread for bob, should return area around unread
-  bob #$> ("/_get chat @2 initial=3", chat, [(0, "Audio/video calls: enabled"), (0, "1"), (0, "2")])
+  bob #$> ("/_get chat @2 initial=2", chat, [(0, "Voice messages: enabled"), (0, "Audio/video calls: enabled"), (0, "1"), (0, "2"), (0, "3")])
 
   -- Read next 2 items
   let itemIds = intercalate "," $ map itemId [1 .. 2]
   bob #$> ("/_read chat items @2 " <> itemIds, id, "ok")
-  bob #$> ("/_get chat @2 initial=3", chat, [(0, "2"), (0, "3"), (0, "4")])
+  bob #$> ("/_get chat @2 initial=2", chat, [(0, "1"), (0, "2"), (0, "3"), (0, "4"), (0, "5")])
 
   -- Read all items
   bob #$> ("/_read chat @2", id, "ok")
   bob #$> ("/_get chat @2 initial=3", chat, [(0, "8"), (0, "9"), (0, "10")])
-  bob #$> ("/_get chat @2 initial=5", chat, [(0, "6"), (0, "7"), (0, "8"), (0, "9"), (0, "10")])
-
-  -- Clear chat, send a few extra message and assert page size is consistent
-  bob #$> ("/clear alice", id, "alice: all messages are removed locally ONLY")
-  forM_ ([1 .. 10] :: [Int]) $ \n -> alice #> ("@bob " <> show n)
-  forM_ ([1 .. 10] :: [Int]) $ \n -> bob <# ("alice> " <> show n)
-
-  bob #$> ("/_get chat @2 initial=5", chat, [(0, "1"), (0, "2"), (0, "3"), (0, "4"), (0, "5")])
-  let newItemIds = intercalate "," $ map itemId [11 .. 12] -- Read, 1, 2
-  bob #$> ("/_read chat items @2 " <> newItemIds, id, "ok")
-  bob #$> ("/_get chat @2 initial=5", chat, [(0, "1"), (0, "2"), (0, "3"), (0, "4"), (0, "5")])
-  let allButLastId = intercalate "," $ map itemId [13 .. 19] -- Read all but last
-  bob #$> ("/_read chat items @2 " <> allButLastId, id, "ok")
   bob #$> ("/_get chat @2 initial=5", chat, [(0, "6"), (0, "7"), (0, "8"), (0, "9"), (0, "10")])
   where
     opts =
@@ -2385,11 +2372,13 @@ testUserPrivacy =
                "bob> Voice messages: enabled",
                "bob> Audio/video calls: enabled"
              ]
-      alice ##> "/_get items around=11 count=3"
+      alice ##> "/_get items around=11 count=2"
       alice
-        <##? [ "bob> Message reactions: enabled",
+        <##? [ "bob> Full deletion: off",
+               "bob> Message reactions: enabled",
                "bob> Voice messages: enabled",
-               "bob> Audio/video calls: enabled"
+               "bob> Audio/video calls: enabled",
+               "@bob hello"
              ]
       alice ##> "/_get items after=12 count=10"
       alice

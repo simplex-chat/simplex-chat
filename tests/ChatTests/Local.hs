@@ -102,10 +102,10 @@ testChatPagination tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
 
   alice #$> ("/_get chat *1 count=100", chat, [(1, "hello world"), (1, "memento mori"), (1, "knock-knock"), (1, "who's there?")])
   alice #$> ("/_get chat *1 count=1", chat, [(1, "who's there?")])
-  alice #$> ("/_get chat *1 around=2 count=1", chat, [(1, "memento mori")])
-  alice #$> ("/_get chat *1 around=2 count=3", chat, [(1, "hello world"), (1, "memento mori"), (1, "knock-knock")])
+  alice #$> ("/_get chat *1 around=2 count=1", chat, [(1, "hello world"), (1, "memento mori"), (1, "knock-knock")])
+  alice #$> ("/_get chat *1 around=2 count=3", chat, [(1, "hello world"), (1, "memento mori"), (1, "knock-knock"), (1, "who's there?")])
   alice #$> ("/_get chat *1 around=3 count=10", chat, [(1, "hello world"), (1, "memento mori"), (1, "knock-knock"), (1, "who's there?")])
-  alice #$> ("/_get chat *1 around=4 count=3", chat, [(1, "knock-knock"), (1, "who's there?")])
+  alice #$> ("/_get chat *1 around=4 count=1", chat, [(1, "knock-knock"), (1, "who's there?")])
   alice #$> ("/_get chat *1 after=2 count=10", chat, [(1, "knock-knock"), (1, "who's there?")])
   alice #$> ("/_get chat *1 after=2 count=2", chat, [(1, "knock-knock"), (1, "who's there?")])
   alice #$> ("/_get chat *1 after=1 count=2", chat, [(1, "memento mori"), (1, "knock-knock")])

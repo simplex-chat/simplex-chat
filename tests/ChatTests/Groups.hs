@@ -345,7 +345,7 @@ testGroupShared alice bob cath checkMessages directConnections = do
       -- so we take into account group event items as well as sent group invitations in direct chats
       alice #$> ("/_get chat #1 after=" <> msgItem1 <> " count=100", chat, [(0, "hi there"), (0, "hey team")])
       alice #$> ("/_get chat #1 before=" <> msgItem2 <> " count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there")])
-      alice #$> ("/_get chat #1 around=" <> msgItem2 <> " count=6", chat, [(0, "connected"), (1, "hello"), (0, "hi there"), (0, "hey team")]) -- expecting only 4 items since there is only 1 item after
+      alice #$> ("/_get chat #1 around=" <> msgItem1 <> " count=2", chat, [(0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there"), (0, "hey team")])
       alice #$> ("/_get chat #1 count=100 search=team", chat, [(0, "hey team")])
       bob @@@ [("@cath", "hey"), ("#team", "hey team"), ("@alice", "received invitation to join group team as admin")]
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "added cath (Catherine)"), (0, "connected"), (0, "hello"), (1, "hi there"), (0, "hey team")])
@@ -391,29 +391,16 @@ testChatPaginationInitial = testChatOpts2 opts aliceProfile bobProfile $ \alice 
   forM_ ([1 .. 10] :: [Int]) $ \n -> bob <# ("#team alice> " <> show n)
 
   -- All messages are unread for bob, should return area around unread
-  bob #$> ("/_get chat #1 initial=3", chat, [(0, "connected"), (0, "1"), (0, "2")])
+  bob #$> ("/_get chat #1 initial=2", chat, [(0, "Recent history: on"), (0, "connected"), (0, "1"), (0, "2"), (0, "3")])
 
   -- Read next 2 items
   let itemIds = intercalate "," $ map groupItemId [1 .. 2]
   bob #$> ("/_read chat items #1 " <> itemIds, id, "ok")
-  bob #$> ("/_get chat #1 initial=3", chat, [(0, "2"), (0, "3"), (0, "4")])
+  bob #$> ("/_get chat #1 initial=2", chat, [(0, "1"), (0, "2"), (0, "3"), (0, "4"), (0, "5")])
 
   -- Read all items
   bob #$> ("/_read chat #1", id, "ok")
   bob #$> ("/_get chat #1 initial=3", chat, [(0, "8"), (0, "9"), (0, "10")])
-  bob #$> ("/_get chat #1 initial=5", chat, [(0, "6"), (0, "7"), (0, "8"), (0, "9"), (0, "10")])
-
-  -- Clear chat, send a few extra message and assert page size is consistent
-  bob #$> ("/clear #team", id, "#team: all messages are removed locally ONLY")
-  forM_ ([1 .. 10] :: [Int]) $ \n -> alice #> ("#team " <> show n)
-  forM_ ([1 .. 10] :: [Int]) $ \n -> bob <# ("#team alice> " <> show n)
-
-  bob #$> ("/_get chat #1 initial=5", chat, [(0, "1"), (0, "2"), (0, "3"), (0, "4"), (0, "5")])
-  let newItemIds = intercalate "," $ map groupItemId [11 .. 12] -- Read, 1, 2
-  bob #$> ("/_read chat items #1 " <> newItemIds, id, "ok")
-  bob #$> ("/_get chat #1 initial=5", chat, [(0, "1"), (0, "2"), (0, "3"), (0, "4"), (0, "5")])
-  let allButLastId = intercalate "," $ map groupItemId [13 .. 19] -- Read all but last
-  bob #$> ("/_read chat items #1 " <> allButLastId, id, "ok")
   bob #$> ("/_get chat #1 initial=5", chat, [(0, "6"), (0, "7"), (0, "8"), (0, "9"), (0, "10")])
   where
     opts =
