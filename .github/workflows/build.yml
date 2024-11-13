@@ -150,9 +150,13 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v') && matrix.asset_name && matrix.os == 'ubuntu-20.04'
         run: sudo apt install -y desktop-file-utils
 
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04'
+        run: sudo apt install -y libturbojpeg0-dev
+
       - name: Install pkg-config for Mac
         if: matrix.os == 'macos-latest' || matrix.os == 'macos-13'
-        run: brew install pkg-config
+        run: brew install pkg-config jpeg-turbo
 
       - name: Unix prepare cabal.project.local for Ubuntu
         if: matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04'
@@ -322,6 +326,7 @@ jobs:
             git
             perl
             make
+            mingw-w64-x86_64-libjpeg-turbo
           pacboy: >-
             toolchain:p
             cmake:p
