@@ -18,6 +18,8 @@ import chat.simplex.common.views.helpers.generateNewFileName
 import chat.simplex.common.views.helpers.getFileName
 import chat.simplex.common.views.helpers.removeFile
 import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.FileOutputStream
 import java.io.InputStream
 import java.net.URI
 import kotlin.math.min

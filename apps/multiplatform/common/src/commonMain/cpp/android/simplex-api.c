@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
-//#include <stdlib.h>
+#include <stdlib.h>
 //#include <android/log.h>
 
 // from the RTS
