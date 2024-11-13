@@ -20,12 +20,15 @@ struct AddressCreationCard: View {
 
     var body: some View {
         let addressExists = chatModel.userAddress != nil
-        let size = dynamicSize(userFont).profileImageSize
+        let chats = chatModel.chats.filter { chat in
+            !chat.chatInfo.chatDeleted && chatContactType(chat: chat) != ContactType.card
+        }
         ZStack(alignment: .topTrailing) {
             HStack(alignment: .top, spacing: 16) {
+                let envelopeSize = dynamicSize(userFont).profileImageSize
                 Image(systemName: "envelope.circle.fill")
                     .resizable()
-                    .frame(width: size, height: size)
+                    .frame(width: envelopeSize, height: envelopeSize)
                     .foregroundColor(.accentColor)
                 VStack(alignment: .leading) {
                     Text("Your SimpleX address")
@@ -92,6 +95,11 @@ struct AddressCreationCard: View {
         }
         .onChange(of: addressExists) { exists in
             if exists, !addressCreationCardShown {
+                addressCreationCardShown = true
+            }
+        }
+        .onChange(of: chats.count) { size in
+            if size >= 3, !addressCreationCardShown  {
                 addressCreationCardShown = true
             }
         }
