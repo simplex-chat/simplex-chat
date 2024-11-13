@@ -17,7 +17,6 @@ struct OperatorView: View {
     @EnvironmentObject var theme: AppTheme
     @Binding var userServers: [UserOperatorServers]
     var operatorServersIndex: Int
-    @State var userOperatorServers: UserOperatorServers
     @State var serverOperatorToEdit: ServerOperator
     @State var useOperator: Bool
     @State private var useOperatorToggleReset: Bool = false
@@ -68,9 +67,9 @@ struct OperatorView: View {
                         Toggle("As proxy", isOn: $serverOperatorToEdit.roles.proxy)
                     }
 
-                    if !userOperatorServers.smpServers.isEmpty {
+                    if !userServers[operatorServersIndex].smpServers.isEmpty {
                         Section {
-                            ForEach($userOperatorServers.smpServers) { srv in
+                            ForEach($userServers[operatorServersIndex].smpServers) { srv in
                                 ProtocolServerViewLink(
                                     userServers: $userServers,
                                     server: srv,
@@ -89,9 +88,9 @@ struct OperatorView: View {
                         }
                     }
 
-                    if !userOperatorServers.xftpServers.isEmpty {
+                    if !userServers[operatorServersIndex].xftpServers.isEmpty {
                         Section {
-                            ForEach($userOperatorServers.xftpServers) { srv in
+                            ForEach($userServers[operatorServersIndex].xftpServers) { srv in
                                 ProtocolServerViewLink(
                                     userServers: $userServers,
                                     server: srv,
@@ -112,8 +111,8 @@ struct OperatorView: View {
 
                     Section {
                         TestServersButton(
-                            smpServers: $userOperatorServers.smpServers,
-                            xftpServers: $userOperatorServers.xftpServers,
+                            smpServers: $userServers[operatorServersIndex].smpServers,
+                            xftpServers: $userServers[operatorServersIndex].xftpServers,
                             testing: $testing
                         )
                     }
@@ -121,8 +120,7 @@ struct OperatorView: View {
             }
         }
         .modifier(BackButton(disabled: Binding.constant(false)) {
-            userOperatorServers.operator = serverOperatorToEdit
-            userServers[operatorServersIndex] = userOperatorServers
+            userServers[operatorServersIndex].operator = serverOperatorToEdit
             ChatModel.shared.updateServerOperator(serverOperatorToEdit)
             dismiss()
         })
@@ -476,7 +474,6 @@ struct UsageConditionsView: View {
     OperatorView(
         userServers: Binding.constant([UserOperatorServers.sampleData1]),
         operatorServersIndex: 1,
-        userOperatorServers: UserOperatorServers.sampleData1,
         serverOperatorToEdit: ServerOperator.sampleData1,
         useOperator: ServerOperator.sampleData1.enabled
     )

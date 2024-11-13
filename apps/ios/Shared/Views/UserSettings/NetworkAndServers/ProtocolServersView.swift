@@ -18,7 +18,6 @@ struct YourServersView: View {
     @Environment(\.editMode) private var editMode
     @Binding var userServers: [UserOperatorServers]
     var operatorServersIndex: Int
-    @State var customServers: UserOperatorServers // nil operator is passed to this view
     @State private var selectedServer: String? = nil
     @State private var showAddServer = false
     @State private var newServerNavLinkActive = false
@@ -40,9 +39,9 @@ struct YourServersView: View {
 
     private func yourServersView() -> some View {
         List {
-            if !customServers.smpServers.isEmpty {
+            if !userServers[operatorServersIndex].smpServers.isEmpty {
                 Section {
-                    ForEach($customServers.smpServers) { srv in
+                    ForEach($userServers[operatorServersIndex].smpServers) { srv in
                         ProtocolServerViewLink(
                             userServers: $userServers,
                             server: srv,
@@ -53,7 +52,7 @@ struct YourServersView: View {
                     }
                     .onDelete { indexSet in
                         // TODO set delete if serverId is not null
-                        customServers.smpServers.remove(atOffsets: indexSet)
+                        userServers[operatorServersIndex].smpServers.remove(atOffsets: indexSet)
                     }
                 } header: {
                     Text("Message servers")
@@ -65,9 +64,9 @@ struct YourServersView: View {
                 }
             }
 
-            if !customServers.xftpServers.isEmpty {
+            if !userServers[operatorServersIndex].xftpServers.isEmpty {
                 Section {
-                    ForEach($customServers.xftpServers) { srv in
+                    ForEach($userServers[operatorServersIndex].xftpServers) { srv in
                         ProtocolServerViewLink(
                             userServers: $userServers,
                             server: srv,
@@ -78,7 +77,7 @@ struct YourServersView: View {
                     }
                     .onDelete { indexSet in
                         // TODO set delete if serverId is not null
-                        customServers.xftpServers.remove(atOffsets: indexSet)
+                        userServers[operatorServersIndex].xftpServers.remove(atOffsets: indexSet)
                     }
                 } header: {
                     Text("Media & file servers")
@@ -108,28 +107,27 @@ struct YourServersView: View {
 
             Section {
                 TestServersButton(
-                    smpServers: $customServers.smpServers,
-                    xftpServers: $customServers.xftpServers,
+                    smpServers: $userServers[operatorServersIndex].smpServers,
+                    xftpServers: $userServers[operatorServersIndex].xftpServers,
                     testing: $testing
                 )
                 howToButton()
             }
         }
         .toolbar {
-            if !customServers.smpServers.filter({ !$0.deleted }).isEmpty || !customServers.xftpServers.filter({ !$0.deleted }).isEmpty {
+            if (
+                !userServers[operatorServersIndex].smpServers.filter({ !$0.deleted }).isEmpty ||
+                !userServers[operatorServersIndex].xftpServers.filter({ !$0.deleted }).isEmpty
+            ) {
                 EditButton()
             }
         }
-        .modifier(BackButton(disabled: Binding.constant(false)) {
-            userServers[operatorServersIndex] = customServers
-            dismiss()
-        })
         .confirmationDialog("Add server", isPresented: $showAddServer, titleVisibility: .hidden) {
             Button("Enter server manually") { newServerNavLinkActive = true }
             Button("Scan server QR code") { showScanProtoServer = true }
         }
         .sheet(isPresented: $showScanProtoServer) {
-            ScanProtocolServer(smpServers: $customServers.smpServers, xftpServers: $customServers.xftpServers)
+            ScanProtocolServer(smpServers: $userServers[operatorServersIndex].smpServers, xftpServers: $userServers[operatorServersIndex].xftpServers)
                 .modifier(ThemedBackground(grouped: true))
         }
     }
@@ -288,8 +286,7 @@ struct YourServersView_Previews: PreviewProvider {
     static var previews: some View {
         YourServersView(
             userServers: Binding.constant([UserOperatorServers.sampleDataNilOperator]),
-            operatorServersIndex: 1,
-            customServers: UserOperatorServers.sampleDataNilOperator
+            operatorServersIndex: 1
         )
     }
 }

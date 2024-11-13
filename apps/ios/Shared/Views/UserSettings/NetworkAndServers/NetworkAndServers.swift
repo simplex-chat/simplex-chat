@@ -72,8 +72,7 @@ struct NetworkAndServers: View {
                         NavigationLink {
                             YourServersView(
                                 userServers: $userServers,
-                                operatorServersIndex: idx,
-                                customServers: userServers[idx]
+                                operatorServersIndex: idx
                             )
                             .navigationTitle("Your servers")
                             .modifier(ThemedBackground(grouped: true))
@@ -176,7 +175,6 @@ struct NetworkAndServers: View {
                 OperatorView(
                     userServers: $userServers,
                     operatorServersIndex: operatorServersIndex,
-                    userOperatorServers: userOperatorServers,
                     serverOperatorToEdit: srvOperator,
                     useOperator: srvOperator.enabled
                 )
