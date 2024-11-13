@@ -20,35 +20,43 @@ struct AddressCreationCard: View {
 
     var body: some View {
         let addressExists = chatModel.userAddress != nil
-        
+        let size = dynamicSize(userFont).profileImageSize
         ZStack(alignment: .topTrailing) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 8) {
-                    Image(systemName: "envelope.circle.fill")
-                    Text("SimpleX address:")
+            HStack(alignment: .top, spacing: 16) {
+                Image(systemName: "envelope.circle.fill")
+                    .resizable()
+                    .frame(width: size, height: size)
+                    .foregroundColor(.accentColor)
+                VStack(alignment: .leading) {
+                    Text("Your SimpleX address")
                         .font(.title3)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                HStack(spacing: 0) {
-                    Button {
-                        showAddressSheet = true
-                    } label: {
-                        Text("Create SimpleX address")
-                    }
-                    VStack {
-                        Image(systemName: "info.circle")
-                            .padding(8)
-                    }
-                    .onTapGesture {
-                        showAddressInfoSheet = true
+                    Spacer()
+                    HStack(alignment: .center) {
+                        Text("How to use it")
+                        VStack {
+                            Image(systemName: "info.circle")
+                                .foregroundColor(theme.colors.secondary)
+                        }
                     }
                 }
             }
-            Image(systemName: "multiply")
-                .foregroundColor(theme.colors.secondary)
-                .onTapGesture {
-                    showAddressCreationAlert = true
-                }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .trailing) {
+                Image(systemName: "multiply")
+                    .foregroundColor(theme.colors.secondary)
+                    .onTapGesture {
+                        showAddressCreationAlert = true
+                    }
+                Spacer()
+                Text("Create")
+                    .foregroundColor(.accentColor)
+                    .onTapGesture {
+                        showAddressSheet = true
+                    }
+            }
+        }
+        .onTapGesture {
+            showAddressInfoSheet = true
         }
         .padding()
         .background(theme.appColors.sentMessage)
