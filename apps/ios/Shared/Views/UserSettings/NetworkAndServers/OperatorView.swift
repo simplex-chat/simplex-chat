@@ -72,9 +72,9 @@ struct OperatorView: View {
                         Section {
                             ForEach($userOperatorServers.smpServers) { srv in
                                 ProtocolServerViewLink(
+                                    userServers: $userServers,
                                     server: srv,
                                     serverProtocol: .smp,
-                                    preset: true,
                                     backLabel: "\(serverOperatorToEdit.tradeName) servers",
                                     selectedServer: $selectedServer
                                 )
@@ -93,9 +93,9 @@ struct OperatorView: View {
                         Section {
                             ForEach($userOperatorServers.xftpServers) { srv in
                                 ProtocolServerViewLink(
+                                    userServers: $userServers,
                                     server: srv,
                                     serverProtocol: .xftp,
-                                    preset: true,
                                     backLabel: "\(serverOperatorToEdit.tradeName) servers",
                                     selectedServer: $selectedServer
                                 )

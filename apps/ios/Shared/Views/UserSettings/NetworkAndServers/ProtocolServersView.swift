@@ -21,6 +21,7 @@ struct YourServersView: View {
     @State var customServers: UserOperatorServers // nil operator is passed to this view
     @State private var selectedServer: String? = nil
     @State private var showAddServer = false
+    @State private var newServerNavLinkActive = false
     @State private var showScanProtoServer = false
     @State private var testing = false
 
@@ -43,9 +44,9 @@ struct YourServersView: View {
                 Section {
                     ForEach($customServers.smpServers) { srv in
                         ProtocolServerViewLink(
+                            userServers: $userServers,
                             server: srv,
                             serverProtocol: .smp,
-                            preset: false,
                             backLabel: "Your servers",
                             selectedServer: $selectedServer
                         )
@@ -68,9 +69,9 @@ struct YourServersView: View {
                 Section {
                     ForEach($customServers.xftpServers) { srv in
                         ProtocolServerViewLink(
+                            userServers: $userServers,
                             server: srv,
                             serverProtocol: .xftp,
-                            preset: false,
                             backLabel: "Your servers",
                             selectedServer: $selectedServer
                         )
@@ -90,8 +91,18 @@ struct YourServersView: View {
             }
 
             Section {
-                Button("Add server") {
-                    showAddServer = true
+                ZStack {
+                    Button("Add server") {
+                        showAddServer = true
+                    }
+
+                    NavigationLink(isActive: $newServerNavLinkActive) {
+                        newServerDestinationView()
+                    } label: {
+                        EmptyView()
+                    }
+                    .frame(width: 1, height: 1)
+                    .hidden()
                 }
             }
 
@@ -114,20 +125,22 @@ struct YourServersView: View {
             dismiss()
         })
         .confirmationDialog("Add server", isPresented: $showAddServer, titleVisibility: .hidden) {
-            Button("Enter SMP server manually") {
-                customServers.smpServers.append(UserServer.empty)
-                selectedServer = customServers.smpServers.last?.id
-            }
-            Button("Enter XFTP server manually") {
-                customServers.xftpServers.append(UserServer.empty)
-                selectedServer = customServers.xftpServers.last?.id
-            }
+            Button("Enter server manually") { newServerNavLinkActive = true }
             Button("Scan server QR code") { showScanProtoServer = true }
         }
         .sheet(isPresented: $showScanProtoServer) {
             ScanProtocolServer(smpServers: $customServers.smpServers, xftpServers: $customServers.xftpServers)
                 .modifier(ThemedBackground(grouped: true))
         }
+    }
+
+    private func newServerDestinationView() -> some View {
+        NewServerView(
+            userServers: $userServers
+        )
+        .navigationTitle("New server")
+        .navigationBarTitleDisplayMode(.large)
+        .modifier(ThemedBackground(grouped: true))
     }
 
     func howToButton() -> some View {
@@ -146,9 +159,9 @@ struct YourServersView: View {
 
 struct ProtocolServerViewLink: View {
     @EnvironmentObject var theme: AppTheme
+    @Binding var userServers: [UserOperatorServers]
     @Binding var server: UserServer
     var serverProtocol: ServerProtocol
-    var preset: Bool
     var backLabel: LocalizedStringKey
     @Binding var selectedServer: String?
 
@@ -157,10 +170,9 @@ struct ProtocolServerViewLink: View {
 
         NavigationLink(tag: server.id, selection: $selectedServer) {
             ProtocolServerView(
-                serverProtocol: serverProtocol,
+                userServers: $userServers,
                 server: $server,
                 serverToEdit: server,
-                preset: preset,
                 backLabel: backLabel
             )
             .navigationBarTitle("\(proto) server")
