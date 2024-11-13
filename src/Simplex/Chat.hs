@@ -1564,7 +1564,7 @@ processChatCommand' vr = \case
     msgs <- lift $ withAgent' $ \a -> getConnectionMessages a acIds
     let ntfMsgs = L.map (\msg -> receivedMsgInfo <$> msg) msgs
     pure $ CRConnNtfMessages ntfMsgs
-  GetUserProtoServers (AProtocolType p) -> withUser $ \user -> withServerProtocol p $ do
+  GetUserProtoServers (AProtocolType (p :: SProtocolType p)) -> withUser $ \user -> withServerProtocol p $ do
     (operators, smpServers, xftpServers) <- withFastStore (`getUserServers` user)
     userServers <- liftIO $ groupByOperator $ case p of
       SPSMP -> (operators, smpServers, [])
@@ -8584,7 +8584,6 @@ chatCommandP =
         onOffP
         (Just <$> (AutoAccept <$> (" incognito=" *> onOffP <|> pure False) <*> optional (A.space *> msgContentP)))
         (pure Nothing)
-    -- srvCfgP = strP >>= \case AProtocolType p -> APSC p <$> (A.space *> jsonP)
     rcCtrlAddressP = RCCtrlAddress <$> ("addr=" *> strP) <*> (" iface=" *> (jsonP <|> text1P))
     text1P = safeDecodeUtf8 <$> A.takeTill (== ' ')
     char_ = optional . A.char
