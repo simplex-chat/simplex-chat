@@ -12,8 +12,6 @@ struct UserProfilesView: View {
     @Environment(\.editMode) private var editMode
     @AppStorage(DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE) private var showHiddenProfilesNotice = true
     @AppStorage(DEFAULT_SHOW_MUTE_PROFILE_ALERT) private var showMuteProfileAlert = true
-    @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
-    @ObservedObject var appSheetState: AppSheetState = AppSheetState.shared
     @State private var showDeleteConfirmation = false
     @State private var userToDelete: User?
     @State private var alert: UserProfilesAlert?
@@ -23,7 +21,6 @@ struct UserProfilesView: View {
     @State private var profileHidden = false
     @State private var profileAction: UserProfileAction?
     @State private var actionPassword = ""
-    @State private var pendingAuthAction: (() -> Void)?
     @State private var navigateToProfileCreate = false
 
     var trimmedSearchTextOrPassword: String { searchTextOrPassword.trimmingCharacters(in: .whitespaces)}
@@ -59,12 +56,6 @@ struct UserProfilesView: View {
     }
 
     var body: some View {
-        let redaction = appSheetState.redactionReasons(protectScreen)
-        
-        userProfilesView(redaction)
-    }
-
-    private func userProfilesView(_ redaction: RedactionReasons) -> some View {
         List {
             if profileHidden {
                 Button {
@@ -184,12 +175,6 @@ struct UserProfilesView: View {
                 return mkAlert(title: title, message: error)
             }
         }
-        .onChange(of: redaction) { newRedaction in
-            if newRedaction.isEmpty, let action = self.pendingAuthAction {
-                action()
-                self.pendingAuthAction = nil
-            }
-        }
     }
 
     private func filteredUsers() -> [UserInfo] {
@@ -217,11 +202,8 @@ struct UserProfilesView: View {
                 switch laResult {
                 case .success, .unavailable:
                     authorized = true
-                    if protectScreen && privacyLocalAuthModeDefault.get() == .system {
-                        pendingAuthAction = action
-                    } else {
-                        action()
-                    }
+                    AppSheetState.shared.scenePhaseActive = true
+                    DispatchQueue.main.async(execute: action)
                 case .failed: authorized = false
                 }
             }
