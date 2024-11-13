@@ -52,7 +52,10 @@ struct ProtocolServerView: View {
                 }
             } else {
                 dismiss()
-                showAlert(NSLocalizedString("Invalid server address!", comment: "alert title"))
+                showAlert(
+                    NSLocalizedString("Invalid server address!", comment: "alert title"),
+                    message: NSLocalizedString("Check server address and try again.", comment: "alert title")
+                )
             }
         })
         .alert(isPresented: $showTestFailure) {

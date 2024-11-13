@@ -26,30 +26,7 @@ struct NewServerView: View {
             }
         }
         .modifier(BackButton(disabled: Binding.constant(false)) {
-            if let (serverProtocol, matchingOperator) = serverProtocolAndOperator(serverToEdit, userServers) {
-                if let i = userServers.firstIndex(where: {
-                    $0.operator?.operatorId == matchingOperator?.operatorId ||
-                    ($0.operator == nil && matchingOperator == nil)
-                }) {
-                    switch serverProtocol {
-                    case .smp: $userServers[i].wrappedValue.smpServers.append(serverToEdit)
-                    case .xftp: $userServers[i].wrappedValue.xftpServers.append(serverToEdit)
-                    }
-                    dismiss()
-                    if let op = matchingOperator {
-                        showAlert(
-                            NSLocalizedString("Operator server", comment: "alert title"),
-                            message: String.localizedStringWithFormat(NSLocalizedString("Server added to operator %@.", comment: "alert message"), op.tradeName)
-                        )
-                    }
-                } else { // Shouldn't happen
-                    dismiss()
-                    showAlert(NSLocalizedString("Error adding server", comment: "alert title"))
-                }
-            } else {
-                dismiss()
-                showAlert(NSLocalizedString("Invalid server address!", comment: "alert title"))
-            }
+            addServer(serverToEdit, $userServers, dismiss)
         })
         .alert(isPresented: $showTestFailure) {
             Alert(
@@ -132,6 +109,36 @@ func serverProtocolAndOperator(_ server: UserServer, _ userServers: [UserOperato
         return (serverProtocol, matchingOperator)
     } else {
         return nil
+    }
+}
+
+func addServer(_ server: UserServer, _ userServers: Binding<[UserOperatorServers]>, _ dismiss: DismissAction) {
+    if let (serverProtocol, matchingOperator) = serverProtocolAndOperator(server, userServers.wrappedValue) {
+        if let i = userServers.wrappedValue.firstIndex(where: {
+            $0.operator?.operatorId == matchingOperator?.operatorId ||
+            ($0.operator == nil && matchingOperator == nil)
+        }) {
+            switch serverProtocol {
+            case .smp: userServers[i].wrappedValue.smpServers.append(server)
+            case .xftp: userServers[i].wrappedValue.xftpServers.append(server)
+            }
+            dismiss()
+            if let op = matchingOperator {
+                showAlert(
+                    NSLocalizedString("Operator server", comment: "alert title"),
+                    message: String.localizedStringWithFormat(NSLocalizedString("Server added to operator %@.", comment: "alert message"), op.tradeName)
+                )
+            }
+        } else { // Shouldn't happen
+            dismiss()
+            showAlert(NSLocalizedString("Error adding server", comment: "alert title"))
+        }
+    } else {
+        dismiss()
+        showAlert(
+            NSLocalizedString("Invalid server address!", comment: "alert title"),
+            message: NSLocalizedString("Check server address and try again.", comment: "alert title")
+        )
     }
 }
 

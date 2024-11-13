@@ -12,9 +12,7 @@ import CodeScanner
 
 struct ScanProtocolServer: View {
     @Environment(\.dismiss) var dismiss: DismissAction
-    @Binding var smpServers: [UserServer]
-    @Binding var xftpServers: [UserServer]
-    @State private var showAddressError = false
+    @Binding var userServers: [UserOperatorServers]
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -29,27 +27,14 @@ struct ScanProtocolServer: View {
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .alert(isPresented: $showAddressError) {
-            Alert(
-                title: Text("Invalid server address!"),
-                message: Text("Check server address and try again.")
-            )
-        }
     }
 
     func processQRCode(_ resp: Result<ScanResult, ScanError>) {
         switch resp {
         case let .success(r):
-            if let serverAddress = parseServerAddress(r.string) {
-                if serverAddress.serverProtocol == .smp {
-                    smpServers.append(UserServer(serverId: nil, server: r.string, preset: false, tested: nil, enabled: false, deleted: false))
-                } else {
-                    xftpServers.append(UserServer(serverId: nil, server: r.string, preset: false, tested: nil, enabled: false, deleted: false))
-                }
-                dismiss()
-            } else {
-                showAddressError = true
-            }
+            var server: UserServer = .empty
+            server.server = r.string
+            addServer(server, $userServers, dismiss)
         case let .failure(e):
             logger.error("ScanProtocolServer.processQRCode QR code error: \(e.localizedDescription)")
             dismiss()
@@ -60,8 +45,7 @@ struct ScanProtocolServer: View {
 struct ScanProtocolServer_Previews: PreviewProvider {
     static var previews: some View {
         ScanProtocolServer(
-            smpServers: Binding.constant([]),
-            xftpServers: Binding.constant([])
+            userServers: Binding.constant([UserOperatorServers.sampleDataNilOperator])
         )
     }
 }
