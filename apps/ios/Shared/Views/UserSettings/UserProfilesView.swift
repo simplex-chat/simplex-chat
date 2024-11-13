@@ -80,8 +80,8 @@ struct UserProfilesView: View {
                 }
                 if #available(iOS 16, *) {
                     v.onDelete { indexSet in
-                        withAuth {
-                            if let i = indexSet.first {
+                        if let i = indexSet.first {
+                            withAuth {
                                 confirmDeleteUser(users[i].user)
                             }
                         }
@@ -185,8 +185,8 @@ struct UserProfilesView: View {
             }
         }
         .onChange(of: redaction) { newRedaction in
-            if newRedaction.isEmpty {
-                self.pendingAuthAction?()
+            if newRedaction.isEmpty, let action = self.pendingAuthAction {
+                action()
                 self.pendingAuthAction = nil
             }
         }
@@ -217,7 +217,9 @@ struct UserProfilesView: View {
                 switch laResult {
                 case .success, .unavailable:
                     authorized = true
-                    pendingAuthAction = {
+                    if protectScreen && privacyLocalAuthModeDefault.get() == .system {
+                        pendingAuthAction = action
+                    } else {
                         action()
                     }
                 case .failed: authorized = false
