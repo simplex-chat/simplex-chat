@@ -25,6 +25,7 @@ import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, isNothing, mapMaybe)
+import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1)
@@ -42,6 +43,7 @@ import Simplex.Chat.Help
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages hiding (NewChatItem (..))
 import Simplex.Chat.Messages.CIContent
+import Simplex.Chat.Operators
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote.AppVersion (AppVersion (..), pattern AppVersionRange)
 import Simplex.Chat.Remote.Types
@@ -53,7 +55,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..), SubscriptionsInfo (..))
-import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..), ServerCfg (..))
+import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..), ServerRoles (..))
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import Simplex.Messaging.Client (SMPProxyFallback, SMPProxyMode (..), SocksMode (..))
@@ -95,8 +97,11 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRChats chats -> viewChats ts tz chats
   CRApiChat u chat -> ttyUser u $ if testView then testViewChat chat else [viewJSON chat]
   CRApiParsedMarkdown ft -> [viewJSON ft]
-  CRUserProtoServers u userServers -> ttyUser u $ viewUserServers userServers testView
   CRServerTestResult u srv testFailure -> ttyUser u $ viewServerTestResult srv testFailure
+  CRServerOperators ops ca -> viewServerOperators ops ca 
+  CRUserServers u uss -> ttyUser u $ concatMap viewUserServers uss <> (if testView then [] else serversUserHelp)
+  CRUserServersValidation _ -> []
+  CRUsageConditions {} -> []
   CRChatItemTTL u ttl -> ttyUser u $ viewChatItemTTL ttl
   CRNetworkConfig cfg -> viewNetworkConfig cfg
   CRContactInfo u ct cStats customUserProfile -> ttyUser u $ viewContactInfo ct cStats customUserProfile
@@ -1209,27 +1214,31 @@ viewUserPrivacy User {userId} User {userId = userId', localDisplayName = n', sho
     "profile is " <> if isJust viewPwdHash then "hidden" else "visible"
   ]
 
-viewUserServers :: AUserProtoServers -> Bool -> [StyledString]
-viewUserServers (AUPS UserProtoServers {serverProtocol = p, protoServers, presetServers}) testView =
-  customServers
-    <> if testView
-      then []
-      else
-        [ "",
-          "use " <> highlight (srvCmd <> " test <srv>") <> " to test " <> pName <> " server connection",
-          "use " <> highlight (srvCmd <> " <srv1[,srv2,...]>") <> " to configure " <> pName <> " servers",
-          "use " <> highlight (srvCmd <> " default") <> " to remove configured " <> pName <> " servers and use presets"
-        ]
-          <> case p of
-            SPSMP -> ["(chat option " <> highlight' "-s" <> " (" <> highlight' "--server" <> ") has precedence over saved SMP servers for chat session)"]
-            SPXFTP -> ["(chat option " <> highlight' "-xftp-servers" <> " has precedence over saved XFTP servers for chat session)"]
+viewUserServers :: UserOperatorServers -> [StyledString]
+viewUserServers (UserOperatorServers _ [] []) = []
+viewUserServers UserOperatorServers {operator, smpServers, xftpServers} =
+  [plain $ maybe "Your servers" shortViewOperator operator]
+    <> viewServers SPSMP smpServers
+    <> viewServers SPXFTP xftpServers
   where
-    srvCmd = "/" <> strEncode p
-    pName = protocolName p
-    customServers =
-      if null protoServers
-        then ("no " <> pName <> " servers saved, using presets: ") : viewServers presetServers
-        else viewServers protoServers
+    viewServers :: ProtocolTypeI p => SProtocolType p -> [UserServer p] -> [StyledString]
+    viewServers _ [] = []
+    viewServers p srvs = ["  " <> protocolName p <> " servers"] <> map (plain . ("    " <> ) . viewServer) srvs
+      where
+        viewServer UserServer {server, preset, tested, enabled} = safeDecodeUtf8 (strEncode server) <> serverInfo
+          where
+            serverInfo = if null serverInfo_ then "" else parens $ T.intercalate ", " serverInfo_
+            serverInfo_ = ["preset" | preset] <> testedInfo <> ["disabled" | not enabled]
+            testedInfo = maybe [] (\t -> ["test: " <> if t then "passed" else "failed"]) tested
+
+serversUserHelp :: [StyledString]
+serversUserHelp =
+  [ "",
+    "use " <> highlight' "/smp test <srv>" <> " to test SMP server connection",
+    "use " <> highlight' "/smp <srv1[,srv2,...]>" <> " to configure SMP servers",
+    "or the same commands starting from /xftp for XFTP servers",
+    "chat options " <> highlight' "-s" <> " (" <> highlight' "--server" <> ") and " <> highlight' "--xftp-servers" <> " have precedence over preset servers for new user profiles"
+  ]
 
 protocolName :: ProtocolTypeI p => SProtocolType p -> StyledString
 protocolName = plain . map toUpper . T.unpack . decodeLatin1 . strEncode
@@ -1249,6 +1258,53 @@ viewServerTestResult (AProtoServerWithAuth p _) = \case
   _ -> [pName <> " server test passed"]
   where
     pName = protocolName p
+
+viewServerOperators :: [ServerOperator] -> Maybe UsageConditionsAction -> [StyledString]
+viewServerOperators ops ca = map (plain . viewOperator) ops <> maybe [] viewConditionsAction ca
+
+viewOperator :: ServerOperator' s -> Text
+viewOperator op@ServerOperator {tradeName, legalName, serverDomains, conditionsAcceptance} =
+  viewOpIdTag op
+    <> tradeName
+    <> maybe "" parens legalName
+    <> (", domains: "  <> T.intercalate ", " serverDomains)
+    <> (", conditions: " <> viewOpConditions conditionsAcceptance)
+    <> (", " <> viewOpEnabled op)
+
+shortViewOperator :: ServerOperator -> Text
+shortViewOperator op@ServerOperator {operatorId = DBEntityId opId, tradeName} =
+  tshow opId <> ". " <> tradeName <> parens (viewOpEnabled op)
+
+viewOpIdTag :: ServerOperator' s -> Text
+viewOpIdTag ServerOperator {operatorId, operatorTag} = case operatorId of
+  DBEntityId i -> tshow i <> " - " <> tag
+  DBNewEntity -> tag
+  where
+    tag = maybe "" textEncode operatorTag <> ". "
+
+viewOpConditions :: ConditionsAcceptance -> Text
+viewOpConditions = \case
+  CAAccepted ts -> viewCond "accepted" ts
+  CARequired ts -> viewCond "required" ts
+  where
+    viewCond w ts = w <> maybe "" (parens . tshow) ts
+
+viewOpEnabled :: ServerOperator' s -> Text
+viewOpEnabled ServerOperator {enabled, roles = ServerRoles {storage, proxy}}
+  | enabled && storage && proxy = "enabled"
+  | enabled && storage = "enabled storage"
+  | enabled && proxy = "enabled proxy"
+  | otherwise = "disabled"
+
+viewConditionsAction :: UsageConditionsAction -> [StyledString]
+viewConditionsAction = \case
+  UCAReview {operators, deadline, showNotice} | showNotice -> case deadline of
+    Just ts -> [plain $ "New conditions will be accepted at " <> tshow ts <> " for " <> ops]
+    Nothing -> [plain $ "New conditions have to be accepted for " <> ops]
+    where
+      ops = T.intercalate ", " $ map legalName_ operators
+      legalName_ ServerOperator {tradeName, legalName} = fromMaybe tradeName legalName
+  _ -> []
 
 viewChatItemTTL :: Maybe Int64 -> [StyledString]
 viewChatItemTTL = \case
@@ -1326,8 +1382,11 @@ viewConnectionStats ConnectionStats {rcvQueuesInfo, sndQueuesInfo} =
   ["receiving messages via: " <> viewRcvQueuesInfo rcvQueuesInfo | not $ null rcvQueuesInfo]
     <> ["sending messages via: " <> viewSndQueuesInfo sndQueuesInfo | not $ null sndQueuesInfo]
 
-viewServers :: ProtocolTypeI p => NonEmpty (ServerCfg p) -> [StyledString]
-viewServers = map (plain . B.unpack . strEncode . (\ServerCfg {server} -> server)) . L.toList
+-- viewServers :: ProtocolTypeI p => [ServerOperator] -> NonEmpty (ServerCfg p) -> [StyledString]
+-- viewServers operators = map (plain . (\ServerCfg {server, operator} -> B.unpack (strEncode server) <> viewOperator operator)) . L.toList
+--   where
+--     ops :: Map (Maybe DBEntityId) Text = foldl' (\m ServerOperator {operatorId, tradeName} -> M.insert (Just operatorId) tradeName m) M.empty operators
+--     viewOperator = maybe "" $ \op -> " (operator " <> maybe (show op) T.unpack (M.lookup (Just op) ops) <> ")"
 
 viewRcvQueuesInfo :: [RcvQueueInfo] -> StyledString
 viewRcvQueuesInfo = plain . intercalate ", " . map showQueueInfo
@@ -1926,7 +1985,9 @@ viewVersionInfo logLevel CoreVersionInfo {version, simplexmqVersion, simplexmqCo
       then [versionString version, updateStr, "simplexmq: " <> simplexmqVersion <> parens simplexmqCommit]
       else [versionString version, updateStr]
   where
-    parens s = " (" <> s <> ")"
+
+parens :: (IsString a, Semigroup a) => a -> a
+parens s = " (" <> s <> ")"
 
 viewRemoteHosts :: [RemoteHostInfo] -> [StyledString]
 viewRemoteHosts = \case

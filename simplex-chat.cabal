@@ -150,10 +150,13 @@ library
       Simplex.Chat.Migrations.M20240920_user_order
       Simplex.Chat.Migrations.M20241008_indexes
       Simplex.Chat.Migrations.M20241010_contact_requests_contact_id
+      Simplex.Chat.Migrations.M20241027_server_operators
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared
       Simplex.Chat.Mobile.WebRTC
+      Simplex.Chat.Operators
+      Simplex.Chat.Operators.Conditions
       Simplex.Chat.Options
       Simplex.Chat.ProfileGenerator
       Simplex.Chat.Protocol
@@ -213,6 +216,7 @@ library
     , directory ==1.3.*
     , email-validate ==2.3.*
     , exceptions ==0.10.*
+    , file-embed ==0.0.15.*
     , filepath ==1.4.*
     , http-types ==0.12.*
     , http2 >=4.2.2 && <4.3
@@ -223,6 +227,7 @@ library
     , optparse-applicative >=0.15 && <0.17
     , random >=1.1 && <1.3
     , record-hasfield ==1.0.*
+    , scientific ==0.3.7.*
     , simple-logger ==0.1.*
     , simplexmq >=5.0
     , socks ==0.6.*
@@ -249,7 +254,7 @@ library
         bytestring ==0.10.*
       , process >=1.6 && <1.6.18
       , template-haskell ==2.16.*
-      , text >=1.2.3.0 && <1.3
+      , text >=1.2.4.0 && <1.3
 
 executable simplex-bot
   main-is: Main.hs
@@ -276,6 +281,7 @@ executable simplex-bot
     , directory ==1.3.*
     , email-validate ==2.3.*
     , exceptions ==0.10.*
+    , file-embed ==0.0.15.*
     , filepath ==1.4.*
     , http-types ==0.12.*
     , http2 >=4.2.2 && <4.3
@@ -286,6 +292,7 @@ executable simplex-bot
     , optparse-applicative >=0.15 && <0.17
     , random >=1.1 && <1.3
     , record-hasfield ==1.0.*
+    , scientific ==0.3.7.*
     , simple-logger ==0.1.*
     , simplex-chat
     , simplexmq >=5.0
@@ -313,7 +320,7 @@ executable simplex-bot
         bytestring ==0.10.*
       , process >=1.6 && <1.6.18
       , template-haskell ==2.16.*
-      , text >=1.2.3.0 && <1.3
+      , text >=1.2.4.0 && <1.3
 
 executable simplex-bot-advanced
   main-is: Main.hs
@@ -340,6 +347,7 @@ executable simplex-bot-advanced
     , directory ==1.3.*
     , email-validate ==2.3.*
     , exceptions ==0.10.*
+    , file-embed ==0.0.15.*
     , filepath ==1.4.*
     , http-types ==0.12.*
     , http2 >=4.2.2 && <4.3
@@ -350,6 +358,7 @@ executable simplex-bot-advanced
     , optparse-applicative >=0.15 && <0.17
     , random >=1.1 && <1.3
     , record-hasfield ==1.0.*
+    , scientific ==0.3.7.*
     , simple-logger ==0.1.*
     , simplex-chat
     , simplexmq >=5.0
@@ -377,7 +386,7 @@ executable simplex-bot-advanced
         bytestring ==0.10.*
       , process >=1.6 && <1.6.18
       , template-haskell ==2.16.*
-      , text >=1.2.3.0 && <1.3
+      , text >=1.2.4.0 && <1.3
 
 executable simplex-broadcast-bot
   main-is: Main.hs
@@ -407,6 +416,7 @@ executable simplex-broadcast-bot
     , directory ==1.3.*
     , email-validate ==2.3.*
     , exceptions ==0.10.*
+    , file-embed ==0.0.15.*
     , filepath ==1.4.*
     , http-types ==0.12.*
     , http2 >=4.2.2 && <4.3
@@ -417,6 +427,7 @@ executable simplex-broadcast-bot
     , optparse-applicative >=0.15 && <0.17
     , random >=1.1 && <1.3
     , record-hasfield ==1.0.*
+    , scientific ==0.3.7.*
     , simple-logger ==0.1.*
     , simplex-chat
     , simplexmq >=5.0
@@ -444,7 +455,7 @@ executable simplex-broadcast-bot
         bytestring ==0.10.*
       , process >=1.6 && <1.6.18
       , template-haskell ==2.16.*
-      , text >=1.2.3.0 && <1.3
+      , text >=1.2.4.0 && <1.3
 
 executable simplex-chat
   main-is: Main.hs
@@ -472,6 +483,7 @@ executable simplex-chat
     , directory ==1.3.*
     , email-validate ==2.3.*
     , exceptions ==0.10.*
+    , file-embed ==0.0.15.*
     , filepath ==1.4.*
     , http-types ==0.12.*
     , http2 >=4.2.2 && <4.3
@@ -482,6 +494,7 @@ executable simplex-chat
     , optparse-applicative >=0.15 && <0.17
     , random >=1.1 && <1.3
     , record-hasfield ==1.0.*
+    , scientific ==0.3.7.*
     , simple-logger ==0.1.*
     , simplex-chat
     , simplexmq >=5.0
@@ -510,7 +523,7 @@ executable simplex-chat
         bytestring ==0.10.*
       , process >=1.6 && <1.6.18
       , template-haskell ==2.16.*
-      , text >=1.2.3.0 && <1.3
+      , text >=1.2.4.0 && <1.3
 
 executable simplex-directory-service
   main-is: Main.hs
@@ -543,6 +556,7 @@ executable simplex-directory-service
     , directory ==1.3.*
     , email-validate ==2.3.*
     , exceptions ==0.10.*
+    , file-embed ==0.0.15.*
     , filepath ==1.4.*
     , http-types ==0.12.*
     , http2 >=4.2.2 && <4.3
@@ -553,6 +567,7 @@ executable simplex-directory-service
     , optparse-applicative >=0.15 && <0.17
     , random >=1.1 && <1.3
     , record-hasfield ==1.0.*
+    , scientific ==0.3.7.*
     , simple-logger ==0.1.*
     , simplex-chat
     , simplexmq >=5.0
@@ -580,7 +595,7 @@ executable simplex-directory-service
         bytestring ==0.10.*
       , process >=1.6 && <1.6.18
       , template-haskell ==2.16.*
-      , text >=1.2.3.0 && <1.3
+      , text >=1.2.4.0 && <1.3
 
 test-suite simplex-chat-test
   type: exitcode-stdio-1.0
@@ -642,6 +657,7 @@ test-suite simplex-chat-test
     , directory ==1.3.*
     , email-validate ==2.3.*
     , exceptions ==0.10.*
+    , file-embed ==0.0.15.*
     , filepath ==1.4.*
     , generic-random ==1.5.*
     , http-types ==0.12.*
@@ -653,6 +669,7 @@ test-suite simplex-chat-test
     , optparse-applicative >=0.15 && <0.17
     , random >=1.1 && <1.3
     , record-hasfield ==1.0.*
+    , scientific ==0.3.7.*
     , silently ==1.2.*
     , simple-logger ==0.1.*
     , simplex-chat
@@ -681,7 +698,7 @@ test-suite simplex-chat-test
         bytestring ==0.10.*
       , process >=1.6 && <1.6.18
       , template-haskell ==2.16.*
-      , text >=1.2.3.0 && <1.3
+      , text >=1.2.4.0 && <1.3
   if impl(ghc >= 9.6.2)
     build-depends:
         hspec ==2.11.*

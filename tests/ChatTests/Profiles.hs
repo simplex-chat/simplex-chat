@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
 {-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module ChatTests.Profiles where
 
@@ -1733,7 +1734,16 @@ testChangePCCUserDiffSrv tmp = do
         -- Create new user with different servers
         alice ##> "/create user alisa"
         showActiveUser alice "alisa"
-        alice #$> ("/smp smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003", id, "ok")
+        alice ##> "/smp"
+        alice <## "Your servers"
+        alice <## "  SMP servers"
+        alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001 (preset)"
+        alice #$> ("/smp smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@127.0.0.1:7003", id, "ok")
+        alice ##> "/smp"
+        alice <## "Your servers"
+        alice <## "  SMP servers"
+        alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001 (preset, disabled)"
+        alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@127.0.0.1:7003"
         alice ##> "/user alice"
         showActiveUser alice "alice (Alice)"
         -- Change connection to newly created user and use the newly created connection

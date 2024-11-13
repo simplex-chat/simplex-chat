@@ -10,7 +10,7 @@ import Data.Maybe (fromMaybe)
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
 import Network.Socket
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatResponse (..), DefaultAgentServers (DefaultAgentServers, netCfg), SimpleNetCfg (..), currentRemoteHost, versionNumber, versionString)
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatResponse (..), PresetServers (..), SimpleNetCfg (..), currentRemoteHost, versionNumber, versionString)
 import Simplex.Chat.Core
 import Simplex.Chat.Options
 import Simplex.Chat.Terminal
@@ -56,7 +56,7 @@ simplexChatCLI' cfg opts@ChatOpts {chatCmd, chatCmdLog, chatCmdDelay, chatServer
           putStrLn $ serializeChatResponse (rh, Just user) ts tz rh r
 
 welcome :: ChatConfig -> ChatOpts -> IO ()
-welcome ChatConfig {defaultServers = DefaultAgentServers {netCfg}} ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, simpleNetCfg = SimpleNetCfg {socksProxy, socksMode, smpProxyMode_, smpProxyFallback_}}} =
+welcome ChatConfig {presetServers = PresetServers {netCfg}} ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, simpleNetCfg = SimpleNetCfg {socksProxy, socksMode, smpProxyMode_, smpProxyFallback_}}} =
   mapM_
     putStrLn
     [ versionString versionNumber,

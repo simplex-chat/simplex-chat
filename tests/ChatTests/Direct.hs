@@ -25,7 +25,7 @@ import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
-import Simplex.Chat.Controller (ChatConfig (..), DefaultAgentServers (..))
+import Simplex.Chat.Controller (ChatConfig (..), PresetServers (..))
 import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
@@ -332,8 +332,8 @@ testRetryConnectingClientTimeout tmp = do
               { quotaExceededTimeout = 1,
                 messageRetryInterval = RetryInterval2 {riFast = fastRetryInterval, riSlow = fastRetryInterval}
               },
-          defaultServers =
-            let def@DefaultAgentServers {netCfg} = defaultServers testCfg
+          presetServers =
+            let def@PresetServers {netCfg} = presetServers testCfg
              in def {netCfg = (netCfg :: NetworkConfig) {tcpTimeout = 10}}
         }
     opts' =
@@ -1109,17 +1109,32 @@ testGetSetSMPServers :: HasCallStack => FilePath -> IO ()
 testGetSetSMPServers =
   testChat2 aliceProfile bobProfile $
     \alice _ -> do
-      alice #$> ("/_servers 1 smp", id, "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001")
+      alice ##> "/_servers 1"
+      alice <## "Your servers"
+      alice <## "  SMP servers"
+      alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001 (preset)"
+      alice <## "  XFTP servers"
+      alice <## "    xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002 (preset)"      
       alice #$> ("/smp smp://1234-w==@smp1.example.im", id, "ok")
-      alice #$> ("/smp", id, "smp://1234-w==@smp1.example.im")
+      alice ##> "/smp"
+      alice <## "Your servers"
+      alice <## "  SMP servers"
+      alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001 (preset, disabled)"
+      alice <## "    smp://1234-w==@smp1.example.im"
       alice #$> ("/smp smp://1234-w==:password@smp1.example.im", id, "ok")
-      alice #$> ("/smp", id, "smp://1234-w==:password@smp1.example.im")
+      -- alice #$> ("/smp", id, "smp://1234-w==:password@smp1.example.im")
+      alice ##> "/smp"
+      alice <## "Your servers"
+      alice <## "  SMP servers"
+      alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001 (preset, disabled)"
+      alice <## "    smp://1234-w==:password@smp1.example.im"
       alice #$> ("/smp smp://2345-w==@smp2.example.im smp://3456-w==@smp3.example.im:5224", id, "ok")
       alice ##> "/smp"
-      alice <## "smp://2345-w==@smp2.example.im"
-      alice <## "smp://3456-w==@smp3.example.im:5224"
-      alice #$> ("/smp default", id, "ok")
-      alice #$> ("/smp", id, "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001")
+      alice <## "Your servers"
+      alice <## "  SMP servers"
+      alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001 (preset, disabled)"
+      alice <## "    smp://2345-w==@smp2.example.im"
+      alice <## "    smp://3456-w==@smp3.example.im:5224"
 
 testTestSMPServerConnection :: HasCallStack => FilePath -> IO ()
 testTestSMPServerConnection =
@@ -1140,17 +1155,31 @@ testGetSetXFTPServers :: HasCallStack => FilePath -> IO ()
 testGetSetXFTPServers =
   testChat2 aliceProfile bobProfile $
     \alice _ -> withXFTPServer $ do
-      alice #$> ("/_servers 1 xftp", id, "xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002")
+      alice ##> "/_servers 1"
+      alice <## "Your servers"
+      alice <## "  SMP servers"
+      alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001 (preset)"
+      alice <## "  XFTP servers"
+      alice <## "    xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002 (preset)"
       alice #$> ("/xftp xftp://1234-w==@xftp1.example.im", id, "ok")
-      alice #$> ("/xftp", id, "xftp://1234-w==@xftp1.example.im")
+      alice ##> "/xftp"
+      alice <## "Your servers"
+      alice <## "  XFTP servers"
+      alice <## "    xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002 (preset, disabled)"
+      alice <## "    xftp://1234-w==@xftp1.example.im"
       alice #$> ("/xftp xftp://1234-w==:password@xftp1.example.im", id, "ok")
-      alice #$> ("/xftp", id, "xftp://1234-w==:password@xftp1.example.im")
+      alice ##> "/xftp"
+      alice <## "Your servers"
+      alice <## "  XFTP servers"
+      alice <## "    xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002 (preset, disabled)"
+      alice <## "    xftp://1234-w==:password@xftp1.example.im"
       alice #$> ("/xftp xftp://2345-w==@xftp2.example.im xftp://3456-w==@xftp3.example.im:5224", id, "ok")
       alice ##> "/xftp"
-      alice <## "xftp://2345-w==@xftp2.example.im"
-      alice <## "xftp://3456-w==@xftp3.example.im:5224"
-      alice #$> ("/xftp default", id, "ok")
-      alice #$> ("/xftp", id, "xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002")
+      alice <## "Your servers"
+      alice <## "  XFTP servers"
+      alice <## "    xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002 (preset, disabled)"
+      alice <## "    xftp://2345-w==@xftp2.example.im"
+      alice <## "    xftp://3456-w==@xftp3.example.im:5224"
 
 testTestXFTPServer :: HasCallStack => FilePath -> IO ()
 testTestXFTPServer =
@@ -1768,11 +1797,17 @@ testCreateUserSameServers =
   where
     checkCustomServers alice = do
       alice ##> "/smp"
-      alice <## "smp://2345-w==@smp2.example.im"
-      alice <## "smp://3456-w==@smp3.example.im:5224"
+      alice <## "Your servers"
+      alice <## "  SMP servers"
+      alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001 (preset, disabled)"
+      alice <## "    smp://2345-w==@smp2.example.im"
+      alice <## "    smp://3456-w==@smp3.example.im:5224"
       alice ##> "/xftp"
-      alice <## "xftp://2345-w==@xftp2.example.im"
-      alice <## "xftp://3456-w==@xftp3.example.im:5224"
+      alice <## "Your servers"
+      alice <## "  XFTP servers"
+      alice <## "    xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002 (preset, disabled)"
+      alice <## "    xftp://2345-w==@xftp2.example.im"
+      alice <## "    xftp://3456-w==@xftp3.example.im:5224"
 
 testDeleteUser :: HasCallStack => FilePath -> IO ()
 testDeleteUser =
