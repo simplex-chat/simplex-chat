@@ -135,10 +135,12 @@ func addServer(_ server: UserServer, _ userServers: Binding<[UserOperatorServers
         }
     } else {
         dismiss()
-        showAlert(
-            NSLocalizedString("Invalid server address!", comment: "alert title"),
-            message: NSLocalizedString("Check server address and try again.", comment: "alert title")
-        )
+        if server.server.trimmingCharacters(in: .whitespaces) != "" {
+            showAlert(
+                NSLocalizedString("Invalid server address!", comment: "alert title"),
+                message: NSLocalizedString("Check server address and try again.", comment: "alert title")
+            )
+        }
     }
 }
 
