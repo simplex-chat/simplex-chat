@@ -267,7 +267,7 @@
   <string name="auth_device_authentication_is_disabled_turning_off">Device authentication is disabled. Turning off SimpleX Lock.</string>
   <string name="auth_stop_chat">Stop chat</string>
   <string name="auth_open_chat_console">Open chat console</string>
-  <string name="auth_open_chat_profiles">Open chat profiles</string>
+  <string name="auth_open_chat_profiles">Change chat profiles</string>
   <string name="auth_open_migration_to_another_device">Open migration screen</string>
   <string name="lock_not_enabled">SimpleX Lock not enabled!</string>
   <string name="you_can_turn_on_lock">You can turn on SimpleX Lock via Settings.</string>
