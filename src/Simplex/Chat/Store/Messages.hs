@@ -1137,13 +1137,13 @@ getContactUnreadCount_ db User {userId} Contact {contactId} =
       (userId, contactId, CISRcvNew)
 
 getContactNavInfo_ :: DB.Connection -> User -> Contact -> CChatItem 'CTDirect -> IO NavigationInfo
-getContactNavInfo_ db User {userId} Contact {contactId} belowCI = do
-  belowUnread <- getBelowUnreadCount
-  belowTotal <- getBelowTotalCount
-  pure NavigationInfo {belowUnread, belowTotal}
+getContactNavInfo_ db User {userId} Contact {contactId} afterCI = do
+  afterUnread <- getAfterUnreadCount
+  afterTotal <- getAfterTotalCount
+  pure NavigationInfo {afterUnread, afterTotal}
   where
-    getBelowUnreadCount :: IO Int
-    getBelowUnreadCount =
+    getAfterUnreadCount :: IO Int
+    getAfterUnreadCount =
       fromOnly . head
         <$> DB.query
           db
@@ -1153,9 +1153,9 @@ getContactNavInfo_ db User {userId} Contact {contactId} belowCI = do
             WHERE user_id = ? AND contact_id = ? AND item_status = ?
               AND (created_at > ? OR (created_at = ? AND chat_item_id > ?))
           |]
-          (userId, contactId, CISRcvNew, ciCreatedAt belowCI, ciCreatedAt belowCI, cChatItemId belowCI)
-    getBelowTotalCount :: IO Int
-    getBelowTotalCount =
+          (userId, contactId, CISRcvNew, ciCreatedAt afterCI, ciCreatedAt afterCI, cChatItemId afterCI)
+    getAfterTotalCount :: IO Int
+    getAfterTotalCount =
       fromOnly . head
         <$> DB.query
           db
@@ -1165,7 +1165,7 @@ getContactNavInfo_ db User {userId} Contact {contactId} belowCI = do
             WHERE user_id = ? AND contact_id = ?
               AND (created_at > ? OR (created_at = ? AND chat_item_id > ?))
           |]
-          (userId, contactId, ciCreatedAt belowCI, ciCreatedAt belowCI, cChatItemId belowCI)
+          (userId, contactId, ciCreatedAt afterCI, ciCreatedAt afterCI, cChatItemId afterCI)
 
 getGroupChat :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
 getGroupChat db vr user groupId pagination search_ = do
@@ -1355,13 +1355,13 @@ getGroupUnreadCount_ db User {userId} GroupInfo {groupId} =
       (userId, groupId, CISRcvNew)
 
 getGroupNavInfo_ :: DB.Connection -> User -> GroupInfo -> CChatItem 'CTGroup -> IO NavigationInfo
-getGroupNavInfo_ db User {userId} GroupInfo {groupId} belowCI = do
-  belowUnread <- getBelowUnreadCount
-  belowTotal <- getBelowTotalCount
-  pure NavigationInfo {belowUnread, belowTotal}
+getGroupNavInfo_ db User {userId} GroupInfo {groupId} afterCI = do
+  afterUnread <- getAfterUnreadCount
+  afterTotal <- getAfterTotalCount
+  pure NavigationInfo {afterUnread, afterTotal}
   where
-    getBelowUnreadCount :: IO Int
-    getBelowUnreadCount =
+    getAfterUnreadCount :: IO Int
+    getAfterUnreadCount =
       fromOnly . head
         <$> DB.query
           db
@@ -1371,9 +1371,9 @@ getGroupNavInfo_ db User {userId} GroupInfo {groupId} belowCI = do
             WHERE user_id = ? AND group_id = ? AND item_status = ?
               AND (item_ts > ? OR (item_ts = ? AND chat_item_id > ?))
           |]
-          (userId, groupId, CISRcvNew, chatItemTs belowCI, chatItemTs belowCI, cChatItemId belowCI)
-    getBelowTotalCount :: IO Int
-    getBelowTotalCount =
+          (userId, groupId, CISRcvNew, chatItemTs afterCI, chatItemTs afterCI, cChatItemId afterCI)
+    getAfterTotalCount :: IO Int
+    getAfterTotalCount =
       fromOnly . head
         <$> DB.query
           db
@@ -1383,7 +1383,7 @@ getGroupNavInfo_ db User {userId} GroupInfo {groupId} belowCI = do
             WHERE user_id = ? AND group_id = ?
               AND (item_ts > ? OR (item_ts = ? AND chat_item_id > ?))
           |]
-          (userId, groupId, chatItemTs belowCI, chatItemTs belowCI, cChatItemId belowCI)
+          (userId, groupId, chatItemTs afterCI, chatItemTs afterCI, cChatItemId afterCI)
 
 getLocalChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTLocal, Maybe NavigationInfo)
 getLocalChat db user folderId pagination search_ = do
@@ -1557,13 +1557,13 @@ getLocalUnreadCount_ db User {userId} NoteFolder {noteFolderId} =
       (userId, noteFolderId, CISRcvNew)
 
 getLocalNavInfo_ :: DB.Connection -> User -> NoteFolder -> CChatItem 'CTLocal -> IO NavigationInfo
-getLocalNavInfo_ db User {userId} NoteFolder {noteFolderId} belowCI = do
-  belowUnread <- getBelowUnreadCount
-  belowTotal <- getBelowTotalCount
-  pure NavigationInfo {belowUnread, belowTotal}
+getLocalNavInfo_ db User {userId} NoteFolder {noteFolderId} afterCI = do
+  afterUnread <- getAfterUnreadCount
+  afterTotal <- getAfterTotalCount
+  pure NavigationInfo {afterUnread, afterTotal}
   where
-    getBelowUnreadCount :: IO Int
-    getBelowUnreadCount =
+    getAfterUnreadCount :: IO Int
+    getAfterUnreadCount =
       fromOnly . head
         <$> DB.query
           db
@@ -1573,9 +1573,9 @@ getLocalNavInfo_ db User {userId} NoteFolder {noteFolderId} belowCI = do
             WHERE user_id = ? AND note_folder_id = ? AND item_status = ?
               AND (created_at > ? OR (created_at = ? AND chat_item_id > ?))
           |]
-          (userId, noteFolderId, CISRcvNew, ciCreatedAt belowCI, ciCreatedAt belowCI, cChatItemId belowCI)
-    getBelowTotalCount :: IO Int
-    getBelowTotalCount =
+          (userId, noteFolderId, CISRcvNew, ciCreatedAt afterCI, ciCreatedAt afterCI, cChatItemId afterCI)
+    getAfterTotalCount :: IO Int
+    getAfterTotalCount =
       fromOnly . head
         <$> DB.query
           db
@@ -1585,7 +1585,7 @@ getLocalNavInfo_ db User {userId} NoteFolder {noteFolderId} belowCI = do
             WHERE user_id = ? AND note_folder_id = ?
               AND (created_at > ? OR (created_at = ? AND chat_item_id > ?))
           |]
-          (userId, noteFolderId, ciCreatedAt belowCI, ciCreatedAt belowCI, cChatItemId belowCI)
+          (userId, noteFolderId, ciCreatedAt afterCI, ciCreatedAt afterCI, cChatItemId afterCI)
 
 toChatItemRef :: (ChatItemId, Maybe Int64, Maybe Int64, Maybe Int64) -> Either StoreError (ChatRef, ChatItemId)
 toChatItemRef = \case

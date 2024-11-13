@@ -325,8 +325,8 @@ data ChatStats = ChatStats
   deriving (Show)
 
 data NavigationInfo = NavigationInfo
-  { belowUnread :: Int,
-    belowTotal :: Int
+  { afterUnread :: Int,
+    afterTotal :: Int
   }
   deriving (Show)
 
