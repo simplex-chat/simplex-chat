@@ -15,6 +15,7 @@ struct UserAddressView: View {
     @EnvironmentObject private var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @State var shareViaProfile = false
+    @State var autoCreate = false
     @State private var aas = AutoAcceptState()
     @State private var savedAAS = AutoAcceptState()
     @State private var ignoreShareViaProfileChange = false
@@ -65,6 +66,11 @@ struct UserAddressView: View {
                     }
                     ProgressView().scaleEffect(2)
                 }
+            }
+        }
+        .onAppear {
+            if chatModel.userAddress == nil, autoCreate {
+                createAddress()
             }
         }
     }
@@ -212,24 +218,28 @@ struct UserAddressView: View {
 
     private func createAddressButton() -> some View {
         Button {
-            progressIndicator = true
-            Task {
-                do {
-                    let connReqContact = try await apiCreateUserAddress()
-                    DispatchQueue.main.async {
-                        chatModel.userAddress = UserContactLink(connReqContact: connReqContact)
-                        alert = .shareOnCreate
-                        progressIndicator = false
-                    }
-                } catch let error {
-                    logger.error("UserAddressView apiCreateUserAddress: \(responseError(error))")
-                    let a = getErrorAlert(error, "Error creating address")
-                    alert = .error(title: a.title, error: a.message)
-                    await MainActor.run { progressIndicator = false }
-                }
-            }
+            createAddress()
         } label: {
             Label("Create SimpleX address", systemImage: "qrcode")
+        }
+    }
+    
+    private func createAddress() {
+        progressIndicator = true
+        Task {
+            do {
+                let connReqContact = try await apiCreateUserAddress()
+                DispatchQueue.main.async {
+                    chatModel.userAddress = UserContactLink(connReqContact: connReqContact)
+                    alert = .shareOnCreate
+                    progressIndicator = false
+                }
+            } catch let error {
+                logger.error("UserAddressView apiCreateUserAddress: \(responseError(error))")
+                let a = getErrorAlert(error, "Error creating address")
+                alert = .error(title: a.title, error: a.message)
+                await MainActor.run { progressIndicator = false }
+            }
         }
     }
 
