@@ -1420,6 +1420,8 @@ $(JQ.deriveJSON defaultJSON ''ChatItemInfo)
 
 $(JQ.deriveJSON defaultJSON ''ChatStats)
 
+$(JQ.deriveJSON defaultJSON ''NavigationInfo)
+
 instance ChatTypeI c => ToJSON (Chat c) where
   toJSON = $(JQ.mkToJSON defaultJSON ''Chat)
   toEncoding = $(JQ.mkToEncoding defaultJSON ''Chat)
