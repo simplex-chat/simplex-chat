@@ -21,7 +21,7 @@ fun onRequestAccepted(chat: Chat) {
     if (chatInfo is ChatInfo.Direct) {
         ModalManager.start.closeModals()
         if (chatInfo.contact.sndReady) {
-            openLoadedChat(chat, chatModel)
+            openLoadedChat(chat)
         }
     }
 }
@@ -54,13 +54,13 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, showDel
                     when (contactType) {
                         ContactType.RECENT -> {
                             withApi {
-                                openChat(rhId, chat.chatInfo, chatModel)
+                                openChat(rhId, chat.chatInfo)
                                 ModalManager.start.closeModals()
                             }
                         }
                         ContactType.CHAT_DELETED -> {
                             withApi {
-                                openChat(rhId, chat.chatInfo, chatModel)
+                                openChat(rhId, chat.chatInfo)
                                 ModalManager.start.closeModals()
                             }
                         }

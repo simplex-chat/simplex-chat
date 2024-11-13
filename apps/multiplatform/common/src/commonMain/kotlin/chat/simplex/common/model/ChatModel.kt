@@ -13,7 +13,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.ComposeState
-import chat.simplex.common.views.chatlist.apiLoadMessages
+import chat.simplex.common.views.chat.apiLoadMessages
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.migration.MigrationToDeviceState
 import chat.simplex.common.views.migration.MigrationToState
@@ -74,6 +74,7 @@ object ChatModel {
   val chatItems = mutableStateOf(SnapshotStateList<ChatItem>())
   // set listener here that will be notified on every add/delete of a chat item
   var chatItemsChangesListener: ChatItemsChangesListener? = null
+  val anchors = mutableStateOf<List<Long>>(emptyList())
   // rhId, chatId
   val deletedChats = mutableStateOf<List<Pair<Long?, String>>>(emptyList())
   val chatItemStatuses = mutableMapOf<Long, CIStatus>()
@@ -693,17 +694,6 @@ object ChatModel {
     return count to ns
   }
 
-  // returns the index of the passed item and the next item (it has smaller index)
-  fun getNextChatItem(ci: ChatItem): Pair<Int?, ChatItem?> {
-    val i = getChatItemIndexOrNull(ci)
-    return if (i != null) {
-      val reversedChatItems = chatItems.asReversed()
-      i to if (i > 0) reversedChatItems[i - 1] else null
-    } else {
-      null to null
-    }
-  }
-
   // returns the index of the first item in the same merged group (the first hidden item)
   // and the previous visible item with another merge category
   fun getPrevShownChatItem(ciIndex: Int?, ciCategory: CIMergeCategory?): Pair<Int?, ChatItem?> {
@@ -1307,6 +1297,12 @@ data class Contact(
     )
   }
 }
+
+@Serializable
+data class NavigationInfo(
+  val belowUnread: Int = 0,
+  val belowTotal: Int = 0
+)
 
 @Serializable
 enum class ContactStatus {

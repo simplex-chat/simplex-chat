@@ -188,7 +188,7 @@ fun ErrorChatListItem() {
 suspend fun directChatAction(rhId: Long?, contact: Contact, chatModel: ChatModel) {
   when {
     contact.activeConn == null && contact.profile.contactLink != null && contact.active -> askCurrentOrIncognitoProfileConnectContactViaAddress(chatModel, rhId, contact, close = null, openChat = true)
-    else -> openChat(rhId, ChatInfo.Direct(contact), chatModel)
+    else -> openChat(rhId, ChatInfo.Direct(contact))
   }
 }
 
@@ -196,213 +196,30 @@ suspend fun groupChatAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatMo
   when (groupInfo.membership.memberStatus) {
     GroupMemberStatus.MemInvited -> acceptGroupInvitationAlertDialog(rhId, groupInfo, chatModel, inProgress)
     GroupMemberStatus.MemAccepted -> groupInvitationAcceptedAlert(rhId)
-    else -> openChat(rhId, ChatInfo.Group(groupInfo), chatModel)
+    else -> openChat(rhId, ChatInfo.Group(groupInfo))
   }
 }
 
-suspend fun noteFolderChatAction(rhId: Long?, noteFolder: NoteFolder) {
-  openChat(rhId, ChatInfo.Local(noteFolder), chatModel)
-}
+suspend fun noteFolderChatAction(rhId: Long?, noteFolder: NoteFolder) = openChat(rhId, ChatInfo.Local(noteFolder))
 
-suspend fun openDirectChat(rhId: Long?, contactId: Long, chatModel: ChatModel) = coroutineScope {
-  val chat = chatModel.controller.apiGetChat(rhId, ChatType.Direct, contactId, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
-  if (chat != null && isActive) {
-    openLoadedChat(chat, chatModel)
-  }
-}
+suspend fun openDirectChat(rhId: Long?, contactId: Long) = openChat(rhId, ChatType.Direct, contactId)
 
-suspend fun openGroupChat(rhId: Long?, groupId: Long, chatModel: ChatModel) = coroutineScope {
-  val chat = chatModel.controller.apiGetChat(rhId, ChatType.Group, groupId, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
-  if (chat != null && isActive) {
-    openLoadedChat(chat, chatModel)
-  }
-}
+suspend fun openGroupChat(rhId: Long?, groupId: Long) = openChat(rhId, ChatType.Group, groupId)
 
-suspend fun openChat(rhId: Long?, chatInfo: ChatInfo, chatModel: ChatModel) = coroutineScope {
-  val chat = chatModel.controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
-  if (chat != null && isActive) {
-    openLoadedChat(chat, chatModel)
-  }
-}
+suspend fun openChat(rhId: Long?, chatInfo: ChatInfo) = openChat(rhId, chatInfo.chatType, chatInfo.apiId)
 
-fun openLoadedChat(chat: Chat, chatModel: ChatModel) {
+private suspend fun openChat(rhId: Long?, chatType: ChatType, apiId: Long) =
+  apiLoadMessages(rhId, chatType, apiId, ChatPagination.Initial(ChatPagination.INITIAL_COUNT), "", chatModel.anchors) { 0 .. 0 }
+
+fun openLoadedChat(chat: Chat) {
   chatModel.chatItemStatuses.clear()
   chatModel.chatItems.replaceAll(chat.chatItems)
   chatModel.chatId.value = chat.chatInfo.id
+  chatModel.anchors.value = emptyList()
 }
 
-suspend fun apiLoadMessages(
-  ch: Chat,
-  pagination: ChatPagination,
-  search: String,
-  anchors: MutableState<List<Long>>,
-  visibleItemIndexesNonReversed: () -> IntRange
-) {
-  val chatInfo = ch.chatInfo
-  val chat = chatModel.controller.apiGetChat(ch.remoteHostId, chatInfo.chatType, chatInfo.apiId, pagination, search) ?: return
-  if (chatModel.chatId.value != chat.id || chat.chatItems.isEmpty()) return
-  val oldItems = chatModel.chatItems.value
-  val newItems = SnapshotStateList<ChatItem>()
-  newItems.addAll(oldItems)
-  when (pagination) {
-    is ChatPagination.Last -> {
-      withContext(Dispatchers.Main) {
-        chatModel.chatItems.replaceAll(chat.chatItems)
-        anchors.value = emptyList()
-      }
-    }
-    is ChatPagination.After -> {
-      val indexInCurrentItems: Int = oldItems.indexOfFirst { it.id == pagination.chatItemId }
-      if (indexInCurrentItems == -1) return
-      val newIds = mutableSetOf<Long>()
-      var i = 0
-      while (i < chat.chatItems.size) {
-        newIds.add(chat.chatItems[i].id)
-        i++
-      }
-      val indexInAnchoredRanges = anchors.value.indexOf(pagination.chatItemId)
-      val loadingFromAnchoredRange = indexInAnchoredRanges != -1
-      val anchorsToMerge = if (loadingFromAnchoredRange && indexInAnchoredRanges + 1 <= anchors.size) ArrayList(anchors.value.subList(indexInAnchoredRanges + 1, anchors.size)) else ArrayList()
-      println("LALAL GAPS TO MERGE $anchorsToMerge")
-      println("LALAL ALL GAPS ${anchors.value}")
-      val anchorsToRemove = ArrayList<Long>()
-      var firstItemIdBelowAllAnchors: Long? = null
-      newItems.removeAll {
-        val duplicate = newIds.contains(it.id)
-        if (loadingFromAnchoredRange && duplicate) {
-          println("LALAL duplicate ${it.id}  $newIds")
-          if (anchorsToMerge.contains(it.id)) {
-            anchorsToMerge.remove(it.id)
-            anchorsToRemove.add(it.id)
-          } else if (firstItemIdBelowAllAnchors == null && anchorsToMerge.isEmpty()) {
-            // we passed all anchors and found duplicated item below all of them, which means no anchors anymore below the loaded items
-            println("LALAL FOUND firstItemIdBelowAllGaps ${it.id}")
-            firstItemIdBelowAllAnchors = it.id
-          }
-        }
-        duplicate
-      }
-      println("LALAL GAPS TO REMOVE $anchorsToRemove")
-      newItems.addAll(min(indexInCurrentItems + 1, newItems.size), chat.chatItems)
-      withContext(Dispatchers.Main) {
-        chatModel.chatItems.replaceAll(newItems)
-        if (anchorsToRemove.isNotEmpty()) {
-          val newAnchors = ArrayList(anchors.value)
-          newAnchors.removeAll(anchorsToRemove.toSet())
-          anchors.value = newAnchors
-        }
-        if (firstItemIdBelowAllAnchors != null) {
-          // no anchors anymore, all were merged with bottom items
-          anchors.value = emptyList()
-        } else {
-          val enlargedAnchor = anchors.value.indexOf(pagination.chatItemId)
-          if (enlargedAnchor != -1) {
-            // move the anchor to the end of loaded items
-            val newAnchors = ArrayList(anchors.value)
-            newAnchors[enlargedAnchor] = chat.chatItems.last().id
-            anchors.value = newAnchors
-            println("LALAL ENLARGED GAPS TO ${anchors.value}")
-          }
-        }
-        println("LALAL GAPSss1 ${anchors.value}  ${newIds}")
-      }
-    }
-    is ChatPagination.Before -> {
-      val indexInCurrentItems: Int = oldItems.indexOfFirst { it.id == pagination.chatItemId }
-      if (indexInCurrentItems == -1) return
-      val newIds = mutableSetOf<Long>()
-      var i = 0
-      while (i < chat.chatItems.size) {
-        newIds.add(chat.chatItems[i].id)
-        i++
-      }
-      val wasSize = newItems.size
-      val visibleItemIndexes = visibleItemIndexesNonReversed()
-      val trimmedIds = mutableSetOf<Long>()
-      var lastAnchorIndexTrimmed = -1
-      var index = 0
-      newItems.removeAll {
-        // keep the newest 200 items (bottom area) and oldest 200 items, trim others
-        val invisibleItemToTrim = index > 200 && newItems.size - index > 200 && visibleItemIndexes.last < index
-        val prevItemWasTrimmed = index - 1 > 200 && newItems.size - index + 1 > 200 && visibleItemIndexes.last < index - 1
-        val indexInAnchors = anchors.value.indexOf(it.id)
-        if (indexInAnchors != -1) {
-          lastAnchorIndexTrimmed = indexInAnchors
-        }
-        if (invisibleItemToTrim) {
-          if (prevItemWasTrimmed) {
-            trimmedIds.add(it.id)
-          } else {
-            // prev item is not supposed to be trimmed, so exclude current one from trimming and set an anchor here instead.
-            // this allows to define anchoredRange of the oldest items and to start loading trimmed items when user scrolls in the opposite direction
-            if (lastAnchorIndexTrimmed == -1) {
-              anchors.value = listOf(it.id) + anchors.value
-            } else {
-              val newAnchors = ArrayList(anchors.value)
-              newAnchors[lastAnchorIndexTrimmed] = it.id
-              anchors.value = newAnchors
-            }
-          }
-        }
-        index++
-        (invisibleItemToTrim && prevItemWasTrimmed) || newIds.contains(it.id)
-      }
-      println("LALAL TRIMMED ITEMS ${trimmedIds}")
-      val insertAt = indexInCurrentItems - (wasSize - newItems.size) + trimmedIds.size
-      newItems.addAll(insertAt, chat.chatItems)
-      println("LALAL TRIMMED LEFT ${newItems.map { it.id }}")
-      withContext(Dispatchers.Main) {
-        chatModel.chatItems.replaceAll(newItems)
-        println("LALAL GAPS2 ${anchors.value}  ${newIds} insertAt $insertAt indexInCurrentItems $indexInCurrentItems wasSize $wasSize")
-        // will remove any anchors that now becomes obsolete because items were merged
-        anchors.value = anchors.value.filterNot { anchor -> (newIds.contains(anchor) || trimmedIds.contains(anchor)).also { if (it) println("LALAL GAP WAS REMOVED $anchor") } }
-      }
-    }
-    is ChatPagination.Around -> {
-      val newIds = mutableSetOf<Long>()
-      var i = 0
-      while (i < chat.chatItems.size) {
-        newIds.add(chat.chatItems[i].id)
-        i++
-      }
-      //val sizeBeforeRemove = newItems.size
-      newItems.removeAll { newIds.contains(it.id) }
-      //if (sizeBeforeRemove == newItems.size) {
-        // nothing was removed which means items weren't intersected and needs to be deleted after scroll position changes
-      //}
-      // currently, items will always be added on top, which is index 0
-      newItems.addAll(0, chat.chatItems)
-      withContext(Dispatchers.Main) {
-        chatModel.chatItems.replaceAll(newItems)
-        anchors.value = listOf(chat.chatItems.last().id) + anchors.value
-      }
-      println("LALAL GAPS0 ${anchors.value}  ${newIds}")
-    }
-    is ChatPagination.Initial -> {
-      val newIds = mutableSetOf<Long>()
-      var i = 0
-      while (i < chat.chatItems.size) {
-        newIds.add(chat.chatItems[i].id)
-        i++
-      }
-      newItems.removeAll { newIds.contains(it.id) }
-      val oldestNewItem = chat.chatItems.first()
-      val indexToAddAt = newItems.indexOfFirst { it.meta.itemTs > oldestNewItem.meta.itemTs }
-      newItems.addAll(if (indexToAddAt == -1) newItems.lastIndex + 1 else indexToAddAt, chat.chatItems)
-      withContext(Dispatchers.Main) {
-        chatModel.chatItems.replaceAll(newItems)
-        anchors.value = emptyList()
-      }
-    }
-  }
-}
-
-suspend fun apiFindMessages(ch: Chat, chatModel: ChatModel, search: String) {
-  val chatInfo = ch.chatInfo
-  val chat = chatModel.controller.apiGetChat(ch.remoteHostId, chatInfo.chatType, chatInfo.apiId, search = search) ?: return
-  if (chatModel.chatId.value != chat.id) return
-  chatModel.chatItems.replaceAll(chat.chatItems)
-}
+suspend fun apiFindMessages(ch: Chat, chatModel: ChatModel, search: String) =
+  apiLoadMessages(ch.remoteHostId, ch.chatInfo.chatType, ch.chatInfo.apiId, pagination = ChatPagination.Last(ChatPagination.INITIAL_COUNT), search = search, chatModel.anchors) { 0 .. 0 }
 
 suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) {
   val groupMembers = chatModel.controller.apiListMembers(rhId, groupInfo.groupId)
@@ -883,7 +700,7 @@ fun askCurrentOrIncognitoProfileConnectContactViaAddress(
             close?.invoke()
             val ok = connectContactViaAddress(chatModel, rhId, contact.contactId, incognito = false)
             if (ok && openChat) {
-              openDirectChat(rhId, contact.contactId, chatModel)
+              openDirectChat(rhId, contact.contactId)
             }
           }
         }) {
@@ -895,7 +712,7 @@ fun askCurrentOrIncognitoProfileConnectContactViaAddress(
             close?.invoke()
             val ok = connectContactViaAddress(chatModel, rhId, contact.contactId, incognito = true)
             if (ok && openChat) {
-              openDirectChat(rhId, contact.contactId, chatModel)
+              openDirectChat(rhId, contact.contactId)
             }
           }
         }) {

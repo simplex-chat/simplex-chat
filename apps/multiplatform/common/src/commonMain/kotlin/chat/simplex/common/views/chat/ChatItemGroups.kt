@@ -2,11 +2,14 @@ package chat.simplex.common.views.chat
 
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import chat.simplex.common.model.*
 import chat.simplex.common.model.CIDirection.GroupRcv
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.chatModel
-import chat.simplex.common.views.chatlist.apiLoadMessages
+import kotlinx.coroutines.*
 import kotlin.math.abs
+import kotlin.math.min
 
 data class SectionGroups(
   val sections: List<SectionItems>,
@@ -36,6 +39,7 @@ data class SectionItems (
   val revealed: MutableState<Boolean>,
   val showAvatar: MutableSet<Long>,
   val startIndexInParentItems: Int,
+  val unreadIds: MutableSet<Long>,
 ) {
   fun reveal(reveal: Boolean, revealedItems: MutableState<Set<Long>>) {
     println("LALAL REVEAL $reveal  ${revealedItems.value}")
@@ -94,6 +98,9 @@ fun List<ChatItem>.putIntoGroups(revealedItems: Set<Long>, itemAnchors: List<Lon
       if (shouldShowAvatar(item, next)) {
         recent.showAvatar.add(item.id)
       }
+      if (item.isRcvNew) {
+        recent.unreadIds.add(item.id)
+      }
     } else {
       val revealed = item.mergeCategory == null || revealedItems.contains(item.id)
       visibleItemIndexInParent++
@@ -117,7 +124,8 @@ fun List<ChatItem>.putIntoGroups(revealedItems: Set<Long>, itemAnchors: List<Lon
         } else {
           mutableSetOf()
         },
-        startIndexInParentItems = visibleItemIndexInParent
+        startIndexInParentItems = visibleItemIndexInParent,
+        unreadIds = if (item.isRcvNew) mutableSetOf(item.id) else mutableSetOf()
       )
       groups.add(recent)
     }
@@ -160,26 +168,27 @@ fun List<SectionItems>.lastIndexInParentItems(): Int {
 }
 
 fun List<SectionItems>.newestItemAtParentIndexOrNull(parentIndex: Int): ChatItem? {
+  println("LALAL PARENTINDEX $parentIndex")
   for (group in this) {
     val range = group.startIndexInParentItems..group.startIndexInParentItems + group.items.lastIndex
     if (range.contains(parentIndex)) {
-      return if (group.revealed.value) {
+      return (if (group.revealed.value) {
         group.items[parentIndex - group.startIndexInParentItems].item
       } else {
         group.items.first().item
-      }
+      }).also { println("LALAL PARENTINDEX $parentIndex  ${it.meta.createdAt}") }
     }
   }
   return null
 }
 
-// returns index of newest item in reveredChatItems on that row by receiving index from LazyColumn
-private fun List<SectionItems>.newestItemIndexAtParentIndexOrNull(parentIndex: Int): Int? {
+// returns index of newest item in reversedChatItems on that row by receiving index from LazyColumn
+fun List<SectionItems>.newestItemIndexAtParentIndexOrNull(parentIndex: Int): Int? {
   for (group in this) {
     val range = group.startIndexInParentItems..group.startIndexInParentItems + group.items.lastIndex
     if (range.contains(parentIndex)) {
       return if (group.revealed.value) {
-        parentIndex - group.startIndexInParentItems
+        parentIndex
       } else {
         group.startIndexInParentItems
       }
@@ -189,12 +198,12 @@ private fun List<SectionItems>.newestItemIndexAtParentIndexOrNull(parentIndex: I
 }
 
 // returns index of oldest item in reversedChatItems on that row by receiving index from LazyColumn
-private fun List<SectionItems>.oldestItemIndexAtParentIndexOrNull(parentIndex: Int): Int? {
+fun List<SectionItems>.oldestItemIndexAtParentIndexOrNull(parentIndex: Int): Int? {
   for (group in this) {
     val range = group.startIndexInParentItems..group.startIndexInParentItems + group.items.lastIndex
     if (range.contains(parentIndex)) {
       return if (group.revealed.value) {
-        parentIndex - group.startIndexInParentItems
+        parentIndex
       } else {
         group.startIndexInParentItems + group.items.lastIndex
       }
@@ -202,6 +211,13 @@ private fun List<SectionItems>.oldestItemIndexAtParentIndexOrNull(parentIndex: I
   }
   return null
 }
+
+/** Returns groups mapping for easy checking the structure */
+fun List<SectionItems>.mappingToString(): String = map { g ->
+  "\nstartIndexInParentItems ${g.startIndexInParentItems}, revealed ${g.revealed.value}, mergeCategory ${g.items[0].item.mergeCategory} ${g.items.mapIndexed { index, it -> 
+    if (g.revealed.value) g.startIndexInParentItems + index to it.item.id else g.startIndexInParentItems to it.item.id }
+  }"
+}.toString()
 
 fun visibleItemIndexesNonReversed(groups: State<SectionGroups>, listState: LazyListState): IntRange {
   val zero = 0 .. 0
@@ -226,7 +242,8 @@ fun recalculateAnchorPositions(anchors: MutableState<List<Long>>) = object: Chat
       // deleted the item that was right before the anchor between items, find newer item so it will act like the anchor
       if (index != -1) {
         val newAnchor = newItems.getOrNull(itemIds[index].second - itemIds.count { it.second <= index })?.id
-        if (newAnchor != null) {
+        // it the  whole section is gone and anchors overlap, don't add it at all
+        if (newAnchor != null && !newAnchors.contains(newAnchor)) {
           newAnchors.add(newAnchor)
         }
       } else {
@@ -268,3 +285,169 @@ private fun getItemSeparationLargeGap(chatItem: ChatItem, nextItem: ChatItem?): 
 
 private fun shouldShowAvatar(current: ChatItem, older: ChatItem?) =
   current.chatDir is CIDirection.GroupRcv && (older == null || (older.chatDir !is CIDirection.GroupRcv || older.chatDir.groupMember.memberId != current.chatDir.groupMember.memberId))
+
+suspend fun apiLoadMessages(
+  rhId: Long?,
+  chatType: ChatType,
+  apiId: Long,
+  pagination: ChatPagination,
+  search: String,
+  anchors: MutableState<List<Long>>,
+  visibleItemIndexesNonReversed: () -> IntRange
+) = coroutineScope {
+  val (chat, navInfo) = chatModel.controller.apiGetChat(rhId, chatType, apiId, pagination, search) ?: return@coroutineScope
+  // For .initial allow the chatItems to be empty as well as chatModel.chatId to not match this chat because these values become set after .initial finishes
+  if (((chatModel.chatId.value != chat.id || chat.chatItems.isEmpty()) && pagination !is ChatPagination.Initial && pagination !is ChatPagination.Last)
+    || !isActive) return@coroutineScope
+
+  val oldItems = chatModel.chatItems.value
+  val newItems = SnapshotStateList<ChatItem>()
+  when (pagination) {
+    is ChatPagination.Initial -> {
+      val newAnchors = if (chat.chatItems.isNotEmpty() && navInfo.belowTotal > 0) listOf(chat.chatItems.last().id) else emptyList()
+      withChats {
+        if (chatModel.getChat(chat.id) == null) {
+          addChat(chat)
+        }
+      }
+      withContext(Dispatchers.Main) {
+        chatModel.chatItemStatuses.clear()
+        chatModel.chatItems.replaceAll(chat.chatItems)
+        chatModel.chatId.value = chat.chatInfo.id
+        anchors.value = newAnchors
+      }
+    }
+    is ChatPagination.Before -> {
+      newItems.addAll(oldItems)
+      val indexInCurrentItems: Int = oldItems.indexOfFirst { it.id == pagination.chatItemId }
+      if (indexInCurrentItems == -1) return@coroutineScope
+      val newIds = mutableSetOf<Long>()
+      var i = 0
+      while (i < chat.chatItems.size) {
+        newIds.add(chat.chatItems[i].id)
+        i++
+      }
+      val wasSize = newItems.size
+      val visibleItemIndexes = visibleItemIndexesNonReversed()
+      val trimmedIds = mutableSetOf<Long>()
+      var lastAnchorIndexTrimmed = -1
+      var index = 0
+      newItems.removeAll {
+        // keep the newest 200 items (bottom area) and oldest 200 items, trim others
+        val invisibleItemToTrim = index > 200 && newItems.size - index > 200 && visibleItemIndexes.last < index
+        val prevItemWasTrimmed = index - 1 > 200 && newItems.size - index + 1 > 200 && visibleItemIndexes.last < index - 1
+        val indexInAnchors = anchors.value.indexOf(it.id)
+        if (indexInAnchors != -1) {
+          lastAnchorIndexTrimmed = indexInAnchors
+        }
+        if (invisibleItemToTrim) {
+          if (prevItemWasTrimmed) {
+            trimmedIds.add(it.id)
+          } else {
+            // prev item is not supposed to be trimmed, so exclude current one from trimming and set an anchor here instead.
+            // this allows to define anchoredRange of the oldest items and to start loading trimmed items when user scrolls in the opposite direction
+            if (lastAnchorIndexTrimmed == -1) {
+              anchors.value = listOf(it.id) + anchors.value
+            } else {
+              val newAnchors = ArrayList(anchors.value)
+              newAnchors[lastAnchorIndexTrimmed] = it.id
+              anchors.value = newAnchors
+            }
+          }
+        }
+        index++
+        (invisibleItemToTrim && prevItemWasTrimmed) || newIds.contains(it.id)
+      }
+      println("LALAL TRIMMED ITEMS ${trimmedIds}")
+      val insertAt = indexInCurrentItems - (wasSize - newItems.size) + trimmedIds.size
+      newItems.addAll(insertAt, chat.chatItems)
+      println("LALAL TRIMMED LEFT ${newItems.map { it.id }}")
+      withContext(Dispatchers.Main) {
+        chatModel.chatItems.replaceAll(newItems)
+        println("LALAL GAPS2 ${anchors.value}  ${newIds} insertAt $insertAt indexInCurrentItems $indexInCurrentItems wasSize $wasSize")
+        // will remove any anchors that now becomes obsolete because items were merged
+        anchors.value = anchors.value.filterNot { anchor -> (newIds.contains(anchor) || trimmedIds.contains(anchor)).also { if (it) println("LALAL GAP WAS REMOVED $anchor") } }
+      }
+    }
+    is ChatPagination.After -> {
+      newItems.addAll(oldItems)
+      val indexInCurrentItems: Int = oldItems.indexOfFirst { it.id == pagination.chatItemId }
+      if (indexInCurrentItems == -1) return@coroutineScope
+      val newIds = mutableSetOf<Long>()
+      var i = 0
+      while (i < chat.chatItems.size) {
+        newIds.add(chat.chatItems[i].id)
+        i++
+      }
+      val indexInAnchoredRanges = anchors.value.indexOf(pagination.chatItemId)
+      val loadingFromAnchoredRange = indexInAnchoredRanges != -1
+      val anchorsToMerge = if (loadingFromAnchoredRange && indexInAnchoredRanges + 1 <= anchors.size) ArrayList(anchors.value.subList(indexInAnchoredRanges + 1, anchors.size)) else ArrayList()
+      println("LALAL GAPS TO MERGE $anchorsToMerge")
+      println("LALAL ALL GAPS ${anchors.value}")
+      val anchorsToRemove = ArrayList<Long>()
+      var firstItemIdBelowAllAnchors: Long? = null
+      newItems.removeAll {
+        val duplicate = newIds.contains(it.id)
+        if (loadingFromAnchoredRange && duplicate) {
+          println("LALAL duplicate ${it.id}  $newIds")
+          if (anchorsToMerge.contains(it.id)) {
+            anchorsToMerge.remove(it.id)
+            anchorsToRemove.add(it.id)
+          } else if (firstItemIdBelowAllAnchors == null && anchorsToMerge.isEmpty()) {
+            // we passed all anchors and found duplicated item below all of them, which means no anchors anymore below the loaded items
+            println("LALAL FOUND firstItemIdBelowAllGaps ${it.id}")
+            firstItemIdBelowAllAnchors = it.id
+          }
+        }
+        duplicate
+      }
+      println("LALAL GAPS TO REMOVE $anchorsToRemove")
+      newItems.addAll(min(indexInCurrentItems + 1, newItems.size), chat.chatItems)
+      withContext(Dispatchers.Main) {
+        chatModel.chatItems.replaceAll(newItems)
+        if (anchorsToRemove.isNotEmpty()) {
+          val newAnchors = ArrayList(anchors.value)
+          newAnchors.removeAll(anchorsToRemove.toSet())
+          anchors.value = newAnchors
+        }
+        if (firstItemIdBelowAllAnchors != null) {
+          // no anchors anymore, all were merged with bottom items
+          anchors.value = emptyList()
+        } else {
+          val enlargedAnchor = anchors.value.indexOf(pagination.chatItemId)
+          if (enlargedAnchor != -1) {
+            // move the anchor to the end of loaded items
+            val newAnchors = ArrayList(anchors.value)
+            newAnchors[enlargedAnchor] = chat.chatItems.last().id
+            anchors.value = newAnchors
+            println("LALAL ENLARGED GAPS TO ${anchors.value}")
+          }
+        }
+        println("LALAL GAPSss1 ${anchors.value}  ${newIds}")
+      }
+    }
+    is ChatPagination.Around -> {
+      newItems.addAll(oldItems)
+      val newIds = mutableSetOf<Long>()
+      var i = 0
+      while (i < chat.chatItems.size) {
+        newIds.add(chat.chatItems[i].id)
+        i++
+      }
+      newItems.removeAll { newIds.contains(it.id) }
+      // currently, items will always be added on top, which is index 0
+      newItems.addAll(0, chat.chatItems)
+      withContext(Dispatchers.Main) {
+        chatModel.chatItems.replaceAll(newItems)
+        anchors.value = listOf(chat.chatItems.last().id) + anchors.value
+      }
+      println("LALAL GAPS0 ${anchors.value}  ${newIds}")
+    }
+    is ChatPagination.Last -> {
+      withContext(Dispatchers.Main) {
+        chatModel.chatItems.replaceAll(chat.chatItems)
+        anchors.value = emptyList()
+      }
+    }
+  }
+}

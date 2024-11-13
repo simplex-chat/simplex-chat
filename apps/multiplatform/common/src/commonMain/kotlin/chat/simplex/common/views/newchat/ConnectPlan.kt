@@ -409,7 +409,7 @@ fun openKnownContact(chatModel: ChatModel, rhId: Long?, close: (() -> Unit)?, co
     val c = chatModel.getContactChat(contact.contactId)
     if (c != null) {
       close?.invoke()
-      openDirectChat(rhId, contact.contactId, chatModel)
+      openDirectChat(rhId, contact.contactId)
     }
   }
 }
@@ -490,7 +490,7 @@ fun openKnownGroup(chatModel: ChatModel, rhId: Long?, close: (() -> Unit)?, grou
     val g = chatModel.getGroupChat(groupInfo.groupId)
     if (g != null) {
       close?.invoke()
-      openGroupChat(rhId, groupInfo.groupId, chatModel)
+      openGroupChat(rhId, groupInfo.groupId)
     }
   }
 }

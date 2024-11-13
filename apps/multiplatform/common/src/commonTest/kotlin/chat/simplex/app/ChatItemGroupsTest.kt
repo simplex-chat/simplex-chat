@@ -1,9 +1,11 @@
 package chat.simplex.app
 
 import androidx.compose.runtime.mutableStateOf
-import chat.simplex.common.model.ChatItem
-import chat.simplex.common.model.size
+import chat.simplex.common.model.*
+import chat.simplex.common.views.chat.putIntoGroups
 import chat.simplex.common.views.chat.recalculateAnchorPositions
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -40,5 +42,86 @@ class ChatItemGroupsTest {
     val recalc4 = recalculateAnchorPositions(anchors4)
     recalc4.cleared()
     assertEquals(0, anchors4.size)
+  }
+
+  @Test
+  fun testPutIntoGroups() {
+    val items = listOf(
+      ChatItem(CIDirection.DirectRcv(), CIMeta.getSample(100L, Clock.System.now(), text = ""), CIContent.SndGroupFeature(GroupFeature.Voice, GroupPreference(GroupFeatureEnabled.ON), memberRole_ = null), reactions = emptyList()),
+      ChatItem(CIDirection.DirectRcv(), CIMeta.getSample(99L, Clock.System.now(), text = ""), CIContent.SndGroupFeature(GroupFeature.FullDelete, GroupPreference(GroupFeatureEnabled.ON), memberRole_ = null), reactions = emptyList()),
+      ChatItem(CIDirection.DirectRcv(), CIMeta.getSample(98L, Clock.System.now(), text = "", itemDeleted = CIDeleted.Deleted(null)), CIContent.RcvDeleted(CIDeleteMode.cidmBroadcast), reactions = emptyList()),
+      ChatItem(CIDirection.DirectRcv(), CIMeta.getSample(97L, Clock.System.now(), text = "", itemDeleted = CIDeleted.Deleted(null)), CIContent.RcvDeleted(CIDeleteMode.cidmBroadcast), reactions = emptyList()),
+      ChatItem(CIDirection.DirectRcv(), CIMeta.getSample(96L, Clock.System.now(), text = ""), CIContent.RcvMsgContent(MsgContent.MCText("")), reactions = emptyList()),
+      ChatItem(CIDirection.DirectRcv(), CIMeta.getSample(95L, Clock.System.now(), text = ""), CIContent.RcvMsgContent(MsgContent.MCText("")), reactions = emptyList()),
+      ChatItem(CIDirection.DirectRcv(), CIMeta.getSample(94L, Clock.System.now(), text = ""), CIContent.RcvMsgContent(MsgContent.MCText("")), reactions = emptyList()),
+    )
+
+    val groups1 = items.putIntoGroups(emptySet(), emptyList())
+    assertEquals(
+      listOf(
+        listOf(0, false,
+          listOf(
+            listOf(0, 100, CIMergeCategory.ChatFeature),
+            listOf(1, 99, CIMergeCategory.ChatFeature)
+          )
+        ),
+        listOf(1, false,
+          listOf(
+            listOf(0, 98, CIMergeCategory.RcvItemDeleted),
+            listOf(1, 97, CIMergeCategory.RcvItemDeleted)
+          )
+        ),
+        listOf(2, true,
+          listOf(
+            listOf(0, 96, null),
+            listOf(1, 95, null),
+            listOf(2, 94, null)
+          )
+        )
+      ).toList().toString(),
+      groups1.sections.map {
+        listOf(
+          it.startIndexInParentItems,
+          it.revealed.value,
+          it.items.mapIndexed { index, listItem ->
+            listOf(index, listItem.item.id, listItem.item.mergeCategory)
+          }
+        )
+      }.toString()
+    )
+
+    val groups2 = items.putIntoGroups(setOf(98L, 97L), emptyList())
+    assertEquals(
+      listOf(
+        listOf(0, false,
+          listOf(
+            listOf(0, 100, CIMergeCategory.ChatFeature),
+            listOf(1, 99, CIMergeCategory.ChatFeature)
+          )
+        ),
+        listOf(1, true,
+          listOf(
+            listOf(0, 98, CIMergeCategory.RcvItemDeleted),
+            listOf(1, 97, CIMergeCategory.RcvItemDeleted)
+          )
+        ),
+        listOf(3, true,
+          listOf(
+            listOf(0, 96, null),
+            listOf(1, 95, null),
+            listOf(2, 94, null)
+          )
+        )
+      ).toList().toString(),
+      groups2.sections.map {
+        listOf(
+          it.startIndexInParentItems,
+          it.revealed.value,
+          it.items.mapIndexed { index, listItem ->
+            listOf(index, listItem.item.id, listItem.item.mergeCategory)
+          }
+        )
+      }.toString()
+    )
   }
 }

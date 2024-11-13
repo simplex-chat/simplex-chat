@@ -48,6 +48,7 @@ import java.io.File
 import java.net.URI
 import kotlin.math.*
 
+@Stable
 data class ItemSeparation(val timestamp: Boolean, val largeGap: Boolean, val date: Instant?)
 
 @Composable
@@ -294,7 +295,7 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
               val c = chatModel.getChat(chatId)
               if (chatModel.chatId.value != chatId) return@ChatLayout
               if (c != null) {
-                apiLoadMessages(c, pagination, searchText.value, anchors, visibleItemIndexes)
+                apiLoadMessages(c.remoteHostId, c.chatInfo.chatType, c.chatInfo.apiId, pagination, searchText.value, anchors, visibleItemIndexes)
               }
             },
             deleteMessage = { itemId, mode ->
@@ -371,7 +372,7 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
             },
             openDirectChat = { contactId ->
               scope.launch {
-                openDirectChat(chatRh, contactId, chatModel)
+                openDirectChat(chatRh, contactId)
               }
             },
             forwardItem = { cInfo, cItem ->
@@ -940,29 +941,36 @@ fun BoxScope.ChatItemsList(
   developerTools: Boolean,
   showViaProxy: Boolean
 ) {
-  val listState = rememberLazyListState()
   val chatInfoUpdated = rememberUpdatedState(chatInfo)
   val scope = rememberCoroutineScope()
-  var prevSearchEmptiness by rememberSaveable { mutableStateOf(searchValue.value.isEmpty()) }
-  // Scroll to bottom when search value changes from something to nothing and back
-  LaunchedEffect(searchValue.value.isEmpty()) {
-    // They are equal when orientation was changed, don't need to scroll.
-    // LaunchedEffect unaware of this event since it uses remember, not rememberSaveable
-    if (prevSearchEmptiness == searchValue.value.isEmpty()) return@LaunchedEffect
-    prevSearchEmptiness = searchValue.value.isEmpty()
-
-    if (listState.firstVisibleItemIndex != 0) {
-      scope.launch { listState.scrollToItem(0) }
-    }
-  }
 
   Spacer(Modifier.size(8.dp))
   val reversedChatItems = remember { derivedStateOf { chatModel.chatItems.asReversed() } }
   val revealedItems = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(setOf<Long>()) }
-  val anchors = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf<List<Long>>(emptyList()) }
+  val anchors = remember { chatModel.anchors }
   val groups = remember { derivedStateOf { reversedChatItems.value.putIntoGroups(revealedItems.value, anchors.value) } }
   val topPaddingToContentPx = rememberUpdatedState(with(LocalDensity.current) { topPaddingToContent().roundToPx() })
-  val maxHeight = remember { derivedStateOf { listState.layoutInfo.viewportEndOffset - topPaddingToContentPx.value } }
+  /** determines height based on window info and static height of two AppBars. It's needed because in the first graphic frame height of
+   * [composeViewHeight] is unknown, but we need to set scroll position for unread messages already so it will be correct before the first frame appears
+   * */
+  val maxHeightForList = rememberUpdatedState(
+    with(LocalDensity.current) { LocalWindowHeight().roundToPx() - topPaddingToContentPx.value - (AppBarHeight * fontSizeSqrtMultiplier * 2).roundToPx() }
+  )
+  val listState = rememberUpdatedState(rememberSaveable(chatInfo.id, searchValue.value.isEmpty(), saver = LazyListState.Saver) {
+    val item = reversedChatItems.value.lastOrNull { it.isRcvNew }
+    val index = if (item != null) groups.value.sections.indexInParentItems(item.id) else -1
+    if (index <= 0) {
+      LazyListState(0, 0)
+    } else {
+      LazyListState(index + 1, -maxHeightForList.value)
+    }
+  })
+  val maxHeight = remember { derivedStateOf { listState.value.layoutInfo.viewportEndOffset - topPaddingToContentPx.value } }
+  val density = LocalDensity.current
+  val h = LocalWindowHeight()
+  SideEffect {
+    println("LALAL WINDOW ${maxHeightForList.value} ${h} ${maxHeight.value}  ${topPaddingToContentPx.value} ${composeViewHeight.value} ${with(density) { AppBarHeight.roundToPx()} }  ${with(density) { max(AppBarHeight, composeViewHeight.value).roundToPx()}}")
+  }
   val loadingMoreItems = remember { mutableStateOf(false) }
   if (!loadingMoreItems.value) {
     PreloadItems(chatInfo.id, groups, listState, ChatPagination.UNTIL_PRELOAD_COUNT) { chatId, pagination ->
@@ -970,14 +978,14 @@ fun BoxScope.ChatItemsList(
       try {
         loadingMoreItems.value = true
         loadMessages(chatId, pagination, anchors) {
-          visibleItemIndexesNonReversed(groups, listState)
+          visibleItemIndexesNonReversed(groups, listState.value)
         }
       } finally {
         loadingMoreItems.value = false
       }
     }
   }
-  ScrollToUnreadOrBottom(chatInfo.id, groups, maxHeight, listState, chatModel.chatItems)
+  SmallScrollOnNewMessage(listState, chatModel.chatItems)
   val scrollToItem: State<(Long) -> Unit> = remember {
     mutableStateOf(
       { itemId: Long ->
@@ -991,7 +999,7 @@ fun BoxScope.ChatItemsList(
               val oldSize = reversedChatItems.value.size
               withContext(Dispatchers.Default) {
                 loadMessages(chatInfoUpdated.value.id, pagination, anchors) {
-                  visibleItemIndexesNonReversed(groups, listState)
+                  visibleItemIndexesNonReversed(groups, listState.value)
                 }
               }
               var repeatsLeft = 50
@@ -1005,7 +1013,7 @@ fun BoxScope.ChatItemsList(
             }
             if (index != -1) {
               withContext(scope.coroutineContext) {
-                listState.animateScrollToItem(min(reversedChatItems.value.lastIndex, index + 1), -maxHeight.value)
+                listState.value.animateScrollToItem(min(reversedChatItems.value.lastIndex, index + 1), -maxHeight.value)
               }
             }
           } finally {
@@ -1020,7 +1028,7 @@ fun BoxScope.ChatItemsList(
     revealedItems.value = emptySet()
     anchors.value = emptyList()
     var stopListening = false
-    snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastIndex }
+    snapshotFlow { listState.value.layoutInfo.visibleItemsInfo.lastIndex }
       .distinctUntilChanged()
       .filter { !stopListening }
       .collect {
@@ -1040,8 +1048,8 @@ fun BoxScope.ChatItemsList(
 
     @Composable
     fun ChatViewListItem(
-      i: Int,
-      range: IntRange?,
+      itemAtZeroIndexInWholeList: Boolean,
+      range: State<IntRange?>,
       showAvatar: Boolean,
       cItem: ChatItem,
       itemSeparation: ItemSeparation,
@@ -1049,6 +1057,7 @@ fun BoxScope.ChatItemsList(
       revealed: State<Boolean>,
       reveal: (Boolean) -> Unit
     ) {
+      SideEffect { println("LALAL LISTITEM $itemAtZeroIndexInWholeList $range  ${cItem.id}") }
       val itemScope = rememberCoroutineScope()
       CompositionLocalProvider(
         // Makes horizontal and vertical scrolling to coexist nicely.
@@ -1056,10 +1065,11 @@ fun BoxScope.ChatItemsList(
         LocalViewConfiguration provides LocalViewConfiguration.current.bigTouchSlop()
       ) {
         val provider = {
-          providerForGallery(i, chatModel.chatItems.value, cItem.id) { indexInReversed ->
+          providerForGallery(chatModel.chatItems.value, cItem.id) { indexInReversed ->
+            println("LALAL SCROLL $indexInReversed")
             itemScope.launch {
-              listState.scrollToItem(
-                kotlin.math.min(reversedChatItems.value.lastIndex, indexInReversed + 1),
+              listState.value.scrollToItem(
+                min(reversedChatItems.value.lastIndex, indexInReversed + 1),
                 -maxHeight.value
               )
             }
@@ -1067,7 +1077,8 @@ fun BoxScope.ChatItemsList(
         }
 
         @Composable
-        fun ChatItemViewShortHand(cItem: ChatItem, itemSeparation: ItemSeparation, range: IntRange?, fillMaxWidth: Boolean = true) {
+        fun ChatItemViewShortHand(cItem: ChatItem, itemSeparation: ItemSeparation, range: State<IntRange?>, fillMaxWidth: Boolean = true) {
+          SideEffect { println("LALAL SHORTHAND ${range.value}  ${cItem.id}") }
           tryOrShowError("${cItem.id}ChatItem", error = {
             CIBrokenComposableView(if (cItem.chatDir.sent) Alignment.CenterEnd else Alignment.CenterStart)
           }) {
@@ -1076,7 +1087,8 @@ fun BoxScope.ChatItemsList(
         }
 
         @Composable
-        fun ChatItemView(cItem: ChatItem, range: IntRange?, itemSeparation: ItemSeparation, previousItemSeparationLargeGap: Boolean) {
+        fun ChatItemView(cItem: ChatItem, range: State<IntRange?>, itemSeparation: ItemSeparation, previousItemSeparationLargeGap: Boolean) {
+          SideEffect { println("LALAL CHATITEMVIEW ${range.value}  ${cItem.id}") }
           val dismissState = rememberDismissState(initialValue = DismissValue.Default) {
             if (it == DismissValue.DismissedToStart) {
               itemScope.launch {
@@ -1103,7 +1115,7 @@ fun BoxScope.ChatItemsList(
             Box(
               modifier = modifier.padding(
                 bottom = if (itemSeparation.largeGap) {
-                  if (i == 0) {
+                  if (itemAtZeroIndexInWholeList) {
                     8.dp
                   } else {
                     4.dp
@@ -1143,12 +1155,13 @@ fun BoxScope.ChatItemsList(
                     horizontalAlignment = Alignment.Start
                   ) {
                     @Composable
-                    fun MemberNameAndRole() {
+                    fun MemberNameAndRole(range: State<IntRange?>) {
                       Row(Modifier.padding(bottom = 2.dp).graphicsLayer { translationX = selectionOffset.toPx() }, horizontalArrangement = Arrangement.SpaceBetween) {
                         val member = cItem.chatDir.groupMember
+                        val rangeValue = range.value
                         val (prevMember, memCount) =
-                          if (range != null) {
-                            chatModel.getPrevHiddenMember(member, range)
+                          if (rangeValue != null) {
+                            chatModel.getPrevHiddenMember(member, rangeValue)
                           } else {
                             null to 1
                           }
@@ -1198,7 +1211,7 @@ fun BoxScope.ChatItemsList(
                     }
                     if (cItem.content.showMemberName) {
                       DependentLayout(Modifier, CHAT_BUBBLE_LAYOUT_ID) {
-                        MemberNameAndRole()
+                        MemberNameAndRole(range)
                         Item()
                       }
                     } else {
@@ -1216,6 +1229,7 @@ fun BoxScope.ChatItemsList(
                         .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
                         .then(swipeableOrSelectionModifier)
                     ) {
+                      SideEffect { println("LALAL CHATITEMBOX ${range.value}  ${cItem.id}") }
                       ChatItemViewShortHand(cItem, itemSeparation, range)
                     }
                   }
@@ -1261,46 +1275,6 @@ fun BoxScope.ChatItemsList(
             }
           }
         }
-
-//        val (currIndex, nextItem) = chatModel.getNextChatItem(cItem)
-//        val ciCategory = cItem.mergeCategory
-//        if (ciCategory != null && ciCategory == nextItem?.mergeCategory) {
-//          // memberConnected events and deleted items are aggregated at the last chat item in a row, see ChatItemView
-//        } else {
-//          val (prevHidden, prevItem) = chatModel.getPrevShownChatItem(currIndex, ciCategory)
-//
-//          val itemSeparation = getItemSeparation(cItem, nextItem)
-//          val previousItemSeparation = if (prevItem != null) getItemSeparation(prevItem, cItem) else null
-//
-//          if (itemSeparation.date != null) {
-//            DateSeparator(itemSeparation.date)
-//          }
-//
-//          val range = chatViewItemsRange(currIndex, prevHidden)
-//          val reversed = reversedChatItems.value
-//          if (revealed.value && range != null) {
-//            reversed.subList(range.first, range.last + 1).forEachIndexed { index, ci ->
-//              val prev = if (index + range.first == prevHidden) prevItem else reversed[index + range.first + 1]
-//              ChatItemView(ci, null, prev, itemSeparation, previousItemSeparation)
-//            }
-//          } else {
-//            ChatItemView(cItem, range, prevItem, itemSeparation, previousItemSeparation)
-//          }
-//
-//          if (i == reversed.lastIndex) {
-//            DateSeparator(cItem.meta.itemTs)
-//          }
-//        }
-
-
-        if (cItem.isRcvNew && chatInfo.id == ChatModel.chatId.value) {
-          LaunchedEffect(cItem.id) {
-            itemScope.launch {
-              delay(600)
-              markRead(CC.ItemRange(cItem.id, cItem.id), null)
-            }
-          }
-        }
         if (itemSeparation.date != null) {
           DateSeparator(itemSeparation.date)
         }
@@ -1309,7 +1283,7 @@ fun BoxScope.ChatItemsList(
     }
   LazyColumnWithScrollBar(
     Modifier.align(Alignment.BottomCenter),
-    state = listState,
+    state = listState.value,
     reverseLayout = true,
     contentPadding = PaddingValues(
       top = topPaddingToContent(),
@@ -1322,21 +1296,26 @@ fun BoxScope.ChatItemsList(
       val isLastGroup = groupIndex == groupsValue.sections.lastIndex
       val last = if (isLastGroup) reversedChatItems.value.lastOrNull() else null
       if (group.revealed.value) {
-        itemsIndexed(group.items, key = { _, item -> (item.item.id to item.item.meta.createdAt.toEpochMilliseconds()).toString() }) { i, item ->
-          val ciCategory = item.item.mergeCategory
-          val range = if (ciCategory != null && item.item.chatDir !is CIDirection.GroupRcv) {
-            group.startIndexInParentItems .. (group.startIndexInParentItems + group.items.lastIndex)
+        itemsIndexed(group.items, key = { _, item -> (item.item.id to item.item.meta.createdAt.toEpochMilliseconds()).toString() }) { i, listItem ->
+          val item = listItem.item
+          val ciCategory = item.mergeCategory
+          val range = if (ciCategory != null && item.chatDir !is CIDirection.GroupRcv) {
+            group.startIndexInParentItems..(group.startIndexInParentItems + group.items.lastIndex)
           } else {
             null
           }
-          val showAvatar = group.showAvatar.contains(item.item.id)
-          val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.item.id) } }
-          ChatViewListItem(group.startIndexInParentItems + i, range, showAvatar, item.item, item.separation, item.prevItemSeparationLargeGap, isRevealed) {
+          val showAvatar = group.showAvatar.contains(item.id)
+          val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
+          println("LALAL ITEMINDEXED $i $range  ${item.id}")
+          ChatViewListItem(group.startIndexInParentItems + i == 0, rememberUpdatedState(range), showAvatar, item, listItem.separation, listItem.prevItemSeparationLargeGap, isRevealed) {
             group.reveal(it, revealedItems)
           }
           if (last != null && i == group.items.lastIndex) {
             // no using separate item(){} block in order to have total number of items in LazyColumn match number of items in groups
             DateSeparator(last.meta.itemTs)
+          }
+          if (item.isRcvNew) {
+            MarkItemsReadAfterDelay(item.id, item.id, chatInfo.id, markRead)
           }
         }
       } else {
@@ -1346,18 +1325,22 @@ fun BoxScope.ChatItemsList(
           val range = if (item.mergeCategory != null) group.startIndexInParentItems .. (group.startIndexInParentItems + group.items.lastIndex) else null
           val showAvatar = group.showAvatar.contains(item.id) || item.mergeCategory != null
           val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
-          ChatViewListItem(group.startIndexInParentItems, range, showAvatar, item, listItem.separation, listItem.prevItemSeparationLargeGap, isRevealed) {
+          println("LALAL ITEM $range  ${item.id}")
+          ChatViewListItem(group.startIndexInParentItems == 0, rememberUpdatedState(range), showAvatar, item, listItem.separation, listItem.prevItemSeparationLargeGap, isRevealed) {
             group.reveal(it, revealedItems)
           }
           if (last != null) {
             // no using separate item(){} block in order to have total number of items in LazyColumn match number of items in groups
             DateSeparator(last.meta.itemTs)
           }
+          if (group.unreadIds.isNotEmpty()) {
+            MarkItemsReadAfterDelay(group.items.last().item.id, group.items.first().item.id, chatInfo.id, markRead)
+          }
         }
       }
     }
   }
-  FloatingButtons(chatModel.chatItems, unreadCount, composeViewHeight, remoteHostId, chatInfo, searchValue, markRead, listState)
+  FloatingButtons(chatModel.chatItems, groups, unreadCount, maxHeight, composeViewHeight, remoteHostId, chatInfo, searchValue, markRead, listState)
 
   FloatingDate(
     Modifier.padding(top = 10.dp + topPaddingToContent()).align(Alignment.TopCenter),
@@ -1366,7 +1349,7 @@ fun BoxScope.ChatItemsList(
   )
 
   LaunchedEffect(Unit) {
-    snapshotFlow { listState.isScrollInProgress }
+    snapshotFlow { listState.value.isScrollInProgress }
       .collect {
         chatViewScrollState.value = it
       }
@@ -1374,47 +1357,23 @@ fun BoxScope.ChatItemsList(
 }
 
 @Composable
-private fun ScrollToUnreadOrBottom(chatId: ChatId, groups: State<SectionGroups>, maxHeight: State<Int>, listState: LazyListState, chatItems: State<List<ChatItem>>) {
-  val scope = rememberCoroutineScope()
-  // Helps to scroll to bottom after moving from Group to Direct chat
-  // and prevents scrolling to bottom on orientation change
-  var shouldAutoScroll by rememberSaveable { mutableStateOf(true to chatId) }
-  LaunchedEffect(chatId, shouldAutoScroll) {
-    if ((shouldAutoScroll.first || shouldAutoScroll.second != chatId)/* && listState.firstVisibleItemIndex != 0*/) {
-      val item = chatItems.value.firstOrNull { it.isRcvNew }
-      var index = 0
-      if (item != null) {
-        index = groups.value.sections.indexInParentItems(item.id)
-      }
-      if (index <= 0) {
-        scope.launch { listState.scrollToItem(0) }
-      } else {
-        scope.launch { listState.scrollToItem(index + 1, -maxHeight.value) }
-      }
-    }
-    // Don't autoscroll next time until it will be needed
-    shouldAutoScroll = false to chatId
-  }
+private fun SmallScrollOnNewMessage(listState: State<LazyListState>, chatItems: State<List<ChatItem>>) {
   val scrollDistance = with(LocalDensity.current) { -39.dp.toPx() }
-  /*
-  * Since we use key with each item in LazyColumn, LazyColumn will not autoscroll to bottom item. We need to do it ourselves.
-  * When the first visible item (from bottom) is visible (even partially) we can autoscroll to 0 item. Or just scrollBy small distance otherwise
-  * */
   LaunchedEffect(Unit) {
-    var lastTotalItems = listState.layoutInfo.totalItemsCount
+    var lastTotalItems = listState.value.layoutInfo.totalItemsCount
     snapshotFlow { chatItems.value.lastOrNull()?.id }
-      .filter { listState.layoutInfo.visibleItemsInfo.firstOrNull()?.key != it }
+      .filter { listState.value.layoutInfo.visibleItemsInfo.firstOrNull()?.key != it }
       .collect {
-        val diff = listState.layoutInfo.totalItemsCount - lastTotalItems
-        lastTotalItems = listState.layoutInfo.totalItemsCount
+        val diff = listState.value.layoutInfo.totalItemsCount - lastTotalItems
+        lastTotalItems = listState.value.layoutInfo.totalItemsCount
         if (diff < 1 || diff > 2) {
           return@collect
         }
         try {
-          if (listState.firstVisibleItemIndex == 0 || (listState.firstVisibleItemIndex == 1 && listState.layoutInfo.totalItemsCount == chatItems.value.size)) {
-            if (appPlatform.isAndroid) listState.animateScrollToItem(0) else listState.scrollToItem(0)
+          if (listState.value.firstVisibleItemIndex == 0 || (listState.value.firstVisibleItemIndex == 1 && listState.value.layoutInfo.totalItemsCount == chatItems.value.size)) {
+            if (appPlatform.isAndroid) listState.value.animateScrollToItem(0) else listState.value.scrollToItem(0)
           } else {
-            if (appPlatform.isAndroid) listState.animateScrollBy(scrollDistance) else listState.scrollBy(scrollDistance)
+            if (appPlatform.isAndroid) listState.value.animateScrollBy(scrollDistance) else listState.value.scrollBy(scrollDistance)
           }
         } catch (e: CancellationException) {
           /**
@@ -1432,52 +1391,67 @@ private fun ScrollToUnreadOrBottom(chatId: ChatId, groups: State<SectionGroups>,
 @Composable
 fun BoxScope.FloatingButtons(
   chatItems: State<List<ChatItem>>,
+  groups: State<SectionGroups>,
   unreadCount: State<Int>,
+  maxHeight: State<Int>,
   composeViewHeight: State<Dp>,
   remoteHostId: Long?,
   chatInfo: ChatInfo,
   searchValue: State<String>,
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
-  listState: LazyListState
+  listState: State<LazyListState>
 ) {
   val scope = rememberCoroutineScope()
-  val maxHeight = remember { derivedStateOf { listState.layoutInfo.viewportSize.height } }
   val bottomUnreadCount = remember {
     derivedStateOf {
+      println("LALAL UNREADCOUNT0 ${unreadCount.value}")
       if (unreadCount.value == 0) return@derivedStateOf 0
       val items = chatItems.value
-      val from = items.lastIndex - listState.firstVisibleItemIndex - listState.layoutInfo.visibleItemsInfo.lastIndex
-      if (items.size <= from || from < 0) return@derivedStateOf 0
+      val lastVisibleIndex = oldestLastPartiallyVisibleIndexInListState(groups, listState)
+      val from = items.lastIndex - lastVisibleIndex
+      println("LALAL lastVisibleIndex $lastVisibleIndex items.lastIndex ${items.lastIndex} from $from  ${items.size}")
+      if (items.size <= from || from < 0) return@derivedStateOf -1
 
       items.subList(from, items.size).count { it.isRcvNew }
     }
   }
 
-  val showBottomButtonWithCounter = remember { derivedStateOf { bottomUnreadCount.value > 0 && listState.firstVisibleItemIndex != 0 && searchValue.value.isEmpty() } }
-  val showBottomButtonWithArrow = remember { derivedStateOf { !showBottomButtonWithCounter.value && listState.firstVisibleItemIndex != 0 } }
+  val showBottomButtonWithCounter = remember { derivedStateOf { bottomUnreadCount.value > 0 && listState.value.firstVisibleItemIndex != 0 && searchValue.value.isEmpty() } }
+  val showBottomButtonWithArrow = remember { derivedStateOf { !showBottomButtonWithCounter.value && listState.value.firstVisibleItemIndex != 0 } }
   BottomEndFloatingButton(
     bottomUnreadCount,
     showBottomButtonWithCounter,
     showBottomButtonWithArrow,
     composeViewHeight,
     onClickArrowDown = {
-      scope.launch { listState.animateScrollToItem(0) }
+      scope.launch { listState.value.animateScrollToItem(0) }
     },
     onClickCounter = {
-      val firstVisibleOffset = (-maxHeight.value * 0.8).toInt()
-      scope.launch { listState.animateScrollToItem(kotlin.math.max(0, bottomUnreadCount.value - 1), firstVisibleOffset) }
+      val item = chatItems.value.asReversed().lastOrNull { it.isRcvNew }
+      val index = if (item != null) groups.value.sections.indexInParentItems(item.id) else -1
+      println("LALAL ITEM $index ${newestLastFullyPartiallyVisibleIndexInListState(groups, listState)} ${item?.id} ${item?.text}")
+      when {
+        // if already shown the first unread item, scroll to the bottom instead
+        index == newestLastFullyPartiallyVisibleIndexInListState(groups, listState) ->
+          scope.launch { listState.value.animateScrollToItem(0) }
+        // scroll to the top unread item
+        index != -1 ->
+          scope.launch { listState.value.animateScrollToItem(index + 1, -maxHeight.value) }
+      }
     }
   )
   // Don't show top FAB if is in search
   if (searchValue.value.isNotEmpty()) return
   val fabSize = 56.dp
-  val topUnreadCount = remember { derivedStateOf { unreadCount.value - bottomUnreadCount.value } }
+  val topUnreadCount = remember { derivedStateOf { (if (bottomUnreadCount.value > 0) unreadCount.value - bottomUnreadCount.value else 0).also {
+    println("LALAL UNREADCOUNT1 ${unreadCount.value} ${bottomUnreadCount.value} $it")
+  } } }
   val showDropDown = remember { mutableStateOf(false) }
 
   TopEndFloatingButton(
     Modifier.padding(end = DEFAULT_PADDING, top = 24.dp + topPaddingToContent()).align(Alignment.TopEnd),
     topUnreadCount,
-    onClick = { scope.launch { listState.animateScrollBy(maxHeight.value.toFloat()) } },
+    onClick = { scope.launch { listState.value.animateScrollBy(maxHeight.value.toFloat()) } },
     onLongClick = { showDropDown.value = true }
   )
 
@@ -1493,10 +1467,11 @@ fun BoxScope.FloatingButtons(
         generalGetString(MR.strings.mark_read),
         painterResource(MR.images.ic_check),
         onClick = {
-          val minUnreadItemId = chatModel.chats.value.firstOrNull { it.remoteHostId == remoteHostId && it.id == chatInfo.id }?.chatStats?.minUnreadItemId ?: return@ItemAction
+          val chat = chatModel.chats.value.firstOrNull { it.remoteHostId == remoteHostId && it.id == chatInfo.id } ?: return@ItemAction
+          val minUnreadItemId = chat.chatStats.minUnreadItemId
           markRead(
-            CC.ItemRange(minUnreadItemId, chatItems.value[chatItems.value.size - listState.layoutInfo.visibleItemsInfo.lastIndex - 1].id - 1),
-            bottomUnreadCount.value
+            CC.ItemRange(minUnreadItemId, chat.chatItems.lastOrNull()?.id ?: return@ItemAction),
+            0
           )
           showDropDown.value = false
         })
@@ -1508,7 +1483,7 @@ fun BoxScope.FloatingButtons(
 fun PreloadItems(
   chatId: String,
   groups: State<SectionGroups>,
-  listState: LazyListState,
+  listState: State<LazyListState>,
   remaining: Int,
   loadItems: suspend (ChatId, ChatPagination) -> Unit,
 ) {
@@ -1520,7 +1495,7 @@ fun PreloadItems(
     snapshotFlow { chatId.value }
       .filterNotNull()
       .collect {
-        allowLoad.value = listState.layoutInfo.totalItemsCount == listState.layoutInfo.visibleItemsInfo.size
+        allowLoad.value = listState.value.layoutInfo.totalItemsCount == listState.value.layoutInfo.visibleItemsInfo.size
         delay(500)
         allowLoad.value = true
       }
@@ -1542,7 +1517,7 @@ fun PreloadItems(
 //    }
     launch {
       var bottomLoadingIsDisabled = false
-      snapshotFlow { listState.firstVisibleItemIndex }
+      snapshotFlow { listState.value.firstVisibleItemIndex }
         .map { firstVisibleIndex ->
           val items = chatModel.chatItems.value
           val anchors = groups.value.anchoredRanges
@@ -1570,10 +1545,8 @@ fun PreloadItems(
 //          }
           val items = chatModel.chatItems.value
           val item = items.getOrNull(loadFromIndex)
-          println("LALAL GAP $loadFromIndex lastIndex ${items.lastIndex} ${item?.id}, firstVisible ${listState.firstVisibleItemIndex}")
+          println("LALAL GAP $loadFromIndex lastIndex ${items.lastIndex} ${item?.id}, firstVisible ${listState.value.firstVisibleItemIndex}")
           if (item != null) {
-            // stop this coroutine to not make any parallel calls while this one is executing. The coroutine will be restarted later, see
-            //cancel()
             withBGApi {
               val oldSize = items.size
               onLoadMore.value(chatId.value, ChatPagination.After(item.id, ChatPagination.PRELOAD_COUNT))
@@ -1587,9 +1560,9 @@ fun PreloadItems(
   }
   KeyChangeEffect(allowLoad.value, chatId.value) {
     snapshotFlow {
-      val lInfo = listState.layoutInfo
+      val lInfo = listState.value.layoutInfo
       val anchors = groups.value.anchoredRanges
-      val firstVisibleIndex = listState.firstVisibleItemIndex
+      val firstVisibleIndex = listState.value.firstVisibleItemIndex
       var lastIndexToLoadFrom: Int? = null
       val lastVisibleItemIndex = (lInfo.visibleItemsInfo.lastOrNull()?.index ?: 0)
       for (anchor in anchors) {
@@ -1601,7 +1574,7 @@ fun PreloadItems(
           }
           break
         }
-        val containsInRange = anchor.indexRangeInParentItems.contains(listState.firstVisibleItemIndex)
+        val containsInRange = anchor.indexRangeInParentItems.contains(listState.value.firstVisibleItemIndex)
         if (containsInRange) {
           if (lastVisibleItemIndex > (anchor.indexRangeInParentItems.last - remaining)) {
             println("LALAL SECOND lastVisibleItemIndex $lastVisibleItemIndex last ${anchor.indexRangeInParentItems.last} ${anchor}")
@@ -1684,17 +1657,16 @@ fun topPaddingToContent(): Dp {
 private fun FloatingDate(
   modifier: Modifier,
   groups: State<SectionGroups>,
-  listState: LazyListState,
+  listState: State<LazyListState>,
 ) {
-  var nearBottomIndex by remember { mutableStateOf(-1) }
-  var isNearBottom by remember { mutableStateOf(true) }
+  val isNearBottom = remember(chatModel.chatId) { mutableStateOf(listState.value.firstVisibleItemIndex == 0) }
+  val nearBottomIndex = remember(chatModel.chatId) { mutableStateOf(if (isNearBottom.value) -1 else 0) }
+  val showDate = remember(chatModel.chatId) { mutableStateOf(false) }
+  val density = LocalDensity.current.density
   val lastVisibleItemDate = remember {
     derivedStateOf {
-      if (listState.layoutInfo.visibleItemsInfo.lastIndex >= 0) {
-        val lastFullyVisibleOffset = listState.layoutInfo.viewportEndOffset
-        val lastVisibleChatItem = groups.value.sections.newestItemAtParentIndexOrNull((listState.layoutInfo.visibleItemsInfo.lastOrNull { item ->
-          item.offset + item.size <= lastFullyVisibleOffset && item.size > 0
-        }?.index ?: listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index) ?: -1)
+      if (listState.value.layoutInfo.visibleItemsInfo.lastIndex >= 0) {
+        val lastVisibleChatItem = lastFullyVisibleIemInListState(density, groups, listState)
         val timeZone = TimeZone.currentSystemDefault()
         lastVisibleChatItem?.meta?.itemTs?.toLocalDateTime(timeZone)?.date?.atStartOfDayIn(timeZone)
       } else {
@@ -1702,35 +1674,23 @@ private fun FloatingDate(
       }
     }
   }
-  val showDate = remember { mutableStateOf(false) }
-  LaunchedEffect(Unit) {
-    launch {
-      snapshotFlow { chatModel.chatId.value }
-        .distinctUntilChanged()
-        .collect {
-          showDate.value = false
-          isNearBottom = true
-          nearBottomIndex = -1
-        }
-    }
-  }
 
   LaunchedEffect(Unit) {
-    snapshotFlow { listState.layoutInfo.visibleItemsInfo }
+    snapshotFlow { listState.value.layoutInfo.visibleItemsInfo }
       .collect { visibleItemsInfo ->
         if (visibleItemsInfo.find { it.index == 0 } != null) {
           var elapsedOffset = 0
 
           for (it in visibleItemsInfo) {
-            if (elapsedOffset >= listState.layoutInfo.viewportSize.height / 2.5) {
-              nearBottomIndex = it.index
+            if (elapsedOffset >= listState.value.layoutInfo.viewportSize.height / 2.5) {
+              nearBottomIndex.value = it.index
               break;
             }
             elapsedOffset += it.size
           }
         }
 
-        isNearBottom = if (nearBottomIndex == -1) true else (visibleItemsInfo.firstOrNull()?.index ?: 0) <= nearBottomIndex
+        isNearBottom.value = if (nearBottomIndex.value == -1) true else (visibleItemsInfo.firstOrNull()?.index ?: 0) <= nearBottomIndex.value
       }
   }
 
@@ -1738,7 +1698,7 @@ private fun FloatingDate(
     if (isVisible) {
       val now = Clock.System.now()
       val date = lastVisibleItemDate.value
-      if (!isNearBottom && !showDate.value && date != null && getTimestampDateText(date) != getTimestampDateText(now)) {
+      if (!isNearBottom.value && !showDate.value && date != null && getTimestampDateText(date) != getTimestampDateText(now)) {
         showDate.value = true
       }
     } else if (showDate.value) {
@@ -1748,7 +1708,7 @@ private fun FloatingDate(
 
   LaunchedEffect(Unit) {
     var hideDateWhenNotScrolling: Job = Job()
-    snapshotFlow { listState.firstVisibleItemScrollOffset }
+    snapshotFlow { listState.value.firstVisibleItemScrollOffset }
       .collect {
         setDateVisibility(true)
         hideDateWhenNotScrolling.cancel()
@@ -1854,6 +1814,58 @@ private fun DateSeparator(date: Instant) {
     textAlign = TextAlign.Center,
     color = MaterialTheme.colors.secondary
   )
+}
+
+@Composable
+private fun MarkItemsReadAfterDelay(
+  itemIdStart: Long,
+  itemIdEnd: Long,
+  chatId: ChatId,
+  markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit
+) {
+  LaunchedEffect(itemIdStart, itemIdEnd, chatId) {
+    if (chatId != ChatModel.chatId.value) return@LaunchedEffect
+
+    delay(600L)
+    markRead(CC.ItemRange(itemIdStart, itemIdEnd), null)
+  }
+}
+
+private fun newestLastFullyPartiallyVisibleIndexInListState(groups: State<SectionGroups>, listState: State<LazyListState>): Int {
+  val lastFullyVisibleOffset = listState.value.layoutInfo.viewportEndOffset
+  return groups.value.sections.newestItemIndexAtParentIndexOrNull(
+    (listState.value.layoutInfo.visibleItemsInfo.lastOrNull { item ->
+      println("LALAL OFFSET ${item.offset} ${item.size} $lastFullyVisibleOffset ${item.index} ${item.key}")
+      item.offset + item.size <= lastFullyVisibleOffset
+    }
+      ?.index
+      ?: listState.value.layoutInfo.visibleItemsInfo.lastOrNull()?.index)
+      ?: -1)
+    ?: -1
+}
+
+private fun oldestLastPartiallyVisibleIndexInListState(groups: State<SectionGroups>, listState: State<LazyListState>): Int {
+  val lastFullyVisibleOffset = listState.value.layoutInfo.viewportEndOffset
+  return groups.value.sections.oldestItemIndexAtParentIndexOrNull(
+    (listState.value.layoutInfo.visibleItemsInfo.lastOrNull { item ->
+      println("LALAL OFFSET ${item.index} ${item.offset} ${item.size} $lastFullyVisibleOffset  ${listState.value.layoutInfo.visibleItemsInfo.lastOrNull()?.index}")
+      item.offset <= lastFullyVisibleOffset
+    }
+      ?.index
+      ?: listState.value.layoutInfo.visibleItemsInfo.lastOrNull()?.index)
+      ?: -1)
+    ?: -1
+}
+
+private fun lastFullyVisibleIemInListState(density: Float, groups: State<SectionGroups>, listState: State<LazyListState>): ChatItem? {
+  val lastFullyVisibleOffsetMinusFloatingHeight = listState.value.layoutInfo.viewportEndOffset - 50 * density
+  return groups.value.sections.newestItemAtParentIndexOrNull(
+    (listState.value.layoutInfo.visibleItemsInfo.lastOrNull { item ->
+      item.offset <= lastFullyVisibleOffsetMinusFloatingHeight && item.size > 0
+    }
+      ?.index
+      ?: listState.value.layoutInfo.visibleItemsInfo.lastOrNull()?.index)
+      ?: -1)
 }
 
 val chatViewScrollState = MutableStateFlow(false)
@@ -2077,7 +2089,6 @@ sealed class ProviderMedia {
 }
 
 fun providerForGallery(
-  listStateIndex: Int,
   chatItems: List<ChatItem>,
   cItemId: Long,
   scrollTo: (Int) -> Unit
@@ -2145,10 +2156,11 @@ fun providerForGallery(
 
     override fun onDismiss(index: Int) {
       val internalIndex = initialIndex - index
-      val indexInChatItems = item(internalIndex, initialChatId)?.first ?: return
+      val item = item(internalIndex, initialChatId)
+      val indexInChatItems = item?.first ?: return
       val indexInReversed = chatItems.lastIndex - indexInChatItems
       // Do not scroll to active item, just to different items
-      if (indexInReversed == listStateIndex) return
+      if (item.second.id == cItemId) return
       scrollTo(indexInReversed)
     }
   }

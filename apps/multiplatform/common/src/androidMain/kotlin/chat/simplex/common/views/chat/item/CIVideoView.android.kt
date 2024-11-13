@@ -44,3 +44,15 @@ actual fun LocalWindowWidth(): Dp {
     (rect.width() / density).dp
   }
 }
+
+@Composable
+actual fun LocalWindowHeight(): Dp {
+  val view = LocalView.current
+  val density = LocalDensity.current
+  return with(density) { view.height.toDp() }
+//  return remember(view.height) {
+//    val rect = Rect()
+//    view.getWindowVisibleDisplayFrame(rect)
+//    (rect.height() / density).dp
+//  }
+}

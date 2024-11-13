@@ -865,9 +865,13 @@ object ChatController {
     return emptyList()
   }
 
-  suspend fun apiGetChat(rh: Long?, type: ChatType, id: Long, pagination: ChatPagination = ChatPagination.Last(ChatPagination.INITIAL_COUNT), search: String = ""): Chat? {
+  suspend fun apiGetChat(rh: Long?, type: ChatType, id: Long, pagination: ChatPagination, search: String = ""): Pair<Chat, NavigationInfo>? {
+//    val start = if (pagination is ChatPagination.Initial) System.currentTimeMillis() else 0
     val r = sendCmd(rh, CC.ApiGetChat(type, id, pagination, search))
-    if (r is CR.ApiChat) return if (rh == null) r.chat else r.chat.copy(remoteHostId = rh)
+//    if (pagination is ChatPagination.Initial) {
+//      println("LALAL RESULT OF QUERY ${pagination.count} ${System.currentTimeMillis() - start}")
+//    }
+    if (r is CR.ApiChat) return if (rh == null) r.chat to r.navInfo else r.chat.copy(remoteHostId = rh) to r.navInfo
     Log.e(TAG, "apiGetChat bad response: ${r.responseType} ${r.details}")
     AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_parse_chat_title), generalGetString(MR.strings.contact_developers))
     return null
@@ -3420,7 +3424,7 @@ sealed class CC {
     is GetAgentServersSummary -> "getAgentServersSummary"
   }
 
-  class ItemRange(val from: Long, val to: Long)
+  data class ItemRange(val from: Long, val to: Long)
 
   fun chatItemTTLStr(seconds: Long?): String {
     if (seconds == null) return "none"
@@ -3480,7 +3484,7 @@ sealed class ChatPagination {
   }
 
   companion object {
-    const val INITIAL_COUNT = 100
+    val INITIAL_COUNT = if (appPlatform.isDesktop) 100 else 75
     const val PRELOAD_COUNT = 100
     const val UNTIL_PRELOAD_COUNT = 50
   }
@@ -4918,7 +4922,7 @@ sealed class CR {
   @Serializable @SerialName("chatRunning") class ChatRunning: CR()
   @Serializable @SerialName("chatStopped") class ChatStopped: CR()
   @Serializable @SerialName("apiChats") class ApiChats(val user: UserRef, val chats: List<Chat>): CR()
-  @Serializable @SerialName("apiChat") class ApiChat(val user: UserRef, val chat: Chat): CR()
+  @Serializable @SerialName("apiChat") class ApiChat(val user: UserRef, val chat: Chat, val navInfo: NavigationInfo = NavigationInfo()): CR()
   @Serializable @SerialName("chatItemInfo") class ApiChatItemInfo(val user: UserRef, val chatItem: AChatItem, val chatItemInfo: ChatItemInfo): CR()
   @Serializable @SerialName("userProtoServers") class UserProtoServers(val user: UserRef, val servers: UserProtocolServers): CR()
   @Serializable @SerialName("serverTestResult") class ServerTestResult(val user: UserRef, val testServer: String, val testFailure: ProtocolTestFailure? = null): CR()

@@ -57,7 +57,7 @@ fun ChatItemView(
   useLinkPreviews: Boolean,
   linkMode: SimplexLinkMode,
   revealed: State<Boolean>,
-  range: IntRange?,
+  range: State<IntRange?>,
   selectedChatItems: MutableState<Set<Long>?>,
   fillMaxWidth: Boolean = true,
   selectChatItem: () -> Unit,
@@ -86,13 +86,14 @@ fun ChatItemView(
   itemSeparation: ItemSeparation,
   preview: Boolean = false,
 ) {
+  SideEffect { println("LALAL CHATITEMID ${range}  ${cItem.id}") }
   val uriHandler = LocalUriHandler.current
   val sent = cItem.chatDir.sent
   val alignment = if (sent) Alignment.CenterEnd else Alignment.CenterStart
   val showMenu = remember { mutableStateOf(false) }
   val fullDeleteAllowed = remember(cInfo) { cInfo.featureEnabled(ChatFeature.FullDelete) }
   val onLinkLongClick = { _: String -> showMenu.value = true }
-  val live = composeState.value.liveMessage != null
+  val live = remember { derivedStateOf { composeState.value.liveMessage != null } }.value
 
   Box(
     modifier = if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier,
@@ -300,7 +301,7 @@ fun ChatItemView(
                   HideItemAction(revealed, showMenu, reveal)
                 } else if (!cItem.isDeletedContent) {
                   RevealItemAction(revealed, showMenu, reveal)
-                } else if (range != null) {
+                } else if (range.value != null) {
                   ExpandItemAction(revealed, showMenu, reveal)
                 }
                 ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
@@ -321,7 +322,7 @@ fun ChatItemView(
                 }
               }
             }
-            cItem.mergeCategory != null && ((range?.count() ?: 0) > 1 || revealed.value) -> {
+            cItem.mergeCategory != null && ((range.value?.count() ?: 0) > 1 || revealed.value) -> {
               DefaultDropdownMenu(showMenu) {
                 if (revealed.value) {
                   ShrinkItemAction(revealed, showMenu, reveal)
@@ -1064,7 +1065,7 @@ fun PreviewChatItemView(
     linkMode = SimplexLinkMode.DESCRIPTION,
     composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
     revealed = remember { mutableStateOf(false) },
-    range = 0..1,
+    range = remember { mutableStateOf(0..1) },
     selectedChatItems = remember { mutableStateOf(setOf()) },
     selectChatItem = {},
     deleteMessage = { _, _ -> },
@@ -1106,7 +1107,7 @@ fun PreviewChatItemViewDeletedContent() {
       linkMode = SimplexLinkMode.DESCRIPTION,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       revealed = remember { mutableStateOf(false) },
-      range = 0..1,
+      range = remember { mutableStateOf(0..1) },
       selectedChatItems = remember { mutableStateOf(setOf()) },
       selectChatItem = {},
       deleteMessage = { _, _ -> },
