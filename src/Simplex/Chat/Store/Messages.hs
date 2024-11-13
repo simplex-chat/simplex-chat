@@ -1097,9 +1097,11 @@ getDirectChatInitial_ db user@User {userId} ct@Contact {contactId} count =
         DB.query
           db
           [sql|
-            SELECT MIN(chat_item_id)
+            SELECT chat_item_id
             FROM chat_items
             WHERE user_id = ? AND contact_id = ? AND item_status = ?
+            ORDER BY created_at ASC, chat_item_id ASC
+            LIMIT 1
           |]
           (userId, contactId, CISRcvNew)
 
@@ -1251,9 +1253,11 @@ getGroupChatInitial_ db user@User {userId} g@GroupInfo {groupId} count =
         DB.query
           db
           [sql|
-            SELECT MIN(chat_item_id)
+            SELECT chat_item_id
             FROM chat_items
             WHERE user_id = ? AND group_id = ? AND item_status = ?
+            ORDER BY item_ts ASC, chat_item_id ASC
+            LIMIT 1
           |]
           (userId, groupId, CISRcvNew)
 
@@ -1389,9 +1393,11 @@ getLocalChatInitial_ db user@User {userId} nf@NoteFolder {noteFolderId} count = 
         DB.query
           db
           [sql|
-            SELECT MIN(chat_item_id)
+            SELECT chat_item_id
             FROM chat_items
             WHERE user_id = ? AND note_folder_id = ? AND item_status = ?
+            ORDER BY created_at ASC, chat_item_id ASC
+            LIMIT 1
           |]
           (userId, noteFolderId, CISRcvNew)
 
