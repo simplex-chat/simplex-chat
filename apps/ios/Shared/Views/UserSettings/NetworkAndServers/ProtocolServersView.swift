@@ -39,20 +39,32 @@ struct YourServersView: View {
 
     private func yourServersView() -> some View {
         List {
-            if !userServers[operatorServersIndex].smpServers.isEmpty {
+            if !userServers[operatorServersIndex].smpServers.filter({ !$0.deleted }).isEmpty {
                 Section {
                     ForEach($userServers[operatorServersIndex].smpServers) { srv in
-                        ProtocolServerViewLink(
-                            userServers: $userServers,
-                            server: srv,
-                            serverProtocol: .smp,
-                            backLabel: "Your servers",
-                            selectedServer: $selectedServer
-                        )
+                        if !srv.wrappedValue.deleted {
+                            ProtocolServerViewLink(
+                                userServers: $userServers,
+                                server: srv,
+                                serverProtocol: .smp,
+                                backLabel: "Your servers",
+                                selectedServer: $selectedServer
+                            )
+                        } else {
+                            EmptyView()
+                        }
                     }
                     .onDelete { indexSet in
-                        // TODO set delete if serverId is not null
-                        userServers[operatorServersIndex].smpServers.remove(atOffsets: indexSet)
+                        if let idx = indexSet.first {
+                            let server = userServers[operatorServersIndex].smpServers[idx]
+                            if server.serverId == nil {
+                                userServers[operatorServersIndex].smpServers.remove(at: idx)
+                            } else {
+                                var updatedServer = server
+                                updatedServer.deleted = true
+                                userServers[operatorServersIndex].smpServers[idx] = updatedServer
+                            }
+                        }
                     }
                 } header: {
                     Text("Message servers")
@@ -64,20 +76,32 @@ struct YourServersView: View {
                 }
             }
 
-            if !userServers[operatorServersIndex].xftpServers.isEmpty {
+            if !userServers[operatorServersIndex].xftpServers.filter({ !$0.deleted }).isEmpty {
                 Section {
                     ForEach($userServers[operatorServersIndex].xftpServers) { srv in
-                        ProtocolServerViewLink(
-                            userServers: $userServers,
-                            server: srv,
-                            serverProtocol: .xftp,
-                            backLabel: "Your servers",
-                            selectedServer: $selectedServer
-                        )
+                        if !srv.wrappedValue.deleted {
+                            ProtocolServerViewLink(
+                                userServers: $userServers,
+                                server: srv,
+                                serverProtocol: .xftp,
+                                backLabel: "Your servers",
+                                selectedServer: $selectedServer
+                            )
+                        } else {
+                            EmptyView()
+                        }
                     }
                     .onDelete { indexSet in
-                        // TODO set delete if serverId is not null
-                        userServers[operatorServersIndex].xftpServers.remove(atOffsets: indexSet)
+                        if let idx = indexSet.first {
+                            let server = userServers[operatorServersIndex].xftpServers[idx]
+                            if server.serverId == nil {
+                                userServers[operatorServersIndex].xftpServers.remove(at: idx)
+                            } else {
+                                var updatedServer = server
+                                updatedServer.deleted = true
+                                userServers[operatorServersIndex].xftpServers[idx] = updatedServer
+                            }
+                        }
                     }
                 } header: {
                     Text("Media & file servers")
