@@ -324,6 +324,12 @@ data ChatStats = ChatStats
   }
   deriving (Show)
 
+data NavigationInfo = NavigationInfo
+  { belowUnread :: Int,
+    belowTotal :: Int
+  }
+  deriving (Show)
+
 -- | type to show a mix of messages from multiple chats
 data AChatItem = forall c d. (ChatTypeI c, MsgDirectionI d) => AChatItem (SChatType c) (SMsgDirection d) (ChatInfo c) (ChatItem c d)
 
