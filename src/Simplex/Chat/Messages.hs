@@ -324,6 +324,12 @@ data ChatStats = ChatStats
   }
   deriving (Show)
 
+data NavigationInfo = NavigationInfo
+  { afterUnread :: Int,
+    afterTotal :: Int
+  }
+  deriving (Show)
+
 -- | type to show a mix of messages from multiple chats
 data AChatItem = forall c d. (ChatTypeI c, MsgDirectionI d) => AChatItem (SChatType c) (SMsgDirection d) (ChatInfo c) (ChatItem c d)
 
@@ -1413,6 +1419,8 @@ instance ChatTypeI c => ToJSON (CChatItem c) where
 $(JQ.deriveJSON defaultJSON ''ChatItemInfo)
 
 $(JQ.deriveJSON defaultJSON ''ChatStats)
+
+$(JQ.deriveJSON defaultJSON ''NavigationInfo)
 
 instance ChatTypeI c => ToJSON (Chat c) where
   toJSON = $(JQ.mkToJSON defaultJSON ''Chat)
