@@ -906,6 +906,7 @@
 				5CBD285B29575B8E00EC2CF4 /* WhatsNewView.swift */,
 				B79ADAFE2CE4EF930083DFFD /* AddressCreationCard.swift */,
 				640743602CD360E600158442 /* ChooseServerOperators.swift */,
+				B79ADAFE2CE4EF930083DFFD /* AddressCreationCard.swift */,
 			);
 			path = Onboarding;
 			sourceTree = "<group>";
