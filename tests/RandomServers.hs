@@ -1,8 +1,10 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
@@ -16,7 +18,7 @@ import qualified Data.List.NonEmpty as L
 import Data.Monoid (Sum (..))
 import Simplex.Chat (defaultChatConfig, randomPresetServers)
 import Simplex.Chat.Controller (ChatConfig (..), PresetServers (..))
-import Simplex.Chat.Operators (DBEntityId' (..), NewUserServer, UserServer' (..), operatorServers, operatorServersToUse)
+import Simplex.Chat.Operators
 import Simplex.Messaging.Agent.Env.SQLite (ServerRoles (..))
 import Simplex.Messaging.Protocol (ProtoServerWithAuth (..), SProtocolType (..), UserProtocol)
 import Test.Hspec

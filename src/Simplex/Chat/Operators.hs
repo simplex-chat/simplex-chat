@@ -52,7 +52,7 @@ import Simplex.Chat.Types.Util (textParseJSON)
 import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
+import Simplex.Messaging.Protocol (AProtocolType (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (atomicModifyIORef'_, safeDecodeUtf8)
 
@@ -203,12 +203,18 @@ data UpdatedUserOperatorServers = UpdatedUserOperatorServers
 
 data ValidatedUserOperatorServers = ValidatedUserOperatorServers
   { operator :: Maybe ServerOperator,
-    smpServers :: [ValidatedServer 'PSMP],
-    xftpServers :: [ValidatedServer 'PXFTP]
+    smpServers :: [AValidatedServer 'PSMP],
+    xftpServers :: [AValidatedServer 'PXFTP]
   }
   deriving (Show)
 
-data ValidatedServer p = ValidatedServer (Either Text (AUserServer p))
+data AValidatedServer p = forall s. AVS (SDBStored s) (ValidatedServer s p)
+
+deriving instance Show (AValidatedServer p)
+
+type ValidatedServer s p = UserServer_ s ValidatedProtoServer p
+
+data ValidatedProtoServer p = ValidatedProtoServer {unVPS :: Either Text (ProtoServerWithAuth p)}
   deriving (Show)
 
 class UserServersClass u where
@@ -218,7 +224,7 @@ class UserServersClass u where
   servers' :: UserProtocol p => u -> SProtocolType p -> [AServer u p]
 
 instance UserServersClass UserOperatorServers where
-  type AServer UserOperatorServers = UserServer' 'DBStored
+  type AServer UserOperatorServers = UserServer_ 'DBStored ProtoServerWithAuth
   operator' UserOperatorServers {operator} = operator
   partitionValid ss = ([], map (AUS SDBStored) ss)
   servers' UserOperatorServers {smpServers, xftpServers} = \case
@@ -234,12 +240,17 @@ instance UserServersClass UpdatedUserOperatorServers where
     SPXFTP -> xftpServers
 
 instance UserServersClass ValidatedUserOperatorServers where
-  type AServer ValidatedUserOperatorServers = ValidatedServer
+  type AServer ValidatedUserOperatorServers = AValidatedServer
   operator' ValidatedUserOperatorServers {operator} = operator
-  partitionValid = partitionEithers . map (\(ValidatedServer s) -> s)
+  partitionValid = partitionEithers . map serverOrErr
+    where
+      serverOrErr :: AValidatedServer p -> Either Text (AUserServer p)
+      serverOrErr (AVS s srv@UserServer {server = server'}) = (\server -> AUS s srv {server}) <$> unVPS server'
   servers' ValidatedUserOperatorServers {smpServers, xftpServers} = \case
     SPSMP -> smpServers
     SPXFTP -> xftpServers
+
+type UserServer' s p = UserServer_ s ProtoServerWithAuth p
 
 type UserServer p = UserServer' 'DBStored p
 
@@ -249,9 +260,9 @@ data AUserServer p = forall s. AUS (SDBStored s) (UserServer' s p)
 
 deriving instance Show (AUserServer p)
 
-data UserServer' s p = UserServer
+data UserServer_ s (srv :: ProtocolType -> Type) (p :: ProtocolType) = UserServer
   { serverId :: DBEntityId' s,
-    server :: ProtoServerWithAuth p,
+    server :: srv p,
     preset :: Bool,
     tested :: Maybe Bool,
     enabled :: Bool,
@@ -396,7 +407,7 @@ data UserServersError
   | USEStorageMissing {protocol :: AProtocolType, user :: Maybe User}
   | USEProxyMissing {protocol :: AProtocolType, user :: Maybe User}
   | USEInvalidServer {protocol :: AProtocolType, invalidServer :: Text}
-  | USEDuplicateServer {protocol :: AProtocolType, duplicateServer :: AProtoServerWithAuth, duplicateHost :: TransportHost}
+  | USEDuplicateServer {protocol :: AProtocolType, duplicateServer :: Text, duplicateHost :: TransportHost}
   deriving (Show)
 
 validateUserServers :: UserServersClass u' => [u'] -> [(User, [UserOperatorServers])] -> [UserServersError]
@@ -421,7 +432,7 @@ validateUserServers curr others = currUserErrs <> concatMap otherUserErrs others
         (invalidSrvs, userSrvs) = partitionValid $ concatMap (`servers'` p) uss
         srvs = filter (\(AUS _ UserServer {deleted}) -> not deleted) userSrvs
         duplicateErr_ (AUS _ srv@UserServer {server}) =
-          USEDuplicateServer p' (AProtoServerWithAuth p server)
+          USEDuplicateServer p' (safeDecodeUtf8 $ strEncode server)
             <$> find (`S.member` duplicateHosts) (srvHost srv)
         duplicateHosts = snd $ foldl' addHost (S.empty, S.empty) allHosts
         allHosts = concatMap (\(AUS _ srv) -> L.toList $ srvHost srv) srvs
@@ -462,17 +473,23 @@ instance DBStoredI s => FromJSON (ServerOperator' s) where
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "UCA") ''UsageConditionsAction)
 
 instance ProtocolTypeI p => ToJSON (UserServer' s p) where
-  toEncoding = $(JQ.mkToEncoding defaultJSON ''UserServer')
-  toJSON = $(JQ.mkToJSON defaultJSON ''UserServer')
+  toEncoding = $(JQ.mkToEncoding defaultJSON ''UserServer_)
+  toJSON = $(JQ.mkToJSON defaultJSON ''UserServer_)
 
 instance (DBStoredI s, ProtocolTypeI p) => FromJSON (UserServer' s p) where
-  parseJSON = $(JQ.mkParseJSON defaultJSON ''UserServer')
+  parseJSON = $(JQ.mkParseJSON defaultJSON ''UserServer_)
 
 instance ProtocolTypeI p => FromJSON (AUserServer p) where
   parseJSON v = (AUS SDBStored <$> parseJSON v) <|> (AUS SDBNew <$> parseJSON v)
 
-instance ProtocolTypeI p => FromJSON (ValidatedServer p) where
-  parseJSON v = ValidatedServer <$> ((Right <$> parseJSON v) <|> (Left <$> parseJSON v))
+instance ProtocolTypeI p => FromJSON (ValidatedProtoServer p) where
+  parseJSON v = ValidatedProtoServer <$> ((Right <$> parseJSON v) <|> (Left <$> parseJSON v))
+
+instance (DBStoredI s, ProtocolTypeI p) => FromJSON (ValidatedServer s p) where
+  parseJSON = $(JQ.mkParseJSON defaultJSON ''UserServer_)
+
+instance ProtocolTypeI p => FromJSON (AValidatedServer p) where
+  parseJSON v = (AVS SDBStored <$> parseJSON v) <|> (AVS SDBNew <$> parseJSON v)
 
 $(JQ.deriveJSON defaultJSON ''UserOperatorServers)
 
