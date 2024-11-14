@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 private struct VersionDescription {
     var version: String
@@ -525,7 +526,16 @@ struct WhatsNewView: View {
 
     var body: some View {
         viewBody()
-            .interactiveDismissDisabled(showOperatorsNotice)
+            .task {
+                if showOperatorsNotice {
+                    do {
+                        let (conditions, _, _) = try await getUsageConditions() // TODO Add conditionsId to UsageConditionsAction .review
+                        try await setConditionsNotified(conditionsId: conditions.conditionsId)
+                    } catch let error {
+                        logger.error("WhatsNewView setConditionsNotified error: \(responseError(error))")
+                    }
+                }
+            }
     }
 
     @ViewBuilder private func viewBody() -> some View {

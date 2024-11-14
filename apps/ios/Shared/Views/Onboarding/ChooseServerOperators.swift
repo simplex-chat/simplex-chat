@@ -192,8 +192,7 @@ struct ChooseServerOperators: View {
     @ViewBuilder private func reviewConditionsDestinationView() -> some View {
         let acceptForOperators = selectedOperators.filter { !$0.conditionsAcceptance.conditionsAccepted }
         UsageConditionsView(
-            showTitle: false,
-            dismissOnAccept: false,
+            onboarding: onboarding,
             conditionsAction: .review(operators: acceptForOperators, deadline: nil, showNotice: false),
             onAcceptAction: { date in
                 ChatModel.shared.acceptConditionsForOperators(acceptForOperators, date, enable: true)

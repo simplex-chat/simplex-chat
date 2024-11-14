@@ -194,10 +194,8 @@ final class ChatModel: ObservableObject {
     @Published var draftChatId: String?
     @Published var networkInfo = UserNetworkInfo(networkType: .other, online: true)
     // server operators
-    // TODO Load into model from backend, update on operator changes
-    @Published var serverOperators: [ServerOperator] = [ServerOperator.sampleData1, ServerOperator.sampleData2, ServerOperator.sampleData3]
-    // @Published var usageConditionsAction: UsageConditionsAction? = .review(operators: [ServerOperator.sampleData1], deadline: Date.distantFuture, showNotice: true)
-    @Published var usageConditionsAction: UsageConditionsAction? = .accepted(operators: [ServerOperator.sampleData1])
+    @Published var serverOperators: [ServerOperator] = []
+    @Published var usageConditionsAction: UsageConditionsAction? = nil
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 

@@ -1205,6 +1205,7 @@ public enum ServerProtocol: String, Decodable {
 
 public enum OperatorTag: String, Codable {
     case simplex = "simplex"
+    case flux = "flux"
     case xyz = "xyz"
     case demo = "demo"
 }
@@ -1226,6 +1227,14 @@ public let operatorsInfo: Dictionary<OperatorTag, ServerOperatorInfo> = [
         largeLogo: "logo",
         logoDarkMode: "decentralized-light",
         largeLogoDarkMode: "logo-light"
+    ),
+    .flux: ServerOperatorInfo(
+        description: "Flux is the largest decentralized cloud infrastructure, leveraging a global network of user-operated computational nodes. Flux offers a powerful, scalable, and affordable platform designed to support individuals, businesses, and cutting-edge technologies like AI. With high uptime and worldwide distribution, Flux ensures reliable, accessible cloud computing for all.",
+        website: "https://runonflux.com",
+        logo: "flux_logo_symbol",
+        largeLogo: "flux_logo",
+        logoDarkMode: "flux_logo_symbol",
+        largeLogoDarkMode: "flux_logo-light"
     ),
     .xyz: ServerOperatorInfo(
         description: "XYZ servers",

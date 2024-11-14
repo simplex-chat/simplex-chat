@@ -163,8 +163,7 @@ struct NetworkAndServers: View {
             switch item {
             case let .showConditions(conditionsAction):
                 UsageConditionsView(
-                    showTitle: true,
-                    dismissOnAccept: true,
+                    onboarding: false,
                     conditionsAction: conditionsAction,
                     onAcceptAction: { date in
                         switch conditionsAction {
@@ -227,7 +226,6 @@ struct NetworkAndServers: View {
         }
     }
 }
-
 
 
 func saveServers(_ currUserServers: Binding<[UserOperatorServers]>, _ userServers: Binding<[UserOperatorServers]>) {
