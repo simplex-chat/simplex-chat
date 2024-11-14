@@ -444,25 +444,6 @@ struct UserAddressView: View {
     }
 }
 
-struct SendAddressMailView: View {
-    @Binding var showMailView: Bool
-    @Binding var mailViewResult: Result<MFMailComposeResult, Error>?
-    var userAddress: UserContactLink
-
-    var body: some View {
-        let messageBody = String(format: NSLocalizedString("""
-            <p>Hi!</p>
-            <p><a href="%@">Connect to me via SimpleX Chat</a></p>
-            """, comment: "email text"), simplexChatLink(userAddress.connReqContact))
-        MailView(
-            isShowing: self.$showMailView,
-            result: $mailViewResult,
-            subject: NSLocalizedString("Let's talk in SimpleX Chat", comment: "email subject"),
-            messageBody: messageBody
-        )
-    }
-}
-
 struct UserAddressView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
