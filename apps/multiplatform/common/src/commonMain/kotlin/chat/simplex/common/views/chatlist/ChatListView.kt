@@ -143,7 +143,7 @@ fun AddressCreationCard() {
         .background(MaterialTheme.appColors.sentMessage)
         .clickable {
           ModalManager.start.showModal {
-            UserAddressLearnMore()
+            UserAddressLearnMore(showCreateAddressButton = true)
           }
         }
     ) {
