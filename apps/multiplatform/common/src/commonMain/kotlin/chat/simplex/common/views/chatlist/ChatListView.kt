@@ -74,136 +74,39 @@ private fun showNewChatSheet(oneHandUI: State<Boolean>) {
 
 @Composable
 fun ToggleChatListCard() {
-  Column(
-    modifier = Modifier
-      .padding(16.dp)
-      .clip(RoundedCornerShape(18.dp))
-  ) {
-    Box(
-      modifier = Modifier
-        .background(MaterialTheme.appColors.sentMessage)
-    ) {
-      Box(
-        modifier = Modifier.fillMaxWidth().matchParentSize().padding(5.dp),
-        contentAlignment = Alignment.TopEnd
-      ) {
-        IconButton(
-          onClick = {
-            appPrefs.oneHandUICardShown.set(true)
-            AlertManager.shared.showAlertMsg(
-              title = generalGetString(MR.strings.one_hand_ui),
-              text = generalGetString(MR.strings.one_hand_ui_change_instruction),
-            )
-          }
-        ) {
-          Icon(
-            painterResource(MR.images.ic_close), stringResource(MR.strings.back), tint = MaterialTheme.colors.secondary
-          )
-        }
-      }
-      Column(
-        modifier = Modifier
-          .padding(horizontal = DEFAULT_PADDING)
-          .padding(top = DEFAULT_PADDING)
-      ) {
-        Row(
-          horizontalArrangement = Arrangement.Start,
-          verticalAlignment = Alignment.CenterVertically,
-          modifier = Modifier.fillMaxWidth()
-        ) {
-          Text(stringResource(MR.strings.one_hand_ui_card_title), style = MaterialTheme.typography.h3)
-        }
-        Row(
-          Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 12.dp),
-          verticalAlignment = Alignment.CenterVertically
-        ) {
-          Text(stringResource(MR.strings.one_hand_ui), Modifier.weight(10f), style = MaterialTheme.typography.body1)
-
-          Spacer(Modifier.fillMaxWidth().weight(1f))
-
-          SharedPreferenceToggle(
-            appPrefs.oneHandUI,
-            enabled = true
-          )
-        }
-      }
+  ChatListCard(
+    close = {
+      appPrefs.oneHandUICardShown.set(true)
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.one_hand_ui),
+        text = generalGetString(MR.strings.one_hand_ui_change_instruction),
+      )
     }
-  }
-}
-
-@Composable
-fun AddressCreationCard() {
-  Column(
-    modifier = Modifier
-      .padding(16.dp)
-      .clip(RoundedCornerShape(18.dp))
   ) {
-    Box(
+    Column(
       modifier = Modifier
-        .background(MaterialTheme.appColors.sentMessage)
-        .clickable {
-          ModalManager.start.showModal {
-            UserAddressLearnMore(showCreateAddressButton = true)
-          }
-        }
+        .padding(horizontal = DEFAULT_PADDING)
+        .padding(top = DEFAULT_PADDING)
     ) {
-      Box(
-        modifier = Modifier.fillMaxWidth().matchParentSize().padding(5.dp),
-        contentAlignment = Alignment.TopEnd
+      Row(
+        horizontalArrangement = Arrangement.Start,
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
       ) {
-        IconButton(
-          onClick = {
-            appPrefs.addressCreationCardShown.set(true)
-            AlertManager.shared.showAlertMsg(
-              title = generalGetString(MR.strings.simplex_address),
-              text = generalGetString(MR.strings.address_creation_instruction),
-            )
-          }
-        ) {
-          Icon(
-            painterResource(MR.images.ic_close), stringResource(MR.strings.back), tint = MaterialTheme.colors.secondary
-          )
-        }
+        Text(stringResource(MR.strings.one_hand_ui_card_title), style = MaterialTheme.typography.h3)
       }
       Row(
-        Modifier
-          .fillMaxWidth()
-          .padding(
-            start = DEFAULT_PADDING,
-            end = DEFAULT_PADDING - 5.dp,
-            top = DEFAULT_PADDING,
-            bottom = DEFAULT_PADDING_HALF
-          )
+        Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
       ) {
-        Box(Modifier.padding(4.dp)) {
-          Box(Modifier.background(MaterialTheme.colors.primary, CircleShape).padding(12.dp)) {
-            ProfileImage(size = 37.dp, null, icon = MR.images.ic_mail_filled, color = Color.White, backgroundColor = Color.Red)
-          }
-        }
-        Column(modifier = Modifier.padding(start = DEFAULT_PADDING)) {
-          Text(stringResource(MR.strings.your_simplex_contact_address), style = MaterialTheme.typography.h3)
-          Spacer(Modifier.height(DEFAULT_PADDING_HALF))
-          Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
-            Row(modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)) {
-              Text(stringResource(MR.strings.how_to_use_simplex_chat), Modifier.padding(end = DEFAULT_SPACE_AFTER_ICON), style = MaterialTheme.typography.body1)
-              Icon(
-                painterResource(MR.images.ic_info),
-                null,
-                tint = MaterialTheme.colors.primary
-              )
-            }
-            Spacer(Modifier.weight(1f))
-            TextButton(
-              onClick = {
-                ModalManager.start.showModalCloseable { close ->
-                  UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = close)
-                }
-              },
-            ) {
-              Text(stringResource(MR.strings.create_address_button), style = MaterialTheme.typography.body1)
-            }
-          }
-        }
+        Text(stringResource(MR.strings.one_hand_ui), Modifier.weight(10f), style = MaterialTheme.typography.body1)
+
+        Spacer(Modifier.fillMaxWidth().weight(1f))
+
+        SharedPreferenceToggle(
+          appPrefs.oneHandUI,
+          enabled = true
+        )
       }
     }
   }
@@ -272,6 +175,102 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
         userPickerState = userPickerState,
         setPerformLA = AppLock::setPerformLA
       )
+    }
+  }
+}
+
+@Composable
+private fun ChatListCard(
+  close: () -> Unit,
+  onCardClick: (() -> Unit)? = null,
+  content: @Composable BoxScope.() -> Unit
+) {
+  Column(
+    modifier = Modifier
+      .padding(16.dp)
+      .clip(RoundedCornerShape(18.dp))
+  ) {
+    Box(
+      modifier = Modifier
+        .background(MaterialTheme.appColors.sentMessage)
+        .clickable {
+          onCardClick?.invoke()
+        }
+    ) {
+      Box(
+        modifier = Modifier.fillMaxWidth().matchParentSize().padding(5.dp),
+        contentAlignment = Alignment.TopEnd
+      ) {
+        IconButton(
+          onClick = {
+            close()
+          }
+        ) {
+          Icon(
+            painterResource(MR.images.ic_close), stringResource(MR.strings.back), tint = MaterialTheme.colors.secondary
+          )
+        }
+      }
+      content()
+    }
+  }
+}
+
+@Composable
+private fun AddressCreationCard() {
+  ChatListCard(
+    close = {
+      appPrefs.addressCreationCardShown.set(true)
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.simplex_address),
+        text = generalGetString(MR.strings.address_creation_instruction),
+      )
+    },
+    onCardClick = {
+      ModalManager.start.showModal {
+        UserAddressLearnMore(showCreateAddressButton = false)
+      }
+    }
+  ) {
+    Row(
+      Modifier
+        .fillMaxWidth()
+        .padding(
+          start = DEFAULT_PADDING,
+          end = DEFAULT_PADDING - 5.dp,
+          top = DEFAULT_PADDING,
+          bottom = DEFAULT_PADDING_HALF
+        )
+    ) {
+      Box(Modifier.padding(4.dp)) {
+        Box(Modifier.background(MaterialTheme.colors.primary, CircleShape).padding(12.dp)) {
+          ProfileImage(size = 37.dp, null, icon = MR.images.ic_mail_filled, color = Color.White, backgroundColor = Color.Red)
+        }
+      }
+      Column(modifier = Modifier.padding(start = DEFAULT_PADDING)) {
+        Text(stringResource(MR.strings.your_simplex_contact_address), style = MaterialTheme.typography.h3)
+        Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+        Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
+          Row(modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)) {
+            Text(stringResource(MR.strings.how_to_use_simplex_chat), Modifier.padding(end = DEFAULT_SPACE_AFTER_ICON), style = MaterialTheme.typography.body1)
+            Icon(
+              painterResource(MR.images.ic_info),
+              null,
+              tint = MaterialTheme.colors.primary
+            )
+          }
+          Spacer(Modifier.weight(1f))
+          TextButton(
+            onClick = {
+              ModalManager.start.showModalCloseable { close ->
+                UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = close)
+              }
+            },
+          ) {
+            Text(stringResource(MR.strings.create_address_button), style = MaterialTheme.typography.body1)
+          }
+        }
+      }
     }
   }
 }
