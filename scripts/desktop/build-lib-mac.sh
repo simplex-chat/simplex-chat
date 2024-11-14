@@ -100,25 +100,25 @@ cp $BUILD_DIR/build/libHSsimplex-chat-*-inplace-ghc*.$LIB_EXT apps/multiplatform
 cd apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 
 LIBCRYPTO_PATH=$(otool -l libHSdrct-*.$LIB_EXT | grep libcrypto | cut -d' ' -f11)
-install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.1.1.$LIB_EXT libHSdrct-*.$LIB_EXT
-cp $LIBCRYPTO_PATH libcrypto.1.1.$LIB_EXT
-chmod 755 libcrypto.1.1.$LIB_EXT
-install_name_tool -id "libcrypto.1.1.$LIB_EXT" libcrypto.1.1.$LIB_EXT
+install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.3.0.$LIB_EXT libHSdrct-*.$LIB_EXT
+cp $LIBCRYPTO_PATH libcrypto.3.0.$LIB_EXT
+chmod 755 libcrypto.3.0.$LIB_EXT
+install_name_tool -id "libcrypto.3.0.$LIB_EXT" libcrypto.3.0.$LIB_EXT
 install_name_tool -id "libffi.8.$LIB_EXT" libffi.$LIB_EXT
 
 LIBCRYPTO_PATH=$(otool -l $LIB | grep libcrypto | cut -d' ' -f11)
 if [ -n "$LIBCRYPTO_PATH" ]; then
-    install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.1.1.$LIB_EXT $LIB
+    install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.3.0.$LIB_EXT $LIB
 fi
 
 LIBCRYPTO_PATH=$(otool -l libHSsmplxmq*.$LIB_EXT | grep libcrypto | cut -d' ' -f11)
 if [ -n "$LIBCRYPTO_PATH" ]; then
-    install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.1.1.$LIB_EXT libHSsmplxmq*.$LIB_EXT
+    install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.3.0.$LIB_EXT libHSsmplxmq*.$LIB_EXT
 fi
 
 LIBCRYPTO_PATH=$(otool -l libHSsqlcphr-*.$LIB_EXT | grep libcrypto | cut -d' ' -f11)
 if [ -n "$LIBCRYPTO_PATH" ]; then
-    install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.1.1.$LIB_EXT libHSsqlcphr-*.$LIB_EXT
+    install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.3.0.$LIB_EXT libHSsqlcphr-*.$LIB_EXT
 fi
 
 for lib in $(find . -type f -name "*.$LIB_EXT"); do
