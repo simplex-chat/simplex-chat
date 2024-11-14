@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
@@ -22,6 +23,7 @@ import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
+import Data.Either (partitionEithers, rights)
 import Data.FileEmbed
 import Data.Foldable (foldMap')
 import Data.IORef
@@ -43,6 +45,7 @@ import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import Language.Haskell.TH.Syntax (lift)
 import Simplex.Chat.Operators.Conditions
+import Simplex.Chat.Types (User)
 import Simplex.Chat.Types.Util (textParseJSON)
 import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
 import Simplex.Messaging.Encoding.String
@@ -196,10 +199,28 @@ data UpdatedUserOperatorServers = UpdatedUserOperatorServers
   }
   deriving (Show)
 
-updatedServers :: UserProtocol p => UpdatedUserOperatorServers -> SProtocolType p -> [AUserServer p]
-updatedServers UpdatedUserOperatorServers {smpServers, xftpServers} = \case
+data ValidatedUserOperatorServers = ValidatedUserOperatorServers
+  { operator :: Maybe ServerOperator,
+    smpServers :: [ValidatedServer 'PSMP],
+    xftpServers :: [ValidatedServer 'PXFTP]
+  }
+  deriving (Show)
+
+data ValidatedServer p = ValidatedServer {aUserServer :: Either Text (AUserServer p)}
+  deriving (Show)
+
+validatedServers :: UserProtocol p => ValidatedUserOperatorServers -> SProtocolType p -> [ValidatedServer p]
+validatedServers ValidatedUserOperatorServers {smpServers, xftpServers} = \case
   SPSMP -> smpServers
   SPXFTP -> xftpServers
+
+toValidatedServers :: UpdatedUserOperatorServers -> ValidatedUserOperatorServers
+toValidatedServers UpdatedUserOperatorServers {operator, smpServers, xftpServers} =
+  ValidatedUserOperatorServers
+    { operator,
+      smpServers = map (ValidatedServer . Right) smpServers,
+      xftpServers = map (ValidatedServer . Right) xftpServers
+    }
 
 type UserServer p = UserServer' 'DBStored p
 
@@ -352,35 +373,42 @@ groupByOperator (ops, smpSrvs, xftpSrvs) = do
     addXFTP srv s@UserOperatorServers {xftpServers} = (s :: UserOperatorServers) {xftpServers = srv : xftpServers}
 
 data UserServersError
-  = USEStorageMissing {protocol :: AProtocolType}
-  | USEProxyMissing {protocol :: AProtocolType}
+  = USENoServers {protocol :: AProtocolType, user :: Maybe User}
+  | USEStorageMissing {protocol :: AProtocolType, user :: Maybe User}
+  | USEProxyMissing {protocol :: AProtocolType, user :: Maybe User}
+  | USEInvalidServer {protocol :: AProtocolType, invalidServer :: Text}
   | USEDuplicateServer {protocol :: AProtocolType, duplicateServer :: AProtoServerWithAuth, duplicateHost :: TransportHost}
   deriving (Show)
 
-validateUserServers :: NonEmpty UpdatedUserOperatorServers -> [UserServersError]
-validateUserServers uss =
-  missingRolesErr SPSMP storage USEStorageMissing
-    <> missingRolesErr SPSMP proxy USEProxyMissing
-    <> missingRolesErr SPXFTP storage USEStorageMissing
-    <> duplicatServerErrs SPSMP
-    <> duplicatServerErrs SPXFTP
+-- validateUserServers :: NonEmpty UpdatedUserOperatorServers -> [(User, NonEmpty UpdatedUserOperatorServers)] -> [UserServersError]
+-- validateUserServers uss otherUSSs =
+validateUserServers :: [ValidatedUserOperatorServers] -> [(User, [ValidatedUserOperatorServers])] -> [UserServersError]
+validateUserServers curr others = currUserErrs <> concatMap otherUserErrs others
   where
-    missingRolesErr :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> (ServerRoles -> Bool) -> (AProtocolType -> UserServersError) -> [UserServersError]
-    missingRolesErr p roleSel err = [err (AProtocolType p) | not hasRole]
+    currUserErrs = noServersErrs SPSMP Nothing curr <> noServersErrs SPXFTP Nothing curr <> serverErrs SPSMP curr <> serverErrs SPXFTP curr
+    otherUserErrs (user, uss) = noServersErrs SPSMP (Just user) uss <> noServersErrs SPXFTP (Just user) uss
+    servers :: UserProtocol p => SProtocolType p -> [ValidatedUserOperatorServers] -> [Either Text (AUserServer p)]
+    servers p = map aUserServer . concatMap (`validatedServers` p)
+    noServersErrs  :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> Maybe User -> [ValidatedUserOperatorServers] -> [UserServersError]
+    noServersErrs p user uss
+      | noServers opEnabled = [USENoServers p' user]
+      | otherwise = [USEStorageMissing p' user | noServers (hasRole storage)] <> [USEProxyMissing p' user | noServers (hasRole proxy)]
       where
-        hasRole =
-          any (\(AUS _ UserServer {deleted, enabled}) -> enabled && not deleted) $
-            concatMap (`updatedServers` p) $ filter roleEnabled (L.toList uss)
-        roleEnabled UpdatedUserOperatorServers {operator} =
+        p' = AProtocolType p
+        noServers cond = not $ any srvEnabled $ rights $ servers p $ filter cond uss
+        opEnabled ValidatedUserOperatorServers {operator} =
+          maybe True (\ServerOperator {enabled} -> enabled) operator
+        hasRole roleSel ValidatedUserOperatorServers {operator} =
           maybe True (\ServerOperator {enabled, roles} -> enabled && roleSel roles) operator
-    duplicatServerErrs :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> [UserServersError]
-    duplicatServerErrs p = mapMaybe duplicateErr_ srvs
+        srvEnabled (AUS _ UserServer {deleted, enabled}) = enabled && not deleted
+    serverErrs :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> [ValidatedUserOperatorServers] -> [UserServersError]
+    serverErrs p uss = map (USEInvalidServer p') invalidSrvs <> mapMaybe duplicateErr_ srvs
       where
-        srvs =
-          filter (\(AUS _ UserServer {deleted}) -> not deleted) $
-            concatMap (`updatedServers` p) (L.toList uss)
+        p' = AProtocolType p
+        (invalidSrvs, userSrvs) = partitionEithers $ servers p uss
+        srvs = filter (\(AUS _ UserServer {deleted}) -> not deleted) userSrvs
         duplicateErr_ (AUS _ srv@UserServer {server}) =
-          USEDuplicateServer (AProtocolType p) (AProtoServerWithAuth p server)
+          USEDuplicateServer p' (AProtoServerWithAuth p server)
             <$> find (`S.member` duplicateHosts) (srvHost srv)
         duplicateHosts = snd $ foldl' addHost (S.empty, S.empty) allHosts
         allHosts = concatMap (\(AUS _ srv) -> L.toList $ srvHost srv) srvs
@@ -430,9 +458,15 @@ instance (DBStoredI s, ProtocolTypeI p) => FromJSON (UserServer' s p) where
 instance ProtocolTypeI p => FromJSON (AUserServer p) where
   parseJSON v = (AUS SDBStored <$> parseJSON v) <|> (AUS SDBNew <$> parseJSON v)
 
+instance ProtocolTypeI p => FromJSON (ValidatedServer p) where
+  parseJSON v = ValidatedServer <$> ((Right <$> parseJSON v) <|> (Left <$> parseJSON v))
+
 $(JQ.deriveJSON defaultJSON ''UserOperatorServers)
 
 instance FromJSON UpdatedUserOperatorServers where
   parseJSON = $(JQ.mkParseJSON defaultJSON ''UpdatedUserOperatorServers)
+
+instance FromJSON ValidatedUserOperatorServers where
+  parseJSON = $(JQ.mkParseJSON defaultJSON ''ValidatedUserOperatorServers)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "USE") ''UserServersError)

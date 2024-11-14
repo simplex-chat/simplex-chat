@@ -358,7 +358,7 @@ data ChatCommand
   | APISetServerOperators (NonEmpty ServerOperator)
   | APIGetUserServers UserId
   | APISetUserServers UserId (NonEmpty UpdatedUserOperatorServers)
-  | APIValidateServers (NonEmpty UpdatedUserOperatorServers) -- response is CRUserServersValidation
+  | APIValidateServers [ValidatedUserOperatorServers] -- response is CRUserServersValidation
   | APIGetUsageConditions
   | APISetConditionsNotified Int64
   | APIAcceptConditions Int64 (NonEmpty Int64)

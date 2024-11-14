@@ -1608,7 +1608,7 @@ processChatCommand' vr = \case
   APIGetUserServers userId -> withUserId userId $ \user -> withFastStore $ \db ->
     CRUserServers user <$> (liftIO . groupByOperator =<< getUserServers db user)
   APISetUserServers userId userServers -> withUserId userId $ \user -> do
-    let errors = validateUserServers userServers
+    let errors = validateUserServers (map toValidatedServers $ L.toList userServers) []
     unless (null errors) $ throwChatError (CECommandError $ "user servers validation error(s): " <> show errors)
     (operators, smpServers, xftpServers) <- withFastStore $ \db -> do
       setUserServers db user userServers
@@ -1620,7 +1620,7 @@ processChatCommand' vr = \case
       setProtocolServers a auId $ agentServerCfgs opDomains (rndServers SPSMP rs) smpServers
       setProtocolServers a auId $ agentServerCfgs opDomains (rndServers SPXFTP rs) xftpServers
     ok_
-  APIValidateServers userServers -> pure $ CRUserServersValidation $ validateUserServers userServers
+  APIValidateServers userServers -> pure $ CRUserServersValidation $ validateUserServers userServers []
   APIGetUsageConditions -> do
     (usageConditions, acceptedConditions) <- withFastStore $ \db -> do
       usageConditions <- getCurrentUsageConditions db
