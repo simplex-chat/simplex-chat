@@ -30,21 +30,27 @@ private enum NetworkAndServersSheet: Identifiable {
 }
 
 struct NetworkAndServers: View {
+    @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     @EnvironmentObject var theme: AppTheme
-    @State private var serverOperators: [ServerOperator] = []
+    @State private var currUserServers: [UserOperatorServers] = []
+    @State private var userServers: [UserOperatorServers] = []
     @State private var sheetItem: NetworkAndServersSheet? = nil
+    @State private var justOpened = true
+    @State private var showSaveDialog = false
 
     var body: some View {
         VStack {
             List {
                 let conditionsAction = m.usageConditionsAction
-                let smpServers = [ServerCfg.sampleData.preset, ServerCfg.sampleData.preset]
-                let xftpServers = [ServerCfg.sampleData.xftpPreset, ServerCfg.sampleData.xftpPreset]
                 Section {
-                    ForEach($serverOperators) { srvOperator in
-                        serverOperatorView(srvOperator, smpServers, xftpServers)
+                    ForEach(userServers.enumerated().map { $0 }, id: \.element.id) { idx, userOperatorServers in
+                        if let serverOperator = userOperatorServers.operator {
+                            serverOperatorView(idx, serverOperator)
+                        } else {
+                            EmptyView()
+                        }
                     }
 
                     if let conditionsAction = conditionsAction {
@@ -55,7 +61,7 @@ struct NetworkAndServers: View {
                         .foregroundColor(theme.colors.secondary)
                 } footer: {
                     switch conditionsAction {
-                    case let .reviewUpdatedConditions(_, deadline):
+                    case let .review(_, deadline, _):
                         if let deadline = deadline {
                             Text("Review conditions until: \(conditionsTimestamp(deadline)).")
                                 .foregroundColor(theme.colors.secondary)
@@ -66,14 +72,19 @@ struct NetworkAndServers: View {
                 }
 
                 Section {
-                    NavigationLink {
-                        YourServersView()
+                    if let idx = userServers.firstIndex(where: { $0.operator == nil }) {
+                        NavigationLink {
+                            YourServersView(
+                                userServers: $userServers,
+                                operatorServersIndex: idx
+                            )
                             .navigationTitle("Your servers")
                             .modifier(ThemedBackground(grouped: true))
-                    } label: {
-                        Text("Your servers")
+                        } label: {
+                            Text("Your servers")
+                        }
                     }
-                    
+
                     NavigationLink {
                         AdvancedNetworkSettings()
                             .navigationTitle("Advanced settings")
@@ -87,8 +98,8 @@ struct NetworkAndServers: View {
                 }
 
                 Section {
-                    Button("Save servers") {}
-                        .disabled(true)
+                    Button("Save servers", action: saveServers)
+                        .disabled(saveDisabled)
                 }
 
                 Section(header: Text("Calls").foregroundColor(theme.colors.secondary)) {
@@ -110,10 +121,40 @@ struct NetworkAndServers: View {
                 }
             }
         }
-        .onAppear {
-            serverOperators = ChatModel.shared.serverOperators
+        .task {
+            // this condition is needed to prevent re-setting the servers when exiting single server view
+            if justOpened {
+                do {
+                    currUserServers = try await getUserServers()
+                    userServers = currUserServers
+                } catch let error {
+                    showAlert(
+                        NSLocalizedString("Error loading servers", comment: "alert title"),
+                        message: responseError(error)
+                    )
+                }
+                justOpened = false
+            }
         }
-        .sheet(item: $sheetItem, onDismiss: { serverOperators = ChatModel.shared.serverOperators }) { item in
+        .modifier(BackButton(disabled: Binding.constant(false)) {
+            if saveDisabled {
+                dismiss()
+                justOpened = false
+            } else {
+                showSaveDialog = true
+            }
+        })
+        .confirmationDialog("Save servers?", isPresented: $showSaveDialog, titleVisibility: .visible) {
+            Button("Save") {
+                saveServers()
+                dismiss()
+                justOpened = false
+            }
+            Button("Exit without saving") { dismiss() }
+        }
+        // TODO smarter onDismiss - apply model operators conditions state to currUserServers/userServers
+        // .sheet(item: $sheetItem, onDismiss: { serverOperators = ChatModel.shared.serverOperators }) { item in
+        .sheet(item: $sheetItem) { item in
             switch item {
             case let .showConditions(conditionsAction):
                 UsageConditionsView(
@@ -122,7 +163,7 @@ struct NetworkAndServers: View {
                     conditionsAction: conditionsAction,
                     onAcceptAction: { date in
                         switch conditionsAction {
-                        case let .reviewUpdatedConditions(acceptForOperators, _): ChatModel.shared.acceptConditionsForOperators(acceptForOperators, date)
+                        case let .review(operators, _, _): ChatModel.shared.acceptConditionsForOperators(operators, date)
                         default: break
                         }
                     }
@@ -132,32 +173,26 @@ struct NetworkAndServers: View {
         }
     }
 
-    @ViewBuilder private func serverOperatorView(
-        _ serverOperator: Binding<ServerOperator>,
-        _ smpServers: [ServerCfg],
-        _ xftpServers: [ServerCfg]
-    ) -> some View {
-        let srvOperator = serverOperator.wrappedValue
+    @ViewBuilder private func serverOperatorView(_ operatorServersIndex: Int, _ serverOperator: ServerOperator) -> some View {
         NavigationLink() {
             OperatorView(
-                serverOperator: serverOperator,
-                serverOperatorToEdit: srvOperator,
-                useOperator: srvOperator.enabled,
-                currSMPServers: smpServers,
-                currXFTPServers: xftpServers
+                userServers: $userServers,
+                operatorServersIndex: operatorServersIndex,
+                serverOperatorToEdit: serverOperator,
+                useOperator: serverOperator.enabled
             )
-            .navigationBarTitle("\(srvOperator.name) servers")
+            .navigationBarTitle("\(serverOperator.tradeName) servers")
             .modifier(ThemedBackground(grouped: true))
             .navigationBarTitleDisplayMode(.large)
         } label: {
             HStack {
-                Image(srvOperator.logo(colorScheme))
+                Image(serverOperator.logo(colorScheme))
                     .resizable()
                     .scaledToFit()
-                    .grayscale(srvOperator.enabled ? 0.0 : 1.0)
+                    .grayscale(serverOperator.enabled ? 0.0 : 1.0)
                     .frame(width: 24, height: 24)
-                Text(srvOperator.name)
-                    .foregroundColor(srvOperator.enabled ? theme.colors.onBackground : theme.colors.secondary)
+                Text(serverOperator.tradeName)
+                    .foregroundColor(serverOperator.enabled ? theme.colors.onBackground : theme.colors.secondary)
             }
         }
     }
@@ -167,10 +202,46 @@ struct NetworkAndServers: View {
             sheetItem = .showConditions(conditionsAction: conditionsAction)
         } label: {
             switch conditionsAction {
-            case .reviewUpdatedConditions:
+            case .review:
                 Text("Review conditions")
-            case .viewAcceptedConditions:
+            case .accepted:
                 Text("Accepted conditions")
+            }
+        }
+    }
+
+
+    private var saveDisabled: Bool {
+        userServers == currUserServers
+    }
+
+    func saveServers() {
+        Task {
+            do {
+                // TODO validateServers
+                // TODO Apply validation result to userServers state
+                try await setUserServers(userServers: userServers)
+                // Get updated servers for new server ids (otherwise it messes up delete of newly added and saved servers)
+                do {
+                    let updatedServers = try await getUserServers()
+                    await MainActor.run {
+                        currUserServers = updatedServers
+                        userServers = updatedServers
+                    }
+                } catch let error {
+                    logger.error("saveServers getUserServers error: \(responseError(error))")
+                    await MainActor.run {
+                        currUserServers = userServers
+                    }
+                }
+            } catch let error {
+                logger.error("saveServers setUserServers error: \(responseError(error))")
+                await MainActor.run {
+                    showAlert(
+                        NSLocalizedString("Error saving servers", comment: "alert title"),
+                        message: responseError(error)
+                    )
+                }
             }
         }
     }

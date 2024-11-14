@@ -15,19 +15,29 @@ struct OperatorView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     @EnvironmentObject var theme: AppTheme
-    @Binding var serverOperator: ServerOperator
+    @Binding var userServers: [UserOperatorServers]
+    var operatorServersIndex: Int
     @State var serverOperatorToEdit: ServerOperator
     @State var useOperator: Bool
     @State private var useOperatorToggleReset: Bool = false
     @State private var showConditionsSheet: Bool = false
-    @State var currSMPServers: [ServerCfg]
-    @State var smpServers: [ServerCfg] = []
-    @State var currXFTPServers: [ServerCfg]
-    @State var xftpServers: [ServerCfg] = []
     @State private var selectedServer: String? = nil
-    @State private var justOpened = true
+    @State private var testing = false
 
     var body: some View {
+        operatorView()
+            .opacity(testing ? 0.4 : 1)
+            .overlay {
+                if testing {
+                    ProgressView()
+                        .scaleEffect(2)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
+            .allowsHitTesting(!testing)
+    }
+
+    private func operatorView() -> some View {
         VStack {
             List {
                 Section {
@@ -38,47 +48,82 @@ struct OperatorView: View {
                         .foregroundColor(theme.colors.secondary)
                 } footer: {
                     switch (serverOperatorToEdit.conditionsAcceptance) {
-                    case let .accepted(date):
-                        Text("Conditions accepted on: \(conditionsTimestamp(date)).")
-                            .foregroundColor(theme.colors.secondary)
-                    case let .reviewAvailable(deadline):
-                        if serverOperatorToEdit.enabled {
-                            Text("Review conditions until: \(conditionsTimestamp(deadline)).")
+                    case let .accepted(acceptedAt):
+                        if let acceptedAt = acceptedAt {
+                            Text("Conditions accepted on: \(conditionsTimestamp(acceptedAt)).")
                                 .foregroundColor(theme.colors.secondary)
                         }
-                    case .reviewRequired:
-                        EmptyView()
+                    case let .required(deadline):
+                        if serverOperatorToEdit.enabled, let deadline = deadline {
+                            Text("Conditions will be considered accepted after: \(conditionsTimestamp(deadline)).")
+                                .foregroundColor(theme.colors.secondary)
+                        }
                     }
                 }
 
                 if serverOperatorToEdit.enabled {
-                    usageRolesSection()
-                    serversSection($smpServers, .smp)
-                    serversSection($xftpServers, .xftp)
-                }
-
-                Section {
-                    if serverOperatorToEdit.enabled {
-                        Button("Test servers") {}
+                    Section(header: Text("Use operator").foregroundColor(theme.colors.secondary)) {
+                        Toggle("For storage", isOn: $serverOperatorToEdit.roles.storage)
+                        Toggle("As proxy", isOn: $serverOperatorToEdit.roles.proxy)
                     }
-                    Button("Save") {}
-                        .disabled(true)
+
+                    if !userServers[operatorServersIndex].smpServers.isEmpty {
+                        Section {
+                            ForEach($userServers[operatorServersIndex].smpServers) { srv in
+                                ProtocolServerViewLink(
+                                    userServers: $userServers,
+                                    server: srv,
+                                    serverProtocol: .smp,
+                                    backLabel: "\(serverOperatorToEdit.tradeName) servers",
+                                    selectedServer: $selectedServer
+                                )
+                            }
+                        } header: {
+                            Text("Message servers")
+                                .foregroundColor(theme.colors.secondary)
+                        } footer: {
+                            Text("The servers for new connections of your current chat profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
+                                .foregroundColor(theme.colors.secondary)
+                                .lineLimit(10)
+                        }
+                    }
+
+                    if !userServers[operatorServersIndex].xftpServers.isEmpty {
+                        Section {
+                            ForEach($userServers[operatorServersIndex].xftpServers) { srv in
+                                ProtocolServerViewLink(
+                                    userServers: $userServers,
+                                    server: srv,
+                                    serverProtocol: .xftp,
+                                    backLabel: "\(serverOperatorToEdit.tradeName) servers",
+                                    selectedServer: $selectedServer
+                                )
+                            }
+                        } header: {
+                            Text("Media & file servers")
+                                .foregroundColor(theme.colors.secondary)
+                        } footer: {
+                            Text("The servers for new files of your current chat profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
+                                .foregroundColor(theme.colors.secondary)
+                                .lineLimit(10)
+                        }
+                    }
+
+                    Section {
+                        TestServersButton(
+                            smpServers: $userServers[operatorServersIndex].smpServers,
+                            xftpServers: $userServers[operatorServersIndex].xftpServers,
+                            testing: $testing
+                        )
+                    }
                 }
             }
         }
         .modifier(BackButton(disabled: Binding.constant(false)) {
-            serverOperator = serverOperatorToEdit
+            userServers[operatorServersIndex].operator = serverOperatorToEdit
             ChatModel.shared.updateServerOperator(serverOperatorToEdit)
             dismiss()
         })
-        .onAppear {
-            // this condition is needed to prevent re-setting the servers when exiting single server view
-            if justOpened {
-                smpServers = currSMPServers
-                xftpServers = currXFTPServers
-                justOpened = false
-            }
-        }
         .sheet(isPresented: $showConditionsSheet, onDismiss: onUseToggleSheetDismissed) {
             SingleOperatorUsageConditionsView(serverOperator: $serverOperatorToEdit, serverOperatorToEdit: serverOperatorToEdit)
                 .modifier(ThemedBackground(grouped: true))
@@ -87,18 +132,18 @@ struct OperatorView: View {
 
     private func infoViewLink() -> some View {
         NavigationLink() {
-            OperatorInfoView(serverOperator: serverOperator)
+            OperatorInfoView(serverOperator: serverOperatorToEdit)
                 .navigationBarTitle("Operator information")
                 .modifier(ThemedBackground(grouped: true))
                 .navigationBarTitleDisplayMode(.large)
         } label: {
             HStack {
-                Image(serverOperator.logo(colorScheme))
+                Image(serverOperatorToEdit.logo(colorScheme))
                     .resizable()
                     .scaledToFit()
                     .grayscale(serverOperatorToEdit.enabled ? 0.0 : 1.0)
                     .frame(width: 24, height: 24)
-                Text(serverOperator.name)
+                Text(serverOperatorToEdit.tradeName)
             }
         }
     }
@@ -113,15 +158,13 @@ struct OperatorView: View {
                     case .accepted:
                         serverOperatorToEdit.enabled = true
                         ChatModel.shared.updateServerOperator(serverOperatorToEdit)
-                    case .reviewAvailable:
-                        if !ChatModel.shared.operatorsWithConditionsAccepted.isEmpty {
+                    case let .required(deadline):
+                        if deadline == nil {
                             showConditionsSheet = true
                         } else {
                             serverOperatorToEdit.enabled = true
                             ChatModel.shared.updateServerOperator(serverOperatorToEdit)
                         }
-                    case .reviewRequired:
-                        showConditionsSheet = true
                     }
                 } else {
                     serverOperatorToEdit.enabled = false
@@ -132,73 +175,12 @@ struct OperatorView: View {
 
     private func onUseToggleSheetDismissed() {
         if useOperator && !serverOperatorToEdit.enabled {
-            if case .reviewRequired = serverOperatorToEdit.conditionsAcceptance {
-                useOperatorToggleReset = true
-                useOperator = false
-            } else if serverOperatorToEdit.conditionsAcceptance.conditionsAccepted {
+            if serverOperatorToEdit.conditionsAcceptance.usageAllowed {
                 serverOperatorToEdit.enabled = true
                 ChatModel.shared.updateServerOperator(serverOperatorToEdit)
-            }
-        }
-    }
-
-    private func usageRolesSection() -> some View {
-        Section(header: Text("Use operator").foregroundColor(theme.colors.secondary)) {
-            Toggle("For storage", isOn: $serverOperatorToEdit.roles.storage)
-            Toggle("As proxy", isOn: $serverOperatorToEdit.roles.proxy)
-        }
-    }
-
-    @ViewBuilder private func serversSection(_ servers: Binding<[ServerCfg]>, _ serverProtocol: ServerProtocol) -> some View {
-        let proto = serverProtocol.rawValue.uppercased()
-        Section {
-            ForEach(servers) { srv in
-                protocolServerView(srv, serverProtocol)
-            }
-        } header: {
-            Text("\(proto) servers")
-                .foregroundColor(theme.colors.secondary)
-        } footer: {
-            Text("The servers for new connections of your current chat profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
-                .foregroundColor(theme.colors.secondary)
-                .lineLimit(10)
-        }
-    }
-
-    // TODO Refactor (similar function in ProtocolServersView) / Keep modified for operator servers? (some things are not applicable)
-    // TODO Check all servers across all operators (uniqueAddress in ProtocolServersView) / Validate via api (per server?)
-    private func protocolServerView(_ server: Binding<ServerCfg>, _ serverProtocol: ServerProtocol) -> some View {
-        let proto = serverProtocol.rawValue.uppercased()
-        let srv = server.wrappedValue
-        return NavigationLink(tag: srv.id, selection: $selectedServer) {
-            ProtocolServerView(
-                serverProtocol: serverProtocol,
-                server: server,
-                serverToEdit: srv,
-                backLabel: "\(serverOperator.name) servers"
-            )
-            .navigationBarTitle("\(proto) server")
-            .modifier(ThemedBackground(grouped: true))
-            .navigationBarTitleDisplayMode(.large)
-        } label: {
-            let address = parseServerAddress(srv.server)
-            HStack {
-                Group {
-                    if !srv.enabled {
-                        Image(systemName: "slash.circle").foregroundColor(theme.colors.secondary)
-                    } else {
-                        showTestStatus(server: srv)
-                    }
-                }
-            }
-            .frame(width: 16, alignment: .center)
-            .padding(.trailing, 4)
-
-            let v = Text(address?.hostnames.first ?? srv.server).lineLimit(1)
-            if srv.enabled {
-                v
             } else {
-                v.foregroundColor(theme.colors.secondary)
+                useOperatorToggleReset = true
+                useOperator = false
             }
         }
     }
@@ -241,15 +223,57 @@ Potenti dolor ridiculus est faucibus leo. Euismod consequat ultricies fringilla 
 Habitasse eu sapien eleifend gravida tortor potenti senectus euismod. Lectus enim fames turpis lectus facilisi efficitur elit porttitor facilisi. Nisl quam senectus quam augue integer leo. In aliquam tempor nibh proin felis tortor elementum sodales lacinia. Ut per placerat bibendum magna dapibus fermentum bibendum amet congue. Curae bibendum enim platea per faucibus imperdiet morbi hac varius. Conubia feugiat justo hac faucibus dis.
 """
 
-func conditionsTextView() -> some View {
-    ScrollView {
-        Text(conditionsText)
-            .padding()
+struct ConditionsTextView: View {
+    @State private var conditionsData: (UsageConditions, String?, UsageConditions?)?
+    @State private var failedToLoad: Bool = false
+
+    let defaultConditionsLink = "https://github.com/simplex-chat/simplex-chat/blob/stable/PRIVACY.md"
+
+    var body: some View {
+        viewBody()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .task {
+                do {
+                    conditionsData = try await getUsageConditions()
+                } catch let error {
+                    logger.error("ConditionsTextView getUsageConditions error: \(responseError(error))")
+                    failedToLoad = true
+                }
+            }
     }
-    .background(
-        RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .fill(Color(uiColor: .secondarySystemGroupedBackground))
-    )
+
+    @ViewBuilder private func viewBody() -> some View {
+        if let (usageConditions, conditionsText, acceptedConditions) = conditionsData {
+            if let conditionsText = conditionsText {
+                ScrollView {
+                    Text(conditionsText.trimmingCharacters(in: .whitespacesAndNewlines))
+                        .padding()
+                }
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color(uiColor: .secondarySystemGroupedBackground))
+                )
+            } else {
+                let conditionsLink = "https://github.com/simplex-chat/simplex-chat/blob/\(usageConditions.conditionsCommit)/PRIVACY.md"
+                conditionsLinkView(conditionsLink)
+            }
+        } else if failedToLoad {
+            conditionsLinkView(defaultConditionsLink)
+        } else {
+            ProgressView()
+                .scaleEffect(2)
+        }
+    }
+
+    private func conditionsLinkView(_ conditionsLink: String) -> some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text("Current conditions text couldn't be loaded, you can review conditions via this link:")
+            Link(destination: URL(string: conditionsLink)!) {
+                Text(conditionsLink)
+                    .multilineTextAlignment(.leading)
+            }
+        }
+    }
 }
 
 struct SingleOperatorUsageConditionsView: View {
@@ -257,75 +281,85 @@ struct SingleOperatorUsageConditionsView: View {
     @EnvironmentObject var theme: AppTheme
     @Binding var serverOperator: ServerOperator
     @State var serverOperatorToEdit: ServerOperator
-    @State private var conditionsExpanded: Bool = false
+    @State private var usageConditionsNavLinkActive: Bool = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Group {
-                Text("Use operator \(serverOperator.name)")
-                    .font(.largeTitle)
-                    .bold()
-                    .padding(.top)
-                    .padding(.top)
-                
-                let operatorsWithConditionsAccepted = ChatModel.shared.operatorsWithConditionsAccepted
-                
-                if case let .accepted(date) = serverOperator.conditionsAcceptance {
-                    
-                    conditionsTextView()
-                    
-                    Text("Conditions accepted on: \(conditionsTimestamp(date)).")
-                        .foregroundColor(theme.colors.secondary)
+        viewBody()
+    }
+
+    @ViewBuilder private func viewBody() -> some View {
+        let operatorsWithConditionsAccepted = ChatModel.shared.serverOperators.filter { $0.conditionsAcceptance.conditionsAccepted }
+        if case .accepted = serverOperator.conditionsAcceptance {
+
+            // In current UI implementation this branch doesn't get shown - as conditions can't be opened from inside operator once accepted
+            VStack(alignment: .leading, spacing: 20) {
+                Group {
+                    viewHeader()
+                    ConditionsTextView()
                         .padding(.bottom)
                         .padding(.bottom)
+                }
+                .padding(.horizontal)
+            }
+            .frame(maxHeight: .infinity)
 
-                } else if !operatorsWithConditionsAccepted.isEmpty {
-                    
-                    Text("You already accepted conditions of use for following operator(s): **\(operatorsWithConditionsAccepted.map { $0.name }.joined(separator: ", "))**.")
+        } else if !operatorsWithConditionsAccepted.isEmpty {
 
-                    Text("Same conditions will apply to operator **\(serverOperator.name)**.")
-
-                    conditionsAppliedToOtherOperatorsText()
-                    
-                    if !conditionsExpanded {
-                        Button {
-                            conditionsExpanded = true
-                        } label: {
-                            Text("View conditions")
-                        }
+            NavigationView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Group {
+                        viewHeader()
+                        Text("Conditions are already accepted for following operator(s): **\(operatorsWithConditionsAccepted.map { $0.legalName_ }.joined(separator: ", "))**.")
+                        Text("Same conditions will apply to operator **\(serverOperator.legalName_)**.")
+                        conditionsAppliedToOtherOperatorsText()
+                        usageConditionsNavLinkButton()
 
                         Spacer()
-                    } else {
-                        conditionsTextView()
+
+                        acceptConditionsButton()
+                            .padding(.bottom)
+                            .padding(.bottom)
                     }
-                    
-                    acceptConditionsButton()
-                        .padding(.bottom)
-                        .padding(.bottom)
-
-                } else {
-                    
-                    Text("In order to use operator **\(serverOperator.name)**, accept conditions of use.")
-
-                    conditionsAppliedToOtherOperatorsText()
-                    
-                    conditionsTextView()
-                    
-                    acceptConditionsButton()
-                        .padding(.bottom)
-                        .padding(.bottom)
-
+                    .padding(.horizontal)
                 }
+                .frame(maxHeight: .infinity)
             }
-            .padding(.horizontal)
+
+        } else {
+
+            VStack(alignment: .leading, spacing: 20) {
+                Group {
+                    viewHeader()
+                    Text("In order to use operator **\(serverOperator.legalName_)**, accept conditions of use.")
+                    conditionsAppliedToOtherOperatorsText()
+                    ConditionsTextView()
+                    acceptConditionsButton()
+                        .padding(.bottom)
+                        .padding(.bottom)
+                }
+                .padding(.horizontal)
+            }
+            .frame(maxHeight: .infinity)
+
         }
-        .frame(maxHeight: .infinity)
+    }
+
+    private func viewHeader() -> some View {
+        Text("Use operator \(serverOperator.tradeName)")
+            .font(.largeTitle)
+            .bold()
+            .padding(.top)
+            .padding(.top)
     }
 
     @ViewBuilder private func conditionsAppliedToOtherOperatorsText() -> some View {
-        let otherEnabledOperators = ChatModel.shared.enabledOperatorsWithConditionsNotAccepted.filter { $0.operatorId != serverOperator.operatorId }
-        if !otherEnabledOperators.isEmpty {
-            Text("Conditions will also apply for following operator(s) you use: **\(otherEnabledOperators.map { $0.name }.joined(separator: ", "))**.")
+        let otherOperatorsToApply = ChatModel.shared.serverOperators.filter {
+            $0.enabled &&
+            !$0.conditionsAcceptance.conditionsAccepted &&
+            $0.operatorId != serverOperator.operatorId
+        }
+        if !otherOperatorsToApply.isEmpty {
+            Text("Conditions will also apply for following operator(s) you use: **\(otherOperatorsToApply.map { $0.legalName_ }.joined(separator: ", "))**.")
         }
     }
 
@@ -333,15 +367,48 @@ struct SingleOperatorUsageConditionsView: View {
         Button {
             // Should call api to save state here, not when saving all servers
             // (It's counterintuitive to lose to closed sheet or Reset)
-            let date = Date.now
-            ChatModel.shared.acceptConditionsForEnabledOperators(date)
-            serverOperatorToEdit.conditionsAcceptance = .accepted(date: date)
+            let acceptedAt = Date.now
+            ChatModel.shared.acceptConditionsForEnabledOperators(acceptedAt)
+            serverOperatorToEdit.conditionsAcceptance = .accepted(acceptedAt: acceptedAt)
             serverOperator = serverOperatorToEdit
             dismiss()
         } label: {
             Text("Accept conditions")
         }
-        .buttonStyle(OnboardingButtonStyle())
+        .buttonStyle(OnboardingButtonStyle(isDisabled: false))
+    }
+
+    private func usageConditionsNavLinkButton() -> some View {
+        ZStack {
+            Button {
+                usageConditionsNavLinkActive = true
+            } label: {
+                Text("View conditions")
+            }
+
+            NavigationLink(isActive: $usageConditionsNavLinkActive) {
+                usageConditionsDestinationView()
+            } label: {
+                EmptyView()
+            }
+            .frame(width: 1, height: 1)
+            .hidden()
+        }
+    }
+
+    private func usageConditionsDestinationView() -> some View {
+        VStack(spacing: 20) {
+            ConditionsTextView()
+                .padding(.top)
+
+            acceptConditionsButton()
+                .padding(.bottom)
+                .padding(.bottom)
+        }
+        .padding(.horizontal)
+        .navigationTitle("Conditions of use")
+        .navigationBarTitleDisplayMode(.large)
+        .modifier(ThemedBackground(grouped: true))
     }
 }
 
@@ -364,21 +431,21 @@ struct UsageConditionsView: View {
             }
             
             switch conditionsAction {
-            case let .reviewUpdatedConditions(acceptForOperators, _):
-                
-                Text("Conditions will be accepted for following operator(s): **\(acceptForOperators.map { $0.name }.joined(separator: ", "))**.")
+            case let .review(operators, _, _):
 
-                conditionsTextView()
-                
-                acceptConditionsButton(acceptForOperators)
+                Text("Conditions will be accepted for following operator(s): **\(operators.map { $0.legalName_ }.joined(separator: ", "))**.")
+
+                ConditionsTextView()
+
+                acceptConditionsButton(operators)
                     .padding(.bottom)
                     .padding(.bottom)
                 
-            case let .viewAcceptedConditions(acceptedForOperators):
-                
-                Text("Conditions are accepted for following operator(s): **\(acceptedForOperators.map { $0.name }.joined(separator: ", "))**.")
+            case let .accepted(operators):
 
-                conditionsTextView()
+                Text("Conditions are accepted for following operator(s): **\(operators.map { $0.legalName_ }.joined(separator: ", "))**.")
+
+                ConditionsTextView()
                     .padding(.bottom)
                     .padding(.bottom)
                 
@@ -388,7 +455,7 @@ struct UsageConditionsView: View {
         .frame(maxHeight: .infinity)
     }
 
-    private func acceptConditionsButton(_ acceptForOperators: [ServerOperator]) -> some View {
+    private func acceptConditionsButton(_ operators: [ServerOperator]) -> some View {
         Button {
             // Should call api to save state here, not when saving all servers
             // (It's counterintuitive to lose to closed sheet or Reset)
@@ -399,16 +466,15 @@ struct UsageConditionsView: View {
         } label: {
             Text("Accept conditions")
         }
-        .buttonStyle(OnboardingButtonStyle())
+        .buttonStyle(OnboardingButtonStyle(isDisabled: false))
     }
 }
 
 #Preview {
     OperatorView(
-        serverOperator: Binding.constant(ServerOperator.sampleData1),
+        userServers: Binding.constant([UserOperatorServers.sampleData1]),
+        operatorServersIndex: 1,
         serverOperatorToEdit: ServerOperator.sampleData1,
-        useOperator: ServerOperator.sampleData1.enabled,
-        currSMPServers: [ServerCfg.sampleData.preset],
-        currXFTPServers: [ServerCfg.sampleData.xftpPreset]
+        useOperator: ServerOperator.sampleData1.enabled
     )
 }

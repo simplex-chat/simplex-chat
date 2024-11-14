@@ -493,8 +493,8 @@ struct SMPServerSummaryView: View {
                     .textSelection(.enabled)
                 if summary.known == true {
                     NavigationLink {
-                        ProtocolServersView(serverProtocol: .smp)
-                            .navigationTitle("Your SMP servers")
+                        NetworkAndServers()
+                            .navigationTitle("Network & servers")
                             .modifier(ThemedBackground(grouped: true))
                     } label: {
                         Text("Open server settings")
@@ -681,8 +681,8 @@ struct XFTPServerSummaryView: View {
                     .textSelection(.enabled)
                 if summary.known == true {
                     NavigationLink {
-                        ProtocolServersView(serverProtocol: .xftp)
-                            .navigationTitle("Your XFTP servers")
+                        NetworkAndServers()
+                            .navigationTitle("Network & servers")
                             .modifier(ThemedBackground(grouped: true))
                     } label: {
                         Text("Open server settings")

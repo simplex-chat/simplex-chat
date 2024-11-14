@@ -500,18 +500,6 @@ func apiDeleteToken(token: DeviceToken) async throws {
     try await sendCommandOkResp(.apiDeleteToken(token: token))
 }
 
-func getUserProtoServers(_ serverProtocol: ServerProtocol) throws -> UserProtoServers {
-    let userId = try currentUserId("getUserProtoServers")
-    let r = chatSendCmdSync(.apiGetUserProtoServers(userId: userId, serverProtocol: serverProtocol))
-    if case let .userProtoServers(_, servers) = r { return servers }
-    throw r
-}
-
-func setUserProtoServers(_ serverProtocol: ServerProtocol, servers: [ServerCfg]) async throws {
-    let userId = try currentUserId("setUserProtoServers")
-    try await sendCommandOkResp(.apiSetUserProtoServers(userId: userId, serverProtocol: serverProtocol, servers: servers))
-}
-
 func testProtoServer(server: String) async throws -> Result<(), ProtocolTestFailure> {
     let userId = try currentUserId("testProtoServer")
     let r = await chatSendCmd(.apiTestProtoServer(userId: userId, server: server))
@@ -521,6 +509,71 @@ func testProtoServer(server: String) async throws -> Result<(), ProtocolTestFail
         }
         return .success(())
     }
+    throw r
+}
+
+func getServerOperatorsSync() throws -> ([ServerOperator], UsageConditionsAction?) {
+    let r = chatSendCmdSync(.apiGetServerOperators)
+    if case let .serverOperators(operators, conditionsAction) = r { return (operators, conditionsAction) }
+    logger.error("getServerOperatorsSync error: \(String(describing: r))")
+    throw r
+}
+
+func getServerOperators() async throws -> ([ServerOperator], UsageConditionsAction?) {
+    let r = await chatSendCmd(.apiGetServerOperators)
+    if case let .serverOperators(operators, conditionsAction) = r { return (operators, conditionsAction) }
+    logger.error("getServerOperators error: \(String(describing: r))")
+    throw r
+}
+
+func setServerOperators(operators: [ServerOperator]) async throws -> ([ServerOperator], UsageConditionsAction?) {
+    let r = await chatSendCmd(.apiSetServerOperators(operators: operators))
+    if case let .serverOperators(operators, conditionsAction) = r { return (operators, conditionsAction) }
+    logger.error("setServerOperators error: \(String(describing: r))")
+    throw r
+}
+
+func getUserServers() async throws -> [UserOperatorServers] {
+    let userId = try currentUserId("getUserServers")
+    let r = await chatSendCmd(.apiGetUserServers(userId: userId))
+    if case let .userServers(_, userServers) = r { return userServers }
+    logger.error("getUserServers error: \(String(describing: r))")
+    throw r
+}
+
+func setUserServers(userServers: [UserOperatorServers]) async throws {
+    let userId = try currentUserId("setUserServers")
+    let r = await chatSendCmd(.apiSetUserServers(userId: userId, userServers: userServers))
+    if case .cmdOk = r { return }
+    logger.error("setUserServers error: \(String(describing: r))")
+    throw r
+}
+
+func validateServers(userServers: [UserOperatorServers]) async throws -> [UserServersError] {
+    let r = await chatSendCmd(.apiValidateServers(userServers: userServers))
+    if case let .userServersValidation(serverErrors) = r { return serverErrors }
+    logger.error("validateServers error: \(String(describing: r))")
+    throw r
+}
+
+func getUsageConditions() async throws -> (UsageConditions, String?, UsageConditions?) {
+    let r = await chatSendCmd(.apiGetUsageConditions)
+    if case let .usageConditions(usageConditions, conditionsText, acceptedConditions) = r { return (usageConditions, conditionsText, acceptedConditions) }
+    logger.error("getUsageConditions error: \(String(describing: r))")
+    throw r
+}
+
+func setConditionsNotified(conditionsId: Int64) async throws {
+    let r = await chatSendCmd(.apiSetConditionsNotified(conditionsId: conditionsId))
+    if case .cmdOk = r { return }
+    logger.error("setConditionsNotified error: \(String(describing: r))")
+    throw r
+}
+
+func acceptConditions(conditionsId: Int64, operatorIds: [Int64]) async throws -> ([ServerOperator], UsageConditionsAction?) {
+    let r = await chatSendCmd(.apiAcceptConditions(conditionsId: conditionsId, operatorIds: operatorIds))
+    if case let .serverOperators(updatedOperators, conditionsAction) = r { return (updatedOperators, conditionsAction) }
+    logger.error("acceptConditions error: \(String(describing: r))")
     throw r
 }
 
@@ -1557,6 +1610,7 @@ func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = ni
     try apiSetAppFilePaths(filesFolder: getAppFilesDirectory().path, tempFolder: getTempFilesDirectory().path, assetsFolder: getWallpaperDirectory().deletingLastPathComponent().path)
     try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
     m.chatInitialized = true
+    (m.serverOperators, m.usageConditionsAction) = try getServerOperatorsSync()
     m.currentUser = try apiGetActiveUser()
     if m.currentUser == nil {
         onboardingStageDefault.set(.step1_SimpleXInfo)

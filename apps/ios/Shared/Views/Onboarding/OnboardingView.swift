@@ -16,7 +16,7 @@ struct OnboardingView: View {
         case .step1_SimpleXInfo: SimpleXInfo(onboarding: true)
         case .step2_CreateProfile: CreateFirstProfile()
         case .step3_CreateSimpleXAddress: CreateSimpleXAddress()
-        case .step3_ChooseServerOperators: ChooseServerOperators()
+        case .step3_ChooseServerOperators: ChooseServerOperators(onboarding: true)
         case .step4_SetNotificationsMode: SetNotificationsMode()
         case .onboardingComplete: EmptyView()
         }

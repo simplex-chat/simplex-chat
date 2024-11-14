@@ -12,15 +12,13 @@ import SimpleXChat
 struct ProtocolServerView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var theme: AppTheme
-    let serverProtocol: ServerProtocol
-    @Binding var server: ServerCfg
-    @State var serverToEdit: ServerCfg
+    @Binding var userServers: [UserOperatorServers]
+    @Binding var server: UserServer
+    @State var serverToEdit: UserServer
     var backLabel: LocalizedStringKey
     @State private var showTestFailure = false
     @State private var testing = false
     @State private var testFailure: ProtocolTestFailure?
-
-    var proto: String { serverProtocol.rawValue.uppercased() }
 
     var body: some View {
         ZStack {
@@ -34,8 +32,31 @@ struct ProtocolServerView: View {
             }
         }
         .modifier(BackButton(label: backLabel, disabled: Binding.constant(false)) {
-            server = serverToEdit
-            dismiss()
+            if let (serverToEditProtocol, serverToEditOperator) = serverProtocolAndOperator(serverToEdit, userServers),
+               let (serverProtocol, serverOperator) = serverProtocolAndOperator(server, userServers) {
+                if serverToEditProtocol != serverProtocol {
+                    dismiss()
+                    showAlert(
+                        NSLocalizedString("Error updating server", comment: "alert title"),
+                        message: NSLocalizedString("Server protocol changed.", comment: "alert title")
+                    )
+                } else if serverToEditOperator != serverOperator {
+                    dismiss()
+                    showAlert(
+                        NSLocalizedString("Error updating server", comment: "alert title"),
+                        message: NSLocalizedString("Server operator changed.", comment: "alert title")
+                    )
+                } else {
+                    server = serverToEdit
+                    dismiss()
+                }
+            } else {
+                dismiss()
+                showAlert(
+                    NSLocalizedString("Invalid server address!", comment: "alert title"),
+                    message: NSLocalizedString("Check server address and try again.", comment: "alert title")
+                )
+            }
         })
         .alert(isPresented: $showTestFailure) {
             Alert(
@@ -63,7 +84,7 @@ struct ProtocolServerView: View {
     private func customServer() -> some View {
         VStack {
             let serverAddress = parseServerAddress(serverToEdit.server)
-            let valid = serverAddress?.valid == true && serverAddress?.serverProtocol == serverProtocol
+            let valid = serverAddress?.valid == true
             List {
                 Section {
                     TextEditor(text: $serverToEdit.server)
@@ -113,10 +134,7 @@ struct ProtocolServerView: View {
                 Spacer()
                 showTestStatus(server: serverToEdit)
             }
-            let useForNewDisabled = serverToEdit.tested != true && !serverToEdit.preset
             Toggle("Use for new connections", isOn: $serverToEdit.enabled)
-                .disabled(useForNewDisabled)
-                .foregroundColor(useForNewDisabled ? theme.colors.secondary : theme.colors.onBackground)
         }
     }
 }
@@ -143,7 +161,7 @@ struct BackButton: ViewModifier {
     }
 }
 
-@ViewBuilder func showTestStatus(server: ServerCfg) -> some View {
+@ViewBuilder func showTestStatus(server: UserServer) -> some View {
     switch server.tested {
     case .some(true):
         Image(systemName: "checkmark")
@@ -156,7 +174,7 @@ struct BackButton: ViewModifier {
     }
 }
 
-func testServerConnection(server: Binding<ServerCfg>) async -> ProtocolTestFailure? {
+func testServerConnection(server: Binding<UserServer>) async -> ProtocolTestFailure? {
     do {
         let r = try await testProtoServer(server: server.wrappedValue.server)
         switch r {
@@ -179,9 +197,9 @@ func testServerConnection(server: Binding<ServerCfg>) async -> ProtocolTestFailu
 struct ProtocolServerView_Previews: PreviewProvider {
     static var previews: some View {
         ProtocolServerView(
-            serverProtocol: .smp,
-            server: Binding.constant(ServerCfg.sampleData.custom),
-            serverToEdit: ServerCfg.sampleData.custom,
+            userServers: Binding.constant([UserOperatorServers.sampleDataNilOperator]),
+            server: Binding.constant(UserServer.sampleData.custom),
+            serverToEdit: UserServer.sampleData.custom,
             backLabel: "Your SMP servers"
         )
     }

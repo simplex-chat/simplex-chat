@@ -11,29 +11,48 @@ import SimpleXChat
 
 struct OnboardingButtonStyle: ButtonStyle {
     @EnvironmentObject var theme: AppTheme
+    var isDisabled: Bool
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 17, weight: .semibold))
             .padding()
             .frame(maxWidth: .infinity)
-            .background(theme.colors.primary)
-            .foregroundColor(theme.colors.isLight ? .white : .black) // TODO review
+            .background(
+                isDisabled
+                ? (
+                    theme.colors.isLight
+                    ? .gray.opacity(0.17)
+                    : .gray.opacity(0.27)
+                )
+                : theme.colors.primary
+            )
+            .foregroundColor(
+                isDisabled
+                ? (
+                    theme.colors.isLight
+                    ? .gray.opacity(0.4)
+                    : .white.opacity(0.2)
+                )
+                : .white
+            )
             .cornerRadius(16)
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
-            .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
     }
 }
 
 struct ChooseServerOperators: View {
+    @Environment(\.dismiss) var dismiss: DismissAction
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     @EnvironmentObject var theme: AppTheme
+    var onboarding: Bool
     @State private var showInfoSheet = false
     @State private var serverOperators: [ServerOperator] = []
-    @State private var selectedOperators = Set<Int64>()
-    @State private var customServersNavLinkActive = false
+    @State private var selectedOperatorIds = Set<Int64>()
     @State private var reviewConditionsNavLinkActive = false
     @State private var justOpened = true
+
+    var selectedOperators: [ServerOperator] { serverOperators.filter { selectedOperatorIds.contains($0.operatorId) } }
 
     var body: some View {
         NavigationView {
@@ -52,13 +71,37 @@ struct ChooseServerOperators: View {
                             operatorCheckView(srvOperator)
                         }
 
-                        customServersButton()
-
-                        Spacer()
                         Spacer()
 
-                        reviewConditionsButton()
+                        let reviewForOperators = selectedOperators.filter { !$0.conditionsAcceptance.conditionsAccepted }
+                        let canReviewLater = reviewForOperators.allSatisfy { $0.conditionsAcceptance.usageAllowed }
+
+                        VStack(spacing: 8) {
+                            if !reviewForOperators.isEmpty {
+                                reviewConditionsButton()
+                            } else {
+                                continueButton()
+                            }
+                            if onboarding {
+                                Text("You can disable operators and configure your servers in Network & servers settings.")
+                                    .multilineTextAlignment(.center)
+                                    .font(.footnote)
+                                    .padding(.horizontal, 32)
+                            }
+                        }
+                        .padding(.bottom)
+
+                        if !onboarding && !reviewForOperators.isEmpty {
+                            VStack(spacing: 8) {
+                                reviewLaterButton()
+                                Text("Conditions will be considered accepted for used operators after 30 days.")
+                                    .multilineTextAlignment(.center)
+                                    .font(.footnote)
+                                    .padding(.horizontal, 32)
+                            }
+                            .disabled(!canReviewLater)
                             .padding(.bottom)
+                        }
                     }
                     .frame(minHeight: g.size.height)
                 }
@@ -68,7 +111,7 @@ struct ChooseServerOperators: View {
             .onAppear {
                 if justOpened {
                     serverOperators = ChatModel.shared.serverOperators
-                    selectedOperators = Set(serverOperators.filter { $0.enabled }.map { $0.operatorId })
+                    selectedOperatorIds = Set(serverOperators.filter { $0.enabled }.map { $0.operatorId })
                     justOpened = false
                 }
             }
@@ -77,8 +120,6 @@ struct ChooseServerOperators: View {
             }
         }
     }
-
-    var acceptForOperators: [ServerOperator] { serverOperators.filter { selectedOperators.contains($0.operatorId) } }
 
     private func infoText() -> some View {
         HStack(spacing: 12) {
@@ -96,7 +137,7 @@ struct ChooseServerOperators: View {
     }
 
     @ViewBuilder private func operatorCheckView(_ serverOperator: ServerOperator) -> some View {
-        let checked = selectedOperators.contains(serverOperator.operatorId)
+        let checked = selectedOperatorIds.contains(serverOperator.operatorId)
         let icon = checked ? "checkmark.circle.fill" : "circle"
         let iconColor = checked ? theme.colors.primary : Color(uiColor: .tertiaryLabel).asAnotherColorFromSecondary(theme)
         HStack(spacing: 10) {
@@ -121,60 +162,11 @@ struct ChooseServerOperators: View {
         .padding(.horizontal, 2)
         .onTapGesture {
             if checked {
-                selectedOperators.remove(serverOperator.operatorId)
+                selectedOperatorIds.remove(serverOperator.operatorId)
             } else {
-                selectedOperators.insert(serverOperator.operatorId)
+                selectedOperatorIds.insert(serverOperator.operatorId)
             }
         }
-    }
-
-    private func customServersButton() -> some View {
-        ZStack {
-            HStack(spacing: 10) {
-                ZStack {
-                    Image(systemName: "externaldrive.connected.to.line.below")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 22, height: 22)
-                        .foregroundColor(theme.colors.secondary)
-                }
-                .frame(width: 30, height: 30)
-
-                Text("Custom servers")
-                    .font(.title3)
-
-                Spacer()
-
-                Text("Configure…")
-                    .font(.callout)
-                    .foregroundColor(theme.colors.primary)
-            }
-            .background(Color(.systemBackground))
-            .padding()
-            .clipShape(RoundedRectangle(cornerRadius: 18))
-            .overlay(
-                RoundedRectangle(cornerRadius: 18)
-                    .stroke(Color(uiColor: .secondarySystemFill), lineWidth: 2)
-            )
-            .padding(.horizontal, 2)
-            .onTapGesture {
-                customServersNavLinkActive = true
-            }
-
-            NavigationLink(isActive: $customServersNavLinkActive) {
-                customServersDestinationView()
-            } label: {
-                EmptyView()
-            }
-            .frame(width: 1, height: 1)
-            .hidden()
-        }
-    }
-
-    private func customServersDestinationView() -> some View {
-        YourServersView()
-            .navigationTitle("Custom servers")
-            .modifier(ThemedBackground(grouped: true))
     }
 
     private func reviewConditionsButton() -> some View {
@@ -184,9 +176,8 @@ struct ChooseServerOperators: View {
             } label: {
                 Text("Review conditions")
             }
-            .buttonStyle(OnboardingButtonStyle())
-            .padding(.horizontal)
-            .disabled(selectedOperators.isEmpty)
+            .buttonStyle(OnboardingButtonStyle(isDisabled: selectedOperatorIds.isEmpty))
+            .disabled(selectedOperatorIds.isEmpty)
 
             NavigationLink(isActive: $reviewConditionsNavLinkActive) {
                 reviewConditionsDestinationView()
@@ -198,22 +189,51 @@ struct ChooseServerOperators: View {
         }
     }
 
-    private func reviewConditionsDestinationView() -> some View {
+    @ViewBuilder private func reviewConditionsDestinationView() -> some View {
+        let acceptForOperators = selectedOperators.filter { !$0.conditionsAcceptance.conditionsAccepted }
         UsageConditionsView(
             showTitle: false,
             dismissOnAccept: false,
-            conditionsAction: .reviewUpdatedConditions(acceptForOperators: acceptForOperators, deadline: nil),
+            conditionsAction: .review(operators: acceptForOperators, deadline: nil, showNotice: false),
             onAcceptAction: { date in
                 ChatModel.shared.acceptConditionsForOperators(acceptForOperators, date, enable: true)
-                withAnimation {
-                    onboardingStageDefault.set(.step4_SetNotificationsMode)
-                    ChatModel.shared.onboardingStage = .step4_SetNotificationsMode
-                }
+                continueToNextStep()
             }
         )
         .navigationTitle("Conditions of use")
         .navigationBarTitleDisplayMode(.large)
         .modifier(ThemedBackground(grouped: true))
+    }
+
+    private func continueButton() -> some View {
+        Button {
+            continueToNextStep()
+        } label: {
+            Text("Continue")
+        }
+        .buttonStyle(OnboardingButtonStyle(isDisabled: selectedOperatorIds.isEmpty))
+        .disabled(selectedOperatorIds.isEmpty)
+    }
+
+    private func reviewLaterButton() -> some View {
+        Button {
+            continueToNextStep()
+        } label: {
+            Text("Review later")
+        }
+        .buttonStyle(.borderless)
+    }
+
+    private func continueToNextStep() {
+        if onboarding {
+            // TODO setServerOperators (to enable/disable operator(s) and set roles)
+            withAnimation {
+                onboardingStageDefault.set(.step4_SetNotificationsMode)
+                ChatModel.shared.onboardingStage = .step4_SetNotificationsMode
+            }
+        } else {
+            dismiss()
+        }
     }
 }
 
@@ -241,5 +261,5 @@ struct ChooseServerOperatorsInfoView: View {
 }
 
 #Preview {
-    ChooseServerOperators()
+    ChooseServerOperators(onboarding: true)
 }

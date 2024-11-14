@@ -131,11 +131,6 @@ class ChatItemDummyModel: ObservableObject {
     func sendUpdate() { objectWillChange.send() }
 }
 
-enum UsageConditionsAction {
-    case reviewUpdatedConditions(acceptForOperators: [ServerOperator], deadline: Date?)
-    case viewAcceptedConditions(acceptedForOperators: [ServerOperator])
-}
-
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
     @Published var setDeliveryReceipts = false
@@ -199,7 +194,10 @@ final class ChatModel: ObservableObject {
     @Published var draftChatId: String?
     @Published var networkInfo = UserNetworkInfo(networkType: .other, online: true)
     // server operators
+    // TODO Load into model from backend, update on operator changes
     @Published var serverOperators: [ServerOperator] = [ServerOperator.sampleData1, ServerOperator.sampleData2, ServerOperator.sampleData3]
+    // @Published var usageConditionsAction: UsageConditionsAction? = .review(operators: [ServerOperator.sampleData1], deadline: Date.distantFuture, showNotice: true)
+    @Published var usageConditionsAction: UsageConditionsAction? = .accepted(operators: [ServerOperator.sampleData1])
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
@@ -245,55 +243,49 @@ final class ChatModel: ObservableObject {
             users.remove(at: i)
         }
     }
-
-    var operatorsWithConditionsAccepted: [ServerOperator] {
-        serverOperators.filter { $0.conditionsAcceptance.conditionsAccepted }
-    }
-
-    var enabledOperatorsWithConditionsNotAccepted: [ServerOperator] {
-        serverOperators.filter { $0.enabled && !$0.conditionsAcceptance.conditionsAccepted }
-    }
-
+    
     func acceptConditionsForEnabledOperators(_ date: Date) {
         for (i, serverOperator) in serverOperators.enumerated() {
             if serverOperator.enabled && !serverOperator.conditionsAcceptance.conditionsAccepted {
                 var updatedOperator = serverOperator
-                updatedOperator.conditionsAcceptance = .accepted(date: date)
+                updatedOperator.conditionsAcceptance = .accepted(acceptedAt: date)
                 serverOperators[i] = updatedOperator
             }
         }
+        updateUsageConditionsAction()
     }
 
     func acceptConditionsForOperators(_ acceptForOperators: [ServerOperator], _ date: Date, enable: Bool = false) {
         for serverOperator in acceptForOperators {
             if let i = serverOperators.firstIndex(where: { $0.operatorId == serverOperator.operatorId }) {
                 var updatedOperator = serverOperators[i]
-                updatedOperator.conditionsAcceptance = .accepted(date: date)
+                updatedOperator.conditionsAcceptance = .accepted(acceptedAt: date)
                 if enable {
                     updatedOperator.enabled = true
                 }
                 serverOperators[i] = updatedOperator
             }
         }
+        updateUsageConditionsAction()
     }
 
     func updateServerOperator(_ updatedOperator: ServerOperator) {
         if let i = serverOperators.firstIndex(where: { $0.operatorId == updatedOperator.operatorId }) {
             serverOperators[i] = updatedOperator
         }
+        updateUsageConditionsAction()
     }
 
-    // TODO If conditions are accepted for operators currently not used, they should also be included into list.
-    var usageConditionsAction: UsageConditionsAction? {
+    // TODO remove
+    private func updateUsageConditionsAction() {
         let usedOperators = serverOperators.filter { $0.enabled }
         if usedOperators.isEmpty {
-            return nil
+            usageConditionsAction = nil
         } else if usedOperators.allSatisfy({ $0.conditionsAcceptance.conditionsAccepted }) {
-            return .viewAcceptedConditions(acceptedForOperators: usedOperators)
+            usageConditionsAction = .accepted(operators: usedOperators)
         } else {
             let acceptForOperators = usedOperators.filter { !$0.conditionsAcceptance.conditionsAccepted }
-            let deadline = usedOperators.compactMap { $0.conditionsAcceptance.reviewAvailableDeadline }.first
-            return .reviewUpdatedConditions(acceptForOperators: acceptForOperators, deadline: deadline)
+            usageConditionsAction = .review(operators: acceptForOperators, deadline: Date.distantFuture, showNotice: false)
         }
     }
 
