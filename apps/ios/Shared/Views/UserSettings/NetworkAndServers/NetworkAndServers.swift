@@ -221,12 +221,21 @@ struct NetworkAndServers: View {
                 // TODO validateServers
                 // TODO Apply validation result to userServers state
                 try await setUserServers(userServers: userServers)
-                await MainActor.run {
-                    currUserServers = userServers
+                // Get updated servers for new server ids (otherwise it messes up delete of newly added and saved servers)
+                do {
+                    let updatedServers = try await getUserServers()
+                    await MainActor.run {
+                        currUserServers = updatedServers
+                        userServers = updatedServers
+                    }
+                } catch let error {
+                    logger.error("saveServers getUserServers error: \(responseError(error))")
+                    await MainActor.run {
+                        currUserServers = userServers
+                    }
                 }
             } catch let error {
-                let err = responseError(error)
-                logger.error("saveServers setUserProtocolServers error: \(err)")
+                logger.error("saveServers setUserServers error: \(responseError(error))")
                 await MainActor.run {
                     showAlert(
                         NSLocalizedString("Error saving servers", comment: "alert title"),
