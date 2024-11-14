@@ -54,18 +54,7 @@ struct YourServersView: View {
                             EmptyView()
                         }
                     }
-                    .onDelete { indexSet in
-                        if let idx = indexSet.first {
-                            let server = userServers[operatorServersIndex].smpServers[idx]
-                            if server.serverId == nil {
-                                userServers[operatorServersIndex].smpServers.remove(at: idx)
-                            } else {
-                                var updatedServer = server
-                                updatedServer.deleted = true
-                                userServers[operatorServersIndex].smpServers[idx] = updatedServer
-                            }
-                        }
-                    }
+                    .onDelete { indexSet in deleteSMPServer($userServers, operatorServersIndex, indexSet) }
                 } header: {
                     Text("Message servers")
                         .foregroundColor(theme.colors.secondary)
@@ -91,18 +80,7 @@ struct YourServersView: View {
                             EmptyView()
                         }
                     }
-                    .onDelete { indexSet in
-                        if let idx = indexSet.first {
-                            let server = userServers[operatorServersIndex].xftpServers[idx]
-                            if server.serverId == nil {
-                                userServers[operatorServersIndex].xftpServers.remove(at: idx)
-                            } else {
-                                var updatedServer = server
-                                updatedServer.deleted = true
-                                userServers[operatorServersIndex].xftpServers[idx] = updatedServer
-                            }
-                        }
-                    }
+                    .onDelete { indexSet in deleteXFTPServer($userServers, operatorServersIndex, indexSet) }
                 } header: {
                     Text("Media & file servers")
                         .foregroundColor(theme.colors.secondary)
@@ -234,6 +212,40 @@ struct ProtocolServerViewLink: View {
 
     private func invalidServer() -> some View {
         Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+    }
+}
+
+func deleteSMPServer(
+    _ userServers: Binding<[UserOperatorServers]>,
+    _ operatorServersIndex: Int,
+    _ serverIndexSet: IndexSet
+) {
+    if let idx = serverIndexSet.first {
+        let server = userServers[operatorServersIndex].wrappedValue.smpServers[idx]
+        if server.serverId == nil {
+            userServers[operatorServersIndex].wrappedValue.smpServers.remove(at: idx)
+        } else {
+            var updatedServer = server
+            updatedServer.deleted = true
+            userServers[operatorServersIndex].wrappedValue.smpServers[idx] = updatedServer
+        }
+    }
+}
+
+func deleteXFTPServer(
+    _ userServers: Binding<[UserOperatorServers]>,
+    _ operatorServersIndex: Int,
+    _ serverIndexSet: IndexSet
+) {
+    if let idx = serverIndexSet.first {
+        let server = userServers[operatorServersIndex].wrappedValue.xftpServers[idx]
+        if server.serverId == nil {
+            userServers[operatorServersIndex].wrappedValue.xftpServers.remove(at: idx)
+        } else {
+            var updatedServer = server
+            updatedServer.deleted = true
+            userServers[operatorServersIndex].wrappedValue.xftpServers[idx] = updatedServer
+        }
     }
 }
 
