@@ -20,6 +20,9 @@ struct ServersSummaryView: View {
     @State private var timer: Timer? = nil
     @State private var alert: SomeAlert?
 
+    @State private var currUserServers: [UserOperatorServers] = []
+    @State private var userServers: [UserOperatorServers] = []
+
     @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
 
     enum PresentedUserCategory {
@@ -53,6 +56,15 @@ struct ServersSummaryView: View {
         }
         .onDisappear {
             stopTimer()
+
+            if userServers != currUserServers {
+                showAlert(
+                    title: NSLocalizedString("Save servers?", comment: "alert title"),
+                    buttonTitle: NSLocalizedString("Save", comment: "alert button"),
+                    buttonAction: { saveServers($currUserServers, $userServers) },
+                    cancelButton: true
+                )
+            }
         }
         .alert(item: $alert) { $0.alert }
     }
@@ -275,7 +287,9 @@ struct ServersSummaryView: View {
         NavigationLink(tag: srvSumm.id, selection: $selectedSMPServer) {
             SMPServerSummaryView(
                 summary: srvSumm,
-                statsStartedAt: statsStartedAt
+                statsStartedAt: statsStartedAt,
+                currUserServers: $currUserServers,
+                userServers: $userServers
             )
             .navigationBarTitle("SMP server")
             .navigationBarTitleDisplayMode(.large)
@@ -344,7 +358,9 @@ struct ServersSummaryView: View {
         NavigationLink(tag: srvSumm.id, selection: $selectedXFTPServer) {
             XFTPServerSummaryView(
                 summary: srvSumm,
-                statsStartedAt: statsStartedAt
+                statsStartedAt: statsStartedAt,
+                currUserServers: $currUserServers,
+                userServers: $userServers
             )
             .navigationBarTitle("XFTP server")
             .navigationBarTitleDisplayMode(.large)
@@ -486,6 +502,9 @@ struct SMPServerSummaryView: View {
 
     @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
 
+    @Binding var currUserServers: [UserOperatorServers]
+    @Binding var userServers: [UserOperatorServers]
+
     var body: some View {
         List {
             Section("Server address") {
@@ -493,9 +512,12 @@ struct SMPServerSummaryView: View {
                     .textSelection(.enabled)
                 if summary.known == true {
                     NavigationLink {
-                        NetworkAndServers()
-                            .navigationTitle("Network & servers")
-                            .modifier(ThemedBackground(grouped: true))
+                        NetworkAndServers(
+                            currUserServers: $currUserServers,
+                            userServers: $userServers
+                        )
+                        .navigationTitle("Network & servers")
+                        .modifier(ThemedBackground(grouped: true))
                     } label: {
                         Text("Open server settings")
                     }
@@ -674,6 +696,9 @@ struct XFTPServerSummaryView: View {
     var summary: XFTPServerSummary
     var statsStartedAt: Date
 
+    @Binding var currUserServers: [UserOperatorServers]
+    @Binding var userServers: [UserOperatorServers]
+
     var body: some View {
         List {
             Section("Server address") {
@@ -681,9 +706,12 @@ struct XFTPServerSummaryView: View {
                     .textSelection(.enabled)
                 if summary.known == true {
                     NavigationLink {
-                        NetworkAndServers()
-                            .navigationTitle("Network & servers")
-                            .modifier(ThemedBackground(grouped: true))
+                        NetworkAndServers(
+                            currUserServers: $currUserServers,
+                            userServers: $userServers
+                        )
+                        .navigationTitle("Network & servers")
+                        .modifier(ThemedBackground(grouped: true))
                     } label: {
                         Text("Open server settings")
                     }

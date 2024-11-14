@@ -36,6 +36,9 @@ struct UserPickerSheetView: View {
     @EnvironmentObject var chatModel: ChatModel
     @State private var loaded = false
 
+    @State private var currUserServers: [UserOperatorServers] = []
+    @State private var userServers: [UserOperatorServers] = []
+
     var body: some View {
         NavigationView {
             ZStack {
@@ -56,7 +59,10 @@ struct UserPickerSheetView: View {
                     case .useFromDesktop:
                         ConnectDesktopView()
                     case .settings:
-                        SettingsView()
+                        SettingsView(
+                            currUserServers: $currUserServers,
+                            userServers: $userServers
+                        )
                     }
                 }
                 Color.clear // Required for list background to be rendered during loading
@@ -75,6 +81,16 @@ struct UserPickerSheetView: View {
                 .easeOut(duration: 0.1),
                 { loaded = true }
             )
+        }
+        .onDisappear {
+            if userServers != currUserServers {
+                showAlert(
+                    title: NSLocalizedString("Save servers?", comment: "alert title"),
+                    buttonTitle: NSLocalizedString("Save", comment: "alert button"),
+                    buttonAction: { saveServers($currUserServers, $userServers) },
+                    cancelButton: true
+                )
+            }
         }
     }
 }

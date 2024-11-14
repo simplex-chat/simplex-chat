@@ -263,6 +263,9 @@ struct SettingsView: View {
     @EnvironmentObject var theme: AppTheme
     @State private var showProgress: Bool = false
 
+    @Binding var currUserServers: [UserOperatorServers]
+    @Binding var userServers: [UserOperatorServers]
+
     var body: some View {
         ZStack {
             settingsView()
@@ -289,9 +292,12 @@ struct SettingsView: View {
                     .disabled(chatModel.chatRunning != true)
                     
                     NavigationLink {
-                        NetworkAndServers()
-                            .navigationTitle("Network & servers")
-                            .modifier(ThemedBackground(grouped: true))
+                        NetworkAndServers(
+                            currUserServers: $currUserServers,
+                            userServers: $userServers
+                        )
+                        .navigationTitle("Network & servers")
+                        .modifier(ThemedBackground(grouped: true))
                     } label: {
                         settingsRow("externaldrive.connected.to.line.below", color: theme.colors.secondary) { Text("Network & servers") }
                     }
@@ -525,7 +531,10 @@ struct SettingsView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
         chatModel.currentUser = User.sampleData
-        return SettingsView()
-            .environmentObject(chatModel)
+        return SettingsView(
+            currUserServers: Binding.constant([UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator]),
+            userServers: Binding.constant([UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator])
+        )
+        .environmentObject(chatModel)
     }
 }

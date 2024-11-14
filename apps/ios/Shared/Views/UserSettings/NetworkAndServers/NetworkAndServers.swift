@@ -34,8 +34,8 @@ struct NetworkAndServers: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     @EnvironmentObject var theme: AppTheme
-    @State private var currUserServers: [UserOperatorServers] = []
-    @State private var userServers: [UserOperatorServers] = []
+    @Binding var currUserServers: [UserOperatorServers]
+    @Binding var userServers: [UserOperatorServers]
     @State private var sheetItem: NetworkAndServersSheet? = nil
     @State private var justOpened = true
     @State private var showSaveDialog = false
@@ -86,7 +86,7 @@ struct NetworkAndServers: View {
                                 
                                 if userServers[idx] != currUserServers[idx] {
                                     Spacer()
-                                    changesUnsaved()
+                                    unsavedChangesIndicator()
                                 }
                             }
                         }
@@ -105,8 +105,8 @@ struct NetworkAndServers: View {
                 }
 
                 Section {
-                    Button("Save servers", action: saveServers)
-                        .disabled(saveDisabled)
+                    Button("Save servers", action: { saveServers($currUserServers, $userServers) })
+                        .disabled(userServers == currUserServers)
                 }
 
                 Section(header: Text("Calls").foregroundColor(theme.colors.secondary)) {
@@ -144,18 +144,16 @@ struct NetworkAndServers: View {
             }
         }
         .modifier(BackButton(disabled: Binding.constant(false)) {
-            if saveDisabled {
-                dismiss()
-                justOpened = false
-            } else {
+            if userServers != currUserServers {
                 showSaveDialog = true
+            } else {
+                dismiss()
             }
         })
         .confirmationDialog("Save servers?", isPresented: $showSaveDialog, titleVisibility: .visible) {
             Button("Save") {
-                saveServers()
+                saveServers($currUserServers, $userServers)
                 dismiss()
-                justOpened = false
             }
             Button("Exit without saving") { dismiss() }
         }
@@ -203,13 +201,13 @@ struct NetworkAndServers: View {
 
                 if userServers[operatorServersIndex] != currUserServers[operatorServersIndex] {
                     Spacer()
-                    changesUnsaved()
+                    unsavedChangesIndicator()
                 }
             }
         }
     }
 
-    private func changesUnsaved() -> some View {
+    private func unsavedChangesIndicator() -> some View {
         Image(systemName: "pencil")
             .foregroundColor(theme.colors.secondary)
             .symbolRenderingMode(.monochrome)
@@ -228,38 +226,35 @@ struct NetworkAndServers: View {
             }
         }
     }
+}
 
-    private var saveDisabled: Bool {
-        userServers == currUserServers
-    }
 
-    func saveServers() {
-        Task {
+
+func saveServers(_ currUserServers: Binding<[UserOperatorServers]>, _ userServers: Binding<[UserOperatorServers]>) {
+    let userServersToSave = userServers.wrappedValue
+    Task {
+        do {
+            try await setUserServers(userServers: userServersToSave)
+            // Get updated servers for new server ids (otherwise it messes up delete of newly added and saved servers)
             do {
-                // TODO validateServers
-                // TODO Apply validation result to userServers state
-                try await setUserServers(userServers: userServers)
-                // Get updated servers for new server ids (otherwise it messes up delete of newly added and saved servers)
-                do {
-                    let updatedServers = try await getUserServers()
-                    await MainActor.run {
-                        currUserServers = updatedServers
-                        userServers = updatedServers
-                    }
-                } catch let error {
-                    logger.error("saveServers getUserServers error: \(responseError(error))")
-                    await MainActor.run {
-                        currUserServers = userServers
-                    }
+                let updatedServers = try await getUserServers()
+                await MainActor.run {
+                    currUserServers.wrappedValue = updatedServers
+                    userServers.wrappedValue = updatedServers
                 }
             } catch let error {
-                logger.error("saveServers setUserServers error: \(responseError(error))")
+                logger.error("saveServers getUserServers error: \(responseError(error))")
                 await MainActor.run {
-                    showAlert(
-                        NSLocalizedString("Error saving servers", comment: "alert title"),
-                        message: responseError(error)
-                    )
+                    currUserServers.wrappedValue = userServersToSave
                 }
+            }
+        } catch let error {
+            logger.error("saveServers setUserServers error: \(responseError(error))")
+            await MainActor.run {
+                showAlert(
+                    NSLocalizedString("Error saving servers", comment: "alert title"),
+                    message: responseError(error)
+                )
             }
         }
     }
@@ -267,6 +262,9 @@ struct NetworkAndServers: View {
 
 struct NetworkServersView_Previews: PreviewProvider {
     static var previews: some View {
-        NetworkAndServers()
+        NetworkAndServers(
+            currUserServers: Binding.constant([UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator]),
+            userServers: Binding.constant([UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator])
+        )
     }
 }
