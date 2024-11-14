@@ -165,7 +165,7 @@ struct NetworkAndServers: View {
             switch item {
             case let .showConditions(conditionsAction):
                 UsageConditionsView(
-                    onboarding: false,
+                    onSheet: true,
                     conditionsAction: conditionsAction
                 )
                 .modifier(ThemedBackground(grouped: true))

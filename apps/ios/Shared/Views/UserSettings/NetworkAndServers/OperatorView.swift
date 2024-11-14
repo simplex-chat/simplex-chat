@@ -466,13 +466,13 @@ struct SingleOperatorUsageConditionsView: View {
 struct UsageConditionsView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var theme: AppTheme
-    var onboarding: Bool // On onboarding this view is shown via NavigationLink, in other cases on sheet
+    var onSheet: Bool
     var conditionsAction: UsageConditionsAction
     var onAcceptAction: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            if !onboarding {
+            if onSheet {
                 Text("Conditions of use")
                     .font(.largeTitle)
                     .bold()
@@ -509,7 +509,7 @@ struct UsageConditionsView: View {
         Button {
             acceptForOperators(operators.map { $0.operatorId })
             onAcceptAction?()
-            if !onboarding{
+            if onSheet{
                 dismiss()
             }
         } label: {

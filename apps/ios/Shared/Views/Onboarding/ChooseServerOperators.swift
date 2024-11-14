@@ -192,7 +192,7 @@ struct ChooseServerOperators: View {
     @ViewBuilder private func reviewConditionsDestinationView() -> some View {
         let acceptForOperators = selectedOperators.filter { !$0.conditionsAcceptance.conditionsAccepted }
         UsageConditionsView(
-            onboarding: onboarding,
+            onSheet: false,
             conditionsAction: .review(operators: acceptForOperators, deadline: nil, showNotice: false),
             onAcceptAction: { continueToNextStep() }
         )
