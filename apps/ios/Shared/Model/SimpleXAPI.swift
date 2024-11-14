@@ -318,10 +318,12 @@ private func apiChatsResponse(_ r: ChatResponse) throws -> [ChatData] {
     throw r
 }
 
-let loadItemsPerPage = 50
+let loadItemsPerPage = 100
+let preloadItem = 25
+let idealChatListSize = 300
 
 func apiGetChat(type: ChatType, id: Int64, search: String = "") async throws -> Chat {
-    let r = await chatSendCmd(.apiGetChat(type: type, id: id, pagination: .last(count: loadItemsPerPage), search: search))
+    let r = await chatSendCmd(.apiGetChat(type: type, id: id, pagination: .initial(count: loadItemsPerPage), search: search))
     if case let .apiChat(_, chat) = r { return Chat.init(chat) }
     throw r
 }
@@ -329,6 +331,15 @@ func apiGetChat(type: ChatType, id: Int64, search: String = "") async throws -> 
 func apiGetChatItems(type: ChatType, id: Int64, pagination: ChatPagination, search: String = "") async throws -> [ChatItem] {
     let r = await chatSendCmd(.apiGetChat(type: type, id: id, pagination: pagination, search: search))
     if case let .apiChat(_, chat) = r { return chat.chatItems }
+    if case .chatCmdError(_, _) = r {
+        if case .chatError(_, let chatError) = r {
+            if case .errorStore(let storeError) = chatError {
+                if case .chatItemNotFound(_) = storeError {
+                    itemNotFoundAlert()
+                }
+            }
+        }
+    }
     throw r
 }
 
@@ -339,7 +350,9 @@ func loadChat(chat: Chat, search: String = "", clearItems: Bool = true) async {
         let im = ItemsModel.shared
         m.chatItemStatuses = [:]
         if clearItems {
-            await MainActor.run { im.reversedChatItems = [] }
+            await MainActor.run {
+                im.reversedChatItems = []
+            }
         }
         let chat = try await apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
         await MainActor.run {
@@ -416,6 +429,13 @@ func apiCreateChatItems(noteFolderId: Int64, composedMessages: [ComposedMessage]
     if case let .newChatItems(_, aChatItems) = r { return aChatItems.map { $0.chatItem } }
     createChatItemsErrorAlert(r)
     return nil
+}
+
+func itemNotFoundAlert() {
+    AlertManager.shared.showAlertMsg(
+        title: "Message no longer available",
+        message: "The quoted message you are trying to view has been deleted."
+    )
 }
 
 private func sendMessageErrorAlert(_ r: ChatResponse) {

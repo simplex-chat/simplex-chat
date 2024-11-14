@@ -2663,7 +2663,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         item.isLiveDummy = true
         return item
     }
-
+    
     public static func invalidJSON(chatDir: CIDirection?, meta: CIMeta?, json: String) -> ChatItem {
         ChatItem(
             chatDir: chatDir ?? .directSnd,

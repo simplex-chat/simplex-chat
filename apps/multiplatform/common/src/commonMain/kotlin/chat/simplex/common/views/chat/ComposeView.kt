@@ -381,6 +381,14 @@ fun ComposeView(
 
   suspend fun send(chat: Chat, mc: MsgContent, quoted: Long?, file: CryptoFile? = null, live: Boolean = false, ttl: Int?): ChatItem? {
     val cInfo = chat.chatInfo
+
+//    val composedMessages = Array(300) { index ->
+//      ComposedMessage(
+//        file,
+//        quoted,
+//        MsgContent.MCText("$index")
+//      )
+//    }.toList()
     val chatItems = if (chat.chatInfo.chatType == ChatType.Local)
       chatModel.controller.apiCreateChatItems(
         rh = chat.remoteHostId,

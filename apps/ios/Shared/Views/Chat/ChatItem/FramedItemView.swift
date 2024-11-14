@@ -48,10 +48,18 @@ struct FramedItemView: View {
                 if let qi = chatItem.quotedItem {
                     ciQuoteView(qi)
                         .onTapGesture {
-                            if let ci = ItemsModel.shared.reversedChatItems.first(where: { $0.id == qi.itemId }) {
-                                withAnimation {
-                                    scrollModel.scrollToItem(id: ci.id)
+                            if let itemId = qi.itemId {
+                                if !scrollToItem(itemId) {
+                                    Task {
+                                        //if await loadItemsAround(chat.chatInfo, itemId) != nil {
+                                          //  await MainActor.run {
+                                            //    let _ = scrollToItem(itemId)
+                                            //}
+                                        //}
+                                    }
                                 }
+                            } else {
+                                itemNotFoundAlert()
                             }
                         }
                 } else if let itemForwarded = chatItem.meta.itemForwarded {
@@ -323,6 +331,18 @@ struct FramedItemView: View {
             return videoWidth
         }
     }
+    
+    // Scroll to an item, if success returns true otherwise false
+    private func scrollToItem(_ itemId: Int64) -> Bool {
+        if let ci = ItemsModel.shared.reversedChatItems.first(where: { $0.id == itemId }) {
+            withAnimation {
+                scrollModel.scrollToItem(id: ci.id)
+            }
+            return true
+        } else {
+            return false
+        }
+    }    
 }
 
 @ViewBuilder func toggleSecrets<V: View>(_ ft: [FormattedText]?, _ showSecrets: Binding<Bool>, _ v: V) -> some View {

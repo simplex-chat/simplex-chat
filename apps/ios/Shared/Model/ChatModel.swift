@@ -58,6 +58,7 @@ class ItemsModel: ObservableObject {
     // this will cause reversedChatItems to be rendered without throttling
     @Published var isLoading = false
     @Published var showLoadingProgress = false
+    @State var anchors: [ChatItem.ID] = []
 
     init() {
         publisher
