@@ -4605,7 +4605,7 @@ Ez az Ön hivatkozása a(z) %@ nevű csoporthoz!</target>
       </trans-unit>
       <trans-unit id="New in %@" xml:space="preserve" approved="no">
         <source>New in %@</source>
-        <target state="translated">A(z) %@ verzió változásnaplója</target>
+        <target state="translated">A(z) %@ verzió változáslistája</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New media options" xml:space="preserve">
@@ -6583,7 +6583,7 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
       </trans-unit>
       <trans-unit id="Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." xml:space="preserve" approved="no">
         <source>Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped.</source>
-        <target state="translated">A csevegés megállítása a csevegési adatbázis exportálásához, importálásához vagy törléséhez. A csevegés megállítása során nem tud üzeneteket fogadni és küldeni.</target>
+        <target state="translated">A csevegés megállítása a csevegési adatbázis exportálásához, importálásához vagy törléséhez. A csevegés megállításakor nem tud üzeneteket fogadni és küldeni.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Stop chat?" xml:space="preserve">
@@ -7554,7 +7554,7 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
       </trans-unit>
       <trans-unit id="What's new" xml:space="preserve" approved="no">
         <source>What's new</source>
-        <target state="translated">Változásnapló</target>
+        <target state="translated">Változáslista</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="When available" xml:space="preserve">
