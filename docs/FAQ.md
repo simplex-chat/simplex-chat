@@ -242,7 +242,7 @@ If you are prompted to enter database passphrase and you do not know it, this co
 - Migration of app data from one device to another while using unsupported migration tool (Use SimpleX Chat's own migration tool only)
 - You may have forgotten the passphrase. (There is no other way to access your data)
 
-You can resolve it by deleting the app's database:
+You can resolve it by deleting the app's database: (WARNING: this results in deletion of all profiles, contacts)
 - on Android/iOS, uninstall the app and install it again.
 - on Windows, delete folder C:\AppData\Roaming\SimpleX, you should be able to find it by entering %appdata% after pressing Windows key + R.
 - on Linux/Mac, delete directories ~/.local/share/simplex and ~/.config/simplex, where ~ represents your home directory (/home/user)
