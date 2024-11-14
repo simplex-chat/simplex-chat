@@ -81,7 +81,14 @@ struct NetworkAndServers: View {
                             .navigationTitle("Your servers")
                             .modifier(ThemedBackground(grouped: true))
                         } label: {
-                            Text("Your servers")
+                            HStack {
+                                Text("Your servers")
+                                
+                                if userServers[idx] != currUserServers[idx] {
+                                    Spacer()
+                                    changesUnsaved()
+                                }
+                            }
                         }
                     }
 
@@ -173,7 +180,7 @@ struct NetworkAndServers: View {
         }
     }
 
-    @ViewBuilder private func serverOperatorView(_ operatorServersIndex: Int, _ serverOperator: ServerOperator) -> some View {
+    private func serverOperatorView(_ operatorServersIndex: Int, _ serverOperator: ServerOperator) -> some View {
         NavigationLink() {
             OperatorView(
                 userServers: $userServers,
@@ -193,8 +200,20 @@ struct NetworkAndServers: View {
                     .frame(width: 24, height: 24)
                 Text(serverOperator.tradeName)
                     .foregroundColor(serverOperator.enabled ? theme.colors.onBackground : theme.colors.secondary)
+
+                if userServers[operatorServersIndex] != currUserServers[operatorServersIndex] {
+                    Spacer()
+                    changesUnsaved()
+                }
             }
         }
+    }
+
+    private func changesUnsaved() -> some View {
+        Image(systemName: "pencil")
+            .foregroundColor(theme.colors.secondary)
+            .symbolRenderingMode(.monochrome)
+            .frame(maxWidth: 24, maxHeight: 24, alignment: .center)
     }
 
     private func conditionsButton(_ conditionsAction: UsageConditionsAction) -> some View {
@@ -209,7 +228,6 @@ struct NetworkAndServers: View {
             }
         }
     }
-
 
     private var saveDisabled: Bool {
         userServers == currUserServers
