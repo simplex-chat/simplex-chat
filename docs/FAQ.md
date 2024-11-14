@@ -18,6 +18,7 @@ revision: 23.04.2024
 - [I want to see when my contacts read my messages](#i-want-to-see-when-my-contacts-read-my-messages)
 - [Can I use the same profile on desktop? Do messages sync cross-platform?](#can-i-use-the-same-profile-on-desktop-do-messages-sync-cross-platform)
 - [Why cannot I delete messages I sent from my contact's device?](#why-cannot-i-delete-messages-i-sent-from-my-contacts-device)
+- [Why invite links use simplex.chat domain?](#why-invite-links-use-simplex.chat-domain)
 
 [Troubleshooting](#troubleshooting)
 - [I do not receive messages or message notifications](#i-do-not-receive-messages-or-message-notifications)
@@ -27,6 +28,7 @@ revision: 23.04.2024
 - [Audio or video calls do not connect](#audio-or-video-calls-do-not-connect)
 - [Audio or video calls without e2e encryption](#audio-or-video-calls-without-e2e-encryption)
 - [I clicked the link to connect, but could not connect](#i-clicked-the-link-to-connect-but-could-not-connect)
+- [I do not know my database passphrase](#i-do-not-know-my-database-passphrase)
 
 [Privacy and security](#privacy-and-security)
 - [Does SimpleX support post quantum cryptography?](#does-simplex-support-post-quantum-cryptography)
@@ -119,6 +121,13 @@ We believe that allowing deleting information from your device to your contacts 
 It is also important to remember, that even if your contact enabled "Delete for everyone", you cannot really see it as a strong guarantee that the message will be deleted. Your contact's app can have a very simple modification (a one-line code change), that would prevent this deletion from happening when you request it. So you cannot see it as something that guarantees your security from your contacts.
 
 When "Delete for everyone" is not enabled, you can still mark the sent message as deleted within 24 hours of sending it. In this case the recipient will see it as "deleted message", and will be able to reveal the original message.
+
+### Why invite links use simplex.chat domain?
+
+You can replace https://simplex.chat with simplex:/ or with any other domain - the app does not connect with simplex.chat domain, and generally ignores it completely. It is only used to make onboarding easier for users who do not have installed the app yet.
+The default link domain will soon move to server’s domain, servers already can host the pages that will be used to render QR codes too.
+
+The link exchange isn’t really hosted anywhere, it’s just the page to render QR code, and the server that hosts this page doesn’t observe the actual connection link as it’s in the hash fragment - it is not sent over the internet - all that the server can see is https://simplex.chat/contact/ and the rest is processed locally in the browse, if you open it as a page.
 
 ## Troubleshooting
 
@@ -225,6 +234,18 @@ If you confirmed the connection in the app, pending connection will be shown in 
 For connection to complete, your contact has to be online and have the app running - please ask them to open the app, and try to have the app open at the same time - it will help to complete the connection faster.
 
 Once the connection is established you don't need to be online at the same time to send messages.
+
+### I do not know my database passphrase
+
+If you are prompted to enter database passphrase and you do not know it, this could have happened due to:
+- Error during SimpleX Chat installation on desktop.
+- Migration of app data from one device to another while using unsupported migration tool (Use SimpleX Chat's own migration tool only)
+- You may have forgotten the passphrase. (There is no other way to access your data)
+
+You can resolve it by deleting the app's database:
+- on Android/iOS, uninstall the app and install it again.
+- on Windows, delete folder C:\AppData\Roaming\SimpleX, you should be able to find it by entering %appdata% after pressing Windows key + R.
+- on Linux/Mac, delete directories ~/.local/share/simplex and ~/.config/simplex, where ~ represents your home directory (/home/user)
 
 ## Privacy and security
 
