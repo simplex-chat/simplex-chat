@@ -817,14 +817,14 @@ processChatCommand' vr = \case
   APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
     -- TODO optimize queries calculating ChatStats, currently they're disabled
     CTDirect -> do
-      directChat <- withFastStore (\db -> getDirectChat db vr user cId pagination search)
-      pure $ CRApiChat user (AChat SCTDirect directChat)
+      (directChat, navInfo) <- withFastStore (\db -> getDirectChat db vr user cId pagination search)
+      pure $ CRApiChat user (AChat SCTDirect directChat) navInfo
     CTGroup -> do
-      groupChat <- withFastStore (\db -> getGroupChat db vr user cId pagination search)
-      pure $ CRApiChat user (AChat SCTGroup groupChat)
+      (groupChat, navInfo) <- withFastStore (\db -> getGroupChat db vr user cId pagination search)
+      pure $ CRApiChat user (AChat SCTGroup groupChat) navInfo
     CTLocal -> do
-      localChat <- withFastStore (\db -> getLocalChat db user cId pagination search)
-      pure $ CRApiChat user (AChat SCTLocal localChat)
+      (localChat, navInfo) <- withFastStore (\db -> getLocalChat db user cId pagination search)
+      pure $ CRApiChat user (AChat SCTLocal localChat) navInfo
     CTContactRequest -> pure $ chatCmdError (Just user) "not implemented"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
   APIGetChatItems pagination search -> withUser $ \user -> do
@@ -8459,6 +8459,8 @@ chatCommandP =
       (CPLast <$ "count=" <*> A.decimal)
         <|> (CPAfter <$ "after=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
         <|> (CPBefore <$ "before=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
+        <|> (CPAround <$ "around=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
+        <|> (CPInitial <$ "initial=" <*> A.decimal)
     paginationByTimeP =
       (PTLast <$ "count=" <*> A.decimal)
         <|> (PTAfter <$ "after=" <*> strP <* A.space <* "count=" <*> A.decimal)
