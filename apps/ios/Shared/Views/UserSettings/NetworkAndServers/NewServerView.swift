@@ -114,10 +114,7 @@ func serverProtocolAndOperator(_ server: UserServer, _ userServers: [UserOperato
 
 func addServer(_ server: UserServer, _ userServers: Binding<[UserOperatorServers]>, _ dismiss: DismissAction) {
     if let (serverProtocol, matchingOperator) = serverProtocolAndOperator(server, userServers.wrappedValue) {
-        if let i = userServers.wrappedValue.firstIndex(where: {
-            $0.operator?.operatorId == matchingOperator?.operatorId ||
-            ($0.operator == nil && matchingOperator == nil)
-        }) {
+        if let i = userServers.wrappedValue.firstIndex(where: { $0.operator?.operatorId == matchingOperator?.operatorId }) {
             switch serverProtocol {
             case .smp: userServers[i].wrappedValue.smpServers.append(server)
             case .xftp: userServers[i].wrappedValue.xftpServers.append(server)
