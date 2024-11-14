@@ -1309,7 +1309,7 @@
     <string name="your_contacts_will_remain_connected">Az ismerősei továbbra is kapcsolódva maradnak.</string>
     <string name="error_xftp_test_server_auth">A kiszolgálónak engedélyre van szüksége a várólisták létrehozásához, ellenőrizze jelszavát</string>
     <string name="database_initialization_error_desc">Az adatbázis nem működik megfelelően. Koppintson ide a további információkért</string>
-    <string name="stop_snd_file__message">A fájl küldése leállt.</string>
+    <string name="stop_snd_file__message">A fájl küldése le fog állni.</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Kapcsolódási kísérlet ahhoz a kiszolgálóhoz, amely az adott ismerősétől érkező üzenetek fogadására szolgál.</string>
     <string name="la_could_not_be_verified">Nem sikerült hitelesíteni; próbálja meg újra.</string>
     <string name="moderate_message_will_be_marked_warning">Az üzenet az összes tag számára moderáltként lesz megjelölve.</string>
@@ -1337,7 +1337,7 @@
     <string name="non_content_uri_alert_text">Érvénytelen fájl elérési útvonalat osztott meg. Jelentse a problémát az alkalmazás fejlesztőinek.</string>
     <string name="failed_to_create_user_duplicate_desc">Már van egy csevegési profil ugyanezzel a megjelenített névvel. Válasszon egy másik nevet.</string>
     <string name="trying_to_connect_to_server_to_receive_messages_with_error">Kapcsolódási kísérlet ahhoz a kiszolgálóhoz, amely az adott ismerősétől érkező üzenetek fogadására szolgál (hiba: %1$s).</string>
-    <string name="stop_rcv_file__message">A fájl fogadása leállt.</string>
+    <string name="stop_rcv_file__message">A fájl fogadása le fog állni.</string>
     <string name="la_please_remember_to_store_password">Ne felejtse el, vagy tárolja biztonságosan – az elveszett jelszót nem lehet visszaállítani!</string>
     <string name="video_will_be_received_when_contact_completes_uploading">A videó akkor érkezik meg, amikor a küldője befejezte annak feltöltését.</string>
     <string name="description_you_shared_one_time_link_incognito">egyszer használható hivatkozást osztott meg inkognitóban</string>
@@ -1462,7 +1462,7 @@
     <string name="relay_server_if_necessary">A közvetítő-kiszolgáló csak szükség esetén kerül használatra. Egy másik fél megfigyelheti az IP-címet.</string>
     <string name="v5_0_app_passcode_descr">Rendszerhitelesítés helyetti beállítás.</string>
     <string name="switch_receiving_address_desc">A fogadó cím egy másik kiszolgálóra változik. A címváltoztatás a feladó online állapotba kerülése után fejeződik be.</string>
-    <string name="stop_chat_to_export_import_or_delete_chat_database">A csevegés megállítása a csevegési adatbázis exportálásához, importálásához vagy törléséhez. A csevegés megállítása alatt nem tud üzeneteket fogadni és küldeni.</string>
+    <string name="stop_chat_to_export_import_or_delete_chat_database">A csevegés megállítása a csevegési adatbázis exportálásához, importálásához vagy törléséhez. A csevegés megállítása során nem tud üzeneteket fogadni és küldeni.</string>
     <string name="save_passphrase_in_keychain">Jelmondat mentése a Keystore-ba</string>
     <string name="v4_6_chinese_spanish_interface_descr">Köszönet a felhasználóknak - hozzájárulás a Weblate-en!</string>
     <string name="save_passphrase_in_settings">Jelmondat mentése a beállításokban</string>
