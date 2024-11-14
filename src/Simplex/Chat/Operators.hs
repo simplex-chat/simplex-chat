@@ -14,6 +14,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilyDependencies #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat.Operators where
@@ -23,11 +24,12 @@ import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
-import Data.Either (partitionEithers, rights)
+import Data.Either (partitionEithers)
 import Data.FileEmbed
 import Data.Foldable (foldMap')
 import Data.IORef
 import Data.Int (Int64)
+import Data.Kind
 import Data.List (find, foldl')
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
@@ -206,21 +208,38 @@ data ValidatedUserOperatorServers = ValidatedUserOperatorServers
   }
   deriving (Show)
 
-data ValidatedServer p = ValidatedServer {aUserServer :: Either Text (AUserServer p)}
+data ValidatedServer p = ValidatedServer (Either Text (AUserServer p))
   deriving (Show)
 
-validatedServers :: UserProtocol p => ValidatedUserOperatorServers -> SProtocolType p -> [ValidatedServer p]
-validatedServers ValidatedUserOperatorServers {smpServers, xftpServers} = \case
-  SPSMP -> smpServers
-  SPXFTP -> xftpServers
+class UserServersClass u where
+  type AServer u = (s :: ProtocolType -> Type) | s -> u
+  operator' :: u -> Maybe ServerOperator
+  partitionValid :: [AServer u p] -> ([Text], [AUserServer p])
+  servers' :: UserProtocol p => u -> SProtocolType p -> [AServer u p]
 
-toValidatedServers :: UpdatedUserOperatorServers -> ValidatedUserOperatorServers
-toValidatedServers UpdatedUserOperatorServers {operator, smpServers, xftpServers} =
-  ValidatedUserOperatorServers
-    { operator,
-      smpServers = map (ValidatedServer . Right) smpServers,
-      xftpServers = map (ValidatedServer . Right) xftpServers
-    }
+instance UserServersClass UserOperatorServers where
+  type AServer UserOperatorServers = UserServer' 'DBStored
+  operator' UserOperatorServers {operator} = operator
+  partitionValid ss = ([], map (AUS SDBStored) ss)
+  servers' UserOperatorServers {smpServers, xftpServers} = \case
+    SPSMP -> smpServers
+    SPXFTP -> xftpServers
+
+instance UserServersClass UpdatedUserOperatorServers where
+  type AServer UpdatedUserOperatorServers = AUserServer
+  operator' UpdatedUserOperatorServers {operator} = operator
+  partitionValid = ([],)
+  servers' UpdatedUserOperatorServers {smpServers, xftpServers} = \case
+    SPSMP -> smpServers
+    SPXFTP -> xftpServers
+
+instance UserServersClass ValidatedUserOperatorServers where
+  type AServer ValidatedUserOperatorServers = ValidatedServer
+  operator' ValidatedUserOperatorServers {operator} = operator
+  partitionValid = partitionEithers . map (\(ValidatedServer s) -> s)
+  servers' ValidatedUserOperatorServers {smpServers, xftpServers} = \case
+    SPSMP -> smpServers
+    SPXFTP -> xftpServers
 
 type UserServer p = UserServer' 'DBStored p
 
@@ -380,32 +399,26 @@ data UserServersError
   | USEDuplicateServer {protocol :: AProtocolType, duplicateServer :: AProtoServerWithAuth, duplicateHost :: TransportHost}
   deriving (Show)
 
--- validateUserServers :: NonEmpty UpdatedUserOperatorServers -> [(User, NonEmpty UpdatedUserOperatorServers)] -> [UserServersError]
--- validateUserServers uss otherUSSs =
-validateUserServers :: [ValidatedUserOperatorServers] -> [(User, [ValidatedUserOperatorServers])] -> [UserServersError]
+validateUserServers :: UserServersClass u' => [u'] -> [(User, [UserOperatorServers])] -> [UserServersError]
 validateUserServers curr others = currUserErrs <> concatMap otherUserErrs others
   where
     currUserErrs = noServersErrs SPSMP Nothing curr <> noServersErrs SPXFTP Nothing curr <> serverErrs SPSMP curr <> serverErrs SPXFTP curr
     otherUserErrs (user, uss) = noServersErrs SPSMP (Just user) uss <> noServersErrs SPXFTP (Just user) uss
-    servers :: UserProtocol p => SProtocolType p -> [ValidatedUserOperatorServers] -> [Either Text (AUserServer p)]
-    servers p = map aUserServer . concatMap (`validatedServers` p)
-    noServersErrs  :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> Maybe User -> [ValidatedUserOperatorServers] -> [UserServersError]
+    noServersErrs  :: (UserServersClass u, ProtocolTypeI p, UserProtocol p) => SProtocolType p -> Maybe User -> [u] -> [UserServersError]
     noServersErrs p user uss
       | noServers opEnabled = [USENoServers p' user]
       | otherwise = [USEStorageMissing p' user | noServers (hasRole storage)] <> [USEProxyMissing p' user | noServers (hasRole proxy)]
       where
         p' = AProtocolType p
-        noServers cond = not $ any srvEnabled $ rights $ servers p $ filter cond uss
-        opEnabled ValidatedUserOperatorServers {operator} =
-          maybe True (\ServerOperator {enabled} -> enabled) operator
-        hasRole roleSel ValidatedUserOperatorServers {operator} =
-          maybe True (\ServerOperator {enabled, roles} -> enabled && roleSel roles) operator
+        noServers cond = not $ any srvEnabled $ snd $ partitionValid $ concatMap (`servers'` p) $ filter cond uss
+        opEnabled = maybe True (\ServerOperator {enabled} -> enabled) . operator'
+        hasRole roleSel = maybe True (\ServerOperator {enabled, roles} -> enabled && roleSel roles) . operator'
         srvEnabled (AUS _ UserServer {deleted, enabled}) = enabled && not deleted
-    serverErrs :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> [ValidatedUserOperatorServers] -> [UserServersError]
+    serverErrs :: (UserServersClass u, ProtocolTypeI p, UserProtocol p) => SProtocolType p -> [u] -> [UserServersError]
     serverErrs p uss = map (USEInvalidServer p') invalidSrvs <> mapMaybe duplicateErr_ srvs
       where
         p' = AProtocolType p
-        (invalidSrvs, userSrvs) = partitionEithers $ servers p uss
+        (invalidSrvs, userSrvs) = partitionValid $ concatMap (`servers'` p) uss
         srvs = filter (\(AUS _ UserServer {deleted}) -> not deleted) userSrvs
         duplicateErr_ (AUS _ srv@UserServer {server}) =
           USEDuplicateServer p' (AProtoServerWithAuth p server)

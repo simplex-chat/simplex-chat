@@ -1608,7 +1608,7 @@ processChatCommand' vr = \case
   APIGetUserServers userId -> withUserId userId $ \user -> withFastStore $ \db ->
     CRUserServers user <$> (liftIO . groupByOperator =<< getUserServers db user)
   APISetUserServers userId userServers -> withUserId userId $ \user -> do
-    let errors = validateUserServers (map toValidatedServers $ L.toList userServers) []
+    errors <- validateAllUsersServers userId $ L.toList userServers
     unless (null errors) $ throwChatError (CECommandError $ "user servers validation error(s): " <> show errors)
     (operators, smpServers, xftpServers) <- withFastStore $ \db -> do
       setUserServers db user userServers
@@ -1620,7 +1620,8 @@ processChatCommand' vr = \case
       setProtocolServers a auId $ agentServerCfgs opDomains (rndServers SPSMP rs) smpServers
       setProtocolServers a auId $ agentServerCfgs opDomains (rndServers SPXFTP rs) xftpServers
     ok_
-  APIValidateServers userServers -> pure $ CRUserServersValidation $ validateUserServers userServers []
+  APIValidateServers userId userServers -> withUserId userId $ \user ->
+    CRUserServersValidation user <$> validateAllUsersServers userId userServers
   APIGetUsageConditions -> do
     (usageConditions, acceptedConditions) <- withFastStore $ \db -> do
       usageConditions <- getCurrentUsageConditions db
@@ -2926,6 +2927,11 @@ processChatCommand' vr = \case
     withServerProtocol p action = case userProtocol p of
       Just Dict -> action
       _ -> throwChatError $ CEServerProtocol $ AProtocolType p
+    validateAllUsersServers :: UserServersClass u => Int64 -> [u] -> CM [UserServersError]
+    validateAllUsersServers currUserId userServers = withFastStore $ \db -> do
+      users' <- filter (\User {userId} -> userId /= currUserId) <$> liftIO (getUsers db)
+      others <- mapM (\user -> liftIO . fmap (user,) . groupByOperator =<< getUserServers db user) users'
+      pure $ validateUserServers userServers others
     forwardFile :: ChatName -> FileTransferId -> (ChatName -> CryptoFile -> ChatCommand) -> CM ChatResponse
     forwardFile chatName fileId sendCommand = withUser $ \user -> do
       withStore (\db -> getFileTransfer db user fileId) >>= \case
@@ -8242,7 +8248,7 @@ chatCommandP =
       "/_operators " *> (APISetServerOperators <$> jsonP),
       "/_servers " *> (APIGetUserServers <$> A.decimal),
       "/_servers " *> (APISetUserServers <$> A.decimal <* A.space <*> jsonP),
-      "/_validate_servers " *> (APIValidateServers <$> jsonP),
+      "/_validate_servers " *> (APIValidateServers <$> A.decimal <* A.space <*> jsonP),
       "/_conditions" $> APIGetUsageConditions,
       "/_conditions_notified " *> (APISetConditionsNotified <$> A.decimal),
       "/_accept_conditions " *> (APIAcceptConditions <$> A.decimal <*> _strP),
