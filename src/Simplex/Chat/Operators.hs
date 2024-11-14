@@ -87,7 +87,7 @@ type DBEntityId = DBEntityId' 'DBStored
 
 type DBNewEntity = DBEntityId' 'DBNew
 
-data OperatorTag = OTSimplex | OTXyz
+data OperatorTag = OTSimplex | OTFlux
   deriving (Eq, Ord, Show)
 
 instance FromField OperatorTag where fromField = fromTextField_ textDecode
@@ -104,11 +104,11 @@ instance ToJSON OperatorTag where
 instance TextEncoding OperatorTag where
   textDecode = \case
     "simplex" -> Just OTSimplex
-    "xyz" -> Just OTXyz
+    "flux" -> Just OTFlux
     _ -> Nothing
   textEncode = \case
     OTSimplex -> "simplex"
-    OTXyz -> "xyz"
+    OTFlux -> "flux"
 
 -- this and other types only define instances of serialization for known DB IDs only,
 -- entities without IDs cannot be serialized to JSON
