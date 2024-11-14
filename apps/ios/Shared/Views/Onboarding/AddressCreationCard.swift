@@ -87,7 +87,7 @@ struct AddressCreationCard: View {
         }
         .sheet(isPresented: $showAddressInfoSheet) {
             NavigationView {
-                UserAddressLearnMore()
+                UserAddressLearnMore(showCreateAddressButton: true)
                     .navigationTitle("SimpleX address")
                     .navigationBarTitleDisplayMode(.large)
                     .modifier(ThemedBackground(grouped: true))
