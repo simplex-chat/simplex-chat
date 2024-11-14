@@ -1,5 +1,8 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -47,9 +50,13 @@ module Simplex.Chat.Store.Profiles
     getContactWithoutConnViaAddress,
     updateUserAddressAutoAccept,
     getProtocolServers,
+    getUpdateUserServers,
     -- overwriteOperatorsAndServers,
     overwriteProtocolServers,
+    insertProtocolServer,
+    getUpdateServerOperators,
     getServerOperators,
+    getUserServers,
     setServerOperators,
     getCurrentUsageConditions,
     getLatestAcceptedConditions,
@@ -77,10 +84,11 @@ import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
-import Data.Text (Text, splitOn)
+import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
-import Database.SQLite.Simple (NamedParam (..), Only (..), (:.) (..))
+import Database.SQLite.Simple (NamedParam (..), Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Call
 import Simplex.Chat.Messages
@@ -92,7 +100,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Env.SQLite (OperatorId, ServerCfg (..), ServerRoles (..))
+import Simplex.Messaging.Agent.Env.SQLite (ServerRoles (..))
 import Simplex.Messaging.Agent.Protocol (ACorrId, ConnId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
@@ -100,7 +108,7 @@ import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON)
-import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolTypeI (..), SubscriptionMode)
+import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode, UserProtocol)
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
 
@@ -524,177 +532,282 @@ updateUserAddressAutoAccept db user@User {userId} autoAccept = do
       Just AutoAccept {acceptIncognito, autoReply} -> (True, acceptIncognito, autoReply)
       _ -> (False, False, Nothing)
 
-getProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> IO [ServerCfg p]
-getProtocolServers db User {userId} =
-  map toServerCfg
+getUpdateUserServers :: forall p. (ProtocolTypeI p, UserProtocol p) => DB.Connection -> SProtocolType p -> NonEmpty PresetOperator -> NonEmpty (NewUserServer p) -> User -> IO [UserServer p]
+getUpdateUserServers db p presetOps randomSrvs user = do
+  ts <- getCurrentTime
+  srvs <- getProtocolServers db p user
+  let srvs' = L.toList $ updatedUserServers p presetOps randomSrvs srvs
+  mapM (upsertServer ts) srvs'
+  where
+    upsertServer :: UTCTime -> AUserServer p -> IO (UserServer p)
+    upsertServer ts (AUS _ s@UserServer {serverId}) = case serverId of
+      DBNewEntity -> insertProtocolServer db p user ts s
+      DBEntityId _ -> updateProtocolServer db p ts s $> s
+
+getProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> SProtocolType p -> User -> IO [UserServer p]
+getProtocolServers db p User {userId} =
+  map toUserServer
     <$> DB.query
       db
       [sql|
-        SELECT s.host, s.port, s.key_hash, s.basic_auth, s.server_operator_id, s.preset, s.tested, s.enabled, o.role_storage, o.role_proxy
-        FROM protocol_servers s
-        LEFT JOIN server_operators o USING (server_operator_id)
-        WHERE s.user_id = ? AND s.protocol = ?
+        SELECT smp_server_id, host, port, key_hash, basic_auth, preset, tested, enabled
+        FROM protocol_servers
+        WHERE user_id = ? AND protocol = ?
       |]
-      (userId, decodeLatin1 $ strEncode protocol)
+      (userId, decodeLatin1 $ strEncode p)
   where
-    protocol = protocolTypeI @p
-    toServerCfg :: (NonEmpty TransportHost, String, C.KeyHash, Maybe Text, Maybe OperatorId, Bool, Maybe Bool, Bool, Maybe Bool, Maybe Bool) -> ServerCfg p
-    toServerCfg (host, port, keyHash, auth_, operator, preset, tested, enabled, storage_, proxy_) =
-      let server = ProtoServerWithAuth (ProtocolServer protocol host port keyHash) (BasicAuth . encodeUtf8 <$> auth_)
-          roles = ServerRoles {storage = fromMaybe True storage_, proxy = fromMaybe True proxy_}
-       in ServerCfg {server, operator, preset, tested, enabled, roles}
+    toUserServer :: (DBEntityId, NonEmpty TransportHost, String, C.KeyHash, Maybe Text, Bool, Maybe Bool, Bool) -> UserServer p
+    toUserServer (serverId, host, port, keyHash, auth_, preset, tested, enabled) =
+      let server = ProtoServerWithAuth (ProtocolServer p host port keyHash) (BasicAuth . encodeUtf8 <$> auth_)
+       in UserServer {serverId, server, preset, tested, enabled, deleted = False}
 
 -- TODO remove
 -- overwriteOperatorsAndServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> Maybe [ServerOperator] -> [ServerCfg p] -> ExceptT StoreError IO [ServerCfg p]
 -- overwriteOperatorsAndServers db user@User {userId} operators_ servers = do
-overwriteProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> [ServerCfg p] -> ExceptT StoreError IO ()
-overwriteProtocolServers db User {userId} servers =
+overwriteProtocolServers :: ProtocolTypeI p => DB.Connection -> SProtocolType p -> User -> [UserServer p] -> ExceptT StoreError IO ()
+overwriteProtocolServers db p User {userId} servers =
   -- liftIO $ mapM_ (updateServerOperators_ db) operators_
   checkConstraint SEUniqueID . ExceptT $ do
     currentTs <- getCurrentTime
-    DB.execute db "DELETE FROM protocol_servers WHERE user_id = ? AND protocol = ? " (userId, protocol)
-    forM_ servers $ \ServerCfg {server, preset, tested, enabled} -> do
-      let ProtoServerWithAuth ProtocolServer {host, port, keyHash} auth_ = server
+    DB.execute db "DELETE FROM protocol_servers WHERE user_id = ? AND protocol = ? " (userId, decodeLatin1 $ strEncode p)
+    forM_ servers $ \UserServer {serverId, server, preset, tested, enabled} -> do
       DB.execute
         db
         [sql|
           INSERT INTO protocol_servers
-            (protocol, host, port, key_hash, basic_auth, preset, tested, enabled, user_id, created_at, updated_at)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?)
+            (server_id, protocol, host, port, key_hash, basic_auth, preset, tested, enabled, user_id, created_at, updated_at)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
         |]
-        ((protocol, host, port, keyHash, safeDecodeUtf8 . unBasicAuth <$> auth_) :. (preset, tested, enabled, userId, currentTs, currentTs))
-    -- Right <$> getProtocolServers db user
+        (Only serverId :. serverColumns p server :. (preset, tested, enabled, userId, currentTs, currentTs))
     pure $ Right ()
-  where
-    protocol = decodeLatin1 $ strEncode $ protocolTypeI @p
+
+insertProtocolServer :: forall p. ProtocolTypeI p => DB.Connection -> SProtocolType p -> User -> UTCTime -> NewUserServer p -> IO (UserServer p)
+insertProtocolServer db p User {userId} ts srv@UserServer {server, preset, tested, enabled} = do
+  DB.execute
+    db
+    [sql|
+      INSERT INTO protocol_servers
+        (protocol, host, port, key_hash, basic_auth, preset, tested, enabled, user_id, created_at, updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?)
+    |]
+    (serverColumns p server :. (preset, tested, enabled, userId, ts, ts))
+  sId <- insertedRowId db
+  pure (srv :: NewUserServer p) {serverId = DBEntityId sId}
+
+updateProtocolServer :: ProtocolTypeI p => DB.Connection -> SProtocolType p -> UTCTime -> UserServer p -> IO ()
+updateProtocolServer db p ts UserServer {serverId, server, preset, tested, enabled} =
+  DB.execute
+    db
+    [sql|
+      UPDATE protocol_servers
+      SET protocol = ?, host = ?, port = ?, key_hash = ?, basic_auth = ?,
+          preset = ?, tested = ?, enabled = ?, updated_at = ?
+      WHERE smp_server_id = ?
+    |]
+    (serverColumns p server :. (preset, tested, enabled, ts, serverId))
+
+serverColumns :: ProtocolTypeI p => SProtocolType p -> ProtoServerWithAuth p -> (Text, NonEmpty TransportHost, String, C.KeyHash, Maybe Text)
+serverColumns p (ProtoServerWithAuth ProtocolServer {host, port, keyHash} auth_) =
+  let protocol = decodeLatin1 $ strEncode p
+      auth = safeDecodeUtf8 . unBasicAuth <$> auth_
+   in (protocol, host, port, keyHash, auth)
 
 getServerOperators :: DB.Connection -> ExceptT StoreError IO ([ServerOperator], Maybe UsageConditionsAction)
 getServerOperators db = do
-  now <- liftIO getCurrentTime
-  currentConditions <- getCurrentUsageConditions db
-  latestAcceptedConditions <- getLatestAcceptedConditions db
-  operators <-
-    liftIO $
-      map (toOperator now currentConditions latestAcceptedConditions)
-        <$> DB.query_
-          db
-          [sql|
-            SELECT
-              so.server_operator_id, so.server_operator_tag, so.trade_name, so.legal_name,
-              so.server_domains, so.enabled, so.role_storage, so.role_proxy,
-              AcceptedConditions.conditions_commit, AcceptedConditions.accepted_at
-            FROM server_operators so
-            LEFT JOIN (
-              SELECT server_operator_id, conditions_commit, accepted_at, MAX(operator_usage_conditions_id)
-              FROM operator_usage_conditions
-              GROUP BY server_operator_id
-            ) AcceptedConditions ON AcceptedConditions.server_operator_id = so.server_operator_id
-          |]
-  pure (operators, usageConditionsAction operators currentConditions now)
-  where
-    toOperator ::
-      UTCTime ->
-      UsageConditions ->
-      Maybe UsageConditions ->
-      ( (OperatorId, Maybe OperatorTag, Text, Maybe Text, Text, Bool, Bool, Bool)
-          :. (Maybe Text, Maybe UTCTime)
-      ) ->
-      ServerOperator
-    toOperator
-      now
-      UsageConditions {conditionsCommit = currentCommit, createdAt, notifiedAt}
-      latestAcceptedConditions_
-      ( (operatorId, operatorTag, tradeName, legalName, domains, enabled, storage, proxy)
-          :. (operatorCommit_, acceptedAt_)
-        ) =
-        let roles = ServerRoles {storage, proxy}
-            serverDomains = splitOn "," domains
-            conditionsAcceptance = case (latestAcceptedConditions_, operatorCommit_) of
-              -- no conditions were ever accepted for any operator(s)
-              -- (shouldn't happen as there should always be record for SimpleX Chat)
-              (Nothing, _) -> CARequired Nothing
-              -- no conditions were ever accepted for this operator
-              (_, Nothing) -> CARequired Nothing
-              (Just UsageConditions {conditionsCommit = latestAcceptedCommit}, Just operatorCommit)
-                | latestAcceptedCommit == currentCommit ->
-                    if operatorCommit == latestAcceptedCommit
-                      then -- current conditions were accepted for operator
-                        CAAccepted acceptedAt_
-                      else -- current conditions were NOT accepted for operator, but were accepted for other operator(s)
-                        CARequired Nothing
-                | otherwise ->
-                    if operatorCommit == latestAcceptedCommit
-                      then -- new conditions available, latest accepted conditions were accepted for operator
-                        CARequired $ conditionsRequiredOrDeadline createdAt (fromMaybe now notifiedAt)
-                      else -- new conditions available, latest accepted conditions were NOT accepted for operator (were accepted for other operator(s))
-                        CARequired Nothing
-         in ServerOperator {operatorId, operatorTag, tradeName, legalName, serverDomains, conditionsAcceptance, enabled, roles}
+  currentConds <- getCurrentUsageConditions db
+  liftIO $ do
+    now <- getCurrentTime
+    latestAcceptedConds_ <- getLatestAcceptedConditions db
+    let getConds op = (\ca -> op {conditionsAcceptance = ca}) <$> getOperatorConditions_ db op currentConds latestAcceptedConds_ now
+    operators <- mapM getConds =<< getServerOperators_ db
+    pure (operators, usageConditionsAction operators currentConds now)
 
-setServerOperators :: DB.Connection -> NonEmpty OperatorEnabled -> ExceptT StoreError IO ([ServerOperator], Maybe UsageConditionsAction)
-setServerOperators db operatorsEnabled = do
-  liftIO $ forM_ operatorsEnabled $ \OperatorEnabled {operatorId, enabled, roles = ServerRoles {storage, proxy}} ->
-    DB.execute
-      db
-      "UPDATE server_operators SET enabled = ?, role_storage = ?, role_proxy = ? WHERE server_operator_id = ?"
-      (enabled, storage, proxy, operatorId)
-  getServerOperators db
+getUserServers :: DB.Connection -> User -> ExceptT StoreError IO ([ServerOperator], [UserServer 'PSMP],  [UserServer 'PXFTP])
+getUserServers db user =
+  (,,)
+    <$> (fst <$> getServerOperators db)
+    <*> liftIO (getProtocolServers db SPSMP user)
+    <*> liftIO (getProtocolServers db SPXFTP user)
+
+setServerOperators :: DB.Connection -> NonEmpty ServerOperator -> IO ()
+setServerOperators db ops = do
+  currentTs <- getCurrentTime
+  mapM_ (updateServerOperator db currentTs) ops
+
+updateServerOperator :: DB.Connection -> UTCTime -> ServerOperator -> IO ()
+updateServerOperator db currentTs ServerOperator {operatorId, enabled, roles = ServerRoles {storage, proxy}} =
+  DB.execute
+    db
+    [sql|
+      UPDATE server_operators
+      SET enabled = ?, role_storage = ?, role_proxy = ?, updated_at = ?
+      WHERE server_operator_id = ?
+    |]
+    (enabled, storage, proxy, operatorId, currentTs)
+
+getUpdateServerOperators :: DB.Connection -> NonEmpty PresetOperator -> Bool -> IO [ServerOperator]
+getUpdateServerOperators db presetOps newUser = do
+  conds <- map toUsageConditions <$> DB.query_ db usageCondsQuery
+  now <- getCurrentTime
+  let (acceptForSimplex_, currentConds, condsToAdd) = usageConditionsToAdd newUser now conds
+  mapM_ insertConditions condsToAdd
+  latestAcceptedConds_ <- getLatestAcceptedConditions db
+  ops <- updatedServerOperators presetOps <$> getServerOperators_ db
+  forM ops $ \(ASO _ op) ->
+    case operatorId op of
+      DBNewEntity -> do
+        op' <- insertOperator op
+        case (operatorTag op', acceptForSimplex_) of
+          (Just OTSimplex, Just cond) -> autoAcceptConditions op' cond
+          _ -> pure op'
+      DBEntityId _ -> do
+        updateOperator op
+        getOperatorConditions_ db op currentConds latestAcceptedConds_ now >>= \case
+          CARequired Nothing | operatorTag op == Just OTSimplex -> autoAcceptConditions op currentConds
+          CARequired (Just ts) | ts < now -> autoAcceptConditions op currentConds
+          ca -> pure op {conditionsAcceptance = ca}
+  where
+    insertConditions UsageConditions {conditionsId, conditionsCommit, notifiedAt, createdAt} =
+      DB.execute
+        db
+        [sql|
+          INSERT INTO usage_conditions
+            (usage_conditions_id, conditions_commit, notified_at, created_at)
+          VALUES (?,?,?,?)
+        |]
+        (conditionsId, conditionsCommit, notifiedAt, createdAt)
+    updateOperator :: ServerOperator -> IO ()
+    updateOperator ServerOperator {operatorId, tradeName, legalName, serverDomains, enabled, roles = ServerRoles {storage, proxy}} =
+      DB.execute
+        db
+        [sql|
+          UPDATE server_operators
+          SET trade_name = ?, legal_name = ?, server_domains = ?, enabled = ?, role_storage = ?, role_proxy = ?
+          WHERE server_operator_id = ?
+        |]
+        (tradeName, legalName, T.intercalate "," serverDomains, enabled, storage, proxy, operatorId)
+    insertOperator :: NewServerOperator -> IO ServerOperator
+    insertOperator op@ServerOperator {operatorTag, tradeName, legalName, serverDomains, enabled, roles = ServerRoles {storage, proxy}} = do
+      DB.execute
+        db
+        [sql|
+          INSERT INTO server_operators
+            (server_operator_tag, trade_name, legal_name, server_domains, enabled, role_storage, role_proxy)
+          VALUES (?,?,?,?,?,?,?)
+        |]
+        (operatorTag, tradeName, legalName, T.intercalate "," serverDomains, enabled, storage, proxy)
+      opId <- insertedRowId db
+      pure op {operatorId = DBEntityId opId}
+    autoAcceptConditions op UsageConditions {conditionsCommit} =
+      acceptConditions_ db op conditionsCommit Nothing
+        $> op {conditionsAcceptance = CAAccepted Nothing}
+
+serverOperatorQuery :: Query
+serverOperatorQuery =
+  [sql|
+    SELECT server_operator_id, server_operator_tag, trade_name, legal_name,
+      server_domains, enabled, role_storage, role_proxy
+    FROM server_operators
+  |]
+
+getServerOperators_ :: DB.Connection -> IO [ServerOperator]
+getServerOperators_ db = map toServerOperator <$> DB.query_ db serverOperatorQuery
+
+toServerOperator :: (DBEntityId, Maybe OperatorTag, Text, Maybe Text, Text, Bool, Bool, Bool) -> ServerOperator
+toServerOperator (operatorId, operatorTag, tradeName, legalName, domains, enabled, storage, proxy) =
+  ServerOperator
+    { operatorId,
+      operatorTag,
+      tradeName,
+      legalName,
+      serverDomains = T.splitOn "," domains,
+      conditionsAcceptance = CARequired Nothing,
+      enabled,
+      roles = ServerRoles {storage, proxy}
+    }
+
+getOperatorConditions_ :: DB.Connection -> ServerOperator -> UsageConditions -> Maybe UsageConditions -> UTCTime -> IO ConditionsAcceptance
+getOperatorConditions_ db ServerOperator {operatorId} UsageConditions {conditionsCommit = currentCommit, createdAt, notifiedAt} latestAcceptedConds_ now = do
+  case latestAcceptedConds_ of
+    Nothing -> pure $ CARequired Nothing -- no conditions accepted by any operator
+    Just UsageConditions {conditionsCommit = latestAcceptedCommit} -> do
+      operatorAcceptedConds_ <-
+        maybeFirstRow id $
+          DB.query
+            db
+            [sql|
+              SELECT conditions_commit, accepted_at
+              FROM operator_usage_conditions
+              WHERE server_operator_id = ?
+              ORDER BY operator_usage_conditions_id DESC
+              LIMIT 1
+            |]
+            (Only operatorId)
+      pure $ case operatorAcceptedConds_ of
+        Just (operatorCommit, acceptedAt_)
+          | operatorCommit /= latestAcceptedCommit -> CARequired Nothing -- TODO should we consider this operator disabled?
+          | currentCommit /= latestAcceptedCommit -> CARequired $ conditionsRequiredOrDeadline createdAt (fromMaybe now notifiedAt)
+          | otherwise -> CAAccepted acceptedAt_
+        _ -> CARequired Nothing -- no conditions were accepted for this operator
 
 getCurrentUsageConditions :: DB.Connection -> ExceptT StoreError IO UsageConditions
 getCurrentUsageConditions db =
   ExceptT . firstRow toUsageConditions SEUsageConditionsNotFound $
-    DB.query_
-      db
-      [sql|
-        SELECT usage_conditions_id, conditions_commit, notified_at, created_at
-        FROM usage_conditions
-        ORDER BY usage_conditions_id DESC LIMIT 1
-      |]
+    DB.query_ db (usageCondsQuery <> " DESC LIMIT 1")
+
+usageCondsQuery :: Query
+usageCondsQuery =
+  [sql|
+    SELECT usage_conditions_id, conditions_commit, notified_at, created_at
+    FROM usage_conditions
+    ORDER BY usage_conditions_id
+  |]
 
 toUsageConditions :: (Int64, Text, Maybe UTCTime, UTCTime) -> UsageConditions
 toUsageConditions (conditionsId, conditionsCommit, notifiedAt, createdAt) =
   UsageConditions {conditionsId, conditionsCommit, notifiedAt, createdAt}
 
-getLatestAcceptedConditions :: DB.Connection -> ExceptT StoreError IO (Maybe UsageConditions)
-getLatestAcceptedConditions db = do
-  (latestAcceptedCommit_ :: Maybe Text) <-
-    liftIO $
-      maybeFirstRow fromOnly $
-        DB.query_
-          db
-          [sql|
+getLatestAcceptedConditions :: DB.Connection -> IO (Maybe UsageConditions)
+getLatestAcceptedConditions db =
+  maybeFirstRow toUsageConditions $
+    DB.query_
+      db
+      [sql|
+        SELECT usage_conditions_id, conditions_commit, notified_at, created_at
+        FROM usage_conditions
+        WHERE conditions_commit = (
           SELECT conditions_commit
           FROM operator_usage_conditions
           ORDER BY accepted_at DESC
           LIMIT 1
-        |]
-  forM latestAcceptedCommit_ $ \latestAcceptedCommit ->
-    ExceptT . firstRow toUsageConditions SEUsageConditionsNotFound $
-      DB.query
-        db
-        [sql|
-          SELECT usage_conditions_id, conditions_commit, notified_at, created_at
-          FROM usage_conditions
-          WHERE conditions_commit = ?
-        |]
-        (Only latestAcceptedCommit)
+        )
+      |]
 
 setConditionsNotified :: DB.Connection -> Int64 -> UTCTime -> IO ()
-setConditionsNotified db conditionsId notifiedAt =
-  DB.execute db "UPDATE usage_conditions SET notified_at = ? WHERE usage_conditions_id = ?" (notifiedAt, conditionsId)
+setConditionsNotified db condId notifiedAt =
+  DB.execute db "UPDATE usage_conditions SET notified_at = ? WHERE usage_conditions_id = ?" (notifiedAt, condId)
 
-acceptConditions :: DB.Connection -> Int64 -> NonEmpty ServerOperator -> UTCTime -> ExceptT StoreError IO ([ServerOperator], Maybe UsageConditionsAction)
-acceptConditions db conditionsId operators acceptedAt = do
-  UsageConditions {conditionsCommit} <- getUsageConditionsById_ db conditionsId
-  liftIO $ forM_ operators $ \ServerOperator {operatorId, operatorTag} ->
-    DB.execute
-      db
-      [sql|
-        INSERT INTO operator_usage_conditions
-          (server_operator_id, server_operator_tag, conditions_commit, accepted_at)
-        VALUES (?,?,?,?)
-      |]
-      (operatorId, operatorTag, conditionsCommit, acceptedAt)
-  getServerOperators db
+acceptConditions :: DB.Connection -> Int64 -> NonEmpty Int64 -> UTCTime -> ExceptT StoreError IO ()
+acceptConditions db condId opIds acceptedAt = do
+  UsageConditions {conditionsCommit} <- getUsageConditionsById_ db condId
+  operators <- mapM getServerOperator_ opIds
+  let ts = Just acceptedAt
+  liftIO $ forM_ operators $ \op -> acceptConditions_ db op conditionsCommit ts
+  where
+    getServerOperator_ opId =
+      ExceptT $ firstRow toServerOperator (SEOperatorNotFound opId) $
+        DB.query db (serverOperatorQuery <> " WHERE operator_id = ?") (Only opId)
+
+acceptConditions_ :: DB.Connection -> ServerOperator -> Text -> Maybe UTCTime -> IO ()
+acceptConditions_ db ServerOperator {operatorId, operatorTag} conditionsCommit acceptedAt =
+  DB.execute
+    db
+    [sql|
+      INSERT INTO operator_usage_conditions
+        (server_operator_id, server_operator_tag, conditions_commit, accepted_at)
+      VALUES (?,?,?,?)
+    |]
+    (operatorId, operatorTag, conditionsCommit, acceptedAt)
 
 getUsageConditionsById_ :: DB.Connection -> Int64 -> ExceptT StoreError IO UsageConditions
 getUsageConditionsById_ db conditionsId =
@@ -708,83 +821,22 @@ getUsageConditionsById_ db conditionsId =
       |]
       (Only conditionsId)
 
-setUserServers :: DB.Connection -> User -> NonEmpty UserServers -> ExceptT StoreError IO ()
-setUserServers db User {userId} userServers = do
-  currentTs <- liftIO getCurrentTime
-  forM_ userServers $ do
-    \UserServers {operator, smpServers, xftpServers} -> do
-      forM_ operator $ \op -> liftIO $ updateOperator currentTs op
-      overwriteServers currentTs operator smpServers
-      overwriteServers currentTs operator xftpServers
+setUserServers :: DB.Connection -> User -> NonEmpty UpdatedUserOperatorServers -> ExceptT StoreError IO ()
+setUserServers db user@User {userId} userServers = checkConstraint SEUniqueID $ liftIO $ do
+  ts <- getCurrentTime
+  forM_ userServers $ \UpdatedUserOperatorServers {operator, smpServers, xftpServers} -> do
+    mapM_ (updateServerOperator db ts) operator
+    mapM_ (upsertOrDelete SPSMP ts) smpServers
+    mapM_ (upsertOrDelete SPXFTP ts) xftpServers
   where
-    updateOperator :: UTCTime -> ServerOperator -> IO ()
-    updateOperator currentTs ServerOperator {operatorId, enabled, roles = ServerRoles {storage, proxy}} =
-      DB.execute
-        db
-        [sql|
-          UPDATE server_operators
-          SET enabled = ?, role_storage = ?, role_proxy = ?, updated_at = ?
-          WHERE server_operator_id = ?
-        |]
-        (enabled, storage, proxy, operatorId, currentTs)
-    overwriteServers :: forall p. ProtocolTypeI p => UTCTime -> Maybe ServerOperator -> [ServerCfg p] -> ExceptT StoreError IO ()
-    overwriteServers currentTs serverOperator servers =
-      checkConstraint SEUniqueID . ExceptT $ do
-        case serverOperator of
-          Nothing ->
-            DB.execute db "DELETE FROM protocol_servers WHERE user_id = ? AND server_operator_id IS NULL AND protocol = ?" (userId, protocol)
-          Just ServerOperator {operatorId} ->
-            DB.execute db "DELETE FROM protocol_servers WHERE user_id = ? AND server_operator_id = ? AND protocol = ?" (userId, operatorId, protocol)
-        forM_ servers $ \ServerCfg {server, operator, preset, tested, enabled} -> do
-          let ProtoServerWithAuth ProtocolServer {host, port, keyHash} auth_ = server
-          DB.execute
-            db
-            [sql|
-              INSERT INTO protocol_servers
-                (protocol, host, port, key_hash, basic_auth, operator, preset, tested, enabled, user_id, created_at, updated_at)
-              VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
-            |]
-            ((protocol, host, port, keyHash, safeDecodeUtf8 . unBasicAuth <$> auth_, operator) :. (preset, tested, enabled, userId, currentTs, currentTs))
-        pure $ Right ()
-      where
-        protocol = decodeLatin1 $ strEncode $ protocolTypeI @p
-
--- updateServerOperators_ :: DB.Connection -> [ServerOperator] -> IO [ServerOperator]
--- updateServerOperators_ db operators = do
---   DB.execute_ db "DELETE FROM server_operators WHERE preset = 0"
---   let (existing, new) = partition (isJust . operatorId) operators
---   existing' <- mapM (\op -> upsertExisting op $> op) existing
---   new' <- mapM insertNew new
---   pure $ existing' <> new'
---   where
---     upsertExisting ServerOperator {operatorId, name, preset, enabled, roles = ServerRoles {storage, proxy}}
---       | preset =
---           DB.execute
---             db
---             [sql|
---               UPDATE server_operators
---               SET enabled = ?, role_storage = ?, role_proxy = ?
---               WHERE server_operator_id = ?
---             |]
---             (enabled, storage, proxy, operatorId)
---       | otherwise =
---           DB.execute
---             db
---             [sql|
---               INSERT INTO server_operators (server_operator_id, name, preset, enabled, role_storage, role_proxy)
---               VALUES (?,?,?,?,?,?)
---             |]
---             (operatorId, name, preset, enabled, storage, proxy)
---     insertNew op@ServerOperator {name, preset, enabled, roles = ServerRoles {storage, proxy}} = do
---       DB.execute
---         db
---         [sql|
---           INSERT INTO server_operators (name, preset, enabled, role_storage, role_proxy)
---           VALUES (?,?,?,?,?)
---         |]
---         (name, preset, enabled, storage, proxy)
---       opId <- insertedRowId db
---       pure op {operatorId = Just opId}
+    upsertOrDelete :: ProtocolTypeI p => SProtocolType p -> UTCTime -> AUserServer p -> IO ()
+    upsertOrDelete p ts (AUS _ s@UserServer {serverId, deleted}) = case serverId of
+      DBNewEntity
+        | deleted -> pure ()
+        | otherwise -> void $ insertProtocolServer db p user ts s
+      DBEntityId srvId
+        | deleted -> DB.execute db "DELETE FROM protocol_servers WHERE user_id = ? AND smp_server_id = ? AND preset = ?" (userId, srvId, False)
+        | otherwise -> updateProtocolServer db p ts s
 
 createCall :: DB.Connection -> User -> Call -> UTCTime -> IO ()
 createCall db user@User {userId} Call {contactId, callId, callUUID, chatItemId, callState} callTs = do

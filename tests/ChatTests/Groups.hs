@@ -1,8 +1,10 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module ChatTests.Groups where
 

@@ -6,6 +6,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
@@ -43,7 +44,7 @@ import Data.Functor (($>))
 import Data.Functor.Identity
 import Data.Int (Int64)
 import Data.List (find, foldl', isSuffixOf, mapAccumL, partition, sortOn, zipWith4)
-import Data.List.NonEmpty (NonEmpty (..), nonEmpty, toList, (<|))
+import Data.List.NonEmpty (NonEmpty (..), (<|))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -54,6 +55,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDay, nominalDiffTimeToSeconds)
+import Data.Type.Equality
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Data.Word (Word32)
@@ -98,7 +100,7 @@ import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.FileTransfer.Types (FileErrorType (..), RcvFileId, SndFileId)
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Client (SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, getFastNetworkConfig, ipAddressProtected, withLockMap)
-import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), OperatorId, ServerCfg (..), allRoles, createAgentStore, defaultAgentConfig, enabledServerCfg, presetServerCfg)
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), ServerCfg (..), ServerRoles (..), allRoles, createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock (withLock)
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
@@ -138,6 +140,32 @@ import qualified UnliftIO.Exception as E
 import UnliftIO.IO (hClose, hSeek, hTell, openFile)
 import UnliftIO.STM
 
+operatorSimpleXChat :: NewServerOperator
+operatorSimpleXChat =
+  ServerOperator
+    { operatorId = DBNewEntity,
+      operatorTag = Just OTSimplex,
+      tradeName = "SimpleX Chat",
+      legalName = Just "SimpleX Chat Ltd",
+      serverDomains = ["simplex.im"],
+      conditionsAcceptance = CARequired Nothing,
+      enabled = True,
+      roles = allRoles
+    }
+
+operatorFlux :: NewServerOperator
+operatorFlux =
+  ServerOperator
+    { operatorId = DBNewEntity,
+      operatorTag = Just OTFlux,
+      tradeName = "Flux",
+      legalName = Just "InFlux Technologies Limited",
+      serverDomains = ["simplexonflux.com"],
+      conditionsAcceptance = CARequired Nothing,
+      enabled = False,
+      roles = ServerRoles {storage = False, proxy = True}
+    }
+
 defaultChatConfig :: ChatConfig
 defaultChatConfig =
   ChatConfig
@@ -148,13 +176,25 @@ defaultChatConfig =
           },
       chatVRange = supportedChatVRange,
       confirmMigrations = MCConsole,
-      defaultServers =
-        DefaultAgentServers
-          { smp = _defaultSMPServers,
-            useSMP = 4,
+      presetServers =
+        PresetServers
+          { operators =
+              [ PresetOperator
+                  { operator = Just operatorSimpleXChat,
+                    smp = simplexChatSMPServers,
+                    useSMP = 4,
+                    xftp = map (presetServer True) $ L.toList defaultXFTPServers,
+                    useXFTP = 3
+                  },
+                PresetOperator
+                  { operator = Just operatorFlux,
+                    smp = fluxSMPServers,
+                    useSMP = 3,
+                    xftp = fluxXFTPServers,
+                    useXFTP = 3
+                  }
+              ],
             ntf = _defaultNtfServers,
-            xftp = L.map (presetServerCfg True allRoles operatorSimpleXChat) defaultXFTPServers,
-            useXFTP = L.length defaultXFTPServers,
             netCfg = defaultNetworkConfig
           },
       tbqSize = 1024,
@@ -178,32 +218,52 @@ defaultChatConfig =
       chatHooks = defaultChatHooks
     }
 
-_defaultSMPServers :: NonEmpty (ServerCfg 'PSMP)
-_defaultSMPServers =
-  L.fromList $
-    map
-      (presetServerCfg True allRoles operatorSimpleXChat)
-      [ "smp://0YuTwO05YJWS8rkjn9eLJDjQhFKvIYd8d4xG8X1blIU=@smp8.simplex.im,beccx4yfxxbvyhqypaavemqurytl6hozr47wfc7uuecacjqdvwpw2xid.onion",
-        "smp://SkIkI6EPd2D63F4xFKfHk7I1UGZVNn6k1QWZ5rcyr6w=@smp9.simplex.im,jssqzccmrcws6bhmn77vgmhfjmhwlyr3u7puw4erkyoosywgl67slqqd.onion",
-        "smp://6iIcWT_dF2zN_w5xzZEY7HI2Prbh3ldP07YTyDexPjE=@smp10.simplex.im,rb2pbttocvnbrngnwziclp2f4ckjq65kebafws6g4hy22cdaiv5dwjqd.onion",
-        "smp://1OwYGt-yqOfe2IyVHhxz3ohqo3aCCMjtB-8wn4X_aoY=@smp11.simplex.im,6ioorbm6i3yxmuoezrhjk6f6qgkc4syabh7m3so74xunb5nzr4pwgfqd.onion",
-        "smp://UkMFNAXLXeAAe0beCa4w6X_zp18PwxSaSjY17BKUGXQ=@smp12.simplex.im,ie42b5weq7zdkghocs3mgxdjeuycheeqqmksntj57rmejagmg4eor5yd.onion",
-        "smp://enEkec4hlR3UtKx2NMpOUK_K4ZuDxjWBO1d9Y4YXVaA=@smp14.simplex.im,aspkyu2sopsnizbyfabtsicikr2s4r3ti35jogbcekhm3fsoeyjvgrid.onion",
-        "smp://h--vW7ZSkXPeOUpfxlFGgauQmXNFOzGoizak7Ult7cw=@smp15.simplex.im,oauu4bgijybyhczbnxtlggo6hiubahmeutaqineuyy23aojpih3dajad.onion",
-        "smp://hejn2gVIqNU6xjtGM3OwQeuk8ZEbDXVJXAlnSBJBWUA=@smp16.simplex.im,p3ktngodzi6qrf7w64mmde3syuzrv57y55hxabqcq3l5p6oi7yzze6qd.onion",
-        "smp://ZKe4uxF4Z_aLJJOEsC-Y6hSkXgQS5-oc442JQGkyP8M=@smp17.simplex.im,ogtwfxyi3h2h5weftjjpjmxclhb5ugufa5rcyrmg7j4xlch7qsr5nuqd.onion",
-        "smp://PtsqghzQKU83kYTlQ1VKg996dW4Cw4x_bvpKmiv8uns=@smp18.simplex.im,lyqpnwbs2zqfr45jqkncwpywpbtq7jrhxnib5qddtr6npjyezuwd3nqd.onion",
-        "smp://N_McQS3F9TGoh4ER0QstUf55kGnNSd-wXfNPZ7HukcM=@smp19.simplex.im,i53bbtoqhlc365k6kxzwdp5w3cdt433s7bwh3y32rcbml2vztiyyz5id.onion"
+simplexChatSMPServers :: [NewUserServer 'PSMP]
+simplexChatSMPServers =
+  map
+    (presetServer True)
+    [ "smp://0YuTwO05YJWS8rkjn9eLJDjQhFKvIYd8d4xG8X1blIU=@smp8.simplex.im,beccx4yfxxbvyhqypaavemqurytl6hozr47wfc7uuecacjqdvwpw2xid.onion",
+      "smp://SkIkI6EPd2D63F4xFKfHk7I1UGZVNn6k1QWZ5rcyr6w=@smp9.simplex.im,jssqzccmrcws6bhmn77vgmhfjmhwlyr3u7puw4erkyoosywgl67slqqd.onion",
+      "smp://6iIcWT_dF2zN_w5xzZEY7HI2Prbh3ldP07YTyDexPjE=@smp10.simplex.im,rb2pbttocvnbrngnwziclp2f4ckjq65kebafws6g4hy22cdaiv5dwjqd.onion",
+      "smp://1OwYGt-yqOfe2IyVHhxz3ohqo3aCCMjtB-8wn4X_aoY=@smp11.simplex.im,6ioorbm6i3yxmuoezrhjk6f6qgkc4syabh7m3so74xunb5nzr4pwgfqd.onion",
+      "smp://UkMFNAXLXeAAe0beCa4w6X_zp18PwxSaSjY17BKUGXQ=@smp12.simplex.im,ie42b5weq7zdkghocs3mgxdjeuycheeqqmksntj57rmejagmg4eor5yd.onion",
+      "smp://enEkec4hlR3UtKx2NMpOUK_K4ZuDxjWBO1d9Y4YXVaA=@smp14.simplex.im,aspkyu2sopsnizbyfabtsicikr2s4r3ti35jogbcekhm3fsoeyjvgrid.onion",
+      "smp://h--vW7ZSkXPeOUpfxlFGgauQmXNFOzGoizak7Ult7cw=@smp15.simplex.im,oauu4bgijybyhczbnxtlggo6hiubahmeutaqineuyy23aojpih3dajad.onion",
+      "smp://hejn2gVIqNU6xjtGM3OwQeuk8ZEbDXVJXAlnSBJBWUA=@smp16.simplex.im,p3ktngodzi6qrf7w64mmde3syuzrv57y55hxabqcq3l5p6oi7yzze6qd.onion",
+      "smp://ZKe4uxF4Z_aLJJOEsC-Y6hSkXgQS5-oc442JQGkyP8M=@smp17.simplex.im,ogtwfxyi3h2h5weftjjpjmxclhb5ugufa5rcyrmg7j4xlch7qsr5nuqd.onion",
+      "smp://PtsqghzQKU83kYTlQ1VKg996dW4Cw4x_bvpKmiv8uns=@smp18.simplex.im,lyqpnwbs2zqfr45jqkncwpywpbtq7jrhxnib5qddtr6npjyezuwd3nqd.onion",
+      "smp://N_McQS3F9TGoh4ER0QstUf55kGnNSd-wXfNPZ7HukcM=@smp19.simplex.im,i53bbtoqhlc365k6kxzwdp5w3cdt433s7bwh3y32rcbml2vztiyyz5id.onion"
+    ]
+    <> map
+      (presetServer False)
+      [ "smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im,o5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion",
+        "smp://hpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg=@smp5.simplex.im,jjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion",
+        "smp://PQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo=@smp6.simplex.im,bylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion"
       ]
-      <> map
-        (presetServerCfg False allRoles operatorSimpleXChat)
-        [ "smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im,o5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion",
-          "smp://hpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg=@smp5.simplex.im,jjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion",
-          "smp://PQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo=@smp6.simplex.im,bylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion"
-        ]
 
-operatorSimpleXChat :: Maybe OperatorId
-operatorSimpleXChat = Just 1
+fluxSMPServers :: [NewUserServer 'PSMP]
+fluxSMPServers =
+  map
+    (presetServer True)
+    [ "smp://xQW_ufMkGE20UrTlBl8QqceG1tbuylXhr9VOLPyRJmw=@smp1.simplexonflux.com,qb4yoanyl4p7o33yrknv4rs6qo7ugeb2tu2zo66sbebezs4cpyosarid.onion",
+      "smp://LDnWZVlAUInmjmdpQQoIo6FUinRXGe0q3zi5okXDE4s=@smp2.simplexonflux.com,yiqtuh3q4x7hgovkomafsod52wvfjucdljqbbipg5sdssnklgongxbqd.onion",
+      "smp://1jne379u7IDJSxAvXbWb_JgoE7iabcslX0LBF22Rej0=@smp3.simplexonflux.com,a5lm4k7ufei66cdck6fy63r4lmkqy3dekmmb7jkfdm5ivi6kfaojshad.onion",
+      "smp://xmAmqj75I9mWrUihLUlI0ZuNLXlIwFIlHRq5Pb6cHAU=@smp4.simplexonflux.com,qpcz2axyy66u26hfdd2e23uohcf3y6c36mn7dcuilcgnwjasnrvnxjqd.onion",
+      "smp://rWvBYyTamuRCBYb_KAn-nsejg879ndhiTg5Sq3k0xWA=@smp5.simplexonflux.com,4ao347qwiuluyd45xunmii4skjigzuuox53hpdsgbwxqafd4yrticead.onion",
+      "smp://PN7-uqLBToqlf1NxHEaiL35lV2vBpXq8Nj8BW11bU48=@smp6.simplexonflux.com,hury6ot3ymebbr2535mlp7gcxzrjpc6oujhtfxcfh2m4fal4xw5fq6qd.onion"
+    ]
+
+fluxXFTPServers :: [NewUserServer 'PXFTP]
+fluxXFTPServers =
+  map
+    (presetServer True)
+    [ "xftp://92Sctlc09vHl_nAqF2min88zKyjdYJ9mgxRCJns5K2U=@xftp1.simplexonflux.com,apl3pumq3emwqtrztykyyoomdx4dg6ysql5zek2bi3rgznz7ai3odkid.onion",
+      "xftp://YBXy4f5zU1CEhnbbCzVWTNVNsaETcAGmYqGNxHntiE8=@xftp2.simplexonflux.com,c5jjecisncnngysah3cz2mppediutfelco4asx65mi75d44njvua3xid.onion",
+      "xftp://ARQO74ZSvv2OrulRF3CdgwPz_AMy27r0phtLSq5b664=@xftp3.simplexonflux.com,dc4mohiubvbnsdfqqn7xhlhpqs5u4tjzp7xpz6v6corwvzvqjtaqqiqd.onion",
+      "xftp://ub2jmAa9U0uQCy90O-fSUNaYCj6sdhl49Jh3VpNXP58=@xftp4.simplexonflux.com,4qq5pzier3i4yhpuhcrhfbl6j25udc4czoyascrj4yswhodhfwev3nyd.onion",
+      "xftp://Rh19D5e4Eez37DEE9hAlXDB3gZa1BdFYJTPgJWPO9OI=@xftp5.simplexonflux.com,q7itltdn32hjmgcqwhow4tay5ijetng3ur32bolssw32fvc5jrwvozad.onion",
+      "xftp://0AznwoyfX8Od9T_acp1QeeKtxUi676IBIiQjXVwbdyU=@xftp6.simplexonflux.com,upvzf23ou6nrmaf3qgnhd6cn3d74tvivlmz3p7wdfwq6fhthjrjiiqid.onion"
+    ]
 
 _defaultNtfServers :: [NtfServer]
 _defaultNtfServers =
@@ -240,16 +300,19 @@ newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Boo
 newChatController
   ChatDatabase {chatStore, agentStore}
   user
-  cfg@ChatConfig {agentConfig = aCfg, defaultServers, inlineFiles, deviceNameForRemote, confirmMigrations}
+  cfg@ChatConfig {agentConfig = aCfg, presetServers, inlineFiles, deviceNameForRemote, confirmMigrations}
   ChatOpts {coreOptions = CoreChatOpts {smpServers, xftpServers, simpleNetCfg, logLevel, logConnections, logServerHosts, logFile, tbqSize, highlyAvailable, yesToUpMigrations}, deviceName, optFilesFolder, optTempDirectory, showReactions, allowInstantFiles, autoAcceptFileSize}
   backgroundMode = do
     let inlineFiles' = if allowInstantFiles || autoAcceptFileSize > 0 then inlineFiles else inlineFiles {sendChunks = 0, receiveInstant = False}
         confirmMigrations' = if confirmMigrations == MCConsole && yesToUpMigrations then MCYesUp else confirmMigrations
-        config = cfg {logLevel, showReactions, tbqSize, subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = configServers, inlineFiles = inlineFiles', autoAcceptFileSize, highlyAvailable, confirmMigrations = confirmMigrations'}
+        config = cfg {logLevel, showReactions, tbqSize, subscriptionEvents = logConnections, hostEvents = logServerHosts, presetServers = presetServers', inlineFiles = inlineFiles', autoAcceptFileSize, highlyAvailable, confirmMigrations = confirmMigrations'}
         firstTime = dbNew chatStore
     currentUser <- newTVarIO user
+    randomSMP <- randomPresetServers SPSMP presetServers'
+    randomXFTP <- randomPresetServers SPXFTP presetServers'
+    let randomServers = RandomServers {smpServers = randomSMP, xftpServers = randomXFTP}
     currentRemoteHost <- newTVarIO Nothing
-    servers <- agentServers config
+    servers <- withTransaction chatStore $ \db -> agentServers db config randomServers
     smpAgent <- getSMPAgentClient aCfg {tbqSize} servers agentStore backgroundMode
     agentAsync <- newTVarIO Nothing
     random <- liftIO C.newRandom
@@ -285,6 +348,7 @@ newChatController
       ChatController
         { firstTime,
           currentUser,
+          randomServers,
           currentRemoteHost,
           smpAgent,
           agentAsync,
@@ -322,28 +386,41 @@ newChatController
           contactMergeEnabled
         }
     where
-      configServers :: DefaultAgentServers
-      configServers =
-        let DefaultAgentServers {smp = defSmp, xftp = defXftp, netCfg} = defaultServers
-            smp' = maybe defSmp (L.map enabledServerCfg) (nonEmpty smpServers)
-            xftp' = maybe defXftp (L.map enabledServerCfg) (nonEmpty xftpServers)
-         in defaultServers {smp = smp', xftp = xftp', netCfg = updateNetworkConfig netCfg simpleNetCfg}
-      agentServers :: ChatConfig -> IO InitialAgentServers
-      agentServers config@ChatConfig {defaultServers = defServers@DefaultAgentServers {ntf, netCfg}} = do
-        users <- withTransaction chatStore getUsers
-        smp' <- getUserServers users SPSMP
-        xftp' <- getUserServers users SPXFTP
+      presetServers' :: PresetServers
+      presetServers' = presetServers {operators = operators', netCfg = netCfg'}
+        where
+          PresetServers {operators, netCfg} = presetServers
+          netCfg' = updateNetworkConfig netCfg simpleNetCfg
+          operators' = case (smpServers, xftpServers) of
+            ([], []) -> operators
+            (smpSrvs, []) -> L.map disableSMP operators <> [custom smpSrvs []]
+            ([], xftpSrvs) -> L.map disableXFTP operators <> [custom [] xftpSrvs]
+            (smpSrvs, xftpSrvs) -> [custom smpSrvs xftpSrvs]
+          disableSMP op@PresetOperator {smp} = (op :: PresetOperator) {smp = map disableSrv smp}
+          disableXFTP op@PresetOperator {xftp} = (op :: PresetOperator) {xftp = map disableSrv xftp}
+          disableSrv :: forall p. NewUserServer p -> NewUserServer p
+          disableSrv srv = (srv :: NewUserServer p) {enabled = False}
+          custom smpSrvs xftpSrvs =
+            PresetOperator
+              { operator = Nothing,
+                smp = map newUserServer smpSrvs,
+                useSMP = 0,
+                xftp = map newUserServer xftpSrvs,
+                useXFTP = 0
+              }
+      agentServers :: DB.Connection -> ChatConfig -> RandomServers -> IO InitialAgentServers
+      agentServers db ChatConfig {presetServers = PresetServers {operators = presetOps, ntf, netCfg}} rs = do
+        users <- getUsers db
+        opDomains <- operatorDomains <$> getUpdateServerOperators db presetOps (null users)
+        smp' <- getServers SPSMP users opDomains
+        xftp' <- getServers SPXFTP users opDomains
         pure InitialAgentServers {smp = smp', xftp = xftp', ntf, netCfg}
         where
-          getUserServers :: forall p. (ProtocolTypeI p, UserProtocol p) => [User] -> SProtocolType p -> IO (Map UserId (NonEmpty (ServerCfg p)))
-          getUserServers users protocol = case users of
-            [] -> pure $ M.fromList [(1, cfgServers protocol defServers)]
-            _ -> M.fromList <$> initialServers
-            where
-              initialServers :: IO [(UserId, NonEmpty (ServerCfg p))]
-              initialServers = mapM (\u -> (aUserId u,) <$> userServers u) users
-              userServers :: User -> IO (NonEmpty (ServerCfg p))
-              userServers user' = useServers config protocol <$> withTransaction chatStore (`getProtocolServers` user')
+          getServers :: forall p. (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> [User] -> [(Text, ServerOperator)] -> IO (Map UserId (NonEmpty (ServerCfg p)))
+          getServers p users opDomains = do
+            let rs' = rndServers p rs
+            fmap M.fromList $ forM users $ \u ->
+              (aUserId u,) . agentServerCfgs opDomains rs' <$> getUpdateUserServers db p presetOps rs' u
 
 updateNetworkConfig :: NetworkConfig -> SimpleNetCfg -> NetworkConfig
 updateNetworkConfig cfg SimpleNetCfg {socksProxy, socksMode, hostMode, requiredHostMode, smpProxyMode_, smpProxyFallback_, smpWebPort, tcpTimeout_, logTLSErrors} =
@@ -386,33 +463,37 @@ withFileLock :: String -> Int64 -> CM a -> CM a
 withFileLock name = withEntityLock name . CLFile
 {-# INLINE withFileLock #-}
 
-useServers :: UserProtocol p => ChatConfig -> SProtocolType p -> [ServerCfg p] -> NonEmpty (ServerCfg p)
-useServers ChatConfig {defaultServers} p = fromMaybe (cfgServers p defaultServers) . nonEmpty
+serverCfg :: ProtoServerWithAuth p -> ServerCfg p
+serverCfg server = ServerCfg {server, operator = Nothing, enabled = True, roles = allRoles}
 
-randomServers :: forall p. UserProtocol p => SProtocolType p -> ChatConfig -> IO (NonEmpty (ServerCfg p), [ServerCfg p])
-randomServers p ChatConfig {defaultServers} = do
-  let srvs = cfgServers p defaultServers
-      (enbldSrvs, dsbldSrvs) = L.partition (\ServerCfg {enabled} -> enabled) srvs
-      toUse = cfgServersToUse p defaultServers
-  if length enbldSrvs <= toUse
-    then pure (srvs, [])
-    else do
-      (enbldSrvs', srvsToDisable) <- splitAt toUse <$> shuffle enbldSrvs
-      let dsbldSrvs' = map (\srv -> (srv :: ServerCfg p) {enabled = False}) srvsToDisable
-          srvs' = sortOn server' $ enbldSrvs' <> dsbldSrvs' <> dsbldSrvs
-      pure (fromMaybe srvs $ L.nonEmpty srvs', srvs')
+useServers :: forall p. UserProtocol p => SProtocolType p -> RandomServers -> [UserServer p] -> NonEmpty (NewUserServer p)
+useServers p rs servers = case L.nonEmpty servers of
+  Nothing -> rndServers p rs
+  Just srvs -> L.map (\srv -> (srv :: UserServer p) {serverId = DBNewEntity}) srvs
+
+rndServers :: UserProtocol p => SProtocolType p -> RandomServers -> NonEmpty (NewUserServer p)
+rndServers p RandomServers {smpServers, xftpServers} = case p of
+  SPSMP -> smpServers
+  SPXFTP -> xftpServers
+
+randomPresetServers :: forall p. UserProtocol p => SProtocolType p -> PresetServers -> IO (NonEmpty (NewUserServer p))
+randomPresetServers p PresetServers {operators} = toJust . L.nonEmpty . concat =<< mapM opSrvs operators
   where
-    server' ServerCfg {server = ProtoServerWithAuth srv _} = srv
-
-cfgServers :: UserProtocol p => SProtocolType p -> DefaultAgentServers -> NonEmpty (ServerCfg p)
-cfgServers p DefaultAgentServers {smp, xftp} = case p of
-  SPSMP -> smp
-  SPXFTP -> xftp
-
-cfgServersToUse :: UserProtocol p => SProtocolType p -> DefaultAgentServers -> Int
-cfgServersToUse p DefaultAgentServers {useSMP, useXFTP} = case p of
-  SPSMP -> useSMP
-  SPXFTP -> useXFTP
+    toJust = \case
+      Just a -> pure a
+      Nothing -> E.throwIO $ userError "no preset servers"
+    opSrvs :: PresetOperator -> IO [NewUserServer p]
+    opSrvs op = do
+      let srvs = operatorServers p op
+          toUse = operatorServersToUse p op
+          (enbldSrvs, dsbldSrvs) = partition (\UserServer {enabled} -> enabled) srvs
+      if toUse <= 0 || toUse >= length enbldSrvs
+        then pure srvs
+        else do
+          (enbldSrvs', srvsToDisable) <- splitAt toUse <$> shuffle enbldSrvs
+          let dsbldSrvs' = map (\srv -> (srv :: NewUserServer p) {enabled = False}) srvsToDisable
+          pure $ sortOn server' $ enbldSrvs' <> dsbldSrvs' <> dsbldSrvs
+    server' UserServer {server = ProtoServerWithAuth srv _} = srv
 
 -- enableSndFiles has no effect when mainApp is True
 startChatController :: Bool -> Bool -> CM' (Async ())
@@ -556,19 +637,24 @@ processChatCommand' vr = \case
     forM_ profile $ \Profile {displayName} -> checkValidName displayName
     p@Profile {displayName} <- liftIO $ maybe generateRandomProfile pure profile
     u <- asks currentUser
-    (smp, smpServers) <- chooseServers SPSMP
-    (xftp, xftpServers) <- chooseServers SPXFTP
+    smpServers <- chooseServers SPSMP
+    xftpServers <- chooseServers SPXFTP
     users <- withFastStore' getUsers
     forM_ users $ \User {localDisplayName = n, activeUser, viewPwdHash} ->
       when (n == displayName) . throwChatError $
         if activeUser || isNothing viewPwdHash then CEUserExists displayName else CEInvalidDisplayName {displayName, validName = ""}
+    opDomains <- operatorDomains . fst <$> withFastStore getServerOperators
+    rs <- asks randomServers
+    let smp = agentServerCfgs opDomains (rndServers SPSMP rs) smpServers
+        xftp = agentServerCfgs opDomains (rndServers SPXFTP rs) xftpServers
     auId <- withAgent (\a -> createUser a smp xftp)
     ts <- liftIO $ getCurrentTime >>= if pastTimestamp then coupleDaysAgo else pure
     user <- withFastStore $ \db -> createUserRecordAt db (AgentUserId auId) p True ts
     createPresetContactCards user `catchChatError` \_ -> pure ()
-    withFastStore $ \db -> createNoteFolder db user
-    storeServers user smpServers
-    storeServers user xftpServers
+    withFastStore $ \db -> do
+      createNoteFolder db user
+      liftIO $ mapM_ (insertProtocolServer db SPSMP user ts) $ useServers SPSMP rs smpServers
+      liftIO $ mapM_ (insertProtocolServer db SPXFTP user ts) $ useServers SPXFTP rs xftpServers
     atomically . writeTVar u $ Just user
     pure $ CRActiveUser user
     where
@@ -577,18 +663,10 @@ processChatCommand' vr = \case
         withFastStore $ \db -> do
           createContact db user simplexStatusContactProfile
           createContact db user simplexTeamContactProfile
-      chooseServers :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> CM (NonEmpty (ServerCfg p), [ServerCfg p])
-      chooseServers protocol =
-        asks currentUser >>= readTVarIO >>= \case
-          Nothing -> asks config >>= liftIO . randomServers protocol
-          Just user -> chosenServers =<< withFastStore' (`getProtocolServers` user)
-        where
-          chosenServers servers = do
-            cfg <- asks config
-            pure (useServers cfg protocol servers, servers)
-      storeServers user servers =
-        unless (null servers) . withFastStore $
-          \db -> overwriteProtocolServers db user servers
+      chooseServers :: forall p. ProtocolTypeI p => SProtocolType p -> CM [UserServer p]
+      chooseServers p = do
+        srvs <- chatReadVar currentUser >>= mapM (\user -> withFastStore' $ \db -> getProtocolServers db p user)
+        pure $ fromMaybe [] srvs
       coupleDaysAgo t = (`addUTCTime` t) . fromInteger . negate . (+ (2 * day)) <$> randomRIO (0, day)
       day = 86400
   ListUsers -> CRUsersList <$> withFastStore' getUsersInfo
@@ -1486,57 +1564,67 @@ processChatCommand' vr = \case
     msgs <- lift $ withAgent' $ \a -> getConnectionMessages a acIds
     let ntfMsgs = L.map (\msg -> receivedMsgInfo <$> msg) msgs
     pure $ CRConnNtfMessages ntfMsgs
-  APIGetUserProtoServers userId (AProtocolType p) -> withUserId userId $ \user -> withServerProtocol p $ do
-    cfg@ChatConfig {defaultServers} <- asks config
-    srvs <- withFastStore' (`getProtocolServers` user)
-    (operators, _) <- withFastStore $ \db -> getServerOperators db
-    let servers = AUPS $ UserProtoServers p (useServers cfg p srvs) (cfgServers p defaultServers)
-    pure $ CRUserProtoServers {user, servers, operators}
-  GetUserProtoServers aProtocol -> withUser $ \User {userId} ->
-    processChatCommand $ APIGetUserProtoServers userId aProtocol
-  APISetUserProtoServers userId (APSC p (ProtoServersConfig servers))
-    | null servers || any (\ServerCfg {enabled} -> enabled) servers -> withUserId userId $ \user -> withServerProtocol p $ do
-        withFastStore $ \db -> overwriteProtocolServers db user servers
-        cfg <- asks config
-        lift $ withAgent' $ \a -> setProtocolServers a (aUserId user) $ useServers cfg p servers
-        ok user
-    | otherwise -> withUserId userId $ \user -> pure $ chatCmdError (Just user) "all servers are disabled"
-  SetUserProtoServers serversConfig -> withUser $ \User {userId} ->
-    processChatCommand $ APISetUserProtoServers userId serversConfig
+  GetUserProtoServers (AProtocolType p) -> withUser $ \user -> withServerProtocol p $ do
+    srvs <- withFastStore (`getUserServers` user)
+    CRUserServers user <$> liftIO (groupedServers srvs p)
+    where
+      groupedServers :: UserProtocol p => ([ServerOperator], [UserServer 'PSMP],  [UserServer 'PXFTP]) -> SProtocolType p -> IO [UserOperatorServers]
+      groupedServers (operators, smpServers, xftpServers) = \case
+        SPSMP -> groupByOperator (operators, smpServers, [])
+        SPXFTP -> groupByOperator (operators, [], xftpServers)
+  SetUserProtoServers (AProtocolType (p :: SProtocolType p)) srvs -> withUser $ \user@User {userId} -> withServerProtocol p $ do
+    srvs' <- mapM aUserServer srvs
+    userServers_ <- liftIO . groupByOperator =<< withFastStore (`getUserServers` user)
+    case L.nonEmpty userServers_ of
+      Nothing -> throwChatError $ CECommandError "no servers"
+      Just userServers -> case srvs of
+        [] -> throwChatError $ CECommandError "no servers"
+        _ -> processChatCommand $ APISetUserServers userId $ L.map (updatedSrvs p) userServers
+          where
+            -- disable preset and replace custom servers (groupByOperator always adds custom)
+            updatedSrvs :: UserProtocol p => SProtocolType p -> UserOperatorServers -> UpdatedUserOperatorServers
+            updatedSrvs p' UserOperatorServers {operator, smpServers, xftpServers} = case p' of
+              SPSMP -> u (updateSrvs smpServers, map (AUS SDBStored) xftpServers)
+              SPXFTP -> u (map (AUS SDBStored) smpServers, updateSrvs xftpServers)
+              where
+                u = uncurry $ UpdatedUserOperatorServers operator
+                updateSrvs :: [UserServer p] -> [AUserServer p]
+                updateSrvs pSrvs = map disableSrv pSrvs <> maybe srvs' (const []) operator
+                disableSrv srv@UserServer {preset} =
+                  AUS SDBStored $ if preset then srv {enabled = False} else srv {deleted = True}
+    where
+      aUserServer ::  AProtoServerWithAuth -> CM (AUserServer p)
+      aUserServer (AProtoServerWithAuth p' srv) = case testEquality p p' of
+        Just Refl -> pure $ AUS SDBNew $ newUserServer srv
+        Nothing -> throwChatError $ CECommandError $ "incorrect server protocol: " <> B.unpack (strEncode srv)
   APITestProtoServer userId srv@(AProtoServerWithAuth _ server) -> withUserId userId $ \user ->
     lift $ CRServerTestResult user srv <$> withAgent' (\a -> testProtocolServer a (aUserId user) server)
   TestProtoServer srv -> withUser $ \User {userId} ->
     processChatCommand $ APITestProtoServer userId srv
-  APIGetServerOperators -> do
-    (operators, conditionsAction) <- withFastStore $ \db -> getServerOperators db
-    pure $ CRServerOperators operators conditionsAction
-  APISetServerOperators operatorsEnabled -> do
-    (operators, conditionsAction) <- withFastStore $ \db -> setServerOperators db operatorsEnabled
-    pure $ CRServerOperators operators conditionsAction
-  APIGetUserServers userId -> withUserId userId $ \user -> do
-    (operators, smpServers, xftpServers) <- withFastStore $ \db -> do
-      (operators, _) <- getServerOperators db
-      smpServers <- liftIO $ getServers db user SPSMP
-      xftpServers <- liftIO $ getServers db user SPXFTP
-      pure (operators, smpServers, xftpServers)
-    let userServers = groupByOperator operators smpServers xftpServers
-    pure $ CRUserServers user userServers
-    where
-      getServers :: ProtocolTypeI p => DB.Connection -> User -> SProtocolType p -> IO [ServerCfg p]
-      getServers db user _p = getProtocolServers db user
+  APIGetServerOperators -> uncurry CRServerOperators <$> withFastStore getServerOperators
+  APISetServerOperators operatorsEnabled -> withFastStore $ \db -> do
+    liftIO $ setServerOperators db operatorsEnabled
+    uncurry CRServerOperators <$> getServerOperators db
+  APIGetUserServers userId -> withUserId userId $ \user -> withFastStore $ \db ->
+    CRUserServers user <$> (liftIO . groupByOperator =<< getUserServers db user)
   APISetUserServers userId userServers -> withUserId userId $ \user -> do
     let errors = validateUserServers userServers
     unless (null errors) $ throwChatError (CECommandError $ "user servers validation error(s): " <> show errors)
-    withFastStore $ \db -> setUserServers db user userServers
-    -- TODO set protocol servers for agent
+    (operators, smpServers, xftpServers) <- withFastStore $ \db -> do
+      setUserServers db user userServers
+      getUserServers db user
+    let opDomains = operatorDomains operators
+    rs <- asks randomServers
+    lift $ withAgent' $ \a -> do
+      let auId = aUserId user
+      setProtocolServers a auId $ agentServerCfgs opDomains (rndServers SPSMP rs) smpServers
+      setProtocolServers a auId $ agentServerCfgs opDomains (rndServers SPXFTP rs) xftpServers
     ok_
-  APIValidateServers userServers -> do
-    let errors = validateUserServers userServers
-    pure $ CRUserServersValidation errors
+  APIValidateServers userServers -> pure $ CRUserServersValidation $ validateUserServers userServers
   APIGetUsageConditions -> do
     (usageConditions, acceptedConditions) <- withFastStore $ \db -> do
       usageConditions <- getCurrentUsageConditions db
-      acceptedConditions <- getLatestAcceptedConditions db
+      acceptedConditions <- liftIO $ getLatestAcceptedConditions db
       pure (usageConditions, acceptedConditions)
     -- TODO if db commit is different from source commit, conditionsText should be nothing in response
     pure
@@ -1545,14 +1633,14 @@ processChatCommand' vr = \case
           conditionsText = usageConditionsText,
           acceptedConditions
         }
-  APISetConditionsNotified conditionsId -> do
+  APISetConditionsNotified condId -> do
     currentTs <- liftIO getCurrentTime
-    withFastStore' $ \db -> setConditionsNotified db conditionsId currentTs
+    withFastStore' $ \db -> setConditionsNotified db condId currentTs
     ok_
-  APIAcceptConditions conditionsId operators -> do
+  APIAcceptConditions condId opIds -> withFastStore $ \db -> do
     currentTs <- liftIO getCurrentTime
-    (operators', conditionsAction) <- withFastStore $ \db -> acceptConditions db conditionsId operators currentTs
-    pure $ CRServerOperators operators' conditionsAction
+    acceptConditions db condId opIds currentTs
+    uncurry CRServerOperators <$> getServerOperators db
   APISetChatItemTTL userId newTTL_ -> withUserId userId $ \user ->
     checkStoreNotChanged $
       withChatLock "setChatItemTTL" $ do
@@ -1805,8 +1893,9 @@ processChatCommand' vr = \case
       canKeepLink (CRInvitationUri crData _) newUser = do
         let ConnReqUriData {crSmpQueues = q :| _} = crData
             SMPQueueUri {queueAddress = SMPQueueAddress {smpServer}} = q
-        cfg <- asks config
-        newUserServers <- L.map (\ServerCfg {server} -> protoServer server) . useServers cfg SPSMP <$> withFastStore' (`getProtocolServers` newUser)
+        newUserServers <- 
+          map protoServer' . filter (\ServerCfg {enabled} -> enabled)
+            <$> getKnownAgentServers SPSMP newUser
         pure $ smpServer `elem` newUserServers
       updateConnRecord user@User {userId} conn@PendingContactConnection {customUserProfileId} newUser = do
         withAgent $ \a -> changeConnectionUser a (aUserId user) (aConnId' conn) (aUserId newUser)
@@ -2140,7 +2229,7 @@ processChatCommand' vr = \case
     where
       changeMemberRole user gInfo members m gEvent = do
         let GroupMember {memberId = mId, memberRole = mRole, memberStatus = mStatus, memberContactId, localDisplayName = cName} = m
-        assertUserGroupRole gInfo $ maximum [GRAdmin, mRole, memRole]
+        assertUserGroupRole gInfo $ maximum ([GRAdmin, mRole, memRole] :: [GroupMemberRole])
         withGroupLock "memberRole" groupId . procCmd $ do
           unless (mRole == memRole) $ do
             withFastStore' $ \db -> updateGroupMemberRole db user m memRole
@@ -2538,14 +2627,15 @@ processChatCommand' vr = \case
     pure $ CRAgentSubsTotal user subsTotal hasSession
   GetAgentServersSummary userId -> withUserId userId $ \user -> do
     agentServersSummary <- lift $ withAgent' getAgentServersSummary
-    cfg <- asks config
-    (users, smpServers, xftpServers) <-
-      withStore' $ \db -> (,,) <$> getUsers db <*> getServers db cfg user SPSMP <*> getServers db cfg user SPXFTP
-    let presentedServersSummary = toPresentedServersSummary agentServersSummary users user smpServers xftpServers _defaultNtfServers
-    pure $ CRAgentServersSummary user presentedServersSummary
+    withStore' $ \db -> do
+      users <- getUsers db
+      smpServers <- getServers db user SPSMP
+      xftpServers <- getServers db user SPXFTP
+      let presentedServersSummary = toPresentedServersSummary agentServersSummary users user smpServers xftpServers _defaultNtfServers
+      pure $ CRAgentServersSummary user presentedServersSummary
     where
-      getServers :: (ProtocolTypeI p, UserProtocol p) => DB.Connection -> ChatConfig -> User -> SProtocolType p -> IO (NonEmpty (ProtocolServer p))
-      getServers db cfg user p = L.map (\ServerCfg {server} -> protoServer server) . useServers cfg p <$> getProtocolServers db user
+      getServers :: ProtocolTypeI p => DB.Connection -> User -> SProtocolType p -> IO [ProtocolServer p]
+      getServers db user p = map (\UserServer {server} -> protoServer server) <$> getProtocolServers db p user
   ResetAgentServersStats -> withAgent resetAgentServersStats >> ok_
   GetAgentWorkers -> lift $ CRAgentWorkersSummary <$> withAgent' getAgentWorkersSummary
   GetAgentWorkersDetails -> lift $ CRAgentWorkersDetails <$> withAgent' getAgentWorkersDetails
@@ -3663,8 +3753,7 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
       S.toList $ S.fromList $ concatMap (\FD.FileChunk {replicas} -> map (\FD.FileChunkReplica {server} -> server) replicas) chunks
     getUnknownSrvs :: [XFTPServer] -> CM [XFTPServer]
     getUnknownSrvs srvs = do
-      cfg <- asks config
-      knownSrvs <- L.map (\ServerCfg {server} -> protoServer server) . useServers cfg SPXFTP <$> withStore' (`getProtocolServers` user)
+      knownSrvs <- map protoServer' <$> getKnownAgentServers SPXFTP user
       pure $ filter (`notElem` knownSrvs) srvs
     ipProtectedForSrvs :: [XFTPServer] -> CM Bool
     ipProtectedForSrvs srvs = do
@@ -3677,6 +3766,17 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
         cleanupACIFile aci
         toView $ CRChatItemUpdated user aci
       throwChatError $ CEFileNotApproved fileId unknownSrvs
+
+getKnownAgentServers :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> User -> CM [ServerCfg p]
+getKnownAgentServers p user = do
+  rs <- asks randomServers
+  withStore $ \db -> do
+    opDomains <- operatorDomains . fst <$> getServerOperators db
+    srvs <- liftIO $ getProtocolServers db p user
+    pure $ L.toList $ agentServerCfgs opDomains (rndServers p rs) srvs
+
+protoServer' :: ServerCfg p -> ProtocolServer p
+protoServer' ServerCfg {server} = protoServer server
 
 getNetworkConfig :: CM' NetworkConfig
 getNetworkConfig = withAgent' $ liftIO . getFastNetworkConfig
@@ -3876,7 +3976,7 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
         (sftConns, sfts) <- getSndFileTransferConns
         (rftConns, rfts) <- getRcvFileTransferConns
         (pcConns, pcs) <- getPendingContactConns
-        let conns = concat [ctConns, ucConns, mConns, sftConns, rftConns, pcConns]
+        let conns = concat ([ctConns, ucConns, mConns, sftConns, rftConns, pcConns] :: [[ConnId]])
         pure (conns, cts, ucs, gs, ms, sfts, rfts, pcs)
   -- subscribe using batched commands
   rs <- withAgent $ \a -> agentBatchSubscribe a conns
@@ -4684,7 +4784,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             ctItem = AChatItem SCTDirect SMDSnd (DirectChat ct)
         SWITCH qd phase cStats -> do
           toView $ CRContactSwitch user ct (SwitchProgress qd phase cStats)
-          when (phase `elem` [SPStarted, SPCompleted]) $ case qd of
+          when (phase == SPStarted || phase == SPCompleted) $ case qd of
             QDRcv -> createInternalChatItem user (CDDirectSnd ct) (CISndConnEvent $ SCESwitchQueue phase Nothing) Nothing
             QDSnd -> createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent $ RCESwitchQueue phase) Nothing
         RSYNC rss cryptoErr_ cStats ->
@@ -4969,7 +5069,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                           (Just fileDescrText, Just msgId) -> do
                             partSize <- asks $ xftpDescrPartSize . config
                             let parts = splitFileDescr partSize fileDescrText
-                            pure . toList $ L.map (XMsgFileDescr msgId) parts
+                            pure . L.toList $ L.map (XMsgFileDescr msgId) parts
                           _ -> pure []
                         let fileDescrChatMsgs = map (ChatMessage senderVRange Nothing) fileDescrEvents
                             GroupMember {memberId} = sender
@@ -5095,7 +5195,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         when continued $ sendPendingGroupMessages user m conn
       SWITCH qd phase cStats -> do
         toView $ CRGroupMemberSwitch user gInfo m (SwitchProgress qd phase cStats)
-        when (phase `elem` [SPStarted, SPCompleted]) $ case qd of
+        when (phase == SPStarted || phase == SPCompleted) $ case qd of
           QDRcv -> createInternalChatItem user (CDGroupSnd gInfo) (CISndConnEvent . SCESwitchQueue phase . Just $ groupMemberRef m) Nothing
           QDSnd -> createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvConnEvent $ RCESwitchQueue phase) Nothing
       RSYNC rss cryptoErr_ cStats ->
@@ -6659,15 +6759,17 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           messageWarning "x.grp.mem.con: neither member is invitee"
       where
         inviteeXGrpMemCon :: GroupMemberIntro -> CM ()
-        inviteeXGrpMemCon GroupMemberIntro {introId, introStatus}
-          | introStatus == GMIntroReConnected = updateStatus introId GMIntroConnected
-          | introStatus `elem` [GMIntroToConnected, GMIntroConnected] = pure ()
-          | otherwise = updateStatus introId GMIntroToConnected
+        inviteeXGrpMemCon GroupMemberIntro {introId, introStatus} = case introStatus of
+          GMIntroReConnected -> updateStatus introId GMIntroConnected
+          GMIntroToConnected -> pure ()
+          GMIntroConnected -> pure ()
+          _ -> updateStatus introId GMIntroToConnected
         forwardMemberXGrpMemCon :: GroupMemberIntro -> CM ()
-        forwardMemberXGrpMemCon GroupMemberIntro {introId, introStatus}
-          | introStatus == GMIntroToConnected = updateStatus introId GMIntroConnected
-          | introStatus `elem` [GMIntroReConnected, GMIntroConnected] = pure ()
-          | otherwise = updateStatus introId GMIntroReConnected
+        forwardMemberXGrpMemCon GroupMemberIntro {introId, introStatus} = case introStatus of
+          GMIntroToConnected -> updateStatus introId GMIntroConnected
+          GMIntroReConnected -> pure ()
+          GMIntroConnected -> pure ()
+          _ -> updateStatus introId GMIntroReConnected
         updateStatus introId status = withStore' $ \db -> updateIntroStatus db introId status
 
     xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> RcvMessage -> UTCTime -> CM ()
@@ -8132,22 +8234,18 @@ chatCommandP =
       "/smp test " *> (TestProtoServer . AProtoServerWithAuth SPSMP <$> strP),
       "/xftp test " *> (TestProtoServer . AProtoServerWithAuth SPXFTP <$> strP),
       "/ntf test " *> (TestProtoServer . AProtoServerWithAuth SPNTF <$> strP),
-      "/_servers " *> (APISetUserProtoServers <$> A.decimal <* A.space <*> srvCfgP),
-      "/smp " *> (SetUserProtoServers . APSC SPSMP . ProtoServersConfig . map enabledServerCfg <$> protocolServersP),
-      "/smp default" $> SetUserProtoServers (APSC SPSMP $ ProtoServersConfig []),
-      "/xftp " *> (SetUserProtoServers . APSC SPXFTP . ProtoServersConfig . map enabledServerCfg <$> protocolServersP),
-      "/xftp default" $> SetUserProtoServers (APSC SPXFTP $ ProtoServersConfig []),
-      "/_servers " *> (APIGetUserProtoServers <$> A.decimal <* A.space <*> strP),
+      "/smp " *> (SetUserProtoServers (AProtocolType SPSMP) . map (AProtoServerWithAuth SPSMP) <$> protocolServersP),
+      "/xftp " *> (SetUserProtoServers (AProtocolType SPXFTP) . map (AProtoServerWithAuth SPXFTP) <$> protocolServersP),
       "/smp" $> GetUserProtoServers (AProtocolType SPSMP),
       "/xftp" $> GetUserProtoServers (AProtocolType SPXFTP),
       "/_operators" $> APIGetServerOperators,
       "/_operators " *> (APISetServerOperators <$> jsonP),
-      "/_user_servers " *> (APIGetUserServers <$> A.decimal),
-      "/_user_servers " *> (APISetUserServers <$> A.decimal <* A.space <*> jsonP),
+      "/_servers " *> (APIGetUserServers <$> A.decimal),
+      "/_servers " *> (APISetUserServers <$> A.decimal <* A.space <*> jsonP),
       "/_validate_servers " *> (APIValidateServers <$> jsonP),
       "/_conditions" $> APIGetUsageConditions,
       "/_conditions_notified " *> (APISetConditionsNotified <$> A.decimal),
-      "/_accept_conditions " *> (APIAcceptConditions <$> A.decimal <* A.space <*> jsonP),
+      "/_accept_conditions " *> (APIAcceptConditions <$> A.decimal <*> _strP),
       "/_ttl " *> (APISetChatItemTTL <$> A.decimal <* A.space <*> ciTTLDecimal),
       "/ttl " *> (SetChatItemTTL <$> ciTTL),
       "/_ttl " *> (APIGetChatItemTTL <$> A.decimal),
@@ -8491,7 +8589,6 @@ chatCommandP =
         onOffP
         (Just <$> (AutoAccept <$> (" incognito=" *> onOffP <|> pure False) <*> optional (A.space *> msgContentP)))
         (pure Nothing)
-    srvCfgP = strP >>= \case AProtocolType p -> APSC p <$> (A.space *> jsonP)
     rcCtrlAddressP = RCCtrlAddress <$> ("addr=" *> strP) <*> (" iface=" *> (jsonP <|> text1P))
     text1P = safeDecodeUtf8 <$> A.takeTill (== ' ')
     char_ = optional . A.char

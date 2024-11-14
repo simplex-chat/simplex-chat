@@ -1,6 +1,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Simplex.Chat.Terminal where
@@ -13,15 +14,15 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Database.SQLite.Simple (SQLError (..))
 import qualified Database.SQLite.Simple as DB
-import Simplex.Chat (defaultChatConfig, operatorSimpleXChat)
+import Simplex.Chat (_defaultNtfServers, defaultChatConfig, operatorSimpleXChat)
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
 import Simplex.Chat.Help (chatWelcome)
+import Simplex.Chat.Operators
 import Simplex.Chat.Options
 import Simplex.Chat.Terminal.Input
 import Simplex.Chat.Terminal.Output
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
-import Simplex.Messaging.Agent.Env.SQLite (allRoles, presetServerCfg)
 import Simplex.Messaging.Client (NetworkConfig (..), SMPProxyFallback (..), SMPProxyMode (..), defaultNetworkConfig)
 import Simplex.Messaging.Util (raceAny_)
 import System.IO (hFlush, hSetEcho, stdin, stdout)
@@ -29,20 +30,24 @@ import System.IO (hFlush, hSetEcho, stdin, stdout)
 terminalChatConfig :: ChatConfig
 terminalChatConfig =
   defaultChatConfig
-    { defaultServers =
-        DefaultAgentServers
-          { smp =
-              L.fromList $
-                map
-                  (presetServerCfg True allRoles operatorSimpleXChat)
-                  [ "smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im,o5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion",
-                    "smp://hpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg=@smp5.simplex.im,jjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion",
-                    "smp://PQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo=@smp6.simplex.im,bylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion"
-                  ],
-            useSMP = 3,
-            ntf = ["ntf://FB-Uop7RTaZZEG0ZLD2CIaTjsPh-Fw0zFAnb7QyA8Ks=@ntf2.simplex.im,ntg7jdjy2i3qbib3sykiho3enekwiaqg3icctliqhtqcg6jmoh6cxiad.onion"],
-            xftp = L.map (presetServerCfg True allRoles operatorSimpleXChat) defaultXFTPServers,
-            useXFTP = L.length defaultXFTPServers,
+    { presetServers =
+        PresetServers
+          { operators =
+              [ PresetOperator
+                  { operator = Just operatorSimpleXChat,
+                    smp =
+                      map
+                        (presetServer True)
+                        [ "smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im,o5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion",
+                          "smp://hpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg=@smp5.simplex.im,jjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion",
+                          "smp://PQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo=@smp6.simplex.im,bylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion"
+                        ],
+                    useSMP = 3,
+                    xftp = map (presetServer True) $ L.toList defaultXFTPServers,
+                    useXFTP = 3
+                  }
+              ],
+            ntf = _defaultNtfServers,
             netCfg =
               defaultNetworkConfig
                 { smpProxyMode = SPMUnknown,
