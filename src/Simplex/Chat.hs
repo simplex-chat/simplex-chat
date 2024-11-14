@@ -1564,15 +1564,14 @@ processChatCommand' vr = \case
     msgs <- lift $ withAgent' $ \a -> getConnectionMessages a acIds
     let ntfMsgs = L.map (\msg -> receivedMsgInfo <$> msg) msgs
     pure $ CRConnNtfMessages ntfMsgs
-  GetUserProtoServers (AProtocolType p) -> withUser $ \user -> withServerProtocol p $
-    CRUserServers user <$> groupedServers p user
+  GetUserProtoServers (AProtocolType p) -> withUser $ \user -> withServerProtocol p $ do
+    srvs <- withFastStore (`getUserServers` user)
+    CRUserServers user <$> liftIO (groupedServers srvs p)
     where
-      groupedServers :: UserProtocol p => SProtocolType p -> User -> CM [UserOperatorServers]
-      groupedServers p' user = do
-        (operators, smpServers, xftpServers) <- withFastStore (`getUserServers` user)
-        liftIO $ groupByOperator $ case p of
-          SPSMP -> (operators, smpServers, [])
-          SPXFTP -> (operators, [], xftpServers)
+      groupedServers :: UserProtocol p => ([ServerOperator], [UserServer 'PSMP],  [UserServer 'PXFTP]) -> SProtocolType p -> IO [UserOperatorServers]
+      groupedServers (operators, smpServers, xftpServers) = \case
+        SPSMP -> groupByOperator (operators, smpServers, [])
+        SPXFTP -> groupByOperator (operators, [], xftpServers)
   SetUserProtoServers (AProtocolType (p :: SProtocolType p)) srvs -> withUser $ \user@User {userId} -> withServerProtocol p $ do
     srvs' <- mapM aUserServer srvs
     userServers_ <- liftIO . groupByOperator =<< withFastStore (`getUserServers` user)
