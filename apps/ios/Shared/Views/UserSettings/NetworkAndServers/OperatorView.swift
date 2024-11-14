@@ -15,6 +15,7 @@ struct OperatorView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.editMode) private var editMode
     @Binding var userServers: [UserOperatorServers]
     var operatorServersIndex: Int
     @State var serverOperatorToEdit: ServerOperator
@@ -67,16 +68,21 @@ struct OperatorView: View {
                         Toggle("As proxy", isOn: $serverOperatorToEdit.roles.proxy)
                     }
 
-                    if !userServers[operatorServersIndex].smpServers.isEmpty {
+                    // Preset servers can't be deleted
+                    if !userServers[operatorServersIndex].smpServers.filter({ $0.preset }).isEmpty {
                         Section {
                             ForEach($userServers[operatorServersIndex].smpServers) { srv in
-                                ProtocolServerViewLink(
-                                    userServers: $userServers,
-                                    server: srv,
-                                    serverProtocol: .smp,
-                                    backLabel: "\(serverOperatorToEdit.tradeName) servers",
-                                    selectedServer: $selectedServer
-                                )
+                                if srv.wrappedValue.preset {
+                                    ProtocolServerViewLink(
+                                        userServers: $userServers,
+                                        server: srv,
+                                        serverProtocol: .smp,
+                                        backLabel: "\(serverOperatorToEdit.tradeName) servers",
+                                        selectedServer: $selectedServer
+                                    )
+                                } else {
+                                    EmptyView()
+                                }
                             }
                         } header: {
                             Text("Message servers")
@@ -88,16 +94,54 @@ struct OperatorView: View {
                         }
                     }
 
-                    if !userServers[operatorServersIndex].xftpServers.isEmpty {
+                    if !userServers[operatorServersIndex].smpServers.filter({ !$0.preset && !$0.deleted }).isEmpty {
+                        Section {
+                            ForEach($userServers[operatorServersIndex].smpServers) { srv in
+                                if !srv.wrappedValue.preset && !srv.wrappedValue.deleted {
+                                    ProtocolServerViewLink(
+                                        userServers: $userServers,
+                                        server: srv,
+                                        serverProtocol: .smp,
+                                        backLabel: "\(serverOperatorToEdit.tradeName) servers",
+                                        selectedServer: $selectedServer
+                                    )
+                                } else {
+                                    EmptyView()
+                                }
+                            }
+                            .onDelete { indexSet in
+                                if let idx = indexSet.first {
+                                    let server = userServers[operatorServersIndex].smpServers[idx]
+                                    if server.serverId == nil {
+                                        userServers[operatorServersIndex].smpServers.remove(at: idx)
+                                    } else {
+                                        var updatedServer = server
+                                        updatedServer.deleted = true
+                                        userServers[operatorServersIndex].smpServers[idx] = updatedServer
+                                    }
+                                }
+                            }
+                        } header: {
+                            Text("Added message servers")
+                                .foregroundColor(theme.colors.secondary)
+                        }
+                    }
+
+                    // Preset servers can't be deleted
+                    if !userServers[operatorServersIndex].xftpServers.filter({ $0.preset }).isEmpty {
                         Section {
                             ForEach($userServers[operatorServersIndex].xftpServers) { srv in
-                                ProtocolServerViewLink(
-                                    userServers: $userServers,
-                                    server: srv,
-                                    serverProtocol: .xftp,
-                                    backLabel: "\(serverOperatorToEdit.tradeName) servers",
-                                    selectedServer: $selectedServer
-                                )
+                                if srv.wrappedValue.preset {
+                                    ProtocolServerViewLink(
+                                        userServers: $userServers,
+                                        server: srv,
+                                        serverProtocol: .xftp,
+                                        backLabel: "\(serverOperatorToEdit.tradeName) servers",
+                                        selectedServer: $selectedServer
+                                    )
+                                } else {
+                                    EmptyView()
+                                }
                             }
                         } header: {
                             Text("Media & file servers")
@@ -109,6 +153,39 @@ struct OperatorView: View {
                         }
                     }
 
+                    if !userServers[operatorServersIndex].xftpServers.filter({ !$0.preset && !$0.deleted }).isEmpty {
+                        Section {
+                            ForEach($userServers[operatorServersIndex].xftpServers) { srv in
+                                if !srv.wrappedValue.preset && !srv.wrappedValue.deleted {
+                                    ProtocolServerViewLink(
+                                        userServers: $userServers,
+                                        server: srv,
+                                        serverProtocol: .xftp,
+                                        backLabel: "\(serverOperatorToEdit.tradeName) servers",
+                                        selectedServer: $selectedServer
+                                    )
+                                } else {
+                                    EmptyView()
+                                }
+                            }
+                            .onDelete { indexSet in
+                                if let idx = indexSet.first {
+                                    let server = userServers[operatorServersIndex].xftpServers[idx]
+                                    if server.serverId == nil {
+                                        userServers[operatorServersIndex].xftpServers.remove(at: idx)
+                                    } else {
+                                        var updatedServer = server
+                                        updatedServer.deleted = true
+                                        userServers[operatorServersIndex].xftpServers[idx] = updatedServer
+                                    }
+                                }
+                            }
+                        } header: {
+                            Text("Added media & file servers")
+                                .foregroundColor(theme.colors.secondary)
+                        }
+                    }
+
                     Section {
                         TestServersButton(
                             smpServers: $userServers[operatorServersIndex].smpServers,
@@ -117,6 +194,14 @@ struct OperatorView: View {
                         )
                     }
                 }
+            }
+        }
+        .toolbar {
+            if (
+                !userServers[operatorServersIndex].smpServers.filter({ !$0.preset && !$0.deleted }).isEmpty ||
+                !userServers[operatorServersIndex].xftpServers.filter({ !$0.preset && !$0.deleted }).isEmpty
+            ) {
+                EditButton()
             }
         }
         .modifier(BackButton(disabled: Binding.constant(false)) {
