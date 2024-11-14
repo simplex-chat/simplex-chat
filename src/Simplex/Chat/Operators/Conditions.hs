@@ -9,7 +9,7 @@ import qualified Data.Text as T
 stripFrontMatter :: Text -> Text
 stripFrontMatter =
   T.unlines
-    . dropWhile ("# " `T.isPrefixOf`) -- strip title
+    -- . dropWhile ("# " `T.isPrefixOf`) -- strip title
     . dropWhile (T.all isSpace)
     . dropWhile fm
     . (\ls -> let ls' = dropWhile (not . fm) ls in if null ls' then ls else ls')
