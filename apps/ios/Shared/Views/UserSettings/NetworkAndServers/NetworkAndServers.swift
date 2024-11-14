@@ -45,8 +45,12 @@ struct NetworkAndServers: View {
             List {
                 let conditionsAction = m.usageConditionsAction
                 Section {
-                    ForEach(userServers.enumerated().filter { $0.element.operator != nil }, id: \.offset) { idx, userOperatorServers in
-                        serverOperatorView(idx, userOperatorServers)
+                    ForEach(userServers.enumerated().map { $0 }, id: \.element.id) { idx, userOperatorServers in
+                        if let serverOperator = userOperatorServers.operator {
+                            serverOperatorView(idx, serverOperator)
+                        } else {
+                            EmptyView()
+                        }
                     }
 
                     if let conditionsAction = conditionsAction {
@@ -169,28 +173,26 @@ struct NetworkAndServers: View {
         }
     }
 
-    @ViewBuilder private func serverOperatorView(_ operatorServersIndex: Int, _ userOperatorServers: UserOperatorServers) -> some View {
-        if let srvOperator = userOperatorServers.operator {
-            NavigationLink() {
-                OperatorView(
-                    userServers: $userServers,
-                    operatorServersIndex: operatorServersIndex,
-                    serverOperatorToEdit: srvOperator,
-                    useOperator: srvOperator.enabled
-                )
-                .navigationBarTitle("\(srvOperator.tradeName) servers")
-                .modifier(ThemedBackground(grouped: true))
-                .navigationBarTitleDisplayMode(.large)
-            } label: {
-                HStack {
-                    Image(srvOperator.logo(colorScheme))
-                        .resizable()
-                        .scaledToFit()
-                        .grayscale(srvOperator.enabled ? 0.0 : 1.0)
-                        .frame(width: 24, height: 24)
-                    Text(srvOperator.tradeName)
-                        .foregroundColor(srvOperator.enabled ? theme.colors.onBackground : theme.colors.secondary)
-                }
+    @ViewBuilder private func serverOperatorView(_ operatorServersIndex: Int, _ serverOperator: ServerOperator) -> some View {
+        NavigationLink() {
+            OperatorView(
+                userServers: $userServers,
+                operatorServersIndex: operatorServersIndex,
+                serverOperatorToEdit: serverOperator,
+                useOperator: serverOperator.enabled
+            )
+            .navigationBarTitle("\(serverOperator.tradeName) servers")
+            .modifier(ThemedBackground(grouped: true))
+            .navigationBarTitleDisplayMode(.large)
+        } label: {
+            HStack {
+                Image(serverOperator.logo(colorScheme))
+                    .resizable()
+                    .scaledToFit()
+                    .grayscale(serverOperator.enabled ? 0.0 : 1.0)
+                    .frame(width: 24, height: 24)
+                Text(serverOperator.tradeName)
+                    .foregroundColor(serverOperator.enabled ? theme.colors.onBackground : theme.colors.secondary)
             }
         }
     }
