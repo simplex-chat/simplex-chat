@@ -253,20 +253,6 @@ final class ChatModel: ObservableObject {
         updateUsageConditionsAction()
     }
 
-    func acceptConditionsForOperators(_ acceptForOperators: [ServerOperator], _ date: Date, enable: Bool = false) {
-        for serverOperator in acceptForOperators {
-            if let i = serverOperators.firstIndex(where: { $0.operatorId == serverOperator.operatorId }) {
-                var updatedOperator = serverOperators[i]
-                updatedOperator.conditionsAcceptance = .accepted(acceptedAt: date)
-                if enable {
-                    updatedOperator.enabled = true
-                }
-                serverOperators[i] = updatedOperator
-            }
-        }
-        updateUsageConditionsAction()
-    }
-
     func updateServerOperator(_ updatedOperator: ServerOperator) {
         if let i = serverOperators.firstIndex(where: { $0.operatorId == updatedOperator.operatorId }) {
             serverOperators[i] = updatedOperator

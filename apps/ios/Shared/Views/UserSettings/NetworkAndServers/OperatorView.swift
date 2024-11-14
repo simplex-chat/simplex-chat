@@ -274,10 +274,6 @@ struct OperatorInfoView: View {
     }
 }
 
-func acceptForOperators() {
-    
-}
-
 struct ConditionsTextView: View {
     @State private var conditionsData: (UsageConditions, String?, UsageConditions?)?
     @State private var failedToLoad: Bool = false
@@ -472,7 +468,7 @@ struct UsageConditionsView: View {
     @EnvironmentObject var theme: AppTheme
     var onboarding: Bool // On onboarding this view is shown via NavigationLink, in other cases on sheet
     var conditionsAction: UsageConditionsAction
-    var onAcceptAction: ((Date) -> Void)
+    var onAcceptAction: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -483,7 +479,7 @@ struct UsageConditionsView: View {
                     .padding(.top)
                     .padding(.top)
             }
-            
+
             switch conditionsAction {
             case let .review(operators, _, _):
 
@@ -494,7 +490,7 @@ struct UsageConditionsView: View {
                 acceptConditionsButton(operators)
                     .padding(.bottom)
                     .padding(.bottom)
-                
+
             case let .accepted(operators):
 
                 Text("Conditions are accepted for following operator(s): **\(operators.map { $0.legalName_ }.joined(separator: ", "))**.")
@@ -502,7 +498,7 @@ struct UsageConditionsView: View {
                 ConditionsTextView()
                     .padding(.bottom)
                     .padding(.bottom)
-                
+
             }
         }
         .padding(.horizontal)
@@ -511,9 +507,8 @@ struct UsageConditionsView: View {
 
     private func acceptConditionsButton(_ operators: [ServerOperator]) -> some View {
         Button {
-            // Should call api to save state here, not when saving all servers
-            // (It's counterintuitive to lose to closed sheet or Reset)
-            onAcceptAction(Date.now)
+            acceptForOperators(operators.map { $0.operatorId })
+            onAcceptAction?()
             if !onboarding{
                 dismiss()
             }
@@ -521,6 +516,25 @@ struct UsageConditionsView: View {
             Text("Accept conditions")
         }
         .buttonStyle(OnboardingButtonStyle(isDisabled: false))
+    }
+}
+
+func acceptForOperators(_ operatorIds: [Int64]) {
+    Task {
+        do {
+            let (conditions, _, _) = try await getUsageConditions() // TODO Add conditionsId to UsageConditionsAction .review
+            let r = try await acceptConditions(conditionsId: conditions.conditionsId, operatorIds: operatorIds)
+            await MainActor.run {
+                (ChatModel.shared.serverOperators, ChatModel.shared.usageConditionsAction) = r
+            }
+        } catch let error {
+            await MainActor.run {
+                showAlert(
+                    NSLocalizedString("Error accepting conditions", comment: "alert title"),
+                    message: responseError(error)
+                )
+            }
+        }
     }
 }
 

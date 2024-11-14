@@ -194,10 +194,7 @@ struct ChooseServerOperators: View {
         UsageConditionsView(
             onboarding: onboarding,
             conditionsAction: .review(operators: acceptForOperators, deadline: nil, showNotice: false),
-            onAcceptAction: { date in
-                ChatModel.shared.acceptConditionsForOperators(acceptForOperators, date, enable: true)
-                continueToNextStep()
-            }
+            onAcceptAction: { continueToNextStep() }
         )
         .navigationTitle("Conditions of use")
         .navigationBarTitleDisplayMode(.large)

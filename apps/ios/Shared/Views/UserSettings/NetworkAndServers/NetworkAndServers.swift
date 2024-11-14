@@ -63,7 +63,7 @@ struct NetworkAndServers: View {
                     switch conditionsAction {
                     case let .review(_, deadline, _):
                         if let deadline = deadline {
-                            Text("Review conditions until: \(conditionsTimestamp(deadline)).")
+                            Text("Conditions will be considered accepted for enabled operators after: \(conditionsTimestamp(deadline)).")
                                 .foregroundColor(theme.colors.secondary)
                         }
                     default:
@@ -135,10 +135,12 @@ struct NetworkAndServers: View {
                     currUserServers = try await getUserServers()
                     userServers = currUserServers
                 } catch let error {
-                    showAlert(
-                        NSLocalizedString("Error loading servers", comment: "alert title"),
-                        message: responseError(error)
-                    )
+                    await MainActor.run {
+                        showAlert(
+                            NSLocalizedString("Error loading servers", comment: "alert title"),
+                            message: responseError(error)
+                        )
+                    }
                 }
                 justOpened = false
             }
@@ -164,13 +166,7 @@ struct NetworkAndServers: View {
             case let .showConditions(conditionsAction):
                 UsageConditionsView(
                     onboarding: false,
-                    conditionsAction: conditionsAction,
-                    onAcceptAction: { date in
-                        switch conditionsAction {
-                        case let .review(operators, _, _): ChatModel.shared.acceptConditionsForOperators(operators, date)
-                        default: break
-                        }
-                    }
+                    conditionsAction: conditionsAction
                 )
                 .modifier(ThemedBackground(grouped: true))
             }
