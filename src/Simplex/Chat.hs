@@ -153,14 +153,14 @@ operatorSimpleXChat =
       roles = allRoles
     }
 
-operatorXYZ :: NewServerOperator
-operatorXYZ =
+operatorFlux :: NewServerOperator
+operatorFlux =
   ServerOperator
     { operatorId = DBNewEntity,
-      operatorTag = Just OTXyz,
-      tradeName = "XYZ",
-      legalName = Just "XYZ Ltd",
-      serverDomains = ["xyz.com"],
+      operatorTag = Just OTFlux,
+      tradeName = "Flux",
+      legalName = Just "InFlux Technologies Limited",
+      serverDomains = ["simplexonflux.com"],
       conditionsAcceptance = CARequired Nothing,
       enabled = False,
       roles = ServerRoles {storage = False, proxy = True}
@@ -187,10 +187,10 @@ defaultChatConfig =
                     useXFTP = 3
                   },
                 PresetOperator
-                  { operator = Just operatorXYZ,
-                    smp = xyzSMPServers,
+                  { operator = Just operatorFlux,
+                    smp = fluxSMPServers,
                     useSMP = 3,
-                    xftp = xyzXFTPServers,
+                    xftp = fluxXFTPServers,
                     useXFTP = 3
                   }
               ],
@@ -241,28 +241,28 @@ simplexChatSMPServers =
         "smp://PQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo=@smp6.simplex.im,bylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion"
       ]
 
-xyzSMPServers :: [NewUserServer 'PSMP]
-xyzSMPServers =
+fluxSMPServers :: [NewUserServer 'PSMP]
+fluxSMPServers =
   map
     (presetServer True)
-    [ "smp://abcd@smp1.xyz.com",
-      "smp://abcd@smp2.xyz.com",
-      "smp://abcd@smp3.xyz.com",
-      "smp://abcd@smp4.xyz.com",
-      "smp://abcd@smp5.xyz.com",
-      "smp://abcd@smp6.xyz.com"
+    [ "smp://xQW_ufMkGE20UrTlBl8QqceG1tbuylXhr9VOLPyRJmw=@smp1.simplexonflux.com,qb4yoanyl4p7o33yrknv4rs6qo7ugeb2tu2zo66sbebezs4cpyosarid.onion",
+      "smp://LDnWZVlAUInmjmdpQQoIo6FUinRXGe0q3zi5okXDE4s=@smp2.simplexonflux.com,yiqtuh3q4x7hgovkomafsod52wvfjucdljqbbipg5sdssnklgongxbqd.onion",
+      "smp://1jne379u7IDJSxAvXbWb_JgoE7iabcslX0LBF22Rej0=@smp3.simplexonflux.com,a5lm4k7ufei66cdck6fy63r4lmkqy3dekmmb7jkfdm5ivi6kfaojshad.onion",
+      "smp://xmAmqj75I9mWrUihLUlI0ZuNLXlIwFIlHRq5Pb6cHAU=@smp4.simplexonflux.com,qpcz2axyy66u26hfdd2e23uohcf3y6c36mn7dcuilcgnwjasnrvnxjqd.onion",
+      "smp://rWvBYyTamuRCBYb_KAn-nsejg879ndhiTg5Sq3k0xWA=@smp5.simplexonflux.com,4ao347qwiuluyd45xunmii4skjigzuuox53hpdsgbwxqafd4yrticead.onion",
+      "smp://PN7-uqLBToqlf1NxHEaiL35lV2vBpXq8Nj8BW11bU48=@smp6.simplexonflux.com,hury6ot3ymebbr2535mlp7gcxzrjpc6oujhtfxcfh2m4fal4xw5fq6qd.onion"
     ]
 
-xyzXFTPServers :: [NewUserServer 'PXFTP]
-xyzXFTPServers =
+fluxXFTPServers :: [NewUserServer 'PXFTP]
+fluxXFTPServers =
   map
     (presetServer True)
-    [ "xftp://abcd@xftp1.xyz.com",
-      "xftp://abcd@xftp2.xyz.com",
-      "xftp://abcd@xftp3.xyz.com",
-      "xftp://abcd@xftp4.xyz.com",
-      "xftp://abcd@xftp5.xyz.com",
-      "xftp://abcd@xftp6.xyz.com"
+    [ "xftp://92Sctlc09vHl_nAqF2min88zKyjdYJ9mgxRCJns5K2U=@xftp1.simplexonflux.com,apl3pumq3emwqtrztykyyoomdx4dg6ysql5zek2bi3rgznz7ai3odkid.onion",
+      "xftp://YBXy4f5zU1CEhnbbCzVWTNVNsaETcAGmYqGNxHntiE8=@xftp2.simplexonflux.com,c5jjecisncnngysah3cz2mppediutfelco4asx65mi75d44njvua3xid.onion",
+      "xftp://ARQO74ZSvv2OrulRF3CdgwPz_AMy27r0phtLSq5b664=@xftp3.simplexonflux.com,dc4mohiubvbnsdfqqn7xhlhpqs5u4tjzp7xpz6v6corwvzvqjtaqqiqd.onion",
+      "xftp://ub2jmAa9U0uQCy90O-fSUNaYCj6sdhl49Jh3VpNXP58=@xftp4.simplexonflux.com,4qq5pzier3i4yhpuhcrhfbl6j25udc4czoyascrj4yswhodhfwev3nyd.onion",
+      "xftp://Rh19D5e4Eez37DEE9hAlXDB3gZa1BdFYJTPgJWPO9OI=@xftp5.simplexonflux.com,q7itltdn32hjmgcqwhow4tay5ijetng3ur32bolssw32fvc5jrwvozad.onion",
+      "xftp://0AznwoyfX8Od9T_acp1QeeKtxUi676IBIiQjXVwbdyU=@xftp6.simplexonflux.com,upvzf23ou6nrmaf3qgnhd6cn3d74tvivlmz3p7wdfwq6fhthjrjiiqid.onion "
     ]
 
 _defaultNtfServers :: [NtfServer]
@@ -1579,13 +1579,13 @@ processChatCommand' vr = \case
       Nothing -> throwChatError $ CECommandError "no servers"
       Just userServers -> case srvs of
         [] -> throwChatError $ CECommandError "no servers"
-        _ -> processChatCommand $ APISetUserServers userId $ L.map updatedSrvs userServers
+        _ -> processChatCommand $ APISetUserServers userId $ L.map (updatedSrvs p) userServers
           where
             -- disable preset and replace custom servers (groupByOperator always adds custom)
-            updatedSrvs UserOperatorServers {operator, smpServers, xftpServers} = case p of
+            updatedSrvs :: UserProtocol p => SProtocolType p -> UserOperatorServers -> UpdatedUserOperatorServers
+            updatedSrvs p' UserOperatorServers {operator, smpServers, xftpServers} = case p' of
               SPSMP -> u (updateSrvs smpServers, map (AUS SDBStored) xftpServers)
               SPXFTP -> u (map (AUS SDBStored) smpServers, updateSrvs xftpServers)
-              SPNTF -> u ([], []) -- pattern match for ghc 8.10.7
               where
                 u = uncurry $ UpdatedUserOperatorServers operator
                 updateSrvs :: [UserServer p] -> [AUserServer p]
