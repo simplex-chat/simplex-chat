@@ -44,6 +44,7 @@ struct NetworkAndServers: View {
         VStack {
             List {
                 let conditionsAction = m.conditions.conditionsAction
+                let anyOperatorEnabled = userServers.contains(where: { $0.operator?.enabled ?? false })
                 Section {
                     ForEach(userServers.enumerated().map { $0 }, id: \.element.id) { idx, userOperatorServers in
                         if let serverOperator = userOperatorServers.operator {
@@ -53,7 +54,7 @@ struct NetworkAndServers: View {
                         }
                     }
 
-                    if let conditionsAction = conditionsAction {
+                    if let conditionsAction = conditionsAction, anyOperatorEnabled {
                         conditionsButton(conditionsAction)
                     }
                 } header: {
@@ -62,7 +63,7 @@ struct NetworkAndServers: View {
                 } footer: {
                     switch conditionsAction {
                     case let .review(_, deadline, _):
-                        if let deadline = deadline {
+                        if let deadline = deadline, anyOperatorEnabled {
                             Text("Conditions will be considered accepted for enabled operators after: \(conditionsTimestamp(deadline)).")
                                 .foregroundColor(theme.colors.secondary)
                         }
