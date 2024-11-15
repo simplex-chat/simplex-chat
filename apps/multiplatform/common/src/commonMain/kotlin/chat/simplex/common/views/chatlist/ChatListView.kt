@@ -242,7 +242,7 @@ private fun AddressCreationCard() {
           bottom = DEFAULT_PADDING_HALF
         )
     ) {
-      Box(Modifier.padding(4.dp)) {
+      Box(Modifier.padding(vertical = 4.dp)) {
         Box(Modifier.background(MaterialTheme.colors.primary, CircleShape).padding(12.dp)) {
           ProfileImage(size = 37.dp, null, icon = MR.images.ic_mail_filled, color = Color.White, backgroundColor = Color.Red)
         }
