@@ -796,7 +796,7 @@ acceptConditions db condId opIds acceptedAt = do
   where
     getServerOperator_ opId =
       ExceptT $ firstRow toServerOperator (SEOperatorNotFound opId) $
-        DB.query db (serverOperatorQuery <> " WHERE operator_id = ?") (Only opId)
+        DB.query db (serverOperatorQuery <> " WHERE server_operator_id = ?") (Only opId)
 
 acceptConditions_ :: DB.Connection -> ServerOperator -> Text -> Maybe UTCTime -> IO ()
 acceptConditions_ db ServerOperator {operatorId, operatorTag} conditionsCommit acceptedAt =
