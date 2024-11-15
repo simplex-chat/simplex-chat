@@ -16,6 +16,7 @@ struct OperatorView: View {
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     @EnvironmentObject var theme: AppTheme
     @Environment(\.editMode) private var editMode
+    @Binding var currUserServers: [UserOperatorServers]
     @Binding var userServers: [UserOperatorServers]
     var operatorServersIndex: Int
     @State var serverOperatorToEdit: ServerOperator
@@ -192,12 +193,15 @@ struct OperatorView: View {
         }
         .modifier(BackButton(disabled: Binding.constant(false)) {
             userServers[operatorServersIndex].operator = serverOperatorToEdit
-            ChatModel.shared.updateServerOperator(serverOperatorToEdit)
             dismiss()
         })
         .sheet(isPresented: $showConditionsSheet, onDismiss: onUseToggleSheetDismissed) {
-            SingleOperatorUsageConditionsView(serverOperator: $serverOperatorToEdit, serverOperatorToEdit: serverOperatorToEdit)
-                .modifier(ThemedBackground(grouped: true))
+            SingleOperatorUsageConditionsView(
+                currUserServers: $currUserServers,
+                userServers: $userServers,
+                serverOperator: $serverOperatorToEdit
+            )
+            .modifier(ThemedBackground(grouped: true))
         }
     }
 
@@ -228,31 +232,23 @@ struct OperatorView: View {
                     switch serverOperatorToEdit.conditionsAcceptance {
                     case .accepted:
                         serverOperatorToEdit.enabled = true
-                        ChatModel.shared.updateServerOperator(serverOperatorToEdit)
                     case let .required(deadline):
                         if deadline == nil {
                             showConditionsSheet = true
                         } else {
                             serverOperatorToEdit.enabled = true
-                            ChatModel.shared.updateServerOperator(serverOperatorToEdit)
                         }
                     }
                 } else {
                     serverOperatorToEdit.enabled = false
-                    ChatModel.shared.updateServerOperator(serverOperatorToEdit)
                 }
             }
     }
 
     private func onUseToggleSheetDismissed() {
-        if useOperator && !serverOperatorToEdit.enabled {
-            if serverOperatorToEdit.conditionsAcceptance.usageAllowed {
-                serverOperatorToEdit.enabled = true
-                ChatModel.shared.updateServerOperator(serverOperatorToEdit)
-            } else {
-                useOperatorToggleReset = true
-                useOperator = false
-            }
+        if useOperator && !serverOperatorToEdit.conditionsAcceptance.usageAllowed {
+            useOperatorToggleReset = true
+            useOperator = false
         }
     }
 }
@@ -301,6 +297,7 @@ struct ConditionsTextView: View {
             }
     }
 
+    // TODO Markdown & diff rendering
     @ViewBuilder private func viewBody() -> some View {
         if let (usageConditions, conditionsText, acceptedConditions) = conditionsData {
             if let conditionsText = conditionsText {
@@ -338,8 +335,9 @@ struct ConditionsTextView: View {
 struct SingleOperatorUsageConditionsView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var theme: AppTheme
+    @Binding var currUserServers: [UserOperatorServers]
+    @Binding var userServers: [UserOperatorServers]
     @Binding var serverOperator: ServerOperator
-    @State var serverOperatorToEdit: ServerOperator
     @State private var usageConditionsNavLinkActive: Bool = false
 
     var body: some View {
@@ -421,16 +419,16 @@ struct SingleOperatorUsageConditionsView: View {
             Text("Conditions will also apply for following operator(s) you use: **\(otherOperatorsToApply.map { $0.legalName_ }.joined(separator: ", "))**.")
         }
     }
-
-    private func acceptConditionsButton() -> some View {
+    
+    @ViewBuilder private func acceptConditionsButton() -> some View {
+        let operatorIds = ChatModel.shared.conditions.serverOperators
+            .filter {
+                $0.operatorId == serverOperator.operatorId || // Opened operator
+                ($0.enabled && !$0.conditionsAcceptance.conditionsAccepted) // Other enabled operators with conditions not accepted
+            }
+            .map { $0.operatorId }
         Button {
-            // Should call api to save state here, not when saving all servers
-            // (It's counterintuitive to lose to closed sheet or Reset)
-            let acceptedAt = Date.now
-            ChatModel.shared.acceptConditionsForEnabledOperators(acceptedAt)
-            serverOperatorToEdit.conditionsAcceptance = .accepted(acceptedAt: acceptedAt)
-            serverOperator = serverOperatorToEdit
-            dismiss()
+            acceptForOperators($currUserServers, $userServers, $serverOperator, dismiss, operatorIds)
         } label: {
             Text("Accept conditions")
         }
@@ -473,7 +471,8 @@ struct SingleOperatorUsageConditionsView: View {
 
 #Preview {
     OperatorView(
-        userServers: Binding.constant([UserOperatorServers.sampleData1]),
+        currUserServers: Binding.constant([UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator]),
+        userServers: Binding.constant([UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator]),
         operatorServersIndex: 1,
         serverOperatorToEdit: ServerOperator.sampleData1,
         useOperator: ServerOperator.sampleData1.enabled

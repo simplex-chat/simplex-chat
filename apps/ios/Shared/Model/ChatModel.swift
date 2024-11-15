@@ -240,37 +240,6 @@ final class ChatModel: ObservableObject {
             users.remove(at: i)
         }
     }
-    
-    func acceptConditionsForEnabledOperators(_ date: Date) {
-        for (i, serverOperator) in conditions.serverOperators.enumerated() {
-            if serverOperator.enabled && !serverOperator.conditionsAcceptance.conditionsAccepted {
-                var updatedOperator = serverOperator
-                updatedOperator.conditionsAcceptance = .accepted(acceptedAt: date)
-                conditions.serverOperators[i] = updatedOperator
-            }
-        }
-        updateUsageConditionsAction()
-    }
-
-    func updateServerOperator(_ updatedOperator: ServerOperator) {
-        if let i = conditions.serverOperators.firstIndex(where: { $0.operatorId == updatedOperator.operatorId }) {
-            conditions.serverOperators[i] = updatedOperator
-        }
-        updateUsageConditionsAction()
-    }
-
-    // TODO remove
-    private func updateUsageConditionsAction() {
-        let usedOperators = conditions.serverOperators.filter { $0.enabled }
-        if usedOperators.isEmpty {
-            conditions.conditionsAction = nil
-        } else if usedOperators.allSatisfy({ $0.conditionsAcceptance.conditionsAccepted }) {
-            conditions.conditionsAction = .accepted(operators: usedOperators)
-        } else {
-            let acceptForOperators = usedOperators.filter { !$0.conditionsAcceptance.conditionsAccepted }
-            conditions.conditionsAction = .review(operators: acceptForOperators, deadline: Date.distantFuture, showNotice: false)
-        }
-    }
 
     func hasChat(_ id: String) -> Bool {
         chats.first(where: { $0.id == id }) != nil

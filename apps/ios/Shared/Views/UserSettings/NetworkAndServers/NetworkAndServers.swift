@@ -177,6 +177,7 @@ struct NetworkAndServers: View {
     private func serverOperatorView(_ operatorServersIndex: Int, _ serverOperator: ServerOperator) -> some View {
         NavigationLink() {
             OperatorView(
+                currUserServers: $currUserServers,
                 userServers: $userServers,
                 operatorServersIndex: operatorServersIndex,
                 serverOperatorToEdit: serverOperator,
@@ -244,7 +245,7 @@ struct UsageConditionsView: View {
             case let .review(operators, _, _):
                 Text("Conditions will be accepted for following operator(s): **\(operators.map { $0.legalName_ }.joined(separator: ", "))**.")
                 ConditionsTextView()
-                acceptConditionsButton(operators)
+                acceptConditionsButton(operators.map { $0.operatorId })
                     .padding(.bottom)
                     .padding(.bottom)
 
@@ -259,40 +260,13 @@ struct UsageConditionsView: View {
         .frame(maxHeight: .infinity)
     }
 
-    private func acceptConditionsButton(_ operators: [ServerOperator]) -> some View {
+    private func acceptConditionsButton(_ operatorIds: [Int64]) -> some View {
         Button {
-            Task {
-                do {
-                    let conditionsId = ChatModel.shared.conditions.currentConditions.conditionsId
-                    let operatorIds = operators.map { $0.operatorId }
-                    let r = try await acceptConditions(conditionsId: conditionsId, operatorIds: operatorIds)
-                    await MainActor.run {
-                        ChatModel.shared.conditions = r
-                        updateOperators($currUserServers, r.serverOperators)
-                        updateOperators($userServers, r.serverOperators)
-                        dismiss()
-                    }
-                } catch let error {
-                    await MainActor.run {
-                        showAlert(
-                            NSLocalizedString("Error accepting conditions", comment: "alert title"),
-                            message: responseError(error)
-                        )
-                    }
-                }
-            }
+            acceptForOperators($currUserServers, $userServers, nil, dismiss, operatorIds)
         } label: {
             Text("Accept conditions")
         }
         .buttonStyle(OnboardingButtonStyle(isDisabled: false))
-    }
-
-    private func updateOperators(_ operators: Binding<[UserOperatorServers]>, _ updatedOperators: [ServerOperator]) {
-        for i in 0..<operators.wrappedValue.count {
-            if let updatedOperator = updatedOperators.first(where: { $0.operatorId == operators.wrappedValue[i].operator?.operatorId }) {
-                operators.wrappedValue[i].operator?.conditionsAcceptance = updatedOperator.conditionsAcceptance
-            }
-        }
     }
 }
 
@@ -322,6 +296,52 @@ func saveServers(_ currUserServers: Binding<[UserOperatorServers]>, _ userServer
                     message: responseError(error)
                 )
             }
+        }
+    }
+}
+
+func acceptForOperators(
+    _ currUserServers: Binding<[UserOperatorServers]>,
+    _ userServers: Binding<[UserOperatorServers]>,
+    _ serverOperator: Binding<ServerOperator>?,
+    _ dismissAction: DismissAction,
+    _ operatorIds: [Int64]
+) {
+    Task {
+        do {
+            let conditionsId = ChatModel.shared.conditions.currentConditions.conditionsId
+            let r = try await acceptConditions(conditionsId: conditionsId, operatorIds: operatorIds)
+            await MainActor.run {
+                ChatModel.shared.conditions = r
+                updateOperators(currUserServers, r.serverOperators)
+                updateOperators(userServers, r.serverOperators)
+                // -- This hack is for OperatorView, where it's problematic to work directly with userServers binding, because its operator is optional.
+                //    Instead separate operator object is passed there, but we have to maintain it here (alternatively acceptForOperators could be duplicated).
+                if let serverOperator = serverOperator,
+                   let op = r.serverOperators.first(where: { $0.operatorId == serverOperator.wrappedValue.operatorId }) {
+                    var updatedOperator = serverOperator.wrappedValue
+                    updatedOperator.conditionsAcceptance = op.conditionsAcceptance
+                    updatedOperator.enabled = true
+                    serverOperator.wrappedValue = updatedOperator
+                }
+                // --
+                dismissAction()
+            }
+        } catch let error {
+            await MainActor.run {
+                showAlert(
+                    NSLocalizedString("Error accepting conditions", comment: "alert title"),
+                    message: responseError(error)
+                )
+            }
+        }
+    }
+}
+
+private func updateOperators(_ usvs: Binding<[UserOperatorServers]>, _ updatedOperators: [ServerOperator]) {
+    for i in 0..<usvs.wrappedValue.count {
+        if let updatedOperator = updatedOperators.first(where: { $0.operatorId == usvs.wrappedValue[i].operator?.operatorId }) {
+            usvs.wrappedValue[i].operator?.conditionsAcceptance = updatedOperator.conditionsAcceptance
         }
     }
 }
