@@ -263,11 +263,6 @@ struct NativeTextEditor_Previews: PreviewProvider{
     }
 }
 
-
 func encodeMarkdown(_ string: String) -> NSAttributedString {
-
-}
-
-func decodeMarkdown(_ attributedString: NSAttributedString) -> String {
-
+    fatalError()
 }
