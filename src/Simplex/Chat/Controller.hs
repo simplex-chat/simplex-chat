@@ -358,7 +358,7 @@ data ChatCommand
   | APISetServerOperators (NonEmpty ServerOperator)
   | APIGetUserServers UserId
   | APISetUserServers UserId (NonEmpty UpdatedUserOperatorServers)
-  | APIValidateServers (NonEmpty UpdatedUserOperatorServers) -- response is CRUserServersValidation
+  | APIValidateServers UserId [ValidatedUserOperatorServers] -- response is CRUserServersValidation
   | APIGetUsageConditions
   | APISetConditionsNotified Int64
   | APIAcceptConditions Int64 (NonEmpty Int64)
@@ -590,7 +590,7 @@ data ChatResponse
   | CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure}
   | CRServerOperators {operators :: [ServerOperator], conditionsAction :: Maybe UsageConditionsAction}
   | CRUserServers {user :: User, userServers :: [UserOperatorServers]}
-  | CRUserServersValidation {serverErrors :: [UserServersError]}
+  | CRUserServersValidation {user :: User, serverErrors :: [UserServersError]}
   | CRUsageConditions {usageConditions :: UsageConditions, conditionsText :: Text, acceptedConditions :: Maybe UsageConditions}
   | CRChatItemTTL {user :: User, chatItemTTL :: Maybe Int64}
   | CRNetworkConfig {networkConfig :: NetworkConfig}

@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
@@ -13,6 +14,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilyDependencies #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat.Operators where
@@ -22,10 +24,12 @@ import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
+import Data.Either (partitionEithers)
 import Data.FileEmbed
 import Data.Foldable (foldMap')
 import Data.IORef
 import Data.Int (Int64)
+import Data.Kind
 import Data.List (find, foldl')
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
@@ -43,11 +47,12 @@ import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import Language.Haskell.TH.Syntax (lift)
 import Simplex.Chat.Operators.Conditions
+import Simplex.Chat.Types (User)
 import Simplex.Chat.Types.Util (textParseJSON)
 import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
+import Simplex.Messaging.Protocol (AProtocolType (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (atomicModifyIORef'_, safeDecodeUtf8)
 
@@ -196,10 +201,56 @@ data UpdatedUserOperatorServers = UpdatedUserOperatorServers
   }
   deriving (Show)
 
-updatedServers :: UserProtocol p => UpdatedUserOperatorServers -> SProtocolType p -> [AUserServer p]
-updatedServers UpdatedUserOperatorServers {smpServers, xftpServers} = \case
-  SPSMP -> smpServers
-  SPXFTP -> xftpServers
+data ValidatedUserOperatorServers = ValidatedUserOperatorServers
+  { operator :: Maybe ServerOperator,
+    smpServers :: [AValidatedServer 'PSMP],
+    xftpServers :: [AValidatedServer 'PXFTP]
+  }
+  deriving (Show)
+
+data AValidatedServer p = forall s. AVS (SDBStored s) (ValidatedServer s p)
+
+deriving instance Show (AValidatedServer p)
+
+type ValidatedServer s p = UserServer_ s ValidatedProtoServer p
+
+data ValidatedProtoServer p = ValidatedProtoServer {unVPS :: Either Text (ProtoServerWithAuth p)}
+  deriving (Show)
+
+class UserServersClass u where
+  type AServer u = (s :: ProtocolType -> Type) | s -> u
+  operator' :: u -> Maybe ServerOperator
+  partitionValid :: [AServer u p] -> ([Text], [AUserServer p])
+  servers' :: UserProtocol p => u -> SProtocolType p -> [AServer u p]
+
+instance UserServersClass UserOperatorServers where
+  type AServer UserOperatorServers = UserServer_ 'DBStored ProtoServerWithAuth
+  operator' UserOperatorServers {operator} = operator
+  partitionValid ss = ([], map (AUS SDBStored) ss)
+  servers' UserOperatorServers {smpServers, xftpServers} = \case
+    SPSMP -> smpServers
+    SPXFTP -> xftpServers
+
+instance UserServersClass UpdatedUserOperatorServers where
+  type AServer UpdatedUserOperatorServers = AUserServer
+  operator' UpdatedUserOperatorServers {operator} = operator
+  partitionValid = ([],)
+  servers' UpdatedUserOperatorServers {smpServers, xftpServers} = \case
+    SPSMP -> smpServers
+    SPXFTP -> xftpServers
+
+instance UserServersClass ValidatedUserOperatorServers where
+  type AServer ValidatedUserOperatorServers = AValidatedServer
+  operator' ValidatedUserOperatorServers {operator} = operator
+  partitionValid = partitionEithers . map serverOrErr
+    where
+      serverOrErr :: AValidatedServer p -> Either Text (AUserServer p)
+      serverOrErr (AVS s srv@UserServer {server = server'}) = (\server -> AUS s srv {server}) <$> unVPS server'
+  servers' ValidatedUserOperatorServers {smpServers, xftpServers} = \case
+    SPSMP -> smpServers
+    SPXFTP -> xftpServers
+
+type UserServer' s p = UserServer_ s ProtoServerWithAuth p
 
 type UserServer p = UserServer' 'DBStored p
 
@@ -209,9 +260,9 @@ data AUserServer p = forall s. AUS (SDBStored s) (UserServer' s p)
 
 deriving instance Show (AUserServer p)
 
-data UserServer' s p = UserServer
+data UserServer_ s (srv :: ProtocolType -> Type) (p :: ProtocolType) = UserServer
   { serverId :: DBEntityId' s,
-    server :: ProtoServerWithAuth p,
+    server :: srv p,
     preset :: Bool,
     tested :: Maybe Bool,
     enabled :: Bool,
@@ -352,35 +403,36 @@ groupByOperator (ops, smpSrvs, xftpSrvs) = do
     addXFTP srv s@UserOperatorServers {xftpServers} = (s :: UserOperatorServers) {xftpServers = srv : xftpServers}
 
 data UserServersError
-  = USEStorageMissing {protocol :: AProtocolType}
-  | USEProxyMissing {protocol :: AProtocolType}
-  | USEDuplicateServer {protocol :: AProtocolType, duplicateServer :: AProtoServerWithAuth, duplicateHost :: TransportHost}
+  = USENoServers {protocol :: AProtocolType, user :: Maybe User}
+  | USEStorageMissing {protocol :: AProtocolType, user :: Maybe User}
+  | USEProxyMissing {protocol :: AProtocolType, user :: Maybe User}
+  | USEInvalidServer {protocol :: AProtocolType, invalidServer :: Text}
+  | USEDuplicateServer {protocol :: AProtocolType, duplicateServer :: Text, duplicateHost :: TransportHost}
   deriving (Show)
 
-validateUserServers :: NonEmpty UpdatedUserOperatorServers -> [UserServersError]
-validateUserServers uss =
-  missingRolesErr SPSMP storage USEStorageMissing
-    <> missingRolesErr SPSMP proxy USEProxyMissing
-    <> missingRolesErr SPXFTP storage USEStorageMissing
-    <> duplicatServerErrs SPSMP
-    <> duplicatServerErrs SPXFTP
+validateUserServers :: UserServersClass u' => [u'] -> [(User, [UserOperatorServers])] -> [UserServersError]
+validateUserServers curr others = currUserErrs <> concatMap otherUserErrs others
   where
-    missingRolesErr :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> (ServerRoles -> Bool) -> (AProtocolType -> UserServersError) -> [UserServersError]
-    missingRolesErr p roleSel err = [err (AProtocolType p) | not hasRole]
+    currUserErrs = noServersErrs SPSMP Nothing curr <> noServersErrs SPXFTP Nothing curr <> serverErrs SPSMP curr <> serverErrs SPXFTP curr
+    otherUserErrs (user, uss) = noServersErrs SPSMP (Just user) uss <> noServersErrs SPXFTP (Just user) uss
+    noServersErrs  :: (UserServersClass u, ProtocolTypeI p, UserProtocol p) => SProtocolType p -> Maybe User -> [u] -> [UserServersError]
+    noServersErrs p user uss
+      | noServers opEnabled = [USENoServers p' user]
+      | otherwise = [USEStorageMissing p' user | noServers (hasRole storage)] <> [USEProxyMissing p' user | noServers (hasRole proxy)]
       where
-        hasRole =
-          any (\(AUS _ UserServer {deleted, enabled}) -> enabled && not deleted) $
-            concatMap (`updatedServers` p) $ filter roleEnabled (L.toList uss)
-        roleEnabled UpdatedUserOperatorServers {operator} =
-          maybe True (\ServerOperator {enabled, roles} -> enabled && roleSel roles) operator
-    duplicatServerErrs :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> [UserServersError]
-    duplicatServerErrs p = mapMaybe duplicateErr_ srvs
+        p' = AProtocolType p
+        noServers cond = not $ any srvEnabled $ snd $ partitionValid $ concatMap (`servers'` p) $ filter cond uss
+        opEnabled = maybe True (\ServerOperator {enabled} -> enabled) . operator'
+        hasRole roleSel = maybe True (\ServerOperator {enabled, roles} -> enabled && roleSel roles) . operator'
+        srvEnabled (AUS _ UserServer {deleted, enabled}) = enabled && not deleted
+    serverErrs :: (UserServersClass u, ProtocolTypeI p, UserProtocol p) => SProtocolType p -> [u] -> [UserServersError]
+    serverErrs p uss = map (USEInvalidServer p') invalidSrvs <> mapMaybe duplicateErr_ srvs
       where
-        srvs =
-          filter (\(AUS _ UserServer {deleted}) -> not deleted) $
-            concatMap (`updatedServers` p) (L.toList uss)
+        p' = AProtocolType p
+        (invalidSrvs, userSrvs) = partitionValid $ concatMap (`servers'` p) uss
+        srvs = filter (\(AUS _ UserServer {deleted}) -> not deleted) userSrvs
         duplicateErr_ (AUS _ srv@UserServer {server}) =
-          USEDuplicateServer (AProtocolType p) (AProtoServerWithAuth p server)
+          USEDuplicateServer p' (safeDecodeUtf8 $ strEncode server)
             <$> find (`S.member` duplicateHosts) (srvHost srv)
         duplicateHosts = snd $ foldl' addHost (S.empty, S.empty) allHosts
         allHosts = concatMap (\(AUS _ srv) -> L.toList $ srvHost srv) srvs
@@ -421,18 +473,30 @@ instance DBStoredI s => FromJSON (ServerOperator' s) where
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "UCA") ''UsageConditionsAction)
 
 instance ProtocolTypeI p => ToJSON (UserServer' s p) where
-  toEncoding = $(JQ.mkToEncoding defaultJSON ''UserServer')
-  toJSON = $(JQ.mkToJSON defaultJSON ''UserServer')
+  toEncoding = $(JQ.mkToEncoding defaultJSON ''UserServer_)
+  toJSON = $(JQ.mkToJSON defaultJSON ''UserServer_)
 
 instance (DBStoredI s, ProtocolTypeI p) => FromJSON (UserServer' s p) where
-  parseJSON = $(JQ.mkParseJSON defaultJSON ''UserServer')
+  parseJSON = $(JQ.mkParseJSON defaultJSON ''UserServer_)
 
 instance ProtocolTypeI p => FromJSON (AUserServer p) where
   parseJSON v = (AUS SDBStored <$> parseJSON v) <|> (AUS SDBNew <$> parseJSON v)
+
+instance ProtocolTypeI p => FromJSON (ValidatedProtoServer p) where
+  parseJSON v = ValidatedProtoServer <$> ((Right <$> parseJSON v) <|> (Left <$> parseJSON v))
+
+instance (DBStoredI s, ProtocolTypeI p) => FromJSON (ValidatedServer s p) where
+  parseJSON = $(JQ.mkParseJSON defaultJSON ''UserServer_)
+
+instance ProtocolTypeI p => FromJSON (AValidatedServer p) where
+  parseJSON v = (AVS SDBStored <$> parseJSON v) <|> (AVS SDBNew <$> parseJSON v)
 
 $(JQ.deriveJSON defaultJSON ''UserOperatorServers)
 
 instance FromJSON UpdatedUserOperatorServers where
   parseJSON = $(JQ.mkParseJSON defaultJSON ''UpdatedUserOperatorServers)
+
+instance FromJSON ValidatedUserOperatorServers where
+  parseJSON = $(JQ.mkParseJSON defaultJSON ''ValidatedUserOperatorServers)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "USE") ''UserServersError)

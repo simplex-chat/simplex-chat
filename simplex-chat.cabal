@@ -618,6 +618,7 @@ test-suite simplex-chat-test
       MarkdownTests
       MessageBatching
       MobileTests
+      OperatorTests
       ProtocolTests
       RandomServers
       RemoteTests
