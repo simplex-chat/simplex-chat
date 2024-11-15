@@ -956,24 +956,6 @@ instance ToJSON AgentQueueId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
--- data ProtoServersConfig p = ProtoServersConfig {servers :: [ServerCfg p]}
---   deriving (Show)
-
--- data AProtoServersConfig = forall p. ProtocolTypeI p => APSC (SProtocolType p) (ProtoServersConfig p)
-
--- deriving instance Show AProtoServersConfig
-
--- data UserProtoServers p = UserProtoServers
---   { serverProtocol :: SProtocolType p,
---     protoServers :: NonEmpty (ServerCfg p),
---     presetServers :: NonEmpty (ServerCfg p)
---   }
---   deriving (Show)
-
--- data AUserProtoServers = forall p. (ProtocolTypeI p, UserProtocol p) => AUPS (UserProtoServers p)
-
--- deriving instance Show AUserProtoServers
-
 data ArchiveConfig = ArchiveConfig {archivePath :: FilePath, disableCompression :: Maybe Bool, parentTempDirectory :: Maybe FilePath}
   deriving (Show)
 
