@@ -157,12 +157,14 @@ struct NetworkAndServers: View {
         })
         .onChange(of: disappearing) { disappearing_ in
             if disappearing_ {
-                showAlert(
-                    title: NSLocalizedString("Save servers?", comment: "alert title"),
-                    buttonTitle: NSLocalizedString("Save", comment: "alert button"),
-                    buttonAction: { saveServers() },
-                    cancelButton: true
-                )
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    showAlert(
+                        title: NSLocalizedString("Save servers?", comment: "alert title"),
+                        buttonTitle: NSLocalizedString("Save", comment: "alert button"),
+                        buttonAction: { saveServers() },
+                        cancelButton: true
+                    )
+                }
             }
         }
         .confirmationDialog("Save servers?", isPresented: $showSaveDialog, titleVisibility: .visible) {
