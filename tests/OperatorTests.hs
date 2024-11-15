@@ -71,7 +71,7 @@ invalidDisabledOp =
 invalidNoStorage :: UpdatedUserOperatorServers
 invalidNoStorage =
   (valid :: UpdatedUserOperatorServers)
-    { operator = Just operatorSimpleXChat {operatorId = DBEntityId 1, roles = allRoles {storage = False}}
+    { operator = Just operatorSimpleXChat {operatorId = DBEntityId 1, smpRoles = allRoles {storage = False}}
     }
 
 invalidDuplicate :: UpdatedUserOperatorServers

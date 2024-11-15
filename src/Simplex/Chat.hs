@@ -150,7 +150,8 @@ operatorSimpleXChat =
       serverDomains = ["simplex.im"],
       conditionsAcceptance = CARequired Nothing,
       enabled = True,
-      roles = allRoles
+      smpRoles = allRoles,
+      xftpRoles = allRoles
     }
 
 operatorFlux :: NewServerOperator
@@ -163,7 +164,8 @@ operatorFlux =
       serverDomains = ["simplexonflux.com"],
       conditionsAcceptance = CARequired Nothing,
       enabled = False,
-      roles = ServerRoles {storage = False, proxy = True}
+      smpRoles = ServerRoles {storage = False, proxy = True},
+      xftpRoles = allRoles
     }
 
 defaultChatConfig :: ChatConfig
@@ -420,7 +422,7 @@ newChatController
           getServers p users opDomains = do
             let rs' = rndServers p rs
             fmap M.fromList $ forM users $ \u ->
-              (aUserId u,) . agentServerCfgs opDomains rs' <$> getUpdateUserServers db p presetOps rs' u
+              (aUserId u,) . agentServerCfgs p opDomains rs' <$> getUpdateUserServers db p presetOps rs' u
 
 updateNetworkConfig :: NetworkConfig -> SimpleNetCfg -> NetworkConfig
 updateNetworkConfig cfg SimpleNetCfg {socksProxy, socksMode, hostMode, requiredHostMode, smpProxyMode_, smpProxyFallback_, smpWebPort, tcpTimeout_, logTLSErrors} =
@@ -645,8 +647,8 @@ processChatCommand' vr = \case
         if activeUser || isNothing viewPwdHash then CEUserExists displayName else CEInvalidDisplayName {displayName, validName = ""}
     opDomains <- operatorDomains . fst <$> withFastStore getServerOperators
     rs <- asks randomServers
-    let smp = agentServerCfgs opDomains (rndServers SPSMP rs) smpServers
-        xftp = agentServerCfgs opDomains (rndServers SPXFTP rs) xftpServers
+    let smp = agentServerCfgs SPSMP opDomains (rndServers SPSMP rs) smpServers
+        xftp = agentServerCfgs SPXFTP opDomains (rndServers SPXFTP rs) xftpServers
     auId <- withAgent (\a -> createUser a smp xftp)
     ts <- liftIO $ getCurrentTime >>= if pastTimestamp then coupleDaysAgo else pure
     user <- withFastStore $ \db -> createUserRecordAt db (AgentUserId auId) p True ts
@@ -1617,8 +1619,8 @@ processChatCommand' vr = \case
     rs <- asks randomServers
     lift $ withAgent' $ \a -> do
       let auId = aUserId user
-      setProtocolServers a auId $ agentServerCfgs opDomains (rndServers SPSMP rs) smpServers
-      setProtocolServers a auId $ agentServerCfgs opDomains (rndServers SPXFTP rs) xftpServers
+      setProtocolServers a auId $ agentServerCfgs SPSMP opDomains (rndServers SPSMP rs) smpServers
+      setProtocolServers a auId $ agentServerCfgs SPXFTP opDomains (rndServers SPXFTP rs) xftpServers
     ok_
   APIValidateServers userId userServers -> withUserId userId $ \user ->
     CRUserServersValidation user <$> validateAllUsersServers userId userServers
@@ -3779,7 +3781,7 @@ getKnownAgentServers p user = do
   withStore $ \db -> do
     opDomains <- operatorDomains . fst <$> getServerOperators db
     srvs <- liftIO $ getProtocolServers db p user
-    pure $ L.toList $ agentServerCfgs opDomains (rndServers p rs) srvs
+    pure $ L.toList $ agentServerCfgs p opDomains (rndServers p rs) srvs
 
 protoServer' :: ServerCfg p -> ProtocolServer p
 protoServer' ServerCfg {server} = protoServer server

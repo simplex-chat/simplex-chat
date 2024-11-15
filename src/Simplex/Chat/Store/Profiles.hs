@@ -635,15 +635,15 @@ setServerOperators db ops = do
   mapM_ (updateServerOperator db currentTs) ops
 
 updateServerOperator :: DB.Connection -> UTCTime -> ServerOperator -> IO ()
-updateServerOperator db currentTs ServerOperator {operatorId, enabled, roles = ServerRoles {storage, proxy}} =
+updateServerOperator db currentTs ServerOperator {operatorId, enabled, smpRoles, xftpRoles} =
   DB.execute
     db
     [sql|
       UPDATE server_operators
-      SET enabled = ?, role_storage = ?, role_proxy = ?, updated_at = ?
+      SET enabled = ?, smp_role_storage = ?, smp_role_proxy = ?, xftp_role_storage = ?, xftp_role_proxy = ?, updated_at = ?
       WHERE server_operator_id = ?
     |]
-    (enabled, storage, proxy, operatorId, currentTs)
+    (enabled, storage smpRoles, proxy smpRoles, storage xftpRoles, proxy xftpRoles, operatorId, currentTs)
 
 getUpdateServerOperators :: DB.Connection -> NonEmpty PresetOperator -> Bool -> IO [ServerOperator]
 getUpdateServerOperators db presetOps newUser = do
@@ -677,25 +677,25 @@ getUpdateServerOperators db presetOps newUser = do
         |]
         (conditionsId, conditionsCommit, notifiedAt, createdAt)
     updateOperator :: ServerOperator -> IO ()
-    updateOperator ServerOperator {operatorId, tradeName, legalName, serverDomains, enabled, roles = ServerRoles {storage, proxy}} =
+    updateOperator ServerOperator {operatorId, tradeName, legalName, serverDomains, enabled, smpRoles, xftpRoles} =
       DB.execute
         db
         [sql|
           UPDATE server_operators
-          SET trade_name = ?, legal_name = ?, server_domains = ?, enabled = ?, role_storage = ?, role_proxy = ?
+          SET trade_name = ?, legal_name = ?, server_domains = ?, enabled = ?, smp_role_storage = ?, smp_role_proxy = ?, xftp_role_storage = ?, xftp_role_proxy = ?
           WHERE server_operator_id = ?
         |]
-        (tradeName, legalName, T.intercalate "," serverDomains, enabled, storage, proxy, operatorId)
+        (tradeName, legalName, T.intercalate "," serverDomains, enabled, storage smpRoles, proxy smpRoles, storage xftpRoles, proxy xftpRoles, operatorId)
     insertOperator :: NewServerOperator -> IO ServerOperator
-    insertOperator op@ServerOperator {operatorTag, tradeName, legalName, serverDomains, enabled, roles = ServerRoles {storage, proxy}} = do
+    insertOperator op@ServerOperator {operatorTag, tradeName, legalName, serverDomains, enabled, smpRoles, xftpRoles} = do
       DB.execute
         db
         [sql|
           INSERT INTO server_operators
-            (server_operator_tag, trade_name, legal_name, server_domains, enabled, role_storage, role_proxy)
-          VALUES (?,?,?,?,?,?,?)
+            (server_operator_tag, trade_name, legal_name, server_domains, enabled, smp_role_storage, smp_role_proxy, xftp_role_storage, xftp_role_proxy)
+          VALUES (?,?,?,?,?,?,?,?,?)
         |]
-        (operatorTag, tradeName, legalName, T.intercalate "," serverDomains, enabled, storage, proxy)
+        (operatorTag, tradeName, legalName, T.intercalate "," serverDomains, enabled, storage smpRoles, proxy smpRoles, storage xftpRoles, proxy xftpRoles)
       opId <- insertedRowId db
       pure op {operatorId = DBEntityId opId}
     autoAcceptConditions op UsageConditions {conditionsCommit} =
@@ -706,15 +706,15 @@ serverOperatorQuery :: Query
 serverOperatorQuery =
   [sql|
     SELECT server_operator_id, server_operator_tag, trade_name, legal_name,
-      server_domains, enabled, role_storage, role_proxy
+      server_domains, enabled, smp_role_storage, smp_role_proxy, xftp_role_storage, xftp_role_proxy
     FROM server_operators
   |]
 
 getServerOperators_ :: DB.Connection -> IO [ServerOperator]
 getServerOperators_ db = map toServerOperator <$> DB.query_ db serverOperatorQuery
 
-toServerOperator :: (DBEntityId, Maybe OperatorTag, Text, Maybe Text, Text, Bool, Bool, Bool) -> ServerOperator
-toServerOperator (operatorId, operatorTag, tradeName, legalName, domains, enabled, storage, proxy) =
+toServerOperator :: (DBEntityId, Maybe OperatorTag, Text, Maybe Text, Text, Bool) :. (Bool, Bool) :. (Bool, Bool) -> ServerOperator
+toServerOperator ((operatorId, operatorTag, tradeName, legalName, domains, enabled) :. smpRoles' :. xftpRoles') =
   ServerOperator
     { operatorId,
       operatorTag,
@@ -723,8 +723,11 @@ toServerOperator (operatorId, operatorTag, tradeName, legalName, domains, enable
       serverDomains = T.splitOn "," domains,
       conditionsAcceptance = CARequired Nothing,
       enabled,
-      roles = ServerRoles {storage, proxy}
+      smpRoles = serverRoles smpRoles',
+      xftpRoles = serverRoles xftpRoles'
     }
+  where
+    serverRoles (storage, proxy) = ServerRoles {storage, proxy}
 
 getOperatorConditions_ :: DB.Connection -> ServerOperator -> UsageConditions -> Maybe UsageConditions -> UTCTime -> IO ConditionsAcceptance
 getOperatorConditions_ db ServerOperator {operatorId} UsageConditions {conditionsCommit = currentCommit, createdAt, notifiedAt} latestAcceptedConds_ now = do
