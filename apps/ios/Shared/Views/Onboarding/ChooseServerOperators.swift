@@ -94,10 +94,14 @@ struct ChooseServerOperators: View {
                         if !onboarding && !reviewForOperators.isEmpty {
                             VStack(spacing: 8) {
                                 reviewLaterButton()
-                                Text("Conditions will be considered accepted for enabled operators after 30 days.")
-                                    .multilineTextAlignment(.center)
-                                    .font(.footnote)
-                                    .padding(.horizontal, 32)
+                                (
+                                    Text("Conditions will be considered accepted for enabled operators after 30 days.")
+                                    + Text(" ")
+                                    + Text("You can disable operators and configure your servers in Network & servers settings.")
+                                )
+                                .multilineTextAlignment(.center)
+                                .font(.footnote)
+                                .padding(.horizontal, 32)
                             }
                             .disabled(!canReviewLater)
                             .padding(.bottom)
