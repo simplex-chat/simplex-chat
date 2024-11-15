@@ -98,7 +98,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRApiChat u chat _ -> ttyUser u $ if testView then testViewChat chat else [viewJSON chat]
   CRApiParsedMarkdown ft -> [viewJSON ft]
   CRServerTestResult u srv testFailure -> ttyUser u $ viewServerTestResult srv testFailure
-  CRServerOperators ops ca -> viewServerOperators ops ca 
+  CRServerOperatorConditions (ServerOperatorConditions ops _ ca) -> viewServerOperators ops ca
   CRUserServers u uss -> ttyUser u $ concatMap viewUserServers uss <> (if testView then [] else serversUserHelp)
   CRUserServersValidation {} -> []
   CRUsageConditions {} -> []
