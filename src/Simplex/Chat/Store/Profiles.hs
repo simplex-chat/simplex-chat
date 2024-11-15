@@ -644,7 +644,7 @@ updateServerOperator db currentTs ServerOperator {operatorId, enabled, smpRoles,
       SET enabled = ?, smp_role_storage = ?, smp_role_proxy = ?, xftp_role_storage = ?, xftp_role_proxy = ?, updated_at = ?
       WHERE server_operator_id = ?
     |]
-    (enabled, storage smpRoles, proxy smpRoles, storage xftpRoles, proxy xftpRoles, operatorId, currentTs)
+    (enabled, storage smpRoles, proxy smpRoles, storage xftpRoles, proxy xftpRoles, currentTs, operatorId)
 
 getUpdateServerOperators :: DB.Connection -> NonEmpty PresetOperator -> Bool -> IO [ServerOperator]
 getUpdateServerOperators db presetOps newUser = do
