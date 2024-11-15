@@ -194,6 +194,8 @@ fun MainScreen() {
           OnboardingStage.Step2_CreateProfile -> CreateFirstProfile(chatModel) {}
           OnboardingStage.LinkAMobile -> LinkAMobile()
           OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
+          // Ensure backwards compatibility with old onboarding stage for address creation, otherwise notification setup would be skipped
+          OnboardingStage.Step3_CreateSimpleXAddress -> SetNotificationsMode(chatModel)
           OnboardingStage.Step4_SetNotificationsMode -> SetNotificationsMode(chatModel)
         }
       }
