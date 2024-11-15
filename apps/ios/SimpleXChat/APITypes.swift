@@ -1416,6 +1416,23 @@ public struct UserOperatorServers: Identifiable, Equatable, Codable {
         }
     }
 
+    public var operator_: ServerOperator {
+        get {
+            self.operator ?? ServerOperator(
+                operatorId: 0,
+                operatorTag: nil,
+                tradeName: "",
+                legalName: "",
+                serverDomains: [],
+                conditionsAcceptance: .accepted(acceptedAt: nil),
+                enabled: false,
+                smpRoles: ServerRoles(storage: true, proxy: true),
+                xftpRoles: ServerRoles(storage: true, proxy: true)
+            )
+        }
+        set { `operator` = newValue }
+    }
+    
     public static var sampleData1 = UserOperatorServers(
         operator: ServerOperator.sampleData1,
         smpServers: [UserServer.sampleData.preset],

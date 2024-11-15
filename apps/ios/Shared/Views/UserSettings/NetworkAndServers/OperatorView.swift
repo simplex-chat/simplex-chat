@@ -18,8 +18,8 @@ struct OperatorView: View {
     @Environment(\.editMode) private var editMode
     @Binding var currUserServers: [UserOperatorServers]
     @Binding var userServers: [UserOperatorServers]
-    var operatorServersIndex: Int
-    @State var serverOperatorToEdit: ServerOperator
+    var operatorIndex: Int
+//    @State var serverOperatorToEdit: ServerOperator
     @State var useOperator: Bool
     @State private var useOperatorToggleReset: Bool = false
     @State private var showConditionsSheet: Bool = false
@@ -49,38 +49,38 @@ struct OperatorView: View {
                     Text("Operator")
                         .foregroundColor(theme.colors.secondary)
                 } footer: {
-                    switch (serverOperatorToEdit.conditionsAcceptance) {
+                    switch (userServers[operatorIndex].operator_.conditionsAcceptance) {
                     case let .accepted(acceptedAt):
                         if let acceptedAt = acceptedAt {
                             Text("Conditions accepted on: \(conditionsTimestamp(acceptedAt)).")
                                 .foregroundColor(theme.colors.secondary)
                         }
                     case let .required(deadline):
-                        if serverOperatorToEdit.enabled, let deadline = deadline {
+                        if userServers[operatorIndex].operator_.enabled, let deadline = deadline {
                             Text("Conditions will be considered accepted after: \(conditionsTimestamp(deadline)).")
                                 .foregroundColor(theme.colors.secondary)
                         }
                     }
                 }
 
-                if serverOperatorToEdit.enabled {
-                    if !userServers[operatorServersIndex].smpServers.filter({ !$0.deleted }).isEmpty {
+                if userServers[operatorIndex].operator_.enabled {
+                    if !userServers[operatorIndex].smpServers.filter({ !$0.deleted }).isEmpty {
                         Section(header: Text("Use for messages").foregroundColor(theme.colors.secondary)) {
-                            Toggle("For receiving", isOn: $serverOperatorToEdit.smpRoles.storage)
-                            Toggle("For private routing", isOn: $serverOperatorToEdit.smpRoles.proxy)
+                            Toggle("For receiving", isOn: $userServers[operatorIndex].operator_.smpRoles.storage)
+                            Toggle("For private routing", isOn: $userServers[operatorIndex].operator_.smpRoles.proxy)
                         }
                     }
 
                     // Preset servers can't be deleted
-                    if !userServers[operatorServersIndex].smpServers.filter({ $0.preset }).isEmpty {
+                    if !userServers[operatorIndex].smpServers.filter({ $0.preset }).isEmpty {
                         Section {
-                            ForEach($userServers[operatorServersIndex].smpServers) { srv in
+                            ForEach($userServers[operatorIndex].smpServers) { srv in
                                 if srv.wrappedValue.preset {
                                     ProtocolServerViewLink(
                                         userServers: $userServers,
                                         server: srv,
                                         serverProtocol: .smp,
-                                        backLabel: "\(serverOperatorToEdit.tradeName) servers",
+                                        backLabel: "\(userServers[operatorIndex].operator_.tradeName) servers",
                                         selectedServer: $selectedServer
                                     )
                                 } else {
@@ -97,44 +97,44 @@ struct OperatorView: View {
                         }
                     }
 
-                    if !userServers[operatorServersIndex].smpServers.filter({ !$0.preset && !$0.deleted }).isEmpty {
+                    if !userServers[operatorIndex].smpServers.filter({ !$0.preset && !$0.deleted }).isEmpty {
                         Section {
-                            ForEach($userServers[operatorServersIndex].smpServers) { srv in
+                            ForEach($userServers[operatorIndex].smpServers) { srv in
                                 if !srv.wrappedValue.preset && !srv.wrappedValue.deleted {
                                     ProtocolServerViewLink(
                                         userServers: $userServers,
                                         server: srv,
                                         serverProtocol: .smp,
-                                        backLabel: "\(serverOperatorToEdit.tradeName) servers",
+                                        backLabel: "\(userServers[operatorIndex].operator_.tradeName) servers",
                                         selectedServer: $selectedServer
                                     )
                                 } else {
                                     EmptyView()
                                 }
                             }
-                            .onDelete { indexSet in deleteSMPServer($userServers, operatorServersIndex, indexSet) }
+                            .onDelete { indexSet in deleteSMPServer($userServers, operatorIndex, indexSet) }
                         } header: {
                             Text("Added message servers")
                                 .foregroundColor(theme.colors.secondary)
                         }
                     }
 
-                    if !userServers[operatorServersIndex].xftpServers.filter({ !$0.deleted }).isEmpty {
+                    if !userServers[operatorIndex].xftpServers.filter({ !$0.deleted }).isEmpty {
                         Section(header: Text("Use for files").foregroundColor(theme.colors.secondary)) {
-                            Toggle("For sending", isOn: $serverOperatorToEdit.xftpRoles.storage)
+                            Toggle("For sending", isOn: $userServers[operatorIndex].operator_.xftpRoles.storage)
                         }
                     }
 
                     // Preset servers can't be deleted
-                    if !userServers[operatorServersIndex].xftpServers.filter({ $0.preset }).isEmpty {
+                    if !userServers[operatorIndex].xftpServers.filter({ $0.preset }).isEmpty {
                         Section {
-                            ForEach($userServers[operatorServersIndex].xftpServers) { srv in
+                            ForEach($userServers[operatorIndex].xftpServers) { srv in
                                 if srv.wrappedValue.preset {
                                     ProtocolServerViewLink(
                                         userServers: $userServers,
                                         server: srv,
                                         serverProtocol: .xftp,
-                                        backLabel: "\(serverOperatorToEdit.tradeName) servers",
+                                        backLabel: "\(userServers[operatorIndex].operator_.tradeName) servers",
                                         selectedServer: $selectedServer
                                     )
                                 } else {
@@ -151,22 +151,22 @@ struct OperatorView: View {
                         }
                     }
 
-                    if !userServers[operatorServersIndex].xftpServers.filter({ !$0.preset && !$0.deleted }).isEmpty {
+                    if !userServers[operatorIndex].xftpServers.filter({ !$0.preset && !$0.deleted }).isEmpty {
                         Section {
-                            ForEach($userServers[operatorServersIndex].xftpServers) { srv in
+                            ForEach($userServers[operatorIndex].xftpServers) { srv in
                                 if !srv.wrappedValue.preset && !srv.wrappedValue.deleted {
                                     ProtocolServerViewLink(
                                         userServers: $userServers,
                                         server: srv,
                                         serverProtocol: .xftp,
-                                        backLabel: "\(serverOperatorToEdit.tradeName) servers",
+                                        backLabel: "\(userServers[operatorIndex].operator_.tradeName) servers",
                                         selectedServer: $selectedServer
                                     )
                                 } else {
                                     EmptyView()
                                 }
                             }
-                            .onDelete { indexSet in deleteXFTPServer($userServers, operatorServersIndex, indexSet) }
+                            .onDelete { indexSet in deleteXFTPServer($userServers, operatorIndex, indexSet) }
                         } header: {
                             Text("Added media & file servers")
                                 .foregroundColor(theme.colors.secondary)
@@ -175,8 +175,8 @@ struct OperatorView: View {
 
                     Section {
                         TestServersButton(
-                            smpServers: $userServers[operatorServersIndex].smpServers,
-                            xftpServers: $userServers[operatorServersIndex].xftpServers,
+                            smpServers: $userServers[operatorIndex].smpServers,
+                            xftpServers: $userServers[operatorIndex].xftpServers,
                             testing: $testing
                         )
                     }
@@ -185,21 +185,17 @@ struct OperatorView: View {
         }
         .toolbar {
             if (
-                !userServers[operatorServersIndex].smpServers.filter({ !$0.preset && !$0.deleted }).isEmpty ||
-                !userServers[operatorServersIndex].xftpServers.filter({ !$0.preset && !$0.deleted }).isEmpty
+                !userServers[operatorIndex].smpServers.filter({ !$0.preset && !$0.deleted }).isEmpty ||
+                !userServers[operatorIndex].xftpServers.filter({ !$0.preset && !$0.deleted }).isEmpty
             ) {
                 EditButton()
             }
         }
-        .modifier(BackButton(disabled: Binding.constant(false)) {
-            userServers[operatorServersIndex].operator = serverOperatorToEdit
-            dismiss()
-        })
         .sheet(isPresented: $showConditionsSheet, onDismiss: onUseToggleSheetDismissed) {
             SingleOperatorUsageConditionsView(
                 currUserServers: $currUserServers,
                 userServers: $userServers,
-                serverOperator: $serverOperatorToEdit
+                serverOperator: userServers[operatorIndex].operator_
             )
             .modifier(ThemedBackground(grouped: true))
         }
@@ -207,18 +203,18 @@ struct OperatorView: View {
 
     private func infoViewLink() -> some View {
         NavigationLink() {
-            OperatorInfoView(serverOperator: serverOperatorToEdit)
+            OperatorInfoView(serverOperator: userServers[operatorIndex].operator_)
                 .navigationBarTitle("Operator information")
                 .modifier(ThemedBackground(grouped: true))
                 .navigationBarTitleDisplayMode(.large)
         } label: {
             HStack {
-                Image(serverOperatorToEdit.logo(colorScheme))
+                Image(userServers[operatorIndex].operator_.logo(colorScheme))
                     .resizable()
                     .scaledToFit()
-                    .grayscale(serverOperatorToEdit.enabled ? 0.0 : 1.0)
+                    .grayscale(userServers[operatorIndex].operator_.enabled ? 0.0 : 1.0)
                     .frame(width: 24, height: 24)
-                Text(serverOperatorToEdit.tradeName)
+                Text(userServers[operatorIndex].operator_.tradeName)
             }
         }
     }
@@ -229,24 +225,24 @@ struct OperatorView: View {
                 if useOperatorToggleReset {
                     useOperatorToggleReset = false
                 } else if useOperatorToggle {
-                    switch serverOperatorToEdit.conditionsAcceptance {
+                    switch userServers[operatorIndex].operator_.conditionsAcceptance {
                     case .accepted:
-                        serverOperatorToEdit.enabled = true
+                        userServers[operatorIndex].operator_.enabled = true
                     case let .required(deadline):
                         if deadline == nil {
                             showConditionsSheet = true
                         } else {
-                            serverOperatorToEdit.enabled = true
+                            userServers[operatorIndex].operator_.enabled = true
                         }
                     }
                 } else {
-                    serverOperatorToEdit.enabled = false
+                    userServers[operatorIndex].operator_.enabled = false
                 }
             }
     }
 
     private func onUseToggleSheetDismissed() {
-        if useOperator && !serverOperatorToEdit.conditionsAcceptance.usageAllowed {
+        if useOperator && !userServers[operatorIndex].operator_.conditionsAcceptance.usageAllowed {
             useOperatorToggleReset = true
             useOperator = false
         }
@@ -337,7 +333,7 @@ struct SingleOperatorUsageConditionsView: View {
     @EnvironmentObject var theme: AppTheme
     @Binding var currUserServers: [UserOperatorServers]
     @Binding var userServers: [UserOperatorServers]
-    @Binding var serverOperator: ServerOperator
+    var serverOperator: ServerOperator
     @State private var usageConditionsNavLinkActive: Bool = false
 
     var body: some View {
@@ -428,7 +424,7 @@ struct SingleOperatorUsageConditionsView: View {
             }
             .map { $0.operatorId }
         Button {
-            acceptForOperators($currUserServers, $userServers, $serverOperator, dismiss, operatorIds)
+            acceptForOperators($currUserServers, $userServers, dismiss, operatorIds)
         } label: {
             Text("Accept conditions")
         }
@@ -473,8 +469,7 @@ struct SingleOperatorUsageConditionsView: View {
     OperatorView(
         currUserServers: Binding.constant([UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator]),
         userServers: Binding.constant([UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator]),
-        operatorServersIndex: 1,
-        serverOperatorToEdit: ServerOperator.sampleData1,
+        operatorIndex: 1,
         useOperator: ServerOperator.sampleData1.enabled
     )
 }

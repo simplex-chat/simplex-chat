@@ -175,13 +175,12 @@ struct NetworkAndServers: View {
         }
     }
 
-    private func serverOperatorView(_ operatorServersIndex: Int, _ serverOperator: ServerOperator) -> some View {
+    private func serverOperatorView(_ operatorIndex: Int, _ serverOperator: ServerOperator) -> some View {
         NavigationLink() {
             OperatorView(
                 currUserServers: $currUserServers,
                 userServers: $userServers,
-                operatorServersIndex: operatorServersIndex,
-                serverOperatorToEdit: serverOperator,
+                operatorIndex: operatorIndex,
                 useOperator: serverOperator.enabled
             )
             .navigationBarTitle("\(serverOperator.tradeName) servers")
@@ -197,7 +196,7 @@ struct NetworkAndServers: View {
                 Text(serverOperator.tradeName)
                     .foregroundColor(serverOperator.enabled ? theme.colors.onBackground : theme.colors.secondary)
 
-                if userServers[operatorServersIndex] != currUserServers[operatorServersIndex] {
+                if userServers[operatorIndex] != currUserServers[operatorIndex] {
                     Spacer()
                     unsavedChangesIndicator()
                 }
@@ -263,7 +262,7 @@ struct UsageConditionsView: View {
 
     private func acceptConditionsButton(_ operatorIds: [Int64]) -> some View {
         Button {
-            acceptForOperators($currUserServers, $userServers, nil, dismiss, operatorIds)
+            acceptForOperators($currUserServers, $userServers, dismiss, operatorIds)
         } label: {
             Text("Accept conditions")
         }
@@ -304,7 +303,6 @@ func saveServers(_ currUserServers: Binding<[UserOperatorServers]>, _ userServer
 func acceptForOperators(
     _ currUserServers: Binding<[UserOperatorServers]>,
     _ userServers: Binding<[UserOperatorServers]>,
-    _ serverOperator: Binding<ServerOperator>?,
     _ dismissAction: DismissAction,
     _ operatorIds: [Int64]
 ) {
@@ -316,16 +314,6 @@ func acceptForOperators(
                 ChatModel.shared.conditions = r
                 updateOperators(currUserServers, r.serverOperators)
                 updateOperators(userServers, r.serverOperators)
-                // -- This hack is for OperatorView, where it's problematic to work directly with userServers binding, because its operator is optional.
-                //    Instead separate operator object is passed there, but we have to maintain it here (alternatively acceptForOperators could be duplicated).
-                if let serverOperator = serverOperator,
-                   let op = r.serverOperators.first(where: { $0.operatorId == serverOperator.wrappedValue.operatorId }) {
-                    var updatedOperator = serverOperator.wrappedValue
-                    updatedOperator.conditionsAcceptance = op.conditionsAcceptance
-                    updatedOperator.enabled = true
-                    serverOperator.wrappedValue = updatedOperator
-                }
-                // --
                 dismissAction()
             }
         } catch let error {
