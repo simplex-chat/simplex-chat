@@ -34,11 +34,13 @@ struct NetworkAndServers: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     @EnvironmentObject var theme: AppTheme
-    @Binding var currUserServers: [UserOperatorServers]
-    @Binding var userServers: [UserOperatorServers]
+    @State private var currUserServers: [UserOperatorServers] = []
+    @State private var userServers: [UserOperatorServers] = []
     @State private var sheetItem: NetworkAndServersSheet? = nil
     @State private var justOpened = true
     @State private var showSaveDialog = false
+
+    @Binding var disappearing: Bool
 
     var body: some View {
         VStack {
@@ -106,7 +108,7 @@ struct NetworkAndServers: View {
                 }
 
                 Section {
-                    Button("Save servers", action: { saveServers($currUserServers, $userServers) })
+                    Button("Save servers", action: { saveServers() })
                         .disabled(userServers == currUserServers)
                 }
 
@@ -153,9 +155,19 @@ struct NetworkAndServers: View {
                 dismiss()
             }
         })
+        .onChange(of: disappearing) { disappearing_ in
+            if disappearing_ {
+                showAlert(
+                    title: NSLocalizedString("Save servers?", comment: "alert title"),
+                    buttonTitle: NSLocalizedString("Save", comment: "alert button"),
+                    buttonAction: { saveServers() },
+                    cancelButton: true
+                )
+            }
+        }
         .confirmationDialog("Save servers?", isPresented: $showSaveDialog, titleVisibility: .visible) {
             Button("Save") {
-                saveServers($currUserServers, $userServers)
+                saveServers()
                 dismiss()
             }
             Button("Exit without saving") { dismiss() }
@@ -223,6 +235,35 @@ struct NetworkAndServers: View {
             }
         }
     }
+
+    func saveServers() {
+        Task {
+            do {
+                try await setUserServers(userServers: userServers)
+                // Get updated servers for new server ids (otherwise it messes up delete of newly added and saved servers)
+                do {
+                    let updatedServers = try await getUserServers()
+                    await MainActor.run {
+                        currUserServers = updatedServers
+                        userServers = updatedServers
+                    }
+                } catch let error {
+                    logger.error("saveServers getUserServers error: \(responseError(error))")
+                    await MainActor.run {
+                        currUserServers = userServers
+                    }
+                }
+            } catch let error {
+                logger.error("saveServers setUserServers error: \(responseError(error))")
+                await MainActor.run {
+                    showAlert(
+                        NSLocalizedString("Error saving servers", comment: "alert title"),
+                        message: responseError(error)
+                    )
+                }
+            }
+        }
+    }
 }
 
 struct UsageConditionsView: View {
@@ -270,36 +311,6 @@ struct UsageConditionsView: View {
     }
 }
 
-func saveServers(_ currUserServers: Binding<[UserOperatorServers]>, _ userServers: Binding<[UserOperatorServers]>) {
-    let userServersToSave = userServers.wrappedValue
-    Task {
-        do {
-            try await setUserServers(userServers: userServersToSave)
-            // Get updated servers for new server ids (otherwise it messes up delete of newly added and saved servers)
-            do {
-                let updatedServers = try await getUserServers()
-                await MainActor.run {
-                    currUserServers.wrappedValue = updatedServers
-                    userServers.wrappedValue = updatedServers
-                }
-            } catch let error {
-                logger.error("saveServers getUserServers error: \(responseError(error))")
-                await MainActor.run {
-                    currUserServers.wrappedValue = userServersToSave
-                }
-            }
-        } catch let error {
-            logger.error("saveServers setUserServers error: \(responseError(error))")
-            await MainActor.run {
-                showAlert(
-                    NSLocalizedString("Error saving servers", comment: "alert title"),
-                    message: responseError(error)
-                )
-            }
-        }
-    }
-}
-
 func acceptForOperators(
     _ currUserServers: Binding<[UserOperatorServers]>,
     _ userServers: Binding<[UserOperatorServers]>,
@@ -342,8 +353,7 @@ private func updateOperators(_ usvs: Binding<[UserOperatorServers]>, _ updatedOp
 struct NetworkServersView_Previews: PreviewProvider {
     static var previews: some View {
         NetworkAndServers(
-            currUserServers: Binding.constant([UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator]),
-            userServers: Binding.constant([UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator])
+            disappearing: Binding.constant(false)
         )
     }
 }

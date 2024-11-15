@@ -36,8 +36,7 @@ struct UserPickerSheetView: View {
     @EnvironmentObject var chatModel: ChatModel
     @State private var loaded = false
 
-    @State private var currUserServers: [UserOperatorServers] = []
-    @State private var userServers: [UserOperatorServers] = []
+    @State private var disappearing: Bool = false
 
     var body: some View {
         NavigationView {
@@ -59,10 +58,7 @@ struct UserPickerSheetView: View {
                     case .useFromDesktop:
                         ConnectDesktopView()
                     case .settings:
-                        SettingsView(
-                            currUserServers: $currUserServers,
-                            userServers: $userServers
-                        )
+                        SettingsView(disappearing: $disappearing)
                     }
                 }
                 Color.clear // Required for list background to be rendered during loading
@@ -83,14 +79,7 @@ struct UserPickerSheetView: View {
             )
         }
         .onDisappear {
-            if userServers != currUserServers {
-                showAlert(
-                    title: NSLocalizedString("Save servers?", comment: "alert title"),
-                    buttonTitle: NSLocalizedString("Save", comment: "alert button"),
-                    buttonAction: { saveServers($currUserServers, $userServers) },
-                    cancelButton: true
-                )
-            }
+            disappearing = true
         }
     }
 }
