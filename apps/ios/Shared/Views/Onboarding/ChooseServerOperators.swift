@@ -109,19 +109,19 @@ struct ChooseServerOperators: View {
                     }
                     .frame(minHeight: g.size.height)
                 }
+                .onAppear {
+                    if justOpened {
+                        serverOperators = ChatModel.shared.conditions.serverOperators
+                        selectedOperatorIds = Set(serverOperators.filter { $0.enabled }.map { $0.operatorId })
+                        justOpened = false
+                    }
+                }
+                .sheet(isPresented: $showInfoSheet) {
+                    ChooseServerOperatorsInfoView()
+                }
             }
             .frame(maxHeight: .infinity)
             .padding()
-            .onAppear {
-                if justOpened {
-                    serverOperators = ChatModel.shared.conditions.serverOperators
-                    selectedOperatorIds = Set(serverOperators.filter { $0.enabled }.map { $0.operatorId })
-                    justOpened = false
-                }
-            }
-            .sheet(isPresented: $showInfoSheet) {
-                ChooseServerOperatorsInfoView()
-            }
         }
     }
 
@@ -317,7 +317,6 @@ struct ChooseServerOperators: View {
     }
 }
 
-// TODO fix padding, dark mode
 struct ChooseServerOperatorsInfoView: View {
     var body: some View {
         VStack(alignment: .leading) {
@@ -335,7 +334,7 @@ struct ChooseServerOperatorsInfoView: View {
             }
         }
         .padding()
-        .frame(maxHeight: .infinity, alignment: .top)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .modifier(ThemedBackground())
     }
 }
