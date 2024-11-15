@@ -529,8 +529,8 @@ struct WhatsNewView: View {
             .task {
                 if showOperatorsNotice {
                     do {
-                        let (conditions, _, _) = try await getUsageConditions() // TODO Add conditionsId to UsageConditionsAction .review
-                        try await setConditionsNotified(conditionsId: conditions.conditionsId)
+                        let conditionsId = ChatModel.shared.conditions.currentConditions.conditionsId
+                        try await setConditionsNotified(conditionsId: conditionsId)
                     } catch let error {
                         logger.error("WhatsNewView setConditionsNotified error: \(responseError(error))")
                     }

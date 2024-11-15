@@ -43,7 +43,7 @@ struct NetworkAndServers: View {
     var body: some View {
         VStack {
             List {
-                let conditionsAction = m.usageConditionsAction
+                let conditionsAction = m.conditions.conditionsAction
                 Section {
                     ForEach(userServers.enumerated().map { $0 }, id: \.element.id) { idx, userOperatorServers in
                         if let serverOperator = userOperatorServers.operator {

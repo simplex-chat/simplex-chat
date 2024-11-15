@@ -274,7 +274,7 @@ struct ContentView: View {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                         if !noticesShown {
                             let showWhatsNew = shouldShowWhatsNew()
-                            let showOperatorsNotice = chatModel.usageConditionsAction?.showNotice ?? false
+                            let showOperatorsNotice = chatModel.conditions.conditionsAction?.showNotice ?? false
                             noticesShown = showWhatsNew || showOperatorsNotice
                             if noticesShown {
                                 noticesSheetItem = .notices(showWhatsNew: showWhatsNew, showOperatorsNotice: showOperatorsNotice)

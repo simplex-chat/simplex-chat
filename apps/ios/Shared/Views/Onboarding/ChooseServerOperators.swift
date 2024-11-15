@@ -94,7 +94,7 @@ struct ChooseServerOperators: View {
                         if !onboarding && !reviewForOperators.isEmpty {
                             VStack(spacing: 8) {
                                 reviewLaterButton()
-                                Text("Conditions will be considered accepted for used operators after 30 days.")
+                                Text("Conditions will be considered accepted for enabled operators after 30 days.")
                                     .multilineTextAlignment(.center)
                                     .font(.footnote)
                                     .padding(.horizontal, 32)
@@ -110,7 +110,7 @@ struct ChooseServerOperators: View {
             .padding()
             .onAppear {
                 if justOpened {
-                    serverOperators = ChatModel.shared.serverOperators
+                    serverOperators = ChatModel.shared.conditions.serverOperators
                     selectedOperatorIds = Set(serverOperators.filter { $0.enabled }.map { $0.operatorId })
                     justOpened = false
                 }
@@ -188,19 +188,6 @@ struct ChooseServerOperators: View {
             .hidden()
         }
     }
-
-    @ViewBuilder private func reviewConditionsDestinationView() -> some View {
-        let acceptForOperators = selectedOperators.filter { !$0.conditionsAcceptance.conditionsAccepted }
-        UsageConditionsView(
-            onSheet: false,
-            conditionsAction: .review(operators: acceptForOperators, deadline: nil, showNotice: false),
-            onAcceptAction: { continueToNextStep() }
-        )
-        .navigationTitle("Conditions of use")
-        .navigationBarTitleDisplayMode(.large)
-        .modifier(ThemedBackground(grouped: true))
-    }
-
     private func continueButton() -> some View {
         Button {
             continueToNextStep()
@@ -222,7 +209,6 @@ struct ChooseServerOperators: View {
 
     private func continueToNextStep() {
         if onboarding {
-            // TODO setServerOperators (to enable/disable operator(s) and set roles)
             withAnimation {
                 onboardingStageDefault.set(.step4_SetNotificationsMode)
                 ChatModel.shared.onboardingStage = .step4_SetNotificationsMode
@@ -230,6 +216,59 @@ struct ChooseServerOperators: View {
         } else {
             dismiss()
         }
+    }
+
+    private func reviewConditionsDestinationView() -> some View {
+        reviewConditionsView()
+            .navigationTitle("Conditions of use")
+            .navigationBarTitleDisplayMode(.large)
+            .modifier(ThemedBackground(grouped: true))
+    }
+
+    @ViewBuilder private func reviewConditionsView() -> some View {
+        let operatorsWithConditionsAccepted = ChatModel.shared.conditions.serverOperators.filter { $0.conditionsAcceptance.conditionsAccepted }
+        let operators = selectedOperators.filter { !$0.conditionsAcceptance.conditionsAccepted }
+        VStack(alignment: .leading, spacing: 20) {
+            if !operatorsWithConditionsAccepted.isEmpty {
+                Text("Conditions are already accepted for following operator(s): **\(operatorsWithConditionsAccepted.map { $0.legalName_ }.joined(separator: ", "))**.")
+                Text("Same conditions will apply to operator(s): **\(operators.map { $0.legalName_ }.joined(separator: ", "))**.")
+            } else {
+                Text("Conditions will be accepted for operator(s): **\(operators.map { $0.legalName_ }.joined(separator: ", "))**.")
+            }
+            ConditionsTextView()
+            acceptConditionsButton(operators)
+                .padding(.bottom)
+                .padding(.bottom)
+        }
+        .padding(.horizontal)
+        .frame(maxHeight: .infinity)
+    }
+
+    private func acceptConditionsButton(_ operators: [ServerOperator]) -> some View {
+        Button {
+            Task {
+                do {
+                    let conditionsId = ChatModel.shared.conditions.currentConditions.conditionsId
+                    let operatorIds = operators.map { $0.operatorId }
+                    let r = try await acceptConditions(conditionsId: conditionsId, operatorIds: operatorIds)
+                    // TODO enable
+                    await MainActor.run {
+                        ChatModel.shared.conditions = r
+                        continueToNextStep()
+                    }
+                } catch let error {
+                    await MainActor.run {
+                        showAlert(
+                            NSLocalizedString("Error accepting conditions", comment: "alert title"),
+                            message: responseError(error)
+                        )
+                    }
+                }
+            }
+        } label: {
+            Text("Accept conditions")
+        }
+        .buttonStyle(OnboardingButtonStyle(isDisabled: false))
     }
 }
 

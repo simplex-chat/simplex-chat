@@ -63,9 +63,11 @@ struct OperatorView: View {
                 }
 
                 if serverOperatorToEdit.enabled {
-                    Section(header: Text("Use operator").foregroundColor(theme.colors.secondary)) {
-                        Toggle("For storage", isOn: $serverOperatorToEdit.roles.storage)
-                        Toggle("As proxy", isOn: $serverOperatorToEdit.roles.proxy)
+                    if !userServers[operatorServersIndex].smpServers.filter({ !$0.deleted }).isEmpty {
+                        Section(header: Text("Use for messages").foregroundColor(theme.colors.secondary)) {
+                            Toggle("For receiving", isOn: $serverOperatorToEdit.smpRoles.storage)
+                            Toggle("For private routing", isOn: $serverOperatorToEdit.smpRoles.proxy)
+                        }
                     }
 
                     // Preset servers can't be deleted
@@ -113,6 +115,12 @@ struct OperatorView: View {
                         } header: {
                             Text("Added message servers")
                                 .foregroundColor(theme.colors.secondary)
+                        }
+                    }
+
+                    if !userServers[operatorServersIndex].xftpServers.filter({ !$0.deleted }).isEmpty {
+                        Section(header: Text("Use for files").foregroundColor(theme.colors.secondary)) {
+                            Toggle("For sending", isOn: $serverOperatorToEdit.xftpRoles.storage)
                         }
                     }
 
@@ -339,7 +347,7 @@ struct SingleOperatorUsageConditionsView: View {
     }
 
     @ViewBuilder private func viewBody() -> some View {
-        let operatorsWithConditionsAccepted = ChatModel.shared.serverOperators.filter { $0.conditionsAcceptance.conditionsAccepted }
+        let operatorsWithConditionsAccepted = ChatModel.shared.conditions.serverOperators.filter { $0.conditionsAcceptance.conditionsAccepted }
         if case .accepted = serverOperator.conditionsAcceptance {
 
             // In current UI implementation this branch doesn't get shown - as conditions can't be opened from inside operator once accepted
@@ -404,7 +412,7 @@ struct SingleOperatorUsageConditionsView: View {
     }
 
     @ViewBuilder private func conditionsAppliedToOtherOperatorsText() -> some View {
-        let otherOperatorsToApply = ChatModel.shared.serverOperators.filter {
+        let otherOperatorsToApply = ChatModel.shared.conditions.serverOperators.filter {
             $0.enabled &&
             !$0.conditionsAcceptance.conditionsAccepted &&
             $0.operatorId != serverOperator.operatorId
@@ -522,10 +530,10 @@ struct UsageConditionsView: View {
 func acceptForOperators(_ operatorIds: [Int64]) {
     Task {
         do {
-            let (conditions, _, _) = try await getUsageConditions() // TODO Add conditionsId to UsageConditionsAction .review
-            let r = try await acceptConditions(conditionsId: conditions.conditionsId, operatorIds: operatorIds)
+            let conditionsId = ChatModel.shared.conditions.currentConditions.conditionsId
+            let r = try await acceptConditions(conditionsId: conditionsId, operatorIds: operatorIds)
             await MainActor.run {
-                (ChatModel.shared.serverOperators, ChatModel.shared.usageConditionsAction) = r
+                ChatModel.shared.conditions = r
             }
         } catch let error {
             await MainActor.run {
