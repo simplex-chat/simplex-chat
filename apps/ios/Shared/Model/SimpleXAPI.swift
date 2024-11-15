@@ -512,15 +512,8 @@ func testProtoServer(server: String) async throws -> Result<(), ProtocolTestFail
     throw r
 }
 
-func getServerOperatorsSync() throws -> ServerOperatorConditions {
+func getServerOperators() throws -> ServerOperatorConditions {
     let r = chatSendCmdSync(.apiGetServerOperators)
-    if case let .serverOperatorConditions(conditions) = r { return conditions }
-    logger.error("getServerOperatorsSync error: \(String(describing: r))")
-    throw r
-}
-
-func getServerOperators() async throws -> ServerOperatorConditions {
-    let r = await chatSendCmd(.apiGetServerOperators)
     if case let .serverOperatorConditions(conditions) = r { return conditions }
     logger.error("getServerOperators error: \(String(describing: r))")
     throw r
@@ -1611,7 +1604,7 @@ func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = ni
     try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
     m.chatInitialized = true
     m.currentUser = try apiGetActiveUser()
-    m.conditions = try getServerOperatorsSync()
+    m.conditions = try getServerOperators()
     if m.currentUser == nil {
         onboardingStageDefault.set(.step1_SimpleXInfo)
         privacyDeliveryReceiptsSet.set(true)
