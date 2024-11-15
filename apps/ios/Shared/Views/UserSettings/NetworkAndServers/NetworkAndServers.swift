@@ -77,7 +77,7 @@ struct NetworkAndServers: View {
                         NavigationLink {
                             YourServersView(
                                 userServers: $userServers,
-                                operatorServersIndex: idx
+                                operatorIndex: idx
                             )
                             .navigationTitle("Your servers")
                             .modifier(ThemedBackground(grouped: true))
