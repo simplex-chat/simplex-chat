@@ -165,8 +165,9 @@ struct NetworkAndServers: View {
             switch item {
             case let .showConditions(conditionsAction):
                 UsageConditionsView(
-                    onSheet: true,
-                    conditionsAction: conditionsAction
+                    conditionsAction: conditionsAction,
+                    currUserServers: $currUserServers,
+                    userServers: $userServers
                 )
                 .modifier(ThemedBackground(grouped: true))
             }
@@ -223,6 +224,77 @@ struct NetworkAndServers: View {
     }
 }
 
+struct UsageConditionsView: View {
+    @Environment(\.dismiss) var dismiss: DismissAction
+    @EnvironmentObject var theme: AppTheme
+    var conditionsAction: UsageConditionsAction
+    @Binding var currUserServers: [UserOperatorServers]
+    @Binding var userServers: [UserOperatorServers]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text("Conditions of use")
+                .font(.largeTitle)
+                .bold()
+                .padding(.top)
+                .padding(.top)
+
+            switch conditionsAction {
+
+            case let .review(operators, _, _):
+                Text("Conditions will be accepted for following operator(s): **\(operators.map { $0.legalName_ }.joined(separator: ", "))**.")
+                ConditionsTextView()
+                acceptConditionsButton(operators)
+                    .padding(.bottom)
+                    .padding(.bottom)
+
+            case let .accepted(operators):
+                Text("Conditions are accepted for following operator(s): **\(operators.map { $0.legalName_ }.joined(separator: ", "))**.")
+                ConditionsTextView()
+                    .padding(.bottom)
+                    .padding(.bottom)
+            }
+        }
+        .padding(.horizontal)
+        .frame(maxHeight: .infinity)
+    }
+
+    private func acceptConditionsButton(_ operators: [ServerOperator]) -> some View {
+        Button {
+            Task {
+                do {
+                    let conditionsId = ChatModel.shared.conditions.currentConditions.conditionsId
+                    let operatorIds = operators.map { $0.operatorId }
+                    let r = try await acceptConditions(conditionsId: conditionsId, operatorIds: operatorIds)
+                    await MainActor.run {
+                        ChatModel.shared.conditions = r
+                        updateOperators($currUserServers, r.serverOperators)
+                        updateOperators($userServers, r.serverOperators)
+                        dismiss()
+                    }
+                } catch let error {
+                    await MainActor.run {
+                        showAlert(
+                            NSLocalizedString("Error accepting conditions", comment: "alert title"),
+                            message: responseError(error)
+                        )
+                    }
+                }
+            }
+        } label: {
+            Text("Accept conditions")
+        }
+        .buttonStyle(OnboardingButtonStyle(isDisabled: false))
+    }
+
+    private func updateOperators(_ operators: Binding<[UserOperatorServers]>, _ updatedOperators: [ServerOperator]) {
+        for i in 0..<operators.wrappedValue.count {
+            if let updatedOperator = updatedOperators.first(where: { $0.operatorId == operators.wrappedValue[i].operator?.operatorId }) {
+                operators.wrappedValue[i].operator?.conditionsAcceptance = updatedOperator.conditionsAcceptance
+            }
+        }
+    }
+}
 
 func saveServers(_ currUserServers: Binding<[UserOperatorServers]>, _ userServers: Binding<[UserOperatorServers]>) {
     let userServersToSave = userServers.wrappedValue

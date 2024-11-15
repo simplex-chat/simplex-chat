@@ -256,9 +256,7 @@ struct ChooseServerOperators: View {
                         ChatModel.shared.conditions = r
                     }
                     if let enabledOperators = enabledOperators(r.serverOperators) {
-                        print("######## SET \(enabledOperators)")
                         let r2 = try await setServerOperators(operators: enabledOperators)
-                        print("######## GOT \(r2.serverOperators)")
                         await MainActor.run {
                             ChatModel.shared.conditions = r2
                             continueToNextStep()
