@@ -227,16 +227,16 @@ struct ChooseServerOperators: View {
 
     @ViewBuilder private func reviewConditionsView() -> some View {
         let operatorsWithConditionsAccepted = ChatModel.shared.conditions.serverOperators.filter { $0.conditionsAcceptance.conditionsAccepted }
-        let operators = selectedOperators.filter { !$0.conditionsAcceptance.conditionsAccepted }
+        let acceptForOperators = selectedOperators.filter { !$0.conditionsAcceptance.conditionsAccepted }
         VStack(alignment: .leading, spacing: 20) {
             if !operatorsWithConditionsAccepted.isEmpty {
                 Text("Conditions are already accepted for following operator(s): **\(operatorsWithConditionsAccepted.map { $0.legalName_ }.joined(separator: ", "))**.")
-                Text("Same conditions will apply to operator(s): **\(operators.map { $0.legalName_ }.joined(separator: ", "))**.")
+                Text("Same conditions will apply to operator(s): **\(acceptForOperators.map { $0.legalName_ }.joined(separator: ", "))**.")
             } else {
-                Text("Conditions will be accepted for operator(s): **\(operators.map { $0.legalName_ }.joined(separator: ", "))**.")
+                Text("Conditions will be accepted for operator(s): **\(acceptForOperators.map { $0.legalName_ }.joined(separator: ", "))**.")
             }
             ConditionsTextView()
-            acceptConditionsButton(operators)
+            acceptConditionsButton()
                 .padding(.bottom)
                 .padding(.bottom)
         }
@@ -244,17 +244,29 @@ struct ChooseServerOperators: View {
         .frame(maxHeight: .infinity)
     }
 
-    private func acceptConditionsButton(_ operators: [ServerOperator]) -> some View {
+    private func acceptConditionsButton() -> some View {
         Button {
             Task {
                 do {
                     let conditionsId = ChatModel.shared.conditions.currentConditions.conditionsId
-                    let operatorIds = operators.map { $0.operatorId }
+                    let acceptForOperators = selectedOperators.filter { !$0.conditionsAcceptance.conditionsAccepted }
+                    let operatorIds = acceptForOperators.map { $0.operatorId }
                     let r = try await acceptConditions(conditionsId: conditionsId, operatorIds: operatorIds)
-                    // TODO enable
                     await MainActor.run {
                         ChatModel.shared.conditions = r
-                        continueToNextStep()
+                    }
+                    if let enabledOperators = enabledOperators(r.serverOperators) {
+                        print("######## SET \(enabledOperators)")
+                        let r2 = try await setServerOperators(operators: enabledOperators)
+                        print("######## GOT \(r2.serverOperators)")
+                        await MainActor.run {
+                            ChatModel.shared.conditions = r2
+                            continueToNextStep()
+                        }
+                    } else {
+                        await MainActor.run {
+                            continueToNextStep()
+                        }
                     }
                 } catch let error {
                     await MainActor.run {
@@ -269,6 +281,34 @@ struct ChooseServerOperators: View {
             Text("Accept conditions")
         }
         .buttonStyle(OnboardingButtonStyle(isDisabled: false))
+    }
+
+    private func enabledOperators(_ updated: [ServerOperator]) -> [ServerOperator]? {
+        var merged = updated.filter { selectedOperatorIds.contains($0.operatorId) }
+        if !merged.isEmpty {
+            for i in 0..<merged.count {
+                var op = merged[i]
+                op.enabled = true
+                merged[i] = op
+            }
+            let haveSMPStorage = merged.contains(where: { $0.smpRoles.storage })
+            let haveSMPProxy = merged.contains(where: { $0.smpRoles.proxy })
+            let haveXFTPStorage = merged.contains(where: { $0.xftpRoles.storage })
+            let haveXFTPProxy = merged.contains(where: { $0.xftpRoles.proxy })
+            if haveSMPStorage && haveSMPProxy && haveXFTPStorage && haveXFTPProxy {
+                return merged
+            } else {
+                var firstOperator = merged[0]
+                if !haveSMPStorage { firstOperator.smpRoles.storage = true }
+                if !haveSMPProxy { firstOperator.smpRoles.proxy = true }
+                if !haveXFTPStorage { firstOperator.xftpRoles.storage = true }
+                if !haveXFTPProxy { firstOperator.xftpRoles.proxy = true }
+                merged[0] = firstOperator
+                return merged
+            }
+        } else {
+            return nil
+        }
     }
 }
 
