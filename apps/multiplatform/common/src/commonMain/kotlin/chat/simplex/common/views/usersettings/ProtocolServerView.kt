@@ -31,7 +31,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
-fun ProtocolServerView(m: ChatModel, server: ServerCfg, serverProtocol: ServerProtocol, onUpdate: (ServerCfg) -> Unit, onDelete: () -> Unit) {
+fun ProtocolServerView(m: ChatModel, server: UserServer, serverProtocol: ServerProtocol, onUpdate: (UserServer) -> Unit, onDelete: () -> Unit) {
   var testing by remember { mutableStateOf(false) }
   ProtocolServerLayout(
     testing,
@@ -69,10 +69,10 @@ fun ProtocolServerView(m: ChatModel, server: ServerCfg, serverProtocol: ServerPr
 @Composable
 private fun ProtocolServerLayout(
   testing: Boolean,
-  server: ServerCfg,
+  server: UserServer,
   serverProtocol: ServerProtocol,
   testServer: () -> Unit,
-  onUpdate: (ServerCfg) -> Unit,
+  onUpdate: (UserServer) -> Unit,
   onDelete: () -> Unit,
 ) {
   ColumnWithScrollBar {
@@ -90,9 +90,9 @@ private fun ProtocolServerLayout(
 @Composable
 private fun PresetServer(
   testing: Boolean,
-  server: ServerCfg,
+  server: UserServer,
   testServer: () -> Unit,
-  onUpdate: (ServerCfg) -> Unit,
+  onUpdate: (UserServer) -> Unit,
   onDelete: () -> Unit,
 ) {
   SectionView(stringResource(MR.strings.smp_servers_preset_address).uppercase()) {
@@ -114,10 +114,10 @@ private fun PresetServer(
 @Composable
 private fun CustomServer(
   testing: Boolean,
-  server: ServerCfg,
+  server: UserServer,
   serverProtocol: ServerProtocol,
   testServer: () -> Unit,
-  onUpdate: (ServerCfg) -> Unit,
+  onUpdate: (UserServer) -> Unit,
   onDelete: () -> Unit,
 ) {
   val serverAddress = remember { mutableStateOf(server.server) }
@@ -162,9 +162,9 @@ private fun CustomServer(
 private fun UseServerSection(
   valid: Boolean,
   testing: Boolean,
-  server: ServerCfg,
+  server: UserServer,
   testServer: () -> Unit,
-  onUpdate: (ServerCfg) -> Unit,
+  onUpdate: (UserServer) -> Unit,
   onDelete: () -> Unit,
 ) {
   SectionView(stringResource(MR.strings.smp_servers_use_server).uppercase()) {
@@ -189,14 +189,14 @@ private fun UseServerSection(
 }
 
 @Composable
-fun ShowTestStatus(server: ServerCfg, modifier: Modifier = Modifier) =
+fun ShowTestStatus(server: UserServer, modifier: Modifier = Modifier) =
   when (server.tested) {
     true -> Icon(painterResource(MR.images.ic_check), null, modifier, tint = SimplexGreen)
     false -> Icon(painterResource(MR.images.ic_close), null, modifier, tint = MaterialTheme.colors.error)
     else -> Icon(painterResource(MR.images.ic_check), null, modifier, tint = Color.Transparent)
   }
 
-suspend fun testServerConnection(server: ServerCfg, m: ChatModel): Pair<ServerCfg, ProtocolTestFailure?> =
+suspend fun testServerConnection(server: UserServer, m: ChatModel): Pair<UserServer, ProtocolTestFailure?> =
   try {
     val r = m.controller.testProtoServer(server.remoteHostId, server.server)
     server.copy(tested = r == null) to r

@@ -28,8 +28,8 @@ import chat.simplex.res.MR
 
 @Composable
 fun ModalData.ProtocolServersView(m: ChatModel, rhId: Long?, serverProtocol: ServerProtocol, close: () -> Unit) {
-  var presetServers by remember(rhId) { mutableStateOf(emptyList<ServerCfg>()) }
-  var servers by remember { stateGetOrPut("servers") { emptyList<ServerCfg>() } }
+  var presetServers by remember(rhId) { mutableStateOf(emptyList<UserServer>()) }
+  var servers by remember { stateGetOrPut("servers") { emptyList<UserServer>() } }
   var serversAlreadyLoaded by remember { stateGetOrPut("serversAlreadyLoaded") { false } }
   val currServers = remember(rhId) { mutableStateOf(servers) }
   val testing = rememberSaveable(rhId) { mutableStateOf(false) }
@@ -55,19 +55,19 @@ fun ModalData.ProtocolServersView(m: ChatModel, rhId: Long?, serverProtocol: Ser
 
   LaunchedEffect(rhId) {
     withApi {
-      val res = m.controller.getUserProtoServers(rhId, serverProtocol)
-      if (res != null) {
-        currServers.value = res.protoServers
-        presetServers = res.presetServers
-        if (servers.isEmpty() && !serversAlreadyLoaded) {
-          servers = currServers.value
-          serversAlreadyLoaded = true
-        }
-      }
+//      val res = m.controller.getUserServers(rhId)
+//      if (res != null) {
+//        currServers.value = res.protoServers
+//        presetServers = res.presetServers
+//        if (servers.isEmpty() && !serversAlreadyLoaded) {
+//          servers = currServers.value
+//          serversAlreadyLoaded = true
+//        }
+//      }
     }
   }
   val testServersJob = CancellableOnGoneJob()
-  fun showServer(server: ServerCfg) {
+  fun showServer(server: UserServer) {
     ModalManager.start.showModalCloseable(true) { close ->
       var old by remember { mutableStateOf(server) }
       val index = servers.indexOf(old)
@@ -111,7 +111,7 @@ fun ModalData.ProtocolServersView(m: ChatModel, rhId: Long?, serverProtocol: Ser
             Column {
               SectionItemView({
                 AlertManager.shared.hideAlert()
-                servers = servers + ServerCfg.empty
+                servers = servers + UserServer.empty
                 // No saving until something will be changed on the next screen to prevent blank servers on the list
                 showServer(servers.last())
               }) {
@@ -181,7 +181,7 @@ fun ModalData.ProtocolServersView(m: ChatModel, rhId: Long?, serverProtocol: Ser
 private fun ProtocolServersLayout(
   serverProtocol: ServerProtocol,
   testing: Boolean,
-  servers: List<ServerCfg>,
+  servers: List<UserServer>,
   serversUnchanged: Boolean,
   saveDisabled: Boolean,
   allServersDisabled: Boolean,
@@ -190,7 +190,7 @@ private fun ProtocolServersLayout(
   testServers: () -> Unit,
   resetServers: () -> Unit,
   saveSMPServers: () -> Unit,
-  showServer: (ServerCfg) -> Unit,
+  showServer: (UserServer) -> Unit,
 ) {
   ColumnWithScrollBar {
     AppBarTitle(stringResource(if (serverProtocol == ServerProtocol.SMP) MR.strings.your_SMP_servers else MR.strings.your_XFTP_servers))
@@ -263,7 +263,7 @@ private fun ProtocolServersLayout(
 }
 
 @Composable
-private fun ProtocolServerView(serverProtocol: ServerProtocol, srv: ServerCfg, servers: List<ServerCfg>, disabled: Boolean) {
+private fun ProtocolServerView(serverProtocol: ServerProtocol, srv: UserServer, servers: List<UserServer>, disabled: Boolean) {
   val address = parseServerAddress(srv.server)
   when {
     address == null || !address.valid || address.serverProtocol != serverProtocol || !uniqueAddress(srv, address, servers) -> InvalidServer()
@@ -296,17 +296,17 @@ fun InvalidServer() {
   Icon(painterResource(MR.images.ic_error), null, tint = MaterialTheme.colors.error)
 }
 
-private fun uniqueAddress(s: ServerCfg, address: ServerAddress, servers: List<ServerCfg>): Boolean = servers.all { srv ->
+private fun uniqueAddress(s: UserServer, address: ServerAddress, servers: List<UserServer>): Boolean = servers.all { srv ->
   address.hostnames.all { host ->
     srv.id == s.id || !srv.server.contains(host)
   }
 }
 
-private fun hasAllPresets(presetServers: List<ServerCfg>, servers: List<ServerCfg>, m: ChatModel): Boolean =
+private fun hasAllPresets(presetServers: List<UserServer>, servers: List<UserServer>, m: ChatModel): Boolean =
   presetServers.all { hasPreset(it, servers) } ?: true
 
-private fun addAllPresets(rhId: Long?, presetServers: List<ServerCfg>, servers: List<ServerCfg>, m: ChatModel): List<ServerCfg> {
-  val toAdd = ArrayList<ServerCfg>()
+private fun addAllPresets(rhId: Long?, presetServers: List<UserServer>, servers: List<UserServer>, m: ChatModel): List<UserServer> {
+  val toAdd = ArrayList<UserServer>()
   for (srv in presetServers) {
     if (!hasPreset(srv, servers)) {
       toAdd.add(srv)
@@ -315,10 +315,10 @@ private fun addAllPresets(rhId: Long?, presetServers: List<ServerCfg>, servers: 
   return toAdd
 }
 
-private fun hasPreset(srv: ServerCfg, servers: List<ServerCfg>): Boolean =
+private fun hasPreset(srv: UserServer, servers: List<UserServer>): Boolean =
   servers.any { it.server == srv.server }
 
-private suspend fun testServers(testing: MutableState<Boolean>, servers: List<ServerCfg>, m: ChatModel, onUpdated: (List<ServerCfg>) -> Unit) {
+private suspend fun testServers(testing: MutableState<Boolean>, servers: List<UserServer>, m: ChatModel, onUpdated: (List<UserServer>) -> Unit) {
   val resetStatus = resetTestStatus(servers)
   onUpdated(resetStatus)
   testing.value = true
@@ -333,7 +333,7 @@ private suspend fun testServers(testing: MutableState<Boolean>, servers: List<Se
   }
 }
 
-private fun resetTestStatus(servers: List<ServerCfg>): List<ServerCfg> {
+private fun resetTestStatus(servers: List<UserServer>): List<UserServer> {
   val copy = ArrayList(servers)
   for ((index, server) in servers.withIndex()) {
     if (server.enabled) {
@@ -344,9 +344,9 @@ private fun resetTestStatus(servers: List<ServerCfg>): List<ServerCfg> {
   return copy
 }
 
-private suspend fun runServersTest(servers: List<ServerCfg>, m: ChatModel, onUpdated: (List<ServerCfg>) -> Unit): Map<String, ProtocolTestFailure> {
+private suspend fun runServersTest(servers: List<UserServer>, m: ChatModel, onUpdated: (List<UserServer>) -> Unit): Map<String, ProtocolTestFailure> {
   val fs: MutableMap<String, ProtocolTestFailure> = mutableMapOf()
-  val updatedServers = ArrayList<ServerCfg>(servers)
+  val updatedServers = ArrayList<UserServer>(servers)
   for ((index, server) in servers.withIndex()) {
     if (server.enabled) {
       interruptIfCancelled()
@@ -363,11 +363,11 @@ private suspend fun runServersTest(servers: List<ServerCfg>, m: ChatModel, onUpd
   return fs
 }
 
-private fun saveServers(rhId: Long?, protocol: ServerProtocol, currServers: MutableState<List<ServerCfg>>, servers: List<ServerCfg>, m: ChatModel, afterSave: () -> Unit = {}) {
+private fun saveServers(rhId: Long?, protocol: ServerProtocol, currServers: MutableState<List<UserServer>>, servers: List<UserServer>, m: ChatModel, afterSave: () -> Unit = {}) {
   withBGApi {
-    if (m.controller.setUserProtoServers(rhId, protocol, servers)) {
-      currServers.value = servers
-    }
+//    if (m.controller.setUserServers(rhId, protocol, servers)) {
+//      currServers.value = servers
+//    }
     afterSave()
   }
 }

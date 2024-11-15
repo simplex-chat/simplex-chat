@@ -955,36 +955,6 @@ object ChatController {
     return null
   }
 
-  suspend fun getUserProtoServers(rh: Long?, serverProtocol: ServerProtocol): UserProtocolServers? {
-    val userId = kotlin.runCatching { currentUserId("getUserProtoServers") }.getOrElse { return null }
-    val r = sendCmd(rh, CC.APIGetUserProtoServers(userId, serverProtocol))
-    return if (r is CR.UserProtoServers) { if (rh == null) r.servers else r.servers.copy(protoServers = r.servers.protoServers.map { it.copy(remoteHostId = rh) }) }
-    else {
-      Log.e(TAG, "getUserProtoServers bad response: ${r.responseType} ${r.details}")
-      AlertManager.shared.showAlertMsg(
-        generalGetString(if (serverProtocol == ServerProtocol.SMP) MR.strings.error_loading_smp_servers else MR.strings.error_loading_xftp_servers),
-        "${r.responseType}: ${r.details}"
-      )
-      null
-    }
-  }
-
-  suspend fun setUserProtoServers(rh: Long?, serverProtocol: ServerProtocol, servers: List<ServerCfg>): Boolean {
-    val userId = kotlin.runCatching { currentUserId("setUserProtoServers") }.getOrElse { return false }
-    val r = sendCmd(rh, CC.APISetUserProtoServers(userId, serverProtocol, servers))
-    return when (r) {
-      is CR.CmdOk -> true
-      else -> {
-        Log.e(TAG, "setUserProtoServers bad response: ${r.responseType} ${r.details}")
-        AlertManager.shared.showAlertMsg(
-          generalGetString(if (serverProtocol == ServerProtocol.SMP) MR.strings.error_saving_smp_servers else MR.strings.error_saving_xftp_servers),
-          generalGetString(if (serverProtocol == ServerProtocol.SMP) MR.strings.ensure_smp_server_address_are_correct_format_and_unique else MR.strings.ensure_xftp_server_address_are_correct_format_and_unique)
-        )
-        false
-      }
-    }
-  }
-
   suspend fun testProtoServer(rh: Long?, server: String): ProtocolTestFailure? {
     val userId = currentUserId("testProtoServer")
     val r = sendCmd(rh, CC.APITestProtoServer(userId, server))
@@ -993,6 +963,97 @@ object ChatController {
       else -> {
         Log.e(TAG, "testProtoServer bad response: ${r.responseType} ${r.details}")
         throw Exception("testProtoServer bad response: ${r.responseType} ${r.details}")
+      }
+    }
+  }
+
+  suspend fun getServerOperators(rh: Long?): ServerOperatorConditionsDetail? {
+    val r = sendCmd(rh, CC.ApiGetServerOperators())
+
+    return when (r) {
+      is CR.ServerOperatorConditions -> r.conditions
+      else -> {
+        Log.e(TAG, "getServerOperators bad response: ${r.responseType} ${r.details}")
+        null
+      }
+    }
+  }
+
+  suspend fun setServerOperators(rh: Long?, operators: List<ServerOperator>): ServerOperatorConditionsDetail? {
+    val r = sendCmd(rh, CC.ApiSetServerOperators(operators))
+    return when (r) {
+      is CR.ServerOperatorConditions -> r.conditions
+      else -> {
+        Log.e(TAG, "setServerOperators bad response: ${r.responseType} ${r.details}")
+        null
+      }
+    }
+  }
+
+  suspend fun getUserServers(rh: Long?): List<UserOperatorServers>? {
+    val userId = currentUserId("getUserServers")
+    val r = sendCmd(rh, CC.ApiGetUserServers(userId))
+    return when (r) {
+      is CR.UserServers -> r.userServers
+      else -> {
+        Log.e(TAG, "getUserServers bad response: ${r.responseType} ${r.details}")
+        null
+      }
+    }
+  }
+
+  suspend fun setUserServers(rh: Long?, userServers: List<UserOperatorServers>): Boolean {
+    val userId = currentUserId("setUserServers")
+    val r = sendCmd(rh, CC.ApiSetUserServers(userId, userServers))
+    return when (r) {
+      is CR.CmdOk -> true
+      else -> {
+        Log.e(TAG, "setUserServers bad response: ${r.responseType} ${r.details}")
+        false
+      }
+    }
+  }
+
+  suspend fun validateServers(rh: Long?, userServers: List<UserOperatorServers>): List<UserServersError>? {
+    val r = sendCmd(rh, CC.ApiValidateServers(userServers))
+    return when (r) {
+      is CR.UserServersValidation -> r.serverErrors
+      else -> {
+        Log.e(TAG, "validateServers bad response: ${r.responseType} ${r.details}")
+        null
+      }
+    }
+  }
+
+  suspend fun getUsageConditions(rh: Long?): Triple<UsageConditionsDetail, String?, CR.UsageConditions?>? {
+    val r = sendCmd(rh, CC.ApiGetUsageConditions())
+    return when (r) {
+      is CR.UsageConditions -> Triple(r.usageConditions, r.conditionsText, r.acceptedConditions)
+      else -> {
+        Log.e(TAG, "getUsageConditions bad response: ${r.responseType} ${r.details}")
+        null
+      }
+    }
+  }
+
+  suspend fun setConditionsNotified(rh: Long?, conditionsId: Long): Boolean {
+    val r = sendCmd(rh, CC.ApiSetConditionsNotified(conditionsId))
+    return when (r) {
+      is CR.CmdOk -> true
+      else -> {
+        Log.e(TAG, "setConditionsNotified bad response: ${r.responseType} ${r.details}")
+        false
+      }
+    }
+  }
+
+  suspend fun acceptConditions(rh: Long?, conditionsId: Long, operatorIds: List<Long>): CR.ServerOperatorConditions? {
+    val r = sendCmd(rh, CC.ApiAcceptConditions(conditionsId, operatorIds))
+    return when (r) {
+      is CR.ServerOperatorConditions -> r
+      else -> {
+        Log.e(TAG, "acceptConditions bad response: ${r.responseType} ${r.details}")
+        null
       }
     }
   }
@@ -3029,9 +3090,15 @@ sealed class CC {
   class APIGetGroupLink(val groupId: Long): CC()
   class APICreateMemberContact(val groupId: Long, val groupMemberId: Long): CC()
   class APISendMemberContactInvitation(val contactId: Long, val mc: MsgContent): CC()
-  class APIGetUserProtoServers(val userId: Long, val serverProtocol: ServerProtocol): CC()
-  class APISetUserProtoServers(val userId: Long, val serverProtocol: ServerProtocol, val servers: List<ServerCfg>): CC()
   class APITestProtoServer(val userId: Long, val server: String): CC()
+  class ApiGetServerOperators(): CC()
+  class ApiSetServerOperators(val operators: List<ServerOperator>): CC()
+  class ApiGetUserServers(val userId: Long): CC()
+  class ApiSetUserServers(val userId: Long, val userServers: List<UserOperatorServers>): CC()
+  class ApiValidateServers(val userServers: List<UserOperatorServers>): CC()
+  class ApiGetUsageConditions(): CC()
+  class ApiSetConditionsNotified(val conditionsId: Long): CC()
+  class ApiAcceptConditions(val conditionsId: Long, val operatorIds: List<Long>): CC()
   class APISetChatItemTTL(val userId: Long, val seconds: Long?): CC()
   class APIGetChatItemTTL(val userId: Long): CC()
   class APISetNetworkConfig(val networkConfig: NetCfg): CC()
@@ -3189,9 +3256,15 @@ sealed class CC {
     is APIGetGroupLink -> "/_get link #$groupId"
     is APICreateMemberContact -> "/_create member contact #$groupId $groupMemberId"
     is APISendMemberContactInvitation -> "/_invite member contact @$contactId ${mc.cmdString}"
-    is APIGetUserProtoServers -> "/_servers $userId ${serverProtocol.name.lowercase()}"
-    is APISetUserProtoServers -> "/_servers $userId ${serverProtocol.name.lowercase()} ${protoServersStr(servers)}"
     is APITestProtoServer -> "/_server test $userId $server"
+    is ApiGetServerOperators -> "/_operators"
+    is ApiSetServerOperators -> "/_operators ${json.encodeToString(operators)}}"
+    is ApiGetUserServers -> "/_servers $userId"
+    is ApiSetUserServers -> "/_servers $userId ${json.encodeToString(userServers)}"
+    is ApiValidateServers -> "/_validate_servers ${json.encodeToString(userServers)}"
+    is ApiGetUsageConditions -> "/_conditions"
+    is ApiSetConditionsNotified -> "/_conditions_notified ${conditionsId}"
+    is ApiAcceptConditions -> "/_accept_conditions ${conditionsId} ${operatorIds.joinToString(",")}"
     is APISetChatItemTTL -> "/_ttl $userId ${chatItemTTLStr(seconds)}"
     is APIGetChatItemTTL -> "/_ttl $userId"
     is APISetNetworkConfig -> "/_network ${json.encodeToString(networkConfig)}"
@@ -3334,9 +3407,15 @@ sealed class CC {
     is APIGetGroupLink -> "apiGetGroupLink"
     is APICreateMemberContact -> "apiCreateMemberContact"
     is APISendMemberContactInvitation -> "apiSendMemberContactInvitation"
-    is APIGetUserProtoServers -> "apiGetUserProtoServers"
-    is APISetUserProtoServers -> "apiSetUserProtoServers"
     is APITestProtoServer -> "testProtoServer"
+    is ApiGetServerOperators -> "apiGetServerOperators"
+    is ApiSetServerOperators -> "apiSetServerOperators"
+    is ApiGetUserServers -> "apiGetUserServers"
+    is ApiSetUserServers -> "apiSetUserServers"
+    is ApiValidateServers -> "apiValidateServers"
+    is ApiGetUsageConditions -> "apiGetUsageConditions"
+    is ApiSetConditionsNotified -> "apiSetConditionsNotified"
+    is ApiAcceptConditions -> "apiAcceptConditions"
     is APISetChatItemTTL -> "apiSetChatItemTTL"
     is APIGetChatItemTTL -> "apiGetChatItemTTL"
     is APISetNetworkConfig -> "apiSetNetworkConfig"
@@ -3451,8 +3530,6 @@ sealed class CC {
 
   companion object {
     fun chatRef(chatType: ChatType, id: Long) = "${chatType.type}${id}"
-
-    fun protoServersStr(servers: List<ServerCfg>) = json.encodeToString(ProtoServersConfig(servers))
   }
 }
 
@@ -3498,24 +3575,291 @@ enum class ServerProtocol {
 }
 
 @Serializable
-data class ProtoServersConfig(
-  val servers: List<ServerCfg>
+enum class OperatorTag {
+  @SerialName("simplex") SimpleX,
+  @SerialName("flux") Flux,
+  @SerialName("xyz") XYZ,
+  @SerialName("demo") Demo
+}
+
+@Serializable
+data class ServerOperatorInfo(
+  val description: String,
+  val website: String,
+  val logo: String,
+  val largeLogo: String,
+  val logoDarkMode: String,
+  val largeLogoDarkMode: String
+)
+
+val operatorsInfo: Map<OperatorTag, ServerOperatorInfo> = mapOf(
+  OperatorTag.SimpleX to ServerOperatorInfo(
+    description = "SimpleX Chat preset servers",
+    website = "https://simplex.chat",
+    logo = "decentralized",
+    largeLogo = "logo",
+    logoDarkMode = "decentralized-light",
+    largeLogoDarkMode = "logo-light"
+  ),
+  OperatorTag.Flux to ServerOperatorInfo(
+    description = "Flux is the largest decentralized cloud infrastructure, leveraging a global network of user-operated computational nodes. Flux offers a powerful, scalable, and affordable platform designed to support individuals, businesses, and cutting-edge technologies like AI. With high uptime and worldwide distribution, Flux ensures reliable, accessible cloud computing for all.",
+    website = "https://runonflux.com",
+    logo = "flux_logo_symbol",
+    largeLogo = "flux_logo",
+    logoDarkMode = "flux_logo_symbol",
+    largeLogoDarkMode = "flux_logo-light"
+  ),
+  OperatorTag.XYZ to ServerOperatorInfo(
+    description = "XYZ servers",
+    website = "XYZ website",
+    logo = "shield",
+    largeLogo = "logo",
+    logoDarkMode = "shield",
+    largeLogoDarkMode = "logo-light"
+  ),
+  OperatorTag.Demo to ServerOperatorInfo(
+    description = "Demo operator",
+    website = "Demo website",
+    logo = "decentralized",
+    largeLogo = "logo",
+    logoDarkMode = "decentralized-light",
+    largeLogoDarkMode = "logo-light"
+  )
 )
 
 @Serializable
-data class UserProtocolServers(
-  val serverProtocol: ServerProtocol,
-  val protoServers: List<ServerCfg>,
-  val presetServers: List<ServerCfg>,
+data class UsageConditionsDetail(
+  val conditionsId: Long,
+  val conditionsCommit: String,
+  val notifiedAt: Instant?,
+  val createdAt: Instant
+) {
+  companion object {
+    val sampleData = UsageConditionsDetail(
+      conditionsId = 1,
+      conditionsCommit = "11a44dc1fd461a93079f897048b46998db55da5c",
+      notifiedAt = null,
+      createdAt = Clock.System.now()
+    )
+  }
+}
+
+@Serializable
+sealed class UsageConditionsAction {
+  data class Review(val operators: List<ServerOperator>, val deadline: Date?, private val showNoticeFlag: Boolean) : UsageConditionsAction() {
+    val showNotice: Boolean
+      get() = showNoticeFlag
+  }
+  data class Accepted(val operators: List<ServerOperator>) : UsageConditionsAction() {
+    val showNotice: Boolean
+      get() = false
+  }
+}
+
+@Serializable
+data class ServerOperatorConditionsDetail(
+  val serverOperators: List<ServerOperator>,
+  val currentConditions: UsageConditionsDetail,
+  val conditionsAction: UsageConditionsAction?
+) {
+  companion object {
+    val empty = ServerOperatorConditionsDetail(
+      serverOperators = emptyList(),
+      currentConditions = UsageConditionsDetail(conditionsId = 0, conditionsCommit = "empty", notifiedAt = null, createdAt = Clock.System.now()),
+      conditionsAction = null
+    )
+  }
+}
+
+@Serializable()
+sealed class ConditionsAcceptance {
+  data class Accepted(val acceptedAt: Date?) : ConditionsAcceptance()
+  data class Required(val deadline: Date?) : ConditionsAcceptance()
+
+  val conditionsAccepted: Boolean
+    get() = when (this) {
+      is Accepted -> true
+      is Required -> false
+    }
+
+  val usageAllowed: Boolean
+    get() = when (this) {
+      is Accepted -> true
+      is Required -> this.deadline != null
+    }
+}
+
+@Serializable
+data class ServerOperator(
+  val operatorId: Long,
+  val operatorTag: OperatorTag?,
+  val tradeName: String,
+  val legalName: String?,
+  val serverDomains: List<String>,
+  val conditionsAcceptance: ConditionsAcceptance,
+  val enabled: Boolean,
+  val smpRoles: ServerRoles,
+  val xftpRoles: ServerRoles,
+) {
+  companion object {
+    val dummyOperatorInfo = ServerOperatorInfo(
+      description = "Default",
+      website = "Default",
+      logo = "decentralized",
+      largeLogo = "logo",
+      logoDarkMode = "decentralized-light",
+      largeLogoDarkMode = "logo-light"
+    )
+
+    val sampleData1 = ServerOperator(
+      operatorId = 1,
+      operatorTag = OperatorTag.SimpleX,
+      tradeName = "SimpleX Chat",
+      legalName = "SimpleX Chat Ltd",
+      serverDomains = listOf("simplex.im"),
+      conditionsAcceptance = ConditionsAcceptance.Accepted(acceptedAt = null),
+      enabled = true,
+      smpRoles = ServerRoles(storage = true, proxy = true),
+      xftpRoles = ServerRoles(storage = true, proxy = true)
+    )
+
+    val sampleData2 = ServerOperator(
+      operatorId = 2,
+      operatorTag = OperatorTag.XYZ,
+      tradeName = "XYZ",
+      legalName = null,
+      serverDomains = listOf("xyz.com"),
+      conditionsAcceptance = ConditionsAcceptance.Required(deadline = null),
+      enabled = false,
+      smpRoles = ServerRoles(storage = false, proxy = true),
+      xftpRoles = ServerRoles(storage = false, proxy = true)
+    )
+
+    val sampleData3 = ServerOperator(
+      operatorId = 3,
+      operatorTag = OperatorTag.Demo,
+      tradeName = "Demo",
+      legalName = null,
+      serverDomains = listOf("demo.com"),
+      conditionsAcceptance = ConditionsAcceptance.Required(deadline = null),
+      enabled = false,
+      smpRoles = ServerRoles(storage = true, proxy = false),
+      xftpRoles = ServerRoles(storage = true, proxy = false)
+    )
+  }
+
+  val id: Long
+    get() = operatorId
+
+  override fun equals(other: Any?): Boolean {
+    if (other !is ServerOperator) return false
+    return other.operatorId == this.operatorId &&
+        other.operatorTag == this.operatorTag &&
+        other.tradeName == this.tradeName &&
+        other.legalName == this.legalName &&
+        other.serverDomains == this.serverDomains &&
+        other.conditionsAcceptance == this.conditionsAcceptance &&
+        other.enabled == this.enabled &&
+        other.smpRoles == this.smpRoles &&
+        other.xftpRoles == this.xftpRoles
+  }
+
+  override fun hashCode(): Int {
+    var result = operatorId.hashCode()
+    result = 31 * result + (operatorTag?.hashCode() ?: 0)
+    result = 31 * result + tradeName.hashCode()
+    result = 31 * result + (legalName?.hashCode() ?: 0)
+    result = 31 * result + serverDomains.hashCode()
+    result = 31 * result + conditionsAcceptance.hashCode()
+    result = 31 * result + enabled.hashCode()
+    result = 31 * result + smpRoles.hashCode()
+    result = 31 * result + xftpRoles.hashCode()
+    return result
+  }
+
+  val legalName_: String
+    get() = legalName ?: tradeName
+
+  val info: ServerOperatorInfo get() {
+      return if (this.operatorTag != null) {
+        operatorsInfo[this.operatorTag] ?: dummyOperatorInfo
+      } else {
+        dummyOperatorInfo
+      }
+    }
+
+  val logo: String get() {
+    return if (CurrentColors.value.base == DefaultTheme.LIGHT) info.logo else info.logoDarkMode
+  }
+
+  val largeLogo: String get() {
+    return if (CurrentColors.value.base == DefaultTheme.LIGHT) info.largeLogo else info.largeLogoDarkMode
+  }
+}
+
+@Serializable
+data class ServerRoles(
+  val storage: Boolean,
+  val proxy: Boolean
 )
 
 @Serializable
-data class ServerCfg(
+data class UserOperatorServers(
+  var operator: ServerOperator?,
+  val smpServers: List<UserServer>,
+  val xftpServers: List<UserServer>
+) {
+  val id: String
+    get() = operator?.operatorId?.toString() ?: "nil operator"
+
+  var operator_: ServerOperator
+    get() = operator ?: ServerOperator(
+      operatorId = 0,
+      operatorTag = null,
+      tradeName = "",
+      legalName = null,
+      serverDomains = emptyList(),
+      conditionsAcceptance = ConditionsAcceptance.Accepted(null),
+      enabled = false,
+      smpRoles = ServerRoles(storage = true, proxy = true),
+      xftpRoles = ServerRoles(storage = true, proxy = true)
+    )
+    set(value) {
+      operator = value
+    }
+
+  companion object {
+    val sampleData1 = UserOperatorServers(
+      operator = ServerOperator.sampleData1,
+      smpServers = listOf(UserServer.sampleData.preset),
+      xftpServers = listOf(UserServer.sampleData.xftpPreset)
+    )
+
+    val sampleDataNilOperator = UserOperatorServers(
+      operator = null,
+      smpServers = listOf(UserServer.sampleData.preset),
+      xftpServers = listOf(UserServer.sampleData.xftpPreset)
+    )
+  }
+}
+
+@Serializable
+sealed class UserServersError {
+  class StorageMissing: UserServersError()
+  class ProxyMissing: UserServersError()
+  data class DuplicateSMP(val server: String) : UserServersError()
+  data class DuplicateXFTP(val server: String) : UserServersError()
+}
+
+@Serializable
+data class UserServer(
   val remoteHostId: Long?,
+  val serverId: Long?,
   val server: String,
   val preset: Boolean,
   val tested: Boolean? = null,
-  val enabled: Boolean
+  val enabled: Boolean,
+  val deleted: Boolean
 ) {
   @Transient
   private val createdAt: Date = Date()
@@ -3529,35 +3873,51 @@ data class ServerCfg(
     get() = server.isBlank()
 
   companion object {
-    val empty = ServerCfg(remoteHostId = null, server = "", preset = false, tested = null, enabled = false)
+    val empty = UserServer(remoteHostId = null, serverId = null, server = "", preset = false, tested = null, enabled = false, deleted = false)
 
     class SampleData(
-      val preset: ServerCfg,
-      val custom: ServerCfg,
-      val untested: ServerCfg
+      val preset: UserServer,
+      val custom: UserServer,
+      val untested: UserServer,
+      val xftpPreset: UserServer
     )
 
     val sampleData = SampleData(
-      preset = ServerCfg(
+      preset = UserServer(
         remoteHostId = null,
+        serverId = 1,
         server = "smp://abcd@smp8.simplex.im",
         preset = true,
         tested = true,
-        enabled = true
+        enabled = true,
+        deleted = false
       ),
-      custom = ServerCfg(
+      custom = UserServer(
         remoteHostId = null,
+        serverId = 2,
         server = "smp://abcd@smp9.simplex.im",
         preset = false,
         tested = false,
-        enabled = false
+        enabled = false,
+        deleted = false
       ),
-      untested = ServerCfg(
+      untested = UserServer(
         remoteHostId = null,
+        serverId = 3,
         server = "smp://abcd@smp10.simplex.im",
         preset = false,
         tested = null,
-        enabled = true
+        enabled = true,
+        deleted = false
+      ),
+      xftpPreset = UserServer(
+        remoteHostId = null,
+        serverId = 4,
+        server = "xftp://abcd@xftp8.simplex.im",
+        preset = true,
+        tested = true,
+        enabled = true,
+        deleted = false
       )
     )
   }
@@ -4916,8 +5276,11 @@ sealed class CR {
   @Serializable @SerialName("apiChats") class ApiChats(val user: UserRef, val chats: List<Chat>): CR()
   @Serializable @SerialName("apiChat") class ApiChat(val user: UserRef, val chat: Chat): CR()
   @Serializable @SerialName("chatItemInfo") class ApiChatItemInfo(val user: UserRef, val chatItem: AChatItem, val chatItemInfo: ChatItemInfo): CR()
-  @Serializable @SerialName("userProtoServers") class UserProtoServers(val user: UserRef, val servers: UserProtocolServers): CR()
   @Serializable @SerialName("serverTestResult") class ServerTestResult(val user: UserRef, val testServer: String, val testFailure: ProtocolTestFailure? = null): CR()
+  @Serializable @SerialName("serverOperatorConditions") class ServerOperatorConditions(val conditions: ServerOperatorConditionsDetail): CR()
+  @Serializable @SerialName("userServers") class UserServers(val user: UserRef, val userServers: List<UserOperatorServers>): CR()
+  @Serializable @SerialName("userServersValidation") class UserServersValidation(val serverErrors: List<UserServersError>): CR()
+  @Serializable @SerialName("usageConditions") class UsageConditions(val usageConditions: UsageConditionsDetail, val conditionsText: String, val acceptedConditions: UsageConditions?): CR()
   @Serializable @SerialName("chatItemTTL") class ChatItemTTL(val user: UserRef, val chatItemTTL: Long? = null): CR()
   @Serializable @SerialName("networkConfig") class NetworkConfig(val networkConfig: NetCfg): CR()
   @Serializable @SerialName("contactInfo") class ContactInfo(val user: UserRef, val contact: Contact, val connectionStats_: ConnectionStats? = null, val customUserProfile: Profile? = null): CR()
@@ -5096,8 +5459,11 @@ sealed class CR {
     is ApiChats -> "apiChats"
     is ApiChat -> "apiChat"
     is ApiChatItemInfo -> "chatItemInfo"
-    is UserProtoServers -> "userProtoServers"
     is ServerTestResult -> "serverTestResult"
+    is ServerOperatorConditions -> "serverOperatorConditions"
+    is UserServers -> "userServers"
+    is UserServersValidation -> "userServersValidation"
+    is UsageConditions -> "usageConditions"
     is ChatItemTTL -> "chatItemTTL"
     is NetworkConfig -> "networkConfig"
     is ContactInfo -> "contactInfo"
@@ -5266,8 +5632,11 @@ sealed class CR {
     is ApiChats -> withUser(user, json.encodeToString(chats))
     is ApiChat -> withUser(user, json.encodeToString(chat))
     is ApiChatItemInfo -> withUser(user, "chatItem: ${json.encodeToString(chatItem)}\n${json.encodeToString(chatItemInfo)}")
-    is UserProtoServers -> withUser(user, "servers: ${json.encodeToString(servers)}")
     is ServerTestResult -> withUser(user, "server: $testServer\nresult: ${json.encodeToString(testFailure)}")
+    is ServerOperatorConditions -> "conditions: ${json.encodeToString(conditions)}"
+    is UserServers -> withUser(user, "userServers: ${json.encodeToString(userServers)}")
+    is UserServersValidation -> "serverErrors: ${json.encodeToString(serverErrors)}"
+    is UsageConditions -> "usageConditions: ${json.encodeToString(usageConditions)}\nnacceptedConditions: ${json.encodeToString(acceptedConditions)}"
     is ChatItemTTL -> withUser(user, json.encodeToString(chatItemTTL))
     is NetworkConfig -> json.encodeToString(networkConfig)
     is ContactInfo -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats_)}")

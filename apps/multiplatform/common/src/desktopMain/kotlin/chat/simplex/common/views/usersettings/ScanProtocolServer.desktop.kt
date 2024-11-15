@@ -1,9 +1,9 @@
 package chat.simplex.common.views.usersettings
 
 import androidx.compose.runtime.Composable
-import chat.simplex.common.model.ServerCfg
+import chat.simplex.common.model.UserServer
 
 @Composable
-actual fun ScanProtocolServer(rhId: Long?, onNext: (ServerCfg) -> Unit) {
+actual fun ScanProtocolServer(rhId: Long?, onNext: (UserServer) -> Unit) {
   ScanProtocolServerLayout(rhId, onNext)
 }
