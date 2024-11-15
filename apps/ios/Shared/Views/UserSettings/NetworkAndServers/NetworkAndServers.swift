@@ -262,7 +262,7 @@ struct UsageConditionsView: View {
 
     private func acceptConditionsButton(_ operatorIds: [Int64]) -> some View {
         Button {
-            acceptForOperators($currUserServers, $userServers, dismiss, operatorIds)
+            acceptForOperators($currUserServers, $userServers, nil, dismiss, operatorIds)
         } label: {
             Text("Accept conditions")
         }
@@ -303,6 +303,7 @@ func saveServers(_ currUserServers: Binding<[UserOperatorServers]>, _ userServer
 func acceptForOperators(
     _ currUserServers: Binding<[UserOperatorServers]>,
     _ userServers: Binding<[UserOperatorServers]>,
+    _ operatorIndexToEnable: Int?,
     _ dismissAction: DismissAction,
     _ operatorIds: [Int64]
 ) {
@@ -314,6 +315,9 @@ func acceptForOperators(
                 ChatModel.shared.conditions = r
                 updateOperators(currUserServers, r.serverOperators)
                 updateOperators(userServers, r.serverOperators)
+                if let i = operatorIndexToEnable {
+                    userServers.wrappedValue[i].operator?.enabled = true
+                }
                 dismissAction()
             }
         } catch let error {

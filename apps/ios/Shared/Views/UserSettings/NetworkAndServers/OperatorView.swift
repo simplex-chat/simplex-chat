@@ -19,7 +19,6 @@ struct OperatorView: View {
     @Binding var currUserServers: [UserOperatorServers]
     @Binding var userServers: [UserOperatorServers]
     var operatorIndex: Int
-//    @State var serverOperatorToEdit: ServerOperator
     @State var useOperator: Bool
     @State private var useOperatorToggleReset: Bool = false
     @State private var showConditionsSheet: Bool = false
@@ -195,7 +194,7 @@ struct OperatorView: View {
             SingleOperatorUsageConditionsView(
                 currUserServers: $currUserServers,
                 userServers: $userServers,
-                serverOperator: userServers[operatorIndex].operator_
+                operatorIndex: operatorIndex
             )
             .modifier(ThemedBackground(grouped: true))
         }
@@ -333,7 +332,7 @@ struct SingleOperatorUsageConditionsView: View {
     @EnvironmentObject var theme: AppTheme
     @Binding var currUserServers: [UserOperatorServers]
     @Binding var userServers: [UserOperatorServers]
-    var serverOperator: ServerOperator
+    var operatorIndex: Int
     @State private var usageConditionsNavLinkActive: Bool = false
 
     var body: some View {
@@ -342,7 +341,7 @@ struct SingleOperatorUsageConditionsView: View {
 
     @ViewBuilder private func viewBody() -> some View {
         let operatorsWithConditionsAccepted = ChatModel.shared.conditions.serverOperators.filter { $0.conditionsAcceptance.conditionsAccepted }
-        if case .accepted = serverOperator.conditionsAcceptance {
+        if case .accepted = userServers[operatorIndex].operator_.conditionsAcceptance {
 
             // In current UI implementation this branch doesn't get shown - as conditions can't be opened from inside operator once accepted
             VStack(alignment: .leading, spacing: 20) {
@@ -363,7 +362,7 @@ struct SingleOperatorUsageConditionsView: View {
                     Group {
                         viewHeader()
                         Text("Conditions are already accepted for following operator(s): **\(operatorsWithConditionsAccepted.map { $0.legalName_ }.joined(separator: ", "))**.")
-                        Text("Same conditions will apply to operator **\(serverOperator.legalName_)**.")
+                        Text("Same conditions will apply to operator **\(userServers[operatorIndex].operator_.legalName_)**.")
                         conditionsAppliedToOtherOperatorsText()
                         usageConditionsNavLinkButton()
 
@@ -383,7 +382,7 @@ struct SingleOperatorUsageConditionsView: View {
             VStack(alignment: .leading, spacing: 20) {
                 Group {
                     viewHeader()
-                    Text("In order to use operator **\(serverOperator.legalName_)**, accept conditions of use.")
+                    Text("In order to use operator **\(userServers[operatorIndex].operator_.legalName_)**, accept conditions of use.")
                     conditionsAppliedToOtherOperatorsText()
                     ConditionsTextView()
                     acceptConditionsButton()
@@ -398,7 +397,7 @@ struct SingleOperatorUsageConditionsView: View {
     }
 
     private func viewHeader() -> some View {
-        Text("Use operator \(serverOperator.tradeName)")
+        Text("Use operator \(userServers[operatorIndex].operator_.tradeName)")
             .font(.largeTitle)
             .bold()
             .padding(.top)
@@ -409,7 +408,7 @@ struct SingleOperatorUsageConditionsView: View {
         let otherOperatorsToApply = ChatModel.shared.conditions.serverOperators.filter {
             $0.enabled &&
             !$0.conditionsAcceptance.conditionsAccepted &&
-            $0.operatorId != serverOperator.operatorId
+            $0.operatorId != userServers[operatorIndex].operator_.operatorId
         }
         if !otherOperatorsToApply.isEmpty {
             Text("Conditions will also apply for following operator(s) you use: **\(otherOperatorsToApply.map { $0.legalName_ }.joined(separator: ", "))**.")
@@ -419,12 +418,12 @@ struct SingleOperatorUsageConditionsView: View {
     @ViewBuilder private func acceptConditionsButton() -> some View {
         let operatorIds = ChatModel.shared.conditions.serverOperators
             .filter {
-                $0.operatorId == serverOperator.operatorId || // Opened operator
+                $0.operatorId == userServers[operatorIndex].operator_.operatorId || // Opened operator
                 ($0.enabled && !$0.conditionsAcceptance.conditionsAccepted) // Other enabled operators with conditions not accepted
             }
             .map { $0.operatorId }
         Button {
-            acceptForOperators($currUserServers, $userServers, dismiss, operatorIds)
+            acceptForOperators($currUserServers, $userServers, operatorIndex, dismiss, operatorIds)
         } label: {
             Text("Accept conditions")
         }
