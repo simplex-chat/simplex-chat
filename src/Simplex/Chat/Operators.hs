@@ -134,6 +134,13 @@ data UsageConditionsAction
   | UCAAccepted {operators :: [ServerOperator]}
   deriving (Show)
 
+data ServerOperatorConditions = ServerOperatorConditions
+  { serverOperators :: [ServerOperator],
+    currentConditions :: UsageConditions,
+    conditionsAction :: Maybe UsageConditionsAction
+  }
+  deriving (Show)
+
 usageConditionsAction :: [ServerOperator] -> UsageConditions -> UTCTime -> Maybe UsageConditionsAction
 usageConditionsAction operators UsageConditions {createdAt, notifiedAt} now = do
   let enabledOperators = filter (\ServerOperator {enabled} -> enabled) operators
@@ -477,6 +484,8 @@ instance DBStoredI s => FromJSON (ServerOperator' s) where
   parseJSON = $(JQ.mkParseJSON defaultJSON ''ServerOperator')
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "UCA") ''UsageConditionsAction)
+
+$(JQ.deriveJSON defaultJSON ''ServerOperatorConditions)
 
 instance ProtocolTypeI p => ToJSON (UserServer' s p) where
   toEncoding = $(JQ.mkToEncoding defaultJSON ''UserServer_)

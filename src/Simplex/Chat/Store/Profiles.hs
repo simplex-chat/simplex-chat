@@ -612,20 +612,21 @@ serverColumns p (ProtoServerWithAuth ProtocolServer {host, port, keyHash} auth_)
       auth = safeDecodeUtf8 . unBasicAuth <$> auth_
    in (protocol, host, port, keyHash, auth)
 
-getServerOperators :: DB.Connection -> ExceptT StoreError IO ([ServerOperator], Maybe UsageConditionsAction)
+getServerOperators :: DB.Connection -> ExceptT StoreError IO ServerOperatorConditions
 getServerOperators db = do
-  currentConds <- getCurrentUsageConditions db
+  currentConditions <- getCurrentUsageConditions db
   liftIO $ do
     now <- getCurrentTime
     latestAcceptedConds_ <- getLatestAcceptedConditions db
-    let getConds op = (\ca -> op {conditionsAcceptance = ca}) <$> getOperatorConditions_ db op currentConds latestAcceptedConds_ now
-    operators <- mapM getConds =<< getServerOperators_ db
-    pure (operators, usageConditionsAction operators currentConds now)
+    let getConds op = (\ca -> op {conditionsAcceptance = ca}) <$> getOperatorConditions_ db op currentConditions latestAcceptedConds_ now
+    ops <- mapM getConds =<< getServerOperators_ db
+    let conditionsAction = usageConditionsAction ops currentConditions now
+    pure ServerOperatorConditions {serverOperators = ops, currentConditions, conditionsAction}
 
 getUserServers :: DB.Connection -> User -> ExceptT StoreError IO ([ServerOperator], [UserServer 'PSMP],  [UserServer 'PXFTP])
 getUserServers db user =
   (,,)
-    <$> (fst <$> getServerOperators db)
+    <$> (serverOperators <$> getServerOperators db)
     <*> liftIO (getProtocolServers db SPSMP user)
     <*> liftIO (getProtocolServers db SPXFTP user)
 

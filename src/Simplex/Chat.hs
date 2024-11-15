@@ -645,7 +645,7 @@ processChatCommand' vr = \case
     forM_ users $ \User {localDisplayName = n, activeUser, viewPwdHash} ->
       when (n == displayName) . throwChatError $
         if activeUser || isNothing viewPwdHash then CEUserExists displayName else CEInvalidDisplayName {displayName, validName = ""}
-    opDomains <- operatorDomains . fst <$> withFastStore getServerOperators
+    opDomains <- operatorDomains . serverOperators <$> withFastStore getServerOperators
     rs <- asks randomServers
     let smp = agentServerCfgs SPSMP opDomains (rndServers SPSMP rs) smpServers
         xftp = agentServerCfgs SPXFTP opDomains (rndServers SPXFTP rs) xftpServers
@@ -1603,10 +1603,10 @@ processChatCommand' vr = \case
     lift $ CRServerTestResult user srv <$> withAgent' (\a -> testProtocolServer a (aUserId user) server)
   TestProtoServer srv -> withUser $ \User {userId} ->
     processChatCommand $ APITestProtoServer userId srv
-  APIGetServerOperators -> uncurry CRServerOperators <$> withFastStore getServerOperators
+  APIGetServerOperators -> CRServerOperatorConditions <$> withFastStore getServerOperators
   APISetServerOperators operatorsEnabled -> withFastStore $ \db -> do
     liftIO $ setServerOperators db operatorsEnabled
-    uncurry CRServerOperators <$> getServerOperators db
+    CRServerOperatorConditions <$> getServerOperators db
   APIGetUserServers userId -> withUserId userId $ \user -> withFastStore $ \db ->
     CRUserServers user <$> (liftIO . groupByOperator =<< getUserServers db user)
   APISetUserServers userId userServers -> withUserId userId $ \user -> do
@@ -1643,7 +1643,7 @@ processChatCommand' vr = \case
   APIAcceptConditions condId opIds -> withFastStore $ \db -> do
     currentTs <- liftIO getCurrentTime
     acceptConditions db condId opIds currentTs
-    uncurry CRServerOperators <$> getServerOperators db
+    CRServerOperatorConditions <$> getServerOperators db
   APISetChatItemTTL userId newTTL_ -> withUserId userId $ \user ->
     checkStoreNotChanged $
       withChatLock "setChatItemTTL" $ do
@@ -3779,7 +3779,7 @@ getKnownAgentServers :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> 
 getKnownAgentServers p user = do
   rs <- asks randomServers
   withStore $ \db -> do
-    opDomains <- operatorDomains . fst <$> getServerOperators db
+    opDomains <- operatorDomains . serverOperators <$> getServerOperators db
     srvs <- liftIO $ getProtocolServers db p user
     pure $ L.toList $ agentServerCfgs p opDomains (rndServers p rs) srvs
 
