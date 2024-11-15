@@ -65,7 +65,7 @@ import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, ProtocolServer (..), ProtocolTypeI, SProtocolType (..))
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, ProtocolServer (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
@@ -98,7 +98,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRApiChat u chat _ -> ttyUser u $ if testView then testViewChat chat else [viewJSON chat]
   CRApiParsedMarkdown ft -> [viewJSON ft]
   CRServerTestResult u srv testFailure -> ttyUser u $ viewServerTestResult srv testFailure
-  CRServerOperators ops ca -> viewServerOperators ops ca 
+  CRServerOperatorConditions (ServerOperatorConditions ops _ ca) -> viewServerOperators ops ca
   CRUserServers u uss -> ttyUser u $ concatMap viewUserServers uss <> (if testView then [] else serversUserHelp)
   CRUserServersValidation {} -> []
   CRUsageConditions {} -> []
@@ -1221,15 +1221,27 @@ viewUserServers UserOperatorServers {operator, smpServers, xftpServers} =
     <> viewServers SPSMP smpServers
     <> viewServers SPXFTP xftpServers
   where
-    viewServers :: ProtocolTypeI p => SProtocolType p -> [UserServer p] -> [StyledString]
+    viewServers :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> [UserServer p] -> [StyledString]
     viewServers _ [] = []
-    viewServers p srvs = ["  " <> protocolName p <> " servers"] <> map (plain . ("    " <> ) . viewServer) srvs
+    viewServers p srvs
+      | maybe True (\ServerOperator {enabled} -> enabled) operator =
+          ["  " <> protocolName p <> " servers" <> maybe "" ((" " <>) . viewRoles) operator]
+            <> map (plain . ("    " <> ) . viewServer) srvs
+      | otherwise = []
       where
         viewServer UserServer {server, preset, tested, enabled} = safeDecodeUtf8 (strEncode server) <> serverInfo
           where
             serverInfo = if null serverInfo_ then "" else parens $ T.intercalate ", " serverInfo_
             serverInfo_ = ["preset" | preset] <> testedInfo <> ["disabled" | not enabled]
             testedInfo = maybe [] (\t -> ["test: " <> if t then "passed" else "failed"]) tested
+        viewRoles op@ServerOperator {enabled}
+          | not enabled = "disabled"
+          | storage rs && proxy rs = "enabled"
+          | storage rs = "enabled storage"
+          | proxy rs = "enabled proxy"
+          | otherwise = "disabled (servers known)"
+          where
+            rs = operatorRoles p op
 
 serversUserHelp :: [StyledString]
 serversUserHelp =
@@ -1272,8 +1284,8 @@ viewOperator op@ServerOperator {tradeName, legalName, serverDomains, conditionsA
     <> (", " <> viewOpEnabled op)
 
 shortViewOperator :: ServerOperator -> Text
-shortViewOperator op@ServerOperator {operatorId = DBEntityId opId, tradeName} =
-  tshow opId <> ". " <> tradeName <> parens (viewOpEnabled op)
+shortViewOperator ServerOperator {operatorId = DBEntityId opId, tradeName, enabled} =
+  tshow opId <> ". " <> tradeName <> parens (if enabled then "enabled" else "disabled")
 
 viewOpIdTag :: ServerOperator' s -> Text
 viewOpIdTag ServerOperator {operatorId, operatorTag} = case operatorId of
@@ -1290,11 +1302,19 @@ viewOpConditions = \case
     viewCond w ts = w <> maybe "" (parens . tshow) ts
 
 viewOpEnabled :: ServerOperator' s -> Text
-viewOpEnabled ServerOperator {enabled, roles = ServerRoles {storage, proxy}}
-  | enabled && storage && proxy = "enabled"
-  | enabled && storage = "enabled storage"
-  | enabled && proxy = "enabled proxy"
-  | otherwise = "disabled"
+viewOpEnabled ServerOperator {enabled, smpRoles, xftpRoles}
+  | not enabled = "disabled"
+  | no smpRoles && no xftpRoles = "disabled (servers known)"
+  | both smpRoles && both xftpRoles = "enabled"
+  | otherwise = "SMP " <> viewRoles smpRoles <> ", XFTP" <> viewRoles xftpRoles
+  where
+    no rs = not $ storage rs || proxy rs
+    both rs = storage rs && proxy rs
+    viewRoles rs
+      | both rs = "enabled"
+      | storage rs = "enabled storage"
+      | proxy rs = "enabled proxy"
+      | otherwise = "disabled (servers known)"
 
 viewConditionsAction :: UsageConditionsAction -> [StyledString]
 viewConditionsAction = \case
@@ -1381,12 +1401,6 @@ viewConnectionStats :: ConnectionStats -> [StyledString]
 viewConnectionStats ConnectionStats {rcvQueuesInfo, sndQueuesInfo} =
   ["receiving messages via: " <> viewRcvQueuesInfo rcvQueuesInfo | not $ null rcvQueuesInfo]
     <> ["sending messages via: " <> viewSndQueuesInfo sndQueuesInfo | not $ null sndQueuesInfo]
-
--- viewServers :: ProtocolTypeI p => [ServerOperator] -> NonEmpty (ServerCfg p) -> [StyledString]
--- viewServers operators = map (plain . (\ServerCfg {server, operator} -> B.unpack (strEncode server) <> viewOperator operator)) . L.toList
---   where
---     ops :: Map (Maybe DBEntityId) Text = foldl' (\m ServerOperator {operatorId, tradeName} -> M.insert (Just operatorId) tradeName m) M.empty operators
---     viewOperator = maybe "" $ \op -> " (operator " <> maybe (show op) T.unpack (M.lookup (Just op) ops) <> ")"
 
 viewRcvQueuesInfo :: [RcvQueueInfo] -> StyledString
 viewRcvQueuesInfo = plain . intercalate ", " . map showQueueInfo

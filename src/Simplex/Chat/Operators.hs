@@ -134,6 +134,13 @@ data UsageConditionsAction
   | UCAAccepted {operators :: [ServerOperator]}
   deriving (Show)
 
+data ServerOperatorConditions = ServerOperatorConditions
+  { serverOperators :: [ServerOperator],
+    currentConditions :: UsageConditions,
+    conditionsAction :: Maybe UsageConditionsAction
+  }
+  deriving (Show)
+
 usageConditionsAction :: [ServerOperator] -> UsageConditions -> UTCTime -> Maybe UsageConditionsAction
 usageConditionsAction operators UsageConditions {createdAt, notifiedAt} now = do
   let enabledOperators = filter (\ServerOperator {enabled} -> enabled) operators
@@ -178,9 +185,15 @@ data ServerOperator' s = ServerOperator
     serverDomains :: [Text],
     conditionsAcceptance :: ConditionsAcceptance,
     enabled :: Bool,
-    roles :: ServerRoles
+    smpRoles :: ServerRoles,
+    xftpRoles :: ServerRoles
   }
   deriving (Show)
+
+operatorRoles :: UserProtocol p => SProtocolType p -> ServerOperator -> ServerRoles
+operatorRoles p op = case p of
+  SPSMP -> smpRoles op
+  SPXFTP -> xftpRoles op
 
 conditionsAccepted :: ServerOperator -> Bool
 conditionsAccepted ServerOperator {conditionsAcceptance} = case conditionsAcceptance of
@@ -336,8 +349,8 @@ updatedServerOperators presetOps storedOps =
       Just presetOp -> (storedOp' :)
         where
           storedOp' = case find ((operatorTag presetOp ==) . operatorTag) storedOps of
-            Just ServerOperator {operatorId, conditionsAcceptance, enabled, roles} ->
-              ASO SDBStored presetOp {operatorId, conditionsAcceptance, enabled, roles}
+            Just ServerOperator {operatorId, conditionsAcceptance, enabled, smpRoles, xftpRoles} ->
+              ASO SDBStored presetOp {operatorId, conditionsAcceptance, enabled, smpRoles, xftpRoles}
             Nothing -> ASO SDBNew presetOp
 
 -- This function should be used inside DB transaction to update servers.
@@ -361,8 +374,8 @@ updatedUserServers p presetOps randomSrvs srvs =
 srvHost :: UserServer' s p -> NonEmpty TransportHost
 srvHost UserServer {server = ProtoServerWithAuth srv _} = host srv
 
-agentServerCfgs :: [(Text, ServerOperator)] -> NonEmpty (NewUserServer p) -> [UserServer' s p] -> NonEmpty (ServerCfg p)
-agentServerCfgs opDomains randomSrvs =
+agentServerCfgs :: UserProtocol p => SProtocolType p -> [(Text, ServerOperator)] -> NonEmpty (NewUserServer p) -> [UserServer' s p] -> NonEmpty (ServerCfg p)
+agentServerCfgs p opDomains randomSrvs =
   fromMaybe fallbackSrvs . L.nonEmpty . mapMaybe enabledOpAgentServer
   where
     fallbackSrvs = L.map (snd . agentServer) randomSrvs
@@ -372,8 +385,8 @@ agentServerCfgs opDomains randomSrvs =
     agentServer :: UserServer' s p -> (Bool, ServerCfg p)
     agentServer srv@UserServer {server, enabled} =
       case find (\(d, _) -> any (matchingHost d) (srvHost srv)) opDomains of
-        Just (_, ServerOperator {operatorId = DBEntityId opId, enabled = opEnabled, roles}) ->
-          (opEnabled, ServerCfg {server, enabled, operator = Just opId, roles})
+        Just (_, op@ServerOperator {operatorId = DBEntityId opId, enabled = opEnabled}) ->
+          (opEnabled, ServerCfg {server, enabled, operator = Just opId, roles = operatorRoles p op})
         Nothing ->
           (True, ServerCfg {server, enabled, operator = Nothing, roles = allRoles})
 
@@ -423,7 +436,7 @@ validateUserServers curr others = currUserErrs <> concatMap otherUserErrs others
         p' = AProtocolType p
         noServers cond = not $ any srvEnabled $ snd $ partitionValid $ concatMap (`servers'` p) $ filter cond uss
         opEnabled = maybe True (\ServerOperator {enabled} -> enabled) . operator'
-        hasRole roleSel = maybe True (\ServerOperator {enabled, roles} -> enabled && roleSel roles) . operator'
+        hasRole roleSel = maybe True (\op@ServerOperator {enabled} -> enabled && roleSel (operatorRoles p op)) . operator'
         srvEnabled (AUS _ UserServer {deleted, enabled}) = enabled && not deleted
     serverErrs :: (UserServersClass u, ProtocolTypeI p, UserProtocol p) => SProtocolType p -> [u] -> [UserServersError]
     serverErrs p uss = map (USEInvalidServer p') invalidSrvs <> mapMaybe duplicateErr_ srvs
@@ -471,6 +484,8 @@ instance DBStoredI s => FromJSON (ServerOperator' s) where
   parseJSON = $(JQ.mkParseJSON defaultJSON ''ServerOperator')
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "UCA") ''UsageConditionsAction)
+
+$(JQ.deriveJSON defaultJSON ''ServerOperatorConditions)
 
 instance ProtocolTypeI p => ToJSON (UserServer' s p) where
   toEncoding = $(JQ.mkToEncoding defaultJSON ''UserServer_)

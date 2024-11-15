@@ -596,8 +596,10 @@ CREATE TABLE server_operators(
   legal_name TEXT,
   server_domains TEXT,
   enabled INTEGER NOT NULL DEFAULT 1,
-  role_storage INTEGER NOT NULL DEFAULT 1,
-  role_proxy INTEGER NOT NULL DEFAULT 1,
+  smp_role_storage INTEGER NOT NULL DEFAULT 1,
+  smp_role_proxy INTEGER NOT NULL DEFAULT 1,
+  xftp_role_storage INTEGER NOT NULL DEFAULT 1,
+  xftp_role_proxy INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
