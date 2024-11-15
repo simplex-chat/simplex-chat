@@ -188,6 +188,7 @@ struct ChooseServerOperators: View {
             .hidden()
         }
     }
+
     private func continueButton() -> some View {
         Button {
             continueToNextStep()

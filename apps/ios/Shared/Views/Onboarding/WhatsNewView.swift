@@ -542,7 +542,6 @@ struct WhatsNewView: View {
         if showWhatsNew {
             whatsNewView()
         } else if showOperatorsNotice {
-            // TODO better view details
             ChooseServerOperators(onboarding: false)
         }
     }

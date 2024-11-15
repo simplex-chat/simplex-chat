@@ -160,8 +160,6 @@ struct NetworkAndServers: View {
             }
             Button("Exit without saving") { dismiss() }
         }
-        // TODO smarter onDismiss - apply model operators conditions state to currUserServers/userServers
-        // .sheet(item: $sheetItem, onDismiss: { serverOperators = ChatModel.shared.serverOperators }) { item in
         .sheet(item: $sheetItem) { item in
             switch item {
             case let .showConditions(conditionsAction):
@@ -275,7 +273,7 @@ func saveServers(_ currUserServers: Binding<[UserOperatorServers]>, _ userServer
     Task {
         do {
             try await setUserServers(userServers: userServersToSave)
-            // Get updated servers for new server ids (otherwise it messes up delete of newly added and saved servers)
+            // Get updated servers to learn new server ids (otherwise it messes up delete of newly added and saved servers)
             do {
                 let updatedServers = try await getUserServers()
                 await MainActor.run {

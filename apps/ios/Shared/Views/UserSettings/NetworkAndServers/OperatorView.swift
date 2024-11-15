@@ -7,8 +7,6 @@
 //
 
 import SwiftUI
-
-import SwiftUI
 import SimpleXChat
 
 struct OperatorView: View {
