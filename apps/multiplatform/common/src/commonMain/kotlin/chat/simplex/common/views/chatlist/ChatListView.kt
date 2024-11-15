@@ -228,7 +228,7 @@ private fun AddressCreationCard() {
     },
     onCardClick = {
       ModalManager.start.showModal {
-        UserAddressLearnMore(showCreateAddressButton = false)
+        UserAddressLearnMore(showCreateAddressButton = true)
       }
     }
   ) {
