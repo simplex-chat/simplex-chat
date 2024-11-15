@@ -572,7 +572,7 @@ data ChatResponse
   | CRChatSuspended
   | CRApiChats {user :: User, chats :: [AChat]}
   | CRChats {chats :: [AChat]}
-  | CRApiChat {user :: User, chat :: AChat}
+  | CRApiChat {user :: User, chat :: AChat, navInfo :: Maybe NavigationInfo}
   | CRChatItems {user :: User, chatName_ :: Maybe ChatName, chatItems :: [AChatItem]}
   | CRChatItemInfo {user :: User, chatItem :: AChatItem, chatItemInfo :: ChatItemInfo}
   | CRChatItemId User (Maybe ChatItemId)
@@ -839,6 +839,8 @@ data ChatPagination
   = CPLast Int
   | CPAfter ChatItemId Int
   | CPBefore ChatItemId Int
+  | CPAround ChatItemId Int
+  | CPInitial Int
   deriving (Show)
 
 data PaginationByTime

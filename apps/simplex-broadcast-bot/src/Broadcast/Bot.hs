@@ -21,6 +21,7 @@ import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Chat.Types
+import Simplex.Messaging.Util (tshow)
 import System.Directory (getAppUserDataDirectory)
 
 welcomeGetOpts :: IO BroadcastBotOpts
@@ -48,14 +49,14 @@ broadcastBot BroadcastBotOpts {publishers, welcomeMessage, prohibitedMessage} _u
                 CRContactsList _ cts -> void . forkIO $ do
                   let cts' = filter broadcastTo cts
                   forM_ cts' $ \ct' -> sendComposedMessage cc ct' Nothing mc
-                  sendReply $ "Forwarded to " <> show (length cts') <> " contact(s)"
+                  sendReply $ "Forwarded to " <> tshow (length cts') <> " contact(s)"
                 r -> putStrLn $ "Error getting contacts list: " <> show r
             else sendReply "!1 Message is not supported!"
         | otherwise -> do
           sendReply prohibitedMessage
           deleteMessage cc ct $ chatItemId' ci
         where
-          sendReply = sendComposedMessage cc ct (Just $ chatItemId' ci) . textMsgContent
+          sendReply = sendComposedMessage cc ct (Just $ chatItemId' ci) . MCText
           publisher = KnownContact {contactId = contactId' ct, localDisplayName = localDisplayName' ct}
           allowContent = \case
             MCText _ -> True

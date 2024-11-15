@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.ui.theme.*
@@ -137,12 +138,16 @@ fun UserPicker(
     }
   }
 
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val iconColor = MaterialTheme.colors.secondaryVariant
+  val background = if (appPlatform.isAndroid) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, alpha = 1 - userPickerAlpha()) else MaterialTheme.colors.surface
   PlatformUserPicker(
     modifier = Modifier
       .height(IntrinsicSize.Min)
       .fillMaxWidth()
-      .then(if (newChat.isVisible()) Modifier.shadow(8.dp, clip = true) else Modifier)
-      .background(if (appPlatform.isAndroid) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, alpha = 1 - userPickerAlpha()) else MaterialTheme.colors.surface)
+      .then(if (newChat.isVisible()) Modifier.shadow(8.dp, clip = true, ambientColor = background) else Modifier)
+      .padding(top = if (appPlatform.isDesktop && oneHandUI.value) 7.dp else 0.dp)
+      .background(background)
       .padding(bottom = USER_PICKER_SECTION_SPACING - DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
     pickerState = userPickerState
   ) {
@@ -198,12 +203,13 @@ fun UserPicker(
           UserPickerUsersSection(
             users = users,
             onUserClicked = onUserClicked,
+            iconColor = iconColor,
             stopped = stopped
           )
         }
       } else if (currentUser != null) {
         SectionItemView({ onUserClicked(currentUser) }, 80.dp, padding = PaddingValues(start = 16.dp, end = DEFAULT_PADDING), disabled = stopped) {
-          ProfilePreview(currentUser.profile, stopped = stopped)
+          ProfilePreview(currentUser.profile, iconColor = iconColor, stopped = stopped)
         }
       }
     }
@@ -234,6 +240,7 @@ fun UserPicker(
           Column(modifier = Modifier.padding(vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)) {
             UserPickerUsersSection(
               users = inactiveUsers,
+              iconColor = iconColor,
               onUserClicked = onUserClicked,
               stopped = stopped
             )
@@ -261,20 +268,32 @@ fun UserPicker(
           painterResource(MR.images.ic_manage_accounts),
           stringResource(MR.strings.your_chat_profiles),
           {
-            doWithAuth(
-              generalGetString(MR.strings.auth_open_chat_profiles),
-              generalGetString(MR.strings.auth_log_in_using_credential)
-            ) {
-              ModalManager.start.showCustomModal { close ->
-                val search = rememberSaveable { mutableStateOf("") }
-                val profileHidden = rememberSaveable { mutableStateOf(false) }
-                ModalView(
-                  { close() },
-                  endButtons = {
-                    SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
-                  },
-                  content = { UserProfilesView(chatModel, search, profileHidden) })
-              }
+            ModalManager.start.showCustomModal(keyboardCoversBar = false) { close ->
+              val search = rememberSaveable { mutableStateOf("") }
+              val profileHidden = rememberSaveable { mutableStateOf(false) }
+              val authorized = remember { stateGetOrPut("authorized") { false } }
+              ModalView(
+                { close() },
+                showSearch = true,
+                searchAlwaysVisible = true,
+                onSearchValueChanged = {
+                  search.value = it
+                },
+                content = {
+                  UserProfilesView(chatModel, search, profileHidden) { block ->
+                      if (authorized.value) {
+                        block()
+                      } else {
+                        doWithAuth(
+                          generalGetString(MR.strings.auth_open_chat_profiles),
+                          generalGetString(MR.strings.auth_log_in_using_credential)
+                        ) {
+                          authorized.value = true
+                          block()
+                        }
+                      }
+                    }
+                })
             }
           },
           disabled = stopped
@@ -403,26 +422,35 @@ fun UserProfilePickerItem(
     UserProfileRow(u, enabled)
     if (u.activeUser) {
       Icon(painterResource(MR.images.ic_done_filled), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
-    } else if (u.hidden) {
-      Icon(painterResource(MR.images.ic_lock), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
-    } else if (unreadCount > 0) {
-      Box(
-        contentAlignment = Alignment.Center
-      ) {
-        Text(
-          unreadCountStr(unreadCount),
-          color = Color.White,
-          fontSize = 10.sp,
-          modifier = Modifier
-            .background(MaterialTheme.colors.primaryVariant, shape = CircleShape)
-            .padding(2.dp)
-            .badgeLayout()
-        )
-      }
-    } else if (!u.showNtfs) {
-      Icon(painterResource(MR.images.ic_notifications_off), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
     } else {
-      Box(Modifier.size(20.dp))
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        if (unreadCount > 0) {
+          Box(
+            contentAlignment = Alignment.Center,
+          ) {
+            Text(
+              unreadCountStr(unreadCount),
+              color = Color.White,
+              fontSize = 10.sp,
+              modifier = Modifier
+                .background(if (u.showNtfs) MaterialTheme.colors.primaryVariant else MaterialTheme.colors.secondary, shape = CircleShape)
+                .padding(2.dp)
+                .badgeLayout()
+            )
+          }
+
+          if (u.hidden) {
+            Spacer(Modifier.width(8.dp))
+            Icon(painterResource(MR.images.ic_lock), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
+          }
+        } else if (u.hidden) {
+          Icon(painterResource(MR.images.ic_lock), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
+        } else if (!u.showNtfs) {
+          Icon(painterResource(MR.images.ic_notifications_off), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
+        } else {
+          Box(Modifier.size(20.dp))
+        }
+      }
     }
   }
 }
@@ -519,6 +547,7 @@ private fun DevicePickerRow(
 @Composable
 expect fun UserPickerUsersSection(
   users: List<UserInfo>,
+  iconColor: Color,
   stopped: Boolean,
   onUserClicked: (user: User) -> Unit,
 )

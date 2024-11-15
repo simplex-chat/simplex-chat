@@ -66,6 +66,7 @@ chatDirectTests = do
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
     it "should send multiline message" testMultilineMessage
     it "send large message" testLargeMessage
+    it "initial chat pagination" testChatPaginationInitial
   describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
     it "send multiple timed messages" testSendMultiTimed
@@ -123,7 +124,7 @@ chatDirectTests = do
     it "chat items only expire for users who configured expiration" testEnableCIExpirationOnlyForOneUser
     it "disabling chat item expiration doesn't disable it for other users" testDisableCIExpirationOnlyForOneUser
     it "both users have configured timed messages with contacts, messages expire, restart" testUsersTimedMessages
-    it "user profile privacy: hide profiles and notificaitons" testUserPrivacy
+    it "user profile privacy: hide profiles and notifications" testUserPrivacy
   describe "settings" $ do
     it "set chat item expiration TTL" testSetChatItemTTL
     it "save/get app settings" testAppSettings
@@ -210,6 +211,7 @@ testAddContact = versionTestMatrix2 runTestAddContact
           -- pagination
           alice #$> ("/_get chat @2 after=" <> itemId 1 <> " count=100", chat, [(0, "hello there"), (0, "how are you?")])
           alice #$> ("/_get chat @2 before=" <> itemId 2 <> " count=100", chat, features <> [(1, "hello there 🙂")])
+          alice #$> ("/_get chat @2 around=" <> itemId 2 <> " count=2", chat, [(0, "Audio/video calls: enabled"), (1, "hello there 🙂"), (0, "hello there"), (0, "how are you?")])
           -- search
           alice #$> ("/_get chat @2 count=100 search=ello ther", chat, [(1, "hello there 🙂"), (0, "hello there")])
           -- read messages
@@ -359,6 +361,36 @@ testMarkReadDirect = testChat2 aliceProfile bobProfile $ \alice bob -> do
   i :: ChatItemId <- read <$> getTermLine bob
   let itemIds = intercalate "," $ map show [i - 3 .. i]
   bob #$> ("/_read chat items @2 " <> itemIds, id, "ok")
+
+testChatPaginationInitial :: HasCallStack => FilePath -> IO ()
+testChatPaginationInitial = testChatOpts2 opts aliceProfile bobProfile $ \alice bob -> do
+  connectUsers alice bob
+  -- Wait, otherwise ids are going to be wrong.
+  threadDelay 1000000
+
+  -- Send messages from alice to bob
+  forM_ ([1 .. 10] :: [Int]) $ \n -> alice #> ("@bob " <> show n)
+
+  -- Bob receives the messages.
+  forM_ ([1 .. 10] :: [Int]) $ \n -> bob <# ("alice> " <> show n)
+
+  -- All messages are unread for bob, should return area around unread
+  bob #$> ("/_get chat @2 initial=2", chat, [(0, "Voice messages: enabled"), (0, "Audio/video calls: enabled"), (0, "1"), (0, "2"), (0, "3")])
+
+  -- Read next 2 items
+  let itemIds = intercalate "," $ map itemId [1 .. 2]
+  bob #$> ("/_read chat items @2 " <> itemIds, id, "ok")
+  bob #$> ("/_get chat @2 initial=2", chat, [(0, "1"), (0, "2"), (0, "3"), (0, "4"), (0, "5")])
+
+  -- Read all items
+  bob #$> ("/_read chat @2", id, "ok")
+  bob #$> ("/_get chat @2 initial=3", chat, [(0, "8"), (0, "9"), (0, "10")])
+  bob #$> ("/_get chat @2 initial=5", chat, [(0, "6"), (0, "7"), (0, "8"), (0, "9"), (0, "10")])
+  where
+    opts =
+      testOpts
+        { markRead = False
+        }
 
 testDuplicateContactsSeparate :: HasCallStack => FilePath -> IO ()
 testDuplicateContactsSeparate =
@@ -791,7 +823,7 @@ testDirectMessageDelete =
       alice @@@ [("@bob", lastChatFeature)]
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures)
 
-      -- alice: msg id 1
+      -- alice: msg id 3
       bob ##> ("/_update item @2 " <> itemId 2 <> " text hey alice")
       bob <# "@alice [edited] > hello 🙂"
       bob <## "      hey alice"
@@ -806,12 +838,12 @@ testDirectMessageDelete =
       alice @@@ [("@bob", "hey alice [marked deleted]")]
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hey alice [marked deleted]")])
 
-      -- alice: deletes msg id 1 that was broadcast deleted by bob
-      alice #$> ("/_delete item @2 " <> itemId 1 <> " internal", id, "message deleted")
+      -- alice: deletes msg id 3 that was broadcast deleted by bob
+      alice #$> ("/_delete item @2 " <> itemId 3 <> " internal", id, "message deleted")
       alice @@@ [("@bob", lastChatFeature)]
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures)
 
-      -- alice: msg id 1, bob: msg id 3 (quoting message alice deleted locally)
+      -- alice: msg id 4, bob: msg id 3 (quoting message alice deleted locally)
       bob `send` "> @alice (hello 🙂) do you receive my messages?"
       bob <# "@alice > hello 🙂"
       bob <## "      do you receive my messages?"
@@ -819,14 +851,14 @@ testDirectMessageDelete =
       alice <## "      do you receive my messages?"
       alice @@@ [("@bob", "do you receive my messages?")]
       alice #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((0, "do you receive my messages?"), Just (1, "hello 🙂"))])
-      alice #$> ("/_delete item @2 " <> itemId 1 <> " broadcast", id, "cannot delete this item")
+      alice #$> ("/_delete item @2 " <> itemId 4 <> " broadcast", id, "cannot delete this item")
 
-      -- alice: msg id 2, bob: msg id 4
+      -- alice: msg id 5, bob: msg id 4
       bob #> "@alice how are you?"
       alice <# "bob> how are you?"
 
-      -- alice: deletes msg id 2
-      alice #$> ("/_delete item @2 " <> itemId 2 <> " internal", id, "message deleted")
+      -- alice: deletes msg id 5
+      alice #$> ("/_delete item @2 " <> itemId 5 <> " internal", id, "message deleted")
 
       -- bob: marks deleted msg id 4 (that alice deleted locally)
       bob #$> ("/_delete item @2 " <> itemId 4 <> " broadcast", id, "message marked deleted")
@@ -2339,6 +2371,14 @@ testUserPrivacy =
                "bob> Message reactions: enabled",
                "bob> Voice messages: enabled",
                "bob> Audio/video calls: enabled"
+             ]
+      alice ##> "/_get items around=11 count=2"
+      alice
+        <##? [ "bob> Full deletion: off",
+               "bob> Message reactions: enabled",
+               "bob> Voice messages: enabled",
+               "bob> Audio/video calls: enabled",
+               "@bob hello"
              ]
       alice ##> "/_get items after=12 count=10"
       alice
