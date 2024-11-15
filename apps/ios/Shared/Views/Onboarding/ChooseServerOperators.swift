@@ -281,28 +281,30 @@ struct ChooseServerOperators: View {
         .buttonStyle(OnboardingButtonStyle(isDisabled: false))
     }
 
-    private func enabledOperators(_ updated: [ServerOperator]) -> [ServerOperator]? {
-        var merged = updated.filter { selectedOperatorIds.contains($0.operatorId) }
-        if !merged.isEmpty {
-            for i in 0..<merged.count {
-                var op = merged[i]
-                op.enabled = true
-                merged[i] = op
+    private func enabledOperators(_ operators: [ServerOperator]) -> [ServerOperator]? {
+        var ops = operators
+        if !ops.isEmpty {
+            for i in 0..<ops.count {
+                var op = ops[i]
+                op.enabled = selectedOperatorIds.contains(op.operatorId)
+                ops[i] = op
             }
-            let haveSMPStorage = merged.contains(where: { $0.smpRoles.storage })
-            let haveSMPProxy = merged.contains(where: { $0.smpRoles.proxy })
-            let haveXFTPStorage = merged.contains(where: { $0.xftpRoles.storage })
-            let haveXFTPProxy = merged.contains(where: { $0.xftpRoles.proxy })
+            let haveSMPStorage = ops.contains(where: { $0.enabled && $0.smpRoles.storage })
+            let haveSMPProxy = ops.contains(where: { $0.enabled && $0.smpRoles.proxy })
+            let haveXFTPStorage = ops.contains(where: { $0.enabled && $0.xftpRoles.storage })
+            let haveXFTPProxy = ops.contains(where: { $0.enabled && $0.xftpRoles.proxy })
             if haveSMPStorage && haveSMPProxy && haveXFTPStorage && haveXFTPProxy {
-                return merged
-            } else {
-                var firstOperator = merged[0]
-                if !haveSMPStorage { firstOperator.smpRoles.storage = true }
-                if !haveSMPProxy { firstOperator.smpRoles.proxy = true }
-                if !haveXFTPStorage { firstOperator.xftpRoles.storage = true }
-                if !haveXFTPProxy { firstOperator.xftpRoles.proxy = true }
-                merged[0] = firstOperator
-                return merged
+                return ops
+            } else if let firstEnabledIndex = ops.firstIndex(where: { $0.enabled }) {
+                var op = ops[firstEnabledIndex]
+                if !haveSMPStorage { op.smpRoles.storage = true }
+                if !haveSMPProxy { op.smpRoles.proxy = true }
+                if !haveXFTPStorage { op.xftpRoles.storage = true }
+                if !haveXFTPProxy { op.xftpRoles.proxy = true }
+                ops[firstEnabledIndex] = op
+                return ops
+            } else { // Shouldn't happen - view doesn't let to proceed if no operators are enabled
+                return nil
             }
         } else {
             return nil
