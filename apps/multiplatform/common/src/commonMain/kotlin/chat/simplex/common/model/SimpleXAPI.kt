@@ -866,11 +866,7 @@ object ChatController {
   }
 
   suspend fun apiGetChat(rh: Long?, type: ChatType, id: Long, pagination: ChatPagination, search: String = ""): Pair<Chat, NavigationInfo>? {
-//    val start = if (pagination is ChatPagination.Initial) System.currentTimeMillis() else 0
     val r = sendCmd(rh, CC.ApiGetChat(type, id, pagination, search))
-//    if (pagination is ChatPagination.Initial) {
-//      println("LALAL RESULT OF QUERY ${pagination.count} ${System.currentTimeMillis() - start}")
-//    }
     if (r is CR.ApiChat) return if (rh == null) r.chat to r.navInfo else r.chat.copy(remoteHostId = rh) to r.navInfo
     Log.e(TAG, "apiGetChat bad response: ${r.responseType} ${r.details}")
     AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_parse_chat_title), generalGetString(MR.strings.contact_developers))
@@ -5272,7 +5268,7 @@ sealed class CR {
     is ChatRunning -> noDetails()
     is ChatStopped -> noDetails()
     is ApiChats -> withUser(user, json.encodeToString(chats))
-    is ApiChat -> withUser(user, json.encodeToString(chat))
+    is ApiChat -> withUser(user, "chat: ${json.encodeToString(chat)}\nnavInfo: ${navInfo}")
     is ApiChatItemInfo -> withUser(user, "chatItem: ${json.encodeToString(chatItem)}\n${json.encodeToString(chatItemInfo)}")
     is UserProtoServers -> withUser(user, "servers: ${json.encodeToString(servers)}")
     is ServerTestResult -> withUser(user, "server: $testServer\nresult: ${json.encodeToString(testFailure)}")

@@ -70,7 +70,7 @@ fun GroupMemberInfoView(
       getContactChat = { chatModel.getContactChat(it) },
       openDirectChat = {
         withBGApi {
-          apiLoadMessages(rhId, ChatType.Direct, it, ChatPagination.Initial(ChatPagination.INITIAL_COUNT), "", chatModel.anchors) { 0 .. 0 }
+          apiLoadMessages(rhId, ChatType.Direct, it, ChatPagination.Initial(ChatPagination.INITIAL_COUNT), chatModel.chatState)
           if (chatModel.getContactChat(it) != null) {
             closeAll()
           }

@@ -209,17 +209,19 @@ suspend fun openGroupChat(rhId: Long?, groupId: Long) = openChat(rhId, ChatType.
 suspend fun openChat(rhId: Long?, chatInfo: ChatInfo) = openChat(rhId, chatInfo.chatType, chatInfo.apiId)
 
 private suspend fun openChat(rhId: Long?, chatType: ChatType, apiId: Long) =
-  apiLoadMessages(rhId, chatType, apiId, ChatPagination.Initial(ChatPagination.INITIAL_COUNT), "", chatModel.anchors) { 0 .. 0 }
+  apiLoadMessages(rhId, chatType, apiId, ChatPagination.Initial(ChatPagination.INITIAL_COUNT), chatModel.chatState)
 
 fun openLoadedChat(chat: Chat) {
   chatModel.chatItemStatuses.clear()
   chatModel.chatItems.replaceAll(chat.chatItems)
   chatModel.chatId.value = chat.chatInfo.id
-  chatModel.anchors.value = emptyList()
+  chatModel.chatState.clear()
 }
 
-suspend fun apiFindMessages(ch: Chat, chatModel: ChatModel, search: String) =
-  apiLoadMessages(ch.remoteHostId, ch.chatInfo.chatType, ch.chatInfo.apiId, pagination = ChatPagination.Last(ChatPagination.INITIAL_COUNT), search = search, chatModel.anchors) { 0 .. 0 }
+suspend fun apiFindMessages(ch: Chat, search: String) {
+  chatModel.chatItems.clearAndNotify()
+  apiLoadMessages(ch.remoteHostId, ch.chatInfo.chatType, ch.chatInfo.apiId, pagination = ChatPagination.Last(ChatPagination.INITIAL_COUNT), chatModel.chatState, search = search)
+}
 
 suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) {
   val groupMembers = chatModel.controller.apiListMembers(rhId, groupInfo.groupId)

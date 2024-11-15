@@ -86,7 +86,7 @@ fun ChatItemView(
   itemSeparation: ItemSeparation,
   preview: Boolean = false,
 ) {
-  SideEffect { println("LALAL CHATITEMID ${range}  ${cItem.id}") }
+//  SideEffect { println("LALAL CHATITEMID ${range}  ${cItem.id}") }
   val uriHandler = LocalUriHandler.current
   val sent = cItem.chatDir.sent
   val alignment = if (sent) Alignment.CenterEnd else Alignment.CenterStart

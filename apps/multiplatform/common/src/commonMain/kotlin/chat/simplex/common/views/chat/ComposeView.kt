@@ -659,13 +659,6 @@ fun ComposeView(
     }
   }
 
-  // LALAL
-//  LaunchedEffect(Unit) {
-//    for (i in 0..1000) {
-//      sendMessageAsync(i.toString(), false, null)
-//    }
-//  }
-
   fun onMessageChange(s: String) {
     composeState.value = composeState.value.copy(message = s)
     if (isShortEmoji(s)) {
