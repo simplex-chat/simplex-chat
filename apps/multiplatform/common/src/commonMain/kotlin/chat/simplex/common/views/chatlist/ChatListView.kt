@@ -256,7 +256,6 @@ private fun AddressCreationCard() {
             Icon(
               painterResource(MR.images.ic_info),
               null,
-              tint = MaterialTheme.colors.primary
             )
           }
           Spacer(Modifier.weight(1f))
