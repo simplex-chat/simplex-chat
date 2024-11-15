@@ -15,9 +15,10 @@ struct OperatorView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.editMode) private var editMode
+    @Binding var currUserServers: [UserOperatorServers]
     @Binding var userServers: [UserOperatorServers]
-    var operatorServersIndex: Int
-    @State var serverOperatorToEdit: ServerOperator
+    var operatorIndex: Int
     @State var useOperator: Bool
     @State private var useOperatorToggleReset: Bool = false
     @State private var showConditionsSheet: Bool = false
@@ -47,36 +48,43 @@ struct OperatorView: View {
                     Text("Operator")
                         .foregroundColor(theme.colors.secondary)
                 } footer: {
-                    switch (serverOperatorToEdit.conditionsAcceptance) {
+                    switch (userServers[operatorIndex].operator_.conditionsAcceptance) {
                     case let .accepted(acceptedAt):
                         if let acceptedAt = acceptedAt {
                             Text("Conditions accepted on: \(conditionsTimestamp(acceptedAt)).")
                                 .foregroundColor(theme.colors.secondary)
                         }
                     case let .required(deadline):
-                        if serverOperatorToEdit.enabled, let deadline = deadline {
+                        if userServers[operatorIndex].operator_.enabled, let deadline = deadline {
                             Text("Conditions will be considered accepted after: \(conditionsTimestamp(deadline)).")
                                 .foregroundColor(theme.colors.secondary)
                         }
                     }
                 }
 
-                if serverOperatorToEdit.enabled {
-                    Section(header: Text("Use operator").foregroundColor(theme.colors.secondary)) {
-                        Toggle("For storage", isOn: $serverOperatorToEdit.roles.storage)
-                        Toggle("As proxy", isOn: $serverOperatorToEdit.roles.proxy)
+                if userServers[operatorIndex].operator_.enabled {
+                    if !userServers[operatorIndex].smpServers.filter({ !$0.deleted }).isEmpty {
+                        Section(header: Text("Use for messages").foregroundColor(theme.colors.secondary)) {
+                            Toggle("For receiving", isOn: $userServers[operatorIndex].operator_.smpRoles.storage)
+                            Toggle("For private routing", isOn: $userServers[operatorIndex].operator_.smpRoles.proxy)
+                        }
                     }
 
-                    if !userServers[operatorServersIndex].smpServers.isEmpty {
+                    // Preset servers can't be deleted
+                    if !userServers[operatorIndex].smpServers.filter({ $0.preset }).isEmpty {
                         Section {
-                            ForEach($userServers[operatorServersIndex].smpServers) { srv in
-                                ProtocolServerViewLink(
-                                    userServers: $userServers,
-                                    server: srv,
-                                    serverProtocol: .smp,
-                                    backLabel: "\(serverOperatorToEdit.tradeName) servers",
-                                    selectedServer: $selectedServer
-                                )
+                            ForEach($userServers[operatorIndex].smpServers) { srv in
+                                if srv.wrappedValue.preset {
+                                    ProtocolServerViewLink(
+                                        userServers: $userServers,
+                                        server: srv,
+                                        serverProtocol: .smp,
+                                        backLabel: "\(userServers[operatorIndex].operator_.tradeName) servers",
+                                        selectedServer: $selectedServer
+                                    )
+                                } else {
+                                    EmptyView()
+                                }
                             }
                         } header: {
                             Text("Message servers")
@@ -88,16 +96,49 @@ struct OperatorView: View {
                         }
                     }
 
-                    if !userServers[operatorServersIndex].xftpServers.isEmpty {
+                    if !userServers[operatorIndex].smpServers.filter({ !$0.preset && !$0.deleted }).isEmpty {
                         Section {
-                            ForEach($userServers[operatorServersIndex].xftpServers) { srv in
-                                ProtocolServerViewLink(
-                                    userServers: $userServers,
-                                    server: srv,
-                                    serverProtocol: .xftp,
-                                    backLabel: "\(serverOperatorToEdit.tradeName) servers",
-                                    selectedServer: $selectedServer
-                                )
+                            ForEach($userServers[operatorIndex].smpServers) { srv in
+                                if !srv.wrappedValue.preset && !srv.wrappedValue.deleted {
+                                    ProtocolServerViewLink(
+                                        userServers: $userServers,
+                                        server: srv,
+                                        serverProtocol: .smp,
+                                        backLabel: "\(userServers[operatorIndex].operator_.tradeName) servers",
+                                        selectedServer: $selectedServer
+                                    )
+                                } else {
+                                    EmptyView()
+                                }
+                            }
+                            .onDelete { indexSet in deleteSMPServer($userServers, operatorIndex, indexSet) }
+                        } header: {
+                            Text("Added message servers")
+                                .foregroundColor(theme.colors.secondary)
+                        }
+                    }
+
+                    if !userServers[operatorIndex].xftpServers.filter({ !$0.deleted }).isEmpty {
+                        Section(header: Text("Use for files").foregroundColor(theme.colors.secondary)) {
+                            Toggle("For sending", isOn: $userServers[operatorIndex].operator_.xftpRoles.storage)
+                        }
+                    }
+
+                    // Preset servers can't be deleted
+                    if !userServers[operatorIndex].xftpServers.filter({ $0.preset }).isEmpty {
+                        Section {
+                            ForEach($userServers[operatorIndex].xftpServers) { srv in
+                                if srv.wrappedValue.preset {
+                                    ProtocolServerViewLink(
+                                        userServers: $userServers,
+                                        server: srv,
+                                        serverProtocol: .xftp,
+                                        backLabel: "\(userServers[operatorIndex].operator_.tradeName) servers",
+                                        selectedServer: $selectedServer
+                                    )
+                                } else {
+                                    EmptyView()
+                                }
                             }
                         } header: {
                             Text("Media & file servers")
@@ -109,41 +150,70 @@ struct OperatorView: View {
                         }
                     }
 
+                    if !userServers[operatorIndex].xftpServers.filter({ !$0.preset && !$0.deleted }).isEmpty {
+                        Section {
+                            ForEach($userServers[operatorIndex].xftpServers) { srv in
+                                if !srv.wrappedValue.preset && !srv.wrappedValue.deleted {
+                                    ProtocolServerViewLink(
+                                        userServers: $userServers,
+                                        server: srv,
+                                        serverProtocol: .xftp,
+                                        backLabel: "\(userServers[operatorIndex].operator_.tradeName) servers",
+                                        selectedServer: $selectedServer
+                                    )
+                                } else {
+                                    EmptyView()
+                                }
+                            }
+                            .onDelete { indexSet in deleteXFTPServer($userServers, operatorIndex, indexSet) }
+                        } header: {
+                            Text("Added media & file servers")
+                                .foregroundColor(theme.colors.secondary)
+                        }
+                    }
+
                     Section {
                         TestServersButton(
-                            smpServers: $userServers[operatorServersIndex].smpServers,
-                            xftpServers: $userServers[operatorServersIndex].xftpServers,
+                            smpServers: $userServers[operatorIndex].smpServers,
+                            xftpServers: $userServers[operatorIndex].xftpServers,
                             testing: $testing
                         )
                     }
                 }
             }
         }
-        .modifier(BackButton(disabled: Binding.constant(false)) {
-            userServers[operatorServersIndex].operator = serverOperatorToEdit
-            ChatModel.shared.updateServerOperator(serverOperatorToEdit)
-            dismiss()
-        })
+        .toolbar {
+            if (
+                !userServers[operatorIndex].smpServers.filter({ !$0.preset && !$0.deleted }).isEmpty ||
+                !userServers[operatorIndex].xftpServers.filter({ !$0.preset && !$0.deleted }).isEmpty
+            ) {
+                EditButton()
+            }
+        }
         .sheet(isPresented: $showConditionsSheet, onDismiss: onUseToggleSheetDismissed) {
-            SingleOperatorUsageConditionsView(serverOperator: $serverOperatorToEdit, serverOperatorToEdit: serverOperatorToEdit)
-                .modifier(ThemedBackground(grouped: true))
+            SingleOperatorUsageConditionsView(
+                currUserServers: $currUserServers,
+                userServers: $userServers,
+                operatorIndex: operatorIndex
+            )
+            .modifier(ThemedBackground(grouped: true))
         }
     }
 
     private func infoViewLink() -> some View {
         NavigationLink() {
-            OperatorInfoView(serverOperator: serverOperatorToEdit)
+            OperatorInfoView(serverOperator: userServers[operatorIndex].operator_)
                 .navigationBarTitle("Operator information")
                 .modifier(ThemedBackground(grouped: true))
                 .navigationBarTitleDisplayMode(.large)
         } label: {
             HStack {
-                Image(serverOperatorToEdit.logo(colorScheme))
+                Image(userServers[operatorIndex].operator_.logo(colorScheme))
                     .resizable()
                     .scaledToFit()
-                    .grayscale(serverOperatorToEdit.enabled ? 0.0 : 1.0)
+                    .grayscale(userServers[operatorIndex].operator_.enabled ? 0.0 : 1.0)
                     .frame(width: 24, height: 24)
-                Text(serverOperatorToEdit.tradeName)
+                Text(userServers[operatorIndex].operator_.tradeName)
             }
         }
     }
@@ -154,34 +224,26 @@ struct OperatorView: View {
                 if useOperatorToggleReset {
                     useOperatorToggleReset = false
                 } else if useOperatorToggle {
-                    switch serverOperatorToEdit.conditionsAcceptance {
+                    switch userServers[operatorIndex].operator_.conditionsAcceptance {
                     case .accepted:
-                        serverOperatorToEdit.enabled = true
-                        ChatModel.shared.updateServerOperator(serverOperatorToEdit)
+                        userServers[operatorIndex].operator_.enabled = true
                     case let .required(deadline):
                         if deadline == nil {
                             showConditionsSheet = true
                         } else {
-                            serverOperatorToEdit.enabled = true
-                            ChatModel.shared.updateServerOperator(serverOperatorToEdit)
+                            userServers[operatorIndex].operator_.enabled = true
                         }
                     }
                 } else {
-                    serverOperatorToEdit.enabled = false
-                    ChatModel.shared.updateServerOperator(serverOperatorToEdit)
+                    userServers[operatorIndex].operator_.enabled = false
                 }
             }
     }
 
     private func onUseToggleSheetDismissed() {
-        if useOperator && !serverOperatorToEdit.enabled {
-            if serverOperatorToEdit.conditionsAcceptance.usageAllowed {
-                serverOperatorToEdit.enabled = true
-                ChatModel.shared.updateServerOperator(serverOperatorToEdit)
-            } else {
-                useOperatorToggleReset = true
-                useOperator = false
-            }
+        if useOperator && !userServers[operatorIndex].operator_.conditionsAcceptance.usageAllowed {
+            useOperatorToggleReset = true
+            useOperator = false
         }
     }
 }
@@ -211,18 +273,6 @@ struct OperatorInfoView: View {
     }
 }
 
-let conditionsText = """
-Lorem ipsum odor amet, consectetuer adipiscing elit. Blandit mauris massa tempor ac; maximus accumsan magnis. Sollicitudin maximus tempor luctus sociosqu turpis dictum per imperdiet porttitor. Efficitur mattis fusce curae id efficitur. Non bibendum elementum faucibus vehicula morbi pulvinar. Accumsan habitant tincidunt sollicitudin taciti ad urna potenti velit. Primis laoreet pharetra magnis est dolor proin viverra.
-
-Laoreet auctor morbi a varius rutrum diam porta? In ad erat condimentum erat leo ornare. Eu venenatis inceptos rhoncus urna fringilla dis proin ante. Cras dignissim rutrum et faucibus feugiat neque curae tempus. Tellus ligula id dapibus, diam sollicitudin velit odio aliquam lectus. Maecenas ullamcorper arcu interdum cubilia donec iaculis. Maximus penatibus turpis a; vel fermentum ridiculus magna phasellus pellentesque. Eros tellus libero varius potenti; lobortis iaculis.
-
-Mollis condimentum potenti velit at rutrum tellus maximus suscipit nec. Vehicula aenean dui netus enim aliquam. Aliquam libero rhoncus per pharetra accumsan eros. Urna non eu sem varius vivamus mus tellus aptent quam. Tristique mi natoque lectus volutpat facilisi commodo ac consequat. Proin parturient facilisi senectus egestas ultrices. Fringilla nisi urna convallis molestie lorem varius phasellus a ornare. Ullamcorper varius praesent facilisi habitasse massa.
-
-Potenti dolor ridiculus est faucibus leo. Euismod consequat ultricies fringilla sociosqu duis sollicitudin. Eget convallis lacinia lacus justo per habitasse parturient. Donec nunc himenaeos pretium donec cursus pharetra ac phasellus? Fringilla sodales egestas orci ligula per ligula semper pellentesque. Potenti non dignissim tempor; orci rutrum elit.
-
-Habitasse eu sapien eleifend gravida tortor potenti senectus euismod. Lectus enim fames turpis lectus facilisi efficitur elit porttitor facilisi. Nisl quam senectus quam augue integer leo. In aliquam tempor nibh proin felis tortor elementum sodales lacinia. Ut per placerat bibendum magna dapibus fermentum bibendum amet congue. Curae bibendum enim platea per faucibus imperdiet morbi hac varius. Conubia feugiat justo hac faucibus dis.
-"""
-
 struct ConditionsTextView: View {
     @State private var conditionsData: (UsageConditions, String?, UsageConditions?)?
     @State private var failedToLoad: Bool = false
@@ -242,6 +292,7 @@ struct ConditionsTextView: View {
             }
     }
 
+    // TODO Markdown & diff rendering
     @ViewBuilder private func viewBody() -> some View {
         if let (usageConditions, conditionsText, acceptedConditions) = conditionsData {
             if let conditionsText = conditionsText {
@@ -279,8 +330,9 @@ struct ConditionsTextView: View {
 struct SingleOperatorUsageConditionsView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var theme: AppTheme
-    @Binding var serverOperator: ServerOperator
-    @State var serverOperatorToEdit: ServerOperator
+    @Binding var currUserServers: [UserOperatorServers]
+    @Binding var userServers: [UserOperatorServers]
+    var operatorIndex: Int
     @State private var usageConditionsNavLinkActive: Bool = false
 
     var body: some View {
@@ -288,8 +340,8 @@ struct SingleOperatorUsageConditionsView: View {
     }
 
     @ViewBuilder private func viewBody() -> some View {
-        let operatorsWithConditionsAccepted = ChatModel.shared.serverOperators.filter { $0.conditionsAcceptance.conditionsAccepted }
-        if case .accepted = serverOperator.conditionsAcceptance {
+        let operatorsWithConditionsAccepted = ChatModel.shared.conditions.serverOperators.filter { $0.conditionsAcceptance.conditionsAccepted }
+        if case .accepted = userServers[operatorIndex].operator_.conditionsAcceptance {
 
             // In current UI implementation this branch doesn't get shown - as conditions can't be opened from inside operator once accepted
             VStack(alignment: .leading, spacing: 20) {
@@ -310,7 +362,7 @@ struct SingleOperatorUsageConditionsView: View {
                     Group {
                         viewHeader()
                         Text("Conditions are already accepted for following operator(s): **\(operatorsWithConditionsAccepted.map { $0.legalName_ }.joined(separator: ", "))**.")
-                        Text("Same conditions will apply to operator **\(serverOperator.legalName_)**.")
+                        Text("Same conditions will apply to operator **\(userServers[operatorIndex].operator_.legalName_)**.")
                         conditionsAppliedToOtherOperatorsText()
                         usageConditionsNavLinkButton()
 
@@ -330,7 +382,7 @@ struct SingleOperatorUsageConditionsView: View {
             VStack(alignment: .leading, spacing: 20) {
                 Group {
                     viewHeader()
-                    Text("In order to use operator **\(serverOperator.legalName_)**, accept conditions of use.")
+                    Text("In order to use operator **\(userServers[operatorIndex].operator_.legalName_)**, accept conditions of use.")
                     conditionsAppliedToOtherOperatorsText()
                     ConditionsTextView()
                     acceptConditionsButton()
@@ -345,7 +397,7 @@ struct SingleOperatorUsageConditionsView: View {
     }
 
     private func viewHeader() -> some View {
-        Text("Use operator \(serverOperator.tradeName)")
+        Text("Use operator \(userServers[operatorIndex].operator_.tradeName)")
             .font(.largeTitle)
             .bold()
             .padding(.top)
@@ -353,25 +405,25 @@ struct SingleOperatorUsageConditionsView: View {
     }
 
     @ViewBuilder private func conditionsAppliedToOtherOperatorsText() -> some View {
-        let otherOperatorsToApply = ChatModel.shared.serverOperators.filter {
+        let otherOperatorsToApply = ChatModel.shared.conditions.serverOperators.filter {
             $0.enabled &&
             !$0.conditionsAcceptance.conditionsAccepted &&
-            $0.operatorId != serverOperator.operatorId
+            $0.operatorId != userServers[operatorIndex].operator_.operatorId
         }
         if !otherOperatorsToApply.isEmpty {
             Text("Conditions will also apply for following operator(s) you use: **\(otherOperatorsToApply.map { $0.legalName_ }.joined(separator: ", "))**.")
         }
     }
-
-    private func acceptConditionsButton() -> some View {
+    
+    @ViewBuilder private func acceptConditionsButton() -> some View {
+        let operatorIds = ChatModel.shared.conditions.serverOperators
+            .filter {
+                $0.operatorId == userServers[operatorIndex].operator_.operatorId || // Opened operator
+                ($0.enabled && !$0.conditionsAcceptance.conditionsAccepted) // Other enabled operators with conditions not accepted
+            }
+            .map { $0.operatorId }
         Button {
-            // Should call api to save state here, not when saving all servers
-            // (It's counterintuitive to lose to closed sheet or Reset)
-            let acceptedAt = Date.now
-            ChatModel.shared.acceptConditionsForEnabledOperators(acceptedAt)
-            serverOperatorToEdit.conditionsAcceptance = .accepted(acceptedAt: acceptedAt)
-            serverOperator = serverOperatorToEdit
-            dismiss()
+            acceptForOperators($currUserServers, $userServers, operatorIndex, dismiss, operatorIds)
         } label: {
             Text("Accept conditions")
         }
@@ -412,69 +464,11 @@ struct SingleOperatorUsageConditionsView: View {
     }
 }
 
-struct UsageConditionsView: View {
-    @Environment(\.dismiss) var dismiss: DismissAction
-    @EnvironmentObject var theme: AppTheme
-    var showTitle: Bool // When shown on sheet
-    var dismissOnAccept: Bool // When shown on sheet
-    var conditionsAction: UsageConditionsAction
-    var onAcceptAction: ((Date) -> Void)
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            if showTitle {
-                Text("Conditions of use")
-                    .font(.largeTitle)
-                    .bold()
-                    .padding(.top)
-                    .padding(.top)
-            }
-            
-            switch conditionsAction {
-            case let .review(operators, _, _):
-
-                Text("Conditions will be accepted for following operator(s): **\(operators.map { $0.legalName_ }.joined(separator: ", "))**.")
-
-                ConditionsTextView()
-
-                acceptConditionsButton(operators)
-                    .padding(.bottom)
-                    .padding(.bottom)
-                
-            case let .accepted(operators):
-
-                Text("Conditions are accepted for following operator(s): **\(operators.map { $0.legalName_ }.joined(separator: ", "))**.")
-
-                ConditionsTextView()
-                    .padding(.bottom)
-                    .padding(.bottom)
-                
-            }
-        }
-        .padding(.horizontal)
-        .frame(maxHeight: .infinity)
-    }
-
-    private func acceptConditionsButton(_ operators: [ServerOperator]) -> some View {
-        Button {
-            // Should call api to save state here, not when saving all servers
-            // (It's counterintuitive to lose to closed sheet or Reset)
-            onAcceptAction(Date.now)
-            if dismissOnAccept{
-                dismiss()
-            }
-        } label: {
-            Text("Accept conditions")
-        }
-        .buttonStyle(OnboardingButtonStyle(isDisabled: false))
-    }
-}
-
 #Preview {
     OperatorView(
-        userServers: Binding.constant([UserOperatorServers.sampleData1]),
-        operatorServersIndex: 1,
-        serverOperatorToEdit: ServerOperator.sampleData1,
+        currUserServers: Binding.constant([UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator]),
+        userServers: Binding.constant([UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator]),
+        operatorIndex: 1,
         useOperator: ServerOperator.sampleData1.enabled
     )
 }

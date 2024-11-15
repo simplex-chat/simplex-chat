@@ -17,7 +17,7 @@ struct YourServersView: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.editMode) private var editMode
     @Binding var userServers: [UserOperatorServers]
-    var operatorServersIndex: Int
+    var operatorIndex: Int
     @State private var selectedServer: String? = nil
     @State private var showAddServer = false
     @State private var newServerNavLinkActive = false
@@ -39,9 +39,9 @@ struct YourServersView: View {
 
     private func yourServersView() -> some View {
         List {
-            if !userServers[operatorServersIndex].smpServers.filter({ !$0.deleted }).isEmpty {
+            if !userServers[operatorIndex].smpServers.filter({ !$0.deleted }).isEmpty {
                 Section {
-                    ForEach($userServers[operatorServersIndex].smpServers) { srv in
+                    ForEach($userServers[operatorIndex].smpServers) { srv in
                         if !srv.wrappedValue.deleted {
                             ProtocolServerViewLink(
                                 userServers: $userServers,
@@ -54,18 +54,7 @@ struct YourServersView: View {
                             EmptyView()
                         }
                     }
-                    .onDelete { indexSet in
-                        if let idx = indexSet.first {
-                            let server = userServers[operatorServersIndex].smpServers[idx]
-                            if server.serverId == nil {
-                                userServers[operatorServersIndex].smpServers.remove(at: idx)
-                            } else {
-                                var updatedServer = server
-                                updatedServer.deleted = true
-                                userServers[operatorServersIndex].smpServers[idx] = updatedServer
-                            }
-                        }
-                    }
+                    .onDelete { indexSet in deleteSMPServer($userServers, operatorIndex, indexSet) }
                 } header: {
                     Text("Message servers")
                         .foregroundColor(theme.colors.secondary)
@@ -76,9 +65,9 @@ struct YourServersView: View {
                 }
             }
 
-            if !userServers[operatorServersIndex].xftpServers.filter({ !$0.deleted }).isEmpty {
+            if !userServers[operatorIndex].xftpServers.filter({ !$0.deleted }).isEmpty {
                 Section {
-                    ForEach($userServers[operatorServersIndex].xftpServers) { srv in
+                    ForEach($userServers[operatorIndex].xftpServers) { srv in
                         if !srv.wrappedValue.deleted {
                             ProtocolServerViewLink(
                                 userServers: $userServers,
@@ -91,18 +80,7 @@ struct YourServersView: View {
                             EmptyView()
                         }
                     }
-                    .onDelete { indexSet in
-                        if let idx = indexSet.first {
-                            let server = userServers[operatorServersIndex].xftpServers[idx]
-                            if server.serverId == nil {
-                                userServers[operatorServersIndex].xftpServers.remove(at: idx)
-                            } else {
-                                var updatedServer = server
-                                updatedServer.deleted = true
-                                userServers[operatorServersIndex].xftpServers[idx] = updatedServer
-                            }
-                        }
-                    }
+                    .onDelete { indexSet in deleteXFTPServer($userServers, operatorIndex, indexSet) }
                 } header: {
                     Text("Media & file servers")
                         .foregroundColor(theme.colors.secondary)
@@ -131,8 +109,8 @@ struct YourServersView: View {
 
             Section {
                 TestServersButton(
-                    smpServers: $userServers[operatorServersIndex].smpServers,
-                    xftpServers: $userServers[operatorServersIndex].xftpServers,
+                    smpServers: $userServers[operatorIndex].smpServers,
+                    xftpServers: $userServers[operatorIndex].xftpServers,
                     testing: $testing
                 )
                 howToButton()
@@ -140,8 +118,8 @@ struct YourServersView: View {
         }
         .toolbar {
             if (
-                !userServers[operatorServersIndex].smpServers.filter({ !$0.deleted }).isEmpty ||
-                !userServers[operatorServersIndex].xftpServers.filter({ !$0.deleted }).isEmpty
+                !userServers[operatorIndex].smpServers.filter({ !$0.deleted }).isEmpty ||
+                !userServers[operatorIndex].xftpServers.filter({ !$0.deleted }).isEmpty
             ) {
                 EditButton()
             }
@@ -237,6 +215,40 @@ struct ProtocolServerViewLink: View {
     }
 }
 
+func deleteSMPServer(
+    _ userServers: Binding<[UserOperatorServers]>,
+    _ operatorServersIndex: Int,
+    _ serverIndexSet: IndexSet
+) {
+    if let idx = serverIndexSet.first {
+        let server = userServers[operatorServersIndex].wrappedValue.smpServers[idx]
+        if server.serverId == nil {
+            userServers[operatorServersIndex].wrappedValue.smpServers.remove(at: idx)
+        } else {
+            var updatedServer = server
+            updatedServer.deleted = true
+            userServers[operatorServersIndex].wrappedValue.smpServers[idx] = updatedServer
+        }
+    }
+}
+
+func deleteXFTPServer(
+    _ userServers: Binding<[UserOperatorServers]>,
+    _ operatorServersIndex: Int,
+    _ serverIndexSet: IndexSet
+) {
+    if let idx = serverIndexSet.first {
+        let server = userServers[operatorServersIndex].wrappedValue.xftpServers[idx]
+        if server.serverId == nil {
+            userServers[operatorServersIndex].wrappedValue.xftpServers.remove(at: idx)
+        } else {
+            var updatedServer = server
+            updatedServer.deleted = true
+            userServers[operatorServersIndex].wrappedValue.xftpServers[idx] = updatedServer
+        }
+    }
+}
+
 struct TestServersButton: View {
     @Binding var smpServers: [UserServer]
     @Binding var xftpServers: [UserServer]
@@ -310,7 +322,7 @@ struct YourServersView_Previews: PreviewProvider {
     static var previews: some View {
         YourServersView(
             userServers: Binding.constant([UserOperatorServers.sampleDataNilOperator]),
-            operatorServersIndex: 1
+            operatorIndex: 1
         )
     }
 }

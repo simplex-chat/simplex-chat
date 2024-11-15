@@ -512,23 +512,16 @@ func testProtoServer(server: String) async throws -> Result<(), ProtocolTestFail
     throw r
 }
 
-func getServerOperatorsSync() throws -> ([ServerOperator], UsageConditionsAction?) {
+func getServerOperators() throws -> ServerOperatorConditions {
     let r = chatSendCmdSync(.apiGetServerOperators)
-    if case let .serverOperators(operators, conditionsAction) = r { return (operators, conditionsAction) }
-    logger.error("getServerOperatorsSync error: \(String(describing: r))")
-    throw r
-}
-
-func getServerOperators() async throws -> ([ServerOperator], UsageConditionsAction?) {
-    let r = await chatSendCmd(.apiGetServerOperators)
-    if case let .serverOperators(operators, conditionsAction) = r { return (operators, conditionsAction) }
+    if case let .serverOperatorConditions(conditions) = r { return conditions }
     logger.error("getServerOperators error: \(String(describing: r))")
     throw r
 }
 
-func setServerOperators(operators: [ServerOperator]) async throws -> ([ServerOperator], UsageConditionsAction?) {
+func setServerOperators(operators: [ServerOperator]) async throws -> ServerOperatorConditions {
     let r = await chatSendCmd(.apiSetServerOperators(operators: operators))
-    if case let .serverOperators(operators, conditionsAction) = r { return (operators, conditionsAction) }
+    if case let .serverOperatorConditions(conditions) = r { return conditions }
     logger.error("setServerOperators error: \(String(describing: r))")
     throw r
 }
@@ -570,9 +563,9 @@ func setConditionsNotified(conditionsId: Int64) async throws {
     throw r
 }
 
-func acceptConditions(conditionsId: Int64, operatorIds: [Int64]) async throws -> ([ServerOperator], UsageConditionsAction?) {
+func acceptConditions(conditionsId: Int64, operatorIds: [Int64]) async throws -> ServerOperatorConditions {
     let r = await chatSendCmd(.apiAcceptConditions(conditionsId: conditionsId, operatorIds: operatorIds))
-    if case let .serverOperators(updatedOperators, conditionsAction) = r { return (updatedOperators, conditionsAction) }
+    if case let .serverOperatorConditions(conditions) = r { return conditions }
     logger.error("acceptConditions error: \(String(describing: r))")
     throw r
 }
@@ -1610,8 +1603,8 @@ func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = ni
     try apiSetAppFilePaths(filesFolder: getAppFilesDirectory().path, tempFolder: getTempFilesDirectory().path, assetsFolder: getWallpaperDirectory().deletingLastPathComponent().path)
     try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
     m.chatInitialized = true
-    (m.serverOperators, m.usageConditionsAction) = try getServerOperatorsSync()
     m.currentUser = try apiGetActiveUser()
+    m.conditions = try getServerOperators()
     if m.currentUser == nil {
         onboardingStageDefault.set(.step1_SimpleXInfo)
         privacyDeliveryReceiptsSet.set(true)

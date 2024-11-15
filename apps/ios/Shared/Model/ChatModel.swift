@@ -193,11 +193,8 @@ final class ChatModel: ObservableObject {
     @Published var draft: ComposeState?
     @Published var draftChatId: String?
     @Published var networkInfo = UserNetworkInfo(networkType: .other, online: true)
-    // server operators
-    // TODO Load into model from backend, update on operator changes
-    @Published var serverOperators: [ServerOperator] = [ServerOperator.sampleData1, ServerOperator.sampleData2, ServerOperator.sampleData3]
-    // @Published var usageConditionsAction: UsageConditionsAction? = .review(operators: [ServerOperator.sampleData1], deadline: Date.distantFuture, showNotice: true)
-    @Published var usageConditionsAction: UsageConditionsAction? = .accepted(operators: [ServerOperator.sampleData1])
+    // usage conditions
+    @Published var conditions: ServerOperatorConditions = .empty
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
@@ -241,51 +238,6 @@ final class ChatModel: ObservableObject {
     func removeUser(_ user: User) {
         if let i = getUserIndex(user) {
             users.remove(at: i)
-        }
-    }
-    
-    func acceptConditionsForEnabledOperators(_ date: Date) {
-        for (i, serverOperator) in serverOperators.enumerated() {
-            if serverOperator.enabled && !serverOperator.conditionsAcceptance.conditionsAccepted {
-                var updatedOperator = serverOperator
-                updatedOperator.conditionsAcceptance = .accepted(acceptedAt: date)
-                serverOperators[i] = updatedOperator
-            }
-        }
-        updateUsageConditionsAction()
-    }
-
-    func acceptConditionsForOperators(_ acceptForOperators: [ServerOperator], _ date: Date, enable: Bool = false) {
-        for serverOperator in acceptForOperators {
-            if let i = serverOperators.firstIndex(where: { $0.operatorId == serverOperator.operatorId }) {
-                var updatedOperator = serverOperators[i]
-                updatedOperator.conditionsAcceptance = .accepted(acceptedAt: date)
-                if enable {
-                    updatedOperator.enabled = true
-                }
-                serverOperators[i] = updatedOperator
-            }
-        }
-        updateUsageConditionsAction()
-    }
-
-    func updateServerOperator(_ updatedOperator: ServerOperator) {
-        if let i = serverOperators.firstIndex(where: { $0.operatorId == updatedOperator.operatorId }) {
-            serverOperators[i] = updatedOperator
-        }
-        updateUsageConditionsAction()
-    }
-
-    // TODO remove
-    private func updateUsageConditionsAction() {
-        let usedOperators = serverOperators.filter { $0.enabled }
-        if usedOperators.isEmpty {
-            usageConditionsAction = nil
-        } else if usedOperators.allSatisfy({ $0.conditionsAcceptance.conditionsAccepted }) {
-            usageConditionsAction = .accepted(operators: usedOperators)
-        } else {
-            let acceptForOperators = usedOperators.filter { !$0.conditionsAcceptance.conditionsAccepted }
-            usageConditionsAction = .review(operators: acceptForOperators, deadline: Date.distantFuture, showNotice: false)
         }
     }
 

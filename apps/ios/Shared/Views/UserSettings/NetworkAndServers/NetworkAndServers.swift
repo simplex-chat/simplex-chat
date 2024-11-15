@@ -34,8 +34,8 @@ struct NetworkAndServers: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     @EnvironmentObject var theme: AppTheme
-    @State private var currUserServers: [UserOperatorServers] = []
-    @State private var userServers: [UserOperatorServers] = []
+    @Binding var currUserServers: [UserOperatorServers]
+    @Binding var userServers: [UserOperatorServers]
     @State private var sheetItem: NetworkAndServersSheet? = nil
     @State private var justOpened = true
     @State private var showSaveDialog = false
@@ -43,7 +43,8 @@ struct NetworkAndServers: View {
     var body: some View {
         VStack {
             List {
-                let conditionsAction = m.usageConditionsAction
+                let conditionsAction = m.conditions.conditionsAction
+                let anyOperatorEnabled = userServers.contains(where: { $0.operator?.enabled ?? false })
                 Section {
                     ForEach(userServers.enumerated().map { $0 }, id: \.element.id) { idx, userOperatorServers in
                         if let serverOperator = userOperatorServers.operator {
@@ -53,7 +54,7 @@ struct NetworkAndServers: View {
                         }
                     }
 
-                    if let conditionsAction = conditionsAction {
+                    if let conditionsAction = conditionsAction, anyOperatorEnabled {
                         conditionsButton(conditionsAction)
                     }
                 } header: {
@@ -62,8 +63,8 @@ struct NetworkAndServers: View {
                 } footer: {
                     switch conditionsAction {
                     case let .review(_, deadline, _):
-                        if let deadline = deadline {
-                            Text("Review conditions until: \(conditionsTimestamp(deadline)).")
+                        if let deadline = deadline, anyOperatorEnabled {
+                            Text("Conditions will be considered accepted for enabled operators after: \(conditionsTimestamp(deadline)).")
                                 .foregroundColor(theme.colors.secondary)
                         }
                     default:
@@ -76,12 +77,19 @@ struct NetworkAndServers: View {
                         NavigationLink {
                             YourServersView(
                                 userServers: $userServers,
-                                operatorServersIndex: idx
+                                operatorIndex: idx
                             )
                             .navigationTitle("Your servers")
                             .modifier(ThemedBackground(grouped: true))
                         } label: {
-                            Text("Your servers")
+                            HStack {
+                                Text("Your servers")
+                                
+                                if userServers[idx] != currUserServers[idx] {
+                                    Spacer()
+                                    unsavedChangesIndicator()
+                                }
+                            }
                         }
                     }
 
@@ -98,8 +106,8 @@ struct NetworkAndServers: View {
                 }
 
                 Section {
-                    Button("Save servers", action: saveServers)
-                        .disabled(saveDisabled)
+                    Button("Save servers", action: { saveServers($currUserServers, $userServers) })
+                        .disabled(userServers == currUserServers)
                 }
 
                 Section(header: Text("Calls").foregroundColor(theme.colors.secondary)) {
@@ -128,27 +136,27 @@ struct NetworkAndServers: View {
                     currUserServers = try await getUserServers()
                     userServers = currUserServers
                 } catch let error {
-                    showAlert(
-                        NSLocalizedString("Error loading servers", comment: "alert title"),
-                        message: responseError(error)
-                    )
+                    await MainActor.run {
+                        showAlert(
+                            NSLocalizedString("Error loading servers", comment: "alert title"),
+                            message: responseError(error)
+                        )
+                    }
                 }
                 justOpened = false
             }
         }
         .modifier(BackButton(disabled: Binding.constant(false)) {
-            if saveDisabled {
-                dismiss()
-                justOpened = false
-            } else {
+            if userServers != currUserServers {
                 showSaveDialog = true
+            } else {
+                dismiss()
             }
         })
         .confirmationDialog("Save servers?", isPresented: $showSaveDialog, titleVisibility: .visible) {
             Button("Save") {
-                saveServers()
+                saveServers($currUserServers, $userServers)
                 dismiss()
-                justOpened = false
             }
             Button("Exit without saving") { dismiss() }
         }
@@ -158,27 +166,21 @@ struct NetworkAndServers: View {
             switch item {
             case let .showConditions(conditionsAction):
                 UsageConditionsView(
-                    showTitle: true,
-                    dismissOnAccept: true,
                     conditionsAction: conditionsAction,
-                    onAcceptAction: { date in
-                        switch conditionsAction {
-                        case let .review(operators, _, _): ChatModel.shared.acceptConditionsForOperators(operators, date)
-                        default: break
-                        }
-                    }
+                    currUserServers: $currUserServers,
+                    userServers: $userServers
                 )
                 .modifier(ThemedBackground(grouped: true))
             }
         }
     }
 
-    @ViewBuilder private func serverOperatorView(_ operatorServersIndex: Int, _ serverOperator: ServerOperator) -> some View {
+    private func serverOperatorView(_ operatorIndex: Int, _ serverOperator: ServerOperator) -> some View {
         NavigationLink() {
             OperatorView(
+                currUserServers: $currUserServers,
                 userServers: $userServers,
-                operatorServersIndex: operatorServersIndex,
-                serverOperatorToEdit: serverOperator,
+                operatorIndex: operatorIndex,
                 useOperator: serverOperator.enabled
             )
             .navigationBarTitle("\(serverOperator.tradeName) servers")
@@ -193,8 +195,20 @@ struct NetworkAndServers: View {
                     .frame(width: 24, height: 24)
                 Text(serverOperator.tradeName)
                     .foregroundColor(serverOperator.enabled ? theme.colors.onBackground : theme.colors.secondary)
+
+                if userServers[operatorIndex] != currUserServers[operatorIndex] {
+                    Spacer()
+                    unsavedChangesIndicator()
+                }
             }
         }
+    }
+
+    private func unsavedChangesIndicator() -> some View {
+        Image(systemName: "pencil")
+            .foregroundColor(theme.colors.secondary)
+            .symbolRenderingMode(.monochrome)
+            .frame(maxWidth: 24, maxHeight: 24, alignment: .center)
     }
 
     private func conditionsButton(_ conditionsAction: UsageConditionsAction) -> some View {
@@ -209,46 +223,127 @@ struct NetworkAndServers: View {
             }
         }
     }
+}
 
+struct UsageConditionsView: View {
+    @Environment(\.dismiss) var dismiss: DismissAction
+    @EnvironmentObject var theme: AppTheme
+    var conditionsAction: UsageConditionsAction
+    @Binding var currUserServers: [UserOperatorServers]
+    @Binding var userServers: [UserOperatorServers]
 
-    private var saveDisabled: Bool {
-        userServers == currUserServers
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text("Conditions of use")
+                .font(.largeTitle)
+                .bold()
+                .padding(.top)
+                .padding(.top)
+
+            switch conditionsAction {
+
+            case let .review(operators, _, _):
+                Text("Conditions will be accepted for following operator(s): **\(operators.map { $0.legalName_ }.joined(separator: ", "))**.")
+                ConditionsTextView()
+                acceptConditionsButton(operators.map { $0.operatorId })
+                    .padding(.bottom)
+                    .padding(.bottom)
+
+            case let .accepted(operators):
+                Text("Conditions are accepted for following operator(s): **\(operators.map { $0.legalName_ }.joined(separator: ", "))**.")
+                ConditionsTextView()
+                    .padding(.bottom)
+                    .padding(.bottom)
+            }
+        }
+        .padding(.horizontal)
+        .frame(maxHeight: .infinity)
     }
 
-    func saveServers() {
-        Task {
+    private func acceptConditionsButton(_ operatorIds: [Int64]) -> some View {
+        Button {
+            acceptForOperators($currUserServers, $userServers, nil, dismiss, operatorIds)
+        } label: {
+            Text("Accept conditions")
+        }
+        .buttonStyle(OnboardingButtonStyle(isDisabled: false))
+    }
+}
+
+func saveServers(_ currUserServers: Binding<[UserOperatorServers]>, _ userServers: Binding<[UserOperatorServers]>) {
+    let userServersToSave = userServers.wrappedValue
+    Task {
+        do {
+            try await setUserServers(userServers: userServersToSave)
+            // Get updated servers for new server ids (otherwise it messes up delete of newly added and saved servers)
             do {
-                // TODO validateServers
-                // TODO Apply validation result to userServers state
-                try await setUserServers(userServers: userServers)
-                // Get updated servers for new server ids (otherwise it messes up delete of newly added and saved servers)
-                do {
-                    let updatedServers = try await getUserServers()
-                    await MainActor.run {
-                        currUserServers = updatedServers
-                        userServers = updatedServers
-                    }
-                } catch let error {
-                    logger.error("saveServers getUserServers error: \(responseError(error))")
-                    await MainActor.run {
-                        currUserServers = userServers
-                    }
+                let updatedServers = try await getUserServers()
+                await MainActor.run {
+                    currUserServers.wrappedValue = updatedServers
+                    userServers.wrappedValue = updatedServers
                 }
             } catch let error {
-                logger.error("saveServers setUserServers error: \(responseError(error))")
+                logger.error("saveServers getUserServers error: \(responseError(error))")
                 await MainActor.run {
-                    showAlert(
-                        NSLocalizedString("Error saving servers", comment: "alert title"),
-                        message: responseError(error)
-                    )
+                    currUserServers.wrappedValue = userServersToSave
                 }
             }
+        } catch let error {
+            logger.error("saveServers setUserServers error: \(responseError(error))")
+            await MainActor.run {
+                showAlert(
+                    NSLocalizedString("Error saving servers", comment: "alert title"),
+                    message: responseError(error)
+                )
+            }
+        }
+    }
+}
+
+func acceptForOperators(
+    _ currUserServers: Binding<[UserOperatorServers]>,
+    _ userServers: Binding<[UserOperatorServers]>,
+    _ operatorIndexToEnable: Int?,
+    _ dismissAction: DismissAction,
+    _ operatorIds: [Int64]
+) {
+    Task {
+        do {
+            let conditionsId = ChatModel.shared.conditions.currentConditions.conditionsId
+            let r = try await acceptConditions(conditionsId: conditionsId, operatorIds: operatorIds)
+            await MainActor.run {
+                ChatModel.shared.conditions = r
+                updateOperators(currUserServers, r.serverOperators)
+                updateOperators(userServers, r.serverOperators)
+                if let i = operatorIndexToEnable {
+                    userServers.wrappedValue[i].operator?.enabled = true
+                }
+                dismissAction()
+            }
+        } catch let error {
+            await MainActor.run {
+                showAlert(
+                    NSLocalizedString("Error accepting conditions", comment: "alert title"),
+                    message: responseError(error)
+                )
+            }
+        }
+    }
+}
+
+private func updateOperators(_ usvs: Binding<[UserOperatorServers]>, _ updatedOperators: [ServerOperator]) {
+    for i in 0..<usvs.wrappedValue.count {
+        if let updatedOperator = updatedOperators.first(where: { $0.operatorId == usvs.wrappedValue[i].operator?.operatorId }) {
+            usvs.wrappedValue[i].operator?.conditionsAcceptance = updatedOperator.conditionsAcceptance
         }
     }
 }
 
 struct NetworkServersView_Previews: PreviewProvider {
     static var previews: some View {
-        NetworkAndServers()
+        NetworkAndServers(
+            currUserServers: Binding.constant([UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator]),
+            userServers: Binding.constant([UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator])
+        )
     }
 }

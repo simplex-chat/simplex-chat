@@ -245,7 +245,7 @@ public enum ChatCommand {
             case let .apiValidateServers(userServers): return "/_validate_servers \(encodeJSON(userServers))"
             case .apiGetUsageConditions: return "/_conditions"
             case let .apiSetConditionsNotified(conditionsId): return "/_conditions_notified \(conditionsId)"
-            case let .apiAcceptConditions(conditionsId, operatorIds): return "/_accept_conditions \(conditionsId) \(operatorIds)"
+            case let .apiAcceptConditions(conditionsId, operatorIds): return "/_accept_conditions \(conditionsId) \(joinedIds(operatorIds))"
             case let .apiSetChatItemTTL(userId, seconds): return "/_ttl \(userId) \(chatItemTTLStr(seconds: seconds))"
             case let .apiGetChatItemTTL(userId): return "/_ttl \(userId)"
             case let .apiSetNetworkConfig(networkConfig): return "/_network \(encodeJSON(networkConfig))"
@@ -563,7 +563,7 @@ public enum ChatResponse: Decodable, Error {
     case apiChat(user: UserRef, chat: ChatData)
     case chatItemInfo(user: UserRef, chatItem: AChatItem, chatItemInfo: ChatItemInfo)
     case serverTestResult(user: UserRef, testServer: String, testFailure: ProtocolTestFailure?)
-    case serverOperators(operators: [ServerOperator], conditionsAction: UsageConditionsAction?)
+    case serverOperatorConditions(conditions: ServerOperatorConditions)
     case userServers(user: UserRef, userServers: [UserOperatorServers])
     case userServersValidation(serverErrors: [UserServersError])
     case usageConditions(usageConditions: UsageConditions, conditionsText: String, acceptedConditions: UsageConditions?)
@@ -739,7 +739,7 @@ public enum ChatResponse: Decodable, Error {
             case .apiChat: return "apiChat"
             case .chatItemInfo: return "chatItemInfo"
             case .serverTestResult: return "serverTestResult"
-            case .serverOperators: return "serverOperators"
+            case .serverOperatorConditions: return "serverOperators"
             case .userServers: return "userServers"
             case .userServersValidation: return "userServersValidation"
             case .usageConditions: return "usageConditions"
@@ -911,7 +911,7 @@ public enum ChatResponse: Decodable, Error {
             case let .apiChat(u, chat): return withUser(u, String(describing: chat))
             case let .chatItemInfo(u, chatItem, chatItemInfo): return withUser(u, "chatItem: \(String(describing: chatItem))\nchatItemInfo: \(String(describing: chatItemInfo))")
             case let .serverTestResult(u, server, testFailure): return withUser(u, "server: \(server)\nresult: \(String(describing: testFailure))")
-            case let .serverOperators(operators, conditionsAction): return "operators: \(String(describing: operators))\nconditionsAction: \(String(describing: conditionsAction))"
+            case let .serverOperatorConditions(conditions): return "conditions: \(String(describing: conditions))"
             case let .userServers(u, userServers): return withUser(u, "userServers: \(String(describing: userServers))")
             case let .userServersValidation(serverErrors): return "serverErrors: \(String(describing: serverErrors))"
             case let .usageConditions(usageConditions, _, acceptedConditions): return "usageConditions: \(String(describing: usageConditions))\nacceptedConditions: \(String(describing: acceptedConditions))"
@@ -1205,6 +1205,7 @@ public enum ServerProtocol: String, Decodable {
 
 public enum OperatorTag: String, Codable {
     case simplex = "simplex"
+    case flux = "flux"
     case xyz = "xyz"
     case demo = "demo"
 }
@@ -1226,6 +1227,14 @@ public let operatorsInfo: Dictionary<OperatorTag, ServerOperatorInfo> = [
         largeLogo: "logo",
         logoDarkMode: "decentralized-light",
         largeLogoDarkMode: "logo-light"
+    ),
+    .flux: ServerOperatorInfo(
+        description: "Flux is the largest decentralized cloud infrastructure, leveraging a global network of user-operated computational nodes. Flux offers a powerful, scalable, and affordable platform designed to support individuals, businesses, and cutting-edge technologies like AI. With high uptime and worldwide distribution, Flux ensures reliable, accessible cloud computing for all.",
+        website: "https://runonflux.com",
+        logo: "flux_logo_symbol",
+        largeLogo: "flux_logo",
+        logoDarkMode: "flux_logo_symbol",
+        largeLogoDarkMode: "flux_logo-light"
     ),
     .xyz: ServerOperatorInfo(
         description: "XYZ servers",
@@ -1271,6 +1280,18 @@ public enum UsageConditionsAction: Decodable {
     }
 }
 
+public struct ServerOperatorConditions: Decodable {
+    public var serverOperators: [ServerOperator]
+    public var currentConditions: UsageConditions
+    public var conditionsAction: UsageConditionsAction?
+
+    public static var empty = ServerOperatorConditions(
+        serverOperators: [],
+        currentConditions: UsageConditions(conditionsId: 0, conditionsCommit: "empty", notifiedAt: nil, createdAt: .now),
+        conditionsAction: nil
+    )
+}
+
 public enum ConditionsAcceptance: Equatable, Codable, Hashable {
     case accepted(acceptedAt: Date?)
     // If deadline is present, it means there's a grace period to review and accept conditions during which user can continue to use the operator.
@@ -1300,13 +1321,15 @@ public struct ServerOperator: Identifiable, Equatable, Codable {
     public var serverDomains: [String]
     public var conditionsAcceptance: ConditionsAcceptance
     public var enabled: Bool
-    public var roles: ServerRoles
+    public var smpRoles: ServerRoles
+    public var xftpRoles: ServerRoles
 
     public var id: Int64 { operatorId }
 
     public static func == (l: ServerOperator, r: ServerOperator) -> Bool {
         l.operatorId == r.operatorId && l.operatorTag == r.operatorTag && l.tradeName == r.tradeName && l.legalName == r.legalName &&
-        l.serverDomains == r.serverDomains && l.conditionsAcceptance == r.conditionsAcceptance && l.enabled == r.enabled && l.roles == r.roles
+        l.serverDomains == r.serverDomains && l.conditionsAcceptance == r.conditionsAcceptance && l.enabled == r.enabled &&
+        l.smpRoles == r.smpRoles && l.xftpRoles == r.xftpRoles
     }
 
     public var legalName_: String {
@@ -1346,7 +1369,8 @@ public struct ServerOperator: Identifiable, Equatable, Codable {
         serverDomains: ["simplex.im"],
         conditionsAcceptance: .accepted(acceptedAt: nil),
         enabled: true,
-        roles: ServerRoles(storage: true, proxy: true)
+        smpRoles: ServerRoles(storage: true, proxy: true),
+        xftpRoles: ServerRoles(storage: true, proxy: true)
     )
 
     public static var sampleData2 = ServerOperator(
@@ -1357,7 +1381,8 @@ public struct ServerOperator: Identifiable, Equatable, Codable {
         serverDomains: ["xyz.com"],
         conditionsAcceptance: .required(deadline: nil),
         enabled: false,
-        roles: ServerRoles(storage: true, proxy: true)
+        smpRoles: ServerRoles(storage: false, proxy: true),
+        xftpRoles: ServerRoles(storage: false, proxy: true)
     )
 
     public static var sampleData3 = ServerOperator(
@@ -1368,7 +1393,8 @@ public struct ServerOperator: Identifiable, Equatable, Codable {
         serverDomains: ["demo.com"],
         conditionsAcceptance: .required(deadline: nil),
         enabled: false,
-        roles: ServerRoles(storage: true, proxy: true)
+        smpRoles: ServerRoles(storage: true, proxy: false),
+        xftpRoles: ServerRoles(storage: true, proxy: false)
     )
 }
 
@@ -1390,6 +1416,23 @@ public struct UserOperatorServers: Identifiable, Equatable, Codable {
         }
     }
 
+    public var operator_: ServerOperator {
+        get {
+            self.operator ?? ServerOperator(
+                operatorId: 0,
+                operatorTag: nil,
+                tradeName: "",
+                legalName: "",
+                serverDomains: [],
+                conditionsAcceptance: .accepted(acceptedAt: nil),
+                enabled: false,
+                smpRoles: ServerRoles(storage: true, proxy: true),
+                xftpRoles: ServerRoles(storage: true, proxy: true)
+            )
+        }
+        set { `operator` = newValue }
+    }
+    
     public static var sampleData1 = UserOperatorServers(
         operator: ServerOperator.sampleData1,
         smpServers: [UserServer.sampleData.preset],
