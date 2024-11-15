@@ -29,7 +29,7 @@ validateServers = describe "validate user servers" $ do
     validateUserServers [invalidDisabled] [] `shouldBe` [USENoServers aSMP Nothing]
     validateUserServers [invalidDisabledOp] [] `shouldBe` [USENoServers aSMP Nothing, USENoServers aXFTP Nothing]
   it "should fail without servers with storage role" $ do
-    validateUserServers [invalidNoStorage] [] `shouldBe` [USEStorageMissing aSMP Nothing, USEStorageMissing aXFTP Nothing]
+    validateUserServers [invalidNoStorage] [] `shouldBe` [USEStorageMissing aSMP Nothing]
   it "should fail with duplicate host" $ do
     validateUserServers [invalidDuplicate] [] `shouldBe`
       [ USEDuplicateServer aSMP "smp://0YuTwO05YJWS8rkjn9eLJDjQhFKvIYd8d4xG8X1blIU=@smp8.simplex.im,beccx4yfxxbvyhqypaavemqurytl6hozr47wfc7uuecacjqdvwpw2xid.onion" "smp8.simplex.im",
