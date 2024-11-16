@@ -945,6 +945,7 @@ fun BoxScope.ChatItemsList(
   val scope = rememberCoroutineScope()
 
   Spacer(Modifier.size(8.dp))
+  val searchValueIsEmpty = remember { derivedStateOf { searchValue.value.isEmpty() } }
   val reversedChatItems = remember { derivedStateOf { chatModel.chatItems.asReversed() } }
   val revealedItems = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(setOf<Long>()) }
   val groups = remember { derivedStateOf { reversedChatItems.value.putIntoGroups(unreadCount, revealedItems.value, chatModel.chatState) } }
@@ -955,7 +956,7 @@ fun BoxScope.ChatItemsList(
   val maxHeightForList = rememberUpdatedState(
     with(LocalDensity.current) { LocalWindowHeight().roundToPx() - topPaddingToContentPx.value - (AppBarHeight * fontSizeSqrtMultiplier * 2).roundToPx() }
   )
-  val listState = rememberUpdatedState(rememberSaveable(chatInfo.id, searchValue.value.isEmpty(), saver = LazyListState.Saver) {
+  val listState = rememberUpdatedState(rememberSaveable(chatInfo.id, searchValueIsEmpty.value, saver = LazyListState.Saver) {
     val item = reversedChatItems.value.lastOrNull { it.isRcvNew }
     val index = if (item != null) groups.value.indexInParentItems[item.id] ?: -1 else -1
     if (index <= 0) {
@@ -966,9 +967,10 @@ fun BoxScope.ChatItemsList(
   })
   val maxHeight = remember { derivedStateOf { listState.value.layoutInfo.viewportEndOffset - topPaddingToContentPx.value } }
   val loadingMoreItems = remember { mutableStateOf(false) }
+  val ignoreLoadingRequests = remember(remoteHostId) { mutableSetOf<Long>() }
   if (!loadingMoreItems.value) {
-    PreloadItems(chatInfo.id, groups, listState, ChatPagination.UNTIL_PRELOAD_COUNT) { chatId, pagination ->
-      if (loadingMoreItems.value) return@PreloadItems
+    PreloadItems(chatInfo.id, if (searchValueIsEmpty.value) ignoreLoadingRequests else mutableSetOf(), groups, listState, ChatPagination.UNTIL_PRELOAD_COUNT) { chatId, pagination ->
+      if (loadingMoreItems.value) return@PreloadItems false
       try {
         loadingMoreItems.value = true
         loadMessages(chatId, pagination, chatModel.chatState) {
@@ -977,6 +979,7 @@ fun BoxScope.ChatItemsList(
       } finally {
         loadingMoreItems.value = false
       }
+      true
     }
   }
   SmallScrollOnNewMessage(listState, chatModel.chatItems)
@@ -1489,15 +1492,17 @@ fun BoxScope.FloatingButtons(
 @Composable
 fun PreloadItems(
   chatId: String,
+  ignoreLoadingRequests: MutableSet<Long>,
   groups: State<SectionGroups>,
   listState: State<LazyListState>,
   remaining: Int,
-  loadItems: suspend (ChatId, ChatPagination) -> Unit,
+  loadItems: suspend (ChatId, ChatPagination) -> Boolean,
 ) {
   // Prevent situation when initial load and load more happens one after another after selecting a chat with long scroll position from previous selection
   val allowLoad = remember { mutableStateOf(false) }
   val chatId = rememberUpdatedState(chatId)
   val onLoadMore = rememberUpdatedState(loadItems)
+  val ignoreLoadingRequests = rememberUpdatedState(ignoreLoadingRequests)
   LaunchedEffect(Unit) {
     snapshotFlow { chatId.value }
       .distinctUntilChanged()
@@ -1567,9 +1572,15 @@ fun PreloadItems(
         } else null
       }
       .filterNotNull()
+      .filter { !ignoreLoadingRequests.value.contains(it) }
       .collect { loadFromItemId ->
         withBGApi {
-          onLoadMore.value(chatId.value, ChatPagination.Before(loadFromItemId, ChatPagination.PRELOAD_COUNT))
+          val sizeWas = chatModel.chatItems.value.size
+          val firstItemIdWas = chatModel.chatItems.value.firstOrNull()?.id
+          val triedToLoad = onLoadMore.value(chatId.value, ChatPagination.Before(loadFromItemId, ChatPagination.PRELOAD_COUNT))
+          if (triedToLoad && sizeWas == chatModel.chatItems.value.size && firstItemIdWas == chatModel.chatItems.value.firstOrNull()?.id) {
+            ignoreLoadingRequests.value.add(loadFromItemId)
+          }
         }
       }
   }
