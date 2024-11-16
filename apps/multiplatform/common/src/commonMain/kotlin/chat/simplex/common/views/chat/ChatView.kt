@@ -1559,7 +1559,7 @@ fun PreloadItems(
           }
         }
         val items = chatModel.chatItems.value
-        if (anchors.isEmpty() && items.isNotEmpty() && lastVisibleItemIndex > groups.value.lastIndexInParentItems() + 1 - remaining) {
+        if (anchors.isEmpty() && items.isNotEmpty() && lastVisibleItemIndex > groups.value.lastIndexInParentItems() + 1 - remaining && items.size >= ChatPagination.INITIAL_COUNT) {
           lastIndexToLoadFrom = items.lastIndex
         }
         if (allowLoad.value && lastIndexToLoadFrom != null/* && lastVisibleItemIndex + 1 >= ChatPagination.INITIAL_COUNT*/) {
