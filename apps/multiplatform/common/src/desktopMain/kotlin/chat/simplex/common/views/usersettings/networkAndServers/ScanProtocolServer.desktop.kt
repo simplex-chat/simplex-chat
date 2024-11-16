@@ -1,4 +1,4 @@
-package chat.simplex.common.views.usersettings
+package chat.simplex.common.views.usersettings.networkAndServers
 
 import androidx.compose.runtime.Composable
 import chat.simplex.common.model.UserServer
