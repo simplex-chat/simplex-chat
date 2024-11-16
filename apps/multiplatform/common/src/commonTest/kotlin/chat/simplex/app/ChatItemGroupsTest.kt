@@ -3,6 +3,7 @@ package chat.simplex.app
 import androidx.compose.runtime.mutableStateOf
 import chat.simplex.common.model.*
 import chat.simplex.common.views.chat.*
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.datetime.Clock
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -13,37 +14,37 @@ class ChatItemGroupsTest {
   fun testRecalculateAnchorPositions() {
     val oldItems = listOf(ChatItem.getSampleData(0), ChatItem.getSampleData(123L), ChatItem.getSampleData(124L), ChatItem.getSampleData(125L))
 
-    val anchors1 = mutableStateOf(listOf(123L))
+    val anchors1 = MutableStateFlow(listOf(123L))
     val chatState1 = ActiveChatState(anchors = anchors1)
     val removed1 = listOf(oldItems[1])
     val newItems1 = oldItems - removed1
     val recalc1 = recalculateChatStatePositions(chatState1)
     recalc1.removed(removed1.map { Triple(it.id, oldItems.indexOf(removed1[0]), it.isRcvNew) }, newItems1)
-    assertEquals(1, anchors1.size)
+    assertEquals(1, anchors1.value.size)
     assertEquals(124L, anchors1.value.first())
 
-    val anchors2 = mutableStateOf(listOf(123L))
+    val anchors2 = MutableStateFlow(listOf(123L))
     val chatState2 = ActiveChatState(anchors = anchors2)
     val removed2 = listOf(oldItems[1], oldItems[2])
     val newItems2 = oldItems - removed2
     val recalc2 = recalculateChatStatePositions(chatState2)
     recalc2.removed(removed2.mapIndexed { index, it -> Triple(it.id, oldItems.indexOf(removed2[index]), it.isRcvNew) }, newItems2)
-    assertEquals(1, anchors2.size)
+    assertEquals(1, anchors2.value.size)
     assertEquals(125L, anchors2.value.first())
 
-    val anchors3 = mutableStateOf(listOf(123L))
+    val anchors3 = MutableStateFlow(listOf(123L))
     val chatState3 = ActiveChatState(anchors = anchors3)
     val removed3 = listOf(oldItems[1], oldItems[2], oldItems[3])
     val newItems3 = oldItems - removed3
     val recalc3 = recalculateChatStatePositions(chatState3)
     recalc3.removed(removed3.mapIndexed { index, it -> Triple(it.id, oldItems.indexOf(removed3[index]), it.isRcvNew) }, newItems3)
-    assertEquals(0, anchors3.size)
+    assertEquals(0, anchors3.value.size)
 
-    val anchors4 = mutableStateOf(listOf(123L))
+    val anchors4 = MutableStateFlow(listOf(123L))
     val chatState4 = ActiveChatState(anchors = anchors4)
     val recalc4 = recalculateChatStatePositions(chatState4)
     recalc4.cleared()
-    assertEquals(0, anchors4.size)
+    assertEquals(0, anchors4.value.size)
   }
 
   @Test
