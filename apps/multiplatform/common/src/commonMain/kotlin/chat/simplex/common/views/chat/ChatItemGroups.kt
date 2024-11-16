@@ -396,20 +396,20 @@ fun recalculateChatStatePositions(chatState: ActiveChatState) = object: ChatItem
   override fun cleared() { chatState.clear() }
 }
 
-private fun getItemSeparation(chatItem: ChatItem, nextItem: ChatItem?): ItemSeparation {
-  if (nextItem == null) {
+private fun getItemSeparation(chatItem: ChatItem, prevItem: ChatItem?): ItemSeparation {
+  if (prevItem == null) {
     return ItemSeparation(timestamp = true, largeGap = true, date = null)
   }
 
-  val sameMemberAndDirection = if (nextItem.chatDir is GroupRcv && chatItem.chatDir is GroupRcv) {
-    chatItem.chatDir.groupMember.groupMemberId == nextItem.chatDir.groupMember.groupMemberId
-  } else chatItem.chatDir.sent == nextItem.chatDir.sent
-  val largeGap = !sameMemberAndDirection || (abs(nextItem.meta.createdAt.epochSeconds - chatItem.meta.createdAt.epochSeconds) >= 60)
+  val sameMemberAndDirection = if (prevItem.chatDir is GroupRcv && chatItem.chatDir is GroupRcv) {
+    chatItem.chatDir.groupMember.groupMemberId == prevItem.chatDir.groupMember.groupMemberId
+  } else chatItem.chatDir.sent == prevItem.chatDir.sent
+  val largeGap = !sameMemberAndDirection || (abs(prevItem.meta.createdAt.epochSeconds - chatItem.meta.createdAt.epochSeconds) >= 60)
 
   return ItemSeparation(
-    timestamp = largeGap || nextItem.meta.timestampText != chatItem.meta.timestampText,
+    timestamp = largeGap || prevItem.meta.timestampText != chatItem.meta.timestampText,
     largeGap = largeGap,
-    date = if (getTimestampDateText(chatItem.meta.itemTs) == getTimestampDateText(nextItem.meta.itemTs)) null else nextItem.meta.itemTs
+    date = if (getTimestampDateText(chatItem.meta.itemTs) == getTimestampDateText(prevItem.meta.itemTs)) null else prevItem.meta.itemTs
   )
 }
 
