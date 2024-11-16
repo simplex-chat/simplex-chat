@@ -135,6 +135,8 @@ object ChatModel {
   val clipboardHasText = mutableStateOf(false)
   val networkInfo = mutableStateOf(UserNetworkInfo(networkType = UserNetworkType.OTHER, online = true))
 
+  val conditions = mutableStateOf(ServerOperatorConditionsDetail.empty)
+
   val updatingProgress = mutableStateOf(null as Float?)
   var updatingRequest: Closeable? = null
 

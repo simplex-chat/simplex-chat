@@ -17,6 +17,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.common.model.ChatController.setConditionsNotified
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -26,8 +27,25 @@ import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 
 @Composable
-fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
+fun WhatsNewView(showWhatsNew: MutableState<Boolean> = mutableStateOf(true), showOperatorsNotice: Boolean = false, viaSettings: Boolean = false, close: () -> Unit) {
   val currentVersion = remember { mutableStateOf(versionDescriptions.lastIndex) }
+
+  if (showOperatorsNotice) {
+    LaunchedEffect(Unit) {
+      val conditionsId = chatModel.conditions.value?.currentConditions?.conditionsId
+      if (conditionsId != null) {
+        try {
+          setConditionsNotified(rh = chatModel.remoteHostId(), conditionsId = conditionsId)
+        } catch (e: Exception) {
+          Log.d(TAG, "WhatsNewView setConditionsNotified error: ${e.message}")
+        }
+      }
+    }
+  }
+
+  if (showOperatorsNotice) {
+    return ChooseServerOperators(onboarding = false)
+  }
 
   @Composable
   fun featureDescription(icon: ImageResource?, titleId: StringResource, descrId: StringResource?, link: String?, subfeatures: List<Pair<ImageResource, StringResource>>) {
@@ -140,8 +158,14 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
           Modifier.fillMaxWidth(), contentAlignment = Alignment.Center
         ) {
           Text(
-            generalGetString(MR.strings.ok),
-            modifier = Modifier.clickable(onClick = close),
+            if (showOperatorsNotice) generalGetString(MR.strings.server_operators_view_updated_conditions) else generalGetString(MR.strings.ok),
+            modifier = Modifier.clickable(onClick = {
+              if (showOperatorsNotice) {
+                showWhatsNew.value = false
+              } else {
+                close()
+              }
+            }),
             style = MaterialTheme.typography.h3,
             color = MaterialTheme.colors.primary
           )

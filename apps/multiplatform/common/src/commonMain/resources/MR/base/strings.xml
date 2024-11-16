@@ -2056,6 +2056,7 @@
   <string name="v6_1_message_dates_descr">Better message dates.</string>
   <string name="v6_1_forward_many_messages_descr">Forward up to 20 messages at once.</string>
   <string name="v6_1_delete_many_messages_descr">Delete or moderate up to 200 messages.</string>
+  <string name="server_operators_view_updated_conditions">View updated conditions</string>
 
   <!-- CustomTimePicker -->
   <string name="custom_time_unit_seconds">seconds</string>

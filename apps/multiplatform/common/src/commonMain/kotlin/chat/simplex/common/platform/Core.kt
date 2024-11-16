@@ -118,6 +118,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     if (appPreferences.encryptionStartedAt.get() != null) appPreferences.encryptionStartedAt.set(null)
     val user = chatController.apiGetActiveUser(null)
     chatModel.currentUser.value = user
+    chatModel.conditions.value = chatController.getServerOperators(null) ?: ServerOperatorConditionsDetail.empty
     if (user == null) {
       chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
       chatModel.currentUser.value = null

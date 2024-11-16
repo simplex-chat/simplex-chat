@@ -133,9 +133,11 @@ fun ToggleChatListCard() {
 fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedViewState>, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   LaunchedEffect(Unit) {
-    if (shouldShowWhatsNew(chatModel)) {
+    val showWhatsNew = shouldShowWhatsNew(chatModel)
+    val showOperatorsNotice = chatModel.conditions.value?.conditionsAction?.shouldSowNotice ?: false
+    if (showWhatsNew || showOperatorsNotice) {
       delay(1000L)
-      ModalManager.center.showCustomModal { close -> WhatsNewView(close = close) }
+      ModalManager.center.showCustomModal { close -> WhatsNewView(close = close, showWhatsNew = remember { mutableStateOf(showWhatsNew) }, showOperatorsNotice = showOperatorsNotice) }
     }
   }
 

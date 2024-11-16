@@ -3646,14 +3646,14 @@ data class UsageConditionsDetail(
 
 @Serializable
 sealed class UsageConditionsAction {
-  data class Review(val operators: List<ServerOperator>, val deadline: Date?, private val showNoticeFlag: Boolean) : UsageConditionsAction() {
-    val showNotice: Boolean
-      get() = showNoticeFlag
-  }
-  data class Accepted(val operators: List<ServerOperator>) : UsageConditionsAction() {
-    val showNotice: Boolean
-      get() = false
-  }
+  data class Review(val operators: List<ServerOperator>, val deadline: Date?, val showNotice: Boolean) : UsageConditionsAction()
+  data class Accepted(val operators: List<ServerOperator>) : UsageConditionsAction()
+
+  val shouldSowNotice: Boolean
+    get() = when (this) {
+      is Review -> showNotice
+      else -> false
+    }
 }
 
 @Serializable
