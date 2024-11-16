@@ -226,6 +226,15 @@ object ChatModel {
       popChatCollector.throttlePopChat(chat.remoteHostId, chat.id, currentPosition = 0)
     }
 
+    private suspend fun reorderChat(chat: Chat, toIndex: Int) {
+      val newChats = SnapshotStateList<Chat>()
+      newChats.addAll(chats.value)
+      newChats.remove(chat)
+      newChats.add(index = toIndex, chat)
+      chats.replaceAll(newChats)
+      popChatCollector.throttlePopChat(chat.remoteHostId, chat.id, currentPosition = toIndex)
+    }
+
     fun updateChatInfo(rhId: Long?, cInfo: ChatInfo) {
       val i = getChatIndex(rhId, cInfo.id)
       if (i >= 0) {
@@ -327,7 +336,7 @@ object ChatModel {
             chat.chatStats
         )
         if (appPlatform.isDesktop && cItem.chatDir.sent) {
-          addChat(chats.removeAt(i))
+          reorderChat(chats[i], 0)
         } else {
           popChatCollector.throttlePopChat(chat.remoteHostId, chat.id, currentPosition = i)
         }
