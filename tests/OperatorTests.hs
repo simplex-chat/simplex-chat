@@ -12,7 +12,6 @@ module OperatorTests (operatorTests) where
 
 import qualified Data.List.NonEmpty as L
 import Simplex.Chat
-import Simplex.Chat.Controller
 import Simplex.Chat.Operators
 import Simplex.Chat.Types
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
@@ -22,7 +21,6 @@ import Test.Hspec
 
 operatorTests :: Spec
 operatorTests = describe "managing server operators" $ do
-  updatedUserServersTest
   validateServersTest
 
 validateServersTest :: Spec
@@ -45,29 +43,9 @@ validateServersTest = describe "validate user servers" $ do
     aSMP = AProtocolType SPSMP
     aXFTP = AProtocolType SPXFTP
 
-
-updatedUserServersTest :: Spec
-updatedUserServersTest = fdescribe "update user servers" $ do
-  it "should use random servers without servers" $ do
-    let randomSrvs = L.fromList simplexChatSMPServers
-    updatedUserServers SPSMP presetOps randomSrvs []
-      `shouldBe` L.map (AUS SDBNew) randomSrvs
-  it "should use random servers for new operators" $ do
-  where
-    ChatConfig {presetServers = PresetServers {operators = presetOps}} = defaultChatConfig
-
 deriving instance Eq User
 
 deriving instance Eq UserServersError
-
-deriving instance Eq (DBEntityId' s)
-
-deriving instance Eq (UserServer' s p)
-
-instance Eq (AUserServer p) where
-  AUS SDBNew s == AUS SDBNew s' = s == s'
-  AUS SDBStored s == AUS SDBStored s' = s == s'
-  _ == _ = False
 
 valid :: UpdatedUserOperatorServers
 valid =

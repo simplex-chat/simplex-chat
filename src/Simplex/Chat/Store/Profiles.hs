@@ -589,10 +589,10 @@ getServerOperators db = do
     let conditionsAction = usageConditionsAction ops currentConditions now
     pure ServerOperatorConditions {serverOperators = ops, currentConditions, conditionsAction}
 
-getUserServers :: DB.Connection -> User -> ExceptT StoreError IO ([ServerOperator], [UserServer 'PSMP],  [UserServer 'PXFTP])
+getUserServers :: DB.Connection -> User -> ExceptT StoreError IO ([Maybe ServerOperator], [UserServer 'PSMP],  [UserServer 'PXFTP])
 getUserServers db user =
   (,,)
-    <$> (serverOperators <$> getServerOperators db)
+    <$> (map Just . serverOperators <$> getServerOperators db)
     <*> liftIO (getProtocolServers db SPSMP user)
     <*> liftIO (getProtocolServers db SPXFTP user)
 
@@ -612,7 +612,7 @@ updateServerOperator db currentTs ServerOperator {operatorId, enabled, smpRoles,
     |]
     (enabled, storage smpRoles, proxy smpRoles, storage xftpRoles, proxy xftpRoles, currentTs, operatorId)
 
-getUpdateServerOperators :: DB.Connection -> NonEmpty PresetOperator -> Bool -> IO [(Maybe PresetOperator, ServerOperator)]
+getUpdateServerOperators :: DB.Connection -> NonEmpty PresetOperator -> Bool -> IO [(Maybe PresetOperator, Maybe ServerOperator)]
 getUpdateServerOperators db presetOps newUser = do
   conds <- map toUsageConditions <$> DB.query_ db usageCondsQuery
   now <- getCurrentTime
@@ -620,8 +620,9 @@ getUpdateServerOperators db presetOps newUser = do
   mapM_ insertConditions condsToAdd
   latestAcceptedConds_ <- getLatestAcceptedConditions db
   ops <- updatedServerOperators presetOps <$> getServerOperators_ db
-  forM ops $ \(presetOp, ASO _ op) ->
-    (presetOp,) <$> case operatorId op of
+  forM ops $ \(presetOp, op') -> (presetOp,) <$> mapM (updateOp currentConds latestAcceptedConds_ acceptForSimplex_ now) op'
+  where
+    updateOp currentConds latestAcceptedConds_ acceptForSimplex_ now (ASO _ op) = case operatorId op of
       DBNewEntity -> do
         op' <- insertOperator op
         case (operatorTag op', acceptForSimplex_) of
@@ -633,7 +634,6 @@ getUpdateServerOperators db presetOps newUser = do
           CARequired Nothing | operatorTag op == Just OTSimplex -> autoAcceptConditions op currentConds
           CARequired (Just ts) | ts < now -> autoAcceptConditions op currentConds
           ca -> pure op {conditionsAcceptance = ca}
-  where
     insertConditions UsageConditions {conditionsId, conditionsCommit, notifiedAt, createdAt} =
       DB.execute
         db

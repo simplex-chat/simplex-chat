@@ -423,11 +423,11 @@ newChatController
       agentServers db ChatConfig {presetServers = PresetServers {ntf, netCfg}} presetOps as = do
         users <- getUsers db
         ops <- getUpdateServerOperators db presetOps (null users)
-        let opDomains = operatorDomains $ map snd ops
+        let opDomains = operatorDomains $ mapMaybe snd ops
         (smp', xftp') <- unzip <$> mapM (getServers as ops opDomains) users
         pure InitialAgentServers {smp = M.fromList smp', xftp = M.fromList xftp', ntf, netCfg}
         where
-          getServers :: RandomAgentServers -> [(Maybe PresetOperator, ServerOperator)] -> [(Text, ServerOperator)] -> User -> IO ((UserId, NonEmpty (ServerCfg 'PSMP)), (UserId, NonEmpty (ServerCfg 'PXFTP)))
+          getServers :: RandomAgentServers -> [(Maybe PresetOperator, Maybe ServerOperator)] -> [(Text, ServerOperator)] -> User -> IO ((UserId, NonEmpty (ServerCfg 'PSMP)), (UserId, NonEmpty (ServerCfg 'PXFTP)))
           getServers as ops opDomains user = do
             smpSrvs <- getProtocolServers db SPSMP user
             xftpSrvs <- getProtocolServers db SPXFTP user
@@ -671,17 +671,18 @@ processChatCommand' vr = \case
     (uss, (smp', xftp')) <- case uss_ of
       Just uss -> do
         let opDomains = operatorDomains $ mapMaybe operator' uss
-        pure $ (Nothing,) $ useServers as opDomains uss
+            uss' = map copyServers uss
+        pure $ (uss',) $ useServers as opDomains uss
       Nothing -> do
         ps <- asks randomPresetServers
         uss <- presetUserServers ps <$> withFastStore' (\db -> getUpdateServerOperators db ps True)
         let RandomAgentServers {smpServers = smp', xftpServers = xftp'} = as
-        pure (Just uss, (smp', xftp'))
+        pure (uss, (smp', xftp'))
     auId <- withAgent (\a -> createUser a smp' xftp')
     ts <- liftIO $ getCurrentTime >>= if pastTimestamp then coupleDaysAgo else pure
     user <- withFastStore $ \db -> do
       user <- createUserRecordAt db (AgentUserId auId) p True ts
-      mapM_ (mapM_ (setUserServers db user ts)) uss
+      mapM_ (setUserServers db user ts) uss
       createPresetContactCards db user `catchStoreError` \_ -> pure ()
       createNoteFolder db user
       pure user
@@ -696,6 +697,10 @@ processChatCommand' vr = \case
       chooseServers p = do
         srvs <- chatReadVar currentUser >>= mapM (\user -> withFastStore' $ \db -> getProtocolServers db p user)
         pure $ fromMaybe [] srvs
+      copyServers :: UserOperatorServers -> UpdatedUserOperatorServers
+      copyServers UserOperatorServers {operator, smpServers, xftpServers} =
+        let new srv = AUS SDBNew srv {serverId = DBNewEntity}
+         in UpdatedUserOperatorServers {operator, smpServers = map new smpServers, xftpServers = map new xftpServers}
       coupleDaysAgo t = (`addUTCTime` t) . fromInteger . negate . (+ (2 * day)) <$> randomRIO (0, day)
       day = 86400
   ListUsers -> CRUsersList <$> withFastStore' getUsersInfo
@@ -1597,7 +1602,7 @@ processChatCommand' vr = \case
     srvs <- withFastStore (`getUserServers` user)
     CRUserServers user <$> liftIO (groupedServers srvs p)
     where
-      groupedServers :: UserProtocol p => ([ServerOperator], [UserServer 'PSMP],  [UserServer 'PXFTP]) -> SProtocolType p -> IO [UserOperatorServers]
+      groupedServers :: UserProtocol p => ([Maybe ServerOperator], [UserServer 'PSMP],  [UserServer 'PXFTP]) -> SProtocolType p -> IO [UserOperatorServers]
       groupedServers (operators, smpServers, xftpServers) = \case
         SPSMP -> groupByOperator (operators, smpServers, [])
         SPXFTP -> groupByOperator (operators, [], xftpServers)
