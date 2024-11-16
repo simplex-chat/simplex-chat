@@ -1412,7 +1412,20 @@ fun BoxScope.FloatingButtons(
   }
 
   val showBottomButtonWithCounter = remember { derivedStateOf { bottomUnreadCount.value > 0 && listState.value.firstVisibleItemIndex != 0 && searchValue.value.isEmpty() } }
-  val showBottomButtonWithArrow = remember { derivedStateOf { !showBottomButtonWithCounter.value && listState.value.firstVisibleItemIndex != 0 } }
+  val allowToShowBottomWithArrow = remember { mutableStateOf(true) }
+  val showBottomButtonWithArrow = remember { derivedStateOf {
+    val allow = allowToShowBottomWithArrow.value
+    val shouldShow = !showBottomButtonWithCounter.value && listState.value.firstVisibleItemIndex != 0
+    // this tricky idea is to prevent showing button with arrow in the next frame after creating/receiving new message because the list will
+    // scroll to that message but before this happens, that button will show up and then will hide itself after scroll finishes.
+    // This workaround prevents it
+    if (!shouldShow) {
+      allowToShowBottomWithArrow.value = false
+    } else {
+      allowToShowBottomWithArrow.value = true
+    }
+    shouldShow && allow
+  } }
   BottomEndFloatingButton(
     bottomUnreadCount,
     showBottomButtonWithCounter,
@@ -1439,7 +1452,7 @@ fun BoxScope.FloatingButtons(
   // Don't show top FAB if is in search
   if (searchValue.value.isNotEmpty()) return
   val fabSize = 56.dp
-  val topUnreadCount = remember { derivedStateOf { (if (bottomUnreadCount.value >= 0) (unreadCount.value - bottomUnreadCount.value).coerceAtLeast(0) else 0) } }
+  val topUnreadCount = remember { derivedStateOf { if (bottomUnreadCount.value >= 0) (unreadCount.value - bottomUnreadCount.value).coerceAtLeast(0) else 0 } }
   val showDropDown = remember { mutableStateOf(false) }
 
   TopEndFloatingButton(
