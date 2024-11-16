@@ -26,7 +26,6 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.platform.chatModel
-import chat.simplex.common.views.usersettings.SessionModePicker
 import chat.simplex.common.views.usersettings.SettingsPreferenceItem
 import chat.simplex.res.MR
 import java.text.DecimalFormat

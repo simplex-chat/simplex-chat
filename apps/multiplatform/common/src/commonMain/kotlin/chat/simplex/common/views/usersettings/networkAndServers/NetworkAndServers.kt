@@ -1,4 +1,4 @@
-package chat.simplex.common.views.usersettings
+package chat.simplex.common.views.usersettings.networkAndServers
 
 import SectionBottomSpacer
 import SectionDividerSpaced
@@ -28,7 +28,7 @@ import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.usersettings.networkAndServers.AdvancedNetworkSettingsView
+import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
 
 @Composable
@@ -378,7 +378,7 @@ fun SocksProxySettings(
           Text(stringResource(MR.strings.network_options_reset_to_defaults), color = if (resetDisabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
         }
         SectionItemView(
-          click = { if (networkUseSocksProxy && !migration) chat.simplex.common.views.usersettings.networkAndServers.showUpdateNetworkSettingsDialog { save(false) } else save(false) },
+          click = { if (networkUseSocksProxy && !migration) showUpdateNetworkSettingsDialog { save(false) } else save(false) },
           disabled = saveDisabled
         ) {
           Text(stringResource(if (networkUseSocksProxy && !migration) MR.strings.network_options_save_and_reconnect else MR.strings.network_options_save), color = if (saveDisabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
