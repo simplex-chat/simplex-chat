@@ -947,7 +947,6 @@ fun BoxScope.ChatItemsList(
   Spacer(Modifier.size(8.dp))
   val reversedChatItems = remember { derivedStateOf { chatModel.chatItems.asReversed() } }
   val revealedItems = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(setOf<Long>()) }
-  val anchors = remember { chatModel.chatState.anchors }
   val groups = remember { derivedStateOf { reversedChatItems.value.putIntoGroups(unreadCount, revealedItems.value, chatModel.chatState) } }
   val topPaddingToContentPx = rememberUpdatedState(with(LocalDensity.current) { topPaddingToContent().roundToPx() })
   /** determines height based on window info and static height of two AppBars. It's needed because in the first graphic frame height of
@@ -966,7 +965,6 @@ fun BoxScope.ChatItemsList(
     }
   })
   val maxHeight = remember { derivedStateOf { listState.value.layoutInfo.viewportEndOffset - topPaddingToContentPx.value } }
-  val density = LocalDensity.current
   val loadingMoreItems = remember { mutableStateOf(false) }
   if (!loadingMoreItems.value) {
     PreloadItems(chatInfo.id, groups, listState, ChatPagination.UNTIL_PRELOAD_COUNT) { chatId, pagination ->
@@ -1295,7 +1293,7 @@ fun BoxScope.ChatItemsList(
       val isLastGroup = groupIndex == groupsValue.sections.lastIndex
       val last = if (isLastGroup) reversedChatItems.value.lastOrNull() else null
       if (group.revealed.value) {
-        itemsIndexed(group.items, key = { _, item -> (item.item.id to item.item.meta.createdAt.toEpochMilliseconds()).toString() }) { i, listItem ->
+        itemsIndexed(group.items, key = { _, listItem -> keyForItem(listItem.item) }) { i, listItem ->
           val item = listItem.item
           val ciCategory = item.mergeCategory
           val range = if (ciCategory != null && item.chatDir !is CIDirection.GroupRcv) {
@@ -1313,13 +1311,13 @@ fun BoxScope.ChatItemsList(
             DateSeparator(last.meta.itemTs)
           }
           if (item.isRcvNew) {
-            MarkItemsReadAfterDelay(item.id, item.id, chatInfo.id, markRead)
+            MarkItemsReadAfterDelay(keyForItem(item), item.id, item.id, chatInfo.id, listState, markRead)
           }
         }
       } else {
         val listItem = group.items.first()
         val item = listItem.item
-        item(key = (item.id to item.meta.createdAt.toEpochMilliseconds()).toString()) {
+        item(key = keyForItem(listItem.item)) {
           val range = if (item.mergeCategory != null) group.startIndexInParentItems .. (group.startIndexInParentItems + group.items.lastIndex) else null
           val showAvatar = group.showAvatar.contains(item.id) || item.mergeCategory != null
           val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
@@ -1331,7 +1329,7 @@ fun BoxScope.ChatItemsList(
             DateSeparator(last.meta.itemTs)
           }
           if (group.unreadIds.isNotEmpty()) {
-            MarkItemsReadAfterDelay(group.items.last().item.id, group.items.first().item.id, chatInfo.id, markRead)
+            MarkItemsReadAfterDelay(keyForItem(item), group.items.last().item.id, group.items.first().item.id, chatInfo.id, listState, markRead)
           }
         }
       }
@@ -1358,16 +1356,20 @@ private fun SmallScrollOnNewMessage(listState: State<LazyListState>, chatItems: 
   val scrollDistance = with(LocalDensity.current) { -39.dp.toPx() }
   LaunchedEffect(Unit) {
     var lastTotalItems = listState.value.layoutInfo.totalItemsCount
-    snapshotFlow { chatItems.value.lastOrNull()?.id }
-      .filter { listState.value.layoutInfo.visibleItemsInfo.firstOrNull()?.key != it }
+    var lastItemId = chatItems.value.lastOrNull()?.id
+    snapshotFlow { listState.value.layoutInfo.totalItemsCount }
+      .distinctUntilChanged()
+      .drop(1)
+      .filter { lastItemId != chatItems.value.lastOrNull()?.id }
       .collect {
         val diff = listState.value.layoutInfo.totalItemsCount - lastTotalItems
         lastTotalItems = listState.value.layoutInfo.totalItemsCount
+        lastItemId = chatItems.value.lastOrNull()?.id
         if (diff < 1 || diff > 2) {
           return@collect
         }
         try {
-          if (listState.value.firstVisibleItemIndex == 0 || (listState.value.firstVisibleItemIndex == 1 && listState.value.layoutInfo.totalItemsCount == chatItems.value.size)) {
+          if (listState.value.firstVisibleItemIndex == 0 || listState.value.firstVisibleItemIndex == 1) {
             if (appPlatform.isAndroid) listState.value.animateScrollToItem(0) else listState.value.scrollToItem(0)
           } else {
             if (appPlatform.isAndroid) listState.value.animateScrollBy(scrollDistance) else listState.value.scrollBy(scrollDistance)
@@ -1485,6 +1487,7 @@ fun PreloadItems(
   val onLoadMore = rememberUpdatedState(loadItems)
   LaunchedEffect(Unit) {
     snapshotFlow { chatId.value }
+      .distinctUntilChanged()
       .filterNotNull()
       .collect {
         allowLoad.value = listState.value.layoutInfo.totalItemsCount == listState.value.layoutInfo.visibleItemsInfo.size
@@ -1508,8 +1511,8 @@ fun PreloadItems(
 //        }
 //    }
     launch {
-      var bottomLoadingIsDisabled = false
       snapshotFlow { listState.value.firstVisibleItemIndex }
+        .distinctUntilChanged()
         .map { firstVisibleIndex ->
           val items = chatModel.chatItems.value
           val anchors = groups.value.anchoredRanges
@@ -1517,25 +1520,16 @@ fun PreloadItems(
           if (anchor != null) {
             // we're inside an anchoredRange (top --- [end of the anchoredRange --- we're here --- start of the anchoredRange] --- bottom)
             val index = groups.value.sections.indexInParentItems(anchor.itemId)
-            if (index + remaining > firstVisibleIndex) items.lastIndex - anchor.indexRange.first to true else null
-          } else if (!bottomLoadingIsDisabled) {
-            // no anchoredRanges at all, just clear list that can be loaded from top and bottom just taking edges to start loading items with
-            // OR
-            // there are anchoredRanges, but they are higher in the list (anchoredRange(s) --- we're here (== bottom))
-            if (remaining > firstVisibleIndex) items.lastIndex to false else null
+            if (index + remaining > firstVisibleIndex) items.lastIndex - anchor.indexRange.first else null
           } else null
         }
         .filterNotNull()
-        .collect { (loadFromIndex, insideAnchoredRange) ->
+        .collect { loadFromIndex ->
           val items = chatModel.chatItems.value
           val item = items.getOrNull(loadFromIndex)
           if (item != null) {
             withBGApi {
-              val oldSize = items.size
               onLoadMore.value(chatId.value, ChatPagination.After(item.id, ChatPagination.PRELOAD_COUNT))
-              if (!insideAnchoredRange && oldSize + ChatPagination.PRELOAD_COUNT > chatModel.chatItems.size) {
-                bottomLoadingIsDisabled = true
-              }
             }
           }
         }
@@ -1543,6 +1537,7 @@ fun PreloadItems(
   }
   KeyChangeEffect(allowLoad.value, chatId.value) {
     snapshotFlow { listState.value.firstVisibleItemIndex }
+      .distinctUntilChanged()
       .map { firstVisibleIndex ->
         val lInfo = listState.value.layoutInfo
         val anchors = groups.value.anchoredRanges
@@ -1792,13 +1787,24 @@ private fun DateSeparator(date: Instant) {
 
 @Composable
 private fun MarkItemsReadAfterDelay(
+  itemKey: String,
   itemIdStart: Long,
   itemIdEnd: Long,
   chatId: ChatId,
+  listState: State<LazyListState>,
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit
 ) {
-  LaunchedEffect(itemIdStart, itemIdEnd, chatId) {
-    if (chatId != ChatModel.chatId.value) return@LaunchedEffect
+  // items can be "visible" in terms of LazyColumn but hidden behind compose view/appBar. So don't count such item as visible and not mark read
+  val itemIsFullyVisible = remember { derivedStateOf {
+    val item = listState.value.layoutInfo.visibleItemsInfo.firstOrNull { it.key == itemKey }
+    if (item != null) {
+      item.offset >= 0 || -item.offset < item.size
+    } else {
+      false
+    }
+  } }
+  LaunchedEffect(itemIsFullyVisible.value, itemIdStart, itemIdEnd, chatId) {
+    if (chatId != ChatModel.chatId.value || !itemIsFullyVisible.value) return@LaunchedEffect
 
     delay(600L)
     markRead(CC.ItemRange(itemIdStart, itemIdEnd), null)
@@ -2142,6 +2148,8 @@ fun providerForGallery(
     }
   }
 }
+
+private fun keyForItem(item: ChatItem): String = (item.id to item.meta.createdAt.toEpochMilliseconds()).toString()
 
 private fun ViewConfiguration.bigTouchSlop(slop: Float = 50f) = object: ViewConfiguration {
   override val longPressTimeoutMillis

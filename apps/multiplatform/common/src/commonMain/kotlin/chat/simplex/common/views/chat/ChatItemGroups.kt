@@ -13,10 +13,9 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.CIDirection.GroupRcv
 import chat.simplex.common.model.ChatModel.withChats
-import chat.simplex.common.platform.TAG
 import chat.simplex.common.platform.chatModel
-import chat.simplex.common.platform.Log
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.math.abs
 import kotlin.math.min
 
@@ -37,15 +36,15 @@ data class AnchoredRange(
 )
 
 data class ActiveChatState (
-  val anchors: MutableState<List<Long>> = mutableStateOf(emptyList()),
-  val unreadAnchorItemId: MutableState<Long> = mutableStateOf(-1L),
+  val anchors: MutableStateFlow<List<Long>> = MutableStateFlow(emptyList()),
+  val unreadAnchorItemId: MutableStateFlow<Long> = MutableStateFlow(-1L),
   // total items after unread anchor item (exclusive)
-  val totalAfter: MutableState<Int> = mutableStateOf(0),
-  val unreadTotal: MutableState<Int> = mutableStateOf(0),
+  val totalAfter: MutableStateFlow<Int> = MutableStateFlow(0),
+  val unreadTotal: MutableStateFlow<Int> = MutableStateFlow(0),
   // exclusive
-  val unreadAfter: MutableState<Int> = mutableStateOf(0),
+  val unreadAfter: MutableStateFlow<Int> = MutableStateFlow(0),
   // exclusive
-  val unreadAfterNewestLoaded: MutableState<Int> = mutableStateOf(0)
+  val unreadAfterNewestLoaded: MutableStateFlow<Int> = MutableStateFlow(0)
 ) {
   fun moveUnreadAnchor(toItemId: Long?, nonReversedItems: List<ChatItem>) {
     toItemId ?: return
@@ -317,7 +316,7 @@ fun recalculateChatStatePositions(chatState: ActiveChatState) = object: ChatItem
     var i = newItems.lastIndex
     val ids = itemIds.toMutableSet()
     // intermediate variables to prevent re-setting state value a lot of times without reason
-    var newUnreadBefore = unreadTotal.value
+    var newUnreadTotal = unreadTotal.value
     var newUnreadAfter = unreadAfter.value
     while (i >= 0) {
       val item = newItems[i]
@@ -328,15 +327,14 @@ fun recalculateChatStatePositions(chatState: ActiveChatState) = object: ChatItem
         // was unread, now this item is read
         if (unreadAnchorIndex == -1) {
           newUnreadAfter--
-        } else {
-          newUnreadBefore--
         }
+        newUnreadTotal--
         ids.remove(item.id)
         if (ids.isEmpty()) break
       }
       i--
     }
-    unreadTotal.value = newUnreadBefore
+    unreadTotal.value = newUnreadTotal
     unreadAfter.value = newUnreadAfter
   }
   override fun added(item: Pair<Long, Boolean>, index: Int) {
@@ -564,7 +562,7 @@ suspend fun apiLoadMessages(
       val indexInAnchoredRanges = anchors.value.indexOf(pagination.chatItemId)
       // LALAL isn't it always from anchoredRange?
       val loadingFromAnchoredRange = indexInAnchoredRanges != -1
-      val anchorsToMerge = if (loadingFromAnchoredRange && indexInAnchoredRanges + 1 <= anchors.size) ArrayList(anchors.value.subList(indexInAnchoredRanges + 1, anchors.size)) else ArrayList()
+      val anchorsToMerge = if (loadingFromAnchoredRange && indexInAnchoredRanges + 1 <= anchors.value.size) ArrayList(anchors.value.subList(indexInAnchoredRanges + 1, anchors.value.size)) else ArrayList()
       val anchorsToRemove = ArrayList<Long>()
       var firstItemIdBelowAllAnchors: Long? = null
       newItems.removeAll {

@@ -658,8 +658,8 @@ object ChatModel {
             items[i] = newItem.copy(meta = newItem.meta.copy(itemTimed = newItem.meta.itemTimed.copy(
               deleteAt = Clock.System.now() + newItem.meta.itemTimed.ttl.toDuration(DurationUnit.SECONDS)))
             )
-            markedReadIds.add(item.id)
           }
+          markedReadIds.add(item.id)
           markedRead++
           if (range != null) {
             itemIdsFromRange.remove(item.id)
