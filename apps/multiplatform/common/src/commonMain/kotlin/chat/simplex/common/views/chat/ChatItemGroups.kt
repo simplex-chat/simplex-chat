@@ -25,7 +25,9 @@ data class SectionGroups(
 )
 
 data class AnchoredRange(
-  /** itemId that was the last item in received list (ordered from old to new items) loaded using [ChatPagination.Around], see [apiLoadMessages] */
+  /** itemId that was the last item in received list (ordered from old to new items) loaded using [ChatPagination.Initial], [ChatPagination.Around].
+   * It changes over time when new items are loaded.
+   * see [apiLoadMessages] */
   val itemId: Long,
   /** range of indexes inside reversedChatItems where the first element is the anchor (it's index is [indexRange.first])
    * so [0, 1, 2, -100-, 101] if the 3 is an anchor, AnchoredRange(itemId = 100, indexRange = 3 .. 4) will be this AnchoredRange instance (3, 4 indexes of the anchoredRange with the anchor itself at index 3)
@@ -560,7 +562,7 @@ suspend fun apiLoadMessages(
         i++
       }
       val indexInAnchoredRanges = anchors.value.indexOf(pagination.chatItemId)
-      // LALAL isn't it always from anchoredRange?
+      // Currently, it should always load from anchored range. Code that did different things were removed but let's keep it for the future
       val loadingFromAnchoredRange = indexInAnchoredRanges != -1
       val anchorsToMerge = if (loadingFromAnchoredRange && indexInAnchoredRanges + 1 <= anchors.value.size) ArrayList(anchors.value.subList(indexInAnchoredRanges + 1, anchors.value.size)) else ArrayList()
       val anchorsToRemove = ArrayList<Long>()

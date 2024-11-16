@@ -1509,20 +1509,6 @@ fun PreloadItems(
       }
   }
   LaunchedEffect(chatId.value) {
-//    // first visible item index when loadItems was finished and list state scrolled to wherever it is needed to scroll
-//    var itemIndexAfterReloadTime = listState.firstVisibleItemIndex
-//    var oldTotalItemsCount = listState.layoutInfo.totalItemsCount
-//    var oldFirstVisibleItemIndex = listState.firstVisibleItemIndex
-//    launch {
-//      snapshotFlow { listState.layoutInfo.totalItemsCount }
-//        .filter { it != oldTotalItemsCount }
-//        .collect {
-//          val diff = (it - oldTotalItemsCount) - (listState.firstVisibleItemIndex - oldFirstVisibleItemIndex)
-//          if (diff < 0) {
-//            itemIndexAfterReloadTime += diff.absoluteValue
-//          }
-//        }
-//    }
     launch {
       snapshotFlow { listState.value.firstVisibleItemIndex }
         .distinctUntilChanged()
@@ -1808,7 +1794,7 @@ private fun MarkItemsReadAfterDelay(
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit
 ) {
   // items can be "visible" in terms of LazyColumn but hidden behind compose view/appBar. So don't count such item as visible and not mark read
-  val itemIsFullyVisible = remember { derivedStateOf {
+  val itemIsPartiallyAboveCompose = remember { derivedStateOf {
     val item = listState.value.layoutInfo.visibleItemsInfo.firstOrNull { it.key == itemKey }
     if (item != null) {
       item.offset >= 0 || -item.offset < item.size
@@ -1816,8 +1802,8 @@ private fun MarkItemsReadAfterDelay(
       false
     }
   } }
-  LaunchedEffect(itemIsFullyVisible.value, itemIdStart, itemIdEnd, chatId) {
-    if (chatId != ChatModel.chatId.value || !itemIsFullyVisible.value) return@LaunchedEffect
+  LaunchedEffect(itemIsPartiallyAboveCompose.value, itemIdStart, itemIdEnd, chatId) {
+    if (chatId != ChatModel.chatId.value || !itemIsPartiallyAboveCompose.value) return@LaunchedEffect
 
     delay(600L)
     markRead(CC.ItemRange(itemIdStart, itemIdEnd), null)
