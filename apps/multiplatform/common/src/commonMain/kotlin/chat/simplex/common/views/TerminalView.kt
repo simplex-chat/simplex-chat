@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layoutId
@@ -25,6 +26,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.item.CONSOLE_COMPOSE_LAYOUT_ID
 import chat.simplex.common.views.chat.item.AdaptingBottomPaddingLayout
 import chat.simplex.common.views.chatlist.NavigationBarBackground
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 
@@ -125,11 +127,11 @@ fun TerminalLog(floating: Boolean, composeViewHeight: State<Dp>) {
     derivedStateOf { chatModel.terminalItems.value.asReversed() }
   }
   val listState = LocalAppBarHandler.current?.listState ?: rememberLazyListState()
+  var autoScrollToBottom = rememberSaveable { mutableStateOf(true) }
   LaunchedEffect(Unit) {
-    var autoScrollToBottom = listState.firstVisibleItemIndex <= 1
     launch {
       snapshotFlow { listState.layoutInfo.totalItemsCount }
-        .filter { autoScrollToBottom }
+        .filter { autoScrollToBottom.value }
         .collect {
           try {
             listState.scrollToItem(0)
@@ -138,10 +140,16 @@ fun TerminalLog(floating: Boolean, composeViewHeight: State<Dp>) {
           }
         }
     }
+    var oldNumberOfElements = listState.layoutInfo.totalItemsCount
     launch {
       snapshotFlow { listState.firstVisibleItemIndex }
+        .drop(1)
         .collect {
-          autoScrollToBottom = it == 0
+          if (oldNumberOfElements != listState.layoutInfo.totalItemsCount) {
+            oldNumberOfElements = listState.layoutInfo.totalItemsCount
+            return@collect
+          }
+          autoScrollToBottom.value = it == 0
         }
     }
   }
