@@ -27,6 +27,7 @@ import qualified Data.Aeson.TH as JQ
 import Data.Either (partitionEithers)
 import Data.FileEmbed
 import Data.Foldable (foldMap')
+import Data.Functor.Identity
 import Data.IORef
 import Data.Int (Int64)
 import Data.Kind
@@ -335,18 +336,27 @@ usageConditionsToAdd' prevCommit sourceCommit newUser createdAt = \case
   where
     conditions cId commit = UsageConditions {conditionsId = cId, conditionsCommit = commit, notifiedAt = Nothing, createdAt}
 
+presetUserServers :: NonEmpty PresetOperator -> [ServerOperator] -> [UpdatedUserOperatorServers]
+presetUserServers = undefined
+-- presetUserServers PresetOperator {operator, smp, xftp} =
+--   UpdatedUserOperatorServers
+--     { operator,
+--       smpServers = map (AUS SDBNew) smp,
+--       xftpServers = map (AUS SDBNew) xftp
+--     }
+
 -- This function should be used inside DB transaction to update operators.
 -- It allows to add/remove/update preset operators in the database preserving enabled and roles settings,
 -- and preserves custom operators without tags for forward compatibility.
-updatedServerOperators :: NonEmpty PresetOperator -> [ServerOperator] -> [AServerOperator]
+updatedServerOperators :: NonEmpty PresetOperator -> [ServerOperator] -> [(Maybe PresetOperator, AServerOperator)]
 updatedServerOperators presetOps storedOps =
   foldr addPreset [] presetOps
-    <> map (ASO SDBStored) (filter (isNothing . operatorTag) storedOps)
+    <> map ((Nothing,) . ASO SDBStored) (filter (isNothing . operatorTag) storedOps)
   where
     -- TODO remove domains of preset operators from custom
-    addPreset PresetOperator {operator} = case operator of
+    addPreset op@PresetOperator {operator} = case operator of
       Nothing -> id
-      Just presetOp -> (storedOp' :)
+      Just presetOp -> ((Just op, storedOp') :)
         where
           storedOp' = case find ((operatorTag presetOp ==) . operatorTag) storedOps of
             Just ServerOperator {operatorId, conditionsAcceptance, enabled, smpRoles, xftpRoles} ->
@@ -354,64 +364,94 @@ updatedServerOperators presetOps storedOps =
             Nothing -> ASO SDBNew presetOp
 
 -- This function should be used inside DB transaction to update servers.
-updatedUserServers :: forall p. UserProtocol p => SProtocolType p -> NonEmpty PresetOperator -> NonEmpty (NewUserServer p) -> [UserServer p] -> NonEmpty (AUserServer p)
-updatedUserServers _ _ randomSrvs [] = L.map (AUS SDBNew) randomSrvs
-updatedUserServers p presetOps randomSrvs srvs = 
-  fromMaybe (L.map (AUS SDBNew) randomSrvs) (L.nonEmpty updatedSrvs)
-  where
-    updatedSrvs = map userServer presetSrvs <> map (AUS SDBStored) (filter customServer srvs)
-    storedSrvs :: Map (ProtoServerWithAuth p) (UserServer p)
-    storedSrvs = foldl' (\ss srv@UserServer {server} -> M.insert server srv ss) M.empty srvs
-    customServer :: UserServer p -> Bool
-    customServer srv = not (preset srv) && all (`S.notMember` presetHosts) (srvHost srv)
-    presetSrvs :: [NewUserServer p]
-    presetSrvs = concatMap (operatorServers p) presetOps
-    presetHosts :: Set TransportHost
-    presetHosts = foldMap' (S.fromList . L.toList . srvHost) presetSrvs
-    userServer :: NewUserServer p -> AUserServer p
-    userServer srv@UserServer {server} = maybe (AUS SDBNew srv) (AUS SDBStored) (M.lookup server storedSrvs)
+updatedUserServers :: (Maybe PresetOperator, UserOperatorServers) -> UpdatedUserOperatorServers
+updatedUserServers (presetOp_, UserOperatorServers {operator, smpServers, xftpServers}) = case presetOp_ of
+  Nothing ->
+    UpdatedUserOperatorServers
+      { operator,
+        smpServers = map (AUS SDBStored) smpServers,
+        xftpServers = map (AUS SDBStored) xftpServers
+      }
+  Just presetOp ->
+    UpdatedUserOperatorServers
+      { operator,
+        smpServers = updated SPSMP smpServers,
+        xftpServers = updated SPXFTP xftpServers
+      }
+    where
+      updated :: forall p. UserProtocol p => SProtocolType p -> [UserServer p] -> [AUserServer p]
+      updated p srvs = map userServer presetSrvs <> map (AUS SDBStored) (filter customServer srvs)
+        where
+          storedSrvs :: Map (ProtoServerWithAuth p) (UserServer p)
+          storedSrvs = foldl' (\ss srv@UserServer {server} -> M.insert server srv ss) M.empty srvs
+          customServer :: UserServer p -> Bool
+          customServer srv = not (preset srv) && all (`S.notMember` presetHosts) (srvHost srv)
+          presetSrvs :: [NewUserServer p]
+          presetSrvs = operatorServers p presetOp
+          presetHosts :: Set TransportHost
+          presetHosts = foldMap' (S.fromList . L.toList . srvHost) presetSrvs
+          userServer :: NewUserServer p -> AUserServer p
+          userServer srv@UserServer {server} = maybe (AUS SDBNew srv) (AUS SDBStored) (M.lookup server storedSrvs)
 
 srvHost :: UserServer' s p -> NonEmpty TransportHost
 srvHost UserServer {server = ProtoServerWithAuth srv _} = host srv
 
-agentServerCfgs :: UserProtocol p => SProtocolType p -> [(Text, ServerOperator)] -> NonEmpty (NewUserServer p) -> [UserServer' s p] -> NonEmpty (ServerCfg p)
-agentServerCfgs p opDomains randomSrvs =
-  fromMaybe fallbackSrvs . L.nonEmpty . mapMaybe enabledOpAgentServer
+agentServerCfgs :: UserProtocol p => SProtocolType p -> [(Text, ServerOperator)] -> [UserServer' s p] -> [ServerCfg p]
+agentServerCfgs p opDomains = mapMaybe agentServer
   where
-    fallbackSrvs = L.map (snd . agentServer) randomSrvs
-    enabledOpAgentServer srv =
-      let (opEnabled, srvCfg) = agentServer srv
-       in if opEnabled then Just srvCfg else Nothing
-    agentServer :: UserServer' s p -> (Bool, ServerCfg p)
+    agentServer :: UserServer' s p -> Maybe (ServerCfg p)
     agentServer srv@UserServer {server, enabled} =
       case find (\(d, _) -> any (matchingHost d) (srvHost srv)) opDomains of
-        Just (_, op@ServerOperator {operatorId = DBEntityId opId, enabled = opEnabled}) ->
-          (opEnabled, ServerCfg {server, enabled, operator = Just opId, roles = operatorRoles p op})
+        Just (_, op@ServerOperator {operatorId = DBEntityId opId, enabled = opEnabled})
+          | opEnabled -> Just ServerCfg {server, enabled, operator = Just opId, roles = operatorRoles p op}
+          | otherwise -> Nothing
         Nothing ->
-          (True, ServerCfg {server, enabled, operator = Nothing, roles = allRoles})
+          Just ServerCfg {server, enabled, operator = Nothing, roles = allRoles}
 
 matchingHost :: Text -> TransportHost -> Bool
 matchingHost d = \case
   THDomainName h -> d `T.isSuffixOf` T.pack h
   _ -> False
 
-operatorDomains :: [ServerOperator] -> [(Text, ServerOperator)]
+operatorDomains :: [ServerOperator' s] -> [(Text, ServerOperator' s)]
 operatorDomains = foldr (\op ds -> foldr (\d -> ((d, op) :)) ds (serverDomains op)) []
 
+class Box b where
+  box :: a -> b a
+  unbox :: b a -> a
+
+instance Box Identity where
+  box = Identity
+  unbox = runIdentity
+
+instance Box ((,) (Maybe a)) where
+  box = (Nothing,)
+  unbox = snd
+
 groupByOperator :: ([ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP]) -> IO [UserOperatorServers]
-groupByOperator (ops, smpSrvs, xftpSrvs) = do
-  ss <- mapM (\op -> (serverDomains op,) <$> newIORef (UserOperatorServers (Just op) [] [])) ops
-  custom <- newIORef $ UserOperatorServers Nothing [] []
+groupByOperator (ops, smpSrvs, xftpSrvs) = map runIdentity <$> groupByOperator_ (map Identity ops, smpSrvs, xftpSrvs)
+
+-- For the initial app start this function relies on tuple being Functor/Box
+-- to preserve the information about operator being DBNew or DBStored
+groupByOperator' :: ([(Maybe PresetOperator, ServerOperator)], [UserServer 'PSMP], [UserServer 'PXFTP]) -> IO [(Maybe PresetOperator, UserOperatorServers)]
+groupByOperator' = groupByOperator_
+{-# INLINE groupByOperator' #-}
+
+groupByOperator_ :: forall f. (Box f, Functor f) => ([f ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP]) -> IO [f UserOperatorServers]
+groupByOperator_ (ops, smpSrvs, xftpSrvs) = do
+  ss <- mapM ((\op -> (serverDomains op,) <$> mkUSRef (Just op)) . unbox) ops
+  custom <- mkUSRef Nothing
   mapM_ (addServer ss custom addSMP) (reverse smpSrvs)
   mapM_ (addServer ss custom addXFTP) (reverse xftpSrvs)
   opSrvs <- mapM (readIORef . snd) ss
   customSrvs <- readIORef custom
   pure $ opSrvs <> [customSrvs]
   where
-    addServer :: [([Text], IORef UserOperatorServers)] -> IORef UserOperatorServers -> (UserServer p -> UserOperatorServers -> UserOperatorServers) -> UserServer p -> IO ()
+    mkUSRef op = newIORef $ box $ UserOperatorServers op [] []
+    addServer :: [([Text], IORef (f UserOperatorServers))] -> IORef (f UserOperatorServers) -> (UserServer p -> UserOperatorServers -> UserOperatorServers) -> UserServer p -> IO ()
     addServer ss custom add srv = 
       let v = maybe custom snd $ find (\(ds, _) -> any (\d -> any (matchingHost d) (srvHost srv)) ds) ss
-       in atomicModifyIORef'_ v $ add srv
+       in atomicModifyIORef'_ v (add srv <$>)
     addSMP srv s@UserOperatorServers {smpServers} = (s :: UserOperatorServers) {smpServers = srv : smpServers}
     addXFTP srv s@UserOperatorServers {xftpServers} = (s :: UserOperatorServers) {xftpServers = srv : xftpServers}
 

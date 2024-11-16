@@ -50,9 +50,6 @@ module Simplex.Chat.Store.Profiles
     getContactWithoutConnViaAddress,
     updateUserAddressAutoAccept,
     getProtocolServers,
-    getUpdateUserServers,
-    -- overwriteOperatorsAndServers,
-    overwriteProtocolServers,
     insertProtocolServer,
     getUpdateServerOperators,
     getServerOperators,
@@ -63,6 +60,7 @@ module Simplex.Chat.Store.Profiles
     setConditionsNotified,
     acceptConditions,
     setUserServers,
+    setUserServers',
     createCall,
     deleteCalls,
     getCalls,
@@ -83,7 +81,7 @@ import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
-import Data.Maybe (fromMaybe)
+import Data.Maybe (catMaybes, fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
@@ -108,7 +106,7 @@ import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON)
-import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode, UserProtocol)
+import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode)
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
 
@@ -532,18 +530,6 @@ updateUserAddressAutoAccept db user@User {userId} autoAccept = do
       Just AutoAccept {acceptIncognito, autoReply} -> (True, acceptIncognito, autoReply)
       _ -> (False, False, Nothing)
 
-getUpdateUserServers :: forall p. (ProtocolTypeI p, UserProtocol p) => DB.Connection -> SProtocolType p -> NonEmpty PresetOperator -> NonEmpty (NewUserServer p) -> User -> IO [UserServer p]
-getUpdateUserServers db p presetOps randomSrvs user = do
-  ts <- getCurrentTime
-  srvs <- getProtocolServers db p user
-  let srvs' = L.toList $ updatedUserServers p presetOps randomSrvs srvs
-  mapM (upsertServer ts) srvs'
-  where
-    upsertServer :: UTCTime -> AUserServer p -> IO (UserServer p)
-    upsertServer ts (AUS _ s@UserServer {serverId}) = case serverId of
-      DBNewEntity -> insertProtocolServer db p user ts s
-      DBEntityId _ -> updateProtocolServer db p ts s $> s
-
 getProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> SProtocolType p -> User -> IO [UserServer p]
 getProtocolServers db p User {userId} =
   map toUserServer
@@ -560,26 +546,6 @@ getProtocolServers db p User {userId} =
     toUserServer (serverId, host, port, keyHash, auth_, preset, tested, enabled) =
       let server = ProtoServerWithAuth (ProtocolServer p host port keyHash) (BasicAuth . encodeUtf8 <$> auth_)
        in UserServer {serverId, server, preset, tested, enabled, deleted = False}
-
--- TODO remove
--- overwriteOperatorsAndServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> Maybe [ServerOperator] -> [ServerCfg p] -> ExceptT StoreError IO [ServerCfg p]
--- overwriteOperatorsAndServers db user@User {userId} operators_ servers = do
-overwriteProtocolServers :: ProtocolTypeI p => DB.Connection -> SProtocolType p -> User -> [UserServer p] -> ExceptT StoreError IO ()
-overwriteProtocolServers db p User {userId} servers =
-  -- liftIO $ mapM_ (updateServerOperators_ db) operators_
-  checkConstraint SEUniqueID . ExceptT $ do
-    currentTs <- getCurrentTime
-    DB.execute db "DELETE FROM protocol_servers WHERE user_id = ? AND protocol = ? " (userId, decodeLatin1 $ strEncode p)
-    forM_ servers $ \UserServer {serverId, server, preset, tested, enabled} -> do
-      DB.execute
-        db
-        [sql|
-          INSERT INTO protocol_servers
-            (server_id, protocol, host, port, key_hash, basic_auth, preset, tested, enabled, user_id, created_at, updated_at)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
-        |]
-        (Only serverId :. serverColumns p server :. (preset, tested, enabled, userId, currentTs, currentTs))
-    pure $ Right ()
 
 insertProtocolServer :: forall p. ProtocolTypeI p => DB.Connection -> SProtocolType p -> User -> UTCTime -> NewUserServer p -> IO (UserServer p)
 insertProtocolServer db p User {userId} ts srv@UserServer {server, preset, tested, enabled} = do
@@ -646,7 +612,7 @@ updateServerOperator db currentTs ServerOperator {operatorId, enabled, smpRoles,
     |]
     (enabled, storage smpRoles, proxy smpRoles, storage xftpRoles, proxy xftpRoles, currentTs, operatorId)
 
-getUpdateServerOperators :: DB.Connection -> NonEmpty PresetOperator -> Bool -> IO [ServerOperator]
+getUpdateServerOperators :: DB.Connection -> NonEmpty PresetOperator -> Bool -> IO [(Maybe PresetOperator, ServerOperator)]
 getUpdateServerOperators db presetOps newUser = do
   conds <- map toUsageConditions <$> DB.query_ db usageCondsQuery
   now <- getCurrentTime
@@ -654,8 +620,8 @@ getUpdateServerOperators db presetOps newUser = do
   mapM_ insertConditions condsToAdd
   latestAcceptedConds_ <- getLatestAcceptedConditions db
   ops <- updatedServerOperators presetOps <$> getServerOperators_ db
-  forM ops $ \(ASO _ op) ->
-    case operatorId op of
+  forM ops $ \(presetOp, ASO _ op) ->
+    (presetOp,) <$> case operatorId op of
       DBNewEntity -> do
         op' <- insertOperator op
         case (operatorTag op', acceptForSimplex_) of
@@ -825,22 +791,24 @@ getUsageConditionsById_ db conditionsId =
       |]
       (Only conditionsId)
 
-setUserServers :: DB.Connection -> User -> NonEmpty UpdatedUserOperatorServers -> ExceptT StoreError IO ()
-setUserServers db user@User {userId} userServers = checkConstraint SEUniqueID $ liftIO $ do
-  ts <- getCurrentTime
-  forM_ userServers $ \UpdatedUserOperatorServers {operator, smpServers, xftpServers} -> do
-    mapM_ (updateServerOperator db ts) operator
-    mapM_ (upsertOrDelete SPSMP ts) smpServers
-    mapM_ (upsertOrDelete SPXFTP ts) xftpServers
+setUserServers :: DB.Connection -> User -> UTCTime -> UpdatedUserOperatorServers -> ExceptT StoreError IO UserOperatorServers
+setUserServers db user ts = checkConstraint SEUniqueID . liftIO . setUserServers' db user ts
+
+setUserServers' :: DB.Connection -> User -> UTCTime -> UpdatedUserOperatorServers -> IO UserOperatorServers
+setUserServers' db user@User {userId} ts UpdatedUserOperatorServers {operator, smpServers, xftpServers} = do
+  mapM_ (updateServerOperator db ts) operator
+  smpSrvs' <- catMaybes <$> mapM (upsertOrDelete SPSMP) smpServers
+  xftpSrvs' <- catMaybes <$> mapM (upsertOrDelete SPXFTP) xftpServers
+  pure UserOperatorServers {operator, smpServers = smpSrvs', xftpServers = xftpSrvs'}
   where
-    upsertOrDelete :: ProtocolTypeI p => SProtocolType p -> UTCTime -> AUserServer p -> IO ()
-    upsertOrDelete p ts (AUS _ s@UserServer {serverId, deleted}) = case serverId of
+    upsertOrDelete :: ProtocolTypeI p => SProtocolType p -> AUserServer p -> IO (Maybe (UserServer p))
+    upsertOrDelete p (AUS _ s@UserServer {serverId, deleted}) = case serverId of
       DBNewEntity
-        | deleted -> pure ()
-        | otherwise -> void $ insertProtocolServer db p user ts s
+        | deleted -> pure Nothing
+        | otherwise -> Just <$> insertProtocolServer db p user ts s
       DBEntityId srvId
-        | deleted -> DB.execute db "DELETE FROM protocol_servers WHERE user_id = ? AND smp_server_id = ? AND preset = ?" (userId, srvId, False)
-        | otherwise -> updateProtocolServer db p ts s
+        | deleted -> Nothing <$ DB.execute db "DELETE FROM protocol_servers WHERE user_id = ? AND smp_server_id = ? AND preset = ?" (userId, srvId, False)
+        | otherwise -> Just s <$ updateProtocolServer db p ts s
 
 createCall :: DB.Connection -> User -> Call -> UTCTime -> IO ()
 createCall db user@User {userId} Call {contactId, callId, callUUID, chatItemId, callState} callTs = do
