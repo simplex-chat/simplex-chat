@@ -154,12 +154,6 @@ data ChatConfig = ChatConfig
     chatHooks :: ChatHooks
   }
 
-data RandomServers = RandomServers -- TODO remove
-  { smpServers :: NonEmpty (NewUserServer 'PSMP),
-    xftpServers :: NonEmpty (NewUserServer 'PXFTP)
-  }
-  deriving (Show)
-
 data RandomAgentServers = RandomAgentServers
   { smpServers :: NonEmpty (ServerCfg 'PSMP),
     xftpServers :: NonEmpty (ServerCfg 'PXFTP)
@@ -212,8 +206,7 @@ data ChatDatabase = ChatDatabase {chatStore :: SQLiteStore, agentStore :: SQLite
 
 data ChatController = ChatController
   { currentUser :: TVar (Maybe User),
-    randomServers :: RandomServers, -- TODO remove
-    randomServers' :: NonEmpty PresetOperator,
+    randomPresetServers :: NonEmpty PresetOperator,
     randomAgentServers :: RandomAgentServers,
     currentRemoteHost :: TVar (Maybe RemoteHostId),
     firstTime :: Bool,

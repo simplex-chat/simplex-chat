@@ -235,13 +235,13 @@ class UserServersClass u where
   type AServer u = (s :: ProtocolType -> Type) | s -> u
   operator' :: u -> Maybe ServerOperator
   partitionValid :: [AServer u p] -> ([Text], [AUserServer p])
-  servers' :: UserProtocol p => u -> SProtocolType p -> [AServer u p]
+  servers' :: UserProtocol p => SProtocolType p -> u -> [AServer u p]
 
 instance UserServersClass UserOperatorServers where
   type AServer UserOperatorServers = UserServer_ 'DBStored ProtoServerWithAuth
   operator' UserOperatorServers {operator} = operator
   partitionValid ss = ([], map (AUS SDBStored) ss)
-  servers' UserOperatorServers {smpServers, xftpServers} = \case
+  servers' p UserOperatorServers {smpServers, xftpServers} = case p of
     SPSMP -> smpServers
     SPXFTP -> xftpServers
 
@@ -249,7 +249,7 @@ instance UserServersClass UpdatedUserOperatorServers where
   type AServer UpdatedUserOperatorServers = AUserServer
   operator' UpdatedUserOperatorServers {operator} = operator
   partitionValid = ([],)
-  servers' UpdatedUserOperatorServers {smpServers, xftpServers} = \case
+  servers' p UpdatedUserOperatorServers {smpServers, xftpServers} = case p of
     SPSMP -> smpServers
     SPXFTP -> xftpServers
 
@@ -260,7 +260,7 @@ instance UserServersClass ValidatedUserOperatorServers where
     where
       serverOrErr :: AValidatedServer p -> Either Text (AUserServer p)
       serverOrErr (AVS s srv@UserServer {server = server'}) = (\server -> AUS s srv {server}) <$> unVPS server'
-  servers' ValidatedUserOperatorServers {smpServers, xftpServers} = \case
+  servers' p ValidatedUserOperatorServers {smpServers, xftpServers} = case p of
     SPSMP -> smpServers
     SPXFTP -> xftpServers
 
@@ -292,8 +292,11 @@ data PresetOperator = PresetOperator
     useXFTP :: Int
   }
 
-operatorServers :: UserProtocol p => SProtocolType p -> PresetOperator -> [NewUserServer p]
-operatorServers p PresetOperator {smp, xftp} = case p of
+pOperator :: PresetOperator -> Maybe NewServerOperator
+pOperator PresetOperator {operator} = operator
+
+pServers :: UserProtocol p => SProtocolType p -> PresetOperator -> [NewUserServer p]
+pServers p PresetOperator {smp, xftp} = case p of
   SPSMP -> smp
   SPXFTP -> xftp
 
@@ -336,14 +339,17 @@ usageConditionsToAdd' prevCommit sourceCommit newUser createdAt = \case
   where
     conditions cId commit = UsageConditions {conditionsId = cId, conditionsCommit = commit, notifiedAt = Nothing, createdAt}
 
-presetUserServers :: NonEmpty PresetOperator -> [ServerOperator] -> [UpdatedUserOperatorServers]
-presetUserServers = undefined
--- presetUserServers PresetOperator {operator, smp, xftp} =
---   UpdatedUserOperatorServers
---     { operator,
---       smpServers = map (AUS SDBNew) smp,
---       xftpServers = map (AUS SDBNew) xftp
---     }
+presetUserServers :: NonEmpty PresetOperator -> [(Maybe PresetOperator, ServerOperator)] -> [UpdatedUserOperatorServers]
+presetUserServers presetOps ops = map opUS ops <> noOpUS
+  where
+    opUS (presetOp_, op) = case presetOp_ of
+      Nothing -> UpdatedUserOperatorServers (Just op) [] []
+      Just presetOp -> mkUS (Just op) presetOp
+    noOpUS = case find (isNothing . pOperator) presetOps of -- assumes there can be only one preset where operator is Nothing
+      Nothing -> []
+      Just presetOp -> [mkUS Nothing presetOp]
+    mkUS op_ PresetOperator {smp, xftp} =
+      UpdatedUserOperatorServers op_ (map (AUS SDBNew) smp) (map (AUS SDBNew) xftp)
 
 -- This function should be used inside DB transaction to update operators.
 -- It allows to add/remove/update preset operators in the database preserving enabled and roles settings,
@@ -354,7 +360,7 @@ updatedServerOperators presetOps storedOps =
     <> map ((Nothing,) . ASO SDBStored) (filter (isNothing . operatorTag) storedOps)
   where
     -- TODO remove domains of preset operators from custom
-    addPreset op@PresetOperator {operator} = case operator of
+    addPreset op = case pOperator op of
       Nothing -> id
       Just presetOp -> ((Just op, storedOp') :)
         where
@@ -387,7 +393,7 @@ updatedUserServers (presetOp_, UserOperatorServers {operator, smpServers, xftpSe
           customServer :: UserServer p -> Bool
           customServer srv = not (preset srv) && all (`S.notMember` presetHosts) (srvHost srv)
           presetSrvs :: [NewUserServer p]
-          presetSrvs = operatorServers p presetOp
+          presetSrvs = pServers p presetOp
           presetHosts :: Set TransportHost
           presetHosts = foldMap' (S.fromList . L.toList . srvHost) presetSrvs
           userServer :: NewUserServer p -> AUserServer p
@@ -474,7 +480,7 @@ validateUserServers curr others = currUserErrs <> concatMap otherUserErrs others
       | otherwise = [USEStorageMissing p' user | noServers (hasRole storage)] <> [USEProxyMissing p' user | noServers (hasRole proxy)]
       where
         p' = AProtocolType p
-        noServers cond = not $ any srvEnabled $ snd $ partitionValid $ concatMap (`servers'` p) $ filter cond uss
+        noServers cond = not $ any srvEnabled $ snd $ partitionValid $ concatMap (servers' p) $ filter cond uss
         opEnabled = maybe True (\ServerOperator {enabled} -> enabled) . operator'
         hasRole roleSel = maybe True (\op@ServerOperator {enabled} -> enabled && roleSel (operatorRoles p op)) . operator'
         srvEnabled (AUS _ UserServer {deleted, enabled}) = enabled && not deleted
@@ -482,7 +488,7 @@ validateUserServers curr others = currUserErrs <> concatMap otherUserErrs others
     serverErrs p uss = map (USEInvalidServer p') invalidSrvs <> mapMaybe duplicateErr_ srvs
       where
         p' = AProtocolType p
-        (invalidSrvs, userSrvs) = partitionValid $ concatMap (`servers'` p) uss
+        (invalidSrvs, userSrvs) = partitionValid $ concatMap (servers' p) uss
         srvs = filter (\(AUS _ UserServer {deleted}) -> not deleted) userSrvs
         duplicateErr_ (AUS _ srv@UserServer {server}) =
           USEDuplicateServer p' (safeDecodeUtf8 $ strEncode server)

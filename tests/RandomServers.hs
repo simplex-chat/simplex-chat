@@ -16,7 +16,7 @@ import Data.List (sortOn)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Monoid (Sum (..))
-import Simplex.Chat (defaultChatConfig, randomPresetServers)
+import Simplex.Chat (defaultChatConfig, chooseRandomServers)
 import Simplex.Chat.Controller (ChatConfig (..), PresetServers (..))
 import Simplex.Chat.Operators
 import Simplex.Messaging.Agent.Env.SQLite (ServerRoles (..))
@@ -38,21 +38,21 @@ testRandomSMPServers :: IO ()
 testRandomSMPServers = do
   [srvs1, srvs2, srvs3] <-
     replicateM 3 $
-      checkEnabled SPSMP 7 False =<< randomPresetServers SPSMP (presetServers defaultChatConfig)
+      checkEnabled SPSMP 7 False =<< chooseRandomServers SPSMP (presetServers defaultChatConfig)
   (srvs1 == srvs2 && srvs2 == srvs3) `shouldBe` False -- && to avoid rare failures
 
 testRandomXFTPServers :: IO ()
 testRandomXFTPServers = do
   [srvs1, srvs2, srvs3] <-
     replicateM 3 $
-      checkEnabled SPXFTP 6 False =<< randomPresetServers SPXFTP (presetServers defaultChatConfig)
+      checkEnabled SPXFTP 6 False =<< chooseRandomServers SPXFTP (presetServers defaultChatConfig)
   (srvs1 == srvs2 && srvs2 == srvs3) `shouldBe` False -- && to avoid rare failures
 
 checkEnabled :: UserProtocol p => SProtocolType p -> Int -> Bool -> NonEmpty (NewUserServer p) -> IO [NewUserServer p]
 checkEnabled p n allUsed srvs = do
   let srvs' = sortOn server' $ L.toList srvs
       PresetServers {operators = presetOps} = presetServers defaultChatConfig
-      presetSrvs = sortOn server' $ concatMap (operatorServers p) presetOps
+      presetSrvs = sortOn server' $ concatMap (pServers p) presetOps
       Sum toUse = foldMap' (Sum . operatorServersToUse p) presetOps
   srvs' == presetSrvs `shouldBe` allUsed
   map enable srvs' `shouldBe` map enable presetSrvs
