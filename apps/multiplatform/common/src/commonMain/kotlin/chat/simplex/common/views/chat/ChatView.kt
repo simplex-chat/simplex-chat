@@ -957,7 +957,7 @@ fun BoxScope.ChatItemsList(
   )
   val listState = rememberUpdatedState(rememberSaveable(chatInfo.id, searchValue.value.isEmpty(), saver = LazyListState.Saver) {
     val item = reversedChatItems.value.lastOrNull { it.isRcvNew }
-    val index = if (item != null) groups.value.sections.indexInParentItems(item.id) else -1
+    val index = if (item != null) groups.value.indexInParentItems[item.id] ?: -1 else -1
     if (index <= 0) {
       LazyListState(0, 0)
     } else {
@@ -985,7 +985,7 @@ fun BoxScope.ChatItemsList(
       { itemId: Long ->
         withApi {
           try {
-            var index = groups.value.sections.indexInParentItems(itemId)
+            var index = groups.value.indexInParentItems[itemId] ?: -1
             if (index == -1) {
               loadingMoreItems.value = true
               val pagination = ChatPagination.Around(itemId, ChatPagination.PRELOAD_COUNT * 2)
@@ -1000,7 +1000,7 @@ fun BoxScope.ChatItemsList(
                 delay(20)
                 repeatsLeft--
               }
-              index = groups.value.sections.indexInParentItems(itemId)
+              index = groups.value.indexInParentItems[itemId] ?: -1
             }
             if (index != -1) {
               withContext(scope.coroutineContext) {
@@ -1436,13 +1436,13 @@ fun BoxScope.FloatingButtons(
     },
     onClickCounter = {
       val item = chatItems.value.asReversed().lastOrNull { it.isRcvNew }
-      val indexInReversed = if (item != null) groups.value.sections.indexInReversedItems(item.id) else -1
+      val indexInReversed = if (item != null) groups.value.indexInReversedItems[item.id] ?: -1 else -1
       // if already shown the first unread item, scroll to the bottom instead
       if (indexInReversed != -1 && indexInReversed == newestLastFullyVisibleIndexInListState(topPaddingToContentPx, groups, listState)) {
         scope.launch { tryBlockAndSetLoadingMore(loadingMoreItems) { listState.value.animateScrollToItem(0) } }
       } else {
         // scroll to the top unread item
-        val indexInParent = if (item != null) groups.value.sections.indexInParentItems(item.id) else -1
+        val indexInParent = if (item != null) groups.value.indexInParentItems[item.id] ?: -1 else -1
         if (indexInParent != -1) {
           scope.launch { tryBlockAndSetLoadingMore(loadingMoreItems) { listState.value.animateScrollToItem(indexInParent + 1, -maxHeight.value) } }
         }
@@ -1518,7 +1518,7 @@ fun PreloadItems(
           val anchor = anchors.lastOrNull { it.indexRangeInParentItems.contains(firstVisibleIndex) }
           if (anchor != null) {
             // we're inside an anchoredRange (top --- [end of the anchoredRange --- we're here --- start of the anchoredRange] --- bottom)
-            val index = groups.value.sections.indexInParentItems(anchor.itemId)
+            val index = groups.value.indexInParentItems[anchor.itemId] ?: -1
             if (index + remaining > firstVisibleIndex) items.lastIndex - anchor.indexRange.first else null
           } else null
         }
@@ -1559,7 +1559,7 @@ fun PreloadItems(
           }
         }
         val items = chatModel.chatItems.value
-        if (anchors.isEmpty() && items.isNotEmpty() && lastVisibleItemIndex > groups.value.sections.lastIndexInParentItems() + 1 - remaining) {
+        if (anchors.isEmpty() && items.isNotEmpty() && lastVisibleItemIndex > groups.value.lastIndexInParentItems() + 1 - remaining) {
           lastIndexToLoadFrom = items.lastIndex
         }
         if (allowLoad.value && lastIndexToLoadFrom != null/* && lastVisibleItemIndex + 1 >= ChatPagination.INITIAL_COUNT*/) {
@@ -1812,32 +1812,32 @@ private fun MarkItemsReadAfterDelay(
 
 private fun newestLastFullyVisibleIndexInListState(topPaddingToContentPx: State<Int>, groups: State<SectionGroups>, listState: State<LazyListState>): Int {
   val lastFullyVisibleOffset = listState.value.layoutInfo.viewportEndOffset - topPaddingToContentPx.value
-  return groups.value.sections.newestItemIndexInReversedOrNull(
+  return groups.value.newestItemIndexInReversed[
     (listState.value.layoutInfo.visibleItemsInfo.lastOrNull { item ->
       item.offset + item.size <= lastFullyVisibleOffset
     }
       ?.index
       ?: listState.value.layoutInfo.visibleItemsInfo.lastOrNull()?.index)
-      ?: -1)
+      ?: -1]
     ?: -1
 }
 
 private fun oldestPartiallyVisibleListItemInListStateOrNull(topPaddingToContentPx: State<Int>, groups: State<SectionGroups>, listState: State<LazyListState>): ListItem? {
   val lastFullyVisibleOffset = listState.value.layoutInfo.viewportEndOffset - topPaddingToContentPx.value
-  return groups.value.sections.oldestListItemInReversedOrNull((listState.value.layoutInfo.visibleItemsInfo.lastOrNull { item ->
+  return groups.value.oldestListItemInReversed[(listState.value.layoutInfo.visibleItemsInfo.lastOrNull { item ->
     item.offset <= lastFullyVisibleOffset
-  }?.index ?: listState.value.layoutInfo.visibleItemsInfo.lastOrNull()?.index) ?: -1)
+  }?.index ?: listState.value.layoutInfo.visibleItemsInfo.lastOrNull()?.index) ?: -1]
 }
 
 private fun lastFullyVisibleIemInListState(topPaddingToContentPx: State<Int>, density: Float, fontSizeSqrtMultiplier: Float, groups: State<SectionGroups>, listState: State<LazyListState>): ChatItem? {
   val lastFullyVisibleOffsetMinusFloatingHeight = listState.value.layoutInfo.viewportEndOffset - topPaddingToContentPx.value - 50 * density * fontSizeSqrtMultiplier
-  return groups.value.sections.newestItemInReversedOrNull(
+  return groups.value.newestListItemInReversed[
     (listState.value.layoutInfo.visibleItemsInfo.lastOrNull { item ->
       item.offset <= lastFullyVisibleOffsetMinusFloatingHeight && item.size > 0
     }
       ?.index
       ?: listState.value.layoutInfo.visibleItemsInfo.lastOrNull()?.index)
-      ?: -1)
+      ?: -1]?.item
 }
 
 val chatViewScrollState = MutableStateFlow(false)

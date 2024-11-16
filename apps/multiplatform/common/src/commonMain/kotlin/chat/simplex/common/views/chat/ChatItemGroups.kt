@@ -21,7 +21,19 @@ import kotlin.math.min
 
 data class SectionGroups(
   val sections: List<SectionItems>,
-  val anchoredRanges: List<AnchoredRange>
+  val anchoredRanges: List<AnchoredRange>,
+  // chat item id, index in list
+  val indexInParentItems: Map<Long, Int>,
+  // chat item id, index in reversedChatItems
+  val indexInReversedItems: Map<Long, Int>,
+  // parentIndex (in LazyColumn), index in reversed for the newest item (if collapsed)
+  val newestItemIndexInReversed: Map<Int, Int>,
+  // parentIndex (in LazyColumn), index in reversed for the oldest item (if collapsed)
+  val oldestItemIndexInReversed: Map<Int, Int>,
+  // parentIndex (in LazyColumn), newest list item (if collapsed)
+  val newestListItemInReversed: Map<Int, ListItem>,
+  // parentIndex (in LazyColumn), oldest list item (if collapsed)
+  val oldestListItemInReversed: Map<Int, ListItem>
 )
 
 data class AnchoredRange(
@@ -122,13 +134,19 @@ data class SectionItems (
 }
 
 fun List<ChatItem>.putIntoGroups(unreadCount: State<Int>, revealedItems: Set<Long>, chatState: ActiveChatState): SectionGroups {
-  if (isEmpty()) return SectionGroups(emptyList(), emptyList())
+  if (isEmpty()) return SectionGroups(emptyList(), emptyList(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), emptyMap())
 
   val unreadAnchorItemId = chatState.unreadAnchorItemId
   val itemAnchors = chatState.anchors.value
   val groups = ArrayList<SectionItems>()
   // Indexes of anchors here will be related to reversedChatItems, not chatModel.chatItems
   val anchoredRanges = ArrayList<AnchoredRange>()
+  val indexInParentItems = mutableMapOf<Long, Int>()
+  val indexInReversedItems = mutableMapOf<Long, Int>()
+  val newestItemIndexInReversed = mutableMapOf<Int, Int>()
+  val oldestItemIndexInReversed = mutableMapOf<Int, Int>()
+  val newestListItemInReversed = mutableMapOf<Int, ListItem>()
+  val oldestListItemInReversed = mutableMapOf<Int, ListItem>()
   var index = 0
   var unclosedAnchorIndex: Int? = null
   var unclosedAnchorIndexInParent: Int? = null
@@ -162,7 +180,10 @@ fun List<ChatItem>.putIntoGroups(unreadCount: State<Int>, revealedItems: Set<Lon
         prevItemSeparationLargeGap = false
       }
       val listItem = ListItem(item, itemSeparation, prevItemSeparationLargeGap, unreadBefore)
-
+      if (recent.revealed.value) {
+        newestItemIndexInReversed[visibleItemIndexInParent] = index
+        newestListItemInReversed[visibleItemIndexInParent] = listItem
+      }
       recent.items.add(listItem)
       if (shouldShowAvatar(item, next)) {
         recent.showAvatar.add(item.id)
@@ -170,6 +191,8 @@ fun List<ChatItem>.putIntoGroups(unreadCount: State<Int>, revealedItems: Set<Lon
       if (item.isRcvNew) {
         recent.unreadIds.add(item.id)
       }
+      oldestItemIndexInReversed[visibleItemIndexInParent] = index
+      oldestListItemInReversed[visibleItemIndexInParent] = listItem
     } else {
       val revealed = item.mergeCategory == null || revealedItems.contains(item.id)
       visibleItemIndexInParent++
@@ -197,6 +220,10 @@ fun List<ChatItem>.putIntoGroups(unreadCount: State<Int>, revealedItems: Set<Lon
         unreadIds = if (item.isRcvNew) mutableSetOf(item.id) else mutableSetOf()
       )
       groups.add(recent)
+      newestItemIndexInReversed[visibleItemIndexInParent] = index
+      oldestItemIndexInReversed[visibleItemIndexInParent] = index
+      newestListItemInReversed[visibleItemIndexInParent] = listItem
+      oldestListItemInReversed[visibleItemIndexInParent] = listItem
     }
     if (itemIsAnchor) {
       // found item that is considered as an anchor
@@ -211,76 +238,25 @@ fun List<ChatItem>.putIntoGroups(unreadCount: State<Int>, revealedItems: Set<Lon
       // just one anchor for the whole list, there will be no more, it's the end
       anchoredRanges.add(AnchoredRange(unclosedAnchorItemId, unclosedAnchorIndex .. index, unclosedAnchorIndexInParent .. visibleItemIndexInParent))
     }
+    indexInParentItems[item.id] = visibleItemIndexInParent
+    indexInReversedItems[item.id] = index
     index++
   }
-  return SectionGroups(groups, anchoredRanges)
+  return SectionGroups(
+    groups,
+    anchoredRanges,
+    indexInParentItems,
+    indexInReversedItems,
+    newestItemIndexInReversed,
+    oldestItemIndexInReversed,
+    newestListItemInReversed,
+    oldestListItemInReversed
+  )
 }
 
-fun List<SectionItems>.indexInParentItems(itemId: Long): Int {
-  for (group in this) {
-    val index = group.items.indexOfFirst { it.item.id == itemId }
-    if (index != -1) {
-      return group.startIndexInParentItems + if (group.revealed.value) index else 0
-    }
-  }
-  return -1
-}
-
-fun List<SectionItems>.indexInReversedItems(itemId: Long): Int {
-  for (group in this) {
-    val index = group.items.indexOfFirst { it.item.id == itemId }
-    if (index != -1) {
-      return group.startIndexInReversedItems + if (group.revealed.value) index else 0
-    }
-  }
-  return -1
-}
-
-fun List<SectionItems>.lastIndexInParentItems(): Int {
-  val last = lastOrNull() ?: return -1
-  return if (last.revealed.value) {
-    last.startIndexInParentItems + last.items.lastIndex
-  } else {
-    last.startIndexInParentItems
-  }
-}
-
-fun List<SectionItems>.newestItemInReversedOrNull(parentIndex: Int): ChatItem? {
-  val group = lastOrNull { it.startIndexInParentItems <= parentIndex } ?: return null
-  return if (group.revealed.value) {
-    group.items.getOrNull(parentIndex - group.startIndexInParentItems)?.item
-  } else {
-    group.items.firstOrNull()?.item
-  }
-}
-
-// returns index of newest item in reversedChatItems on that row by receiving index from LazyColumn
-fun List<SectionItems>.newestItemIndexInReversedOrNull(parentIndex: Int): Int? {
-  val group = lastOrNull { it.startIndexInParentItems <= parentIndex } ?: return null
-  return if (group.revealed.value) {
-    group.startIndexInReversedItems + (parentIndex - group.startIndexInParentItems)
-  } else {
-    group.startIndexInReversedItems
-  }
-}
-
-fun List<SectionItems>.oldestListItemInReversedOrNull(parentIndex: Int): ListItem? {
-  val group = lastOrNull { it.startIndexInParentItems <= parentIndex } ?: return null
-  return if (group.revealed.value) {
-    group.items.getOrNull(parentIndex - group.startIndexInParentItems)
-  } else {
-    group.items.lastOrNull()
-  }
-}
-
-// returns index of oldest item in reversedChatItems on that row by receiving index from LazyColumn
-fun List<SectionItems>.oldestItemIndexInReversedOrNull(parentIndex: Int): Int? {
-  val group = lastOrNull { it.startIndexInParentItems <= parentIndex } ?: return null
-  return if (group.revealed.value) {
-    group.startIndexInReversedItems + (parentIndex - group.startIndexInParentItems)
-  } else {
-    group.startIndexInReversedItems + group.items.lastIndex
-  }
+fun SectionGroups.lastIndexInParentItems(): Int {
+  val last = sections.lastOrNull() ?: return -1
+  return indexInParentItems[last.items.last().item.id] ?: -1
 }
 
 /** Returns groups mapping for easy checking the structure */
@@ -293,8 +269,8 @@ fun List<SectionItems>.mappingToString(): String = map { g ->
 fun visibleItemIndexesNonReversed(groups: State<SectionGroups>, listState: LazyListState): IntRange {
   val zero = 0 .. 0
   if (listState.layoutInfo.totalItemsCount == 0) return zero
-  val newest = groups.value.sections.newestItemIndexInReversedOrNull(listState.firstVisibleItemIndex)
-  val oldest = groups.value.sections.oldestItemIndexInReversedOrNull(listState.layoutInfo.visibleItemsInfo.last().index)
+  val newest = groups.value.newestItemIndexInReversed[listState.firstVisibleItemIndex]
+  val oldest = groups.value.oldestItemIndexInReversed[listState.layoutInfo.visibleItemsInfo.last().index]
   if (newest == null || oldest == null) return zero
   val size = chatModel.chatItems.value.size
   val range = size - oldest .. size - newest
