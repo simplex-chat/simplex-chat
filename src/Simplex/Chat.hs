@@ -179,6 +179,8 @@ defaultChatConfig =
           },
       chatVRange = supportedChatVRange,
       confirmMigrations = MCConsole,
+      -- this property should NOT use operator = Nothing
+      -- non-operator servers can be passed via options
       presetServers =
         PresetServers
           { operators =

@@ -25,10 +25,9 @@ import Data.Maybe (isNothing)
 import qualified Data.Text as T
 import Network.Socket
 import Simplex.Chat
-import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..), PresetServers (..), defaultSimpleNetCfg)
+import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..), defaultSimpleNetCfg)
 import Simplex.Chat.Core
 import Simplex.Chat.Options
-import Simplex.Chat.Operators (PresetOperator (..), presetServer)
 import Simplex.Chat.Protocol (currentChatVersion, pqEncryptionCompressionVersion)
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
@@ -95,8 +94,8 @@ testCoreOpts =
     { dbFilePrefix = "./simplex_v1",
       dbKey = "",
       -- dbKey = "this is a pass-phrase to encrypt the database",
-      smpServers = [],
-      xftpServers = [],
+      smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"],
+      xftpServers = ["xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002"],
       simpleNetCfg = defaultSimpleNetCfg,
       logLevel = CLLImportant,
       logConnections = False,
@@ -150,18 +149,6 @@ testCfg :: ChatConfig
 testCfg =
   defaultChatConfig
     { agentConfig = testAgentCfg,
-      presetServers =
-        (presetServers defaultChatConfig)
-          { operators =
-              [ PresetOperator
-                  { operator = Nothing,
-                    smp = map (presetServer True) ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"],
-                    useSMP = 1,
-                    xftp = map (presetServer True) ["xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002"],
-                    useXFTP = 1
-                  }
-              ]
-          },
       showReceipts = False,
       testView = True,
       tbqSize = 16

@@ -341,14 +341,8 @@ usageConditionsToAdd' prevCommit sourceCommit newUser createdAt = \case
     conditions cId commit = UsageConditions {conditionsId = cId, conditionsCommit = commit, notifiedAt = Nothing, createdAt}
 
 presetUserServers :: NonEmpty PresetOperator -> [(Maybe PresetOperator, Maybe ServerOperator)] -> [UpdatedUserOperatorServers]
-presetUserServers presetOps ops = map opUS ops <> noOpUS
+presetUserServers presetOps = mapMaybe $ \(presetOp_, op) -> mkUS op <$> presetOp_
   where
-    opUS (presetOp_, op) = case presetOp_ of
-      Nothing -> UpdatedUserOperatorServers op [] []
-      Just presetOp -> mkUS op presetOp
-    noOpUS = case find (isNothing . pOperator) presetOps of -- assumes there can be only one preset where operator is Nothing
-      Nothing -> []
-      Just presetOp -> [mkUS Nothing presetOp]
     mkUS op PresetOperator {smp, xftp} =
       UpdatedUserOperatorServers op (map (AUS SDBNew) smp) (map (AUS SDBNew) xftp)
 

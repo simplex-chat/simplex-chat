@@ -183,6 +183,7 @@ data PresetServers = PresetServers
     ntf :: [NtfServer],
     netCfg :: NetworkConfig
   }
+  deriving (Show)
 
 data InlineFilesConfig = InlineFilesConfig
   { offerChunks :: Integer,

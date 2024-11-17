@@ -1737,12 +1737,11 @@ testChangePCCUserDiffSrv tmp = do
         alice ##> "/smp"
         alice <## "Your servers"
         alice <## "  SMP servers"
-        alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001 (preset)"
+        alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"
         alice #$> ("/smp smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@127.0.0.1:7003", id, "ok")
         alice ##> "/smp"
         alice <## "Your servers"
         alice <## "  SMP servers"
-        alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001 (preset, disabled)"
         alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@127.0.0.1:7003"
         alice ##> "/user alice"
         showActiveUser alice "alice (Alice)"
