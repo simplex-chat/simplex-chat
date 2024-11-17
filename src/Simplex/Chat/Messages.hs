@@ -227,8 +227,8 @@ data CChatItem c = forall d. MsgDirectionI d => CChatItem (SMsgDirection d) (Cha
 
 deriving instance Show (CChatItem c)
 
-cchatItemId :: CChatItem c -> ChatItemId
-cchatItemId (CChatItem _ ci) = chatItemId' ci
+cChatItemId :: CChatItem c -> ChatItemId
+cChatItemId (CChatItem _ ci) = chatItemId' ci
 
 chatItemId' :: ChatItem c d -> ChatItemId
 chatItemId' ChatItem {meta = CIMeta {itemId}} = itemId
@@ -238,6 +238,12 @@ chatItemTs (CChatItem _ ci) = chatItemTs' ci
 
 chatItemTs' :: ChatItem c d -> UTCTime
 chatItemTs' ChatItem {meta = CIMeta {itemTs}} = itemTs
+
+ciCreatedAt :: CChatItem c -> UTCTime
+ciCreatedAt (CChatItem _ ci) = ciCreatedAt' ci
+
+ciCreatedAt' :: ChatItem c d -> UTCTime
+ciCreatedAt' ChatItem {meta = CIMeta {createdAt}} = createdAt
 
 chatItemTimed :: ChatItem c d -> Maybe CITimed
 chatItemTimed ChatItem {meta = CIMeta {itemTimed}} = itemTimed
@@ -315,6 +321,12 @@ data ChatStats = ChatStats
   { unreadCount :: Int,
     minUnreadItemId :: ChatItemId,
     unreadChat :: Bool
+  }
+  deriving (Show)
+
+data NavigationInfo = NavigationInfo
+  { afterUnread :: Int,
+    afterTotal :: Int
   }
   deriving (Show)
 
@@ -1407,6 +1419,8 @@ instance ChatTypeI c => ToJSON (CChatItem c) where
 $(JQ.deriveJSON defaultJSON ''ChatItemInfo)
 
 $(JQ.deriveJSON defaultJSON ''ChatStats)
+
+$(JQ.deriveJSON defaultJSON ''NavigationInfo)
 
 instance ChatTypeI c => ToJSON (Chat c) where
   toJSON = $(JQ.mkToJSON defaultJSON ''Chat)
