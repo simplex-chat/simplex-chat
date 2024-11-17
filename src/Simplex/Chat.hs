@@ -315,7 +315,7 @@ newChatController
     currentUser <- newTVarIO user
     randomPresetServers <- chooseRandomServers presetServers'
     let rndSrvs = L.toList randomPresetServers
-        operatorWithId (i, op) = (\op -> op {operatorId = DBEntityId i}) <$> pOperator op
+        operatorWithId (i, op) = (\o -> o {operatorId = DBEntityId i}) <$> pOperator op
         opDomains = operatorDomains $ mapMaybe operatorWithId $ zip [1..] rndSrvs
     agentSMP <- randomServerCfgs "agent SMP servers" SPSMP opDomains rndSrvs
     agentXFTP <- randomServerCfgs "agent XFTP servers" SPXFTP opDomains rndSrvs
@@ -426,17 +426,17 @@ newChatController
         users <- getUsers db
         ops <- getUpdateServerOperators db presetOps (null users)
         let opDomains = operatorDomains $ mapMaybe snd ops
-        (smp', xftp') <- unzip <$> mapM (getServers as ops opDomains) users
+        (smp', xftp') <- unzip <$> mapM (getServers ops opDomains) users
         pure InitialAgentServers {smp = M.fromList smp', xftp = M.fromList xftp', ntf, netCfg}
         where
-          getServers :: RandomAgentServers -> [(Maybe PresetOperator, Maybe ServerOperator)] -> [(Text, ServerOperator)] -> User -> IO ((UserId, NonEmpty (ServerCfg 'PSMP)), (UserId, NonEmpty (ServerCfg 'PXFTP)))
-          getServers as ops opDomains user = do
-            smpSrvs <- getProtocolServers db SPSMP user
-            xftpSrvs <- getProtocolServers db SPXFTP user
+          getServers :: [(Maybe PresetOperator, Maybe ServerOperator)] -> [(Text, ServerOperator)] -> User -> IO ((UserId, NonEmpty (ServerCfg 'PSMP)), (UserId, NonEmpty (ServerCfg 'PXFTP)))
+          getServers ops opDomains user' = do
+            smpSrvs <- getProtocolServers db SPSMP user'
+            xftpSrvs <- getProtocolServers db SPXFTP user'
             uss <- groupByOperator' (ops, smpSrvs, xftpSrvs)
             ts <- getCurrentTime
-            uss' <- mapM (setUserServers' db user ts . updatedUserServers) uss
-            let auId = aUserId user
+            uss' <- mapM (setUserServers' db user' ts . updatedUserServers) uss
+            let auId = aUserId user'
             pure $ bimap (auId,) (auId,) $ useServers as opDomains uss'
 
 updateNetworkConfig :: NetworkConfig -> SimpleNetCfg -> NetworkConfig
@@ -480,7 +480,7 @@ withFileLock :: String -> Int64 -> CM a -> CM a
 withFileLock name = withEntityLock name . CLFile
 {-# INLINE withFileLock #-}
 
-useServers :: Foldable f => RandomAgentServers -> [(Text, ServerOperator)] -> f UserOperatorServers -> (NonEmpty (ServerCfg PSMP), NonEmpty (ServerCfg PXFTP))
+useServers :: Foldable f => RandomAgentServers -> [(Text, ServerOperator)] -> f UserOperatorServers -> (NonEmpty (ServerCfg 'PSMP), NonEmpty (ServerCfg 'PXFTP))
 useServers as opDomains uss =
   let smp' = useServerCfgs SPSMP as opDomains $ concatMap (servers' SPSMP) uss
       xftp' = useServerCfgs SPXFTP as opDomains $ concatMap (servers' SPXFTP) uss
@@ -668,19 +668,8 @@ processChatCommand' vr = \case
     forM_ users $ \User {localDisplayName = n, activeUser, viewPwdHash} ->
       when (n == displayName) . throwChatError $
         if activeUser || isNothing viewPwdHash then CEUserExists displayName else CEInvalidDisplayName {displayName, validName = ""}
-    uss_ <- readTVarIO u >>= mapM (withFastStore . flip getUserServers >=> liftIO . groupByOperator)
-    as <- asks randomAgentServers
-    (uss, (smp', xftp')) <- case uss_ of
-      Just uss -> do
-        let opDomains = operatorDomains $ mapMaybe operator' uss
-            uss' = map copyServers uss
-        pure $ (uss',) $ useServers as opDomains uss
-      Nothing -> do
-        ps <- asks randomPresetServers
-        uss <- presetUserServers ps <$> withFastStore' (\db -> getUpdateServerOperators db ps True)
-        let RandomAgentServers {smpServers = smp', xftpServers = xftp'} = as
-        pure (uss, (smp', xftp'))
-    auId <- withAgent (\a -> createUser a smp' xftp')
+    (uss, (smp', xftp')) <- chooseServers =<< readTVarIO u
+    auId <- withAgent $ \a -> createUser a smp' xftp'
     ts <- liftIO $ getCurrentTime >>= if pastTimestamp then coupleDaysAgo else pure
     user <- withFastStore $ \db -> do
       user <- createUserRecordAt db (AgentUserId auId) p True ts
@@ -695,10 +684,19 @@ processChatCommand' vr = \case
       createPresetContactCards db user = do
         createContact db user simplexStatusContactProfile
         createContact db user simplexTeamContactProfile
-      chooseServers :: forall p. ProtocolTypeI p => SProtocolType p -> CM [UserServer p]
-      chooseServers p = do
-        srvs <- chatReadVar currentUser >>= mapM (\user -> withFastStore' $ \db -> getProtocolServers db p user)
-        pure $ fromMaybe [] srvs
+      chooseServers :: Maybe User -> CM ([UpdatedUserOperatorServers], (NonEmpty (ServerCfg 'PSMP), NonEmpty (ServerCfg 'PXFTP)))
+      chooseServers user_ = do
+        as <- asks randomAgentServers
+        mapM (withFastStore . flip getUserServers >=> liftIO . groupByOperator) user_ >>= \case
+          Just uss -> do
+            let opDomains = operatorDomains $ mapMaybe operator' uss
+                uss' = map copyServers uss
+            pure $ (uss',) $ useServers as opDomains uss
+          Nothing -> do
+            ps <- asks randomPresetServers
+            uss <- presetUserServers <$> withFastStore' (\db -> getUpdateServerOperators db ps True)
+            let RandomAgentServers {smpServers = smp', xftpServers = xftp'} = as
+            pure (uss, (smp', xftp'))
       copyServers :: UserOperatorServers -> UpdatedUserOperatorServers
       copyServers UserOperatorServers {operator, smpServers, xftpServers} =
         let new srv = AUS SDBNew srv {serverId = DBNewEntity}
@@ -1602,32 +1600,16 @@ processChatCommand' vr = \case
     pure $ CRConnNtfMessages ntfMsgs
   GetUserProtoServers (AProtocolType p) -> withUser $ \user -> withServerProtocol p $ do
     srvs <- withFastStore (`getUserServers` user)
-    CRUserServers user <$> liftIO (groupedServers srvs p)
-    where
-      groupedServers :: UserProtocol p => ([Maybe ServerOperator], [UserServer 'PSMP],  [UserServer 'PXFTP]) -> SProtocolType p -> IO [UserOperatorServers]
-      groupedServers (operators, smpServers, xftpServers) = \case
-        SPSMP -> groupByOperator (operators, smpServers, [])
-        SPXFTP -> groupByOperator (operators, [], xftpServers)
+    liftIO $ CRUserServers user <$> groupByOperator (protocolServers p srvs)
   SetUserProtoServers (AProtocolType (p :: SProtocolType p)) srvs -> withUser $ \user@User {userId} -> withServerProtocol p $ do
-    srvs' <- mapM aUserServer srvs
     userServers_ <- liftIO . groupByOperator =<< withFastStore (`getUserServers` user)
     case L.nonEmpty userServers_ of
       Nothing -> throwChatError $ CECommandError "no servers"
       Just userServers -> case srvs of
         [] -> throwChatError $ CECommandError "no servers"
-        _ -> processChatCommand $ APISetUserServers userId $ L.map (updatedSrvs p) userServers
-          where
-            -- disable preset and replace custom servers (groupByOperator always adds custom)
-            updatedSrvs :: UserProtocol p => SProtocolType p -> UserOperatorServers -> UpdatedUserOperatorServers
-            updatedSrvs p' UserOperatorServers {operator, smpServers, xftpServers} = case p' of
-              SPSMP -> u (updateSrvs smpServers, map (AUS SDBStored) xftpServers)
-              SPXFTP -> u (map (AUS SDBStored) smpServers, updateSrvs xftpServers)
-              where
-                u = uncurry $ UpdatedUserOperatorServers operator
-                updateSrvs :: [UserServer p] -> [AUserServer p]
-                updateSrvs pSrvs = map disableSrv pSrvs <> maybe srvs' (const []) operator
-                disableSrv srv@UserServer {preset} =
-                  AUS SDBStored $ if preset then srv {enabled = False} else srv {deleted = True}
+        _ -> do
+          srvs' <- mapM aUserServer srvs
+          processChatCommand $ APISetUserServers userId $ L.map (updatedServers p srvs') userServers
     where
       aUserServer ::  AProtoServerWithAuth -> CM (AUserServer p)
       aUserServer (AProtoServerWithAuth p' srv) = case testEquality p p' of
@@ -3409,6 +3391,23 @@ processChatCommand' vr = \case
     getConnQueueInfo user Connection {connId, agentConnId = AgentConnId acId} = do
       msgInfo <- withFastStore' (`getLastRcvMsgInfo` connId)
       CRQueueInfo user msgInfo <$> withAgent (`getConnectionQueueInfo` acId)
+
+protocolServers :: UserProtocol p => SProtocolType p -> ([Maybe ServerOperator], [UserServer 'PSMP],  [UserServer 'PXFTP]) -> ([Maybe ServerOperator], [UserServer 'PSMP],  [UserServer 'PXFTP])
+protocolServers p (operators, smpServers, xftpServers) = case p of
+  SPSMP -> (operators, smpServers, [])
+  SPXFTP -> (operators, [], xftpServers)
+
+-- disable preset and replace custom servers (groupByOperator always adds custom)
+updatedServers :: forall p. UserProtocol p => SProtocolType p -> [AUserServer p] -> UserOperatorServers -> UpdatedUserOperatorServers
+updatedServers p' srvs UserOperatorServers {operator, smpServers, xftpServers} = case p' of
+  SPSMP -> u (updateSrvs smpServers, map (AUS SDBStored) xftpServers)
+  SPXFTP -> u (map (AUS SDBStored) smpServers, updateSrvs xftpServers)
+  where
+    u = uncurry $ UpdatedUserOperatorServers operator
+    updateSrvs :: [UserServer p] -> [AUserServer p]
+    updateSrvs pSrvs = map disableSrv pSrvs <> maybe srvs (const []) operator
+    disableSrv srv@UserServer {preset} =
+      AUS SDBStored $ if preset then srv {enabled = False} else srv {deleted = True}
 
 type ComposeMessageReq = (ComposedMessage, Maybe CIForwardedFrom)
 

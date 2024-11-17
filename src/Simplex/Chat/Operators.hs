@@ -340,8 +340,8 @@ usageConditionsToAdd' prevCommit sourceCommit newUser createdAt = \case
   where
     conditions cId commit = UsageConditions {conditionsId = cId, conditionsCommit = commit, notifiedAt = Nothing, createdAt}
 
-presetUserServers :: NonEmpty PresetOperator -> [(Maybe PresetOperator, Maybe ServerOperator)] -> [UpdatedUserOperatorServers]
-presetUserServers presetOps = mapMaybe $ \(presetOp_, op) -> mkUS op <$> presetOp_
+presetUserServers :: [(Maybe PresetOperator, Maybe ServerOperator)] -> [UpdatedUserOperatorServers]
+presetUserServers = mapMaybe $ \(presetOp_, op) -> mkUS op <$> presetOp_
   where
     mkUS op PresetOperator {smp, xftp} =
       UpdatedUserOperatorServers op (map (AUS SDBNew) smp) (map (AUS SDBNew) xftp)
@@ -433,9 +433,9 @@ groupByOperator' = groupByOperator_
 groupByOperator_ :: forall f. (Box f, Traversable f) => ([f (Maybe ServerOperator)], [UserServer 'PSMP], [UserServer 'PXFTP]) -> IO [f UserOperatorServers]
 groupByOperator_ (ops, smpSrvs, xftpSrvs) = do
   let ops' = mapMaybe sequence ops
-      customOp = find (isNothing . unbox) ops
+      customOp_ = find (isNothing . unbox) ops
   ss <- mapM ((\op -> (serverDomains (unbox op),) <$> newIORef (mkUS . Just <$> op))) ops'
-  custom <- newIORef $ maybe (box $ mkUS Nothing) (mkUS <$>) customOp
+  custom <- newIORef $ maybe (box $ mkUS Nothing) (mkUS <$>) customOp_
   mapM_ (addServer ss custom addSMP) (reverse smpSrvs)
   mapM_ (addServer ss custom addXFTP) (reverse xftpSrvs)
   opSrvs <- mapM (readIORef . snd) ss
