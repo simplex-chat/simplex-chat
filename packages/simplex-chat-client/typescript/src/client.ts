@@ -312,7 +312,7 @@ export class ChatClient {
 
   async apiListGroups(userId: number, contactId?: number, search?: string): Promise<CR.GroupInfo[]> {
     const r = await this.sendChatCommand({type: "apiListGroups", userId, contactId, search})
-    if (r.type === "groupsList") return r.groups.map(v => v[0])
+    if (r.type === "groupsList") return r.groups.map((v) => v[0])
     throw new ChatCommandError("error listing groups", r)
   }
 

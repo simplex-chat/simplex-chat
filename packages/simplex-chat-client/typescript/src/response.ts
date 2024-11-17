@@ -600,7 +600,7 @@ export interface CRGroupCreated extends CR {
 export interface CRGroupsList extends CR {
   type: "groupsList"
   user: User
-  groups: Array<[GroupInfo, GroupSummary]>
+  groups: [GroupInfo, GroupSummary][]
 }
 
 export interface CRGroupMembers extends CR {

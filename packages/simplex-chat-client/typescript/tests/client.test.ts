@@ -3,9 +3,9 @@ import {ChatClient} from "../src/index"
 import {ConnReqType} from "../src/client"
 import * as CC from "../src/command"
 import * as CR from "../src/response"
-import { GroupMemberStatus } from "../src/response"
+import {GroupMemberStatus} from "../src/response"
 
-describe("ChatClient (expects SimpleX Chat server with a user, without contacts, on localhost:5225)", () => {
+describe.skip("ChatClient (expects SimpleX Chat server with a user, without contacts, on localhost:5225)", () => {
   test("connect, send message to themselves, delete contact", async () => {
     const c = await ChatClient.create("ws://127.0.0.1:5225")
     assert.strictEqual((await c.msgQ.dequeue()).type, "contactSubSummary")
@@ -73,9 +73,9 @@ describe("ChatClient (expects SimpleX Chat server with a user, without contacts,
 
     if (user == null) throw new Error("Cannot reach")
 
-      // debug 
-      // const _debug = await c.apiListGroups(user.userId)
-      // console.dir(_debug)
+    // debug
+    // const _debug = await c.apiListGroups(user.userId)
+    // console.dir(_debug)
     const newGroupProfile = {
       displayName: "list_group",
       fullName: "list_group",
@@ -90,10 +90,14 @@ describe("ChatClient (expects SimpleX Chat server with a user, without contacts,
     const searchGroup = await c.apiNewGroup(user.userId, searchGroupProfile)
 
     // fetch all groups
-    const allGroups = (await c.apiListGroups(user.userId, user.userContactId)).filter(v => v.membership.memberStatus !== GroupMemberStatus.Left)
+    const allGroups = (await c.apiListGroups(user.userId, user.userContactId)).filter(
+      (v) => v.membership.memberStatus !== GroupMemberStatus.Left
+    )
     assert.equal(allGroups.length, 2)
 
-    const searchGroups = (await c.apiListGroups(user.userId, user.userContactId, "search_group")).filter(v => v.membership.memberStatus !== GroupMemberStatus.Left)
+    const searchGroups = (await c.apiListGroups(user.userId, user.userContactId, "search_group")).filter(
+      (v) => v.membership.memberStatus !== GroupMemberStatus.Left
+    )
     assert.equal(searchGroups.length, 1)
     assert.equal(searchGroups[0].groupProfile.displayName, searchGroupProfile.displayName)
     assert.equal(searchGroups[0].groupId, searchGroup.groupId)

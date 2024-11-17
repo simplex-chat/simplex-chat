@@ -747,9 +747,7 @@ export function cmdString(cmd: ChatCommand): string {
     case "newGroup":
       return `/_group ${cmd.userId} ${JSON.stringify(cmd.groupProfile)}`
     case "apiListGroups":
-      const _contactId = cmd.contactId != null ? ` @${cmd.contactId}` : ''
-      const _search = cmd.search != null ? ` ${cmd.search}` : ''
-      return `/_groups ${cmd.userId}${_contactId}${_search}`
+      return `/_groups ${cmd.userId}${cmd.contactId ? ` @${cmd.contactId}` : ""}${cmd.search ? ` ${cmd.search}` : ""}`
     case "apiAddMember":
       return `/_add #${cmd.groupId} ${cmd.contactId} ${cmd.memberRole}`
     case "apiJoinGroup":
