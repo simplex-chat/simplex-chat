@@ -310,6 +310,12 @@ export class ChatClient {
     throw new ChatCommandError("error creating group", r)
   }
 
+  async apiListGroups(userId: number, contactId?: number, search?: string): Promise<CR.GroupInfo[]> {
+    const r = await this.sendChatCommand({type: "apiListGroups", userId, contactId, search})
+    if (r.type === "groupsList") return r.groups.map(v => v[0])
+    throw new ChatCommandError("error listing groups", r)
+  }
+
   async apiAddMember(groupId: number, contactId: number, memberRole: CC.GroupMemberRole): Promise<CR.GroupMember> {
     const r = await this.sendChatCommand({type: "apiAddMember", groupId, contactId, memberRole})
     if (r.type === "sentGroupInvitation") return r.member

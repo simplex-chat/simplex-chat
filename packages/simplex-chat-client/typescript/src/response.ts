@@ -66,6 +66,7 @@ export type ChatResponse =
   | CRRcvFileSubError
   | CRPendingSubSummary
   | CRGroupCreated
+  | CRGroupsList
   | CRGroupMembers
   | CRUserAcceptedGroupSent
   | CRUserDeletedMember
@@ -163,6 +164,7 @@ type ChatResponseTag =
   | "sndFileSubError"
   | "rcvFileSubError"
   | "pendingSubSummary"
+  | "groupsList"
   | "groupCreated"
   | "groupMembers"
   | "userAcceptedGroupSent"
@@ -595,6 +597,12 @@ export interface CRGroupCreated extends CR {
   groupInfo: GroupInfo
 }
 
+export interface CRGroupsList extends CR {
+  type: "groupsList"
+  user: User
+  groups: Array<[GroupInfo, GroupSummary]>
+}
+
 export interface CRGroupMembers extends CR {
   type: "groupMembers"
   user: User
@@ -843,18 +851,45 @@ export interface GroupInfo {
   createdAt: Date
 }
 
+export interface GroupSummary {
+  currentMembers: number
+}
+
 export interface GroupProfile {
   displayName: string
   fullName: string
   image?: string // web-compatible data/base64 string for the image
 }
 
+export enum GroupMemberStatus {
+  Removed = "removed",
+  Left = "left",
+  Deleted = "deleted",
+  Unknown = "unknown",
+  Invited = "invited",
+  Introduced = "introduced",
+  IntroInvited = "intro-inv",
+  Accepted = "accepted",
+  Announced = "announced",
+  Connected = "connected",
+  Complete = "complete",
+  Creator = "creator",
+}
+
+export enum GroupMemberCategory {
+  User = "user",
+  Invitee = "invitee",
+  Host = "host",
+  Pre = "pre",
+  Post = "post",
+}
+
 export interface GroupMember {
   groupMemberId: number
   memberId: string
   memberRole: GroupMemberRole
-  // memberCategory: GroupMemberCategory
-  // memberStatus: GroupMemberStatus
+  memberCategory: GroupMemberCategory
+  memberStatus: GroupMemberStatus
   // invitedBy: InvitedBy
   localDisplayName: string
   memberProfile: Profile
