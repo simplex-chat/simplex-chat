@@ -273,6 +273,7 @@ testRetryAcceptingViaContactLink tmp = testChatCfgOpts2 cfg' opts' aliceProfile 
       bob <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
         alice <## "server connected localhost ()"
+        threadDelay 250000
         bob ##> ("/_connect plan 1 " <> cLink)
         bob <## "contact address: ok to connect"
         bob ##> ("/_connect 1 " <> cLink)
