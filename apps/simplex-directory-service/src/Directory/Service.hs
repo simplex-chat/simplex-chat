@@ -630,7 +630,7 @@ directoryService st DirectoryOpts {adminUsers, superUsers, serviceName, searchRe
         listGroups count pending =
           readTVarIO (groupRegs st) >>= \groups -> do
             grs <-
-              if pending 
+              if pending
                 then filterM (fmap pendingApproval . readTVarIO . groupRegStatus) groups
                 else pure groups
             sendReply $ tshow (length grs) <> " registered group(s)" <> (if length grs > count then ", showing the last " <> tshow count else "")
@@ -689,7 +689,7 @@ getContact cc ctId = resp <$> sendChatCmd cc (APIGetChat (ChatRef CTDirect ctId)
   where
     resp :: ChatResponse -> Maybe Contact
     resp = \case
-      CRApiChat _ (AChat SCTDirect Chat {chatInfo = DirectChat ct}) -> Just ct
+      CRApiChat _ (AChat SCTDirect Chat {chatInfo = DirectChat ct}) _ -> Just ct
       _ -> Nothing
 
 getGroup :: ChatController -> GroupId -> IO (Maybe GroupInfo)

@@ -439,6 +439,8 @@ smpServerCfg =
       controlPortUserAuth = Nothing,
       controlPortAdminAuth = Nothing,
       messageExpiration = Just defaultMessageExpiration,
+      expireMessagesOnStart = False,
+      idleQueueInterval = defaultIdleQueueInterval,
       notificationExpiration = defaultNtfExpiration,
       inactiveClientExpiration = Just defaultInactiveClientExpiration,
       smpCredentials =
@@ -524,7 +526,7 @@ serverBracket server f = do
   started <- newEmptyTMVarIO
   bracket
     (forkIOWithUnmask ($ server started))
-    (\t -> killThread t >> waitFor started "stop")
+    (\t -> killThread t >> waitFor started "stop" >> threadDelay 100000)
     (\_ -> waitFor started "start" >> f)
   where
     waitFor started s =
