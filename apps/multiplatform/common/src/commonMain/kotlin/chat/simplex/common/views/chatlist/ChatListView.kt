@@ -134,7 +134,7 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   LaunchedEffect(Unit) {
     val showWhatsNew = shouldShowWhatsNew(chatModel)
-    val showOperatorsNotice = chatModel.conditions.value?.conditionsAction?.shouldSowNotice ?: false
+    val showOperatorsNotice = chatModel.conditions.value.conditionsAction?.shouldSowNotice ?: false
     if (showWhatsNew || showOperatorsNotice) {
       delay(1000L)
       ModalManager.center.showCustomModal { close -> WhatsNewView(close = close, showWhatsNew = remember { mutableStateOf(showWhatsNew) }, showOperatorsNotice = showOperatorsNotice) }

@@ -1009,6 +1009,10 @@ object ChatController {
     return when (r) {
       is CR.CmdOk -> true
       else -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.failed_to_save_servers),
+          "${r.responseType}: ${r.details}"
+        )
         Log.e(TAG, "setUserServers bad response: ${r.responseType} ${r.details}")
         false
       }
@@ -3592,7 +3596,7 @@ data class ServerOperatorInfo(
   val logoDarkMode: String,
   val largeLogoDarkMode: String
 )
-
+// TODO: Check logos
 val operatorsInfo: Map<OperatorTag, ServerOperatorInfo> = mapOf(
   OperatorTag.SimpleX to ServerOperatorInfo(
     description = "SimpleX Chat preset servers",
@@ -3647,8 +3651,8 @@ data class UsageConditionsDetail(
 
 @Serializable
 sealed class UsageConditionsAction {
-  data class Review(val operators: List<ServerOperator>, val deadline: Date?, val showNotice: Boolean) : UsageConditionsAction()
-  data class Accepted(val operators: List<ServerOperator>) : UsageConditionsAction()
+  @Serializable @SerialName("review") data class Review(val operators: List<ServerOperator>, val deadline: Instant?, val showNotice: Boolean) : UsageConditionsAction()
+  @Serializable @SerialName("accepted") data class Accepted(val operators: List<ServerOperator>) : UsageConditionsAction()
 
   val shouldSowNotice: Boolean
     get() = when (this) {
@@ -3674,8 +3678,8 @@ data class ServerOperatorConditionsDetail(
 
 @Serializable()
 sealed class ConditionsAcceptance {
-  data class Accepted(val acceptedAt: Date?) : ConditionsAcceptance()
-  data class Required(val deadline: Date?) : ConditionsAcceptance()
+  @Serializable @SerialName("accepted") data class Accepted(val acceptedAt: Instant?) : ConditionsAcceptance()
+  @Serializable @SerialName("required") data class Required(val deadline: Instant?) : ConditionsAcceptance()
 
   val conditionsAccepted: Boolean
     get() = when (this) {
@@ -3846,10 +3850,10 @@ data class UserOperatorServers(
 
 @Serializable
 sealed class UserServersError {
-  class StorageMissing: UserServersError()
-  class ProxyMissing: UserServersError()
-  data class DuplicateSMP(val server: String) : UserServersError()
-  data class DuplicateXFTP(val server: String) : UserServersError()
+  @Serializable @SerialName("storageMissing") class StorageMissing: UserServersError()
+  @Serializable @SerialName("proxyMissing") class ProxyMissing: UserServersError()
+  @Serializable @SerialName("duplicateSMP") data class DuplicateSMP(val server: String) : UserServersError()
+  @Serializable @SerialName("duplicateXFTP") data class DuplicateXFTP(val server: String) : UserServersError()
 }
 
 @Serializable

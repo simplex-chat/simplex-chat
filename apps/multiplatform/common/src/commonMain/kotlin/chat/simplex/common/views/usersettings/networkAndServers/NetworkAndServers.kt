@@ -20,124 +20,222 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.input.*
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.model.ChatController.getUserServers
+import chat.simplex.common.model.ChatController.setUserServers
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
+import kotlinx.coroutines.launch
 
 @Composable
-fun NetworkAndServersView() {
+fun NetworkAndServersView(close: () -> Unit) {
   val currentRemoteHost by remember { chatModel.currentRemoteHost }
   // It's not a state, just a one-time value. Shouldn't be used in any state-related situations
   val netCfg = remember { chatModel.controller.getNetCfg() }
   val networkUseSocksProxy: MutableState<Boolean> = remember { mutableStateOf(netCfg.useSocksProxy) }
+  val currUserServers = remember { mutableStateOf(emptyList<UserOperatorServers>()) }
+  val userServers = remember { mutableStateOf(emptyList<UserOperatorServers>()) }
+  val scope = rememberCoroutineScope()
 
   val proxyPort = remember { derivedStateOf { appPrefs.networkProxy.state.value.port } }
-  NetworkAndServersLayout(
-    currentRemoteHost = currentRemoteHost,
-    networkUseSocksProxy = networkUseSocksProxy,
-    onionHosts = remember { mutableStateOf(netCfg.onionHosts) },
-    toggleSocksProxy = { enable ->
-      val def = NetCfg.defaults
-      val proxyDef = NetCfg.proxyDefaults
-      if (enable) {
-        AlertManager.shared.showAlertDialog(
-          title = generalGetString(MR.strings.network_enable_socks),
-          text = generalGetString(MR.strings.network_enable_socks_info).format(proxyPort.value),
-          confirmText = generalGetString(MR.strings.confirm_verb),
-          onConfirm = {
-            withBGApi {
-              var conf = controller.getNetCfg().withProxy(controller.appPrefs.networkProxy.get())
-              if (conf.tcpConnectTimeout == def.tcpConnectTimeout) {
-                conf = conf.copy(tcpConnectTimeout = proxyDef.tcpConnectTimeout)
-              }
-              if (conf.tcpTimeout == def.tcpTimeout) {
-                conf = conf.copy(tcpTimeout = proxyDef.tcpTimeout)
-              }
-              if (conf.tcpTimeoutPerKb == def.tcpTimeoutPerKb) {
-                conf = conf.copy(tcpTimeoutPerKb = proxyDef.tcpTimeoutPerKb)
-              }
-              if (conf.rcvConcurrency == def.rcvConcurrency) {
-                conf = conf.copy(rcvConcurrency = proxyDef.rcvConcurrency)
-              }
-              chatModel.controller.apiSetNetworkConfig(conf)
-              chatModel.controller.setNetCfg(conf)
-              networkUseSocksProxy.value = true
-            }
-          }
-        )
+  ModalView(
+    close = {
+      if (currUserServers.value != userServers.value) {
+        close()
       } else {
-        AlertManager.shared.showAlertDialog(
-          title = generalGetString(MR.strings.network_disable_socks),
-          text = generalGetString(MR.strings.network_disable_socks_info),
-          confirmText = generalGetString(MR.strings.confirm_verb),
-          onConfirm = {
-            withBGApi {
-              var conf = controller.getNetCfg().copy(socksProxy = null)
-              if (conf.tcpConnectTimeout == proxyDef.tcpConnectTimeout) {
-                conf = conf.copy(tcpConnectTimeout = def.tcpConnectTimeout)
-              }
-              if (conf.tcpTimeout == proxyDef.tcpTimeout) {
-                conf = conf.copy(tcpTimeout = def.tcpTimeout)
-              }
-              if (conf.tcpTimeoutPerKb == proxyDef.tcpTimeoutPerKb) {
-                conf = conf.copy(tcpTimeoutPerKb = def.tcpTimeoutPerKb)
-              }
-              if (conf.rcvConcurrency == proxyDef.rcvConcurrency) {
-                conf = conf.copy(rcvConcurrency = def.rcvConcurrency)
-              }
-              chatModel.controller.apiSetNetworkConfig(conf)
-              chatModel.controller.setNetCfg(conf)
-              networkUseSocksProxy.value = false
-            }
-          }
+        showUnsavedChangesAlert(
+          { scope.launch { saveServers(currentRemoteHost?.remoteHostId, currUserServers, userServers) }},
+          close
         )
       }
     }
-  )
+  ) {
+    NetworkAndServersLayout(
+      currentRemoteHost = currentRemoteHost,
+      networkUseSocksProxy = networkUseSocksProxy,
+      onionHosts = remember { mutableStateOf(netCfg.onionHosts) },
+      currUserServers = currUserServers,
+      userServers = userServers,
+      toggleSocksProxy = { enable ->
+        val def = NetCfg.defaults
+        val proxyDef = NetCfg.proxyDefaults
+        if (enable) {
+          AlertManager.shared.showAlertDialog(
+            title = generalGetString(MR.strings.network_enable_socks),
+            text = generalGetString(MR.strings.network_enable_socks_info).format(proxyPort.value),
+            confirmText = generalGetString(MR.strings.confirm_verb),
+            onConfirm = {
+              withBGApi {
+                var conf = controller.getNetCfg().withProxy(controller.appPrefs.networkProxy.get())
+                if (conf.tcpConnectTimeout == def.tcpConnectTimeout) {
+                  conf = conf.copy(tcpConnectTimeout = proxyDef.tcpConnectTimeout)
+                }
+                if (conf.tcpTimeout == def.tcpTimeout) {
+                  conf = conf.copy(tcpTimeout = proxyDef.tcpTimeout)
+                }
+                if (conf.tcpTimeoutPerKb == def.tcpTimeoutPerKb) {
+                  conf = conf.copy(tcpTimeoutPerKb = proxyDef.tcpTimeoutPerKb)
+                }
+                if (conf.rcvConcurrency == def.rcvConcurrency) {
+                  conf = conf.copy(rcvConcurrency = proxyDef.rcvConcurrency)
+                }
+                chatModel.controller.apiSetNetworkConfig(conf)
+                chatModel.controller.setNetCfg(conf)
+                networkUseSocksProxy.value = true
+              }
+            }
+          )
+        } else {
+          AlertManager.shared.showAlertDialog(
+            title = generalGetString(MR.strings.network_disable_socks),
+            text = generalGetString(MR.strings.network_disable_socks_info),
+            confirmText = generalGetString(MR.strings.confirm_verb),
+            onConfirm = {
+              withBGApi {
+                var conf = controller.getNetCfg().copy(socksProxy = null)
+                if (conf.tcpConnectTimeout == proxyDef.tcpConnectTimeout) {
+                  conf = conf.copy(tcpConnectTimeout = def.tcpConnectTimeout)
+                }
+                if (conf.tcpTimeout == proxyDef.tcpTimeout) {
+                  conf = conf.copy(tcpTimeout = def.tcpTimeout)
+                }
+                if (conf.tcpTimeoutPerKb == proxyDef.tcpTimeoutPerKb) {
+                  conf = conf.copy(tcpTimeoutPerKb = def.tcpTimeoutPerKb)
+                }
+                if (conf.rcvConcurrency == proxyDef.rcvConcurrency) {
+                  conf = conf.copy(rcvConcurrency = def.rcvConcurrency)
+                }
+                chatModel.controller.apiSetNetworkConfig(conf)
+                chatModel.controller.setNetCfg(conf)
+                networkUseSocksProxy.value = false
+              }
+            }
+          )
+        }
+      }
+    )
+  }
 }
 
 @Composable fun NetworkAndServersLayout(
   currentRemoteHost: RemoteHostInfo?,
   networkUseSocksProxy: MutableState<Boolean>,
   onionHosts: MutableState<OnionHosts>,
+  currUserServers: MutableState<List<UserOperatorServers>>,
+  userServers: MutableState<List<UserOperatorServers>>,
   toggleSocksProxy: (Boolean) -> Unit,
 ) {
   val m = chatModel
+  val conditionsAction = remember { m.conditions.value.conditionsAction }
+  val anyOperatorEnabled = remember { derivedStateOf { userServers.value.any { it.operator?.enabled == true } } }
+  val scope = rememberCoroutineScope()
+
+  LaunchedEffect(Unit) {
+    try {
+      val servers = getUserServers(rh = currentRemoteHost?.remoteHostId)
+      if (servers != null) {
+        currUserServers.value = servers
+        userServers.value = servers
+      }
+    } catch (e: Exception) {
+      Log.e(TAG, e.stackTraceToString())
+    }
+  }
+
   ColumnWithScrollBar {
     val showModal = { it: @Composable ModalData.() -> Unit ->  ModalManager.start.showModal(content = it) }
     val showCustomModal = { it: @Composable (close: () -> Unit) -> Unit -> ModalManager.start.showCustomModal { close -> it(close) }}
 
     AppBarTitle(stringResource(MR.strings.network_and_servers))
+    // TODO: Review this and socks.
     if (!chatModel.desktopNoUserNoRemote) {
-      SectionView(generalGetString(MR.strings.settings_section_title_messages)) {
-        SettingsActionItem(painterResource(MR.images.ic_dns), stringResource(MR.strings.message_servers), { ModalManager.start.showCustomModal { close -> ProtocolServersView(m, m.remoteHostId, ServerProtocol.SMP, close) } })
+      SectionView(generalGetString(MR.strings.network_preset_servers_title).uppercase()) {
+        userServers.value.forEachIndexed { index, srv ->
+          srv.operator?.let { ServerOperatorRow(index, it, currUserServers, userServers) }
+        }
+      }
+      if (conditionsAction != null && anyOperatorEnabled.value) {
+        ConditionsButton(conditionsAction)
+      }
+      val footerText = if (conditionsAction is UsageConditionsAction.Review && conditionsAction.deadline != null && anyOperatorEnabled.value) {
+        String.format(generalGetString(MR.strings.operator_conditions_accepted_for_enabled_operators_on), localTimestamp(conditionsAction.deadline))
+      } else null
 
-        SettingsActionItem(painterResource(MR.images.ic_dns), stringResource(MR.strings.media_and_file_servers), { ModalManager.start.showCustomModal { close -> ProtocolServersView(m, m.remoteHostId, ServerProtocol.XFTP, close) } })
+      if (footerText != null) {
+        SectionTextFooter(footerText)
+      }
+      SectionDividerSpaced()
+    }
 
-        if (currentRemoteHost == null) {
-          UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy)
-          SettingsActionItem(painterResource(MR.images.ic_settings_ethernet), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkUseSocksProxy.value, appPrefs.networkProxy, onionHosts, sessionMode = appPrefs.networkSessionMode.get(), false, it) }})
-          SettingsActionItem(painterResource(MR.images.ic_cable), stringResource(MR.strings.network_settings), { ModalManager.start.showCustomModal { AdvancedNetworkSettingsView(showModal, it) } })
-          if (networkUseSocksProxy.value) {
-            SectionTextFooter(annotatedStringResource(MR.strings.socks_proxy_setting_limitations))
-            SectionDividerSpaced(maxTopPadding = true)
-          } else {
-            SectionDividerSpaced()
+    SectionView(generalGetString(MR.strings.settings_section_title_messages)) {
+      val nullOperatorIndex = userServers.value.indexOfFirst { it.operator == null }
+
+      if (nullOperatorIndex != -1) {
+        SectionItemView({  ModalManager.start.showModal { YourServersView(userServers = userServers, operatorIndex = nullOperatorIndex) } }) {
+          Icon(
+            painterResource(MR.images.ic_dns),
+            stringResource(MR.strings.your_servers),
+            tint = MaterialTheme.colors.secondary
+          )
+          TextIconSpaced()
+          Text(stringResource(MR.strings.your_servers), color = MaterialTheme.colors.onBackground)
+
+          if (currUserServers.value.getOrNull(nullOperatorIndex) != userServers.value.getOrNull(nullOperatorIndex)) {
+            Spacer(Modifier.weight(1f))
+            UnsavedChangesIndicator()
           }
+        }
+      }
+
+      if (currentRemoteHost == null) {
+        UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy)
+        SettingsActionItem(painterResource(MR.images.ic_settings_ethernet), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkUseSocksProxy.value, appPrefs.networkProxy, onionHosts, sessionMode = appPrefs.networkSessionMode.get(), false, it) }})
+        SettingsActionItem(painterResource(MR.images.ic_cable), stringResource(MR.strings.network_settings), { ModalManager.start.showCustomModal { AdvancedNetworkSettingsView(showModal, it) } })
+        if (networkUseSocksProxy.value) {
+          SectionTextFooter(annotatedStringResource(MR.strings.socks_proxy_setting_limitations))
+          SectionDividerSpaced(maxTopPadding = true)
+        } else {
+          SectionDividerSpaced(maxBottomPadding = false)
         }
       }
     }
 
+    val saveDisabled = userServers.value == currUserServers.value
+
+    SectionItemView(
+      { scope.launch { saveServers(rhId = currentRemoteHost?.remoteHostId, currUserServers, userServers) } },
+      disabled = saveDisabled,
+    ) {
+      Text(stringResource(MR.strings.smp_servers_save), color = if (!saveDisabled) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
+    }
+
+    SectionDividerSpaced()
+
     SectionView(generalGetString(MR.strings.settings_section_title_calls)) {
       SettingsActionItem(painterResource(MR.images.ic_electrical_services), stringResource(MR.strings.webrtc_ice_servers), { ModalManager.start.showModal { RTCServersView(m) } })
     }
+
+
+//      val footerText = when (val c = operator.conditionsAcceptance) {
+//        is ConditionsAcceptance.Accepted -> if (c.acceptedAt != null) {
+//          String.format(generalGetString(MR.strings.operator_conditions_accepted), localTimestamp(c.acceptedAt))
+//        } else null
+//        is ConditionsAcceptance.Required -> if (operator.enabled && c.deadline != null) {
+//          String.format(generalGetString(MR.strings.operator_conditions_accepted_after), localTimestamp(c.deadline))
+//        } else null
+//      }
+//      if (footerText != null) {
+//        SectionTextFooter(footerText)
+//      }
 
     if (appPlatform.isAndroid) {
       SectionDividerSpaced()
@@ -149,8 +247,9 @@ fun NetworkAndServersView() {
       }
     }
     SectionBottomSpacer()
+
+    }
   }
-}
 
 @Composable fun OnionRelatedLayout(
   developerTools: Boolean,
@@ -505,6 +604,97 @@ fun showWrongProxyConfigAlert() {
   )
 }
 
+@Composable()
+private fun ServerOperatorRow(
+  index: Int,
+  operator: ServerOperator,
+  currUserServers: MutableState<List<UserOperatorServers>>,
+  userServers: MutableState<List<UserOperatorServers>>
+) {
+  SectionItemView({ ModalManager.start.showModalCloseable { _ -> OperatorInfoView(index, operator) } }) {
+    Image(
+      painterResource(MR.images.decentralized),
+      operator.tradeName,
+      modifier = Modifier.size(24.dp),
+      colorFilter = if (operator.enabled) null else ColorFilter.colorMatrix(ColorMatrix().apply {
+        setToSaturation(0f)
+      })
+    )
+    TextIconSpaced()
+    Text(operator.tradeName, color = if (operator.enabled) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
+
+    if (currUserServers.value.getOrNull(index) != userServers.value.getOrNull(index)) {
+      Spacer(Modifier.weight(1f))
+      UnsavedChangesIndicator()
+    }
+  }
+}
+
+@Composable
+private fun UnsavedChangesIndicator() {
+  Icon(
+    painterResource(MR.images.ic_edit_filled),
+    stringResource(MR.strings.icon_descr_edited),
+    tint = MaterialTheme.colors.secondary,
+    modifier = Modifier.size(16.dp)
+  )
+}
+
+@Composable
+private fun ModalData.UsageConditionsView(conditionsAction: UsageConditionsAction, close: () -> Unit) {
+  ModalView(close = close) {
+    Text("Hello")
+  }
+}
+
+@Composable
+private fun ConditionsButton(conditionsAction: UsageConditionsAction) {
+  SectionItemView(
+    click = { ModalManager.start.showModalCloseable { close -> UsageConditionsView(conditionsAction, close) } },
+  ) {
+    Text(
+      stringResource(if (conditionsAction is UsageConditionsAction.Review) MR.strings.operator_review_conditions else MR.strings.operator_conditions_accepted),
+      color = MaterialTheme.colors.primary
+    )
+  }
+}
+
+private suspend fun saveServers(
+  rhId: Long?,
+  currUserServers: MutableState<List<UserOperatorServers>>,
+  userServers: MutableState<List<UserOperatorServers>>
+) {
+  val userServersToSave = currUserServers.value
+  try {
+    val set = setUserServers(rhId, userServersToSave)
+
+    if (set) {
+      val updatedServers = getUserServers(rhId)
+
+      if (updatedServers != null) {
+        currUserServers.value = updatedServers
+        userServers.value = updatedServers
+      } else {
+        currUserServers.value = userServersToSave
+      }
+    } else {
+      currUserServers.value = userServersToSave
+    }
+  } catch (ex: Exception) {
+    Log.e(TAG, ex.stackTraceToString())
+  }
+}
+
+private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {
+  AlertManager.shared.showAlertDialogStacked(
+    title = generalGetString(MR.strings.smp_save_servers_question),
+    confirmText = generalGetString(MR.strings.save_verb),
+    dismissText = generalGetString(MR.strings.exit_without_saving),
+    onConfirm = save,
+    onDismiss = revert,
+  )
+}
+
 fun showUpdateNetworkSettingsDialog(
   title: String,
   startsWith: String = "",
@@ -531,6 +721,8 @@ fun PreviewNetworkAndServersLayout() {
       networkUseSocksProxy = remember { mutableStateOf(true) },
       onionHosts = remember { mutableStateOf(OnionHosts.PREFER) },
       toggleSocksProxy = {},
+      currUserServers =  remember { mutableStateOf(emptyList()) },
+      userServers = remember { mutableStateOf(emptyList()) }
     )
   }
 }

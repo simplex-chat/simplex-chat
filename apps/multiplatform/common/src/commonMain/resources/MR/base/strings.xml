@@ -109,6 +109,7 @@
   <string name="failed_to_create_user_invalid_title">Invalid display name!</string>
   <string name="failed_to_create_user_invalid_desc">This display name is invalid. Please choose another name.</string>
   <string name="failed_to_active_user_title">Error switching profile!</string>
+  <string name="failed_to_save_servers">Error saving servers</string>
 
   <!-- API Error Responses - SimpleXAPI.kt -->
   <string name="connection_timeout">Connection timeout</string>
@@ -1663,6 +1664,21 @@
   <string name="group_profile_is_stored_on_members_devices">Group profile is stored on members\' devices, not on the servers.</string>
   <string name="save_group_profile">Save group profile</string>
   <string name="error_saving_group_profile">Error saving group profile</string>
+
+  <!-- NetworkAndServers.kt -->
+  <string name="network_preset_servers_title">Preset servers</string>
+  <string name="operator_review_conditions">Review conditions</string>
+  <string name="operator_conditions_accepted">Accepted conditions</string>
+  <string name="operator_conditions_accepted_for_enabled_operators_on">Conditions will be considered accepted for enabled operators after %s.</string>
+  <string name="your_servers">Your servers</string>
+
+  <!-- OperatorView.kt -->
+  <string name="operator">Operator</string>
+  <string name="operator_info_title">Operator information</string>
+  <string name="operator_description">Description</string>
+  <string name="operator_website">Website</string>
+  <string name="operator_conditions_accepted_on">Conditions accepted on: %s.</string>
+  <string name="operator_conditions_accepted_after"> Conditions will be considered accepted after: %s.</string>
 
   <!-- AdvancedNetworkSettings.kt -->
   <string name="network_option_tcp_connection">TCP connection</string>
