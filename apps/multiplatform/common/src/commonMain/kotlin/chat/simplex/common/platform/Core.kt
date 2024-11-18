@@ -137,8 +137,13 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
       }
     } else if (startChat().await()) {
       val savedOnboardingStage = appPreferences.onboardingStage.get()
+      val next = if (appPlatform.isAndroid) {
+        OnboardingStage.Step4_SetNotificationsMode
+      } else {
+        OnboardingStage.OnboardingComplete
+      }
       val newStage = if (listOf(OnboardingStage.Step1_SimpleXInfo, OnboardingStage.Step2_CreateProfile).contains(savedOnboardingStage) && chatModel.users.size == 1) {
-        OnboardingStage.Step3_CreateSimpleXAddress
+        next
       } else {
         savedOnboardingStage
       }
