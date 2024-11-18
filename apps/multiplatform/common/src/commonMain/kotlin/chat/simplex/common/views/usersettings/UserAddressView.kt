@@ -33,6 +33,7 @@ fun UserAddressView(
   chatModel: ChatModel,
   viaCreateLinkView: Boolean = false,
   shareViaProfile: Boolean = false,
+  autoCreateAddress: Boolean = false,
   close: () -> Unit
 ) {
   // TODO close when remote host changes
@@ -58,6 +59,33 @@ fun UserAddressView(
       }
     }
   }
+
+  fun createAddress() {
+    withBGApi {
+      progressIndicator = true
+      val connReqContact = chatModel.controller.apiCreateUserAddress(user?.value?.remoteHostId)
+      if (connReqContact != null) {
+        chatModel.userAddress.value = UserContactLinkRec(connReqContact)
+
+        AlertManager.shared.showAlertDialog(
+          title = generalGetString(MR.strings.share_address_with_contacts_question),
+          text = generalGetString(MR.strings.add_address_to_your_profile),
+          confirmText = generalGetString(MR.strings.share_verb),
+          onConfirm = {
+            setProfileAddress(true)
+            shareViaProfile.value = true
+          }
+        )
+      }
+      progressIndicator = false
+    }
+  }
+
+  LaunchedEffect(autoCreateAddress) {
+    if (autoCreateAddress) {
+      createAddress()
+    }
+  }
   val userAddress = remember { chatModel.userAddress }
   val clipboard = LocalClipboardManager.current
   val uriHandler = LocalUriHandler.current
@@ -67,26 +95,7 @@ fun UserAddressView(
       userAddress = userAddress.value,
       shareViaProfile,
       onCloseHandler,
-      createAddress = {
-        withBGApi {
-          progressIndicator = true
-          val connReqContact = chatModel.controller.apiCreateUserAddress(user?.value?.remoteHostId)
-          if (connReqContact != null) {
-            chatModel.userAddress.value = UserContactLinkRec(connReqContact)
-
-            AlertManager.shared.showAlertDialog(
-              title = generalGetString(MR.strings.share_address_with_contacts_question),
-              text = generalGetString(MR.strings.add_address_to_your_profile),
-              confirmText = generalGetString(MR.strings.share_verb),
-              onConfirm = {
-                setProfileAddress(true)
-                shareViaProfile.value = true
-              }
-            )
-          }
-          progressIndicator = false
-        }
-      },
+      createAddress = { createAddress() },
       learnMore = {
         ModalManager.start.showModal {
           UserAddressLearnMore()
