@@ -29,8 +29,6 @@ randomServersTests = describe "choosig random servers" $ do
 
 deriving instance Eq ServerRoles
 
-deriving instance Eq (DBEntityId' s)
-
 deriving instance Eq (UserServer' s p)
 
 testRandomSMPServers :: IO ()

@@ -2946,26 +2946,20 @@ processChatCommand' vr = \case
     withServerProtocol p action = case userProtocol p of
       Just Dict -> action
       _ -> throwChatError $ CEServerProtocol $ AProtocolType p
-    validateAllUsersServers :: forall u. UserServersClass u => Int64 -> [u] -> CM [UserServersError]
+    validateAllUsersServers :: UserServersClass u => Int64 -> [u] -> CM [UserServersError]
     validateAllUsersServers currUserId userServers = withFastStore $ \db -> do
       users' <- filter (\User {userId} -> userId /= currUserId) <$> liftIO (getUsers db)
-      others <- mapM (\user -> liftIO . fmap (user,) . groupByOperator =<< getUserServers db user) users'
-      let others' = map (\(user, uos) -> (user, applyOperatorChanges uos)) others
-      pure $ validateUserServers userServers others'
+      others <- mapM (getUserOperatorServers db) users'
+      pure $ validateUserServers userServers others
       where
-        applyOperatorChanges :: [UserOperatorServers] -> [UserOperatorServers]
-        applyOperatorChanges =
-          map (\uos@UserOperatorServers {operator} -> (uos {operator = updateOperator operator} :: UserOperatorServers))
-        updateOperator :: Maybe ServerOperator -> Maybe ServerOperator
-        updateOperator Nothing = Nothing
-        updateOperator (Just op) =
-          let op' = listToMaybe $ mapMaybe matchingOperator userServers
-           in Just $ fromMaybe op op'
+        getUserOperatorServers :: DB.Connection -> User -> ExceptT StoreError IO (User, [UserOperatorServers])
+        getUserOperatorServers db user = do
+          uss <- liftIO . groupByOperator =<< getUserServers db user
+          pure (user, map updatedUserServers uss)
+        updatedUserServers uss = uss {operator = updatedOp <$> operator' uss} :: UserOperatorServers
+        updatedOp op = fromMaybe op $ find matchingOp $ mapMaybe operator' userServers
           where
-            matchingOperator :: u -> Maybe ServerOperator
-            matchingOperator uos' = case operator' uos' of
-              Nothing -> Nothing
-              Just op' -> if operatorTag op' == operatorTag op then Just op' else Nothing
+            matchingOp op' = operatorId op' == operatorId op
     forwardFile :: ChatName -> FileTransferId -> (ChatName -> CryptoFile -> ChatCommand) -> CM ChatResponse
     forwardFile chatName fileId sendCommand = withUser $ \user -> do
       withStore (\db -> getFileTransfer db user fileId) >>= \case
