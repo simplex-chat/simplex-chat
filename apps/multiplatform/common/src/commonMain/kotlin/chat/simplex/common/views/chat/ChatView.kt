@@ -1295,47 +1295,78 @@ fun BoxScope.ChatItemsList(
     for ((groupIndex, group) in groupsValue.sections.withIndex()) {
       val isLastGroup = groupIndex == groupsValue.sections.lastIndex
       val last = if (isLastGroup) reversedChatItems.value.lastOrNull() else null
-      if (group.revealed.value) {
-        itemsIndexed(group.items, key = { _, listItem -> keyForItem(listItem.item) }) { i, listItem ->
-          val item = listItem.item
-          val ciCategory = item.mergeCategory
-          val range = if (ciCategory != null && item.chatDir !is CIDirection.GroupRcv) {
-            group.startIndexInParentItems..(group.startIndexInParentItems + group.items.lastIndex)
-          } else {
-            null
-          }
-          val showAvatar = group.showAvatar.contains(item.id)
-          val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
-          ChatViewListItem(group.startIndexInParentItems + i == 0, rememberUpdatedState(range), showAvatar, item, listItem.separation, listItem.prevItemSeparationLargeGap, isRevealed) {
-            group.reveal(it, revealedItems)
-          }
-          if (last != null && i == group.items.lastIndex) {
-            // no using separate item(){} block in order to have total number of items in LazyColumn match number of items in groups
-            DateSeparator(last.meta.itemTs)
-          }
-          if (item.isRcvNew) {
-            MarkItemsReadAfterDelay(keyForItem(item), item.id, item.id, chatInfo.id, listState, markRead)
-          }
-        }
-      } else {
-        val listItem = group.items.first()
+      itemsIndexed(
+        items = when (group) {
+          is MergedItem.Single -> listOf(group.item)
+          is MergedItem.Merged -> if (group.revealed.value) listOf(group.items[0]) else listOf(group.items.last())
+        },
+        key = { _, listItem -> keyForItem(listItem.item) }
+      ) { i, listItem ->
         val item = listItem.item
-        item(key = keyForItem(listItem.item)) {
-          val range = if (item.mergeCategory != null) group.startIndexInParentItems .. (group.startIndexInParentItems + group.items.lastIndex) else null
-          val showAvatar = group.showAvatar.contains(item.id) || item.mergeCategory != null
-          val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
-          ChatViewListItem(group.startIndexInParentItems == 0, rememberUpdatedState(range), showAvatar, item, listItem.separation, listItem.prevItemSeparationLargeGap, isRevealed) {
-            group.reveal(it, revealedItems)
+        val range = if (/*item.mergeCategory != null && (item.chatDir !is CIDirection.GroupRcv || */group is MergedItem.Merged/* )*/) {
+          group.range.value
+        } else {
+          null
+        }
+        val showAvatar = if (group is MergedItem.Merged) group.showAvatar.contains(item.id) else true
+        val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
+        ChatViewListItem(i == 0, rememberUpdatedState(range), showAvatar, item, listItem.separation, listItem.prevItemSeparationLargeGap, isRevealed) {
+          if (group is MergedItem.Merged) group.reveal(it, revealedItems)
+        }
+
+        if (last != null) {
+          // no using separate item(){} block in order to have total number of items in LazyColumn match number of items in groups
+          DateSeparator(last.meta.itemTs)
+        }
+        if (item.isRcvNew) {
+          val (itemIdStart, itemIdEnd) = when (group) {
+            is MergedItem.Single -> group.item.item.id to group.item.item.id
+            is MergedItem.Merged -> group.items.last().item.id to group.items.first().item.id
           }
-          if (last != null) {
-            // no using separate item(){} block in order to have total number of items in LazyColumn match number of items in groups
-            DateSeparator(last.meta.itemTs)
-          }
-          if (group.unreadIds.isNotEmpty()) {
-            MarkItemsReadAfterDelay(keyForItem(item), group.items.last().item.id, group.items.first().item.id, chatInfo.id, listState, markRead)
-          }
+          MarkItemsReadAfterDelay(keyForItem(item), itemIdStart, itemIdEnd, chatInfo.id, listState, markRead)
         }
       }
+//      if (group.revealed.value) {
+//        itemsIndexed(group.items, key = { _, listItem -> keyForItem(listItem.item) }) { i, listItem ->
+//          val item = listItem.item
+//          val ciCategory = item.mergeCategory
+//          val range = if (ciCategory != null && item.chatDir !is CIDirection.GroupRcv) {
+//            group.startIndexInParentItems..(group.startIndexInParentItems + group.items.lastIndex)
+//          } else {
+//            null
+//          }
+//          val showAvatar = group.showAvatar.contains(item.id)
+//          val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
+//          ChatViewListItem(group.startIndexInParentItems + i == 0, rememberUpdatedState(range), showAvatar, item, listItem.separation, listItem.prevItemSeparationLargeGap, isRevealed) {
+//            group.reveal(it, revealedItems)
+//          }
+//          if (last != null && i == group.items.lastIndex) {
+//            // no using separate item(){} block in order to have total number of items in LazyColumn match number of items in groups
+//            DateSeparator(last.meta.itemTs)
+//          }
+//          if (item.isRcvNew) {
+//            MarkItemsReadAfterDelay(keyForItem(item), item.id, item.id, chatInfo.id, listState, markRead)
+//          }
+//        }
+//      } else {
+//        val listItem = group.items.first()
+//        val item = listItem.item
+//        item(key = keyForItem(listItem.item)) {
+//          val range = if (item.mergeCategory != null) group.startIndexInParentItems .. (group.startIndexInParentItems + group.items.lastIndex) else null
+//          val showAvatar = group.showAvatar.contains(item.id) || item.mergeCategory != null
+//          val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
+//          ChatViewListItem(group.startIndexInParentItems == 0, rememberUpdatedState(range), showAvatar, item, listItem.separation, listItem.prevItemSeparationLargeGap, isRevealed) {
+//            group.reveal(it, revealedItems)
+//          }
+//          if (last != null) {
+//            // no using separate item(){} block in order to have total number of items in LazyColumn match number of items in groups
+//            DateSeparator(last.meta.itemTs)
+//          }
+//          if (group.unreadIds.isNotEmpty()) {
+//            MarkItemsReadAfterDelay(keyForItem(item), group.items.last().item.id, group.items.first().item.id, chatInfo.id, listState, markRead)
+//          }
+//        }
+//      }
     }
   }
   FloatingButtons(loadingMoreItems, chatModel.chatItems, groups, unreadCount, maxHeight, composeViewHeight, remoteHostId, chatInfo, searchValue, markRead, listState)

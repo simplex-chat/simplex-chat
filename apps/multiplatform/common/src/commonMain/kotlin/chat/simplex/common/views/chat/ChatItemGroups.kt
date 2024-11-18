@@ -20,7 +20,7 @@ import kotlin.math.abs
 import kotlin.math.min
 
 data class Sections (
-  val sections: List<SectionItems>,
+  val sections: List<MergedItem>,
   val anchoredRanges: List<AnchoredRange>,
   // chat item id, index in list
   val indexInParentItems: Map<Long, Int>,
@@ -37,8 +37,30 @@ data class Sections (
 ) {
   fun lastIndexInParentItems(): Int {
     val last = sections.lastOrNull() ?: return -1
-    return indexInParentItems[last.items.last().item.id] ?: -1
+    return when (last) {
+      is MergedItem.Single -> indexInParentItems[last.item.item.id] ?: -1
+      is MergedItem.Merged -> indexInParentItems[last.items.last().item.id] ?: -1
+    }
   }
+
+  /** Returns groups mapping for easy checking the structure */
+  fun mappingToString(): String = sections.mapIndexed { index, g ->
+    when (g) {
+      is MergedItem.Single ->
+        "\nstartIndexInParentItems $index, startIndexInReversedItems ${g.startIndexInReversedItems}, " +
+            "revealed true, " +
+            "mergeCategory null " +
+            "\nunreadBefore ${g.item.unreadBefore}"
+
+      is MergedItem.Merged ->
+        "\nstartIndexInParentItems $index, startIndexInReversedItems ${g.startIndexInReversedItems}, " +
+            "revealed ${g.revealed.value}, " +
+            "mergeCategory ${g.items[0].item.mergeCategory} " +
+            g.items.mapIndexed { i, it ->
+              "\nunreadBefore ${it.unreadBefore} ${Triple(index, g.startIndexInReversedItems + i, it.item.id)}"
+            }
+    }
+  }.toString()
 
   companion object {
     fun create(items: List<ChatItem>, unreadCount: State<Int>, revealedItems: Set<Long>, chatState: ActiveChatState): Sections {
@@ -46,7 +68,7 @@ data class Sections (
 
       val unreadAnchorItemId = chatState.unreadAnchorItemId
       val itemAnchors = chatState.anchors.value
-      val groups = ArrayList<SectionItems>()
+      val groups = ArrayList<MergedItem>()
       // Indexes of anchors here will be related to reversedChatItems, not chatModel.chatItems
       val anchoredRanges = ArrayList<AnchoredRange>()
       val indexInParentItems = mutableMapOf<Long, Int>()
@@ -61,7 +83,8 @@ data class Sections (
       var unclosedAnchorItemId: Long? = null
       var visibleItemIndexInParent = -1
       var unreadBefore = unreadCount.value - chatState.unreadAfterNewestLoaded.value
-      var recent: SectionItems? = null
+      var lastRangeForMergedItems: MutableStateFlow<IntRange>? = null
+      var recent: MergedItem? = null
       while (index < items.size) {
         val item = items[index]
         val next = items.getOrNull(index + 1)
@@ -75,23 +98,23 @@ data class Sections (
         }
         if (item.isRcvNew) unreadBefore--
 
-        if (index > 0 && recent!!.mergeCategory == category && !itemIsAnchor) {
-          if (recent.revealed.value) {
-            val prev = items.getOrNull(index - 1)
-            itemSeparation = getItemSeparation(item, prev)
-            val nextForGap = if ((category != null && category == prev?.mergeCategory) || index + 1 == items.size) null else next
-            prevItemSeparationLargeGap = if (nextForGap == null) false else getItemSeparationLargeGap(nextForGap, item)
+        if (recent is MergedItem.Merged && recent.mergeCategory == category && !recent.revealed.value && !itemIsAnchor) {
+//          if (recent.revealed.value) {
+//            val prev = items.getOrNull(index - 1)
+//            itemSeparation = getItemSeparation(item, prev)
+//            val nextForGap = if ((category != null && category == prev?.mergeCategory) || index + 1 == items.size) null else next
+//            prevItemSeparationLargeGap = if (nextForGap == null) false else getItemSeparationLargeGap(nextForGap, item)
 
-            visibleItemIndexInParent++
-          } else {
+//            visibleItemIndexInParent++
+//          } else {
             itemSeparation = getItemSeparation(item, null)
             prevItemSeparationLargeGap = false
-          }
+//          }
           val listItem = ListItem(item, itemSeparation, prevItemSeparationLargeGap, unreadBefore)
-          if (recent.revealed.value) {
-            newestItemIndexInReversed[visibleItemIndexInParent] = index
-            newestListItemInReversed[visibleItemIndexInParent] = listItem
-          }
+//          if (recent.revealed.value) {
+//            newestItemIndexInReversed[visibleItemIndexInParent] = index
+//            newestListItemInReversed[visibleItemIndexInParent] = listItem
+//          }
           recent.items.add(listItem)
           if (shouldShowAvatar(item, next)) {
             recent.showAvatar.add(item.id)
@@ -106,27 +129,41 @@ data class Sections (
           visibleItemIndexInParent++
 
           val prev = items.getOrNull(index - 1)
-          itemSeparation = getItemSeparation(item, prev)
           if (revealed) {
+            itemSeparation = getItemSeparation(item, prev)
             val nextForGap = if ((category != null && category == prev?.mergeCategory) || index + 1 == items.size) null else next
             prevItemSeparationLargeGap = if (nextForGap == null) false else getItemSeparationLargeGap(nextForGap, item)
           } else {
+            itemSeparation = getItemSeparation(item, null)
             prevItemSeparationLargeGap = false
           }
           val listItem = ListItem(item, itemSeparation, prevItemSeparationLargeGap, unreadBefore)
-          recent = SectionItems(
-            mergeCategory = item.mergeCategory,
-            items = arrayListOf(listItem),
-            revealed = mutableStateOf(revealed),
-            showAvatar = if (shouldShowAvatar(item, next)) {
-              mutableSetOf(item.id)
+          recent = if (item.mergeCategory != null) {
+            if (item.mergeCategory == prev?.mergeCategory && lastRangeForMergedItems != null) {
+              lastRangeForMergedItems.value = lastRangeForMergedItems.value.first .. index
             } else {
-              mutableSetOf()
-            },
-            startIndexInParentItems = visibleItemIndexInParent,
-            startIndexInReversedItems = index,
-            unreadIds = if (item.isRcvNew) mutableSetOf(item.id) else mutableSetOf()
-          )
+              lastRangeForMergedItems = MutableStateFlow(index .. index)
+            }
+            MergedItem.Merged(
+              range = lastRangeForMergedItems,
+              mergeCategory = item.mergeCategory,
+              items = arrayListOf(listItem),
+              revealed = mutableStateOf(revealed),
+              showAvatar = if (shouldShowAvatar(item, next)) {
+                mutableSetOf(item.id)
+              } else {
+                mutableSetOf()
+              },
+              startIndexInReversedItems = index,
+              unreadIds = if (item.isRcvNew) mutableSetOf(item.id) else mutableSetOf()
+            )
+          } else {
+            lastRangeForMergedItems = null
+            MergedItem.Single(
+              item = listItem,
+              startIndexInReversedItems = index
+            )
+          }
           groups.add(recent)
           newestItemIndexInReversed[visibleItemIndexInParent] = index
           oldestItemIndexInReversed[visibleItemIndexInParent] = index
@@ -164,33 +201,44 @@ data class Sections (
   }
 }
 
-data class SectionItems (
-  val mergeCategory: CIMergeCategory?,
-  val items: ArrayList<ListItem>,
-  val revealed: MutableState<Boolean>,
-  val showAvatar: MutableSet<Long>,
+sealed class MergedItem {
+
   /** min index of row in LazyColumn:
   - for unrevealed row, it will match listState's index
   - for revealed row, this number represents index in listState for the first item in [items].
    */
-  val startIndexInParentItems: Int,
-  val startIndexInReversedItems: Int,
-  val unreadIds: MutableSet<Long>,
-) {
-  fun reveal(reveal: Boolean, revealedItems: MutableState<Set<Long>>) {
-    val newRevealed = revealedItems.value.toMutableSet()
-    var i = 0
-    while (i < items.size) {
-      val item = items[i]
-      if (reveal) {
-        newRevealed.add(item.item.id)
-      } else {
-        newRevealed.remove(item.item.id)
+  abstract val startIndexInReversedItems: Int
+
+  data class Single(
+    val item: ListItem,
+    override val startIndexInReversedItems: Int,
+  ): MergedItem()
+
+  @Stable
+  data class Merged (
+    val items: ArrayList<ListItem>,
+    val revealed: MutableState<Boolean>,
+    val range: MutableStateFlow<IntRange>,
+    val mergeCategory: CIMergeCategory?,
+    val showAvatar: MutableSet<Long>,
+    val unreadIds: MutableSet<Long>,
+    override val startIndexInReversedItems: Int,
+  ): MergedItem() {
+    fun reveal(reveal: Boolean, revealedItems: MutableState<Set<Long>>) {
+      val newRevealed = revealedItems.value.toMutableSet()
+      var i = 0
+      while (i < items.size) {
+        val item = items[i]
+        if (reveal) {
+          newRevealed.add(item.item.id)
+        } else {
+          newRevealed.remove(item.item.id)
+        }
+        i++
       }
-      i++
+      revealedItems.value = newRevealed
+      revealed.value = reveal
     }
-    revealedItems.value = newRevealed
-    revealed.value = reveal
   }
 }
 
@@ -260,13 +308,6 @@ data class ActiveChatState (
     unreadAfterNewestLoaded.value = 0
   }
 }
-
-/** Returns groups mapping for easy checking the structure */
-fun List<SectionItems>.mappingToString(): String = map { g ->
-  "\nstartIndexInParentItems ${g.startIndexInParentItems}, startIndexInReversedItems ${g.startIndexInReversedItems}, revealed ${g.revealed.value}, mergeCategory ${g.items[0].item.mergeCategory} ${g.items.mapIndexed { index, it ->
-    "\nunreadBefore ${it.unreadBefore} ${if (g.revealed.value) Triple(g.startIndexInParentItems + index, g.startIndexInReversedItems + index, it.item.id) else Triple(g.startIndexInParentItems, g.startIndexInReversedItems, it.item.id)}"
-  }}"
-}.toString()
 
 fun visibleItemIndexesNonReversed(groups: State<Sections>, listState: LazyListState): IntRange {
   val zero = 0 .. 0
