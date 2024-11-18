@@ -36,7 +36,7 @@ fun SetupDatabasePassphrase(m: ChatModel) {
   val confirmNewKey = rememberSaveable { mutableStateOf("") }
   fun nextStep() {
     if (appPlatform.isAndroid || chatModel.currentUser.value != null) {
-      m.controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_CreateSimpleXAddress)
+      m.controller.appPrefs.onboardingStage.set(OnboardingStage.Step4_SetNotificationsMode)
     } else {
       m.controller.appPrefs.onboardingStage.set(OnboardingStage.LinkAMobile)
     }
