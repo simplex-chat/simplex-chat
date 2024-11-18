@@ -1570,7 +1570,7 @@ processChatCommand' vr = \case
     srvs <- withFastStore (`getUserServers` user)
     CRUserServers user <$> liftIO (groupedServers srvs p)
     where
-      groupedServers :: UserProtocol p => ([ServerOperator], [UserServer 'PSMP],  [UserServer 'PXFTP]) -> SProtocolType p -> IO [UserOperatorServers]
+      groupedServers :: UserProtocol p => ([ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP]) -> SProtocolType p -> IO [UserOperatorServers]
       groupedServers (operators, smpServers, xftpServers) = \case
         SPSMP -> groupByOperator (operators, smpServers, [])
         SPXFTP -> groupByOperator (operators, [], xftpServers)
@@ -1595,7 +1595,7 @@ processChatCommand' vr = \case
                 disableSrv srv@UserServer {preset} =
                   AUS SDBStored $ if preset then srv {enabled = False} else srv {deleted = True}
     where
-      aUserServer ::  AProtoServerWithAuth -> CM (AUserServer p)
+      aUserServer :: AProtoServerWithAuth -> CM (AUserServer p)
       aUserServer (AProtoServerWithAuth p' srv) = case testEquality p p' of
         Just Refl -> pure $ AUS SDBNew $ newUserServer srv
         Nothing -> throwChatError $ CECommandError $ "incorrect server protocol: " <> B.unpack (strEncode srv)
@@ -1896,7 +1896,7 @@ processChatCommand' vr = \case
       canKeepLink (CRInvitationUri crData _) newUser = do
         let ConnReqUriData {crSmpQueues = q :| _} = crData
             SMPQueueUri {queueAddress = SMPQueueAddress {smpServer}} = q
-        newUserServers <- 
+        newUserServers <-
           map protoServer' . filter (\ServerCfg {enabled} -> enabled)
             <$> getKnownAgentServers SPSMP newUser
         pure $ smpServer `elem` newUserServers
@@ -2929,11 +2929,26 @@ processChatCommand' vr = \case
     withServerProtocol p action = case userProtocol p of
       Just Dict -> action
       _ -> throwChatError $ CEServerProtocol $ AProtocolType p
-    validateAllUsersServers :: UserServersClass u => Int64 -> [u] -> CM [UserServersError]
+    validateAllUsersServers :: forall u. UserServersClass u => Int64 -> [u] -> CM [UserServersError]
     validateAllUsersServers currUserId userServers = withFastStore $ \db -> do
       users' <- filter (\User {userId} -> userId /= currUserId) <$> liftIO (getUsers db)
       others <- mapM (\user -> liftIO . fmap (user,) . groupByOperator =<< getUserServers db user) users'
-      pure $ validateUserServers userServers others
+      let others' = map (\(user, uos) -> (user, applyOperatorChanges uos)) others
+      pure $ validateUserServers userServers others'
+      where
+        applyOperatorChanges :: [UserOperatorServers] -> [UserOperatorServers]
+        applyOperatorChanges =
+          map (\uos@UserOperatorServers {operator} -> (uos {operator = updateOperator operator} :: UserOperatorServers))
+        updateOperator :: Maybe ServerOperator -> Maybe ServerOperator
+        updateOperator Nothing = Nothing
+        updateOperator (Just op) =
+          let op' = listToMaybe (mapMaybe matchingOperator userServers)
+           in Just $ fromMaybe op op'
+          where
+            matchingOperator :: u -> Maybe ServerOperator
+            matchingOperator uos' = case operator' uos' of
+              Nothing -> Nothing
+              Just op' -> if operatorTag op' == operatorTag op then Just op' else Nothing
     forwardFile :: ChatName -> FileTransferId -> (ChatName -> CryptoFile -> ChatCommand) -> CM ChatResponse
     forwardFile chatName fileId sendCommand = withUser $ \user -> do
       withStore (\db -> getFileTransfer db user fileId) >>= \case
