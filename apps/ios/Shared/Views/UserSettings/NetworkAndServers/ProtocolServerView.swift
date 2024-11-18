@@ -13,6 +13,7 @@ struct ProtocolServerView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var theme: AppTheme
     @Binding var userServers: [UserOperatorServers]
+    @Binding var serverErrors: [UserServersError]
     @Binding var server: UserServer
     @State var serverToEdit: UserServer
     var backLabel: LocalizedStringKey
@@ -48,6 +49,7 @@ struct ProtocolServerView: View {
                     )
                 } else {
                     server = serverToEdit
+                    validateServers_($userServers, $serverErrors)
                     dismiss()
                 }
             } else {
@@ -198,6 +200,7 @@ struct ProtocolServerView_Previews: PreviewProvider {
     static var previews: some View {
         ProtocolServerView(
             userServers: Binding.constant([UserOperatorServers.sampleDataNilOperator]),
+            serverErrors: Binding.constant([]),
             server: Binding.constant(UserServer.sampleData.custom),
             serverToEdit: UserServer.sampleData.custom,
             backLabel: "Your SMP servers"

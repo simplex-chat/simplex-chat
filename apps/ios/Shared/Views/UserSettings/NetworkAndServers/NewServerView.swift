@@ -13,6 +13,7 @@ struct NewServerView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var theme: AppTheme
     @Binding var userServers: [UserOperatorServers]
+    @Binding var serverErrors: [UserServersError]
     @State private var serverToEdit: UserServer = .empty
     @State private var showTestFailure = false
     @State private var testing = false
@@ -26,7 +27,7 @@ struct NewServerView: View {
             }
         }
         .modifier(BackButton(disabled: Binding.constant(false)) {
-            addServer(serverToEdit, $userServers, dismiss)
+            addServer(serverToEdit, $userServers, $serverErrors, dismiss)
         })
         .alert(isPresented: $showTestFailure) {
             Alert(
@@ -112,13 +113,19 @@ func serverProtocolAndOperator(_ server: UserServer, _ userServers: [UserOperato
     }
 }
 
-func addServer(_ server: UserServer, _ userServers: Binding<[UserOperatorServers]>, _ dismiss: DismissAction) {
+func addServer(
+    _ server: UserServer,
+    _ userServers: Binding<[UserOperatorServers]>,
+    _ serverErrors: Binding<[UserServersError]>,
+    _ dismiss: DismissAction
+) {
     if let (serverProtocol, matchingOperator) = serverProtocolAndOperator(server, userServers.wrappedValue) {
         if let i = userServers.wrappedValue.firstIndex(where: { $0.operator?.operatorId == matchingOperator?.operatorId }) {
             switch serverProtocol {
             case .smp: userServers[i].wrappedValue.smpServers.append(server)
             case .xftp: userServers[i].wrappedValue.xftpServers.append(server)
             }
+            validateServers_(userServers, serverErrors)
             dismiss()
             if let op = matchingOperator {
                 showAlert(
@@ -143,6 +150,7 @@ func addServer(_ server: UserServer, _ userServers: Binding<[UserOperatorServers
 
 #Preview {
     NewServerView(
-        userServers: Binding.constant([UserOperatorServers.sampleDataNilOperator])
+        userServers: Binding.constant([UserOperatorServers.sampleDataNilOperator]),
+        serverErrors: Binding.constant([])
     )
 }

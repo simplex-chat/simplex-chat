@@ -16,6 +16,7 @@ struct OperatorView: View {
     @Environment(\.editMode) private var editMode
     @Binding var currUserServers: [UserOperatorServers]
     @Binding var userServers: [UserOperatorServers]
+    @Binding var serverErrors: [UserServersError]
     var operatorIndex: Int
     @State var useOperator: Bool
     @State private var useOperatorToggleReset: Bool = false
@@ -36,7 +37,8 @@ struct OperatorView: View {
             .allowsHitTesting(!testing)
     }
 
-    private func operatorView() -> some View {
+    @ViewBuilder private func operatorView() -> some View {
+        let duplicateHosts = findDuplicateHosts(serverErrors)
         VStack {
             List {
                 Section {
@@ -46,25 +48,42 @@ struct OperatorView: View {
                     Text("Operator")
                         .foregroundColor(theme.colors.secondary)
                 } footer: {
-                    switch (userServers[operatorIndex].operator_.conditionsAcceptance) {
-                    case let .accepted(acceptedAt):
-                        if let acceptedAt = acceptedAt {
-                            Text("Conditions accepted on: \(conditionsTimestamp(acceptedAt)).")
-                                .foregroundColor(theme.colors.secondary)
-                        }
-                    case let .required(deadline):
-                        if userServers[operatorIndex].operator_.enabled, let deadline = deadline {
-                            Text("Conditions will be considered accepted after: \(conditionsTimestamp(deadline)).")
-                                .foregroundColor(theme.colors.secondary)
+                    if let errStr = globalServersError(serverErrors) {
+                        ServersErrorView(errStr: errStr)
+                    } else {
+                        switch (userServers[operatorIndex].operator_.conditionsAcceptance) {
+                        case let .accepted(acceptedAt):
+                            if let acceptedAt = acceptedAt {
+                                Text("Conditions accepted on: \(conditionsTimestamp(acceptedAt)).")
+                                    .foregroundColor(theme.colors.secondary)
+                            }
+                        case let .required(deadline):
+                            if userServers[operatorIndex].operator_.enabled, let deadline = deadline {
+                                Text("Conditions will be considered accepted after: \(conditionsTimestamp(deadline)).")
+                                    .foregroundColor(theme.colors.secondary)
+                            }
                         }
                     }
                 }
 
                 if userServers[operatorIndex].operator_.enabled {
                     if !userServers[operatorIndex].smpServers.filter({ !$0.deleted }).isEmpty {
-                        Section(header: Text("Use for messages").foregroundColor(theme.colors.secondary)) {
+                        Section {
                             Toggle("For receiving", isOn: $userServers[operatorIndex].operator_.smpRoles.storage)
+                                .onChange(of: userServers[operatorIndex].operator_.smpRoles.storage) { _ in
+                                    validateServers_($userServers, $serverErrors)
+                                }
                             Toggle("For private routing", isOn: $userServers[operatorIndex].operator_.smpRoles.proxy)
+                                .onChange(of: userServers[operatorIndex].operator_.smpRoles.proxy) { _ in
+                                    validateServers_($userServers, $serverErrors)
+                                }
+                        } header: {
+                            Text("Use for messages")
+                                .foregroundColor(theme.colors.secondary)
+                        } footer: {
+                            if let errStr = globalSMPError(serverErrors) {
+                                ServersErrorView(errStr: errStr)
+                            }
                         }
                     }
 
@@ -75,6 +94,8 @@ struct OperatorView: View {
                                 if srv.wrappedValue.preset {
                                     ProtocolServerViewLink(
                                         userServers: $userServers,
+                                        serverErrors: $serverErrors,
+                                        duplicateHosts: duplicateHosts,
                                         server: srv,
                                         serverProtocol: .smp,
                                         backLabel: "\(userServers[operatorIndex].operator_.tradeName) servers",
@@ -88,9 +109,13 @@ struct OperatorView: View {
                             Text("Message servers")
                                 .foregroundColor(theme.colors.secondary)
                         } footer: {
-                            Text("The servers for new connections of your current chat profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
-                                .foregroundColor(theme.colors.secondary)
-                                .lineLimit(10)
+                            if let errStr = globalSMPError(serverErrors) {
+                                ServersErrorView(errStr: errStr)
+                            } else {
+                                Text("The servers for new connections of your current chat profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
+                                    .foregroundColor(theme.colors.secondary)
+                                    .lineLimit(10)
+                            }
                         }
                     }
 
@@ -100,6 +125,8 @@ struct OperatorView: View {
                                 if !srv.wrappedValue.preset && !srv.wrappedValue.deleted {
                                     ProtocolServerViewLink(
                                         userServers: $userServers,
+                                        serverErrors: $serverErrors,
+                                        duplicateHosts: duplicateHosts,
                                         server: srv,
                                         serverProtocol: .smp,
                                         backLabel: "\(userServers[operatorIndex].operator_.tradeName) servers",
@@ -109,7 +136,10 @@ struct OperatorView: View {
                                     EmptyView()
                                 }
                             }
-                            .onDelete { indexSet in deleteSMPServer($userServers, operatorIndex, indexSet) }
+                            .onDelete { indexSet in
+                                deleteSMPServer($userServers, operatorIndex, indexSet)
+                                validateServers_($userServers, $serverErrors)
+                            }
                         } header: {
                             Text("Added message servers")
                                 .foregroundColor(theme.colors.secondary)
@@ -117,8 +147,18 @@ struct OperatorView: View {
                     }
 
                     if !userServers[operatorIndex].xftpServers.filter({ !$0.deleted }).isEmpty {
-                        Section(header: Text("Use for files").foregroundColor(theme.colors.secondary)) {
+                        Section {
                             Toggle("For sending", isOn: $userServers[operatorIndex].operator_.xftpRoles.storage)
+                                .onChange(of: userServers[operatorIndex].operator_.xftpRoles.storage) { _ in
+                                    validateServers_($userServers, $serverErrors)
+                                }
+                        } header: {
+                            Text("Use for files")
+                                .foregroundColor(theme.colors.secondary)
+                        } footer: {
+                            if let errStr = globalXFTPError(serverErrors) {
+                                ServersErrorView(errStr: errStr)
+                            }
                         }
                     }
 
@@ -129,6 +169,8 @@ struct OperatorView: View {
                                 if srv.wrappedValue.preset {
                                     ProtocolServerViewLink(
                                         userServers: $userServers,
+                                        serverErrors: $serverErrors,
+                                        duplicateHosts: duplicateHosts,
                                         server: srv,
                                         serverProtocol: .xftp,
                                         backLabel: "\(userServers[operatorIndex].operator_.tradeName) servers",
@@ -142,9 +184,13 @@ struct OperatorView: View {
                             Text("Media & file servers")
                                 .foregroundColor(theme.colors.secondary)
                         } footer: {
-                            Text("The servers for new files of your current chat profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
-                                .foregroundColor(theme.colors.secondary)
-                                .lineLimit(10)
+                            if let errStr = globalXFTPError(serverErrors) {
+                                ServersErrorView(errStr: errStr)
+                            } else {
+                                Text("The servers for new files of your current chat profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
+                                    .foregroundColor(theme.colors.secondary)
+                                    .lineLimit(10)
+                            }
                         }
                     }
 
@@ -154,6 +200,8 @@ struct OperatorView: View {
                                 if !srv.wrappedValue.preset && !srv.wrappedValue.deleted {
                                     ProtocolServerViewLink(
                                         userServers: $userServers,
+                                        serverErrors: $serverErrors,
+                                        duplicateHosts: duplicateHosts,
                                         server: srv,
                                         serverProtocol: .xftp,
                                         backLabel: "\(userServers[operatorIndex].operator_.tradeName) servers",
@@ -163,7 +211,10 @@ struct OperatorView: View {
                                     EmptyView()
                                 }
                             }
-                            .onDelete { indexSet in deleteXFTPServer($userServers, operatorIndex, indexSet) }
+                            .onDelete { indexSet in
+                                deleteXFTPServer($userServers, operatorIndex, indexSet)
+                                validateServers_($userServers, $serverErrors)
+                            }
                         } header: {
                             Text("Added media & file servers")
                                 .foregroundColor(theme.colors.secondary)
@@ -192,6 +243,7 @@ struct OperatorView: View {
             SingleOperatorUsageConditionsView(
                 currUserServers: $currUserServers,
                 userServers: $userServers,
+                serverErrors: $serverErrors,
                 operatorIndex: operatorIndex
             )
             .modifier(ThemedBackground(grouped: true))
@@ -225,15 +277,18 @@ struct OperatorView: View {
                     switch userServers[operatorIndex].operator_.conditionsAcceptance {
                     case .accepted:
                         userServers[operatorIndex].operator_.enabled = true
+                        validateServers_($userServers, $serverErrors)
                     case let .required(deadline):
                         if deadline == nil {
                             showConditionsSheet = true
                         } else {
                             userServers[operatorIndex].operator_.enabled = true
+                            validateServers_($userServers, $serverErrors)
                         }
                     }
                 } else {
                     userServers[operatorIndex].operator_.enabled = false
+                    validateServers_($userServers, $serverErrors)
                 }
             }
     }
@@ -330,6 +385,7 @@ struct SingleOperatorUsageConditionsView: View {
     @EnvironmentObject var theme: AppTheme
     @Binding var currUserServers: [UserOperatorServers]
     @Binding var userServers: [UserOperatorServers]
+    @Binding var serverErrors: [UserServersError]
     var operatorIndex: Int
     @State private var usageConditionsNavLinkActive: Bool = false
 
@@ -421,11 +477,35 @@ struct SingleOperatorUsageConditionsView: View {
             }
             .map { $0.operatorId }
         Button {
-            acceptForOperators($currUserServers, $userServers, operatorIndex, dismiss, operatorIds)
+            acceptForOperators(operatorIds, operatorIndex)
         } label: {
             Text("Accept conditions")
         }
         .buttonStyle(OnboardingButtonStyle(isDisabled: false))
+    }
+
+    func acceptForOperators(_ operatorIds: [Int64], _ operatorIndexToEnable: Int) {
+        Task {
+            do {
+                let conditionsId = ChatModel.shared.conditions.currentConditions.conditionsId
+                let r = try await acceptConditions(conditionsId: conditionsId, operatorIds: operatorIds)
+                await MainActor.run {
+                    ChatModel.shared.conditions = r
+                    updateOperatorsConditionsAcceptance($currUserServers, r.serverOperators)
+                    updateOperatorsConditionsAcceptance($userServers, r.serverOperators)
+                    userServers[operatorIndexToEnable].operator?.enabled = true
+                    validateServers_($userServers, $serverErrors)
+                    dismiss()
+                }
+            } catch let error {
+                await MainActor.run {
+                    showAlert(
+                        NSLocalizedString("Error accepting conditions", comment: "alert title"),
+                        message: responseError(error)
+                    )
+                }
+            }
+        }
     }
 
     private func usageConditionsNavLinkButton() -> some View {
@@ -466,6 +546,7 @@ struct SingleOperatorUsageConditionsView: View {
     OperatorView(
         currUserServers: Binding.constant([UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator]),
         userServers: Binding.constant([UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator]),
+        serverErrors: Binding.constant([]),
         operatorIndex: 1,
         useOperator: ServerOperator.sampleData1.enabled
     )

@@ -17,6 +17,7 @@ struct YourServersView: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.editMode) private var editMode
     @Binding var userServers: [UserOperatorServers]
+    @Binding var serverErrors: [UserServersError]
     var operatorIndex: Int
     @State private var selectedServer: String? = nil
     @State private var showAddServer = false
@@ -37,7 +38,8 @@ struct YourServersView: View {
             .allowsHitTesting(!testing)
     }
 
-    private func yourServersView() -> some View {
+    @ViewBuilder private func yourServersView() -> some View {
+        let duplicateHosts = findDuplicateHosts(serverErrors)
         List {
             if !userServers[operatorIndex].smpServers.filter({ !$0.deleted }).isEmpty {
                 Section {
@@ -45,6 +47,8 @@ struct YourServersView: View {
                         if !srv.wrappedValue.deleted {
                             ProtocolServerViewLink(
                                 userServers: $userServers,
+                                serverErrors: $serverErrors,
+                                duplicateHosts: duplicateHosts,
                                 server: srv,
                                 serverProtocol: .smp,
                                 backLabel: "Your servers",
@@ -54,14 +58,21 @@ struct YourServersView: View {
                             EmptyView()
                         }
                     }
-                    .onDelete { indexSet in deleteSMPServer($userServers, operatorIndex, indexSet) }
+                    .onDelete { indexSet in
+                        deleteSMPServer($userServers, operatorIndex, indexSet)
+                        validateServers_($userServers, $serverErrors)
+                    }
                 } header: {
                     Text("Message servers")
                         .foregroundColor(theme.colors.secondary)
                 } footer: {
-                    Text("The servers for new connections of your current chat profile **\(m.currentUser?.displayName ?? "")**.")
-                        .foregroundColor(theme.colors.secondary)
-                        .lineLimit(10)
+                    if let errStr = globalSMPError(serverErrors) {
+                        ServersErrorView(errStr: errStr)
+                    } else {
+                        Text("The servers for new connections of your current chat profile **\(m.currentUser?.displayName ?? "")**.")
+                            .foregroundColor(theme.colors.secondary)
+                            .lineLimit(10)
+                    }
                 }
             }
 
@@ -71,6 +82,8 @@ struct YourServersView: View {
                         if !srv.wrappedValue.deleted {
                             ProtocolServerViewLink(
                                 userServers: $userServers,
+                                serverErrors: $serverErrors,
+                                duplicateHosts: duplicateHosts,
                                 server: srv,
                                 serverProtocol: .xftp,
                                 backLabel: "Your servers",
@@ -80,14 +93,21 @@ struct YourServersView: View {
                             EmptyView()
                         }
                     }
-                    .onDelete { indexSet in deleteXFTPServer($userServers, operatorIndex, indexSet) }
+                    .onDelete { indexSet in
+                        deleteXFTPServer($userServers, operatorIndex, indexSet)
+                        validateServers_($userServers, $serverErrors)
+                    }
                 } header: {
                     Text("Media & file servers")
                         .foregroundColor(theme.colors.secondary)
                 } footer: {
-                    Text("The servers for new files of your current chat profile **\(m.currentUser?.displayName ?? "")**.")
-                        .foregroundColor(theme.colors.secondary)
-                        .lineLimit(10)
+                    if let errStr = globalXFTPError(serverErrors) {
+                        ServersErrorView(errStr: errStr)
+                    } else {
+                        Text("The servers for new files of your current chat profile **\(m.currentUser?.displayName ?? "")**.")
+                            .foregroundColor(theme.colors.secondary)
+                            .lineLimit(10)
+                    }
                 }
             }
 
@@ -104,6 +124,10 @@ struct YourServersView: View {
                     }
                     .frame(width: 1, height: 1)
                     .hidden()
+                }
+            } footer: {
+                if let errStr = globalServersError(serverErrors) {
+                    ServersErrorView(errStr: errStr)
                 }
             }
 
@@ -129,14 +153,18 @@ struct YourServersView: View {
             Button("Scan server QR code") { showScanProtoServer = true }
         }
         .sheet(isPresented: $showScanProtoServer) {
-            ScanProtocolServer(userServers: $userServers)
-                .modifier(ThemedBackground(grouped: true))
+            ScanProtocolServer(
+                userServers: $userServers,
+                serverErrors: $serverErrors
+            )
+            .modifier(ThemedBackground(grouped: true))
         }
     }
 
     private func newServerDestinationView() -> some View {
         NewServerView(
-            userServers: $userServers
+            userServers: $userServers,
+            serverErrors: $serverErrors
         )
         .navigationTitle("New server")
         .navigationBarTitleDisplayMode(.large)
@@ -160,6 +188,8 @@ struct YourServersView: View {
 struct ProtocolServerViewLink: View {
     @EnvironmentObject var theme: AppTheme
     @Binding var userServers: [UserOperatorServers]
+    @Binding var serverErrors: [UserServersError]
+    var duplicateHosts: Set<String>
     @Binding var server: UserServer
     var serverProtocol: ServerProtocol
     var backLabel: LocalizedStringKey
@@ -171,6 +201,7 @@ struct ProtocolServerViewLink: View {
         NavigationLink(tag: server.id, selection: $selectedServer) {
             ProtocolServerView(
                 userServers: $userServers,
+                serverErrors: $serverErrors,
                 server: $server,
                 serverToEdit: server,
                 backLabel: backLabel
@@ -185,9 +216,8 @@ struct ProtocolServerViewLink: View {
                     if let address = address {
                         if !address.valid || address.serverProtocol != serverProtocol {
                             invalidServer()
-                            // TODO Show based on validateServers
-                            // } else if !uniqueAddress(srv, address) {
-                            //     Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+                        } else if address.hostnames.contains(where: duplicateHosts.contains) {
+                            Image(systemName: "exclamationmark.circle").foregroundColor(.red)
                         } else if !server.enabled {
                             Image(systemName: "slash.circle").foregroundColor(theme.colors.secondary)
                         } else {
@@ -322,6 +352,7 @@ struct YourServersView_Previews: PreviewProvider {
     static var previews: some View {
         YourServersView(
             userServers: Binding.constant([UserOperatorServers.sampleDataNilOperator]),
+            serverErrors: Binding.constant([]),
             operatorIndex: 1
         )
     }
