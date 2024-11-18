@@ -1436,23 +1436,7 @@ fun BoxScope.FloatingButtons(
     showBottomButtonWithCounter,
     showBottomButtonWithArrow,
     composeViewHeight,
-    onClickArrowDown = {
-      scope.launch { tryBlockAndSetLoadingMore(loadingMoreItems) { listState.value.animateScrollToItem(0) } }
-    },
-    onClickCounter = {
-      val item = chatItems.value.asReversed().lastOrNull { it.isRcvNew }
-      val indexInReversed = if (item != null) groups.value.indexInReversedItems[item.id] ?: -1 else -1
-      // if already shown the first unread item, scroll to the bottom instead
-      if (indexInReversed != -1 && indexInReversed == newestLastFullyVisibleIndexInListState(topPaddingToContentPx, groups, listState)) {
-        scope.launch { tryBlockAndSetLoadingMore(loadingMoreItems) { listState.value.animateScrollToItem(0) } }
-      } else {
-        // scroll to the top unread item
-        val indexInParent = if (item != null) groups.value.indexInParentItems[item.id] ?: -1 else -1
-        if (indexInParent != -1) {
-          scope.launch { tryBlockAndSetLoadingMore(loadingMoreItems) { listState.value.animateScrollToItem(indexInParent + 1, -maxHeight.value) } }
-        }
-      }
-    }
+    onClick = { scope.launch { tryBlockAndSetLoadingMore(loadingMoreItems) { listState.value.animateScrollToItem(0) } } }
   )
   // Don't show top FAB if is in search
   if (searchValue.value.isNotEmpty()) return
@@ -1463,7 +1447,12 @@ fun BoxScope.FloatingButtons(
   TopEndFloatingButton(
     Modifier.padding(end = DEFAULT_PADDING, top = 24.dp + topPaddingToContent()).align(Alignment.TopEnd),
     topUnreadCount,
-    onClick = { scope.launch { listState.value.animateScrollBy(maxHeight.value.toFloat()) } },
+    onClick = {
+      val item = chatItems.value.asReversed().lastOrNull { it.isRcvNew } ?: return@TopEndFloatingButton
+      val indexInParent = groups.value.indexInParentItems[item.id] ?: return@TopEndFloatingButton
+      // scroll to the top unread item
+      scope.launch { tryBlockAndSetLoadingMore(loadingMoreItems) { listState.value.animateScrollToItem(indexInParent + 1, -maxHeight.value) } }
+    },
     onLongClick = { showDropDown.value = true }
   )
 
@@ -1883,12 +1872,11 @@ private fun BoxScope.BottomEndFloatingButton(
   showButtonWithCounter: State<Boolean>,
   showButtonWithArrow: State<Boolean>,
   composeViewHeight: State<Dp>,
-  onClickArrowDown: () -> Unit,
-  onClickCounter: () -> Unit
+  onClick: () -> Unit
 ) = when {
   showButtonWithCounter.value -> {
     FloatingActionButton(
-      onClick = onClickCounter,
+      onClick = onClick,
       elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
       modifier = Modifier.padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING + composeViewHeight.value).align(Alignment.BottomEnd).size(48.dp),
       backgroundColor = MaterialTheme.colors.secondaryVariant,
@@ -1902,7 +1890,7 @@ private fun BoxScope.BottomEndFloatingButton(
   }
   showButtonWithArrow.value -> {
     FloatingActionButton(
-      onClick = onClickArrowDown,
+      onClick = onClick,
       elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
       modifier = Modifier.padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING + composeViewHeight.value).align(Alignment.BottomEnd).size(48.dp),
       backgroundColor = MaterialTheme.colors.secondaryVariant,
