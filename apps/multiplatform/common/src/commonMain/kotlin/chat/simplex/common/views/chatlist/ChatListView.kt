@@ -806,7 +806,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   } else {
     NavigationBarBackground(oneHandUI.value, true)
   }
-  if (!oneHandUICardShown.value || !addressCreationCardShown.value) {
+  if (!oneHandUICardShown.value) {
     LaunchedEffect(chats.size) {
       if (chats.size >= 3) {
         appPrefs.oneHandUICardShown.set(true)
