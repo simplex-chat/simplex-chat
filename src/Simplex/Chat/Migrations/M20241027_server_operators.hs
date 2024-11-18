@@ -54,5 +54,5 @@ DROP TABLE operator_usage_conditions;
 DROP TABLE usage_conditions;
 DROP TABLE server_operators;
 
-DELETE FROM protocol_servers WHERE host LIKE "%.simplexonflux.com";
+DELETE FROM protocol_servers WHERE host LIKE "%.simplexonflux.com,%";
 |]
