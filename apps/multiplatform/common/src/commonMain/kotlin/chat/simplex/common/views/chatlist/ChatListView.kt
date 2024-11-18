@@ -230,15 +230,22 @@ private fun AddressCreationCard() {
       }
     }
   ) {
+      Box(modifier = Modifier.matchParentSize().padding(end = (DEFAULT_PADDING_HALF + 2.dp) * fontSizeSqrtMultiplier, bottom = 2.dp), contentAlignment = Alignment.BottomEnd) {
+      TextButton(
+        onClick = {
+          ModalManager.start.showModalCloseable { close ->
+            UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = close)
+          }
+        },
+      ) {
+        Text(stringResource(MR.strings.create_address_button), style = MaterialTheme.typography.body1)
+      }
+    }
     Row(
       Modifier
         .fillMaxWidth()
-        .padding(
-          start = DEFAULT_PADDING,
-          end = DEFAULT_PADDING - 5.dp,
-          top = DEFAULT_PADDING,
-          bottom = DEFAULT_PADDING_HALF
-        )
+        .padding(DEFAULT_PADDING),
+      verticalAlignment = Alignment.CenterVertically
     ) {
       Box(Modifier.padding(vertical = 4.dp)) {
         Box(Modifier.background(MaterialTheme.colors.primary, CircleShape).padding(12.dp)) {
@@ -247,25 +254,13 @@ private fun AddressCreationCard() {
       }
       Column(modifier = Modifier.padding(start = DEFAULT_PADDING)) {
         Text(stringResource(MR.strings.your_simplex_contact_address), style = MaterialTheme.typography.h3)
-        Spacer(Modifier.height(DEFAULT_PADDING_HALF))
-        Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
-          Row(modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)) {
-            Text(stringResource(MR.strings.how_to_use_simplex_chat), Modifier.padding(end = DEFAULT_SPACE_AFTER_ICON), style = MaterialTheme.typography.body1)
-            Icon(
-              painterResource(MR.images.ic_info),
-              null,
-            )
-          }
-          Spacer(Modifier.weight(1f))
-          TextButton(
-            onClick = {
-              ModalManager.start.showModalCloseable { close ->
-                UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = close)
-              }
-            },
-          ) {
-            Text(stringResource(MR.strings.create_address_button), style = MaterialTheme.typography.body1)
-          }
+        Spacer(Modifier.fillMaxWidth().padding(DEFAULT_PADDING_HALF))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          Text(stringResource(MR.strings.how_to_use_simplex_chat), Modifier.padding(end = DEFAULT_SPACE_AFTER_ICON), style = MaterialTheme.typography.body1)
+          Icon(
+            painterResource(MR.images.ic_info),
+            null,
+          )
         }
       }
     }
