@@ -89,6 +89,8 @@ data DBEntityId' (s :: DBStored) where
 
 deriving instance Show (DBEntityId' s)
 
+deriving instance Eq (DBEntityId' s)
+
 type DBEntityId = DBEntityId' 'DBStored
 
 type DBNewEntity = DBEntityId' 'DBNew

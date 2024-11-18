@@ -1611,7 +1611,7 @@ processChatCommand' vr = \case
           srvs' <- mapM aUserServer srvs
           processChatCommand $ APISetUserServers userId $ L.map (updatedServers p srvs') userServers
     where
-      aUserServer ::  AProtoServerWithAuth -> CM (AUserServer p)
+      aUserServer :: AProtoServerWithAuth -> CM (AUserServer p)
       aUserServer (AProtoServerWithAuth p' srv) = case testEquality p p' of
         Just Refl -> pure $ AUS SDBNew $ newUserServer srv
         Nothing -> throwChatError $ CECommandError $ "incorrect server protocol: " <> B.unpack (strEncode srv)
@@ -2949,8 +2949,17 @@ processChatCommand' vr = \case
     validateAllUsersServers :: UserServersClass u => Int64 -> [u] -> CM [UserServersError]
     validateAllUsersServers currUserId userServers = withFastStore $ \db -> do
       users' <- filter (\User {userId} -> userId /= currUserId) <$> liftIO (getUsers db)
-      others <- mapM (\user -> liftIO . fmap (user,) . groupByOperator =<< getUserServers db user) users'
+      others <- mapM (getUserOperatorServers db) users'
       pure $ validateUserServers userServers others
+      where
+        getUserOperatorServers :: DB.Connection -> User -> ExceptT StoreError IO (User, [UserOperatorServers])
+        getUserOperatorServers db user = do
+          uss <- liftIO . groupByOperator =<< getUserServers db user
+          pure (user, map updatedUserServers uss)
+        updatedUserServers uss = uss {operator = updatedOp <$> operator' uss} :: UserOperatorServers
+        updatedOp op = fromMaybe op $ find matchingOp $ mapMaybe operator' userServers
+          where
+            matchingOp op' = operatorId op' == operatorId op
     forwardFile :: ChatName -> FileTransferId -> (ChatName -> CryptoFile -> ChatCommand) -> CM ChatResponse
     forwardFile chatName fileId sendCommand = withUser $ \user -> do
       withStore (\db -> getFileTransfer db user fileId) >>= \case
