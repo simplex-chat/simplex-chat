@@ -1988,7 +1988,6 @@ testGroupAsync tmp = do
         (bob <## "#team: you joined the group")
       alice #> "#team hello bob"
       bob <# "#team alice> hello bob"
-  print (1 :: Integer)
   withTestChat tmp "alice" $ \alice -> do
     withNewTestChat tmp "cath" cathProfile $ \cath -> do
       alice <## "1 contacts connected (use /cs for the list)"
@@ -2008,7 +2007,6 @@ testGroupAsync tmp = do
         ]
       alice #> "#team hello cath"
       cath <# "#team alice> hello cath"
-  print (2 :: Integer)
   withTestChat tmp "bob" $ \bob -> do
     withTestChat tmp "cath" $ \cath -> do
       concurrentlyN_
@@ -2024,7 +2022,6 @@ testGroupAsync tmp = do
             cath <## "#team: member bob (Bob) is connected"
         ]
   threadDelay 500000
-  print (3 :: Integer)
   withTestChat tmp "bob" $ \bob -> do
     withNewTestChat tmp "dan" danProfile $ \dan -> do
       bob <## "2 contacts connected (use /cs for the list)"
@@ -2044,7 +2041,6 @@ testGroupAsync tmp = do
         ]
       threadDelay 1000000
   threadDelay 1000000
-  print (4 :: Integer)
   withTestChat tmp "alice" $ \alice -> do
     withTestChat tmp "cath" $ \cath -> do
       withTestChat tmp "dan" $ \dan -> do
@@ -2066,7 +2062,6 @@ testGroupAsync tmp = do
               dan <## "#team: member cath (Catherine) is connected"
           ]
         threadDelay 1000000
-  print (5 :: Integer)
   withTestChat tmp "alice" $ \alice -> do
     withTestChat tmp "bob" $ \bob -> do
       withTestChat tmp "cath" $ \cath -> do
