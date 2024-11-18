@@ -61,7 +61,7 @@ class ChatItemGroupsTest {
 
     val unreadCount = mutableStateOf(0)
     val chatState = ActiveChatState()
-    val groups1 = items.putIntoGroups(unreadCount, emptySet(), chatState)
+    val groups1 = Sections.create(items, unreadCount, emptySet(), chatState)
     assertEquals(
       listOf(
         listOf(0, 0, false,
@@ -96,7 +96,7 @@ class ChatItemGroupsTest {
       }.toString()
     )
 
-    val groups2 = items.putIntoGroups(unreadCount, setOf(98L, 97L), chatState)
+    val groups2 = Sections.create(items, unreadCount, setOf(98L, 97L), chatState)
     assertEquals(
       listOf(
         listOf(0, 0, false,

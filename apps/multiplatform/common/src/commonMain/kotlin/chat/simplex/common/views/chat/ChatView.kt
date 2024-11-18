@@ -948,7 +948,7 @@ fun BoxScope.ChatItemsList(
   val searchValueIsEmpty = remember { derivedStateOf { searchValue.value.isEmpty() } }
   val reversedChatItems = remember { derivedStateOf { chatModel.chatItems.asReversed() } }
   val revealedItems = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(setOf<Long>()) }
-  val groups = remember { derivedStateOf { reversedChatItems.value.putIntoGroups(unreadCount, revealedItems.value, chatModel.chatState) } }
+  val groups = remember { derivedStateOf { Sections.create(reversedChatItems.value, unreadCount, revealedItems.value, chatModel.chatState) } }
   val topPaddingToContentPx = rememberUpdatedState(with(LocalDensity.current) { topPaddingToContent().roundToPx() })
   /** determines height based on window info and static height of two AppBars. It's needed because in the first graphic frame height of
    * [composeViewHeight] is unknown, but we need to set scroll position for unread messages already so it will be correct before the first frame appears
@@ -1394,7 +1394,7 @@ private fun SmallScrollOnNewMessage(listState: State<LazyListState>, chatItems: 
 fun BoxScope.FloatingButtons(
   loadingMoreItems: MutableState<Boolean>,
   chatItems: State<List<ChatItem>>,
-  groups: State<SectionGroups>,
+  groups: State<Sections>,
   unreadCount: State<Int>,
   maxHeight: State<Int>,
   composeViewHeight: State<Dp>,
@@ -1484,7 +1484,7 @@ fun BoxScope.FloatingButtons(
 fun PreloadItems(
   chatId: String,
   ignoreLoadingRequests: MutableSet<Long>,
-  groups: State<SectionGroups>,
+  groups: State<Sections>,
   listState: State<LazyListState>,
   remaining: Int,
   loadItems: suspend (ChatId, ChatPagination) -> Boolean,
@@ -1624,7 +1624,7 @@ fun topPaddingToContent(): Dp {
 @Composable
 private fun FloatingDate(
   modifier: Modifier,
-  groups: State<SectionGroups>,
+  groups: State<Sections>,
   listState: State<LazyListState>,
 ) {
   val isNearBottom = remember(chatModel.chatId) { mutableStateOf(listState.value.firstVisibleItemIndex == 0) }
@@ -1812,7 +1812,7 @@ private fun MarkItemsReadAfterDelay(
   }
 }
 
-private fun newestLastFullyVisibleIndexInListState(topPaddingToContentPx: State<Int>, groups: State<SectionGroups>, listState: State<LazyListState>): Int {
+private fun newestLastFullyVisibleIndexInListState(topPaddingToContentPx: State<Int>, groups: State<Sections>, listState: State<LazyListState>): Int {
   val lastFullyVisibleOffset = listState.value.layoutInfo.viewportEndOffset - topPaddingToContentPx.value
   return groups.value.newestItemIndexInReversed[
     (listState.value.layoutInfo.visibleItemsInfo.lastOrNull { item ->
@@ -1824,14 +1824,14 @@ private fun newestLastFullyVisibleIndexInListState(topPaddingToContentPx: State<
     ?: -1
 }
 
-private fun oldestPartiallyVisibleListItemInListStateOrNull(topPaddingToContentPx: State<Int>, groups: State<SectionGroups>, listState: State<LazyListState>): ListItem? {
+private fun oldestPartiallyVisibleListItemInListStateOrNull(topPaddingToContentPx: State<Int>, groups: State<Sections>, listState: State<LazyListState>): ListItem? {
   val lastFullyVisibleOffset = listState.value.layoutInfo.viewportEndOffset - topPaddingToContentPx.value
   return groups.value.oldestListItemInReversed[(listState.value.layoutInfo.visibleItemsInfo.lastOrNull { item ->
     item.offset <= lastFullyVisibleOffset
   }?.index ?: listState.value.layoutInfo.visibleItemsInfo.lastOrNull()?.index) ?: -1]
 }
 
-private fun lastFullyVisibleIemInListState(topPaddingToContentPx: State<Int>, density: Float, fontSizeSqrtMultiplier: Float, groups: State<SectionGroups>, listState: State<LazyListState>): ChatItem? {
+private fun lastFullyVisibleIemInListState(topPaddingToContentPx: State<Int>, density: Float, fontSizeSqrtMultiplier: Float, groups: State<Sections>, listState: State<LazyListState>): ChatItem? {
   val lastFullyVisibleOffsetMinusFloatingHeight = listState.value.layoutInfo.viewportEndOffset - topPaddingToContentPx.value - 50 * density * fontSizeSqrtMultiplier
   return groups.value.newestListItemInReversed[
     (listState.value.layoutInfo.visibleItemsInfo.lastOrNull { item ->
