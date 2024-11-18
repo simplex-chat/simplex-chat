@@ -14,7 +14,6 @@ import Control.Monad (replicateM)
 import Data.Foldable (foldMap')
 import Data.List (sortOn)
 import Data.List.NonEmpty (NonEmpty)
-import qualified Data.List.NonEmpty as L
 import Data.Monoid (Sum (..))
 import Simplex.Chat (defaultChatConfig, chooseRandomServers)
 import Simplex.Chat.Controller (ChatConfig (..), PresetServers (..))
@@ -36,26 +35,27 @@ deriving instance Eq (UserServer' s p)
 
 testRandomSMPServers :: IO ()
 testRandomSMPServers = do
-  pure ()
---   [srvs1, srvs2, srvs3] <-
---     replicateM 3 $
---       checkEnabled SPSMP 7 False =<< chooseRandomServers (presetServers defaultChatConfig)
---   (srvs1 == srvs2 && srvs2 == srvs3) `shouldBe` False -- && to avoid rare failures
+  [srvs1, srvs2, srvs3] <-
+    replicateM 3 $
+      checkEnabled SPSMP 7 False =<< chooseRandomServers (presetServers defaultChatConfig)
+  (srvs1 == srvs2 && srvs2 == srvs3) `shouldBe` False -- && to avoid rare failures
 
 testRandomXFTPServers :: IO ()
 testRandomXFTPServers = do
-  pure ()
---   [srvs1, srvs2, srvs3] <-
---     replicateM 3 $
---       checkEnabled SPXFTP 6 False =<< chooseRandomServers (presetServers defaultChatConfig)
---   (srvs1 == srvs2 && srvs2 == srvs3) `shouldBe` False -- && to avoid rare failures
+  [srvs1, srvs2, srvs3] <-
+    replicateM 3 $
+      checkEnabled SPXFTP 6 False =<< chooseRandomServers (presetServers defaultChatConfig)
+  (srvs1 == srvs2 && srvs2 == srvs3) `shouldBe` False -- && to avoid rare failures
 
-checkEnabled :: UserProtocol p => SProtocolType p -> Int -> Bool -> NonEmpty (NewUserServer p) -> IO [NewUserServer p]
-checkEnabled p n allUsed srvs = do
-  let srvs' = sortOn server' $ L.toList srvs
-      PresetServers {operators = presetOps} = presetServers defaultChatConfig
+checkEnabled :: UserProtocol p => SProtocolType p -> Int -> Bool -> NonEmpty (PresetOperator) -> IO [NewUserServer p]
+checkEnabled p n allUsed presetOps' = do
+  let PresetServers {operators = presetOps} = presetServers defaultChatConfig
       presetSrvs = sortOn server' $ concatMap (pServers p) presetOps
+      srvs' = sortOn server' $ concatMap (pServers p) presetOps'
       Sum toUse = foldMap' (Sum . operatorServersToUse p) presetOps
+      Sum toUse' = foldMap' (Sum . operatorServersToUse p) presetOps'
+  length presetOps `shouldBe` length presetOps'
+  toUse `shouldBe` toUse'
   srvs' == presetSrvs `shouldBe` allUsed
   map enable srvs' `shouldBe` map enable presetSrvs
   let enbldSrvs = filter (\UserServer {enabled} -> enabled) srvs'
