@@ -1,6 +1,12 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
@@ -8,8 +14,10 @@
 
 module OperatorTests (operatorTests) where
 
+import Data.Bifunctor (second)
 import qualified Data.List.NonEmpty as L
 import Simplex.Chat
+import Simplex.Chat.Controller (ChatConfig (..), PresetServers (..))
 import Simplex.Chat.Operators
 import Simplex.Chat.Types
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
@@ -19,10 +27,11 @@ import Test.Hspec
 
 operatorTests :: Spec
 operatorTests = describe "managing server operators" $ do
-  validateServers
+  validateServersTest
+  updatedServersTest
 
-validateServers :: Spec
-validateServers = describe "validate user servers" $ do
+validateServersTest :: Spec
+validateServersTest = describe "validate user servers" $ do
   it "should pass valid user servers" $ validateUserServers [valid] [] `shouldBe` []
   it "should fail without servers" $ do
     validateUserServers [invalidNoServers] [] `shouldBe` [USENoServers aSMP Nothing]
@@ -40,6 +49,50 @@ validateServers = describe "validate user servers" $ do
   where
     aSMP = AProtocolType SPSMP
     aXFTP = AProtocolType SPXFTP
+
+updatedServersTest :: Spec
+updatedServersTest = describe "validate user servers" $ do
+  it "adding preset operators on first start" $ do
+    let ops' :: [(Maybe PresetOperator, Maybe AServerOperator)] =
+          updatedServerOperators operators []
+    length ops' `shouldBe` 2
+    all addedPreset ops' `shouldBe` True
+    let ops'' :: [(Maybe PresetOperator, Maybe ServerOperator)] =
+          saveOps ops' -- mock getUpdateServerOperators
+    uss <- groupByOperator' (ops'', [], []) -- no stored servers
+    length uss `shouldBe` 3
+    [op1, op2, op3] <- pure $ map updatedUserServers uss
+    [p1, p2] <- pure operators -- presets
+    sameServers p1 op1
+    sameServers p2 op2
+    null (servers' SPSMP op3) `shouldBe` True
+    null (servers' SPXFTP op3) `shouldBe` True
+  it "adding preset operators and assiging servers to operator for existing users" $ do
+    let ops' = updatedServerOperators operators []
+        ops'' = saveOps ops'
+    uss <-
+      groupByOperator'
+        ( ops'',
+          saveSrvs $ take 3 simplexChatSMPServers <> [newUserServer "smp://abcd@smp.example.im"],
+          saveSrvs $ map (presetServer True) $ L.take 3 defaultXFTPServers
+        )
+    [op1, op2, op3] <- pure $ map updatedUserServers uss
+    [p1, p2] <- pure operators -- presets
+    sameServers p1 op1
+    sameServers p2 op2
+    map srvHost' (servers' SPSMP op3) `shouldBe` [["smp.example.im"]]
+    null (servers' SPXFTP op3) `shouldBe` True
+  where
+    addedPreset = \case
+      (Just PresetOperator {operator = Just op}, Just (ASO SDBNew op')) -> operatorTag op == operatorTag op'
+      _ -> False
+    saveOps = zipWith (\i -> second ((\(ASO _ op) -> op {operatorId = DBEntityId i}) <$>)) [1..]
+    saveSrvs = zipWith (\i srv -> srv {serverId = DBEntityId i}) [1..]
+    sameServers preset op = do
+      map srvHost (pServers SPSMP preset) `shouldBe` map srvHost' (servers' SPSMP op)
+      map srvHost (pServers SPXFTP preset) `shouldBe` map srvHost' (servers' SPXFTP op)
+    srvHost' (AUS _ s) = srvHost s
+    PresetServers {operators} = presetServers defaultChatConfig
 
 deriving instance Eq User
 

@@ -240,6 +240,7 @@ testRetryConnecting tmp = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile te
       bob <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
         alice <## "server connected localhost ()"
+        threadDelay 250000
         bob ##> ("/_connect plan 1 " <> inv)
         bob <## "invitation link: ok to connect"
         bob ##> ("/_connect 1 " <> inv)
@@ -1144,27 +1145,24 @@ testGetSetSMPServers =
       alice ##> "/_servers 1"
       alice <## "Your servers"
       alice <## "  SMP servers"
-      alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001 (preset)"
+      alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"
       alice <## "  XFTP servers"
-      alice <## "    xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002 (preset)"      
+      alice <## "    xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002"
       alice #$> ("/smp smp://1234-w==@smp1.example.im", id, "ok")
       alice ##> "/smp"
       alice <## "Your servers"
       alice <## "  SMP servers"
-      alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001 (preset, disabled)"
       alice <## "    smp://1234-w==@smp1.example.im"
       alice #$> ("/smp smp://1234-w==:password@smp1.example.im", id, "ok")
       -- alice #$> ("/smp", id, "smp://1234-w==:password@smp1.example.im")
       alice ##> "/smp"
       alice <## "Your servers"
       alice <## "  SMP servers"
-      alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001 (preset, disabled)"
       alice <## "    smp://1234-w==:password@smp1.example.im"
       alice #$> ("/smp smp://2345-w==@smp2.example.im smp://3456-w==@smp3.example.im:5224", id, "ok")
       alice ##> "/smp"
       alice <## "Your servers"
       alice <## "  SMP servers"
-      alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001 (preset, disabled)"
       alice <## "    smp://2345-w==@smp2.example.im"
       alice <## "    smp://3456-w==@smp3.example.im:5224"
 
@@ -1190,26 +1188,23 @@ testGetSetXFTPServers =
       alice ##> "/_servers 1"
       alice <## "Your servers"
       alice <## "  SMP servers"
-      alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001 (preset)"
+      alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"
       alice <## "  XFTP servers"
-      alice <## "    xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002 (preset)"
+      alice <## "    xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002"
       alice #$> ("/xftp xftp://1234-w==@xftp1.example.im", id, "ok")
       alice ##> "/xftp"
       alice <## "Your servers"
       alice <## "  XFTP servers"
-      alice <## "    xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002 (preset, disabled)"
       alice <## "    xftp://1234-w==@xftp1.example.im"
       alice #$> ("/xftp xftp://1234-w==:password@xftp1.example.im", id, "ok")
       alice ##> "/xftp"
       alice <## "Your servers"
       alice <## "  XFTP servers"
-      alice <## "    xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002 (preset, disabled)"
       alice <## "    xftp://1234-w==:password@xftp1.example.im"
       alice #$> ("/xftp xftp://2345-w==@xftp2.example.im xftp://3456-w==@xftp3.example.im:5224", id, "ok")
       alice ##> "/xftp"
       alice <## "Your servers"
       alice <## "  XFTP servers"
-      alice <## "    xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002 (preset, disabled)"
       alice <## "    xftp://2345-w==@xftp2.example.im"
       alice <## "    xftp://3456-w==@xftp3.example.im:5224"
 
@@ -1831,13 +1826,11 @@ testCreateUserSameServers =
       alice ##> "/smp"
       alice <## "Your servers"
       alice <## "  SMP servers"
-      alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001 (preset, disabled)"
       alice <## "    smp://2345-w==@smp2.example.im"
       alice <## "    smp://3456-w==@smp3.example.im:5224"
       alice ##> "/xftp"
       alice <## "Your servers"
       alice <## "  XFTP servers"
-      alice <## "    xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002 (preset, disabled)"
       alice <## "    xftp://2345-w==@xftp2.example.im"
       alice <## "    xftp://3456-w==@xftp3.example.im:5224"
 

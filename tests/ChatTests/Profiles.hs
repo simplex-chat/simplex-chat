@@ -273,6 +273,7 @@ testRetryAcceptingViaContactLink tmp = testChatCfgOpts2 cfg' opts' aliceProfile 
       bob <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
         alice <## "server connected localhost ()"
+        threadDelay 250000
         bob ##> ("/_connect plan 1 " <> cLink)
         bob <## "contact address: ok to connect"
         bob ##> ("/_connect 1 " <> cLink)
@@ -1737,12 +1738,11 @@ testChangePCCUserDiffSrv tmp = do
         alice ##> "/smp"
         alice <## "Your servers"
         alice <## "  SMP servers"
-        alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001 (preset)"
+        alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"
         alice #$> ("/smp smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@127.0.0.1:7003", id, "ok")
         alice ##> "/smp"
         alice <## "Your servers"
         alice <## "  SMP servers"
-        alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001 (preset, disabled)"
         alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@127.0.0.1:7003"
         alice ##> "/user alice"
         showActiveUser alice "alice (Alice)"

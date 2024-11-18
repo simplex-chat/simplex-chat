@@ -165,7 +165,7 @@ fun createProfileInNoProfileSetup(displayName: String, close: () -> Unit) {
     if (!chatModel.connectedToRemote()) {
       chatModel.localUserCreated.value = true
     }
-    controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_CreateSimpleXAddress)
+    controller.appPrefs.onboardingStage.set(OnboardingStage.Step4_SetNotificationsMode)
     controller.startChat(user)
     controller.switchUIRemoteHost(null)
     close()
@@ -181,7 +181,7 @@ fun createProfileInProfiles(chatModel: ChatModel, displayName: String, close: ()
     chatModel.currentUser.value = user
     if (chatModel.users.isEmpty()) {
       chatModel.controller.startChat(user)
-      chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_CreateSimpleXAddress)
+      chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step4_SetNotificationsMode)
     } else {
       val users = chatModel.controller.listUsers(rhId)
       chatModel.users.clear()
@@ -204,7 +204,7 @@ fun createProfileOnboarding(chatModel: ChatModel, displayName: String, close: ()
       onboardingStage.set(if (appPlatform.isDesktop && chatModel.controller.appPrefs.initialRandomDBPassphrase.get() && !chatModel.desktopOnboardingRandomPassword.value) {
         OnboardingStage.Step2_5_SetupDatabasePassphrase
       } else {
-        OnboardingStage.Step3_CreateSimpleXAddress
+        OnboardingStage.Step4_SetNotificationsMode
       })
     } else {
       // the next two lines are only needed for failure case when because of the database error the app gets stuck on on-boarding screen,
