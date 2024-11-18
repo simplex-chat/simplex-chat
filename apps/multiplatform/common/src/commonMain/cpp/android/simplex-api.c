@@ -1,7 +1,8 @@
 #include <jni.h>
 #include <string.h>
+#include <stdbool.h>
 #include <stdint.h>
-//#include <stdlib.h>
+#include <stdlib.h>
 //#include <android/log.h>
 
 // from the RTS
@@ -68,9 +69,51 @@ extern char *chat_password_hash(const char *pwd, const char *salt);
 extern char *chat_valid_name(const char *name);
 extern int chat_json_length(const char *str);
 extern char *chat_write_file(chat_ctrl ctrl, const char *path, char *ptr, int length);
+extern char *chat_write_image(chat_ctrl ctrl, long max_size, const char *path, char *ptr, int length, bool encrypt);
 extern char *chat_read_file(const char *path, const char *key, const char *nonce);
 extern char *chat_encrypt_file(chat_ctrl ctrl, const char *from_path, const char *to_path);
 extern char *chat_decrypt_file(const char *from_path, const char *key, const char *nonce, const char *to_path);
+extern char *chat_resize_image_to_str_size(const char *from_path, long max_size);
+
+char * encode_to_utf8_chars(JNIEnv *env, jstring string) {
+    if (!string) return "";
+
+    const jclass cls_string = (*env)->FindClass(env, "java/lang/String");
+    const jmethodID mid_getBytes = (*env)->GetMethodID(env, cls_string, "getBytes", "(Ljava/lang/String;)[B");
+    const jbyteArray jbyte_array = (jbyteArray) (*env)->CallObjectMethod(env, string, mid_getBytes, (*env)->NewStringUTF(env, "UTF-8"));
+    jint length = (jint) (*env)->GetArrayLength(env, jbyte_array);
+    jbyte *jbytes = malloc(length + 1);
+    (*env)->GetByteArrayRegion(env, jbyte_array, 0, length, jbytes);
+    // char * should be null terminated but jbyte * isn't. Terminate it with \0. Otherwise, Haskell will not see the end of string
+    jbytes[length] = '\0';
+
+    //for (int i = 0; i < length; ++i)
+    //    fprintf(stderr, "%d: %02x\n", i, jbytes[i]);
+
+    (*env)->DeleteLocalRef(env, jbyte_array);
+    (*env)->DeleteLocalRef(env, cls_string);
+    return (char *) jbytes;
+}
+
+// As a reference: https://stackoverflow.com/a/60002045
+jstring decode_to_utf8_string(JNIEnv *env, char *string) {
+    jobject bb = (*env)->NewDirectByteBuffer(env, (void *)string, strlen(string));
+    jclass cls_charset = (*env)->FindClass(env, "java/nio/charset/Charset");
+    jmethodID mid_charset_forName = (*env)->GetStaticMethodID(env, cls_charset, "forName", "(Ljava/lang/String;)Ljava/nio/charset/Charset;");
+    jobject charset = (*env)->CallStaticObjectMethod(env, cls_charset, mid_charset_forName, (*env)->NewStringUTF(env, "UTF-8"));
+
+    jmethodID mid_decode = (*env)->GetMethodID(env, cls_charset, "decode", "(Ljava/nio/ByteBuffer;)Ljava/nio/CharBuffer;");
+    jobject cb = (*env)->CallObjectMethod(env, charset, mid_decode, bb);
+
+    jclass cls_char_buffer = (*env)->FindClass(env, "java/nio/CharBuffer");
+    jmethodID mid_to_string = (*env)->GetMethodID(env, cls_char_buffer, "toString", "()Ljava/lang/String;");
+    jstring res = (*env)->CallObjectMethod(env, cb, mid_to_string);
+
+    (*env)->DeleteLocalRef(env, bb);
+    (*env)->DeleteLocalRef(env, charset);
+    (*env)->DeleteLocalRef(env, cb);
+    return res;
+}
 
 JNIEXPORT jobjectArray JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatMigrateInit(JNIEnv *env, __unused jclass clazz, jstring dbPath, jstring dbKey, jstring confirm) {
@@ -182,6 +225,16 @@ Java_chat_simplex_common_platform_CoreKt_chatWriteFile(JNIEnv *env, jclass clazz
     return res;
 }
 
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatWriteImage(JNIEnv *env, jclass clazz, jlong controller, jlong maxSize, jstring path, jobject buffer, jboolean encrypt) {
+    const char *_path = encode_to_utf8_chars(env, path);
+    jbyte *buff = (jbyte *) (*env)->GetDirectBufferAddress(env, buffer);
+    jlong capacity = (*env)->GetDirectBufferCapacity(env, buffer);
+    jstring res = decode_to_utf8_string(env, chat_write_image((void*)controller, maxSize, _path, buff, capacity, encrypt));
+    (*env)->ReleaseStringUTFChars(env, path, _path);
+    return res;
+}
+
 JNIEXPORT jobjectArray JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatReadFile(JNIEnv *env, jclass clazz, jstring path, jstring key, jstring nonce) {
     const char *_path = (*env)->GetStringUTFChars(env, path, JNI_FALSE);
@@ -242,5 +295,13 @@ Java_chat_simplex_common_platform_CoreKt_chatDecryptFile(JNIEnv *env, jclass cla
     (*env)->ReleaseStringUTFChars(env, key, _key);
     (*env)->ReleaseStringUTFChars(env,  nonce, _nonce);
     (*env)->ReleaseStringUTFChars(env, to_path, _to_path);
+    return res;
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatResizeImageToStrSize(JNIEnv *env, jclass clazz, jstring from_path, jlong max_size) {
+    const char *_from_path = encode_to_utf8_chars(env, from_path);
+    jstring res = decode_to_utf8_string(env, chat_resize_image_to_str_size(_from_path, max_size));
+    (*env)->ReleaseStringUTFChars(env, from_path, _from_path);
     return res;
 }
