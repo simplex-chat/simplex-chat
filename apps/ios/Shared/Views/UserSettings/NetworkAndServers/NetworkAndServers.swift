@@ -345,7 +345,7 @@ func globalServersError(_ serverErrors: [UserServersError]) -> String? {
     return nil
 }
 
-func globalSMPError(_ serverErrors: [UserServersError]) -> String? {
+func globalSMPServersError(_ serverErrors: [UserServersError]) -> String? {
     for err in serverErrors {
         if let errStr = err.globalSMPError {
             return errStr
@@ -354,7 +354,7 @@ func globalSMPError(_ serverErrors: [UserServersError]) -> String? {
     return nil
 }
 
-func globalXFTPError(_ serverErrors: [UserServersError]) -> String? {
+func globalXFTPServersError(_ serverErrors: [UserServersError]) -> String? {
     for err in serverErrors {
         if let errStr = err.globalXFTPError {
             return errStr

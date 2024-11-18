@@ -66,7 +66,7 @@ struct YourServersView: View {
                     Text("Message servers")
                         .foregroundColor(theme.colors.secondary)
                 } footer: {
-                    if let errStr = globalSMPError(serverErrors) {
+                    if let errStr = globalSMPServersError(serverErrors) {
                         ServersErrorView(errStr: errStr)
                     } else {
                         Text("The servers for new connections of your current chat profile **\(m.currentUser?.displayName ?? "")**.")
@@ -101,7 +101,7 @@ struct YourServersView: View {
                     Text("Media & file servers")
                         .foregroundColor(theme.colors.secondary)
                 } footer: {
-                    if let errStr = globalXFTPError(serverErrors) {
+                    if let errStr = globalXFTPServersError(serverErrors) {
                         ServersErrorView(errStr: errStr)
                     } else {
                         Text("The servers for new files of your current chat profile **\(m.currentUser?.displayName ?? "")**.")

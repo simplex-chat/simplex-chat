@@ -81,7 +81,7 @@ struct OperatorView: View {
                             Text("Use for messages")
                                 .foregroundColor(theme.colors.secondary)
                         } footer: {
-                            if let errStr = globalSMPError(serverErrors) {
+                            if let errStr = globalSMPServersError(serverErrors) {
                                 ServersErrorView(errStr: errStr)
                             }
                         }
@@ -109,7 +109,7 @@ struct OperatorView: View {
                             Text("Message servers")
                                 .foregroundColor(theme.colors.secondary)
                         } footer: {
-                            if let errStr = globalSMPError(serverErrors) {
+                            if let errStr = globalSMPServersError(serverErrors) {
                                 ServersErrorView(errStr: errStr)
                             } else {
                                 Text("The servers for new connections of your current chat profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
@@ -156,7 +156,7 @@ struct OperatorView: View {
                             Text("Use for files")
                                 .foregroundColor(theme.colors.secondary)
                         } footer: {
-                            if let errStr = globalXFTPError(serverErrors) {
+                            if let errStr = globalXFTPServersError(serverErrors) {
                                 ServersErrorView(errStr: errStr)
                             }
                         }
@@ -184,7 +184,7 @@ struct OperatorView: View {
                             Text("Media & file servers")
                                 .foregroundColor(theme.colors.secondary)
                         } footer: {
-                            if let errStr = globalXFTPError(serverErrors) {
+                            if let errStr = globalXFTPServersError(serverErrors) {
                                 ServersErrorView(errStr: errStr)
                             } else {
                                 Text("The servers for new files of your current chat profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
