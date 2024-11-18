@@ -3,7 +3,7 @@
     <string name="server_connected">연결됨</string>
     <string name="server_connecting">연결 중</string>
     <string name="connect_via_group_link">그룹 링크를 통해 연결하시겠습니까\?</string>
-    <string name="connect_via_invitation_link">초대 링크로 연결하시겠습니까\?</string>
+    <string name="connect_via_invitation_link">일회용 링크로 연결하시겠습니까?</string>
     <string name="display_name_connection_established">연결 수립됨</string>
     <string name="connection_timeout">연결 시간 초과</string>
     <string name="cannot_receive_file">파일을 받을 수 없음</string>
@@ -12,7 +12,7 @@
     <string name="connection_error_auth">연결 오류(인증)</string>
     <string name="smp_server_test_create_queue">대기열 만들기</string>
     <string name="database_initialization_error_title">데이터베이스를 초기화할 수 없음</string>
-    <string name="notifications_mode_service_desc">백그라운드 서비스가 항상 실행 됩니다. - 메시지를 받는 즉시 알림이 표시됩니다.</string>
+    <string name="notifications_mode_service_desc">백그라운드 서비스가 항상 실행됨 – 메시지를 받는 즉시 알림이 표시됩니다.</string>
     <string name="notifications_mode_periodic_desc">10분마다 최대 1분간 새 메시지 확인</string>
     <string name="notification_contact_connected">연결됨</string>
     <string name="notification_preview_somebody">숨긴 대화 상대:</string>
@@ -68,7 +68,7 @@
     <string name="callstate_connected">연결됨</string>
     <string name="callstate_connecting">연결 중…</string>
     <string name="create_your_profile">내 프로필 생성</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>배터리에 좋음</b>. 백그라운드 서비스는 10분마다 메시지를 확인합니다. 전화나 긴급 메시지를 놓칠 수 있습니다.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>배터리에 좋음</b>. 앱이 10분마다 메시지를 확인합니다. 전화나 긴급 메시지를 놓칠 수 있습니다.</string>
     <string name="call_already_ended">통화가 이미 종료되었습니다!</string>
     <string name="always_use_relay">항상 릴레이 사용</string>
     <string name="icon_descr_audio_call">음성 통화</string>
@@ -118,7 +118,7 @@
     <string name="allow_your_contacts_irreversibly_delete">대화 상대가 전송한 메시지 영구 삭제를 허용합니다. (24시간)</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">대화 상대가 사라지는 메시지를 전송할 수 있도록 허용합니다.</string>
     <string name="allow_your_contacts_to_send_voice_messages">대화 상대의 음성 메시지 전송을 허용합니다.</string>
-    <string name="both_you_and_your_contacts_can_delete">당신과 대화 상대 모두 메시지를 영구 삭제할 수 있습니다.</string>
+    <string name="both_you_and_your_contacts_can_delete">당신과 대화 상대 모두 메시지를 영구 삭제할 수 있습니다. (24 시간)</string>
     <string name="both_you_and_your_contact_can_send_voice">당신과 대화 상대 모두 음성 메시지를 보낼 수 있습니다.</string>
     <string name="contacts_can_mark_messages_for_deletion">상대가 메시지에 삭제 표시를 할 수 있습니다. 그러나 삭제 표시된 메시지 내용은 여전히 볼 수 있습니다.</string>
     <string name="allow_to_delete_messages">보낸 메시지 영구 삭제를 허용합니다. (24시간)</string>
@@ -153,8 +153,8 @@
     <string name="allow_irreversible_message_deletion_only_if">대화 상대가 허용하는 경우에만 영구적인 메시지 삭제를 허용합니다. (24시간)</string>
     <string name="all_your_contacts_will_remain_connected">모든 대화 상대가 연결된 상태로 유지됩니다.</string>
     <string name="notifications_mode_service">항상 켜기</string>
-    <string name="keychain_is_storing_securely">안드로이드 암호 저장소는 암호를 안전하게 저장하는 데 사용됩니다 - 알림 서비스가 작동할 수 있습니다.</string>
-    <string name="keychain_allows_to_receive_ntfs">앱을 다시 시작하거나 암호를 변경한 후 안드로이드 암호 저장소를 사용하여 암호를 안전하게 저장합니다. - 알림을 받을 수 있습니다.</string>
+    <string name="keychain_is_storing_securely">Android 암호 저장소는 암호를 안전하게 저장하는 데 사용됩니다 - 알림 서비스가 작동할 수 있습니다.</string>
+    <string name="keychain_allows_to_receive_ntfs">앱을 다시 시작하거나 암호를 변경한 후 Android 암호 저장소를 사용하여 암호를 안전하게 저장합니다. - 알림을 받을 수 있습니다.</string>
     <string name="notifications_mode_off_desc">앱이 실행 중일 때만 알림을 받을 수 있으며, 백그라운드 서비스는 시작되지 않습니다.</string>
     <string name="full_backup">앱 데이터 백업</string>
     <string name="settings_section_title_icon">앱 아이콘</string>
@@ -169,7 +169,7 @@
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>설정을 통해 비활성화할 수 있습니다.</b> – 앱이 실행되는 동안 알림이 표시됩니다.]]></string>
     <string name="both_you_and_your_contact_can_send_disappearing">당신과 대화 상대 모두 사라지는 메시지를 보낼 수 있습니다.</string>
     <string name="cannot_access_keychain">데이터베이스 암호를 저장하고 있는 암호 저장소에 접근할 수 없습니다.</string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>배터리 더욱 사용</b>! 백그라운드 서비스가 항상 실행됩니다. - 메시지를 수신되는 즉시 알림이 표시됩니다.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><b>배터리를 더욱 사용함</b>! 앱이 항상 백그라운드에서 실행됩니다. - 수신되는 즉시 알림이 표시됩니다.</string>
     <string name="callstatus_ended">통화 종료됨 %1$s</string>
     <string name="callstatus_calling">전화 중…</string>
     <string name="icon_descr_call_progress">전화 연결 중</string>
@@ -193,7 +193,7 @@
     <string name="group_member_status_introduced">연결 중 (도입)</string>
     <string name="connection_error">연결 오류</string>
     <string name="connection_local_display_name">연결 %1$d</string>
-    <string name="connect_via_contact_link">링크를 통해 연결하시겠습니까\?</string>
+    <string name="connect_via_contact_link">주소를 통해 연결하시겠습니까?</string>
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">대화 상대와 모든 메시지가 삭제됩니다. - 삭제 후 되돌릴 수 없습니다!</string>
     <string name="status_contact_has_e2e_encryption">대화 상대와 종단간 암호화됨</string>
     <string name="alert_title_contact_connection_pending">대화 상대와 아직 연결되지 않았습니다!</string>
@@ -275,7 +275,7 @@
     <string name="add_contact_or_create_group">새로운 채팅 시작</string>
     <string name="display_name__field">표시 이름</string>
     <string name="display_name_cannot_contain_whitespace">표시 이름에는 공백문자가 쓰일 수 없어요.</string>
-    <string name="display_name">표시 이름</string>
+    <string name="display_name">이름을 입력:</string>
     <string name="encrypted_audio_call">종단간 암호화된 음성 전화</string>
     <string name="encrypted_video_call">종단간 암호화된 영상 전화</string>
     <string name="no_call_on_lock_screen">비활성화</string>
@@ -374,12 +374,12 @@
     <string name="failed_to_create_user_title">프로필 생성 오류!</string>
     <string name="description_via_group_link_incognito">그룹 링크로 익명 채팅</string>
     <string name="description_via_group_link">그룹 링크로 채팅</string>
-    <string name="description_via_one_time_link">일회용 링크로 채팅</string>
+    <string name="description_via_one_time_link">일회용 링크를 통해</string>
     <string name="description_you_shared_one_time_link_incognito">일회용 익명 링크를 공유했어요.</string>
     <string name="description_you_shared_one_time_link">일회용 링크를 공유했어요.</string>
     <string name="description_via_contact_address_link_incognito">상대의 연락처 링크로 익명 연결</string>
     <string name="description_via_contact_address_link">상대의 연락처 링크로 연결</string>
-    <string name="description_via_one_time_link_incognito">일회용 연락처로 익명 연결</string>
+    <string name="description_via_one_time_link_incognito">일회용 링크로 익명 연결</string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">SMP 서버 주소가 올바른 형식이고 줄로 구분되어 있고 중복이 없는지 확인해 주세요.</string>
     <string name="error_saving_smp_servers">SMP 서버 저장 오류</string>
     <string name="error_setting_network_config">네트워크 설정 업데이트 오류</string>
@@ -487,9 +487,9 @@
     <string name="group_invitation_item_description">그룹으로 초대 %1$s</string>
     <string name="group_link">그룹 링크</string>
     <string name="group_welcome_title">환영 메시지</string>
-    <string name="group_display_name_field">보여지는 그룹 이름</string>
+    <string name="group_display_name_field">그룹 이름 입력:</string>
     <string name="group_full_name_field">그룹 이름 :</string>
-    <string name="group_is_decentralized">그룹은 완전히 탈중앙화되어 있으며 구성원만 그룹을 볼 수 있어요.</string>
+    <string name="group_is_decentralized">완전히 탈중앙화됨 – 멤버만 볼 수 있습니다.</string>
     <string name="group_main_profile_sent">프로필이 그룹 구성원에게 전송될 거예요.</string>
     <string name="group_profile_is_stored_on_members_devices">그룹 프로필은 서버가 아닌 멤버들의 기기에 저장되어요.</string>
     <string name="group_preferences">그룹 설정</string>
@@ -721,7 +721,7 @@
     <string name="privacy_redefined">프라이버시의 재정의</string>
     <string name="opensource_protocol_and_code_anybody_can_run_servers">누구나 서버를 호스팅할 수 있습니다.</string>
     <string name="onboarding_notifications_mode_off">앱이 실행 중일 때</string>
-    <string name="read_more_in_github_with_link"><![CDATA[ㅍ자세한 내용은 \u0020<font color="#0088ff">GitHub</font> 에서 확인해 주세요.]]></string>
+    <string name="read_more_in_github_with_link">자세한 내용은 &lt;font color=#0088ff&gt;GitHub&lt;/font&gt; 에서 확인해 주세요.</string>
     <string name="relay_server_protects_ip">릴레이 서버는 IP 주소를 숨겨주지만, 통화 시간을 관찰 할 수 있어요.</string>
     <string name="rcv_group_event_invited_via_your_group_link">그룹 링크로 초대</string>
     <string name="onboarding_notifications_mode_subtitle">설정을 통해 나중에 변경할 수 있어요.</string>
@@ -969,7 +969,7 @@
     <string name="conn_event_ratchet_sync_started">암호화 동의 중…</string>
     <string name="v5_2_more_things">몇 가지 더</string>
     <string name="turn_off_battery_optimization_button">허용</string>
-    <string name="forward_files_messages_deleted_after_selection_title">%1$s개의 메시지가 전달되지 않았습니다.</string>
+    <string name="forward_files_messages_deleted_after_selection_title">%1$s개의 메시지가 전송되지 않았습니다.</string>
     <string name="forward_files_in_progress_desc">%1$d개의 파일이 아직 다운로드 중입니다.</string>
     <string name="forward_files_missing_desc">%1$d개 파일이 삭제되었습니다.</string>
     <string name="acknowledged">확인됨</string>
@@ -1109,7 +1109,7 @@
     <string name="v5_3_new_desktop_app_descr">데스크톱 앱에서 새 프로필 생성합니다. 💻</string>
     <string name="error_alert_title">오류</string>
     <string name="error_aborting_address_change">주소 변경을 중단하는 중 오류</string>
-    <string name="error_forwarding_messages">메시지를 전달하는 동안 오류</string>
+    <string name="error_forwarding_messages">메시지를 전송하는 동안 오류</string>
     <string name="delete_members_messages__question">멤버의 %d 메시지를 삭제하시겠습니까?</string>
     <string name="file_error_no_file">파일을 찾을 수 없음 - 파일이 삭제되었거나 취소되었을 가능성이 큽니다.</string>
     <string name="info_view_call_button">통화</string>
@@ -1297,4 +1297,42 @@
     <string name="info_row_debug_delivery">전송 디버그</string>
     <string name="files_are_prohibited_in_group">파일 및 미디어는 이 그룹에서 금지됩니다.</string>
     <string name="enter_this_device_name">이 장치의 이름을 입력하십시오…</string>
+    <string name="found_desktop">데스크톱을 찾음</string>
+    <string name="snd_error_proxy_relay">전달 서버: %1$s\n대상 서버 오류: %2$s</string>
+    <string name="snd_error_proxy">전달 서버: %1$s\n오류: %2$s</string>
+    <string name="forward_alert_title_messages_to_forward">%1$s 메시지를 전송하시겠습니까?</string>
+    <string name="forward_alert_forward_messages_without_files">파일 없이 메시지를 전달하시겠습니까?</string>
+    <string name="compose_forward_messages_n">%1$s 메시지 전송 중</string>
+    <string name="forward_multiple">메시지 전송…</string>
+    <string name="permissions_find_in_settings_and_grant">Android 설정에서 이 권한을 찾아 수동으로 허용하십시오.</string>
+    <string name="appearance_font_size">글꼴 크기</string>
+    <string name="wallpaper_preview_hello_bob">안녕하세요!</string>
+    <string name="wallpaper_preview_hello_alice">안녕하세요!</string>
+    <string name="file_error_relay">파일 서버 오류: %1$s</string>
+    <string name="revoke_file__message">파일이 서버에서 삭제됩니다.</string>
+    <string name="proxy_destination_error_failed_to_connect">전달 서버 %1$s가 대상 서버 %2$s에 연결하지 못했습니다. 나중에 시도하십시오.</string>
+    <string name="smp_proxy_error_broker_version">전달 서버 버전이 네트워크 설정과 호환되지 않습니다: %1$s.</string>
+    <string name="smp_proxy_error_broker_host">전달 서버 주소가 네트워크 설정과 호환되지 않습니다: %1$s.</string>
+    <string name="forwarded_chat_item_info_tab">전송됨</string>
+    <string name="forwarded_from_chat_item_info_title">에서 전송됨</string>
+    <string name="share_text_file_status">파일 상태: %s</string>
+    <string name="wallpaper_scale_fit">맞춤</string>
+    <string name="v5_1_message_reactions_descr">드디어, 우리는 그것들을 얻었냈습니다! 🚀</string>
+    <string name="migrate_to_device_file_delete_or_link_invalid">파일이 삭제되었거나 링크가 유효하지 않음</string>
+    <string name="migrate_from_device_finalize_migration">이전 완료</string>
+    <string name="forward_chat_item">전송</string>
+    <string name="forwarded_description">전송됨</string>
+    <string name="forward_message">메시지 전송…</string>
+    <string name="fix_connection_not_supported_by_contact">연락처에서 지원하지 않는 수정</string>
+    <string name="wallpaper_scale_fill">채우기</string>
+    <string name="fix_connection_confirm">수정</string>
+    <string name="fix_connection">연결 수정</string>
+    <string name="fix_connection_question">연결을 수정하시겠습니까?</string>
+    <string name="fix_connection_not_supported_by_group_member">그룹 멤버에서 지원하지 않는 수정</string>
+    <string name="v5_7_forward">메시지 전송 및 저장</string>
+    <string name="v4_6_reduced_battery_usage">배터리 사용량을 더욱 줄임</string>
+    <string name="v6_1_forward_many_messages_descr">한 번에 최대 20개의 메시지를 전달할 수 있습니다.</string>
+    <string name="migrate_to_device_finalize_migration">다른 기기로 이전을 완료합니다.</string>
+    <string name="info_row_file_status">파일 상태</string>
+    <string name="v4_4_french_interface">프랑스어 인터페이스</string>
 </resources>
