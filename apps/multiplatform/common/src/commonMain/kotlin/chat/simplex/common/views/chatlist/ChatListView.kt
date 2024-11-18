@@ -810,7 +810,6 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
     LaunchedEffect(chats.size) {
       if (chats.size >= 3) {
         appPrefs.oneHandUICardShown.set(true)
-        appPrefs.addressCreationCardShown.set(true)
       }
     }
   }
