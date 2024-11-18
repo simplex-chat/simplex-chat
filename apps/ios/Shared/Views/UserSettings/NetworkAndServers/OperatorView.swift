@@ -253,7 +253,7 @@ struct OperatorView: View {
     private func infoViewLink() -> some View {
         NavigationLink() {
             OperatorInfoView(serverOperator: userServers[operatorIndex].operator_)
-                .navigationBarTitle("Operator information")
+                .navigationBarTitle("Network operator")
                 .modifier(ThemedBackground(grouped: true))
                 .navigationBarTitleDisplayMode(.large)
         } label: {
@@ -310,15 +310,31 @@ func conditionsTimestamp(_ date: Date) -> String {
 
 struct OperatorInfoView: View {
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.colorScheme) var colorScheme: ColorScheme
     var serverOperator: ServerOperator
 
     var body: some View {
         VStack {
             List {
-                Section(header: Text("Description").foregroundColor(theme.colors.secondary)) {
-                    Text(serverOperator.info.description)
+                Section {
+                    VStack(alignment: .leading) {
+                        Image(serverOperator.largeLogo(colorScheme))
+                            .resizable()
+                            .scaledToFit()
+                            .frame(height: 48)
+                        if let legalName = serverOperator.legalName {
+                            Text(legalName)
+                        }
+                    }
                 }
-                Section(header: Text("Website").foregroundColor(theme.colors.secondary)) {
+                Section {
+                    VStack(alignment: .leading, spacing: 12) {
+                        ForEach(serverOperator.info.description, id: \.self) { d in
+                            Text(d)
+                        }
+                    }
+                }
+                Section {
                     Link("\(serverOperator.info.website)", destination: URL(string: serverOperator.info.website)!)
                 }
             }
@@ -481,7 +497,7 @@ struct SingleOperatorUsageConditionsView: View {
         } label: {
             Text("Accept conditions")
         }
-        .buttonStyle(OnboardingButtonStyle(isDisabled: false))
+        .buttonStyle(OnboardingButtonStyle())
     }
 
     func acceptForOperators(_ operatorIds: [Int64], _ operatorIndexToEnable: Int) {

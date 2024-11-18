@@ -11,7 +11,7 @@ import SimpleXChat
 
 struct OnboardingButtonStyle: ButtonStyle {
     @EnvironmentObject var theme: AppTheme
-    var isDisabled: Bool
+    var isDisabled: Bool = false
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -283,7 +283,7 @@ struct ChooseServerOperators: View {
         } label: {
             Text("Accept conditions")
         }
-        .buttonStyle(OnboardingButtonStyle(isDisabled: false))
+        .buttonStyle(OnboardingButtonStyle())
     }
 
     private func enabledOperators(_ operators: [ServerOperator]) -> [ServerOperator]? {

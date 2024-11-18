@@ -1211,7 +1211,7 @@ public enum OperatorTag: String, Codable {
 }
 
 public struct ServerOperatorInfo: Decodable {
-    public var description: String
+    public var description: [String]
     public var website: String
     public var logo: String
     public var largeLogo: String
@@ -1221,7 +1221,7 @@ public struct ServerOperatorInfo: Decodable {
 
 public let operatorsInfo: Dictionary<OperatorTag, ServerOperatorInfo> = [
     .simplex: ServerOperatorInfo(
-        description: "SimpleX Chat preset servers",
+        description: ["SimpleX Chat preset servers"],
         website: "https://simplex.chat",
         logo: "decentralized",
         largeLogo: "logo",
@@ -1229,7 +1229,10 @@ public let operatorsInfo: Dictionary<OperatorTag, ServerOperatorInfo> = [
         largeLogoDarkMode: "logo-light"
     ),
     .flux: ServerOperatorInfo(
-        description: "Flux is the largest decentralized cloud infrastructure, leveraging a global network of user-operated computational nodes. Flux offers a powerful, scalable, and affordable platform designed to support individuals, businesses, and cutting-edge technologies like AI. With high uptime and worldwide distribution, Flux ensures reliable, accessible cloud computing for all.",
+        description: [
+            "Flux is the largest decentralized cloud infrastructure, leveraging a global network of user-operated computational nodes.",
+            "Flux offers a powerful, scalable, and affordable platform designed to support individuals, businesses, and cutting-edge technologies like AI. With high uptime and worldwide distribution, Flux ensures reliable, accessible cloud computing for all."
+        ],
         website: "https://runonflux.com",
         logo: "flux_logo_symbol",
         largeLogo: "flux_logo",
@@ -1237,7 +1240,7 @@ public let operatorsInfo: Dictionary<OperatorTag, ServerOperatorInfo> = [
         largeLogoDarkMode: "flux_logo-light"
     ),
     .xyz: ServerOperatorInfo(
-        description: "XYZ servers",
+        description: ["XYZ servers"],
         website: "XYZ website",
         logo: "shield",
         largeLogo: "logo",
@@ -1245,7 +1248,7 @@ public let operatorsInfo: Dictionary<OperatorTag, ServerOperatorInfo> = [
         largeLogoDarkMode: "logo-light"
     ),
     .demo: ServerOperatorInfo(
-        description: "Demo operator",
+        description: ["Demo operator"],
         website: "Demo website",
         logo: "decentralized",
         largeLogo: "logo",
@@ -1344,8 +1347,8 @@ public struct ServerOperator: Identifiable, Equatable, Codable {
         }
     }
 
-    private static let dummyOperatorInfo = ServerOperatorInfo(
-        description: "Default",
+    public static let dummyOperatorInfo = ServerOperatorInfo(
+        description: ["Default"],
         website: "Default",
         logo: "decentralized",
         largeLogo: "logo",

@@ -274,7 +274,7 @@ struct UsageConditionsView: View {
         } label: {
             Text("Accept conditions")
         }
-        .buttonStyle(OnboardingButtonStyle(isDisabled: false))
+        .buttonStyle(OnboardingButtonStyle())
     }
 
     func acceptForOperators(_ operatorIds: [Int64]) {
