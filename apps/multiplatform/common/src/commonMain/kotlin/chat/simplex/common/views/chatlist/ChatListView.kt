@@ -186,9 +186,7 @@ private fun ChatListCard(
   content: @Composable BoxScope.() -> Unit
 ) {
   Column(
-    modifier = Modifier
-      .padding(16.dp)
-      .clip(RoundedCornerShape(18.dp))
+    modifier = Modifier.clip(RoundedCornerShape(18.dp))
   ) {
     Box(
       modifier = Modifier
@@ -788,14 +786,9 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         }
       }
     }
-    if (!oneHandUICardShown.value && chats.size > 1) {
+    if ((!oneHandUICardShown.value || !addressCreationCardShown.value) && chats.size > 1) {
       item {
-        ToggleChatListCard()
-      }
-    }
-    if (!addressCreationCardShown.value && chats.size > 1) {
-      item {
-        AddressCreationCard()
+        ChatListFeatureCards()
       }
     }
     itemsIndexed(chats, key = { _, chat -> chat.remoteHostId to chat.id }) { index, chat ->
@@ -804,14 +797,9 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
       } }
       ChatListNavLinkView(chat, nextChatSelected)
     }
-    if (!oneHandUICardShown.value && chats.size <= 1) {
+    if ((!oneHandUICardShown.value || !addressCreationCardShown.value) && chats.size <= 1) {
       item {
-        ToggleChatListCard()
-      }
-    }
-    if (!addressCreationCardShown.value && chats.size <= 1) {
-      item {
-        AddressCreationCard()
+        ChatListFeatureCards()
       }
     }
     if (appPlatform.isAndroid) {
@@ -842,6 +830,25 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
       if (chatModel.userAddress.value != null) {
         appPrefs.addressCreationCardShown.set(true)
       }
+    }
+  }
+}
+
+@Composable
+private fun ChatListFeatureCards() {
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val oneHandUICardShown = remember { appPrefs.oneHandUICardShown.state }
+  val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
+
+  Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    if (!oneHandUICardShown.value && !oneHandUI.value) {
+      ToggleChatListCard()
+    }
+    if (!addressCreationCardShown.value) {
+      AddressCreationCard()
+    }
+    if (!oneHandUICardShown.value && oneHandUI.value) {
+      ToggleChatListCard()
     }
   }
 }
