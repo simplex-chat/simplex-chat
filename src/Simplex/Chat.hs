@@ -2942,7 +2942,7 @@ processChatCommand' vr = \case
         updateOperator :: Maybe ServerOperator -> Maybe ServerOperator
         updateOperator Nothing = Nothing
         updateOperator (Just op) =
-          let op' = listToMaybe (mapMaybe matchingOperator userServers)
+          let op' = listToMaybe $ mapMaybe matchingOperator userServers
            in Just $ fromMaybe op op'
           where
             matchingOperator :: u -> Maybe ServerOperator
