@@ -781,18 +781,13 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         }
       }
     }
-    if ((!oneHandUICardShown.value || !addressCreationCardShown.value) && chats.size > 1) {
-      item {
-        ChatListFeatureCards()
-      }
-    }
     itemsIndexed(chats, key = { _, chat -> chat.remoteHostId to chat.id }) { index, chat ->
       val nextChatSelected = remember(chat.id, chats) { derivedStateOf {
         chatModel.chatId.value != null && chats.getOrNull(index + 1)?.id == chatModel.chatId.value
       } }
       ChatListNavLinkView(chat, nextChatSelected)
     }
-    if ((!oneHandUICardShown.value || !addressCreationCardShown.value) && chats.size <= 1) {
+    if (!oneHandUICardShown.value || !addressCreationCardShown.value) {
       item {
         ChatListFeatureCards()
       }
