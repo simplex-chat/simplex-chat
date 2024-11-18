@@ -19,13 +19,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.math.abs
 import kotlin.math.min
 
-data class Sections (
-  val sections: List<MergedItem>,
-  val anchoredRanges: List<AnchoredRange>,
+data class MergedItems (
+  val items: List<MergedItem>,
+  val ranges: List<SplitRange>,
   // chat item id, index in list
-  val indexInParentItems: Map<Long, Int>,
+  val indexInParentItems: Map<Long, Int>, // remove
   // chat item id, index in reversedChatItems
-  val indexInReversedItems: Map<Long, Int>,
+  val indexInReversedItems: Map<Long, Int>, // remove
   // parentIndex (in LazyColumn), index in reversed for the newest item (if collapsed)
   val newestItemIndexInReversed: Map<Int, Int>,
   // parentIndex (in LazyColumn), index in reversed for the oldest item (if collapsed)
@@ -36,15 +36,15 @@ data class Sections (
   val oldestListItemInReversed: Map<Int, ListItem>
 ) {
   fun lastIndexInParentItems(): Int {
-    val last = sections.lastOrNull() ?: return -1
+    val last = items.lastOrNull() ?: return -1
     return when (last) {
       is MergedItem.Single -> indexInParentItems[last.item.item.id] ?: -1
-      is MergedItem.Merged -> indexInParentItems[last.items.last().item.id] ?: -1
+      is MergedItem.Grouped -> indexInParentItems[last.items.last().item.id] ?: -1
     }
   }
 
   /** Returns groups mapping for easy checking the structure */
-  fun mappingToString(): String = sections.mapIndexed { index, g ->
+  fun mappingToString(): String = items.mapIndexed { index, g ->
     when (g) {
       is MergedItem.Single ->
         "\nstartIndexInParentItems $index, startIndexInReversedItems ${g.startIndexInReversedItems}, " +
@@ -52,7 +52,7 @@ data class Sections (
             "mergeCategory null " +
             "\nunreadBefore ${g.item.unreadBefore}"
 
-      is MergedItem.Merged ->
+      is MergedItem.Grouped ->
         "\nstartIndexInParentItems $index, startIndexInReversedItems ${g.startIndexInReversedItems}, " +
             "revealed ${g.revealed.value}, " +
             "mergeCategory ${g.items[0].item.mergeCategory} " +
@@ -64,13 +64,13 @@ data class Sections (
 
   companion object {
     fun create(items: List<ChatItem>, unreadCount: State<Int>, revealedItems: Set<Long>, chatState: ActiveChatState): Sections {
-      if (items.isEmpty()) return Sections(emptyList(), emptyList(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), emptyMap())
+      if (items.isEmpty()) return MergedItems(emptyList(), emptyList(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), emptyMap())
 
       val unreadAnchorItemId = chatState.unreadAnchorItemId
       val itemAnchors = chatState.anchors.value
       val groups = ArrayList<MergedItem>()
       // Indexes of anchors here will be related to reversedChatItems, not chatModel.chatItems
-      val anchoredRanges = ArrayList<AnchoredRange>()
+      val anchoredRanges = ArrayList<SplitRange>()
       val indexInParentItems = mutableMapOf<Long, Int>()
       val indexInReversedItems = mutableMapOf<Long, Int>()
       val newestItemIndexInReversed = mutableMapOf<Int, Int>()
@@ -98,7 +98,7 @@ data class Sections (
         }
         if (item.isRcvNew) unreadBefore--
 
-        if (recent is MergedItem.Merged && recent.mergeCategory == category && !recent.revealed.value && !itemIsAnchor) {
+        if (recent is MergedItem.Grouped && recent.mergeCategory == category && !recent.revealed.value && !itemIsAnchor) {
 //          if (recent.revealed.value) {
 //            val prev = items.getOrNull(index - 1)
 //            itemSeparation = getItemSeparation(item, prev)
@@ -144,8 +144,8 @@ data class Sections (
             } else {
               lastRangeForMergedItems = MutableStateFlow(index .. index)
             }
-            MergedItem.Merged(
-              range = lastRangeForMergedItems,
+            MergedItem.Grouped(
+              reversedListRange = lastRangeForMergedItems,
               mergeCategory = item.mergeCategory,
               items = arrayListOf(listItem),
               revealed = mutableStateOf(revealed),
@@ -174,20 +174,20 @@ data class Sections (
           // found item that is considered as an anchor
           if (unclosedAnchorIndex != null && unclosedAnchorItemId != null && unclosedAnchorIndexInParent != null) {
             // it was at least second anchor in the list
-            anchoredRanges.add(AnchoredRange(unclosedAnchorItemId, unclosedAnchorIndex until index, unclosedAnchorIndexInParent until visibleItemIndexInParent))
+            anchoredRanges.add(SplitRange(unclosedAnchorItemId, unclosedAnchorIndex until index, unclosedAnchorIndexInParent until visibleItemIndexInParent))
           }
           unclosedAnchorIndex = index
           unclosedAnchorIndexInParent = visibleItemIndexInParent
           unclosedAnchorItemId = item.id
         } else if (index + 1 == items.size && unclosedAnchorIndex != null && unclosedAnchorItemId != null && unclosedAnchorIndexInParent != null) {
           // just one anchor for the whole list, there will be no more, it's the end
-          anchoredRanges.add(AnchoredRange(unclosedAnchorItemId, unclosedAnchorIndex .. index, unclosedAnchorIndexInParent .. visibleItemIndexInParent))
+          anchoredRanges.add(SplitRange(unclosedAnchorItemId, unclosedAnchorIndex .. index, unclosedAnchorIndexInParent .. visibleItemIndexInParent))
         }
         indexInParentItems[item.id] = visibleItemIndexInParent
         indexInReversedItems[item.id] = index
         index++
       }
-      return Sections(
+      return MergedItems(
         groups,
         anchoredRanges,
         indexInParentItems,
@@ -215,12 +215,12 @@ sealed class MergedItem {
   ): MergedItem()
 
   @Stable
-  data class Merged (
+  data class Grouped (
     val items: ArrayList<ListItem>,
     val revealed: MutableState<Boolean>,
-    val range: MutableStateFlow<IntRange>,
+    val reversedListRange: MutableStateFlow<IntRange>,
     val mergeCategory: CIMergeCategory?,
-    val showAvatar: MutableSet<Long>,
+    val showAvatar: MutableSet<Long>, // ?
     val unreadIds: MutableSet<Long>,
     override val startIndexInReversedItems: Int,
   ): MergedItem() {
@@ -242,25 +242,27 @@ sealed class MergedItem {
   }
 }
 
-data class AnchoredRange(
+data class SplitRange(
   /** itemId that was the last item in received list (ordered from old to new items) loaded using [ChatPagination.Initial], [ChatPagination.Around].
    * It changes over time when new items are loaded.
    * see [apiLoadMessages] */
-  val itemId: Long,
-  /** range of indexes inside reversedChatItems where the first element is the anchor (it's index is [indexRange.first])
+  val itemId: Long, // remove
+  /** range of indexes inside reversedChatItems where the first element is the anchor (it's index is [reversedListRange.first])
    * so [0, 1, 2, -100-, 101] if the 3 is an anchor, AnchoredRange(itemId = 100, indexRange = 3 .. 4) will be this AnchoredRange instance (3, 4 indexes of the anchoredRange with the anchor itself at index 3)
    * */
-  val indexRange: IntRange,
+  val reversedListRange: IntRange,
   /** range of indexes inside LazyColumn (taking revealed/hidden items into account) where the first element is the anchor (it's index is [indexRangeInParentItems.first]) */
   val indexRangeInParentItems: IntRange
 )
 
 data class ListItem(
   val item: ChatItem,
-  val separation: ItemSeparation,
-  val prevItemSeparationLargeGap: Boolean,
+  // nextItem
+  // prevItem
+  val separation: ItemSeparation, // remove
+  val prevItemSeparationLargeGap: Boolean, // remove
   // how many unread items before (older than) this one (excluding this one)
-  val unreadBefore: Int
+  val unreadBefore: Int // ?
 )
 
 data class ActiveChatState (
@@ -309,7 +311,7 @@ data class ActiveChatState (
   }
 }
 
-fun visibleItemIndexesNonReversed(groups: State<Sections>, listState: LazyListState): IntRange {
+fun visibleItemIndexesNonReversed(groups: State<MergedItems>, listState: LazyListState): IntRange {
   val zero = 0 .. 0
   if (listState.layoutInfo.totalItemsCount == 0) return zero
   val newest = groups.value.newestItemIndexInReversed[listState.firstVisibleItemIndex]
