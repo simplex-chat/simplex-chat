@@ -38,7 +38,7 @@ struct HowItWorks: View {
 
             if onboarding {
                 OnboardingActionButton()
-                    .padding(.bottom, 8)
+                    .padding(.bottom)
             }
         }
         .lineLimit(10)

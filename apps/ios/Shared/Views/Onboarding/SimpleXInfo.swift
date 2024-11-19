@@ -18,7 +18,7 @@ struct SimpleXInfo: View {
     var body: some View {
         GeometryReader { g in
             ScrollView {
-                VStack(alignment: .leading) {
+                VStack(alignment: .leading, spacing: 20) {
                     Image(colorScheme == .light ? "logo" : "logo-light")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
@@ -42,9 +42,9 @@ struct SimpleXInfo: View {
                     }
 
                     Spacer()
+                    
                     if onboarding {
                         OnboardingActionButton()
-                        Spacer()
 
                         Button {
                             m.migrationState = .pasteOrScanLink
@@ -52,7 +52,6 @@ struct SimpleXInfo: View {
                             Label("Migrate from another device", systemImage: "tray.and.arrow.down")
                                 .font(.subheadline)
                         }
-                        .padding(.bottom, 8)
                         .frame(maxWidth: .infinity)
                     }
 
@@ -62,9 +61,8 @@ struct SimpleXInfo: View {
                         Label("How it works", systemImage: "info.circle")
                             .font(.subheadline)
                     }
-                    .padding(.bottom, 8)
                     .frame(maxWidth: .infinity)
-
+                    .padding(.bottom)
                 }
                 .frame(minHeight: g.size.height)
             }
@@ -112,7 +110,6 @@ struct SimpleXInfo: View {
 
 struct OnboardingActionButton: View {
     @EnvironmentObject var m: ChatModel
-    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         if m.currentUser == nil {
@@ -129,13 +126,9 @@ struct OnboardingActionButton: View {
                 m.onboardingStage = onboarding
             }
         } label: {
-            HStack {
-                Text(label).font(.title2)
-                Image(systemName: "greaterthan")
-            }
+            Text(label).font(.title2)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.bottom)
+        .buttonStyle(OnboardingButtonStyle(isDisabled: false))
     }
 
     private func actionButton(_ label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
@@ -144,13 +137,9 @@ struct OnboardingActionButton: View {
                 action()
             }
         } label: {
-            HStack {
-                Text(label).font(.title2)
-                Image(systemName: "greaterthan")
-            }
+            Text(label).font(.title2)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.bottom)
+        .buttonStyle(OnboardingButtonStyle(isDisabled: false))
     }
 }
 
