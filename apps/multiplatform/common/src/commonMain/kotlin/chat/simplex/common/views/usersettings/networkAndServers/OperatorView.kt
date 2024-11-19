@@ -7,36 +7,46 @@ import SectionView
 import TextIconSpaced
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.text.intl.Locale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.getUsageConditions
-import chat.simplex.common.platform.ColumnWithScrollBar
-import chat.simplex.common.platform.chatModel
+import chat.simplex.common.platform.*
+import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.launch
-import kotlinx.datetime.*
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 
 @Composable
-fun ModalData.OperatorView(currUserServers: MutableState<List<UserOperatorServers>>, userServers: MutableState<List<UserOperatorServers>>, operatorIndex: Int, rhId: Long?) {
+fun ModalData.OperatorView(
+  currUserServers: MutableState<List<UserOperatorServers>>,
+  userServers: MutableState<List<UserOperatorServers>>,
+  serverErrors: MutableState<List<UserServersError>>,
+  operatorIndex: Int,
+  rhId: Long?
+) {
   val testing = remember { mutableStateOf(false) }
   val operator = remember { userServers.value[operatorIndex].operator_ }
 
   ColumnWithScrollBar(Modifier.alpha(if (testing.value) 0.6f else 1f)) {
     AppBarTitle(String.format(stringResource(MR.strings.operator_servers_title), operator.tradeName))
-    OperatorViewLayout(currUserServers, userServers, operatorIndex, rhId)
+    OperatorViewLayout(currUserServers, userServers, serverErrors, operatorIndex, rhId)
     if (testing.value) {
       DefaultProgressView(null)
     }
@@ -44,7 +54,13 @@ fun ModalData.OperatorView(currUserServers: MutableState<List<UserOperatorServer
 }
 
 @Composable
-fun OperatorViewLayout(currUserServers: MutableState<List<UserOperatorServers>>, userServers: MutableState<List<UserOperatorServers>>, operatorIndex: Int, rhId: Long?) {
+fun OperatorViewLayout(
+  currUserServers: MutableState<List<UserOperatorServers>>,
+  userServers: MutableState<List<UserOperatorServers>>,
+  serverErrors: MutableState<List<UserServersError>>,
+  operatorIndex: Int,
+  rhId: Long?
+) {
   val operator = remember { userServers.value[operatorIndex].operator_ }
 
   Column {
@@ -61,7 +77,7 @@ fun OperatorViewLayout(currUserServers: MutableState<List<UserOperatorServers>>,
         TextIconSpaced()
         Text(operator.tradeName, color = MaterialTheme.colors.onBackground)
       }
-      UseOperatorToggle(currUserServers = currUserServers, userServers = userServers, operatorIndex = operatorIndex, rhId = rhId)
+      UseOperatorToggle(currUserServers = currUserServers, userServers = userServers, serverErrors = serverErrors, operatorIndex = operatorIndex, rhId = rhId)
     }
     if (operator.enabled) {
       if (userServers.value[operatorIndex].smpServers.filter { !it.deleted }.isNotEmpty()) {
@@ -96,6 +112,7 @@ private fun OperatorInfoView(serverOperator: ServerOperator) {
 private fun UseOperatorToggle(
   currUserServers: MutableState<List<UserOperatorServers>>,
   userServers: MutableState<List<UserOperatorServers>>,
+  serverErrors: MutableState<List<UserServersError>>,
   operatorIndex: Int,
   rhId: Long?
 ) {
@@ -111,22 +128,21 @@ private fun UseOperatorToggle(
       checked = operator.enabled,
       onCheckedChange = { enabled ->
         if (enabled) {
-          when (operator.conditionsAcceptance) {
+          when (val conditionsAcceptance = operator.conditionsAcceptance) {
             is ConditionsAcceptance.Accepted -> {
               userServers.value[operatorIndex].operator_.enabled = true
             }
 
             is ConditionsAcceptance.Required -> {
-              if (operator.conditionsAcceptance.deadline == null) {
-                val deadline = operator.conditionsAcceptance.deadline
-                // show conditions modal
-
-                ModalManager.start.showModalCloseable { _ ->
+              if (conditionsAcceptance.deadline == null) {
+                ModalManager.start.showModalCloseable { close ->
                   SingleOperatorUsageConditionsView(
                     currUserServers = currUserServers,
                     userServers = userServers,
+                    serverErrors = serverErrors,
                     operatorIndex = operatorIndex,
-                    rhId = rhId
+                    rhId = rhId,
+                    close = close
                   )
                 }
               } else {
@@ -146,31 +162,140 @@ private fun UseOperatorToggle(
 private fun SingleOperatorUsageConditionsView(
   currUserServers: MutableState<List<UserOperatorServers>>,
   userServers: MutableState<List<UserOperatorServers>>,
+  serverErrors: MutableState<List<UserServersError>>,
   operatorIndex: Int,
-  rhId: Long?
+  rhId: Long?,
+  close: () -> Unit
 ) {
   val operatorsWithConditionsAccepted = remember { chatModel.conditions.value.serverOperators.filter { it.conditionsAcceptance.conditionsAccepted } }
   val operator = remember { userServers.value[operatorIndex].operator_ }
+  val scope = rememberCoroutineScope()
 
-  ColumnWithScrollBar {
-    AppBarTitle(String.format(stringResource(MR.strings.use_operator_x), operator.tradeName))
+  suspend fun acceptForOperators(rhId: Long?, operatorIds: List<Long>, operatorIndexToEnable: Int, close: () -> Unit) {
+    try {
+      val conditionsId = chatModel.conditions.value.currentConditions.conditionsId
+      val r = chatController.acceptConditions(rhId, conditionsId, operatorIds) ?: return
 
-    if (operator.conditionsAcceptance is ConditionsAcceptance.Accepted) {
-      // In current UI implementation this branch doesn't get shown - as conditions can't be opened from inside operator once accepted
-      ConditionsTextView(rhId)
-    } else if (operatorsWithConditionsAccepted.isNotEmpty()) {
-      //
-    } else {
-      //
+      chatModel.conditions.value = r
+      updateOperatorsConditionsAcceptance(currUserServers, r.serverOperators)
+      updateOperatorsConditionsAcceptance(userServers, r.serverOperators)
+      userServers.value.getOrNull(operatorIndexToEnable)?.operator?.enabled = true
+      validateServers(rhId, userServers, serverErrors)
+      close()
+    } catch (ex: Exception) {
+      Log.e(TAG, ex.stackTraceToString())
     }
   }
+
+  @Composable
+  fun AcceptConditionsButton(close: () -> Unit) {
+    // Opened operator or Other enabled operators with conditions not accepted
+    val operatorIds = chatModel.conditions.value.serverOperators
+      .filter { it.operatorId == operator.id || (it.enabled && !it.conditionsAcceptance.conditionsAccepted) }
+      .map { it.operatorId }
+
+    Column(Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING * 2), horizontalAlignment = Alignment.CenterHorizontally) {
+      Button(
+        onClick = {
+          scope.launch {
+            acceptForOperators(rhId = rhId, operatorIds = operatorIds, operatorIndexToEnable = operatorIndex, close)
+          }
+        },
+        shape = CircleShape,
+        contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 2, vertical = DEFAULT_PADDING),
+        colors = ButtonDefaults.buttonColors(MaterialTheme.colors.primary, disabledBackgroundColor = MaterialTheme.colors.secondary)
+      ) {
+        Text(stringResource(MR.strings.accept_conditions), style = MaterialTheme.typography.h2, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+      }
+    }
+  }
+
+  @Composable
+  fun UsageConditionsDestinationView(close: () -> Unit) {
+    ColumnWithScrollBar(modifier = Modifier.fillMaxSize()) {
+      NonScrollableTitle(stringResource(MR.strings.operator_conditions_of_use))
+      Column(modifier = Modifier.weight(1f).padding(end = DEFAULT_PADDING, start = DEFAULT_PADDING, bottom = DEFAULT_PADDING, top = DEFAULT_PADDING)) {
+        ConditionsTextView(rhId)
+      }
+      AcceptConditionsButton(close)
+    }
+  }
+
+  @Composable
+  fun UsageConditionsNavLinkButton() {
+    Text(
+      stringResource(MR.strings.view_conditions),
+      color = MaterialTheme.colors.primary,
+      modifier = Modifier.clickable {
+        ModalManager.start.showModalCloseable { close ->
+          UsageConditionsDestinationView(close)
+        }
+      }
+    )
+  }
+
+  ColumnWithScrollBar(modifier = Modifier.fillMaxSize()) {
+    NonScrollableTitle(String.format(stringResource(MR.strings.use_operator_x), operator.tradeName))
+    if (operator.conditionsAcceptance is ConditionsAcceptance.Accepted) {
+      // In current UI implementation this branch doesn't get shown - as conditions can't be opened from inside operator once accepted
+      Column(modifier = Modifier.weight(1f).padding(end = DEFAULT_PADDING, start = DEFAULT_PADDING, bottom = DEFAULT_PADDING)) {
+        ConditionsTextView(rhId)
+      }
+    } else if (operatorsWithConditionsAccepted.isNotEmpty()) {
+      SectionItemView {
+        Text(String.format(stringResource(MR.strings.operator_conditions_accepted_for_some), operatorsWithConditionsAccepted.joinToString(", ") { it.legalName_ }))
+      }
+      SectionItemView {
+        Text(String.format(stringResource(MR.strings.operator_same_conditions_will_be_applied), operator.legalName_))
+      }
+      ConditionsAppliedToOtherOperatorsText(userServers = userServers.value, operatorIndex = operatorIndex)
+
+      SectionItemView {
+        UsageConditionsNavLinkButton()
+      }
+      Spacer(Modifier.fillMaxWidth().weight(1f))
+      AcceptConditionsButton(close)
+    } else {
+      SectionItemView {
+        Text(String.format(stringResource(MR.strings.operator_in_order_to_use_accept_conditions, operator.legalName_)))
+      }
+      SectionItemView {
+        ConditionsAppliedToOtherOperatorsText(userServers = userServers.value, operatorIndex = operatorIndex)
+      }
+      Column(modifier = Modifier.weight(1f).padding(end = DEFAULT_PADDING, start = DEFAULT_PADDING, bottom = DEFAULT_PADDING)) {
+        ConditionsTextView(rhId)
+      }
+      AcceptConditionsButton(close)
+    }
+  }
+}
+
+@Composable
+private fun NonScrollableTitle(title: String) {
+  val titleColor = MaterialTheme.appColors.title
+  val theme = CurrentColors.collectAsState()
+
+  val brush = if (theme.value.base == DefaultTheme.SIMPLEX)
+    Brush.linearGradient(listOf(titleColor.darker(0.2f), titleColor.lighter(0.35f)), Offset(0f, Float.POSITIVE_INFINITY), Offset(Float.POSITIVE_INFINITY, 0f))
+  else // color is not updated when changing themes if I pass null here
+    Brush.linearGradient(listOf(titleColor, titleColor), Offset(0f, Float.POSITIVE_INFINITY), Offset(Float.POSITIVE_INFINITY, 0f))
+
+  Text(
+    title,
+    Modifier
+      .padding(start = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING),
+    overflow = TextOverflow.Ellipsis,
+    style = MaterialTheme.typography.h1.copy(brush = brush),
+    color = MaterialTheme.colors.primaryVariant,
+    textAlign = TextAlign.Start
+  )
 }
 
 @Composable
 private fun ConditionsTextView(
   rhId: Long?
 ) {
-  val conditionsData = remember { mutableStateOf<Triple<UsageConditionsDetail, String?, CR.UsageConditions?>?>(null) }
+  val conditionsData = remember { mutableStateOf<Triple<UsageConditionsDetail, String?, UsageConditionsDetail?>?>(null) }
   val failedToLoad = remember { mutableStateOf(false) }
   val defaultConditionsLink = "https://github.com/simplex-chat/simplex-chat/blob/stable/PRIVACY.md"
   val scope = rememberCoroutineScope()
@@ -196,21 +321,22 @@ private fun ConditionsTextView(
     val (usageConditions, conditionsText, _) = conditions
 
     if (conditionsText != null) {
-      Box(
-        modifier = Modifier
-          .background(
-            color = MaterialTheme.colors.secondaryVariant,
-            shape = RoundedCornerShape(12.dp)
-          )
-          .padding(8.dp)
-      ) {
-        ColumnWithScrollBar {
+      val scrollState = rememberScrollState()
+        Box(
+          modifier = Modifier
+            .fillMaxSize()
+            .clip(RoundedCornerShape(12.dp))
+            .verticalScroll(scrollState)
+            .background(
+              color =  MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f),
+            )
+            .padding(8.dp)
+        ) {
           Text(
-            text = conditionsText.trim(),
+            text = conditionsText.trimIndent(),
             modifier = Modifier.padding(16.dp)
           )
         }
-      }
     } else {
       val conditionsLink = "https://github.com/simplex-chat/simplex-chat/blob/${usageConditions.conditionsCommit}/PRIVACY.md"
       ConditionsLinkView(conditionsLink)
@@ -224,10 +350,30 @@ private fun ConditionsTextView(
 
 @Composable
 private fun ConditionsLinkView(conditionsLink: String) {
-
   SectionItemView {
     val uriHandler = LocalUriHandler.current
     Text(stringResource(MR.strings.operator_conditions_failed_to_load), color = MaterialTheme.colors.onBackground)
     Text(conditionsLink, color = MaterialTheme.colors.primary, modifier = Modifier.clickable { uriHandler.openUriCatching(conditionsLink) })
+  }
+}
+
+@Composable
+private fun ConditionsAppliedToOtherOperatorsText(userServers: List<UserOperatorServers>, operatorIndex: Int) {
+  val otherOperatorsToApply = remember {
+    derivedStateOf {
+      chatModel.conditions.value.serverOperators.filter {
+        it.enabled &&
+            !it.conditionsAcceptance.conditionsAccepted &&
+            it.operatorId != userServers[operatorIndex].operator_.operatorId
+      }
+    }
+  }
+
+  if (otherOperatorsToApply.value.isNotEmpty()) {
+    SectionItemView {
+      Text(
+        String.format(stringResource(MR.strings.operators_conditions_will_also_apply), otherOperatorsToApply.value.joinToString(", ") { it.legalName_ }),
+      )
+    }
   }
 }

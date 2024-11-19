@@ -1034,7 +1034,7 @@ object ChatController {
     }
   }
 
-  suspend fun getUsageConditions(rh: Long?): Triple<UsageConditionsDetail, String?, CR.UsageConditions?>? {
+  suspend fun getUsageConditions(rh: Long?): Triple<UsageConditionsDetail, String?, UsageConditionsDetail?>? {
     val r = sendCmd(rh, CC.ApiGetUsageConditions())
     return when (r) {
       is CR.UsageConditions -> Triple(r.usageConditions, r.conditionsText, r.acceptedConditions)
@@ -1056,11 +1056,15 @@ object ChatController {
     }
   }
 
-  suspend fun acceptConditions(rh: Long?, conditionsId: Long, operatorIds: List<Long>): CR.ServerOperatorConditions? {
+  suspend fun acceptConditions(rh: Long?, conditionsId: Long, operatorIds: List<Long>): ServerOperatorConditionsDetail? {
     val r = sendCmd(rh, CC.ApiAcceptConditions(conditionsId, operatorIds))
     return when (r) {
-      is CR.ServerOperatorConditions -> r
+      is CR.ServerOperatorConditions -> r.conditions
       else -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.error_accepting_operator_conditions),
+          "${r.responseType}: ${r.details}"
+        )
         Log.e(TAG, "acceptConditions bad response: ${r.responseType} ${r.details}")
         null
       }
@@ -3705,7 +3709,7 @@ data class ServerOperator(
   val tradeName: String,
   val legalName: String?,
   val serverDomains: List<String>,
-  val conditionsAcceptance: ConditionsAcceptance,
+  var conditionsAcceptance: ConditionsAcceptance,
   var enabled: Boolean,
   val smpRoles: ServerRoles,
   val xftpRoles: ServerRoles,
@@ -5336,7 +5340,7 @@ sealed class CR {
   @Serializable @SerialName("serverOperatorConditions") class ServerOperatorConditions(val conditions: ServerOperatorConditionsDetail): CR()
   @Serializable @SerialName("userServers") class UserServers(val user: UserRef, val userServers: List<UserOperatorServers>): CR()
   @Serializable @SerialName("userServersValidation") class UserServersValidation(val user: UserRef, val serverErrors: List<UserServersError>): CR()
-  @Serializable @SerialName("usageConditions") class UsageConditions(val usageConditions: UsageConditionsDetail, val conditionsText: String?, val acceptedConditions: UsageConditions?): CR()
+  @Serializable @SerialName("usageConditions") class UsageConditions(val usageConditions: UsageConditionsDetail, val conditionsText: String?, val acceptedConditions: UsageConditionsDetail?): CR()
   @Serializable @SerialName("chatItemTTL") class ChatItemTTL(val user: UserRef, val chatItemTTL: Long? = null): CR()
   @Serializable @SerialName("networkConfig") class NetworkConfig(val networkConfig: NetCfg): CR()
   @Serializable @SerialName("contactInfo") class ContactInfo(val user: UserRef, val contact: Contact, val connectionStats_: ConnectionStats? = null, val customUserProfile: Profile? = null): CR()

@@ -117,6 +117,7 @@
   <string name="no_media_servers_configured_for_sending">No media &amp; file servers configured for sending.</string>
   <string name="no_media_servers_configured_for_private_routing">No media &amp; file servers configured for private routing.</string>
   <string name="for_chat_profile">For chat profile %s:</string>
+  <string name="error_accepting_operator_conditions">Error accepting conditions</string>
 
   <!-- API Error Responses - SimpleXAPI.kt -->
   <string name="connection_timeout">Connection timeout</string>
@@ -1692,7 +1693,13 @@
   <string name="operator_use_operator_toggle_description">Use operator</string>
   <string name="use_operator_x">Use operator %s</string>
   <string name="operator_conditions_failed_to_load">Current conditions text couldn\'t be loaded, you can review conditions via this link:</string>
-
+  <string name="operator_conditions_accepted_for_some">Conditions are already accepted for following operator(s): %s.</string>
+  <string name="operator_same_conditions_will_be_applied">Same conditions will apply to operator %s.</string>
+  <string name="operators_conditions_will_also_apply">Conditions will also apply for following operator(s) you use: %s.</string>
+  <string name="view_conditions">View conditions</string>
+  <string name="accept_conditions">Accept conditions</string>
+  <string name="operator_conditions_of_use">Conditions of use</string>
+  <string name="operator_in_order_to_use_accept_conditions">In order to use operator %s, accept conditions of use.</string>
 
   <!-- AdvancedNetworkSettings.kt -->
   <string name="network_option_tcp_connection">TCP connection</string>

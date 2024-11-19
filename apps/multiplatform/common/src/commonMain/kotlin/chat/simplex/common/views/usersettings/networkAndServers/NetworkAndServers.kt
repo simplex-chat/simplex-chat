@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.acceptConditions
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.getUserServers
 import chat.simplex.common.model.ChatController.setUserServers
@@ -44,6 +45,8 @@ fun NetworkAndServersView(close: () -> Unit) {
   val networkUseSocksProxy: MutableState<Boolean> = remember { mutableStateOf(netCfg.useSocksProxy) }
   val currUserServers = remember { mutableStateOf(emptyList<UserOperatorServers>()) }
   val userServers = remember { mutableStateOf(emptyList<UserOperatorServers>()) }
+  val serverErrors = remember { mutableStateOf(emptyList<UserServersError>()) }
+
   val scope = rememberCoroutineScope()
 
   val proxyPort = remember { derivedStateOf { appPrefs.networkProxy.state.value.port } }
@@ -65,6 +68,7 @@ fun NetworkAndServersView(close: () -> Unit) {
       onionHosts = remember { mutableStateOf(netCfg.onionHosts) },
       currUserServers = currUserServers,
       userServers = userServers,
+      serverErrors = serverErrors,
       toggleSocksProxy = { enable ->
         val def = NetCfg.defaults
         val proxyDef = NetCfg.proxyDefaults
@@ -131,6 +135,7 @@ fun NetworkAndServersView(close: () -> Unit) {
   networkUseSocksProxy: MutableState<Boolean>,
   onionHosts: MutableState<OnionHosts>,
   currUserServers: MutableState<List<UserOperatorServers>>,
+  serverErrors: MutableState<List<UserServersError>>,
   userServers: MutableState<List<UserOperatorServers>>,
   toggleSocksProxy: (Boolean) -> Unit,
 ) {
@@ -160,7 +165,7 @@ fun NetworkAndServersView(close: () -> Unit) {
     if (!chatModel.desktopNoUserNoRemote) {
       SectionView(generalGetString(MR.strings.network_preset_servers_title).uppercase()) {
         userServers.value.forEachIndexed { index, srv ->
-          srv.operator?.let { ServerOperatorRow(index, it, currUserServers, userServers, currentRemoteHost?.remoteHostId) }
+          srv.operator?.let { ServerOperatorRow(index, it, currUserServers, userServers, serverErrors, currentRemoteHost?.remoteHostId) }
         }
       }
       if (conditionsAction != null && anyOperatorEnabled.value) {
@@ -610,9 +615,10 @@ private fun ServerOperatorRow(
   operator: ServerOperator,
   currUserServers: MutableState<List<UserOperatorServers>>,
   userServers: MutableState<List<UserOperatorServers>>,
+  serverErrors: MutableState<List<UserServersError>>,
   rhId: Long?
 ) {
-  SectionItemView({ ModalManager.start.showModalCloseable { _ -> OperatorView(currUserServers, userServers, index, rhId) } }) {
+  SectionItemView({ ModalManager.start.showModalCloseable { _ -> OperatorView(currUserServers, userServers, serverErrors, index, rhId) } }) {
     Image(
       painterResource(MR.images.decentralized),
       operator.tradeName,
@@ -713,6 +719,28 @@ fun showUpdateNetworkSettingsDialog(
   )
 }
 
+fun updateOperatorsConditionsAcceptance(usvs: MutableState<List<UserOperatorServers>>, updatedOperators: List<ServerOperator>) {
+  for (i in usvs.value.indices) {
+    val updatedOperator = updatedOperators.firstOrNull { it.operatorId == usvs.value[i].operator?.operatorId } ?: continue
+    usvs.value[i].operator?.conditionsAcceptance = updatedOperator.conditionsAcceptance
+  }
+}
+
+suspend fun validateServers(
+  rhId: Long?,
+  userServers: MutableState<List<UserOperatorServers>>,
+  serverErrors: MutableState<List<UserServersError>>
+) {
+  val userServersToValidate = userServers.value
+
+  try {
+    val errors = chatController.validateServers(rhId, userServersToValidate) ?: return
+    serverErrors.value = errors
+  } catch (ex: Exception) {
+    Log.e(TAG, ex.stackTraceToString())
+  }
+}
+
 @Preview
 @Composable
 fun PreviewNetworkAndServersLayout() {
@@ -723,7 +751,8 @@ fun PreviewNetworkAndServersLayout() {
       onionHosts = remember { mutableStateOf(OnionHosts.PREFER) },
       toggleSocksProxy = {},
       currUserServers =  remember { mutableStateOf(emptyList()) },
-      userServers = remember { mutableStateOf(emptyList()) }
+      userServers = remember { mutableStateOf(emptyList()) },
+      serverErrors = remember { mutableStateOf(emptyList()) }
     )
   }
 }
