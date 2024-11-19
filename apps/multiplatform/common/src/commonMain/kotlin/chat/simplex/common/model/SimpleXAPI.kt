@@ -3866,47 +3866,45 @@ sealed class UserServersError {
 
   val globalError: String?
     get() = when (this) {
-      is NoServers -> protocol.toGlobalError(this, ::globalSMPError, ::globalXFTPError)
-      is StorageMissing -> protocol.toGlobalError(this, ::globalSMPError, ::globalXFTPError)
-      is ProxyMissing -> protocol.toGlobalError(this, ::globalSMPError, ::globalXFTPError)
+      is NoServers -> protocol.toGlobalError( { this.globalSMPError }, { this.globalXFTPError })
+      is StorageMissing -> protocol.toGlobalError({ this.globalSMPError }, { this.globalXFTPError })
+      is ProxyMissing -> protocol.toGlobalError({ this.globalSMPError }, { this.globalXFTPError })
       else -> null
     }
 
-  private fun globalSMPError(error: UserServersError): String? {
-    return when (error) {
-      is NoServers -> error.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_message_servers_configured)}" }
+  val globalSMPError: String?
+    get() = when (this) {
+      is NoServers -> this.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_message_servers_configured)}" }
         ?: generalGetString(MR.strings.no_message_servers_configured)
-      is StorageMissing -> error.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_message_servers_configured_for_receiving)}" }
+      is StorageMissing -> this.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_message_servers_configured_for_receiving)}" }
         ?: generalGetString(MR.strings.no_message_servers_configured_for_receiving)
-      is ProxyMissing -> error.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_message_servers_configured_for_private_routing)}" }
+      is ProxyMissing -> this.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_message_servers_configured_for_private_routing)}" }
         ?: generalGetString(MR.strings.no_message_servers_configured_for_private_routing)
       else -> null
     }
-  }
-  private fun globalXFTPError(error: UserServersError): String? {
-    return when (error) {
-      is NoServers -> error.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_media_servers_configured)}" }
+
+  val globalXFTPError: String?
+    get() = when (this) {
+      is NoServers -> this.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_media_servers_configured)}" }
         ?: generalGetString(MR.strings.no_media_servers_configured)
-      is StorageMissing -> error.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_media_servers_configured_for_sending)}" }
+      is StorageMissing -> this.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_media_servers_configured_for_sending)}" }
         ?: generalGetString(MR.strings.no_media_servers_configured_for_sending)
-      is ProxyMissing -> error.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_media_servers_configured_for_private_routing)}" }
+      is ProxyMissing -> this.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_media_servers_configured_for_private_routing)}" }
         ?: generalGetString(MR.strings.no_media_servers_configured_for_private_routing)
       else -> null
     }
-  }
 
   private fun userStr(user: UserRef): String {
     return String.format(generalGetString(MR.strings.for_chat_profile), user.localDisplayName)
   }
 
   private fun ServerProtocol.toGlobalError(
-    error: UserServersError,
-    smpHandler: (UserServersError) -> String?,
-    xftpHandler: (UserServersError) -> String?
+    smpHandler: () -> String?,
+    xftpHandler: () -> String?
   ): String? {
     return when (this) {
-      ServerProtocol.SMP -> smpHandler(error)
-      ServerProtocol.XFTP -> xftpHandler(error)
+      ServerProtocol.SMP -> smpHandler()
+      ServerProtocol.XFTP -> xftpHandler()
     }
   }
 }

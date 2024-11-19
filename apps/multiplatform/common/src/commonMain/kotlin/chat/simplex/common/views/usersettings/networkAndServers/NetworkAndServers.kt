@@ -24,6 +24,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.acceptConditions
 import chat.simplex.common.model.ChatController.appPrefs
@@ -52,7 +53,7 @@ fun NetworkAndServersView(close: () -> Unit) {
   val proxyPort = remember { derivedStateOf { appPrefs.networkProxy.state.value.port } }
   ModalView(
     close = {
-      if (currUserServers.value != userServers.value) {
+      if (currUserServers.value == userServers.value) {
         close()
       } else {
         showUnsavedChangesAlert(
@@ -666,29 +667,18 @@ private fun ConditionsButton(conditionsAction: UsageConditionsAction) {
   }
 }
 
-private suspend fun saveServers(
-  rhId: Long?,
-  currUserServers: MutableState<List<UserOperatorServers>>,
-  userServers: MutableState<List<UserOperatorServers>>
-) {
-  val userServersToSave = currUserServers.value
-  try {
-    val set = setUserServers(rhId, userServersToSave)
-
-    if (set) {
-      val updatedServers = getUserServers(rhId)
-
-      if (updatedServers != null) {
-        currUserServers.value = updatedServers
-        userServers.value = updatedServers
-      } else {
-        currUserServers.value = userServersToSave
-      }
-    } else {
-      currUserServers.value = userServersToSave
-    }
-  } catch (ex: Exception) {
-    Log.e(TAG, ex.stackTraceToString())
+@Composable
+fun ServerErrorsView(errStr: String) {
+  Row {
+    Icon(
+      painterResource(MR.images.ic_error),
+      contentDescription = stringResource(MR.strings.server_error),
+      tint = Color.Red,
+      modifier = Modifier
+        .size(19.sp.toDp())
+        .offset(x = 2.sp.toDp())
+    )
+    Text(errStr, color = MaterialTheme.colors.secondary)
   }
 }
 
@@ -736,6 +726,78 @@ suspend fun validateServers(
   try {
     val errors = chatController.validateServers(rhId, userServersToValidate) ?: return
     serverErrors.value = errors
+  } catch (ex: Exception) {
+    Log.e(TAG, ex.stackTraceToString())
+  }
+}
+
+fun serversCanBeSaved(
+  currUserServers: List<UserOperatorServers>,
+  userServers: List<UserOperatorServers>,
+  serverErrors: List<UserServersError>
+): Boolean {
+  return userServers != currUserServers && serverErrors.isEmpty()
+}
+
+fun globalServersError(serverErrors: List<UserServersError>): String? {
+  for (err in serverErrors) {
+    if (err.globalError != null) {
+      return err.globalError
+    }
+  }
+  return null
+}
+
+fun globalSMPServersError(serverErrors: List<UserServersError>): String? {
+  for (err in serverErrors) {
+    if (err.globalSMPError != null) {
+      return err.globalSMPError
+    }
+  }
+  return null
+}
+
+fun globalXFTPServersError(serverErrors: List<UserServersError>): String? {
+  for (err in serverErrors) {
+    if (err.globalXFTPError != null) {
+      return err.globalXFTPError
+    }
+  }
+  return null
+}
+
+fun findDuplicateHosts(serverErrors: List<UserServersError>): Set<String> {
+  val duplicateHostsList = serverErrors.mapNotNull { err ->
+    if (err is UserServersError.DuplicateServer) {
+      err.duplicateHost
+    } else {
+      null
+    }
+  }
+  return duplicateHostsList.toSet()
+}
+
+private suspend fun saveServers(
+  rhId: Long?,
+  currUserServers: MutableState<List<UserOperatorServers>>,
+  userServers: MutableState<List<UserOperatorServers>>
+) {
+  val userServersToSave = currUserServers.value
+  try {
+    val set = setUserServers(rhId, userServersToSave)
+
+    if (set) {
+      val updatedServers = getUserServers(rhId)
+
+      if (updatedServers != null) {
+        currUserServers.value = updatedServers
+        userServers.value = updatedServers
+      } else {
+        currUserServers.value = userServersToSave
+      }
+    } else {
+      currUserServers.value = userServersToSave
+    }
   } catch (ex: Exception) {
     Log.e(TAG, ex.stackTraceToString())
   }
