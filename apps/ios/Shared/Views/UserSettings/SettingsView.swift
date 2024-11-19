@@ -367,7 +367,7 @@ struct SettingsView: View {
                         }
                     }
                     NavigationLink {
-                        WhatsNewView(viaSettings: true, showWhatsNew: true, showOperatorsNotice: false)
+                        WhatsNewView(viaSettings: true, updatedConditions: false)
                             .modifier(ThemedBackground())
                             .navigationBarTitleDisplayMode(.inline)
                     } label: {

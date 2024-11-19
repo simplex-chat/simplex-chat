@@ -526,7 +526,7 @@ private let versionDescriptions: [VersionDescription] = [
             .view(FeatureView(
                 icon: nil,
                 title: "Network decentralization",
-                view: newOperatorsView
+                view: { NewOperatorsView() }
             )),
             .feature(Description(
                 icon: "text.quote",
@@ -549,20 +549,37 @@ func shouldShowWhatsNew() -> Bool {
     return v != lastVersion
 }
 
-fileprivate func newOperatorsView() -> some View {
-    VStack(alignment: .leading) {
-        Image((operatorsInfo[.flux] ?? ServerOperator.dummyOperatorInfo).largeLogo)
-            .resizable()
-            .scaledToFit()
-            .frame(height: 48)
-        Text("The second preset operator in the app!")
-            .multilineTextAlignment(.leading)
-            .lineLimit(10)
-        HStack {
-            Button("Enable Flux") {
-                
+fileprivate struct NewOperatorsView: View {
+    @State private var showOperatorsSheet = false
+
+    var body: some View {
+        VStack(alignment: .leading) {
+            Image((operatorsInfo[.flux] ?? ServerOperator.dummyOperatorInfo).largeLogo)
+                .resizable()
+                .scaledToFit()
+                .frame(height: 48)
+            Text("The second preset operator in the app!")
+                .multilineTextAlignment(.leading)
+                .lineLimit(10)
+            HStack {
+                Button("Enable Flux") {
+                    showOperatorsSheet = true
+                }
+                Text("for better metadata privacy.")
             }
-            Text("for better metadata privacy.")
+        }
+        .sheet(isPresented: $showOperatorsSheet) {
+            ChooseServerOperators(onboarding: false)
+        }
+    }
+}
+
+private enum WhatsNewViewSheet: Identifiable {
+    case showConditions
+
+    var id: String {
+        switch self {
+        case .showConditions: return "showConditions"
         }
     }
 }
@@ -573,13 +590,13 @@ struct WhatsNewView: View {
     @State var currentVersion = versionDescriptions.count - 1
     @State var currentVersionNav = versionDescriptions.count - 1
     var viaSettings = false
-    @State var showWhatsNew: Bool
-    var showOperatorsNotice: Bool
+    var updatedConditions: Bool
+    @State private var sheetItem: WhatsNewViewSheet? = nil
 
     var body: some View {
-        viewBody()
+        whatsNewView()
             .task {
-                if showOperatorsNotice {
+                if updatedConditions {
                     do {
                         let conditionsId = ChatModel.shared.conditions.currentConditions.conditionsId
                         try await setConditionsNotified(conditionsId: conditionsId)
@@ -588,14 +605,16 @@ struct WhatsNewView: View {
                     }
                 }
             }
-    }
-
-    @ViewBuilder private func viewBody() -> some View {
-        if showWhatsNew {
-            whatsNewView()
-        } else if showOperatorsNotice {
-            ChooseServerOperators(onboarding: false)
-        }
+            .sheet(item: $sheetItem) { item in
+                switch item {
+                case .showConditions:
+                    UsageConditionsView(
+                        currUserServers: Binding.constant([]),
+                        userServers: Binding.constant([])
+                    )
+                    .modifier(ThemedBackground(grouped: true))
+                }
+            }
     }
 
     private func whatsNewView() -> some View {
@@ -623,22 +642,19 @@ struct WhatsNewView: View {
                                     }
                                 }
                             }
+                            if updatedConditions {
+                                Button("View updated conditions") {
+                                    sheetItem = .showConditions
+                                }
+                            }
                             if !viaSettings {
                                 Spacer()
 
-                                if showOperatorsNotice {
-                                    Button("View updated conditions") {
-                                        showWhatsNew = false
-                                    }
-                                    .font(.title3)
-                                    .frame(maxWidth: .infinity, alignment: .center)
-                                } else {
-                                    Button("Ok") {
-                                        dismiss()
-                                    }
-                                    .font(.title3)
-                                    .frame(maxWidth: .infinity, alignment: .center)
+                                Button("Ok") {
+                                    dismiss()
                                 }
+                                .font(.title3)
+                                .frame(maxWidth: .infinity, alignment: .center)
 
                                 Spacer()
                             }
@@ -729,6 +745,6 @@ struct WhatsNewView: View {
 
 struct NewFeaturesView_Previews: PreviewProvider {
     static var previews: some View {
-        WhatsNewView(showWhatsNew: true, showOperatorsNotice: false)
+        WhatsNewView(updatedConditions: false)
     }
 }
