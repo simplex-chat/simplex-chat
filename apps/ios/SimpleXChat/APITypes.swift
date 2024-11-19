@@ -72,9 +72,15 @@ public enum ChatCommand {
     case apiGetGroupLink(groupId: Int64)
     case apiCreateMemberContact(groupId: Int64, groupMemberId: Int64)
     case apiSendMemberContactInvitation(contactId: Int64, msg: MsgContent)
-    case apiGetUserProtoServers(userId: Int64, serverProtocol: ServerProtocol)
-    case apiSetUserProtoServers(userId: Int64, serverProtocol: ServerProtocol, servers: [ServerCfg])
     case apiTestProtoServer(userId: Int64, server: String)
+    case apiGetServerOperators
+    case apiSetServerOperators(operators: [ServerOperator])
+    case apiGetUserServers(userId: Int64)
+    case apiSetUserServers(userId: Int64, userServers: [UserOperatorServers])
+    case apiValidateServers(userId: Int64, userServers: [UserOperatorServers])
+    case apiGetUsageConditions
+    case apiSetConditionsNotified(conditionsId: Int64)
+    case apiAcceptConditions(conditionsId: Int64, operatorIds: [Int64])
     case apiSetChatItemTTL(userId: Int64, seconds: Int64?)
     case apiGetChatItemTTL(userId: Int64)
     case apiSetNetworkConfig(networkConfig: NetCfg)
@@ -231,9 +237,15 @@ public enum ChatCommand {
             case let .apiGetGroupLink(groupId): return "/_get link #\(groupId)"
             case let .apiCreateMemberContact(groupId, groupMemberId): return "/_create member contact #\(groupId) \(groupMemberId)"
             case let .apiSendMemberContactInvitation(contactId, mc): return "/_invite member contact @\(contactId) \(mc.cmdString)"
-            case let .apiGetUserProtoServers(userId, serverProtocol): return "/_servers \(userId) \(serverProtocol)"
-            case let .apiSetUserProtoServers(userId, serverProtocol, servers): return "/_servers \(userId) \(serverProtocol) \(protoServersStr(servers))"
             case let .apiTestProtoServer(userId, server): return "/_server test \(userId) \(server)"
+            case .apiGetServerOperators: return "/_operators"
+            case let .apiSetServerOperators(operators): return "/_operators \(encodeJSON(operators))"
+            case let .apiGetUserServers(userId): return "/_servers \(userId)"
+            case let .apiSetUserServers(userId, userServers): return "/_servers \(userId) \(encodeJSON(userServers))"
+            case let .apiValidateServers(userId, userServers): return "/_validate_servers \(userId) \(encodeJSON(userServers))"
+            case .apiGetUsageConditions: return "/_conditions"
+            case let .apiSetConditionsNotified(conditionsId): return "/_conditions_notified \(conditionsId)"
+            case let .apiAcceptConditions(conditionsId, operatorIds): return "/_accept_conditions \(conditionsId) \(joinedIds(operatorIds))"
             case let .apiSetChatItemTTL(userId, seconds): return "/_ttl \(userId) \(chatItemTTLStr(seconds: seconds))"
             case let .apiGetChatItemTTL(userId): return "/_ttl \(userId)"
             case let .apiSetNetworkConfig(networkConfig): return "/_network \(encodeJSON(networkConfig))"
@@ -386,9 +398,15 @@ public enum ChatCommand {
             case .apiGetGroupLink: return "apiGetGroupLink"
             case .apiCreateMemberContact: return "apiCreateMemberContact"
             case .apiSendMemberContactInvitation: return "apiSendMemberContactInvitation"
-            case .apiGetUserProtoServers: return "apiGetUserProtoServers"
-            case .apiSetUserProtoServers: return "apiSetUserProtoServers"
             case .apiTestProtoServer: return "apiTestProtoServer"
+            case .apiGetServerOperators: return "apiGetServerOperators"
+            case .apiSetServerOperators: return "apiSetServerOperators"
+            case .apiGetUserServers: return "apiGetUserServers"
+            case .apiSetUserServers: return "apiSetUserServers"
+            case .apiValidateServers: return "apiValidateServers"
+            case .apiGetUsageConditions: return "apiGetUsageConditions"
+            case .apiSetConditionsNotified: return "apiSetConditionsNotified"
+            case .apiAcceptConditions: return "apiAcceptConditions"
             case .apiSetChatItemTTL: return "apiSetChatItemTTL"
             case .apiGetChatItemTTL: return "apiGetChatItemTTL"
             case .apiSetNetworkConfig: return "apiSetNetworkConfig"
@@ -475,10 +493,6 @@ public enum ChatCommand {
     func joinedIds(_ ids: [Int64]) -> String {
         ids.map { "\($0)" }.joined(separator: ",")
     }
-    
-    func protoServersStr(_ servers: [ServerCfg]) -> String {
-        encodeJSON(ProtoServersConfig(servers: servers))
-    }
 
     func chatItemTTLStr(seconds: Int64?) -> String {
         if let seconds = seconds {
@@ -548,8 +562,11 @@ public enum ChatResponse: Decodable, Error {
     case apiChats(user: UserRef, chats: [ChatData])
     case apiChat(user: UserRef, chat: ChatData)
     case chatItemInfo(user: UserRef, chatItem: AChatItem, chatItemInfo: ChatItemInfo)
-    case userProtoServers(user: UserRef, servers: UserProtoServers)
     case serverTestResult(user: UserRef, testServer: String, testFailure: ProtocolTestFailure?)
+    case serverOperatorConditions(conditions: ServerOperatorConditions)
+    case userServers(user: UserRef, userServers: [UserOperatorServers])
+    case userServersValidation(user: UserRef, serverErrors: [UserServersError])
+    case usageConditions(usageConditions: UsageConditions, conditionsText: String, acceptedConditions: UsageConditions?)
     case chatItemTTL(user: UserRef, chatItemTTL: Int64?)
     case networkConfig(networkConfig: NetCfg)
     case contactInfo(user: UserRef, contact: Contact, connectionStats_: ConnectionStats?, customUserProfile: Profile?)
@@ -721,8 +738,11 @@ public enum ChatResponse: Decodable, Error {
             case .apiChats: return "apiChats"
             case .apiChat: return "apiChat"
             case .chatItemInfo: return "chatItemInfo"
-            case .userProtoServers: return "userProtoServers"
             case .serverTestResult: return "serverTestResult"
+            case .serverOperatorConditions: return "serverOperators"
+            case .userServers: return "userServers"
+            case .userServersValidation: return "userServersValidation"
+            case .usageConditions: return "usageConditions"
             case .chatItemTTL: return "chatItemTTL"
             case .networkConfig: return "networkConfig"
             case .contactInfo: return "contactInfo"
@@ -890,8 +910,11 @@ public enum ChatResponse: Decodable, Error {
             case let .apiChats(u, chats): return withUser(u, String(describing: chats))
             case let .apiChat(u, chat): return withUser(u, String(describing: chat))
             case let .chatItemInfo(u, chatItem, chatItemInfo): return withUser(u, "chatItem: \(String(describing: chatItem))\nchatItemInfo: \(String(describing: chatItemInfo))")
-            case let .userProtoServers(u, servers): return withUser(u, "servers: \(String(describing: servers))")
             case let .serverTestResult(u, server, testFailure): return withUser(u, "server: \(server)\nresult: \(String(describing: testFailure))")
+            case let .serverOperatorConditions(conditions): return "conditions: \(String(describing: conditions))"
+            case let .userServers(u, userServers): return withUser(u, "userServers: \(String(describing: userServers))")
+            case let .userServersValidation(u, serverErrors): return withUser(u, "serverErrors: \(String(describing: serverErrors))")
+            case let .usageConditions(usageConditions, _, acceptedConditions): return "usageConditions: \(String(describing: usageConditions))\nacceptedConditions: \(String(describing: acceptedConditions))"
             case let .chatItemTTL(u, chatItemTTL): return withUser(u, String(describing: chatItemTTL))
             case let .networkConfig(networkConfig): return String(describing: networkConfig)
             case let .contactInfo(u, contact, connectionStats_, customUserProfile): return withUser(u, "contact: \(String(describing: contact))\nconnectionStats_: \(String(describing: connectionStats_))\ncustomUserProfile: \(String(describing: customUserProfile))")
@@ -1175,86 +1198,426 @@ public struct DBEncryptionConfig: Codable {
     public var newKey: String
 }
 
-struct SMPServersConfig: Encodable {
-    var smpServers: [ServerCfg]
-}
-
 public enum ServerProtocol: String, Decodable {
     case smp
     case xftp
 }
 
-public struct ProtoServersConfig: Codable {
-    public var servers: [ServerCfg]
+public enum OperatorTag: String, Codable {
+    case simplex = "simplex"
+    case flux = "flux"
+    case xyz = "xyz"
+    case demo = "demo"
 }
 
-public struct UserProtoServers: Decodable {
-    public var serverProtocol: ServerProtocol
-    public var protoServers: [ServerCfg]
-    public var presetServers: [ServerCfg]
+public struct ServerOperatorInfo: Decodable {
+    public var description: [String]
+    public var website: String
+    public var logo: String
+    public var largeLogo: String
+    public var logoDarkMode: String
+    public var largeLogoDarkMode: String
 }
 
-public struct ServerCfg: Identifiable, Equatable, Codable, Hashable {
+public let operatorsInfo: Dictionary<OperatorTag, ServerOperatorInfo> = [
+    .simplex: ServerOperatorInfo(
+        description: ["SimpleX Chat preset servers"],
+        website: "https://simplex.chat",
+        logo: "decentralized",
+        largeLogo: "logo",
+        logoDarkMode: "decentralized-light",
+        largeLogoDarkMode: "logo-light"
+    ),
+    .flux: ServerOperatorInfo(
+        description: [
+            "Flux is the largest decentralized cloud infrastructure, leveraging a global network of user-operated computational nodes.",
+            "Flux offers a powerful, scalable, and affordable platform designed to support individuals, businesses, and cutting-edge technologies like AI. With high uptime and worldwide distribution, Flux ensures reliable, accessible cloud computing for all."
+        ],
+        website: "https://runonflux.com",
+        logo: "flux_logo_symbol",
+        largeLogo: "flux_logo",
+        logoDarkMode: "flux_logo_symbol",
+        largeLogoDarkMode: "flux_logo-light"
+    ),
+    .xyz: ServerOperatorInfo(
+        description: ["XYZ servers"],
+        website: "XYZ website",
+        logo: "shield",
+        largeLogo: "logo",
+        logoDarkMode: "shield",
+        largeLogoDarkMode: "logo-light"
+    ),
+    .demo: ServerOperatorInfo(
+        description: ["Demo operator"],
+        website: "Demo website",
+        logo: "decentralized",
+        largeLogo: "logo",
+        logoDarkMode: "decentralized-light",
+        largeLogoDarkMode: "logo-light"
+    )
+]
+
+public struct UsageConditions: Decodable {
+    public var conditionsId: Int64
+    public var conditionsCommit: String
+    public var notifiedAt: Date?
+    public var createdAt: Date
+
+    public static var sampleData = UsageConditions(
+        conditionsId: 1,
+        conditionsCommit: "11a44dc1fd461a93079f897048b46998db55da5c",
+        notifiedAt: nil,
+        createdAt: Date.now
+    )
+}
+
+public enum UsageConditionsAction: Decodable {
+    case review(operators: [ServerOperator], deadline: Date?, showNotice: Bool)
+    case accepted(operators: [ServerOperator])
+
+    public var showNotice: Bool {
+        switch self {
+        case let .review(_, _, showNotice): showNotice
+        case .accepted: false
+        }
+    }
+}
+
+public struct ServerOperatorConditions: Decodable {
+    public var serverOperators: [ServerOperator]
+    public var currentConditions: UsageConditions
+    public var conditionsAction: UsageConditionsAction?
+
+    public static var empty = ServerOperatorConditions(
+        serverOperators: [],
+        currentConditions: UsageConditions(conditionsId: 0, conditionsCommit: "empty", notifiedAt: nil, createdAt: .now),
+        conditionsAction: nil
+    )
+}
+
+public enum ConditionsAcceptance: Equatable, Codable, Hashable {
+    case accepted(acceptedAt: Date?)
+    // If deadline is present, it means there's a grace period to review and accept conditions during which user can continue to use the operator.
+    // No deadline indicates it's required to accept conditions for the operator to start using it.
+    case required(deadline: Date?)
+
+    public var conditionsAccepted: Bool {
+        switch self {
+        case .accepted: true
+        case .required: false
+        }
+    }
+
+    public var usageAllowed: Bool {
+        switch self {
+        case .accepted: true
+        case let .required(deadline): deadline != nil
+        }
+    }
+}
+
+public struct ServerOperator: Identifiable, Equatable, Codable {
+    public var operatorId: Int64
+    public var operatorTag: OperatorTag?
+    public var tradeName: String
+    public var legalName: String?
+    public var serverDomains: [String]
+    public var conditionsAcceptance: ConditionsAcceptance
+    public var enabled: Bool
+    public var smpRoles: ServerRoles
+    public var xftpRoles: ServerRoles
+
+    public var id: Int64 { operatorId }
+
+    public static func == (l: ServerOperator, r: ServerOperator) -> Bool {
+        l.operatorId == r.operatorId && l.operatorTag == r.operatorTag && l.tradeName == r.tradeName && l.legalName == r.legalName &&
+        l.serverDomains == r.serverDomains && l.conditionsAcceptance == r.conditionsAcceptance && l.enabled == r.enabled &&
+        l.smpRoles == r.smpRoles && l.xftpRoles == r.xftpRoles
+    }
+
+    public var legalName_: String {
+        legalName ?? tradeName
+    }
+
+    public var info: ServerOperatorInfo {
+        return if let operatorTag = operatorTag {
+            operatorsInfo[operatorTag] ?? ServerOperator.dummyOperatorInfo
+        } else {
+            ServerOperator.dummyOperatorInfo
+        }
+    }
+
+    public static let dummyOperatorInfo = ServerOperatorInfo(
+        description: ["Default"],
+        website: "Default",
+        logo: "decentralized",
+        largeLogo: "logo",
+        logoDarkMode: "decentralized-light",
+        largeLogoDarkMode: "logo-light"
+    )
+
+    public func logo(_ colorScheme: ColorScheme) -> String {
+        colorScheme == .light ? info.logo : info.logoDarkMode
+    }
+
+    public func largeLogo(_ colorScheme: ColorScheme) -> String {
+        colorScheme == .light ? info.largeLogo : info.largeLogoDarkMode
+    }
+
+    public static var sampleData1 = ServerOperator(
+        operatorId: 1,
+        operatorTag: .simplex,
+        tradeName: "SimpleX Chat",
+        legalName: "SimpleX Chat Ltd",
+        serverDomains: ["simplex.im"],
+        conditionsAcceptance: .accepted(acceptedAt: nil),
+        enabled: true,
+        smpRoles: ServerRoles(storage: true, proxy: true),
+        xftpRoles: ServerRoles(storage: true, proxy: true)
+    )
+
+    public static var sampleData2 = ServerOperator(
+        operatorId: 2,
+        operatorTag: .xyz,
+        tradeName: "XYZ",
+        legalName: nil,
+        serverDomains: ["xyz.com"],
+        conditionsAcceptance: .required(deadline: nil),
+        enabled: false,
+        smpRoles: ServerRoles(storage: false, proxy: true),
+        xftpRoles: ServerRoles(storage: false, proxy: true)
+    )
+
+    public static var sampleData3 = ServerOperator(
+        operatorId: 3,
+        operatorTag: .demo,
+        tradeName: "Demo",
+        legalName: nil,
+        serverDomains: ["demo.com"],
+        conditionsAcceptance: .required(deadline: nil),
+        enabled: false,
+        smpRoles: ServerRoles(storage: true, proxy: false),
+        xftpRoles: ServerRoles(storage: true, proxy: false)
+    )
+}
+
+public struct ServerRoles: Equatable, Codable {
+    public var storage: Bool
+    public var proxy: Bool
+}
+
+public struct UserOperatorServers: Identifiable, Equatable, Codable {
+    public var `operator`: ServerOperator?
+    public var smpServers: [UserServer]
+    public var xftpServers: [UserServer]
+
+    public var id: String {
+        if let op = self.operator {
+            "\(op.operatorId)"
+        } else {
+            "nil operator"
+        }
+    }
+
+    public var operator_: ServerOperator {
+        get {
+            self.operator ?? ServerOperator(
+                operatorId: 0,
+                operatorTag: nil,
+                tradeName: "",
+                legalName: "",
+                serverDomains: [],
+                conditionsAcceptance: .accepted(acceptedAt: nil),
+                enabled: false,
+                smpRoles: ServerRoles(storage: true, proxy: true),
+                xftpRoles: ServerRoles(storage: true, proxy: true)
+            )
+        }
+        set { `operator` = newValue }
+    }
+    
+    public static var sampleData1 = UserOperatorServers(
+        operator: ServerOperator.sampleData1,
+        smpServers: [UserServer.sampleData.preset],
+        xftpServers: [UserServer.sampleData.xftpPreset]
+    )
+
+    public static var sampleDataNilOperator = UserOperatorServers(
+        operator: nil,
+        smpServers: [UserServer.sampleData.preset],
+        xftpServers: [UserServer.sampleData.xftpPreset]
+    )
+}
+
+public enum UserServersError: Decodable {
+    case noServers(protocol: ServerProtocol, user: UserRef?)
+    case storageMissing(protocol: ServerProtocol, user: UserRef?)
+    case proxyMissing(protocol: ServerProtocol, user: UserRef?)
+    case invalidServer(protocol: ServerProtocol, invalidServer: String)
+    case duplicateServer(protocol: ServerProtocol, duplicateServer: String, duplicateHost: String)
+
+    public var globalError: String? {
+        switch self {
+        case let .noServers(`protocol`, _):
+            switch `protocol` {
+            case .smp: return globalSMPError
+            case .xftp: return globalXFTPError
+            }
+        case let .storageMissing(`protocol`, _):
+            switch `protocol` {
+            case .smp: return globalSMPError
+            case .xftp: return globalXFTPError
+            }
+        case let .proxyMissing(`protocol`, _):
+            switch `protocol` {
+            case .smp: return globalSMPError
+            case .xftp: return globalXFTPError
+            }
+        default: return nil
+        }
+    }
+
+    public var globalSMPError: String? {
+        switch self {
+        case let .noServers(.smp, user):
+            let text = NSLocalizedString("No message servers.", comment: "servers error")
+            if let user = user {
+                return userStr(user) + " " + text
+            } else {
+                return text
+            }
+        case let .storageMissing(.smp, user):
+            let text = NSLocalizedString("No servers to receive messages.", comment: "servers error")
+            if let user = user {
+                return userStr(user) + " " + text
+            } else {
+                return text
+            }
+        case let .proxyMissing(.smp, user):
+            let text = NSLocalizedString("No servers for private message routing.", comment: "servers error")
+            if let user = user {
+                return userStr(user) + " " + text
+            } else {
+                return text
+            }
+        default:
+            return nil
+        }
+    }
+
+    public var globalXFTPError: String? {
+        switch self {
+        case let .noServers(.xftp, user):
+            let text = NSLocalizedString("No media & file servers.", comment: "servers error")
+            if let user = user {
+                return userStr(user) + " " + text
+            } else {
+                return text
+            }
+        case let .storageMissing(.xftp, user):
+            let text = NSLocalizedString("No servers to send files.", comment: "servers error")
+            if let user = user {
+                return userStr(user) + " " + text
+            } else {
+                return text
+            }
+        case let .proxyMissing(.xftp, user):
+            let text = NSLocalizedString("No servers to receive files.", comment: "servers error")
+            if let user = user {
+                return userStr(user) + " " + text
+            } else {
+                return text
+            }
+        default:
+            return nil
+        }
+    }
+
+    private func userStr(_ user: UserRef) -> String {
+        String.localizedStringWithFormat(NSLocalizedString("For chat profile %@:", comment: "servers error"), user.localDisplayName)
+    }
+}
+
+public struct UserServer: Identifiable, Equatable, Codable, Hashable {
+    public var serverId: Int64?
     public var server: String
     public var preset: Bool
     public var tested: Bool?
     public var enabled: Bool
+    public var deleted: Bool
     var createdAt = Date()
-//    public var sendEnabled: Bool // can we potentially want to prevent sending on the servers we use to receive?
-// Even if we don't see the use case, it's probably better to allow it in the model
-// In any case, "trusted/known" servers are out of scope of this change
 
-    public init(server: String, preset: Bool, tested: Bool?, enabled: Bool) {
+    public init(serverId: Int64?, server: String, preset: Bool, tested: Bool?, enabled: Bool, deleted: Bool) {
+        self.serverId = serverId
         self.server = server
         self.preset = preset
         self.tested = tested
         self.enabled = enabled
+        self.deleted = deleted
     }
 
-    public static func == (l: ServerCfg, r: ServerCfg) -> Bool {
-        l.server == r.server && l.preset == r.preset && l.tested == r.tested && l.enabled == r.enabled
+    public static func == (l: UserServer, r: UserServer) -> Bool {
+        l.serverId == r.serverId && l.server == r.server && l.preset == r.preset && l.tested == r.tested &&
+        l.enabled == r.enabled && l.deleted == r.deleted
     }
 
     public var id: String { "\(server) \(createdAt)" }
 
-    public static var empty = ServerCfg(server: "", preset: false, tested: nil, enabled: false)
+    public static var empty = UserServer(serverId: nil, server: "", preset: false, tested: nil, enabled: false, deleted: false)
 
     public var isEmpty: Bool {
         server.trimmingCharacters(in: .whitespaces) == ""
     }
 
     public struct SampleData {
-        public var preset: ServerCfg
-        public var custom: ServerCfg
-        public var untested: ServerCfg
+        public var preset: UserServer
+        public var custom: UserServer
+        public var untested: UserServer
+        public var xftpPreset: UserServer
     }
 
     public static var sampleData = SampleData(
-        preset: ServerCfg(
+        preset: UserServer(
+            serverId: 1,
             server: "smp://abcd@smp8.simplex.im",
             preset: true,
             tested: true,
-            enabled: true
+            enabled: true,
+            deleted: false
         ),
-        custom: ServerCfg(
+        custom: UserServer(
+            serverId: 2,
             server: "smp://abcd@smp9.simplex.im",
             preset: false,
             tested: false,
-            enabled: false
+            enabled: false,
+            deleted: false
         ),
-        untested: ServerCfg(
+        untested: UserServer(
+            serverId: 3,
             server: "smp://abcd@smp10.simplex.im",
             preset: false,
             tested: nil,
-            enabled: true
+            enabled: true,
+            deleted: false
+        ),
+        xftpPreset: UserServer(
+            serverId: 4,
+            server: "xftp://abcd@xftp8.simplex.im",
+            preset: true,
+            tested: true,
+            enabled: true,
+            deleted: false
         )
     )
 
     enum CodingKeys: CodingKey {
+        case serverId
         case server
         case preset
         case tested
         case enabled
+        case deleted
     }
 }
 

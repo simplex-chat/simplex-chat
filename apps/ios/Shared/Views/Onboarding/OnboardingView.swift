@@ -16,6 +16,7 @@ struct OnboardingView: View {
         case .step1_SimpleXInfo: SimpleXInfo(onboarding: true)
         case .step2_CreateProfile: CreateFirstProfile()
         case .step3_CreateSimpleXAddress: CreateSimpleXAddress()
+        case .step3_ChooseServerOperators: ChooseServerOperators(onboarding: true)
         case .step4_SetNotificationsMode: SetNotificationsMode()
         case .onboardingComplete: EmptyView()
         }
@@ -24,8 +25,9 @@ struct OnboardingView: View {
 
 enum OnboardingStage: String, Identifiable {
     case step1_SimpleXInfo
-    case step2_CreateProfile
-    case step3_CreateSimpleXAddress
+    case step2_CreateProfile // deprecated
+    case step3_CreateSimpleXAddress // deprecated
+    case step3_ChooseServerOperators
     case step4_SetNotificationsMode
     case onboardingComplete
 

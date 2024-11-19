@@ -36,6 +36,10 @@ struct UserPickerSheetView: View {
     @EnvironmentObject var chatModel: ChatModel
     @State private var loaded = false
 
+    @State private var currUserServers: [UserOperatorServers] = []
+    @State private var userServers: [UserOperatorServers] = []
+    @State private var serverErrors: [UserServersError] = []
+
     var body: some View {
         NavigationView {
             ZStack {
@@ -56,7 +60,11 @@ struct UserPickerSheetView: View {
                     case .useFromDesktop:
                         ConnectDesktopView()
                     case .settings:
-                        SettingsView()
+                        SettingsView(
+                            currUserServers: $currUserServers,
+                            userServers: $userServers,
+                            serverErrors: $serverErrors
+                        )
                     }
                 }
                 Color.clear // Required for list background to be rendered during loading
@@ -76,6 +84,16 @@ struct UserPickerSheetView: View {
                 { loaded = true }
             )
         }
+        .onDisappear {
+            if serversCanBeSaved(currUserServers, userServers, serverErrors) {
+                showAlert(
+                    title: NSLocalizedString("Save servers?", comment: "alert title"),
+                    buttonTitle: NSLocalizedString("Save", comment: "alert button"),
+                    buttonAction: { saveServers($currUserServers, $userServers) },
+                    cancelButton: true
+                )
+            }
+        }
     }
 }
 
@@ -94,6 +112,7 @@ struct ChatListView: View {
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
     @AppStorage(DEFAULT_ONE_HAND_UI_CARD_SHOWN) private var oneHandUICardShown = false
+    @AppStorage(DEFAULT_ADDRESS_CREATION_CARD_SHOWN) private var addressCreationCardShown = false
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
 
     var body: some View {
@@ -278,6 +297,12 @@ struct ChatListView: View {
                     }
                     if !oneHandUICardShown {
                         OneHandUICard()
+                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                    }
+                    if !addressCreationCardShown {
+                        AddressCreationCard()
                             .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
