@@ -1480,21 +1480,21 @@ public enum UserServersError: Decodable {
     public var globalSMPError: String? {
         switch self {
         case let .noServers(.smp, user):
-            let text = NSLocalizedString("No message servers configured.", comment: "servers error")
+            let text = NSLocalizedString("No message servers.", comment: "servers error")
             if let user = user {
                 return userStr(user) + " " + text
             } else {
                 return text
             }
         case let .storageMissing(.smp, user):
-            let text = NSLocalizedString("No message servers configured for receiving.", comment: "servers error")
+            let text = NSLocalizedString("No servers to receive messages.", comment: "servers error")
             if let user = user {
                 return userStr(user) + " " + text
             } else {
                 return text
             }
         case let .proxyMissing(.smp, user):
-            let text = NSLocalizedString("No message servers configured for private routing.", comment: "servers error")
+            let text = NSLocalizedString("No servers for private message routing.", comment: "servers error")
             if let user = user {
                 return userStr(user) + " " + text
             } else {
@@ -1508,21 +1508,21 @@ public enum UserServersError: Decodable {
     public var globalXFTPError: String? {
         switch self {
         case let .noServers(.xftp, user):
-            let text = NSLocalizedString("No media & file servers configured.", comment: "servers error")
+            let text = NSLocalizedString("No media & file servers.", comment: "servers error")
             if let user = user {
                 return userStr(user) + " " + text
             } else {
                 return text
             }
         case let .storageMissing(.xftp, user):
-            let text = NSLocalizedString("No media & file servers configured for sending.", comment: "servers error")
+            let text = NSLocalizedString("No servers to send files.", comment: "servers error")
             if let user = user {
                 return userStr(user) + " " + text
             } else {
                 return text
             }
         case let .proxyMissing(.xftp, user):
-            let text = NSLocalizedString("No media & file servers configured for private routing.", comment: "servers error")
+            let text = NSLocalizedString("No servers to receive files.", comment: "servers error")
             if let user = user {
                 return userStr(user) + " " + text
             } else {

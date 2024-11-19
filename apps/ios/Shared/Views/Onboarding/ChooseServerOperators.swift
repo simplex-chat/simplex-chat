@@ -95,9 +95,9 @@ struct ChooseServerOperators: View {
                             VStack(spacing: 8) {
                                 reviewLaterButton()
                                 (
-                                    Text("Conditions will be considered accepted for enabled operators after 30 days.")
+                                    Text("Conditions will be accepted for enabled operators after 30 days.")
                                     + Text(" ")
-                                    + Text("You can disable operators and configure your servers in Network & servers settings.")
+                                    + Text("You can configure operators in Network & servers settings.")
                                 )
                                 .multilineTextAlignment(.center)
                                 .font(.footnote)

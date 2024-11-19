@@ -59,7 +59,7 @@ struct OperatorView: View {
                             }
                         case let .required(deadline):
                             if userServers[operatorIndex].operator_.enabled, let deadline = deadline {
-                                Text("Conditions will be considered accepted after: \(conditionsTimestamp(deadline)).")
+                                Text("Conditions will be accepted on: \(conditionsTimestamp(deadline)).")
                                     .foregroundColor(theme.colors.secondary)
                             }
                         }
@@ -69,7 +69,7 @@ struct OperatorView: View {
                 if userServers[operatorIndex].operator_.enabled {
                     if !userServers[operatorIndex].smpServers.filter({ !$0.deleted }).isEmpty {
                         Section {
-                            Toggle("For receiving", isOn: $userServers[operatorIndex].operator_.smpRoles.storage)
+                            Toggle("To receive", isOn: $userServers[operatorIndex].operator_.smpRoles.storage)
                                 .onChange(of: userServers[operatorIndex].operator_.smpRoles.storage) { _ in
                                     validateServers_($userServers, $serverErrors)
                                 }
@@ -148,7 +148,7 @@ struct OperatorView: View {
 
                     if !userServers[operatorIndex].xftpServers.filter({ !$0.deleted }).isEmpty {
                         Section {
-                            Toggle("For sending", isOn: $userServers[operatorIndex].operator_.xftpRoles.storage)
+                            Toggle("To send", isOn: $userServers[operatorIndex].operator_.xftpRoles.storage)
                                 .onChange(of: userServers[operatorIndex].operator_.xftpRoles.storage) { _ in
                                     validateServers_($userServers, $serverErrors)
                                 }
