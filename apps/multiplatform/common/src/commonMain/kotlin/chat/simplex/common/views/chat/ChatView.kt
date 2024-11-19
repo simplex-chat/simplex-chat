@@ -1357,12 +1357,12 @@ private fun SmallScrollOnNewMessage(listState: State<LazyListState>, chatItems: 
     snapshotFlow { listState.value.layoutInfo.totalItemsCount }
       .distinctUntilChanged()
       .drop(1)
-      .filter { lastItemId != chatItems.value.lastOrNull()?.id }
       .collect {
         val diff = listState.value.layoutInfo.totalItemsCount - lastTotalItems
+        val sameLastItem = lastItemId == chatItems.value.lastOrNull()?.id
         lastTotalItems = listState.value.layoutInfo.totalItemsCount
         lastItemId = chatItems.value.lastOrNull()?.id
-        if (diff < 1 || diff > 2) {
+        if (diff < 1 || diff > 2 || sameLastItem) {
           return@collect
         }
         try {
