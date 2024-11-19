@@ -70,6 +70,11 @@ struct ChooseServerOperators: View {
                         ForEach(serverOperators) { srvOperator in
                             operatorCheckView(srvOperator)
                         }
+                        Text("You can configure servers via settings.")
+                            .font(.footnote)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity, alignment: .center)
+//                            .padding(.horizontal, 32)
 
                         Spacer()
 
@@ -83,10 +88,12 @@ struct ChooseServerOperators: View {
                                 continueButton()
                             }
                             if onboarding {
-                                Text("You can disable operators and configure your servers in Network & servers settings.")
-                                    .multilineTextAlignment(.center)
-                                    .font(.footnote)
-                                    .padding(.horizontal, 32)
+                                Button("Conditions of use") {
+                                    // TODO open accepted conditions
+                                }
+                                .font(.callout)
+                                .foregroundColor(reviewForOperators.isEmpty ? .accentColor : .clear)
+                                .padding(.top)
                             }
                         }
                         .padding(.bottom)
@@ -136,7 +143,7 @@ struct ChooseServerOperators: View {
                     showInfoSheet = true
                 }
 
-            Text("Select operators, whose servers you will be using.")
+            Text("Select network operators to use.")
         }
     }
 
@@ -320,14 +327,15 @@ struct ChooseServerOperators: View {
 struct ChooseServerOperatorsInfoView: View {
     var body: some View {
         VStack(alignment: .leading) {
-            Text("Why choose multiple operators")
+            Text("Network operators")
                 .font(.largeTitle)
+                .bold()
                 .padding(.vertical)
             ScrollView {
                 VStack(alignment: .leading) {
                     Group {
-                        Text("Selecting multiple operators improves protection of your communication graph.")
-                        Text("TODO Better explanation")
+                        Text("When more than one network operator is enabled, the app will use the servers of different operators for each conversation.")
+                        Text("For example, if you receive messages via SimpleX Chat server, the app will use one of Flux servers for private routing.")
                     }
                     .padding(.bottom)
                 }

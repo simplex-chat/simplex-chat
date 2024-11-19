@@ -257,14 +257,11 @@ struct OperatorView: View {
                 .modifier(ThemedBackground(grouped: true))
                 .navigationBarTitleDisplayMode(.large)
         } label: {
-            HStack {
-                Image(userServers[operatorIndex].operator_.logo(colorScheme))
-                    .resizable()
-                    .scaledToFit()
-                    .grayscale(userServers[operatorIndex].operator_.enabled ? 0.0 : 1.0)
-                    .frame(width: 24, height: 24)
-                Text(userServers[operatorIndex].operator_.tradeName)
-            }
+            Image(userServers[operatorIndex].operator_.largeLogo(colorScheme))
+                .resizable()
+                .scaledToFit()
+                .grayscale(userServers[operatorIndex].operator_.enabled ? 0.0 : 1.0)
+                .frame(height: 40)
         }
     }
 
