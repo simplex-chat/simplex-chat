@@ -1018,12 +1018,14 @@ fun BoxScope.ChatItemsList(
     )
   }
   // TODO: Having this block on desktop makes ChatItemsList() to recompose twice on chatModel.chatId update instead of once
+  val finishedInitialComposition = remember { mutableStateOf(false) }
   LaunchedEffect(chatInfo.id) {
     revealedItems.value = emptySet()
     snapshotFlow { listState.value.layoutInfo.visibleItemsInfo.lastIndex }
       .distinctUntilChanged()
       .collect {
         onComposed(chatInfo.id)
+        finishedInitialComposition.value = true
         cancel()
       }
   }
@@ -1326,7 +1328,7 @@ fun BoxScope.ChatItemsList(
           is MergedItem.Single -> merged.item.item.id to merged.item.item.id
           is MergedItem.Grouped -> merged.items.last().item.id to merged.items.first().item.id
         }
-        MarkItemsReadAfterDelay(keyForItem(item), itemIdStart, itemIdEnd, chatInfo.id, listState, markRead)
+        MarkItemsReadAfterDelay(keyForItem(item), itemIdStart, itemIdEnd, finishedInitialComposition, chatInfo.id, listState, markRead)
       }
     }
   }
@@ -1782,6 +1784,7 @@ private fun MarkItemsReadAfterDelay(
   itemKey: String,
   itemIdStart: Long,
   itemIdEnd: Long,
+  finishedInitialComposition: State<Boolean>,
   chatId: ChatId,
   listState: State<LazyListState>,
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit
@@ -1795,8 +1798,8 @@ private fun MarkItemsReadAfterDelay(
       false
     }
   } }
-  LaunchedEffect(itemIsPartiallyAboveCompose.value, itemIdStart, itemIdEnd, chatId) {
-    if (chatId != ChatModel.chatId.value || !itemIsPartiallyAboveCompose.value) return@LaunchedEffect
+  LaunchedEffect(itemIsPartiallyAboveCompose.value, itemIdStart, itemIdEnd, finishedInitialComposition.value, chatId) {
+    if (chatId != ChatModel.chatId.value || !itemIsPartiallyAboveCompose.value || !finishedInitialComposition.value) return@LaunchedEffect
 
     delay(600L)
     markRead(CC.ItemRange(itemIdStart, itemIdEnd), null)
