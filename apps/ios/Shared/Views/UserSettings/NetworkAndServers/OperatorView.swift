@@ -269,7 +269,7 @@ struct OperatorView: View {
     }
 
     private func useOperatorToggle() -> some View {
-        Toggle("Use operator", isOn: $useOperator)
+        Toggle("Use servers", isOn: $useOperator)
             .onChange(of: useOperator) { useOperatorToggle in
                 if useOperatorToggleReset {
                     useOperatorToggleReset = false
@@ -452,7 +452,7 @@ struct SingleOperatorUsageConditionsView: View {
             VStack(alignment: .leading, spacing: 20) {
                 Group {
                     viewHeader()
-                    Text("In order to use operator **\(userServers[operatorIndex].operator_.legalName_)**, accept conditions of use.")
+                    Text("To use the servers of **\(userServers[operatorIndex].operator_.legalName_)**, accept conditions of use.")
                     conditionsAppliedToOtherOperatorsText()
                     ConditionsTextView()
                     acceptConditionsButton()
@@ -467,7 +467,7 @@ struct SingleOperatorUsageConditionsView: View {
     }
 
     private func viewHeader() -> some View {
-        Text("Use operator \(userServers[operatorIndex].operator_.tradeName)")
+        Text("Use servers of \(userServers[operatorIndex].operator_.tradeName)")
             .font(.largeTitle)
             .bold()
             .padding(.top)
@@ -481,7 +481,7 @@ struct SingleOperatorUsageConditionsView: View {
             $0.operatorId != userServers[operatorIndex].operator_.operatorId
         }
         if !otherOperatorsToApply.isEmpty {
-            Text("Conditions will also apply for following operator(s) you use: **\(otherOperatorsToApply.map { $0.legalName_ }.joined(separator: ", "))**.")
+            Text("These conditions will also apply for: **\(otherOperatorsToApply.map { $0.legalName_ }.joined(separator: ", "))**.")
         }
     }
     
