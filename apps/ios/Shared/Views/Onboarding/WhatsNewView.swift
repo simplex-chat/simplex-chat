@@ -527,7 +527,12 @@ private let versionDescriptions: [VersionDescription] = [
                 icon: nil,
                 title: "Network decentralization",
                 view: newOperatorsView
-            ))
+            )),
+            .feature(Description(
+                icon: "text.quote",
+                title: "Improved chat navigation",
+                description: "- Open chat on the first unread message.\n- Jump to quoted messages."
+            )),
         ]
     )
 ]
@@ -553,8 +558,11 @@ fileprivate func newOperatorsView() -> some View {
         Text("The second preset operator in the app!")
             .multilineTextAlignment(.leading)
             .lineLimit(10)
-        Button("Choose operators to use") {
-            
+        HStack {
+            Button("Enable Flux") {
+                
+            }
+            Text("for better metadata privacy.")
         }
     }
 }
