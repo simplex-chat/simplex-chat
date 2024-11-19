@@ -18,6 +18,7 @@ struct HowItWorks: View {
         VStack(alignment: .leading) {
             Text("How SimpleX works")
                 .font(.largeTitle)
+                .bold()
                 .padding(.vertical)
             ScrollView {
                 VStack(alignment: .leading) {

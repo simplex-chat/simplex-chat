@@ -41,15 +41,27 @@ struct OnboardingButtonStyle: ButtonStyle {
     }
 }
 
+private enum ChooseServerOperatorsSheet: Identifiable {
+    case showInfo
+    case showConditions
+
+    var id: String {
+        switch self {
+        case .showInfo: return "showInfo"
+        case .showConditions: return "showConditions"
+        }
+    }
+}
+
 struct ChooseServerOperators: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     @EnvironmentObject var theme: AppTheme
     var onboarding: Bool
-    @State private var showInfoSheet = false
     @State private var serverOperators: [ServerOperator] = []
     @State private var selectedOperatorIds = Set<Int64>()
     @State private var reviewConditionsNavLinkActive = false
+    @State private var sheetItem: ChooseServerOperatorsSheet? = nil
     @State private var justOpened = true
 
     var selectedOperators: [ServerOperator] { serverOperators.filter { selectedOperatorIds.contains($0.operatorId) } }
@@ -74,25 +86,34 @@ struct ChooseServerOperators: View {
                             .font(.footnote)
                             .multilineTextAlignment(.center)
                             .frame(maxWidth: .infinity, alignment: .center)
-//                            .padding(.horizontal, 32)
+                            .padding(.horizontal, 32)
 
                         Spacer()
 
                         let reviewForOperators = selectedOperators.filter { !$0.conditionsAcceptance.conditionsAccepted }
                         let canReviewLater = reviewForOperators.allSatisfy { $0.conditionsAcceptance.usageAllowed }
+                        let currEnabledOperatorIds = Set(serverOperators.filter { $0.enabled }.map { $0.operatorId })
 
                         VStack(spacing: 8) {
                             if !reviewForOperators.isEmpty {
                                 reviewConditionsButton()
+                            } else if selectedOperatorIds != currEnabledOperatorIds && !selectedOperatorIds.isEmpty {
+                                setOperatorsButton()
                             } else {
                                 continueButton()
                             }
                             if onboarding {
-                                Button("Conditions of use") {
-                                    // TODO open accepted conditions
+                                Group {
+                                    if reviewForOperators.isEmpty {
+                                        Button("Conditions of use") {
+                                            sheetItem = .showConditions
+                                        }
+                                    } else {
+                                        Text("Conditions of use")
+                                            .foregroundColor(.clear)
+                                    }
                                 }
                                 .font(.callout)
-                                .foregroundColor(reviewForOperators.isEmpty ? .accentColor : .clear)
                                 .padding(.top)
                             }
                         }
@@ -123,8 +144,17 @@ struct ChooseServerOperators: View {
                         justOpened = false
                     }
                 }
-                .sheet(isPresented: $showInfoSheet) {
-                    ChooseServerOperatorsInfoView()
+                .sheet(item: $sheetItem) { item in
+                    switch item {
+                    case .showInfo:
+                        ChooseServerOperatorsInfoView()
+                    case .showConditions:
+                        UsageConditionsView(
+                            currUserServers: Binding.constant([]),
+                            userServers: Binding.constant([])
+                        )
+                        .modifier(ThemedBackground(grouped: true))
+                    }
                 }
             }
             .frame(maxHeight: .infinity)
@@ -140,7 +170,7 @@ struct ChooseServerOperators: View {
                 .frame(width: 20, height: 20)
                 .foregroundColor(theme.colors.primary)
                 .onTapGesture {
-                    showInfoSheet = true
+                    sheetItem = .showInfo
                 }
 
             Text("Select network operators to use.")
@@ -198,6 +228,28 @@ struct ChooseServerOperators: View {
             .frame(width: 1, height: 1)
             .hidden()
         }
+    }
+
+    private func setOperatorsButton() -> some View {
+        Button {
+            Task {
+                if let enabledOperators = enabledOperators(serverOperators) {
+                    let r = try await setServerOperators(operators: enabledOperators)
+                    await MainActor.run {
+                        ChatModel.shared.conditions = r
+                        continueToNextStep()
+                    }
+                } else {
+                    await MainActor.run {
+                        continueToNextStep()
+                    }
+                }
+            }
+        } label: {
+            Text("Update")
+        }
+        .buttonStyle(OnboardingButtonStyle(isDisabled: selectedOperatorIds.isEmpty))
+        .disabled(selectedOperatorIds.isEmpty)
     }
 
     private func continueButton() -> some View {

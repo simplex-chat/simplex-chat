@@ -20,7 +20,7 @@ private enum NetworkAlert: Identifiable {
 }
 
 private enum NetworkAndServersSheet: Identifiable {
-    case showConditions(conditionsAction: UsageConditionsAction)
+    case showConditions
 
     var id: String {
         switch self {
@@ -65,7 +65,7 @@ struct NetworkAndServers: View {
                     switch conditionsAction {
                     case let .review(_, deadline, _):
                         if let deadline = deadline, anyOperatorEnabled {
-                            Text("Conditions will be considered accepted on: \(conditionsTimestamp(deadline)).")
+                            Text("Conditions will be accepted on: \(conditionsTimestamp(deadline)).")
                                 .foregroundColor(theme.colors.secondary)
                         }
                     default:
@@ -171,9 +171,8 @@ struct NetworkAndServers: View {
         }
         .sheet(item: $sheetItem) { item in
             switch item {
-            case let .showConditions(conditionsAction):
+            case .showConditions:
                 UsageConditionsView(
-                    conditionsAction: conditionsAction,
                     currUserServers: $currUserServers,
                     userServers: $userServers
                 )
@@ -221,7 +220,7 @@ struct NetworkAndServers: View {
 
     private func conditionsButton(_ conditionsAction: UsageConditionsAction) -> some View {
         Button {
-            sheetItem = .showConditions(conditionsAction: conditionsAction)
+            sheetItem = .showConditions
         } label: {
             switch conditionsAction {
             case .review:
@@ -236,7 +235,6 @@ struct NetworkAndServers: View {
 struct UsageConditionsView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var theme: AppTheme
-    var conditionsAction: UsageConditionsAction
     @Binding var currUserServers: [UserOperatorServers]
     @Binding var userServers: [UserOperatorServers]
 
@@ -248,14 +246,29 @@ struct UsageConditionsView: View {
                 .padding(.top)
                 .padding(.top)
 
-            switch conditionsAction {
+            switch ChatModel.shared.conditions.conditionsAction {
 
-            case let .review(operators, _, _):
+            case .none:
+                ConditionsTextView()
+                    .padding(.bottom)
+                    .padding(.bottom)
+
+            case let .review(operators, deadline, _):
                 Text("Conditions will be accepted for the operator(s): **\(operators.map { $0.legalName_ }.joined(separator: ", "))**.")
                 ConditionsTextView()
-                acceptConditionsButton(operators.map { $0.operatorId })
-                    .padding(.bottom)
-                    .padding(.bottom)
+                VStack(spacing: 8) {
+                    acceptConditionsButton(operators.map { $0.operatorId })
+                    if let deadline = deadline {
+                        Text("Conditions will be automatically accepted for enabled operators on: \(conditionsTimestamp(deadline)).")
+                            .foregroundColor(theme.colors.secondary)
+                            .font(.footnote)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding(.horizontal, 32)
+                    }
+                }
+                .padding(.bottom)
+                .padding(.bottom)
 
             case let .accepted(operators):
                 Text("Conditions are accepted for the operator(s): **\(operators.map { $0.legalName_ }.joined(separator: ", "))**.")

@@ -10,11 +10,13 @@ import Intents
 import SimpleXChat
 
 private enum NoticesSheet: Identifiable {
-    case notices(showWhatsNew: Bool, showOperatorsNotice: Bool)
+    case whatsNew(updatedConditions: Bool)
+    case updatedConditions
 
     var id: String {
         switch self {
-        case .notices: return "notices"
+        case .whatsNew: return "whatsNew"
+        case .updatedConditions: return "updatedConditions"
         }
     }
 }
@@ -274,10 +276,12 @@ struct ContentView: View {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                         if !noticesShown {
                             let showWhatsNew = shouldShowWhatsNew()
-                            let showOperatorsNotice = chatModel.conditions.conditionsAction?.showNotice ?? false
-                            noticesShown = showWhatsNew || showOperatorsNotice
-                            if noticesShown {
-                                noticesSheetItem = .notices(showWhatsNew: showWhatsNew, showOperatorsNotice: showOperatorsNotice)
+                            let showUpdatedConditions = chatModel.conditions.conditionsAction?.showNotice ?? false
+                            noticesShown = showWhatsNew || showUpdatedConditions
+                            if showWhatsNew {
+                                noticesSheetItem = .whatsNew(updatedConditions: showUpdatedConditions)
+                            } else if showUpdatedConditions {
+                                noticesSheetItem = .updatedConditions
                             }
                         }
                     }
@@ -288,8 +292,14 @@ struct ContentView: View {
             .onChange(of: chatModel.appOpenUrl) { _ in connectViaUrl() }
             .sheet(item: $noticesSheetItem) { item in
                 switch item {
-                case let .notices(showWhatsNew, showOperatorsNotice):
-                    WhatsNewView(showWhatsNew: showWhatsNew, showOperatorsNotice: showOperatorsNotice)
+                case let .whatsNew(updatedConditions):
+                    WhatsNewView(updatedConditions: updatedConditions)
+                case .updatedConditions:
+                    UsageConditionsView(
+                        currUserServers: Binding.constant([]),
+                        userServers: Binding.constant([])
+                    )
+                    .modifier(ThemedBackground(grouped: true))
                 }
             }
             if chatModel.setDeliveryReceipts {
