@@ -88,38 +88,42 @@ struct CreateFirstProfile: View {
     @FocusState private var focusDisplayName
 
     var body: some View {
-        VStack(alignment: .leading) {
-            Group {
-                Text("Create your profile")
-                    .font(.largeTitle)
-                    .bold()
-                Text("Your profile, contacts and delivered messages are stored on your device.")
-                    .foregroundColor(theme.colors.secondary)
-                Text("The profile is only shared with your contacts.")
-                    .foregroundColor(theme.colors.secondary)
-                    .padding(.bottom)
-            }
-            .padding(.bottom)
+        VStack(alignment: .leading, spacing: 20) {
+            Text("Your profile, contacts and delivered messages are stored on your device.")
+                .foregroundColor(theme.colors.secondary)
+            Text("The profile is only shared with your contacts.")
+                .foregroundColor(theme.colors.secondary)
 
-            ZStack(alignment: .topLeading) {
+            HStack {
                 let name = displayName.trimmingCharacters(in: .whitespaces)
                 let validName = mkValidName(name)
-                if name != validName {
-                    Button {
-                        showAlert(.invalidNameError(validName: validName))
-                    } label: {
-                        Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+                ZStack {
+                    if name != validName {
+                        Button {
+                            showAlert(.invalidNameError(validName: validName))
+                        } label: {
+                            Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+                        }
+                    } else {
+                        Image(systemName: "exclamationmark.circle").foregroundColor(.clear)
+                        Image(systemName: "pencil").foregroundColor(theme.colors.secondary)
                     }
-                } else {
-                    Image(systemName: "exclamationmark.circle").foregroundColor(.clear)
                 }
                 TextField("Enter your name…", text: $displayName)
                     .focused($focusDisplayName)
-                    .padding(.leading, 32)
+                    .padding(.horizontal)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(Color(uiColor: .secondarySystemGroupedBackground))
+                    )
             }
-            .padding(.bottom)
+            .padding(.top)
+
             Spacer()
-            onboardingButtons()
+
+            createProfileButton()
+                .padding(.bottom)
         }
         .onAppear() {
             focusDisplayName = true
@@ -129,32 +133,14 @@ struct CreateFirstProfile: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    func onboardingButtons() -> some View {
-        HStack {
-            Button {
-                hideKeyboard()
-                withAnimation {
-                    m.onboardingStage = .step1_SimpleXInfo
-                }
-            } label: {
-                HStack {
-                    Image(systemName: "lessthan")
-                    Text("About SimpleX")
-                }
-            }
-
-            Spacer()
-
-            Button {
-                createProfile(displayName, showAlert: showAlert, dismiss: dismiss)
-            } label: {
-                HStack {
-                    Text("Create")
-                    Image(systemName: "greaterthan")
-                }
-            }
-            .disabled(!canCreateProfile(displayName))
+    func createProfileButton() -> some View {
+        Button {
+            createProfile(displayName, showAlert: showAlert, dismiss: dismiss)
+        } label: {
+            Text("Create profile")
         }
+        .buttonStyle(OnboardingButtonStyle(isDisabled: !canCreateProfile(displayName)))
+        .disabled(!canCreateProfile(displayName))
     }
 
     private func showAlert(_ alert: UserProfileAlert) {

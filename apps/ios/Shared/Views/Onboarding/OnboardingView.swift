@@ -25,7 +25,7 @@ struct OnboardingView: View {
 
 enum OnboardingStage: String, Identifiable {
     case step1_SimpleXInfo
-    case step2_CreateProfile
+    case step2_CreateProfile // deprecated
     case step3_CreateSimpleXAddress // deprecated
     case step3_ChooseServerOperators
     case step4_SetNotificationsMode
