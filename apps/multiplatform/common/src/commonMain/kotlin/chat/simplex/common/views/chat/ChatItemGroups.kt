@@ -21,18 +21,10 @@ import kotlin.math.min
 
 data class MergedItems (
   val items: List<MergedItem>,
-  val ranges: List<SplitRange>,
+  val splits: List<SplitRange>,
   // chat item id, index in list
   val indexInParentItems: Map<Long, Int>,
 ) {
-  fun lastIndexInParentItems(): Int {
-    val last = items.lastOrNull() ?: return -1
-    return when (last) {
-      is MergedItem.Single -> indexInParentItems[last.item.item.id] ?: -1
-      is MergedItem.Grouped -> indexInParentItems[last.items.last().item.id] ?: -1
-    }
-  }
-
   /** Returns groups mapping for easy checking the structure */
   fun mappingToString(): String = items.mapIndexed { index, g ->
     when (g) {
@@ -65,7 +57,6 @@ data class MergedItems (
       var index = 0
       var unclosedSplitIndex: Int? = null
       var unclosedSplitIndexInParent: Int? = null
-      var unclosedSplitItemId: Long? = null
       var visibleItemIndexInParent = -1
       var unreadBefore = unreadCount.value - chatState.unreadAfterNewestLoaded.value
       var lastRevealedIdsInMergedItems: MutableList<Long>? = null
@@ -159,16 +150,15 @@ data class MergedItems (
         }
         if (itemIsSplit) {
           // found item that is considered as a split
-          if (unclosedSplitIndex != null && unclosedSplitItemId != null && unclosedSplitIndexInParent != null) {
+          if (unclosedSplitIndex != null && unclosedSplitIndexInParent != null) {
             // it was at least second split in the list
-            splitRanges.add(SplitRange(unclosedSplitItemId, unclosedSplitIndex until index, unclosedSplitIndexInParent until visibleItemIndexInParent))
+            splitRanges.add(SplitRange(unclosedSplitIndex until index, unclosedSplitIndexInParent until visibleItemIndexInParent))
           }
           unclosedSplitIndex = index
           unclosedSplitIndexInParent = visibleItemIndexInParent
-          unclosedSplitItemId = item.id
-        } else if (index + 1 == items.size && unclosedSplitIndex != null && unclosedSplitItemId != null && unclosedSplitIndexInParent != null) {
+        } else if (index + 1 == items.size && unclosedSplitIndex != null && unclosedSplitIndexInParent != null) {
           // just one split for the whole list, there will be no more, it's the end
-          splitRanges.add(SplitRange(unclosedSplitItemId, unclosedSplitIndex .. index, unclosedSplitIndexInParent .. visibleItemIndexInParent))
+          splitRanges.add(SplitRange(unclosedSplitIndex .. index, unclosedSplitIndexInParent .. visibleItemIndexInParent))
         }
         indexInParentItems[item.id] = visibleItemIndexInParent
         index++
@@ -220,6 +210,11 @@ sealed class MergedItem {
     }
   }
 
+  fun hasUnread(): Boolean = when (this) {
+    is Single -> item.item.isRcvNew
+    is Grouped -> unreadIds.isNotEmpty()
+  }
+
   fun newest(): ListItem = when (this) {
     is Single -> item
     is Grouped -> items.first()
@@ -242,10 +237,6 @@ sealed class MergedItem {
 }
 
 data class SplitRange(
-  /** itemId that was the last item in received list (ordered from old to new items) loaded using [ChatPagination.Initial], [ChatPagination.Around].
-   * It changes over time when new items are loaded.
-   * see [apiLoadMessages] */
-  val itemId: Long, // remove
   /** range of indexes inside reversedChatItems where the first element is the split (it's index is [indexRangeInReversed.first])
    * so [0, 1, 2, -100-, 101] if the 3 is a split, SplitRange(itemId = 100, indexRange = 3 .. 4) will be this SplitRange instance
    * (3, 4 indexes of the splitRange with the split itself at index 3)

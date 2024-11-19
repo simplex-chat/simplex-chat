@@ -957,8 +957,7 @@ fun BoxScope.ChatItemsList(
     with(LocalDensity.current) { LocalWindowHeight().roundToPx() - topPaddingToContentPx.value - (AppBarHeight * fontSizeSqrtMultiplier * 2).roundToPx() }
   )
   val listState = rememberUpdatedState(rememberSaveable(chatInfo.id, searchValueIsEmpty.value, saver = LazyListState.Saver) {
-    val item = reversedChatItems.value.lastOrNull { it.isRcvNew }
-    val index = if (item != null) groups.value.indexInParentItems[item.id] ?: -1 else -1
+    val index = groups.value.items.indexOfLast { it.hasUnread() }
     if (index <= 0) {
       LazyListState(0, 0)
     } else {
@@ -1480,10 +1479,11 @@ fun BoxScope.FloatingButtons(
     Modifier.padding(end = DEFAULT_PADDING, top = 24.dp + topPaddingToContent()).align(Alignment.TopEnd),
     topUnreadCount,
     onClick = {
-      val item = chatItems.value.asReversed().lastOrNull { it.isRcvNew } ?: return@TopEndFloatingButton
-      val indexInParent = groups.value.indexInParentItems[item.id] ?: return@TopEndFloatingButton
-      // scroll to the top unread item
-      scope.launch { tryBlockAndSetLoadingMore(loadingMoreItems) { listState.value.animateScrollToItem(indexInParent + 1, -maxHeight.value) } }
+      val index = groups.value.items.indexOfLast { it.hasUnread() }
+      if (index != -1) {
+        // scroll to the top unread item
+        scope.launch { tryBlockAndSetLoadingMore(loadingMoreItems) { listState.value.animateScrollToItem(index + 1, -maxHeight.value) } }
+      }
     },
     onLongClick = { showDropDown.value = true }
   )
@@ -1542,12 +1542,11 @@ fun PreloadItems(
         .distinctUntilChanged()
         .map { firstVisibleIndex ->
           val items = chatModel.chatItems.value
-          val anchors = groups.value.ranges
-          val anchor = anchors.lastOrNull { it.indexRangeInParentItems.contains(firstVisibleIndex) }
-          if (anchor != null) {
-            // we're inside an splitRange (top --- [end of the splitRange --- we're here --- start of the splitRange] --- bottom)
-            val index = groups.value.indexInParentItems[anchor.itemId] ?: -1
-            if (index + remaining > firstVisibleIndex) items.lastIndex - anchor.indexRangeInReversed.first else null
+          val splits = groups.value.splits
+          val split = splits.lastOrNull { it.indexRangeInParentItems.contains(firstVisibleIndex) }
+          if (split != null) {
+            // we're inside a splitRange (top --- [end of the splitRange --- we're here --- start of the splitRange] --- bottom)
+            if (split.indexRangeInParentItems.first + remaining > firstVisibleIndex) items.lastIndex - split.indexRangeInReversed.first else null
           } else null
         }
         .filterNotNull()
@@ -1567,27 +1566,27 @@ fun PreloadItems(
       .distinctUntilChanged()
       .map { firstVisibleIndex ->
         val lInfo = listState.value.layoutInfo
-        val anchors = groups.value.ranges
+        val splits = groups.value.splits
         var lastIndexToLoadFrom: Int? = null
         val lastVisibleItemIndex = (lInfo.visibleItemsInfo.lastOrNull()?.index ?: 0)
-        for (anchor in anchors) {
-          // before any anchor
-          if (anchor.indexRangeInParentItems.first > firstVisibleIndex) {
-            if (lastVisibleItemIndex > (anchor.indexRangeInParentItems.first - remaining)) {
-              lastIndexToLoadFrom = anchor.indexRangeInReversed.first - 1
+        for (split in splits) {
+          // before any split
+          if (split.indexRangeInParentItems.first > firstVisibleIndex) {
+            if (lastVisibleItemIndex > (split.indexRangeInParentItems.first - remaining)) {
+              lastIndexToLoadFrom = split.indexRangeInReversed.first - 1
             }
             break
           }
-          val containsInRange = anchor.indexRangeInParentItems.contains(listState.value.firstVisibleItemIndex)
+          val containsInRange = split.indexRangeInParentItems.contains(firstVisibleIndex)
           if (containsInRange) {
-            if (lastVisibleItemIndex > (anchor.indexRangeInParentItems.last - remaining)) {
-              lastIndexToLoadFrom = anchor.indexRangeInReversed.last
+            if (lastVisibleItemIndex > (split.indexRangeInParentItems.last - remaining)) {
+              lastIndexToLoadFrom = split.indexRangeInReversed.last
             }
             break
           }
         }
         val items = chatModel.chatItems.value
-        if (anchors.isEmpty() && items.isNotEmpty() && lastVisibleItemIndex > groups.value.lastIndexInParentItems() + 1 - remaining && items.size >= ChatPagination.INITIAL_COUNT) {
+        if (splits.isEmpty() && items.isNotEmpty() && lastVisibleItemIndex > groups.value.items.lastIndex + 1 - remaining && items.size >= ChatPagination.INITIAL_COUNT) {
           lastIndexToLoadFrom = items.lastIndex
         }
         if (allowLoad.value && lastIndexToLoadFrom != null/* && lastVisibleItemIndex + 1 >= ChatPagination.INITIAL_COUNT*/) {
