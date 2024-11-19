@@ -59,7 +59,7 @@ struct OperatorView: View {
                             }
                         case let .required(deadline):
                             if userServers[operatorIndex].operator_.enabled, let deadline = deadline {
-                                Text("Conditions will be considered accepted after: \(conditionsTimestamp(deadline)).")
+                                Text("Conditions will be accepted on: \(conditionsTimestamp(deadline)).")
                                     .foregroundColor(theme.colors.secondary)
                             }
                         }
@@ -69,7 +69,7 @@ struct OperatorView: View {
                 if userServers[operatorIndex].operator_.enabled {
                     if !userServers[operatorIndex].smpServers.filter({ !$0.deleted }).isEmpty {
                         Section {
-                            Toggle("For receiving", isOn: $userServers[operatorIndex].operator_.smpRoles.storage)
+                            Toggle("To receive", isOn: $userServers[operatorIndex].operator_.smpRoles.storage)
                                 .onChange(of: userServers[operatorIndex].operator_.smpRoles.storage) { _ in
                                     validateServers_($userServers, $serverErrors)
                                 }
@@ -148,7 +148,7 @@ struct OperatorView: View {
 
                     if !userServers[operatorIndex].xftpServers.filter({ !$0.deleted }).isEmpty {
                         Section {
-                            Toggle("For sending", isOn: $userServers[operatorIndex].operator_.xftpRoles.storage)
+                            Toggle("To send", isOn: $userServers[operatorIndex].operator_.xftpRoles.storage)
                                 .onChange(of: userServers[operatorIndex].operator_.xftpRoles.storage) { _ in
                                     validateServers_($userServers, $serverErrors)
                                 }
@@ -253,7 +253,7 @@ struct OperatorView: View {
     private func infoViewLink() -> some View {
         NavigationLink() {
             OperatorInfoView(serverOperator: userServers[operatorIndex].operator_)
-                .navigationBarTitle("Operator information")
+                .navigationBarTitle("Network operator")
                 .modifier(ThemedBackground(grouped: true))
                 .navigationBarTitleDisplayMode(.large)
         } label: {
@@ -269,7 +269,7 @@ struct OperatorView: View {
     }
 
     private func useOperatorToggle() -> some View {
-        Toggle("Use operator", isOn: $useOperator)
+        Toggle("Use servers", isOn: $useOperator)
             .onChange(of: useOperator) { useOperatorToggle in
                 if useOperatorToggleReset {
                     useOperatorToggleReset = false
@@ -310,15 +310,31 @@ func conditionsTimestamp(_ date: Date) -> String {
 
 struct OperatorInfoView: View {
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.colorScheme) var colorScheme: ColorScheme
     var serverOperator: ServerOperator
 
     var body: some View {
         VStack {
             List {
-                Section(header: Text("Description").foregroundColor(theme.colors.secondary)) {
-                    Text(serverOperator.info.description)
+                Section {
+                    VStack(alignment: .leading) {
+                        Image(serverOperator.largeLogo(colorScheme))
+                            .resizable()
+                            .scaledToFit()
+                            .frame(height: 48)
+                        if let legalName = serverOperator.legalName {
+                            Text(legalName)
+                        }
+                    }
                 }
-                Section(header: Text("Website").foregroundColor(theme.colors.secondary)) {
+                Section {
+                    VStack(alignment: .leading, spacing: 12) {
+                        ForEach(serverOperator.info.description, id: \.self) { d in
+                            Text(d)
+                        }
+                    }
+                }
+                Section {
                     Link("\(serverOperator.info.website)", destination: URL(string: serverOperator.info.website)!)
                 }
             }
@@ -436,7 +452,7 @@ struct SingleOperatorUsageConditionsView: View {
             VStack(alignment: .leading, spacing: 20) {
                 Group {
                     viewHeader()
-                    Text("In order to use operator **\(userServers[operatorIndex].operator_.legalName_)**, accept conditions of use.")
+                    Text("To use the servers of **\(userServers[operatorIndex].operator_.legalName_)**, accept conditions of use.")
                     conditionsAppliedToOtherOperatorsText()
                     ConditionsTextView()
                     acceptConditionsButton()
@@ -451,7 +467,7 @@ struct SingleOperatorUsageConditionsView: View {
     }
 
     private func viewHeader() -> some View {
-        Text("Use operator \(userServers[operatorIndex].operator_.tradeName)")
+        Text("Use servers of \(userServers[operatorIndex].operator_.tradeName)")
             .font(.largeTitle)
             .bold()
             .padding(.top)
@@ -465,7 +481,7 @@ struct SingleOperatorUsageConditionsView: View {
             $0.operatorId != userServers[operatorIndex].operator_.operatorId
         }
         if !otherOperatorsToApply.isEmpty {
-            Text("Conditions will also apply for following operator(s) you use: **\(otherOperatorsToApply.map { $0.legalName_ }.joined(separator: ", "))**.")
+            Text("These conditions will also apply for: **\(otherOperatorsToApply.map { $0.legalName_ }.joined(separator: ", "))**.")
         }
     }
     
@@ -481,7 +497,7 @@ struct SingleOperatorUsageConditionsView: View {
         } label: {
             Text("Accept conditions")
         }
-        .buttonStyle(OnboardingButtonStyle(isDisabled: false))
+        .buttonStyle(OnboardingButtonStyle())
     }
 
     func acceptForOperators(_ operatorIds: [Int64], _ operatorIndexToEnable: Int) {

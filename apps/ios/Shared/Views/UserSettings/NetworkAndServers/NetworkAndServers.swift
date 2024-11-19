@@ -65,7 +65,7 @@ struct NetworkAndServers: View {
                     switch conditionsAction {
                     case let .review(_, deadline, _):
                         if let deadline = deadline, anyOperatorEnabled {
-                            Text("Conditions will be considered accepted for enabled operators after: \(conditionsTimestamp(deadline)).")
+                            Text("Conditions will be considered accepted on: \(conditionsTimestamp(deadline)).")
                                 .foregroundColor(theme.colors.secondary)
                         }
                     default:
@@ -251,14 +251,14 @@ struct UsageConditionsView: View {
             switch conditionsAction {
 
             case let .review(operators, _, _):
-                Text("Conditions will be accepted for following operator(s): **\(operators.map { $0.legalName_ }.joined(separator: ", "))**.")
+                Text("Conditions will be accepted for the operator(s): **\(operators.map { $0.legalName_ }.joined(separator: ", "))**.")
                 ConditionsTextView()
                 acceptConditionsButton(operators.map { $0.operatorId })
                     .padding(.bottom)
                     .padding(.bottom)
 
             case let .accepted(operators):
-                Text("Conditions are accepted for following operator(s): **\(operators.map { $0.legalName_ }.joined(separator: ", "))**.")
+                Text("Conditions are accepted for the operator(s): **\(operators.map { $0.legalName_ }.joined(separator: ", "))**.")
                 ConditionsTextView()
                     .padding(.bottom)
                     .padding(.bottom)
@@ -274,7 +274,7 @@ struct UsageConditionsView: View {
         } label: {
             Text("Accept conditions")
         }
-        .buttonStyle(OnboardingButtonStyle(isDisabled: false))
+        .buttonStyle(OnboardingButtonStyle())
     }
 
     func acceptForOperators(_ operatorIds: [Int64]) {

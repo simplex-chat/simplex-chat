@@ -39,7 +39,7 @@ struct UserAddressLearnMore: View {
             } label: {
                 Text("Create SimpleX address")
             }
-            .buttonStyle(OnboardingButtonStyle(isDisabled: false))
+            .buttonStyle(OnboardingButtonStyle())
 
             NavigationLink(isActive: $createAddressLinkActive) {
                 UserAddressView(autoCreate: true)

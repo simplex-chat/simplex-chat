@@ -11,7 +11,7 @@ import SimpleXChat
 
 struct OnboardingButtonStyle: ButtonStyle {
     @EnvironmentObject var theme: AppTheme
-    var isDisabled: Bool
+    var isDisabled: Bool = false
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -95,9 +95,9 @@ struct ChooseServerOperators: View {
                             VStack(spacing: 8) {
                                 reviewLaterButton()
                                 (
-                                    Text("Conditions will be considered accepted for enabled operators after 30 days.")
+                                    Text("Conditions will be accepted for enabled operators after 30 days.")
                                     + Text(" ")
-                                    + Text("You can disable operators and configure your servers in Network & servers settings.")
+                                    + Text("You can configure operators in Network & servers settings.")
                                 )
                                 .multilineTextAlignment(.center)
                                 .font(.footnote)
@@ -283,7 +283,7 @@ struct ChooseServerOperators: View {
         } label: {
             Text("Accept conditions")
         }
-        .buttonStyle(OnboardingButtonStyle(isDisabled: false))
+        .buttonStyle(OnboardingButtonStyle())
     }
 
     private func enabledOperators(_ operators: [ServerOperator]) -> [ServerOperator]? {
