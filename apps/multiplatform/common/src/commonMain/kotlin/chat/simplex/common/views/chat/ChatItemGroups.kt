@@ -1,15 +1,9 @@
 package chat.simplex.common.views.chat
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.chatModel
@@ -71,15 +65,12 @@ data class MergedItems (
           visibleItemIndexInParent++
           val listItem = ListItem(item, prev, next, unreadBefore)
           recent = if (item.mergeCategory != null) {
-            if (item.mergeCategory != prev?.mergeCategory || lastRevealedIdsInMergedItems == null || lastRangeInReversedForMergedItems == null) {
-              lastRangeInReversedForMergedItems = MutableStateFlow(index .. index)
+            if (item.mergeCategory != prev?.mergeCategory || lastRevealedIdsInMergedItems == null) {
               lastRevealedIdsInMergedItems = if (revealedItems.contains(item.id)) mutableListOf(item.id) else mutableListOf()
-            } else {
-              if (revealed) {
-                lastRevealedIdsInMergedItems += item.id
-              }
-              lastRangeInReversedForMergedItems.value = lastRangeInReversedForMergedItems.value.first .. index
+            } else if (revealed) {
+              lastRevealedIdsInMergedItems += item.id
             }
+            lastRangeInReversedForMergedItems = MutableStateFlow(index .. index)
             MergedItem.Grouped(
               items = arrayListOf(listItem),
               revealed = revealed,
@@ -185,11 +176,11 @@ sealed class MergedItem {
 
 data class SplitRange(
   /** range of indexes inside reversedChatItems where the first element is the split (it's index is [indexRangeInReversed.first])
-   * so [0, 1, 2, -100-, 101] if the 3 is a split, SplitRange(itemId = 100, indexRange = 3 .. 4) will be this SplitRange instance
+   * so [0, 1, 2, -100-, 101] if the 3 is a split, SplitRange(indexRange = 3 .. 4) will be this SplitRange instance
    * (3, 4 indexes of the splitRange with the split itself at index 3)
    * */
   val indexRangeInReversed: IntRange,
-  /** range of indexes inside LazyColumn (taking revealed/hidden items into account) where the first element is the split (it's index is [indexRangeInParentItems.first]) */
+  /** range of indexes inside LazyColumn where the first element is the split (it's index is [indexRangeInParentItems.first]) */
   val indexRangeInParentItems: IntRange
 )
 
@@ -356,34 +347,34 @@ fun recalculateChatStatePositions(chatState: ActiveChatState) = object: ChatItem
 }
 
 /** Helps in debugging */
-@Composable
-fun BoxScope.ShowChatState() {
-  Box(Modifier.align(Alignment.Center).size(200.dp).background(Color.Black)) {
-    val s = chatModel.chatState
-    Text(
-      "itemId ${s.unreadAnchorItemId.value} / ${chatModel.chatItems.value.firstOrNull { it.id == s.unreadAnchorItemId.value }?.text}, \nunreadAfter ${s.unreadAfter.value}, afterNewest ${s.unreadAfterNewestLoaded.value}",
-      color = Color.White
-    )
-  }
-}
-// Returns items mapping for easy checking the structure
-fun MergedItems.mappingToString(): String = items.mapIndexed { index, g ->
-  when (g) {
-    is MergedItem.Single ->
-      "\nstartIndexInParentItems $index, startIndexInReversedItems ${g.startIndexInReversedItems}, " +
-          "revealed true, " +
-          "mergeCategory null " +
-          "\nunreadBefore ${g.item.unreadBefore}"
-
-    is MergedItem.Grouped ->
-      "\nstartIndexInParentItems $index, startIndexInReversedItems ${g.startIndexInReversedItems}, " +
-          "revealed ${g.revealed}, " +
-          "mergeCategory ${g.items[0].item.mergeCategory} " +
-          g.items.mapIndexed { i, it ->
-            "\nunreadBefore ${it.unreadBefore} ${Triple(index, g.startIndexInReversedItems + i, it.item.id)}"
-          }
-  }
-}.toString()
+//@Composable
+//fun BoxScope.ShowChatState() {
+//  Box(Modifier.align(Alignment.Center).size(200.dp).background(Color.Black)) {
+//    val s = chatModel.chatState
+//    Text(
+//      "itemId ${s.unreadAnchorItemId.value} / ${chatModel.chatItems.value.firstOrNull { it.id == s.unreadAnchorItemId.value }?.text}, \nunreadAfter ${s.unreadAfter.value}, afterNewest ${s.unreadAfterNewestLoaded.value}",
+//      color = Color.White
+//    )
+//  }
+//}
+//// Returns items mapping for easy checking the structure
+//fun MergedItems.mappingToString(): String = items.mapIndexed { index, g ->
+//  when (g) {
+//    is MergedItem.Single ->
+//      "\nstartIndexInParentItems $index, startIndexInReversedItems ${g.startIndexInReversedItems}, " +
+//          "revealed true, " +
+//          "mergeCategory null " +
+//          "\nunreadBefore ${g.item.unreadBefore}"
+//
+//    is MergedItem.Grouped ->
+//      "\nstartIndexInParentItems $index, startIndexInReversedItems ${g.startIndexInReversedItems}, " +
+//          "revealed ${g.revealed}, " +
+//          "mergeCategory ${g.items[0].item.mergeCategory} " +
+//          g.items.mapIndexed { i, it ->
+//            "\nunreadBefore ${it.unreadBefore} ${Triple(index, g.startIndexInReversedItems + i, it.item.id)}"
+//          }
+//  }
+//}.toString()
 
 const val TRIM_KEEP_COUNT = 200
 
