@@ -70,7 +70,7 @@ import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo)
 import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, SMPServerSubs, ServerQueueInfo, UserNetworkInfo)
-import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig)
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig, ServerCfg)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration, withTransaction, withTransactionPriority)
@@ -154,9 +154,9 @@ data ChatConfig = ChatConfig
     chatHooks :: ChatHooks
   }
 
-data RandomServers = RandomServers
-  { smpServers :: NonEmpty (NewUserServer 'PSMP),
-    xftpServers :: NonEmpty (NewUserServer 'PXFTP)
+data RandomAgentServers = RandomAgentServers
+  { smpServers :: NonEmpty (ServerCfg 'PSMP),
+    xftpServers :: NonEmpty (ServerCfg 'PXFTP)
   }
   deriving (Show)
 
@@ -183,6 +183,7 @@ data PresetServers = PresetServers
     ntf :: [NtfServer],
     netCfg :: NetworkConfig
   }
+  deriving (Show)
 
 data InlineFilesConfig = InlineFilesConfig
   { offerChunks :: Integer,
@@ -206,7 +207,8 @@ data ChatDatabase = ChatDatabase {chatStore :: SQLiteStore, agentStore :: SQLite
 
 data ChatController = ChatController
   { currentUser :: TVar (Maybe User),
-    randomServers :: RandomServers,
+    randomPresetServers :: NonEmpty PresetOperator,
+    randomAgentServers :: RandomAgentServers,
     currentRemoteHost :: TVar (Maybe RemoteHostId),
     firstTime :: Bool,
     smpAgent :: AgentClient,
