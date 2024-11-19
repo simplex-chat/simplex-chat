@@ -11,12 +11,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
-import chat.simplex.common.model.CIDirection.GroupRcv
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.chatModel
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlin.math.abs
 import kotlin.math.min
 
 data class MergedItems (
@@ -25,25 +23,6 @@ data class MergedItems (
   // chat item id, index in list
   val indexInParentItems: Map<Long, Int>,
 ) {
-  /** Returns items mapping for easy checking the structure */
-  fun mappingToString(): String = items.mapIndexed { index, g ->
-    when (g) {
-      is MergedItem.Single ->
-        "\nstartIndexInParentItems $index, startIndexInReversedItems ${g.startIndexInReversedItems}, " +
-            "revealed true, " +
-            "mergeCategory null " +
-            "\nunreadBefore ${g.item.unreadBefore}"
-
-      is MergedItem.Grouped ->
-        "\nstartIndexInParentItems $index, startIndexInReversedItems ${g.startIndexInReversedItems}, " +
-            "revealed ${g.revealed}, " +
-            "mergeCategory ${g.items[0].item.mergeCategory} " +
-            g.items.mapIndexed { i, it ->
-              "\nunreadBefore ${it.unreadBefore} ${Triple(index, g.startIndexInReversedItems + i, it.item.id)}"
-            }
-    }
-  }.toString()
-
   companion object {
     fun create(items: List<ChatItem>, unreadCount: State<Int>, revealedItems: Set<Long>, chatState: ActiveChatState): MergedItems {
       if (items.isEmpty()) return MergedItems(emptyList(), emptyList(), emptyMap())
@@ -64,12 +43,11 @@ data class MergedItems (
       var recent: MergedItem? = null
       while (index < items.size) {
         val item = items[index]
+        val prev = items.getOrNull(index - 1)
         val next = items.getOrNull(index + 1)
         val category = item.mergeCategory
         val itemIsSplit = itemSplits.contains(item.id)
 
-        val itemSeparation: ItemSeparation
-        val prevItemSeparationLargeGap: Boolean
         if (item.id == unreadAnchorItemId.value) {
           unreadBefore = unreadCount.value - chatState.unreadAfter.value
         }
@@ -77,22 +55,9 @@ data class MergedItems (
 
         val revealed = item.mergeCategory == null || revealedItems.contains(item.id)
         if (recent is MergedItem.Grouped && recent.mergeCategory == category && !revealedItems.contains(recent.items.first().item.id) && !itemIsSplit) {
-//          if (recent.revealed.value) {
-//            val prev = items.getOrNull(index - 1)
-//            itemSeparation = getItemSeparation(item, prev)
-//            val nextForGap = if ((category != null && category == prev?.mergeCategory) || index + 1 == items.size) null else next
-//            prevItemSeparationLargeGap = if (nextForGap == null) false else getItemSeparationLargeGap(nextForGap, item)
-
-//            visibleItemIndexInParent++
-//          } else {
-            itemSeparation = getItemSeparation(item, null)
-            prevItemSeparationLargeGap = false
-//          }
-          val listItem = ListItem(item, itemSeparation, prevItemSeparationLargeGap, unreadBefore)
+          val listItem = ListItem(item, prev, next, unreadBefore)
           recent.items.add(listItem)
-          if (shouldShowAvatar(item, next)) {
-            recent.showAvatar.add(item.id)
-          }
+
           if (item.isRcvNew) {
             recent.unreadIds.add(item.id)
           }
@@ -104,17 +69,7 @@ data class MergedItems (
           }
         } else {
           visibleItemIndexInParent++
-
-          val prev = items.getOrNull(index - 1)
-          if (revealed) {
-            itemSeparation = getItemSeparation(item, prev)
-            val nextForGap = if ((category != null && category == prev?.mergeCategory) || index + 1 == items.size) null else next
-            prevItemSeparationLargeGap = if (nextForGap == null) false else getItemSeparationLargeGap(nextForGap, item)
-          } else {
-            itemSeparation = getItemSeparation(item, null)
-            prevItemSeparationLargeGap = false
-          }
-          val listItem = ListItem(item, itemSeparation, prevItemSeparationLargeGap, unreadBefore)
+          val listItem = ListItem(item, prev, next, unreadBefore)
           recent = if (item.mergeCategory != null) {
             if (item.mergeCategory != prev?.mergeCategory || lastRevealedIdsInMergedItems == null || lastRangeInReversedForMergedItems == null) {
               lastRangeInReversedForMergedItems = MutableStateFlow(index .. index)
@@ -128,14 +83,9 @@ data class MergedItems (
             MergedItem.Grouped(
               items = arrayListOf(listItem),
               revealed = revealed,
-              revealedIds = lastRevealedIdsInMergedItems,
+              revealedIdsWithinGroup = lastRevealedIdsInMergedItems,
               rangeInReversed = lastRangeInReversedForMergedItems,
               mergeCategory = item.mergeCategory,
-              showAvatar = if (shouldShowAvatar(item, next)) {
-                mutableSetOf(item.id)
-              } else {
-                mutableSetOf()
-              },
               startIndexInReversedItems = index,
               unreadIds = if (item.isRcvNew) mutableSetOf(item.id) else mutableSetOf()
             )
@@ -184,10 +134,12 @@ sealed class MergedItem {
   data class Grouped (
     val items: ArrayList<ListItem>,
     val revealed: Boolean,
-    val revealedIds: MutableList<Long>,
+    // it stores ids for all consecutive revealed items from the same group in order to hide them all on user's action
+    // it's the same list instance for all Grouped items within revealed group
+    /** @see reveal */
+    val revealedIdsWithinGroup: MutableList<Long>,
     val rangeInReversed: MutableStateFlow<IntRange>,
     val mergeCategory: CIMergeCategory?,
-    val showAvatar: MutableSet<Long>, // ?
     val unreadIds: MutableSet<Long>,
     override val startIndexInReversedItems: Int,
   ): MergedItem() {
@@ -200,11 +152,11 @@ sealed class MergedItem {
           i++
         }
       } else {
-        while (i < revealedIds.size) {
-          newRevealed.remove(revealedIds[i])
+        while (i < revealedIdsWithinGroup.size) {
+          newRevealed.remove(revealedIdsWithinGroup[i])
           i++
         }
-        revealedIds.clear()
+        revealedIdsWithinGroup.clear()
       }
       revealedItems.value = newRevealed
     }
@@ -243,12 +195,10 @@ data class SplitRange(
 
 data class ListItem(
   val item: ChatItem,
-  // nextItem
-  // prevItem
-  val separation: ItemSeparation, // remove
-  val prevItemSeparationLargeGap: Boolean, // remove
+  val prevItem: ChatItem?,
+  val nextItem: ChatItem?,
   // how many unread items before (older than) this one (excluding this one)
-  val unreadBefore: Int // ?
+  val unreadBefore: Int
 )
 
 data class ActiveChatState (
@@ -405,37 +355,7 @@ fun recalculateChatStatePositions(chatState: ActiveChatState) = object: ChatItem
   override fun cleared() { chatState.clear() }
 }
 
-private fun getItemSeparation(chatItem: ChatItem, prevItem: ChatItem?): ItemSeparation {
-  if (prevItem == null) {
-    return ItemSeparation(timestamp = true, largeGap = true, date = null)
-  }
-
-  val sameMemberAndDirection = if (prevItem.chatDir is GroupRcv && chatItem.chatDir is GroupRcv) {
-    chatItem.chatDir.groupMember.groupMemberId == prevItem.chatDir.groupMember.groupMemberId
-  } else chatItem.chatDir.sent == prevItem.chatDir.sent
-  val largeGap = !sameMemberAndDirection || (abs(prevItem.meta.createdAt.epochSeconds - chatItem.meta.createdAt.epochSeconds) >= 60)
-
-  return ItemSeparation(
-    timestamp = largeGap || prevItem.meta.timestampText != chatItem.meta.timestampText,
-    largeGap = largeGap,
-    date = if (getTimestampDateText(chatItem.meta.itemTs) == getTimestampDateText(prevItem.meta.itemTs)) null else prevItem.meta.itemTs
-  )
-}
-
-private fun getItemSeparationLargeGap(chatItem: ChatItem, nextItem: ChatItem?): Boolean {
-  if (nextItem == null) {
-    return true
-  }
-
-  val sameMemberAndDirection = if (nextItem.chatDir is GroupRcv && chatItem.chatDir is GroupRcv) {
-    chatItem.chatDir.groupMember.groupMemberId == nextItem.chatDir.groupMember.groupMemberId
-  } else chatItem.chatDir.sent == nextItem.chatDir.sent
-  return !sameMemberAndDirection || (abs(nextItem.meta.createdAt.epochSeconds - chatItem.meta.createdAt.epochSeconds) >= 60)
-}
-
-private fun shouldShowAvatar(current: ChatItem, older: ChatItem?) =
-  current.chatDir is CIDirection.GroupRcv && (older == null || (older.chatDir !is CIDirection.GroupRcv || older.chatDir.groupMember.memberId != current.chatDir.groupMember.memberId))
-
+/** Helps in debugging */
 @Composable
 fun BoxScope.ShowChatState() {
   Box(Modifier.align(Alignment.Center).size(200.dp).background(Color.Black)) {
@@ -446,6 +366,24 @@ fun BoxScope.ShowChatState() {
     )
   }
 }
+// Returns items mapping for easy checking the structure
+fun MergedItems.mappingToString(): String = items.mapIndexed { index, g ->
+  when (g) {
+    is MergedItem.Single ->
+      "\nstartIndexInParentItems $index, startIndexInReversedItems ${g.startIndexInReversedItems}, " +
+          "revealed true, " +
+          "mergeCategory null " +
+          "\nunreadBefore ${g.item.unreadBefore}"
+
+    is MergedItem.Grouped ->
+      "\nstartIndexInParentItems $index, startIndexInReversedItems ${g.startIndexInReversedItems}, " +
+          "revealed ${g.revealed}, " +
+          "mergeCategory ${g.items[0].item.mergeCategory} " +
+          g.items.mapIndexed { i, it ->
+            "\nunreadBefore ${it.unreadBefore} ${Triple(index, g.startIndexInReversedItems + i, it.item.id)}"
+          }
+  }
+}.toString()
 
 const val TRIM_KEEP_COUNT = 200
 

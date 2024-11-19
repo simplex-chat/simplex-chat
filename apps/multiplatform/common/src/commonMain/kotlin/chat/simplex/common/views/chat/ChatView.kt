@@ -27,6 +27,7 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.CIDirection.GroupRcv
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.withChats
@@ -1292,22 +1293,33 @@ fun BoxScope.ChatItemsList(
   ) {
     val mergedItemsValue = mergedItems.value
     for ((index, merged) in mergedItemsValue.items.withIndex()) {
-      val isLastGroup = index == mergedItemsValue.items.lastIndex
-      val last = if (isLastGroup) reversedChatItems.value.lastOrNull() else null
+      val isLastItem = index == mergedItemsValue.items.lastIndex
+      val last = if (isLastItem) reversedChatItems.value.lastOrNull() else null
       val listItem = when (merged) {
         is MergedItem.Single -> merged.item
         is MergedItem.Grouped -> merged.items.first()
       }
       item(key = keyForItem(listItem.item)) {
         val item = listItem.item
-        val range = if (/*item.mergeCategory != null && (item.chatDir !is CIDirection.GroupRcv || */merged is MergedItem.Grouped/* )*/) {
+        val range = if (merged is MergedItem.Grouped) {
           merged.rangeInReversed.value
         } else {
           null
         }
-        val showAvatar = if (merged is MergedItem.Grouped) merged.showAvatar.contains(item.id) else true
+        val showAvatar = if (merged is MergedItem.Grouped) shouldShowAvatar(item, listItem.nextItem) else true
         val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
-        ChatViewListItem(index == 0, rememberUpdatedState(range), showAvatar, item, listItem.separation, listItem.prevItemSeparationLargeGap, isRevealed) {
+        val itemSeparation: ItemSeparation
+        val prevItemSeparationLargeGap: Boolean
+        if (merged is MergedItem.Single || isRevealed.value) {
+          val prev = listItem.prevItem
+          itemSeparation = getItemSeparation(item, prev)
+          val nextForGap = if ((item.mergeCategory != null && item.mergeCategory == prev?.mergeCategory) || isLastItem) null else listItem.nextItem
+          prevItemSeparationLargeGap = if (nextForGap == null) false else getItemSeparationLargeGap(nextForGap, item)
+        } else {
+          itemSeparation = getItemSeparation(item, null)
+          prevItemSeparationLargeGap = false
+        }
+        ChatViewListItem(index == 0, rememberUpdatedState(range), showAvatar, item, itemSeparation, prevItemSeparationLargeGap, isRevealed) {
           if (merged is MergedItem.Grouped) merged.reveal(it, revealedItems)
         }
 
@@ -2255,6 +2267,38 @@ private fun handleForwardConfirmation(
     }
   )
 }
+
+private fun getItemSeparation(chatItem: ChatItem, prevItem: ChatItem?): ItemSeparation {
+  if (prevItem == null) {
+    return ItemSeparation(timestamp = true, largeGap = true, date = null)
+  }
+
+  val sameMemberAndDirection = if (prevItem.chatDir is GroupRcv && chatItem.chatDir is GroupRcv) {
+    chatItem.chatDir.groupMember.groupMemberId == prevItem.chatDir.groupMember.groupMemberId
+  } else chatItem.chatDir.sent == prevItem.chatDir.sent
+  val largeGap = !sameMemberAndDirection || (abs(prevItem.meta.createdAt.epochSeconds - chatItem.meta.createdAt.epochSeconds) >= 60)
+
+  return ItemSeparation(
+    timestamp = largeGap || prevItem.meta.timestampText != chatItem.meta.timestampText,
+    largeGap = largeGap,
+    date = if (getTimestampDateText(chatItem.meta.itemTs) == getTimestampDateText(prevItem.meta.itemTs)) null else prevItem.meta.itemTs
+  )
+}
+
+private fun getItemSeparationLargeGap(chatItem: ChatItem, nextItem: ChatItem?): Boolean {
+  if (nextItem == null) {
+    return true
+  }
+
+  val sameMemberAndDirection = if (nextItem.chatDir is GroupRcv && chatItem.chatDir is GroupRcv) {
+    chatItem.chatDir.groupMember.groupMemberId == nextItem.chatDir.groupMember.groupMemberId
+  } else chatItem.chatDir.sent == nextItem.chatDir.sent
+  return !sameMemberAndDirection || (abs(nextItem.meta.createdAt.epochSeconds - chatItem.meta.createdAt.epochSeconds) >= 60)
+}
+
+private fun shouldShowAvatar(current: ChatItem, older: ChatItem?) =
+  current.chatDir is CIDirection.GroupRcv && (older == null || (older.chatDir !is CIDirection.GroupRcv || older.chatDir.groupMember.memberId != current.chatDir.groupMember.memberId))
+
 
 @Preview/*(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
