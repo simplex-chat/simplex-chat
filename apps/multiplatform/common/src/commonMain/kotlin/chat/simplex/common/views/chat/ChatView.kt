@@ -1020,13 +1020,11 @@ fun BoxScope.ChatItemsList(
   // TODO: Having this block on desktop makes ChatItemsList() to recompose twice on chatModel.chatId update instead of once
   LaunchedEffect(chatInfo.id) {
     revealedItems.value = emptySet()
-    var stopListening = false
     snapshotFlow { listState.value.layoutInfo.visibleItemsInfo.lastIndex }
       .distinctUntilChanged()
-      .filter { !stopListening }
       .collect {
         onComposed(chatInfo.id)
-        stopListening = true
+        cancel()
       }
   }
   LaunchedEffect(remoteHostId, chatInfo.id) {
