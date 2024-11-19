@@ -989,8 +989,10 @@ fun BoxScope.ChatItemsList(
         withApi {
           try {
             var index = mergedItems.value.indexInParentItems[itemId] ?: -1
+            // setting it to 'loading' even if the item is loaded because in rare cases when the resulting item is near the top, scrolling to
+            // it will trigger loading more items and will scroll to incorrect position (because of trimming)
+            loadingMoreItems.value = true
             if (index == -1) {
-              loadingMoreItems.value = true
               val pagination = ChatPagination.Around(itemId, ChatPagination.PRELOAD_COUNT * 2)
               val oldSize = reversedChatItems.value.size
               withContext(Dispatchers.Default) {
