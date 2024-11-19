@@ -1221,7 +1221,10 @@ public struct ServerOperatorInfo: Decodable {
 
 public let operatorsInfo: Dictionary<OperatorTag, ServerOperatorInfo> = [
     .simplex: ServerOperatorInfo(
-        description: ["SimpleX Chat preset servers"],
+        description: [
+            "SimpleX Chat is the first communication network that has no user profile IDs of any kind, not even random numbers or keys that identify the users.",
+            "SimpleX Chat Ltd develops the communication software for SimpleX network."
+        ],
         website: "https://simplex.chat",
         logo: "decentralized",
         largeLogo: "logo",
