@@ -13,81 +13,85 @@ struct SimpleXInfo: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     @State private var showHowItWorks = false
+    @State private var createProfileNavLinkActive = false
     var onboarding: Bool
 
     var body: some View {
-        GeometryReader { g in
-            ScrollView {
-                VStack(alignment: .leading) {
-                    Image(colorScheme == .light ? "logo" : "logo-light")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: g.size.width * 0.67)
-                        .padding(.bottom, 8)
-                        .frame(maxWidth: .infinity, minHeight: 48, alignment: .top)
+        NavigationView {
+            GeometryReader { g in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        Image(colorScheme == .light ? "logo" : "logo-light")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: g.size.width * 0.67)
+                            .padding(.bottom, 8)
+                            .frame(maxWidth: .infinity, minHeight: 48, alignment: .top)
 
-                    VStack(alignment: .leading) {
-                        Text("The next generation of private messaging")
-                            .font(.title2)
-                            .padding(.bottom, 30)
-                            .padding(.horizontal, 40)
-                            .frame(maxWidth: .infinity)
-                            .multilineTextAlignment(.center)
-                        infoRow("privacy", "Privacy redefined",
-                                "The 1st platform without any user identifiers – private by design.", width: 48)
-                        infoRow("shield", "Immune to spam and abuse",
-                                "People can connect to you only via the links you share.", width: 46)
-                        infoRow(colorScheme == .light ? "decentralized" : "decentralized-light", "Decentralized",
-                                "Open-source protocol and code – anybody can run the servers.", width: 44)
-                    }
+                        VStack(alignment: .leading) {
+                            Text("The next generation of private messaging")
+                                .font(.title2)
+                                .padding(.bottom, 30)
+                                .padding(.horizontal, 40)
+                                .frame(maxWidth: .infinity)
+                                .multilineTextAlignment(.center)
+                            infoRow("privacy", "Privacy redefined",
+                                    "The 1st platform without any user identifiers – private by design.", width: 48)
+                            infoRow("shield", "Immune to spam and abuse",
+                                    "People can connect to you only via the links you share.", width: 46)
+                            infoRow(colorScheme == .light ? "decentralized" : "decentralized-light", "Decentralized",
+                                    "Open-source protocol and code – anybody can run the servers.", width: 44)
+                        }
 
-                    Spacer()
-                    if onboarding {
-                        OnboardingActionButton()
                         Spacer()
 
+                        if onboarding {
+                            onboardingActionButton()
+
+                            Button {
+                                m.migrationState = .pasteOrScanLink
+                            } label: {
+                                Label("Migrate from another device", systemImage: "tray.and.arrow.down")
+                                    .font(.subheadline)
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+
                         Button {
-                            m.migrationState = .pasteOrScanLink
+                            showHowItWorks = true
                         } label: {
-                            Label("Migrate from another device", systemImage: "tray.and.arrow.down")
+                            Label("How it works", systemImage: "info.circle")
                                 .font(.subheadline)
                         }
-                        .padding(.bottom, 8)
                         .frame(maxWidth: .infinity)
+                        .padding(.bottom)
                     }
-
-                    Button {
-                        showHowItWorks = true
-                    } label: {
-                        Label("How it works", systemImage: "info.circle")
-                            .font(.subheadline)
-                    }
-                    .padding(.bottom, 8)
-                    .frame(maxWidth: .infinity)
-
+                    .frame(minHeight: g.size.height)
                 }
-                .frame(minHeight: g.size.height)
-            }
-            .sheet(isPresented: Binding(
-                get: { m.migrationState != nil },
-                set: { _ in
-                    m.migrationState = nil
-                    MigrationToDeviceState.save(nil) }
-            )) {
-                NavigationView {
-                    VStack(alignment: .leading) {
-                        MigrateToDevice(migrationState: $m.migrationState)
+                .sheet(isPresented: Binding(
+                    get: { m.migrationState != nil },
+                    set: { _ in
+                        m.migrationState = nil
+                        MigrationToDeviceState.save(nil) }
+                )) {
+                    NavigationView {
+                        VStack(alignment: .leading) {
+                            MigrateToDevice(migrationState: $m.migrationState)
+                        }
+                        .navigationTitle("Migrate here")
+                        .modifier(ThemedBackground(grouped: true))
                     }
-                    .navigationTitle("Migrate here")
-                    .modifier(ThemedBackground(grouped: true))
+                }
+                .sheet(isPresented: $showHowItWorks) {
+                    HowItWorks(
+                        onboarding: onboarding,
+                        createProfileNavLinkActive: $createProfileNavLinkActive
+                    )
                 }
             }
-            .sheet(isPresented: $showHowItWorks) {
-                HowItWorks(onboarding: onboarding)
-            }
+            .frame(maxHeight: .infinity)
+            .padding()
         }
-        .frame(maxHeight: .infinity)
-        .padding()
     }
 
     private func infoRow(_ image: String, _ title: LocalizedStringKey, _ text: LocalizedStringKey, width: CGFloat) -> some View {
@@ -108,49 +112,51 @@ struct SimpleXInfo: View {
         .padding(.bottom, 20)
         .padding(.trailing, 6)
     }
-}
 
-struct OnboardingActionButton: View {
-    @EnvironmentObject var m: ChatModel
-    @Environment(\.colorScheme) var colorScheme
-
-    var body: some View {
+    @ViewBuilder private func onboardingActionButton() -> some View {
         if m.currentUser == nil {
-            actionButton("Create your profile", onboarding: .step2_CreateProfile)
+            createFirstProfileButton()
         } else {
-            actionButton("Make a private connection", onboarding: .onboardingComplete)
+            userExistsFallbackButton()
         }
     }
 
-    private func actionButton(_ label: LocalizedStringKey, onboarding: OnboardingStage) -> some View {
-        Button {
-            withAnimation {
-                onboardingStageDefault.set(onboarding)
-                m.onboardingStage = onboarding
+    private func createFirstProfileButton() -> some View {
+        ZStack {
+            Button {
+                createProfileNavLinkActive = true
+            } label: {
+                Text("Create your profile")
             }
-        } label: {
-            HStack {
-                Text(label).font(.title2)
-                Image(systemName: "greaterthan")
+            .buttonStyle(OnboardingButtonStyle(isDisabled: false))
+
+            NavigationLink(isActive: $createProfileNavLinkActive) {
+                createProfileDestinationView()
+            } label: {
+                EmptyView()
             }
+            .frame(width: 1, height: 1)
+            .hidden()
         }
-        .frame(maxWidth: .infinity)
-        .padding(.bottom)
     }
 
-    private func actionButton(_ label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+    private func createProfileDestinationView() -> some View {
+        CreateFirstProfile()
+            .navigationTitle("Create your profile")
+            .navigationBarTitleDisplayMode(.large)
+            .modifier(ThemedBackground(grouped: true))
+    }
+
+    private func userExistsFallbackButton() -> some View {
         Button {
             withAnimation {
-                action()
+                onboardingStageDefault.set(.onboardingComplete)
+                m.onboardingStage = .onboardingComplete
             }
         } label: {
-            HStack {
-                Text(label).font(.title2)
-                Image(systemName: "greaterthan")
-            }
+            Text("Make a private connection")
         }
-        .frame(maxWidth: .infinity)
-        .padding(.bottom)
+        .buttonStyle(OnboardingButtonStyle(isDisabled: false))
     }
 }
 
