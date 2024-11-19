@@ -3103,7 +3103,7 @@ sealed class CC {
   class ApiSetServerOperators(val operators: List<ServerOperator>): CC()
   class ApiGetUserServers(val userId: Long): CC()
   class ApiSetUserServers(val userId: Long, val userServers: List<UserOperatorServers>): CC()
-  class ApiValidateServers(val userServers: List<UserOperatorServers>): CC()
+  class ApiValidateServers(val userId: Long, val userServers: List<UserOperatorServers>): CC()
   class ApiGetUsageConditions(): CC()
   class ApiSetConditionsNotified(val conditionsId: Long): CC()
   class ApiAcceptConditions(val conditionsId: Long, val operatorIds: List<Long>): CC()
@@ -3269,7 +3269,7 @@ sealed class CC {
     is ApiSetServerOperators -> "/_operators ${json.encodeToString(operators)}}"
     is ApiGetUserServers -> "/_servers $userId"
     is ApiSetUserServers -> "/_servers $userId ${json.encodeToString(userServers)}"
-    is ApiValidateServers -> "/_validate_servers ${json.encodeToString(userServers)}"
+    is ApiValidateServers -> "/_validate_servers $userId ${json.encodeToString(userServers)}"
     is ApiGetUsageConditions -> "/_conditions"
     is ApiSetConditionsNotified -> "/_conditions_notified ${conditionsId}"
     is ApiAcceptConditions -> "/_accept_conditions ${conditionsId} ${operatorIds.joinToString(",")}"
@@ -3853,10 +3853,57 @@ data class UserOperatorServers(
 
 @Serializable
 sealed class UserServersError {
-  @Serializable @SerialName("storageMissing") class StorageMissing: UserServersError()
-  @Serializable @SerialName("proxyMissing") class ProxyMissing: UserServersError()
-  @Serializable @SerialName("duplicateSMP") data class DuplicateSMP(val server: String) : UserServersError()
-  @Serializable @SerialName("duplicateXFTP") data class DuplicateXFTP(val server: String) : UserServersError()
+  @Serializable @SerialName("noServers") data class NoServers(val protocol: ServerProtocol, val user: UserRef?): UserServersError()
+  @Serializable @SerialName("storageMissing") data class StorageMissing(val protocol: ServerProtocol, val user: UserRef?): UserServersError()
+  @Serializable @SerialName("proxyMissing") data class ProxyMissing(val protocol: ServerProtocol, val user: UserRef?): UserServersError()
+  @Serializable @SerialName("invalidServer") data class InvalidServer(val protocol: ServerProtocol, val invalidServer: String): UserServersError()
+  @Serializable @SerialName("duplicateServer") data class DuplicateServer(val protocol: ServerProtocol, val duplicateServer: String, val duplicateHost: String): UserServersError()
+
+  val globalError: String?
+    get() = when (this) {
+      is NoServers -> protocol.toGlobalError(this, ::globalSMPError, ::globalXFTPError)
+      is StorageMissing -> protocol.toGlobalError(this, ::globalSMPError, ::globalXFTPError)
+      is ProxyMissing -> protocol.toGlobalError(this, ::globalSMPError, ::globalXFTPError)
+      else -> null
+    }
+
+  private fun globalSMPError(error: UserServersError): String? {
+    return when (error) {
+      is NoServers -> error.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_message_servers_configured)}" }
+        ?: generalGetString(MR.strings.no_message_servers_configured)
+      is StorageMissing -> error.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_message_servers_configured_for_receiving)}" }
+        ?: generalGetString(MR.strings.no_message_servers_configured_for_receiving)
+      is ProxyMissing -> error.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_message_servers_configured_for_private_routing)}" }
+        ?: generalGetString(MR.strings.no_message_servers_configured_for_private_routing)
+      else -> null
+    }
+  }
+  private fun globalXFTPError(error: UserServersError): String? {
+    return when (error) {
+      is NoServers -> error.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_media_servers_configured)}" }
+        ?: generalGetString(MR.strings.no_media_servers_configured)
+      is StorageMissing -> error.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_media_servers_configured_for_sending)}" }
+        ?: generalGetString(MR.strings.no_media_servers_configured_for_sending)
+      is ProxyMissing -> error.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_media_servers_configured_for_private_routing)}" }
+        ?: generalGetString(MR.strings.no_media_servers_configured_for_private_routing)
+      else -> null
+    }
+  }
+
+  private fun userStr(user: UserRef): String {
+    return String.format(generalGetString(MR.strings.for_chat_profile), user.localDisplayName)
+  }
+
+  private fun ServerProtocol.toGlobalError(
+    error: UserServersError,
+    smpHandler: (UserServersError) -> String?,
+    xftpHandler: (UserServersError) -> String?
+  ): String? {
+    return when (this) {
+      ServerProtocol.SMP -> smpHandler(error)
+      ServerProtocol.XFTP -> xftpHandler(error)
+    }
+  }
 }
 
 @Serializable
@@ -5287,7 +5334,7 @@ sealed class CR {
   @Serializable @SerialName("serverTestResult") class ServerTestResult(val user: UserRef, val testServer: String, val testFailure: ProtocolTestFailure? = null): CR()
   @Serializable @SerialName("serverOperatorConditions") class ServerOperatorConditions(val conditions: ServerOperatorConditionsDetail): CR()
   @Serializable @SerialName("userServers") class UserServers(val user: UserRef, val userServers: List<UserOperatorServers>): CR()
-  @Serializable @SerialName("userServersValidation") class UserServersValidation(val serverErrors: List<UserServersError>): CR()
+  @Serializable @SerialName("userServersValidation") class UserServersValidation(val user: UserRef, val serverErrors: List<UserServersError>): CR()
   @Serializable @SerialName("usageConditions") class UsageConditions(val usageConditions: UsageConditionsDetail, val conditionsText: String?, val acceptedConditions: UsageConditions?): CR()
   @Serializable @SerialName("chatItemTTL") class ChatItemTTL(val user: UserRef, val chatItemTTL: Long? = null): CR()
   @Serializable @SerialName("networkConfig") class NetworkConfig(val networkConfig: NetCfg): CR()
@@ -5643,7 +5690,7 @@ sealed class CR {
     is ServerTestResult -> withUser(user, "server: $testServer\nresult: ${json.encodeToString(testFailure)}")
     is ServerOperatorConditions -> "conditions: ${json.encodeToString(conditions)}"
     is UserServers -> withUser(user, "userServers: ${json.encodeToString(userServers)}")
-    is UserServersValidation -> "serverErrors: ${json.encodeToString(serverErrors)}"
+    is UserServersValidation -> withUser(user, "serverErrors: ${json.encodeToString(serverErrors)}")
     is UsageConditions -> "usageConditions: ${json.encodeToString(usageConditions)}\nnacceptedConditions: ${json.encodeToString(acceptedConditions)}"
     is ChatItemTTL -> withUser(user, json.encodeToString(chatItemTTL))
     is NetworkConfig -> json.encodeToString(networkConfig)

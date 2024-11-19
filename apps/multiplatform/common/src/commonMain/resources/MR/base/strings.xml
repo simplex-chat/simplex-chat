@@ -110,6 +110,13 @@
   <string name="failed_to_create_user_invalid_desc">This display name is invalid. Please choose another name.</string>
   <string name="failed_to_active_user_title">Error switching profile!</string>
   <string name="failed_to_save_servers">Error saving servers</string>
+  <string name="no_message_servers_configured">No message servers configured.</string>
+  <string name="no_message_servers_configured_for_receiving">No message servers configured for receiving.</string>
+  <string name="no_message_servers_configured_for_private_routing">No message servers configured for private routing.</string>
+  <string name="no_media_servers_configured">No media &amp; file servers configured.</string>
+  <string name="no_media_servers_configured_for_sending">No media &amp; file servers configured for sending.</string>
+  <string name="no_media_servers_configured_for_private_routing">No media &amp; file servers configured for private routing.</string>
+  <string name="for_chat_profile">For chat profile %s:</string>
 
   <!-- API Error Responses - SimpleXAPI.kt -->
   <string name="connection_timeout">Connection timeout</string>
