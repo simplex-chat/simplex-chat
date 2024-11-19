@@ -25,7 +25,7 @@ data class MergedItems (
   // chat item id, index in list
   val indexInParentItems: Map<Long, Int>,
 ) {
-  /** Returns groups mapping for easy checking the structure */
+  /** Returns items mapping for easy checking the structure */
   fun mappingToString(): String = items.mapIndexed { index, g ->
     when (g) {
       is MergedItem.Single ->
@@ -50,7 +50,7 @@ data class MergedItems (
 
       val unreadAnchorItemId = chatState.unreadAnchorItemId
       val itemSplits = chatState.splits.value
-      val groups = ArrayList<MergedItem>()
+      val mergedItems = ArrayList<MergedItem>()
       // Indexes of splits here will be related to reversedChatItems, not chatModel.chatItems
       val splitRanges = ArrayList<SplitRange>()
       val indexInParentItems = mutableMapOf<Long, Int>()
@@ -75,6 +75,7 @@ data class MergedItems (
         }
         if (item.isRcvNew) unreadBefore--
 
+        val revealed = item.mergeCategory == null || revealedItems.contains(item.id)
         if (recent is MergedItem.Grouped && recent.mergeCategory == category && !revealedItems.contains(recent.items.first().item.id) && !itemIsSplit) {
 //          if (recent.revealed.value) {
 //            val prev = items.getOrNull(index - 1)
@@ -96,13 +97,12 @@ data class MergedItems (
             recent.unreadIds.add(item.id)
           }
           if (lastRevealedIdsInMergedItems != null && lastRangeInReversedForMergedItems != null) {
-            if (revealedItems.contains(item.id)) {
+            if (revealed) {
               lastRevealedIdsInMergedItems += item.id
             }
             lastRangeInReversedForMergedItems.value = lastRangeInReversedForMergedItems.value.first..index
           }
         } else {
-          val revealed = item.mergeCategory == null || revealedItems.contains(item.id)
           visibleItemIndexInParent++
 
           val prev = items.getOrNull(index - 1)
@@ -146,7 +146,7 @@ data class MergedItems (
               startIndexInReversedItems = index
             )
           }
-          groups.add(recent)
+          mergedItems.add(recent)
         }
         if (itemIsSplit) {
           // found item that is considered as a split
@@ -164,7 +164,7 @@ data class MergedItems (
         index++
       }
       return MergedItems(
-        groups,
+        mergedItems,
         splitRanges,
         indexInParentItems
       )
@@ -223,11 +223,6 @@ sealed class MergedItem {
   fun oldest(): ListItem = when (this) {
     is Single -> item
     is Grouped -> items.last()
-  }
-
-  fun firstIndexInReversed(): Int = when (this) {
-    is Single -> startIndexInReversedItems
-    is Grouped -> startIndexInReversedItems
   }
 
   fun lastIndexInReversed(): Int = when (this) {
@@ -302,11 +297,11 @@ data class ActiveChatState (
   }
 }
 
-fun visibleItemIndexesNonReversed(groups: State<MergedItems>, listState: LazyListState): IntRange {
+fun visibleItemIndexesNonReversed(mergedItems: State<MergedItems>, listState: LazyListState): IntRange {
   val zero = 0 .. 0
   if (listState.layoutInfo.totalItemsCount == 0) return zero
-  val newest = groups.value.items.getOrNull(listState.firstVisibleItemIndex)?.firstIndexInReversed()
-  val oldest = groups.value.items.getOrNull(listState.layoutInfo.visibleItemsInfo.last().index)?.lastIndexInReversed()
+  val newest = mergedItems.value.items.getOrNull(listState.firstVisibleItemIndex)?.startIndexInReversedItems
+  val oldest = mergedItems.value.items.getOrNull(listState.layoutInfo.visibleItemsInfo.last().index)?.lastIndexInReversed()
   if (newest == null || oldest == null) return zero
   val size = chatModel.chatItems.value.size
   val range = size - oldest .. size - newest
