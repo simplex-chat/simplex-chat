@@ -1023,7 +1023,8 @@ object ChatController {
   }
 
   suspend fun validateServers(rh: Long?, userServers: List<UserOperatorServers>): List<UserServersError>? {
-    val r = sendCmd(rh, CC.ApiValidateServers(userServers))
+    val userId = currentUserId("validateServers")
+    val r = sendCmd(rh, CC.ApiValidateServers(userId, userServers))
     return when (r) {
       is CR.UserServersValidation -> r.serverErrors
       else -> {
