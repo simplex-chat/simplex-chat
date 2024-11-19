@@ -3702,7 +3702,7 @@ data class ServerOperator(
   val legalName: String?,
   val serverDomains: List<String>,
   val conditionsAcceptance: ConditionsAcceptance,
-  val enabled: Boolean,
+  var enabled: Boolean,
   val smpRoles: ServerRoles,
   val xftpRoles: ServerRoles,
 ) {
@@ -5285,7 +5285,7 @@ sealed class CR {
   @Serializable @SerialName("serverOperatorConditions") class ServerOperatorConditions(val conditions: ServerOperatorConditionsDetail): CR()
   @Serializable @SerialName("userServers") class UserServers(val user: UserRef, val userServers: List<UserOperatorServers>): CR()
   @Serializable @SerialName("userServersValidation") class UserServersValidation(val serverErrors: List<UserServersError>): CR()
-  @Serializable @SerialName("usageConditions") class UsageConditions(val usageConditions: UsageConditionsDetail, val conditionsText: String, val acceptedConditions: UsageConditions?): CR()
+  @Serializable @SerialName("usageConditions") class UsageConditions(val usageConditions: UsageConditionsDetail, val conditionsText: String?, val acceptedConditions: UsageConditions?): CR()
   @Serializable @SerialName("chatItemTTL") class ChatItemTTL(val user: UserRef, val chatItemTTL: Long? = null): CR()
   @Serializable @SerialName("networkConfig") class NetworkConfig(val networkConfig: NetCfg): CR()
   @Serializable @SerialName("contactInfo") class ContactInfo(val user: UserRef, val contact: Contact, val connectionStats_: ConnectionStats? = null, val customUserProfile: Profile? = null): CR()

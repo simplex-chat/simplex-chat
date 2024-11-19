@@ -160,7 +160,7 @@ fun NetworkAndServersView(close: () -> Unit) {
     if (!chatModel.desktopNoUserNoRemote) {
       SectionView(generalGetString(MR.strings.network_preset_servers_title).uppercase()) {
         userServers.value.forEachIndexed { index, srv ->
-          srv.operator?.let { ServerOperatorRow(index, it, currUserServers, userServers) }
+          srv.operator?.let { ServerOperatorRow(index, it, currUserServers, userServers, currentRemoteHost?.remoteHostId) }
         }
       }
       if (conditionsAction != null && anyOperatorEnabled.value) {
@@ -609,9 +609,10 @@ private fun ServerOperatorRow(
   index: Int,
   operator: ServerOperator,
   currUserServers: MutableState<List<UserOperatorServers>>,
-  userServers: MutableState<List<UserOperatorServers>>
+  userServers: MutableState<List<UserOperatorServers>>,
+  rhId: Long?
 ) {
-  SectionItemView({ ModalManager.start.showModalCloseable { _ -> OperatorInfoView(index, operator) } }) {
+  SectionItemView({ ModalManager.start.showModalCloseable { _ -> OperatorView(currUserServers, userServers, index, rhId) } }) {
     Image(
       painterResource(MR.images.decentralized),
       operator.tradeName,

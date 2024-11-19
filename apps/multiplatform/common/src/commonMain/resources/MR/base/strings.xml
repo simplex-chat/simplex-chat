@@ -1674,11 +1674,17 @@
 
   <!-- OperatorView.kt -->
   <string name="operator">Operator</string>
+  <string name="operator_servers_title">%s servers</string>
   <string name="operator_info_title">Operator information</string>
   <string name="operator_description">Description</string>
   <string name="operator_website">Website</string>
   <string name="operator_conditions_accepted_on">Conditions accepted on: %s.</string>
   <string name="operator_conditions_accepted_after"> Conditions will be considered accepted after: %s.</string>
+  <string name="operator">Operator</string>
+  <string name="operator_use_operator_toggle_description">Use operator</string>
+  <string name="use_operator_x">Use operator %s</string>
+  <string name="operator_conditions_failed_to_load">Current conditions text couldn\'t be loaded, you can review conditions via this link:</string>
+
 
   <!-- AdvancedNetworkSettings.kt -->
   <string name="network_option_tcp_connection">TCP connection</string>
