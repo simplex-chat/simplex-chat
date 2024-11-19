@@ -90,8 +90,10 @@ struct CreateFirstProfile: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             Text("Your profile, contacts and delivered messages are stored on your device.")
+                .font(.callout)
                 .foregroundColor(theme.colors.secondary)
             Text("The profile is only shared with your contacts.")
+                .font(.callout)
                 .foregroundColor(theme.colors.secondary)
 
             HStack {
@@ -114,8 +116,8 @@ struct CreateFirstProfile: View {
                     .padding(.horizontal)
                     .padding(.vertical, 10)
                     .background(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(Color(uiColor: .secondarySystemGroupedBackground))
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(Color(uiColor: .tertiarySystemFill))
                     )
             }
             .padding(.top)

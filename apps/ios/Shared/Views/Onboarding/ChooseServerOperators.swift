@@ -70,6 +70,11 @@ struct ChooseServerOperators: View {
                         ForEach(serverOperators) { srvOperator in
                             operatorCheckView(srvOperator)
                         }
+                        Text("You can configure servers via settings.")
+                            .font(.footnote)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity, alignment: .center)
+//                            .padding(.horizontal, 32)
 
                         Spacer()
 
@@ -83,10 +88,12 @@ struct ChooseServerOperators: View {
                                 continueButton()
                             }
                             if onboarding {
-                                Text("You can disable operators and configure your servers in Network & servers settings.")
-                                    .multilineTextAlignment(.center)
-                                    .font(.footnote)
-                                    .padding(.horizontal, 32)
+                                Button("Conditions of use") {
+                                    // TODO open accepted conditions
+                                }
+                                .font(.callout)
+                                .foregroundColor(reviewForOperators.isEmpty ? .accentColor : .clear)
+                                .padding(.top)
                             }
                         }
                         .padding(.bottom)

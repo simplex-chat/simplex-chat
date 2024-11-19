@@ -144,7 +144,6 @@ struct SimpleXInfo: View {
         CreateFirstProfile()
             .navigationTitle("Create your profile")
             .navigationBarTitleDisplayMode(.large)
-            .modifier(ThemedBackground(grouped: true))
     }
 
     private func userExistsFallbackButton() -> some View {
