@@ -77,7 +77,7 @@ public enum ChatCommand {
     case apiSetServerOperators(operators: [ServerOperator])
     case apiGetUserServers(userId: Int64)
     case apiSetUserServers(userId: Int64, userServers: [UserOperatorServers])
-    case apiValidateServers(userServers: [UserOperatorServers])
+    case apiValidateServers(userId: Int64, userServers: [UserOperatorServers])
     case apiGetUsageConditions
     case apiSetConditionsNotified(conditionsId: Int64)
     case apiAcceptConditions(conditionsId: Int64, operatorIds: [Int64])
@@ -242,7 +242,7 @@ public enum ChatCommand {
             case let .apiSetServerOperators(operators): return "/_operators \(encodeJSON(operators))"
             case let .apiGetUserServers(userId): return "/_servers \(userId)"
             case let .apiSetUserServers(userId, userServers): return "/_servers \(userId) \(encodeJSON(userServers))"
-            case let .apiValidateServers(userServers): return "/_validate_servers \(encodeJSON(userServers))"
+            case let .apiValidateServers(userId, userServers): return "/_validate_servers \(userId) \(encodeJSON(userServers))"
             case .apiGetUsageConditions: return "/_conditions"
             case let .apiSetConditionsNotified(conditionsId): return "/_conditions_notified \(conditionsId)"
             case let .apiAcceptConditions(conditionsId, operatorIds): return "/_accept_conditions \(conditionsId) \(joinedIds(operatorIds))"
@@ -565,7 +565,7 @@ public enum ChatResponse: Decodable, Error {
     case serverTestResult(user: UserRef, testServer: String, testFailure: ProtocolTestFailure?)
     case serverOperatorConditions(conditions: ServerOperatorConditions)
     case userServers(user: UserRef, userServers: [UserOperatorServers])
-    case userServersValidation(serverErrors: [UserServersError])
+    case userServersValidation(user: UserRef, serverErrors: [UserServersError])
     case usageConditions(usageConditions: UsageConditions, conditionsText: String, acceptedConditions: UsageConditions?)
     case chatItemTTL(user: UserRef, chatItemTTL: Int64?)
     case networkConfig(networkConfig: NetCfg)
@@ -913,7 +913,7 @@ public enum ChatResponse: Decodable, Error {
             case let .serverTestResult(u, server, testFailure): return withUser(u, "server: \(server)\nresult: \(String(describing: testFailure))")
             case let .serverOperatorConditions(conditions): return "conditions: \(String(describing: conditions))"
             case let .userServers(u, userServers): return withUser(u, "userServers: \(String(describing: userServers))")
-            case let .userServersValidation(serverErrors): return "serverErrors: \(String(describing: serverErrors))"
+            case let .userServersValidation(u, serverErrors): return withUser(u, "serverErrors: \(String(describing: serverErrors))")
             case let .usageConditions(usageConditions, _, acceptedConditions): return "usageConditions: \(String(describing: usageConditions))\nacceptedConditions: \(String(describing: acceptedConditions))"
             case let .chatItemTTL(u, chatItemTTL): return withUser(u, String(describing: chatItemTTL))
             case let .networkConfig(networkConfig): return String(describing: networkConfig)
@@ -1447,10 +1447,92 @@ public struct UserOperatorServers: Identifiable, Equatable, Codable {
 }
 
 public enum UserServersError: Decodable {
-    case storageMissing
-    case proxyMissing
-    case duplicateSMP(server: String)
-    case duplicateXFTP(server: String)
+    case noServers(protocol: ServerProtocol, user: UserRef?)
+    case storageMissing(protocol: ServerProtocol, user: UserRef?)
+    case proxyMissing(protocol: ServerProtocol, user: UserRef?)
+    case invalidServer(protocol: ServerProtocol, invalidServer: String)
+    case duplicateServer(protocol: ServerProtocol, duplicateServer: String, duplicateHost: String)
+
+    public var globalError: String? {
+        switch self {
+        case let .noServers(`protocol`, _):
+            switch `protocol` {
+            case .smp: return globalSMPError
+            case .xftp: return globalXFTPError
+            }
+        case let .storageMissing(`protocol`, _):
+            switch `protocol` {
+            case .smp: return globalSMPError
+            case .xftp: return globalXFTPError
+            }
+        case let .proxyMissing(`protocol`, _):
+            switch `protocol` {
+            case .smp: return globalSMPError
+            case .xftp: return globalXFTPError
+            }
+        default: return nil
+        }
+    }
+
+    public var globalSMPError: String? {
+        switch self {
+        case let .noServers(.smp, user):
+            let text = NSLocalizedString("No message servers configured.", comment: "servers error")
+            if let user = user {
+                return userStr(user) + " " + text
+            } else {
+                return text
+            }
+        case let .storageMissing(.smp, user):
+            let text = NSLocalizedString("No message servers configured for receiving.", comment: "servers error")
+            if let user = user {
+                return userStr(user) + " " + text
+            } else {
+                return text
+            }
+        case let .proxyMissing(.smp, user):
+            let text = NSLocalizedString("No message servers configured for private routing.", comment: "servers error")
+            if let user = user {
+                return userStr(user) + " " + text
+            } else {
+                return text
+            }
+        default:
+            return nil
+        }
+    }
+
+    public var globalXFTPError: String? {
+        switch self {
+        case let .noServers(.xftp, user):
+            let text = NSLocalizedString("No media & file servers configured.", comment: "servers error")
+            if let user = user {
+                return userStr(user) + " " + text
+            } else {
+                return text
+            }
+        case let .storageMissing(.xftp, user):
+            let text = NSLocalizedString("No media & file servers configured for sending.", comment: "servers error")
+            if let user = user {
+                return userStr(user) + " " + text
+            } else {
+                return text
+            }
+        case let .proxyMissing(.xftp, user):
+            let text = NSLocalizedString("No media & file servers configured for private routing.", comment: "servers error")
+            if let user = user {
+                return userStr(user) + " " + text
+            } else {
+                return text
+            }
+        default:
+            return nil
+        }
+    }
+
+    private func userStr(_ user: UserRef) -> String {
+        String.localizedStringWithFormat(NSLocalizedString("For chat profile %@:", comment: "servers error"), user.localDisplayName)
+    }
 }
 
 public struct UserServer: Identifiable, Equatable, Codable, Hashable {

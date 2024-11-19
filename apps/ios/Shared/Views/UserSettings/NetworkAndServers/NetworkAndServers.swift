@@ -36,6 +36,7 @@ struct NetworkAndServers: View {
     @EnvironmentObject var theme: AppTheme
     @Binding var currUserServers: [UserOperatorServers]
     @Binding var userServers: [UserOperatorServers]
+    @Binding var serverErrors: [UserServersError]
     @State private var sheetItem: NetworkAndServersSheet? = nil
     @State private var justOpened = true
     @State private var showSaveDialog = false
@@ -77,6 +78,7 @@ struct NetworkAndServers: View {
                         NavigationLink {
                             YourServersView(
                                 userServers: $userServers,
+                                serverErrors: $serverErrors,
                                 operatorIndex: idx
                             )
                             .navigationTitle("Your servers")
@@ -107,7 +109,13 @@ struct NetworkAndServers: View {
 
                 Section {
                     Button("Save servers", action: { saveServers($currUserServers, $userServers) })
-                        .disabled(userServers == currUserServers)
+                        .disabled(!serversCanBeSaved(currUserServers, userServers, serverErrors))
+                } footer: {
+                    if let errStr = globalServersError(serverErrors) {
+                        ServersErrorView(errStr: errStr)
+                    } else if !serverErrors.isEmpty {
+                        ServersErrorView(errStr: NSLocalizedString("Errors in servers configuration.", comment: "servers error"))
+                    }
                 }
 
                 Section(header: Text("Calls").foregroundColor(theme.colors.secondary)) {
@@ -135,6 +143,7 @@ struct NetworkAndServers: View {
                 do {
                     currUserServers = try await getUserServers()
                     userServers = currUserServers
+                    serverErrors = []
                 } catch let error {
                     await MainActor.run {
                         showAlert(
@@ -147,7 +156,7 @@ struct NetworkAndServers: View {
             }
         }
         .modifier(BackButton(disabled: Binding.constant(false)) {
-            if userServers != currUserServers {
+            if serversCanBeSaved(currUserServers, userServers, serverErrors) {
                 showSaveDialog = true
             } else {
                 dismiss()
@@ -178,6 +187,7 @@ struct NetworkAndServers: View {
             OperatorView(
                 currUserServers: $currUserServers,
                 userServers: $userServers,
+                serverErrors: $serverErrors,
                 operatorIndex: operatorIndex,
                 useOperator: serverOperator.enabled
             )
@@ -260,12 +270,108 @@ struct UsageConditionsView: View {
 
     private func acceptConditionsButton(_ operatorIds: [Int64]) -> some View {
         Button {
-            acceptForOperators($currUserServers, $userServers, nil, dismiss, operatorIds)
+            acceptForOperators(operatorIds)
         } label: {
             Text("Accept conditions")
         }
         .buttonStyle(OnboardingButtonStyle(isDisabled: false))
     }
+
+    func acceptForOperators(_ operatorIds: [Int64]) {
+        Task {
+            do {
+                let conditionsId = ChatModel.shared.conditions.currentConditions.conditionsId
+                let r = try await acceptConditions(conditionsId: conditionsId, operatorIds: operatorIds)
+                await MainActor.run {
+                    ChatModel.shared.conditions = r
+                    updateOperatorsConditionsAcceptance($currUserServers, r.serverOperators)
+                    updateOperatorsConditionsAcceptance($userServers, r.serverOperators)
+                    dismiss()
+                }
+            } catch let error {
+                await MainActor.run {
+                    showAlert(
+                        NSLocalizedString("Error accepting conditions", comment: "alert title"),
+                        message: responseError(error)
+                    )
+                }
+            }
+        }
+    }
+}
+
+func validateServers_(_ userServers: Binding<[UserOperatorServers]>, _ serverErrors: Binding<[UserServersError]>) {
+    let userServersToValidate = userServers.wrappedValue
+    Task {
+        do {
+            let errs = try await validateServers(userServers: userServersToValidate)
+            await MainActor.run {
+                serverErrors.wrappedValue = errs
+            }
+        } catch let error {
+            logger.error("validateServers error: \(responseError(error))")
+        }
+    }
+}
+
+func serversCanBeSaved(
+    _ currUserServers: [UserOperatorServers],
+    _ userServers: [UserOperatorServers],
+    _ serverErrors: [UserServersError]
+) -> Bool {
+    return userServers != currUserServers && serverErrors.isEmpty
+}
+
+struct ServersErrorView: View {
+    @EnvironmentObject var theme: AppTheme
+    var errStr: String
+
+    var body: some View {
+        HStack {
+            Image(systemName: "exclamationmark.circle")
+                .foregroundColor(.red)
+            Text(errStr)
+                .foregroundColor(theme.colors.secondary)
+        }
+    }
+}
+
+func globalServersError(_ serverErrors: [UserServersError]) -> String? {
+    for err in serverErrors {
+        if let errStr = err.globalError {
+            return errStr
+        }
+    }
+    return nil
+}
+
+func globalSMPServersError(_ serverErrors: [UserServersError]) -> String? {
+    for err in serverErrors {
+        if let errStr = err.globalSMPError {
+            return errStr
+        }
+    }
+    return nil
+}
+
+func globalXFTPServersError(_ serverErrors: [UserServersError]) -> String? {
+    for err in serverErrors {
+        if let errStr = err.globalXFTPError {
+            return errStr
+        }
+    }
+    return nil
+}
+
+func findDuplicateHosts(_ serverErrors: [UserServersError]) -> Set<String> {
+    let duplicateHostsList = serverErrors.compactMap { err in
+        if case let .duplicateServer(_, _, duplicateHost) = err {
+            return duplicateHost
+        } else {
+            return nil
+        }
+    }
+    return Set(duplicateHostsList)
 }
 
 func saveServers(_ currUserServers: Binding<[UserOperatorServers]>, _ userServers: Binding<[UserOperatorServers]>) {
@@ -298,38 +404,7 @@ func saveServers(_ currUserServers: Binding<[UserOperatorServers]>, _ userServer
     }
 }
 
-func acceptForOperators(
-    _ currUserServers: Binding<[UserOperatorServers]>,
-    _ userServers: Binding<[UserOperatorServers]>,
-    _ operatorIndexToEnable: Int?,
-    _ dismissAction: DismissAction,
-    _ operatorIds: [Int64]
-) {
-    Task {
-        do {
-            let conditionsId = ChatModel.shared.conditions.currentConditions.conditionsId
-            let r = try await acceptConditions(conditionsId: conditionsId, operatorIds: operatorIds)
-            await MainActor.run {
-                ChatModel.shared.conditions = r
-                updateOperators(currUserServers, r.serverOperators)
-                updateOperators(userServers, r.serverOperators)
-                if let i = operatorIndexToEnable {
-                    userServers.wrappedValue[i].operator?.enabled = true
-                }
-                dismissAction()
-            }
-        } catch let error {
-            await MainActor.run {
-                showAlert(
-                    NSLocalizedString("Error accepting conditions", comment: "alert title"),
-                    message: responseError(error)
-                )
-            }
-        }
-    }
-}
-
-private func updateOperators(_ usvs: Binding<[UserOperatorServers]>, _ updatedOperators: [ServerOperator]) {
+func updateOperatorsConditionsAcceptance(_ usvs: Binding<[UserOperatorServers]>, _ updatedOperators: [ServerOperator]) {
     for i in 0..<usvs.wrappedValue.count {
         if let updatedOperator = updatedOperators.first(where: { $0.operatorId == usvs.wrappedValue[i].operator?.operatorId }) {
             usvs.wrappedValue[i].operator?.conditionsAcceptance = updatedOperator.conditionsAcceptance
@@ -341,7 +416,8 @@ struct NetworkServersView_Previews: PreviewProvider {
     static var previews: some View {
         NetworkAndServers(
             currUserServers: Binding.constant([UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator]),
-            userServers: Binding.constant([UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator])
+            userServers: Binding.constant([UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator]),
+            serverErrors: Binding.constant([])
         )
     }
 }

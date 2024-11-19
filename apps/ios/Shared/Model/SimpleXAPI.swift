@@ -543,8 +543,9 @@ func setUserServers(userServers: [UserOperatorServers]) async throws {
 }
 
 func validateServers(userServers: [UserOperatorServers]) async throws -> [UserServersError] {
-    let r = await chatSendCmd(.apiValidateServers(userServers: userServers))
-    if case let .userServersValidation(serverErrors) = r { return serverErrors }
+    let userId = try currentUserId("validateServers")
+    let r = await chatSendCmd(.apiValidateServers(userId: userId, userServers: userServers))
+    if case let .userServersValidation(_, serverErrors) = r { return serverErrors }
     logger.error("validateServers error: \(String(describing: r))")
     throw r
 }

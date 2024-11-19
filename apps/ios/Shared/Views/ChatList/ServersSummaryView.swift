@@ -22,6 +22,7 @@ struct ServersSummaryView: View {
 
     @State private var currUserServers: [UserOperatorServers] = []
     @State private var userServers: [UserOperatorServers] = []
+    @State private var serverErrors: [UserServersError] = []
 
     @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
 
@@ -57,7 +58,7 @@ struct ServersSummaryView: View {
         .onDisappear {
             stopTimer()
 
-            if userServers != currUserServers {
+            if serversCanBeSaved(currUserServers, userServers, serverErrors) {
                 showAlert(
                     title: NSLocalizedString("Save servers?", comment: "alert title"),
                     buttonTitle: NSLocalizedString("Save", comment: "alert button"),
@@ -289,7 +290,8 @@ struct ServersSummaryView: View {
                 summary: srvSumm,
                 statsStartedAt: statsStartedAt,
                 currUserServers: $currUserServers,
-                userServers: $userServers
+                userServers: $userServers,
+                serverErrors: $serverErrors
             )
             .navigationBarTitle("SMP server")
             .navigationBarTitleDisplayMode(.large)
@@ -360,7 +362,8 @@ struct ServersSummaryView: View {
                 summary: srvSumm,
                 statsStartedAt: statsStartedAt,
                 currUserServers: $currUserServers,
-                userServers: $userServers
+                userServers: $userServers,
+                serverErrors: $serverErrors
             )
             .navigationBarTitle("XFTP server")
             .navigationBarTitleDisplayMode(.large)
@@ -504,6 +507,7 @@ struct SMPServerSummaryView: View {
 
     @Binding var currUserServers: [UserOperatorServers]
     @Binding var userServers: [UserOperatorServers]
+    @Binding var serverErrors: [UserServersError]
 
     var body: some View {
         List {
@@ -514,7 +518,8 @@ struct SMPServerSummaryView: View {
                     NavigationLink {
                         NetworkAndServers(
                             currUserServers: $currUserServers,
-                            userServers: $userServers
+                            userServers: $userServers,
+                            serverErrors: $serverErrors
                         )
                         .navigationTitle("Network & servers")
                         .modifier(ThemedBackground(grouped: true))
@@ -698,6 +703,7 @@ struct XFTPServerSummaryView: View {
 
     @Binding var currUserServers: [UserOperatorServers]
     @Binding var userServers: [UserOperatorServers]
+    @Binding var serverErrors: [UserServersError]
 
     var body: some View {
         List {
@@ -708,7 +714,8 @@ struct XFTPServerSummaryView: View {
                     NavigationLink {
                         NetworkAndServers(
                             currUserServers: $currUserServers,
-                            userServers: $userServers
+                            userServers: $userServers,
+                            serverErrors: $serverErrors
                         )
                         .navigationTitle("Network & servers")
                         .modifier(ThemedBackground(grouped: true))

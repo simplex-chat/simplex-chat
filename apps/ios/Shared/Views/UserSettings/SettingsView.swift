@@ -268,6 +268,7 @@ struct SettingsView: View {
 
     @Binding var currUserServers: [UserOperatorServers]
     @Binding var userServers: [UserOperatorServers]
+    @Binding var serverErrors: [UserServersError]
 
     var body: some View {
         ZStack {
@@ -297,7 +298,8 @@ struct SettingsView: View {
                     NavigationLink {
                         NetworkAndServers(
                             currUserServers: $currUserServers,
-                            userServers: $userServers
+                            userServers: $userServers,
+                            serverErrors: $serverErrors
                         )
                         .navigationTitle("Network & servers")
                         .modifier(ThemedBackground(grouped: true))
@@ -536,7 +538,8 @@ struct SettingsView_Previews: PreviewProvider {
         chatModel.currentUser = User.sampleData
         return SettingsView(
             currUserServers: Binding.constant([UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator]),
-            userServers: Binding.constant([UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator])
+            userServers: Binding.constant([UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator]),
+            serverErrors: Binding.constant([])
         )
         .environmentObject(chatModel)
     }

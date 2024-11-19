@@ -13,6 +13,7 @@ import CodeScanner
 struct ScanProtocolServer: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var userServers: [UserOperatorServers]
+    @Binding var serverErrors: [UserServersError]
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -34,7 +35,7 @@ struct ScanProtocolServer: View {
         case let .success(r):
             var server: UserServer = .empty
             server.server = r.string
-            addServer(server, $userServers, dismiss)
+            addServer(server, $userServers, $serverErrors, dismiss)
         case let .failure(e):
             logger.error("ScanProtocolServer.processQRCode QR code error: \(e.localizedDescription)")
             dismiss()
@@ -45,7 +46,8 @@ struct ScanProtocolServer: View {
 struct ScanProtocolServer_Previews: PreviewProvider {
     static var previews: some View {
         ScanProtocolServer(
-            userServers: Binding.constant([UserOperatorServers.sampleDataNilOperator])
+            userServers: Binding.constant([UserOperatorServers.sampleDataNilOperator]),
+            serverErrors: Binding.constant([])
         )
     }
 }

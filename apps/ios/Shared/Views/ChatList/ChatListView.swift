@@ -38,6 +38,7 @@ struct UserPickerSheetView: View {
 
     @State private var currUserServers: [UserOperatorServers] = []
     @State private var userServers: [UserOperatorServers] = []
+    @State private var serverErrors: [UserServersError] = []
 
     var body: some View {
         NavigationView {
@@ -61,7 +62,8 @@ struct UserPickerSheetView: View {
                     case .settings:
                         SettingsView(
                             currUserServers: $currUserServers,
-                            userServers: $userServers
+                            userServers: $userServers,
+                            serverErrors: $serverErrors
                         )
                     }
                 }
@@ -83,7 +85,7 @@ struct UserPickerSheetView: View {
             )
         }
         .onDisappear {
-            if userServers != currUserServers {
+            if serversCanBeSaved(currUserServers, userServers, serverErrors) {
                 showAlert(
                     title: NSLocalizedString("Save servers?", comment: "alert title"),
                     buttonTitle: NSLocalizedString("Save", comment: "alert button"),
