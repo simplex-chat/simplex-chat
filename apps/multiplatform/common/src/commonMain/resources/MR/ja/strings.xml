@@ -1965,4 +1965,11 @@
     <string name="v6_0_connect_faster_descr">友達ともっと速くつながりましょう。</string>
     <string name="v6_0_upgrade_app_descr">新しいバージョンをGitHubからダウンロードしてください。</string>
     <string name="servers_info_downloaded">ダウンロード完了</string>
+    <string name="reconnect">再接続</string>
+    <string name="send_errors">送信エラー</string>
+    <string name="network_socks_proxy">SOCKSプロキシ</string>
+    <string name="network_proxy_password">パスワード</string>
+    <string name="toolbar_settings">設定</string>
+    <string name="servers_info_missing">情報がありません、リロードしてください</string>
+    <string name="smp_server">SMPサーバ</string>
 </resources>
