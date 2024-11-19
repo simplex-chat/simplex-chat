@@ -127,6 +127,8 @@ data StoreError
   | SERemoteCtrlNotFound {remoteCtrlId :: RemoteCtrlId}
   | SERemoteCtrlDuplicateCA
   | SEProhibitedDeleteUser {userId :: UserId, contactId :: ContactId}
+  | SEOperatorNotFound {serverOperatorId :: Int64}
+  | SEUsageConditionsNotFound
   deriving (Show, Exception)
 
 $(J.deriveJSON (sumTypeJSON $ dropPrefix "SE") ''StoreError)

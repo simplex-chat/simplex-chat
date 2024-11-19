@@ -25,16 +25,13 @@ import chat.simplex.res.MR
 
 @Composable
 fun SetNotificationsMode(m: ChatModel) {
-  val handler = remember { AppBarHandler() }
-  CompositionLocalProvider(
-    LocalAppBarHandler provides handler
-  ) {
+  LaunchedEffect(Unit) {
+    prepareChatBeforeNotificationsSetup(m)
+  }
+
+  CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
     ModalView({}, showClose = false) {
-      ColumnWithScrollBar(
-        modifier = Modifier
-          .fillMaxSize()
-          .themedBackground()
-      ) {
+      ColumnWithScrollBar(Modifier.themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer)) {
         Box(Modifier.align(Alignment.CenterHorizontally)) {
           AppBarTitle(stringResource(MR.strings.onboarding_notifications_mode_title))
         }
@@ -100,4 +97,14 @@ fun <T> SelectableCard(currentValue: State<T>, newValue: T, title: String, descr
     }
   }
   Spacer(Modifier.height(14.dp))
+}
+
+private fun prepareChatBeforeNotificationsSetup(chatModel: ChatModel) {
+  // No visible users but may have hidden. In this case chat should be started anyway because it's stopped on this stage with hidden users
+  if (chatModel.users.any { u -> !u.user.hidden }) return
+  withBGApi {
+    val user = chatModel.controller.apiGetActiveUser(null) ?: return@withBGApi
+    chatModel.currentUser.value = user
+    chatModel.controller.startChat(user)
+  }
 }

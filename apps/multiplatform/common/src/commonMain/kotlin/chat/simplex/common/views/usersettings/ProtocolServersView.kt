@@ -192,10 +192,7 @@ private fun ProtocolServersLayout(
   saveSMPServers: () -> Unit,
   showServer: (ServerCfg) -> Unit,
 ) {
-  ColumnWithScrollBar(
-    Modifier
-      .fillMaxWidth()
-  ) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(if (serverProtocol == ServerProtocol.SMP) MR.strings.your_SMP_servers else MR.strings.your_XFTP_servers))
 
     val configuredServers = servers.filter { it.preset || it.enabled }

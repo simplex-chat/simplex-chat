@@ -51,6 +51,7 @@ import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Protocol (srvHostnamesSMPClientVersion)
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
+import Simplex.Messaging.Server.MsgStore.Types (AMSType (..), SMSType (..))
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Transport.Server (ServerCredentials (..), defaultTransportServerConfig)
 import Simplex.Messaging.Version
@@ -422,8 +423,10 @@ smpServerCfg =
   ServerConfig
     { transports = [(serverPort, transport @TLS, False)],
       tbqSize = 1,
-      -- serverTbqSize = 1,
+      msgStoreType = AMSType SMSMemory,
       msgQueueQuota = 16,
+      maxJournalMsgCount = 24,
+      maxJournalStateLines = 4,
       queueIdBytes = 12,
       msgIdBytes = 6,
       storeLogFile = Nothing,
@@ -435,6 +438,8 @@ smpServerCfg =
       controlPortUserAuth = Nothing,
       controlPortAdminAuth = Nothing,
       messageExpiration = Just defaultMessageExpiration,
+      expireMessagesOnStart = False,
+      idleQueueInterval = defaultIdleQueueInterval,
       notificationExpiration = defaultNtfExpiration,
       inactiveClientExpiration = Just defaultInactiveClientExpiration,
       smpCredentials =
@@ -520,7 +525,7 @@ serverBracket server f = do
   started <- newEmptyTMVarIO
   bracket
     (forkIOWithUnmask ($ server started))
-    (\t -> killThread t >> waitFor started "stop")
+    (\t -> killThread t >> waitFor started "stop" >> threadDelay 100000)
     (\_ -> waitFor started "start" >> f)
   where
     waitFor started s =

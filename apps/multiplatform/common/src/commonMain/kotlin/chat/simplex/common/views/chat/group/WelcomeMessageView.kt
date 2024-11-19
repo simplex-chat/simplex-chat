@@ -95,9 +95,7 @@ private fun GroupWelcomeLayout(
   linkMode: SimplexLinkMode,
   save: () -> Unit,
 ) {
-  ColumnWithScrollBar(
-    Modifier.fillMaxWidth(),
-  ) {
+  ColumnWithScrollBar {
     val editMode = remember { mutableStateOf(true) }
     AppBarTitle(stringResource(MR.strings.group_welcome_title))
     val wt = rememberSaveable { welcomeText }

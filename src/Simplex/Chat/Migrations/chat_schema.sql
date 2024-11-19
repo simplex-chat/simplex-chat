@@ -360,7 +360,7 @@ CREATE TABLE pending_group_messages(
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
 CREATE TABLE chat_items(
-  chat_item_id INTEGER PRIMARY KEY,
+  chat_item_id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
   group_id INTEGER REFERENCES groups ON DELETE CASCADE,
@@ -399,6 +399,7 @@ CREATE TABLE chat_items(
   fwd_from_chat_item_id INTEGER REFERENCES chat_items ON DELETE SET NULL,
   via_proxy INTEGER
 );
+CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE chat_item_messages(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
   message_id INTEGER NOT NULL UNIQUE REFERENCES messages ON DELETE CASCADE,
@@ -429,7 +430,6 @@ CREATE TABLE commands(
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
-CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE settings(
   settings_id INTEGER PRIMARY KEY,
   chat_item_ttl INTEGER,
@@ -589,6 +589,35 @@ CREATE TABLE note_folders(
   unread_chat INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE app_settings(app_settings TEXT NOT NULL);
+CREATE TABLE server_operators(
+  server_operator_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  server_operator_tag TEXT,
+  trade_name TEXT NOT NULL,
+  legal_name TEXT,
+  server_domains TEXT,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  smp_role_storage INTEGER NOT NULL DEFAULT 1,
+  smp_role_proxy INTEGER NOT NULL DEFAULT 1,
+  xftp_role_storage INTEGER NOT NULL DEFAULT 1,
+  xftp_role_proxy INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+);
+CREATE TABLE usage_conditions(
+  usage_conditions_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  conditions_commit TEXT NOT NULL UNIQUE,
+  notified_at TEXT,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+);
+CREATE TABLE operator_usage_conditions(
+  operator_usage_conditions_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  server_operator_id INTEGER REFERENCES server_operators(server_operator_id) ON DELETE SET NULL ON UPDATE CASCADE,
+  server_operator_tag TEXT,
+  conditions_commit TEXT NOT NULL,
+  accepted_at TEXT,
+  created_at TEXT NOT NULL DEFAULT(datetime('now'))
+);
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -890,3 +919,10 @@ CREATE INDEX idx_received_probes_group_member_id on received_probes(
   group_member_id
 );
 CREATE INDEX idx_contact_requests_contact_id ON contact_requests(contact_id);
+CREATE INDEX idx_operator_usage_conditions_server_operator_id ON operator_usage_conditions(
+  server_operator_id
+);
+CREATE UNIQUE INDEX idx_operator_usage_conditions_conditions_commit ON operator_usage_conditions(
+  conditions_commit,
+  server_operator_id
+);

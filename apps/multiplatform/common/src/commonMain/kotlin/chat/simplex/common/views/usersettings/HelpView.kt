@@ -21,11 +21,7 @@ fun HelpView(userDisplayName: String) {
 
 @Composable
 fun HelpLayout(userDisplayName: String) {
-  ColumnWithScrollBar(
-    Modifier
-      .fillMaxWidth()
-      .padding(horizontal = DEFAULT_PADDING),
-  ){
+  ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_PADDING)){
     AppBarTitle(String.format(stringResource(MR.strings.personal_welcome), userDisplayName), withPadding = false)
     ChatHelpView()
   }
