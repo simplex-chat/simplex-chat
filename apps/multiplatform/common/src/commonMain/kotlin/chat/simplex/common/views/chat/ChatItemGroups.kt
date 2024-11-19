@@ -23,17 +23,7 @@ data class MergedItems (
   val items: List<MergedItem>,
   val ranges: List<SplitRange>,
   // chat item id, index in list
-  val indexInParentItems: Map<Long, Int>, // remove
-  // chat item id, index in reversedChatItems
-  val indexInReversedItems: Map<Long, Int>, // remove
-  // parentIndex (in LazyColumn), index in reversed for the newest item (if collapsed)
-  val newestItemIndexInReversed: Map<Int, Int>,
-  // parentIndex (in LazyColumn), index in reversed for the oldest item (if collapsed)
-  val oldestItemIndexInReversed: Map<Int, Int>,
-  // parentIndex (in LazyColumn), newest list item (if collapsed)
-  val newestListItemInReversed: Map<Int, ListItem>,
-  // parentIndex (in LazyColumn), oldest list item (if collapsed)
-  val oldestListItemInReversed: Map<Int, ListItem>
+  val indexInParentItems: Map<Long, Int>,
 ) {
   fun lastIndexInParentItems(): Int {
     val last = items.lastOrNull() ?: return -1
@@ -54,7 +44,7 @@ data class MergedItems (
 
       is MergedItem.Grouped ->
         "\nstartIndexInParentItems $index, startIndexInReversedItems ${g.startIndexInReversedItems}, " +
-            "revealed ${g.revealed.value}, " +
+            "revealed ${g.revealed}, " +
             "mergeCategory ${g.items[0].item.mergeCategory} " +
             g.items.mapIndexed { i, it ->
               "\nunreadBefore ${it.unreadBefore} ${Triple(index, g.startIndexInReversedItems + i, it.item.id)}"
@@ -63,33 +53,29 @@ data class MergedItems (
   }.toString()
 
   companion object {
-    fun create(items: List<ChatItem>, unreadCount: State<Int>, revealedItems: Set<Long>, chatState: ActiveChatState): Sections {
-      if (items.isEmpty()) return MergedItems(emptyList(), emptyList(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), emptyMap())
+    fun create(items: List<ChatItem>, unreadCount: State<Int>, revealedItems: Set<Long>, chatState: ActiveChatState): MergedItems {
+      if (items.isEmpty()) return MergedItems(emptyList(), emptyList(), emptyMap())
 
       val unreadAnchorItemId = chatState.unreadAnchorItemId
-      val itemAnchors = chatState.anchors.value
+      val itemSplits = chatState.splits.value
       val groups = ArrayList<MergedItem>()
-      // Indexes of anchors here will be related to reversedChatItems, not chatModel.chatItems
-      val anchoredRanges = ArrayList<SplitRange>()
+      // Indexes of splits here will be related to reversedChatItems, not chatModel.chatItems
+      val splitRanges = ArrayList<SplitRange>()
       val indexInParentItems = mutableMapOf<Long, Int>()
-      val indexInReversedItems = mutableMapOf<Long, Int>()
-      val newestItemIndexInReversed = mutableMapOf<Int, Int>()
-      val oldestItemIndexInReversed = mutableMapOf<Int, Int>()
-      val newestListItemInReversed = mutableMapOf<Int, ListItem>()
-      val oldestListItemInReversed = mutableMapOf<Int, ListItem>()
       var index = 0
-      var unclosedAnchorIndex: Int? = null
-      var unclosedAnchorIndexInParent: Int? = null
-      var unclosedAnchorItemId: Long? = null
+      var unclosedSplitIndex: Int? = null
+      var unclosedSplitIndexInParent: Int? = null
+      var unclosedSplitItemId: Long? = null
       var visibleItemIndexInParent = -1
       var unreadBefore = unreadCount.value - chatState.unreadAfterNewestLoaded.value
-      var lastRangeForMergedItems: MutableStateFlow<IntRange>? = null
+      var lastRevealedIdsInMergedItems: MutableList<Long>? = null
+      var lastRangeInReversedForMergedItems: MutableStateFlow<IntRange>? = null
       var recent: MergedItem? = null
       while (index < items.size) {
         val item = items[index]
         val next = items.getOrNull(index + 1)
         val category = item.mergeCategory
-        val itemIsAnchor = itemAnchors.contains(item.id)
+        val itemIsSplit = itemSplits.contains(item.id)
 
         val itemSeparation: ItemSeparation
         val prevItemSeparationLargeGap: Boolean
@@ -98,7 +84,7 @@ data class MergedItems (
         }
         if (item.isRcvNew) unreadBefore--
 
-        if (recent is MergedItem.Grouped && recent.mergeCategory == category && !recent.revealed.value && !itemIsAnchor) {
+        if (recent is MergedItem.Grouped && recent.mergeCategory == category && !revealedItems.contains(recent.items.first().item.id) && !itemIsSplit) {
 //          if (recent.revealed.value) {
 //            val prev = items.getOrNull(index - 1)
 //            itemSeparation = getItemSeparation(item, prev)
@@ -111,10 +97,6 @@ data class MergedItems (
             prevItemSeparationLargeGap = false
 //          }
           val listItem = ListItem(item, itemSeparation, prevItemSeparationLargeGap, unreadBefore)
-//          if (recent.revealed.value) {
-//            newestItemIndexInReversed[visibleItemIndexInParent] = index
-//            newestListItemInReversed[visibleItemIndexInParent] = listItem
-//          }
           recent.items.add(listItem)
           if (shouldShowAvatar(item, next)) {
             recent.showAvatar.add(item.id)
@@ -122,8 +104,12 @@ data class MergedItems (
           if (item.isRcvNew) {
             recent.unreadIds.add(item.id)
           }
-          oldestItemIndexInReversed[visibleItemIndexInParent] = index
-          oldestListItemInReversed[visibleItemIndexInParent] = listItem
+          if (lastRevealedIdsInMergedItems != null && lastRangeInReversedForMergedItems != null) {
+            if (revealedItems.contains(item.id)) {
+              lastRevealedIdsInMergedItems += item.id
+            }
+            lastRangeInReversedForMergedItems.value = lastRangeInReversedForMergedItems.value.first..index
+          }
         } else {
           val revealed = item.mergeCategory == null || revealedItems.contains(item.id)
           visibleItemIndexInParent++
@@ -139,16 +125,21 @@ data class MergedItems (
           }
           val listItem = ListItem(item, itemSeparation, prevItemSeparationLargeGap, unreadBefore)
           recent = if (item.mergeCategory != null) {
-            if (item.mergeCategory == prev?.mergeCategory && lastRangeForMergedItems != null) {
-              lastRangeForMergedItems.value = lastRangeForMergedItems.value.first .. index
+            if (item.mergeCategory != prev?.mergeCategory || lastRevealedIdsInMergedItems == null || lastRangeInReversedForMergedItems == null) {
+              lastRangeInReversedForMergedItems = MutableStateFlow(index .. index)
+              lastRevealedIdsInMergedItems = if (revealedItems.contains(item.id)) mutableListOf(item.id) else mutableListOf()
             } else {
-              lastRangeForMergedItems = MutableStateFlow(index .. index)
+              if (revealed) {
+                lastRevealedIdsInMergedItems += item.id
+              }
+              lastRangeInReversedForMergedItems.value = lastRangeInReversedForMergedItems.value.first .. index
             }
             MergedItem.Grouped(
-              reversedListRange = lastRangeForMergedItems,
-              mergeCategory = item.mergeCategory,
               items = arrayListOf(listItem),
-              revealed = mutableStateOf(revealed),
+              revealed = revealed,
+              revealedIds = lastRevealedIdsInMergedItems,
+              rangeInReversed = lastRangeInReversedForMergedItems,
+              mergeCategory = item.mergeCategory,
               showAvatar = if (shouldShowAvatar(item, next)) {
                 mutableSetOf(item.id)
               } else {
@@ -158,55 +149,40 @@ data class MergedItems (
               unreadIds = if (item.isRcvNew) mutableSetOf(item.id) else mutableSetOf()
             )
           } else {
-            lastRangeForMergedItems = null
+            lastRangeInReversedForMergedItems = null
             MergedItem.Single(
               item = listItem,
               startIndexInReversedItems = index
             )
           }
           groups.add(recent)
-          newestItemIndexInReversed[visibleItemIndexInParent] = index
-          oldestItemIndexInReversed[visibleItemIndexInParent] = index
-          newestListItemInReversed[visibleItemIndexInParent] = listItem
-          oldestListItemInReversed[visibleItemIndexInParent] = listItem
         }
-        if (itemIsAnchor) {
-          // found item that is considered as an anchor
-          if (unclosedAnchorIndex != null && unclosedAnchorItemId != null && unclosedAnchorIndexInParent != null) {
-            // it was at least second anchor in the list
-            anchoredRanges.add(SplitRange(unclosedAnchorItemId, unclosedAnchorIndex until index, unclosedAnchorIndexInParent until visibleItemIndexInParent))
+        if (itemIsSplit) {
+          // found item that is considered as a split
+          if (unclosedSplitIndex != null && unclosedSplitItemId != null && unclosedSplitIndexInParent != null) {
+            // it was at least second split in the list
+            splitRanges.add(SplitRange(unclosedSplitItemId, unclosedSplitIndex until index, unclosedSplitIndexInParent until visibleItemIndexInParent))
           }
-          unclosedAnchorIndex = index
-          unclosedAnchorIndexInParent = visibleItemIndexInParent
-          unclosedAnchorItemId = item.id
-        } else if (index + 1 == items.size && unclosedAnchorIndex != null && unclosedAnchorItemId != null && unclosedAnchorIndexInParent != null) {
-          // just one anchor for the whole list, there will be no more, it's the end
-          anchoredRanges.add(SplitRange(unclosedAnchorItemId, unclosedAnchorIndex .. index, unclosedAnchorIndexInParent .. visibleItemIndexInParent))
+          unclosedSplitIndex = index
+          unclosedSplitIndexInParent = visibleItemIndexInParent
+          unclosedSplitItemId = item.id
+        } else if (index + 1 == items.size && unclosedSplitIndex != null && unclosedSplitItemId != null && unclosedSplitIndexInParent != null) {
+          // just one split for the whole list, there will be no more, it's the end
+          splitRanges.add(SplitRange(unclosedSplitItemId, unclosedSplitIndex .. index, unclosedSplitIndexInParent .. visibleItemIndexInParent))
         }
         indexInParentItems[item.id] = visibleItemIndexInParent
-        indexInReversedItems[item.id] = index
         index++
       }
       return MergedItems(
         groups,
-        anchoredRanges,
-        indexInParentItems,
-        indexInReversedItems,
-        newestItemIndexInReversed,
-        oldestItemIndexInReversed,
-        newestListItemInReversed,
-        oldestListItemInReversed
+        splitRanges,
+        indexInParentItems
       )
     }
   }
 }
 
 sealed class MergedItem {
-
-  /** min index of row in LazyColumn:
-  - for unrevealed row, it will match listState's index
-  - for revealed row, this number represents index in listState for the first item in [items].
-   */
   abstract val startIndexInReversedItems: Int
 
   data class Single(
@@ -217,8 +193,9 @@ sealed class MergedItem {
   @Stable
   data class Grouped (
     val items: ArrayList<ListItem>,
-    val revealed: MutableState<Boolean>,
-    val reversedListRange: MutableStateFlow<IntRange>,
+    val revealed: Boolean,
+    val revealedIds: MutableList<Long>,
+    val rangeInReversed: MutableStateFlow<IntRange>,
     val mergeCategory: CIMergeCategory?,
     val showAvatar: MutableSet<Long>, // ?
     val unreadIds: MutableSet<Long>,
@@ -227,18 +204,40 @@ sealed class MergedItem {
     fun reveal(reveal: Boolean, revealedItems: MutableState<Set<Long>>) {
       val newRevealed = revealedItems.value.toMutableSet()
       var i = 0
-      while (i < items.size) {
-        val item = items[i]
-        if (reveal) {
-          newRevealed.add(item.item.id)
-        } else {
-          newRevealed.remove(item.item.id)
+      if (reveal) {
+        while (i < items.size) {
+          newRevealed.add(items[i].item.id)
+          i++
         }
-        i++
+      } else {
+        while (i < revealedIds.size) {
+          newRevealed.remove(revealedIds[i])
+          i++
+        }
+        revealedIds.clear()
       }
       revealedItems.value = newRevealed
-      revealed.value = reveal
     }
+  }
+
+  fun newest(): ListItem = when (this) {
+    is Single -> item
+    is Grouped -> items.first()
+  }
+
+  fun oldest(): ListItem = when (this) {
+    is Single -> item
+    is Grouped -> items.last()
+  }
+
+  fun firstIndexInReversed(): Int = when (this) {
+    is Single -> startIndexInReversedItems
+    is Grouped -> startIndexInReversedItems
+  }
+
+  fun lastIndexInReversed(): Int = when (this) {
+    is Single -> startIndexInReversedItems
+    is Grouped -> startIndexInReversedItems + items.lastIndex
   }
 }
 
@@ -247,11 +246,12 @@ data class SplitRange(
    * It changes over time when new items are loaded.
    * see [apiLoadMessages] */
   val itemId: Long, // remove
-  /** range of indexes inside reversedChatItems where the first element is the anchor (it's index is [reversedListRange.first])
-   * so [0, 1, 2, -100-, 101] if the 3 is an anchor, AnchoredRange(itemId = 100, indexRange = 3 .. 4) will be this AnchoredRange instance (3, 4 indexes of the anchoredRange with the anchor itself at index 3)
+  /** range of indexes inside reversedChatItems where the first element is the split (it's index is [indexRangeInReversed.first])
+   * so [0, 1, 2, -100-, 101] if the 3 is a split, SplitRange(itemId = 100, indexRange = 3 .. 4) will be this SplitRange instance
+   * (3, 4 indexes of the splitRange with the split itself at index 3)
    * */
-  val reversedListRange: IntRange,
-  /** range of indexes inside LazyColumn (taking revealed/hidden items into account) where the first element is the anchor (it's index is [indexRangeInParentItems.first]) */
+  val indexRangeInReversed: IntRange,
+  /** range of indexes inside LazyColumn (taking revealed/hidden items into account) where the first element is the split (it's index is [indexRangeInParentItems.first]) */
   val indexRangeInParentItems: IntRange
 )
 
@@ -266,7 +266,7 @@ data class ListItem(
 )
 
 data class ActiveChatState (
-  val anchors: MutableStateFlow<List<Long>> = MutableStateFlow(emptyList()),
+  val splits: MutableStateFlow<List<Long>> = MutableStateFlow(emptyList()),
   val unreadAnchorItemId: MutableStateFlow<Long> = MutableStateFlow(-1L),
   // total items after unread anchor item (exclusive)
   val totalAfter: MutableStateFlow<Int> = MutableStateFlow(0),
@@ -302,7 +302,7 @@ data class ActiveChatState (
   }
 
   fun clear() {
-    anchors.value = emptyList()
+    splits.value = emptyList()
     unreadAnchorItemId.value = -1L
     totalAfter.value = 0
     unreadTotal.value = 0
@@ -314,8 +314,8 @@ data class ActiveChatState (
 fun visibleItemIndexesNonReversed(groups: State<MergedItems>, listState: LazyListState): IntRange {
   val zero = 0 .. 0
   if (listState.layoutInfo.totalItemsCount == 0) return zero
-  val newest = groups.value.newestItemIndexInReversed[listState.firstVisibleItemIndex]
-  val oldest = groups.value.oldestItemIndexInReversed[listState.layoutInfo.visibleItemsInfo.last().index]
+  val newest = groups.value.items.getOrNull(listState.firstVisibleItemIndex)?.firstIndexInReversed()
+  val oldest = groups.value.items.getOrNull(listState.layoutInfo.visibleItemsInfo.last().index)?.lastIndexInReversed()
   if (newest == null || oldest == null) return zero
   val size = chatModel.chatItems.value.size
   val range = size - oldest .. size - newest
@@ -367,22 +367,22 @@ fun recalculateChatStatePositions(chatState: ActiveChatState) = object: ChatItem
     }
   }
   override fun removed(itemIds: List<Triple<Long, Int, Boolean>>, newItems: List<ChatItem>) {
-    val (anchors, unreadAnchorItemId, totalAfter, unreadTotal, unreadAfter) = chatState
-    val newAnchors = ArrayList<Long>()
-    for (anchor in anchors.value) {
-      val index = itemIds.indexOfFirst { it.first == anchor }
-      // deleted the item that was right before the anchor between items, find newer item so it will act like the anchor
+    val (splits, unreadAnchorItemId, totalAfter, unreadTotal, unreadAfter) = chatState
+    val newSplits = ArrayList<Long>()
+    for (split in splits.value) {
+      val index = itemIds.indexOfFirst { it.first == split }
+      // deleted the item that was right before the split between items, find newer item so it will act like the split
       if (index != -1) {
-        val newAnchor = newItems.getOrNull(itemIds[index].second - itemIds.count { it.second <= index })?.id
-        // it the  whole section is gone and anchors overlap, don't add it at all
-        if (newAnchor != null && !newAnchors.contains(newAnchor)) {
-          newAnchors.add(newAnchor)
+        val newSplit = newItems.getOrNull(itemIds[index].second - itemIds.count { it.second <= index })?.id
+        // it the  whole section is gone and splits overlap, don't add it at all
+        if (newSplit != null && !newSplits.contains(newSplit)) {
+          newSplits.add(newSplit)
         }
       } else {
-        newAnchors.add(anchor)
+        newSplits.add(split)
       }
     }
-    anchors.value = newAnchors
+    splits.value = newSplits
 
     val index = itemIds.indexOfFirst { it.first == unreadAnchorItemId.value }
     // unread anchor item was removed
@@ -477,12 +477,12 @@ suspend fun apiLoadMessages(
   if (((chatModel.chatId.value != chat.id || chat.chatItems.isEmpty()) && pagination !is ChatPagination.Initial && pagination !is ChatPagination.Last)
     || !isActive) return@coroutineScope
 
-  val (anchors, unreadAnchorItemId, totalAfter, unreadTotal, unreadAfter, unreadAfterNewestLoaded) = chatState
+  val (splits, unreadAnchorItemId, totalAfter, unreadTotal, unreadAfter, unreadAfterNewestLoaded) = chatState
   val oldItems = chatModel.chatItems.value
   val newItems = SnapshotStateList<ChatItem>()
   when (pagination) {
     is ChatPagination.Initial -> {
-      val newAnchors = if (chat.chatItems.isNotEmpty() && navInfo.afterTotal > 0) listOf(chat.chatItems.last().id) else emptyList()
+      val newSplits = if (chat.chatItems.isNotEmpty() && navInfo.afterTotal > 0) listOf(chat.chatItems.last().id) else emptyList()
       withChats {
         if (chatModel.getChat(chat.id) == null) {
           addChat(chat)
@@ -492,7 +492,7 @@ suspend fun apiLoadMessages(
         chatModel.chatItemStatuses.clear()
         chatModel.chatItems.replaceAll(chat.chatItems)
         chatModel.chatId.value = chat.chatInfo.id
-        anchors.value = newAnchors
+        splits.value = newSplits
         if (chat.chatItems.isNotEmpty()) {
           unreadAnchorItemId.value = chat.chatItems.last().id
         }
@@ -515,44 +515,44 @@ suspend fun apiLoadMessages(
       val wasSize = newItems.size
       val visibleItemIndexes = visibleItemIndexesNonReversed()
       val trimmedIds = mutableSetOf<Long>()
-      var lastAnchorIndexTrimmed = -1
-      var allowedTrimming = true//anchors.value.isNotEmpty()
+      var lastSplitIndexTrimmed = -1
+      var allowedTrimming = true//splits.value.isNotEmpty()
       var index = 0
       /** keep the newest [TRIM_KEEP_COUNT] items (bottom area) and oldest [TRIM_KEEP_COUNT] items, trim others */
       val trimRange = visibleItemIndexes.last + TRIM_KEEP_COUNT .. newItems.size - TRIM_KEEP_COUNT
       val prevItemTrimRange = visibleItemIndexes.last + TRIM_KEEP_COUNT + 1 .. newItems.size - TRIM_KEEP_COUNT
-      var oldUnreadAnchorIndex: Int = -1
-      var newUnreadAnchorIndex: Int = -1
+      var oldUnreadSplitIndex: Int = -1
+      var newUnreadSplitIndex: Int = -1
       newItems.removeAll {
         val invisibleItemToTrim = trimRange.contains(index) && allowedTrimming
         val prevItemWasTrimmed = prevItemTrimRange.contains(index) && allowedTrimming
-        // may disable it after clearing the whole anchored range
-        if (anchors.value.isNotEmpty() && it.id == anchors.value.firstOrNull()) {
-          // trim only in one anchored range
+        // may disable it after clearing the whole split range
+        if (splits.value.isNotEmpty() && it.id == splits.value.firstOrNull()) {
+          // trim only in one split range
           allowedTrimming = false
         }
-        val indexInAnchors = anchors.value.indexOf(it.id)
-        if (indexInAnchors != -1) {
-          lastAnchorIndexTrimmed = indexInAnchors
+        val indexInSplits = splits.value.indexOf(it.id)
+        if (indexInSplits != -1) {
+          lastSplitIndexTrimmed = indexInSplits
         }
         if (invisibleItemToTrim) {
           if (prevItemWasTrimmed) {
             trimmedIds.add(it.id)
           } else {
-            newUnreadAnchorIndex = index
-            // prev item is not supposed to be trimmed, so exclude current one from trimming and set an anchor here instead.
-            // this allows to define anchoredRange of the oldest items and to start loading trimmed items when user scrolls in the opposite direction
-            if (lastAnchorIndexTrimmed == -1) {
-              anchors.value = listOf(it.id) + anchors.value
+            newUnreadSplitIndex = index
+            // prev item is not supposed to be trimmed, so exclude current one from trimming and set a split here instead.
+            // this allows to define splitRange of the oldest items and to start loading trimmed items when user scrolls in the opposite direction
+            if (lastSplitIndexTrimmed == -1) {
+              splits.value = listOf(it.id) + splits.value
             } else {
-              val newAnchors = ArrayList(anchors.value)
-              newAnchors[lastAnchorIndexTrimmed] = it.id
-              anchors.value = newAnchors
+              val newSplits = ArrayList(splits.value)
+              newSplits[lastSplitIndexTrimmed] = it.id
+              splits.value = newSplits
             }
           }
         }
         if (unreadAnchorItemId.value == it.id) {
-          oldUnreadAnchorIndex = index
+          oldUnreadSplitIndex = index
         }
         index++
         (invisibleItemToTrim && prevItemWasTrimmed) || newIds.contains(it.id)
@@ -561,9 +561,9 @@ suspend fun apiLoadMessages(
       newItems.addAll(insertAt, chat.chatItems)
       withContext(Dispatchers.Main) {
         chatModel.chatItems.replaceAll(newItems)
-        // will remove any anchors that now becomes obsolete because items were merged
-        anchors.value = anchors.value.filterNot { anchor -> newIds.contains(anchor) || trimmedIds.contains(anchor) }
-        chatState.moveUnreadAnchor(oldUnreadAnchorIndex, newUnreadAnchorIndex, oldItems)
+        // will remove any splits that now becomes obsolete because items were merged
+        splits.value = splits.value.filterNot { split -> newIds.contains(split) || trimmedIds.contains(split) }
+        chatState.moveUnreadAnchor(oldUnreadSplitIndex, newUnreadSplitIndex, oldItems)
       }
     }
     is ChatPagination.After -> {
@@ -582,21 +582,21 @@ suspend fun apiLoadMessages(
         }
         i++
       }
-      val indexInAnchoredRanges = anchors.value.indexOf(pagination.chatItemId)
-      // Currently, it should always load from anchored range. Code that did different things were removed but let's keep it for the future
-      val loadingFromAnchoredRange = indexInAnchoredRanges != -1
-      val anchorsToMerge = if (loadingFromAnchoredRange && indexInAnchoredRanges + 1 <= anchors.value.size) ArrayList(anchors.value.subList(indexInAnchoredRanges + 1, anchors.value.size)) else ArrayList()
-      val anchorsToRemove = ArrayList<Long>()
-      var firstItemIdBelowAllAnchors: Long? = null
+      val indexInSplitRanges = splits.value.indexOf(pagination.chatItemId)
+      // Currently, it should always load from split range. Code that did different things were removed but let's keep it for the future
+      val loadingFromSplitRange = indexInSplitRanges != -1
+      val splitsToMerge = if (loadingFromSplitRange && indexInSplitRanges + 1 <= splits.value.size) ArrayList(splits.value.subList(indexInSplitRanges + 1, splits.value.size)) else ArrayList()
+      val splitsToRemove = ArrayList<Long>()
+      var firstItemIdBelowAllSplits: Long? = null
       newItems.removeAll {
         val duplicate = newIds.contains(it.id)
-        if (loadingFromAnchoredRange && duplicate) {
-          if (anchorsToMerge.contains(it.id)) {
-            anchorsToMerge.remove(it.id)
-            anchorsToRemove.add(it.id)
-          } else if (firstItemIdBelowAllAnchors == null && anchorsToMerge.isEmpty()) {
-            // we passed all anchors and found duplicated item below all of them, which means no anchors anymore below the loaded items
-            firstItemIdBelowAllAnchors = it.id
+        if (loadingFromSplitRange && duplicate) {
+          if (splitsToMerge.contains(it.id)) {
+            splitsToMerge.remove(it.id)
+            splitsToRemove.add(it.id)
+          } else if (firstItemIdBelowAllSplits == null && splitsToMerge.isEmpty()) {
+            // we passed all splits and found duplicated item below all of them, which means no splits anymore below the loaded items
+            firstItemIdBelowAllSplits = it.id
           }
         }
         if (duplicate && it.isRcvNew) {
@@ -609,25 +609,25 @@ suspend fun apiLoadMessages(
       newItems.addAll(indexToAdd, chat.chatItems)
       withContext(Dispatchers.Main) {
         chatModel.chatItems.replaceAll(newItems)
-        if (anchorsToRemove.isNotEmpty()) {
-          val newAnchors = ArrayList(anchors.value)
-          newAnchors.removeAll(anchorsToRemove.toSet())
-          anchors.value = newAnchors
+        if (splitsToRemove.isNotEmpty()) {
+          val newSplits = ArrayList(splits.value)
+          newSplits.removeAll(splitsToRemove.toSet())
+          splits.value = newSplits
         }
-        if (firstItemIdBelowAllAnchors != null) {
-          // no anchors anymore, all were merged with bottom items
-          anchors.value = emptyList()
+        if (firstItemIdBelowAllSplits != null) {
+          // no splits anymore, all were merged with bottom items
+          splits.value = emptyList()
         } else {
-          val enlargedAnchor = anchors.value.indexOf(pagination.chatItemId)
-          if (enlargedAnchor != -1) {
-            // move the anchor to the end of loaded items
-            val newAnchors = ArrayList(anchors.value)
-            newAnchors[enlargedAnchor] = chat.chatItems.last().id
-            anchors.value = newAnchors
-//            Log.d(TAG, "Enlarged anchored range ${anchors.value}")
+          val enlargedSplit = splits.value.indexOf(pagination.chatItemId)
+          if (enlargedSplit != -1) {
+            // move the split to the end of loaded items
+            val newSplits = ArrayList(splits.value)
+            newSplits[enlargedSplit] = chat.chatItems.last().id
+            splits.value = newSplits
+//            Log.d(TAG, "Enlarged split range ${splits.value}")
           }
         }
-        chatState.moveUnreadAnchor(anchors.value.firstOrNull() ?: newItems.last().id, newItems)
+        chatState.moveUnreadAnchor(splits.value.firstOrNull() ?: newItems.last().id, newItems)
         // loading clear bottom area, updating number of unread items after the newest loaded item
         if (indexToAddIsLast) {
           unreadAfterNewestLoaded.value -= unreadInLoaded
@@ -647,7 +647,7 @@ suspend fun apiLoadMessages(
       newItems.addAll(0, chat.chatItems)
       withContext(Dispatchers.Main) {
         chatModel.chatItems.replaceAll(newItems)
-        anchors.value = listOf(chat.chatItems.last().id) + anchors.value
+        splits.value = listOf(chat.chatItems.last().id) + splits.value
         unreadAnchorItemId.value = chat.chatItems.last().id
         totalAfter.value = navInfo.afterTotal
         unreadTotal.value = chat.chatStats.unreadCount
