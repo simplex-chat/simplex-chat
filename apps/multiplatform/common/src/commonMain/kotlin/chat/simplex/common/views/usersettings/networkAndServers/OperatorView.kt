@@ -191,6 +191,22 @@ fun OperatorViewLayout(
           )
         }
       }
+
+      if (userServers.value[operatorIndex].smpServers.any { !it.preset && !it.deleted }) {
+        SectionDividerSpaced()
+        SectionView(generalGetString(MR.strings.operator_added_message_servers).uppercase()) {
+          userServers.value[operatorIndex].smpServers.forEach { server ->
+            if (server.deleted || server.preset) return@forEach
+            SectionItemView {
+              ProtocolServerView(
+                srv = server,
+                serverProtocol = ServerProtocol.SMP,
+                duplicateHosts = duplicateHosts
+              )
+            }
+          }
+        }
+      }
     }
   }
 }

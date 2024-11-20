@@ -1703,6 +1703,7 @@
   <string name="operator_use_for_messages">Use for messages</string>
   <string name="operator_use_for_messages_receiving">For receiving</string>
   <string name="operator_use_for_messages_private_routing">For private routing</string>
+  <string name="operator_added_message_servers">Added message servers</string>
 
   <!-- AdvancedNetworkSettings.kt -->
   <string name="network_option_tcp_connection">TCP connection</string>
