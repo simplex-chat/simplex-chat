@@ -58,7 +58,7 @@ suspend fun apiLoadMessages(
       val (oldUnreadSplitIndex, newUnreadSplitIndex, trimmedIds, newSplits) = removeDuplicatesAndModifySplitsOnBeforePagination(
         unreadAfterItemId, newItems, newIds, splits, visibleItemIndexesNonReversed
       )
-      val insertAt = indexInCurrentItems - (wasSize - newItems.size) + trimmedIds.size
+      val insertAt = (indexInCurrentItems - (wasSize - newItems.size) + trimmedIds.size).coerceAtLeast(0)
       newItems.addAll(insertAt, chat.chatItems)
       withContext(Dispatchers.Main) {
         chatModel.chatItems.replaceAll(newItems)
@@ -91,12 +91,12 @@ suspend fun apiLoadMessages(
     }
     is ChatPagination.Around -> {
       newItems.addAll(oldItems)
-      removeDuplicates(newItems, chat)
+      val newSplits = removeDuplicatesAndUpperSplits(newItems, chat, splits, visibleItemIndexesNonReversed)
       // currently, items will always be added on top, which is index 0
       newItems.addAll(0, chat.chatItems)
       withContext(Dispatchers.Main) {
         chatModel.chatItems.replaceAll(newItems)
-        splits.value = listOf(chat.chatItems.last().id) + splits.value
+        splits.value = listOf(chat.chatItems.last().id) + newSplits
         unreadAfterItemId.value = chat.chatItems.last().id
         totalAfter.value = navInfo.afterTotal
         unreadTotal.value = chat.chatStats.unreadCount
@@ -129,7 +129,7 @@ private fun removeDuplicatesAndModifySplitsOnBeforePagination(
   newItems: SnapshotStateList<ChatItem>,
   newIds: Set<Long>,
   splits: StateFlow<List<Long>>,
-  visibleItemIndexesNonReversed: () -> IntRange = { 0..0 }
+  visibleItemIndexesNonReversed: () -> IntRange
 ): ModifiedSplits {
   var oldUnreadSplitIndex: Int = -1
   var newUnreadSplitIndex: Int = -1
@@ -233,6 +233,50 @@ private fun removeDuplicatesAndModifySplitsOnAfterPagination(
     }
   }
   return newSplits to unreadInLoaded
+}
+
+private fun removeDuplicatesAndUpperSplits(
+  newItems: SnapshotStateList<ChatItem>,
+  chat: Chat,
+  splits: StateFlow<List<Long>>,
+  visibleItemIndexesNonReversed: () -> IntRange
+): List<Long> {
+  if (splits.value.isEmpty()) {
+    removeDuplicates(newItems, chat)
+    return splits.value
+  }
+
+  val newSplits = splits.value.toMutableList()
+  val visibleItemIndexes = visibleItemIndexesNonReversed()
+  val (newIds, _) = mapItemsToIds(chat.chatItems)
+  val idsToTrim = ArrayList<MutableSet<Long>>()
+  idsToTrim.add(mutableSetOf())
+  var index = 0
+  newItems.removeAll {
+    val duplicate = newIds.contains(it.id)
+    if (!duplicate && visibleItemIndexes.first > index) {
+      idsToTrim.last().add(it.id)
+    }
+    if (visibleItemIndexes.first > index && splits.value.contains(it.id)) {
+      newSplits -= it.id
+      // closing previous range. All items in idsToTrim that ends with empty set should be deleted.
+      // Otherwise, the last set should be excluded from trimming because it is in currently visible split range
+      idsToTrim.add(mutableSetOf())
+    }
+
+    index++
+    duplicate
+  }
+  if (idsToTrim.last().isNotEmpty()) {
+    // it has some elements to trim from currently visible range which means the items shouldn't be trimmed
+    // Otherwise, the last set would be empty
+    idsToTrim.removeLast()
+  }
+  val allItemsToDelete = idsToTrim.flatten()
+  if (allItemsToDelete.isNotEmpty()) {
+    newItems.removeAll { allItemsToDelete.contains(it.id) }
+  }
+  return newSplits
 }
 
 // ids, number of unread items
