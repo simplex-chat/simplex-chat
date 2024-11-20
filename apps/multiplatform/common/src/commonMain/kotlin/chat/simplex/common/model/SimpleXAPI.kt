@@ -3866,32 +3866,52 @@ sealed class UserServersError {
 
   val globalError: String?
     get() = when (this) {
-      is NoServers -> protocol.toGlobalError( { this.globalSMPError }, { this.globalXFTPError })
+      is NoServers -> protocol.toGlobalError({ this.globalSMPError }, { this.globalXFTPError })
       is StorageMissing -> protocol.toGlobalError({ this.globalSMPError }, { this.globalXFTPError })
       is ProxyMissing -> protocol.toGlobalError({ this.globalSMPError }, { this.globalXFTPError })
       else -> null
     }
-
-  val globalSMPError: String?
+  private val protocol_: ServerProtocol
     get() = when (this) {
-      is NoServers -> this.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_message_servers_configured)}" }
-        ?: generalGetString(MR.strings.no_message_servers_configured)
-      is StorageMissing -> this.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_message_servers_configured_for_receiving)}" }
-        ?: generalGetString(MR.strings.no_message_servers_configured_for_receiving)
-      is ProxyMissing -> this.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_message_servers_configured_for_private_routing)}" }
-        ?: generalGetString(MR.strings.no_message_servers_configured_for_private_routing)
-      else -> null
+      is NoServers -> this.protocol
+      is StorageMissing -> this.protocol
+      is ProxyMissing -> this.protocol
+      is InvalidServer -> this.protocol
+      is DuplicateServer -> this.protocol
     }
+  val globalSMPError: String?
+    get() = if (this.protocol_ == ServerProtocol.SMP) {
+      when (this) {
+        is NoServers -> this.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_message_servers_configured)}" }
+          ?: generalGetString(MR.strings.no_message_servers_configured)
 
+        is StorageMissing -> this.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_message_servers_configured_for_receiving)}" }
+          ?: generalGetString(MR.strings.no_message_servers_configured_for_receiving)
+
+        is ProxyMissing -> this.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_message_servers_configured_for_private_routing)}" }
+          ?: generalGetString(MR.strings.no_message_servers_configured_for_private_routing)
+
+        else -> null
+      }
+    } else {
+      null
+    }
   val globalXFTPError: String?
-    get() = when (this) {
-      is NoServers -> this.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_media_servers_configured)}" }
-        ?: generalGetString(MR.strings.no_media_servers_configured)
-      is StorageMissing -> this.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_media_servers_configured_for_sending)}" }
-        ?: generalGetString(MR.strings.no_media_servers_configured_for_sending)
-      is ProxyMissing -> this.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_media_servers_configured_for_private_routing)}" }
-        ?: generalGetString(MR.strings.no_media_servers_configured_for_private_routing)
-      else -> null
+    get() = if (this.protocol_ == ServerProtocol.XFTP) {
+      when (this) {
+        is NoServers -> this.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_media_servers_configured)}" }
+          ?: generalGetString(MR.strings.no_media_servers_configured)
+
+        is StorageMissing -> this.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_media_servers_configured_for_sending)}" }
+          ?: generalGetString(MR.strings.no_media_servers_configured_for_sending)
+
+        is ProxyMissing -> this.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_media_servers_configured_for_private_routing)}" }
+          ?: generalGetString(MR.strings.no_media_servers_configured_for_private_routing)
+
+        else -> null
+      }
+    } else {
+      null
     }
 
   private fun userStr(user: UserRef): String {
