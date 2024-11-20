@@ -3861,7 +3861,6 @@ sealed class UserServersError {
   @Serializable @SerialName("noServers") data class NoServers(val protocol: ServerProtocol, val user: UserRef?): UserServersError()
   @Serializable @SerialName("storageMissing") data class StorageMissing(val protocol: ServerProtocol, val user: UserRef?): UserServersError()
   @Serializable @SerialName("proxyMissing") data class ProxyMissing(val protocol: ServerProtocol, val user: UserRef?): UserServersError()
-  @Serializable @SerialName("invalidServer") data class InvalidServer(val protocol: ServerProtocol, val invalidServer: String): UserServersError()
   @Serializable @SerialName("duplicateServer") data class DuplicateServer(val protocol: ServerProtocol, val duplicateServer: String, val duplicateHost: String): UserServersError()
 
   val globalError: String?
@@ -3876,7 +3875,6 @@ sealed class UserServersError {
       is NoServers -> this.protocol
       is StorageMissing -> this.protocol
       is ProxyMissing -> this.protocol
-      is InvalidServer -> this.protocol
       is DuplicateServer -> this.protocol
     }
   val globalSMPError: String?
