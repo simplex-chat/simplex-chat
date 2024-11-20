@@ -285,6 +285,8 @@
   <string name="message_delivery_error_title">Message delivery error</string>
   <string name="message_delivery_warning_title">Message delivery warning</string>
   <string name="message_delivery_error_desc">Most likely this contact has deleted the connection with you.</string>
+  <string name="message_deleted_or_not_received_error_title">No message</string>
+  <string name="message_deleted_or_not_received_error_desc">This message was deleted or not received yet.</string>
 
   <!-- CIStatus errors -->
   <string name="ci_status_other_error">Error: %1$s</string>

@@ -21,7 +21,7 @@ fun CIChatFeatureView(
   feature: Feature,
   iconColor: Color,
   icon: Painter? = null,
-  revealed: MutableState<Boolean>,
+  revealed: State<Boolean>,
   showMenu: MutableState<Boolean>,
 ) {
   val merged = if (!revealed.value) mergedFeatures(chatItem, chatInfo) else emptyList()
