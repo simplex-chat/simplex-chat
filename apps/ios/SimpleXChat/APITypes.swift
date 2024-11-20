@@ -1456,7 +1456,6 @@ public enum UserServersError: Decodable {
     case noServers(protocol: ServerProtocol, user: UserRef?)
     case storageMissing(protocol: ServerProtocol, user: UserRef?)
     case proxyMissing(protocol: ServerProtocol, user: UserRef?)
-    case invalidServer(protocol: ServerProtocol, invalidServer: String)
     case duplicateServer(protocol: ServerProtocol, duplicateServer: String, duplicateHost: String)
 
     public var globalError: String? {
