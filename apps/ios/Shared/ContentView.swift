@@ -294,6 +294,7 @@ struct ContentView: View {
                 switch item {
                 case let .whatsNew(updatedConditions):
                     WhatsNewView(updatedConditions: updatedConditions)
+                        .modifier(ThemedBackground())
                 case .updatedConditions:
                     UsageConditionsView(
                         currUserServers: Binding.constant([]),

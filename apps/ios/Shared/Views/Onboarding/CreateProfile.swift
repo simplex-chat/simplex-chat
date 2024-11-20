@@ -194,7 +194,7 @@ struct CreateFirstProfile: View {
             .navigationTitle("Choose operators")
             .navigationBarTitleDisplayMode(.large)
             .navigationBarBackButtonHidden(true)
-            .modifier(ThemedBackground(grouped: false))
+            .modifier(ThemedBackground())
     }
 
     private func createProfile() {

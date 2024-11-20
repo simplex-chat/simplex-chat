@@ -306,7 +306,7 @@ struct ChooseServerOperators: View {
             .navigationTitle("Push notifications")
             .navigationBarTitleDisplayMode(.large)
             .navigationBarBackButtonHidden(true)
-            .modifier(ThemedBackground(grouped: false))
+            .modifier(ThemedBackground())
     }
 
     private func reviewConditionsDestinationView() -> some View {

@@ -571,7 +571,7 @@ fileprivate struct NewOperatorsView: View {
         .sheet(isPresented: $showOperatorsSheet) {
             NavigationView {
                 ChooseServerOperators(onboarding: false)
-                    .modifier(ThemedBackground(grouped: false))
+                    .modifier(ThemedBackground())
             }
         }
     }
