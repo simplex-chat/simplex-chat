@@ -869,7 +869,11 @@ object ChatController {
     val r = sendCmd(rh, CC.ApiGetChat(type, id, pagination, search))
     if (r is CR.ApiChat) return if (rh == null) r.chat to r.navInfo else r.chat.copy(remoteHostId = rh) to r.navInfo
     Log.e(TAG, "apiGetChat bad response: ${r.responseType} ${r.details}")
-    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_parse_chat_title), generalGetString(MR.strings.contact_developers))
+    if (pagination is ChatPagination.Around && r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.ChatItemNotFound) {
+      // skip alert in case of .around query because another alert will be shown in ChatView
+    } else {
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_parse_chat_title), generalGetString(MR.strings.contact_developers))
+    }
     return null
   }
 

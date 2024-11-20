@@ -1843,6 +1843,8 @@ private fun scrollToItem(
         withContext(scope.coroutineContext) {
           listState.value.animateScrollToItem(min(reversedChatItems.value.lastIndex, index + 1), -maxHeight.value)
         }
+      } else {
+        showQuotedItemDoesNotExistAlert()
       }
     } finally {
       loadingMoreItems.value = false
