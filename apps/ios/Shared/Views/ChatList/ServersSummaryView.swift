@@ -20,10 +20,6 @@ struct ServersSummaryView: View {
     @State private var timer: Timer? = nil
     @State private var alert: SomeAlert?
 
-    @State private var currUserServers: [UserOperatorServers] = []
-    @State private var userServers: [UserOperatorServers] = []
-    @State private var serverErrors: [UserServersError] = []
-
     @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
 
     enum PresentedUserCategory {
@@ -57,15 +53,6 @@ struct ServersSummaryView: View {
         }
         .onDisappear {
             stopTimer()
-
-            if serversCanBeSaved(currUserServers, userServers, serverErrors) {
-                showAlert(
-                    title: NSLocalizedString("Save servers?", comment: "alert title"),
-                    buttonTitle: NSLocalizedString("Save", comment: "alert button"),
-                    buttonAction: { saveServers($currUserServers, $userServers) },
-                    cancelButton: true
-                )
-            }
         }
         .alert(item: $alert) { $0.alert }
     }
@@ -288,10 +275,7 @@ struct ServersSummaryView: View {
         NavigationLink(tag: srvSumm.id, selection: $selectedSMPServer) {
             SMPServerSummaryView(
                 summary: srvSumm,
-                statsStartedAt: statsStartedAt,
-                currUserServers: $currUserServers,
-                userServers: $userServers,
-                serverErrors: $serverErrors
+                statsStartedAt: statsStartedAt
             )
             .navigationBarTitle("SMP server")
             .navigationBarTitleDisplayMode(.large)
@@ -360,10 +344,7 @@ struct ServersSummaryView: View {
         NavigationLink(tag: srvSumm.id, selection: $selectedXFTPServer) {
             XFTPServerSummaryView(
                 summary: srvSumm,
-                statsStartedAt: statsStartedAt,
-                currUserServers: $currUserServers,
-                userServers: $userServers,
-                serverErrors: $serverErrors
+                statsStartedAt: statsStartedAt
             )
             .navigationBarTitle("XFTP server")
             .navigationBarTitleDisplayMode(.large)
@@ -505,28 +486,11 @@ struct SMPServerSummaryView: View {
 
     @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
 
-    @Binding var currUserServers: [UserOperatorServers]
-    @Binding var userServers: [UserOperatorServers]
-    @Binding var serverErrors: [UserServersError]
-
     var body: some View {
         List {
             Section("Server address") {
                 Text(summary.smpServer)
                     .textSelection(.enabled)
-                if summary.known == true {
-                    NavigationLink {
-                        NetworkAndServers(
-                            currUserServers: $currUserServers,
-                            userServers: $userServers,
-                            serverErrors: $serverErrors
-                        )
-                        .navigationTitle("Network & servers")
-                        .modifier(ThemedBackground(grouped: true))
-                    } label: {
-                        Text("Open server settings")
-                    }
-                }
             }
 
             if let stats = summary.stats {
@@ -701,28 +665,11 @@ struct XFTPServerSummaryView: View {
     var summary: XFTPServerSummary
     var statsStartedAt: Date
 
-    @Binding var currUserServers: [UserOperatorServers]
-    @Binding var userServers: [UserOperatorServers]
-    @Binding var serverErrors: [UserServersError]
-
     var body: some View {
         List {
             Section("Server address") {
                 Text(summary.xftpServer)
                     .textSelection(.enabled)
-                if summary.known == true {
-                    NavigationLink {
-                        NetworkAndServers(
-                            currUserServers: $currUserServers,
-                            userServers: $userServers,
-                            serverErrors: $serverErrors
-                        )
-                        .navigationTitle("Network & servers")
-                        .modifier(ThemedBackground(grouped: true))
-                    } label: {
-                        Text("Open server settings")
-                    }
-                }
             }
 
             if let stats = summary.stats {
