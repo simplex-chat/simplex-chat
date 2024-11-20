@@ -79,6 +79,18 @@ fun OperatorViewLayout(
       }
       UseOperatorToggle(currUserServers = currUserServers, userServers = userServers, serverErrors = serverErrors, operatorIndex = operatorIndex, rhId = rhId)
     }
+    val footerText = when (val c = operator.conditionsAcceptance) {
+      is ConditionsAcceptance.Accepted -> if (c.acceptedAt != null) {
+        String.format(generalGetString(MR.strings.operator_conditions_accepted_on), localTimestamp(c.acceptedAt))
+      } else null
+      is ConditionsAcceptance.Required -> if (operator.enabled && c.deadline != null) {
+        String.format(generalGetString(MR.strings.operator_conditions_accepted_after), localTimestamp(c.deadline))
+      } else null
+    }
+    if (footerText != null) {
+      SectionTextFooter(footerText)
+    }
+
     if (operator.enabled) {
       if (userServers.value[operatorIndex].smpServers.filter { !it.deleted }.isNotEmpty()) {
 
@@ -116,7 +128,6 @@ private fun UseOperatorToggle(
   operatorIndex: Int,
   rhId: Long?
 ) {
-  val operator = remember { userServers.value[operatorIndex].operator_ }
   SectionItemView {
     Text(
       stringResource(MR.strings.operator_use_operator_toggle_description),
@@ -125,12 +136,13 @@ private fun UseOperatorToggle(
     )
     Spacer(Modifier.fillMaxWidth().weight(1f))
     DefaultSwitch(
-      checked = operator.enabled,
+      checked = userServers.value[operatorIndex].operator?.enabled ?: false,
       onCheckedChange = { enabled ->
+        val operator = userServers.value[operatorIndex].operator
         if (enabled) {
-          when (val conditionsAcceptance = operator.conditionsAcceptance) {
+          when (val conditionsAcceptance = operator?.conditionsAcceptance) {
             is ConditionsAcceptance.Accepted -> {
-              userServers.value[operatorIndex].operator_.enabled = true
+              changeOperatorEnabled(userServers, operatorIndex, true)
             }
 
             is ConditionsAcceptance.Required -> {
@@ -146,12 +158,14 @@ private fun UseOperatorToggle(
                   )
                 }
               } else {
-                userServers.value[operatorIndex].operator_.enabled = true
+                changeOperatorEnabled(userServers, operatorIndex, true)
               }
             }
+
+            else -> {}
           }
         } else {
-          userServers.value[operatorIndex].operator_.enabled = false
+          changeOperatorEnabled(userServers, operatorIndex, false)
         }
       },
     )
@@ -179,7 +193,7 @@ private fun SingleOperatorUsageConditionsView(
       chatModel.conditions.value = r
       updateOperatorsConditionsAcceptance(currUserServers, r.serverOperators)
       updateOperatorsConditionsAcceptance(userServers, r.serverOperators)
-      userServers.value.getOrNull(operatorIndexToEnable)?.operator?.enabled = true
+      changeOperatorEnabled(userServers, operatorIndex, true)
       validateServers(rhId, userServers, serverErrors)
       close()
     } catch (ex: Exception) {
@@ -375,5 +389,13 @@ private fun ConditionsAppliedToOtherOperatorsText(userServers: List<UserOperator
         String.format(stringResource(MR.strings.operators_conditions_will_also_apply), otherOperatorsToApply.value.joinToString(", ") { it.legalName_ }),
       )
     }
+  }
+}
+
+private fun changeOperatorEnabled(userServers: MutableState<List<UserOperatorServers>>, operatorIndex: Int, enabled: Boolean) {
+  userServers.value = userServers.value.toMutableList().apply {
+    this[operatorIndex] = this[operatorIndex].copy(
+      operator = this[operatorIndex].operator?.copy(enabled = enabled)
+    )
   }
 }

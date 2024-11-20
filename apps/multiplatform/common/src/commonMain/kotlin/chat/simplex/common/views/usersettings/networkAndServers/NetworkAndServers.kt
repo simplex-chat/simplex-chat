@@ -26,7 +26,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatController.acceptConditions
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.getUserServers
 import chat.simplex.common.model.ChatController.setUserServers
@@ -39,14 +38,14 @@ import chat.simplex.res.MR
 import kotlinx.coroutines.launch
 
 @Composable
-fun NetworkAndServersView(close: () -> Unit) {
+fun ModalData.NetworkAndServersView(close: () -> Unit) {
   val currentRemoteHost by remember { chatModel.currentRemoteHost }
   // It's not a state, just a one-time value. Shouldn't be used in any state-related situations
   val netCfg = remember { chatModel.controller.getNetCfg() }
   val networkUseSocksProxy: MutableState<Boolean> = remember { mutableStateOf(netCfg.useSocksProxy) }
-  val currUserServers = remember { mutableStateOf(emptyList<UserOperatorServers>()) }
-  val userServers = remember { mutableStateOf(emptyList<UserOperatorServers>()) }
-  val serverErrors = remember { mutableStateOf(emptyList<UserServersError>()) }
+  val currUserServers = remember { stateGetOrPut("currUserServers") { emptyList<UserOperatorServers>() } }
+  val userServers = remember { stateGetOrPut("userServers") { emptyList<UserOperatorServers>() } }
+  val serverErrors = remember { stateGetOrPut("serverErrors") { emptyList<UserServersError>() } }
 
   val scope = rememberCoroutineScope()
 
@@ -146,6 +145,9 @@ fun NetworkAndServersView(close: () -> Unit) {
   val scope = rememberCoroutineScope()
 
   LaunchedEffect(Unit) {
+    if (currUserServers.value.isNotEmpty() || userServers.value.isNotEmpty()) {
+      return@LaunchedEffect
+    }
     try {
       val servers = getUserServers(rh = currentRemoteHost?.remoteHostId)
       if (servers != null) {
@@ -229,19 +231,6 @@ fun NetworkAndServersView(close: () -> Unit) {
     SectionView(generalGetString(MR.strings.settings_section_title_calls)) {
       SettingsActionItem(painterResource(MR.images.ic_electrical_services), stringResource(MR.strings.webrtc_ice_servers), { ModalManager.start.showModal { RTCServersView(m) } })
     }
-
-
-//      val footerText = when (val c = operator.conditionsAcceptance) {
-//        is ConditionsAcceptance.Accepted -> if (c.acceptedAt != null) {
-//          String.format(generalGetString(MR.strings.operator_conditions_accepted), localTimestamp(c.acceptedAt))
-//        } else null
-//        is ConditionsAcceptance.Required -> if (operator.enabled && c.deadline != null) {
-//          String.format(generalGetString(MR.strings.operator_conditions_accepted_after), localTimestamp(c.deadline))
-//        } else null
-//      }
-//      if (footerText != null) {
-//        SectionTextFooter(footerText)
-//      }
 
     if (appPlatform.isAndroid) {
       SectionDividerSpaced()
@@ -619,7 +608,19 @@ private fun ServerOperatorRow(
   serverErrors: MutableState<List<UserServersError>>,
   rhId: Long?
 ) {
-  SectionItemView({ ModalManager.start.showModalCloseable { _ -> OperatorView(currUserServers, userServers, serverErrors, index, rhId) } }) {
+  SectionItemView(
+    {
+      ModalManager.start.showModalCloseable { close ->
+        OperatorView(
+          currUserServers,
+          userServers,
+          serverErrors,
+          index,
+          rhId
+        )
+      }
+    }
+  ) {
     Image(
       painterResource(MR.images.decentralized),
       operator.tradeName,
@@ -782,7 +783,7 @@ private suspend fun saveServers(
   currUserServers: MutableState<List<UserOperatorServers>>,
   userServers: MutableState<List<UserOperatorServers>>
 ) {
-  val userServersToSave = currUserServers.value
+  val userServersToSave = userServers.value
   try {
     val set = setUserServers(rhId, userServersToSave)
 
