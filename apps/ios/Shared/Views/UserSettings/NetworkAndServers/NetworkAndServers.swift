@@ -34,9 +34,7 @@ struct NetworkAndServers: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     @EnvironmentObject var theme: AppTheme
-    @Binding var currUserServers: [UserOperatorServers]
-    @Binding var userServers: [UserOperatorServers]
-    @Binding var serverErrors: [UserServersError]
+    @EnvironmentObject var saveableSettings: SaveableSettings
     @State private var sheetItem: NetworkAndServersSheet? = nil
     @State private var justOpened = true
     @State private var showSaveDialog = false
@@ -45,9 +43,9 @@ struct NetworkAndServers: View {
         VStack {
             List {
                 let conditionsAction = m.conditions.conditionsAction
-                let anyOperatorEnabled = userServers.contains(where: { $0.operator?.enabled ?? false })
+                let anyOperatorEnabled = saveableSettings.serverSettings.userServers.contains(where: { $0.operator?.enabled ?? false })
                 Section {
-                    ForEach(userServers.enumerated().map { $0 }, id: \.element.id) { idx, userOperatorServers in
+                    ForEach(saveableSettings.serverSettings.userServers.enumerated().map { $0 }, id: \.element.id) { idx, userOperatorServers in
                         if let serverOperator = userOperatorServers.operator {
                             serverOperatorView(idx, serverOperator)
                         } else {
@@ -74,11 +72,11 @@ struct NetworkAndServers: View {
                 }
 
                 Section {
-                    if let idx = userServers.firstIndex(where: { $0.operator == nil }) {
+                    if let idx = saveableSettings.serverSettings.userServers.firstIndex(where: { $0.operator == nil }) {
                         NavigationLink {
                             YourServersView(
-                                userServers: $userServers,
-                                serverErrors: $serverErrors,
+                                userServers: $saveableSettings.serverSettings.userServers,
+                                serverErrors: $saveableSettings.serverSettings.serverErrors,
                                 operatorIndex: idx
                             )
                             .navigationTitle("Your servers")
@@ -87,7 +85,7 @@ struct NetworkAndServers: View {
                             HStack {
                                 Text("Your servers")
                                 
-                                if userServers[idx] != currUserServers[idx] {
+                                if saveableSettings.serverSettings.userServers[idx] != saveableSettings.serverSettings.currUserServers[idx] {
                                     Spacer()
                                     unsavedChangesIndicator()
                                 }
@@ -108,12 +106,12 @@ struct NetworkAndServers: View {
                 }
 
                 Section {
-                    Button("Save servers", action: { saveServers($currUserServers, $userServers) })
-                        .disabled(!serversCanBeSaved(currUserServers, userServers, serverErrors))
+                    Button("Save servers", action: { saveServers($saveableSettings.serverSettings.currUserServers, $saveableSettings.serverSettings.userServers) })
+                        .disabled(!serversCanBeSaved(saveableSettings.serverSettings.currUserServers, saveableSettings.serverSettings.userServers, saveableSettings.serverSettings.serverErrors))
                 } footer: {
-                    if let errStr = globalServersError(serverErrors) {
+                    if let errStr = globalServersError(saveableSettings.serverSettings.serverErrors) {
                         ServersErrorView(errStr: errStr)
-                    } else if !serverErrors.isEmpty {
+                    } else if !saveableSettings.serverSettings.serverErrors.isEmpty {
                         ServersErrorView(errStr: NSLocalizedString("Errors in servers configuration.", comment: "servers error"))
                     }
                 }
@@ -141,9 +139,9 @@ struct NetworkAndServers: View {
             // this condition is needed to prevent re-setting the servers when exiting single server view
             if justOpened {
                 do {
-                    currUserServers = try await getUserServers()
-                    userServers = currUserServers
-                    serverErrors = []
+                    saveableSettings.serverSettings.currUserServers = try await getUserServers()
+                    saveableSettings.serverSettings.userServers = saveableSettings.serverSettings.currUserServers
+                    saveableSettings.serverSettings.serverErrors = []
                 } catch let error {
                     await MainActor.run {
                         showAlert(
@@ -156,7 +154,7 @@ struct NetworkAndServers: View {
             }
         }
         .modifier(BackButton(disabled: Binding.constant(false)) {
-            if serversCanBeSaved(currUserServers, userServers, serverErrors) {
+            if serversCanBeSaved(saveableSettings.serverSettings.currUserServers, saveableSettings.serverSettings.userServers, saveableSettings.serverSettings.serverErrors) {
                 showSaveDialog = true
             } else {
                 dismiss()
@@ -164,7 +162,7 @@ struct NetworkAndServers: View {
         })
         .confirmationDialog("Save servers?", isPresented: $showSaveDialog, titleVisibility: .visible) {
             Button("Save") {
-                saveServers($currUserServers, $userServers)
+                saveServers($saveableSettings.serverSettings.currUserServers, $saveableSettings.serverSettings.userServers)
                 dismiss()
             }
             Button("Exit without saving") { dismiss() }
@@ -173,8 +171,8 @@ struct NetworkAndServers: View {
             switch item {
             case .showConditions:
                 UsageConditionsView(
-                    currUserServers: $currUserServers,
-                    userServers: $userServers
+                    currUserServers: $saveableSettings.serverSettings.currUserServers,
+                    userServers: $saveableSettings.serverSettings.userServers
                 )
                 .modifier(ThemedBackground(grouped: true))
             }
@@ -184,9 +182,9 @@ struct NetworkAndServers: View {
     private func serverOperatorView(_ operatorIndex: Int, _ serverOperator: ServerOperator) -> some View {
         NavigationLink() {
             OperatorView(
-                currUserServers: $currUserServers,
-                userServers: $userServers,
-                serverErrors: $serverErrors,
+                currUserServers: $saveableSettings.serverSettings.currUserServers,
+                userServers: $saveableSettings.serverSettings.userServers,
+                serverErrors: $saveableSettings.serverSettings.serverErrors,
                 operatorIndex: operatorIndex,
                 useOperator: serverOperator.enabled
             )
@@ -203,7 +201,7 @@ struct NetworkAndServers: View {
                 Text(serverOperator.tradeName)
                     .foregroundColor(serverOperator.enabled ? theme.colors.onBackground : theme.colors.secondary)
 
-                if userServers[operatorIndex] != currUserServers[operatorIndex] {
+                if saveableSettings.serverSettings.userServers[operatorIndex] != saveableSettings.serverSettings.currUserServers[operatorIndex] {
                     Spacer()
                     unsavedChangesIndicator()
                 }
@@ -427,10 +425,6 @@ func updateOperatorsConditionsAcceptance(_ usvs: Binding<[UserOperatorServers]>,
 
 struct NetworkServersView_Previews: PreviewProvider {
     static var previews: some View {
-        NetworkAndServers(
-            currUserServers: Binding.constant([UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator]),
-            userServers: Binding.constant([UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator]),
-            serverErrors: Binding.constant([])
-        )
+        NetworkAndServers()
     }
 }
