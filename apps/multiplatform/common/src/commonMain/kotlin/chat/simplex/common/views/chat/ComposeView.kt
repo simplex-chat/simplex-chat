@@ -429,8 +429,8 @@ fun ComposeView(
         ttl = ttl
       )
 
-      chatItems?.forEach { chatItem ->
-        withChats {
+      withChats {
+        chatItems?.forEach { chatItem ->
           addChatItem(rhId, chat.chatInfo, chatItem)
         }
       }
