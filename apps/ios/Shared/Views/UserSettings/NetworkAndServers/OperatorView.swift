@@ -540,18 +540,12 @@ struct SingleOperatorUsageConditionsView: View {
     }
 
     private func usageConditionsDestinationView() -> some View {
-        VStack(spacing: 20) {
-            ConditionsTextView()
-                .padding(.top)
-
-            acceptConditionsButton()
-                .padding(.bottom)
-                .padding(.bottom)
-        }
-        .padding(.horizontal)
-        .navigationTitle("Conditions of use")
-        .navigationBarTitleDisplayMode(.large)
-        .modifier(ThemedBackground(grouped: true))
+        ConditionsTextView()
+            .padding()
+            .padding(.bottom)
+            .navigationTitle("Conditions of use")
+            .navigationBarTitleDisplayMode(.large)
+            .modifier(ThemedBackground(grouped: true))
     }
 }
 

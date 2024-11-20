@@ -16,10 +16,10 @@ struct OnboardingView: View {
             switch onboarding {
             case .step1_SimpleXInfo:
                 SimpleXInfo(onboarding: true)
-                    .modifier(ThemedBackground(grouped: false))
+                    .modifier(ThemedBackground())
             case .step2_CreateProfile: // deprecated
                 CreateFirstProfile()
-                    .modifier(ThemedBackground(grouped: false))
+                    .modifier(ThemedBackground())
             case .step3_CreateSimpleXAddress: // deprecated
                 CreateSimpleXAddress()
             case .step3_ChooseServerOperators:
@@ -27,13 +27,13 @@ struct OnboardingView: View {
                     .navigationTitle("Choose operators")
                     .navigationBarTitleDisplayMode(.large)
                     .navigationBarBackButtonHidden(true)
-                    .modifier(ThemedBackground(grouped: false))
+                    .modifier(ThemedBackground())
             case .step4_SetNotificationsMode:
                 SetNotificationsMode()
                     .navigationTitle("Push notifications")
                     .navigationBarTitleDisplayMode(.large)
                     .navigationBarBackButtonHidden(true)
-                    .modifier(ThemedBackground(grouped: false))
+                    .modifier(ThemedBackground())
             case .onboardingComplete: EmptyView()
             }
         }

@@ -134,7 +134,7 @@ struct SimpleXInfo: View {
         CreateFirstProfile()
             .navigationTitle("Create your profile")
             .navigationBarTitleDisplayMode(.large)
-            .modifier(ThemedBackground(grouped: false))
+            .modifier(ThemedBackground())
     }
 }
 
