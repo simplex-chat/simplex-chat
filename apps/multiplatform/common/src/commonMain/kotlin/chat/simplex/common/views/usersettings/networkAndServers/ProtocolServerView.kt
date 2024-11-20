@@ -31,37 +31,90 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
-fun ProtocolServerView(m: ChatModel, server: UserServer, serverProtocol: ServerProtocol, onUpdate: (UserServer) -> Unit, onDelete: () -> Unit) {
+fun ProtocolServerView(
+  m: ChatModel,
+  server: UserServer,
+  serverProtocol: ServerProtocol,
+  userServers: MutableState<List<UserOperatorServers>>,
+  serverErrors: MutableState<List<UserServersError>>,
+  onDelete: () -> Unit,
+  onUpdate: (UserServer) -> Unit,
+  close: () -> Unit,
+  rhId: Long?
+) {
   var testing by remember { mutableStateOf(false) }
-  ProtocolServerLayout(
-    testing,
-    server,
-    serverProtocol,
-    testServer = {
-      testing = true
-      withLongRunningApi {
-        val res = testServerConnection(server, m)
-        if (isActive) {
-          onUpdate(res.first)
-          testing = false
+  val scope = rememberCoroutineScope()
+  val draftServer = remember { mutableStateOf(server) }
+
+  ModalView(
+    close = {
+      scope.launch {
+        val draftResult = serverProtocolAndOperator(draftServer.value, userServers.value)
+        val savedResult = serverProtocolAndOperator(server, userServers.value)
+
+        if (draftResult != null && savedResult != null) {
+          val (serverToEditProtocol, serverToEditOperator) = draftResult
+          val (svProtocol, serverOperator) = savedResult
+
+          if (serverToEditProtocol != svProtocol) {
+            close()
+            AlertManager.shared.showAlertMsg(
+              title = generalGetString(MR.strings.error_updating_server_title),
+              text = generalGetString(MR.strings.error_server_protocol_changed)
+            )
+          } else if (serverToEditOperator != serverOperator) {
+            close()
+            AlertManager.shared.showAlertMsg(
+              title = generalGetString(MR.strings.error_updating_server_title),
+              text = generalGetString(MR.strings.error_server_operator_changed)
+            )
+          } else {
+            onUpdate(draftServer.value)
+            validateServers(rhId, userServers, serverErrors)
+            close()
+          }
+        } else {
+          close()
+          AlertManager.shared.showAlertMsg(
+            title = generalGetString(MR.strings.smp_servers_invalid_address),
+            text = generalGetString(MR.strings.smp_servers_check_address)
+          )
         }
       }
-    },
-    onUpdate,
-    onDelete
-  )
-  if (testing) {
-    Box(
-      Modifier.fillMaxSize(),
-      contentAlignment = Alignment.Center
-    ) {
-      CircularProgressIndicator(
-        Modifier
-          .padding(horizontal = 2.dp)
-          .size(30.dp),
-        color = MaterialTheme.colors.secondary,
-        strokeWidth = 2.5.dp
-      )
+    }
+  ) {
+    ProtocolServerLayout(
+      testing,
+      draftServer.value,
+      serverProtocol,
+      testServer = {
+        testing = true
+        withLongRunningApi {
+          val res = testServerConnection(draftServer.value, m)
+          if (isActive) {
+            draftServer.value = res.first
+            testing = false
+          }
+        }
+      },
+      onUpdate = {
+        draftServer.value = it
+      },
+      onDelete
+    )
+    if (testing) {
+      Box(
+        Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+      ) {
+        CircularProgressIndicator(
+          Modifier
+            .padding(horizontal = 2.dp)
+            .size(30.dp),
+          color = MaterialTheme.colors.secondary,
+          strokeWidth = 2.5.dp
+        )
+      }
     }
   }
 }
@@ -76,10 +129,10 @@ private fun ProtocolServerLayout(
   onDelete: () -> Unit,
 ) {
   ColumnWithScrollBar {
-    AppBarTitle(stringResource(if (server.preset) MR.strings.smp_servers_preset_server else MR.strings.smp_servers_your_server))
+    AppBarTitle(stringResource(if (serverProtocol == ServerProtocol.XFTP) MR.strings.xftp_server else MR.strings.smp_server))
 
     if (server.preset) {
-      PresetServer(testing, server, testServer, onUpdate, onDelete)
+      PresetServer(testing, server, testServer, onUpdate)
     } else {
       CustomServer(testing, server, serverProtocol, testServer, onUpdate, onDelete)
     }
@@ -93,7 +146,6 @@ private fun PresetServer(
   server: UserServer,
   testServer: () -> Unit,
   onUpdate: (UserServer) -> Unit,
-  onDelete: () -> Unit,
 ) {
   SectionView(stringResource(MR.strings.smp_servers_preset_address).uppercase()) {
     SelectionContainer {
@@ -108,7 +160,7 @@ private fun PresetServer(
     }
   }
   SectionDividerSpaced()
-  UseServerSection(true, testing, server, testServer, onUpdate, onDelete)
+  UseServerSection(true, testing, server, testServer, onUpdate)
 }
 
 @Composable
@@ -165,7 +217,7 @@ private fun UseServerSection(
   server: UserServer,
   testServer: () -> Unit,
   onUpdate: (UserServer) -> Unit,
-  onDelete: () -> Unit,
+  onDelete: (() -> Unit)? = null,
 ) {
   SectionView(stringResource(MR.strings.smp_servers_use_server).uppercase()) {
     SectionItemViewSpaceBetween(testServer, disabled = !valid || testing) {
@@ -181,9 +233,11 @@ private fun UseServerSection(
     ) {
       onUpdate(server.copy(enabled = it))
     }
-    
-    SectionItemView(onDelete, disabled = testing) {
-      Text(stringResource(MR.strings.smp_servers_delete_server), color = if (testing) MaterialTheme.colors.secondary else MaterialTheme.colors.error)
+
+    if (onDelete != null) {
+      SectionItemView(onDelete, disabled = testing) {
+        Text(stringResource(MR.strings.smp_servers_delete_server), color = if (testing) MaterialTheme.colors.secondary else MaterialTheme.colors.error)
+      }
     }
   }
 }

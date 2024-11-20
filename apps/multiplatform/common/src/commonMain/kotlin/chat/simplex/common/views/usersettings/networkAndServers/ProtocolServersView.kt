@@ -245,6 +245,59 @@ private suspend fun runServersTest(servers: List<UserServer>, m: ChatModel, onUp
   return fs
 }
 
+fun deleteXFTPServer(
+  userServers: MutableState<List<UserOperatorServers>>,
+  operatorServersIndex: Int,
+  serverIndex: Int
+) {
+  val serverIsSaved = userServers.value[operatorServersIndex].xftpServers[serverIndex].serverId != null
+
+  if (serverIsSaved) {
+    userServers.value = userServers.value.toMutableList().apply {
+      this[operatorServersIndex] = this[operatorServersIndex].copy(
+        xftpServers = this[operatorServersIndex].xftpServers.toMutableList().apply {
+          this[serverIndex] = this[serverIndex].copy(deleted = true)
+        }
+      )
+    }
+  } else {
+    userServers.value = userServers.value.toMutableList().apply {
+      this[operatorServersIndex] = this[operatorServersIndex].copy(
+        xftpServers = this[operatorServersIndex].xftpServers.toMutableList().apply {
+          this.removeAt(serverIndex)
+        }
+      )
+    }
+  }
+}
+
+fun deleteSMPServer(
+  userServers: MutableState<List<UserOperatorServers>>,
+  operatorServersIndex: Int,
+  serverIndex: Int
+) {
+  val serverIsSaved = userServers.value[operatorServersIndex].smpServers[serverIndex].serverId != null
+
+  if (serverIsSaved) {
+    userServers.value = userServers.value.toMutableList().apply {
+      this[operatorServersIndex] = this[operatorServersIndex].copy(
+        smpServers = this[operatorServersIndex].smpServers.toMutableList().apply {
+          this[serverIndex] = this[serverIndex].copy(deleted = true)
+        }
+      )
+    }
+  } else {
+    userServers.value = userServers.value.toMutableList().apply {
+      this[operatorServersIndex] = this[operatorServersIndex].copy(
+        smpServers = this[operatorServersIndex].smpServers.toMutableList().apply {
+          this.removeAt(serverIndex)
+        }
+      )
+    }
+  }
+}
+
+
 private fun saveServers(rhId: Long?, protocol: ServerProtocol, currServers: MutableState<List<UserServer>>, servers: List<UserServer>, m: ChatModel, afterSave: () -> Unit = {}) {
   withBGApi {
 //    if (m.controller.setUserServers(rhId, protocol, servers)) {

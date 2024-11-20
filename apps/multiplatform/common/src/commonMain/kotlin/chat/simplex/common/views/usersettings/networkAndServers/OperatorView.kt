@@ -47,10 +47,56 @@ fun ModalData.OperatorView(
   val testing = remember { mutableStateOf(false) }
   val operator = remember { userServers.value[operatorIndex].operator_ }
   val currentUser = remember { chatModel.currentUser }.value
+  val scope = rememberCoroutineScope()
 
   ColumnWithScrollBar(Modifier.alpha(if (testing.value) 0.6f else 1f)) {
     AppBarTitle(String.format(stringResource(MR.strings.operator_servers_title), operator.tradeName))
-    OperatorViewLayout(currUserServers, userServers, serverErrors, operatorIndex, currentUser, rhId)
+    OperatorViewLayout(
+      currUserServers,
+      userServers,
+      serverErrors,
+      operatorIndex,
+      { serverIndex, server, protocol ->
+        ModalManager.start.showCustomModal { close ->
+          ProtocolServerView(
+            m = chatModel,
+            server = server,
+            serverProtocol = protocol,
+            userServers = userServers,
+            serverErrors = serverErrors,
+            onDelete = {
+              if (protocol == ServerProtocol.SMP) {
+                deleteSMPServer(userServers, operatorIndex, serverIndex)
+              } else {
+                deleteXFTPServer(userServers, operatorIndex, serverIndex)
+              }
+              close()
+              scope.launch { validateServers(rhId, userServers, serverErrors) }
+            },
+            onUpdate = { updatedServer ->
+              userServers.value = userServers.value.toMutableList().apply {
+                this[operatorIndex] = this[operatorIndex].copy(
+                  smpServers = if (protocol == ServerProtocol.SMP) {
+                    this[operatorIndex].smpServers.toMutableList().apply {
+                      this[serverIndex] = updatedServer
+                    }
+                  } else this[operatorIndex].smpServers,
+                  xftpServers = if (protocol == ServerProtocol.XFTP) {
+                    this[operatorIndex].xftpServers.toMutableList().apply {
+                      this[serverIndex] = updatedServer
+                    }
+                  } else this[operatorIndex].xftpServers
+                )
+              }
+            },
+            close = close,
+            rhId = rhId
+          )
+        }
+      },
+      currentUser,
+      rhId
+    )
     if (testing.value) {
       DefaultProgressView(null)
     }
@@ -63,6 +109,7 @@ fun OperatorViewLayout(
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
   operatorIndex: Int,
+  navigateToProtocolView: (Int, UserServer, ServerProtocol) -> Unit,
   currentUser: User?,
   rhId: Long?
 ) {
@@ -163,8 +210,9 @@ fun OperatorViewLayout(
       if (userServers.value[operatorIndex].smpServers.any { it.preset }) {
         SectionDividerSpaced()
         SectionView(generalGetString(MR.strings.message_servers).uppercase()) {
-          userServers.value[operatorIndex].smpServers.forEach { server ->
-            SectionItemView {
+          userServers.value[operatorIndex].smpServers.forEachIndexed { i, server  ->
+            if (!server.preset) return@forEachIndexed
+            SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.SMP) }) {
               ProtocolServerView(
                 srv = server,
                 serverProtocol = ServerProtocol.SMP,
@@ -196,9 +244,9 @@ fun OperatorViewLayout(
       if (userServers.value[operatorIndex].smpServers.any { !it.preset && !it.deleted }) {
         SectionDividerSpaced()
         SectionView(generalGetString(MR.strings.operator_added_message_servers).uppercase()) {
-          userServers.value[operatorIndex].smpServers.forEach { server ->
-            if (server.deleted || server.preset) return@forEach
-            SectionItemView {
+          userServers.value[operatorIndex].smpServers.forEachIndexed { i, server ->
+            if (server.deleted || server.preset) return@forEachIndexed
+            SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.SMP) }) {
               ProtocolServerView(
                 srv = server,
                 serverProtocol = ServerProtocol.SMP,
@@ -248,8 +296,9 @@ fun OperatorViewLayout(
       if (userServers.value[operatorIndex].xftpServers.any { it.preset }) {
         SectionDividerSpaced()
         SectionView(generalGetString(MR.strings.media_and_file_servers).uppercase()) {
-          userServers.value[operatorIndex].xftpServers.forEach { server ->
-            SectionItemView {
+          userServers.value[operatorIndex].xftpServers.forEachIndexed { i, server ->
+            if (!server.preset) return@forEachIndexed
+            SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.XFTP) }) {
               ProtocolServerView(
                 srv = server,
                 serverProtocol = ServerProtocol.XFTP,
@@ -281,9 +330,9 @@ fun OperatorViewLayout(
       if (userServers.value[operatorIndex].xftpServers.any { !it.preset && !it.deleted}) {
         SectionDividerSpaced()
         SectionView(generalGetString(MR.strings.operator_added_xftp_servers).uppercase()) {
-          userServers.value[operatorIndex].xftpServers.forEach { server ->
-            if (server.deleted || server.preset) return@forEach
-            SectionItemView {
+          userServers.value[operatorIndex].xftpServers.forEachIndexed { i, server ->
+            if (server.deleted || server.preset) return@forEachIndexed
+            SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.XFTP) }) {
               ProtocolServerView(
                 srv = server,
                 serverProtocol = ServerProtocol.XFTP,

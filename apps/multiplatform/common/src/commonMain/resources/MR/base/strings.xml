@@ -1712,6 +1712,11 @@
   <string name="xftp_servers_per_user">The servers for new files of your current chat profile</string>
   <string name="operator_added_xftp_servers">Added media &amp; file servers</string>
 
+  <!-- ProtocolServerView.kt -->
+  <string name="error_updating_server_title">Error updating server</string>
+  <string name="error_server_protocol_changed">Server protocol changed.</string>
+  <string name="error_server_operator_changed">Server operator changed.</string>
+
   <!-- AdvancedNetworkSettings.kt -->
   <string name="network_option_tcp_connection">TCP connection</string>
   <string name="network_options_reset_to_defaults">Reset to defaults</string>
