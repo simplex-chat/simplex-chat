@@ -243,6 +243,40 @@ fun OperatorViewLayout(
         }
       }
 
+      // Preset servers can't be deleted
+      if (userServers.value[operatorIndex].xftpServers.any { it.preset }) {
+        SectionDividerSpaced()
+        SectionView(generalGetString(MR.strings.media_and_file_servers).uppercase()) {
+          userServers.value[operatorIndex].xftpServers.forEach { server ->
+            SectionItemView {
+              ProtocolServerView(
+                srv = server,
+                serverProtocol = ServerProtocol.XFTP,
+                duplicateHosts = duplicateHosts
+              )
+            }
+          }
+        }
+        val xftpErrors = globalXFTPServersError(serverErrors.value)
+        if (xftpErrors != null) {
+          SectionCustomFooter {
+            ServerErrorsView(xftpErrors)
+          }
+        } else {
+          SectionTextFooter(
+            remember(currentUser?.displayName) {
+              buildAnnotatedString {
+                append(generalGetString(MR.strings.xftp_servers_per_user) + " ")
+                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                  append(currentUser?.displayName ?: "")
+                }
+                append(".")
+              }
+            }
+          )
+        }
+      }
+
     }
   }
 }
