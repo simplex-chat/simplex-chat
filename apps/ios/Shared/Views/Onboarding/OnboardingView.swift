@@ -12,13 +12,30 @@ struct OnboardingView: View {
     var onboarding: OnboardingStage
 
     var body: some View {
-        switch onboarding {
-        case .step1_SimpleXInfo: SimpleXInfo(onboarding: true)
-        case .step2_CreateProfile: CreateFirstProfile()
-        case .step3_CreateSimpleXAddress: CreateSimpleXAddress()
-        case .step3_ChooseServerOperators: ChooseServerOperators(onboarding: true)
-        case .step4_SetNotificationsMode: SetNotificationsMode()
-        case .onboardingComplete: EmptyView()
+        NavigationView {
+            switch onboarding {
+            case .step1_SimpleXInfo:
+                SimpleXInfo(onboarding: true)
+                    .modifier(ThemedBackground(grouped: false))
+            case .step2_CreateProfile: // deprecated
+                CreateFirstProfile()
+                    .modifier(ThemedBackground(grouped: false))
+            case .step3_CreateSimpleXAddress: // deprecated
+                CreateSimpleXAddress()
+            case .step3_ChooseServerOperators:
+                ChooseServerOperators(onboarding: true)
+                    .navigationTitle("Choose operators")
+                    .navigationBarTitleDisplayMode(.large)
+                    .navigationBarBackButtonHidden(true)
+                    .modifier(ThemedBackground(grouped: false))
+            case .step4_SetNotificationsMode:
+                SetNotificationsMode()
+                    .navigationTitle("Push notifications")
+                    .navigationBarTitleDisplayMode(.large)
+                    .navigationBarBackButtonHidden(true)
+                    .modifier(ThemedBackground(grouped: false))
+            case .onboardingComplete: EmptyView()
+            }
         }
     }
 }

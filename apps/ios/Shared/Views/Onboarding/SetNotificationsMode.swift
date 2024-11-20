@@ -17,12 +17,7 @@ struct SetNotificationsMode: View {
     var body: some View {
         GeometryReader { g in
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Push notifications")
-                        .font(.largeTitle)
-                        .bold()
-                        .frame(maxWidth: .infinity)
-                    
+                VStack(alignment: .leading, spacing: 20) {
                     Text("Send notifications:")
                     ForEach(NotificationsMode.values) { mode in
                         NtfModeSelector(mode: mode, selection: $notificationMode)
