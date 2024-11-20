@@ -70,17 +70,9 @@ fun GroupMemberInfoView(
       getContactChat = { chatModel.getContactChat(it) },
       openDirectChat = {
         withBGApi {
-          val c = chatModel.controller.apiGetChat(rhId, ChatType.Direct, it)
-          if (c != null) {
-            withChats {
-              if (chatModel.getContactChat(it) == null) {
-                addChat(c)
-              }
-              chatModel.chatItemStatuses.clear()
-              chatModel.chatItems.replaceAll(c.chatItems)
-              chatModel.chatId.value = c.id
-              closeAll()
-            }
+          apiLoadMessages(rhId, ChatType.Direct, it, ChatPagination.Initial(ChatPagination.INITIAL_COUNT), chatModel.chatState)
+          if (chatModel.getContactChat(it) != null) {
+            closeAll()
           }
         }
       },
@@ -92,7 +84,7 @@ fun GroupMemberInfoView(
             val memberChat = Chat(remoteHostId = rhId, ChatInfo.Direct(memberContact), chatItems = arrayListOf())
             withChats {
               addChat(memberChat)
-              openLoadedChat(memberChat, chatModel)
+              openLoadedChat(memberChat)
             }
             closeAll()
             chatModel.setContactNetworkStatus(memberContact, NetworkStatus.Connected())

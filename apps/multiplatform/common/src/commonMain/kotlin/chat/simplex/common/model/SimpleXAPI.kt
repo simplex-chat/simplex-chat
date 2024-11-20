@@ -22,6 +22,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
+import chat.simplex.common.views.chat.item.showQuotedItemDoesNotExistAlert
 import chat.simplex.common.views.migration.MigrationFileLinkData
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
@@ -868,11 +869,15 @@ object ChatController {
     return emptyList()
   }
 
-  suspend fun apiGetChat(rh: Long?, type: ChatType, id: Long, pagination: ChatPagination = ChatPagination.Last(ChatPagination.INITIAL_COUNT), search: String = ""): Chat? {
+  suspend fun apiGetChat(rh: Long?, type: ChatType, id: Long, pagination: ChatPagination, search: String = ""): Pair<Chat, NavigationInfo>? {
     val r = sendCmd(rh, CC.ApiGetChat(type, id, pagination, search))
-    if (r is CR.ApiChat) return if (rh == null) r.chat else r.chat.copy(remoteHostId = rh)
+    if (r is CR.ApiChat) return if (rh == null) r.chat to r.navInfo else r.chat.copy(remoteHostId = rh) to r.navInfo
     Log.e(TAG, "apiGetChat bad response: ${r.responseType} ${r.details}")
-    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_parse_chat_title), generalGetString(MR.strings.contact_developers))
+    if (pagination is ChatPagination.Around && r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.ChatItemNotFound) {
+      showQuotedItemDoesNotExistAlert()
+    } else {
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_parse_chat_title), generalGetString(MR.strings.contact_developers))
+    }
     return null
   }
 
@@ -2861,7 +2866,7 @@ object ChatController {
     chatModel.users.addAll(users)
     chatModel.currentUser.value = user
     if (user == null) {
-      chatModel.chatItems.clear()
+      chatModel.chatItems.clearAndNotify()
       withChats {
         chats.clear()
         popChatCollector.clear()
@@ -3423,7 +3428,7 @@ sealed class CC {
     is GetAgentServersSummary -> "getAgentServersSummary"
   }
 
-  class ItemRange(val from: Long, val to: Long)
+  data class ItemRange(val from: Long, val to: Long)
 
   fun chatItemTTLStr(seconds: Long?): String {
     if (seconds == null) return "none"
@@ -3471,15 +3476,19 @@ sealed class ChatPagination {
   class Last(val count: Int): ChatPagination()
   class After(val chatItemId: Long, val count: Int): ChatPagination()
   class Before(val chatItemId: Long, val count: Int): ChatPagination()
+  class Around(val chatItemId: Long, val count: Int): ChatPagination()
+  class Initial(val count: Int): ChatPagination()
 
   val cmdString: String get() = when (this) {
     is Last -> "count=${this.count}"
     is After -> "after=${this.chatItemId} count=${this.count}"
     is Before -> "before=${this.chatItemId} count=${this.count}"
+    is Around -> "around=${this.chatItemId} count=${this.count}"
+    is Initial -> "initial=${this.count}"
   }
 
   companion object {
-    const val INITIAL_COUNT = 100
+    val INITIAL_COUNT = if (appPlatform.isDesktop) 100 else 75
     const val PRELOAD_COUNT = 100
     const val UNTIL_PRELOAD_COUNT = 50
   }
@@ -4917,7 +4926,7 @@ sealed class CR {
   @Serializable @SerialName("chatRunning") class ChatRunning: CR()
   @Serializable @SerialName("chatStopped") class ChatStopped: CR()
   @Serializable @SerialName("apiChats") class ApiChats(val user: UserRef, val chats: List<Chat>): CR()
-  @Serializable @SerialName("apiChat") class ApiChat(val user: UserRef, val chat: Chat): CR()
+  @Serializable @SerialName("apiChat") class ApiChat(val user: UserRef, val chat: Chat, val navInfo: NavigationInfo = NavigationInfo()): CR()
   @Serializable @SerialName("chatItemInfo") class ApiChatItemInfo(val user: UserRef, val chatItem: AChatItem, val chatItemInfo: ChatItemInfo): CR()
   @Serializable @SerialName("userProtoServers") class UserProtoServers(val user: UserRef, val servers: UserProtocolServers): CR()
   @Serializable @SerialName("serverTestResult") class ServerTestResult(val user: UserRef, val testServer: String, val testFailure: ProtocolTestFailure? = null): CR()
@@ -5267,7 +5276,7 @@ sealed class CR {
     is ChatRunning -> noDetails()
     is ChatStopped -> noDetails()
     is ApiChats -> withUser(user, json.encodeToString(chats))
-    is ApiChat -> withUser(user, json.encodeToString(chat))
+    is ApiChat -> withUser(user, "chat: ${json.encodeToString(chat)}\nnavInfo: ${navInfo}")
     is ApiChatItemInfo -> withUser(user, "chatItem: ${json.encodeToString(chatItem)}\n${json.encodeToString(chatItemInfo)}")
     is UserProtoServers -> withUser(user, "servers: ${json.encodeToString(servers)}")
     is ServerTestResult -> withUser(user, "server: $testServer\nresult: ${json.encodeToString(testFailure)}")

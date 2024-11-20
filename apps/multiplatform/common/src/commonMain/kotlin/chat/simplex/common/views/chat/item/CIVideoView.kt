@@ -432,6 +432,9 @@ fun VideoPreviewImageViewFullScreen(preview: ImageBitmap, onClick: () -> Unit, o
 expect fun LocalWindowWidth(): Dp
 
 @Composable
+expect fun LocalWindowHeight(): Dp
+
+@Composable
 private fun progressIndicator() {
   CircularProgressIndicator(
     Modifier.size(16.dp),
