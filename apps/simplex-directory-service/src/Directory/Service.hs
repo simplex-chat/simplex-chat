@@ -105,8 +105,11 @@ directoryService st DirectoryOpts {adminUsers, superUsers, serviceName, searchRe
           SDRSuperUser -> deSuperUserCommand ct ciId cmd
       DELogChatResponse r -> logInfo r
   where
+    withAdminUsers action = void . forkIO $ do
+      forM_ superUsers $ \KnownContact {contactId} -> action contactId
+      forM_ adminUsers $ \KnownContact {contactId} -> action contactId
     withSuperUsers action = void . forkIO $ forM_ superUsers $ \KnownContact {contactId} -> action contactId
-    notifySuperUsers s = withSuperUsers $ \contactId -> sendMessage' cc contactId s
+    notifyAdminUsers s = withAdminUsers $ \contactId -> sendMessage' cc contactId s
     notifyOwner GroupReg {dbContactId} = sendMessage' cc dbContactId
     ctId `isOwner` GroupReg {dbContactId} = ctId == dbContactId
     withGroupReg GroupInfo {groupId, localDisplayName} err action = do
@@ -288,16 +291,16 @@ directoryService st DirectoryOpts {adminUsers, superUsers, serviceName, searchRe
               notifyOwner gr $ "The group profile is updated " <> userGroupRef <> ", but no link is added to the welcome message.\n\nThe group will remain hidden from the directory until the group link is added and the group is re-approved."
             GPServiceLinkRemoved -> do
               notifyOwner gr $ "The group link for " <> userGroupRef <> " is removed from the welcome message.\n\nThe group is hidden from the directory until the group link is added and the group is re-approved."
-              notifySuperUsers $ "The group link is removed from " <> groupRef <> ", de-listed."
+              notifyAdminUsers $ "The group link is removed from " <> groupRef <> ", de-listed."
             GPServiceLinkAdded -> do
               setGroupStatus st gr $ GRSPendingApproval n'
               notifyOwner gr $ "The group link is added to " <> userGroupRef <> "!\nIt is hidden from the directory until approved."
-              notifySuperUsers $ "The group link is added to " <> groupRef <> "."
+              notifyAdminUsers $ "The group link is added to " <> groupRef <> "."
               checkRolesSendToApprove gr n'
             GPHasServiceLink -> do
               setGroupStatus st gr $ GRSPendingApproval n'
               notifyOwner gr $ "The group " <> userGroupRef <> " is updated!\nIt is hidden from the directory until approved."
-              notifySuperUsers $ "The group " <> groupRef <> " is updated."
+              notifyAdminUsers $ "The group " <> groupRef <> " is updated."
               checkRolesSendToApprove gr n'
             GPServiceLinkError -> logError $ "Error: no group link for " <> groupRef <> " pending approval."
         groupProfileUpdate = profileUpdate <$> sendChatCmd cc (APIGetGroupLink groupId)
@@ -329,7 +332,7 @@ directoryService st DirectoryOpts {adminUsers, superUsers, serviceName, searchRe
             maybe ("The group ID " <> tshow dbGroupId <> " submitted: ") (\c -> localDisplayName' c <> " submitted the group ID " <> tshow dbGroupId <> ": ") ct_
               <> ("\n" <> groupInfoText p <> "\n" <> membersStr <> "\nTo approve send:")
           msg = maybe (MCText text) (\image -> MCImage {text, image}) image'
-      withSuperUsers $ \cId -> do
+      withAdminUsers $ \cId -> do
         sendComposedMessage' cc cId Nothing msg
         sendMessage' cc cId $ "/approve " <> tshow dbGroupId <> ":" <> viewName displayName <> " " <> tshow gaId
 
@@ -344,14 +347,14 @@ directoryService st DirectoryOpts {adminUsers, superUsers, serviceName, searchRe
             GRSSuspendedBadRoles -> when (rStatus == GRSOk) $ do
               setGroupStatus st gr GRSActive
               notifyOwner gr $ uCtRole <> ".\n\nThe group is listed in the directory again."
-              notifySuperUsers $ "The group " <> groupRef <> " is listed " <> suCtRole
+              notifyAdminUsers $ "The group " <> groupRef <> " is listed " <> suCtRole
             GRSPendingApproval gaId -> when (rStatus == GRSOk) $ do
               sendToApprove g gr gaId
               notifyOwner gr $ uCtRole <> ".\n\nThe group is submitted for approval."
             GRSActive -> when (rStatus /= GRSOk) $ do
               setGroupStatus st gr GRSSuspendedBadRoles
               notifyOwner gr $ uCtRole <> ".\n\nThe group is no longer listed in the directory."
-              notifySuperUsers $ "The group " <> groupRef <> " is de-listed " <> suCtRole
+              notifyAdminUsers $ "The group " <> groupRef <> " is de-listed " <> suCtRole
             _ -> pure ()
       where
         rStatus = groupRolesStatus contactRole serviceRole
@@ -370,7 +373,7 @@ directoryService st DirectoryOpts {adminUsers, superUsers, serviceName, searchRe
             whenContactIsOwner gr $ do
               setGroupStatus st gr GRSActive
               notifyOwner gr $ uSrvRole <> ".\n\nThe group is listed in the directory again."
-              notifySuperUsers $ "The group " <> groupRef <> " is listed " <> suSrvRole
+              notifyAdminUsers $ "The group " <> groupRef <> " is listed " <> suSrvRole
           GRSPendingApproval gaId -> when (serviceRole == GRAdmin) $
             whenContactIsOwner gr $ do
               sendToApprove g gr gaId
@@ -378,7 +381,7 @@ directoryService st DirectoryOpts {adminUsers, superUsers, serviceName, searchRe
           GRSActive -> when (serviceRole /= GRAdmin) $ do
             setGroupStatus st gr GRSSuspendedBadRoles
             notifyOwner gr $ uSrvRole <> ".\n\nThe group is no longer listed in the directory."
-            notifySuperUsers $ "The group " <> groupRef <> " is de-listed " <> suSrvRole
+            notifyAdminUsers $ "The group " <> groupRef <> " is de-listed " <> suSrvRole
           _ -> pure ()
       where
         groupRef = groupReference g
@@ -395,7 +398,7 @@ directoryService st DirectoryOpts {adminUsers, superUsers, serviceName, searchRe
         when (ctId `isOwner` gr) $ do
           setGroupStatus st gr GRSRemoved
           notifyOwner gr $ "You are removed from the group " <> userGroupReference gr g <> ".\n\nThe group is no longer listed in the directory."
-          notifySuperUsers $ "The group " <> groupReference g <> " is de-listed (group owner is removed)."
+          notifyAdminUsers $ "The group " <> groupReference g <> " is de-listed (group owner is removed)."
 
     deContactLeftGroup :: ContactId -> GroupInfo -> IO ()
     deContactLeftGroup ctId g = do
@@ -404,7 +407,7 @@ directoryService st DirectoryOpts {adminUsers, superUsers, serviceName, searchRe
         when (ctId `isOwner` gr) $ do
           setGroupStatus st gr GRSRemoved
           notifyOwner gr $ "You left the group " <> userGroupReference gr g <> ".\n\nThe group is no longer listed in the directory."
-          notifySuperUsers $ "The group " <> groupReference g <> " is de-listed (group owner left)."
+          notifyAdminUsers $ "The group " <> groupReference g <> " is de-listed (group owner left)."
 
     deServiceRemovedFromGroup :: GroupInfo -> IO ()
     deServiceRemovedFromGroup g = do
@@ -412,7 +415,7 @@ directoryService st DirectoryOpts {adminUsers, superUsers, serviceName, searchRe
       withGroupReg g "service removed" $ \gr -> do
         setGroupStatus st gr GRSRemoved
         notifyOwner gr $ serviceName <> " is removed from the group " <> userGroupReference gr g <> ".\n\nThe group is no longer listed in the directory."
-        notifySuperUsers $ "The group " <> groupReference g <> " is de-listed (directory service is removed)."
+        notifyAdminUsers $ "The group " <> groupReference g <> " is de-listed (directory service is removed)."
 
     deUserCommand :: ServiceState -> Contact -> ChatItemId -> DirectoryCmd 'DRUser -> IO ()
     deUserCommand env@ServiceState {searchRequests} ct ciId = \case
