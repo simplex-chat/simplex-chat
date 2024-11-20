@@ -22,6 +22,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
+import chat.simplex.common.views.chat.item.showQuotedItemDoesNotExistAlert
 import chat.simplex.common.views.migration.MigrationFileLinkData
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
@@ -870,7 +871,7 @@ object ChatController {
     if (r is CR.ApiChat) return if (rh == null) r.chat to r.navInfo else r.chat.copy(remoteHostId = rh) to r.navInfo
     Log.e(TAG, "apiGetChat bad response: ${r.responseType} ${r.details}")
     if (pagination is ChatPagination.Around && r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.ChatItemNotFound) {
-      // skip alert in case of .around query because another alert will be shown in ChatView
+      showQuotedItemDoesNotExistAlert()
     } else {
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_parse_chat_title), generalGetString(MR.strings.contact_developers))
     }
