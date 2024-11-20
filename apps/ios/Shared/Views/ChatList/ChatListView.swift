@@ -32,10 +32,10 @@ enum UserPickerSheet: Identifiable {
 }
 
 class SaveableSettings: ObservableObject {
-    @Published var serverSettings: SaveableServerSettings = SaveableServerSettings(currUserServers: [], userServers: [], serverErrors: [])
+    @Published var servers: ServerSettings = ServerSettings(currUserServers: [], userServers: [], serverErrors: [])
 }
 
-struct SaveableServerSettings {
+struct ServerSettings {
     public var currUserServers: [UserOperatorServers]
     public var userServers: [UserOperatorServers]
     public var serverErrors: [UserServersError]
@@ -44,7 +44,7 @@ struct SaveableServerSettings {
 struct UserPickerSheetView: View {
     let sheet: UserPickerSheet
     @EnvironmentObject var chatModel: ChatModel
-    @StateObject private var saveableSettings = SaveableSettings()
+    @StateObject private var ss = SaveableSettings()
 
     @State private var loaded = false
 
@@ -90,19 +90,19 @@ struct UserPickerSheetView: View {
         }
         .onDisappear {
             if serversCanBeSaved(
-                saveableSettings.serverSettings.currUserServers,
-                saveableSettings.serverSettings.userServers,
-                saveableSettings.serverSettings.serverErrors
+                ss.servers.currUserServers,
+                ss.servers.userServers,
+                ss.servers.serverErrors
             ) {
                 showAlert(
                     title: NSLocalizedString("Save servers?", comment: "alert title"),
                     buttonTitle: NSLocalizedString("Save", comment: "alert button"),
-                    buttonAction: { saveServers($saveableSettings.serverSettings.currUserServers, $saveableSettings.serverSettings.userServers) },
+                    buttonAction: { saveServers($ss.servers.currUserServers, $ss.servers.userServers) },
                     cancelButton: true
                 )
             }
         }
-        .environmentObject(saveableSettings)
+        .environmentObject(ss)
     }
 }
 
