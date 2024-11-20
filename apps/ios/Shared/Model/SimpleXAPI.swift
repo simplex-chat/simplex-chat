@@ -1650,7 +1650,7 @@ private func chatInitialized(start: Bool, refreshInvitations: Bool) throws {
     }
 }
 
-func startChat(refreshInvitations: Bool = true) throws {
+func startChat(refreshInvitations: Bool = true, onboarding: Bool = false) throws {
     logger.debug("startChat")
     let m = ChatModel.shared
     try setNetworkConfig(getNetCfg())
@@ -1669,13 +1669,15 @@ func startChat(refreshInvitations: Bool = true) throws {
         if let token = m.deviceToken {
             registerToken(token: token)
         }
-        withAnimation {
-            let savedOnboardingStage = onboardingStageDefault.get()
-            m.onboardingStage = [.step1_SimpleXInfo, .step2_CreateProfile].contains(savedOnboardingStage) && m.users.count == 1
-                                ? .step3_ChooseServerOperators
-                                : savedOnboardingStage
-            if m.onboardingStage == .onboardingComplete && !privacyDeliveryReceiptsSet.get() {
-                m.setDeliveryReceipts = true
+        if !onboarding {
+            withAnimation {
+                let savedOnboardingStage = onboardingStageDefault.get()
+                m.onboardingStage = [.step1_SimpleXInfo, .step2_CreateProfile].contains(savedOnboardingStage) && m.users.count == 1
+                ? .step3_ChooseServerOperators
+                : savedOnboardingStage
+                if m.onboardingStage == .onboardingComplete && !privacyDeliveryReceiptsSet.get() {
+                    m.setDeliveryReceipts = true
+                }
             }
         }
     }

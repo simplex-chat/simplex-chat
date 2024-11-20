@@ -569,7 +569,10 @@ fileprivate struct NewOperatorsView: View {
             }
         }
         .sheet(isPresented: $showOperatorsSheet) {
-            ChooseServerOperators(onboarding: false)
+            NavigationView {
+                ChooseServerOperators(onboarding: false)
+                    .modifier(ThemedBackground(grouped: false))
+            }
         }
     }
 }
