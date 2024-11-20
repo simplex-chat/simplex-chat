@@ -188,7 +188,17 @@ fun ModalData.NetworkAndServersView(close: () -> Unit) {
       val nullOperatorIndex = userServers.value.indexOfFirst { it.operator == null }
 
       if (nullOperatorIndex != -1) {
-        SectionItemView({  ModalManager.start.showModal { YourServersView(userServers = userServers, operatorIndex = nullOperatorIndex) } }) {
+        SectionItemView({
+          ModalManager.start.showModal {
+            YourServersView(
+              currUserServers = currUserServers,
+              userServers = userServers,
+              serverErrors = serverErrors,
+              operatorIndex = nullOperatorIndex,
+              rhId = currentRemoteHost?.remoteHostId
+            )
+          }
+        }) {
           Icon(
             painterResource(MR.images.ic_dns),
             stringResource(MR.strings.your_servers),

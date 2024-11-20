@@ -1,6 +1,7 @@
 package chat.simplex.common.views.usersettings.networkAndServers
 
 import SectionBottomSpacer
+import SectionCustomFooter
 import SectionDividerSpaced
 import SectionItemView
 import SectionTextFooter
@@ -42,7 +43,7 @@ fun ModalData.ProtocolServersView(m: ChatModel, rhId: Long?, serverProtocol: Ser
       testing.value ||
       servers.none { srv ->
         val address = parseServerAddress(srv.server)
-        address != null && uniqueAddress(srv, address, servers)
+        address != null
       } ||
       allServersDisabled.value
     }
@@ -131,15 +132,6 @@ fun ModalData.ProtocolServersView(m: ChatModel, rhId: Long?, serverProtocol: Ser
                   Text(stringResource(MR.strings.smp_servers_scan_qr), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
                 }
               }
-              val hasAllPresets = hasAllPresets(presetServers, servers, m)
-              if (!hasAllPresets) {
-                SectionItemView({
-                  AlertManager.shared.hideAlert()
-                  servers = (servers + addAllPresets(rhId, presetServers, servers, m)).sortedByDescending { it.preset }
-                }) {
-                  Text(stringResource(MR.strings.smp_servers_preset_add), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-                }
-              }
             }
           }
         )
@@ -174,13 +166,6 @@ fun ModalData.ProtocolServersView(m: ChatModel, rhId: Long?, serverProtocol: Ser
         )
       }
     }
-  }
-}
-
-@Composable
-fun ModalData.YourServersView(userServers: MutableState<List<UserOperatorServers>>, operatorIndex: Int) {
-  ColumnWithScrollBar {
-    AppBarTitle(stringResource(MR.strings.your_servers))
   }
 }
 
@@ -270,10 +255,126 @@ private fun ProtocolServersLayout(
 }
 
 @Composable
+fun ModalData.YourServersView(
+  currUserServers: MutableState<List<UserOperatorServers>>,
+  userServers: MutableState<List<UserOperatorServers>>,
+  serverErrors: MutableState<List<UserServersError>>,
+  operatorIndex: Int,
+  rhId: Long?
+) {
+  val testing = remember { mutableStateOf(false) }
+
+  ColumnWithScrollBar {
+    AppBarTitle(stringResource(MR.strings.your_servers))
+    YourServersViewLayout(currUserServers, userServers, serverErrors, operatorIndex, rhId, testing.value)
+    if (testing.value) {
+      DefaultProgressView(null)
+    }
+  }
+}
+
+@Composable
+fun YourServersViewLayout(
+  currUserServers: MutableState<List<UserOperatorServers>>,
+  userServers: MutableState<List<UserOperatorServers>>,
+  serverErrors: MutableState<List<UserServersError>>,
+  operatorIndex: Int,
+  rhId: Long?,
+  testing: Boolean
+) {
+  val scope = rememberCoroutineScope()
+  val duplicateHosts = findDuplicateHosts(serverErrors.value)
+
+  Column {
+    if (userServers.value[operatorIndex].smpServers.any { !it.deleted }) {
+      SectionView(generalGetString(MR.strings.message_servers).uppercase()) {
+        userServers.value[operatorIndex].smpServers.forEach { server ->
+          SectionItemView {
+            ProtocolServerView(
+              srv = server,
+              serverProtocol = ServerProtocol.SMP,
+              duplicateHosts = duplicateHosts
+            )
+          }
+        }
+      }
+      val smpErrors = globalSMPServersError(serverErrors.value)
+      if (smpErrors != null) {
+        SectionCustomFooter {
+          ServerErrorsView(smpErrors)
+        }
+      }
+    }
+
+    SectionDividerSpaced()
+
+    SectionView {
+      SettingsActionItem(
+        painterResource(MR.images.ic_add),
+        stringResource(MR.strings.smp_servers_add),
+        click = { showAddServerDialog(userServers, serverErrors, operatorIndex, rhId) },
+        disabled = testing,
+        textColor = if (testing) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
+        iconColor = if (testing) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
+      )
+    }
+    SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
+
+    SectionView {
+      // TODO Test servers button
+      SectionItemView { Text("Test servers") }
+    }
+    SectionDividerSpaced(maxBottomPadding = false)
+
+    SectionView {
+      HowToButton()
+    }
+    SectionBottomSpacer()
+  }
+}
+
+fun showAddServerDialog(
+  userServers: MutableState<List<UserOperatorServers>>,
+  serverErrors: MutableState<List<UserServersError>>,
+  operatorIndex: Int,
+  rhId: Long?
+) {
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = generalGetString(MR.strings.smp_servers_add),
+    buttons = {
+      Column {
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          ModalManager.start.showModalCloseable { close ->
+            NewServerView(userServers, serverErrors, operatorIndex, rhId, close)
+          }
+        }) {
+          Text(stringResource(MR.strings.smp_servers_enter_manually), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+        if (appPlatform.isAndroid) {
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+            ModalManager.start.showModalCloseable { close ->
+              ScanProtocolServer(rhId) {
+                close()
+                // TODO reuse logic from NewServerView
+              }
+            }
+          }
+          ) {
+            Text(stringResource(MR.strings.smp_servers_scan_qr), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+          }
+        }
+      }
+    }
+  )
+}
+
+@Composable
 private fun ProtocolServerView(serverProtocol: ServerProtocol, srv: UserServer, servers: List<UserServer>, disabled: Boolean) {
   val address = parseServerAddress(srv.server)
   when {
-    address == null || !address.valid || address.serverProtocol != serverProtocol || !uniqueAddress(srv, address, servers) -> InvalidServer()
+    address == null || !address.valid || address.serverProtocol != serverProtocol -> InvalidServer()
     !srv.enabled -> Icon(painterResource(MR.images.ic_do_not_disturb_on), null, tint = MaterialTheme.colors.secondary)
     else -> ShowTestStatus(srv)
   }
@@ -320,28 +421,6 @@ private fun HowToButton() {
 fun InvalidServer() {
   Icon(painterResource(MR.images.ic_error), null, tint = MaterialTheme.colors.error)
 }
-
-private fun uniqueAddress(s: UserServer, address: ServerAddress, servers: List<UserServer>): Boolean = servers.all { srv ->
-  address.hostnames.all { host ->
-    srv.id == s.id || !srv.server.contains(host)
-  }
-}
-
-private fun hasAllPresets(presetServers: List<UserServer>, servers: List<UserServer>, m: ChatModel): Boolean =
-  presetServers.all { hasPreset(it, servers) } ?: true
-
-private fun addAllPresets(rhId: Long?, presetServers: List<UserServer>, servers: List<UserServer>, m: ChatModel): List<UserServer> {
-  val toAdd = ArrayList<UserServer>()
-  for (srv in presetServers) {
-    if (!hasPreset(srv, servers)) {
-      toAdd.add(srv)
-    }
-  }
-  return toAdd
-}
-
-private fun hasPreset(srv: UserServer, servers: List<UserServer>): Boolean =
-  servers.any { it.server == srv.server }
 
 private suspend fun testServers(testing: MutableState<Boolean>, servers: List<UserServer>, m: ChatModel, onUpdated: (List<UserServer>) -> Unit) {
   val resetStatus = resetTestStatus(servers)
