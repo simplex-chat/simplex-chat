@@ -193,6 +193,8 @@ final class ChatModel: ObservableObject {
     @Published var draft: ComposeState?
     @Published var draftChatId: String?
     @Published var networkInfo = UserNetworkInfo(networkType: .other, online: true)
+    // usage conditions
+    @Published var conditions: ServerOperatorConditions = .empty
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 

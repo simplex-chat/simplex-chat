@@ -360,7 +360,7 @@ data ChatCommand
   | APISetServerOperators (NonEmpty ServerOperator)
   | APIGetUserServers UserId
   | APISetUserServers UserId (NonEmpty UpdatedUserOperatorServers)
-  | APIValidateServers UserId [ValidatedUserOperatorServers] -- response is CRUserServersValidation
+  | APIValidateServers UserId [UpdatedUserOperatorServers] -- response is CRUserServersValidation
   | APIGetUsageConditions
   | APISetConditionsNotified Int64
   | APIAcceptConditions Int64 (NonEmpty Int64)

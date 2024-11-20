@@ -11,236 +11,164 @@ import SimpleXChat
 
 private let howToUrl = URL(string: "https://simplex.chat/docs/server.html")!
 
-struct ProtocolServersView: View {
+struct YourServersView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject private var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.editMode) private var editMode
-    let serverProtocol: ServerProtocol
-    @State private var currServers: [ServerCfg] = []
-    @State private var presetServers: [ServerCfg] = []
-    @State private var configuredServers: [ServerCfg] = []
-    @State private var otherServers: [ServerCfg] = []
+    @Binding var userServers: [UserOperatorServers]
+    @Binding var serverErrors: [UserServersError]
+    var operatorIndex: Int
     @State private var selectedServer: String? = nil
     @State private var showAddServer = false
+    @State private var newServerNavLinkActive = false
     @State private var showScanProtoServer = false
-    @State private var justOpened = true
     @State private var testing = false
-    @State private var alert: ServerAlert? = nil
-    @State private var showSaveDialog = false
-
-    var proto: String { serverProtocol.rawValue.uppercased() }
 
     var body: some View {
-        ZStack {
-            protocolServersView()
-            if testing {
-                ProgressView().scaleEffect(2)
+        yourServersView()
+            .opacity(testing ? 0.4 : 1)
+            .overlay {
+                if testing {
+                    ProgressView()
+                        .scaleEffect(2)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
             }
-        }
+            .allowsHitTesting(!testing)
     }
 
-    enum ServerAlert: Identifiable {
-        case testsFailed(failures: [String: ProtocolTestFailure])
-        case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
-
-        var id: String {
-            switch self {
-            case .testsFailed: return "testsFailed"
-            case let .error(title, _): return "error \(title)"
-            }
-        }
-    }
-
-    private func protocolServersView() -> some View {
+    @ViewBuilder private func yourServersView() -> some View {
+        let duplicateHosts = findDuplicateHosts(serverErrors)
         List {
-            if !configuredServers.isEmpty {
+            if !userServers[operatorIndex].smpServers.filter({ !$0.deleted }).isEmpty {
                 Section {
-                    ForEach($configuredServers) { srv in
-                        protocolServerView(srv)
-                    }
-                    .onMove { indexSet, offset in
-                        configuredServers.move(fromOffsets: indexSet, toOffset: offset)
+                    ForEach($userServers[operatorIndex].smpServers) { srv in
+                        if !srv.wrappedValue.deleted {
+                            ProtocolServerViewLink(
+                                userServers: $userServers,
+                                serverErrors: $serverErrors,
+                                duplicateHosts: duplicateHosts,
+                                server: srv,
+                                serverProtocol: .smp,
+                                backLabel: "Your servers",
+                                selectedServer: $selectedServer
+                            )
+                        } else {
+                            EmptyView()
+                        }
                     }
                     .onDelete { indexSet in
-                        configuredServers.remove(atOffsets: indexSet)
+                        deleteSMPServer($userServers, operatorIndex, indexSet)
+                        validateServers_($userServers, $serverErrors)
                     }
                 } header: {
-                    Text("Configured \(proto) servers")
+                    Text("Message servers")
                         .foregroundColor(theme.colors.secondary)
                 } footer: {
-                    Text("The servers for new connections of your current chat profile **\(m.currentUser?.displayName ?? "")**.")
-                        .foregroundColor(theme.colors.secondary)
-                        .lineLimit(10)
+                    if let errStr = globalSMPServersError(serverErrors) {
+                        ServersErrorView(errStr: errStr)
+                    } else {
+                        Text("The servers for new connections of your current chat profile **\(m.currentUser?.displayName ?? "")**.")
+                            .foregroundColor(theme.colors.secondary)
+                            .lineLimit(10)
+                    }
                 }
             }
 
-            if !otherServers.isEmpty {
+            if !userServers[operatorIndex].xftpServers.filter({ !$0.deleted }).isEmpty {
                 Section {
-                    ForEach($otherServers) { srv in
-                        protocolServerView(srv)
-                    }
-                    .onMove { indexSet, offset in
-                        otherServers.move(fromOffsets: indexSet, toOffset: offset)
+                    ForEach($userServers[operatorIndex].xftpServers) { srv in
+                        if !srv.wrappedValue.deleted {
+                            ProtocolServerViewLink(
+                                userServers: $userServers,
+                                serverErrors: $serverErrors,
+                                duplicateHosts: duplicateHosts,
+                                server: srv,
+                                serverProtocol: .xftp,
+                                backLabel: "Your servers",
+                                selectedServer: $selectedServer
+                            )
+                        } else {
+                            EmptyView()
+                        }
                     }
                     .onDelete { indexSet in
-                        otherServers.remove(atOffsets: indexSet)
+                        deleteXFTPServer($userServers, operatorIndex, indexSet)
+                        validateServers_($userServers, $serverErrors)
                     }
                 } header: {
-                    Text("Other \(proto) servers")
+                    Text("Media & file servers")
                         .foregroundColor(theme.colors.secondary)
+                } footer: {
+                    if let errStr = globalXFTPServersError(serverErrors) {
+                        ServersErrorView(errStr: errStr)
+                    } else {
+                        Text("The servers for new files of your current chat profile **\(m.currentUser?.displayName ?? "")**.")
+                            .foregroundColor(theme.colors.secondary)
+                            .lineLimit(10)
+                    }
                 }
             }
 
             Section {
-                Button("Add server") {
-                    showAddServer = true
+                ZStack {
+                    Button("Add server") {
+                        showAddServer = true
+                    }
+
+                    NavigationLink(isActive: $newServerNavLinkActive) {
+                        newServerDestinationView()
+                    } label: {
+                        EmptyView()
+                    }
+                    .frame(width: 1, height: 1)
+                    .hidden()
+                }
+            } footer: {
+                if let errStr = globalServersError(serverErrors) {
+                    ServersErrorView(errStr: errStr)
                 }
             }
 
             Section {
-                Button("Reset") { partitionServers(currServers) }
-                    .disabled(Set(allServers) == Set(currServers) || testing)
-                Button("Test servers", action: testServers)
-                    .disabled(testing || allServersDisabled)
-                Button("Save servers", action: saveServers)
-                    .disabled(saveDisabled)
+                TestServersButton(
+                    smpServers: $userServers[operatorIndex].smpServers,
+                    xftpServers: $userServers[operatorIndex].xftpServers,
+                    testing: $testing
+                )
                 howToButton()
             }
         }
-        .toolbar { EditButton() }
-        .confirmationDialog("Add server", isPresented: $showAddServer, titleVisibility: .hidden) {
-            Button("Enter server manually") {
-                otherServers.append(ServerCfg.empty)
-                selectedServer = allServers.last?.id
+        .toolbar {
+            if (
+                !userServers[operatorIndex].smpServers.filter({ !$0.deleted }).isEmpty ||
+                !userServers[operatorIndex].xftpServers.filter({ !$0.deleted }).isEmpty
+            ) {
+                EditButton()
             }
+        }
+        .confirmationDialog("Add server", isPresented: $showAddServer, titleVisibility: .hidden) {
+            Button("Enter server manually") { newServerNavLinkActive = true }
             Button("Scan server QR code") { showScanProtoServer = true }
-            Button("Add preset servers", action: addAllPresets)
-                .disabled(hasAllPresets())
         }
         .sheet(isPresented: $showScanProtoServer) {
-            ScanProtocolServer(servers: $otherServers)
-            .modifier(ThemedBackground(grouped: true))
-        }
-        .modifier(BackButton(disabled: Binding.constant(false)) {
-            if saveDisabled {
-                dismiss()
-                justOpened = false
-            } else {
-                showSaveDialog = true
-            }
-        })
-        .confirmationDialog("Save servers?", isPresented: $showSaveDialog, titleVisibility: .visible) {
-            Button("Save") {
-                saveServers()
-                dismiss()
-                justOpened = false
-            }
-            Button("Exit without saving") { dismiss() }
-        }
-        .alert(item: $alert) { a in
-            switch a {
-            case let .testsFailed(fs):
-                let msg = fs.map { (srv, f) in
-                    "\(srv): \(f.localizedDescription)"
-                }.joined(separator: "\n")
-                return Alert(
-                    title: Text("Tests failed!"),
-                    message: Text("Some servers failed the test:\n" + msg)
-                )
-            case .error:
-                return Alert(
-                    title: Text("Error")
-                )
-            }
-        }
-        .onAppear {
-            // this condition is needed to prevent re-setting the servers when exiting single server view
-            if justOpened {
-                do {
-                    let r = try getUserProtoServers(serverProtocol)
-                    currServers = r.protoServers
-                    presetServers = r.presetServers
-                    partitionServers(currServers)
-                } catch let error {
-                    alert = .error(
-                        title: "Error loading \(proto) servers",
-                        error: "Error: \(responseError(error))"
-                    )
-                }
-                justOpened = false
-            } else {
-                partitionServers(allServers)
-            }
-        }
-    }
-
-    private func partitionServers(_ servers: [ServerCfg]) {
-        configuredServers = servers.filter { $0.preset || $0.enabled }
-        otherServers = servers.filter { !($0.preset || $0.enabled) }
-    }
-
-    private var allServers: [ServerCfg] {
-        configuredServers + otherServers
-    }
-
-    private var saveDisabled: Bool {
-        allServers.isEmpty ||
-        Set(allServers) == Set(currServers) ||
-        testing ||
-        !allServers.allSatisfy { srv in
-            if let address = parseServerAddress(srv.server) {
-                return uniqueAddress(srv, address)
-            }
-            return false
-        } ||
-        allServersDisabled
-    }
-
-    private var allServersDisabled: Bool {
-        allServers.allSatisfy { !$0.enabled }
-    }
-
-    private func protocolServerView(_ server: Binding<ServerCfg>) -> some View {
-        let srv = server.wrappedValue
-        return NavigationLink(tag: srv.id, selection: $selectedServer) {
-            ProtocolServerView(
-                serverProtocol: serverProtocol,
-                server: server,
-                serverToEdit: srv
+            ScanProtocolServer(
+                userServers: $userServers,
+                serverErrors: $serverErrors
             )
-            .navigationBarTitle(srv.preset ? "Preset server" : "Your server")
             .modifier(ThemedBackground(grouped: true))
-            .navigationBarTitleDisplayMode(.large)
-        } label: {
-            let address = parseServerAddress(srv.server)
-            HStack {
-                Group {
-                    if let address = address {
-                        if !address.valid || address.serverProtocol != serverProtocol {
-                            invalidServer()
-                        } else if !uniqueAddress(srv, address) {
-                            Image(systemName: "exclamationmark.circle").foregroundColor(.red)
-                        } else if !srv.enabled {
-                            Image(systemName: "slash.circle").foregroundColor(theme.colors.secondary)
-                        } else {
-                            showTestStatus(server: srv)
-                        }
-                    } else {
-                        invalidServer()
-                    }
-                }
-                .frame(width: 16, alignment: .center)
-                .padding(.trailing, 4)
-
-                let v = Text(address?.hostnames.first ?? srv.server).lineLimit(1)
-                if srv.enabled {
-                    v
-                } else {
-                    v.foregroundColor(theme.colors.secondary)
-                }
-            }
         }
+    }
+
+    private func newServerDestinationView() -> some View {
+        NewServerView(
+            userServers: $userServers,
+            serverErrors: $serverErrors
+        )
+        .navigationTitle("New server")
+        .navigationBarTitleDisplayMode(.large)
+        .modifier(ThemedBackground(grouped: true))
     }
 
     func howToButton() -> some View {
@@ -255,33 +183,114 @@ struct ProtocolServersView: View {
             }
         }
     }
+}
+
+struct ProtocolServerViewLink: View {
+    @EnvironmentObject var theme: AppTheme
+    @Binding var userServers: [UserOperatorServers]
+    @Binding var serverErrors: [UserServersError]
+    var duplicateHosts: Set<String>
+    @Binding var server: UserServer
+    var serverProtocol: ServerProtocol
+    var backLabel: LocalizedStringKey
+    @Binding var selectedServer: String?
+
+    var body: some View {
+        let proto = serverProtocol.rawValue.uppercased()
+
+        NavigationLink(tag: server.id, selection: $selectedServer) {
+            ProtocolServerView(
+                userServers: $userServers,
+                serverErrors: $serverErrors,
+                server: $server,
+                serverToEdit: server,
+                backLabel: backLabel
+            )
+            .navigationBarTitle("\(proto) server")
+            .modifier(ThemedBackground(grouped: true))
+            .navigationBarTitleDisplayMode(.large)
+        } label: {
+            let address = parseServerAddress(server.server)
+            HStack {
+                Group {
+                    if let address = address {
+                        if !address.valid || address.serverProtocol != serverProtocol {
+                            invalidServer()
+                        } else if address.hostnames.contains(where: duplicateHosts.contains) {
+                            Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+                        } else if !server.enabled {
+                            Image(systemName: "slash.circle").foregroundColor(theme.colors.secondary)
+                        } else {
+                            showTestStatus(server: server)
+                        }
+                    } else {
+                        invalidServer()
+                    }
+                }
+                .frame(width: 16, alignment: .center)
+                .padding(.trailing, 4)
+
+                let v = Text(address?.hostnames.first ?? server.server).lineLimit(1)
+                if server.enabled {
+                    v
+                } else {
+                    v.foregroundColor(theme.colors.secondary)
+                }
+            }
+        }
+    }
 
     private func invalidServer() -> some View {
         Image(systemName: "exclamationmark.circle").foregroundColor(.red)
     }
+}
 
-    private func uniqueAddress(_ s: ServerCfg, _ address: ServerAddress) -> Bool {
-        allServers.allSatisfy { srv in
-            address.hostnames.allSatisfy { host in
-                srv.id == s.id || !srv.server.contains(host)
-            }
+func deleteSMPServer(
+    _ userServers: Binding<[UserOperatorServers]>,
+    _ operatorServersIndex: Int,
+    _ serverIndexSet: IndexSet
+) {
+    if let idx = serverIndexSet.first {
+        let server = userServers[operatorServersIndex].wrappedValue.smpServers[idx]
+        if server.serverId == nil {
+            userServers[operatorServersIndex].wrappedValue.smpServers.remove(at: idx)
+        } else {
+            var updatedServer = server
+            updatedServer.deleted = true
+            userServers[operatorServersIndex].wrappedValue.smpServers[idx] = updatedServer
         }
     }
+}
 
-    private func hasAllPresets() -> Bool {
-        presetServers.allSatisfy { hasPreset($0) }
-    }
-
-    private func addAllPresets() {
-        for srv in presetServers {
-            if !hasPreset(srv) {
-                configuredServers.append(srv)
-            }
+func deleteXFTPServer(
+    _ userServers: Binding<[UserOperatorServers]>,
+    _ operatorServersIndex: Int,
+    _ serverIndexSet: IndexSet
+) {
+    if let idx = serverIndexSet.first {
+        let server = userServers[operatorServersIndex].wrappedValue.xftpServers[idx]
+        if server.serverId == nil {
+            userServers[operatorServersIndex].wrappedValue.xftpServers.remove(at: idx)
+        } else {
+            var updatedServer = server
+            updatedServer.deleted = true
+            userServers[operatorServersIndex].wrappedValue.xftpServers[idx] = updatedServer
         }
     }
+}
 
-    private func hasPreset(_ srv: ServerCfg) -> Bool {
-        allServers.contains(where: { $0.server == srv.server })
+struct TestServersButton: View {
+    @Binding var smpServers: [UserServer]
+    @Binding var xftpServers: [UserServer]
+    @Binding var testing: Bool
+
+    var body: some View {
+        Button("Test servers", action: testServers)
+            .disabled(testing || allServersDisabled)
+    }
+
+    private var allServersDisabled: Bool {
+        smpServers.allSatisfy { !$0.enabled } && xftpServers.allSatisfy { !$0.enabled }
     }
 
     private func testServers() {
@@ -292,68 +301,59 @@ struct ProtocolServersView: View {
             await MainActor.run {
                 testing = false
                 if !fs.isEmpty {
-                    alert = .testsFailed(failures: fs)
+                    let msg = fs.map { (srv, f) in
+                        "\(srv): \(f.localizedDescription)"
+                    }.joined(separator: "\n")
+                    showAlert(
+                        NSLocalizedString("Tests failed!", comment: "alert title"),
+                        message: String.localizedStringWithFormat(NSLocalizedString("Some servers failed the test:\n%@", comment: "alert message"), msg)
+                    )
                 }
             }
         }
     }
 
     private func resetTestStatus() {
-        for i in 0..<configuredServers.count {
-            if configuredServers[i].enabled {
-                configuredServers[i].tested = nil
+        for i in 0..<smpServers.count {
+            if smpServers[i].enabled {
+                smpServers[i].tested = nil
             }
         }
-        for i in 0..<otherServers.count {
-            if otherServers[i].enabled {
-                otherServers[i].tested = nil
+
+        for i in 0..<xftpServers.count {
+            if xftpServers[i].enabled {
+                xftpServers[i].tested = nil
             }
         }
     }
 
     private func runServersTest() async -> [String: ProtocolTestFailure] {
         var fs: [String: ProtocolTestFailure] = [:]
-        for i in 0..<configuredServers.count {
-            if configuredServers[i].enabled {
-                if let f = await testServerConnection(server: $configuredServers[i]) {
-                    fs[serverHostname(configuredServers[i].server)] = f
+        for i in 0..<smpServers.count {
+            if smpServers[i].enabled {
+                if let f = await testServerConnection(server: $smpServers[i]) {
+                    fs[serverHostname(smpServers[i].server)] = f
                 }
             }
         }
-        for i in 0..<otherServers.count {
-            if otherServers[i].enabled {
-                if let f = await testServerConnection(server: $otherServers[i]) {
-                    fs[serverHostname(otherServers[i].server)] = f
+
+        for i in 0..<xftpServers.count {
+            if xftpServers[i].enabled {
+                if let f = await testServerConnection(server: $xftpServers[i]) {
+                    fs[serverHostname(xftpServers[i].server)] = f
                 }
             }
         }
         return fs
     }
-
-    func saveServers() {
-        Task {
-            do {
-                try await setUserProtoServers(serverProtocol, servers: allServers)
-                await MainActor.run {
-                    currServers = allServers
-                    editMode?.wrappedValue = .inactive
-                }
-            } catch let error {
-                let err = responseError(error)
-                logger.error("saveServers setUserProtocolServers error: \(err)")
-                await MainActor.run {
-                    alert = .error(
-                        title: "Error saving \(proto) servers",
-                        error: "Make sure \(proto) server addresses are in correct format, line separated and are not duplicated (\(responseError(error)))."
-                    )
-                }
-            }
-        }
-    }
 }
 
-struct ProtocolServersView_Previews: PreviewProvider {
+struct YourServersView_Previews: PreviewProvider {
     static var previews: some View {
-        ProtocolServersView(serverProtocol: .smp)
+        YourServersView(
+            userServers: Binding.constant([UserOperatorServers.sampleDataNilOperator]),
+            serverErrors: Binding.constant([]),
+            operatorIndex: 1
+        )
     }
 }

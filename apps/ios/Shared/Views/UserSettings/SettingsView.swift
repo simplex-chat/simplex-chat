@@ -50,6 +50,7 @@ let DEFAULT_PROFILE_IMAGE_CORNER_RADIUS = "profileImageCornerRadius"
 let DEFAULT_CHAT_ITEM_ROUNDNESS = "chatItemRoundness"
 let DEFAULT_CHAT_ITEM_TAIL = "chatItemTail"
 let DEFAULT_ONE_HAND_UI_CARD_SHOWN = "oneHandUICardShown"
+let DEFAULT_ADDRESS_CREATION_CARD_SHOWN = "addressCreationCardShown"
 let DEFAULT_TOOLBAR_MATERIAL = "toolbarMaterial"
 let DEFAULT_CONNECT_VIA_LINK_TAB = "connectViaLinkTab"
 let DEFAULT_LIVE_MESSAGE_ALERT_SHOWN = "liveMessageAlertShown"
@@ -107,6 +108,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_CHAT_ITEM_ROUNDNESS: defaultChatItemRoundness,
     DEFAULT_CHAT_ITEM_TAIL: true,
     DEFAULT_ONE_HAND_UI_CARD_SHOWN: false,
+    DEFAULT_ADDRESS_CREATION_CARD_SHOWN: false,
     DEFAULT_TOOLBAR_MATERIAL: ToolbarMaterial.defaultMaterial,
     DEFAULT_CONNECT_VIA_LINK_TAB: ConnectViaLinkTab.scan.rawValue,
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false,
@@ -135,6 +137,7 @@ let appDefaults: [String: Any] = [
 let hintDefaults = [
     DEFAULT_LA_NOTICE_SHOWN,
     DEFAULT_ONE_HAND_UI_CARD_SHOWN,
+    DEFAULT_ADDRESS_CREATION_CARD_SHOWN,
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN,
     DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE,
     DEFAULT_SHOW_MUTE_PROFILE_ALERT,
@@ -263,6 +266,10 @@ struct SettingsView: View {
     @EnvironmentObject var theme: AppTheme
     @State private var showProgress: Bool = false
 
+    @Binding var currUserServers: [UserOperatorServers]
+    @Binding var userServers: [UserOperatorServers]
+    @Binding var serverErrors: [UserServersError]
+
     var body: some View {
         ZStack {
             settingsView()
@@ -289,9 +296,13 @@ struct SettingsView: View {
                     .disabled(chatModel.chatRunning != true)
                     
                     NavigationLink {
-                        NetworkAndServers()
-                            .navigationTitle("Network & servers")
-                            .modifier(ThemedBackground(grouped: true))
+                        NetworkAndServers(
+                            currUserServers: $currUserServers,
+                            userServers: $userServers,
+                            serverErrors: $serverErrors
+                        )
+                        .navigationTitle("Network & servers")
+                        .modifier(ThemedBackground(grouped: true))
                     } label: {
                         settingsRow("externaldrive.connected.to.line.below", color: theme.colors.secondary) { Text("Network & servers") }
                     }
@@ -356,7 +367,7 @@ struct SettingsView: View {
                         }
                     }
                     NavigationLink {
-                        WhatsNewView(viaSettings: true)
+                        WhatsNewView(viaSettings: true, updatedConditions: false)
                             .modifier(ThemedBackground())
                             .navigationBarTitleDisplayMode(.inline)
                     } label: {
@@ -525,7 +536,11 @@ struct SettingsView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
         chatModel.currentUser = User.sampleData
-        return SettingsView()
-            .environmentObject(chatModel)
+        return SettingsView(
+            currUserServers: Binding.constant([UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator]),
+            userServers: Binding.constant([UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator]),
+            serverErrors: Binding.constant([])
+        )
+        .environmentObject(chatModel)
     }
 }

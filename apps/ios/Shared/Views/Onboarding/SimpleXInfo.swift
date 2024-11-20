@@ -13,12 +13,13 @@ struct SimpleXInfo: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     @State private var showHowItWorks = false
+    @State private var createProfileNavLinkActive = false
     var onboarding: Bool
 
     var body: some View {
         GeometryReader { g in
             ScrollView {
-                VStack(alignment: .leading) {
+                VStack(alignment: .leading, spacing: 20) {
                     Image(colorScheme == .light ? "logo" : "logo-light")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
@@ -42,9 +43,9 @@ struct SimpleXInfo: View {
                     }
 
                     Spacer()
+
                     if onboarding {
-                        OnboardingActionButton()
-                        Spacer()
+                        createFirstProfileButton()
 
                         Button {
                             m.migrationState = .pasteOrScanLink
@@ -52,7 +53,6 @@ struct SimpleXInfo: View {
                             Label("Migrate from another device", systemImage: "tray.and.arrow.down")
                                 .font(.subheadline)
                         }
-                        .padding(.bottom, 8)
                         .frame(maxWidth: .infinity)
                     }
 
@@ -62,9 +62,8 @@ struct SimpleXInfo: View {
                         Label("How it works", systemImage: "info.circle")
                             .font(.subheadline)
                     }
-                    .padding(.bottom, 8)
                     .frame(maxWidth: .infinity)
-
+                    .padding(.bottom)
                 }
                 .frame(minHeight: g.size.height)
             }
@@ -83,7 +82,10 @@ struct SimpleXInfo: View {
                 }
             }
             .sheet(isPresented: $showHowItWorks) {
-                HowItWorks(onboarding: onboarding)
+                HowItWorks(
+                    onboarding: onboarding,
+                    createProfileNavLinkActive: $createProfileNavLinkActive
+                )
             }
         }
         .frame(maxHeight: .infinity)
@@ -108,49 +110,31 @@ struct SimpleXInfo: View {
         .padding(.bottom, 20)
         .padding(.trailing, 6)
     }
-}
 
-struct OnboardingActionButton: View {
-    @EnvironmentObject var m: ChatModel
-    @Environment(\.colorScheme) var colorScheme
+    private func createFirstProfileButton() -> some View {
+        ZStack {
+            Button {
+                createProfileNavLinkActive = true
+            } label: {
+                Text("Create your profile")
+            }
+            .buttonStyle(OnboardingButtonStyle(isDisabled: false))
 
-    var body: some View {
-        if m.currentUser == nil {
-            actionButton("Create your profile", onboarding: .step2_CreateProfile)
-        } else {
-            actionButton("Make a private connection", onboarding: .onboardingComplete)
+            NavigationLink(isActive: $createProfileNavLinkActive) {
+                createProfileDestinationView()
+            } label: {
+                EmptyView()
+            }
+            .frame(width: 1, height: 1)
+            .hidden()
         }
     }
 
-    private func actionButton(_ label: LocalizedStringKey, onboarding: OnboardingStage) -> some View {
-        Button {
-            withAnimation {
-                onboardingStageDefault.set(onboarding)
-                m.onboardingStage = onboarding
-            }
-        } label: {
-            HStack {
-                Text(label).font(.title2)
-                Image(systemName: "greaterthan")
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.bottom)
-    }
-
-    private func actionButton(_ label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
-        Button {
-            withAnimation {
-                action()
-            }
-        } label: {
-            HStack {
-                Text(label).font(.title2)
-                Image(systemName: "greaterthan")
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.bottom)
+    private func createProfileDestinationView() -> some View {
+        CreateFirstProfile()
+            .navigationTitle("Create your profile")
+            .navigationBarTitleDisplayMode(.large)
+            .modifier(ThemedBackground())
     }
 }
 
