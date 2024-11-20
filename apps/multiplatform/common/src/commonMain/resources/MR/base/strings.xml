@@ -1700,6 +1700,9 @@
   <string name="accept_conditions">Accept conditions</string>
   <string name="operator_conditions_of_use">Conditions of use</string>
   <string name="operator_in_order_to_use_accept_conditions">In order to use operator %s, accept conditions of use.</string>
+  <string name="operator_use_for_messages">Use for messages</string>
+  <string name="operator_use_for_messages_receiving">For receiving</string>
+  <string name="operator_use_for_messages_private_routing">For private routing</string>
 
   <!-- AdvancedNetworkSettings.kt -->
   <string name="network_option_tcp_connection">TCP connection</string>

@@ -3812,8 +3812,8 @@ data class ServerOperator(
 
 @Serializable
 data class ServerRoles(
-  val storage: Boolean,
-  val proxy: Boolean
+  var storage: Boolean,
+  var proxy: Boolean
 )
 
 @Serializable

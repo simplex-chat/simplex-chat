@@ -679,6 +679,7 @@ fun ServerErrorsView(errStr: String) {
         .size(19.sp.toDp())
         .offset(x = 2.sp.toDp())
     )
+    TextIconSpaced()
     Text(errStr, color = MaterialTheme.colors.secondary)
   }
 }

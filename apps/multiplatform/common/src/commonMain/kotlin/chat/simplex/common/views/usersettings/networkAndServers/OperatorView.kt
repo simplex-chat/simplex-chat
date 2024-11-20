@@ -1,5 +1,6 @@
 package chat.simplex.common.views.usersettings.networkAndServers
 
+import SectionCustomFooter
 import SectionDividerSpaced
 import SectionItemView
 import SectionTextFooter
@@ -32,6 +33,7 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 @Composable
 fun ModalData.OperatorView(
@@ -61,7 +63,9 @@ fun OperatorViewLayout(
   operatorIndex: Int,
   rhId: Long?
 ) {
-  val operator = remember { userServers.value[operatorIndex].operator_ }
+  val operator by remember { derivedStateOf { userServers.value[operatorIndex].operator_ } }
+  val scope = rememberCoroutineScope()
+  val duplicateHosts = findDuplicateHosts(serverErrors.value)
 
   Column {
     SectionView(generalGetString(MR.strings.operator).uppercase()) {
@@ -92,8 +96,82 @@ fun OperatorViewLayout(
     }
 
     if (operator.enabled) {
-      if (userServers.value[operatorIndex].smpServers.filter { !it.deleted }.isNotEmpty()) {
+      if (userServers.value[operatorIndex].smpServers.any { !it.deleted }) {
+        SectionDividerSpaced()
+        SectionView(generalGetString(MR.strings.operator_use_for_messages).uppercase()) {
+          SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+            Text(
+              stringResource(MR.strings.operator_use_for_messages_receiving),
+              Modifier.padding(end = 24.dp),
+              color = Color.Unspecified
+            )
+            Spacer(Modifier.fillMaxWidth().weight(1f))
+            DefaultSwitch(
+              checked = userServers.value[operatorIndex].operator_.smpRoles.storage,
+              onCheckedChange = { enabled ->
+                userServers.value = userServers.value.toMutableList().apply {
+                  this[operatorIndex] = this[operatorIndex].copy(
+                    operator = this[operatorIndex].operator?.copy(
+                      smpRoles = this[operatorIndex].operator?.smpRoles?.copy(storage = enabled) ?: ServerRoles(storage = enabled, proxy = false)
+                    )
+                  )
+                }
+                scope.launch {
+                  validateServers(rhId, userServers, serverErrors)
+                }
+              }
+            )
+          }
+          SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+            Text(
+              stringResource(MR.strings.operator_use_for_messages_private_routing),
+              Modifier.padding(end = 24.dp),
+              color = Color.Unspecified
+            )
+            Spacer(Modifier.fillMaxWidth().weight(1f))
+            DefaultSwitch(
+              checked = userServers.value[operatorIndex].operator_.smpRoles.proxy,
+              onCheckedChange = { enabled ->
+                userServers.value = userServers.value.toMutableList().apply {
+                  this[operatorIndex] = this[operatorIndex].copy(
+                    operator = this[operatorIndex].operator?.copy(
+                      smpRoles = this[operatorIndex].operator?.smpRoles?.copy(proxy = enabled) ?: ServerRoles(storage = false, proxy = enabled)
+                    )
+                  )
+                }
+                scope.launch {
+                  validateServers(rhId, userServers, serverErrors)
+                }
+              }
+            )
+          }
 
+        }
+        val smpErrors = globalSMPServersError(serverErrors.value)
+        if (smpErrors != null) {
+          SectionCustomFooter {
+            ServerErrorsView(smpErrors)
+          }
+        }
+      }
+
+      // Preset servers can't be deleted
+      if (userServers.value[operatorIndex].smpServers.any { it.preset }) {
+        SectionDividerSpaced()
+        SectionView(generalGetString(MR.strings.message_servers).uppercase()) {
+          userServers.value[operatorIndex].smpServers.forEach { server ->
+            SectionItemView {
+              ProtocolServerViewLink(
+                userServers = userServers,
+                serverErrors = serverErrors,
+                server = server,
+                serverProtocol = ServerProtocol.SMP,
+                rhId = rhId,
+                duplicateHosts = duplicateHosts
+              )
+            }
+          }
+        }
       }
     }
   }
@@ -128,7 +206,7 @@ private fun UseOperatorToggle(
   operatorIndex: Int,
   rhId: Long?
 ) {
-  SectionItemView {
+  SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
     Text(
       stringResource(MR.strings.operator_use_operator_toggle_description),
       Modifier.padding(end = 24.dp),
@@ -306,7 +384,7 @@ private fun NonScrollableTitle(title: String) {
 }
 
 @Composable
-private fun ConditionsTextView(
+fun ConditionsTextView(
   rhId: Long?
 ) {
   val conditionsData = remember { mutableStateOf<Triple<UsageConditionsDetail, String?, UsageConditionsDetail?>?>(null) }
