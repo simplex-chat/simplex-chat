@@ -207,6 +207,42 @@ fun OperatorViewLayout(
           }
         }
       }
+
+      if (userServers.value[operatorIndex].xftpServers.any { !it.deleted }) {
+        SectionDividerSpaced()
+        SectionView(generalGetString(MR.strings.operator_use_for_sending).uppercase()) {
+          SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+            Text(
+              stringResource(MR.strings.operator_use_for_files),
+              Modifier.padding(end = 24.dp),
+              color = Color.Unspecified
+            )
+            Spacer(Modifier.fillMaxWidth().weight(1f))
+            DefaultSwitch(
+              checked = userServers.value[operatorIndex].operator_.xftpRoles.storage,
+              onCheckedChange = { enabled ->
+                userServers.value = userServers.value.toMutableList().apply {
+                  this[operatorIndex] = this[operatorIndex].copy(
+                    operator = this[operatorIndex].operator?.copy(
+                      xftpRoles = this[operatorIndex].operator?.xftpRoles?.copy(storage = enabled) ?: ServerRoles(storage = enabled, proxy = false)
+                    )
+                  )
+                }
+                scope.launch {
+                  validateServers(rhId, userServers, serverErrors)
+                }
+              }
+            )
+          }
+        }
+        val xftpErrors = globalXFTPServersError(serverErrors.value)
+        if (xftpErrors != null) {
+          SectionCustomFooter {
+            ServerErrorsView(xftpErrors)
+          }
+        }
+      }
+
     }
   }
 }
