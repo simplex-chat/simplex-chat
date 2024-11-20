@@ -161,12 +161,9 @@ fun OperatorViewLayout(
         SectionView(generalGetString(MR.strings.message_servers).uppercase()) {
           userServers.value[operatorIndex].smpServers.forEach { server ->
             SectionItemView {
-              ProtocolServerViewLink(
-                userServers = userServers,
-                serverErrors = serverErrors,
-                server = server,
+              ProtocolServerView(
+                srv = server,
                 serverProtocol = ServerProtocol.SMP,
-                rhId = rhId,
                 duplicateHosts = duplicateHosts
               )
             }

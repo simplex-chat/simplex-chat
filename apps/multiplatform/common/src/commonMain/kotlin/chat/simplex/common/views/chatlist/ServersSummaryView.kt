@@ -48,7 +48,7 @@ import chat.simplex.common.model.localTimestamp
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.usersettings.ProtocolServersView
+import chat.simplex.common.views.usersettings.networkAndServers.ProtocolServersView
 import chat.simplex.common.views.usersettings.SettingsPreferenceItem
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
