@@ -1620,9 +1620,26 @@ processChatCommand' vr = \case
   TestProtoServer srv -> withUser $ \User {userId} ->
     processChatCommand $ APITestProtoServer userId srv
   APIGetServerOperators -> CRServerOperatorConditions <$> withFastStore getServerOperators
-  APISetServerOperators operatorsEnabled -> withFastStore $ \db -> do
-    liftIO $ setServerOperators db operatorsEnabled
-    CRServerOperatorConditions <$> getServerOperators db
+  APISetServerOperators operators -> do
+    as <- asks randomAgentServers
+    (opsConds, srvs) <- withFastStore $ \db -> do
+      liftIO $ setServerOperators db operators
+      opsConds <- getServerOperators db
+      let ops = serverOperators opsConds
+          ops' = map Just ops <> [Nothing]
+          opDomains = operatorDomains ops
+      liftIO $ fmap (opsConds,) . mapM (getServers db as ops' opDomains) =<< getUsers db
+    lift $ withAgent' $ \a -> forM_ srvs $ \(auId, (smp', xftp')) -> do
+      setProtocolServers a auId smp'
+      setProtocolServers a auId xftp'      
+    pure $ CRServerOperatorConditions opsConds
+    where
+      getServers :: DB.Connection -> RandomAgentServers -> [Maybe ServerOperator] -> [(Text, ServerOperator)] -> User -> IO (UserId, (NonEmpty (ServerCfg 'PSMP), NonEmpty (ServerCfg 'PXFTP)))
+      getServers db as ops opDomains user = do
+        smpSrvs <- getProtocolServers db SPSMP user
+        xftpSrvs <- getProtocolServers db SPXFTP user
+        uss <- groupByOperator (ops, smpSrvs, xftpSrvs)
+        pure $ (aUserId user,) $ useServers as opDomains uss
   APIGetUserServers userId -> withUserId userId $ \user -> withFastStore $ \db -> do
     CRUserServers user <$> (liftIO . groupByOperator =<< getUserServers db user)
   APISetUserServers userId userServers -> withUserId userId $ \user -> do
@@ -2955,8 +2972,8 @@ processChatCommand' vr = \case
         getUserOperatorServers :: DB.Connection -> User -> ExceptT StoreError IO (User, [UserOperatorServers])
         getUserOperatorServers db user = do
           uss <- liftIO . groupByOperator =<< getUserServers db user
-          pure (user, map updatedUserServers uss)
-        updatedUserServers uss = uss {operator = updatedOp <$> operator' uss} :: UserOperatorServers
+          pure (user, map updatedUserSrvs uss)
+        updatedUserSrvs uss = uss {operator = updatedOp <$> operator' uss} :: UserOperatorServers
         updatedOp op = fromMaybe op $ find matchingOp $ mapMaybe operator' userServers
           where
             matchingOp op' = operatorId op' == operatorId op
