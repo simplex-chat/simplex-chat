@@ -31,14 +31,22 @@ enum UserPickerSheet: Identifiable {
     }
 }
 
+class SaveableSettings: ObservableObject {
+    @Published var servers: ServerSettings = ServerSettings(currUserServers: [], userServers: [], serverErrors: [])
+}
+
+struct ServerSettings {
+    public var currUserServers: [UserOperatorServers]
+    public var userServers: [UserOperatorServers]
+    public var serverErrors: [UserServersError]
+}
+
 struct UserPickerSheetView: View {
     let sheet: UserPickerSheet
     @EnvironmentObject var chatModel: ChatModel
-    @State private var loaded = false
+    @StateObject private var ss = SaveableSettings()
 
-    @State private var currUserServers: [UserOperatorServers] = []
-    @State private var userServers: [UserOperatorServers] = []
-    @State private var serverErrors: [UserServersError] = []
+    @State private var loaded = false
 
     var body: some View {
         NavigationView {
@@ -60,11 +68,7 @@ struct UserPickerSheetView: View {
                     case .useFromDesktop:
                         ConnectDesktopView()
                     case .settings:
-                        SettingsView(
-                            currUserServers: $currUserServers,
-                            userServers: $userServers,
-                            serverErrors: $serverErrors
-                        )
+                        SettingsView()
                     }
                 }
                 Color.clear // Required for list background to be rendered during loading
@@ -85,15 +89,20 @@ struct UserPickerSheetView: View {
             )
         }
         .onDisappear {
-            if serversCanBeSaved(currUserServers, userServers, serverErrors) {
+            if serversCanBeSaved(
+                ss.servers.currUserServers,
+                ss.servers.userServers,
+                ss.servers.serverErrors
+            ) {
                 showAlert(
                     title: NSLocalizedString("Save servers?", comment: "alert title"),
                     buttonTitle: NSLocalizedString("Save", comment: "alert button"),
-                    buttonAction: { saveServers($currUserServers, $userServers) },
+                    buttonAction: { saveServers($ss.servers.currUserServers, $ss.servers.userServers) },
                     cancelButton: true
                 )
             }
         }
+        .environmentObject(ss)
     }
 }
 
