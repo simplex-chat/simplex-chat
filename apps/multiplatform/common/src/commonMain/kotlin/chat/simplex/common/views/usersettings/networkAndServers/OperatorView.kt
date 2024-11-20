@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -45,10 +46,11 @@ fun ModalData.OperatorView(
 ) {
   val testing = remember { mutableStateOf(false) }
   val operator = remember { userServers.value[operatorIndex].operator_ }
+  val currentUser = remember { chatModel.currentUser }.value
 
   ColumnWithScrollBar(Modifier.alpha(if (testing.value) 0.6f else 1f)) {
     AppBarTitle(String.format(stringResource(MR.strings.operator_servers_title), operator.tradeName))
-    OperatorViewLayout(currUserServers, userServers, serverErrors, operatorIndex, rhId)
+    OperatorViewLayout(currUserServers, userServers, serverErrors, operatorIndex, currentUser, rhId)
     if (testing.value) {
       DefaultProgressView(null)
     }
@@ -61,6 +63,7 @@ fun OperatorViewLayout(
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
   operatorIndex: Int,
+  currentUser: User?,
   rhId: Long?
 ) {
   val operator by remember { derivedStateOf { userServers.value[operatorIndex].operator_ } }
@@ -168,6 +171,24 @@ fun OperatorViewLayout(
               )
             }
           }
+        }
+        val smpErrors = globalSMPServersError(serverErrors.value)
+        if (smpErrors != null) {
+          SectionCustomFooter {
+            ServerErrorsView(smpErrors)
+          }
+        } else {
+          SectionTextFooter(
+            remember(currentUser?.displayName) {
+              buildAnnotatedString {
+                append(generalGetString(MR.strings.smp_servers_per_user) + " ")
+                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                  append(currentUser?.displayName ?: "")
+                }
+                append(".")
+              }
+            }
+          )
         }
       }
     }
