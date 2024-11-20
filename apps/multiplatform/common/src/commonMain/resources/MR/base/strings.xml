@@ -1708,6 +1708,7 @@
   <string name="operator_use_for_files">Use for files</string>
   <string name="operator_use_for_sending">For sending</string>
   <string name="xftp_servers_per_user">The servers for new files of your current chat profile</string>
+  <string name="operator_added_xftp_servers">Added media &amp; file servers</string>
 
   <!-- AdvancedNetworkSettings.kt -->
   <string name="network_option_tcp_connection">TCP connection</string>

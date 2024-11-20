@@ -22,10 +22,10 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ServerAddress.Companion.parseServerAddress
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.ColumnWithScrollBar
-import chat.simplex.common.platform.appPlatform
+import chat.simplex.common.platform.*
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.res.MR
+import kotlinx.coroutines.launch
 
 @Composable
 fun ModalData.ProtocolServersView(m: ChatModel, rhId: Long?, serverProtocol: ServerProtocol, close: () -> Unit) {
@@ -330,6 +330,29 @@ fun YourServersViewLayout(
       HowToButton()
     }
     SectionBottomSpacer()
+  }
+}
+
+@Composable
+fun TestServersButton(
+  smpServers: List<UserServer>,
+  xftpServers: List<UserServer>,
+  testing: MutableState<Boolean>,
+  onUpdate: (ServerProtocol, List<UserServer>) -> Unit
+) {
+  val scope = rememberCoroutineScope()
+  val disabled = derivedStateOf { (smpServers.none { it.enabled } && xftpServers.none { it.enabled }) || testing.value }
+
+  SectionItemView(
+    {
+      scope.launch {
+        testServers(testing, smpServers, chatModel) { onUpdate(ServerProtocol.SMP, it) }
+        testServers(testing, xftpServers, chatModel) { onUpdate(ServerProtocol.XFTP, it) }
+      }
+    },
+    disabled = disabled.value
+  ) {
+    Text(stringResource(MR.strings.smp_servers_test_servers), color = if (!disabled.value) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
   }
 }
 

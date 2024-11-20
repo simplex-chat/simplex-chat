@@ -69,6 +69,7 @@ fun OperatorViewLayout(
   val operator by remember { derivedStateOf { userServers.value[operatorIndex].operator_ } }
   val scope = rememberCoroutineScope()
   val duplicateHosts = findDuplicateHosts(serverErrors.value)
+  val testing = remember { mutableStateOf(false) }
 
   Column {
     SectionView(generalGetString(MR.strings.operator).uppercase()) {
@@ -277,6 +278,59 @@ fun OperatorViewLayout(
         }
       }
 
+      if (userServers.value[operatorIndex].xftpServers.any { !it.preset && !it.deleted}) {
+        SectionDividerSpaced()
+        SectionView(generalGetString(MR.strings.operator_added_xftp_servers).uppercase()) {
+          userServers.value[operatorIndex].xftpServers.forEach { server ->
+            if (server.deleted || server.preset) return@forEach
+            SectionItemView {
+              ProtocolServerView(
+                srv = server,
+                serverProtocol = ServerProtocol.XFTP,
+                duplicateHosts = duplicateHosts
+              )
+            }
+          }
+        }
+        val xftpErrors = globalXFTPServersError(serverErrors.value)
+        if (xftpErrors != null) {
+          SectionCustomFooter {
+            ServerErrorsView(xftpErrors)
+          }
+        } else {
+          SectionTextFooter(
+            remember(currentUser?.displayName) {
+              buildAnnotatedString {
+                append(generalGetString(MR.strings.xftp_servers_per_user) + " ")
+                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                  append(currentUser?.displayName ?: "")
+                }
+                append(".")
+              }
+            }
+          )
+        }
+      }
+
+      SectionDividerSpaced()
+      TestServersButton(
+        testing = testing,
+        smpServers = userServers.value[operatorIndex].smpServers,
+        xftpServers = userServers.value[operatorIndex].xftpServers,
+      ) { p, l ->
+        when (p) {
+          ServerProtocol.XFTP -> userServers.value = userServers.value.toMutableList().apply {
+            this[operatorIndex] = this[operatorIndex].copy(
+              xftpServers = l
+            )
+          }
+          ServerProtocol.SMP -> userServers.value = userServers.value.toMutableList().apply {
+            this[operatorIndex] = this[operatorIndex].copy(
+              smpServers = l
+            )
+          }
+        }
+      }
     }
   }
 }
