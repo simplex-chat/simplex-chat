@@ -9,6 +9,7 @@ import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.chatModel
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlin.math.min
 
 data class MergedItems (
@@ -21,7 +22,7 @@ data class MergedItems (
     fun create(items: List<ChatItem>, unreadCount: State<Int>, revealedItems: Set<Long>, chatState: ActiveChatState): MergedItems {
       if (items.isEmpty()) return MergedItems(emptyList(), emptyList(), emptyMap())
 
-      val unreadAnchorItemId = chatState.unreadAnchorItemId
+      val unreadAfterItemId = chatState.unreadAfterItemId
       val itemSplits = chatState.splits.value
       val mergedItems = ArrayList<MergedItem>()
       // Indexes of splits here will be related to reversedChatItems, not chatModel.chatItems
@@ -42,7 +43,7 @@ data class MergedItems (
         val category = item.mergeCategory
         val itemIsSplit = itemSplits.contains(item.id)
 
-        if (item.id == unreadAnchorItemId.value) {
+        if (item.id == unreadAfterItemId.value) {
           unreadBefore = unreadCount.value - chatState.unreadAfter.value
         }
         if (item.isRcvNew) unreadBefore--
@@ -116,11 +117,16 @@ data class MergedItems (
 sealed class MergedItem {
   abstract val startIndexInReversedItems: Int
 
+  // the item that is always single, cannot be grouped and always revealed
   data class Single(
     val item: ListItem,
     override val startIndexInReversedItems: Int,
   ): MergedItem()
 
+  /** The item that can contain multiple items or just one depending on revealed state. When the whole group of merged items is revealed,
+   * there will be multiple [Grouped] items with revealed flag set to true. When the whole group is collapsed, it will be just one instance
+   *  of [Grouped] item with all grouped items inside [items]. In other words, number of [MergedItem] will always be equal to number of
+   *  visible rows in ChatView LazyColumn  */
   @Stable
   data class Grouped (
     val items: ArrayList<ListItem>,
@@ -194,8 +200,8 @@ data class ListItem(
 
 data class ActiveChatState (
   val splits: MutableStateFlow<List<Long>> = MutableStateFlow(emptyList()),
-  val unreadAnchorItemId: MutableStateFlow<Long> = MutableStateFlow(-1L),
-  // total items after unread anchor item (exclusive)
+  val unreadAfterItemId: MutableStateFlow<Long> = MutableStateFlow(-1L),
+  // total items after unread after item (exclusive)
   val totalAfter: MutableStateFlow<Int> = MutableStateFlow(0),
   val unreadTotal: MutableStateFlow<Int> = MutableStateFlow(0),
   // exclusive
@@ -203,12 +209,12 @@ data class ActiveChatState (
   // exclusive
   val unreadAfterNewestLoaded: MutableStateFlow<Int> = MutableStateFlow(0)
 ) {
-  fun moveUnreadAnchor(toItemId: Long?, nonReversedItems: List<ChatItem>) {
+  fun moveUnreadAfterItem(toItemId: Long?, nonReversedItems: List<ChatItem>) {
     toItemId ?: return
-    val currentIndex = nonReversedItems.indexOfFirst { it.id == unreadAnchorItemId.value }
+    val currentIndex = nonReversedItems.indexOfFirst { it.id == unreadAfterItemId.value }
     val newIndex = nonReversedItems.indexOfFirst { it.id == toItemId }
     if (currentIndex == -1 || newIndex == -1) return
-    unreadAnchorItemId.value = toItemId
+    unreadAfterItemId.value = toItemId
     val unreadDiff = if (newIndex > currentIndex) {
       -nonReversedItems.subList(currentIndex + 1, newIndex + 1).count { it.isRcvNew }
     } else {
@@ -217,9 +223,9 @@ data class ActiveChatState (
     unreadAfter.value += unreadDiff
   }
 
-  fun moveUnreadAnchor(fromIndex: Int, toIndex: Int, nonReversedItems: List<ChatItem>) {
+  fun moveUnreadAfterItem(fromIndex: Int, toIndex: Int, nonReversedItems: List<ChatItem>) {
     if (fromIndex == -1 || toIndex == -1) return
-    unreadAnchorItemId.value = nonReversedItems[toIndex].id
+    unreadAfterItemId.value = nonReversedItems[toIndex].id
     val unreadDiff = if (toIndex > fromIndex) {
       -nonReversedItems.subList(fromIndex + 1, toIndex + 1).count { it.isRcvNew }
     } else {
@@ -230,7 +236,7 @@ data class ActiveChatState (
 
   fun clear() {
     splits.value = emptyList()
-    unreadAnchorItemId.value = -1L
+    unreadAfterItemId.value = -1L
     totalAfter.value = 0
     unreadTotal.value = 0
     unreadAfter.value = 0
@@ -254,14 +260,14 @@ fun visibleItemIndexesNonReversed(mergedItems: State<MergedItems>, listState: La
 
 fun recalculateChatStatePositions(chatState: ActiveChatState) = object: ChatItemsChangesListener {
   override fun read(itemIds: Set<Long>?, newItems: List<ChatItem>) {
-    val (_, unreadAnchorItemId, _, unreadTotal, unreadAfter) = chatState
+    val (_, unreadAfterItemId, _, unreadTotal, unreadAfter) = chatState
     if (itemIds == null) {
       // special case when the whole chat became read
       unreadTotal.value = 0
       unreadAfter.value = 0
       return
     }
-    var unreadAnchorIndex: Int = -1
+    var unreadAfterItemIndex: Int = -1
     // since it's more often that the newest items become read, it's logical to loop from the end of the list to finish it faster
     var i = newItems.lastIndex
     val ids = itemIds.toMutableSet()
@@ -270,12 +276,12 @@ fun recalculateChatStatePositions(chatState: ActiveChatState) = object: ChatItem
     var newUnreadAfter = unreadAfter.value
     while (i >= 0) {
       val item = newItems[i]
-      if (item.id == unreadAnchorItemId.value) {
-        unreadAnchorIndex = i
+      if (item.id == unreadAfterItemId.value) {
+        unreadAfterItemIndex = i
       }
       if (ids.contains(item.id)) {
         // was unread, now this item is read
-        if (unreadAnchorIndex == -1) {
+        if (unreadAfterItemIndex == -1) {
           newUnreadAfter--
         }
         newUnreadTotal--
@@ -294,7 +300,7 @@ fun recalculateChatStatePositions(chatState: ActiveChatState) = object: ChatItem
     }
   }
   override fun removed(itemIds: List<Triple<Long, Int, Boolean>>, newItems: List<ChatItem>) {
-    val (splits, unreadAnchorItemId, totalAfter, unreadTotal, unreadAfter) = chatState
+    val (splits, unreadAfterItemId, totalAfter, unreadTotal, unreadAfter) = chatState
     val newSplits = ArrayList<Long>()
     for (split in splits.value) {
       val index = itemIds.indexOfFirst { it.first == split }
@@ -311,22 +317,22 @@ fun recalculateChatStatePositions(chatState: ActiveChatState) = object: ChatItem
     }
     splits.value = newSplits
 
-    val index = itemIds.indexOfFirst { it.first == unreadAnchorItemId.value }
-    // unread anchor item was removed
+    val index = itemIds.indexOfFirst { it.first == unreadAfterItemId.value }
+    // unread after item was removed
     if (index != -1) {
-      var newUnreadAnchorItemId = newItems.getOrNull(itemIds[index].second - itemIds.count { it.second <= index })?.id
-      val newUnreadAnchorWasNull = newUnreadAnchorItemId == null
-      if (newUnreadAnchorItemId == null) {
-        // everything on top (including unread anchor) were deleted, take top item as unread anchor id
-        newUnreadAnchorItemId = newItems.firstOrNull()?.id
+      var newUnreadAfterItemId = newItems.getOrNull(itemIds[index].second - itemIds.count { it.second <= index })?.id
+      val newUnreadAfterItemWasNull = newUnreadAfterItemId == null
+      if (newUnreadAfterItemId == null) {
+        // everything on top (including unread after item) were deleted, take top item as unread after id
+        newUnreadAfterItemId = newItems.firstOrNull()?.id
       }
-      if (newUnreadAnchorItemId != null) {
-        unreadAnchorItemId.value = newUnreadAnchorItemId
+      if (newUnreadAfterItemId != null) {
+        unreadAfterItemId.value = newUnreadAfterItemId
         totalAfter.value -= itemIds.count { it.second > index }
         unreadTotal.value -= itemIds.count { it.second <= index && it.third }
         unreadAfter.value -= itemIds.count { it.second > index && it.third }
-        if (newUnreadAnchorWasNull) {
-          // since the unread anchor was moved one item after initial position, adjust counters accordingly
+        if (newUnreadAfterItemWasNull) {
+          // since the unread after item was moved one item after initial position, adjust counters accordingly
           if (newItems.firstOrNull()?.isRcvNew == true) {
             unreadTotal.value++
             unreadAfter.value--
@@ -334,7 +340,7 @@ fun recalculateChatStatePositions(chatState: ActiveChatState) = object: ChatItem
         }
       } else {
         // all items were deleted, 0 items in chatItems
-        unreadAnchorItemId.value = -1L
+        unreadAfterItemId.value = -1L
         totalAfter.value = 0
         unreadTotal.value = 0
         unreadAfter.value = 0
@@ -352,7 +358,7 @@ fun recalculateChatStatePositions(chatState: ActiveChatState) = object: ChatItem
 //  Box(Modifier.align(Alignment.Center).size(200.dp).background(Color.Black)) {
 //    val s = chatModel.chatState
 //    Text(
-//      "itemId ${s.unreadAnchorItemId.value} / ${chatModel.chatItems.value.firstOrNull { it.id == s.unreadAnchorItemId.value }?.text}, \nunreadAfter ${s.unreadAfter.value}, afterNewest ${s.unreadAfterNewestLoaded.value}",
+//      "itemId ${s.unreadAfterItemId.value} / ${chatModel.chatItems.value.firstOrNull { it.id == s.unreadAfterItemId.value }?.text}, \nunreadAfter ${s.unreadAfter.value}, afterNewest ${s.unreadAfterNewestLoaded.value}",
 //      color = Color.White
 //    )
 //  }
@@ -392,7 +398,7 @@ suspend fun apiLoadMessages(
   if (((chatModel.chatId.value != chat.id || chat.chatItems.isEmpty()) && pagination !is ChatPagination.Initial && pagination !is ChatPagination.Last)
     || !isActive) return@coroutineScope
 
-  val (splits, unreadAnchorItemId, totalAfter, unreadTotal, unreadAfter, unreadAfterNewestLoaded) = chatState
+  val (splits, unreadAfterItemId, totalAfter, unreadTotal, unreadAfter, unreadAfterNewestLoaded) = chatState
   val oldItems = chatModel.chatItems.value
   val newItems = SnapshotStateList<ChatItem>()
   when (pagination) {
@@ -409,7 +415,7 @@ suspend fun apiLoadMessages(
         chatModel.chatId.value = chat.chatInfo.id
         splits.value = newSplits
         if (chat.chatItems.isNotEmpty()) {
-          unreadAnchorItemId.value = chat.chatItems.last().id
+          unreadAfterItemId.value = chat.chatItems.last().id
         }
         totalAfter.value = navInfo.afterTotal
         unreadTotal.value = chat.chatStats.unreadCount
@@ -421,64 +427,17 @@ suspend fun apiLoadMessages(
       newItems.addAll(oldItems)
       val indexInCurrentItems: Int = oldItems.indexOfFirst { it.id == pagination.chatItemId }
       if (indexInCurrentItems == -1) return@coroutineScope
-      val newIds = mutableSetOf<Long>()
-      var i = 0
-      while (i < chat.chatItems.size) {
-        newIds.add(chat.chatItems[i].id)
-        i++
-      }
+      val (newIds, _) = mapItemsToIds(chat.chatItems)
       val wasSize = newItems.size
-      val visibleItemIndexes = visibleItemIndexesNonReversed()
-      val trimmedIds = mutableSetOf<Long>()
-      var lastSplitIndexTrimmed = -1
-      var allowedTrimming = true//splits.value.isNotEmpty()
-      var index = 0
-      /** keep the newest [TRIM_KEEP_COUNT] items (bottom area) and oldest [TRIM_KEEP_COUNT] items, trim others */
-      val trimRange = visibleItemIndexes.last + TRIM_KEEP_COUNT .. newItems.size - TRIM_KEEP_COUNT
-      val prevItemTrimRange = visibleItemIndexes.last + TRIM_KEEP_COUNT + 1 .. newItems.size - TRIM_KEEP_COUNT
-      var oldUnreadSplitIndex: Int = -1
-      var newUnreadSplitIndex: Int = -1
-      newItems.removeAll {
-        val invisibleItemToTrim = trimRange.contains(index) && allowedTrimming
-        val prevItemWasTrimmed = prevItemTrimRange.contains(index) && allowedTrimming
-        // may disable it after clearing the whole split range
-        if (splits.value.isNotEmpty() && it.id == splits.value.firstOrNull()) {
-          // trim only in one split range
-          allowedTrimming = false
-        }
-        val indexInSplits = splits.value.indexOf(it.id)
-        if (indexInSplits != -1) {
-          lastSplitIndexTrimmed = indexInSplits
-        }
-        if (invisibleItemToTrim) {
-          if (prevItemWasTrimmed) {
-            trimmedIds.add(it.id)
-          } else {
-            newUnreadSplitIndex = index
-            // prev item is not supposed to be trimmed, so exclude current one from trimming and set a split here instead.
-            // this allows to define splitRange of the oldest items and to start loading trimmed items when user scrolls in the opposite direction
-            if (lastSplitIndexTrimmed == -1) {
-              splits.value = listOf(it.id) + splits.value
-            } else {
-              val newSplits = ArrayList(splits.value)
-              newSplits[lastSplitIndexTrimmed] = it.id
-              splits.value = newSplits
-            }
-          }
-        }
-        if (unreadAnchorItemId.value == it.id) {
-          oldUnreadSplitIndex = index
-        }
-        index++
-        (invisibleItemToTrim && prevItemWasTrimmed) || newIds.contains(it.id)
-      }
+      val (oldUnreadSplitIndex, newUnreadSplitIndex, trimmedIds, newSplits) = removeDuplicatesAndModifySplitsOnBeforePagination(
+        unreadAfterItemId, newItems, newIds, splits, visibleItemIndexesNonReversed
+      )
       val insertAt = indexInCurrentItems - (wasSize - newItems.size) + trimmedIds.size
       newItems.addAll(insertAt, chat.chatItems)
       withContext(Dispatchers.Main) {
         chatModel.chatItems.replaceAll(newItems)
-        // will remove any splits that now becomes obsolete because items were merged
-        splits.value = splits.value.filterNot { split -> newIds.contains(split) || trimmedIds.contains(split) }
-        chatState.moveUnreadAnchor(oldUnreadSplitIndex, newUnreadSplitIndex, oldItems)
+        splits.value = newSplits
+        chatState.moveUnreadAfterItem(oldUnreadSplitIndex, newUnreadSplitIndex, oldItems)
       }
     }
     is ChatPagination.After -> {
@@ -486,63 +445,18 @@ suspend fun apiLoadMessages(
       val indexInCurrentItems: Int = oldItems.indexOfFirst { it.id == pagination.chatItemId }
       if (indexInCurrentItems == -1) return@coroutineScope
 
-      var unreadInLoaded = 0
-      val newIds = mutableSetOf<Long>()
-      var i = 0
-      while (i < chat.chatItems.size) {
-        val item = chat.chatItems[i]
-        newIds.add(item.id)
-        if (item.isRcvNew) {
-          unreadInLoaded++
-        }
-        i++
-      }
-      val indexInSplitRanges = splits.value.indexOf(pagination.chatItemId)
-      // Currently, it should always load from split range. Code that did different things were removed but let's keep it for the future
-      val loadingFromSplitRange = indexInSplitRanges != -1
-      val splitsToMerge = if (loadingFromSplitRange && indexInSplitRanges + 1 <= splits.value.size) ArrayList(splits.value.subList(indexInSplitRanges + 1, splits.value.size)) else ArrayList()
-      val splitsToRemove = ArrayList<Long>()
-      var firstItemIdBelowAllSplits: Long? = null
-      newItems.removeAll {
-        val duplicate = newIds.contains(it.id)
-        if (loadingFromSplitRange && duplicate) {
-          if (splitsToMerge.contains(it.id)) {
-            splitsToMerge.remove(it.id)
-            splitsToRemove.add(it.id)
-          } else if (firstItemIdBelowAllSplits == null && splitsToMerge.isEmpty()) {
-            // we passed all splits and found duplicated item below all of them, which means no splits anymore below the loaded items
-            firstItemIdBelowAllSplits = it.id
-          }
-        }
-        if (duplicate && it.isRcvNew) {
-          unreadInLoaded--
-        }
-        duplicate
-      }
+      val mappedItems = mapItemsToIds(chat.chatItems)
+      val newIds = mappedItems.first
+      val (newSplits, unreadInLoaded) = removeDuplicatesAndModifySplitsOnAfterPagination(
+        mappedItems.second, pagination.chatItemId, newItems, newIds, chat, splits
+      )
       val indexToAdd = min(indexInCurrentItems + 1, newItems.size)
       val indexToAddIsLast = indexToAdd == newItems.size
       newItems.addAll(indexToAdd, chat.chatItems)
       withContext(Dispatchers.Main) {
         chatModel.chatItems.replaceAll(newItems)
-        if (splitsToRemove.isNotEmpty()) {
-          val newSplits = ArrayList(splits.value)
-          newSplits.removeAll(splitsToRemove.toSet())
-          splits.value = newSplits
-        }
-        if (firstItemIdBelowAllSplits != null) {
-          // no splits anymore, all were merged with bottom items
-          splits.value = emptyList()
-        } else {
-          val enlargedSplit = splits.value.indexOf(pagination.chatItemId)
-          if (enlargedSplit != -1) {
-            // move the split to the end of loaded items
-            val newSplits = ArrayList(splits.value)
-            newSplits[enlargedSplit] = chat.chatItems.last().id
-            splits.value = newSplits
-//            Log.d(TAG, "Enlarged split range ${splits.value}")
-          }
-        }
-        chatState.moveUnreadAnchor(splits.value.firstOrNull() ?: newItems.last().id, newItems)
+        splits.value = newSplits
+        chatState.moveUnreadAfterItem(splits.value.firstOrNull() ?: newItems.last().id, newItems)
         // loading clear bottom area, updating number of unread items after the newest loaded item
         if (indexToAddIsLast) {
           unreadAfterNewestLoaded.value -= unreadInLoaded
@@ -551,19 +465,13 @@ suspend fun apiLoadMessages(
     }
     is ChatPagination.Around -> {
       newItems.addAll(oldItems)
-      val newIds = mutableSetOf<Long>()
-      var i = 0
-      while (i < chat.chatItems.size) {
-        newIds.add(chat.chatItems[i].id)
-        i++
-      }
-      newItems.removeAll { newIds.contains(it.id) }
+      removeDuplicates(newItems, chat)
       // currently, items will always be added on top, which is index 0
       newItems.addAll(0, chat.chatItems)
       withContext(Dispatchers.Main) {
         chatModel.chatItems.replaceAll(newItems)
         splits.value = listOf(chat.chatItems.last().id) + splits.value
-        unreadAnchorItemId.value = chat.chatItems.last().id
+        unreadAfterItemId.value = chat.chatItems.last().id
         totalAfter.value = navInfo.afterTotal
         unreadTotal.value = chat.chatStats.unreadCount
         unreadAfter.value = navInfo.afterUnread
@@ -573,22 +481,151 @@ suspend fun apiLoadMessages(
     }
     is ChatPagination.Last -> {
       newItems.addAll(oldItems)
-      val newIds = mutableSetOf<Long>()
-      var i = 0
-      while (i < chat.chatItems.size) {
-        newIds.add(chat.chatItems[i].id)
-        i++
-      }
-      newItems.removeAll { newIds.contains(it.id) }
+      removeDuplicates(newItems, chat)
       newItems.addAll(chat.chatItems)
       withContext(Dispatchers.Main) {
         chatModel.chatItems.replaceAll(newItems)
-//        unreadAnchorItemId.value = newItems.last().id
-//        totalAfter.value = 0
-//        unreadTotal.value = chat.chatStats.unreadCount
-//        unreadAfter.value = 0
         unreadAfterNewestLoaded.value = 0
       }
     }
   }
+}
+
+private data class ModifiedSplits (
+  val oldUnreadSplitIndex: Int,
+  val newUnreadSplitIndex: Int,
+  val trimmedIds: Set<Long>,
+  val newSplits: List<Long>,
+)
+
+private fun removeDuplicatesAndModifySplitsOnBeforePagination(
+  unreadAfterItemId: StateFlow<Long>,
+  newItems: SnapshotStateList<ChatItem>,
+  newIds: Set<Long>,
+  splits: StateFlow<List<Long>>,
+  visibleItemIndexesNonReversed: () -> IntRange = { 0..0 }
+): ModifiedSplits {
+  var oldUnreadSplitIndex: Int = -1
+  var newUnreadSplitIndex: Int = -1
+  val visibleItemIndexes = visibleItemIndexesNonReversed()
+  var lastSplitIndexTrimmed = -1
+  var allowedTrimming = true
+  var index = 0
+  /** keep the newest [TRIM_KEEP_COUNT] items (bottom area) and oldest [TRIM_KEEP_COUNT] items, trim others */
+  val trimRange = visibleItemIndexes.last + TRIM_KEEP_COUNT .. newItems.size - TRIM_KEEP_COUNT
+  val trimmedIds = mutableSetOf<Long>()
+  val prevItemTrimRange = visibleItemIndexes.last + TRIM_KEEP_COUNT + 1 .. newItems.size - TRIM_KEEP_COUNT
+  var newSplits = splits.value
+
+  newItems.removeAll {
+    val invisibleItemToTrim = trimRange.contains(index) && allowedTrimming
+    val prevItemWasTrimmed = prevItemTrimRange.contains(index) && allowedTrimming
+    // may disable it after clearing the whole split range
+    if (splits.value.isNotEmpty() && it.id == splits.value.firstOrNull()) {
+      // trim only in one split range
+      allowedTrimming = false
+    }
+    val indexInSplits = splits.value.indexOf(it.id)
+    if (indexInSplits != -1) {
+      lastSplitIndexTrimmed = indexInSplits
+    }
+    if (invisibleItemToTrim) {
+      if (prevItemWasTrimmed) {
+        trimmedIds.add(it.id)
+      } else {
+        newUnreadSplitIndex = index
+        // prev item is not supposed to be trimmed, so exclude current one from trimming and set a split here instead.
+        // this allows to define splitRange of the oldest items and to start loading trimmed items when user scrolls in the opposite direction
+        if (lastSplitIndexTrimmed == -1) {
+          newSplits = listOf(it.id) + newSplits
+        } else {
+          val new = ArrayList(newSplits)
+          new[lastSplitIndexTrimmed] = it.id
+          newSplits = new
+        }
+      }
+    }
+    if (unreadAfterItemId.value == it.id) {
+      oldUnreadSplitIndex = index
+    }
+    index++
+    (invisibleItemToTrim && prevItemWasTrimmed) || newIds.contains(it.id)
+  }
+  // will remove any splits that now becomes obsolete because items were merged
+  newSplits = newSplits.filterNot { split -> newIds.contains(split) || trimmedIds.contains(split) }
+  return ModifiedSplits(oldUnreadSplitIndex, newUnreadSplitIndex, trimmedIds, newSplits)
+}
+
+private fun removeDuplicatesAndModifySplitsOnAfterPagination(
+  unreadInLoaded: Int,
+  paginationChatItemId: Long,
+  newItems: SnapshotStateList<ChatItem>,
+  newIds: Set<Long>,
+  chat: Chat,
+  splits: StateFlow<List<Long>>
+): Pair<List<Long>, Int> {
+  var unreadInLoaded = unreadInLoaded
+  var firstItemIdBelowAllSplits: Long? = null
+  val splitsToRemove = ArrayList<Long>()
+  val indexInSplitRanges = splits.value.indexOf(paginationChatItemId)
+  // Currently, it should always load from split range
+  val loadingFromSplitRange = indexInSplitRanges != -1
+  val splitsToMerge = if (loadingFromSplitRange && indexInSplitRanges + 1 <= splits.value.size) ArrayList(splits.value.subList(indexInSplitRanges + 1, splits.value.size)) else ArrayList()
+  newItems.removeAll {
+    val duplicate = newIds.contains(it.id)
+    if (loadingFromSplitRange && duplicate) {
+      if (splitsToMerge.contains(it.id)) {
+        splitsToMerge.remove(it.id)
+        splitsToRemove.add(it.id)
+      } else if (firstItemIdBelowAllSplits == null && splitsToMerge.isEmpty()) {
+        // we passed all splits and found duplicated item below all of them, which means no splits anymore below the loaded items
+        firstItemIdBelowAllSplits = it.id
+      }
+    }
+    if (duplicate && it.isRcvNew) {
+      unreadInLoaded--
+    }
+    duplicate
+  }
+  var newSplits: List<Long> = emptyList()
+  if (firstItemIdBelowAllSplits != null) {
+    // no splits anymore, all were merged with bottom items
+    newSplits = emptyList()
+  } else {
+    if (splitsToRemove.isNotEmpty()) {
+      val new = ArrayList(splits.value)
+      new.removeAll(splitsToRemove.toSet())
+      newSplits = new
+    }
+    val enlargedSplit = splits.value.indexOf(paginationChatItemId)
+    if (enlargedSplit != -1) {
+      // move the split to the end of loaded items
+      val new = ArrayList(splits.value)
+      new[enlargedSplit] = chat.chatItems.last().id
+      newSplits = new
+      // Log.d(TAG, "Enlarged split range $newSplits")
+    }
+  }
+  return newSplits to unreadInLoaded
+}
+
+// ids, number of unread items
+private fun mapItemsToIds(items: List<ChatItem>): Pair<Set<Long>, Int> {
+  var unreadInLoaded = 0
+  val ids = mutableSetOf<Long>()
+  var i = 0
+  while (i < items.size) {
+    val item = items[i]
+    ids.add(item.id)
+    if (item.isRcvNew) {
+      unreadInLoaded++
+    }
+    i++
+  }
+  return ids to unreadInLoaded
+}
+
+private fun removeDuplicates(newItems: SnapshotStateList<ChatItem>, chat: Chat) {
+  val (newIds, _) = mapItemsToIds(chat.chatItems)
+  newItems.removeAll { newIds.contains(it.id) }
 }
