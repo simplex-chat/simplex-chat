@@ -123,13 +123,12 @@ private fun CustomServer(
       serverAddress,
       Modifier.height(144.dp)
     )
-    // TODO review
     LaunchedEffect(Unit) {
-      snapshotFlow { server.value.server }
+      snapshotFlow { serverAddress.value }
         .distinctUntilChanged()
         .collect {
           testedPreviously[server.value.server] = server.value.tested
-          // server = server.copy(server = it, tested = testedPreviously[serverAddress.value])
+          server.value = server.value.copy(server = it, tested = testedPreviously[serverAddress.value])
         }
     }
   }
