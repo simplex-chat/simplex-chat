@@ -8,7 +8,7 @@ import kotlinx.datetime.Clock
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class ChatItemMergerTest {
+class ChatItemsMergerTest {
 
   @Test
   fun testRecalculateSplitPositions() {
