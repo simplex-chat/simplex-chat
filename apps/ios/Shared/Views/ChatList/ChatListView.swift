@@ -44,7 +44,7 @@ struct SaveableServerSettings {
 struct UserPickerSheetView: View {
     let sheet: UserPickerSheet
     @EnvironmentObject var chatModel: ChatModel
-    @EnvironmentObject var saveableSettings: SaveableSettings
+    @StateObject private var saveableSettings = SaveableSettings()
 
     @State private var loaded = false
 
@@ -102,7 +102,7 @@ struct UserPickerSheetView: View {
                 )
             }
         }
-        .environmentObject(SaveableSettings())
+        .environmentObject(saveableSettings)
     }
 }
 
