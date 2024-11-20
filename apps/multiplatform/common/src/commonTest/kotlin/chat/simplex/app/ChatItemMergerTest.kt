@@ -8,7 +8,7 @@ import kotlinx.datetime.Clock
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class ChatItemGroupsTest {
+class ChatItemMergerTest {
 
   @Test
   fun testRecalculateSplitPositions() {
@@ -48,7 +48,7 @@ class ChatItemGroupsTest {
   }
 
   @Test
-  fun testPutIntoGroups() {
+  fun testItemsMerging() {
     val items = listOf(
       ChatItem(CIDirection.DirectRcv(), CIMeta.getSample(100L, Clock.System.now(), text = ""), CIContent.SndGroupFeature(GroupFeature.Voice, GroupPreference(GroupFeatureEnabled.ON), memberRole_ = null), reactions = emptyList()),
       ChatItem(CIDirection.DirectRcv(), CIMeta.getSample(99L, Clock.System.now(), text = ""), CIContent.SndGroupFeature(GroupFeature.FullDelete, GroupPreference(GroupFeatureEnabled.ON), memberRole_ = null), reactions = emptyList()),
