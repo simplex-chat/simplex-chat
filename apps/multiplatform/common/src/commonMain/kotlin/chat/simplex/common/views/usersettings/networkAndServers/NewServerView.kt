@@ -26,7 +26,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
-fun NewServerView(
+fun ModalData.NewServerView(
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
   operatorIndex: Int,
@@ -36,7 +36,7 @@ fun NewServerView(
   val newServer = remember { mutableStateOf(UserServer.empty) }
   val testing = remember { mutableStateOf(false) }
 
-  BackHandler(onBack = {
+  ModalView(close = {
     addServer(
       newServer.value,
       userServers,
@@ -44,26 +44,27 @@ fun NewServerView(
       rhId,
       close = close
     )
-  })
-
-  NewServerLayout(
-    userServers,
-    serverErrors,
-    operatorIndex,
-    rhId,
-    newServer,
-    testing
-//    testServer = {
-//      testing = true
-//      withLongRunningApi {
-//        val res = testServerConnection(server, m)
-//        if (isActive) {
-//          onUpdate(res.first)
-//          testing = false
-//        }
-//      }
-//    }
-  )
+    close()
+  }) {
+    NewServerLayout(
+      userServers,
+      serverErrors,
+      operatorIndex,
+      rhId,
+      newServer,
+      testing
+      //    testServer = {
+      //      testing = true
+      //      withLongRunningApi {
+      //        val res = testServerConnection(server, m)
+      //        if (isActive) {
+      //          onUpdate(res.first)
+      //          testing = false
+      //        }
+      //      }
+      //    }
+    )
+  }
   if (testing.value) {
     Box(
       Modifier.fillMaxSize(),

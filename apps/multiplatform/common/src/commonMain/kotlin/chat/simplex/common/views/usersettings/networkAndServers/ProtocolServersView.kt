@@ -368,7 +368,7 @@ fun showAddServerDialog(
       Column {
         SectionItemView({
           AlertManager.shared.hideAlert()
-          ModalManager.start.showModalCloseable { close ->
+          ModalManager.start.showCustomModal { close ->
             NewServerView(userServers, serverErrors, operatorIndex, rhId, close)
           }
         }) {
