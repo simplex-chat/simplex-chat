@@ -32,6 +32,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingActionButton
+import chat.simplex.common.views.onboarding.ReadableText
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -535,7 +536,7 @@ private fun SingleOperatorUsageConditionsView(
   fun UsageConditionsDestinationView(close: () -> Unit) {
     ColumnWithScrollBar(modifier = Modifier.fillMaxSize()) {
       AppBarTitle(stringResource(MR.strings.operator_conditions_of_use), enableAlphaChanges = false)
-      Column(modifier = Modifier.weight(1f).padding(end = DEFAULT_PADDING, start = DEFAULT_PADDING, bottom = DEFAULT_PADDING, top = DEFAULT_PADDING)) {
+      Column(modifier = Modifier.weight(1f).padding(end = DEFAULT_PADDING, start = DEFAULT_PADDING, bottom = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF)) {
         ConditionsTextView(rhId)
       }
       AcceptConditionsButton(close)
@@ -547,7 +548,7 @@ private fun SingleOperatorUsageConditionsView(
     Text(
       stringResource(MR.strings.view_conditions),
       color = MaterialTheme.colors.primary,
-      modifier = Modifier.clickable {
+      modifier = Modifier.padding(top = DEFAULT_PADDING_HALF).clickable {
         ModalManager.start.showModalCloseable { close ->
           UsageConditionsDestinationView(close)
         }
@@ -555,34 +556,33 @@ private fun SingleOperatorUsageConditionsView(
     )
   }
 
-  ColumnWithScrollBar(modifier = Modifier.fillMaxSize()) {
-    AppBarTitle(String.format(stringResource(MR.strings.use_operator_x), operator.tradeName), enableAlphaChanges = false)
+  ColumnWithScrollBar(modifier = Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING)) {
+    AppBarTitle(String.format(stringResource(MR.strings.use_operator_x), operator.tradeName), enableAlphaChanges = false, withPadding = false)
     if (operator.conditionsAcceptance is ConditionsAcceptance.Accepted) {
       // In current UI implementation this branch doesn't get shown - as conditions can't be opened from inside operator once accepted
       Column(modifier = Modifier.weight(1f).padding(end = DEFAULT_PADDING, start = DEFAULT_PADDING, bottom = DEFAULT_PADDING)) {
         ConditionsTextView(rhId)
       }
     } else if (operatorsWithConditionsAccepted.isNotEmpty()) {
-      SectionItemView {
-        Text(String.format(stringResource(MR.strings.operator_conditions_accepted_for_some), operatorsWithConditionsAccepted.joinToString(", ") { it.legalName_ }))
-      }
-      SectionItemView {
-        Text(String.format(stringResource(MR.strings.operator_same_conditions_will_be_applied), operator.legalName_))
-      }
+      ReadableText(
+        MR.strings.operator_conditions_accepted_for_some,
+        args = operatorsWithConditionsAccepted.joinToString(", ") { it.legalName_ }
+      )
+      ReadableText(
+        MR.strings.operator_same_conditions_will_be_applied,
+        args = operator.legalName_
+      )
       ConditionsAppliedToOtherOperatorsText(userServers = userServers.value, operatorIndex = operatorIndex)
 
-      SectionItemView {
-        UsageConditionsNavLinkButton()
-      }
+      UsageConditionsNavLinkButton()
       Spacer(Modifier.fillMaxWidth().weight(1f))
       AcceptConditionsButton(close)
     } else {
-      SectionItemView {
-        Text(String.format(stringResource(MR.strings.operator_in_order_to_use_accept_conditions, operator.legalName_)))
-      }
-      SectionItemView {
-        ConditionsAppliedToOtherOperatorsText(userServers = userServers.value, operatorIndex = operatorIndex)
-      }
+      ReadableText(
+        MR.strings.operator_in_order_to_use_accept_conditions,
+        args = operator.legalName_
+      )
+      ConditionsAppliedToOtherOperatorsText(userServers = userServers.value, operatorIndex = operatorIndex)
       Column(modifier = Modifier.weight(1f).padding(end = DEFAULT_PADDING, start = DEFAULT_PADDING, bottom = DEFAULT_PADDING)) {
         ConditionsTextView(rhId)
       }
@@ -625,11 +625,8 @@ fun ConditionsTextView(
         Box(
           modifier = Modifier
             .fillMaxSize()
-            .clip(RoundedCornerShape(12.dp))
+            .border(border = BorderStroke(1.dp, CurrentColors.value.colors.secondary.copy(alpha = 0.6f)), shape = RoundedCornerShape(12.dp))
             .verticalScroll(scrollState)
-            .background(
-              color =  MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f),
-            )
             .padding(8.dp)
         ) {
           Text(
@@ -670,11 +667,7 @@ private fun ConditionsAppliedToOtherOperatorsText(userServers: List<UserOperator
   }
 
   if (otherOperatorsToApply.value.isNotEmpty()) {
-    SectionItemView {
-      Text(
-        String.format(stringResource(MR.strings.operators_conditions_will_also_apply), otherOperatorsToApply.value.joinToString(", ") { it.legalName_ }),
-      )
-    }
+      ReadableText(MR.strings.operator_conditions_will_be_applied)
   }
 }
 
