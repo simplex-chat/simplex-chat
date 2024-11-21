@@ -3683,7 +3683,7 @@ data class NetCfg(
   val hostMode: HostMode = HostMode.OnionViaSocks,
   val requiredHostMode: Boolean = false,
   val sessionMode: TransportSessionMode = TransportSessionMode.default,
-  val smpProxyMode: SMPProxyMode = SMPProxyMode.Unknown,
+  val smpProxyMode: SMPProxyMode = SMPProxyMode.Always,
   val smpProxyFallback: SMPProxyFallback = SMPProxyFallback.AllowProtected,
   val smpWebPort: Boolean = false,
   val tcpConnectTimeout: Long, // microseconds

@@ -1722,7 +1722,7 @@ public struct NetCfg: Codable, Equatable {
     public var hostMode: HostMode = .publicHost
     public var requiredHostMode = true
     public var sessionMode = TransportSessionMode.user
-    public var smpProxyMode: SMPProxyMode = .unknown
+    public var smpProxyMode: SMPProxyMode = .always
     public var smpProxyFallback: SMPProxyFallback = .allowProtected
     public var smpWebPort = false
     public var tcpConnectTimeout: Int // microseconds
