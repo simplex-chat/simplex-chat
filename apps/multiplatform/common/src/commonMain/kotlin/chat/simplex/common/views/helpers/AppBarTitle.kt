@@ -24,8 +24,8 @@ fun AppBarTitle(
   bottomPadding: Dp = DEFAULT_PADDING * 1.5f + 8.dp,
   enableAlphaChanges: Boolean = true
 ) {
-  val handler = LocalAppBarHandler.current
-  val connection = if (enableAlphaChanges) handler?.connection else null
+  val handler = if (enableAlphaChanges) LocalAppBarHandler.current else null
+  val connection = handler?.connection
   LaunchedEffect(title) {
     handler?.title?.value = title
   }
