@@ -31,6 +31,7 @@ import chat.simplex.common.model.ChatController.getUsageConditions
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.onboarding.OnboardingActionButton
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -517,18 +518,16 @@ private fun SingleOperatorUsageConditionsView(
       .map { it.operatorId }
 
     Column(Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING * 2), horizontalAlignment = Alignment.CenterHorizontally) {
-      Button(
-        onClick = {
+      OnboardingActionButton(
+        labelId = MR.strings.accept_conditions,
+        onboarding = null,
+        enabled = operatorIds.isNotEmpty(),
+        onclick = {
           scope.launch {
-            acceptForOperators(rhId = rhId, operatorIds = operatorIds, operatorIndexToEnable = operatorIndex, close)
+            acceptForOperators(rhId, operatorIds, operatorIndex, close)
           }
-        },
-        shape = CircleShape,
-        contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 2, vertical = DEFAULT_PADDING),
-        colors = ButtonDefaults.buttonColors(MaterialTheme.colors.primary, disabledBackgroundColor = MaterialTheme.colors.secondary)
-      ) {
-        Text(stringResource(MR.strings.accept_conditions), style = MaterialTheme.typography.h2, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
-      }
+        }
+      )
     }
   }
 
