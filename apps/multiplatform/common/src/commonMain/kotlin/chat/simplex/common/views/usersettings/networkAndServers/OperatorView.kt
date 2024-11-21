@@ -158,10 +158,10 @@ fun OperatorViewLayout(
     } else {
       val footerText = when (val c = operator.conditionsAcceptance) {
         is ConditionsAcceptance.Accepted -> if (c.acceptedAt != null) {
-          String.format(generalGetString(MR.strings.operator_conditions_accepted_on), localTimestamp(c.acceptedAt))
+          String.format(generalGetString(MR.strings.operator_conditions_accepted_on), localDate(c.acceptedAt))
         } else null
         is ConditionsAcceptance.Required -> if (operator.enabled && c.deadline != null) {
-          String.format(generalGetString(MR.strings.operator_conditions_will_be_accepted_on), localTimestamp(c.deadline))
+          String.format(generalGetString(MR.strings.operator_conditions_will_be_accepted_on), localDate(c.deadline))
         } else null
       }
       if (footerText != null) {
