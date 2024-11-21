@@ -119,8 +119,7 @@ fun TestServersButton(
   SectionItemView(
     {
       scope.launch {
-        testServers(testing, smpServers, chatModel) { onUpdate(ServerProtocol.SMP, it) }
-        testServers(testing, xftpServers, chatModel) { onUpdate(ServerProtocol.XFTP, it) }
+        testServers(testing, smpServers, xftpServers, chatModel, onUpdate)
       }
     },
     disabled = disabled.value
@@ -200,12 +199,22 @@ fun InvalidServer() {
   Icon(painterResource(MR.images.ic_error), null, tint = MaterialTheme.colors.error)
 }
 
-private suspend fun testServers(testing: MutableState<Boolean>, servers: List<UserServer>, m: ChatModel, onUpdated: (List<UserServer>) -> Unit) {
-  val resetStatus = resetTestStatus(servers)
-  onUpdated(resetStatus)
+private suspend fun testServers(
+  testing: MutableState<Boolean>,
+  smpServers: List<UserServer>,
+  xftpServers: List<UserServer>,
+  m: ChatModel,
+  onUpdate: (ServerProtocol, List<UserServer>) -> Unit
+) {
+  val smpResetStatus = resetTestStatus(smpServers)
+  onUpdate(ServerProtocol.SMP, smpResetStatus)
+  val xftpResetStatus = resetTestStatus(xftpServers)
+  onUpdate(ServerProtocol.XFTP, xftpResetStatus)
   testing.value = true
-  val fs = runServersTest(resetStatus, m) { onUpdated(it) }
+  val smpFailures = runServersTest(smpResetStatus, m) { onUpdate(ServerProtocol.SMP, it) }
+  val xftpFailures = runServersTest(xftpResetStatus, m) { onUpdate(ServerProtocol.XFTP, it) }
   testing.value = false
+  val fs = smpFailures + xftpFailures
   if (fs.isNotEmpty()) {
     val msg = fs.map { it.key + ": " + it.value.localizedDescription }.joinToString("\n")
     AlertManager.shared.showAlertMsg(
