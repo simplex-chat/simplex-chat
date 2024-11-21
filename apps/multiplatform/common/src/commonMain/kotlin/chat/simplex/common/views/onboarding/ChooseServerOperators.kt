@@ -2,8 +2,7 @@ package chat.simplex.common.views.onboarding
 
 import SectionBottomSpacer
 import SectionTextFooter
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.*
@@ -127,7 +126,7 @@ private fun OperatorCheckView(serverOperator: ServerOperator, selectedOperatorId
     shape = RoundedCornerShape(18.dp)
   ) {
     Row(Modifier.padding(DEFAULT_PADDING_HALF), verticalAlignment = Alignment.CenterVertically) {
-      Icon(painterResource(serverOperator.largeLogo), null, Modifier.height(48.dp))
+      Image(painterResource(serverOperator.largeLogo), null, Modifier.height(48.dp))
       Spacer(Modifier.width(DEFAULT_PADDING_HALF).weight(1f))
       CircleCheckbox(checked)
     }

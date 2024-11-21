@@ -139,16 +139,7 @@ fun OperatorViewLayout(
   Column {
     SectionView(generalGetString(MR.strings.operator).uppercase()) {
       SectionItemView({ ModalManager.start.showModalCloseable { _ -> OperatorInfoView(operator) } }) {
-        Image(
-          painterResource(operator.logo),
-          operator.tradeName,
-          modifier = Modifier.size(24.dp),
-          colorFilter = if (operator.enabled) null else ColorFilter.colorMatrix(ColorMatrix().apply {
-            setToSaturation(0f)
-          })
-        )
-        TextIconSpaced()
-        Text(operator.tradeName, color = MaterialTheme.colors.onBackground)
+        Image(painterResource(operator.largeLogo), null, Modifier.height(48.dp))
       }
       UseOperatorToggle(
         scope = scope,
@@ -401,10 +392,29 @@ private fun OperatorInfoView(serverOperator: ServerOperator) {
 
     SectionView {
       SectionItemView {
-        Text(serverOperator.info.description)
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+          Image(painterResource(serverOperator.largeLogo), null, Modifier.height(48.dp))
+          if (serverOperator.legalName != null) {
+            Text(serverOperator.legalName)
+          }
+        }
       }
     }
+
+    SectionDividerSpaced(maxBottomPadding = false)
+
+    SectionView {
+      SectionItemView {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+          serverOperator.info.description.forEach { d ->
+            Text(d)
+          }
+        }
+      }
+    }
+
     SectionDividerSpaced()
+
     SectionView(generalGetString(MR.strings.operator_website).uppercase()) {
       SectionItemView {
         val website = serverOperator.info.website
@@ -524,7 +534,6 @@ private fun SingleOperatorUsageConditionsView(
       Column(modifier = Modifier.weight(1f).padding(end = DEFAULT_PADDING, start = DEFAULT_PADDING, bottom = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF)) {
         ConditionsTextView(rhId)
       }
-      AcceptConditionsButton(close)
     }
   }
 
