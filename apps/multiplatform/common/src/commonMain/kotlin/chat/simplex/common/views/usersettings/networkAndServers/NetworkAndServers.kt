@@ -191,7 +191,7 @@ fun ModalData.NetworkAndServersView(close: () -> Unit) {
         ConditionsButton(conditionsAction, rhId = currentRemoteHost?.remoteHostId)
       }
       val footerText = if (conditionsAction is UsageConditionsAction.Review && conditionsAction.deadline != null && anyOperatorEnabled.value) {
-        String.format(generalGetString(MR.strings.operator_conditions_accepted_for_enabled_operators_on), localDate(conditionsAction.deadline))
+        String.format(generalGetString(MR.strings.operator_conditions_will_be_accepted_on), localDate(conditionsAction.deadline))
       } else null
 
       if (footerText != null) {

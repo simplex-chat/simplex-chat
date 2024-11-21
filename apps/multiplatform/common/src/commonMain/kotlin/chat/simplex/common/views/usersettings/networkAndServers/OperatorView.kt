@@ -166,7 +166,7 @@ fun OperatorViewLayout(
           String.format(generalGetString(MR.strings.operator_conditions_accepted_on), localTimestamp(c.acceptedAt))
         } else null
         is ConditionsAcceptance.Required -> if (operator.enabled && c.deadline != null) {
-          String.format(generalGetString(MR.strings.operator_conditions_accepted_after), localTimestamp(c.deadline))
+          String.format(generalGetString(MR.strings.operator_conditions_will_be_accepted_on), localTimestamp(c.deadline))
         } else null
       }
       if (footerText != null) {
@@ -551,7 +551,7 @@ private fun SingleOperatorUsageConditionsView(
   }
 
   ColumnWithScrollBar(modifier = Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING)) {
-    AppBarTitle(String.format(stringResource(MR.strings.use_operator_x), operator.tradeName), enableAlphaChanges = false, withPadding = false)
+    AppBarTitle(String.format(stringResource(MR.strings.use_servers_of_operator_x), operator.tradeName), enableAlphaChanges = false, withPadding = false)
     if (operator.conditionsAcceptance is ConditionsAcceptance.Accepted) {
       // In current UI implementation this branch doesn't get shown - as conditions can't be opened from inside operator once accepted
       Column(modifier = Modifier.weight(1f).padding(end = DEFAULT_PADDING, start = DEFAULT_PADDING, bottom = DEFAULT_PADDING)) {
