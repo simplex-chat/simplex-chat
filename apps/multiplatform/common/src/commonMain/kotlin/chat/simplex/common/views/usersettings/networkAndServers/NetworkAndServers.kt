@@ -52,13 +52,6 @@ fun ModalData.NetworkAndServersView(close: () -> Unit) {
   val serverErrors = remember { stateGetOrPut("serverErrors") { emptyList<UserServersError>() } }
   val scope = rememberCoroutineScope()
 
-  LaunchedEffect(userServers) {
-    snapshotFlow { userServers.value }
-      .collect { updatedServers ->
-        validateServers(rhId = currentRemoteHost?.remoteHostId, userServersToValidate = updatedServers, serverErrors = serverErrors)
-      }
-  }
-
   val proxyPort = remember { derivedStateOf { appPrefs.networkProxy.state.value.port } }
   ModalView(
     close = {
