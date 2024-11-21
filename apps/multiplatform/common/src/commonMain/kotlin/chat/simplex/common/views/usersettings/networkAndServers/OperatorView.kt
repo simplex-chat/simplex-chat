@@ -136,7 +136,7 @@ fun OperatorViewLayout(
     SectionView(generalGetString(MR.strings.operator).uppercase()) {
       SectionItemView({ ModalManager.start.showModalCloseable { _ -> OperatorInfoView(operator) } }) {
         Image(
-          painterResource(MR.images.decentralized),
+          painterResource(operator.logo),
           operator.tradeName,
           modifier = Modifier.size(24.dp),
           colorFilter = if (operator.enabled) null else ColorFilter.colorMatrix(ColorMatrix().apply {

@@ -655,7 +655,7 @@ private fun ServerOperatorRow(
     }
   ) {
     Image(
-      painterResource(MR.images.decentralized),
+      painterResource(operator.logo),
       operator.tradeName,
       modifier = Modifier.size(24.dp),
       colorFilter = if (operator.enabled) null else ColorFilter.colorMatrix(ColorMatrix().apply {
