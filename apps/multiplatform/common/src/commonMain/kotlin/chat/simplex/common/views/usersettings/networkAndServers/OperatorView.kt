@@ -534,7 +534,7 @@ private fun SingleOperatorUsageConditionsView(
   @Composable
   fun UsageConditionsDestinationView(close: () -> Unit) {
     ColumnWithScrollBar(modifier = Modifier.fillMaxSize()) {
-      NonScrollableTitle(stringResource(MR.strings.operator_conditions_of_use))
+      AppBarTitle(stringResource(MR.strings.operator_conditions_of_use), enableAlphaChanges = false)
       Column(modifier = Modifier.weight(1f).padding(end = DEFAULT_PADDING, start = DEFAULT_PADDING, bottom = DEFAULT_PADDING, top = DEFAULT_PADDING)) {
         ConditionsTextView(rhId)
       }
@@ -556,7 +556,7 @@ private fun SingleOperatorUsageConditionsView(
   }
 
   ColumnWithScrollBar(modifier = Modifier.fillMaxSize()) {
-    NonScrollableTitle(String.format(stringResource(MR.strings.use_operator_x), operator.tradeName))
+    AppBarTitle(String.format(stringResource(MR.strings.use_operator_x), operator.tradeName), enableAlphaChanges = false)
     if (operator.conditionsAcceptance is ConditionsAcceptance.Accepted) {
       // In current UI implementation this branch doesn't get shown - as conditions can't be opened from inside operator once accepted
       Column(modifier = Modifier.weight(1f).padding(end = DEFAULT_PADDING, start = DEFAULT_PADDING, bottom = DEFAULT_PADDING)) {
@@ -589,27 +589,6 @@ private fun SingleOperatorUsageConditionsView(
       AcceptConditionsButton(close)
     }
   }
-}
-
-@Composable
-private fun NonScrollableTitle(title: String) {
-  val titleColor = MaterialTheme.appColors.title
-  val theme = CurrentColors.collectAsState()
-
-  val brush = if (theme.value.base == DefaultTheme.SIMPLEX)
-    Brush.linearGradient(listOf(titleColor.darker(0.2f), titleColor.lighter(0.35f)), Offset(0f, Float.POSITIVE_INFINITY), Offset(Float.POSITIVE_INFINITY, 0f))
-  else // color is not updated when changing themes if I pass null here
-    Brush.linearGradient(listOf(titleColor, titleColor), Offset(0f, Float.POSITIVE_INFINITY), Offset(Float.POSITIVE_INFINITY, 0f))
-
-  Text(
-    title,
-    Modifier
-      .padding(start = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING),
-    overflow = TextOverflow.Ellipsis,
-    style = MaterialTheme.typography.h1.copy(brush = brush),
-    color = MaterialTheme.colors.primaryVariant,
-    textAlign = TextAlign.Start
-  )
 }
 
 @Composable
