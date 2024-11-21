@@ -404,7 +404,7 @@ private fun OperatorInfoView(serverOperator: ServerOperator) {
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.operator_info_title))
 
-    SectionView(generalGetString(MR.strings.operator_description).uppercase()) {
+    SectionView {
       SectionItemView {
         Text(serverOperator.info.description)
       }
