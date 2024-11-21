@@ -386,23 +386,3 @@ fun deleteSMPServer(
     }
   }
 }
-
-
-private fun saveServers(rhId: Long?, protocol: ServerProtocol, currServers: MutableState<List<UserServer>>, servers: List<UserServer>, m: ChatModel, afterSave: () -> Unit = {}) {
-  withBGApi {
-//    if (m.controller.setUserServers(rhId, protocol, servers)) {
-//      currServers.value = servers
-//    }
-    afterSave()
-  }
-}
-
-private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {
-  AlertManager.shared.showAlertDialogStacked(
-    title = generalGetString(MR.strings.smp_save_servers_question),
-    confirmText = generalGetString(MR.strings.save_verb),
-    dismissText = generalGetString(MR.strings.exit_without_saving),
-    onConfirm = save,
-    onDismiss = revert,
-  )
-}
