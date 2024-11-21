@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import dev.icerock.moko.resources.compose.painterResource
@@ -42,7 +41,7 @@ fun ProtocolServerView(
   close: () -> Unit,
   rhId: Long?
 ) {
-  var testing by remember { mutableStateOf(false) }
+  val testing = remember { mutableStateOf(false) }
   val scope = rememberCoroutineScope()
   val draftServer = remember { mutableStateOf(server) }
 
@@ -70,8 +69,8 @@ fun ProtocolServerView(
             )
           } else {
             onUpdate(draftServer.value)
-            validateServers(rhId, userServers, serverErrors)
             close()
+            validateServers(rhId, userServers, serverErrors)
           }
         } else {
           close()
@@ -83,37 +82,26 @@ fun ProtocolServerView(
       }
     }
   ) {
-    ProtocolServerLayout(
-      testing,
-      draftServer.value,
-      serverProtocol,
-      testServer = {
-        testing = true
-        withLongRunningApi {
-          val res = testServerConnection(draftServer.value, m)
-          if (isActive) {
-            draftServer.value = res.first
-            testing = false
+    Box {
+      ProtocolServerLayout(
+        draftServer,
+        serverProtocol,
+        testing.value,
+        testServer = {
+          testing.value = true
+          withLongRunningApi {
+            val res = testServerConnection(draftServer.value, m)
+            if (isActive) {
+              draftServer.value = res.first
+              testing.value = false
+            }
           }
-        }
-      },
-      onUpdate = {
-        draftServer.value = it
-      },
-      onDelete
-    )
-    if (testing) {
-      Box(
-        Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-      ) {
-        CircularProgressIndicator(
-          Modifier
-            .padding(horizontal = 2.dp)
-            .size(30.dp),
-          color = MaterialTheme.colors.secondary,
-          strokeWidth = 2.5.dp
-        )
+        },
+        onDelete
+      )
+
+      if (testing.value) {
+        DefaultProgressView(null)
       }
     }
   }
@@ -121,20 +109,19 @@ fun ProtocolServerView(
 
 @Composable
 private fun ProtocolServerLayout(
-  testing: Boolean,
-  server: UserServer,
+  server: MutableState<UserServer>,
   serverProtocol: ServerProtocol,
+  testing: Boolean,
   testServer: () -> Unit,
-  onUpdate: (UserServer) -> Unit,
   onDelete: () -> Unit,
 ) {
   ColumnWithScrollBar {
     AppBarTitle(stringResource(if (serverProtocol == ServerProtocol.XFTP) MR.strings.xftp_server else MR.strings.smp_server))
 
-    if (server.preset) {
-      PresetServer(testing, server, testServer, onUpdate)
+    if (server.value.preset) {
+      PresetServer(server, testing, testServer)
     } else {
-      CustomServer(testing, server, serverProtocol, testServer, onUpdate, onDelete)
+      CustomServer(server, testing, testServer, onDelete)
     }
     SectionBottomSpacer()
   }
@@ -142,15 +129,14 @@ private fun ProtocolServerLayout(
 
 @Composable
 private fun PresetServer(
+  server: MutableState<UserServer>,
   testing: Boolean,
-  server: UserServer,
-  testServer: () -> Unit,
-  onUpdate: (UserServer) -> Unit,
+  testServer: () -> Unit
 ) {
   SectionView(stringResource(MR.strings.smp_servers_preset_address).uppercase()) {
     SelectionContainer {
       Text(
-        server.server,
+        server.value.server,
         Modifier.padding(start = DEFAULT_PADDING, top = 5.dp, end = DEFAULT_PADDING, bottom = 10.dp),
         style = TextStyle(
           fontFamily = FontFamily.Monospace, fontSize = 16.sp,
@@ -160,23 +146,21 @@ private fun PresetServer(
     }
   }
   SectionDividerSpaced()
-  UseServerSection(true, testing, server, testServer, onUpdate)
+  UseServerSection(server, true, testing, testServer)
 }
 
 @Composable
-private fun CustomServer(
+fun CustomServer(
+  server: MutableState<UserServer>,
   testing: Boolean,
-  server: UserServer,
-  serverProtocol: ServerProtocol,
   testServer: () -> Unit,
-  onUpdate: (UserServer) -> Unit,
-  onDelete: () -> Unit,
+  onDelete: (() -> Unit)?,
 ) {
-  val serverAddress = remember { mutableStateOf(server.server) }
+  val serverAddress = remember { mutableStateOf(server.value.server) }
   val valid = remember {
     derivedStateOf {
       with(parseServerAddress(serverAddress.value)) {
-        this?.valid == true && this.serverProtocol == serverProtocol
+        this?.valid == true
       }
     }
   }
@@ -194,13 +178,14 @@ private fun CustomServer(
       snapshotFlow { serverAddress.value }
         .distinctUntilChanged()
         .collect {
-          testedPreviously[server.server] = server.tested
-          onUpdate(server.copy(server = it, tested = testedPreviously[serverAddress.value]))
+          testedPreviously[server.value.server] = server.value.tested
+          server.value = server.value.copy(server = it, tested = testedPreviously[serverAddress.value])
         }
     }
   }
   SectionDividerSpaced(maxTopPadding = true)
-  UseServerSection(valid.value, testing, server, testServer, onUpdate, onDelete)
+
+  UseServerSection(server, valid.value, testing, testServer, onDelete)
 
   if (valid.value) {
     SectionDividerSpaced()
@@ -212,26 +197,25 @@ private fun CustomServer(
 
 @Composable
 private fun UseServerSection(
+  server: MutableState<UserServer>,
   valid: Boolean,
   testing: Boolean,
-  server: UserServer,
   testServer: () -> Unit,
-  onUpdate: (UserServer) -> Unit,
   onDelete: (() -> Unit)? = null,
 ) {
   SectionView(stringResource(MR.strings.smp_servers_use_server).uppercase()) {
     SectionItemViewSpaceBetween(testServer, disabled = !valid || testing) {
       Text(stringResource(MR.strings.smp_servers_test_server), color = if (valid && !testing) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
-      ShowTestStatus(server)
+      ShowTestStatus(server.value)
     }
 
-    val enabled = rememberUpdatedState(server.enabled)
+    val enabled = rememberUpdatedState(server.value.enabled)
     PreferenceToggle(
       stringResource(MR.strings.smp_servers_use_server_for_new_conn),
-      // disabled = server.tested != true && !server.preset,
+      disabled = testing,
       checked = enabled.value
     ) {
-      onUpdate(server.copy(enabled = it))
+      server.value = server.value.copy(enabled = it)
     }
 
     if (onDelete != null) {

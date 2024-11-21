@@ -1,43 +1,30 @@
 package chat.simplex.common.views.usersettings.networkAndServers
 
 import SectionBottomSpacer
-import SectionDividerSpaced
-import SectionItemView
-import SectionItemViewSpaceBetween
-import SectionView
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ServerAddress.Companion.parseServerAddress
-import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.newchat.QRCode
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.usersettings.PreferenceToggle
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
 fun ModalData.NewServerView(
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
-  operatorIndex: Int,
   rhId: Long?,
   close: () -> Unit
 ) {
-  val newServer = remember { mutableStateOf(UserServer.empty) }
   val testing = remember { mutableStateOf(false) }
+  val scope = rememberCoroutineScope()
+  val newServer = remember { mutableStateOf(UserServer.empty) }
 
   ModalView(close = {
     addServer(
+      scope,
       newServer.value,
       userServers,
       serverErrors,
@@ -45,101 +32,39 @@ fun ModalData.NewServerView(
       close = close
     )
   }) {
-    NewServerLayout(
-      userServers,
-      serverErrors,
-      operatorIndex,
-      rhId,
-      newServer,
-      testing
-      //    testServer = {
-      //      testing = true
-      //      withLongRunningApi {
-      //        val res = testServerConnection(server, m)
-      //        if (isActive) {
-      //          onUpdate(res.first)
-      //          testing = false
-      //        }
-      //      }
-      //    }
-    )
-  }
-  if (testing.value) {
-    Box(
-      Modifier.fillMaxSize(),
-      contentAlignment = Alignment.Center
-    ) {
-      CircularProgressIndicator(
-        Modifier
-          .padding(horizontal = 2.dp)
-          .size(30.dp),
-        color = MaterialTheme.colors.secondary,
-        strokeWidth = 2.5.dp
+    Box {
+      NewServerLayout(
+        newServer,
+        testing.value,
+        testServer = {
+          testing.value = true
+          withLongRunningApi {
+            val res = testServerConnection(newServer.value, chatModel)
+            if (isActive) {
+              newServer.value = res.first
+              testing.value = false
+            }
+          }
+        },
       )
+
+      if (testing.value) {
+        DefaultProgressView(null)
+      }
     }
   }
 }
 
 @Composable
 private fun NewServerLayout(
-  userServers: MutableState<List<UserOperatorServers>>,
-  serverErrors: MutableState<List<UserServersError>>,
-  operatorIndex: Int,
-  rhId: Long?,
   server: MutableState<UserServer>,
-  testing: MutableState<Boolean>
+  testing: Boolean,
+  testServer: () -> Unit,
 ) {
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.smp_servers_new_server))
-    CustomServer(userServers, serverErrors, operatorIndex, rhId, server, testing)
+    CustomServer(server, testing, testServer, onDelete = null)
     SectionBottomSpacer()
-  }
-}
-
-@Composable
-private fun CustomServer(
-  userServers: MutableState<List<UserOperatorServers>>,
-  serverErrors: MutableState<List<UserServersError>>,
-  operatorIndex: Int,
-  rhId: Long?,
-  server: MutableState<UserServer>,
-  testing: MutableState<Boolean>
-) {
-  val serverAddress = remember { mutableStateOf(server.value.server) }
-  val valid = remember {
-    derivedStateOf {
-      with(parseServerAddress(serverAddress.value)) {
-        this?.valid == true
-      }
-    }
-  }
-  SectionView(
-    stringResource(MR.strings.smp_servers_your_server_address).uppercase(),
-    icon = painterResource(MR.images.ic_error),
-    iconTint = if (!valid.value) MaterialTheme.colors.error else Color.Transparent,
-  ) {
-    val testedPreviously = remember { mutableMapOf<String, Boolean?>() }
-    TextEditor(
-      serverAddress,
-      Modifier.height(144.dp)
-    )
-    LaunchedEffect(Unit) {
-      snapshotFlow { serverAddress.value }
-        .distinctUntilChanged()
-        .collect {
-          testedPreviously[server.value.server] = server.value.tested
-          server.value = server.value.copy(server = it, tested = testedPreviously[serverAddress.value])
-        }
-    }
-  }
-  SectionDividerSpaced(maxTopPadding = true)
-  // UseServerSection(valid.value, testing, server, testServer, onUpdate, onDelete)
-
-  if (valid.value) {
-    SectionDividerSpaced()
-    SectionView(stringResource(MR.strings.smp_servers_add_to_another_device).uppercase()) {
-      QRCode(serverAddress.value)
-    }
   }
 }
 
@@ -165,6 +90,7 @@ fun serverProtocolAndOperator(
 }
 
 fun addServer(
+  scope: CoroutineScope,
   server: UserServer,
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
@@ -179,7 +105,6 @@ fun addServer(
       // Create a mutable copy of the userServers list
       val updatedUserServers = userServers.value.toMutableList()
       val operatorServers = updatedUserServers[operatorIndex]
-
       // Create a mutable copy of the smpServers or xftpServers and add the server
       when (serverProtocol) {
         ServerProtocol.SMP -> {
@@ -187,6 +112,7 @@ fun addServer(
           updatedSMPServers.add(server)
           updatedUserServers[operatorIndex] = operatorServers.copy(smpServers = updatedSMPServers)
         }
+
         ServerProtocol.XFTP -> {
           val updatedXFTPServers = operatorServers.xftpServers.toMutableList()
           updatedXFTPServers.add(server)
@@ -195,53 +121,25 @@ fun addServer(
       }
 
       userServers.value = updatedUserServers
-      // TODO
-      // validateServers(rhId, userServers, serverErrors)
       close()
+      scope.launch { validateServers(rhId, userServers, serverErrors) }
       matchingOperator?.let { op ->
         AlertManager.shared.showAlertMsg(
-          title = "Operator server",
-          text = "Server added to operator ${op.tradeName}."
+          title = generalGetString(MR.strings.operator_server_alert_title),
+          text = String.format(generalGetString(MR.strings.server_added_to_operator__name), op.tradeName)
         )
       }
     } else { // Shouldn't happen
       close()
-      AlertManager.shared.showAlertMsg(title = "Error adding server")
+      AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error_adding_server))
     }
   } else {
     close()
     if (server.server.trim().isNotEmpty()) {
       AlertManager.shared.showAlertMsg(
-        title = "Invalid server address!",
-        text = "Check server address and try again."
+        title = generalGetString(MR.strings.smp_servers_invalid_address),
+        text = generalGetString(MR.strings.smp_servers_check_address)
       )
     }
   }
 }
-
-//@Composable
-//private fun UseServerSection(
-//  valid: Boolean,
-//  testing: MutableState<Boolean>,
-//  server: UserServer
-//) {
-//  SectionView(stringResource(MR.strings.smp_servers_use_server).uppercase()) {
-//    SectionItemViewSpaceBetween(testServer, disabled = !valid || testing.value) {
-//      Text(stringResource(MR.strings.smp_servers_test_server), color = if (valid && !testing.value) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
-//      ShowTestStatus(server)
-//    }
-//
-//    val enabled = rememberUpdatedState(server.enabled)
-//    PreferenceToggle(
-//      stringResource(MR.strings.smp_servers_use_server_for_new_conn),
-//      disabled = server.tested != true && !server.preset,
-//      checked = enabled.value
-//    ) {
-//      onUpdate(server.copy(enabled = it))
-//    }
-//
-//    SectionItemView(onDelete, disabled = testing) {
-//      Text(stringResource(MR.strings.smp_servers_delete_server), color = if (testing) MaterialTheme.colors.secondary else MaterialTheme.colors.error)
-//    }
-//  }
-//}

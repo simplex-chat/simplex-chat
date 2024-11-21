@@ -241,6 +241,10 @@ fun ModalData.NetworkAndServersView(close: () -> Unit) {
       SectionCustomFooter {
         ServersErrorFooter(serversErr)
       }
+    } else if (serverErrors.value.isNotEmpty()) {
+      SectionCustomFooter {
+        ServersErrorFooter(generalGetString(MR.strings.errors_in_servers_configuration))
+      }
     }
 
     SectionDividerSpaced()

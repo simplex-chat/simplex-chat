@@ -117,6 +117,7 @@
   <string name="no_media_servers_configured_for_sending">No media &amp; file servers configured for sending.</string>
   <string name="no_media_servers_configured_for_private_routing">No media &amp; file servers configured for private routing.</string>
   <string name="for_chat_profile">For chat profile %s:</string>
+  <string name="errors_in_servers_configuration">Errors in servers configuration.</string>
   <string name="error_accepting_operator_conditions">Error accepting conditions</string>
 
   <!-- API Error Responses - SimpleXAPI.kt -->
@@ -1734,6 +1735,11 @@
   <string name="error_updating_server_title">Error updating server</string>
   <string name="error_server_protocol_changed">Server protocol changed.</string>
   <string name="error_server_operator_changed">Server operator changed.</string>
+
+  <!-- NewServerView.kt -->
+  <string name="operator_server_alert_title">Operator server</string>
+  <string name="server_added_to_operator__name">Server added to operator %s.</string>
+  <string name="error_adding_server">Error adding server</string>
 
   <!-- AdvancedNetworkSettings.kt -->
   <string name="network_option_tcp_connection">TCP connection</string>
