@@ -24,8 +24,8 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.getUserServers
@@ -34,9 +34,12 @@ import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.onboarding.OnboardingActionButton
+import chat.simplex.common.views.onboarding.ReadableText
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.launch
+import java.time.Clock
 
 @Composable
 fun ModalData.NetworkAndServersView(close: () -> Unit) {
@@ -160,9 +163,21 @@ fun ModalData.NetworkAndServersView(close: () -> Unit) {
     }
   }
 
+  @Composable
+  fun ConditionsButton(conditionsAction: UsageConditionsAction, rhId: Long?) {
+    SectionItemView(
+      click = { ModalManager.start.showModalCloseable { close -> UsageConditionsView(currUserServers, userServers, close, rhId) } },
+    ) {
+      Text(
+        stringResource(if (conditionsAction is UsageConditionsAction.Review) MR.strings.operator_review_conditions else MR.strings.operator_conditions_accepted),
+        color = MaterialTheme.colors.primary
+      )
+    }
+  }
+
   ColumnWithScrollBar {
-    val showModal = { it: @Composable ModalData.() -> Unit ->  ModalManager.start.showModal(content = it) }
-    val showCustomModal = { it: @Composable (close: () -> Unit) -> Unit -> ModalManager.start.showCustomModal { close -> it(close) }}
+    val showModal = { it: @Composable ModalData.() -> Unit -> ModalManager.start.showModal(content = it) }
+    val showCustomModal = { it: @Composable (close: () -> Unit) -> Unit -> ModalManager.start.showCustomModal { close -> it(close) } }
 
     AppBarTitle(stringResource(MR.strings.network_and_servers))
     // TODO: Review this and socks.
@@ -173,10 +188,10 @@ fun ModalData.NetworkAndServersView(close: () -> Unit) {
         }
       }
       if (conditionsAction != null && anyOperatorEnabled.value) {
-        ConditionsButton(conditionsAction)
+        ConditionsButton(conditionsAction, rhId = currentRemoteHost?.remoteHostId)
       }
       val footerText = if (conditionsAction is UsageConditionsAction.Review && conditionsAction.deadline != null && anyOperatorEnabled.value) {
-        String.format(generalGetString(MR.strings.operator_conditions_accepted_for_enabled_operators_on), localTimestamp(conditionsAction.deadline))
+        String.format(generalGetString(MR.strings.operator_conditions_accepted_for_enabled_operators_on), localDate(conditionsAction.deadline))
       } else null
 
       if (footerText != null) {
@@ -216,7 +231,7 @@ fun ModalData.NetworkAndServersView(close: () -> Unit) {
 
       if (currentRemoteHost == null) {
         UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy)
-        SettingsActionItem(painterResource(MR.images.ic_settings_ethernet), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkUseSocksProxy.value, appPrefs.networkProxy, onionHosts, sessionMode = appPrefs.networkSessionMode.get(), false, it) }})
+        SettingsActionItem(painterResource(MR.images.ic_settings_ethernet), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkUseSocksProxy.value, appPrefs.networkProxy, onionHosts, sessionMode = appPrefs.networkSessionMode.get(), false, it) } })
         SettingsActionItem(painterResource(MR.images.ic_cable), stringResource(MR.strings.network_settings), { ModalManager.start.showCustomModal { AdvancedNetworkSettingsView(showModal, it) } })
         if (networkUseSocksProxy.value) {
           SectionTextFooter(annotatedStringResource(MR.strings.socks_proxy_setting_limitations))
@@ -226,7 +241,6 @@ fun ModalData.NetworkAndServersView(close: () -> Unit) {
         }
       }
     }
-
     val saveDisabled = !serversCanBeSaved(currUserServers.value, userServers.value, serverErrors.value)
 
     SectionItemView(
@@ -262,9 +276,8 @@ fun ModalData.NetworkAndServersView(close: () -> Unit) {
       }
     }
     SectionBottomSpacer()
-
-    }
   }
+}
 
 @Composable fun OnionRelatedLayout(
   developerTools: Boolean,
@@ -670,28 +683,77 @@ private fun UnsavedChangesIndicator() {
 }
 
 @Composable
-private fun ModalData.UsageConditionsView(conditionsAction: UsageConditionsAction, close: () -> Unit) {
-  ModalView(close = close) {
-    Text("Hello")
+fun UsageConditionsView(
+  currUserServers: MutableState<List<UserOperatorServers>>,
+  userServers: MutableState<List<UserOperatorServers>>,
+  close: () -> Unit,
+  rhId: Long?
+) {
+  suspend fun acceptForOperators(rhId: Long?, operatorIds: List<Long>, close: () -> Unit) {
+    try {
+      val conditionsId = chatModel.conditions.value.currentConditions.conditionsId
+      val r = chatController.acceptConditions(rhId, conditionsId, operatorIds) ?: return
+      chatModel.conditions.value = r
+      updateOperatorsConditionsAcceptance(currUserServers, r.serverOperators)
+      updateOperatorsConditionsAcceptance(userServers, r.serverOperators)
+      close()
+    } catch (ex: Exception) {
+      Log.e(TAG, ex.stackTraceToString())
+    }
   }
-}
 
-@Composable
-fun ModalData.UsageConditionsView(currUserServers: List<UserOperatorServers>, userServers: List<UserOperatorServers>, close: () -> Unit) {
-  ModalView(close = close) {
-    Text("Hello")
+  @Composable
+  fun AcceptConditionsButton(operatorIds: List<Long>, close: () -> Unit, bottomPadding: Dp = DEFAULT_PADDING * 2) {
+    val scope = rememberCoroutineScope()
+    Column(Modifier.fillMaxWidth().padding(bottom = bottomPadding), horizontalAlignment = Alignment.CenterHorizontally) {
+      OnboardingActionButton(
+        labelId = MR.strings.accept_conditions,
+        onboarding = null,
+        enabled = operatorIds.isNotEmpty(),
+        onclick = {
+          scope.launch {
+            acceptForOperators(rhId, operatorIds, close)
+          }
+        }
+      )
+    }
   }
-}
 
-@Composable
-private fun ConditionsButton(conditionsAction: UsageConditionsAction) {
-  SectionItemView(
-    click = { ModalManager.start.showModalCloseable { close -> UsageConditionsView(conditionsAction, close) } },
-  ) {
-    Text(
-      stringResource(if (conditionsAction is UsageConditionsAction.Review) MR.strings.operator_review_conditions else MR.strings.operator_conditions_accepted),
-      color = MaterialTheme.colors.primary
-    )
+  ColumnWithScrollBar(modifier = Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING)) {
+    AppBarTitle(stringResource(MR.strings.operator_conditions_of_use), enableAlphaChanges = false, withPadding = false)
+    when (val conditionsAction = chatModel.conditions.value.conditionsAction) {
+      is UsageConditionsAction.Review -> {
+        if (conditionsAction.operators.isNotEmpty()) {
+          ReadableText(MR.strings.operators_conditions_will_be_accepted_for, args = conditionsAction.operators.joinToString(", ") { it.legalName_ })
+        }
+        Column(modifier = Modifier.weight(1f).padding(bottom = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF)) {
+          ConditionsTextView(rhId)
+        }
+        AcceptConditionsButton(conditionsAction.operators.map { it.operatorId }, close, if (conditionsAction.deadline != null) DEFAULT_PADDING_HALF else DEFAULT_PADDING * 2)
+        if (conditionsAction.deadline != null) {
+          SectionTextFooter(
+            text = AnnotatedString(String.format(generalGetString(MR.strings.operator_conditions_accepted_for_enabled_operators_on), localDate(conditionsAction.deadline))),
+            textAlign = TextAlign.Center
+          )
+          Spacer(Modifier.fillMaxWidth().height(DEFAULT_PADDING))
+        }
+      }
+
+      is UsageConditionsAction.Accepted -> {
+        if (conditionsAction.operators.isNotEmpty()) {
+          ReadableText(MR.strings.operators_conditions_accepted_for, args = conditionsAction.operators.joinToString(", ") { it.legalName_ })
+        }
+        Column(modifier = Modifier.weight(1f).padding(bottom = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF)) {
+          ConditionsTextView(rhId)
+        }
+      }
+
+      else -> {
+        Column(modifier = Modifier.weight(1f).padding(bottom = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF)) {
+          ConditionsTextView(rhId)
+        }
+      }
+    }
   }
 }
 

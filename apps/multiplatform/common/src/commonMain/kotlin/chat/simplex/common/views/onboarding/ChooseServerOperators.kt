@@ -86,9 +86,10 @@ fun ModalData.ChooseServerOperators(onboarding: Boolean, close: () -> Unit) {
               TextButtonBelowOnboardingButton(stringResource(MR.strings.operator_conditions_of_use)) {
                 ModalManager.fullscreen.showModalCloseable { close ->
                   UsageConditionsView(
-                    currUserServers = listOf(),
-                    userServers = listOf(),
-                    close = close
+                    currUserServers = remember { mutableStateOf(emptyList()) },
+                    userServers = remember { mutableStateOf(emptyList()) },
+                    close = close,
+                    rhId = null
                   )
                 }
               }

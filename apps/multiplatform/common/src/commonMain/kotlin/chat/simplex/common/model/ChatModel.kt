@@ -2569,6 +2569,13 @@ fun localTimestamp(t: Instant): String {
   return ts.toJavaLocalDateTime().format(dateFormatter)
 }
 
+fun localDate(t: Instant): String {
+  val tz = TimeZone.currentSystemDefault()
+  val ts: LocalDateTime = t.toLocalDateTime(tz)
+  val dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+  return ts.toJavaLocalDateTime().format(dateFormatter)
+}
+
 @Serializable
 sealed class CIStatus {
   @Serializable @SerialName("sndNew") class SndNew: CIStatus()

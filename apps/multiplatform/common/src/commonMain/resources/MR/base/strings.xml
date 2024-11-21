@@ -1695,8 +1695,10 @@
   <string name="network_preset_servers_title">Preset servers</string>
   <string name="operator_review_conditions">Review conditions</string>
   <string name="operator_conditions_accepted">Accepted conditions</string>
-  <string name="operator_conditions_accepted_for_enabled_operators_on">Conditions will be considered accepted for enabled operators after %s.</string>
+  <string name="operator_conditions_accepted_for_enabled_operators_on">Conditions will be automatically accepted for enabled operators on: %s.</string>
   <string name="your_servers">Your servers</string>
+  <string name="operators_conditions_accepted_for"><![CDATA[Conditions are accepted for the operator(s): <b>%s</b>.]]></string>
+  <string name="operators_conditions_will_be_accepted_for"><![CDATA[Conditions will be accepted for the operator(s): <b>%s</b>.]]></string>
 
   <!-- OperatorView.kt -->
   <string name="operator">Operator</string>
