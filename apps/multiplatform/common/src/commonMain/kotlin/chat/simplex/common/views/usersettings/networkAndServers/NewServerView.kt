@@ -44,7 +44,6 @@ fun ModalData.NewServerView(
       rhId,
       close = close
     )
-    close()
   }) {
     NewServerLayout(
       userServers,
