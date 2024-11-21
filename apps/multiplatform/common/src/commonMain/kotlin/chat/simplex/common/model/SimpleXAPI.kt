@@ -3718,8 +3718,8 @@ data class ServerOperator(
   val tradeName: String,
   val legalName: String?,
   val serverDomains: List<String>,
-  var conditionsAcceptance: ConditionsAcceptance,
-  var enabled: Boolean,
+  val conditionsAcceptance: ConditionsAcceptance,
+  val enabled: Boolean,
   val smpRoles: ServerRoles,
   val xftpRoles: ServerRoles,
 ) {
@@ -3821,20 +3821,20 @@ data class ServerOperator(
 
 @Serializable
 data class ServerRoles(
-  var storage: Boolean,
-  var proxy: Boolean
+  val storage: Boolean,
+  val proxy: Boolean
 )
 
 @Serializable
 data class UserOperatorServers(
-  var operator: ServerOperator?,
+  val operator: ServerOperator?,
   val smpServers: List<UserServer>,
   val xftpServers: List<UserServer>
 ) {
   val id: String
     get() = operator?.operatorId?.toString() ?: "nil operator"
 
-  var operator_: ServerOperator
+  val operator_: ServerOperator
     get() = operator ?: ServerOperator(
       operatorId = 0,
       operatorTag = null,
@@ -3846,9 +3846,6 @@ data class UserOperatorServers(
       smpRoles = ServerRoles(storage = true, proxy = true),
       xftpRoles = ServerRoles(storage = true, proxy = true)
     )
-    set(value) {
-      operator = value
-    }
 
   companion object {
     val sampleData1 = UserOperatorServers(

@@ -739,7 +739,13 @@ fun showUpdateNetworkSettingsDialog(
 fun updateOperatorsConditionsAcceptance(usvs: MutableState<List<UserOperatorServers>>, updatedOperators: List<ServerOperator>) {
   for (i in usvs.value.indices) {
     val updatedOperator = updatedOperators.firstOrNull { it.operatorId == usvs.value[i].operator?.operatorId } ?: continue
-    usvs.value[i].operator?.conditionsAcceptance = updatedOperator.conditionsAcceptance
+    usvs.value = usvs.value.toMutableList().apply {
+      this[i] = this[i].copy(
+        operator = this[i].operator?.copy(
+          conditionsAcceptance = updatedOperator.conditionsAcceptance
+        )
+      )
+    }
   }
 }
 
