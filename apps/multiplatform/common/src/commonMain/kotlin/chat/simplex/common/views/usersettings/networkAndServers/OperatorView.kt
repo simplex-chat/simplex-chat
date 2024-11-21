@@ -287,10 +287,10 @@ fun OperatorViewLayout(
 
       if (userServers.value[operatorIndex].xftpServers.any { !it.deleted }) {
         SectionDividerSpaced()
-        SectionView(generalGetString(MR.strings.operator_use_for_sending).uppercase()) {
+        SectionView(generalGetString(MR.strings.operator_use_for_files).uppercase()) {
           SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
             Text(
-              stringResource(MR.strings.operator_use_for_files),
+              stringResource(MR.strings.operator_use_for_sending),
               Modifier.padding(end = 24.dp),
               color = Color.Unspecified
             )
