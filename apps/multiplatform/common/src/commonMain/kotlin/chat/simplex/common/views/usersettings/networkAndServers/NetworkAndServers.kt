@@ -52,7 +52,7 @@ fun ModalData.NetworkAndServersView(close: () -> Unit) {
   val proxyPort = remember { derivedStateOf { appPrefs.networkProxy.state.value.port } }
   ModalView(
     close = {
-      if (currUserServers.value == userServers.value) {
+      if (!serversCanBeSaved(currUserServers.value, userServers.value, serverErrors.value)) {
         close()
       } else {
         showUnsavedChangesAlert(
@@ -227,7 +227,7 @@ fun ModalData.NetworkAndServersView(close: () -> Unit) {
       }
     }
 
-    val saveDisabled = userServers.value == currUserServers.value
+    val saveDisabled = !serversCanBeSaved(currUserServers.value, userServers.value, serverErrors.value)
 
     SectionItemView(
       { scope.launch { saveServers(rhId = currentRemoteHost?.remoteHostId, currUserServers, userServers) } },

@@ -152,16 +152,23 @@ fun OperatorViewLayout(
       }
       UseOperatorToggle(currUserServers = currUserServers, userServers = userServers, serverErrors = serverErrors, operatorIndex = operatorIndex, rhId = rhId)
     }
-    val footerText = when (val c = operator.conditionsAcceptance) {
-      is ConditionsAcceptance.Accepted -> if (c.acceptedAt != null) {
-        String.format(generalGetString(MR.strings.operator_conditions_accepted_on), localTimestamp(c.acceptedAt))
-      } else null
-      is ConditionsAcceptance.Required -> if (operator.enabled && c.deadline != null) {
-        String.format(generalGetString(MR.strings.operator_conditions_accepted_after), localTimestamp(c.deadline))
-      } else null
-    }
-    if (footerText != null) {
-      SectionTextFooter(footerText)
+    val serversErr = globalServersError(serverErrors.value)
+    if (serversErr != null) {
+      SectionCustomFooter {
+        ServerErrorsView(serversErr)
+      }
+    } else {
+      val footerText = when (val c = operator.conditionsAcceptance) {
+        is ConditionsAcceptance.Accepted -> if (c.acceptedAt != null) {
+          String.format(generalGetString(MR.strings.operator_conditions_accepted_on), localTimestamp(c.acceptedAt))
+        } else null
+        is ConditionsAcceptance.Required -> if (operator.enabled && c.deadline != null) {
+          String.format(generalGetString(MR.strings.operator_conditions_accepted_after), localTimestamp(c.deadline))
+        } else null
+      }
+      if (footerText != null) {
+        SectionTextFooter(footerText)
+      }
     }
 
     if (operator.enabled) {
@@ -216,10 +223,10 @@ fun OperatorViewLayout(
           }
 
         }
-        val smpErrors = globalSMPServersError(serverErrors.value)
-        if (smpErrors != null) {
+        val smpErr = globalSMPServersError(serverErrors.value)
+        if (smpErr != null) {
           SectionCustomFooter {
-            ServerErrorsView(smpErrors)
+            ServerErrorsView(smpErr)
           }
         }
       }
@@ -239,10 +246,10 @@ fun OperatorViewLayout(
             }
           }
         }
-        val smpErrors = globalSMPServersError(serverErrors.value)
-        if (smpErrors != null) {
+        val smpErr = globalSMPServersError(serverErrors.value)
+        if (smpErr != null) {
           SectionCustomFooter {
-            ServerErrorsView(smpErrors)
+            ServerErrorsView(smpErr)
           }
         } else {
           SectionTextFooter(
@@ -302,10 +309,10 @@ fun OperatorViewLayout(
             )
           }
         }
-        val xftpErrors = globalXFTPServersError(serverErrors.value)
-        if (xftpErrors != null) {
+        val xftpErr = globalXFTPServersError(serverErrors.value)
+        if (xftpErr != null) {
           SectionCustomFooter {
-            ServerErrorsView(xftpErrors)
+            ServerErrorsView(xftpErr)
           }
         }
       }
@@ -325,10 +332,10 @@ fun OperatorViewLayout(
             }
           }
         }
-        val xftpErrors = globalXFTPServersError(serverErrors.value)
-        if (xftpErrors != null) {
+        val xftpErr = globalXFTPServersError(serverErrors.value)
+        if (xftpErr != null) {
           SectionCustomFooter {
-            ServerErrorsView(xftpErrors)
+            ServerErrorsView(xftpErr)
           }
         } else {
           SectionTextFooter(
@@ -358,24 +365,6 @@ fun OperatorViewLayout(
               )
             }
           }
-        }
-        val xftpErrors = globalXFTPServersError(serverErrors.value)
-        if (xftpErrors != null) {
-          SectionCustomFooter {
-            ServerErrorsView(xftpErrors)
-          }
-        } else {
-          SectionTextFooter(
-            remember(currentUser?.displayName) {
-              buildAnnotatedString {
-                append(generalGetString(MR.strings.xftp_servers_per_user) + " ")
-                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                  append(currentUser?.displayName ?: "")
-                }
-                append(".")
-              }
-            }
-          )
         }
       }
 

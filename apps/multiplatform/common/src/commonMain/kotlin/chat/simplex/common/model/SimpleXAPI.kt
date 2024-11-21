@@ -3873,12 +3873,11 @@ sealed class UserServersError {
   @Serializable @SerialName("duplicateServer") data class DuplicateServer(val protocol: ServerProtocol, val duplicateServer: String, val duplicateHost: String): UserServersError()
 
   val globalError: String?
-    get() = when (this) {
-      is NoServers -> protocol.toGlobalError({ this.globalSMPError }, { this.globalXFTPError })
-      is StorageMissing -> protocol.toGlobalError({ this.globalSMPError }, { this.globalXFTPError })
-      is ProxyMissing -> protocol.toGlobalError({ this.globalSMPError }, { this.globalXFTPError })
-      else -> null
+    get() = when (this.protocol_) {
+      ServerProtocol.SMP -> globalSMPError
+      ServerProtocol.XFTP -> globalXFTPError
     }
+
   private val protocol_: ServerProtocol
     get() = when (this) {
       is NoServers -> this.protocol
@@ -3886,6 +3885,7 @@ sealed class UserServersError {
       is ProxyMissing -> this.protocol
       is DuplicateServer -> this.protocol
     }
+
   val globalSMPError: String?
     get() = if (this.protocol_ == ServerProtocol.SMP) {
       when (this) {
@@ -3903,6 +3903,7 @@ sealed class UserServersError {
     } else {
       null
     }
+
   val globalXFTPError: String?
     get() = if (this.protocol_ == ServerProtocol.XFTP) {
       when (this) {
@@ -3923,16 +3924,6 @@ sealed class UserServersError {
 
   private fun userStr(user: UserRef): String {
     return String.format(generalGetString(MR.strings.for_chat_profile), user.localDisplayName)
-  }
-
-  private fun ServerProtocol.toGlobalError(
-    smpHandler: () -> String?,
-    xftpHandler: () -> String?
-  ): String? {
-    return when (this) {
-      ServerProtocol.SMP -> smpHandler()
-      ServerProtocol.XFTP -> xftpHandler()
-    }
   }
 }
 

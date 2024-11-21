@@ -87,10 +87,10 @@ fun YourServersViewLayout(
           }
         }
       }
-      val smpErrors = globalSMPServersError(serverErrors.value)
-      if (smpErrors != null) {
+      val smpErr = globalSMPServersError(serverErrors.value)
+      if (smpErr != null) {
         SectionCustomFooter {
-          ServerErrorsView(smpErrors)
+          ServerErrorsView(smpErr)
         }
       } else {
         SectionTextFooter(
@@ -121,10 +121,10 @@ fun YourServersViewLayout(
           }
         }
       }
-      val xftpErrors = globalXFTPServersError(serverErrors.value)
-      if (xftpErrors != null) {
+      val xftpErr = globalXFTPServersError(serverErrors.value)
+      if (xftpErr != null) {
         SectionCustomFooter {
-          ServerErrorsView(xftpErrors)
+          ServerErrorsView(xftpErr)
         }
       } else {
         SectionTextFooter(
@@ -157,6 +157,12 @@ fun YourServersViewLayout(
         textColor = if (testing.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
         iconColor = if (testing.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
       )
+    }
+    val serversErr = globalServersError(serverErrors.value)
+    if (serversErr != null) {
+      SectionCustomFooter {
+        ServerErrorsView(serversErr)
+      }
     }
     SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
 
