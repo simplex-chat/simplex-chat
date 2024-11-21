@@ -9,8 +9,6 @@ import SectionView
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import dev.icerock.moko.resources.compose.painterResource
@@ -36,10 +34,26 @@ fun ModalData.YourServersView(
   rhId: Long?
 ) {
   val testing = remember { mutableStateOf(false) }
+  val currentUser = remember { chatModel.currentUser }.value
+  val scope = rememberCoroutineScope()
 
-  ColumnWithScrollBar {
-    AppBarTitle(stringResource(MR.strings.your_servers))
-    YourServersViewLayout(currUserServers, userServers, serverErrors, operatorIndex, rhId, testing.value)
+  Box {
+    ColumnWithScrollBar {
+      AppBarTitle(stringResource(MR.strings.your_servers))
+      YourServersViewLayout(
+        currUserServers,
+        userServers,
+        serverErrors,
+        operatorIndex,
+        navigateToProtocolView = { serverIndex, server, protocol ->
+          navigateToProtocolView(scope, userServers, serverErrors, operatorIndex, rhId, serverIndex, server, protocol)
+        },
+        currentUser,
+        rhId,
+        testing
+      )
+    }
+
     if (testing.value) {
       DefaultProgressView(null)
     }
@@ -52,17 +66,19 @@ fun YourServersViewLayout(
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
   operatorIndex: Int,
+  navigateToProtocolView: (Int, UserServer, ServerProtocol) -> Unit,
+  currentUser: User?,
   rhId: Long?,
-  testing: Boolean
+  testing: MutableState<Boolean>
 ) {
-  val scope = rememberCoroutineScope()
   val duplicateHosts = findDuplicateHosts(serverErrors.value)
 
   Column {
     if (userServers.value[operatorIndex].smpServers.any { !it.deleted }) {
       SectionView(generalGetString(MR.strings.message_servers).uppercase()) {
-        userServers.value[operatorIndex].smpServers.forEach { server ->
-          SectionItemView {
+        userServers.value[operatorIndex].smpServers.forEachIndexed { i, server  ->
+          if (server.deleted) return@forEachIndexed
+          SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.SMP) }) {
             ProtocolServerView(
               srv = server,
               serverProtocol = ServerProtocol.SMP,
@@ -76,30 +92,95 @@ fun YourServersViewLayout(
         SectionCustomFooter {
           ServerErrorsView(smpErrors)
         }
+      } else {
+        SectionTextFooter(
+          remember(currentUser?.displayName) {
+            buildAnnotatedString {
+              append(generalGetString(MR.strings.smp_servers_per_user) + " ")
+              withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                append(currentUser?.displayName ?: "")
+              }
+              append(".")
+            }
+          }
+        )
       }
     }
 
-    SectionDividerSpaced()
+    if (userServers.value[operatorIndex].xftpServers.any { !it.deleted }) {
+      SectionDividerSpaced()
+      SectionView(generalGetString(MR.strings.media_and_file_servers).uppercase()) {
+        userServers.value[operatorIndex].xftpServers.forEachIndexed { i, server ->
+          if (server.deleted) return@forEachIndexed
+          SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.XFTP) }) {
+            ProtocolServerView(
+              srv = server,
+              serverProtocol = ServerProtocol.XFTP,
+              duplicateHosts = duplicateHosts
+            )
+          }
+        }
+      }
+      val xftpErrors = globalXFTPServersError(serverErrors.value)
+      if (xftpErrors != null) {
+        SectionCustomFooter {
+          ServerErrorsView(xftpErrors)
+        }
+      } else {
+        SectionTextFooter(
+          remember(currentUser?.displayName) {
+            buildAnnotatedString {
+              append(generalGetString(MR.strings.xftp_servers_per_user) + " ")
+              withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                append(currentUser?.displayName ?: "")
+              }
+              append(".")
+            }
+          }
+        )
+      }
+    }
+
+    if (
+      userServers.value[operatorIndex].smpServers.any { !it.deleted } ||
+      userServers.value[operatorIndex].xftpServers.any { !it.deleted }
+      ) {
+      SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
+    }
 
     SectionView {
       SettingsActionItem(
         painterResource(MR.images.ic_add),
         stringResource(MR.strings.smp_servers_add),
         click = { showAddServerDialog(userServers, serverErrors, operatorIndex, rhId) },
-        disabled = testing,
-        textColor = if (testing) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
-        iconColor = if (testing) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
+        disabled = testing.value,
+        textColor = if (testing.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
+        iconColor = if (testing.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
       )
     }
     SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
 
     SectionView {
-      // TODO Test servers button
-      SectionItemView { Text("Test servers") }
-    }
-    SectionDividerSpaced(maxBottomPadding = false)
+      TestServersButton(
+        testing = testing,
+        smpServers = userServers.value[operatorIndex].smpServers,
+        xftpServers = userServers.value[operatorIndex].xftpServers,
+      ) { p, l ->
+        when (p) {
+          ServerProtocol.XFTP -> userServers.value = userServers.value.toMutableList().apply {
+            this[operatorIndex] = this[operatorIndex].copy(
+              xftpServers = l
+            )
+          }
 
-    SectionView {
+          ServerProtocol.SMP -> userServers.value = userServers.value.toMutableList().apply {
+            this[operatorIndex] = this[operatorIndex].copy(
+              smpServers = l
+            )
+          }
+        }
+      }
+
       HowToButton()
     }
     SectionBottomSpacer()
