@@ -9,6 +9,8 @@
 import SwiftUI
 import SimpleXChat
 
+let conditionsURL = URL(string: "https://github.com/simplex-chat/simplex-chat/blob/stable/PRIVACY.md")!
+
 struct OnboardingButtonStyle: ButtonStyle {
     @EnvironmentObject var theme: AppTheme
     var isDisabled: Bool = false
@@ -313,6 +315,7 @@ struct ChooseServerOperators: View {
         reviewConditionsView()
             .navigationTitle("Conditions of use")
             .navigationBarTitleDisplayMode(.large)
+            .toolbar { ToolbarItem(placement: .navigationBarTrailing, content: conditionsLinkButton) }
             .modifier(ThemedBackground(grouped: true))
     }
 

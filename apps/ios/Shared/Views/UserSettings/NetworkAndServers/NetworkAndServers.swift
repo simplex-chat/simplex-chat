@@ -238,11 +238,13 @@ struct UsageConditionsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("Conditions of use")
-                .font(.largeTitle)
-                .bold()
-                .padding(.top)
-                .padding(.top)
+            HStack {
+                Text("Conditions of use").font(.largeTitle).bold()
+                Spacer()
+                conditionsLinkButton()
+            }
+            .padding(.top)
+            .padding(.top)
 
             switch ChatModel.shared.conditions.conditionsAction {
 

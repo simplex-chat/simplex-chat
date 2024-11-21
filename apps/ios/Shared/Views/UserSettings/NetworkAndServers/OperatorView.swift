@@ -464,11 +464,13 @@ struct SingleOperatorUsageConditionsView: View {
     }
 
     private func viewHeader() -> some View {
-        Text("Use servers of \(userServers[operatorIndex].operator_.tradeName)")
-            .font(.largeTitle)
-            .bold()
-            .padding(.top)
-            .padding(.top)
+        HStack {
+            Text("Use \(userServers[operatorIndex].operator_.tradeName)").font(.largeTitle).bold()
+            Spacer()
+            conditionsLinkButton()
+        }
+        .padding(.top)
+        .padding(.top)
     }
 
     @ViewBuilder private func conditionsAppliedToOtherOperatorsText() -> some View {
@@ -545,7 +547,30 @@ struct SingleOperatorUsageConditionsView: View {
             .padding(.bottom)
             .navigationTitle("Conditions of use")
             .navigationBarTitleDisplayMode(.large)
+            .toolbar { ToolbarItem(placement: .navigationBarTrailing, content: conditionsLinkButton) }
             .modifier(ThemedBackground(grouped: true))
+    }
+}
+
+func conditionsLinkButton() -> some View {
+    let commit = ChatModel.shared.conditions.currentConditions.conditionsCommit
+    let mdUrl = URL(string: "https://github.com/simplex-chat/simplex-chat/blob/\(commit)/PRIVACY.md") ?? conditionsURL
+    return Menu {
+        Link(destination: mdUrl) {
+            Label("Open conditions", systemImage: "doc")
+        }
+        if let commitUrl = URL(string: "https://github.com/simplex-chat/simplex-chat/commit/\(commit)") {
+            Link(destination: commitUrl) {
+                Label("Open changes", systemImage: "ellipsis")
+            }
+        }
+    } label: {
+        Image(systemName: "arrow.up.right.circle")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 20)
+            .padding(2)
+            .contentShape(Circle())
     }
 }
 
