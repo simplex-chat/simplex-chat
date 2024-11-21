@@ -24,10 +24,14 @@ fun AppBarTitle(
   bottomPadding: Dp = DEFAULT_PADDING * 1.5f + 8.dp,
   enableAlphaChanges: Boolean = true
 ) {
-  val handler = if (enableAlphaChanges) LocalAppBarHandler.current else null
-  val connection = handler?.connection
+  val handler = LocalAppBarHandler.current
+  val connection = if (enableAlphaChanges) handler?.connection else null
   LaunchedEffect(title) {
-    handler?.title?.value = title
+    if (enableAlphaChanges) {
+      handler?.title?.value = title
+    } else {
+      handler?.connection?.scrollTrackingEnabled = false
+    }
   }
   val theme = CurrentColors.collectAsState()
   val titleColor = MaterialTheme.appColors.title
@@ -60,7 +64,8 @@ fun AppBarTitle(
 }
 
 private fun bottomTitleAlpha(connection: CollapsingAppBarNestedScrollConnection?) =
-  if ((connection?.appBarOffset ?: 0f).absoluteValue < AppBarHandler.appBarMaxHeightPx / 3) 1f
+  if (connection?.scrollTrackingEnabled == false) 1f
+  else if ((connection?.appBarOffset ?: 0f).absoluteValue < AppBarHandler.appBarMaxHeightPx / 3) 1f
   else ((AppBarHandler.appBarMaxHeightPx) + (connection?.appBarOffset ?: 0f) / 1.5f).coerceAtLeast(0f) / AppBarHandler.appBarMaxHeightPx
 
 @Composable
