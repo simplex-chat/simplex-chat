@@ -23,11 +23,11 @@ import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.res.MR
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
 fun ModalData.YourServersView(
-  currUserServers: MutableState<List<UserOperatorServers>>,
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
   operatorIndex: Int,
@@ -41,7 +41,7 @@ fun ModalData.YourServersView(
     ColumnWithScrollBar {
       AppBarTitle(stringResource(MR.strings.your_servers))
       YourServersViewLayout(
-        currUserServers,
+        scope,
         userServers,
         serverErrors,
         operatorIndex,
@@ -62,7 +62,7 @@ fun ModalData.YourServersView(
 
 @Composable
 fun YourServersViewLayout(
-  currUserServers: MutableState<List<UserOperatorServers>>,
+  scope: CoroutineScope,
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
   operatorIndex: Int,
@@ -152,7 +152,7 @@ fun YourServersViewLayout(
       SettingsActionItem(
         painterResource(MR.images.ic_add),
         stringResource(MR.strings.smp_servers_add),
-        click = { showAddServerDialog(userServers, serverErrors, operatorIndex, rhId) },
+        click = { showAddServerDialog(scope, userServers, serverErrors, rhId) },
         disabled = testing.value,
         textColor = if (testing.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
         iconColor = if (testing.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
@@ -216,9 +216,9 @@ fun TestServersButton(
 }
 
 fun showAddServerDialog(
+  scope: CoroutineScope,
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
-  operatorIndex: Int,
   rhId: Long?
 ) {
   AlertManager.shared.showAlertDialogButtonsColumn(
@@ -237,9 +237,15 @@ fun showAddServerDialog(
           SectionItemView({
             AlertManager.shared.hideAlert()
             ModalManager.start.showModalCloseable { close ->
-              ScanProtocolServer(rhId) {
-                close()
-                // TODO reuse logic from NewServerView
+              ScanProtocolServer(rhId) { server ->
+                addServer(
+                  scope,
+                  server,
+                  userServers,
+                  serverErrors,
+                  rhId,
+                  close = close
+                )
               }
             }
           }

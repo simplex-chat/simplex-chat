@@ -192,7 +192,6 @@ fun ModalData.NetworkAndServersView(close: () -> Unit) {
         SectionItemView({
           ModalManager.start.showModal {
             YourServersView(
-              currUserServers = currUserServers,
               userServers = userServers,
               serverErrors = serverErrors,
               operatorIndex = nullOperatorIndex,
