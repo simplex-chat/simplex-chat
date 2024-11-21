@@ -3277,7 +3277,7 @@ sealed class CC {
     is APISendMemberContactInvitation -> "/_invite member contact @$contactId ${mc.cmdString}"
     is APITestProtoServer -> "/_server test $userId $server"
     is ApiGetServerOperators -> "/_operators"
-    is ApiSetServerOperators -> "/_operators ${json.encodeToString(operators)}}"
+    is ApiSetServerOperators -> "/_operators ${json.encodeToString(operators)}"
     is ApiGetUserServers -> "/_servers $userId"
     is ApiSetUserServers -> "/_servers $userId ${json.encodeToString(userServers)}"
     is ApiValidateServers -> "/_validate_servers $userId ${json.encodeToString(userServers)}"
