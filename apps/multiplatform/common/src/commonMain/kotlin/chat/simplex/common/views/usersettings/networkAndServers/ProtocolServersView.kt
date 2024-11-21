@@ -90,7 +90,7 @@ fun YourServersViewLayout(
       val smpErr = globalSMPServersError(serverErrors.value)
       if (smpErr != null) {
         SectionCustomFooter {
-          ServerErrorsView(smpErr)
+          ServersErrorFooter(smpErr)
         }
       } else {
         SectionTextFooter(
@@ -124,7 +124,7 @@ fun YourServersViewLayout(
       val xftpErr = globalXFTPServersError(serverErrors.value)
       if (xftpErr != null) {
         SectionCustomFooter {
-          ServerErrorsView(xftpErr)
+          ServersErrorFooter(xftpErr)
         }
       } else {
         SectionTextFooter(
@@ -161,7 +161,7 @@ fun YourServersViewLayout(
     val serversErr = globalServersError(serverErrors.value)
     if (serversErr != null) {
       SectionCustomFooter {
-        ServerErrorsView(serversErr)
+        ServersErrorFooter(serversErr)
       }
     }
     SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)

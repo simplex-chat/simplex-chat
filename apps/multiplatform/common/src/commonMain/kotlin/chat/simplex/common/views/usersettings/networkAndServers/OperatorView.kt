@@ -150,12 +150,19 @@ fun OperatorViewLayout(
         TextIconSpaced()
         Text(operator.tradeName, color = MaterialTheme.colors.onBackground)
       }
-      UseOperatorToggle(currUserServers = currUserServers, userServers = userServers, serverErrors = serverErrors, operatorIndex = operatorIndex, rhId = rhId)
+      UseOperatorToggle(
+        scope = scope,
+        currUserServers = currUserServers,
+        userServers = userServers,
+        serverErrors = serverErrors,
+        operatorIndex = operatorIndex,
+        rhId = rhId
+      )
     }
     val serversErr = globalServersError(serverErrors.value)
     if (serversErr != null) {
       SectionCustomFooter {
-        ServerErrorsView(serversErr)
+        ServersErrorFooter(serversErr)
       }
     } else {
       val footerText = when (val c = operator.conditionsAcceptance) {
@@ -226,7 +233,7 @@ fun OperatorViewLayout(
         val smpErr = globalSMPServersError(serverErrors.value)
         if (smpErr != null) {
           SectionCustomFooter {
-            ServerErrorsView(smpErr)
+            ServersErrorFooter(smpErr)
           }
         }
       }
@@ -249,7 +256,7 @@ fun OperatorViewLayout(
         val smpErr = globalSMPServersError(serverErrors.value)
         if (smpErr != null) {
           SectionCustomFooter {
-            ServerErrorsView(smpErr)
+            ServersErrorFooter(smpErr)
           }
         } else {
           SectionTextFooter(
@@ -312,7 +319,7 @@ fun OperatorViewLayout(
         val xftpErr = globalXFTPServersError(serverErrors.value)
         if (xftpErr != null) {
           SectionCustomFooter {
-            ServerErrorsView(xftpErr)
+            ServersErrorFooter(xftpErr)
           }
         }
       }
@@ -335,7 +342,7 @@ fun OperatorViewLayout(
         val xftpErr = globalXFTPServersError(serverErrors.value)
         if (xftpErr != null) {
           SectionCustomFooter {
-            ServerErrorsView(xftpErr)
+            ServersErrorFooter(xftpErr)
           }
         } else {
           SectionTextFooter(
@@ -419,6 +426,7 @@ private fun OperatorInfoView(serverOperator: ServerOperator) {
 
 @Composable
 private fun UseOperatorToggle(
+  scope: CoroutineScope,
   currUserServers: MutableState<List<UserOperatorServers>>,
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
@@ -440,6 +448,7 @@ private fun UseOperatorToggle(
           when (val conditionsAcceptance = operator?.conditionsAcceptance) {
             is ConditionsAcceptance.Accepted -> {
               changeOperatorEnabled(userServers, operatorIndex, true)
+              scope.launch { validateServers(rhId, userServers, serverErrors) }
             }
 
             is ConditionsAcceptance.Required -> {
@@ -456,6 +465,7 @@ private fun UseOperatorToggle(
                 }
               } else {
                 changeOperatorEnabled(userServers, operatorIndex, true)
+                scope.launch { validateServers(rhId, userServers, serverErrors) }
               }
             }
 
@@ -463,6 +473,7 @@ private fun UseOperatorToggle(
           }
         } else {
           changeOperatorEnabled(userServers, operatorIndex, false)
+          scope.launch { validateServers(rhId, userServers, serverErrors) }
         }
       },
     )

@@ -1,6 +1,7 @@
 package chat.simplex.common.views.usersettings.networkAndServers
 
 import SectionBottomSpacer
+import SectionCustomFooter
 import SectionDividerSpaced
 import SectionItemView
 import SectionItemWithValue
@@ -234,6 +235,12 @@ fun ModalData.NetworkAndServersView(close: () -> Unit) {
       disabled = saveDisabled,
     ) {
       Text(stringResource(MR.strings.smp_servers_save), color = if (!saveDisabled) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
+    }
+    val serversErr = globalServersError(serverErrors.value)
+    if (serversErr != null) {
+      SectionCustomFooter {
+        ServersErrorFooter(serversErr)
+      }
     }
 
     SectionDividerSpaced()
@@ -679,8 +686,11 @@ private fun ConditionsButton(conditionsAction: UsageConditionsAction) {
 }
 
 @Composable
-fun ServerErrorsView(errStr: String) {
-  Row {
+fun ServersErrorFooter(errStr: String) {
+  Row(
+    Modifier.fillMaxWidth(),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
     Icon(
       painterResource(MR.images.ic_error),
       contentDescription = stringResource(MR.strings.server_error),
@@ -690,7 +700,12 @@ fun ServerErrorsView(errStr: String) {
         .offset(x = 2.sp.toDp())
     )
     TextIconSpaced()
-    Text(errStr, color = MaterialTheme.colors.secondary)
+    Text(
+      errStr,
+      color = MaterialTheme.colors.secondary,
+      lineHeight = 18.sp,
+      fontSize = 14.sp
+    )
   }
 }
 
