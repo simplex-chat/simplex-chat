@@ -50,8 +50,14 @@ fun ModalData.NetworkAndServersView(close: () -> Unit) {
   val currUserServers = remember { stateGetOrPut("currUserServers") { emptyList<UserOperatorServers>() } }
   val userServers = remember { stateGetOrPut("userServers") { emptyList<UserOperatorServers>() } }
   val serverErrors = remember { stateGetOrPut("serverErrors") { emptyList<UserServersError>() } }
-
   val scope = rememberCoroutineScope()
+
+  LaunchedEffect(userServers) {
+    snapshotFlow { userServers.value }
+      .collect { updatedServers ->
+        validateServers(rhId = currentRemoteHost?.remoteHostId, userServersToValidate = updatedServers, serverErrors = serverErrors)
+      }
+  }
 
   val proxyPort = remember { derivedStateOf { appPrefs.networkProxy.state.value.port } }
   ModalView(
@@ -819,11 +825,9 @@ fun updateOperatorsConditionsAcceptance(usvs: MutableState<List<UserOperatorServ
 
 suspend fun validateServers(
   rhId: Long?,
-  userServers: MutableState<List<UserOperatorServers>>,
+  userServersToValidate: List<UserOperatorServers>,
   serverErrors: MutableState<List<UserServersError>>
 ) {
-  val userServersToValidate = userServers.value
-
   try {
     val errors = chatController.validateServers(rhId, userServersToValidate) ?: return
     serverErrors.value = errors

@@ -22,6 +22,13 @@ fun ModalData.NewServerView(
   val scope = rememberCoroutineScope()
   val newServer = remember { mutableStateOf(UserServer.empty) }
 
+  LaunchedEffect(userServers) {
+    snapshotFlow { userServers.value }
+      .collect { updatedServers ->
+        validateServers(rhId = rhId, userServersToValidate = updatedServers, serverErrors = serverErrors)
+      }
+  }
+
   ModalView(close = {
     addServer(
       scope,
@@ -122,7 +129,6 @@ fun addServer(
 
       userServers.value = updatedUserServers
       close()
-      scope.launch { validateServers(rhId, userServers, serverErrors) }
       matchingOperator?.let { op ->
         AlertManager.shared.showAlertMsg(
           title = generalGetString(MR.strings.operator_server_alert_title),

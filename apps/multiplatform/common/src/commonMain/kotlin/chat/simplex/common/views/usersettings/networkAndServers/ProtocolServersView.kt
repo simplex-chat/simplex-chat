@@ -46,7 +46,7 @@ fun ModalData.YourServersView(
         serverErrors,
         operatorIndex,
         navigateToProtocolView = { serverIndex, server, protocol ->
-          navigateToProtocolView(scope, userServers, serverErrors, operatorIndex, rhId, serverIndex, server, protocol)
+          navigateToProtocolView(userServers, serverErrors, operatorIndex, rhId, serverIndex, server, protocol)
         },
         currentUser,
         rhId,

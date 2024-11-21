@@ -44,7 +44,13 @@ fun ModalData.OperatorView(
   val testing = remember { mutableStateOf(false) }
   val operator = remember { userServers.value[operatorIndex].operator_ }
   val currentUser = remember { chatModel.currentUser }.value
-  val scope = rememberCoroutineScope()
+
+  LaunchedEffect(userServers) {
+    snapshotFlow { userServers.value }
+      .collect { updatedServers ->
+        validateServers(rhId = rhId, userServersToValidate = updatedServers, serverErrors = serverErrors)
+      }
+  }
 
   Box {
     ColumnWithScrollBar(Modifier.alpha(if (testing.value) 0.6f else 1f)) {
@@ -55,7 +61,7 @@ fun ModalData.OperatorView(
         serverErrors,
         operatorIndex,
         navigateToProtocolView = { serverIndex, server, protocol ->
-          navigateToProtocolView(scope, userServers, serverErrors, operatorIndex, rhId, serverIndex, server, protocol)
+          navigateToProtocolView(userServers, serverErrors, operatorIndex, rhId, serverIndex, server, protocol)
         },
         currentUser,
         rhId,
@@ -70,7 +76,6 @@ fun ModalData.OperatorView(
 }
 
 fun navigateToProtocolView(
-  scope: CoroutineScope,
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
   operatorIndex: Int,
@@ -93,7 +98,6 @@ fun navigateToProtocolView(
           deleteXFTPServer(userServers, operatorIndex, serverIndex)
         }
         close()
-        scope.launch { validateServers(rhId, userServers, serverErrors) }
       },
       onUpdate = { updatedServer ->
         userServers.value = userServers.value.toMutableList().apply {
@@ -195,9 +199,6 @@ fun OperatorViewLayout(
                     )
                   )
                 }
-                scope.launch {
-                  validateServers(rhId, userServers, serverErrors)
-                }
               }
             )
           }
@@ -217,9 +218,6 @@ fun OperatorViewLayout(
                       smpRoles = this[operatorIndex].operator?.smpRoles?.copy(proxy = enabled) ?: ServerRoles(storage = false, proxy = enabled)
                     )
                   )
-                }
-                scope.launch {
-                  validateServers(rhId, userServers, serverErrors)
                 }
               }
             )
@@ -304,9 +302,6 @@ fun OperatorViewLayout(
                       xftpRoles = this[operatorIndex].operator?.xftpRoles?.copy(storage = enabled) ?: ServerRoles(storage = enabled, proxy = false)
                     )
                   )
-                }
-                scope.launch {
-                  validateServers(rhId, userServers, serverErrors)
                 }
               }
             )
@@ -444,7 +439,6 @@ private fun UseOperatorToggle(
           when (val conditionsAcceptance = operator?.conditionsAcceptance) {
             is ConditionsAcceptance.Accepted -> {
               changeOperatorEnabled(userServers, operatorIndex, true)
-              scope.launch { validateServers(rhId, userServers, serverErrors) }
             }
 
             is ConditionsAcceptance.Required -> {
@@ -461,7 +455,6 @@ private fun UseOperatorToggle(
                 }
               } else {
                 changeOperatorEnabled(userServers, operatorIndex, true)
-                scope.launch { validateServers(rhId, userServers, serverErrors) }
               }
             }
 
@@ -469,7 +462,6 @@ private fun UseOperatorToggle(
           }
         } else {
           changeOperatorEnabled(userServers, operatorIndex, false)
-          scope.launch { validateServers(rhId, userServers, serverErrors) }
         }
       },
     )
@@ -498,7 +490,6 @@ private fun SingleOperatorUsageConditionsView(
       updateOperatorsConditionsAcceptance(currUserServers, r.serverOperators)
       updateOperatorsConditionsAcceptance(userServers, r.serverOperators)
       changeOperatorEnabled(userServers, operatorIndex, true)
-      validateServers(rhId, userServers, serverErrors)
       close()
     } catch (ex: Exception) {
       Log.e(TAG, ex.stackTraceToString())

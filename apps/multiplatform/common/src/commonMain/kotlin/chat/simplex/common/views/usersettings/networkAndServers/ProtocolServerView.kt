@@ -45,6 +45,13 @@ fun ProtocolServerView(
   val scope = rememberCoroutineScope()
   val draftServer = remember { mutableStateOf(server) }
 
+  LaunchedEffect(userServers) {
+    snapshotFlow { userServers.value }
+      .collect { updatedServers ->
+        validateServers(rhId = rhId, userServersToValidate = updatedServers, serverErrors = serverErrors)
+      }
+  }
+
   ModalView(
     close = {
       scope.launch {
@@ -70,7 +77,6 @@ fun ProtocolServerView(
           } else {
             onUpdate(draftServer.value)
             close()
-            validateServers(rhId, userServers, serverErrors)
           }
         } else {
           close()
