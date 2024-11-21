@@ -79,7 +79,7 @@ fun YourServersViewLayout(
         userServers.value[operatorIndex].smpServers.forEachIndexed { i, server  ->
           if (server.deleted) return@forEachIndexed
           SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.SMP) }) {
-            ProtocolServerView(
+            ProtocolServerViewLink(
               srv = server,
               serverProtocol = ServerProtocol.SMP,
               duplicateHosts = duplicateHosts
@@ -113,7 +113,7 @@ fun YourServersViewLayout(
         userServers.value[operatorIndex].xftpServers.forEachIndexed { i, server ->
           if (server.deleted) return@forEachIndexed
           SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.XFTP) }) {
-            ProtocolServerView(
+            ProtocolServerViewLink(
               srv = server,
               serverProtocol = ServerProtocol.XFTP,
               duplicateHosts = duplicateHosts
@@ -259,7 +259,7 @@ fun showAddServerDialog(
 }
 
 @Composable
-fun ProtocolServerView(serverProtocol: ServerProtocol, srv: UserServer, duplicateHosts: Set<String>) {
+fun ProtocolServerViewLink(serverProtocol: ServerProtocol, srv: UserServer, duplicateHosts: Set<String>) {
   val address = parseServerAddress(srv.server)
   when {
     address == null || !address.valid || address.serverProtocol != serverProtocol || address.hostnames.any { it in duplicateHosts } -> InvalidServer()
