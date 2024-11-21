@@ -376,6 +376,16 @@ userName :: TestCC -> IO [Char]
 userName (TestCC ChatController {currentUser} _ _ _ _ _) =
   maybe "no current user" (\User {localDisplayName} -> T.unpack localDisplayName) <$> readTVarIO currentUser
 
+testChat :: HasCallStack => Profile -> (HasCallStack => TestCC -> IO ()) -> FilePath -> IO ()
+testChat = testChatCfgOpts testCfg testOpts
+
+testChatCfgOpts :: HasCallStack => ChatConfig -> ChatOpts -> Profile -> (HasCallStack => TestCC -> IO ()) -> FilePath -> IO ()
+testChatCfgOpts cfg opts p test = testChatN cfg opts [p] test_
+  where
+    test_ :: HasCallStack => [TestCC] -> IO ()
+    test_ [tc] = test tc
+    test_ _ = error "expected 1 chat client"
+
 testChat2 :: HasCallStack => Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
 testChat2 = testChatCfgOpts2 testCfg testOpts
 

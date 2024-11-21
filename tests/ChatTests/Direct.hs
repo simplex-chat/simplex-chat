@@ -85,6 +85,8 @@ chatDirectTests = do
   describe "XFTP servers" $ do
     it "get and set XFTP servers" testGetSetXFTPServers
     it "test XFTP server connection" testTestXFTPServer
+  describe "operators and usage conditions" $ do
+    it "get and enable operators, accept conditions" testOperators
   describe "async connection handshake" $ do
     describe "connect when initiating client goes offline" $ do
       it "curr" $ testAsyncInitiatingOffline testCfg testCfg
@@ -1140,8 +1142,8 @@ testSendMultiManyBatches =
 
 testGetSetSMPServers :: HasCallStack => FilePath -> IO ()
 testGetSetSMPServers =
-  testChat2 aliceProfile bobProfile $
-    \alice _ -> do
+  testChat aliceProfile $
+    \alice -> do
       alice ##> "/_servers 1"
       alice <## "Your servers"
       alice <## "  SMP servers"
@@ -1168,8 +1170,8 @@ testGetSetSMPServers =
 
 testTestSMPServerConnection :: HasCallStack => FilePath -> IO ()
 testTestSMPServerConnection =
-  testChat2 aliceProfile bobProfile $
-    \alice _ -> do
+  testChat aliceProfile $
+    \alice -> do
       alice ##> "/smp test smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7001"
       alice <## "SMP server test passed"
       -- to test with password:
@@ -1183,8 +1185,8 @@ testTestSMPServerConnection =
 
 testGetSetXFTPServers :: HasCallStack => FilePath -> IO ()
 testGetSetXFTPServers =
-  testChat2 aliceProfile bobProfile $
-    \alice _ -> withXFTPServer $ do
+  testChat aliceProfile $
+    \alice -> withXFTPServer $ do
       alice ##> "/_servers 1"
       alice <## "Your servers"
       alice <## "  SMP servers"
@@ -1210,8 +1212,8 @@ testGetSetXFTPServers =
 
 testTestXFTPServer :: HasCallStack => FilePath -> IO ()
 testTestXFTPServer =
-  testChat2 aliceProfile bobProfile $
-    \alice _ -> withXFTPServer $ do
+  testChat aliceProfile $
+    \alice -> withXFTPServer $ do
       alice ##> "/xftp test xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7002"
       alice <## "XFTP server test passed"
       -- to test with password:
@@ -1222,6 +1224,36 @@ testTestXFTPServer =
       alice ##> "/xftp test xftp://LcJU@localhost:7002"
       alice <## "XFTP server test failed at Connect, error: BROKER {brokerAddress = \"xftp://LcJU@localhost:7002\", brokerErr = NETWORK}"
       alice <## "Possibly, certificate fingerprint in XFTP server address is incorrect"
+
+testOperators  :: HasCallStack => FilePath -> IO ()
+testOperators =
+  testChatCfgOpts testCfg opts' aliceProfile $
+    \alice -> do
+      -- initial load
+      alice ##> "/_conditions"
+      alice <##. "Current conditions: 2."
+      alice ##> "/_operators"
+      alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: required ("
+      alice <## "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: disabled, conditions: required"
+      alice <##. "The new conditions will be accepted for SimpleX Chat Ltd at "
+      -- set conditions notified 
+      alice ##> "/_conditions_notified 2"
+      alice <## "ok"
+      alice ##> "/_operators"
+      alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: required ("
+      alice <## "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: disabled, conditions: required"
+      alice ##> "/_conditions"
+      alice <##. "Current conditions: 2 (notified)."
+      -- accept conditions
+      alice ##> "/_accept_conditions 2 1,2"
+      alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: accepted ("
+      alice <##. "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: disabled, conditions: accepted ("
+      -- update operators
+      alice ##> "/operators 2:on:smp=proxy"
+      alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: accepted ("
+      alice <##. "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: SMP enabled proxy, XFTP enabled, conditions: accepted ("
+  where
+    opts' = testOpts {coreOptions = testCoreOpts {smpServers = [], xftpServers = []}}
 
 testAsyncInitiatingOffline :: HasCallStack => ChatConfig -> ChatConfig -> FilePath -> IO ()
 testAsyncInitiatingOffline aliceCfg bobCfg tmp = do

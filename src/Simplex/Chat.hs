@@ -1640,6 +1640,16 @@ processChatCommand' vr = \case
         xftpSrvs <- getProtocolServers db SPXFTP user
         uss <- groupByOperator (ops, smpSrvs, xftpSrvs)
         pure $ (aUserId user,) $ useServers as opDomains uss
+  SetServerOperators operatorsRoles -> do
+    ops <- serverOperators <$> withFastStore getServerOperators
+    ops' <- mapM (updateOp ops) operatorsRoles
+    processChatCommand $ APISetServerOperators ops'
+    where
+      updateOp :: [ServerOperator] -> ServerOperatorRoles -> CM ServerOperator
+      updateOp ops r =
+        case find (\ServerOperator {operatorId = DBEntityId opId} -> operatorId' r == opId) ops of
+          Just op -> pure op {enabled = enabled' r, smpRoles = smpRoles' r, xftpRoles = xftpRoles' r}
+          Nothing -> throwError $ ChatErrorStore $ SEOperatorNotFound $ operatorId' r
   APIGetUserServers userId -> withUserId userId $ \user -> withFastStore $ \db -> do
     CRUserServers user <$> (liftIO . groupByOperator =<< getUserServers db user)
   APISetUserServers userId userServers -> withUserId userId $ \user -> do
@@ -8308,6 +8318,7 @@ chatCommandP =
       "/xftp" $> GetUserProtoServers (AProtocolType SPXFTP),
       "/_operators" $> APIGetServerOperators,
       "/_operators " *> (APISetServerOperators <$> jsonP),
+      "/operators " *> (SetServerOperators . L.fromList <$> operatorRolesP `A.sepBy1` A.char ','),
       "/_servers " *> (APIGetUserServers <$> A.decimal),
       "/_servers " *> (APISetUserServers <$> A.decimal <* A.space <*> jsonP),
       "/_validate_servers " *> (APIValidateServers <$> A.decimal <* A.space <*> jsonP),
@@ -8637,6 +8648,20 @@ chatCommandP =
       optional ("yes" *> A.space) *> (TMEEnableSetTTL <$> timedTTLP)
         <|> ("yes" $> TMEEnableKeepTTL)
         <|> ("no" $> TMEDisableKeepTTL)
+    operatorRolesP = do
+      operatorId' <- A.decimal
+      enabled' <- A.char ':' *> onOffP
+      smpRoles' <- (":smp=" *> srvRolesP) <|> pure allRoles
+      xftpRoles' <- (":xftp=" *> srvRolesP) <|> pure allRoles
+      pure ServerOperatorRoles {operatorId', enabled', smpRoles', xftpRoles'}
+    srvRolesP = srvRoles <$?> A.takeTill (\c -> c == ':' || c == ',')
+      where
+        srvRoles = \case
+          "off" -> Right $ ServerRoles False False
+          "proxy" -> Right ServerRoles {storage = False, proxy = True}
+          "storage" -> Right ServerRoles {storage = True, proxy = False}
+          "on" -> Right allRoles
+          _ -> Left "bad ServerRoles"
     netCfgP = do
       socksProxy <- "socks=" *> ("off" $> Nothing <|> "on" $> Just defaultSocksProxyWithAuth <|> Just <$> strP)
       socksMode <- " socks-mode=" *> strP <|> pure SMAlways
