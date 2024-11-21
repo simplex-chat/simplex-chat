@@ -11,11 +11,6 @@ import SwiftyGif
 import SimpleXChat
 import PhotosUI
 
-private let defaultAttributes: [NSAttributedString.Key : Any] = [
-    .font: UIFont.preferredFont(forTextStyle: .body),
-    .foregroundColor: UIColor.label
-]
-
 struct NativeTextEditor: UIViewRepresentable {
     @Binding var text: String
     @Binding var disableEditing: Bool
@@ -36,10 +31,7 @@ struct NativeTextEditor: UIViewRepresentable {
         field.backgroundColor = .clear
         field.attributedText = NSAttributedString(
             string: "",
-            attributes: [
-                .font: UIFont.preferredFont(forTextStyle: .body),
-                .foregroundColor: UIColor.label
-            ]
+            attributes: CustomUITextField.defaultAttributes
         )
         field.textAlignment = alignment(text)
         field.autocapitalizationType = .sentences
@@ -104,7 +96,7 @@ private func alignment(_ text: String) -> NSTextAlignment {
     isRightToLeft(text) ? .right : .left
 }
 
-private class CustomUITextField: UITextView, UITextViewDelegate {
+class CustomUITextField: UITextView, UITextViewDelegate {
     var height: Binding<CGFloat>
     var newHeight: CGFloat = 0
     var onTextChanged: (String, [UploadContent]) -> Void = { newText, image in }
@@ -225,13 +217,75 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
     }
 
     // MARK: Formatting
-    
+    private var formatMenu: UIMenu {
+        UIMenu(
+            title: "Format",
+            children: [
+                UIAction(image: UIImage(systemName: "bold")) { _ in self.toggleBold() },
+                UIAction(image: UIImage(systemName: "italic")) { _ in self.toggleItalic() },
+                UIAction(image: UIImage(systemName: "strikethrough")) { _ in self.toggleStriketrough() },
+                UIAction(title: "Mono") { _ in self.toggleMono() },
+                UIMenu(
+                    title: "Color",
+                    children: [UIColor]([.red, .green, .blue, .yellow, .cyan, .magenta])
+                        .map { color in
+                            UIAction(
+                                image: UIImage(systemName: "circle.fill")?
+                                    .withTintColor(color, renderingMode: .alwaysOriginal),
+                                handler: { _ in self.toggle(color: color) }
+                            )
+                        }
+                ),
+                UIAction(title: "Secret") { _ in self.toggleSecret() }
+            ]
+        )
+    }
+
+    func toggleBold() {
+        toggle(UIFont.boldSystemFont(ofSize: Self.bodySize), for: .font) {
+            ($0 as? UIFont)?.fontDescriptor.symbolicTraits.contains(.traitBold)
+        }
+    }
+
+    func toggleItalic() {
+        toggle(UIFont.italicSystemFont(ofSize: Self.bodySize), for: .font) {
+            ($0 as? UIFont)?.fontDescriptor.symbolicTraits.contains(.traitItalic)
+        }
+    }
+
+    func toggleStriketrough() {
+        toggle(NSUnderlineStyle.single.rawValue, for: .strikethroughStyle) {
+            ($0 as? Int).map { $0 == NSUnderlineStyle.single.rawValue }
+        }
+    }
+
+    func toggleMono() {
+        toggle(UIFont.monospacedSystemFont(ofSize: Self.bodySize, weight: .regular), for: .font) {
+            ($0 as? UIFont)?.fontDescriptor.symbolicTraits.contains(.traitMonoSpace)
+        }
+    }
+
+    func toggle(color: UIColor) {
+        toggle(color, for: .foregroundColor) {
+            ($0 as? UIColor).map { $0 == color }
+        }
+    }
+
+    func toggleSecret() {
+        toggle(UIColor.clear, for: .foregroundColor) { value in
+            (value as? UIColor).map { $0 == .clear }
+        }
+        toggle(UIColor.secondarySystemFill, for: .backgroundColor) { value in
+            (value as? UIColor).map { $0 == .secondarySystemFill }
+        }
+    }
+
     /// Toggles an attribute in the currently selected text range
     /// - Parameters:
     ///   - attribute: Value of the attribute to be enabled or disabled
     ///   - key: Key for which to apply the attribute
     ///   - detect: Block which detects, if the attribute is already present within the selection
-    func toggle(
+    private func toggle(
         _ attribute: Any,
         for key: NSAttributedString.Key,
         detect: (Any) -> Bool?
@@ -243,80 +297,24 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
                 stop.pointee = true
             }
         }
-
         if key == .backgroundColor {
             textStorage.removeAttribute(.backgroundColor, range: selectedRange)
         } else {
-            textStorage.setAttributes(defaultAttributes, range: selectedRange)
+            textStorage.setAttributes(Self.defaultAttributes, range: selectedRange)
         }
-
         if !detected {
             textStorage.addAttribute(key, value: attribute, range: selectedRange)
         }
     }
 
-    private var formatMenu: UIMenu {
-
-        func systemImage(_ systemName: String, color: UIColor? = nil) -> UIImage? {
-            if let uiImage = UIImage(systemName: systemName) {
-                if let color {
-                    uiImage.withTintColor(color, renderingMode: .alwaysOriginal)
-                } else {
-                    uiImage
-                }
-            } else { nil }
-        }
-
-        var bodySize: CGFloat { UIFont.preferredFont(forTextStyle: .body).pointSize }
-
-        
-        let colors: [UIColor] = [.red, .green, .blue, .yellow, .cyan, .magenta]
-
-        return UIMenu(
-            title: "Format",
-            children: [
-                UIAction(image: systemImage("bold")) { _ in
-                    self.toggle(UIFont.boldSystemFont(ofSize: bodySize), for: .font) { value in
-                        (value as? UIFont)?.fontDescriptor.symbolicTraits.contains(.traitBold)
-                    }
-                },
-                UIAction(image: systemImage("italic")) { _ in
-                    self.toggle(UIFont.italicSystemFont(ofSize: bodySize), for: .font) { value in
-                        (value as? UIFont)?.fontDescriptor.symbolicTraits.contains(.traitItalic)
-                    }
-                },
-                UIAction(image: systemImage("strikethrough")) { _ in
-                    self.toggle(NSUnderlineStyle.single.rawValue, for: .strikethroughStyle) { value in
-                        (value as? Int).map { $0 == NSUnderlineStyle.single.rawValue }
-                    }
-                },
-                UIAction(title: "Mono") { _ in
-                    self.toggle(UIFont.monospacedSystemFont(ofSize: bodySize, weight: .regular), for: .font) { value in
-                        (value as? UIFont)?.fontDescriptor.symbolicTraits.contains(.traitMonoSpace)
-                    }
-                },
-                UIMenu(
-                    title: "Color",
-                    children: colors
-                        .map { color in
-                            UIAction(image: systemImage("circle.fill", color: color)) { _ in
-                                self.toggle(color, for: .foregroundColor) { value in
-                                    (value as? UIColor).map { $0 == color }
-                                }
-                            }
-                        }
-                ),
-                UIAction(title: "Secret") { _ in
-                    self.toggle(UIColor.clear, for: .foregroundColor) { value in
-                        (value as? UIColor).map { $0 == .clear }
-                    }
-                    self.toggle(UIColor.secondarySystemFill, for: .backgroundColor) { value in
-                        (value as? UIColor).map { $0 == .secondarySystemFill }
-                    }
-                }
-            ]
-        )
+    static var bodySize: CGFloat {
+        UIFont.preferredFont(forTextStyle: .body).pointSize
     }
+
+    static var defaultAttributes: [NSAttributedString.Key : Any] = [
+        .font: UIFont.preferredFont(forTextStyle: .body),
+        .foregroundColor: UIColor.label
+    ]
 }
 
 struct NativeTextEditor_Previews: PreviewProvider{
@@ -330,8 +328,4 @@ struct NativeTextEditor_Previews: PreviewProvider{
         )
         .fixedSize(horizontal: false, vertical: true)
     }
-}
-
-func encodeMarkdown(_ string: String) -> NSAttributedString {
-    fatalError()
 }
