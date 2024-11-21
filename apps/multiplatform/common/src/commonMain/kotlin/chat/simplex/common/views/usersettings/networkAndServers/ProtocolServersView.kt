@@ -228,7 +228,7 @@ fun showAddServerDialog(
         SectionItemView({
           AlertManager.shared.hideAlert()
           ModalManager.start.showCustomModal { close ->
-            NewServerView(userServers, serverErrors, operatorIndex, rhId, close)
+            NewServerView(userServers, serverErrors, rhId, close)
           }
         }) {
           Text(stringResource(MR.strings.smp_servers_enter_manually), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
