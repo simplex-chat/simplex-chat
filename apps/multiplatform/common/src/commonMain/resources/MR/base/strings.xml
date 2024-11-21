@@ -1048,6 +1048,19 @@
   <string name="you_can_change_it_later">Random passphrase is stored in settings as plaintext.\nYou can change it later.</string>
   <string name="use_random_passphrase">Use random passphrase</string>
 
+  <!-- ChooseServerOperators.kt -->
+  <string name="onboarding_choose_server_operators">Choose operators</string>
+  <string name="onboarding_network_operators">Network operators</string>
+  <string name="onboarding_network_operators_app_will_use_different_operators">When more than one network operator is enabled, the app will use the servers of different operators for each conversation.</string>
+  <string name="onboarding_network_operators_app_will_use_for_routing">For example, if you receive messages via SimpleX Chat server, the app will use one of Flux servers for private routing.</string>
+  <string name="onboarding_select_network_operators_to_use">Select network operators to use.</string>
+  <string name="onboarding_network_operators_configure_via_settings">You can configure servers via settings.</string>
+  <string name="onboarding_network_operators_conditions_will_be_accepted">Conditions will be accepted for enabled operators after 30 days.</string>
+  <string name="onboarding_network_operators_conditions_you_can_configure">You can configure operators in Network &amp; servers settings.</string>
+  <string name="onboarding_network_operators_review_later">Review later</string>
+  <string name="onboarding_network_operators_update">Update</string>
+  <string name="onboarding_network_operators_continue">Continue</string>
+
   <!-- Call -->
   <string name="incoming_video_call">Incoming video call</string>
   <string name="incoming_audio_call">Incoming audio call</string>
@@ -1697,8 +1710,13 @@
   <string name="use_operator_x">Use operator %s</string>
   <string name="operator_conditions_failed_to_load">Current conditions text couldn\'t be loaded, you can review conditions via this link:</string>
   <string name="operator_conditions_accepted_for_some"><![CDATA[Conditions are already accepted for following operator(s): <b>%s</b>.]]></string>
+  <string name="operator_same_conditions_will_be_applied"><![CDATA[Same conditions will apply to operator <b>%s</b>.]]></string>
+  <string name="operator_same_conditions_will_apply_to_operators"><![CDATA[Same conditions will apply to operator(s): <b>%s</b>.]]></string>
+  <string name="operator_conditions_accepted_for_some"><![CDATA[Conditions are already accepted for following operator(s): <b>%s</b>.]]></string>
   <string name="operator_conditions_will_be_applied"><![CDATA[These conditions will also apply for: <b>%s</b>.]]></string>
   <string name="operator_same_conditions_will_be_applied"><![CDATA[Same conditions will apply to operator: <b>%s</b>.]]></string>
+  <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[Conditions will be accepted for operator(s): <b>%s</b>.]]></string>
+  <string name="operators_conditions_will_also_apply"><![CDATA[Conditions will also apply for following operator(s) you use: <b>%s</b>.]]></string>
   <string name="view_conditions">View conditions</string>
   <string name="accept_conditions">Accept conditions</string>
   <string name="operator_conditions_of_use">Conditions of use</string>

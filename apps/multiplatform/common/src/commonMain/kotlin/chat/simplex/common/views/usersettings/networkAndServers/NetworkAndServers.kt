@@ -674,6 +674,13 @@ private fun ModalData.UsageConditionsView(conditionsAction: UsageConditionsActio
 }
 
 @Composable
+fun ModalData.UsageConditionsView(currUserServers: List<UserOperatorServers>, userServers: List<UserOperatorServers>, close: () -> Unit) {
+  ModalView(close = close) {
+    Text("Hello")
+  }
+}
+
+@Composable
 private fun ConditionsButton(conditionsAction: UsageConditionsAction) {
   SectionItemView(
     click = { ModalManager.start.showModalCloseable { close -> UsageConditionsView(conditionsAction, close) } },
@@ -737,16 +744,12 @@ fun showUpdateNetworkSettingsDialog(
 }
 
 fun updateOperatorsConditionsAcceptance(usvs: MutableState<List<UserOperatorServers>>, updatedOperators: List<ServerOperator>) {
-  for (i in usvs.value.indices) {
-    val updatedOperator = updatedOperators.firstOrNull { it.operatorId == usvs.value[i].operator?.operatorId } ?: continue
-    usvs.value = usvs.value.toMutableList().apply {
-      this[i] = this[i].copy(
-        operator = this[i].operator?.copy(
-          conditionsAcceptance = updatedOperator.conditionsAcceptance
-        )
-      )
-    }
+  val modified = ArrayList(usvs.value)
+  for (i in modified.indices) {
+    val updatedOperator = updatedOperators.firstOrNull { it.operatorId == modified[i].operator?.operatorId } ?: continue
+    modified[i] = modified[i].copy(operator = modified[i].operator?.copy(conditionsAcceptance = updatedOperator.conditionsAcceptance))
   }
+  usvs.value = modified
 }
 
 suspend fun validateServers(

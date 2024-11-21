@@ -31,6 +31,7 @@ import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlConfiguration
 import chat.simplex.res.MR
 import com.russhwolf.settings.Settings
+import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
@@ -3604,48 +3605,51 @@ enum class OperatorTag {
   @SerialName("demo") Demo
 }
 
-@Serializable
 data class ServerOperatorInfo(
   val description: String,
   val website: String,
-  val logo: String,
-  val largeLogo: String,
-  val logoDarkMode: String,
-  val largeLogoDarkMode: String
+  val logo: ImageResource,
+  val largeLogo: ImageResource,
+  val logoDarkMode: ImageResource,
+  val largeLogoDarkMode: ImageResource
 )
-// TODO: Check logos
 val operatorsInfo: Map<OperatorTag, ServerOperatorInfo> = mapOf(
   OperatorTag.SimpleX to ServerOperatorInfo(
     description = "SimpleX Chat preset servers",
     website = "https://simplex.chat",
-    logo = "decentralized",
-    largeLogo = "logo",
-    logoDarkMode = "decentralized-light",
-    largeLogoDarkMode = "logo-light"
+    logo = MR.images.decentralized,
+    largeLogo = MR.images.logo,
+    logoDarkMode = MR.images.decentralized_light,
+    largeLogoDarkMode = MR.images.logo_light
   ),
   OperatorTag.Flux to ServerOperatorInfo(
     description = "Flux is the largest decentralized cloud infrastructure, leveraging a global network of user-operated computational nodes. Flux offers a powerful, scalable, and affordable platform designed to support individuals, businesses, and cutting-edge technologies like AI. With high uptime and worldwide distribution, Flux ensures reliable, accessible cloud computing for all.",
     website = "https://runonflux.com",
-    logo = "flux_logo_symbol",
-    largeLogo = "flux_logo",
-    logoDarkMode = "flux_logo_symbol",
-    largeLogoDarkMode = "flux_logo-light"
+    logo = MR.images.decentralized,
+    largeLogo = MR.images.logo,
+    logoDarkMode = MR.images.decentralized_light,
+    largeLogoDarkMode = MR.images.logo_light
+    // LALAL
+//    logo = "flux_logo_symbol",
+//    largeLogo = "flux_logo",
+//    logoDarkMode = "flux_logo_symbol",
+//    largeLogoDarkMode = "flux_logo-light"
   ),
   OperatorTag.XYZ to ServerOperatorInfo(
     description = "XYZ servers",
     website = "XYZ website",
-    logo = "shield",
-    largeLogo = "logo",
-    logoDarkMode = "shield",
-    largeLogoDarkMode = "logo-light"
+    logo = MR.images.shield,
+    largeLogo = MR.images.logo,
+    logoDarkMode = MR.images.shield,
+    largeLogoDarkMode = MR.images.logo_light
   ),
   OperatorTag.Demo to ServerOperatorInfo(
     description = "Demo operator",
     website = "Demo website",
-    logo = "decentralized",
-    largeLogo = "logo",
-    logoDarkMode = "decentralized-light",
-    largeLogoDarkMode = "logo-light"
+    logo = MR.images.decentralized,
+    largeLogo = MR.images.logo,
+    logoDarkMode = MR.images.decentralized_light,
+    largeLogoDarkMode = MR.images.logo_light
   )
 )
 
@@ -3727,10 +3731,10 @@ data class ServerOperator(
     val dummyOperatorInfo = ServerOperatorInfo(
       description = "Default",
       website = "Default",
-      logo = "decentralized",
-      largeLogo = "logo",
-      logoDarkMode = "decentralized-light",
-      largeLogoDarkMode = "logo-light"
+      logo = MR.images.decentralized,
+      largeLogo = MR.images.logo,
+      logoDarkMode = MR.images.decentralized_light,
+      largeLogoDarkMode = MR.images.logo_light
     )
 
     val sampleData1 = ServerOperator(
@@ -3810,11 +3814,11 @@ data class ServerOperator(
       }
     }
 
-  val logo: String get() {
+  val logo: ImageResource get() {
     return if (CurrentColors.value.base == DefaultTheme.LIGHT) info.logo else info.logoDarkMode
   }
 
-  val largeLogo: String get() {
+  val largeLogo: ImageResource get() {
     return if (CurrentColors.value.base == DefaultTheme.LIGHT) info.largeLogo else info.largeLogoDarkMode
   }
 }

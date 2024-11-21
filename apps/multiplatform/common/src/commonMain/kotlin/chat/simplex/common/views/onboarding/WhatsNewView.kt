@@ -40,11 +40,10 @@ fun WhatsNewView(showWhatsNew: MutableState<Boolean> = mutableStateOf(true), sho
           Log.d(TAG, "WhatsNewView setConditionsNotified error: ${e.message}")
         }
       }
+      ModalManager.fullscreen.showModalCloseable(showClose = false) { close ->
+        ChooseServerOperators(onboarding = false, close)
+      }
     }
-  }
-
-  if (showOperatorsNotice) {
-    return ChooseServerOperators(onboarding = false)
   }
 
   @Composable

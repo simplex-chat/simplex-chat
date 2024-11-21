@@ -17,7 +17,6 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.database.*
@@ -36,7 +35,7 @@ fun SetupDatabasePassphrase(m: ChatModel) {
   val confirmNewKey = rememberSaveable { mutableStateOf("") }
   fun nextStep() {
     if (appPlatform.isAndroid || chatModel.currentUser.value != null) {
-      m.controller.appPrefs.onboardingStage.set(OnboardingStage.Step4_SetNotificationsMode)
+      m.controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_ChooseServerOperators)
     } else {
       m.controller.appPrefs.onboardingStage.set(OnboardingStage.LinkAMobile)
     }
