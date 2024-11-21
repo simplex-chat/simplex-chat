@@ -228,7 +228,7 @@ private fun UseServerSection(
     val enabled = rememberUpdatedState(server.enabled)
     PreferenceToggle(
       stringResource(MR.strings.smp_servers_use_server_for_new_conn),
-      disabled = server.tested != true && !server.preset,
+      // disabled = server.tested != true && !server.preset,
       checked = enabled.value
     ) {
       onUpdate(server.copy(enabled = it))
