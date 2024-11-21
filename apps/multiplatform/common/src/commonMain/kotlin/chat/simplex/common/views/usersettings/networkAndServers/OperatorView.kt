@@ -1,5 +1,6 @@
 package chat.simplex.common.views.usersettings.networkAndServers
 
+import SectionBottomSpacer
 import SectionCustomFooter
 import SectionDividerSpaced
 import SectionItemView
@@ -33,8 +34,8 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import kotlin.random.Random
 
 @Composable
 fun ModalData.OperatorView(
@@ -49,57 +50,74 @@ fun ModalData.OperatorView(
   val currentUser = remember { chatModel.currentUser }.value
   val scope = rememberCoroutineScope()
 
-  ColumnWithScrollBar(Modifier.alpha(if (testing.value) 0.6f else 1f)) {
-    AppBarTitle(String.format(stringResource(MR.strings.operator_servers_title), operator.tradeName))
-    OperatorViewLayout(
-      currUserServers,
-      userServers,
-      serverErrors,
-      operatorIndex,
-      { serverIndex, server, protocol ->
-        ModalManager.start.showCustomModal { close ->
-          ProtocolServerView(
-            m = chatModel,
-            server = server,
-            serverProtocol = protocol,
-            userServers = userServers,
-            serverErrors = serverErrors,
-            onDelete = {
-              if (protocol == ServerProtocol.SMP) {
-                deleteSMPServer(userServers, operatorIndex, serverIndex)
-              } else {
-                deleteXFTPServer(userServers, operatorIndex, serverIndex)
-              }
-              close()
-              scope.launch { validateServers(rhId, userServers, serverErrors) }
-            },
-            onUpdate = { updatedServer ->
-              userServers.value = userServers.value.toMutableList().apply {
-                this[operatorIndex] = this[operatorIndex].copy(
-                  smpServers = if (protocol == ServerProtocol.SMP) {
-                    this[operatorIndex].smpServers.toMutableList().apply {
-                      this[serverIndex] = updatedServer
-                    }
-                  } else this[operatorIndex].smpServers,
-                  xftpServers = if (protocol == ServerProtocol.XFTP) {
-                    this[operatorIndex].xftpServers.toMutableList().apply {
-                      this[serverIndex] = updatedServer
-                    }
-                  } else this[operatorIndex].xftpServers
-                )
-              }
-            },
-            close = close,
-            rhId = rhId
-          )
-        }
-      },
-      currentUser,
-      rhId
-    )
+  Box {
+    ColumnWithScrollBar(Modifier.alpha(if (testing.value) 0.6f else 1f)) {
+      AppBarTitle(String.format(stringResource(MR.strings.operator_servers_title), operator.tradeName))
+      OperatorViewLayout(
+        currUserServers,
+        userServers,
+        serverErrors,
+        operatorIndex,
+        navigateToProtocolView = { serverIndex, server, protocol ->
+          navigateToProtocolView(scope, userServers, serverErrors, operatorIndex, rhId, serverIndex, server, protocol)
+        },
+        currentUser,
+        rhId,
+        testing
+      )
+    }
+
     if (testing.value) {
       DefaultProgressView(null)
     }
+  }
+}
+
+fun navigateToProtocolView(
+  scope: CoroutineScope,
+  userServers: MutableState<List<UserOperatorServers>>,
+  serverErrors: MutableState<List<UserServersError>>,
+  operatorIndex: Int,
+  rhId: Long?,
+  serverIndex: Int,
+  server: UserServer,
+  protocol: ServerProtocol
+) {
+  ModalManager.start.showCustomModal { close ->
+    ProtocolServerView(
+      m = chatModel,
+      server = server,
+      serverProtocol = protocol,
+      userServers = userServers,
+      serverErrors = serverErrors,
+      onDelete = {
+        if (protocol == ServerProtocol.SMP) {
+          deleteSMPServer(userServers, operatorIndex, serverIndex)
+        } else {
+          deleteXFTPServer(userServers, operatorIndex, serverIndex)
+        }
+        close()
+        scope.launch { validateServers(rhId, userServers, serverErrors) }
+      },
+      onUpdate = { updatedServer ->
+        userServers.value = userServers.value.toMutableList().apply {
+          this[operatorIndex] = this[operatorIndex].copy(
+            smpServers = if (protocol == ServerProtocol.SMP) {
+              this[operatorIndex].smpServers.toMutableList().apply {
+                this[serverIndex] = updatedServer
+              }
+            } else this[operatorIndex].smpServers,
+            xftpServers = if (protocol == ServerProtocol.XFTP) {
+              this[operatorIndex].xftpServers.toMutableList().apply {
+                this[serverIndex] = updatedServer
+              }
+            } else this[operatorIndex].xftpServers
+          )
+        }
+      },
+      close = close,
+      rhId = rhId
+    )
   }
 }
 
@@ -111,12 +129,12 @@ fun OperatorViewLayout(
   operatorIndex: Int,
   navigateToProtocolView: (Int, UserServer, ServerProtocol) -> Unit,
   currentUser: User?,
-  rhId: Long?
+  rhId: Long?,
+  testing: MutableState<Boolean>
 ) {
   val operator by remember { derivedStateOf { userServers.value[operatorIndex].operator_ } }
   val scope = rememberCoroutineScope()
   val duplicateHosts = findDuplicateHosts(serverErrors.value)
-  val testing = remember { mutableStateOf(false) }
 
   Column {
     SectionView(generalGetString(MR.strings.operator).uppercase()) {
@@ -362,24 +380,29 @@ fun OperatorViewLayout(
       }
 
       SectionDividerSpaced()
-      TestServersButton(
-        testing = testing,
-        smpServers = userServers.value[operatorIndex].smpServers,
-        xftpServers = userServers.value[operatorIndex].xftpServers,
-      ) { p, l ->
-        when (p) {
-          ServerProtocol.XFTP -> userServers.value = userServers.value.toMutableList().apply {
-            this[operatorIndex] = this[operatorIndex].copy(
-              xftpServers = l
-            )
-          }
-          ServerProtocol.SMP -> userServers.value = userServers.value.toMutableList().apply {
-            this[operatorIndex] = this[operatorIndex].copy(
-              smpServers = l
-            )
+      SectionView {
+        TestServersButton(
+          testing = testing,
+          smpServers = userServers.value[operatorIndex].smpServers,
+          xftpServers = userServers.value[operatorIndex].xftpServers,
+        ) { p, l ->
+          when (p) {
+            ServerProtocol.XFTP -> userServers.value = userServers.value.toMutableList().apply {
+              this[operatorIndex] = this[operatorIndex].copy(
+                xftpServers = l
+              )
+            }
+
+            ServerProtocol.SMP -> userServers.value = userServers.value.toMutableList().apply {
+              this[operatorIndex] = this[operatorIndex].copy(
+                smpServers = l
+              )
+            }
           }
         }
       }
+
+      SectionBottomSpacer()
     }
   }
 }
