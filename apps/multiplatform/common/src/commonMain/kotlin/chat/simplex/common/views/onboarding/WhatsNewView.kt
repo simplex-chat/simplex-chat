@@ -8,7 +8,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalUriHandler
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -27,19 +26,18 @@ import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 
 @Composable
-fun WhatsNewView(showWhatsNew: MutableState<Boolean> = mutableStateOf(true), showOperatorsNotice: Boolean = false, viaSettings: Boolean = false, close: () -> Unit) {
+fun ModalData.WhatsNewView(showWhatsNew: MutableState<Boolean> = mutableStateOf(true), showOperatorsNotice: Boolean = false, viaSettings: Boolean = false, close: () -> Unit) {
   val currentVersion = remember { mutableStateOf(versionDescriptions.lastIndex) }
-
-  if (showOperatorsNotice) {
+  val showOperatorsNoticeModal = remember { stateGetOrPut("showOperatorsNoticeModal") { showOperatorsNotice } }
+  if (showOperatorsNoticeModal.value) {
     LaunchedEffect(Unit) {
-      val conditionsId = chatModel.conditions.value?.currentConditions?.conditionsId
-      if (conditionsId != null) {
-        try {
-          setConditionsNotified(rh = chatModel.remoteHostId(), conditionsId = conditionsId)
-        } catch (e: Exception) {
-          Log.d(TAG, "WhatsNewView setConditionsNotified error: ${e.message}")
-        }
+      val conditionsId = chatModel.conditions.value.currentConditions.conditionsId
+      try {
+        setConditionsNotified(rh = chatModel.remoteHostId(), conditionsId = conditionsId)
+      } catch (e: Exception) {
+        Log.d(TAG, "WhatsNewView setConditionsNotified error: ${e.message}")
       }
+      showOperatorsNoticeModal.value = false
       ModalManager.fullscreen.showModalCloseable(showClose = false) { close ->
         ChooseServerOperators(onboarding = false, close)
       }
@@ -723,7 +721,8 @@ fun shouldShowWhatsNew(m: ChatModel): Boolean {
 @Composable
 fun PreviewWhatsNewView() {
   SimpleXTheme {
-    WhatsNewView(
+    val data = remember { ModalData() }
+    data.WhatsNewView(
       viaSettings = true,
       close = {}
     )
