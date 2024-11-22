@@ -39,7 +39,7 @@ import chat.simplex.common.views.onboarding.OnboardingActionButton
 import chat.simplex.common.views.onboarding.ReadableText
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 @Composable
 fun ModalData.NetworkAndServersView(close: () -> Unit) {
@@ -50,30 +50,31 @@ fun ModalData.NetworkAndServersView(close: () -> Unit) {
   val currUserServers = remember { stateGetOrPut("currUserServers") { emptyList<UserOperatorServers>() } }
   val userServers = remember { stateGetOrPut("userServers") { emptyList<UserOperatorServers>() } }
   val serverErrors = remember { stateGetOrPut("serverErrors") { emptyList<UserServersError>() } }
-  val scope = rememberCoroutineScope()
 
   val proxyPort = remember { derivedStateOf { appPrefs.networkProxy.state.value.port } }
   fun onClose(): Boolean = if (!serversCanBeSaved(currUserServers.value, userServers.value, serverErrors.value)) {
-    close()
     chatModel.centerPanelBackgroundClickHandler = null
+    close()
     false
   } else {
     showUnsavedChangesAlert(
       {
-        scope.launch {
+        CoroutineScope(Dispatchers.Default).launch {
           saveServers(currentRemoteHost?.remoteHostId, currUserServers, userServers)
           chatModel.centerPanelBackgroundClickHandler = null
+          ModalManager.start.closeModals()
         }
       },
       {
-        close()
         chatModel.centerPanelBackgroundClickHandler = null
+        ModalManager.start.closeModals()
       }
     )
     true
   }
 
   LaunchedEffect(Unit) {
+    // Enables unsaved changes alert on this view and all children views.
     chatModel.centerPanelBackgroundClickHandler = ::onClose
   }
   ModalView(close = ::onClose) {
