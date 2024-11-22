@@ -885,7 +885,9 @@ private suspend fun saveServers(
     val set = setUserServers(rhId, userServersToSave)
 
     if (set) {
+      // Get updated servers to learn new server ids (otherwise it messes up delete of newly added and saved servers)
       val updatedServers = getUserServers(rhId)
+      // Get updated operators to update model
       val updatedOperators = getServerOperators(rhId)
 
       if (updatedOperators != null) {

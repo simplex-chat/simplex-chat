@@ -395,7 +395,9 @@ func saveServers(_ currUserServers: Binding<[UserOperatorServers]>, _ userServer
             // Get updated servers to learn new server ids (otherwise it messes up delete of newly added and saved servers)
             do {
                 let updatedServers = try await getUserServers()
+                let updatedOperators = try await getServerOperators()
                 await MainActor.run {
+                    ChatModel.shared.conditions = updatedOperators
                     currUserServers.wrappedValue = updatedServers
                     userServers.wrappedValue = updatedServers
                 }
