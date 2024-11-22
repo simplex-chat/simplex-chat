@@ -145,6 +145,8 @@ object ChatModel {
   val clipboardHasText = mutableStateOf(false)
   val networkInfo = mutableStateOf(UserNetworkInfo(networkType = UserNetworkType.OTHER, online = true))
 
+  val conditions = mutableStateOf(ServerOperatorConditionsDetail.empty)
+
   val updatingProgress = mutableStateOf(null as Float?)
   var updatingRequest: Closeable? = null
 
@@ -2564,6 +2566,13 @@ fun localTimestamp(t: Instant): String {
   val tz = TimeZone.currentSystemDefault()
   val ts: LocalDateTime = t.toLocalDateTime(tz)
   val dateFormatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
+  return ts.toJavaLocalDateTime().format(dateFormatter)
+}
+
+fun localDate(t: Instant): String {
+  val tz = TimeZone.currentSystemDefault()
+  val ts: LocalDateTime = t.toLocalDateTime(tz)
+  val dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
   return ts.toJavaLocalDateTime().format(dateFormatter)
 }
 

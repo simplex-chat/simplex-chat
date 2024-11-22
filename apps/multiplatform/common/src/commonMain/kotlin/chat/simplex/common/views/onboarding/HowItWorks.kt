@@ -48,8 +48,8 @@ fun HowItWorks(user: User?, onboardingStage: SharedPreference<OnboardingStage>? 
 }
 
 @Composable
-fun ReadableText(stringResId: StringResource, textAlign: TextAlign = TextAlign.Start, padding: PaddingValues = PaddingValues(bottom = 12.dp), style: TextStyle = LocalTextStyle.current) {
-  Text(annotatedStringResource(stringResId), modifier = Modifier.padding(padding), textAlign = textAlign, lineHeight = 22.sp, style = style)
+fun ReadableText(stringResId: StringResource, textAlign: TextAlign = TextAlign.Start, padding: PaddingValues = PaddingValues(bottom = 12.dp), style: TextStyle = LocalTextStyle.current, args: Any? = null) {
+  Text(annotatedStringResource(stringResId, args), modifier = Modifier.padding(padding), textAlign = textAlign, lineHeight = 22.sp, style = style)
 }
 
 @Composable
