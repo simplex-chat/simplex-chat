@@ -164,14 +164,15 @@ fun OnboardingActionButton(
 @Composable
 fun TextButtonBelowOnboardingButton(text: String, onClick: (() -> Unit)?) {
   val state = getKeyboardState()
+  val enabled = onClick != null
   val topPadding by animateDpAsState(if (appPlatform.isAndroid && state.value == KeyboardState.Opened) 0.dp else DEFAULT_PADDING)
   val bottomPadding by animateDpAsState(if (appPlatform.isAndroid && state.value == KeyboardState.Opened) 0.dp else DEFAULT_PADDING * 2)
   if ((appPlatform.isAndroid && state.value == KeyboardState.Closed) || topPadding > 0.dp) {
-    TextButton({ onClick?.invoke() }, Modifier.padding(top = topPadding, bottom = bottomPadding).clip(CircleShape), enabled = onClick != null) {
+    TextButton({ onClick?.invoke() }, Modifier.padding(top = topPadding, bottom = bottomPadding).clip(CircleShape), enabled = enabled) {
       Text(
         text,
         Modifier.padding(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING_HALF, bottom = 5.dp),
-        color = MaterialTheme.colors.primary,
+        color = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
         fontWeight = FontWeight.Medium,
         textAlign = TextAlign.Center
       )

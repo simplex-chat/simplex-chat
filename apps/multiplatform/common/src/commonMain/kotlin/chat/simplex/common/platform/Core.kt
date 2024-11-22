@@ -118,6 +118,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     if (appPreferences.encryptionStartedAt.get() != null) appPreferences.encryptionStartedAt.set(null)
     val user = chatController.apiGetActiveUser(null)
     chatModel.currentUser.value = user
+    chatModel.conditions.value = chatController.getServerOperators(null) ?: ServerOperatorConditionsDetail.empty
     if (user == null) {
       chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
       chatModel.currentUser.value = null
@@ -137,13 +138,12 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
       }
     } else if (startChat().await()) {
       val savedOnboardingStage = appPreferences.onboardingStage.get()
-      val next = if (appPlatform.isAndroid) {
-        OnboardingStage.Step4_SetNotificationsMode
-      } else {
-        OnboardingStage.OnboardingComplete
-      }
       val newStage = if (listOf(OnboardingStage.Step1_SimpleXInfo, OnboardingStage.Step2_CreateProfile).contains(savedOnboardingStage) && chatModel.users.size == 1) {
-        next
+        if (appPlatform.isAndroid) {
+          OnboardingStage.Step4_SetNotificationsMode
+        } else {
+          OnboardingStage.OnboardingComplete
+        }
       } else {
         savedOnboardingStage
       }

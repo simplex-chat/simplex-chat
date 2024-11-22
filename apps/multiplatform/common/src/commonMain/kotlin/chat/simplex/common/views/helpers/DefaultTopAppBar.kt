@@ -258,7 +258,8 @@ private fun AppBarCenterAligned(
 }
 
 private fun topTitleAlpha(text: Boolean, connection: CollapsingAppBarNestedScrollConnection, alpha: Float = appPrefs.inAppBarsAlpha.get()) =
-  if (connection.appBarOffset.absoluteValue < AppBarHandler.appBarMaxHeightPx / 3) 0f
+  if (!connection.scrollTrackingEnabled) 0f
+  else if (connection.appBarOffset.absoluteValue < AppBarHandler.appBarMaxHeightPx / 3) 0f
   else ((-connection.appBarOffset * 1.5f) / (AppBarHandler.appBarMaxHeightPx)).coerceIn(0f, if (text) 1f else alpha)
 
 val AppBarHeight = 56.dp

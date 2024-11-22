@@ -50,6 +50,7 @@ let DEFAULT_PROFILE_IMAGE_CORNER_RADIUS = "profileImageCornerRadius"
 let DEFAULT_CHAT_ITEM_ROUNDNESS = "chatItemRoundness"
 let DEFAULT_CHAT_ITEM_TAIL = "chatItemTail"
 let DEFAULT_ONE_HAND_UI_CARD_SHOWN = "oneHandUICardShown"
+let DEFAULT_ADDRESS_CREATION_CARD_SHOWN = "addressCreationCardShown"
 let DEFAULT_TOOLBAR_MATERIAL = "toolbarMaterial"
 let DEFAULT_CONNECT_VIA_LINK_TAB = "connectViaLinkTab"
 let DEFAULT_LIVE_MESSAGE_ALERT_SHOWN = "liveMessageAlertShown"
@@ -107,6 +108,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_CHAT_ITEM_ROUNDNESS: defaultChatItemRoundness,
     DEFAULT_CHAT_ITEM_TAIL: true,
     DEFAULT_ONE_HAND_UI_CARD_SHOWN: false,
+    DEFAULT_ADDRESS_CREATION_CARD_SHOWN: false,
     DEFAULT_TOOLBAR_MATERIAL: ToolbarMaterial.defaultMaterial,
     DEFAULT_CONNECT_VIA_LINK_TAB: ConnectViaLinkTab.scan.rawValue,
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false,
@@ -135,6 +137,7 @@ let appDefaults: [String: Any] = [
 let hintDefaults = [
     DEFAULT_LA_NOTICE_SHOWN,
     DEFAULT_ONE_HAND_UI_CARD_SHOWN,
+    DEFAULT_ADDRESS_CREATION_CARD_SHOWN,
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN,
     DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE,
     DEFAULT_SHOW_MUTE_PROFILE_ALERT,
@@ -356,7 +359,7 @@ struct SettingsView: View {
                         }
                     }
                     NavigationLink {
-                        WhatsNewView(viaSettings: true)
+                        WhatsNewView(viaSettings: true, updatedConditions: false)
                             .modifier(ThemedBackground())
                             .navigationBarTitleDisplayMode(.inline)
                     } label: {
