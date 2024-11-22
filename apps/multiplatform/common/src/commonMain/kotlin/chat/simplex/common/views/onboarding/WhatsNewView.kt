@@ -30,7 +30,7 @@ import dev.icerock.moko.resources.StringResource
 @Composable
 fun ModalData.WhatsNewView(showWhatsNew: MutableState<Boolean> = mutableStateOf(true), updatedConditions: Boolean = false, viaSettings: Boolean = false, close: () -> Unit) {
   val currentVersion = remember { mutableStateOf(versionDescriptions.lastIndex) }
-  val showUpdatedConditions = remember { stateGetOrPut("updatedConditions") { true } }
+  val showUpdatedConditions = remember { stateGetOrPut("updatedConditions") { updatedConditions } }
   val rhId = chatModel.remoteHostId()
 
   if (showUpdatedConditions.value) {
