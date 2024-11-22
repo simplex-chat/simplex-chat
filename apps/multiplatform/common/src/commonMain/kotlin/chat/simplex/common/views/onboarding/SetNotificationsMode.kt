@@ -16,8 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.NotificationsMode
-import chat.simplex.common.platform.ColumnWithScrollBar
-import chat.simplex.common.platform.appPlatform
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.changeNotificationsMode
@@ -26,7 +25,7 @@ import chat.simplex.res.MR
 @Composable
 fun SetNotificationsMode(m: ChatModel) {
   LaunchedEffect(Unit) {
-    prepareChatBeforeNotificationsSetup(m)
+    prepareChatBeforeNotificationsSetup()
   }
 
   CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
@@ -100,7 +99,7 @@ fun <T> SelectableCard(currentValue: State<T>, newValue: T, title: String, descr
   Spacer(Modifier.height(14.dp))
 }
 
-private fun prepareChatBeforeNotificationsSetup(chatModel: ChatModel) {
+fun prepareChatBeforeNotificationsSetup() {
   // No visible users but may have hidden. In this case chat should be started anyway because it's stopped on this stage with hidden users
   if (chatModel.users.any { u -> !u.user.hidden }) return
   withBGApi {

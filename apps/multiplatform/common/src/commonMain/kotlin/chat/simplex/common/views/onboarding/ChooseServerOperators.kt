@@ -9,7 +9,6 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -18,7 +17,6 @@ import chat.simplex.common.model.ServerOperator
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.usersettings.changeNotificationsMode
 import chat.simplex.common.views.usersettings.networkAndServers.ConditionsTextView
 import chat.simplex.common.views.usersettings.networkAndServers.UsageConditionsView
 import chat.simplex.res.MR
@@ -257,6 +255,14 @@ private fun AcceptConditionsButton(
   selectedOperatorIds: State<Set<Long>>,
   close: () -> Unit
 ) {
+  fun continueOnAccept() {
+    if (appPlatform.isDesktop || !onboarding) {
+      if (onboarding) { close() }
+      continueToNextStep(onboarding, close)
+    } else {
+      continueToSetNotificationsAfterAccept()
+    }
+  }
   OnboardingActionButton(
     modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier,
     labelId = MR.strings.accept_conditions,
@@ -274,20 +280,10 @@ private fun AcceptConditionsButton(
             val r2 = chatController.setServerOperators(rh = chatModel.remoteHostId(), operators = enabledOperators)
             if (r2 != null) {
               chatModel.conditions.value = r2
-              if (appPlatform.isDesktop || !onboarding) {
-                if (onboarding) { close() }
-                continueToNextStep(onboarding, close)
-              } else {
-                continueToSetNotificationsAfterAccept()
-              }
+              continueOnAccept()
             }
           } else {
-            if (appPlatform.isDesktop || !onboarding) {
-              if (onboarding) { close() }
-              continueToNextStep(onboarding, close)
-            } else {
-              continueToSetNotificationsAfterAccept()
-            }
+            continueOnAccept()
           }
         }
       }
@@ -298,6 +294,9 @@ private fun AcceptConditionsButton(
 private fun continueToNextStep(onboarding: Boolean, close: () -> Unit) {
   if (onboarding) {
     appPrefs.onboardingStage.set(if (appPlatform.isAndroid) OnboardingStage.Step4_SetNotificationsMode else OnboardingStage.OnboardingComplete)
+    if (appPlatform.isDesktop) {
+      startChatIfNeeded()
+    }
   } else {
     close()
   }
@@ -306,6 +305,10 @@ private fun continueToNextStep(onboarding: Boolean, close: () -> Unit) {
 private fun continueToSetNotificationsAfterAccept() {
   appPrefs.onboardingStage.set(OnboardingStage.Step4_SetNotificationsMode)
   ModalManager.fullscreen.showModalCloseable(showClose = false) { SetNotificationsMode(chatModel) }
+}
+
+private fun startChatIfNeeded() {
+  prepareChatBeforeNotificationsSetup()
 }
 
 private fun enabledOperators(operators: List<ServerOperator>, selectedOperatorIds: Set<Long>): List<ServerOperator>? {
