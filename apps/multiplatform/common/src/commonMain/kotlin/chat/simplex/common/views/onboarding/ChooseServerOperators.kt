@@ -25,6 +25,10 @@ import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
 fun ModalData.ChooseServerOperators(onboarding: Boolean, close: () -> Unit) {
+  LaunchedEffect(Unit) {
+    prepareChatBeforeFinishingOnboarding()
+  }
+
   CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
     ModalView({}, showClose = false, endButtons = {
       IconButton({ (if (onboarding) ModalManager.fullscreen else ModalManager.start).showModal { ChooseServerOperatorsInfoView() } }) {
@@ -295,9 +299,6 @@ private fun AcceptConditionsButton(
 private fun continueToNextStep(onboarding: Boolean, close: () -> Unit) {
   if (onboarding) {
     appPrefs.onboardingStage.set(if (appPlatform.isAndroid) OnboardingStage.Step4_SetNotificationsMode else OnboardingStage.OnboardingComplete)
-    if (appPlatform.isDesktop) {
-      startChatIfNeeded()
-    }
   } else {
     close()
   }
@@ -306,10 +307,6 @@ private fun continueToNextStep(onboarding: Boolean, close: () -> Unit) {
 private fun continueToSetNotificationsAfterAccept() {
   appPrefs.onboardingStage.set(OnboardingStage.Step4_SetNotificationsMode)
   ModalManager.fullscreen.showModalCloseable(showClose = false) { SetNotificationsMode(chatModel) }
-}
-
-private fun startChatIfNeeded() {
-  prepareChatBeforeNotificationsSetup()
 }
 
 private fun enabledOperators(operators: List<ServerOperator>, selectedOperatorIds: Set<Long>): List<ServerOperator>? {

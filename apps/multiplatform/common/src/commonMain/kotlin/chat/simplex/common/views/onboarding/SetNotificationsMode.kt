@@ -25,7 +25,7 @@ import chat.simplex.res.MR
 @Composable
 fun SetNotificationsMode(m: ChatModel) {
   LaunchedEffect(Unit) {
-    prepareChatBeforeNotificationsSetup()
+    prepareChatBeforeFinishingOnboarding()
   }
 
   CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
@@ -99,7 +99,7 @@ fun <T> SelectableCard(currentValue: State<T>, newValue: T, title: String, descr
   Spacer(Modifier.height(14.dp))
 }
 
-fun prepareChatBeforeNotificationsSetup() {
+fun prepareChatBeforeFinishingOnboarding() {
   // No visible users but may have hidden. In this case chat should be started anyway because it's stopped on this stage with hidden users
   if (chatModel.users.any { u -> !u.user.hidden }) return
   withBGApi {
