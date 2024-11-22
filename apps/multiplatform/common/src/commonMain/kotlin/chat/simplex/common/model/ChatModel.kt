@@ -167,6 +167,9 @@ object ChatModel {
   val processedCriticalError: ProcessedErrors<AgentErrorType.CRITICAL> = ProcessedErrors(60_000)
   val processedInternalError: ProcessedErrors<AgentErrorType.INTERNAL> = ProcessedErrors(20_000)
 
+  // return true if you handled the click
+  var centerPanelBackgroundClickHandler: (() -> Boolean)? = null
+
   fun getUser(userId: Long): User? = if (currentUser.value?.userId == userId) {
     currentUser.value
   } else {
