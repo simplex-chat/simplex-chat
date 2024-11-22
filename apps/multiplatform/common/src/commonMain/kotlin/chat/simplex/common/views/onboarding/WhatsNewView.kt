@@ -146,7 +146,7 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
             }
           }
           is VersionFeature.FeatureView -> {
-            feature.view()
+            feature.view(if (viaSettings) ModalManager.start else ModalManager.center)
           }
         }
       }
@@ -214,7 +214,7 @@ private sealed class VersionFeature {
   class FeatureView(
     val icon: ImageResource?,
     val titleId: StringResource,
-    val view: @Composable () -> Unit
+    val view: @Composable (modalManager: ModalManager) -> Unit
   ): VersionFeature()
 }
 
@@ -728,7 +728,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
       VersionFeature.FeatureView(
         icon = null,
         titleId = MR.strings.v6_2_network_decentralization,
-        view = {
+        view = { modalManager ->
           Column {
             val src = (operatorsInfo[OperatorTag.Flux] ?: dummyOperatorInfo).largeLogo
             Image(painterResource(src), null, modifier = Modifier.height(48.dp))
@@ -738,7 +738,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
                 stringResource(MR.strings.v6_2_network_decentralization_enable_flux),
                 color = MaterialTheme.colors.primary,
                 modifier = Modifier.clickable {
-                  ModalManager.start.showModalCloseable { close -> ChooseServerOperators(onboarding = false, close) }
+                  modalManager.showModalCloseable { close -> ChooseServerOperators(onboarding = false, close, modalManager) }
                 }
               )
               Text(" ")

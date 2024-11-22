@@ -23,14 +23,18 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
-fun ModalData.ChooseServerOperators(onboarding: Boolean, close: (() -> Unit) = { ModalManager.fullscreen.closeModals() }) {
+fun ModalData.ChooseServerOperators(
+  onboarding: Boolean,
+  close: (() -> Unit) = { ModalManager.fullscreen.closeModals() },
+  modalManager: ModalManager = ModalManager.fullscreen
+) {
   LaunchedEffect(Unit) {
     prepareChatBeforeFinishingOnboarding()
   }
 
   CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
     ModalView({}, showClose = false, endButtons = {
-      IconButton({ ModalManager.fullscreen.showModal { ChooseServerOperatorsInfoView() } }) {
+      IconButton({ modalManager.showModal { ChooseServerOperatorsInfoView() } }) {
         Icon(painterResource(MR.images.ic_info), null, Modifier.size(28.dp), tint = MaterialTheme.colors.primary)
       }
     }) {
@@ -78,13 +82,13 @@ fun ModalData.ChooseServerOperators(onboarding: Boolean, close: (() -> Unit) = {
         Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
           val enabled = selectedOperatorIds.value.isNotEmpty()
           when {
-            reviewForOperators.isNotEmpty() -> ReviewConditionsButton(enabled, onboarding, selectedOperators, selectedOperatorIds)
+            reviewForOperators.isNotEmpty() -> ReviewConditionsButton(enabled, onboarding, selectedOperators, selectedOperatorIds, modalManager)
             selectedOperatorIds.value != currEnabledOperatorIds && enabled -> SetOperatorsButton(true, onboarding, serverOperators, selectedOperatorIds, close)
             else -> ContinueButton(enabled, onboarding, close)
           }
           if (onboarding && reviewForOperators.isEmpty()) {
               TextButtonBelowOnboardingButton(stringResource(MR.strings.operator_conditions_of_use)) {
-                ModalManager.fullscreen.showModalCloseable(endButtons = { ConditionsLinkButton() }) { close ->
+                modalManager.showModalCloseable(endButtons = { ConditionsLinkButton() }) { close ->
                   UsageConditionsView(
                     currUserServers = remember { mutableStateOf(emptyList()) },
                     userServers = remember { mutableStateOf(emptyList()) },
@@ -165,7 +169,8 @@ private fun ReviewConditionsButton(
   enabled: Boolean,
   onboarding: Boolean,
   selectedOperators: State<List<ServerOperator>>,
-  selectedOperatorIds: State<Set<Long>>
+  selectedOperatorIds: State<Set<Long>>,
+  modalManager: ModalManager
 ) {
   OnboardingActionButton(
     modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier,
@@ -173,7 +178,7 @@ private fun ReviewConditionsButton(
     onboarding = null,
     enabled = enabled,
     onclick = {
-      ModalManager.fullscreen.showModalCloseable(endButtons = { ConditionsLinkButton() }) { close ->
+      modalManager.showModalCloseable(endButtons = { ConditionsLinkButton() }) { close ->
         ReviewConditionsView(onboarding, selectedOperators, selectedOperatorIds, close)
       }
     }
