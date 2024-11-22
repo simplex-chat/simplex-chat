@@ -37,6 +37,13 @@ fun ModalData.YourServersView(
   val currentUser = remember { chatModel.currentUser }.value
   val scope = rememberCoroutineScope()
 
+  LaunchedEffect(userServers) {
+    snapshotFlow { userServers.value }
+      .collect { updatedServers ->
+        validateServers_(rhId = rhId, userServersToValidate = updatedServers, serverErrors = serverErrors)
+      }
+  }
+
   Box {
     ColumnWithScrollBar {
       AppBarTitle(stringResource(MR.strings.your_servers))

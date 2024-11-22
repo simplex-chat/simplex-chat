@@ -6,7 +6,6 @@ import SectionDividerSpaced
 import SectionItemView
 import SectionTextFooter
 import SectionView
-import TextIconSpaced
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -48,7 +47,7 @@ fun ModalData.OperatorView(
   LaunchedEffect(userServers) {
     snapshotFlow { userServers.value }
       .collect { updatedServers ->
-        validateServers(rhId = rhId, userServersToValidate = updatedServers, serverErrors = serverErrors)
+        validateServers_(rhId = rhId, userServersToValidate = updatedServers, serverErrors = serverErrors)
       }
   }
 

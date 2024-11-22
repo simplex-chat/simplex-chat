@@ -39,7 +39,6 @@ import chat.simplex.common.views.onboarding.ReadableText
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.launch
-import java.time.Clock
 
 @Composable
 fun ModalData.NetworkAndServersView(close: () -> Unit) {
@@ -816,7 +815,7 @@ fun updateOperatorsConditionsAcceptance(usvs: MutableState<List<UserOperatorServ
   usvs.value = modified
 }
 
-suspend fun validateServers(
+suspend fun validateServers_(
   rhId: Long?,
   userServersToValidate: List<UserOperatorServers>,
   serverErrors: MutableState<List<UserServersError>>
