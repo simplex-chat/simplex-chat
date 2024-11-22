@@ -246,8 +246,9 @@ private fun ReviewConditionsView(
     }
     Column(Modifier.padding(top = DEFAULT_PADDING).widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
       AcceptConditionsButton(onboarding, selectedOperators, selectedOperatorIds, close)
+      // Reserve space
+      TextButtonBelowOnboardingButton("", null)
     }
-    Spacer(Modifier.height(DEFAULT_PADDING * 2))
   }
 }
 
