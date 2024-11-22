@@ -627,7 +627,7 @@ fun ConditionsTextView(
         ) {
           Text(
             text = conditionsText.trimIndent(),
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(8.dp)
           )
         }
     } else {
