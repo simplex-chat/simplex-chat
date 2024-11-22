@@ -55,20 +55,26 @@ fun ModalData.NetworkAndServersView(close: () -> Unit) {
   val proxyPort = remember { derivedStateOf { appPrefs.networkProxy.state.value.port } }
   fun onClose(): Boolean = if (!serversCanBeSaved(currUserServers.value, userServers.value, serverErrors.value)) {
     close()
+    chatModel.centerPanelBackgroundClickHandler = null
     false
   } else {
     showUnsavedChangesAlert(
-      { scope.launch { saveServers(currentRemoteHost?.remoteHostId, currUserServers, userServers) }},
-      close
+      {
+        scope.launch {
+          saveServers(currentRemoteHost?.remoteHostId, currUserServers, userServers)
+          chatModel.centerPanelBackgroundClickHandler = null
+        }
+      },
+      {
+        close()
+        chatModel.centerPanelBackgroundClickHandler = null
+      }
     )
     true
   }
 
-  DisposableEffect(Unit) {
+  LaunchedEffect(Unit) {
     chatModel.centerPanelBackgroundClickHandler = ::onClose
-    onDispose {
-      chatModel.centerPanelBackgroundClickHandler = null
-    }
   }
   ModalView(close = ::onClose) {
     NetworkAndServersLayout(
