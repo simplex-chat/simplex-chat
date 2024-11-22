@@ -274,12 +274,20 @@ private fun AcceptConditionsButton(
             val r2 = chatController.setServerOperators(rh = chatModel.remoteHostId(), operators = enabledOperators)
             if (r2 != null) {
               chatModel.conditions.value = r2
-              if (onboarding) { close() }
-              continueToNextStep(onboarding, close)
+              if (appPlatform.isDesktop || !onboarding) {
+                if (onboarding) { close() }
+                continueToNextStep(onboarding, close)
+              } else {
+                continueToSetNotificationsAfterAccept()
+              }
             }
           } else {
-            if (onboarding) { close() }
-            continueToNextStep(onboarding, close)
+            if (appPlatform.isDesktop || !onboarding) {
+              if (onboarding) { close() }
+              continueToNextStep(onboarding, close)
+            } else {
+              continueToSetNotificationsAfterAccept()
+            }
           }
         }
       }
@@ -293,6 +301,11 @@ private fun continueToNextStep(onboarding: Boolean, close: () -> Unit) {
   } else {
     close()
   }
+}
+
+private fun continueToSetNotificationsAfterAccept() {
+  appPrefs.onboardingStage.set(OnboardingStage.Step4_SetNotificationsMode)
+  ModalManager.fullscreen.showModalCloseable(showClose = false) { SetNotificationsMode(chatModel) }
 }
 
 private fun enabledOperators(operators: List<ServerOperator>, selectedOperatorIds: Set<Long>): List<ServerOperator>? {

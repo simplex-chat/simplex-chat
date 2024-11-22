@@ -57,6 +57,7 @@ fun SetNotificationsMode(m: ChatModel) {
             onboarding = OnboardingStage.OnboardingComplete,
             onclick = {
               changeNotificationsMode(currentMode.value, m)
+              ModalManager.fullscreen.closeModals()
             }
           )
           // Reserve space
