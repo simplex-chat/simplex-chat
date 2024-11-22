@@ -289,7 +289,7 @@ private fun AcceptConditionsButton(
 
 private fun continueToNextStep(onboarding: Boolean, close: () -> Unit) {
   if (onboarding) {
-    appPrefs.onboardingStage.set(OnboardingStage.Step4_SetNotificationsMode)
+    appPrefs.onboardingStage.set(if (appPlatform.isAndroid) OnboardingStage.Step4_SetNotificationsMode else OnboardingStage.OnboardingComplete)
   } else {
     close()
   }
