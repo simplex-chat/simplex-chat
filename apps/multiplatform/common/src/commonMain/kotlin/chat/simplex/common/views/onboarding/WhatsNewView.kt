@@ -28,12 +28,11 @@ import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 
 @Composable
-fun ModalData.WhatsNewView(showWhatsNew: MutableState<Boolean> = mutableStateOf(true), updatedConditions: Boolean = false, viaSettings: Boolean = false, close: () -> Unit) {
+fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Boolean = false, close: () -> Unit) {
   val currentVersion = remember { mutableStateOf(versionDescriptions.lastIndex) }
-  val showUpdatedConditions = remember { stateGetOrPut("updatedConditions") { updatedConditions } }
   val rhId = chatModel.remoteHostId()
 
-  if (showUpdatedConditions.value) {
+  if (updatedConditions) {
     LaunchedEffect(Unit) {
       val conditionsId = chatModel.conditions.value.currentConditions.conditionsId
       try {
@@ -156,7 +155,7 @@ fun ModalData.WhatsNewView(showWhatsNew: MutableState<Boolean> = mutableStateOf(
         ReadMoreButton(v.post)
       }
 
-      if (showUpdatedConditions.value) {
+      if (updatedConditions) {
         Text(
           stringResource(MR.strings.view_updated_conditions),
           color = MaterialTheme.colors.primary,
@@ -174,13 +173,9 @@ fun ModalData.WhatsNewView(showWhatsNew: MutableState<Boolean> = mutableStateOf(
           Modifier.fillMaxWidth(), contentAlignment = Alignment.Center
         ) {
           Text(
-            if (updatedConditions) generalGetString(MR.strings.view_updated_conditions) else generalGetString(MR.strings.ok),
+            generalGetString(MR.strings.ok),
             modifier = Modifier.clickable(onClick = {
-              if (updatedConditions) {
-                showWhatsNew.value = false
-              } else {
                 close()
-              }
             }),
             style = MaterialTheme.typography.h3,
             color = MaterialTheme.colors.primary
