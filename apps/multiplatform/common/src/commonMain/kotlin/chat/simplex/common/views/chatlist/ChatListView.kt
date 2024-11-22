@@ -124,7 +124,7 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
     val showUpdatedConditions = chatModel.conditions.value.conditionsAction?.shouldShowNotice ?: false
     if (showWhatsNew) {
       delay(1000L)
-      ModalManager.center.showCustomModal { close -> WhatsNewView(close = close, showWhatsNew = remember { mutableStateOf(true) }, updatedConditions = showUpdatedConditions) }
+      ModalManager.center.showCustomModal { close -> WhatsNewView(close = close, updatedConditions = showUpdatedConditions) }
     } else if (showUpdatedConditions) {
       ModalManager.center.showModalCloseable(endButtons = { ConditionsLinkButton() }) { close ->
         LaunchedEffect(Unit) {
