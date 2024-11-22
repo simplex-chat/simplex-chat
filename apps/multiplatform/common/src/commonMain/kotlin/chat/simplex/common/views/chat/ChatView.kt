@@ -980,8 +980,9 @@ fun BoxScope.ChatItemsList(
   }
 
   val chatInfoUpdated = rememberUpdatedState(chatInfo)
+  val highlightedItems = remember { mutableStateOf(setOf<Long>()) }
   val scope = rememberCoroutineScope()
-  val scrollToItem: (Long) -> Unit = remember { scrollToItem(loadingMoreItems, chatInfoUpdated, maxHeight, scope, reversedChatItems, mergedItems, listState, loadMessages) }
+  val scrollToItem: (Long) -> Unit = remember { scrollToItem(loadingMoreItems, highlightedItems, chatInfoUpdated, maxHeight, scope, reversedChatItems, mergedItems, listState, loadMessages) }
 
   LoadLastItems(loadingMoreItems, remoteHostId, chatInfo)
   SmallScrollOnNewMessage(listState, chatModel.chatItems)
@@ -1031,7 +1032,17 @@ fun BoxScope.ChatItemsList(
           tryOrShowError("${cItem.id}ChatItem", error = {
             CIBrokenComposableView(if (cItem.chatDir.sent) Alignment.CenterEnd else Alignment.CenterStart)
           }) {
-            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp)
+            val highlighted = remember { derivedStateOf { highlightedItems.value.contains(cItem.id) } }
+            LaunchedEffect(Unit) {
+              snapshotFlow { highlighted.value }
+                .distinctUntilChanged()
+                .filter { it }
+                .collect {
+                  delay(500)
+                  highlightedItems.value = setOf()
+                }
+            }
+            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, range = range, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp)
           }
         }
 
@@ -1810,6 +1821,7 @@ private fun lastFullyVisibleIemInListState(topPaddingToContentPx: State<Int>, de
 
 private fun scrollToItem(
   loadingMoreItems: MutableState<Boolean>,
+  highlightedItems: MutableState<Set<Long>>,
   chatInfo: State<ChatInfo>,
   maxHeight: State<Int>,
   scope: CoroutineScope,
@@ -1840,8 +1852,13 @@ private fun scrollToItem(
         index = mergedItems.value.indexInParentItems[itemId] ?: -1
       }
       if (index != -1) {
-        withContext(scope.coroutineContext) {
-          listState.value.animateScrollToItem(min(reversedChatItems.value.lastIndex, index + 1), -maxHeight.value)
+        if (listState.value.layoutInfo.visibleItemsInfo.any { it.index == index && it.offset + it.size <= maxHeight.value }) {
+         highlightedItems.value = setOf(itemId)
+        } else {
+          withContext(scope.coroutineContext) {
+            listState.value.animateScrollToItem(min(reversedChatItems.value.lastIndex, index + 1), -maxHeight.value)
+            highlightedItems.value = setOf(itemId)
+          }
         }
       }
     } finally {

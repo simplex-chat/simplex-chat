@@ -2,6 +2,8 @@ package chat.simplex.common.views.chat.item
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.HoverInteraction
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.*
@@ -57,6 +59,7 @@ fun ChatItemView(
   useLinkPreviews: Boolean,
   linkMode: SimplexLinkMode,
   revealed: State<Boolean>,
+  highlighted: State<Boolean>,
   range: State<IntRange?>,
   selectedChatItems: MutableState<Set<Long>?>,
   fillMaxWidth: Boolean = true,
@@ -135,10 +138,19 @@ fun ChatItemView(
     }
 
     Column(horizontalAlignment = if (cItem.chatDir.sent) Alignment.End else Alignment.Start) {
+      val interactionSource = remember { MutableInteractionSource() }
+      val enterInteraction = remember { HoverInteraction.Enter() }
+      KeyChangeEffect(highlighted.value) {
+        if (highlighted.value) {
+          interactionSource.emit(enterInteraction)
+        } else {
+          interactionSource.emit(HoverInteraction.Exit(enterInteraction))
+        }
+      }
       Column(
         Modifier
           .clipChatItem(cItem, itemSeparation.largeGap, revealed.value)
-          .combinedClickable(onLongClick = { showMenu.value = true }, onClick = onClick)
+          .combinedClickable(onLongClick = { showMenu.value = true }, onClick = onClick, interactionSource = interactionSource, indication = LocalIndication.current)
           .onRightClick { showMenu.value = true },
       ) {
         @Composable
@@ -1064,6 +1076,7 @@ fun PreviewChatItemView(
     linkMode = SimplexLinkMode.DESCRIPTION,
     composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
     revealed = remember { mutableStateOf(false) },
+    highlighted = remember { mutableStateOf(false) },
     range = remember { mutableStateOf(0..1) },
     selectedChatItems = remember { mutableStateOf(setOf()) },
     selectChatItem = {},
@@ -1106,6 +1119,7 @@ fun PreviewChatItemViewDeletedContent() {
       linkMode = SimplexLinkMode.DESCRIPTION,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       revealed = remember { mutableStateOf(false) },
+      highlighted = remember { mutableStateOf(false) },
       range = remember { mutableStateOf(0..1) },
       selectedChatItems = remember { mutableStateOf(setOf()) },
       selectChatItem = {},
