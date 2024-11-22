@@ -227,8 +227,9 @@ private fun ReviewConditionsView(
   selectedOperatorIds: State<Set<Long>>,
   close: () -> Unit
 ) {
-  val operatorsWithConditionsAccepted = chatModel.conditions.value.serverOperators.filter { it.conditionsAcceptance.conditionsAccepted }
-  val acceptForOperators = selectedOperators.value.filter { !it.conditionsAcceptance.conditionsAccepted }
+  // remembering both since we don't want to reload the view after the user accepts conditions
+  val operatorsWithConditionsAccepted = remember { chatModel.conditions.value.serverOperators.filter { it.conditionsAcceptance.conditionsAccepted } }
+  val acceptForOperators = remember { selectedOperators.value.filter { !it.conditionsAcceptance.conditionsAccepted } }
   ColumnWithScrollBar(modifier = Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING)) {
     AppBarTitle(stringResource(MR.strings.operator_conditions_of_use), withPadding = false, enableAlphaChanges = false)
     if (operatorsWithConditionsAccepted.isNotEmpty()) {
