@@ -124,12 +124,12 @@ jobs:
         run: |
           echo "ignore-project: False"                                         >> cabal.project.local
           echo "package simplexmq"                                             >> cabal.project.local
-          echo "    extra-include-dirs: /opt/homebrew/opt/openssl@1.1/include" >> cabal.project.local
-          echo "    extra-lib-dirs: /opt/homebrew/opt/openssl@1.1/lib"         >> cabal.project.local
+          echo "    extra-include-dirs: /opt/homebrew/opt/openssl@3.0/include" >> cabal.project.local
+          echo "    extra-lib-dirs: /opt/homebrew/opt/openssl@3.0/lib"         >> cabal.project.local
           echo ""                                                              >> cabal.project.local
           echo "package direct-sqlcipher"                                      >> cabal.project.local
-          echo "    extra-include-dirs: /opt/homebrew/opt/openssl@1.1/include" >> cabal.project.local
-          echo "    extra-lib-dirs: /opt/homebrew/opt/openssl@1.1/lib"         >> cabal.project.local
+          echo "    extra-include-dirs: /opt/homebrew/opt/openssl@3.0/include" >> cabal.project.local
+          echo "    extra-lib-dirs: /opt/homebrew/opt/openssl@3.0/lib"         >> cabal.project.local
           echo "    flags: +openssl"                                           >> cabal.project.local
 
       - name: Unix prepare cabal.project.local for Mac
@@ -138,12 +138,12 @@ jobs:
         run: |
           echo "ignore-project: False"                                         >> cabal.project.local
           echo "package simplexmq"                                             >> cabal.project.local
-          echo "    extra-include-dirs: /usr/local/opt/openssl@1.1/include"    >> cabal.project.local
-          echo "    extra-lib-dirs: /usr/local/opt/openssl@1.1/lib"            >> cabal.project.local
+          echo "    extra-include-dirs: /usr/local/opt/openssl@3.0/include"    >> cabal.project.local
+          echo "    extra-lib-dirs: /usr/local/opt/openssl@3.0/lib"            >> cabal.project.local
           echo ""                                                              >> cabal.project.local
           echo "package direct-sqlcipher"                                      >> cabal.project.local
-          echo "    extra-include-dirs: /usr/local/opt/openssl@1.1/include"    >> cabal.project.local
-          echo "    extra-lib-dirs: /usr/local/opt/openssl@1.1/lib"            >> cabal.project.local
+          echo "    extra-include-dirs: /usr/local/opt/openssl@3.0/include"    >> cabal.project.local
+          echo "    extra-lib-dirs: /usr/local/opt/openssl@3.0/lib"            >> cabal.project.local
           echo "    flags: +openssl"                                           >> cabal.project.local
 
       - name: Install AppImage dependencies
