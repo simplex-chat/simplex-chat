@@ -76,7 +76,7 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
   LaunchedEffect(Unit) {
     // Enables unsaved changes alert on this view and all children views.
     chatModel.centerPanelBackgroundClickHandler = {
-      onClose { ModalManager.start.closeModals() }
+      onClose(close = { ModalManager.start.closeModals() })
     }
   }
   ModalView(close = { onClose(closeNetworkAndServers) }) {
