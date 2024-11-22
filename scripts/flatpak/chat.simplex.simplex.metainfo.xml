@@ -38,6 +38,34 @@
   </description>
 
   <releases>
+    <release version="6.1.1" date="2024-10-18">
+      <url type="details">https://simplex.chat/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html</url>
+      <description>
+        <p>New in v6.1 - v6.1.1:</p>
+        <ul>
+          <li>Misc fixes</li>
+        </ul>
+        <p>New in v6.1:</p>
+        <p>Better security:</p>
+        <ul>
+          <li>SimpleX protocols reviewed by Trail of Bits.</li>
+          <li>security improvements (don't worry, there is nothing critical there).</li>
+        </ul>
+        <p>Better calls:</p>
+        <ul>
+          <li>you can switch audio and video during the call.</li>
+          <li>share the screen from desktop app.</li>
+        </ul>
+        <p>Better user experience:</p>
+        <ul>
+          <li>switch chat profile for 1-time invitations.</li>
+          <li>customizable message shape.</li>
+          <li>better message dates.</li>
+          <li>forward up to 20 messages at once.</li>
+          <li>delete or moderate up to 200 messages.</li>
+        </ul>
+      </description>
+    </release>
     <release version="6.1.0" date="2024-10-14">
       <url type="details">https://simplex.chat/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html</url>
       <description>
