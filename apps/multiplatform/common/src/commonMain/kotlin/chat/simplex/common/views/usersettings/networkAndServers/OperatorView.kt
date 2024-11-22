@@ -141,7 +141,14 @@ fun OperatorViewLayout(
   Column {
     SectionView(generalGetString(MR.strings.operator).uppercase()) {
       SectionItemView({ ModalManager.start.showModalCloseable { _ -> OperatorInfoView(operator) } }) {
-        Image(painterResource(operator.largeLogo), null, Modifier.height(48.dp))
+        Row(
+          Modifier.fillMaxWidth(),
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Image(painterResource(operator.largeLogo), null, Modifier.height(48.dp))
+          Spacer(Modifier.fillMaxWidth().weight(1f))
+          Icon(painterResource(MR.images.ic_info), null, Modifier.size(28.dp), tint = MaterialTheme.colors.primary)
+        }
       }
       UseOperatorToggle(
         scope = scope,
