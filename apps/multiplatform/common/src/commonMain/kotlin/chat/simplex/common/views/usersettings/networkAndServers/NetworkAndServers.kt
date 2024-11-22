@@ -42,7 +42,7 @@ import chat.simplex.res.MR
 import kotlinx.coroutines.*
 
 @Composable
-fun ModalData.NetworkAndServersView(close: () -> Unit) {
+fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
   val currentRemoteHost by remember { chatModel.currentRemoteHost }
   // It's not a state, just a one-time value. Shouldn't be used in any state-related situations
   val netCfg = remember { chatModel.controller.getNetCfg() }
@@ -52,7 +52,7 @@ fun ModalData.NetworkAndServersView(close: () -> Unit) {
   val serverErrors = remember { stateGetOrPut("serverErrors") { emptyList<UserServersError>() } }
 
   val proxyPort = remember { derivedStateOf { appPrefs.networkProxy.state.value.port } }
-  fun onClose(): Boolean = if (!serversCanBeSaved(currUserServers.value, userServers.value, serverErrors.value)) {
+  fun onClose(close: () -> Unit): Boolean = if (!serversCanBeSaved(currUserServers.value, userServers.value, serverErrors.value)) {
     chatModel.centerPanelBackgroundClickHandler = null
     close()
     false
@@ -62,12 +62,12 @@ fun ModalData.NetworkAndServersView(close: () -> Unit) {
         CoroutineScope(Dispatchers.Default).launch {
           saveServers(currentRemoteHost?.remoteHostId, currUserServers, userServers)
           chatModel.centerPanelBackgroundClickHandler = null
-          ModalManager.start.closeModals()
+          close()
         }
       },
       {
         chatModel.centerPanelBackgroundClickHandler = null
-        ModalManager.start.closeModals()
+        close()
       }
     )
     true
@@ -75,9 +75,11 @@ fun ModalData.NetworkAndServersView(close: () -> Unit) {
 
   LaunchedEffect(Unit) {
     // Enables unsaved changes alert on this view and all children views.
-    chatModel.centerPanelBackgroundClickHandler = ::onClose
+    chatModel.centerPanelBackgroundClickHandler = {
+      onClose { ModalManager.start.closeModals() }
+    }
   }
-  ModalView(close = ::onClose) {
+  ModalView(close = { onClose(closeNetworkAndServers) }) {
     NetworkAndServersLayout(
       currentRemoteHost = currentRemoteHost,
       networkUseSocksProxy = networkUseSocksProxy,
