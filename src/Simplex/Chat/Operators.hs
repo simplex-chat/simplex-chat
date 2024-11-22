@@ -192,6 +192,14 @@ data ServerOperator' s = ServerOperator
   }
   deriving (Show)
 
+data ServerOperatorRoles = ServerOperatorRoles
+  { operatorId' :: Int64,
+    enabled' :: Bool,
+    smpRoles' :: ServerRoles,
+    xftpRoles' :: ServerRoles
+  }
+  deriving (Show)
+
 operatorRoles :: UserProtocol p => SProtocolType p -> ServerOperator -> ServerRoles
 operatorRoles p op = case p of
   SPSMP -> smpRoles op

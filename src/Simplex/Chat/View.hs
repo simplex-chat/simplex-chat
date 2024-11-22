@@ -101,7 +101,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRServerOperatorConditions (ServerOperatorConditions ops _ ca) -> viewServerOperators ops ca
   CRUserServers u uss -> ttyUser u $ concatMap viewUserServers uss <> (if testView then [] else serversUserHelp)
   CRUserServersValidation {} -> []
-  CRUsageConditions {} -> []
+  CRUsageConditions current _ accepted_ -> viewUsageConditions current accepted_
   CRChatItemTTL u ttl -> ttyUser u $ viewChatItemTTL ttl
   CRNetworkConfig cfg -> viewNetworkConfig cfg
   CRContactInfo u ct cStats customUserProfile -> ttyUser u $ viewContactInfo ct cStats customUserProfile
@@ -1280,8 +1280,8 @@ viewOperator op@ServerOperator {tradeName, legalName, serverDomains, conditionsA
     <> tradeName
     <> maybe "" parens legalName
     <> (", domains: "  <> T.intercalate ", " serverDomains)
+    <> (", servers: " <> viewOpEnabled op)
     <> (", conditions: " <> viewOpConditions conditionsAcceptance)
-    <> (", " <> viewOpEnabled op)
 
 shortViewOperator :: ServerOperator -> Text
 shortViewOperator ServerOperator {operatorId = DBEntityId opId, tradeName, enabled} =
@@ -1289,10 +1289,10 @@ shortViewOperator ServerOperator {operatorId = DBEntityId opId, tradeName, enabl
 
 viewOpIdTag :: ServerOperator' s -> Text
 viewOpIdTag ServerOperator {operatorId, operatorTag} = case operatorId of
-  DBEntityId i -> tshow i <> " - " <> tag
+  DBEntityId i -> tshow i <> tag
   DBNewEntity -> tag
   where
-    tag = maybe "" textEncode operatorTag <> ". "
+    tag = maybe "" (parens . textEncode) operatorTag <> ". "
 
 viewOpConditions :: ConditionsAcceptance -> Text
 viewOpConditions = \case
@@ -1306,7 +1306,7 @@ viewOpEnabled ServerOperator {enabled, smpRoles, xftpRoles}
   | not enabled = "disabled"
   | no smpRoles && no xftpRoles = "disabled (servers known)"
   | both smpRoles && both xftpRoles = "enabled"
-  | otherwise = "SMP " <> viewRoles smpRoles <> ", XFTP" <> viewRoles xftpRoles
+  | otherwise = "SMP " <> viewRoles smpRoles <> ", XFTP " <> viewRoles xftpRoles
   where
     no rs = not $ storage rs || proxy rs
     both rs = storage rs && proxy rs
@@ -1319,12 +1319,19 @@ viewOpEnabled ServerOperator {enabled, smpRoles, xftpRoles}
 viewConditionsAction :: UsageConditionsAction -> [StyledString]
 viewConditionsAction = \case
   UCAReview {operators, deadline, showNotice} | showNotice -> case deadline of
-    Just ts -> [plain $ "New conditions will be accepted at " <> tshow ts <> " for " <> ops]
-    Nothing -> [plain $ "New conditions have to be accepted for " <> ops]
+    Just ts -> [plain $ "The new conditions will be accepted for " <> ops <> " at " <> tshow ts]
+    Nothing -> [plain $ "The new conditions have to be accepted for " <> ops]
     where
       ops = T.intercalate ", " $ map legalName_ operators
       legalName_ ServerOperator {tradeName, legalName} = fromMaybe tradeName legalName
   _ -> []
+
+viewUsageConditions :: UsageConditions -> Maybe UsageConditions -> [StyledString]
+viewUsageConditions current accepted_ =
+  [plain $ "Current conditions: " <> viewConds current <> maybe "" (\ac -> ", accepted conditions: " <> viewConds ac) accepted_]
+  where
+    viewConds UsageConditions {conditionsId, conditionsCommit, notifiedAt} =
+      tshow conditionsId <> maybe "" (const " (notified)") notifiedAt <> ". " <> conditionsCommit
 
 viewChatItemTTL :: Maybe Int64 -> [StyledString]
 viewChatItemTTL = \case
