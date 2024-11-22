@@ -15,7 +15,6 @@ import androidx.compose.ui.draw.*
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
@@ -42,7 +41,6 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlin.math.absoluteValue
 
 @Composable
 fun AppScreen() {
@@ -194,6 +192,13 @@ fun MainScreen() {
           OnboardingStage.Step2_CreateProfile -> CreateFirstProfile(chatModel) {}
           OnboardingStage.LinkAMobile -> LinkAMobile()
           OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
+          OnboardingStage.Step3_ChooseServerOperators -> {
+            val modalData = remember { ModalData() }
+            modalData.ChooseServerOperators(true)
+            if (appPlatform.isDesktop) {
+              ModalManager.fullscreen.showInView()
+            }
+          }
           // Ensure backwards compatibility with old onboarding stage for address creation, otherwise notification setup would be skipped
           OnboardingStage.Step3_CreateSimpleXAddress -> SetNotificationsMode(chatModel)
           OnboardingStage.Step4_SetNotificationsMode -> SetNotificationsMode(chatModel)

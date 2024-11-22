@@ -1,29 +1,25 @@
-package chat.simplex.common.views.usersettings
+package chat.simplex.common.views.usersettings.networkAndServers
 
-import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import dev.icerock.moko.resources.compose.stringResource
-import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ServerAddress.Companion.parseServerAddress
-import chat.simplex.common.model.ServerCfg
+import chat.simplex.common.model.UserServer
 import chat.simplex.common.platform.ColumnWithScrollBar
-import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.QRCodeScanner
 import chat.simplex.res.MR
 
 @Composable
-expect fun ScanProtocolServer(rhId: Long?, onNext: (ServerCfg) -> Unit)
+expect fun ScanProtocolServer(rhId: Long?, onNext: (UserServer) -> Unit)
 
 @Composable
-fun ScanProtocolServerLayout(rhId: Long?, onNext: (ServerCfg) -> Unit) {
+fun ScanProtocolServerLayout(rhId: Long?, onNext: (UserServer) -> Unit) {
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.smp_servers_scan_qr))
     QRCodeScanner { text ->
       val res = parseServerAddress(text)
       if (res != null) {
-        onNext(ServerCfg(remoteHostId = rhId, text, false, null, false))
+        onNext(UserServer(remoteHostId = rhId, null, text, false, null, false, false))
       } else {
         AlertManager.shared.showAlertMsg(
           title = generalGetString(MR.strings.smp_servers_invalid_address),

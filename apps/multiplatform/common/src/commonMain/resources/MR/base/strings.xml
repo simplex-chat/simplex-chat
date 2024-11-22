@@ -109,6 +109,16 @@
   <string name="failed_to_create_user_invalid_title">Invalid display name!</string>
   <string name="failed_to_create_user_invalid_desc">This display name is invalid. Please choose another name.</string>
   <string name="failed_to_active_user_title">Error switching profile!</string>
+  <string name="failed_to_save_servers">Error saving servers</string>
+  <string name="no_message_servers_configured">No message servers.</string>
+  <string name="no_message_servers_configured_for_receiving">No servers to receive messages.</string>
+  <string name="no_message_servers_configured_for_private_routing">No servers for private message routing.</string>
+  <string name="no_media_servers_configured">No media &amp; file servers.</string>
+  <string name="no_media_servers_configured_for_sending">No servers to send files.</string>
+  <string name="no_media_servers_configured_for_private_routing">No servers to receive files.</string>
+  <string name="for_chat_profile">For chat profile %s:</string>
+  <string name="errors_in_servers_configuration">Errors in servers configuration.</string>
+  <string name="error_accepting_operator_conditions">Error accepting conditions</string>
 
   <!-- API Error Responses - SimpleXAPI.kt -->
   <string name="connection_timeout">Connection timeout</string>
@@ -750,6 +760,7 @@
   <string name="smp_servers_test_some_failed">Some servers failed the test:</string>
   <string name="smp_servers_scan_qr">Scan server QR code</string>
   <string name="smp_servers_enter_manually">Enter server manually</string>
+  <string name="smp_servers_new_server">New server</string>
   <string name="smp_servers_preset_server">Preset server</string>
   <string name="smp_servers_your_server">Your server</string>
   <string name="smp_servers_your_server_address">Your server address</string>
@@ -1037,6 +1048,19 @@
   <string name="setup_database_passphrase">Setup database passphrase</string>
   <string name="you_can_change_it_later">Random passphrase is stored in settings as plaintext.\nYou can change it later.</string>
   <string name="use_random_passphrase">Use random passphrase</string>
+
+  <!-- ChooseServerOperators.kt -->
+  <string name="onboarding_choose_server_operators">Choose operators</string>
+  <string name="onboarding_network_operators">Network operators</string>
+  <string name="onboarding_network_operators_app_will_use_different_operators">When more than one network operator is enabled, the app will use the servers of different operators for each conversation.</string>
+  <string name="onboarding_network_operators_app_will_use_for_routing">For example, if you receive messages via SimpleX Chat server, the app will use one of Flux servers for private routing.</string>
+  <string name="onboarding_select_network_operators_to_use">Select network operators to use.</string>
+  <string name="onboarding_network_operators_configure_via_settings">You can configure servers via settings.</string>
+  <string name="onboarding_network_operators_conditions_will_be_accepted">Conditions will be accepted for enabled operators after 30 days.</string>
+  <string name="onboarding_network_operators_conditions_you_can_configure">You can configure operators in Network &amp; servers settings.</string>
+  <string name="onboarding_network_operators_review_later">Review later</string>
+  <string name="onboarding_network_operators_update">Update</string>
+  <string name="onboarding_network_operators_continue">Continue</string>
 
   <!-- Call -->
   <string name="incoming_video_call">Incoming video call</string>
@@ -1667,6 +1691,59 @@
   <string name="save_group_profile">Save group profile</string>
   <string name="error_saving_group_profile">Error saving group profile</string>
 
+  <!-- NetworkAndServers.kt -->
+  <string name="network_preset_servers_title">Preset servers</string>
+  <string name="operator_review_conditions">Review conditions</string>
+  <string name="operator_conditions_accepted">Accepted conditions</string>
+  <string name="operator_conditions_accepted_for_enabled_operators_on">Conditions will be automatically accepted for enabled operators on: %s.</string>
+  <string name="your_servers">Your servers</string>
+  <string name="operators_conditions_accepted_for"><![CDATA[Conditions are accepted for the operator(s): <b>%s</b>.]]></string>
+  <string name="operators_conditions_will_be_accepted_for"><![CDATA[Conditions will be accepted for the operator(s): <b>%s</b>.]]></string>
+
+  <!-- OperatorView.kt -->
+  <string name="operator">Operator</string>
+  <string name="operator_servers_title">%s servers</string>
+  <string name="operator_info_title">Network operator</string>
+  <string name="operator_website">Website</string>
+  <string name="operator_conditions_accepted_on">Conditions accepted on: %s.</string>
+  <string name="operator_conditions_will_be_accepted_on">Conditions will be accepted on: %s.</string>
+  <string name="operator">Operator</string>
+  <string name="operator_use_operator_toggle_description">Use servers</string>
+  <string name="use_servers_of_operator_x">Use %s</string>
+  <string name="operator_conditions_failed_to_load">Current conditions text couldn\'t be loaded, you can review conditions via this link:</string>
+  <string name="operator_conditions_accepted_for_some"><![CDATA[Conditions are already accepted for following operator(s): <b>%s</b>.]]></string>
+  <string name="operator_same_conditions_will_be_applied"><![CDATA[Same conditions will apply to operator <b>%s</b>.]]></string>
+  <string name="operator_same_conditions_will_apply_to_operators"><![CDATA[Same conditions will apply to operator(s): <b>%s</b>.]]></string>
+  <string name="operator_conditions_accepted_for_some"><![CDATA[Conditions are already accepted for following operator(s): <b>%s</b>.]]></string>
+  <string name="operator_conditions_will_be_applied"><![CDATA[These conditions will also apply for: <b>%s</b>.]]></string>
+  <string name="operator_same_conditions_will_be_applied"><![CDATA[Same conditions will apply to operator: <b>%s</b>.]]></string>
+  <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[Conditions will be accepted for operator(s): <b>%s</b>.]]></string>
+  <string name="operators_conditions_will_also_apply"><![CDATA[These conditions will also apply for: <b>%s</b>.]]></string>
+  <string name="view_conditions">View conditions</string>
+  <string name="accept_conditions">Accept conditions</string>
+  <string name="operator_conditions_of_use">Conditions of use</string>
+  <string name="operator_in_order_to_use_accept_conditions"><![CDATA[To use the servers of <b>%s</b>, accept conditions of use.]]></string>
+  <string name="operator_use_for_messages">Use for messages</string>
+  <string name="operator_use_for_messages_receiving">To receive</string>
+  <string name="operator_use_for_messages_private_routing">For private routing</string>
+  <string name="operator_added_message_servers">Added message servers</string>
+  <string name="operator_use_for_files">Use for files</string>
+  <string name="operator_use_for_sending">To send</string>
+  <string name="xftp_servers_per_user">The servers for new files of your current chat profile</string>
+  <string name="operator_added_xftp_servers">Added media &amp; file servers</string>
+  <string name="operator_open_conditions">Open conditions</string>
+  <string name="operator_open_changes">Open changes</string>
+
+  <!-- ProtocolServerView.kt -->
+  <string name="error_updating_server_title">Error updating server</string>
+  <string name="error_server_protocol_changed">Server protocol changed.</string>
+  <string name="error_server_operator_changed">Server operator changed.</string>
+
+  <!-- NewServerView.kt -->
+  <string name="operator_server_alert_title">Operator server</string>
+  <string name="server_added_to_operator__name">Server added to operator %s.</string>
+  <string name="error_adding_server">Error adding server</string>
+
   <!-- AdvancedNetworkSettings.kt -->
   <string name="network_option_tcp_connection">TCP connection</string>
   <string name="network_options_reset_to_defaults">Reset to defaults</string>
@@ -2059,6 +2136,13 @@
   <string name="v6_1_message_dates_descr">Better message dates.</string>
   <string name="v6_1_forward_many_messages_descr">Forward up to 20 messages at once.</string>
   <string name="v6_1_delete_many_messages_descr">Delete or moderate up to 200 messages.</string>
+  <string name="v6_2_network_decentralization">Network decentralization</string>
+  <string name="v6_2_network_decentralization_descr">The second preset operator in the app!</string>
+  <string name="v6_2_network_decentralization_enable_flux">Enable flux</string>
+  <string name="v6_2_network_decentralization_enable_flux_reason">for better metadata privacy.</string>
+  <string name="v6_2_improved_chat_navigation">Improved chat navigation</string>
+  <string name="v6_2_improved_chat_navigation_descr">- Open chat on the first unread message.\n- Jump to quoted messages.</string>
+  <string name="view_updated_conditions">View updated conditions</string>
 
   <!-- CustomTimePicker -->
   <string name="custom_time_unit_seconds">seconds</string>

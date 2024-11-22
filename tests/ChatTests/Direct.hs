@@ -25,7 +25,7 @@ import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
-import Simplex.Chat.Controller (ChatConfig (..), DefaultAgentServers (..))
+import Simplex.Chat.Controller (ChatConfig (..), PresetServers (..))
 import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
@@ -85,6 +85,8 @@ chatDirectTests = do
   describe "XFTP servers" $ do
     it "get and set XFTP servers" testGetSetXFTPServers
     it "test XFTP server connection" testTestXFTPServer
+  describe "operators and usage conditions" $ do
+    it "get and enable operators, accept conditions" testOperators
   describe "async connection handshake" $ do
     describe "connect when initiating client goes offline" $ do
       it "curr" $ testAsyncInitiatingOffline testCfg testCfg
@@ -240,6 +242,7 @@ testRetryConnecting tmp = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile te
       bob <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
         alice <## "server connected localhost ()"
+        threadDelay 250000
         bob ##> ("/_connect plan 1 " <> inv)
         bob <## "invitation link: ok to connect"
         bob ##> ("/_connect 1 " <> inv)
@@ -334,8 +337,8 @@ testRetryConnectingClientTimeout tmp = do
               { quotaExceededTimeout = 1,
                 messageRetryInterval = RetryInterval2 {riFast = fastRetryInterval, riSlow = fastRetryInterval}
               },
-          defaultServers =
-            let def@DefaultAgentServers {netCfg} = defaultServers testCfg
+          presetServers =
+            let def@PresetServers {netCfg} = presetServers testCfg
              in def {netCfg = (netCfg :: NetworkConfig) {tcpTimeout = 10}}
         }
     opts' =
@@ -1139,24 +1142,36 @@ testSendMultiManyBatches =
 
 testGetSetSMPServers :: HasCallStack => FilePath -> IO ()
 testGetSetSMPServers =
-  testChat2 aliceProfile bobProfile $
-    \alice _ -> do
-      alice #$> ("/_servers 1 smp", id, "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001")
+  testChat aliceProfile $
+    \alice -> do
+      alice ##> "/_servers 1"
+      alice <## "Your servers"
+      alice <## "  SMP servers"
+      alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"
+      alice <## "  XFTP servers"
+      alice <## "    xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002"
       alice #$> ("/smp smp://1234-w==@smp1.example.im", id, "ok")
-      alice #$> ("/smp", id, "smp://1234-w==@smp1.example.im")
+      alice ##> "/smp"
+      alice <## "Your servers"
+      alice <## "  SMP servers"
+      alice <## "    smp://1234-w==@smp1.example.im"
       alice #$> ("/smp smp://1234-w==:password@smp1.example.im", id, "ok")
-      alice #$> ("/smp", id, "smp://1234-w==:password@smp1.example.im")
+      -- alice #$> ("/smp", id, "smp://1234-w==:password@smp1.example.im")
+      alice ##> "/smp"
+      alice <## "Your servers"
+      alice <## "  SMP servers"
+      alice <## "    smp://1234-w==:password@smp1.example.im"
       alice #$> ("/smp smp://2345-w==@smp2.example.im smp://3456-w==@smp3.example.im:5224", id, "ok")
       alice ##> "/smp"
-      alice <## "smp://2345-w==@smp2.example.im"
-      alice <## "smp://3456-w==@smp3.example.im:5224"
-      alice #$> ("/smp default", id, "ok")
-      alice #$> ("/smp", id, "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001")
+      alice <## "Your servers"
+      alice <## "  SMP servers"
+      alice <## "    smp://2345-w==@smp2.example.im"
+      alice <## "    smp://3456-w==@smp3.example.im:5224"
 
 testTestSMPServerConnection :: HasCallStack => FilePath -> IO ()
 testTestSMPServerConnection =
-  testChat2 aliceProfile bobProfile $
-    \alice _ -> do
+  testChat aliceProfile $
+    \alice -> do
       alice ##> "/smp test smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7001"
       alice <## "SMP server test passed"
       -- to test with password:
@@ -1170,24 +1185,35 @@ testTestSMPServerConnection =
 
 testGetSetXFTPServers :: HasCallStack => FilePath -> IO ()
 testGetSetXFTPServers =
-  testChat2 aliceProfile bobProfile $
-    \alice _ -> withXFTPServer $ do
-      alice #$> ("/_servers 1 xftp", id, "xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002")
+  testChat aliceProfile $
+    \alice -> withXFTPServer $ do
+      alice ##> "/_servers 1"
+      alice <## "Your servers"
+      alice <## "  SMP servers"
+      alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"
+      alice <## "  XFTP servers"
+      alice <## "    xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002"
       alice #$> ("/xftp xftp://1234-w==@xftp1.example.im", id, "ok")
-      alice #$> ("/xftp", id, "xftp://1234-w==@xftp1.example.im")
+      alice ##> "/xftp"
+      alice <## "Your servers"
+      alice <## "  XFTP servers"
+      alice <## "    xftp://1234-w==@xftp1.example.im"
       alice #$> ("/xftp xftp://1234-w==:password@xftp1.example.im", id, "ok")
-      alice #$> ("/xftp", id, "xftp://1234-w==:password@xftp1.example.im")
+      alice ##> "/xftp"
+      alice <## "Your servers"
+      alice <## "  XFTP servers"
+      alice <## "    xftp://1234-w==:password@xftp1.example.im"
       alice #$> ("/xftp xftp://2345-w==@xftp2.example.im xftp://3456-w==@xftp3.example.im:5224", id, "ok")
       alice ##> "/xftp"
-      alice <## "xftp://2345-w==@xftp2.example.im"
-      alice <## "xftp://3456-w==@xftp3.example.im:5224"
-      alice #$> ("/xftp default", id, "ok")
-      alice #$> ("/xftp", id, "xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002")
+      alice <## "Your servers"
+      alice <## "  XFTP servers"
+      alice <## "    xftp://2345-w==@xftp2.example.im"
+      alice <## "    xftp://3456-w==@xftp3.example.im:5224"
 
 testTestXFTPServer :: HasCallStack => FilePath -> IO ()
 testTestXFTPServer =
-  testChat2 aliceProfile bobProfile $
-    \alice _ -> withXFTPServer $ do
+  testChat aliceProfile $
+    \alice -> withXFTPServer $ do
       alice ##> "/xftp test xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7002"
       alice <## "XFTP server test passed"
       -- to test with password:
@@ -1198,6 +1224,36 @@ testTestXFTPServer =
       alice ##> "/xftp test xftp://LcJU@localhost:7002"
       alice <## "XFTP server test failed at Connect, error: BROKER {brokerAddress = \"xftp://LcJU@localhost:7002\", brokerErr = NETWORK}"
       alice <## "Possibly, certificate fingerprint in XFTP server address is incorrect"
+
+testOperators  :: HasCallStack => FilePath -> IO ()
+testOperators =
+  testChatCfgOpts testCfg opts' aliceProfile $
+    \alice -> do
+      -- initial load
+      alice ##> "/_conditions"
+      alice <##. "Current conditions: 2."
+      alice ##> "/_operators"
+      alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: required ("
+      alice <## "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: disabled, conditions: required"
+      alice <##. "The new conditions will be accepted for SimpleX Chat Ltd at "
+      -- set conditions notified 
+      alice ##> "/_conditions_notified 2"
+      alice <## "ok"
+      alice ##> "/_operators"
+      alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: required ("
+      alice <## "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: disabled, conditions: required"
+      alice ##> "/_conditions"
+      alice <##. "Current conditions: 2 (notified)."
+      -- accept conditions
+      alice ##> "/_accept_conditions 2 1,2"
+      alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: accepted ("
+      alice <##. "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: disabled, conditions: accepted ("
+      -- update operators
+      alice ##> "/operators 2:on:smp=proxy"
+      alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: accepted ("
+      alice <##. "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: SMP enabled proxy, XFTP enabled, conditions: accepted ("
+  where
+    opts' = testOpts {coreOptions = testCoreOpts {smpServers = [], xftpServers = []}}
 
 testAsyncInitiatingOffline :: HasCallStack => ChatConfig -> ChatConfig -> FilePath -> IO ()
 testAsyncInitiatingOffline aliceCfg bobCfg tmp = do
@@ -1800,11 +1856,15 @@ testCreateUserSameServers =
   where
     checkCustomServers alice = do
       alice ##> "/smp"
-      alice <## "smp://2345-w==@smp2.example.im"
-      alice <## "smp://3456-w==@smp3.example.im:5224"
+      alice <## "Your servers"
+      alice <## "  SMP servers"
+      alice <## "    smp://2345-w==@smp2.example.im"
+      alice <## "    smp://3456-w==@smp3.example.im:5224"
       alice ##> "/xftp"
-      alice <## "xftp://2345-w==@xftp2.example.im"
-      alice <## "xftp://3456-w==@xftp3.example.im:5224"
+      alice <## "Your servers"
+      alice <## "  XFTP servers"
+      alice <## "    xftp://2345-w==@xftp2.example.im"
+      alice <## "    xftp://3456-w==@xftp3.example.im:5224"
 
 testDeleteUser :: HasCallStack => FilePath -> IO ()
 testDeleteUser =

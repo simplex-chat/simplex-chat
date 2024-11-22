@@ -26,6 +26,7 @@ import chat.simplex.common.views.helpers.DatabaseUtils.ksDatabasePassword
 import chat.simplex.common.views.newchat.QRCodeScanner
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
+import chat.simplex.common.views.usersettings.networkAndServers.OnionRelatedLayout
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource

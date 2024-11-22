@@ -15,41 +15,39 @@ struct SetNotificationsMode: View {
     @State private var showAlert: NotificationAlert?
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Push notifications")
-                    .font(.largeTitle)
-                    .bold()
-                    .frame(maxWidth: .infinity)
-
-                Text("Send notifications:")
-                ForEach(NotificationsMode.values) { mode in
-                    NtfModeSelector(mode: mode, selection: $notificationMode)
-                }
-
-                Spacer()
-
-                Button {
-                    if let token = m.deviceToken {
-                        setNotificationsMode(token, notificationMode)
-                    } else {
-                        AlertManager.shared.showAlertMsg(title: "No device token!")
+        GeometryReader { g in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Text("Send notifications:")
+                    ForEach(NotificationsMode.values) { mode in
+                        NtfModeSelector(mode: mode, selection: $notificationMode)
                     }
-                    onboardingStageDefault.set(.onboardingComplete)
-                    m.onboardingStage = .onboardingComplete
-                } label: {
-                    if case .off = notificationMode {
-                        Text("Use chat")
-                    } else {
-                        Text("Enable notifications")
+                    
+                    Spacer()
+                    
+                    Button {
+                        if let token = m.deviceToken {
+                            setNotificationsMode(token, notificationMode)
+                        } else {
+                            AlertManager.shared.showAlertMsg(title: "No device token!")
+                        }
+                        onboardingStageDefault.set(.onboardingComplete)
+                        m.onboardingStage = .onboardingComplete
+                    } label: {
+                        if case .off = notificationMode {
+                            Text("Use chat")
+                        } else {
+                            Text("Enable notifications")
+                        }
                     }
+                    .buttonStyle(OnboardingButtonStyle())
+                    .padding(.bottom)
                 }
-                .font(.title)
-                .frame(maxWidth: .infinity)
+                .padding()
+                .frame(minHeight: g.size.height)
             }
-            .padding()
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         }
+        .frame(maxHeight: .infinity)
     }
 
     private func setNotificationsMode(_ token: DeviceToken, _ mode: NotificationsMode) {
