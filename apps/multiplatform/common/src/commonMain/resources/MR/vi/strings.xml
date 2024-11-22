@@ -1263,4 +1263,24 @@
     <string name="other_errors">các lỗi khác</string>
     <string name="smp_servers_other">Các máy chủ SMP khác</string>
     <string name="xftp_servers_other">Các máy chủ XFTP khác</string>
+    <string name="paste_the_link_you_received_to_connect_with_your_contact">Dán đường dẫn mà bạn nhận được để kết nối với liên hệ hệ của bạn…</string>
+    <string name="paste_link">Dán đường dẫn</string>
+    <string name="network_proxy_password">Mật khẩu</string>
+    <string name="onboarding_notifications_mode_periodic">Định kỳ</string>
+    <string name="servers_info_subscriptions_connections_pending">Đang chờ xử lý</string>
+    <string name="icon_descr_server_status_pending">Đang chờ xử lý</string>
+    <string name="restore_passphrase_not_found_desc">Không tìm thấy mật khẩu trong Keystore, vui lòng nhập thủ công. Điều này có thể xảy ra nếu bạn khôi phục dữ liệu ứng dụng bằng một công cụ sao lưu. Nếu không phải như vậy, xin vui lòng liên hệ với nhà phát triển.</string>
+    <string name="past_member_vName">Thành viên cũ %1$s</string>
+    <string name="v5_5_simpler_connect_ui">Dán đường dẫn để kết nối!</string>
+    <string name="periodic_notifications">Thông báo định kỳ</string>
+    <string name="paste_the_link_you_received">Dán đường dẫn mà bạn nhận được</string>
+    <string name="paste_button">Dán</string>
+    <string name="call_connection_peer_to_peer">ngang hàng</string>
+    <string name="enter_passphrase_notification_title">Cần có mật khẩu</string>
+    <string name="paste_desktop_address">Dán địa chỉ máy tính</string>
+    <string name="paste_archive_link">Dán đường dẫn sao lưu</string>
+    <string name="password_to_show">Mật khẩu để hiển thị</string>
+    <string name="icon_descr_call_pending_sent">Cuộc gọi chờ</string>
+    <string name="passcode_not_changed">Mã truy cập không đổi!</string>
+    <string name="passcode_set">Mã truy cập đã được đặt!</string>
 </resources>
