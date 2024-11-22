@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.model.ChatController.getServerOperators
 import chat.simplex.common.model.ChatController.getUserServers
 import chat.simplex.common.model.ChatController.setUserServers
 import chat.simplex.common.model.ChatModel.controller
@@ -885,8 +886,13 @@ private suspend fun saveServers(
 
     if (set) {
       val updatedServers = getUserServers(rhId)
+      val updatedOperators = getServerOperators(rhId)
 
-      if (updatedServers != null) {
+      if (updatedOperators != null) {
+        chatModel.conditions.value = updatedOperators
+      }
+
+      if (updatedServers != null ) {
         currUserServers.value = updatedServers
         userServers.value = updatedServers
       } else {
