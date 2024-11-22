@@ -21,7 +21,6 @@ import chat.simplex.common.views.usersettings.networkAndServers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-import java.net.URI
 
 @Composable
 fun ModalData.ChooseServerOperators(onboarding: Boolean, close: (() -> Unit) = { ModalManager.fullscreen.closeModals() }) {
@@ -242,14 +241,13 @@ private fun ReviewConditionsView(
     } else {
       ReadableText(MR.strings.operator_conditions_will_be_accepted_for_some, args = acceptForOperators.joinToString(", ") { it.legalName_ })
     }
-    Box(Modifier.weight(1f)) {
+    Column(modifier = Modifier.weight(1f).padding(top = DEFAULT_PADDING_HALF)) {
       ConditionsTextView(chatModel.remoteHostId())
     }
-    Column(Modifier.padding(top = DEFAULT_PADDING * 2).widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(Modifier.padding(top = DEFAULT_PADDING).widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
       AcceptConditionsButton(onboarding, selectedOperators, selectedOperatorIds, close)
-      // Reserve space
-      TextButtonBelowOnboardingButton("", null)
     }
+    Spacer(Modifier.height(DEFAULT_PADDING * 2))
   }
 }
 
