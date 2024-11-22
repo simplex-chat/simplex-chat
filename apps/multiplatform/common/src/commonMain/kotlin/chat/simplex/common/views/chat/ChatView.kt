@@ -1249,7 +1249,7 @@ fun BoxScope.ChatItemsList(
       } else {
         null
       }
-      val showAvatar = if (merged is MergedItem.Grouped) shouldShowAvatar(item, listItem.nextItem) else true
+      val showAvatar = shouldShowAvatar(item, listItem.nextItem)
       val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
       val itemSeparation: ItemSeparation
       val prevItemSeparationLargeGap: Boolean
