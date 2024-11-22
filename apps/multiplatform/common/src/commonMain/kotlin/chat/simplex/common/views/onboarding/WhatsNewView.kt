@@ -738,7 +738,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
                 stringResource(MR.strings.v6_2_network_decentralization_enable_flux),
                 color = MaterialTheme.colors.primary,
                 modifier = Modifier.clickable {
-                  ModalManager.start.showModal { ChooseServerOperators(onboarding = false) }
+                  ModalManager.start.showModalCloseable { close -> ChooseServerOperators(onboarding = false, close) }
                 }
               )
               Text(" ")

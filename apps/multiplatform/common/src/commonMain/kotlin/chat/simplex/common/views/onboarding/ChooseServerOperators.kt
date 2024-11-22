@@ -24,7 +24,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import java.net.URI
 
 @Composable
-fun ModalData.ChooseServerOperators(onboarding: Boolean) {
+fun ModalData.ChooseServerOperators(onboarding: Boolean, close: (() -> Unit) = { ModalManager.fullscreen.closeModals() }) {
   LaunchedEffect(Unit) {
     prepareChatBeforeFinishingOnboarding()
   }
@@ -80,8 +80,8 @@ fun ModalData.ChooseServerOperators(onboarding: Boolean) {
           val enabled = selectedOperatorIds.value.isNotEmpty()
           when {
             reviewForOperators.isNotEmpty() -> ReviewConditionsButton(enabled, onboarding, selectedOperators, selectedOperatorIds)
-            selectedOperatorIds.value != currEnabledOperatorIds && enabled -> SetOperatorsButton(true, onboarding, serverOperators, selectedOperatorIds)
-            else -> ContinueButton(enabled, onboarding)
+            selectedOperatorIds.value != currEnabledOperatorIds && enabled -> SetOperatorsButton(true, onboarding, serverOperators, selectedOperatorIds, close)
+            else -> ContinueButton(enabled, onboarding, close)
           }
           if (onboarding && reviewForOperators.isEmpty()) {
               TextButtonBelowOnboardingButton(stringResource(MR.strings.operator_conditions_of_use)) {
@@ -99,7 +99,7 @@ fun ModalData.ChooseServerOperators(onboarding: Boolean) {
             TextButtonBelowOnboardingButton("", null)
           }
           if (!onboarding && reviewForOperators.isNotEmpty()) {
-            ReviewLaterButton(canReviewLater)
+            ReviewLaterButton(canReviewLater, close)
             SectionTextFooter(
               annotatedStringResource(MR.strings.onboarding_network_operators_conditions_will_be_accepted) +
                   AnnotatedString(" ") +
@@ -182,7 +182,7 @@ private fun ReviewConditionsButton(
 }
 
 @Composable
-private fun SetOperatorsButton(enabled: Boolean, onboarding: Boolean, serverOperators: State<List<ServerOperator>>, selectedOperatorIds: State<Set<Long>>) {
+private fun SetOperatorsButton(enabled: Boolean, onboarding: Boolean, serverOperators: State<List<ServerOperator>>, selectedOperatorIds: State<Set<Long>>, close: () -> Unit) {
   OnboardingActionButton(
     modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier,
     labelId = MR.strings.onboarding_network_operators_update,
@@ -196,7 +196,7 @@ private fun SetOperatorsButton(enabled: Boolean, onboarding: Boolean, serverOper
           if (r != null) {
             chatModel.conditions.value = r
           }
-          continueToNextStep(onboarding)
+          continueToNextStep(onboarding, close)
         }
       }
     }
@@ -204,23 +204,23 @@ private fun SetOperatorsButton(enabled: Boolean, onboarding: Boolean, serverOper
 }
 
 @Composable
-private fun ContinueButton(enabled: Boolean, onboarding: Boolean) {
+private fun ContinueButton(enabled: Boolean, onboarding: Boolean, close: () -> Unit) {
   OnboardingActionButton(
     modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier,
     labelId = MR.strings.onboarding_network_operators_continue,
     onboarding = null,
     enabled = enabled,
     onclick = {
-      continueToNextStep(onboarding)
+      continueToNextStep(onboarding, close)
     }
   )
 }
 
 @Composable
-private fun ReviewLaterButton(enabled: Boolean) {
+private fun ReviewLaterButton(enabled: Boolean, close: () -> Unit) {
   TextButtonBelowOnboardingButton(
     stringResource(MR.strings.onboarding_network_operators_review_later),
-    onClick = if (!enabled) null else {{ continueToNextStep(false) }}
+    onClick = if (!enabled) null else {{ continueToNextStep(false, close) }}
   )
 }
 
@@ -263,7 +263,7 @@ private fun AcceptConditionsButton(
   fun continueOnAccept() {
     if (appPlatform.isDesktop || !onboarding) {
       if (onboarding) { close() }
-      continueToNextStep(onboarding)
+      continueToNextStep(onboarding, close)
     } else {
       continueToSetNotificationsAfterAccept()
     }
@@ -296,11 +296,11 @@ private fun AcceptConditionsButton(
   )
 }
 
-private fun continueToNextStep(onboarding: Boolean) {
+private fun continueToNextStep(onboarding: Boolean, close: () -> Unit) {
   if (onboarding) {
     appPrefs.onboardingStage.set(if (appPlatform.isAndroid) OnboardingStage.Step4_SetNotificationsMode else OnboardingStage.OnboardingComplete)
   } else {
-    ModalManager.fullscreen.closeModals()
+    close()
   }
 }
 
