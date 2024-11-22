@@ -295,12 +295,16 @@ struct ContentView: View {
                 case let .whatsNew(updatedConditions):
                     WhatsNewView(updatedConditions: updatedConditions)
                         .modifier(ThemedBackground())
+                        .if(updatedConditions) { v in
+                            v.task { await setConditionsNotified_() }
+                        }
                 case .updatedConditions:
                     UsageConditionsView(
                         currUserServers: Binding.constant([]),
                         userServers: Binding.constant([])
                     )
                     .modifier(ThemedBackground(grouped: true))
+                    .task { await setConditionsNotified_() }
                 }
             }
             if chatModel.setDeliveryReceipts {
@@ -311,6 +315,15 @@ struct ContentView: View {
         .onContinueUserActivity("INStartCallIntent", perform: processUserActivity)
         .onContinueUserActivity("INStartAudioCallIntent", perform: processUserActivity)
         .onContinueUserActivity("INStartVideoCallIntent", perform: processUserActivity)
+    }
+
+    private func setConditionsNotified_() async {
+        do {
+            let conditionsId = ChatModel.shared.conditions.currentConditions.conditionsId
+            try await setConditionsNotified(conditionsId: conditionsId)
+        } catch let error {
+            logger.error("setConditionsNotified error: \(responseError(error))")
+        }
     }
 
     private func processUserActivity(_ activity: NSUserActivity) {

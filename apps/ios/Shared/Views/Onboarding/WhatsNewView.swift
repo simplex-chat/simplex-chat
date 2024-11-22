@@ -598,16 +598,6 @@ struct WhatsNewView: View {
 
     var body: some View {
         whatsNewView()
-            .task {
-                if updatedConditions {
-                    do {
-                        let conditionsId = ChatModel.shared.conditions.currentConditions.conditionsId
-                        try await setConditionsNotified(conditionsId: conditionsId)
-                    } catch let error {
-                        logger.error("WhatsNewView setConditionsNotified error: \(responseError(error))")
-                    }
-                }
-            }
             .sheet(item: $sheetItem) { item in
                 switch item {
                 case .showConditions:
