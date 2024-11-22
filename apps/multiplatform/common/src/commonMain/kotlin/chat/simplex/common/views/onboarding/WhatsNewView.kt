@@ -138,6 +138,8 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
     ) {
       AppBarTitle(String.format(generalGetString(MR.strings.new_in_version), v.version), withPadding = false, bottomPadding = DEFAULT_PADDING)
 
+      val modalManager = if (viaSettings) ModalManager.start else ModalManager.center
+
       v.features.forEach { feature ->
         when (feature) {
           is VersionFeature.FeatureDescription -> {
@@ -146,7 +148,7 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
             }
           }
           is VersionFeature.FeatureView -> {
-            feature.view(if (viaSettings) ModalManager.start else ModalManager.center)
+            feature.view(modalManager)
           }
         }
       }
@@ -160,7 +162,7 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
           stringResource(MR.strings.view_updated_conditions),
           color = MaterialTheme.colors.primary,
           modifier = Modifier.clickable {
-            ModalManager.start.showModalCloseable {
+            modalManager.showModalCloseable {
               close -> UsageConditionsView(userServers = mutableStateOf(emptyList()), currUserServers = mutableStateOf(emptyList()), close = close, rhId = rhId)
             }
           }
