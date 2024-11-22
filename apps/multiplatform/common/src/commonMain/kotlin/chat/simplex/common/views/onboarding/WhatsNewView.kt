@@ -753,7 +753,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         }
       ),
       VersionFeature.FeatureDescription(
-        icon = MR.images.ic_videocam,
+        icon = MR.images.ic_chat,
         titleId = MR.strings.v6_2_improved_chat_navigation,
         descrId = MR.strings.v6_2_improved_chat_navigation_descr
       ),
