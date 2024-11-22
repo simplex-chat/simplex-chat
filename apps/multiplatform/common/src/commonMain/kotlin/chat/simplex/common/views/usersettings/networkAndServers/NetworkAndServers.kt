@@ -58,7 +58,7 @@ fun ModalData.NetworkAndServersView(close: () -> Unit) {
   } else {
     showUnsavedChangesAlert(
       { scope.launch { saveServers(currentRemoteHost?.remoteHostId, currUserServers, userServers) }},
-      close
+      close()
     )
     true
   }
