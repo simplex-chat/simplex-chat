@@ -17,11 +17,11 @@ import chat.simplex.common.model.ServerOperator
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.usersettings.networkAndServers.ConditionsTextView
-import chat.simplex.common.views.usersettings.networkAndServers.UsageConditionsView
+import chat.simplex.common.views.usersettings.networkAndServers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import java.net.URI
 
 @Composable
 fun ModalData.ChooseServerOperators(onboarding: Boolean) {
@@ -85,7 +85,7 @@ fun ModalData.ChooseServerOperators(onboarding: Boolean) {
           }
           if (onboarding && reviewForOperators.isEmpty()) {
               TextButtonBelowOnboardingButton(stringResource(MR.strings.operator_conditions_of_use)) {
-                ModalManager.fullscreen.showModalCloseable { close ->
+                ModalManager.fullscreen.showModalCloseable(endButtons = { ConditionsLinkButton() }) { close ->
                   UsageConditionsView(
                     currUserServers = remember { mutableStateOf(emptyList()) },
                     userServers = remember { mutableStateOf(emptyList()) },
@@ -174,7 +174,7 @@ private fun ReviewConditionsButton(
     onboarding = null,
     enabled = enabled,
     onclick = {
-      ModalManager.fullscreen.showModalCloseable { close ->
+      ModalManager.fullscreen.showModalCloseable(endButtons = { ConditionsLinkButton() }) { close ->
         ReviewConditionsView(onboarding, selectedOperators, selectedOperatorIds, close)
       }
     }

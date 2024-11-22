@@ -18,19 +18,22 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.getUsageConditions
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.onboarding.OnboardingActionButton
-import chat.simplex.common.views.onboarding.ReadableText
+import chat.simplex.common.views.onboarding.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import java.net.URI
 
 @Composable
 fun ModalData.OperatorView(
@@ -452,7 +455,7 @@ private fun UseOperatorToggle(
 
             is ConditionsAcceptance.Required -> {
               if (conditionsAcceptance.deadline == null) {
-                ModalManager.start.showModalCloseable { close ->
+                ModalManager.start.showModalCloseable(endButtons = { ConditionsLinkButton() }) { close ->
                   SingleOperatorUsageConditionsView(
                     currUserServers = currUserServers,
                     userServers = userServers,
@@ -542,7 +545,7 @@ private fun SingleOperatorUsageConditionsView(
       stringResource(MR.strings.view_conditions),
       color = MaterialTheme.colors.primary,
       modifier = Modifier.padding(top = DEFAULT_PADDING_HALF).clickable {
-        ModalManager.start.showModalCloseable { close ->
+        ModalManager.start.showModalCloseable(endButtons = { ConditionsLinkButton() }) { close ->
           UsageConditionsDestinationView(close)
         }
       }
@@ -661,6 +664,31 @@ private fun ConditionsAppliedToOtherOperatorsText(userServers: List<UserOperator
 
   if (otherOperatorsToApply.value.isNotEmpty()) {
       ReadableText(MR.strings.operator_conditions_will_be_applied)
+  }
+}
+
+@Composable
+fun ConditionsLinkButton() {
+  val showMenu = remember { mutableStateOf(false) }
+  val uriHandler = LocalUriHandler.current
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  Column {
+    DefaultDropdownMenu(showMenu, offset = if (oneHandUI.value) DpOffset(0.dp, -AppBarHeight * fontSizeSqrtMultiplier * 3) else DpOffset.Zero) {
+      val commit = chatModel.conditions.value.currentConditions.conditionsCommit
+      ItemAction(stringResource(MR.strings.operator_open_conditions), painterResource(MR.images.ic_draft), onClick = {
+        val mdUrl = "https://github.com/simplex-chat/simplex-chat/blob/$commit/PRIVACY.md"
+        uriHandler.openUriCatching(mdUrl)
+        showMenu.value = false
+      })
+      ItemAction(stringResource(MR.strings.operator_open_changes), painterResource(MR.images.ic_more_horiz), onClick = {
+        val commitUrl = "https://github.com/simplex-chat/simplex-chat/commit/$commit"
+        uriHandler.openUriCatching(commitUrl)
+        showMenu.value = false
+      })
+    }
+    IconButton({ showMenu.value = true }) {
+      Icon(painterResource(MR.images.ic_outbound), null, tint = MaterialTheme.colors.primary)
+    }
   }
 }
 

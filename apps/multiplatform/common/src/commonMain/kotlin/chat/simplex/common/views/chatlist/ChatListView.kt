@@ -38,6 +38,7 @@ import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.views.showInvalidNameAlert
 import chat.simplex.common.views.usersettings.*
+import chat.simplex.common.views.usersettings.networkAndServers.ConditionsLinkButton
 import chat.simplex.common.views.usersettings.networkAndServers.UsageConditionsView
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
@@ -125,7 +126,7 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
       delay(1000L)
       ModalManager.center.showCustomModal { close -> WhatsNewView(close = close, showWhatsNew = remember { mutableStateOf(true) }, updatedConditions = showUpdatedConditions) }
     } else if (showUpdatedConditions) {
-      ModalManager.center.showModalCloseable { close ->
+      ModalManager.center.showModalCloseable(endButtons = { ConditionsLinkButton() }) { close ->
         LaunchedEffect(Unit) {
           val conditionsId = chatModel.conditions.value.currentConditions.conditionsId
           try {

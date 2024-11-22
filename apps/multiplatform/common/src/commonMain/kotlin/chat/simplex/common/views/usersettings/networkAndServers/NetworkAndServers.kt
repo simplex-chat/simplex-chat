@@ -164,7 +164,7 @@ fun ModalData.NetworkAndServersView(close: () -> Unit) {
   @Composable
   fun ConditionsButton(conditionsAction: UsageConditionsAction, rhId: Long?) {
     SectionItemView(
-      click = { ModalManager.start.showModalCloseable { close -> UsageConditionsView(currUserServers, userServers, close, rhId) } },
+      click = { ModalManager.start.showModalCloseable(endButtons = { ConditionsLinkButton() }) { close -> UsageConditionsView(currUserServers, userServers, close, rhId) } },
     ) {
       Text(
         stringResource(if (conditionsAction is UsageConditionsAction.Review) MR.strings.operator_review_conditions else MR.strings.operator_conditions_accepted),

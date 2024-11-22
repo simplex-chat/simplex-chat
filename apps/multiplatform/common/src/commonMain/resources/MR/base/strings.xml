@@ -1709,7 +1709,7 @@
   <string name="operator_conditions_will_be_accepted_on">Conditions will be accepted on: %s.</string>
   <string name="operator">Operator</string>
   <string name="operator_use_operator_toggle_description">Use servers</string>
-  <string name="use_servers_of_operator_x">Use servers of %s</string>
+  <string name="use_servers_of_operator_x">Use %s</string>
   <string name="operator_conditions_failed_to_load">Current conditions text couldn\'t be loaded, you can review conditions via this link:</string>
   <string name="operator_conditions_accepted_for_some"><![CDATA[Conditions are already accepted for following operator(s): <b>%s</b>.]]></string>
   <string name="operator_same_conditions_will_be_applied"><![CDATA[Same conditions will apply to operator <b>%s</b>.]]></string>
@@ -1731,6 +1731,8 @@
   <string name="operator_use_for_sending">To send</string>
   <string name="xftp_servers_per_user">The servers for new files of your current chat profile</string>
   <string name="operator_added_xftp_servers">Added media &amp; file servers</string>
+  <string name="operator_open_conditions">Open conditions</string>
+  <string name="operator_open_changes">Open changes</string>
 
   <!-- ProtocolServerView.kt -->
   <string name="error_updating_server_title">Error updating server</string>
