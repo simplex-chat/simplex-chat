@@ -1409,4 +1409,5 @@
     <string name="message_servers">메시지 서버</string>
     <string name="update_network_smp_proxy_mode_question">메시지 라우팅 모드</string>
     <string name="email_invite_body">안녕하세요!\nSimpleX Chat 초대장이 도착했습니다: %s</string>
+    <string name="agent_internal_error_title">내부 오류</string>
 </resources>
