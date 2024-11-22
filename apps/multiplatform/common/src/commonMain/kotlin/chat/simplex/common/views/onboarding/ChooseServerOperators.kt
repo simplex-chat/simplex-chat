@@ -24,14 +24,14 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
-fun ModalData.ChooseServerOperators(onboarding: Boolean, close: () -> Unit) {
+fun ModalData.ChooseServerOperators(onboarding: Boolean) {
   LaunchedEffect(Unit) {
     prepareChatBeforeFinishingOnboarding()
   }
 
   CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
     ModalView({}, showClose = false, endButtons = {
-      IconButton({ (if (onboarding) ModalManager.fullscreen else ModalManager.start).showModal { ChooseServerOperatorsInfoView() } }) {
+      IconButton({ ModalManager.fullscreen.showModal { ChooseServerOperatorsInfoView() } }) {
         Icon(painterResource(MR.images.ic_info), null, Modifier.size(28.dp), tint = MaterialTheme.colors.primary)
       }
     }) {
@@ -80,8 +80,8 @@ fun ModalData.ChooseServerOperators(onboarding: Boolean, close: () -> Unit) {
           val enabled = selectedOperatorIds.value.isNotEmpty()
           when {
             reviewForOperators.isNotEmpty() -> ReviewConditionsButton(enabled, onboarding, selectedOperators, selectedOperatorIds)
-            selectedOperatorIds.value != currEnabledOperatorIds && enabled -> SetOperatorsButton(true, onboarding, serverOperators, selectedOperatorIds, close)
-            else -> ContinueButton(enabled, onboarding, close)
+            selectedOperatorIds.value != currEnabledOperatorIds && enabled -> SetOperatorsButton(true, onboarding, serverOperators, selectedOperatorIds)
+            else -> ContinueButton(enabled, onboarding)
           }
           if (onboarding && reviewForOperators.isEmpty()) {
               TextButtonBelowOnboardingButton(stringResource(MR.strings.operator_conditions_of_use)) {
@@ -99,7 +99,7 @@ fun ModalData.ChooseServerOperators(onboarding: Boolean, close: () -> Unit) {
             TextButtonBelowOnboardingButton("", null)
           }
           if (!onboarding && reviewForOperators.isNotEmpty()) {
-            ReviewLaterButton(canReviewLater, close)
+            ReviewLaterButton(canReviewLater)
             SectionTextFooter(
               annotatedStringResource(MR.strings.onboarding_network_operators_conditions_will_be_accepted) +
                   AnnotatedString(" ") +
@@ -182,7 +182,7 @@ private fun ReviewConditionsButton(
 }
 
 @Composable
-private fun SetOperatorsButton(enabled: Boolean, onboarding: Boolean, serverOperators: State<List<ServerOperator>>, selectedOperatorIds: State<Set<Long>>, close: () -> Unit) {
+private fun SetOperatorsButton(enabled: Boolean, onboarding: Boolean, serverOperators: State<List<ServerOperator>>, selectedOperatorIds: State<Set<Long>>) {
   OnboardingActionButton(
     modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier,
     labelId = MR.strings.onboarding_network_operators_update,
@@ -196,7 +196,7 @@ private fun SetOperatorsButton(enabled: Boolean, onboarding: Boolean, serverOper
           if (r != null) {
             chatModel.conditions.value = r
           }
-          continueToNextStep(onboarding, close)
+          continueToNextStep(onboarding)
         }
       }
     }
@@ -204,23 +204,23 @@ private fun SetOperatorsButton(enabled: Boolean, onboarding: Boolean, serverOper
 }
 
 @Composable
-private fun ContinueButton(enabled: Boolean, onboarding: Boolean, close: () -> Unit) {
+private fun ContinueButton(enabled: Boolean, onboarding: Boolean) {
   OnboardingActionButton(
     modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier,
     labelId = MR.strings.onboarding_network_operators_continue,
     onboarding = null,
     enabled = enabled,
     onclick = {
-      continueToNextStep(onboarding, close)
+      continueToNextStep(onboarding)
     }
   )
 }
 
 @Composable
-private fun ReviewLaterButton(enabled: Boolean, close: () -> Unit) {
+private fun ReviewLaterButton(enabled: Boolean) {
   TextButtonBelowOnboardingButton(
     stringResource(MR.strings.onboarding_network_operators_review_later),
-    onClick = if (!enabled) null else {{ continueToNextStep(false, close) }}
+    onClick = if (!enabled) null else {{ continueToNextStep(false) }}
   )
 }
 
@@ -263,7 +263,7 @@ private fun AcceptConditionsButton(
   fun continueOnAccept() {
     if (appPlatform.isDesktop || !onboarding) {
       if (onboarding) { close() }
-      continueToNextStep(onboarding, close)
+      continueToNextStep(onboarding)
     } else {
       continueToSetNotificationsAfterAccept()
     }
@@ -296,11 +296,11 @@ private fun AcceptConditionsButton(
   )
 }
 
-private fun continueToNextStep(onboarding: Boolean, close: () -> Unit) {
+private fun continueToNextStep(onboarding: Boolean) {
   if (onboarding) {
     appPrefs.onboardingStage.set(if (appPlatform.isAndroid) OnboardingStage.Step4_SetNotificationsMode else OnboardingStage.OnboardingComplete)
   } else {
-    close()
+    ModalManager.fullscreen.closeModals()
   }
 }
 

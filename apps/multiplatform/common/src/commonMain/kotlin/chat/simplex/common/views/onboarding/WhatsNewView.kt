@@ -38,8 +38,8 @@ fun ModalData.WhatsNewView(showWhatsNew: MutableState<Boolean> = mutableStateOf(
         Log.d(TAG, "WhatsNewView setConditionsNotified error: ${e.message}")
       }
       showOperatorsNoticeModal.value = false
-      ModalManager.fullscreen.showModalCloseable(showClose = false) { close ->
-        ChooseServerOperators(onboarding = false, close)
+      ModalManager.fullscreen.showCustomModal {
+        ChooseServerOperators(onboarding = false)
       }
     }
   }

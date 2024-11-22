@@ -194,7 +194,7 @@ fun MainScreen() {
           OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
           OnboardingStage.Step3_ChooseServerOperators -> {
             val modalData = remember { ModalData() }
-            modalData.ChooseServerOperators(true) {}
+            modalData.ChooseServerOperators(true)
             if (appPlatform.isDesktop) {
               ModalManager.fullscreen.showInView()
             }
