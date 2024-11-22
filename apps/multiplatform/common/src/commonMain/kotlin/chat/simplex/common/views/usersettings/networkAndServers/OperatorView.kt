@@ -148,7 +148,7 @@ fun OperatorViewLayout(
           Image(painterResource(operator.largeLogo), null, Modifier.height(48.dp))
           Spacer(Modifier.fillMaxWidth().weight(1f))
           Box(Modifier.padding(horizontal = 2.dp)) {
-            Icon(painterResource(MR.images.ic_info), null, Modifier.size(28.dp), tint = MaterialTheme.colors.primary)
+            Icon(painterResource(MR.images.ic_info), null, Modifier.size(24.dp), tint = MaterialTheme.colors.primaryVariant)
           }
         }
       }
