@@ -147,11 +147,12 @@ fun OperatorViewLayout(
         ) {
           Image(painterResource(operator.largeLogo), null, Modifier.height(48.dp))
           Spacer(Modifier.fillMaxWidth().weight(1f))
-          Icon(painterResource(MR.images.ic_info), null, Modifier.size(28.dp), tint = MaterialTheme.colors.primary)
+          Box(Modifier.padding(horizontal = 2.dp)) {
+            Icon(painterResource(MR.images.ic_info), null, Modifier.size(28.dp), tint = MaterialTheme.colors.primary)
+          }
         }
       }
       UseOperatorToggle(
-        scope = scope,
         currUserServers = currUserServers,
         userServers = userServers,
         serverErrors = serverErrors,
@@ -436,7 +437,6 @@ private fun OperatorInfoView(serverOperator: ServerOperator) {
 
 @Composable
 private fun UseOperatorToggle(
-  scope: CoroutineScope,
   currUserServers: MutableState<List<UserOperatorServers>>,
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
