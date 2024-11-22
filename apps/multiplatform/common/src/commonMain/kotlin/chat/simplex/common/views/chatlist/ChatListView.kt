@@ -25,19 +25,20 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.AppLock
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.model.ChatController.setConditionsNotified
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.onboarding.WhatsNewView
-import chat.simplex.common.views.onboarding.shouldShowWhatsNew
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.Call
 import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.mkValidName
 import chat.simplex.common.views.newchat.*
+import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.views.showInvalidNameAlert
 import chat.simplex.common.views.usersettings.*
+import chat.simplex.common.views.usersettings.networkAndServers.UsageConditionsView
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -115,12 +116,26 @@ fun ToggleChatListCard() {
 @Composable
 fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedViewState>, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val rhId = chatModel.remoteHostId()
+
   LaunchedEffect(Unit) {
     val showWhatsNew = shouldShowWhatsNew(chatModel)
-    val showOperatorsNotice = chatModel.conditions.value.conditionsAction?.shouldSowNotice ?: false
-    if (showWhatsNew || showOperatorsNotice) {
+    val showUpdatedConditions = chatModel.conditions.value.conditionsAction?.shouldShowNotice ?: false
+    if (showWhatsNew) {
       delay(1000L)
-      ModalManager.center.showCustomModal { close -> WhatsNewView(close = close, showWhatsNew = remember { mutableStateOf(showWhatsNew) }, showOperatorsNotice = showOperatorsNotice) }
+      ModalManager.center.showCustomModal { close -> WhatsNewView(close = close, showWhatsNew = remember { mutableStateOf(true) }, updatedConditions = showUpdatedConditions) }
+    } else if (showUpdatedConditions) {
+      ModalManager.center.showModalCloseable { close ->
+        LaunchedEffect(Unit) {
+          val conditionsId = chatModel.conditions.value.currentConditions.conditionsId
+          try {
+            setConditionsNotified(rh = rhId, conditionsId = conditionsId)
+          } catch (e: Exception) {
+            Log.d(TAG, "UsageConditionsView setConditionsNotified error: ${e.message}")
+          }
+        }
+        UsageConditionsView(userServers = mutableStateOf(emptyList()), currUserServers = mutableStateOf(emptyList()), close = close, rhId = rhId)
+      }
     }
   }
 

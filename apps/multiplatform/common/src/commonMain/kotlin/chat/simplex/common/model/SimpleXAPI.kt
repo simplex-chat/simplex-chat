@@ -3676,7 +3676,7 @@ sealed class UsageConditionsAction {
   @Serializable @SerialName("review") data class Review(val operators: List<ServerOperator>, val deadline: Instant?, val showNotice: Boolean) : UsageConditionsAction()
   @Serializable @SerialName("accepted") data class Accepted(val operators: List<ServerOperator>) : UsageConditionsAction()
 
-  val shouldSowNotice: Boolean
+  val shouldShowNotice: Boolean
     get() = when (this) {
       is Review -> showNotice
       else -> false
