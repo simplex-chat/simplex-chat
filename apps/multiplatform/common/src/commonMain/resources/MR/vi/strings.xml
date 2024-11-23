@@ -1283,4 +1283,24 @@
     <string name="icon_descr_call_pending_sent">Cuộc gọi chờ</string>
     <string name="passcode_not_changed">Mã truy cập không đổi!</string>
     <string name="passcode_set">Mã truy cập đã được đặt!</string>
+    <string name="network_option_ping_count">bộ đếm PING</string>
+    <string name="v5_8_persian_ui">UI tiếng Ba Tư</string>
+    <string name="migrate_to_device_confirm_network_settings_footer">Xin vui lòng xác nhận rằng cài đặt mạng cho thiết bị này là chính xác.</string>
+    <string name="error_parsing_uri_desc">Xin vui lòng kiểm tra rằng đường dẫn SimpleX là chính xác.</string>
+    <string name="calls_prohibited_ask_to_enable_calls_alert_text">Xin vui lòng yêu cầu liên hệ của bạn mở tính năng thực hiện cuộc gọi.</string>
+    <string name="network_error_desc">Xin vui lòng kiểm tra kết nối mạng của bạn với %1$s và thử lại.</string>
+    <string name="enter_correct_current_passphrase">Xin vui lòng nhập đúng mật khẩu hiện tại.</string>
+    <string name="v6_0_chat_list_media">Mở từ danh sách cuộc trò chuyện.</string>
+    <string name="v5_6_picture_in_picture_calls">Cuộc gọi hình trong hình</string>
+    <string name="agent_internal_error_desc">Xin vui lòng báo cáo với các nhà phát triển:\n%s</string>
+    <string name="periodic_notifications_disabled">Thông báo định kỳ đã bị tắt!</string>
+    <string name="remote_ctrl_connection_stopped_desc">Xin vui lòng kiểm tra rằng thiết bị di động và máy tính kết nối tới cùng một mạng cục bộ, và tường lửa của máy tính cho phép kết nối.\nHãy chia sẻ bất kỳ vấn đề nào khác với nhà phát triển.</string>
+    <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Xin vui lòng kiểm tra rằng bạn đã dùng đúng đường dẫn hoặc yêu cầu liên hệ của bạn gửi cho bạn một đường dẫn khác.</string>
+    <string name="la_please_remember_to_store_password">Xin vui lòng ghi nhớ hoặc lưu trữ nó một cách an toàn - không có cách nào để khôi phục một mật khẩu đã bị mất!</string>
+    <string name="toast_permission_denied">Quyền truy cập bị tự chối!</string>
+    <string name="ask_your_contact_to_enable_voice">Xin vui lòng yêu cầu liên hệ của bạn mở tính năng gửi tin nhắn thoại.</string>
+    <string name="network_option_ping_interval">khoảng PING</string>
+    <string name="restore_database_alert_desc">Xin vui lòng nhập mật khẩu trước đó sau khi khôi phục bản sao lưu cơ sở dữ liệu. Việc này không thể được hoàn tác.</string>
+    <string name="observer_cant_send_message_desc">Xin vui lòng liên lạc với quản trị viên nhóm.</string>
+    <string name="alert_text_fragment_please_report_to_developers">Xin vui lòng báo cáo với các nhà phát triển.</string>
 </resources>
