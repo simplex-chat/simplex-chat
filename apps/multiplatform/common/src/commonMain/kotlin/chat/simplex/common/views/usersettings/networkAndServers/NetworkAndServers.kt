@@ -39,10 +39,10 @@ import chat.simplex.common.views.onboarding.OnboardingActionButton
 import chat.simplex.common.views.onboarding.ReadableText
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 @Composable
-fun ModalData.NetworkAndServersView(close: () -> Unit) {
+fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
   val currentRemoteHost by remember { chatModel.currentRemoteHost }
   // It's not a state, just a one-time value. Shouldn't be used in any state-related situations
   val netCfg = remember { chatModel.controller.getNetCfg() }
@@ -50,21 +50,36 @@ fun ModalData.NetworkAndServersView(close: () -> Unit) {
   val currUserServers = remember { stateGetOrPut("currUserServers") { emptyList<UserOperatorServers>() } }
   val userServers = remember { stateGetOrPut("userServers") { emptyList<UserOperatorServers>() } }
   val serverErrors = remember { stateGetOrPut("serverErrors") { emptyList<UserServersError>() } }
-  val scope = rememberCoroutineScope()
 
   val proxyPort = remember { derivedStateOf { appPrefs.networkProxy.state.value.port } }
-  ModalView(
-    close = {
-      if (!serversCanBeSaved(currUserServers.value, userServers.value, serverErrors.value)) {
+  fun onClose(close: () -> Unit): Boolean = if (!serversCanBeSaved(currUserServers.value, userServers.value, serverErrors.value)) {
+    chatModel.centerPanelBackgroundClickHandler = null
+    close()
+    false
+  } else {
+    showUnsavedChangesAlert(
+      {
+        CoroutineScope(Dispatchers.Default).launch {
+          saveServers(currentRemoteHost?.remoteHostId, currUserServers, userServers)
+          chatModel.centerPanelBackgroundClickHandler = null
+          close()
+        }
+      },
+      {
+        chatModel.centerPanelBackgroundClickHandler = null
         close()
-      } else {
-        showUnsavedChangesAlert(
-          { scope.launch { saveServers(currentRemoteHost?.remoteHostId, currUserServers, userServers) }},
-          close
-        )
       }
+    )
+    true
+  }
+
+  LaunchedEffect(Unit) {
+    // Enables unsaved changes alert on this view and all children views.
+    chatModel.centerPanelBackgroundClickHandler = {
+      onClose(close = { ModalManager.start.closeModals() })
     }
-  ) {
+  }
+  ModalView(close = { onClose(closeNetworkAndServers) }) {
     NetworkAndServersLayout(
       currentRemoteHost = currentRemoteHost,
       networkUseSocksProxy = networkUseSocksProxy,
