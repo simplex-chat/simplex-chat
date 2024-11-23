@@ -521,7 +521,7 @@ private let versionDescriptions: [VersionDescription] = [
     ),
     VersionDescription(
         version: "v6.2 (beta.1)",
-        post: URL(string: "https://simplex.chat/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html"),
+        post: URL(string: "https://simplex.chat/blog/20241125-servers-operated-by-flux-true-privacy-and-decentralization-for-all-users.html"),
         features: [
             .view(FeatureView(
                 icon: nil,
@@ -529,9 +529,9 @@ private let versionDescriptions: [VersionDescription] = [
                 view: { NewOperatorsView() }
             )),
             .feature(Description(
-                icon: "text.quote",
-                title: "Improved chat navigation",
-                description: "- Open chat on the first unread message.\n- Jump to quoted messages."
+                icon: "bolt",
+                title: "More reliable notifications",
+                description: "They are delivered even when Apple drops them."
             )),
         ]
     )
