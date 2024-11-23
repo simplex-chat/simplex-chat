@@ -737,7 +737,7 @@
     <string name="new_member_role">Új tag szerepköre</string>
     <string name="la_mode_off">Kikapcsolva</string>
     <string name="invalid_contact_link">Érvénytelen hivatkozás!</string>
-    <string name="new_in_version">A(z) %s verzió változáslistája</string>
+    <string name="new_in_version">Újdonságok a(z) %s verzióban</string>
     <string name="smp_servers_invalid_address">Érvénytelen kiszolgálócím!</string>
     <string name="thousand_abbreviation">k</string>
     <string name="chat_item_ttl_none">soha</string>
@@ -1142,7 +1142,7 @@
     <string name="you_are_observer">Ön megfigyelő</string>
     <string name="port_verb">Port</string>
     <string name="set_passcode">Jelkód beállítása</string>
-    <string name="whats_new">Változáslista</string>
+    <string name="whats_new">Újdonságok</string>
     <string name="connect_plan_open_group">Csoport megnyitása</string>
     <string name="info_row_sent_at">Elküldve ekkor:</string>
     <string name="prohibit_sending_voice">A hangüzenetek küldése le van tiltva.</string>
