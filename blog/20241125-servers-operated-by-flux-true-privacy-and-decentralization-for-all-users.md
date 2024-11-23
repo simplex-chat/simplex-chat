@@ -6,7 +6,7 @@ date: 2024-11-25
 image: images/simplexonflux.png
 imageWide: true
 draft: true
-permalink: "/blog/20241125-servers-operated-by-flux-true-privacy-and-decentralization for-all-users.html"
+permalink: "/blog/20241125-servers-operated-by-flux-true-privacy-and-decentralization-for-all-users.html"
 ---
 
 # Servers operated by Flux - true privacy and decentralization for all users
