@@ -48,7 +48,6 @@ import chat.simplex.common.model.localTimestamp
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.usersettings.ProtocolServersView
 import chat.simplex.common.views.usersettings.SettingsPreferenceItem
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
@@ -540,15 +539,8 @@ fun XFTPServerSummaryLayout(summary: XFTPServerSummary, statsStartedAt: Instant,
         )
       )
     }
-    if (summary.known == true) {
-      SectionItemView(click = {
-        ModalManager.start.showCustomModal { close -> ProtocolServersView(chatModel, rhId = rh?.remoteHostId, ServerProtocol.XFTP, close) }
-      }) {
-        Text(generalGetString(MR.strings.open_server_settings_button))
-      }
-      if (summary.stats != null || summary.sessions != null) {
-        SectionDividerSpaced()
-      }
+    if (summary.stats != null || summary.sessions != null) {
+      SectionDividerSpaced()
     }
 
     if (summary.stats != null) {
@@ -579,12 +571,7 @@ fun SMPServerSummaryLayout(summary: SMPServerSummary, statsStartedAt: Instant, r
         )
       )
     }
-    if (summary.known == true) {
-      SectionItemView(click = {
-        ModalManager.start.showCustomModal { close -> ProtocolServersView(chatModel, rhId = rh?.remoteHostId, ServerProtocol.SMP, close) }
-      }) {
-        Text(generalGetString(MR.strings.open_server_settings_button))
-      }
+    if (summary.stats != null || summary.subs != null || summary.sessions != null) {
       SectionDividerSpaced()
     }
 

@@ -25,17 +25,21 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.AppLock
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.model.ChatController.setConditionsNotified
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.onboarding.WhatsNewView
-import chat.simplex.common.views.onboarding.shouldShowWhatsNew
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.Call
 import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.chat.topPaddingToContent
+import chat.simplex.common.views.mkValidName
 import chat.simplex.common.views.newchat.*
+import chat.simplex.common.views.onboarding.*
+import chat.simplex.common.views.showInvalidNameAlert
 import chat.simplex.common.views.usersettings.*
+import chat.simplex.common.views.usersettings.networkAndServers.ConditionsLinkButton
+import chat.simplex.common.views.usersettings.networkAndServers.UsageConditionsView
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -72,58 +76,39 @@ private fun showNewChatSheet(oneHandUI: State<Boolean>) {
 
 @Composable
 fun ToggleChatListCard() {
-  Column(
-    modifier = Modifier
-      .padding(16.dp)
-      .clip(RoundedCornerShape(18.dp))
+  ChatListCard(
+    close = {
+      appPrefs.oneHandUICardShown.set(true)
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.one_hand_ui),
+        text = generalGetString(MR.strings.one_hand_ui_change_instruction),
+      )
+    }
   ) {
-    Box(
+    Column(
       modifier = Modifier
-        .background(MaterialTheme.appColors.sentMessage)
+        .padding(horizontal = DEFAULT_PADDING)
+        .padding(top = DEFAULT_PADDING)
     ) {
-      Box(
-        modifier = Modifier.fillMaxWidth().matchParentSize().padding(5.dp),
-        contentAlignment = Alignment.TopEnd
+      Row(
+        horizontalArrangement = Arrangement.Start,
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
       ) {
-        IconButton(
-          onClick = {
-            appPrefs.oneHandUICardShown.set(true)
-            AlertManager.shared.showAlertMsg(
-              title = generalGetString(MR.strings.one_hand_ui),
-              text = generalGetString(MR.strings.one_hand_ui_change_instruction),
-            )
-          }
-        ) {
-          Icon(
-            painterResource(MR.images.ic_close), stringResource(MR.strings.back), tint = MaterialTheme.colors.secondary
-          )
-        }
+        Text(stringResource(MR.strings.one_hand_ui_card_title), style = MaterialTheme.typography.h3)
       }
-      Column(
-        modifier = Modifier
-          .padding(horizontal = DEFAULT_PADDING)
-          .padding(top = DEFAULT_PADDING)
+      Row(
+        Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
       ) {
-        Row(
-          horizontalArrangement = Arrangement.Start,
-          verticalAlignment = Alignment.CenterVertically,
-          modifier = Modifier.fillMaxWidth()
-        ) {
-          Text(stringResource(MR.strings.one_hand_ui_card_title), style = MaterialTheme.typography.h3)
-        }
-        Row(
-          Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 12.dp),
-          verticalAlignment = Alignment.CenterVertically
-        ) {
-          Text(stringResource(MR.strings.one_hand_ui), Modifier.weight(10f), style = MaterialTheme.typography.body1)
+        Text(stringResource(MR.strings.one_hand_ui), Modifier.weight(10f), style = MaterialTheme.typography.body1)
 
-          Spacer(Modifier.fillMaxWidth().weight(1f))
+        Spacer(Modifier.fillMaxWidth().weight(1f))
 
-          SharedPreferenceToggle(
-            appPrefs.oneHandUI,
-            enabled = true
-          )
-        }
+        SharedPreferenceToggle(
+          appPrefs.oneHandUI,
+          enabled = true
+        )
       }
     }
   }
@@ -132,10 +117,26 @@ fun ToggleChatListCard() {
 @Composable
 fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedViewState>, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val rhId = chatModel.remoteHostId()
+
   LaunchedEffect(Unit) {
-    if (shouldShowWhatsNew(chatModel)) {
+    val showWhatsNew = shouldShowWhatsNew(chatModel)
+    val showUpdatedConditions = chatModel.conditions.value.conditionsAction?.shouldShowNotice ?: false
+    if (showWhatsNew) {
       delay(1000L)
-      ModalManager.center.showCustomModal { close -> WhatsNewView(close = close) }
+      ModalManager.center.showCustomModal { close -> WhatsNewView(close = close, updatedConditions = showUpdatedConditions) }
+    } else if (showUpdatedConditions) {
+      ModalManager.center.showModalCloseable(endButtons = { ConditionsLinkButton() }) { close ->
+        LaunchedEffect(Unit) {
+          val conditionsId = chatModel.conditions.value.currentConditions.conditionsId
+          try {
+            setConditionsNotified(rh = rhId, conditionsId = conditionsId)
+          } catch (e: Exception) {
+            Log.d(TAG, "UsageConditionsView setConditionsNotified error: ${e.message}")
+          }
+        }
+        UsageConditionsView(userServers = mutableStateOf(emptyList()), currUserServers = mutableStateOf(emptyList()), close = close, rhId = rhId)
+      }
     }
   }
 
@@ -192,6 +193,94 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
         userPickerState = userPickerState,
         setPerformLA = AppLock::setPerformLA
       )
+    }
+  }
+}
+
+@Composable
+private fun ChatListCard(
+  close: () -> Unit,
+  onCardClick: (() -> Unit)? = null,
+  content: @Composable BoxScope.() -> Unit
+) {
+  Column(
+    modifier = Modifier.clip(RoundedCornerShape(18.dp))
+  ) {
+    Box(
+      modifier = Modifier
+        .background(MaterialTheme.appColors.sentMessage)
+        .clickable {
+          onCardClick?.invoke()
+        }
+    ) {
+      Box(
+        modifier = Modifier.fillMaxWidth().matchParentSize().padding(5.dp),
+        contentAlignment = Alignment.TopEnd
+      ) {
+        IconButton(
+          onClick = {
+            close()
+          }
+        ) {
+          Icon(
+            painterResource(MR.images.ic_close), stringResource(MR.strings.back), tint = MaterialTheme.colors.secondary
+          )
+        }
+      }
+      content()
+    }
+  }
+}
+
+@Composable
+private fun AddressCreationCard() {
+  ChatListCard(
+    close = {
+      appPrefs.addressCreationCardShown.set(true)
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.simplex_address),
+        text = generalGetString(MR.strings.address_creation_instruction),
+      )
+    },
+    onCardClick = {
+      ModalManager.start.showModal {
+        UserAddressLearnMore(showCreateAddressButton = true)
+      }
+    }
+  ) {
+      Box(modifier = Modifier.matchParentSize().padding(end = (DEFAULT_PADDING_HALF + 2.dp) * fontSizeSqrtMultiplier, bottom = 2.dp), contentAlignment = Alignment.BottomEnd) {
+      TextButton(
+        onClick = {
+          ModalManager.start.showModalCloseable { close ->
+            UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = close)
+          }
+        },
+      ) {
+        Text(stringResource(MR.strings.create_address_button), style = MaterialTheme.typography.body1)
+      }
+    }
+    Row(
+      Modifier
+        .fillMaxWidth()
+        .padding(DEFAULT_PADDING),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Box(Modifier.padding(vertical = 4.dp)) {
+        Box(Modifier.background(MaterialTheme.colors.primary, CircleShape).padding(12.dp)) {
+          ProfileImage(size = 37.dp, null, icon = MR.images.ic_mail_filled, color = Color.White, backgroundColor = Color.Red)
+        }
+      }
+      Column(modifier = Modifier.padding(start = DEFAULT_PADDING)) {
+        Text(stringResource(MR.strings.your_simplex_contact_address), style = MaterialTheme.typography.h3)
+        Spacer(Modifier.fillMaxWidth().padding(DEFAULT_PADDING_HALF))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          Text(stringResource(MR.strings.how_to_use_simplex_chat), Modifier.padding(end = DEFAULT_SPACE_AFTER_ICON), style = MaterialTheme.typography.body1)
+          Icon(
+            painterResource(MR.images.ic_info),
+            null,
+          )
+        }
+      }
     }
   }
 }
@@ -641,6 +730,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   val keyboardState by getKeyboardState()
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val oneHandUICardShown = remember { appPrefs.oneHandUICardShown.state }
+  val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
 
   LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
     val currentIndex = listState.firstVisibleItemIndex
@@ -709,20 +799,15 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         }
       }
     }
-    if (!oneHandUICardShown.value && chats.size > 1) {
-      item {
-        ToggleChatListCard()
-      }
-    }
     itemsIndexed(chats, key = { _, chat -> chat.remoteHostId to chat.id }) { index, chat ->
       val nextChatSelected = remember(chat.id, chats) { derivedStateOf {
         chatModel.chatId.value != null && chats.getOrNull(index + 1)?.id == chatModel.chatId.value
       } }
       ChatListNavLinkView(chat, nextChatSelected)
     }
-    if (!oneHandUICardShown.value && chats.size <= 1) {
+    if (!oneHandUICardShown.value || !addressCreationCardShown.value) {
       item {
-        ToggleChatListCard()
+        ChatListFeatureCards()
       }
     }
     if (appPlatform.isAndroid) {
@@ -741,7 +826,36 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   }
   if (!oneHandUICardShown.value) {
     LaunchedEffect(chats.size) {
-      if (chats.size >= 3) appPrefs.oneHandUICardShown.set(true)
+      if (chats.size >= 3) {
+        appPrefs.oneHandUICardShown.set(true)
+      }
+    }
+  }
+
+  if (!addressCreationCardShown.value) {
+    LaunchedEffect(chatModel.userAddress.value) {
+      if (chatModel.userAddress.value != null) {
+        appPrefs.addressCreationCardShown.set(true)
+      }
+    }
+  }
+}
+
+@Composable
+private fun ChatListFeatureCards() {
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val oneHandUICardShown = remember { appPrefs.oneHandUICardShown.state }
+  val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
+
+  Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    if (!oneHandUICardShown.value && !oneHandUI.value) {
+      ToggleChatListCard()
+    }
+    if (!addressCreationCardShown.value) {
+      AddressCreationCard()
+    }
+    if (!oneHandUICardShown.value && oneHandUI.value) {
+      ToggleChatListCard()
     }
   }
 }

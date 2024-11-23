@@ -9,13 +9,16 @@
 import SwiftUI
 
 struct HowItWorks: View {
+    @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var m: ChatModel
     var onboarding: Bool
+    @Binding var createProfileNavLinkActive: Bool
 
     var body: some View {
         VStack(alignment: .leading) {
             Text("How SimpleX works")
                 .font(.largeTitle)
+                .bold()
                 .padding(.vertical)
             ScrollView {
                 VStack(alignment: .leading) {
@@ -37,8 +40,8 @@ struct HowItWorks: View {
             Spacer()
 
             if onboarding {
-                OnboardingActionButton()
-                    .padding(.bottom, 8)
+                createFirstProfileButton()
+                    .padding(.bottom)
             }
         }
         .lineLimit(10)
@@ -46,10 +49,23 @@ struct HowItWorks: View {
         .frame(maxHeight: .infinity, alignment: .top)
         .modifier(ThemedBackground())
     }
+
+    private func createFirstProfileButton() -> some View {
+        Button {
+            dismiss()
+            createProfileNavLinkActive = true
+        } label: {
+            Text("Create your profile")
+        }
+        .buttonStyle(OnboardingButtonStyle(isDisabled: false))
+    }
 }
 
 struct HowItWorks_Previews: PreviewProvider {
     static var previews: some View {
-        HowItWorks(onboarding: true)
+        HowItWorks(
+            onboarding: true,
+            createProfileNavLinkActive: Binding.constant(false)
+        )
     }
 }

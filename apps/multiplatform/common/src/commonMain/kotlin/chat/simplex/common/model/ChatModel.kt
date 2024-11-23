@@ -8,10 +8,11 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
+import chat.simplex.common.model.ChatModel.chatItemsChangesListener
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
-import chat.simplex.common.views.chat.ComposeState
+import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.migration.MigrationToDeviceState
 import chat.simplex.common.views.migration.MigrationToState
@@ -22,6 +23,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.collections.removeAll as remAll
 import kotlinx.datetime.*
 import kotlinx.datetime.TimeZone
 import kotlinx.serialization.*
@@ -35,6 +37,7 @@ import java.net.URI
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.*
+import kotlin.collections.ArrayList
 import kotlin.random.Random
 import kotlin.time.*
 
@@ -64,7 +67,14 @@ object ChatModel {
 
   // current chat
   val chatId = mutableStateOf<String?>(null)
+  /** if you modify the items by adding/removing them, use helpers methods like [addAndNotify], [removeLastAndNotify], [removeAllAndNotify], [clearAndNotify] and so on.
+   * If some helper is missing, create it. Notify is needed to track state of items that we added manually (not via api call). See [apiLoadMessages].
+   * If you use api call to get the items, use just [add] instead of [addAndNotify].
+   * Never modify underlying list directly because it produces unexpected results in ChatView's LazyColumn (setting by index is ok) */
   val chatItems = mutableStateOf(SnapshotStateList<ChatItem>())
+  // set listener here that will be notified on every add/delete of a chat item
+  var chatItemsChangesListener: ChatItemsChangesListener? = null
+  val chatState = ActiveChatState()
   // rhId, chatId
   val deletedChats = mutableStateOf<List<Pair<Long?, String>>>(emptyList())
   val chatItemStatuses = mutableMapOf<Long, CIStatus>()
@@ -134,6 +144,8 @@ object ChatModel {
 
   val clipboardHasText = mutableStateOf(false)
   val networkInfo = mutableStateOf(UserNetworkInfo(networkType = UserNetworkType.OTHER, online = true))
+
+  val conditions = mutableStateOf(ServerOperatorConditionsDetail.empty)
 
   val updatingProgress = mutableStateOf(null as Float?)
   var updatingRequest: Closeable? = null
@@ -214,6 +226,15 @@ object ChatModel {
     suspend fun addChat(chat: Chat) {
       chats.add(index = 0, chat)
       popChatCollector.throttlePopChat(chat.remoteHostId, chat.id, currentPosition = 0)
+    }
+
+    private suspend fun reorderChat(chat: Chat, toIndex: Int) {
+      val newChats = SnapshotStateList<Chat>()
+      newChats.addAll(chats.value)
+      newChats.remove(chat)
+      newChats.add(index = toIndex, chat)
+      chats.replaceAll(newChats)
+      popChatCollector.throttlePopChat(chat.remoteHostId, chat.id, currentPosition = toIndex)
     }
 
     fun updateChatInfo(rhId: Long?, cInfo: ChatInfo) {
@@ -317,7 +338,7 @@ object ChatModel {
             chat.chatStats
         )
         if (appPlatform.isDesktop && cItem.chatDir.sent) {
-          addChat(chats.removeAt(i))
+          reorderChat(chats[i], 0)
         } else {
           popChatCollector.throttlePopChat(chat.remoteHostId, chat.id, currentPosition = i)
         }
@@ -330,9 +351,9 @@ object ChatModel {
           // Prevent situation when chat item already in the list received from backend
           if (chatItems.value.none { it.id == cItem.id }) {
             if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-              chatItems.add(kotlin.math.max(0, chatItems.value.lastIndex), cItem)
+              chatItems.addAndNotify(kotlin.math.max(0, chatItems.value.lastIndex), cItem)
             } else {
-              chatItems.add(cItem)
+              chatItems.addAndNotify(cItem)
             }
           }
         }
@@ -377,7 +398,7 @@ object ChatModel {
             } else {
               cItem
             }
-            chatItems.add(ci)
+            chatItems.addAndNotify(ci)
             true
           }
         } else {
@@ -416,7 +437,7 @@ object ChatModel {
       }
       // remove from current chat
       if (chatId.value == cInfo.id) {
-        chatItems.removeAll {
+        chatItems.removeAllAndNotify {
           // We delete taking into account meta.createdAt to make sure we will not be in situation when two items with the same id will be deleted
           // (it can happen if already deleted chat item in backend still in the list and new one came with the same (re-used) chat item id)
           val remove = it.id == cItem.id && it.meta.createdAt == cItem.meta.createdAt
@@ -436,7 +457,7 @@ object ChatModel {
       // clear current chat
       if (chatId.value == cInfo.id) {
         chatItemStatuses.clear()
-        chatItems.clear()
+        chatItems.clearAndNotify()
       }
     }
 
@@ -607,14 +628,14 @@ object ChatModel {
   suspend fun addLiveDummy(chatInfo: ChatInfo): ChatItem {
     val cItem = ChatItem.liveDummy(chatInfo is ChatInfo.Direct)
     withContext(Dispatchers.Main) {
-      chatItems.add(cItem)
+      chatItems.addAndNotify(cItem)
     }
     return cItem
   }
 
   fun removeLiveDummy() {
     if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-      chatItems.removeLast()
+      chatItems.removeLastAndNotify()
     }
   }
 
@@ -622,11 +643,17 @@ object ChatModel {
     val cInfo = chatInfo
     var markedRead = 0
     if (chatId.value == cInfo.id) {
-      var i = 0
       val items = chatItems.value
-      while (i < items.size) {
+      var i = items.lastIndex
+      val itemIdsFromRange = if (range != null) {
+        (range.from .. range.to).toMutableSet()
+      } else {
+        mutableSetOf()
+      }
+      val markedReadIds = mutableSetOf<Long>()
+      while (i >= 0) {
         val item = items[i]
-        if (item.meta.itemStatus is CIStatus.RcvNew && (range == null || (range.from <= item.id && item.id <= range.to))) {
+        if (item.meta.itemStatus is CIStatus.RcvNew && (range == null || itemIdsFromRange.contains(item.id))) {
           val newItem = item.withStatus(CIStatus.RcvRead())
           items[i] = newItem
           if (newItem.meta.itemLive != true && newItem.meta.itemTimed?.ttl != null) {
@@ -634,10 +661,17 @@ object ChatModel {
               deleteAt = Clock.System.now() + newItem.meta.itemTimed.ttl.toDuration(DurationUnit.SECONDS)))
             )
           }
+          markedReadIds.add(item.id)
           markedRead++
+          if (range != null) {
+            itemIdsFromRange.remove(item.id)
+            // already set all needed items as read, can finish the loop
+            if (itemIdsFromRange.isEmpty()) break
+          }
         }
-        i += 1
+        i--
       }
+      chatItemsChangesListener?.read(if (range != null) markedReadIds else null, items)
     }
     return markedRead
   }
@@ -684,17 +718,6 @@ object ChatModel {
     return count to ns
   }
 
-  // returns the index of the passed item and the next item (it has smaller index)
-  fun getNextChatItem(ci: ChatItem): Pair<Int?, ChatItem?> {
-    val i = getChatItemIndexOrNull(ci)
-    return if (i != null) {
-      val reversedChatItems = chatItems.asReversed()
-      i to if (i > 0) reversedChatItems[i - 1] else null
-    } else {
-      null to null
-    }
-  }
-
   // returns the index of the first item in the same merged group (the first hidden item)
   // and the previous visible item with another merge category
   fun getPrevShownChatItem(ciIndex: Int?, ciCategory: CIMergeCategory?): Pair<Int?, ChatItem?> {
@@ -738,7 +761,7 @@ object ChatModel {
   fun replaceConnReqView(id: String, withId: String) {
     if (id == showingInvitation.value?.connId) {
       showingInvitation.value = null
-      chatModel.chatItems.clear()
+      chatModel.chatItems.clearAndNotify()
       chatModel.chatId.value = withId
       ModalManager.start.closeModals()
       ModalManager.end.closeModals()
@@ -748,7 +771,7 @@ object ChatModel {
   fun dismissConnReqView(id: String) {
     if (id == showingInvitation.value?.connId) {
       showingInvitation.value = null
-      chatModel.chatItems.clear()
+      chatModel.chatItems.clearAndNotify()
       chatModel.chatId.value = null
       // Close NewChatView
       ModalManager.start.closeModals()
@@ -796,6 +819,15 @@ object ChatModel {
 
   val connectedToRemote: Boolean @Composable get() = currentRemoteHost.value != null || remoteCtrlSession.value?.active == true
   fun connectedToRemote(): Boolean = currentRemoteHost.value != null || remoteCtrlSession.value?.active == true
+}
+
+interface ChatItemsChangesListener {
+  // pass null itemIds if the whole chat now read
+  fun read(itemIds: Set<Long>?, newItems: List<ChatItem>)
+  fun added(item: Pair<Long, Boolean>, index: Int)
+  // itemId, index in old chatModel.chatItems (before the update), isRcvNew (is item unread or not)
+  fun removed(itemIds: List<Triple<Long, Int, Boolean>>, newItems: List<ChatItem>)
+  fun cleared()
 }
 
 data class ShowingInvitation(
@@ -1292,6 +1324,12 @@ data class Contact(
     )
   }
 }
+
+@Serializable
+data class NavigationInfo(
+  val afterUnread: Int = 0,
+  val afterTotal: Int = 0
+)
 
 @Serializable
 enum class ContactStatus {
@@ -2279,12 +2317,24 @@ data class ChatItem (
   }
 }
 
-fun <T> MutableState<SnapshotStateList<T>>.add(index: Int, elem: T) {
-  value = SnapshotStateList<T>().apply { addAll(value); add(index, elem) }
+fun MutableState<SnapshotStateList<Chat>>.add(index: Int, elem: Chat) {
+  value = SnapshotStateList<Chat>().apply { addAll(value); add(index, elem) }
 }
 
-fun <T> MutableState<SnapshotStateList<T>>.add(elem: T) {
-  value = SnapshotStateList<T>().apply { addAll(value); add(elem) }
+fun MutableState<SnapshotStateList<ChatItem>>.addAndNotify(index: Int, elem: ChatItem) {
+  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(index, elem); chatItemsChangesListener?.added(elem.id to elem.isRcvNew, index) }
+}
+
+fun MutableState<SnapshotStateList<Chat>>.add(elem: Chat) {
+  value = SnapshotStateList<Chat>().apply { addAll(value); add(elem) }
+}
+
+// For some reason, Kotlin version crashes if the list is empty
+fun <T> MutableList<T>.removeAll(predicate: (T) -> Boolean): Boolean = if (isEmpty()) false else remAll(predicate)
+
+// Adds item to chatItems and notifies a listener about newly added item
+fun MutableState<SnapshotStateList<ChatItem>>.addAndNotify(elem: ChatItem) {
+  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(elem); chatItemsChangesListener?.added(elem.id to elem.isRcvNew, lastIndex) }
 }
 
 fun <T> MutableState<SnapshotStateList<T>>.addAll(index: Int, elems: List<T>) {
@@ -2295,28 +2345,59 @@ fun <T> MutableState<SnapshotStateList<T>>.addAll(elems: List<T>) {
   value = SnapshotStateList<T>().apply { addAll(value); addAll(elems) }
 }
 
-fun <T> MutableState<SnapshotStateList<T>>.removeAll(block: (T) -> Boolean) {
-  value = SnapshotStateList<T>().apply { addAll(value); removeAll(block) }
+fun MutableState<SnapshotStateList<Chat>>.removeAll(block: (Chat) -> Boolean) {
+  value = SnapshotStateList<Chat>().apply { addAll(value); removeAll(block) }
 }
 
-fun <T> MutableState<SnapshotStateList<T>>.removeAt(index: Int): T {
-  val new = SnapshotStateList<T>()
+// Removes item(s) from chatItems and notifies a listener about removed item(s)
+fun MutableState<SnapshotStateList<ChatItem>>.removeAllAndNotify(block: (ChatItem) -> Boolean) {
+  val toRemove = ArrayList<Triple<Long, Int, Boolean>>()
+  value = SnapshotStateList<ChatItem>().apply {
+    addAll(value)
+    var i = 0
+    removeAll {
+      val remove = block(it)
+      if (remove) toRemove.add(Triple(it.id, i, it.isRcvNew))
+      i++
+      remove
+    }
+  }
+  if (toRemove.isNotEmpty()) {
+    chatItemsChangesListener?.removed(toRemove, value)
+  }
+}
+
+fun MutableState<SnapshotStateList<Chat>>.removeAt(index: Int): Chat {
+  val new = SnapshotStateList<Chat>()
   new.addAll(value)
   val res = new.removeAt(index)
   value = new
   return res
 }
 
-fun <T> MutableState<SnapshotStateList<T>>.removeLast() {
-  value = SnapshotStateList<T>().apply { addAll(value); removeLast() }
+fun MutableState<SnapshotStateList<ChatItem>>.removeLastAndNotify() {
+  val removed: Triple<Long, Int, Boolean>
+  value = SnapshotStateList<ChatItem>().apply {
+    addAll(value)
+    val remIndex = lastIndex
+    val rem = removeLast()
+    removed = Triple(rem.id, remIndex, rem.isRcvNew)
+  }
+  chatItemsChangesListener?.removed(listOf(removed), value)
 }
 
 fun <T> MutableState<SnapshotStateList<T>>.replaceAll(elems: List<T>) {
   value = SnapshotStateList<T>().apply { addAll(elems) }
 }
 
-fun <T> MutableState<SnapshotStateList<T>>.clear() {
-  value = SnapshotStateList<T>()
+fun MutableState<SnapshotStateList<Chat>>.clear() {
+  value = SnapshotStateList()
+}
+
+// Removes all chatItems and notifies a listener about it
+fun MutableState<SnapshotStateList<ChatItem>>.clearAndNotify() {
+  value = SnapshotStateList()
+  chatItemsChangesListener?.cleared()
 }
 
 fun <T> State<SnapshotStateList<T>>.asReversed(): MutableList<T> = value.asReversed()
@@ -2485,6 +2566,13 @@ fun localTimestamp(t: Instant): String {
   val tz = TimeZone.currentSystemDefault()
   val ts: LocalDateTime = t.toLocalDateTime(tz)
   val dateFormatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
+  return ts.toJavaLocalDateTime().format(dateFormatter)
+}
+
+fun localDate(t: Instant): String {
+  val tz = TimeZone.currentSystemDefault()
+  val ts: LocalDateTime = t.toLocalDateTime(tz)
+  val dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
   return ts.toJavaLocalDateTime().format(dateFormatter)
 }
 

@@ -129,7 +129,14 @@ fun FramedItemView(
         .fillMaxWidth()
         .combinedClickable(
           onLongClick = { showMenu.value = true },
-          onClick = { scrollToItem(qi.itemId?: return@combinedClickable) }
+          onClick = {
+            val itemId = qi.itemId
+            if (itemId != null) {
+              scrollToItem(itemId)
+            } else {
+              showQuotedItemDoesNotExistAlert()
+            }
+          }
         )
         .onRightClick { showMenu.value = true }
     ) {
@@ -463,6 +470,13 @@ fun CenteredRowLayout(
       third.place(constraints.maxWidth - third.measuredWidth, ((constraints.maxHeight - third.measuredHeight) / 2).coerceAtLeast(0))
     }
   }
+}
+
+fun showQuotedItemDoesNotExistAlert() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.message_deleted_or_not_received_error_title),
+    text = generalGetString(MR.strings.message_deleted_or_not_received_error_desc)
+  )
 }
 
 /*

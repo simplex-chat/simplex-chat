@@ -2,6 +2,8 @@ package chat.simplex.common.views.chat.item
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.HoverInteraction
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.*
@@ -56,8 +58,9 @@ fun ChatItemView(
   imageProvider: (() -> ImageGalleryProvider)? = null,
   useLinkPreviews: Boolean,
   linkMode: SimplexLinkMode,
-  revealed: MutableState<Boolean>,
-  range: IntRange?,
+  revealed: State<Boolean>,
+  highlighted: State<Boolean>,
+  range: State<IntRange?>,
   selectedChatItems: MutableState<Set<Long>?>,
   fillMaxWidth: Boolean = true,
   selectChatItem: () -> Unit,
@@ -79,6 +82,7 @@ fun ChatItemView(
   findModelMember: (String) -> GroupMember?,
   setReaction: (ChatInfo, ChatItem, Boolean, MsgReaction) -> Unit,
   showItemDetails: (ChatInfo, ChatItem) -> Unit,
+  reveal: (Boolean) -> Unit,
   developerTools: Boolean,
   showViaProxy: Boolean,
   showTimestamp: Boolean,
@@ -91,7 +95,7 @@ fun ChatItemView(
   val showMenu = remember { mutableStateOf(false) }
   val fullDeleteAllowed = remember(cInfo) { cInfo.featureEnabled(ChatFeature.FullDelete) }
   val onLinkLongClick = { _: String -> showMenu.value = true }
-  val live = composeState.value.liveMessage != null
+  val live = remember { derivedStateOf { composeState.value.liveMessage != null } }.value
 
   Box(
     modifier = if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier,
@@ -134,10 +138,19 @@ fun ChatItemView(
     }
 
     Column(horizontalAlignment = if (cItem.chatDir.sent) Alignment.End else Alignment.Start) {
+      val interactionSource = remember { MutableInteractionSource() }
+      val enterInteraction = remember { HoverInteraction.Enter() }
+      KeyChangeEffect(highlighted.value) {
+        if (highlighted.value) {
+          interactionSource.emit(enterInteraction)
+        } else {
+          interactionSource.emit(HoverInteraction.Exit(enterInteraction))
+        }
+      }
       Column(
         Modifier
           .clipChatItem(cItem, itemSeparation.largeGap, revealed.value)
-          .combinedClickable(onLongClick = { showMenu.value = true }, onClick = onClick)
+          .combinedClickable(onLongClick = { showMenu.value = true }, onClick = onClick, interactionSource = interactionSource, indication = LocalIndication.current)
           .onRightClick { showMenu.value = true },
       ) {
         @Composable
@@ -275,7 +288,7 @@ fun ChatItemView(
                 }
                 ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
                 if (revealed.value) {
-                  HideItemAction(revealed, showMenu)
+                  HideItemAction(revealed, showMenu, reveal)
                 }
                 if (cItem.meta.itemDeleted == null && cItem.file != null && cItem.file.cancelAction != null && !cItem.localNote) {
                   CancelFileItemAction(cItem.file.fileId, showMenu, cancelFile = cancelFile, cancelAction = cItem.file.cancelAction)
@@ -296,11 +309,11 @@ fun ChatItemView(
             cItem.meta.itemDeleted != null -> {
               DefaultDropdownMenu(showMenu) {
                 if (revealed.value) {
-                  HideItemAction(revealed, showMenu)
+                  HideItemAction(revealed, showMenu, reveal)
                 } else if (!cItem.isDeletedContent) {
-                  RevealItemAction(revealed, showMenu)
-                } else if (range != null) {
-                  ExpandItemAction(revealed, showMenu)
+                  RevealItemAction(revealed, showMenu, reveal)
+                } else if (range.value != null) {
+                  ExpandItemAction(revealed, showMenu, reveal)
                 }
                 ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
                 DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
@@ -320,12 +333,12 @@ fun ChatItemView(
                 }
               }
             }
-            cItem.mergeCategory != null && ((range?.count() ?: 0) > 1 || revealed.value) -> {
+            cItem.mergeCategory != null && ((range.value?.count() ?: 0) > 1 || revealed.value) -> {
               DefaultDropdownMenu(showMenu) {
                 if (revealed.value) {
-                  ShrinkItemAction(revealed, showMenu)
+                  ShrinkItemAction(revealed, showMenu, reveal)
                 } else {
-                  ExpandItemAction(revealed, showMenu)
+                  ExpandItemAction(revealed, showMenu, reveal)
                 }
                 DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                 if (cItem.canBeDeletedForSelf) {
@@ -350,7 +363,7 @@ fun ChatItemView(
         fun MarkedDeletedItemDropdownMenu() {
           DefaultDropdownMenu(showMenu) {
             if (!cItem.isDeletedContent) {
-              RevealItemAction(revealed, showMenu)
+              RevealItemAction(revealed, showMenu, reveal)
             }
             ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
             DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
@@ -623,7 +636,7 @@ fun ItemInfoAction(
 @Composable
 fun DeleteItemAction(
   cItem: ChatItem,
-  revealed: MutableState<Boolean>,
+  revealed: State<Boolean>,
   showMenu: MutableState<Boolean>,
   questionText: String,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
@@ -700,48 +713,48 @@ fun SelectItemAction(
 }
 
 @Composable
-private fun RevealItemAction(revealed: MutableState<Boolean>, showMenu: MutableState<Boolean>) {
+private fun RevealItemAction(revealed: State<Boolean>, showMenu: MutableState<Boolean>, reveal: (Boolean) -> Unit) {
   ItemAction(
     stringResource(MR.strings.reveal_verb),
     painterResource(MR.images.ic_visibility),
     onClick = {
-      revealed.value = true
+      reveal(true)
       showMenu.value = false
     }
   )
 }
 
 @Composable
-private fun HideItemAction(revealed: MutableState<Boolean>, showMenu: MutableState<Boolean>) {
+private fun HideItemAction(revealed: State<Boolean>, showMenu: MutableState<Boolean>, reveal: (Boolean) -> Unit) {
   ItemAction(
     stringResource(MR.strings.hide_verb),
     painterResource(MR.images.ic_visibility_off),
     onClick = {
-      revealed.value = false
+      reveal(false)
       showMenu.value = false
     }
   )
 }
 
 @Composable
-private fun ExpandItemAction(revealed: MutableState<Boolean>, showMenu: MutableState<Boolean>) {
+private fun ExpandItemAction(revealed: State<Boolean>, showMenu: MutableState<Boolean>, reveal: (Boolean) -> Unit) {
   ItemAction(
     stringResource(MR.strings.expand_verb),
     painterResource(MR.images.ic_expand_all),
     onClick = {
-      revealed.value = true
+      reveal(true)
       showMenu.value = false
     },
   )
 }
 
 @Composable
-private fun ShrinkItemAction(revealed: MutableState<Boolean>, showMenu: MutableState<Boolean>) {
+private fun ShrinkItemAction(revealed: State<Boolean>, showMenu: MutableState<Boolean>, reveal: (Boolean) -> Unit) {
   ItemAction(
     stringResource(MR.strings.hide_verb),
     painterResource(MR.images.ic_collapse_all),
     onClick = {
-      revealed.value = false
+      reveal(false)
       showMenu.value = false
     },
   )
@@ -1063,7 +1076,8 @@ fun PreviewChatItemView(
     linkMode = SimplexLinkMode.DESCRIPTION,
     composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
     revealed = remember { mutableStateOf(false) },
-    range = 0..1,
+    highlighted = remember { mutableStateOf(false) },
+    range = remember { mutableStateOf(0..1) },
     selectedChatItems = remember { mutableStateOf(setOf()) },
     selectChatItem = {},
     deleteMessage = { _, _ -> },
@@ -1084,6 +1098,7 @@ fun PreviewChatItemView(
     findModelMember = { null },
     setReaction = { _, _, _, _ -> },
     showItemDetails = { _, _ -> },
+    reveal = {},
     developerTools = false,
     showViaProxy = false,
     showTimestamp = true,
@@ -1104,7 +1119,8 @@ fun PreviewChatItemViewDeletedContent() {
       linkMode = SimplexLinkMode.DESCRIPTION,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       revealed = remember { mutableStateOf(false) },
-      range = 0..1,
+      highlighted = remember { mutableStateOf(false) },
+      range = remember { mutableStateOf(0..1) },
       selectedChatItems = remember { mutableStateOf(setOf()) },
       selectChatItem = {},
       deleteMessage = { _, _ -> },
@@ -1125,6 +1141,7 @@ fun PreviewChatItemViewDeletedContent() {
       findModelMember = { null },
       setReaction = { _, _, _, _ -> },
       showItemDetails = { _, _ -> },
+      reveal = {},
       developerTools = false,
       showViaProxy = false,
       preview = true,
