@@ -2,7 +2,7 @@
 <resources>
     <string name="server_connected">연결됨</string>
     <string name="server_connecting">연결 중</string>
-    <string name="connect_via_group_link">그룹 링크를 통해 연결하시겠습니까\?</string>
+    <string name="connect_via_group_link">그룹에 참여할까요?</string>
     <string name="connect_via_invitation_link">일회용 링크로 연결하시겠습니까?</string>
     <string name="display_name_connection_established">연결 수립됨</string>
     <string name="connection_timeout">연결 시간 초과</string>
@@ -266,7 +266,7 @@
     <string name="delete_chat_profile_question">채팅 프로필을 삭제할까요\?</string>
     <string name="full_deletion">모두에게서 삭제</string>
     <string name="delete_group_question">그룹을 삭제할까요\?</string>
-    <string name="failed_to_create_user_duplicate_title">표시 이름이 중복되어요!</string>
+    <string name="failed_to_create_user_duplicate_title">표시 이름이 중복됩니다!</string>
     <string name="smp_server_test_disconnect">연결 끊기</string>
     <string name="auth_device_authentication_is_disabled_turning_off">기기 인증이 비활성화되어 SimpleX 잠금 기능이 작동하지 않아요.</string>
     <string name="auth_disable_simplex_lock">SimpleX 잠금 비활성화</string>
@@ -1410,4 +1410,22 @@
     <string name="update_network_smp_proxy_mode_question">메시지 라우팅 모드</string>
     <string name="email_invite_body">안녕하세요!\nSimpleX Chat 초대장이 도착했습니다: %s</string>
     <string name="agent_internal_error_title">내부 오류</string>
+    <string name="invalid_name">잘못된 이름입니다!</string>
+    <string name="invalid_file_link">유효하지 않은 링크</string>
+    <string name="keep_invitation_link">유지</string>
+    <string name="error_parsing_uri_title">유효하지 않은 링크</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">이 문제는 이전 데이터베이스의 백업을 사용하는 경우에 발생할 수 있습니다.</string>
+    <string name="v4_5_italian_interface">이탈리아어 인터페이스</string>
+    <string name="connect_plan_join_your_group">그룹에 참여하시겠습니까?</string>
+    <string name="thousand_abbreviation">k</string>
+    <string name="v5_5_join_group_conversation">그룹 대화에 참여</string>
+    <string name="this_device_version"><i>(이 기기 v%s)</i></string>
+    <string name="failed_to_create_user_invalid_title">잘못된 표시 이름입니다!</string>
+    <string name="non_content_uri_alert_title">잘못된 파일 경로</string>
+    <string name="invalid_qr_code">잘못된 QR 코드</string>
+    <string name="v6_0_private_routing_descr">IP 주소와 연결을 보호합니다.</string>
+    <string name="invite_friends_short">초대</string>
+    <string name="invite_friends">친구 초대</string>
+    <string name="v4_3_irreversible_message_deletion">메시지 영구 삭제</string>
+    <string name="action_button_add_members">초대</string>
 </resources>
