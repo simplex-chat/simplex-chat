@@ -5,7 +5,6 @@ date: 2024-11-25
 # previewBody: blog_previews/20241125.html
 image: images/simplexonflux.png
 imageWide: true
-draft: true
 permalink: "/blog/20241125-servers-operated-by-flux-true-privacy-and-decentralization-for-all-users.html"
 ---
 
@@ -35,7 +34,7 @@ SimpleX network is fully decentralized, without any central component or bootstr
 
 But a large number of SimpleX app users use the servers pre-configured in the app. Even though the app randomly chooses 4 servers in each connection to improve privacy and security, prior to v6.2 these servers were operated by the same company - ourselves.
 
-Our our open-source code we are [legally bound to use](./20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.md#legally-binding-transparency) doesn't provide any metadata that could be used to learn who connects to whom. But the privacy of users' connections still depends on us honouring our promises and [privacy policy](../PRIVACY.md).
+Our open-source code we are [legally bound to use](./20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.md#legally-binding-transparency) doesn't provide any metadata that could be used to learn who connects to whom. But the privacy of users' connections still depends on us honouring our promises and [privacy policy](../PRIVACY.md).
 
 ## Several operators improve connection privacy
 
@@ -49,15 +48,15 @@ To improve connection privacy by having Flux servers forward messages to our ser
 
 Any additional servers you add to app configuration are treated as belonging to another operator, so they also will be used to improve connection privacy, together with pre-configured servers, unless they are disabled.
 
-## SimpleX decentralization compared with Matrix, Session and Tor.
+## SimpleX decentralization compared with Matrix, Session and Tor
 
 SimpleX network decentralization model is different from other decentralized networks in several important aspects.
 
-|                                                | SimpleX | Matrix | Session | Tor-based |
-|------------------------------------------------|---------|--------|---------|-----------|
-| Fully decentralized                            | ✅      | -      | -       | -         |
-| No user profile identity                       | ✅      | -      | -       | -         |
-| Server operator transparency                   | ✅      | ✅     | -       | -         |
+| Communication network        | SimpleX | Matrix | Session | Tor-based |
+|:-----------------------------|:-------:|:------:|:-------:|:---------:|
+| Fully decentralized          | ✅      | -      | -       | -         |
+| No user profile identity     | ✅      | -      | -       | -         |
+| Server operator transparency | ✅      | ✅     | -       | -         |
 
 **Full decentralization**
 
@@ -76,3 +75,45 @@ But if operator transparency helps users privacy, then why Session and Tor don't
 With Tor and Session networks such legal process becomes impossible, and it may be seen as advantage by some users. But on the other hand, nothing prevents the attackers, both criminal and state-funded, to compromise Tor and Session users privacy by running 2% or more of its servers - for Tor network it means less than 200 servers, and for Session network this number is even smaller - less than 50 servers.
 
 Because of that, we see operator transparency provided by SimpleX network as a much better trade-off for users' privacy than operator anonymity provided by Session and Tor. Privacy of network participants is a zero sum game - for the users to have it, server operators should be transparent.
+
+## What's next for SimpleX network decentralization
+
+SimpleX network is designed for extreme decentralization &mdash; not only users are distributed across network operators, as happens with federated networks, but each conversation is relying on infrastructure of 4-6 independent operators, and these operators are regularly and automatically changed.
+
+The only viable commercial model is freemium &mdash; a small share of paying users, who have better service quality and additional features, sponsors free users. This model doesn't have downsides of exploitative "provide service, sell data" approaches, that technology monopolies practice, and it also doesn't have problems of cryptocurrency blockchains, that have shared and immutable state, and that have regulatory problems.
+
+To provide this extreme decentralization with freemium model we will create the system of payments allowing server operators to receive money for infrastructure certificates that will be used with any other participating network operators without compromising privacy of the paying users. You can read about this model [here](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/rfcs/2024-04-26-commercial-model.md). We will be writing more about as this development progresses.
+
+## SimpleX network
+
+Some links to answer the most common questions:
+
+[How can SimpleX deliver messages without user identifiers](./20220511-simplex-chat-v2-images-files.md#the-first-messaging-platform-without-user-identifiers).
+
+[What are the risks to have identifiers assigned to the users](./20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md#why-having-users-identifiers-is-bad-for-the-users).
+
+[Technical details and limitations](https://github.com/simplex-chat/simplex-chat#privacy-technical-details-and-limitations).
+
+[Frequently asked questions](../docs/FAQ.md).
+
+Please also see our [website](https://simplex.chat).
+
+## Please support us with your donations
+
+Huge *thank you* to everybody who donated to SimpleX Chat!
+
+Prioritizing users privacy and security, and also raising the investment, would have been impossible without your support and donations.
+
+Also, funding the work to transition the protocols to non-profit governance model would not have been possible without the donations we received from the users.
+
+Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, so anybody can build the future implementations of the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.
+
+Your donations help us raise more funds &mdash; any amount, even the price of the cup of coffee, makes a big difference for us.
+
+See [this section](https://github.com/simplex-chat/simplex-chat/tree/master#help-us-with-donations) for the ways to donate.
+
+Thank you,
+
+Evgeny
+
+SimpleX Chat founder
