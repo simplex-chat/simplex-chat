@@ -244,8 +244,9 @@ If you are prompted to enter database passphrase and you do not know it, this co
 
 You can resolve it by deleting the app's database: (WARNING: this results in deletion of all profiles, contacts)
 - on Android/iOS, uninstall the app and install it again.
-- on Windows, delete folder C:\AppData\Roaming\SimpleX, you should be able to find it by entering %appdata% after pressing Windows key + R.
+- on Windows, delete folder C:\AppData\Roaming\SimpleX, you can find it by pressing Windows key + R and entering %appdata%
 - on Linux/Mac, delete directories ~/.local/share/simplex and ~/.config/simplex, where ~ represents your home directory (/home/user)
+- on Flatpak, delete directory ~/.var/app/chat.simplex.simplex
 
 ## Privacy and security
 
