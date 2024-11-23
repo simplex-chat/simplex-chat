@@ -2,9 +2,10 @@
 layout: layouts/article.html
 title: "Servers operated by Flux - true privacy and decentralization for all users"
 date: 2024-11-25
-previewBody: blog_previews/20241016.html
-image: images/20241016-wired-privacy.jpg
+# previewBody: blog_previews/20241125.html
+image: images/simplexonflux.png
 imageWide: true
+draft: true
 permalink: "/blog/20241125-servers-operated-by-flux-true-privacy-and-decentralization for-all-users.html"
 ---
 
@@ -19,6 +20,8 @@ permalink: "/blog/20241125-servers-operated-by-flux-true-privacy-and-decentraliz
 - [What is next?](#what-is-next)
 
 ## Welcome, Flux – the new servers in v6.2-beta.1!
+
+<img src="./images/simplexonflux.png" width="330" class="float-to-right">
 
 [Flux](https://runonflux.com) is a decentralized cloud infrastructure that consists of user-operated nodes.
 
@@ -73,4 +76,3 @@ But if operator transparency helps users privacy, then why Session and Tor don't
 With Tor and Session networks such legal process becomes impossible, and it may be seen as advantage by some users. But on the other hand, nothing prevents the attackers, both criminal and state-funded, to compromise Tor and Session users privacy by running 2% or more of its servers - for Tor network it means less than 200 servers, and for Session network this number is even smaller - less than 50 servers.
 
 Because of that, we see operator transparency provided by SimpleX network as a much better trade-off for users' privacy than operator anonymity provided by Session and Tor. Privacy of network participants is a zero sum game - for the users to have it, server operators should be transparent.
-
