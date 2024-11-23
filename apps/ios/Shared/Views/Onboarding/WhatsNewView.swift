@@ -521,7 +521,7 @@ private let versionDescriptions: [VersionDescription] = [
     ),
     VersionDescription(
         version: "v6.2 (beta.1)",
-        post: URL(string: "https://simplex.chat/blog/20241125-servers-operated-by-flux-true-privacy-and-decentralization for-all-users.html"),
+        post: URL(string: "https://simplex.chat/blog/20241125-servers-operated-by-flux-true-privacy-and-decentralization-for-all-users.html"),
         features: [
             .view(FeatureView(
                 icon: nil,

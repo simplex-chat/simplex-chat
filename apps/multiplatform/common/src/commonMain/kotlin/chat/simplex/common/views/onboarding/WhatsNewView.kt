@@ -725,7 +725,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
   ),
   VersionDescription(
     version = "v6.2-beta.1",
-    post = "https://simplex.chat/blog/20241125-servers-operated-by-flux-true-privacy-and-decentralization for-all-users.html",
+    post = "https://simplex.chat/blog/20241125-servers-operated-by-flux-true-privacy-and-decentralization-for-all-users.html",
     features = listOf(
       VersionFeature.FeatureView(
         icon = null,
