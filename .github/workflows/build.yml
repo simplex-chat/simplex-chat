@@ -150,9 +150,9 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v') && matrix.asset_name && matrix.os == 'ubuntu-20.04'
         run: sudo apt install -y desktop-file-utils
 
-      - name: Install pkg-config for Mac
+      - name: Install openssl for Mac
         if: matrix.os == 'macos-latest' || matrix.os == 'macos-13'
-        run: brew install pkg-config
+        run: brew install openssl@3.0
 
       - name: Unix prepare cabal.project.local for Ubuntu
         if: matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04'
@@ -334,7 +334,7 @@ jobs:
         run: |
           export PATH=$PATH:/c/ghcup/bin:$(echo /c/tools/ghc-*/bin || echo)
           scripts/desktop/prepare-openssl-windows.sh
-          openssl_windows_style_path=$(echo `pwd`/dist-newstyle/openssl-1.1.1w | sed 's#/\([a-zA-Z]\)#\1:#' | sed 's#/#\\#g')
+          openssl_windows_style_path=$(echo `pwd`/dist-newstyle/openssl-3.0.15 | sed 's#/\([a-zA-Z]\)#\1:#' | sed 's#/#\\#g')
           rm cabal.project.local 2>/dev/null || true
           echo "ignore-project: False" >> cabal.project.local
           echo "package direct-sqlcipher" >> cabal.project.local
