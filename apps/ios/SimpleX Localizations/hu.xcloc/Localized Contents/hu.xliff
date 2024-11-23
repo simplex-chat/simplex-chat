@@ -4605,7 +4605,7 @@ Ez az Ön hivatkozása a(z) %@ nevű csoporthoz!</target>
       </trans-unit>
       <trans-unit id="New in %@" xml:space="preserve" approved="no">
         <source>New in %@</source>
-        <target state="translated">A(z) %@ verzió változáslistája</target>
+        <target state="translated">Újdonságok a(z) %@ verzióban</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New media options" xml:space="preserve">
@@ -7554,7 +7554,7 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
       </trans-unit>
       <trans-unit id="What's new" xml:space="preserve" approved="no">
         <source>What's new</source>
-        <target state="translated">Változáslista</target>
+        <target state="translated">Újdonságok</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="When available" xml:space="preserve">
