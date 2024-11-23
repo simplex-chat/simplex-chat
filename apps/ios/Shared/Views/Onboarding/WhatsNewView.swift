@@ -531,7 +531,7 @@ private let versionDescriptions: [VersionDescription] = [
             .feature(Description(
                 icon: "bolt",
                 title: "More reliable notifications",
-                description: "They are delivered even when Apple drops them."
+                description: "Delivered even when Apple drops them."
             )),
         ]
     )
