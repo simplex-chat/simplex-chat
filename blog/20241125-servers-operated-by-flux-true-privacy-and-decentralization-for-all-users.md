@@ -2,7 +2,7 @@
 layout: layouts/article.html
 title: "Servers operated by Flux - true privacy and decentralization for all users"
 date: 2024-11-25
-# previewBody: blog_previews/20241125.html
+previewBody: blog_previews/20241125.html
 image: images/simplexonflux.png
 imageWide: true
 permalink: "/blog/20241125-servers-operated-by-flux-true-privacy-and-decentralization-for-all-users.html"
@@ -13,20 +13,22 @@ permalink: "/blog/20241125-servers-operated-by-flux-true-privacy-and-decentraliz
 **Published:** Nov 25, 2024
 
 - [Welcome, Flux](#welcome-flux--the-new-servers-in-v62-beta1) &mdash; the new servers in v6.2-beta.1!
-- [What's the problem?](#whats-the-problem).
-- [Several operators improve connection privacy](#several-operators-improve-connection-privacy).
-- [SimpleX decentralization compared with Matrix, Session and Tor](#simplex-decentralization-compared-with-matrix-session-and-tor).
-- [What is next?](#what-is-next)
+- [What's the problem](#whats-the-problem)?
+- [Using two operators improves connection privacy](#using-two-operators-improves-connection-privacy).
+- [SimpleX decentralization](#simplex-decentralization-compared-with-matrix-session-and-tor) compared with Matrix, Session and Tor.
+- [What's next](#whats-next-for-simplex-network-decentralization) for SimpleX network decentralization?
 
 ## Welcome, Flux – the new servers in v6.2-beta.1!
 
-<img src="./images/simplexonflux.png" width="330" class="float-to-right">
+<img src="./images/20241125-operators-1.png" width="288" class="float-to-right">
 
-[Flux](https://runonflux.com) is a decentralized cloud infrastructure that consists of user-operated nodes.
+[Flux](https://runonflux.com) is a decentralized cloud infrastructure that consists of user-operated nodes [1].
 
 With v6.2 release all SimpleX Chat users can use pre-configured Flux servers to improve metadata privacy and decentralization.
 
-We are very grateful to [Daniel Keller](https://x.com/dak_flux), CEO and co-founder of Flux, for supporting SimpleX network, and betting on our vision of extreme decentralization of communication. Flux investing their infrustructure in our vision is a game changer for us and our users.
+We are very grateful to [Daniel Keller](https://x.com/dak_flux), CEO and co-founder of Flux, for supporting SimpleX network, and betting on our vision of extreme decentralization of communication. Flux investing their infrastructure in our vision is a game changer for us and our users.
+
+Download mobile and desktop SimpleX apps v6.2-beta.1 from [TestFlight](https://testflight.apple.com/join/DWuT2LQu) (iOS), [Play Store](https://play.google.com/store/apps/details?id=chat.simplex.app) (once approved), our [F-Droid repo](https://simplex.chat/fdroid/) or [GitHub](https://github.com/simplex-chat/simplex-chat/releases/tag/v6.2.0-beta.1).
 
 Read on to learn why it is important and how using several operators improves metadata privacy.
 
@@ -38,17 +40,21 @@ But a large number of SimpleX app users use the servers pre-configured in the ap
 
 Our open-source code that we are [legally bound to use](./20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.md#legally-binding-transparency) doesn't provide any metadata that could be used to learn who connects to whom. But the privacy of users' connections still depends on us honouring our promises and [privacy policy](../PRIVACY.md). Flux servers in the app change that.
 
-## Several operators improve connection privacy
+## Using two operators improves connection privacy
+
+<img src="./images/20241125-operators-2.png" width="288" class="float-to-right">
 
 To ensure that the users' metadata from different servers cannot be combined to discover who talks to whom, the servers in each connection have to be operated by different independent organizations.
 
-From v6.2 the app doesn't just choose servers randomly, when both SimpleX Chat and Flux servers are enabled it will always choose servers of different operators in each connection to receive messages and for [private message routing](./20240604-simplex-chat-v5.8-private-message-routing-chat-themes.md), increasing metadata privacy for all users.
+Before this version the app was choosing servers randomly. Now, when both SimpleX Chat and Flux servers are enabled it will always choose servers of different operators in each connection to receive messages and for [private message routing](./20240604-simplex-chat-v5.8-private-message-routing-chat-themes.md), increasing metadata privacy for all users.
 
 Flux servers are configured as opt-in, and the privacy policy and conditions of use that apply to Flux servers are the same as for SimpleX Chat servers &mdash; we are using the same document to minimize the friction for the users.
 
-To improve connection privacy by having Flux servers forward messages to our servers, all you have to do is to enable Flux once the app offers it or via Network & servers settings, and accept that the same conditions apply.
+To improve connection privacy by using Flux servers all you have to do is to enable Flux once the app offers it, or later, via Network & servers settings, and accept that the same conditions apply.
 
-By default, if both Flux and SimpleX servers are enabled, you will be using SimpleX Chat servers to receive messages, Flux servers to forward messages to SimpleX Chat servers, and both operators to forward messages to unknown servers. What each operator servers are used for can be changed in settings.
+<img src="./images/20241125-operators-3.png" width="330" class="float-to-left">
+
+By default, if both Flux and SimpleX servers are enabled in this version, you will be using SimpleX Chat servers to receive messages, Flux servers to forward messages to SimpleX Chat servers, and the servers of both to forward messages to unknown servers. We will enable Flux to receive messages by default a bit later, or you can change it now via settings.
 
 Any additional servers you add to app configuration are treated as belonging to another operator, so they also will be used to improve connection privacy, together with pre-configured servers, unless they are disabled.
 
@@ -58,23 +64,34 @@ SimpleX network decentralization model is different from other decentralized net
 
 | Communication network        | SimpleX | Matrix | Session | Tor-based |
 |:-----------------------------|:-------:|:------:|:-------:|:---------:|
-| Fully decentralized          | ✅      | -      | -       | -         |
+| Full decentralization        | ✅      | -      | -       | -         |
 | No user profile identity     | ✅      | -      | -       | -         |
+| Connection privacy           | ✅      | -      | ✅      | ✅        |
 | Server operator transparency | ✅      | ✅     | -       | -         |
 
 **Full decentralization**
 
-To be fully decentralized, the network should not have a central component, bootstrap nodes or any global shared state, like in cryptocurrency/blockchain-based communication networks. The presense of any central components introduces an attack vector that undermines privacy and security of the network.
+Fully decentralized networks do not have a central component, bootstrap nodes or any global shared state, like in cryptocurrency/blockchain-based communication networks. The presence of any central component or shared state introduces an attack vector that undermines privacy and security of the network.
 
-**User profile identity**
+**No user profile identity**
 
-The presence of user profile identity, even if it is only a random number or long-term key, undermines privacy of users connections, and allows network operators and observers to establish who talks to whom. Matrix network does not provide connection privacy, as not only user identity exists, it is tied to a specific server that knows all user connections and a part of user's contacts connections. What is worse, Element &mdash; the app that most users use to access Matrix network &mdash; only offers the servers of one organization to create an account, resulting in a substantial network centralization.
+User profile identities, even if it is only a random number or a long-term key, undermine privacy of users connections, because they allow network operators and/or observers to find out who talks to whom.
+
+Most communication networks rely on fixed user profile identities. It includes Matrix and communication networks relying on onion routing.
+
+SimpleX network design avoids the need for profile identities or keys, while still allowing optional long-term addresses for users and groups for convenience. It protects users from being discovered and approached by malicious parties, and many family users chose to use SimpleX with children because of it.
+
+**Connection privacy**
+
+Onion routing used in Tor-based messengers and in Session aims to hide who connects to whom, but as neither Tor nor Session users have knowledge about who operate servers, in some cases the clients may connect via the servers controlled by one entity, that may learn the IP addresses of both parties.
+
+Statistically, it is easy to calculate that if traffic data from 2% of onion network is available to an attacker, and the client chooses servers randomly, after about 1750 of such choices the probability of choosing attacker's servers as both entry and exit nodes, and connection privacy being compromised becomes over 50% [2].
+
+Matrix network does not provide connection privacy, as not only user identity exists, it is tied to a specific server that knows all user connections and a part of user's contacts connections. What is worse, Element &mdash; the most widely used Matrix app &mdash; offers the servers of only one organization to create an account, resulting in some degree of network centralization.
 
 **Server operator transparency**
 
-Operator transparency means that network users know who operates the servers they use. Onion routing used in Tor-based messengers and in Session promises to hide who connects to whom, but as neither Tor nor Session users have knowledge about who operate servers, in some cases the clients may connect via the servers controlled by one entity.
-
-Statistically, even if only 2% of onion network servers are operated by an attacker, and the client chooses servers randomly, after about 1750 of such choices the probability of choosing attacker's servers and attacker discovering IP addresses of both communication parties becomes over 50%.
+Operator transparency means that network users know who operates the servers they use. 
 
 You may argue that when the operators are known, the servers data can be requested by the authorities. But such requests, in particular when multiple operators are used by all users, will follow a due legal process, and will not result in compromising the privacy of all users.
 
@@ -98,7 +115,7 @@ Some links to answer the most common questions:
 
 [What are the risks to have identifiers assigned to the users](./20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md#why-having-users-identifiers-is-bad-for-the-users).
 
-[Technical details and limitations](https://github.com/simplex-chat/simplex-chat#privacy-technical-details-and-limitations).
+[Technical details and limitations](https://github.com/simplex-chat/simplex-chat#privacy-and-security-technical-details-and-limitations).
 
 [Frequently asked questions](../docs/FAQ.md).
 
@@ -116,10 +133,16 @@ Our pledge to our users is that SimpleX protocols are and will remain open, and 
 
 Your donations help us raise more funds &mdash; any amount, even the price of the cup of coffee, makes a big difference for us.
 
-See [this section](https://github.com/simplex-chat/simplex-chat/tree/master#help-us-with-donations) for the ways to donate.
+See [this section](https://github.com/simplex-chat/simplex-chat/#please-support-us-with-your-donations) for the ways to donate.
 
 Thank you,
 
 Evgeny
 
 SimpleX Chat founder
+
+[1] You can also to self-host your own SimpleX servers on [Flux decentralized cloud](https://home.runonflux.io/apps/marketplace?q=simplex).
+
+[2] The probability of connection being de-anonymized and the number of random server choices follow this equation: `(1 - s ^ 2) ^ n = 1 - p`, where `s` is the share of attacker-controlled servers in the network, `n` is the number of random choices of entry and exit nodes for the circuit, and `p` is the probability of both entry and exit nodes, and the connection privacy being compromised. Substituting `0.02` (2%) for `s`, `0.5` (50%) for `p`, and solving this equation for `n` we obtain that `1733` random circuits have 50% probability of privacy being compromised.
+
+Also see [this presentation about Tor](https://ritter.vg/p/tor-v1.6.pdf), specifically the approximate calculations on page 76, and also [Tor project post](https://blog.torproject.org/announcing-vanguards-add-onion-services/) about the changes that made attack on hidden service anonymity harder, but still viable in case the it is used for a long time.
