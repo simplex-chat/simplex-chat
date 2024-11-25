@@ -119,49 +119,63 @@ struct CreateFirstProfile: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("Your profile, contacts and delivered messages are stored on your device.")
-                .font(.callout)
-                .foregroundColor(theme.colors.secondary)
-            Text("The profile is only shared with your contacts.")
-                .font(.callout)
-                .foregroundColor(theme.colors.secondary)
+            VStack(alignment: .center, spacing: 20) {
+                Text("Create your profile")
+                    .font(.largeTitle)
+                    .bold()
+                    .multilineTextAlignment(.center)
+                
+                Text("Your profile, contacts and delivered messages are stored on your device.")
+                    .font(.callout)
+                    .foregroundColor(theme.colors.secondary)
+                    .multilineTextAlignment(.center)
+                
+                Text("The profile is only shared with your contacts.")
+                    .font(.callout)
+                    .foregroundColor(theme.colors.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity) // Ensures it takes up the full width
+            .padding(.top, 25)
+            .padding(.horizontal, 10)
 
             HStack {
                 let name = displayName.trimmingCharacters(in: .whitespaces)
                 let validName = mkValidName(name)
-                ZStack {
+                ZStack(alignment: .trailing) {
+                    TextField("Enter your name…", text: $displayName)
+                        .focused($focusDisplayName)
+                        .padding(.horizontal)
+                        .padding(.vertical, 10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(Color(uiColor: .tertiarySystemFill))
+                        )
                     if name != validName {
                         Button {
                             showAlert(.invalidNameError(validName: validName))
                         } label: {
-                            Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+                            Image(systemName: "exclamationmark.circle")
+                                .foregroundColor(.red)
+                                .padding(.horizontal, 10)
                         }
-                    } else {
-                        Image(systemName: "exclamationmark.circle").foregroundColor(.clear)
-                        Image(systemName: "pencil").foregroundColor(theme.colors.secondary)
                     }
                 }
-                TextField("Enter your name…", text: $displayName)
-                    .focused($focusDisplayName)
-                    .padding(.horizontal)
-                    .padding(.vertical, 10)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(Color(uiColor: .tertiarySystemFill))
-                    )
             }
             .padding(.top)
 
             Spacer()
 
             createProfileButton()
-                .padding(.bottom)
+            onboardingButtonPlaceholder()
         }
         .onAppear() {
             focusDisplayName = true
             setLastVersionDefault()
         }
-        .padding()
+        .padding(.horizontal, 25)
+        .padding(.top, 10)
+        .padding(.bottom, 25)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
@@ -191,8 +205,6 @@ struct CreateFirstProfile: View {
 
     private func nextStepDestinationView() -> some View {
         ChooseServerOperators(onboarding: true)
-            .navigationTitle("Choose operators")
-            .navigationBarTitleDisplayMode(.large)
             .navigationBarBackButtonHidden(true)
             .modifier(ThemedBackground())
     }

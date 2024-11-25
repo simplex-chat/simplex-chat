@@ -51,19 +51,11 @@ struct SimpleXInfo: View {
                             m.migrationState = .pasteOrScanLink
                         } label: {
                             Label("Migrate from another device", systemImage: "tray.and.arrow.down")
-                                .font(.subheadline)
+                                .font(.system(size: 17, weight: .semibold))
+                                .frame(minHeight: 40)
                         }
                         .frame(maxWidth: .infinity)
                     }
-
-                    Button {
-                        showHowItWorks = true
-                    } label: {
-                        Label("How it works", systemImage: "info.circle")
-                            .font(.subheadline)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.bottom)
                 }
                 .frame(minHeight: g.size.height)
             }
@@ -89,7 +81,17 @@ struct SimpleXInfo: View {
             }
         }
         .frame(maxHeight: .infinity)
-        .padding()
+        .padding(25)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    showHowItWorks = true
+                } label: {
+                    Image(systemName: "info.circle").padding(.top)
+                }
+                .frame(maxWidth: .infinity)
+            }
+        }
     }
 
     private func infoRow(_ image: String, _ title: LocalizedStringKey, _ text: LocalizedStringKey, width: CGFloat) -> some View {
@@ -104,7 +106,7 @@ struct SimpleXInfo: View {
                 .padding(.trailing, 10)
             VStack(alignment: .leading, spacing: 4) {
                 Text(title).font(.headline)
-                Text(text).frame(minHeight: 40, alignment: .top)
+                Text(text).frame(minHeight: 40, alignment: .top).font(.callout)
             }
         }
         .padding(.bottom, 20)
@@ -121,20 +123,13 @@ struct SimpleXInfo: View {
             .buttonStyle(OnboardingButtonStyle(isDisabled: false))
 
             NavigationLink(isActive: $createProfileNavLinkActive) {
-                createProfileDestinationView()
+                CreateFirstProfile()
             } label: {
                 EmptyView()
             }
             .frame(width: 1, height: 1)
             .hidden()
         }
-    }
-
-    private func createProfileDestinationView() -> some View {
-        CreateFirstProfile()
-            .navigationTitle("Create your profile")
-            .navigationBarTitleDisplayMode(.large)
-            .modifier(ThemedBackground())
     }
 }
 

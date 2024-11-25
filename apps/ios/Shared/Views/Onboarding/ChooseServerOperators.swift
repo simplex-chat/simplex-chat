@@ -73,14 +73,20 @@ struct ChooseServerOperators: View {
         GeometryReader { g in
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    if !onboarding {
-                        Text("Choose operators")
-                            .font(.largeTitle)
-                            .bold()
+                    let title = Text("Server operators")
+                        .font(.largeTitle)
+                        .bold()
+                        .frame(maxWidth: .infinity, alignment: .center)
+                    
+                    if onboarding {
+                        title.padding(.top, 50)
+                    } else {
+                        title
                     }
 
                     infoText()
-                    
+                        .frame(maxWidth: .infinity, alignment: .center)
+
                     Spacer()
                     
                     ForEach(serverOperators) { srvOperator in
@@ -117,8 +123,8 @@ struct ChooseServerOperators: View {
                                         .foregroundColor(.clear)
                                 }
                             }
-                            .font(.callout)
-                            .padding(.top)
+                            .font(.system(size: 17, weight: .semibold))
+                            .frame(minHeight: 40)
                         }
                     }
                     .padding(.bottom)
@@ -162,21 +168,15 @@ struct ChooseServerOperators: View {
             }
         }
         .frame(maxHeight: .infinity)
-        .padding()
+        .padding(onboarding ? 25 : 16)
     }
 
     private func infoText() -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: "info.circle")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 20, height: 20)
-                .foregroundColor(theme.colors.primary)
-                .onTapGesture {
-                    sheetItem = .showInfo
-                }
-
-            Text("Select network operators to use.")
+        Button {
+            sheetItem = .showInfo
+        } label: {
+            Label("How it helps privacy", systemImage: "info.circle")
+                .font(.headline)
         }
     }
 
@@ -305,8 +305,6 @@ struct ChooseServerOperators: View {
 
     private func notificationsModeDestinationView() -> some View {
         SetNotificationsMode()
-            .navigationTitle("Push notifications")
-            .navigationBarTitleDisplayMode(.large)
             .navigationBarBackButtonHidden(true)
             .modifier(ThemedBackground())
     }

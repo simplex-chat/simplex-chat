@@ -24,20 +24,20 @@ struct OnboardingView: View {
                 CreateSimpleXAddress()
             case .step3_ChooseServerOperators:
                 ChooseServerOperators(onboarding: true)
-                    .navigationTitle("Choose operators")
-                    .navigationBarTitleDisplayMode(.large)
                     .navigationBarBackButtonHidden(true)
                     .modifier(ThemedBackground())
             case .step4_SetNotificationsMode:
                 SetNotificationsMode()
-                    .navigationTitle("Push notifications")
-                    .navigationBarTitleDisplayMode(.large)
                     .navigationBarBackButtonHidden(true)
                     .modifier(ThemedBackground())
             case .onboardingComplete: EmptyView()
             }
         }
     }
+}
+
+func onboardingButtonPlaceholder() -> some View {
+    Spacer().frame(height: 40)
 }
 
 enum OnboardingStage: String, Identifiable {

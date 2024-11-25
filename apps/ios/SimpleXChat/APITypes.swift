@@ -2159,8 +2159,16 @@ public enum NotificationsMode: String, Decodable, SelectableItem {
     public var label: LocalizedStringKey {
         switch self {
         case .off: "Local"
-        case .periodic: "Periodically"
-        case .instant: "Instantly"
+        case .periodic: "Periodic"
+        case .instant: "Instant"
+        }
+    }
+    
+    public var icon: String {
+        switch self {
+        case .off: return "arrow.clockwise"
+        case .periodic: return "timer"
+        case .instant: return "bolt"
         }
     }
 

@@ -243,6 +243,14 @@ func ntfModeDescription(_ mode: NotificationsMode) -> LocalizedStringKey {
     }
 }
 
+func ntfModeShortDescription(_ mode: NotificationsMode) -> LocalizedStringKey {
+    switch mode {
+    case .off: return "Checks messages if system allows, no push server (most private)."
+    case .periodic: return "Checks messages every 20 min, uses push server (more private)."
+    case .instant: return "E2E encrypted notifications sent via push server (recommended)."
+    }
+}
+
 struct SelectionListView<Item: SelectableItem>: View {
     @EnvironmentObject var theme: AppTheme
     var list: [Item]
