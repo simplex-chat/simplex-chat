@@ -751,7 +751,6 @@ private fun prepareMarkdown(text: String, parentLink: String): String {
   return text
     .replace("](/", "]($parentLink/")
     .replace("](./", "]($parentLink/")
-    .replace("`https://simplex.chat/`", "`https://simplex.chat/`")
     .replace(localLinkRegex) { it.groupValues.getOrNull(1) ?: it.value }
 }
 
