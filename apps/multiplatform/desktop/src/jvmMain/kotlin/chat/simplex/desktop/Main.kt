@@ -77,7 +77,7 @@ private fun initHaskell() {
 
 private fun windowsLoadRequiredLibs(libsTmpDir: File, vlcDir: File) {
   val mainLibs = arrayOf(
-    "libcrypto-1_1-x64.dll",
+    "libcrypto-3-x64.dll",
     "libsimplex.dll",
     "libapp-lib.dll"
   )

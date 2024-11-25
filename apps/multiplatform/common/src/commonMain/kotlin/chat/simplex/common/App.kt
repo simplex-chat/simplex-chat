@@ -431,8 +431,10 @@ fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
         .fillMaxSize()
         .padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)
         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {
-          ModalManager.start.closeModals()
-          userPickerState.value = AnimatedViewState.HIDING
+          if (chatModel.centerPanelBackgroundClickHandler == null || chatModel.centerPanelBackgroundClickHandler?.invoke() == false) {
+            ModalManager.start.closeModals()
+            userPickerState.value = AnimatedViewState.HIDING
+          }
         })
     )
   }
