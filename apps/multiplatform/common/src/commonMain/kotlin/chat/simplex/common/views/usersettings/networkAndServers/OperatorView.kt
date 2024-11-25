@@ -16,8 +16,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
@@ -643,7 +645,10 @@ fun ConditionsTextView(
             .verticalScroll(scrollState)
             .padding(8.dp)
         ) {
-          ConditionsMarkdown(conditionsText)
+          val parentUriHandler = LocalUriHandler.current
+          CompositionLocalProvider(LocalUriHandler provides remember { internalUriHandler(parentUriHandler) }) {
+            ConditionsMarkdown(conditionsText)
+          }
         }
     } else {
       val conditionsLink = "https://github.com/simplex-chat/simplex-chat/blob/${usageConditions.conditionsCommit}/PRIVACY.md"
@@ -661,24 +666,23 @@ private fun ConditionsMarkdown(text: String) {
   Markdown(text,
     markdownColor(linkText = MaterialTheme.colors.primary),
     markdownTypography(
-      h1 = MaterialTheme.typography.h2.copy(fontWeight = FontWeight.Bold),
+      h1 = MaterialTheme.typography.body1,
       h2 = MaterialTheme.typography.h3.copy(fontSize = 22.sp, fontWeight = FontWeight.Bold),
       h3 = MaterialTheme.typography.h4.copy(fontWeight = FontWeight.Bold),
       h4 = MaterialTheme.typography.h5.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold),
-      h5 = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold)
+      h5 = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold),
+      link = MaterialTheme.typography.body1.copy(
+        textDecoration = TextDecoration.Underline
+      )
     ),
     Modifier.padding(8.dp),
     // using CommonMarkFlavourDescriptor instead of GFMFlavourDescriptor because it shows `https://simplex.chat/` (link inside backticks) incorrectly
     flavour = CommonMarkFlavourDescriptor(),
     components = markdownComponents(
-      heading1 = {
-        MarkdownHeader(it.content, it.node, it.typography.h1)
-        Divider(Modifier.padding(top = 10.dp))
-      },
       heading2 = {
         Spacer(Modifier.height(15.dp))
         MarkdownHeader(it.content, it.node, it.typography.h2)
-        Divider(Modifier.padding(top = 8.dp, bottom = 12.dp))
+        Spacer(Modifier.height(20.dp))
       },
       heading3 = {
         Spacer(Modifier.height(10.dp))
@@ -742,6 +746,16 @@ fun ConditionsLinkButton() {
     }
     IconButton({ showMenu.value = true }) {
       Icon(painterResource(MR.images.ic_outbound), null, tint = MaterialTheme.colors.primary)
+    }
+  }
+}
+
+private fun internalUriHandler(parentUriHandler: UriHandler): UriHandler = object: UriHandler {
+  override fun openUri(uri: String) {
+    if (uri.startsWith("https://simplex.chat/contact#")) {
+      openVerifiedSimplexUri(uri)
+    } else {
+      parentUriHandler.openUriCatching(uri)
     }
   }
 }
