@@ -1303,4 +1303,22 @@
     <string name="restore_database_alert_desc">Xin vui lòng nhập mật khẩu trước đó sau khi khôi phục bản sao lưu cơ sở dữ liệu. Việc này không thể được hoàn tác.</string>
     <string name="observer_cant_send_message_desc">Xin vui lòng liên lạc với quản trị viên nhóm.</string>
     <string name="alert_text_fragment_please_report_to_developers">Xin vui lòng báo cáo với các nhà phát triển.</string>
+    <string name="agent_critical_error_desc">Xin vui lòng báo cáo tới các nhà phát triển:\n%s\n\nGợi ý rằng bạn nên khởi động lại ứng dụng.</string>
+    <string name="error_smp_test_certificate">Có lẽ vân tay chứng chỉ trong địa chỉ máy chủ là không chính xác</string>
+    <string name="migrate_from_device_database_init">Đang chuẩn bị tải lên</string>
+    <string name="port_verb">Cổng</string>
+    <string name="network_proxy_port">cổng %d</string>
+    <string name="store_passphrase_securely_without_recover">Xin vui lòng lưu trữ mật khẩu một cách an toàn, bạn sẽ KHÔNG thể trò chuyện nếu bạn làm mất nó.</string>
+    <string name="loading_remote_file_desc">Xin vui lòng chờ trong khi tệp đang được tải từ thiết bị được liên kết</string>
+    <string name="smp_servers_preset_address">Địa chỉ máy chủ cài sẵn</string>
+    <string name="v4_5_message_draft_descr">Lưu lại bản nháp tin nhắn cuối cùng, với các tệp đính kèm.</string>
+    <string name="migrate_to_device_database_init">Đang chuẩn bị tải xuống</string>
+    <string name="contact_developers">Xin vui lòng cập nhật ứng dụng và liên lạc với các nhà phát triển.</string>
+    <string name="smp_servers_preset_server">Máy chủ cài sẵn</string>
+    <string name="please_try_later">Xin vui lòng thử lại sau.</string>
+    <string name="group_welcome_preview">Xem trước</string>
+    <string name="store_passphrase_securely">Xin vui lòng lưu trữ mật khẩu một cách an toàn, bạn sẽ KHÔNG thể thay đổi nếu bạn làm mất nó.</string>
+    <string name="v5_0_polish_interface">Giao diện tiếng Ba Lan</string>
+    <string name="app_check_for_updates_installed_successfully_desc">Xin vui lòng khởi động lại ứng dụng.</string>
+    <string name="servers_info_previously_connected_servers_section_header">Các máy chủ đã kết nối trước đó</string>
 </resources>
