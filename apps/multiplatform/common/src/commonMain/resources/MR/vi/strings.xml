@@ -1321,4 +1321,6 @@
     <string name="v5_0_polish_interface">Giao diện tiếng Ba Lan</string>
     <string name="app_check_for_updates_installed_successfully_desc">Xin vui lòng khởi động lại ứng dụng.</string>
     <string name="servers_info_previously_connected_servers_section_header">Các máy chủ đã kết nối trước đó</string>
+    <string name="privacy_redefined">Định hình lại sự riêng tư</string>
+    <string name="privacy_and_security">Quyền riêng tư &amp; bảo mật</string>
 </resources>
