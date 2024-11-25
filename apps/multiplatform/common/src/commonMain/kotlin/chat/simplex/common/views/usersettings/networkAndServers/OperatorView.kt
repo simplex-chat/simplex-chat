@@ -145,7 +145,14 @@ fun OperatorViewLayout(
           Modifier.fillMaxWidth(),
           verticalAlignment = Alignment.CenterVertically
         ) {
-          Image(painterResource(operator.largeLogo), null, Modifier.height(48.dp))
+          Image(
+            painterResource(operator.largeLogo),
+            operator.tradeName,
+            modifier = Modifier.height(48.dp),
+            colorFilter = if (operator.enabled) null else ColorFilter.colorMatrix(ColorMatrix().apply {
+              setToSaturation(0f)
+            })
+          )
           Spacer(Modifier.fillMaxWidth().weight(1f))
           Box(Modifier.padding(horizontal = 2.dp)) {
             Icon(painterResource(MR.images.ic_info), null, Modifier.size(24.dp), tint = MaterialTheme.colors.primaryVariant)
