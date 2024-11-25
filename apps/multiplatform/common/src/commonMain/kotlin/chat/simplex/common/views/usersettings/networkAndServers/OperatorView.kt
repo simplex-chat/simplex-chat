@@ -36,7 +36,7 @@ import com.mikepenz.markdown.m2.markdownTypography
 import com.mikepenz.markdown.model.markdownPadding
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import org.intellij.markdown.flavours.commonmark.CommonMarkFlavourDescriptor
 
 @Composable
@@ -607,13 +607,20 @@ fun ConditionsTextView(
   val defaultConditionsLink = "https://github.com/simplex-chat/simplex-chat/blob/stable/PRIVACY.md"
   val scope = rememberCoroutineScope()
 
+  // can show conditions when animation between modals finishes to prevent glitches
+  val canShowConditionsAt = remember { System.currentTimeMillis() + 300 }
   LaunchedEffect(Unit) {
-    scope.launch {
+    scope.launch(Dispatchers.Default) {
       try {
         val conditions = getUsageConditions(rh = rhId)
 
         if (conditions != null) {
-          conditionsData.value = conditions
+          val parentLink = "https://github.com/simplex-chat/simplex-chat/blob/${conditions.first.conditionsCommit}"
+          val conditionsText = conditions.second
+          val preparedText = if (conditionsText != null) prepareMarkdown(conditionsText.trimIndent(), parentLink) else null
+          val modifiedConditions = Triple(conditions.first, preparedText, conditions.third)
+          delay((canShowConditionsAt - System.currentTimeMillis()).coerceAtLeast(0))
+          conditionsData.value = modifiedConditions
         } else {
           failedToLoad.value = true
         }
@@ -629,8 +636,6 @@ fun ConditionsTextView(
 
     if (conditionsText != null) {
       val scrollState = rememberScrollState()
-      val parentLink = "https://github.com/simplex-chat/simplex-chat/blob/${usageConditions.conditionsCommit}"
-      val preparedText = prepareMarkdown(conditionsText.trimIndent(), parentLink)
         Box(
           modifier = Modifier
             .fillMaxSize()
@@ -638,7 +643,7 @@ fun ConditionsTextView(
             .verticalScroll(scrollState)
             .padding(8.dp)
         ) {
-          ConditionsMarkdown(preparedText)
+          ConditionsMarkdown(conditionsText)
         }
     } else {
       val conditionsLink = "https://github.com/simplex-chat/simplex-chat/blob/${usageConditions.conditionsCommit}/PRIVACY.md"
