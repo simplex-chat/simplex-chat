@@ -199,6 +199,7 @@
 		8C8118722C220B5B00E6FC94 /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = 8C8118712C220B5B00E6FC94 /* Yams */; };
 		8C81482C2BD91CD4002CBEC3 /* AudioDevicePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C81482B2BD91CD4002CBEC3 /* AudioDevicePicker.swift */; };
 		8C9BC2652C240D5200875A27 /* ThemeModeEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C9BC2642C240D5100875A27 /* ThemeModeEditor.swift */; };
+		8CB0D6002CF4CC7E00FCA14D /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 8CB0D5FF2CF4CC7E00FCA14D /* MarkdownUI */; };
 		8CC4ED902BD7B8530078AEE8 /* CallAudioDeviceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC4ED8F2BD7B8530078AEE8 /* CallAudioDeviceManager.swift */; };
 		8CC956EE2BC0041000412A11 /* NetworkObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC956ED2BC0041000412A11 /* NetworkObserver.swift */; };
 		8CE848A32C5A0FA000D5C7C8 /* SelectableChatItemToolbars.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CE848A22C5A0FA000D5C7C8 /* SelectableChatItemToolbars.swift */; };
@@ -643,6 +644,7 @@
 				D741547A29AF90B00022400A /* PushKit.framework in Frameworks */,
 				646BB38C283BEEB9001CE359 /* LocalAuthentication.framework in Frameworks */,
 				5C8F01CD27A6F0D8007D2C8D /* CodeScanner in Frameworks */,
+				8CB0D6002CF4CC7E00FCA14D /* MarkdownUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1183,6 +1185,7 @@
 				D7F0E33829964E7E0068AF69 /* LZString */,
 				D7197A1729AE89660055C05A /* WebRTC */,
 				8C8118712C220B5B00E6FC94 /* Yams */,
+				8CB0D5FF2CF4CC7E00FCA14D /* MarkdownUI */,
 			);
 			productName = "SimpleX (iOS)";
 			productReference = 5CA059CA279559F40002BEB4 /* SimpleX.app */;
@@ -1326,6 +1329,7 @@
 				D7F0E33729964E7D0068AF69 /* XCRemoteSwiftPackageReference "lzstring-swift" */,
 				D7197A1629AE89660055C05A /* XCRemoteSwiftPackageReference "WebRTC" */,
 				8C73C1162C21E17B00892670 /* XCRemoteSwiftPackageReference "Yams" */,
+				8CB0D5FE2CF4CC7E00FCA14D /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
 			);
 			productRefGroup = 5CA059CB279559F40002BEB4 /* Products */;
 			projectDirPath = "";
@@ -2375,6 +2379,14 @@
 				version = 5.1.2;
 			};
 		};
+		8CB0D5FE2CF4CC7E00FCA14D /* XCRemoteSwiftPackageReference "swift-markdown-ui" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/gonzalezreal/swift-markdown-ui";
+			requirement = {
+				kind = exactVersion;
+				version = 2.4.1;
+			};
+		};
 		D7197A1629AE89660055C05A /* XCRemoteSwiftPackageReference "WebRTC" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/simplex-chat/WebRTC.git";
@@ -2411,6 +2423,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8C73C1162C21E17B00892670 /* XCRemoteSwiftPackageReference "Yams" */;
 			productName = Yams;
+		};
+		8CB0D5FF2CF4CC7E00FCA14D /* MarkdownUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8CB0D5FE2CF4CC7E00FCA14D /* XCRemoteSwiftPackageReference "swift-markdown-ui" */;
+			productName = MarkdownUI;
 		};
 		CE38A29B2C3FCD72005ED185 /* SwiftyGif */ = {
 			isa = XCSwiftPackageProductDependency;
