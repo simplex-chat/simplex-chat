@@ -16,10 +16,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.DpOffset
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.getUsageConditions
@@ -29,14 +30,19 @@ import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.res.MR
+import com.mikepenz.markdown.compose.Markdown
+import com.mikepenz.markdown.compose.components.markdownComponents
+import com.mikepenz.markdown.compose.elements.MarkdownHeader
+import com.mikepenz.markdown.m2.markdownColor
+import com.mikepenz.markdown.m2.markdownTypography
+import com.mikepenz.markdown.model.markdownPadding
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
-import java.net.URI
+import kotlinx.coroutines.*
+import org.intellij.markdown.flavours.commonmark.CommonMarkFlavourDescriptor
 
 @Composable
-fun ModalData.OperatorView(
+fun OperatorView(
   currUserServers: MutableState<List<UserOperatorServers>>,
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
@@ -610,13 +616,20 @@ fun ConditionsTextView(
   val defaultConditionsLink = "https://github.com/simplex-chat/simplex-chat/blob/stable/PRIVACY.md"
   val scope = rememberCoroutineScope()
 
+  // can show conditions when animation between modals finishes to prevent glitches
+  val canShowConditionsAt = remember { System.currentTimeMillis() + 300 }
   LaunchedEffect(Unit) {
-    scope.launch {
+    scope.launch(Dispatchers.Default) {
       try {
         val conditions = getUsageConditions(rh = rhId)
 
         if (conditions != null) {
-          conditionsData.value = conditions
+          val parentLink = "https://github.com/simplex-chat/simplex-chat/blob/${conditions.first.conditionsCommit}"
+          val conditionsText = conditions.second
+          val preparedText = if (conditionsText != null) prepareMarkdown(conditionsText.trimIndent(), parentLink) else null
+          val modifiedConditions = Triple(conditions.first, preparedText, conditions.third)
+          delay((canShowConditionsAt - System.currentTimeMillis()).coerceAtLeast(0))
+          conditionsData.value = modifiedConditions
         } else {
           failedToLoad.value = true
         }
@@ -639,10 +652,10 @@ fun ConditionsTextView(
             .verticalScroll(scrollState)
             .padding(8.dp)
         ) {
-          Text(
-            text = conditionsText.trimIndent(),
-            modifier = Modifier.padding(8.dp)
-          )
+          val parentUriHandler = LocalUriHandler.current
+          CompositionLocalProvider(LocalUriHandler provides remember { internalUriHandler(parentUriHandler) }) {
+            ConditionsMarkdown(conditionsText)
+          }
         }
     } else {
       val conditionsLink = "https://github.com/simplex-chat/simplex-chat/blob/${usageConditions.conditionsCommit}/PRIVACY.md"
@@ -653,6 +666,44 @@ fun ConditionsTextView(
   } else {
     DefaultProgressView(null)
   }
+}
+
+@Composable
+private fun ConditionsMarkdown(text: String) {
+  Markdown(text,
+    markdownColor(linkText = MaterialTheme.colors.primary),
+    markdownTypography(
+      h1 = MaterialTheme.typography.body1,
+      h2 = MaterialTheme.typography.h3.copy(fontSize = 22.sp, fontWeight = FontWeight.Bold),
+      h3 = MaterialTheme.typography.h4.copy(fontWeight = FontWeight.Bold),
+      h4 = MaterialTheme.typography.h5.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold),
+      h5 = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold),
+      link = MaterialTheme.typography.body1.copy(
+        textDecoration = TextDecoration.Underline
+      )
+    ),
+    Modifier.padding(8.dp),
+    // using CommonMarkFlavourDescriptor instead of GFMFlavourDescriptor because it shows `https://simplex.chat/` (link inside backticks) incorrectly
+    flavour = CommonMarkFlavourDescriptor(),
+    components = markdownComponents(
+      heading2 = {
+        Spacer(Modifier.height(10.dp))
+        MarkdownHeader(it.content, it.node, it.typography.h2)
+        Spacer(Modifier.height(5.dp))
+      },
+      heading3 = {
+        Spacer(Modifier.height(10.dp))
+        MarkdownHeader(it.content, it.node, it.typography.h3)
+        Spacer(Modifier.height(3.dp))
+      },
+      heading4 = {
+        Spacer(Modifier.height(10.dp))
+        MarkdownHeader(it.content, it.node, it.typography.h4)
+        Spacer(Modifier.height(4.dp))
+      },
+    ),
+    padding = markdownPadding(block = 4.dp)
+  )
 }
 
 @Composable
@@ -704,6 +755,24 @@ fun ConditionsLinkButton() {
       Icon(painterResource(MR.images.ic_outbound), null, tint = MaterialTheme.colors.primary)
     }
   }
+}
+
+private fun internalUriHandler(parentUriHandler: UriHandler): UriHandler = object: UriHandler {
+  override fun openUri(uri: String) {
+    if (uri.startsWith("https://simplex.chat/contact#")) {
+      openVerifiedSimplexUri(uri)
+    } else {
+      parentUriHandler.openUriCatching(uri)
+    }
+  }
+}
+
+private fun prepareMarkdown(text: String, parentLink: String): String {
+  val localLinkRegex = Regex("\\[([^\\)]*)\\]\\(#.*\\)", RegexOption.MULTILINE)
+  return text
+    .replace("](/", "]($parentLink/")
+    .replace("](./", "]($parentLink/")
+    .replace(localLinkRegex) { it.groupValues.getOrNull(1) ?: it.value }
 }
 
 private fun changeOperatorEnabled(userServers: MutableState<List<UserOperatorServers>>, operatorIndex: Int, enabled: Boolean) {
