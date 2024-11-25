@@ -18,7 +18,6 @@ struct UserAddressLearnMore: View {
                 VStack(alignment: .leading, spacing: 16) {
                     (Text(Image(systemName: "envelope")).foregroundColor(.secondary) + Text(" ") + Text("Share address publicly").bold().font(.title2))
                     Text("Share SimpleX address on social media.")
-                    Text("Verify who connected, as users can use any name.")
                     Text("You won't lose your contacts if you later delete your address.")
 
                     (Text(Image(systemName: "link.badge.plus")).foregroundColor(.secondary) + Text(" ") + Text("Share 1-time link with a friend").font(.title2).bold())
