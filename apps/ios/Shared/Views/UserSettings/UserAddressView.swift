@@ -304,12 +304,12 @@ struct UserAddressView: View {
     private func learnMoreButton() -> some View {
         NavigationLink {
             UserAddressLearnMore()
-                .navigationTitle("SimpleX address")
+                .navigationTitle("Address or 1-time link?")
                 .modifier(ThemedBackground(grouped: true))
-                .navigationBarTitleDisplayMode(.large)
+                .navigationBarTitleDisplayMode(.inline)
         } label: {
             settingsRow("info.circle", color: theme.colors.secondary) {
-                Text("About SimpleX address")
+                Text("SimpleX address or 1-time link?")
             }
         }
     }
