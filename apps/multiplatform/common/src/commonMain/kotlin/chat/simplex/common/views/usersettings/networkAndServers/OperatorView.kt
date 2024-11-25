@@ -680,9 +680,9 @@ private fun ConditionsMarkdown(text: String) {
     flavour = CommonMarkFlavourDescriptor(),
     components = markdownComponents(
       heading2 = {
-        Spacer(Modifier.height(15.dp))
+        Spacer(Modifier.height(10.dp))
         MarkdownHeader(it.content, it.node, it.typography.h2)
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(5.dp))
       },
       heading3 = {
         Spacer(Modifier.height(10.dp))
