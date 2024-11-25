@@ -23,7 +23,6 @@ struct UserAddressLearnMore: View {
 
                     (Text(Image(systemName: "link.badge.plus")).foregroundColor(.secondary) + Text(" ") + Text("Share 1-time link with a friend").font(.title2).bold())
                     Text("1-time link can be used *with one contact only* - share in person or via any messenger.")
-                    Text("Connections via 1-time links are faster, more private and more secure.")
                     Text("You can set connection name, to remember who the link was shared with.")
 
                     if !showCreateAddressButton {
