@@ -18,7 +18,6 @@ struct NewChatMenuButton: View {
 //    @EnvironmentObject var chatModel: ChatModel
     @State private var showNewChatSheet = false
     @State private var alert: SomeAlert? = nil
-    @State private var pendingConnection: PendingContactConnection? = nil
 
     var body: some View {
             Button {
@@ -30,12 +29,8 @@ struct NewChatMenuButton: View {
                 .frame(width: 24, height: 24)
         }
         .appSheet(isPresented: $showNewChatSheet) {
-            NewChatSheet(pendingConnection: $pendingConnection)
+            NewChatSheet()
                 .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
-                .onDisappear {
-                    alert = cleanupPendingConnection(contactConnection: pendingConnection)
-                    pendingConnection = nil
-                }
         }
         .alert(item: $alert) { a in
             return a.alert
@@ -55,7 +50,6 @@ struct NewChatSheet: View {
     @State private var searchShowingSimplexLink = false
     @State private var searchChatFilteredBySimplexLink: String? = nil
     @State private var alert: SomeAlert?
-    @Binding var pendingConnection: PendingContactConnection?
 
     // Sheet height management
     @State private var isAddContactActive = false
@@ -110,17 +104,17 @@ struct NewChatSheet: View {
             if (searchText.isEmpty) {
                 Section {
                     NavigationLink(isActive: $isAddContactActive) {
-                        NewChatView(selection: .invite, parentAlert: $alert, contactConnection: $pendingConnection)
+                        NewChatView(selection: .invite)
                             .navigationTitle("New chat")
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
-                        navigateOnTap(Label("Add contact", systemImage: "link.badge.plus")) {
+                        navigateOnTap(Label("Create 1-time link", systemImage: "link.badge.plus")) {
                             isAddContactActive = true
                         }
                     }
                     NavigationLink(isActive: $isScanPasteLinkActive) {
-                        NewChatView(selection: .connect, showQRCodeScanner: true, parentAlert: $alert, contactConnection: $pendingConnection)
+                        NewChatView(selection: .connect, showQRCodeScanner: true)
                             .navigationTitle("New chat")
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)

@@ -106,8 +106,15 @@ struct UserAddressView: View {
             } else {
                 Section {
                     createAddressButton()
-                } footer: {
-                    Text("Create an address to let people connect with you.")
+                } header: {
+                    Text("For social media")
+                        .foregroundColor(theme.colors.secondary)
+                }
+
+                Section {
+                    createOneTimeLinkButton()
+                } header: {
+                    Text("Or to share privately")
                         .foregroundColor(theme.colors.secondary)
                 }
 
@@ -240,6 +247,18 @@ struct UserAddressView: View {
                 alert = .error(title: a.title, error: a.message)
                 await MainActor.run { progressIndicator = false }
             }
+        }
+    }
+
+    private func createOneTimeLinkButton() -> some View {
+        NavigationLink {
+            NewChatView(selection: .invite)
+                .navigationTitle("New chat")
+                .navigationBarTitleDisplayMode(.large)
+                .modifier(ThemedBackground(grouped: true))
+        } label: {
+            Label("Create 1-time link", systemImage: "link.badge.plus")
+                .foregroundColor(theme.colors.primary)
         }
     }
 
