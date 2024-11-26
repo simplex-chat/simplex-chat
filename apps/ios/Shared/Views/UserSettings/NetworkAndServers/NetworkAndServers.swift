@@ -269,6 +269,7 @@ struct UsageConditionsView: View {
                 }
                 .padding(.bottom)
                 .padding(.bottom)
+                
 
             case let .accepted(operators):
                 Text("Conditions are accepted for the operator(s): **\(operators.map { $0.legalName_ }.joined(separator: ", "))**.")
@@ -277,7 +278,7 @@ struct UsageConditionsView: View {
                     .padding(.bottom)
             }
         }
-        .padding(.horizontal)
+        .padding(.horizontal, 25)
         .frame(maxHeight: .infinity)
     }
 

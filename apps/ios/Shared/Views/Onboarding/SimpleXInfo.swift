@@ -19,21 +19,26 @@ struct SimpleXInfo: View {
     var body: some View {
         GeometryReader { g in
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    Image(colorScheme == .light ? "logo" : "logo-light")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: g.size.width * 0.67)
-                        .padding(.bottom, 8)
-                        .frame(maxWidth: .infinity, minHeight: 48, alignment: .top)
+                VStack(alignment: .leading) {
+                    VStack(alignment: .center, spacing: 10) {
+                        Image(colorScheme == .light ? "logo" : "logo-light")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: g.size.width * 0.67)
+                            .padding(.bottom, 8)
+                            .frame(maxWidth: .infinity, minHeight: 48, alignment: .top)
+                        
+                        Button {
+                            showHowItWorks = true
+                        } label: {
+                            Label("The future of messaging", systemImage: "info.circle")
+                                .font(.headline)
+                        }
+                    }
+                    
+                    Spacer()
 
                     VStack(alignment: .leading) {
-                        Text("The next generation of private messaging")
-                            .font(.title2)
-                            .padding(.bottom, 30)
-                            .padding(.horizontal, 40)
-                            .frame(maxWidth: .infinity)
-                            .multilineTextAlignment(.center)
                         infoRow("privacy", "Privacy redefined",
                                 "The 1st platform without any user identifiers – private by design.", width: 48)
                         infoRow("shield", "Immune to spam and abuse",
@@ -45,25 +50,19 @@ struct SimpleXInfo: View {
                     Spacer()
 
                     if onboarding {
-                        createFirstProfileButton()
+                        VStack(spacing: 10) {
+                            createFirstProfileButton()
 
-                        Button {
-                            m.migrationState = .pasteOrScanLink
-                        } label: {
-                            Label("Migrate from another device", systemImage: "tray.and.arrow.down")
-                                .font(.subheadline)
+                            Button {
+                                m.migrationState = .pasteOrScanLink
+                            } label: {
+                                Label("Migrate from another device", systemImage: "tray.and.arrow.down")
+                                    .font(.system(size: 17, weight: .semibold))
+                                    .frame(minHeight: 40)
+                            }
+                            .frame(maxWidth: .infinity)
                         }
-                        .frame(maxWidth: .infinity)
                     }
-
-                    Button {
-                        showHowItWorks = true
-                    } label: {
-                        Label("How it works", systemImage: "info.circle")
-                            .font(.subheadline)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.bottom)
                 }
                 .frame(minHeight: g.size.height)
             }
@@ -89,7 +88,9 @@ struct SimpleXInfo: View {
             }
         }
         .frame(maxHeight: .infinity)
-        .padding()
+        .padding(.horizontal, 25)
+        .padding(.top, 75)
+        .padding(.bottom, 25)
     }
 
     private func infoRow(_ image: String, _ title: LocalizedStringKey, _ text: LocalizedStringKey, width: CGFloat) -> some View {
@@ -104,7 +105,7 @@ struct SimpleXInfo: View {
                 .padding(.trailing, 10)
             VStack(alignment: .leading, spacing: 4) {
                 Text(title).font(.headline)
-                Text(text).frame(minHeight: 40, alignment: .top)
+                Text(text).frame(minHeight: 40, alignment: .top).font(.callout)
             }
         }
         .padding(.bottom, 20)
@@ -121,20 +122,13 @@ struct SimpleXInfo: View {
             .buttonStyle(OnboardingButtonStyle(isDisabled: false))
 
             NavigationLink(isActive: $createProfileNavLinkActive) {
-                createProfileDestinationView()
+                CreateFirstProfile()
             } label: {
                 EmptyView()
             }
             .frame(width: 1, height: 1)
             .hidden()
         }
-    }
-
-    private func createProfileDestinationView() -> some View {
-        CreateFirstProfile()
-            .navigationTitle("Create your profile")
-            .navigationBarTitleDisplayMode(.large)
-            .modifier(ThemedBackground())
     }
 }
 
