@@ -1279,4 +1279,8 @@
     <string name="la_current_app_passcode">Kode Sandi Saat Ini</string>
     <string name="la_change_app_passcode">Ubah kode sandi</string>
     <string name="la_please_remember_to_store_password">Harap diingat dan simpan dengan aman - tidak ada cara untuk pulihkan kata sandi yang hilang!</string>
+    <string name="info_row_debug_delivery">Kiriman debug</string>
+    <string name="remove_member_confirmation">Hapus</string>
+    <string name="share_text_created_at">Dibuat pada: %s</string>
+    <string name="member_info_member_blocked">diblokir</string>
 </resources>
