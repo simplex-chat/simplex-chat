@@ -282,7 +282,7 @@ private fun AddressSettingsButton(
     painterResource(MR.images.ic_qr_code),
     stringResource(MR.strings.address_settings),
     click = {
-      ModalManager.start.showModalCloseable { close ->
+      ModalManager.start.showCustomModal { close ->
         UserAddressSettings(user, userAddress, shareViaProfile, setProfileAddress, saveAas, close = close)
       }
     }
