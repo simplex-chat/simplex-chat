@@ -18,6 +18,7 @@ import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.views.usersettings.networkAndServers.ConditionsLinkButton
 import chat.simplex.common.views.usersettings.networkAndServers.UsageConditionsView
@@ -72,10 +73,11 @@ fun UserAddressLearnMore(showCreateAddressButton: Boolean = false) {
           Text(stringResource(MR.strings.create_simplex_address), style = MaterialTheme.typography.h2, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
         }
 
+        val closeAll = { ModalManager.start.closeModals() }
         TextButton(
           onClick = {
-            ModalManager.start.showModalCloseable { close ->
-
+            ModalManager.start.showModalCloseable(endButtons = { AddContactLearnMoreButton() }) { _ ->
+              NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = closeAll)
             }
           },
           Modifier.padding(top = DEFAULT_PADDING, bottom = DEFAULT_PADDING * 2).clip(CircleShape)

@@ -190,10 +190,15 @@ private fun UserAddressLayout(
       verticalArrangement = Arrangement.SpaceEvenly
     ) {
       if (userAddress == null) {
-        SectionView {
+        SectionView(generalGetString(MR.strings.for_social_media).uppercase()) {
           CreateAddressButton(createAddress)
-          SectionTextFooter(stringResource(MR.strings.create_address_and_let_people_connect))
         }
+
+        SectionDividerSpaced()
+        SectionView(generalGetString(MR.strings.or_to_share_privately).uppercase()) {
+          CreateOneTimeLinkButton()
+        }
+        
         SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
         SectionView {
           LearnMoreButton(learnMore)
@@ -204,14 +209,20 @@ private fun UserAddressLayout(
       } else {
         val autoAcceptState = remember { mutableStateOf(AutoAcceptState(userAddress)) }
         val autoAcceptStateSaved = remember { mutableStateOf(autoAcceptState.value) }
-        SectionView(stringResource(MR.strings.address_section_title).uppercase()) {
+        SectionView(stringResource(MR.strings.for_social_media).uppercase()) {
           SimpleXLinkQRCode(userAddress.connReqContact)
           ShareAddressButton { share(simplexChatLink(userAddress.connReqContact)) }
-          ShareViaEmailButton { sendEmail(userAddress) }
+          // ShareViaEmailButton { sendEmail(userAddress) }
           ShareWithContactsButton(shareViaProfile, setProfileAddress)
           AutoAcceptToggle(autoAcceptState) { saveAas(autoAcceptState.value, autoAcceptStateSaved) }
           LearnMoreButton(learnMore)
         }
+
+        SectionDividerSpaced()
+        SectionView(generalGetString(MR.strings.or_to_share_privately).uppercase()) {
+          CreateOneTimeLinkButton()
+        }
+
         if (autoAcceptState.value.enable) {
           SectionDividerSpaced()
           AutoAcceptSection(autoAcceptState, autoAcceptStateSaved, saveAas)
@@ -241,6 +252,22 @@ private fun CreateAddressButton(onClick: () -> Unit) {
     painterResource(MR.images.ic_qr_code),
     stringResource(MR.strings.create_simplex_address),
     onClick,
+    iconColor = MaterialTheme.colors.primary,
+    textColor = MaterialTheme.colors.primary,
+  )
+}
+
+@Composable
+private fun CreateOneTimeLinkButton() {
+  val closeAll = { ModalManager.start.closeModals() }
+  SettingsActionItem(
+    painterResource(MR.images.ic_add_link),
+    stringResource(MR.strings.create_1_time_link),
+    click = {
+      ModalManager.start.showModalCloseable(endButtons = { AddContactLearnMoreButton() }) { _ ->
+        NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = closeAll)
+      }
+    },
     iconColor = MaterialTheme.colors.primary,
     textColor = MaterialTheme.colors.primary,
   )
