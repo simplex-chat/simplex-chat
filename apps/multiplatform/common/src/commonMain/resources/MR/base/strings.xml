@@ -675,10 +675,19 @@
   <string name="if_you_cant_meet_in_person">If you can\'t meet in person, show QR code in a video call, or share the link.</string>
 
   <!-- User Address Learn More - UserAddressLearnMore.kt -->
+  <string name="share_address_publicly">Share address publicly</string>
+  <string name="share_simplex_address_on_social_media">Share SimpleX address on social media.</string>
   <string name="you_can_share_your_address">You can share your address as a link or QR code - anybody can connect to you.</string>
   <string name="you_wont_lose_your_contacts_if_delete_address">You won\'t lose your contacts if you later delete your address.</string>
+  <string name="share_1_time_link_with_a_friend">Share 1-time link with a friend</string>
+  <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[1-time link can be used <i>with one contact only</i> - share in person or via any messenger.]]></string>
+  <string name="you_can_set_connection_name_to_remember">You can set connection name, to remember who the link was shared with.</string>
+  <string name="connection_security">Connection security</string>
+  <string name="simplex_address_and_1_time_links_are_safe_to_share">SimpleX address and 1-time links are safe to share via any messenger.</string>
+  <string name="to_protect_against_your_link_replaced_compare_codes">To protect against your link being replaced, you can compare contact security codes.</string>
   <string name="you_can_accept_or_reject_connection">When people request to connect, you can accept or reject it.</string>
   <string name="read_more_in_user_guide_with_link"><![CDATA[Read more in <font color="#0088ff">User Guide</font>.]]></string>
+  <string name="address_or_1_time_link">Address or 1-time link?</string>
 
   <!-- PasteToConnect.kt -->
   <string name="connect_via_link">Connect via link</string>
@@ -917,6 +926,8 @@
   <string name="invite_friends">Invite friends</string>
   <string name="email_invite_subject">Let\'s talk in SimpleX Chat</string>
   <string name="email_invite_body">Hi!\nConnect to me via SimpleX Chat: %s</string>
+  <string name="simplex_address_or_1_time_link">SimpleX address or 1-time link?</string>
+  <string name="create_1_time_link">Create 1-time link</string>
 
   <!-- CreateSimpleXAddress.kt -->
   <string name="continue_to_next_step">Continue</string>

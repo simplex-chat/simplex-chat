@@ -250,7 +250,7 @@ private fun CreateAddressButton(onClick: () -> Unit) {
 private fun LearnMoreButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_info),
-    stringResource(MR.strings.learn_more_about_address),
+    stringResource(MR.strings.simplex_address_or_1_time_link),
     onClick,
   )
 }
