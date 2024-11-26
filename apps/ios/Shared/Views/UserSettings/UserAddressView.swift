@@ -20,12 +20,12 @@ struct UserAddressView: View {
     @State private var mailViewResult: Result<MFMailComposeResult, Error>? = nil
     @State private var alert: UserAddressAlert?
     @State private var progressIndicator = false
-    
+
     private enum UserAddressAlert: Identifiable {
         case deleteAddress
         case shareOnCreate
         case error(title: LocalizedStringKey, error: LocalizedStringKey?)
-        
+
         var id: String {
             switch self {
             case .deleteAddress: return "deleteAddress"
@@ -34,11 +34,11 @@ struct UserAddressView: View {
             }
         }
     }
-    
+
     var body: some View {
         ZStack {
             userAddressView()
-            
+
             if progressIndicator {
                 ZStack {
                     if chatModel.userAddress != nil {
@@ -57,7 +57,7 @@ struct UserAddressView: View {
             }
         }
     }
-    
+
     private func userAddressView() -> some View {
         List {
             if let userAddress = chatModel.userAddress {
@@ -69,14 +69,14 @@ struct UserAddressView: View {
                     Text("For social media")
                         .foregroundColor(theme.colors.secondary)
                 }
-                
+
                 Section {
                     createOneTimeLinkButton()
                 } header: {
                     Text("Or to share privately")
                         .foregroundColor(theme.colors.secondary)
                 }
-                
+
                 Section {
                     learnMoreButton()
                 }
@@ -99,6 +99,9 @@ struct UserAddressView: View {
                                     DispatchQueue.main.async {
                                         chatModel.userAddress = nil
                                         chatModel.updateUser(u)
+                                        if shareViaProfile {
+                                            shareViaProfile = false
+                                        }
                                     }
                                 }
                                 await MainActor.run { progressIndicator = false }
@@ -123,7 +126,7 @@ struct UserAddressView: View {
             }
         }
     }
-    
+
     @ViewBuilder private func existingAddressView(_ userAddress: UserContactLink) -> some View {
         Section {
             SimpleXLinkQRCode(uri: userAddress.connReqContact)
@@ -137,18 +140,18 @@ struct UserAddressView: View {
             Text("For social media")
                 .foregroundColor(theme.colors.secondary)
         }
-        
+
         Section {
             createOneTimeLinkButton()
         } header: {
             Text("Or to share privately")
                 .foregroundColor(theme.colors.secondary)
         }
-        
+
         Section {
             learnMoreButton()
         }
-        
+
         Section {
             deleteAddressButton()
         } footer: {
@@ -156,7 +159,7 @@ struct UserAddressView: View {
                 .foregroundColor(theme.colors.secondary)
         }
     }
-    
+
     private func createAddressButton() -> some View {
         Button {
             createAddress()
@@ -164,7 +167,7 @@ struct UserAddressView: View {
             Label("Create SimpleX address", systemImage: "qrcode")
         }
     }
-    
+
     private func createAddress() {
         progressIndicator = true
         Task {
@@ -183,7 +186,7 @@ struct UserAddressView: View {
             }
         }
     }
-    
+
     private func createOneTimeLinkButton() -> some View {
         NavigationLink {
             NewChatView(selection: .invite)
@@ -195,7 +198,7 @@ struct UserAddressView: View {
                 .foregroundColor(theme.colors.primary)
         }
     }
-    
+
     private func deleteAddressButton() -> some View {
         Button(role: .destructive) {
             alert = .deleteAddress
@@ -204,7 +207,7 @@ struct UserAddressView: View {
                 .foregroundColor(Color.red)
         }
     }
-    
+
     private func shareQRCodeButton(_ userAddress: UserContactLink) -> some View {
         Button {
             showShareSheet(items: [simplexChatLink(userAddress.connReqContact)])
@@ -214,7 +217,7 @@ struct UserAddressView: View {
             }
         }
     }
-    
+
     private func shareViaEmailButton(_ userAddress: UserContactLink) -> some View {
         Button {
             showMailView = true
@@ -244,7 +247,7 @@ struct UserAddressView: View {
             }
         }
     }
-    
+
     private func addressSettingsButton(_ userAddress: UserContactLink) -> some View {
         NavigationLink {
             UserAddressSettingsView(shareViaProfile: $shareViaProfile)
@@ -255,7 +258,7 @@ struct UserAddressView: View {
             Text("Address settings")
         }
     }
-    
+
     private func learnMoreButton() -> some View {
         NavigationLink {
             UserAddressLearnMore()
