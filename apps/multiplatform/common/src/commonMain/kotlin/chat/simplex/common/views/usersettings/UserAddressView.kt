@@ -279,7 +279,7 @@ private fun AddressSettingsButton(
   saveAas: (AutoAcceptState, MutableState<AutoAcceptState>) -> Unit,
 ) {
   SettingsActionItem(
-    painterResource(MR.images.ic_qr_code),
+    painterResource(MR.images.ic_settings),
     stringResource(MR.strings.address_settings),
     click = {
       ModalManager.start.showCustomModal { close ->
