@@ -8,7 +8,7 @@
 
 import SwiftUI
 import SimpleXChat
-import Down
+//import Down
 import Ink
 
 struct OperatorView: View {
