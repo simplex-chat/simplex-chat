@@ -20,8 +20,6 @@ import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.onboarding.*
-import chat.simplex.common.views.usersettings.networkAndServers.ConditionsLinkButton
-import chat.simplex.common.views.usersettings.networkAndServers.UsageConditionsView
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 
