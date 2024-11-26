@@ -176,16 +176,6 @@ struct ContentView: View {
 
     @ViewBuilder private func contentView() -> some View {
         if let status = chatModel.chatDbStatus, status != .ok {
-            //let mockStatus: DBMigrationResult = .errorMigration(dbFile: "meh", migrationError: .migrationError(mtrError: .different(appMigration: "M20241010_contact_requests_contact_id", dbMigration: "M20240515_rcv_files_user_approved_relays")))
-            
-            // let mockStatus: DBMigrationResult = .errorSQL(dbFile: "meh", migrationSQLError: "UNEXPECTED TOKEN, IN SELECT *")
-            
-            //let mockStatus: DBMigrationResult = .errorKeychain
-            
-            //let mockStatus: DBMigrationResult = .invalidConfirmation
-            
-            //let mockStatus: DBMigrationResult = .unknown(json: "{\"id\":42,\"name\":\"John Doe\",\"isActive\":true,\"tags\":[\"developer\",\"gamer\"],\"score\":95.3,\"location\":null}")
-
             DatabaseErrorView(status: status)
         } else if !chatModel.v3DBMigration.startChat {
             MigrateToAppGroupView()
