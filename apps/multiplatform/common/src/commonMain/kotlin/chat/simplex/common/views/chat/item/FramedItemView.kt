@@ -39,6 +39,7 @@ fun FramedItemView(
   receiveFile: (Long) -> Unit,
   onLinkLongClick: (link: String) -> Unit = {},
   scrollToItem: (Long) -> Unit = {},
+  scrollToQuotedItemFromItem: (Long) -> Unit = {},
 ) {
   val sent = ci.chatDir.sent
   val chatTTL = chatInfo.timedMessagesTTL
@@ -130,11 +131,10 @@ fun FramedItemView(
         .combinedClickable(
           onLongClick = { showMenu.value = true },
           onClick = {
-            val itemId = qi.itemId
-            if (itemId != null) {
-              scrollToItem(itemId)
+            if (qi.itemId != null) {
+              scrollToItem(qi.itemId)
             } else {
-              showQuotedItemDoesNotExistAlert()
+              scrollToQuotedItemFromItem(ci.id)
             }
           }
         )

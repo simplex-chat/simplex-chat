@@ -979,10 +979,12 @@ fun BoxScope.ChatItemsList(
     }
   }
 
+  val remoteHostIdUpdated = rememberUpdatedState(remoteHostId)
   val chatInfoUpdated = rememberUpdatedState(chatInfo)
   val highlightedItems = remember { mutableStateOf(setOf<Long>()) }
   val scope = rememberCoroutineScope()
   val scrollToItem: (Long) -> Unit = remember { scrollToItem(loadingMoreItems, highlightedItems, chatInfoUpdated, maxHeight, scope, reversedChatItems, mergedItems, listState, loadMessages) }
+  val scrollToQuotedItemFromItem: (Long) -> Unit = remember { findQuotedItemFromItem(remoteHostIdUpdated, chatInfoUpdated, scope, scrollToItem) }
 
   LoadLastItems(loadingMoreItems, remoteHostId, chatInfo)
   SmallScrollOnNewMessage(listState, chatModel.chatItems)
@@ -1042,7 +1044,7 @@ fun BoxScope.ChatItemsList(
                   highlightedItems.value = setOf()
                 }
             }
-            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, range = range, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp)
+            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, range = range, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp)
           }
         }
 
@@ -1863,6 +1865,27 @@ private fun scrollToItem(
       }
     } finally {
       loadingMoreItems.value = false
+    }
+  }
+}
+
+private fun findQuotedItemFromItem(
+  rhId: State<Long?>,
+  chatInfo: State<ChatInfo>,
+  scope: CoroutineScope,
+  scrollToItem: (Long) -> Unit
+): (Long) -> Unit = { itemId: Long ->
+  scope.launch(Dispatchers.Default) {
+    val item = apiLoadSingleMessage(rhId.value, chatInfo.value.chatType, chatInfo.value.apiId, itemId)
+    if (item != null) {
+      withChats {
+        updateChatItem(chatInfo.value, item)
+      }
+      if (item.quotedItem?.itemId != null) {
+        scrollToItem(item.quotedItem.itemId)
+      } else {
+        showQuotedItemDoesNotExistAlert()
+      }
     }
   }
 }

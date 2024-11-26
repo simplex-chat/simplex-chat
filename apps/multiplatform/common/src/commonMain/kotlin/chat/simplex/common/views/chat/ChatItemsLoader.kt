@@ -10,6 +10,16 @@ import kotlin.math.min
 
 const val TRIM_KEEP_COUNT = 200
 
+suspend fun apiLoadSingleMessage(
+  rhId: Long?,
+  chatType: ChatType,
+  apiId: Long,
+  itemId: Long
+): ChatItem? = coroutineScope {
+  val (chat, _) = chatModel.controller.apiGetChat(rhId, chatType, apiId, ChatPagination.Around(itemId, 0), "") ?: return@coroutineScope null
+  chat.chatItems.firstOrNull()
+}
+
 suspend fun apiLoadMessages(
   rhId: Long?,
   chatType: ChatType,

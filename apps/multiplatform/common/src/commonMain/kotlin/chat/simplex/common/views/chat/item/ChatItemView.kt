@@ -71,6 +71,7 @@ fun ChatItemView(
   joinGroup: (Long, () -> Unit) -> Unit,
   acceptCall: (Contact) -> Unit,
   scrollToItem: (Long) -> Unit,
+  scrollToQuotedItemFromItem: (Long) -> Unit,
   acceptFeature: (Contact, ChatFeature, Int?) -> Unit,
   openDirectChat: (Long) -> Unit,
   forwardItem: (ChatInfo, ChatItem) -> Unit,
@@ -155,7 +156,7 @@ fun ChatItemView(
       ) {
         @Composable
         fun framedItemView() {
-          FramedItemView(cInfo, cItem, uriHandler, imageProvider, linkMode = linkMode, showViaProxy = showViaProxy, showMenu, showTimestamp = showTimestamp, tailVisible = itemSeparation.largeGap, receiveFile, onLinkLongClick, scrollToItem)
+          FramedItemView(cInfo, cItem, uriHandler, imageProvider, linkMode = linkMode, showViaProxy = showViaProxy, showMenu, showTimestamp = showTimestamp, tailVisible = itemSeparation.largeGap, receiveFile, onLinkLongClick, scrollToItem, scrollToQuotedItemFromItem)
         }
 
         fun deleteMessageQuestionText(): String {
@@ -1087,6 +1088,7 @@ fun PreviewChatItemView(
     joinGroup = { _, _ -> },
     acceptCall = { _ -> },
     scrollToItem = {},
+    scrollToQuotedItemFromItem = {},
     acceptFeature = { _, _, _ -> },
     openDirectChat = { _ -> },
     forwardItem = { _, _ -> },
@@ -1130,6 +1132,7 @@ fun PreviewChatItemViewDeletedContent() {
       joinGroup = { _, _ -> },
       acceptCall = { _ -> },
       scrollToItem = {},
+      scrollToQuotedItemFromItem = {},
       acceptFeature = { _, _, _ -> },
       openDirectChat = { _ -> },
       forwardItem = { _, _ -> },
