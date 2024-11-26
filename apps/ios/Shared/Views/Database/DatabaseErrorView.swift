@@ -95,70 +95,23 @@ struct DatabaseErrorView: View {
                 case let .migrationError(mtrError):
                     titleText("Incompatible database version")
                     fileNameText(dbFile, font: .callout)
-                    VStack(spacing: 35) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .resizable()
-                            .frame(width: 50, height: 50)
-                            .foregroundColor(.red)
-                        Text(mtrErrorDescription(mtrError))
-                            .multilineTextAlignment(.center)
-                            .font(.footnote)
-                    }
-                    .padding(.top)
-                    .frame(maxWidth: .infinity)
+                    errorView(Text(mtrErrorDescription(mtrError)))
                 }
             case let .errorSQL(dbFile, migrationSQLError):
                 titleText("Database error")
                 fileNameText(dbFile, font: .callout)
-                VStack(spacing: 35) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .resizable()
-                        .frame(width: 50, height: 50)
-                        .foregroundColor(.red)
-                    Text("Error: \(migrationSQLError)")
-                        .multilineTextAlignment(.center)
-                        .font(.footnote)
-                }
-                .padding(.top)
-                .frame(maxWidth: .infinity)
+                errorView(Text("Error: \(migrationSQLError)"))
             case .errorKeychain:
                 titleText("Keychain error")
-                VStack(spacing: 35) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .resizable()
-                        .frame(width: 50, height: 50)
-                        .foregroundColor(.red)
-                    Text("Cannot access keychain to save database password")
-                        .multilineTextAlignment(.center)
-                        .font(.footnote)
-                }
-                .padding()
-                .frame(maxWidth: .infinity)
+                errorView(Text("Cannot access keychain to save database password"))
             case .invalidConfirmation:
                 // this can only happen if incorrect parameter is passed
                 titleText("Invalid migration confirmation")
-                VStack {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .resizable()
-                        .frame(width: 50, height: 50)
-                        .foregroundColor(.red)
-                        .padding()
-                }.frame(maxWidth: .infinity)
-    
+                errorView()
+
             case let .unknown(json):
                 titleText("Database error")
-                VStack(spacing: 35) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .resizable()
-                        .frame(width: 50, height: 50)
-                        .foregroundColor(.red)
-                    Text("Unknown database error: \(json)")
-                        .multilineTextAlignment(.center)
-                        .font(.footnote)
-                }
-                .padding()
-                .frame(maxWidth: .infinity)
-                
+                errorView(Text("Unknown database error: \(json)"))
             case .ok:
                 EmptyView()
             }
@@ -312,6 +265,23 @@ struct DatabaseErrorView: View {
                 message: Text(error.localizedDescription)
             ))
         }
+    }
+    
+    private func errorView(_ s: Text? = nil) -> some View {
+        VStack(spacing: 35) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .resizable()
+                .frame(width: 50, height: 50)
+                .foregroundColor(.red)
+            
+            if let text = s {
+                text
+                    .multilineTextAlignment(.center)
+                    .font(.footnote)
+            }
+        }
+        .padding()
+        .frame(maxWidth: .infinity)
     }
 }
 
