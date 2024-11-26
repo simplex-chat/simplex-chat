@@ -40,8 +40,10 @@ struct HowItWorks: View {
             Spacer()
 
             if onboarding {
-                createFirstProfileButton()
-                    .padding(.bottom)
+                VStack(spacing: 10) {
+                    createFirstProfileButton()
+                    onboardingButtonPlaceholder()
+                }
             }
         }
         .lineLimit(10)

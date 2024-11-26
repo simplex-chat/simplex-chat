@@ -34,23 +34,25 @@ struct SetNotificationsMode: View {
                     
                     Spacer()
                     
-                    Button {
-                        if let token = m.deviceToken {
-                            setNotificationsMode(token, notificationMode)
-                        } else {
-                            AlertManager.shared.showAlertMsg(title: "No device token!")
+                    VStack(spacing: 10) {
+                        Button {
+                            if let token = m.deviceToken {
+                                setNotificationsMode(token, notificationMode)
+                            } else {
+                                AlertManager.shared.showAlertMsg(title: "No device token!")
+                            }
+                            onboardingStageDefault.set(.onboardingComplete)
+                            m.onboardingStage = .onboardingComplete
+                        } label: {
+                            if case .off = notificationMode {
+                                Text("Use chat")
+                            } else {
+                                Text("Enable notifications")
+                            }
                         }
-                        onboardingStageDefault.set(.onboardingComplete)
-                        m.onboardingStage = .onboardingComplete
-                    } label: {
-                        if case .off = notificationMode {
-                            Text("Use chat")
-                        } else {
-                            Text("Enable notifications")
-                        }
+                        .buttonStyle(OnboardingButtonStyle())
+                        onboardingButtonPlaceholder()
                     }
-                    .buttonStyle(OnboardingButtonStyle())
-                    onboardingButtonPlaceholder()
                 }
                 .padding(25)
                 .frame(minHeight: g.size.height)

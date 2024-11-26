@@ -127,7 +127,6 @@ struct ChooseServerOperators: View {
                             .frame(minHeight: 40)
                         }
                     }
-                    .padding(.bottom)
                     
                     if !onboarding && !reviewForOperators.isEmpty {
                         VStack(spacing: 8) {
@@ -409,7 +408,7 @@ struct ChooseServerOperators: View {
 struct ChooseServerOperatorsInfoView: View {
     var body: some View {
         VStack(alignment: .leading) {
-            Text("Network operators")
+            Text("Server operators")
                 .font(.largeTitle)
                 .bold()
                 .padding(.vertical)
