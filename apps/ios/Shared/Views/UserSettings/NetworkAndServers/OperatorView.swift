@@ -343,7 +343,6 @@ struct OperatorInfoView: View {
 struct ConditionsTextView: View {
     @State private var conditionsData: (UsageConditions, String?, UsageConditions?)?
     @State private var failedToLoad: Bool = false
-    @State private var markdownContent: AttributedString? = nil
     @State private var conditionsHTML: String? = nil
 
     let defaultConditionsLink = "https://github.com/simplex-chat/simplex-chat/blob/stable/PRIVACY.md"
