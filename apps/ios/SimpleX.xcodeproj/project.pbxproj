@@ -200,6 +200,7 @@
 		8C81482C2BD91CD4002CBEC3 /* AudioDevicePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C81482B2BD91CD4002CBEC3 /* AudioDevicePicker.swift */; };
 		8C9BC2652C240D5200875A27 /* ThemeModeEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C9BC2642C240D5100875A27 /* ThemeModeEditor.swift */; };
 		8CB3476C2CF5CFFA006787A5 /* Ink in Frameworks */ = {isa = PBXBuildFile; productRef = 8CB3476B2CF5CFFA006787A5 /* Ink */; };
+		8CB3476E2CF5F58B006787A5 /* ConditionsWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CB3476D2CF5F58B006787A5 /* ConditionsWebView.swift */; };
 		8CC4ED902BD7B8530078AEE8 /* CallAudioDeviceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC4ED8F2BD7B8530078AEE8 /* CallAudioDeviceManager.swift */; };
 		8CC956EE2BC0041000412A11 /* NetworkObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC956ED2BC0041000412A11 /* NetworkObserver.swift */; };
 		8CE848A32C5A0FA000D5C7C8 /* SelectableChatItemToolbars.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CE848A22C5A0FA000D5C7C8 /* SelectableChatItemToolbars.swift */; };
@@ -548,6 +549,7 @@
 		8C852B072C1086D100BA61E8 /* Color.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Color.swift; sourceTree = "<group>"; };
 		8C86EBE42C0DAE4F00E12243 /* ThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeManager.swift; sourceTree = "<group>"; };
 		8C9BC2642C240D5100875A27 /* ThemeModeEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeModeEditor.swift; sourceTree = "<group>"; };
+		8CB3476D2CF5F58B006787A5 /* ConditionsWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConditionsWebView.swift; sourceTree = "<group>"; };
 		8CC4ED8F2BD7B8530078AEE8 /* CallAudioDeviceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallAudioDeviceManager.swift; sourceTree = "<group>"; };
 		8CC956ED2BC0041000412A11 /* NetworkObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkObserver.swift; sourceTree = "<group>"; };
 		8CE848A22C5A0FA000D5C7C8 /* SelectableChatItemToolbars.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectableChatItemToolbars.swift; sourceTree = "<group>"; };
@@ -1074,6 +1076,7 @@
 				643B3B4D2CCFD6400083A2CF /* OperatorView.swift */,
 				5C9C2DA6289957AE00CC63B1 /* AdvancedNetworkSettings.swift */,
 				5C9C2DA82899DA6F00CC63B1 /* NetworkAndServers.swift */,
+				8CB3476D2CF5F58B006787A5 /* ConditionsWebView.swift */,
 			);
 			path = NetworkAndServers;
 			sourceTree = "<group>";
@@ -1520,6 +1523,7 @@
 				5C764E89279CBCB3000C6508 /* ChatModel.swift in Sources */,
 				5C971E1D27AEBEF600C8A3CE /* ChatInfoView.swift in Sources */,
 				5CBD285C29575B8E00EC2CF4 /* WhatsNewView.swift in Sources */,
+				8CB3476E2CF5F58B006787A5 /* ConditionsWebView.swift in Sources */,
 				5CC1C99527A6CF7F000D9FF6 /* ShareSheet.swift in Sources */,
 				5C5E5D3B2824468B00B0488A /* ActiveCallView.swift in Sources */,
 				5C2E260727A2941F00F70299 /* SimpleXAPI.swift in Sources */,

@@ -8,7 +8,6 @@
 
 import SwiftUI
 import SimpleXChat
-//import Down
 import Ink
 
 struct OperatorView: View {
@@ -345,7 +344,7 @@ struct ConditionsTextView: View {
     @State private var conditionsData: (UsageConditions, String?, UsageConditions?)?
     @State private var failedToLoad: Bool = false
     @State private var markdownContent: AttributedString? = nil
-    @State private var htmlContent: String? = nil
+    @State private var conditionsHTML: String? = nil
 
     let defaultConditionsLink = "https://github.com/simplex-chat/simplex-chat/blob/stable/PRIVACY.md"
 
@@ -360,32 +359,7 @@ struct ConditionsTextView: View {
                     let preparedText: String?
                     if let conditionsText {
                         let prepared = prepareMarkdown(conditionsText.trimmingCharacters(in: .whitespacesAndNewlines), parentLink)
-//                        let options: [NSAttributedString.Key : Any] = [:]
-//                        let conf = DownStylerConfiguration(colors: StaticColorCollection(
-//                            heading1: UIColor(Color.primary),
-//                            heading2: UIColor(Color.primary),
-//                            heading3: UIColor(Color.primary),
-//                            heading4: UIColor(Color.primary),
-//                            heading5: UIColor(Color.primary),
-//                            heading6: UIColor(Color.primary),
-//                            body: UIColor(Color.primary),
-//                            code: UIColor(Color.primary),
-//                            link: UIColor(Color.accentColor),
-//                            quote: UIColor(Color.primary),
-//                            quoteStripe: UIColor(Color.primary),
-//                            thematicBreak: UIColor(Color.primary),
-//                            listItemPrefix: UIColor(Color.primary),
-//                            codeBlockBackground: UIColor(Color.primary)
-//
-//                        )
-//                        )
-                        //let styler = DownStyler(configuration: conf)
-                        //let attributed = try! NSMutableAttributedString(attributedString: Down(markdownString: prepared).toAttributedString(styler: styler))
-//                        attributed.addAttribute(.backgroundColor, value: Color.clear, range: NSMakeRange(0, attributed.length))
-//                        attributed.addAttribute(.foregroundColor, value: Color.primary, range: NSMakeRange(0, attributed.length))
-//                        attributed.addAttribute(.font, value: Color.accentColor, range: NSMakeRange(0, attributed.length))
-                        //markdownContent = AttributedString(attributed)
-                        htmlContent = MarkdownParser().html(from: prepared)
+                        conditionsHTML = MarkdownParser().html(from: prepared)
                         preparedText = prepared
                     } else {
                         preparedText = nil
@@ -400,32 +374,14 @@ struct ConditionsTextView: View {
 
     // TODO Diff rendering
     @ViewBuilder private func viewBody() -> some View {
-        if let (usageConditions, preparedConditions, _) = conditionsData {
-            if /*let markdownContent,*/ let htmlContent {
-//                ScrollView {
-//                    MarkdownView(markdown: preparedConditions)
-//                MarkdownRepresentable()
-//                    .environmentObject(MarkdownObservable(text: preparedConditions))
-//                    Text(markdownContent)
-                InkMarkdown(html: htmlContent)
-                        .environment(
-                            \.openURL,
-                            OpenURLAction { url in
-                                if url.absoluteString.starts(with: "https://simplex.chat/contact#") {
-                                    ChatModel.shared.appOpenUrl = url
-                                    return .handled
-                                } else {
-                                    return .systemAction
-                                }
-
-                            }
-                        )
-                        .padding(6)
-//                }
-                .background(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color(uiColor: .secondarySystemGroupedBackground))
-                )
+        if let (usageConditions, _, _) = conditionsData {
+            if let conditionsHTML {
+                ConditionsWebView(html: conditionsHTML)
+                    .padding(6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color(uiColor: .secondarySystemGroupedBackground))
+                    )
             } else {
                 let conditionsLink = "https://github.com/simplex-chat/simplex-chat/blob/\(usageConditions.conditionsCommit)/PRIVACY.md"
                 conditionsLinkView(conditionsLink)
