@@ -199,7 +199,8 @@
 		8C8118722C220B5B00E6FC94 /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = 8C8118712C220B5B00E6FC94 /* Yams */; };
 		8C81482C2BD91CD4002CBEC3 /* AudioDevicePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C81482B2BD91CD4002CBEC3 /* AudioDevicePicker.swift */; };
 		8C9BC2652C240D5200875A27 /* ThemeModeEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C9BC2642C240D5100875A27 /* ThemeModeEditor.swift */; };
-		8CB0D6002CF4CC7E00FCA14D /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 8CB0D5FF2CF4CC7E00FCA14D /* MarkdownUI */; };
+		8CB347692CF5B447006787A5 /* Down in Frameworks */ = {isa = PBXBuildFile; productRef = 8CB347682CF5B447006787A5 /* Down */; };
+		8CB3476C2CF5CFFA006787A5 /* Ink in Frameworks */ = {isa = PBXBuildFile; productRef = 8CB3476B2CF5CFFA006787A5 /* Ink */; };
 		8CC4ED902BD7B8530078AEE8 /* CallAudioDeviceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC4ED8F2BD7B8530078AEE8 /* CallAudioDeviceManager.swift */; };
 		8CC956EE2BC0041000412A11 /* NetworkObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC956ED2BC0041000412A11 /* NetworkObserver.swift */; };
 		8CE848A32C5A0FA000D5C7C8 /* SelectableChatItemToolbars.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CE848A22C5A0FA000D5C7C8 /* SelectableChatItemToolbars.swift */; };
@@ -637,6 +638,8 @@
 			files = (
 				5CE2BA702845308900EC33A6 /* SimpleXChat.framework in Frameworks */,
 				8C8118722C220B5B00E6FC94 /* Yams in Frameworks */,
+				8CB347692CF5B447006787A5 /* Down in Frameworks */,
+				8CB3476C2CF5CFFA006787A5 /* Ink in Frameworks */,
 				D741547829AF89AF0022400A /* StoreKit.framework in Frameworks */,
 				D7197A1829AE89660055C05A /* WebRTC in Frameworks */,
 				D77B92DC2952372200A5A1CC /* SwiftyGif in Frameworks */,
@@ -644,7 +647,6 @@
 				D741547A29AF90B00022400A /* PushKit.framework in Frameworks */,
 				646BB38C283BEEB9001CE359 /* LocalAuthentication.framework in Frameworks */,
 				5C8F01CD27A6F0D8007D2C8D /* CodeScanner in Frameworks */,
-				8CB0D6002CF4CC7E00FCA14D /* MarkdownUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1185,7 +1187,8 @@
 				D7F0E33829964E7E0068AF69 /* LZString */,
 				D7197A1729AE89660055C05A /* WebRTC */,
 				8C8118712C220B5B00E6FC94 /* Yams */,
-				8CB0D5FF2CF4CC7E00FCA14D /* MarkdownUI */,
+				8CB347682CF5B447006787A5 /* Down */,
+				8CB3476B2CF5CFFA006787A5 /* Ink */,
 			);
 			productName = "SimpleX (iOS)";
 			productReference = 5CA059CA279559F40002BEB4 /* SimpleX.app */;
@@ -1329,7 +1332,8 @@
 				D7F0E33729964E7D0068AF69 /* XCRemoteSwiftPackageReference "lzstring-swift" */,
 				D7197A1629AE89660055C05A /* XCRemoteSwiftPackageReference "WebRTC" */,
 				8C73C1162C21E17B00892670 /* XCRemoteSwiftPackageReference "Yams" */,
-				8CB0D5FE2CF4CC7E00FCA14D /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
+				8CB347672CF5B447006787A5 /* XCRemoteSwiftPackageReference "Down" */,
+				8CB3476A2CF5CFFA006787A5 /* XCRemoteSwiftPackageReference "ink" */,
 			);
 			productRefGroup = 5CA059CB279559F40002BEB4 /* Products */;
 			projectDirPath = "";
@@ -2379,12 +2383,20 @@
 				version = 5.1.2;
 			};
 		};
-		8CB0D5FE2CF4CC7E00FCA14D /* XCRemoteSwiftPackageReference "swift-markdown-ui" */ = {
+		8CB347672CF5B447006787A5 /* XCRemoteSwiftPackageReference "Down" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/gonzalezreal/swift-markdown-ui";
+			repositoryURL = "https://github.com/johnxnguyen/Down";
 			requirement = {
 				kind = exactVersion;
-				version = 2.4.1;
+				version = 0.11.0;
+			};
+		};
+		8CB3476A2CF5CFFA006787A5 /* XCRemoteSwiftPackageReference "ink" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/johnsundell/ink";
+			requirement = {
+				kind = exactVersion;
+				version = 0.6.0;
 			};
 		};
 		D7197A1629AE89660055C05A /* XCRemoteSwiftPackageReference "WebRTC" */ = {
@@ -2424,10 +2436,15 @@
 			package = 8C73C1162C21E17B00892670 /* XCRemoteSwiftPackageReference "Yams" */;
 			productName = Yams;
 		};
-		8CB0D5FF2CF4CC7E00FCA14D /* MarkdownUI */ = {
+		8CB347682CF5B447006787A5 /* Down */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 8CB0D5FE2CF4CC7E00FCA14D /* XCRemoteSwiftPackageReference "swift-markdown-ui" */;
-			productName = MarkdownUI;
+			package = 8CB347672CF5B447006787A5 /* XCRemoteSwiftPackageReference "Down" */;
+			productName = Down;
+		};
+		8CB3476B2CF5CFFA006787A5 /* Ink */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8CB3476A2CF5CFFA006787A5 /* XCRemoteSwiftPackageReference "ink" */;
+			productName = Ink;
 		};
 		CE38A29B2C3FCD72005ED185 /* SwiftyGif */ = {
 			isa = XCSwiftPackageProductDependency;
