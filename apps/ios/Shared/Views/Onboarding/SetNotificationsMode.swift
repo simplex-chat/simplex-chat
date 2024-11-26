@@ -13,41 +13,55 @@ struct SetNotificationsMode: View {
     @EnvironmentObject var m: ChatModel
     @State private var notificationMode = NotificationsMode.instant
     @State private var showAlert: NotificationAlert?
+    @State private var showInfo: Bool = false
 
     var body: some View {
         GeometryReader { g in
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    Text("Send notifications:")
+                VStack(alignment: .center, spacing: 20) {
+                    Text("Push Notifications")
+                        .font(.largeTitle)
+                        .bold()
+                        .padding(.top, 50)
+                    
+                    infoText()
+                    
+                    Spacer()
+
                     ForEach(NotificationsMode.values) { mode in
                         NtfModeSelector(mode: mode, selection: $notificationMode)
                     }
                     
                     Spacer()
                     
-                    Button {
-                        if let token = m.deviceToken {
-                            setNotificationsMode(token, notificationMode)
-                        } else {
-                            AlertManager.shared.showAlertMsg(title: "No device token!")
+                    VStack(spacing: 10) {
+                        Button {
+                            if let token = m.deviceToken {
+                                setNotificationsMode(token, notificationMode)
+                            } else {
+                                AlertManager.shared.showAlertMsg(title: "No device token!")
+                            }
+                            onboardingStageDefault.set(.onboardingComplete)
+                            m.onboardingStage = .onboardingComplete
+                        } label: {
+                            if case .off = notificationMode {
+                                Text("Use chat")
+                            } else {
+                                Text("Enable notifications")
+                            }
                         }
-                        onboardingStageDefault.set(.onboardingComplete)
-                        m.onboardingStage = .onboardingComplete
-                    } label: {
-                        if case .off = notificationMode {
-                            Text("Use chat")
-                        } else {
-                            Text("Enable notifications")
-                        }
+                        .buttonStyle(OnboardingButtonStyle())
+                        onboardingButtonPlaceholder()
                     }
-                    .buttonStyle(OnboardingButtonStyle())
-                    .padding(.bottom)
                 }
-                .padding()
+                .padding(25)
                 .frame(minHeight: g.size.height)
             }
         }
         .frame(maxHeight: .infinity)
+        .sheet(isPresented: $showInfo) {
+            NotificationsInfoView()
+        }
     }
 
     private func setNotificationsMode(_ token: DeviceToken, _ mode: NotificationsMode) {
@@ -73,6 +87,15 @@ struct SetNotificationsMode: View {
             }
         }
     }
+    
+    private func infoText() -> some View {
+        Button {
+            showInfo = true
+        } label: {
+            Label("How it affects privacy", systemImage: "info.circle")
+                .font(.headline)
+        }
+    }
 }
 
 struct NtfModeSelector: View {
@@ -83,15 +106,24 @@ struct NtfModeSelector: View {
 
     var body: some View {
         ZStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(mode.label)
-                    .font(.headline)
+            HStack(spacing: 16) {
+                Image(systemName: mode.icon)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: mode.icon == "bolt" ? 14 : 18, height: 18)
                     .foregroundColor(selection == mode ? theme.colors.primary : theme.colors.secondary)
-                Text(ntfModeDescription(mode))
-                    .lineLimit(10)
-                    .font(.subheadline)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(mode.label)
+                        .font(.headline)
+                        .foregroundColor(selection == mode ? theme.colors.primary : theme.colors.secondary)
+                    Text(ntfModeShortDescription(mode))
+                        .lineLimit(2)
+                        .font(.callout)
+                }
             }
-            .padding(12)
+            .padding(.vertical, 12)
+            .padding(.trailing, 12)
+            .padding(.leading, 16)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(tapped ? Color(uiColor: .secondarySystemFill) : theme.colors.background)
@@ -104,6 +136,36 @@ struct NtfModeSelector: View {
             tapped = down
             if down { selection = mode }
         } perform: {}
+    }
+}
+
+struct NotificationsInfoView: View {
+    var body: some View {
+        VStack(alignment: .leading) {
+            Text("Notification modes")
+                .font(.largeTitle)
+                .bold()
+                .padding(.vertical)
+            ScrollView {
+                VStack(alignment: .leading) {
+                    Group {
+                        ForEach(NotificationsMode.values) { mode in
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(mode.label)
+                                    .font(.headline)
+                                Text(ntfModeDescription(mode))
+                                    .lineLimit(10)
+                                    .font(.callout)
+                            }
+                        }
+                    }
+                    .padding(.bottom)
+                }
+            }
+        }
+        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .modifier(ThemedBackground())
     }
 }
 

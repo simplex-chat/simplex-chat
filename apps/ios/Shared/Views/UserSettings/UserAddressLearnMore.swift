@@ -11,7 +11,8 @@ import SwiftUI
 struct UserAddressLearnMore: View {
     @State var showCreateAddressButton = false
     @State private var createAddressLinkActive = false
-    
+    @State private var createOneTimeLinkActive = false
+
     var body: some View {
         VStack {
             List {
@@ -44,11 +45,8 @@ struct UserAddressLearnMore: View {
                 VStack {
                     addressCreationButton()
                         .padding(.bottom)
-                    
-                    Button("Create 1-time link") {
-                        
-                    }
-                    .font(.footnote)
+
+                    createOneTimeLinkButton()
                 }
                 .padding()
             }
@@ -69,6 +67,28 @@ struct UserAddressLearnMore: View {
                 UserAddressView(autoCreate: true)
                     .navigationTitle("SimpleX address")
                     .navigationBarTitleDisplayMode(.large)
+            } label: {
+                EmptyView()
+            }
+            .frame(width: 1, height: 1)
+            .hidden()
+        }
+    }
+
+    private func createOneTimeLinkButton() -> some View {
+        ZStack {
+            Button {
+                createOneTimeLinkActive = true
+            } label: {
+                Text("Create 1-time link")
+                    .font(.footnote)
+            }
+
+            NavigationLink(isActive: $createOneTimeLinkActive) {
+                NewChatView(selection: .invite)
+                    .navigationTitle("New chat")
+                    .navigationBarTitleDisplayMode(.large)
+                    .modifier(ThemedBackground(grouped: true))
             } label: {
                 EmptyView()
             }
