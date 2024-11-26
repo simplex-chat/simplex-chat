@@ -245,7 +245,7 @@ func ntfModeDescription(_ mode: NotificationsMode) -> LocalizedStringKey {
 
 func ntfModeShortDescription(_ mode: NotificationsMode) -> LocalizedStringKey {
     switch mode {
-    case .off: return "Check messages when allowed."
+    case .off: return "Checks messages when allowed."
     case .periodic: return "Checks messages every 20 min."
     case .instant: return "E2E encrypted notifications."
     }

@@ -331,7 +331,7 @@ struct ChooseServerOperators: View {
                 .padding(.bottom)
                 .padding(.bottom)
         }
-        .padding(.horizontal)
+        .padding(.horizontal, 25)
         .frame(maxHeight: .infinity)
     }
 
