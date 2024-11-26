@@ -61,7 +61,7 @@ fun UserAddressLearnMore(showCreateAddressButton: Boolean = false) {
         Button(
           onClick = {
             ModalManager.start.showModalCloseable { close ->
-              UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = close)
+              UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = { ModalManager.start.closeModals() })
             }
           },
           shape = CircleShape,

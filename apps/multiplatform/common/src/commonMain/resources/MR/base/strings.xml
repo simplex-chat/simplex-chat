@@ -930,6 +930,7 @@
   <string name="or_to_share_privately">Or to share privately</string>
   <string name="simplex_address_or_1_time_link">SimpleX address or 1-time link?</string>
   <string name="create_1_time_link">Create 1-time link</string>
+  <string name="address_settings">Address settings</string>
 
   <!-- CreateSimpleXAddress.kt -->
   <string name="continue_to_next_step">Continue</string>

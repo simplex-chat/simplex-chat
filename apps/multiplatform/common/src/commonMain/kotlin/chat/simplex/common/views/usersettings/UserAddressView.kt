@@ -31,7 +31,6 @@ import chat.simplex.res.MR
 @Composable
 fun UserAddressView(
   chatModel: ChatModel,
-  viaCreateLinkView: Boolean = false,
   shareViaProfile: Boolean = false,
   autoCreateAddress: Boolean = false,
   close: () -> Unit
@@ -39,7 +38,6 @@ fun UserAddressView(
   // TODO close when remote host changes
   val shareViaProfile = remember { mutableStateOf(shareViaProfile) }
   var progressIndicator by remember { mutableStateOf(false) }
-  val onCloseHandler: MutableState<(close: () -> Unit) -> Unit> = remember { mutableStateOf({ _ -> }) }
   val user = remember { chatModel.currentUser }
   KeyChangeEffect(user.value?.remoteHostId, user.value?.userId) {
     close()
@@ -82,7 +80,7 @@ fun UserAddressView(
   }
 
   LaunchedEffect(autoCreateAddress) {
-    if (autoCreateAddress) {
+    if (chatModel.userAddress.value == null && autoCreateAddress) {
       createAddress()
     }
   }
@@ -94,7 +92,6 @@ fun UserAddressView(
       user = user.value,
       userAddress = userAddress.value,
       shareViaProfile,
-      onCloseHandler,
       createAddress = { createAddress() },
       learnMore = {
         ModalManager.start.showModal {
@@ -105,7 +102,7 @@ fun UserAddressView(
       sendEmail = { userAddress ->
         uriHandler.sendEmail(
           generalGetString(MR.strings.email_invite_subject),
-          generalGetString(MR.strings.email_invite_body).format(simplexChatLink( userAddress.connReqContact))
+          generalGetString(MR.strings.email_invite_body).format(simplexChatLink(userAddress.connReqContact))
         )
       },
       setProfileAddress = ::setProfileAddress,
@@ -141,12 +138,8 @@ fun UserAddressView(
     )
   }
 
-  if (viaCreateLinkView) {
+  ModalView(close = close) {
     showLayout()
-  } else {
-    ModalView(close = { onCloseHandler.value(close) }) {
-      showLayout()
-    }
   }
 
   if (progressIndicator) {
@@ -173,7 +166,6 @@ private fun UserAddressLayout(
   user: User?,
   userAddress: UserContactLinkRec?,
   shareViaProfile: MutableState<Boolean>,
-  onCloseHandler: MutableState<(close: () -> Unit) -> Unit>,
   createAddress: () -> Unit,
   learnMore: () -> Unit,
   share: (String) -> Unit,
@@ -198,47 +190,32 @@ private fun UserAddressLayout(
         SectionView(generalGetString(MR.strings.or_to_share_privately).uppercase()) {
           CreateOneTimeLinkButton()
         }
-        
+
         SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
         SectionView {
           LearnMoreButton(learnMore)
         }
-        LaunchedEffect(Unit) {
-          onCloseHandler.value = { close -> close() }
-        }
       } else {
-        val autoAcceptState = remember { mutableStateOf(AutoAcceptState(userAddress)) }
-        val autoAcceptStateSaved = remember { mutableStateOf(autoAcceptState.value) }
         SectionView(stringResource(MR.strings.for_social_media).uppercase()) {
           SimpleXLinkQRCode(userAddress.connReqContact)
           ShareAddressButton { share(simplexChatLink(userAddress.connReqContact)) }
           // ShareViaEmailButton { sendEmail(userAddress) }
-          ShareWithContactsButton(shareViaProfile, setProfileAddress)
-          AutoAcceptToggle(autoAcceptState) { saveAas(autoAcceptState.value, autoAcceptStateSaved) }
-          LearnMoreButton(learnMore)
+          AddressSettingsButton(user, userAddress, shareViaProfile, setProfileAddress, saveAas)
         }
 
         SectionDividerSpaced()
         SectionView(generalGetString(MR.strings.or_to_share_privately).uppercase()) {
           CreateOneTimeLinkButton()
         }
-
-        if (autoAcceptState.value.enable) {
-          SectionDividerSpaced()
-          AutoAcceptSection(autoAcceptState, autoAcceptStateSaved, saveAas)
+        SectionDividerSpaced(maxBottomPadding = false)
+        SectionView {
+          LearnMoreButton(learnMore)
         }
 
         SectionDividerSpaced(maxBottomPadding = false)
-
         SectionView {
           DeleteAddressButton(deleteAddress)
           SectionTextFooter(stringResource(MR.strings.your_contacts_will_remain_connected))
-        }
-        LaunchedEffect(Unit) {
-          onCloseHandler.value = { close ->
-            if (autoAcceptState.value == autoAcceptStateSaved.value) close()
-            else showUnsavedChangesAlert({ saveAas(autoAcceptState.value, autoAcceptStateSaved); close() }, close)
-          }
         }
       }
     }
@@ -291,6 +268,85 @@ fun ShareViaEmailButton(onClick: () -> Unit) {
     iconColor = MaterialTheme.colors.primary,
     textColor = MaterialTheme.colors.primary,
   )
+}
+
+@Composable
+private fun AddressSettingsButton(
+  user: User?,
+  userAddress: UserContactLinkRec,
+  shareViaProfile: MutableState<Boolean>,
+  setProfileAddress: (Boolean) -> Unit,
+  saveAas: (AutoAcceptState, MutableState<AutoAcceptState>) -> Unit,
+) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_qr_code),
+    stringResource(MR.strings.address_settings),
+    click = {
+      ModalManager.start.showModalCloseable { close ->
+        UserAddressSettings(user, userAddress, shareViaProfile, setProfileAddress, saveAas, close = close)
+      }
+    }
+  )
+}
+
+@Composable
+private fun ModalData.UserAddressSettings(
+  user: User?,
+  userAddress: UserContactLinkRec,
+  shareViaProfile: MutableState<Boolean>,
+  setProfileAddress: (Boolean) -> Unit,
+  saveAas: (AutoAcceptState, MutableState<AutoAcceptState>) -> Unit,
+  close: () -> Unit
+) {
+  val autoAcceptState = remember { stateGetOrPut("autoAcceptState") { (AutoAcceptState(userAddress)) } }
+  val autoAcceptStateSaved = remember { stateGetOrPut("autoAcceptStateSaved") { (autoAcceptState.value) } }
+
+  fun onClose(close: () -> Unit): Boolean = if (autoAcceptState.value == autoAcceptStateSaved.value) {
+    chatModel.centerPanelBackgroundClickHandler = null
+    close()
+    false
+  } else {
+    showUnsavedChangesAlert(
+      save = {
+        saveAas(autoAcceptState.value, autoAcceptStateSaved)
+        chatModel.centerPanelBackgroundClickHandler = null
+        close()
+      },
+      revert = {
+        chatModel.centerPanelBackgroundClickHandler = null
+        close()
+      }
+    )
+    true
+  }
+
+  LaunchedEffect(Unit) {
+    // Enables unsaved changes alert on this view.
+    chatModel.centerPanelBackgroundClickHandler = {
+      onClose(close = { ModalManager.start.closeModals() })
+    }
+  }
+
+  ModalView(close = { onClose(close) }) {
+    ColumnWithScrollBar {
+      AppBarTitle(stringResource(MR.strings.address_settings), hostDevice(user?.remoteHostId))
+      Column(
+        Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceEvenly
+      ) {
+        SectionView {
+          ShareWithContactsButton(shareViaProfile, setProfileAddress)
+          AutoAcceptToggle(autoAcceptState) { saveAas(autoAcceptState.value, autoAcceptStateSaved) }
+        }
+
+        if (autoAcceptState.value.enable) {
+          SectionDividerSpaced()
+          AutoAcceptSection(autoAcceptState, autoAcceptStateSaved, saveAas)
+        }
+      }
+    }
+  }
 }
 
 @Composable
@@ -468,7 +524,6 @@ fun PreviewUserAddressLayoutNoAddress() {
       setProfileAddress = { _ -> },
       learnMore = {},
       shareViaProfile = remember { mutableStateOf(false) },
-      onCloseHandler = remember { mutableStateOf({}) },
       sendEmail = {},
     )
   }
@@ -502,7 +557,6 @@ fun PreviewUserAddressLayoutAddressCreated() {
       setProfileAddress = { _ -> },
       learnMore = {},
       shareViaProfile = remember { mutableStateOf(false) },
-      onCloseHandler = remember { mutableStateOf({}) },
       sendEmail = {},
     )
   }
