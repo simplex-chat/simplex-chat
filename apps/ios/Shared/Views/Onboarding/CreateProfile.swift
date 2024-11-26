@@ -168,7 +168,9 @@ struct CreateFirstProfile: View {
 
             VStack(spacing: 10) {
                 createProfileButton()
-                onboardingButtonPlaceholder()
+                if !focusDisplayName {
+                    onboardingButtonPlaceholder()
+                }
             }
         }
         .onAppear() {
