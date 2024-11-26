@@ -1323,4 +1323,24 @@
     <string name="servers_info_previously_connected_servers_section_header">Các máy chủ đã kết nối trước đó</string>
     <string name="privacy_redefined">Định hình lại sự riêng tư</string>
     <string name="privacy_and_security">Quyền riêng tư &amp; bảo mật</string>
+    <string name="profile_update_will_be_sent_to_contacts">Bản cập nhật hồ sơ sẽ được gửi đến các liên hệ của bạn.</string>
+    <string name="prohibit_message_reactions">Không cho phép thả cảm xúc tin nhắn.</string>
+    <string name="prohibit_calls">Không cho phép các cuộc gọi thoại/video.</string>
+    <string name="onboarding_notifications_mode_title">Thông báo riêng tư</string>
+    <string name="settings_section_title_profile_images">Các ảnh đại diện</string>
+    <string name="profile_password">Mật khẩu hồ sơ</string>
+    <string name="note_folder_local_display_name">Ghi chú riêng tư</string>
+    <string name="prohibit_message_deletion">Không cho phép xóa tin nhắn mà không thể phục hồi.</string>
+    <string name="settings_section_title_private_message_routing">ĐỊNH TUYẾN TIN NHẮN RIÊNG TƯ</string>
+    <string name="display_name__field">Tên hồ sơ:</string>
+    <string name="image_descr_profile_image">ảnh đại diện</string>
+    <string name="users_delete_with_connections">Hồ sơ và các kết nối máy chủ</string>
+    <string name="icon_descr_profile_image_placeholder">chỗ để ảnh đại diện</string>
+    <string name="v4_5_private_filenames">Tên tệp riêng tư</string>
+    <string name="v5_8_private_routing">Định tuyến tin nhắn riêng tư 🚀</string>
+    <string name="private_routing_error">Lỗi định tuyến riêng tư</string>
+    <string name="v5_5_private_notes">Ghi chú riêng tư</string>
+    <string name="network_smp_proxy_mode_private_routing">Định tuyến riêng tư</string>
+    <string name="settings_section_title_user_theme">Chủ đề hồ sơ</string>
+    <string name="prohibit_message_reactions_group">Không cho phép thả cảm xúc tin nhắn.</string>
 </resources>
