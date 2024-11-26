@@ -16,25 +16,19 @@ struct UserAddressView: View {
     @EnvironmentObject var theme: AppTheme
     @State var shareViaProfile = false
     @State var autoCreate = false
-    @State private var aas = AutoAcceptState()
-    @State private var savedAAS = AutoAcceptState()
-    @State private var ignoreShareViaProfileChange = false
     @State private var showMailView = false
     @State private var mailViewResult: Result<MFMailComposeResult, Error>? = nil
     @State private var alert: UserAddressAlert?
     @State private var progressIndicator = false
-    @FocusState private var keyboardVisible: Bool
-
+    
     private enum UserAddressAlert: Identifiable {
         case deleteAddress
-        case profileAddress(on: Bool)
         case shareOnCreate
         case error(title: LocalizedStringKey, error: LocalizedStringKey?)
-
+        
         var id: String {
             switch self {
             case .deleteAddress: return "deleteAddress"
-            case let .profileAddress(on): return "profileAddress \(on)"
             case .shareOnCreate: return "shareOnCreate"
             case let .error(title, _): return "error \(title)"
             }
@@ -43,8 +37,8 @@ struct UserAddressView: View {
     
     var body: some View {
         ZStack {
-            userAddressScrollView()
-
+            userAddressView()
+            
             if progressIndicator {
                 ZStack {
                     if chatModel.userAddress != nil {
@@ -63,35 +57,11 @@ struct UserAddressView: View {
             }
         }
     }
-
-    @Namespace private var bottomID
-
-    private func userAddressScrollView() -> some View {
-        ScrollViewReader { proxy in
-            userAddressView()
-                .onChange(of: keyboardVisible) { _ in
-                    if keyboardVisible {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            withAnimation {
-                                proxy.scrollTo(bottomID, anchor: .top)
-                            }
-                        }
-                    }
-                }
-        }
-    }
-
+    
     private func userAddressView() -> some View {
         List {
             if let userAddress = chatModel.userAddress {
                 existingAddressView(userAddress)
-                    .onAppear {
-                        aas = AutoAcceptState(userAddress: userAddress)
-                        savedAAS = aas
-                    }
-                    .onChange(of: aas.enable) { _ in
-                        if !aas.enable { aas = AutoAcceptState() }
-                    }
             } else {
                 Section {
                     createAddressButton()
@@ -99,14 +69,14 @@ struct UserAddressView: View {
                     Text("For social media")
                         .foregroundColor(theme.colors.secondary)
                 }
-
+                
                 Section {
                     createOneTimeLinkButton()
                 } header: {
                     Text("Or to share privately")
                         .foregroundColor(theme.colors.secondary)
                 }
-
+                
                 Section {
                     learnMoreButton()
                 }
@@ -119,8 +89,8 @@ struct UserAddressView: View {
                     title: Text("Delete address?"),
                     message:
                         shareViaProfile
-                        ? Text("All your contacts will remain connected. Profile update will be sent to your contacts.")
-                        : Text("All your contacts will remain connected."),
+                    ? Text("All your contacts will remain connected. Profile update will be sent to your contacts.")
+                    : Text("All your contacts will remain connected."),
                     primaryButton: .destructive(Text("Delete")) {
                         progressIndicator = true
                         Task {
@@ -139,36 +109,12 @@ struct UserAddressView: View {
                         }
                     }, secondaryButton: .cancel()
                 )
-            case let .profileAddress(on):
-                if on {
-                    return Alert(
-                        title: Text("Share address with contacts?"),
-                        message: Text("Profile update will be sent to your contacts."),
-                        primaryButton: .default(Text("Share")) {
-                            setProfileAddress(on)
-                        }, secondaryButton: .cancel() {
-                            ignoreShareViaProfileChange = true
-                            shareViaProfile = !on
-                        }
-                    )
-                } else {
-                    return Alert(
-                        title: Text("Stop sharing address?"),
-                        message: Text("Profile update will be sent to your contacts."),
-                        primaryButton: .default(Text("Stop sharing")) {
-                            setProfileAddress(on)
-                        }, secondaryButton: .cancel() {
-                            ignoreShareViaProfileChange = true
-                            shareViaProfile = !on
-                        }
-                    )
-                }
             case .shareOnCreate:
                 return Alert(
                     title: Text("Share address with contacts?"),
                     message: Text("Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts."),
                     primaryButton: .default(Text("Share")) {
-                        setProfileAddress(true)
+                        setProfileAddress($progressIndicator, true)
                         shareViaProfile = true
                     }, secondaryButton: .cancel()
                 )
@@ -177,7 +123,7 @@ struct UserAddressView: View {
             }
         }
     }
-
+    
     @ViewBuilder private func existingAddressView(_ userAddress: UserContactLink) -> some View {
         Section {
             SimpleXLinkQRCode(uri: userAddress.connReqContact)
@@ -186,32 +132,31 @@ struct UserAddressView: View {
             // if MFMailComposeViewController.canSendMail() {
             //     shareViaEmailButton(userAddress)
             // }
-            addressSettingsButton()
+            addressSettingsButton(userAddress)
         } header: {
             Text("For social media")
                 .foregroundColor(theme.colors.secondary)
         }
-
+        
         Section {
             createOneTimeLinkButton()
         } header: {
             Text("Or to share privately")
                 .foregroundColor(theme.colors.secondary)
         }
-
+        
         Section {
             learnMoreButton()
         }
-
+        
         Section {
             deleteAddressButton()
         } footer: {
             Text("Your contacts will remain connected.")
                 .foregroundColor(theme.colors.secondary)
         }
-        .id(bottomID)
     }
-
+    
     private func createAddressButton() -> some View {
         Button {
             createAddress()
@@ -238,7 +183,7 @@ struct UserAddressView: View {
             }
         }
     }
-
+    
     private func createOneTimeLinkButton() -> some View {
         NavigationLink {
             NewChatView(selection: .invite)
@@ -250,7 +195,7 @@ struct UserAddressView: View {
                 .foregroundColor(theme.colors.primary)
         }
     }
-
+    
     private func deleteAddressButton() -> some View {
         Button(role: .destructive) {
             alert = .deleteAddress
@@ -259,7 +204,7 @@ struct UserAddressView: View {
                 .foregroundColor(Color.red)
         }
     }
-
+    
     private func shareQRCodeButton(_ userAddress: UserContactLink) -> some View {
         Button {
             showShareSheet(items: [simplexChatLink(userAddress.connReqContact)])
@@ -269,7 +214,7 @@ struct UserAddressView: View {
             }
         }
     }
-
+    
     private func shareViaEmailButton(_ userAddress: UserContactLink) -> some View {
         Button {
             showMailView = true
@@ -299,51 +244,18 @@ struct UserAddressView: View {
             }
         }
     }
-
-    private func addressSettingsButton() -> some View {
+    
+    private func addressSettingsButton(_ userAddress: UserContactLink) -> some View {
         NavigationLink {
-            addressSettingsView()
+            UserAddressSettingsView(shareViaProfile: $shareViaProfile)
                 .navigationTitle("Address settings")
                 .navigationBarTitleDisplayMode(.large)
                 .modifier(ThemedBackground(grouped: true))
-                .onDisappear {
-                    if savedAAS != aas {
-                        showAlert(
-                            title: NSLocalizedString("Auto-accept settings", comment: "alert title"),
-                            message: NSLocalizedString("Settings were changed.", comment: "alert message"),
-                            buttonTitle: NSLocalizedString("Save", comment: "alert button"),
-                            buttonAction: saveAAS,
-                            cancelButton: true
-                        )
-                    }
-                }
         } label: {
             Text("Address settings")
         }
     }
-
-    private func addressSettingsView() -> some View {
-        List {
-            Section {
-                shareWithContactsButton()
-                autoAcceptToggle()
-            }
-
-            if aas.enable {
-                autoAcceptSection()
-            }
-        }
-    }
-
-    private func autoAcceptToggle() -> some View {
-        settingsRow("checkmark", color: theme.colors.secondary) {
-            Toggle("Auto-accept", isOn: $aas.enable)
-                .onChange(of: aas.enable) { _ in
-                    saveAAS()
-                }
-        }
-    }
-
+    
     private func learnMoreButton() -> some View {
         NavigationLink {
             UserAddressLearnMore()
@@ -356,6 +268,116 @@ struct UserAddressView: View {
             }
         }
     }
+}
+
+private struct AutoAcceptState: Equatable {
+    var enable = false
+    var incognito = false
+    var welcomeText = ""
+
+    init(enable: Bool = false, incognito: Bool = false, welcomeText: String = "") {
+        self.enable = enable
+        self.incognito = incognito
+        self.welcomeText = welcomeText
+    }
+
+    init(userAddress: UserContactLink) {
+        if let aa = userAddress.autoAccept {
+            enable = true
+            incognito = aa.acceptIncognito
+            if let msg = aa.autoReply {
+                welcomeText = msg.text
+            } else {
+                welcomeText = ""
+            }
+        } else {
+            enable = false
+            incognito = false
+            welcomeText = ""
+        }
+    }
+
+    var autoAccept: AutoAccept? {
+        if enable {
+            var autoReply: MsgContent? = nil
+            let s = welcomeText.trimmingCharacters(in: .whitespacesAndNewlines)
+            if s != "" { autoReply = .text(s) }
+            return AutoAccept(acceptIncognito: incognito, autoReply: autoReply)
+        }
+        return nil
+    }
+}
+
+private func setProfileAddress(_ progressIndicator: Binding<Bool>, _ on: Bool) {
+    progressIndicator.wrappedValue = true
+    Task {
+        do {
+            if let u = try await apiSetProfileAddress(on: on) {
+                DispatchQueue.main.async {
+                    ChatModel.shared.updateUser(u)
+                }
+            }
+            await MainActor.run { progressIndicator.wrappedValue = false }
+        } catch let error {
+            logger.error("apiSetProfileAddress: \(responseError(error))")
+            await MainActor.run { progressIndicator.wrappedValue = false }
+        }
+    }
+}
+
+struct UserAddressSettingsView: View {
+    @Environment(\.dismiss) var dismiss: DismissAction
+    @EnvironmentObject var theme: AppTheme
+    @Binding var shareViaProfile: Bool
+    @State private var aas = AutoAcceptState()
+    @State private var savedAAS = AutoAcceptState()
+    @State private var ignoreShareViaProfileChange = false
+    @State private var progressIndicator = false
+    @FocusState private var keyboardVisible: Bool
+
+    var body: some View {
+        ZStack {
+            if let userAddress = ChatModel.shared.userAddress {
+                userAddressSettingsView()
+                    .onAppear {
+                        aas = AutoAcceptState(userAddress: userAddress)
+                        savedAAS = aas
+                    }
+                    .onChange(of: aas.enable) { aasEnabled in
+                        if !aasEnabled { aas = AutoAcceptState() }
+                    }
+                    .onDisappear {
+                        if savedAAS != aas {
+                            showAlert(
+                                title: NSLocalizedString("Auto-accept settings", comment: "alert title"),
+                                message: NSLocalizedString("Settings were changed.", comment: "alert message"),
+                                buttonTitle: NSLocalizedString("Save", comment: "alert button"),
+                                buttonAction: saveAAS,
+                                cancelButton: true
+                            )
+                        }
+                    }
+            } else {
+                Text(String("Error opening address settings"))
+            }
+            if progressIndicator {
+                ProgressView().scaleEffect(2)
+            }
+        }
+    }
+
+    private func userAddressSettingsView() -> some View {
+        List {
+            Section {
+                shareWithContactsButton()
+                autoAcceptToggle()
+            }
+
+            if aas.enable {
+                autoAcceptSection()
+            }
+        }
+    }
 
     private func shareWithContactsButton() -> some View {
         settingsRow("person", color: theme.colors.secondary) {
@@ -364,68 +386,66 @@ struct UserAddressView: View {
                     if ignoreShareViaProfileChange {
                         ignoreShareViaProfileChange = false
                     } else {
-                        alert = .profileAddress(on: on)
+                        if on {
+                            showAlert(
+                                NSLocalizedString("Share address with contacts?", comment: "alert title"),
+                                message: NSLocalizedString("Profile update will be sent to your contacts.", comment: "alert message"),
+                                actions: {[
+                                    UIAlertAction(
+                                        title: NSLocalizedString("Cancel", comment: "alert action"),
+                                        style: .default,
+                                        handler: { _ in
+                                            ignoreShareViaProfileChange = true
+                                            shareViaProfile = !on
+                                        }
+                                    ),
+                                    UIAlertAction(
+                                        title: NSLocalizedString("Share", comment: "alert action"),
+                                        style: .default,
+                                        handler: { _ in
+                                            setProfileAddress($progressIndicator, on)
+                                        }
+                                    )
+                                ]}
+                            )
+                        } else {
+                            showAlert(
+                                NSLocalizedString("Stop sharing address?", comment: "alert title"),
+                                message: NSLocalizedString("Profile update will be sent to your contacts.", comment: "alert message"),
+                                actions: {[
+                                    UIAlertAction(
+                                        title: NSLocalizedString("Cancel", comment: "alert action"),
+                                        style: .default,
+                                        handler: { _ in
+                                            ignoreShareViaProfileChange = true
+                                            shareViaProfile = !on
+                                        }
+                                    ),
+                                    UIAlertAction(
+                                        title: NSLocalizedString("Stop sharing", comment: "alert action"),
+                                        style: .default,
+                                        handler: { _ in
+                                            setProfileAddress($progressIndicator, on)
+                                        }
+                                    )
+                                ]}
+                            )
+                        }
                     }
                 }
         }
     }
 
-    private func setProfileAddress(_ on: Bool) {
-        progressIndicator = true
-        Task {
-            do {
-                if let u = try await apiSetProfileAddress(on: on) {
-                    DispatchQueue.main.async {
-                        chatModel.updateUser(u)
-                    }
+    private func autoAcceptToggle() -> some View {
+        settingsRow("checkmark", color: theme.colors.secondary) {
+            Toggle("Auto-accept", isOn: $aas.enable)
+                .onChange(of: aas.enable) { _ in
+                    saveAAS()
                 }
-                await MainActor.run { progressIndicator = false }
-            } catch let error {
-                logger.error("UserAddressView apiSetProfileAddress: \(responseError(error))")
-                await MainActor.run { progressIndicator = false }
-            }
-        }
-    }
-    
-    private struct AutoAcceptState: Equatable {
-        var enable = false
-        var incognito = false
-        var welcomeText = ""
-
-        init(enable: Bool = false, incognito: Bool = false, welcomeText: String = "") {
-            self.enable = enable
-            self.incognito = incognito
-            self.welcomeText = welcomeText
-        }
-
-        init(userAddress: UserContactLink) {
-            if let aa = userAddress.autoAccept {
-                enable = true
-                incognito = aa.acceptIncognito
-                if let msg = aa.autoReply {
-                    welcomeText = msg.text
-                } else {
-                    welcomeText = ""
-                }
-            } else {
-                enable = false
-                incognito = false
-                welcomeText = ""
-            }
-        }
-
-        var autoAccept: AutoAccept? {
-            if enable {
-                var autoReply: MsgContent? = nil
-                let s = welcomeText.trimmingCharacters(in: .whitespacesAndNewlines)
-                if s != "" { autoReply = .text(s) }
-                return AutoAccept(acceptIncognito: incognito, autoReply: autoReply)
-            }
-            return nil
         }
     }
 
-    @ViewBuilder private func autoAcceptSection() -> some View {
+    private func autoAcceptSection() -> some View {
         Section {
             acceptIncognitoToggle()
             welcomeMessageEditor()
@@ -477,7 +497,7 @@ struct UserAddressView: View {
         Task {
             do {
                 if let address = try await userAddressAutoAccept(aas.autoAccept) {
-                    chatModel.userAddress = address
+                    ChatModel.shared.userAddress = address
                     savedAAS = aas
                 }
             } catch let error {
