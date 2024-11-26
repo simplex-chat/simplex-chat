@@ -44,17 +44,6 @@ struct UserAddressView: View {
     var body: some View {
         ZStack {
             userAddressScrollView()
-                .onDisappear {
-                    if savedAAS != aas {
-                        showAlert(
-                            title: NSLocalizedString("Auto-accept settings", comment: "alert title"),
-                            message: NSLocalizedString("Settings were changed.", comment: "alert message"),
-                            buttonTitle: NSLocalizedString("Save", comment: "alert button"),
-                            buttonAction: saveAAS,
-                            cancelButton: true
-                        )
-                    }
-                }
 
             if progressIndicator {
                 ZStack {
@@ -140,10 +129,6 @@ struct UserAddressView: View {
                                     DispatchQueue.main.async {
                                         chatModel.userAddress = nil
                                         chatModel.updateUser(u)
-                                        if shareViaProfile {
-                                            ignoreShareViaProfileChange = true
-                                            shareViaProfile = false
-                                        }
                                     }
                                 }
                                 await MainActor.run { progressIndicator = false }
@@ -184,7 +169,6 @@ struct UserAddressView: View {
                     message: Text("Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts."),
                     primaryButton: .default(Text("Share")) {
                         setProfileAddress(true)
-                        ignoreShareViaProfileChange = true
                         shareViaProfile = true
                     }, secondaryButton: .cancel()
                 )
@@ -199,19 +183,24 @@ struct UserAddressView: View {
             SimpleXLinkQRCode(uri: userAddress.connReqContact)
                 .id("simplex-contact-address-qrcode-\(userAddress.connReqContact)")
             shareQRCodeButton(userAddress)
-            if MFMailComposeViewController.canSendMail() {
-                shareViaEmailButton(userAddress)
-            }
-            shareWithContactsButton()
-            autoAcceptToggle()
-            learnMoreButton()
+            // if MFMailComposeViewController.canSendMail() {
+            //     shareViaEmailButton(userAddress)
+            // }
+            addressSettingsButton()
         } header: {
-            Text("Address")
+            Text("For social media")
                 .foregroundColor(theme.colors.secondary)
         }
 
-        if aas.enable {
-            autoAcceptSection()
+        Section {
+            createOneTimeLinkButton()
+        } header: {
+            Text("Or to share privately")
+                .foregroundColor(theme.colors.secondary)
+        }
+
+        Section {
+            learnMoreButton()
         }
 
         Section {
@@ -307,6 +296,41 @@ struct UserAddressView: View {
                     alert = .error(title: a.title, error: a.message)
                 }
                 mailViewResult = nil
+            }
+        }
+    }
+
+    private func addressSettingsButton() -> some View {
+        NavigationLink {
+            addressSettingsView()
+                .navigationTitle("Address settings")
+                .navigationBarTitleDisplayMode(.large)
+                .modifier(ThemedBackground(grouped: true))
+                .onDisappear {
+                    if savedAAS != aas {
+                        showAlert(
+                            title: NSLocalizedString("Auto-accept settings", comment: "alert title"),
+                            message: NSLocalizedString("Settings were changed.", comment: "alert message"),
+                            buttonTitle: NSLocalizedString("Save", comment: "alert button"),
+                            buttonAction: saveAAS,
+                            cancelButton: true
+                        )
+                    }
+                }
+        } label: {
+            Text("Address settings")
+        }
+    }
+
+    private func addressSettingsView() -> some View {
+        List {
+            Section {
+                shareWithContactsButton()
+                autoAcceptToggle()
+            }
+
+            if aas.enable {
+                autoAcceptSection()
             }
         }
     }
