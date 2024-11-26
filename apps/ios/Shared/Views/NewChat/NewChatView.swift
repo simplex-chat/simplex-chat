@@ -45,32 +45,33 @@ enum NewChatOption: Identifiable {
     var id: Self { self }
 }
 
-func cleanupPendingConnection(contactConnection: PendingContactConnection?) -> SomeAlert? {
-    var alert: SomeAlert? = nil
-
-    if !(ChatModel.shared.showingInvitation?.connChatUsed ?? true),
-       let conn = contactConnection {
-        alert = SomeAlert(
-            alert: Alert(
-                title: Text("Keep unused invitation?"),
-                message: Text("You can view invitation link again in connection details."),
-                primaryButton: .default(Text("Keep")) {},
-                secondaryButton: .destructive(Text("Delete")) {
-                    Task {
-                        await deleteChat(Chat(
-                            chatInfo: .contactConnection(contactConnection: conn),
-                            chatItems: []
-                        ))
+func showKeepInvitationAlert() {
+    if let showingInvitation = ChatModel.shared.showingInvitation,
+       !showingInvitation.connChatUsed {
+        showAlert(
+            NSLocalizedString("Keep unused invitation?", comment: "alert title"),
+            message: NSLocalizedString("You can view invitation link again in connection details.", comment: "alert message"),
+            actions: {[
+                UIAlertAction(
+                    title: NSLocalizedString("Keep", comment: "alert action"),
+                    style: .default
+                ),
+                UIAlertAction(
+                    title: NSLocalizedString("Delete", comment: "alert action"),
+                    style: .destructive,
+                    handler: { _ in
+                        Task {
+                            await deleteChat(Chat(
+                                chatInfo: .contactConnection(contactConnection: showingInvitation.pcc),
+                                chatItems: []
+                            ))
+                        }
                     }
-                }
-            ),
-            id: "keepUnusedInvitation"
+                )
+            ]}
         )
     }
-    
     ChatModel.shared.showingInvitation = nil
-
-    return alert
 }
 
 struct NewChatView: View {
@@ -84,13 +85,12 @@ struct NewChatView: View {
     @State var choosingProfile = false
     @State private var pastedLink: String = ""
     @State private var alert: NewChatViewAlert?
-    @Binding var parentAlert: SomeAlert?
-    @Binding var contactConnection: PendingContactConnection?
+    @State private var contactConnection: PendingContactConnection? = nil
 
     var body: some View {
         VStack(alignment: .leading) {
             Picker("New chat", selection: $selection) {
-                Label("Add contact", systemImage: "link")
+                Label("1-time link", systemImage: "link")
                     .tag(NewChatOption.invite)
                 Label("Connect via link", systemImage: "qrcode")
                     .tag(NewChatOption.connect)
@@ -157,7 +157,7 @@ struct NewChatView: View {
         }
         .onDisappear {
             if !choosingProfile {
-                parentAlert = cleanupPendingConnection(contactConnection: contactConnection)
+                showKeepInvitationAlert()
                 contactConnection = nil
             }
         }
@@ -197,7 +197,7 @@ struct NewChatView: View {
                 if let (connReq, pcc) = r {
                     await MainActor.run {
                         m.updateContactConnection(pcc)
-                        m.showingInvitation = ShowingInvitation(connId: pcc.id, connChatUsed: false)
+                        m.showingInvitation = ShowingInvitation(pcc: pcc, connChatUsed: false)
                         connReqInvitation = connReq
                         contactConnection = pcc
                     }
@@ -1278,9 +1278,7 @@ struct NewChatView_Previews: PreviewProvider {
         @State var contactConnection: PendingContactConnection? = nil
 
         NewChatView(
-            selection: .invite,
-            parentAlert: $parentAlert,
-            contactConnection: $contactConnection
+            selection: .invite
         )
     }
 }
