@@ -845,7 +845,7 @@ final class ChatModel: ObservableObject {
     }
 
     func dismissConnReqView(_ id: String) {
-        if id == showingInvitation?.connId {
+        if id == showingInvitation?.pcc.id {
             markShowingInvitationUsed()
             dismissAllSheets()
         }
@@ -898,7 +898,7 @@ final class ChatModel: ObservableObject {
 }
 
 struct ShowingInvitation {
-    var connId: String
+    var pcc: PendingContactConnection
     var connChatUsed: Bool
 }
 
