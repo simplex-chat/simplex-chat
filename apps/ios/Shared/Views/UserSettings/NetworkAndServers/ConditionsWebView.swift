@@ -12,9 +12,28 @@ import WebKit
 struct ConditionsWebView: UIViewRepresentable {
     @State var html: String
     @EnvironmentObject var theme: AppTheme
+    @State var pageLoaded = false
 
     func makeUIView(context: Context) -> WKWebView {
         let view = WKWebView()
+        view.backgroundColor = .clear
+        view.isOpaque = false
+        view.navigationDelegate = context.coordinator
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            // just to make sure that even if updateUIView will not be called for any reason, the page
+            // will be rendered anyway
+            if !pageLoaded {
+                loadPage(view)
+            }
+        }
+        return view
+    }
+
+    func updateUIView(_ view: WKWebView, context: Context) {
+        loadPage(view)
+    }
+
+    private func loadPage(_ webView: WKWebView) {
         let styles = """
         <style>
         body {
@@ -31,15 +50,11 @@ struct ConditionsWebView: UIViewRepresentable {
         </style>
         """
         let head = "<head><meta name='viewport' content='width=device-width, initial-scale=1.0, minimum-scale=1.0, user-scalable=no'>\(styles)</head>"
-        logger.debug("LALAL HTML \(head + html)")
-        view.loadHTMLString(head + html, baseURL: nil)
-        view.backgroundColor = .clear
-        view.isOpaque = false
-        view.navigationDelegate = context.coordinator
-        return view
+        webView.loadHTMLString(head + html, baseURL: nil)
+        DispatchQueue.main.async {
+            pageLoaded = true
+        }
     }
-
-    func updateUIView(_ downView: WKWebView, context: Context) {}
 
     func makeCoordinator() -> Cordinator {
         Cordinator()
