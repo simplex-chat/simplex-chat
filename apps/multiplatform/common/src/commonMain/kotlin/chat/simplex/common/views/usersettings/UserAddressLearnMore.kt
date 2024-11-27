@@ -36,7 +36,7 @@ fun UserAddressLearnMore(showCreateAddressButton: Boolean = false) {
     ReadableText(MR.strings.share_simplex_address_on_social_media)
     ReadableText(MR.strings.you_wont_lose_your_contacts_if_delete_address)
 
-    Row {
+    Row(Modifier.padding(top = DEFAULT_PADDING_HALF)) {
       Icon(painterResource(MR.images.ic_add_link), null, tint = MaterialTheme.colors.secondary)
       Spacer(Modifier.width(DEFAULT_PADDING_HALF))
       ReadableText(MR.strings.share_1_time_link_with_a_friend, style = MaterialTheme.typography.h3.copy(fontWeight = FontWeight.Bold))
@@ -45,7 +45,7 @@ fun UserAddressLearnMore(showCreateAddressButton: Boolean = false) {
     ReadableText(MR.strings.you_can_set_connection_name_to_remember)
 
     if (!showCreateAddressButton) {
-      Row {
+      Row(Modifier.padding(top = DEFAULT_PADDING_HALF)) {
         Icon(painterResource(MR.images.ic_shield), null, tint = MaterialTheme.colors.secondary)
         Spacer(Modifier.width(DEFAULT_PADDING_HALF))
         ReadableText(MR.strings.connection_security, style = MaterialTheme.typography.h3.copy(fontWeight = FontWeight.Bold))
