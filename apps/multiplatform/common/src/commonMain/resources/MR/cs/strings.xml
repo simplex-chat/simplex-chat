@@ -631,8 +631,7 @@
     <string name="network_use_onion_hosts_no_desc">Onion hostitelé nebudou použiti.</string>
     <string name="network_session_mode_transport_isolation">Izolace přenosu</string>
     <string name="network_session_mode_user_description"><![CDATA[A separate TCP connection (and SOCKS credential) will be used <b>for each chat profile you have in the app</b>.]]></string>
-    <string name="network_session_mode_entity_description">Oddělit TCP připojení (a SOCKS pověření) bude použito <b>pro všechny kontakty a členy skupin</b>.
-\n<b>Upozornění</b>: Pokud máte mnoho připojení, může být spotřeba baterie a provoz podstatně vyšší a některá připojení mohou selhat.</string>
+    <string name="network_session_mode_entity_description">Oddělit TCP připojení (a SOCKS pověření) bude použito <b>pro všechny kontakty a členy skupin</b>. \n<b>Upozornění</b>: Pokud máte mnoho připojení, může být spotřeba baterie a provoz podstatně vyšší a některá připojení mohou selhat.</string>
     <string name="appearance_settings">Vzhled</string>
     <string name="app_version_title">Verze aplikace</string>
     <string name="app_version_name">Verze aplikace: v%s</string>
