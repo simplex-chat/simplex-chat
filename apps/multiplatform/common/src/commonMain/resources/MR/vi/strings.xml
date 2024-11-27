@@ -1324,13 +1324,13 @@
     <string name="privacy_redefined">Định hình lại sự riêng tư</string>
     <string name="privacy_and_security">Quyền riêng tư &amp; bảo mật</string>
     <string name="profile_update_will_be_sent_to_contacts">Bản cập nhật hồ sơ sẽ được gửi đến các liên hệ của bạn.</string>
-    <string name="prohibit_message_reactions">Không cho phép thả cảm xúc tin nhắn.</string>
-    <string name="prohibit_calls">Không cho phép các cuộc gọi thoại/video.</string>
+    <string name="prohibit_message_reactions">Cấm thả cảm xúc tin nhắn.</string>
+    <string name="prohibit_calls">Cấm các cuộc gọi thoại/video.</string>
     <string name="onboarding_notifications_mode_title">Thông báo riêng tư</string>
     <string name="settings_section_title_profile_images">Các ảnh đại diện</string>
     <string name="profile_password">Mật khẩu hồ sơ</string>
     <string name="note_folder_local_display_name">Ghi chú riêng tư</string>
-    <string name="prohibit_message_deletion">Không cho phép xóa tin nhắn mà không thể phục hồi.</string>
+    <string name="prohibit_message_deletion">Cấm xóa tin nhắn mà không thể phục hồi.</string>
     <string name="settings_section_title_private_message_routing">ĐỊNH TUYẾN TIN NHẮN RIÊNG TƯ</string>
     <string name="display_name__field">Tên hồ sơ:</string>
     <string name="image_descr_profile_image">ảnh đại diện</string>
@@ -1342,5 +1342,19 @@
     <string name="v5_5_private_notes">Ghi chú riêng tư</string>
     <string name="network_smp_proxy_mode_private_routing">Định tuyến riêng tư</string>
     <string name="settings_section_title_user_theme">Chủ đề hồ sơ</string>
-    <string name="prohibit_message_reactions_group">Không cho phép thả cảm xúc tin nhắn.</string>
+    <string name="prohibit_message_reactions_group">Cấm thả cảm xúc tin nhắn.</string>
+    <string name="network_option_protocol_timeout_per_kb">Thời gian chờ giao thức trên mỗi KB</string>
+    <string name="v4_6_hidden_chat_profiles_descr">Bảo vệ các hồ sơ trò chuyện của bạn bằng mật khẩu!</string>
+    <string name="v5_8_private_routing_descr">Bảo vệ địa chỉ IP của bạn khỏi các máy chủ tiếp tin được chọn bởi liên hệ của bạn.\nBật trong cài đặt *Mạng &amp; các máy chủ*</string>
+    <string name="protect_ip_address">Bảo vệ địa chỉ IP</string>
+    <string name="prohibit_direct_messages">Cấm gửi tin nhắn trực tiếp tới các thành viên.</string>
+    <string name="prohibit_sending_voice_messages">Cấm gửi tin nhắn thoại.</string>
+    <string name="network_option_protocol_timeout">Thời gian chờ giao thức</string>
+    <string name="prohibit_sending_disappearing">Cấm gửi tin nhắn tự xóa.</string>
+    <string name="protect_app_screen">Bảo vệ màn hình ứng dụng</string>
+    <string name="prohibit_sending_files">Cấm gửi tệp và phương tiện truyền thông.</string>
+    <string name="prohibit_sending_voice">Cấm gửi tin nhắn thoại.</string>
+    <string name="prohibit_sending_disappearing_messages">Cấm gửi tin nhắn tự xóa.</string>
+    <string name="prohibit_sending_simplex_links">Cấm gửi đường dẫn SimpleX</string>
+    <string name="proxied">Được proxy</string>
 </resources>
