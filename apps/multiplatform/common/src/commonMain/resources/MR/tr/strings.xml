@@ -71,8 +71,7 @@
     <string name="allow_verb">İzin ver</string>
     <string name="v5_0_app_passcode">Uygulama erişim kodu</string>
     <string name="network_session_mode_user_description"><![CDATA[<b>Uygulamadaki her konuşma profliniz için</b> ayrı bir TCP bağlantısı (ve SOCKS kimliği) kullanılacaktır.]]></string>
-    <string name="network_session_mode_entity_description"><b>Konuştuğun kişilerin ve grup üyelerinin tamamı için</b> ayrı bir TCP bağlantısı (ve SOCKS kimliği) kullanılacaktır.
-\n<b>Bilgin olsun</b>: Çok sayıda bağlantın varsa pilin ve veri kullanımın önemli ölçüde artabilir ve bazı bağlantılar başarısız olabilir.</string>
+    <string name="network_session_mode_entity_description"><b>Konuştuğun kişilerin ve grup üyelerinin tamamı için</b> ayrı bir TCP bağlantısı (ve SOCKS kimliği) kullanılacaktır. \n<b>Bilgin olsun</b>: Çok sayıda bağlantın varsa pilin ve veri kullanımın önemli ölçüde artabilir ve bazı bağlantılar başarısız olabilir.</string>
     <string name="save_and_notify_group_members">Kaydet ve grup üyelerini bilgilendir</string>
     <string name="notifications_mode_off">Uygulama açıkken çalışır</string>
     <string name="search_verb">Ara</string>
