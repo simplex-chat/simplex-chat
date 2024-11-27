@@ -998,9 +998,7 @@
     <string name="network_session_mode_entity">Verbindung</string>
     <string name="network_session_mode_user">Chat-Profil</string>
     <string name="delete_files_and_media_for_all_users">Dateien für alle Chat-Profile löschen</string>
-    <string name="network_session_mode_entity_description"><b>Für jeden Kontakt und jedes Gruppenmitglied</b> wird eine separate TCP-Verbindung (und SOCKS-Berechtigung) genutzt.
-\n
-\n<b>Bitte beachten Sie</b>: Wenn Sie viele Verbindungen haben, können Akkuverbrauch und Datennutzung wesentlich höher ausfallen und einige Verbindungen scheitern.</string>
+    <string name="network_session_mode_entity_description"><b>Für jeden Kontakt und jedes Gruppenmitglied</b> wird eine separate TCP-Verbindung (und SOCKS-Berechtigung) genutzt. \n \n<b>Bitte beachten Sie</b>: Wenn Sie viele Verbindungen haben, können Akkuverbrauch und Datennutzung wesentlich höher ausfallen und einige Verbindungen scheitern.</string>
     <string name="network_session_mode_user_description"><![CDATA[<b>Für jedes von Ihnen in der App genutzte Chat-Profil</b> wird eine separate TCP-Verbindung (und SOCKS-Berechtigung) genutzt.]]></string>
     <string name="users_delete_data_only">Nur lokale Profildaten</string>
     <string name="users_delete_with_connections">Profil und Serververbindungen</string>
