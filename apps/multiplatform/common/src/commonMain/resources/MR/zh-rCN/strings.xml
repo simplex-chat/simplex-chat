@@ -113,8 +113,7 @@
     <string name="icon_descr_audio_on">开启音频</string>
     <string name="icon_descr_asked_to_receive">已要求接收图片</string>
     <string name="network_session_mode_user_description"><![CDATA[一个单独的TCP连接（和SOCKS凭证）将被用于<b>，用于您在应用程序中的每个聊天资料</b> 。]]></string>
-    <string name="network_session_mode_entity_description">每个联系人和群组成员 <b>将使用单独的 TCP 连接（和 SOCKS 凭证）</b>。
-\n<b>请注意</b>：如果您有很多连接，您的电池和流量消耗可能会大大增加，并且某些连接可能会失败。</string>
+    <string name="network_session_mode_entity_description">每个联系人和群组成员 <b>将使用单独的 TCP 连接（和 SOCKS 凭证）</b>。 \n<b>请注意</b>：如果您有很多连接，您的电池和流量消耗可能会大大增加，并且某些连接可能会失败。</string>
     <string name="back">返回</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b> 最长续航 </b>。您只会在应用程序运行时收到通知（无后台服务）。]]></string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b> 较长续航 </b>。应用每 10 分钟检查一次消息。您可能会错过来电或者紧急信息。]]></string>
