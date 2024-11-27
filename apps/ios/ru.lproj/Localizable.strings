@@ -3115,7 +3115,7 @@
 "No permission to record voice message" = "Нет разрешения для записи голосового сообщения";
 
 /* No comment provided by engineer. */
-"No push server" = "Локальные";
+"No push server" = "Без сервера нотификаций";
 
 /* No comment provided by engineer. */
 "No received or sent files" = "Нет полученных или отправленных файлов";
