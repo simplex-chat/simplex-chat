@@ -34,13 +34,7 @@ struct AddressCreationCard: View {
                     Text("Your SimpleX address")
                         .font(.title3)
                     Spacer()
-                    HStack(alignment: .center) {
-                        Text("How to use it")
-                        VStack {
-                            Image(systemName: "info.circle")
-                                .foregroundColor(theme.colors.secondary)
-                        }
-                    }
+                    Text("How to use it") + textSpace + Text(Image(systemName: "info.circle")).foregroundColor(theme.colors.secondary)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

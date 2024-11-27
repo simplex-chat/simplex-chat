@@ -151,7 +151,7 @@ struct ContactListNavLink: View {
     }
 
     private var verifiedIcon: Text {
-        (Text(Image(systemName: "checkmark.shield")) + Text(" "))
+        (Text(Image(systemName: "checkmark.shield")) + textSpace)
             .foregroundColor(.secondary)
             .baselineOffset(1)
             .kerning(-2)
