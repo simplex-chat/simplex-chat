@@ -2497,9 +2497,9 @@ Available in v5.1</source>
         <target state="translated">ההעברה הושלמה</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrations: %@" xml:space="preserve" approved="no">
-        <source>Migrations: %@</source>
-        <target state="translated">העברות: %@</target>
+      <trans-unit id="Migrations:" xml:space="preserve" approved="no">
+        <source>Migrations:</source>
+        <target state="translated">העברות:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Moderate" xml:space="preserve" approved="no">

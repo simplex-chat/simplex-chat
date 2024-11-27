@@ -4253,9 +4253,9 @@ This is your link for group %@!</source>
         <target>Přenesení dokončeno</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrations: %@" xml:space="preserve">
-        <source>Migrations: %@</source>
-        <target>Migrace: %@</target>
+      <trans-unit id="Migrations:" xml:space="preserve">
+        <source>Migrations:</source>
+        <target>Migrace:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Moderate" xml:space="preserve">

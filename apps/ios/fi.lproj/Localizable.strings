@@ -2005,7 +2005,7 @@
 "Migration is completed" = "Siirto on valmis";
 
 /* No comment provided by engineer. */
-"Migrations: %@" = "Siirrot: %@";
+"Migrations:" = "Siirrot:";
 
 /* time unit */
 "minutes" = "minuuttia";

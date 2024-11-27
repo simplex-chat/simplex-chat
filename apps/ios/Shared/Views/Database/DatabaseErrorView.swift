@@ -48,7 +48,7 @@ struct DatabaseErrorView: View {
                     }
                 } else {
                     titleText("Encrypted database")
-                    Text("Database passphrase is different from saved in the keychain.")
+                    Text("Database passphrase is required to open chat.")
                         .font(.callout)
                         .foregroundColor(theme.colors.secondary)
                         .multilineTextAlignment(.center)
@@ -141,23 +141,9 @@ struct DatabaseErrorView: View {
     }
 
     private func migrationsText(_ ms: [String]) -> some View {
-        VStack(alignment: .center) {
-            if ms.isEmpty {
-                EmptyView()
-            } else {
-                Text("Migrations")
-                    .font(.subheadline)
-                    .padding(.bottom, 5)
-                ForEach(ms, id: \.self) { m in
-                    HStack(alignment: .top, spacing: 4) {
-                        Text("-").font(.caption).multilineTextAlignment(.center)
-                        Text(m).font(.caption).multilineTextAlignment(.center)
-                    }
-                }
-            }
-        }
-        .padding(.horizontal, 25)
-        .frame(maxWidth: .infinity)
+        (Text("Migrations:").font(.subheadline) + Text(verbatim: "\n") + Text(ms.joined(separator: "\n")).font(.caption))
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 25)
     }
 
     private func databaseKeyField(onSubmit: @escaping () -> Void) -> some View {
@@ -171,7 +157,7 @@ struct DatabaseErrorView: View {
     }
 
     private func saveAndOpenButton() -> some View {
-        Button("Save and open chat") {
+        Button("Save passphrase and open chat") {
             saveAndRunChat()
         }
         .buttonStyle(OnboardingButtonStyle(isDisabled: false))

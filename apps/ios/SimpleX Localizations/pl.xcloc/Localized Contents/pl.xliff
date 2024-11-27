@@ -4548,9 +4548,9 @@ To jest twój link do grupy %@!</target>
         <target>Migracja została zakończona</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrations: %@" xml:space="preserve">
-        <source>Migrations: %@</source>
-        <target>Migracje: %@</target>
+      <trans-unit id="Migrations:" xml:space="preserve">
+        <source>Migrations:</source>
+        <target>Migracje:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Moderate" xml:space="preserve">

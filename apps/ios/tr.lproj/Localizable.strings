@@ -2984,7 +2984,7 @@
 "Migration is completed" = "Geçiş tamamlandı";
 
 /* No comment provided by engineer. */
-"Migrations: %@" = "Geçişler: %@";
+"Migrations:" = "Geçişler:";
 
 /* time unit */
 "minutes" = "dakikalar";

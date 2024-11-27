@@ -1948,7 +1948,7 @@
 "Migration is completed" = "การโยกย้ายเสร็จสมบูรณ์";
 
 /* No comment provided by engineer. */
-"Migrations: %@" = "การย้ายข้อมูล: %@";
+"Migrations:" = "การย้ายข้อมูล";
 
 /* time unit */
 "minutes" = "นาที";

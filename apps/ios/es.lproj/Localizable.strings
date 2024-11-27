@@ -2984,7 +2984,7 @@
 "Migration is completed" = "Migración completada";
 
 /* No comment provided by engineer. */
-"Migrations: %@" = "Migraciones: %@";
+"Migrations:" = "Migraciones:";
 
 /* time unit */
 "minutes" = "minutos";

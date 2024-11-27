@@ -4781,8 +4781,8 @@ Available in v5.1</source>
         <target state="translated">訊息 &amp; 檔案</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrations: %@" xml:space="preserve" approved="no">
-        <source>Migrations: %@</source>
+      <trans-unit id="Migrations:" xml:space="preserve" approved="no">
+        <source>Migrations:</source>
         <target state="translated">遷移：%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

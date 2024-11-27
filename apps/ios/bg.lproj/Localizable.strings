@@ -2510,7 +2510,7 @@
 "Migration is completed" = "Миграцията е завършена";
 
 /* No comment provided by engineer. */
-"Migrations: %@" = "Миграции: %@";
+"Migrations:" = "Миграции:";
 
 /* time unit */
 "minutes" = "минути";

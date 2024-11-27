@@ -2984,7 +2984,7 @@
 "Migration is completed" = "Перемещение данных завершено";
 
 /* No comment provided by engineer. */
-"Migrations: %@" = "Миграции: %@";
+"Migrations:" = "Миграции:";
 
 /* time unit */
 "minutes" = "минут";
