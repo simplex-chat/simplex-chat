@@ -1061,8 +1061,8 @@ func apiRejectContactRequest(contactReqId: Int64) async throws {
     throw r
 }
 
-func apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64)) async throws {
-    try await sendCommandOkResp(.apiChatRead(type: type, id: id, itemRange: itemRange))
+func apiChatRead(type: ChatType, id: Int64) async throws {
+    try await sendCommandOkResp(.apiChatRead(type: type, id: id))
 }
 
 func apiChatItemsRead(type: ChatType, id: Int64, itemIds: [Int64]) async throws {
@@ -1368,15 +1368,13 @@ func apiGetNetworkStatuses() throws -> [ConnNetworkStatus] {
     throw r
 }
 
-func markChatRead(_ chat: Chat, aboveItem: ChatItem? = nil) async {
+func markChatRead(_ chat: Chat) async {
     do {
         if chat.chatStats.unreadCount > 0 {
-            let minItemId = chat.chatStats.minUnreadItemId
-            let itemRange = (minItemId, aboveItem?.id ?? chat.chatItems.last?.id ?? minItemId)
             let cInfo = chat.chatInfo
-            try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: itemRange)
+            try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId)
             await MainActor.run {
-                withAnimation { ChatModel.shared.markChatItemsRead(cInfo, aboveItem: aboveItem) }
+                withAnimation { ChatModel.shared.markChatItemsRead(cInfo) }
             }
         }
         if chat.chatStats.unreadChat {
@@ -1396,17 +1394,6 @@ func markChatUnread(_ chat: Chat, unreadChat: Bool = true) async {
         }
     } catch {
         logger.error("markChatUnread apiChatUnread error: \(responseError(error))")
-    }
-}
-
-func apiMarkChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
-    do {
-        try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: (cItem.id, cItem.id))
-        DispatchQueue.main.async {
-            ChatModel.shared.markChatItemsRead(cInfo, [cItem.id])
-        }
-    } catch {
-        logger.error("apiChatRead error: \(responseError(error))")
     }
 }
 

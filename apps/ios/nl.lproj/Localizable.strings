@@ -65,10 +65,7 @@
 "[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Star on GitHub](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
-"**Add contact**: to create a new invitation link, or connect via a link you received." = "**Contact toevoegen**: om een nieuwe uitnodigingslink aan te maken, of verbinding te maken via een link die u heeft ontvangen.";
-
-/* No comment provided by engineer. */
-"**Add new contact**: to create your one-time QR Code for your contact." = "**Nieuw contact toevoegen**: om uw eenmalige QR-code of link voor uw contact te maken.";
+"**Create 1-time link**: to create and share a new invitation link." = "**Contact toevoegen**: om een nieuwe uitnodigingslink aan te maken, of verbinding te maken via een link die u heeft ontvangen.";
 
 /* No comment provided by engineer. */
 "**Create group**: to create a new group." = "**Groep aanmaken**: om een nieuwe groep aan te maken.";
@@ -80,10 +77,10 @@
 "**e2e encrypted** video call" = "**e2e versleuteld** video gesprek";
 
 /* No comment provided by engineer. */
-"**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." = "**Meer privé**: bekijk elke 20 minuten nieuwe berichten. Apparaattoken wordt gedeeld met de SimpleX Chat-server, maar niet hoeveel contacten of berichten u heeft.";
+"**More private**: check new messages every 20 minutes. Only device token is shared with our push server. It doesn't see how many contacts you have, or any message metadata." = "**Meer privé**: bekijk elke 20 minuten nieuwe berichten. Apparaattoken wordt gedeeld met de SimpleX Chat-server, maar niet hoeveel contacten of berichten u heeft.";
 
 /* No comment provided by engineer. */
-"**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." = "**Meest privé**: gebruik geen SimpleX Chat-notificatie server, controleer berichten regelmatig op de achtergrond (afhankelijk van hoe vaak u de app gebruikt).";
+"**Most private**: do not use SimpleX Chat push server. The app will check messages in background, when the system allows it, depending on how often you use the app." = "**Meest privé**: gebruik geen SimpleX Chat-notificatie server, controleer berichten regelmatig op de achtergrond (afhankelijk van hoe vaak u de app gebruikt).";
 
 /* No comment provided by engineer. */
 "**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." = "**Let op**: als u dezelfde database op twee apparaten gebruikt, wordt de decodering van berichten van uw verbindingen verbroken, als veiligheidsmaatregel.";
@@ -92,7 +89,7 @@
 "**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**Let op**: u kunt het wachtwoord NIET herstellen of wijzigen als u het kwijtraakt.";
 
 /* No comment provided by engineer. */
-"**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." = "**Aanbevolen**: apparaattoken en meldingen worden naar de SimpleX Chat-meldingsserver gestuurd, maar niet de berichtinhoud, -grootte of van wie het afkomstig is.";
+"**Recommended**: device token and end-to-end encrypted notifications are sent to SimpleX Chat push server, but it does not see the message content, size or who it is from." = "**Aanbevolen**: apparaattoken en meldingen worden naar de SimpleX Chat-meldingsserver gestuurd, maar niet de berichtinhoud, -grootte of van wie het afkomstig is.";
 
 /* No comment provided by engineer. */
 "**Warning**: Instant push notifications require passphrase saved in Keychain." = "**Waarschuwing**: voor directe push meldingen is een wachtwoord vereist dat is opgeslagen in de Keychain.";
@@ -2474,7 +2471,7 @@
 "Immediately" = "Onmiddellijk";
 
 /* No comment provided by engineer. */
-"Immune to spam and abuse" = "Immuun voor spam en misbruik";
+"Immune to spam" = "Immuun voor spam en misbruik";
 
 /* No comment provided by engineer. */
 "Import" = "Importeren";
@@ -2576,7 +2573,7 @@
 "Instant push notifications will be hidden!\n" = "Directe push meldingen worden verborgen!\n";
 
 /* No comment provided by engineer. */
-"Instantly" = "Direct";
+"Instant" = "Direct";
 
 /* No comment provided by engineer. */
 "Interface" = "Interface";
@@ -2786,7 +2783,7 @@
 "Live messages" = "Live berichten";
 
 /* No comment provided by engineer. */
-"Local" = "Lokaal";
+"No push server" = "Lokaal";
 
 /* No comment provided by engineer. */
 "Local name" = "Lokale naam";
@@ -3226,7 +3223,7 @@
 "Onion hosts will not be used." = "Onion hosts worden niet gebruikt.";
 
 /* No comment provided by engineer. */
-"Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." = "Alleen client apparaten slaan gebruikers profielen, contacten, groepen en berichten op die zijn verzonden met **2-laags end-to-end-codering**.";
+"Only client devices store user profiles, contacts, groups, and messages." = "Alleen client apparaten slaan gebruikers profielen, contacten, groepen en berichten op die zijn verzonden met **2-laags end-to-end-codering**.";
 
 /* No comment provided by engineer. */
 "Only delete conversation" = "Alleen conversatie verwijderen";
@@ -3295,7 +3292,7 @@
 "Open user profiles" = "Gebruikers profielen openen";
 
 /* No comment provided by engineer. */
-"Open-source protocol and code – anybody can run the servers." = "Open-source protocol en code. Iedereen kan de servers draaien.";
+"Anybody can host servers." = "Iedereen kan servers hosten.";
 
 /* No comment provided by engineer. */
 "Opening app…" = "App openen…";
@@ -3376,10 +3373,10 @@
 "Pending" = "in behandeling";
 
 /* No comment provided by engineer. */
-"People can connect to you only via the links you share." = "Mensen kunnen alleen verbinding met u maken via de links die u deelt.";
+"You decide who can connect." = "Jij bepaalt wie er verbinding mag maken.";
 
 /* No comment provided by engineer. */
-"Periodically" = "Periodiek";
+"Periodic" = "Periodiek";
 
 /* message decrypt error item */
 "Permanent decryption error" = "Decodering fout";
@@ -3592,7 +3589,7 @@
 "Read more" = "Lees meer";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." = "Lees meer in de [Gebruikershandleiding](https://simplex.chat/docs/guide/app-settings.html#uw-simplex-contactadres).";
+"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "Lees meer in de [Gebruikershandleiding](https://simplex.chat/docs/guide/app-settings.html#uw-simplex-contactadres).";
 
 /* No comment provided by engineer. */
 "Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "Lees meer in de [Gebruikershandleiding](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).";
@@ -4500,7 +4497,7 @@
 "Thanks to the users – contribute via Weblate!" = "Dank aan de gebruikers – draag bij via Weblate!";
 
 /* No comment provided by engineer. */
-"The 1st platform without any user identifiers – private by design." = "Het eerste platform zonder gebruikers-ID's, privé door ontwerp.";
+"No user identifiers." = "Geen gebruikers-ID\'s.";
 
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "De app kan u op de hoogte stellen wanneer u berichten of contact verzoeken ontvangt - open de instellingen om dit in te schakelen.";
@@ -4545,7 +4542,7 @@
 "The messages will be marked as moderated for all members." = "De berichten worden voor alle leden als gemodereerd gemarkeerd.";
 
 /* No comment provided by engineer. */
-"The next generation of private messaging" = "De volgende generatie privéberichten";
+"The future of messaging" = "De volgende generatie privéberichten";
 
 /* No comment provided by engineer. */
 "The old database was not removed during the migration, it can be deleted." = "De oude database is niet verwijderd tijdens de migratie, deze kan worden verwijderd.";
@@ -4635,7 +4632,7 @@
 "To make a new connection" = "Om een nieuwe verbinding te maken";
 
 /* No comment provided by engineer. */
-"To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." = "Om de privacy te beschermen, heeft SimpleX in plaats van gebruikers-ID's die door alle andere platforms worden gebruikt, ID's voor berichten wachtrijen, afzonderlijk voor elk van uw contacten.";
+"To protect your privacy, SimpleX uses separate IDs for each of your contacts." = "Om de privacy te beschermen, heeft SimpleX in plaats van gebruikers-ID's die door alle andere platforms worden gebruikt, ID's voor berichten wachtrijen, afzonderlijk voor elk van uw contacten.";
 
 /* No comment provided by engineer. */
 "To protect timezone, image/voice files use UTC." = "Om de tijdzone te beschermen, gebruiken afbeeldings-/spraakbestanden UTC.";
@@ -5209,9 +5206,6 @@
 
 /* snd group event chat item */
 "you changed role of %@ to %@" = "je veranderde de rol van %1$@ in %2$@";
-
-/* No comment provided by engineer. */
-"You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." = "U bepaalt via welke server(s) de berichten **ontvangen**, uw contacten de servers die u gebruikt om ze berichten te sturen.";
 
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "U kon niet worden geverifieerd; probeer het opnieuw.";
