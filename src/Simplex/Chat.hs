@@ -1078,6 +1078,8 @@ processChatCommand' vr = \case
           throwChatError (CECommandError $ "reaction already " <> if add then "added" else "removed")
         when (add && length rs >= maxMsgReactions) $
           throwChatError (CECommandError "too many reactions")
+  APIGetReactionMembers _userId _groupId _itemId _reaction -> withUser $ \user -> do
+    pure $ chatCmdError (Just user) "not supported"
   APIPlanForwardChatItems (ChatRef fromCType fromChatId) itemIds -> withUser $ \user -> case fromCType of
     CTDirect -> planForward user . snd =<< getCommandDirectChatItems user fromChatId itemIds
     CTGroup -> planForward user . snd =<< getCommandGroupChatItems user fromChatId itemIds
@@ -8267,6 +8269,7 @@ chatCommandP =
       "/_delete item " *> (APIDeleteChatItem <$> chatRefP <*> _strP <* A.space <*> ciDeleteMode),
       "/_delete member item #" *> (APIDeleteMemberChatItem <$> A.decimal <*> _strP),
       "/_reaction " *> (APIChatItemReaction <$> chatRefP <* A.space <*> A.decimal <* A.space <*> onOffP <* A.space <*> jsonP),
+      "/_reaction members " *> (APIGetReactionMembers <$> A.decimal <* A.space <*> A.decimal <* A.space <*> A.decimal <* A.space <*> jsonP),
       "/_forward plan " *> (APIPlanForwardChatItems <$> chatRefP <*> _strP),
       "/_forward " *> (APIForwardChatItems <$> chatRefP <* A.space <*> chatRefP <*> _strP <*> sendMessageTTLP),
       "/_read user " *> (APIUserRead <$> A.decimal),
