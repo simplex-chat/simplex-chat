@@ -147,6 +147,30 @@ private func resizeImage(_ image: UIImage, newBounds: CGRect, drawIn: CGRect, ha
     }
 }
 
+public func maskToCircle(_ image: UIImage, hasAlpha: Bool) -> UIImage {
+    let diameter = min(image.size.width, image.size.height) // Determine the circle's diameter
+    let bounds = CGRect(x: 0, y: 0, width: diameter, height: diameter)
+
+    let format = UIGraphicsImageRendererFormat()
+    format.scale = image.scale
+    format.opaque = !hasAlpha
+
+    return UIGraphicsImageRenderer(size: bounds.size, format: format).image { context in
+        // Create a circular path
+        let circlePath = UIBezierPath(ovalIn: bounds)
+
+        // Clip the context to the circle
+        circlePath.addClip()
+
+        // Draw the image centered within the circle
+        let origin = CGPoint(
+            x: (bounds.width - image.size.width) / 2,
+            y: (bounds.height - image.size.height) / 2
+        )
+        image.draw(at: origin)
+    }
+}
+
 public func imageHasAlpha(_ img: UIImage) -> Bool {
     if let cgImage = img.cgImage {
         let colorSpace = CGColorSpaceCreateDeviceRGB()

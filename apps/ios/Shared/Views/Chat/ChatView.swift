@@ -362,6 +362,15 @@ struct ChatView: View {
                 await markChatUnread(chat, unreadChat: false)
             }
         }
+        if let groupInfo = cInfo.groupInfo {
+            Task {
+                let groupMembers = await apiListMembers(groupInfo.groupId)
+                await MainActor.run {
+                    chatModel.groupMembers = groupMembers.map { GMember.init($0) }
+                    chatModel.populateGroupMembersIndexes()
+                }
+            }
+        }
         ChatView.FloatingButtonModel.shared.totalUnread = chat.chatStats.unreadCount
     }
 
@@ -1245,9 +1254,14 @@ struct ChatView: View {
                     .padding(.horizontal, 6)
                     .padding(.vertical, 4)
 
-                    if chat.chatInfo.featureEnabled(.reactions) && (ci.allowAddReaction || r.userReacted) {
-                        v.onTapGesture {
-                            setReaction(ci, add: !r.userReacted, reaction: r.reaction)
+                    if chat.chatInfo.featureEnabled(.reactions) {
+                        if ci.allowAddReaction || r.userReacted {
+                            v.onTapGesture {
+                                setReaction(ci, add: !r.userReacted, reaction: r.reaction)
+                            }
+                            .contextMenu { ReactionContextMenu(reaction: r.reaction, chatItem: ci, groupId: chat.chatInfo.groupInfo?.groupId, selectedMember: $selectedMember) }
+                        } else {
+                            v.contextMenu { ReactionContextMenu(reaction: r.reaction, chatItem: ci, groupId: chat.chatInfo.groupInfo?.groupId, selectedMember: $selectedMember) }
                         }
                     } else {
                         v
@@ -1835,6 +1849,77 @@ private func buildTheme() -> AppTheme {
         return AppTheme(name: theme.name, base: theme.base, colors: theme.colors, appColors: theme.appColors, wallpaper: theme.wallpaper)
     } else {
         return AppTheme.shared
+    }
+}
+
+struct ReactionContextMenu: View {
+    @EnvironmentObject var chatModel: ChatModel
+    var reaction: MsgReaction
+    var chatItem: ChatItem
+    var groupId: Int64?
+    @Binding var selectedMember: GMember?
+
+    @State private var memberReactions: [MemberReaction] = [
+        MemberReaction(groupMemberId: 129, reactionTs: Date()),
+        MemberReaction(groupMemberId: 131, reactionTs: Date().addingTimeInterval(-3600)), // 1 hour ago
+        MemberReaction(groupMemberId: 132, reactionTs: Date().addingTimeInterval(-86400)), // 1 day ago
+        MemberReaction(groupMemberId: 133, reactionTs: Date().addingTimeInterval(-604800)), // 1 week ago
+        MemberReaction(groupMemberId: 134, reactionTs: Date().addingTimeInterval(-604800)), // 1 week ago
+        MemberReaction(groupMemberId: 136, reactionTs: Date().addingTimeInterval(-604800)), // 1 week ago
+    ]
+
+    var body: some View {
+        groupMemberReactionList()
+//        .onAppear {
+//            logger.error("apiGetReactionMembers groupId: \(groupId ?? -1)")
+//
+//            if let gId = groupId {
+//                Task {
+//                    do {
+//                        let memberReactions = try await apiGetReactionMembers(
+//                            groupId: gId,
+//                            itemId: chatItem.id,
+//                            reaction: reaction
+//                        )
+//
+//                        await MainActor.run {
+//                            self.memberReactions = memberReactions
+//                        }
+//                    } catch let error {
+//                        logger.error("apiGetReactionMembers error: \(responseError(error))")
+//                    }
+//                }
+//            }
+//        }
+    }
+
+    @ViewBuilder
+    private func groupMemberReactionList() -> some View {
+        ForEach(memberReactions, id: \.groupMemberId) { memberReaction in
+            if let i = chatModel.groupMembersIndexes[memberReaction.groupMemberId] {
+                let member = chatModel.groupMembers[i]
+
+                Button {
+                    selectedMember = member
+                    logger.error("all_members: \(ChatModel.shared.groupMembers.map { $0.groupMemberId })")
+                } label: {
+                    if let originalImage = imageFromBase64(member.wrapped.image) {
+                        let hasAlpha = imageHasAlpha(originalImage)
+                        let circularImage = maskToCircle(originalImage, hasAlpha: hasAlpha)
+                        Image(uiImage: circularImage)
+                    } else {
+                        let originalImage = UIImage(systemName: "person.crop.circle.fill")!
+                        let hasAlpha = imageHasAlpha(originalImage)
+                        let circularImage = maskToCircle(originalImage, hasAlpha: hasAlpha)
+                        Image(uiImage: circularImage)
+                    }
+
+                    Text(member.displayName)
+                }
+            } else {
+                EmptyView()
+            }
+        }
     }
 }
 
