@@ -907,8 +907,7 @@
     <string name="update_network_session_mode_question">Aggiornare la modalità di isolamento del trasporto\?</string>
     <string name="users_delete_all_chats_deleted">Tutte le chat e i messaggi verranno eliminati. Non è reversibile!</string>
     <string name="network_session_mode_user">Profilo di chat</string>
-    <string name="network_session_mode_entity_description">Verrà usata una connessione TCP separata (e le credenziali SOCKS) <b> per ogni contatto e membro del gruppo </b>.
-\n<b> Nota: </b>: se hai molte connessioni, il consumo di batteria e traffico può essere notevolmente superiore e alcune connessioni potrebbero fallire.</string>
+    <string name="network_session_mode_entity_description">Verrà usata una connessione TCP separata (e le credenziali SOCKS) <b> per ogni contatto e membro del gruppo </b>. \n<b> Nota: </b>: se hai molte connessioni, il consumo di batteria e traffico può essere notevolmente superiore e alcune connessioni potrebbero fallire.</string>
     <string name="network_session_mode_entity">Connessione</string>
     <string name="messages_section_description">Questa impostazione si applica ai messaggi del profilo di chat attuale</string>
     <string name="network_session_mode_transport_isolation">Isolamento del trasporto</string>
