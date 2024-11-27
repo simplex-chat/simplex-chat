@@ -3292,7 +3292,7 @@
 "Open user profiles" = "Felhasználó-profilok megnyitása";
 
 /* No comment provided by engineer. */
-"Open-source protocol and code – anybody can run the servers." = "Nyílt forráskódú protokoll és forráskód – bárki üzemeltethet kiszolgálókat.";
+"Anybody can host servers." = "Bárki üzemeltethet kiszolgálókat.";
 
 /* No comment provided by engineer. */
 "Opening app…" = "Az alkalmazás megnyitása…";
@@ -3373,7 +3373,7 @@
 "Pending" = "Függőben";
 
 /* No comment provided by engineer. */
-"People can connect to you only via the links you share." = "Az emberek csak az Ön által megosztott hivatkozáson keresztül kapcsolódhatnak.";
+"You decide who can connect." = "Ön dönti el, hogy kivel beszélget.";
 
 /* No comment provided by engineer. */
 "Periodic" = "Rendszeresen";
@@ -4497,7 +4497,7 @@
 "Thanks to the users – contribute via Weblate!" = "Köszönet a felhasználóknak - hozzájárulás a Weblate-en!";
 
 /* No comment provided by engineer. */
-"The 1st platform without any user identifiers – private by design." = "Az első csevegési rendszer bármiféle felhasználó-azonosító nélkül - privátra lett tervezre.";
+"No user identifiers." = "Nincsenek felhasználó-azonosítók.";
 
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "Az alkalmazás értesíteni fogja, amikor üzeneteket vagy kapcsolatkéréseket kap – beállítások megnyitása az engedélyezéshez.";
@@ -4542,7 +4542,7 @@
 "The messages will be marked as moderated for all members." = "Az üzenetek moderáltként lesznek megjelölve minden tag számára.";
 
 /* No comment provided by engineer. */
-"The next generation of private messaging" = "A privát üzenetküldés következő generációja";
+"The future of messaging" = "A privát üzenetküldés következő generációja";
 
 /* No comment provided by engineer. */
 "The old database was not removed during the migration, it can be deleted." = "A régi adatbázis nem került eltávolításra az átköltöztetéskor, így törölhető.";

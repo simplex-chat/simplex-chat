@@ -3292,7 +3292,7 @@
 "Open user profiles" = "Benutzerprofile öffnen";
 
 /* No comment provided by engineer. */
-"Open-source protocol and code – anybody can run the servers." = "Open-Source-Protokoll und -Code – Jede Person kann ihre eigenen Server aufsetzen und nutzen.";
+"Anybody can host servers." = "Jeder kann seine eigenen Server aufsetzen.";
 
 /* No comment provided by engineer. */
 "Opening app…" = "App wird geöffnet…";
@@ -3373,7 +3373,7 @@
 "Pending" = "Ausstehend";
 
 /* No comment provided by engineer. */
-"People can connect to you only via the links you share." = "Verbindungen mit Kontakten sind nur über Links möglich, die Sie oder Ihre Kontakte untereinander teilen.";
+"You decide who can connect." = "Sie entscheiden, wer sich mit Ihnen verbinden kann.";
 
 /* No comment provided by engineer. */
 "Periodic" = "Periodisch";
@@ -4497,7 +4497,7 @@
 "Thanks to the users – contribute via Weblate!" = "Dank der Nutzer - Tragen Sie per Weblate bei!";
 
 /* No comment provided by engineer. */
-"The 1st platform without any user identifiers – private by design." = "Die erste Plattform ohne Benutzerkennungen – Privat per Design.";
+"No user identifiers." = "Keine Benutzerkennungen.";
 
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "Wenn sie Nachrichten oder Kontaktanfragen empfangen, kann Sie die App benachrichtigen - Um dies zu aktivieren, öffnen Sie bitte die Einstellungen.";
@@ -4542,7 +4542,7 @@
 "The messages will be marked as moderated for all members." = "Die Nachrichten werden für alle Mitglieder als moderiert gekennzeichnet werden.";
 
 /* No comment provided by engineer. */
-"The next generation of private messaging" = "Die nächste Generation von privatem Messaging";
+"The future of messaging" = "Die nächste Generation von privatem Messaging";
 
 /* No comment provided by engineer. */
 "The old database was not removed during the migration, it can be deleted." = "Die alte Datenbank wurde während der Migration nicht entfernt. Sie kann gelöscht werden.";

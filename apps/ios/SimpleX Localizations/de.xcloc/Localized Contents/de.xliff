@@ -925,6 +925,7 @@
       </trans-unit>
       <trans-unit id="Anybody can host servers." xml:space="preserve">
         <source>Anybody can host servers.</source>
+        <target>Jeder kann seine eigenen Server aufsetzen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App build: %@" xml:space="preserve">
@@ -4848,6 +4849,7 @@ Das ist Ihr Link für die Gruppe %@!</target>
       </trans-unit>
       <trans-unit id="No user identifiers." xml:space="preserve">
         <source>No user identifiers.</source>
+        <target>Keine Benutzerkennungen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Not compatible!" xml:space="preserve">
@@ -7030,6 +7032,7 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
       </trans-unit>
       <trans-unit id="The future of messaging" xml:space="preserve">
         <source>The future of messaging</source>
+        <target>Die nächste Generation von privatem Messaging</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The hash of the previous message is different." xml:space="preserve">
@@ -8086,6 +8089,7 @@ Verbindungsanfrage wiederholen?</target>
       </trans-unit>
       <trans-unit id="You decide who can connect." xml:space="preserve">
         <source>You decide who can connect.</source>
+        <target>Sie entscheiden, wer sich mit Ihnen verbinden kann.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You have already requested connection via this address!" xml:space="preserve">

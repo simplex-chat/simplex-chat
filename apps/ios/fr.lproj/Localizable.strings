@@ -3178,7 +3178,7 @@
 "Open user profiles" = "Ouvrir les profils d'utilisateurs";
 
 /* No comment provided by engineer. */
-"Open-source protocol and code – anybody can run the servers." = "Protocole et code open-source – n'importe qui peut heberger un serveur.";
+"Anybody can host servers." = "N\'importe qui peut heberger un serveur.";
 
 /* No comment provided by engineer. */
 "Opening app…" = "Ouverture de l'app…";
@@ -3253,7 +3253,7 @@
 "Pending" = "En attente";
 
 /* No comment provided by engineer. */
-"People can connect to you only via the links you share." = "On ne peut se connecter à vous qu’avec les liens que vous partagez.";
+"You decide who can connect." = "Vous choisissez qui peut se connecter.";
 
 /* No comment provided by engineer. */
 "Periodic" = "Périodique";
@@ -4332,7 +4332,7 @@
 "Thanks to the users – contribute via Weblate!" = "Merci aux utilisateurs - contribuez via Weblate !";
 
 /* No comment provided by engineer. */
-"The 1st platform without any user identifiers – private by design." = "La 1ère plateforme sans aucun identifiant d'utilisateur – privée par design.";
+"No user identifiers." = "Aucun identifiant d\'utilisateur.";
 
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "L'application peut vous avertir lorsque vous recevez des messages ou des demandes de contact - veuillez ouvrir les paramètres pour les activer.";
@@ -4377,7 +4377,7 @@
 "The messages will be marked as moderated for all members." = "Les messages seront marqués comme modérés pour tous les membres.";
 
 /* No comment provided by engineer. */
-"The next generation of private messaging" = "La nouvelle génération de messagerie privée";
+"The future of messaging" = "La nouvelle génération de messagerie privée";
 
 /* No comment provided by engineer. */
 "The old database was not removed during the migration, it can be deleted." = "L'ancienne base de données n'a pas été supprimée lors de la migration, elle peut être supprimée.";

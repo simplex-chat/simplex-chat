@@ -2384,7 +2384,7 @@
 "Immediately" = "Негайно";
 
 /* No comment provided by engineer. */
-"Immune to spam and abuse" = "Імунітет до спаму та зловживань";
+"Immune to spam" = "Імунітет до спаму та зловживань";
 
 /* No comment provided by engineer. */
 "Import" = "Імпорт";
@@ -3178,7 +3178,7 @@
 "Open user profiles" = "Відкрити профілі користувачів";
 
 /* No comment provided by engineer. */
-"Open-source protocol and code – anybody can run the servers." = "Протокол і код з відкритим вихідним кодом - будь-хто може запускати сервери.";
+"Anybody can host servers." = "Кожен може хостити сервери.";
 
 /* No comment provided by engineer. */
 "Opening app…" = "Відкриваємо програму…";
@@ -3253,7 +3253,7 @@
 "Pending" = "В очікуванні";
 
 /* No comment provided by engineer. */
-"People can connect to you only via the links you share." = "Люди можуть зв'язатися з вами лише за посиланнями, якими ви ділитеся.";
+"You decide who can connect." = "Ви вирішуєте, хто може під\'єднатися.";
 
 /* No comment provided by engineer. */
 "Periodic" = "Періодично";
@@ -4332,7 +4332,7 @@
 "Thanks to the users – contribute via Weblate!" = "Дякуємо користувачам - зробіть свій внесок через Weblate!";
 
 /* No comment provided by engineer. */
-"The 1st platform without any user identifiers – private by design." = "Перша платформа без жодних ідентифікаторів користувачів – приватна за дизайном.";
+"No user identifiers." = "Ніяких ідентифікаторів користувачів.";
 
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "Додаток може сповіщати вас, коли ви отримуєте повідомлення або запити на контакт - будь ласка, відкрийте налаштування, щоб увімкнути цю функцію.";
@@ -4377,7 +4377,7 @@
 "The messages will be marked as moderated for all members." = "Повідомлення будуть позначені як модеровані для всіх учасників.";
 
 /* No comment provided by engineer. */
-"The next generation of private messaging" = "Наступне покоління приватних повідомлень";
+"The future of messaging" = "Наступне покоління приватних повідомлень";
 
 /* No comment provided by engineer. */
 "The old database was not removed during the migration, it can be deleted." = "Стара база даних не була видалена під час міграції, її можна видалити.";

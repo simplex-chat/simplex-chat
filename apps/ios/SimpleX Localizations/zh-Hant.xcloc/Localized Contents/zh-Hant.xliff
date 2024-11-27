@@ -1742,8 +1742,8 @@
         <target state="translated">下載圖片需要傳送者上線的時候才能下載圖片，請等待對方上線！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Immune to spam and abuse" xml:space="preserve" approved="no">
-        <source>Immune to spam and abuse</source>
+      <trans-unit id="Immune to spam" xml:space="preserve" approved="no">
+        <source>Immune to spam</source>
         <target state="translated">不受垃圾郵件和濫用行為影響</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -2272,8 +2272,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target state="translated">使用終端機開啟對話</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Open-source protocol and code – anybody can run the servers." xml:space="preserve" approved="no">
-        <source>Open-source protocol and code – anybody can run the servers.</source>
+      <trans-unit id="Anybody can host servers." xml:space="preserve" approved="no">
+        <source>Anybody can host servers.</source>
         <target state="translated">開放源碼協議和程式碼 – 任何人也可以運行伺服器。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -2312,8 +2312,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target state="translated">將你接收到的連結貼上至下面的框內，以開始你與你的聯絡人對話。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="People can connect to you only via the links you share." xml:space="preserve" approved="no">
-        <source>People can connect to you only via the links you share.</source>
+      <trans-unit id="You decide who can connect." xml:space="preserve" approved="no">
+        <source>You decide who can connect.</source>
         <target state="translated">人們只能在你分享了連結後，才能和你連接。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3005,8 +3005,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target state="translated">感謝你安裝SimpleX Chat！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The 1st platform without any user identifiers – private by design." xml:space="preserve" approved="no">
-        <source>The 1st platform without any user identifiers – private by design.</source>
+      <trans-unit id="No user identifiers." xml:space="preserve" approved="no">
+        <source>No user identifiers.</source>
         <target state="translated">第一個沒有任何用戶識別符的通訊平台 – 以私隱為設計。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3044,8 +3044,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>The microphone does not work when the app is in the background.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The next generation of private messaging" xml:space="preserve" approved="no">
-        <source>The next generation of private messaging</source>
+      <trans-unit id="The future of messaging" xml:space="preserve" approved="no">
+        <source>The future of messaging</source>
         <target state="translated">新一代的私密訊息平台</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

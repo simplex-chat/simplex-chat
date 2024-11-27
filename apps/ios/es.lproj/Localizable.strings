@@ -3292,7 +3292,7 @@
 "Open user profiles" = "Abrir perfil de usuario";
 
 /* No comment provided by engineer. */
-"Open-source protocol and code – anybody can run the servers." = "Protocolo y código abiertos: cualquiera puede usar los servidores.";
+"Anybody can host servers." = "Cualquiera puede alojar servidores.";
 
 /* No comment provided by engineer. */
 "Opening app…" = "Iniciando aplicación…";
@@ -3373,7 +3373,7 @@
 "Pending" = "Pendientes";
 
 /* No comment provided by engineer. */
-"People can connect to you only via the links you share." = "Las personas pueden conectarse contigo solo mediante los enlaces que compartes.";
+"You decide who can connect." = "Tu decides quién se conecta.";
 
 /* No comment provided by engineer. */
 "Periodic" = "Periódicamente";
@@ -4497,7 +4497,7 @@
 "Thanks to the users – contribute via Weblate!" = "¡Nuestro agradecimiento a todos los colaboradores! Puedes contribuir a través de Weblate";
 
 /* No comment provided by engineer. */
-"The 1st platform without any user identifiers – private by design." = "La primera plataforma sin identificadores de usuario: diseñada para la privacidad.";
+"No user identifiers." = "Sin identificadores de usuario.";
 
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "La aplicación puede notificarte cuando recibas mensajes o solicitudes de contacto: por favor, abre la configuración para activarlo.";
@@ -4542,7 +4542,7 @@
 "The messages will be marked as moderated for all members." = "Los mensajes serán marcados como moderados para todos los miembros.";
 
 /* No comment provided by engineer. */
-"The next generation of private messaging" = "La nueva generación de mensajería privada";
+"The future of messaging" = "La nueva generación de mensajería privada";
 
 /* No comment provided by engineer. */
 "The old database was not removed during the migration, it can be deleted." = "La base de datos antigua no se eliminó durante la migración, puede eliminarse.";

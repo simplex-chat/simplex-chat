@@ -2384,7 +2384,7 @@
 "Immediately" = "立即";
 
 /* No comment provided by engineer. */
-"Immune to spam and abuse" = "不受垃圾和骚扰消息影响";
+"Immune to spam" = "不受垃圾和骚扰消息影响";
 
 /* No comment provided by engineer. */
 "Import" = "导入";
@@ -3178,7 +3178,7 @@
 "Open user profiles" = "打开用户个人资料";
 
 /* No comment provided by engineer. */
-"Open-source protocol and code – anybody can run the servers." = "开源协议和代码——任何人都可以运行服务器。";
+"Anybody can host servers." = "任何人都可以托管服务器。";
 
 /* No comment provided by engineer. */
 "Opening app…" = "正在打开应用程序…";
@@ -3253,7 +3253,7 @@
 "Pending" = "待定";
 
 /* No comment provided by engineer. */
-"People can connect to you only via the links you share." = "人们只能通过您共享的链接与您建立联系。";
+"You decide who can connect." = "你决定谁可以连接。";
 
 /* No comment provided by engineer. */
 "Periodic" = "定期";
@@ -4332,7 +4332,7 @@
 "Thanks to the users – contribute via Weblate!" = "感谢用户——通过 Weblate 做出贡献！";
 
 /* No comment provided by engineer. */
-"The 1st platform without any user identifiers – private by design." = "第一个没有任何用户标识符的平台 - 隐私设计.";
+"No user identifiers." = "没有用户标识符。";
 
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "该应用可以在您收到消息或联系人请求时通知您——请打开设置以启用通知。";
@@ -4377,7 +4377,7 @@
 "The messages will be marked as moderated for all members." = "对于所有成员，这些消息将被标记为已审核。";
 
 /* No comment provided by engineer. */
-"The next generation of private messaging" = "下一代私密通讯软件";
+"The future of messaging" = "下一代私密通讯软件";
 
 /* No comment provided by engineer. */
 "The old database was not removed during the migration, it can be deleted." = "旧数据库在迁移过程中没有被移除，可以删除。";

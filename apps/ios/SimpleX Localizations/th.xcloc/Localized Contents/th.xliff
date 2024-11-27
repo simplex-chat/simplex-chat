@@ -867,6 +867,7 @@
       </trans-unit>
       <trans-unit id="Anybody can host servers." xml:space="preserve">
         <source>Anybody can host servers.</source>
+        <target>โปรโตคอลและโค้ดโอเพ่นซอร์ส – ใคร ๆ ก็สามารถเปิดใช้เซิร์ฟเวอร์ได้</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App build: %@" xml:space="preserve">
@@ -3570,6 +3571,7 @@ Error: %2$@</source>
       </trans-unit>
       <trans-unit id="Immune to spam" xml:space="preserve">
         <source>Immune to spam</source>
+        <target>มีภูมิคุ้มกันต่อสแปมและการละเมิด</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Import" xml:space="preserve">
@@ -4498,6 +4500,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="No user identifiers." xml:space="preserve">
         <source>No user identifiers.</source>
+        <target>แพลตฟอร์มแรกที่ไม่มีตัวระบุผู้ใช้ - ถูกออกแบบให้เป็นส่วนตัว</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Not compatible!" xml:space="preserve">
@@ -6516,6 +6519,7 @@ It can happen because of some bug or when the connection is compromised.</source
       </trans-unit>
       <trans-unit id="The future of messaging" xml:space="preserve">
         <source>The future of messaging</source>
+        <target>การส่งข้อความส่วนตัวรุ่นต่อไป</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The hash of the previous message is different." xml:space="preserve">
@@ -7481,6 +7485,7 @@ Repeat join request?</source>
       </trans-unit>
       <trans-unit id="You decide who can connect." xml:space="preserve">
         <source>You decide who can connect.</source>
+        <target>ผู้คนสามารถเชื่อมต่อกับคุณผ่านลิงก์ที่คุณแบ่งปันเท่านั้น</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You have already requested connection via this address!" xml:space="preserve">

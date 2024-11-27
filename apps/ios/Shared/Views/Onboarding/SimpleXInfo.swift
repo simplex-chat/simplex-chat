@@ -32,7 +32,7 @@ struct SimpleXInfo: View {
                         Button {
                             showHowItWorks = true
                         } label: {
-                            (Text(Image(systemName: "info.circle")) + textSpace + Text("The future of messaging"))
+                            Label("The future of messaging", systemImage: "info.circle")
                                 .font(.headline)
                         }
                     }
@@ -105,7 +105,10 @@ struct SimpleXInfo: View {
                 .padding(.trailing, 10)
             VStack(alignment: .leading, spacing: 4) {
                 Text(title).font(.headline)
-                Text(text).frame(minHeight: 40, alignment: .top).font(.callout)
+                Text(text).frame(minHeight: 40, alignment: .top)
+                    .font(.callout)
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.top, 4)
         }

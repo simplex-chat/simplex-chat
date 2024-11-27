@@ -1756,8 +1756,8 @@
         <target state="translated">A imagem será recebida quando seu contato estiver online, aguarde ou verifique mais tarde!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Immune to spam and abuse" xml:space="preserve" approved="no">
-        <source>Immune to spam and abuse</source>
+      <trans-unit id="Immune to spam" xml:space="preserve" approved="no">
+        <source>Immune to spam</source>
         <target state="translated">Imune a spam e abuso</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -2262,8 +2262,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target state="translated">Abrir console de chat</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Open-source protocol and code – anybody can run the servers." xml:space="preserve" approved="no">
-        <source>Open-source protocol and code – anybody can run the servers.</source>
+      <trans-unit id="Anybody can host servers." xml:space="preserve" approved="no">
+        <source>Anybody can host servers.</source>
         <target state="translated">Protocolo de código aberto – qualquer um pode executar os servidores.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -2301,8 +2301,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target state="translated">Cole o link que você recebeu na caixa abaixo para conectar com o seu contato.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="People can connect to you only via the links you share." xml:space="preserve" approved="no">
-        <source>People can connect to you only via the links you share.</source>
+      <trans-unit id="You decide who can connect." xml:space="preserve" approved="no">
+        <source>You decide who can connect.</source>
         <target state="translated">Pessoas podem se conectar com você somente via links compartilhados.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -2956,8 +2956,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Thank you for installing SimpleX Chat!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The 1st platform without any user identifiers – private by design." xml:space="preserve" approved="no">
-        <source>The 1st platform without any user identifiers – private by design.</source>
+      <trans-unit id="No user identifiers." xml:space="preserve" approved="no">
+        <source>No user identifiers.</source>
         <target state="translated">A 1ª plataforma sem nenhum identificador de usuário – privada por design.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -2993,8 +2993,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>The microphone does not work when the app is in the background.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The next generation of private messaging" xml:space="preserve" approved="no">
-        <source>The next generation of private messaging</source>
+      <trans-unit id="The future of messaging" xml:space="preserve" approved="no">
+        <source>The future of messaging</source>
         <target state="translated">A próxima geração de mensageiros privados</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

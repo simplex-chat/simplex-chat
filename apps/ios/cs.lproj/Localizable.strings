@@ -2268,7 +2268,7 @@
 "Open user profiles" = "Otevřít uživatelské profily";
 
 /* No comment provided by engineer. */
-"Open-source protocol and code – anybody can run the servers." = "Protokol a kód s otevřeným zdrojovým kódem - servery může provozovat kdokoli.";
+"Anybody can host servers." = "Servery může provozovat kdokoli.";
 
 /* member role */
 "owner" = "vlastník";
@@ -2298,7 +2298,7 @@
 "peer-to-peer" = "peer-to-peer";
 
 /* No comment provided by engineer. */
-"People can connect to you only via the links you share." = "Lidé se s vámi mohou spojit pouze prostřednictvím odkazů, které sdílíte.";
+"You decide who can connect." = "Lidé se s vámi mohou spojit pouze prostřednictvím odkazu, který sdílíte.";
 
 /* No comment provided by engineer. */
 "Periodic" = "Pravidelně";
@@ -3008,7 +3008,7 @@
 "Thanks to the users – contribute via Weblate!" = "Díky uživatelům - přispívejte prostřednictvím Weblate!";
 
 /* No comment provided by engineer. */
-"The 1st platform without any user identifiers – private by design." = "1. Platforma bez identifikátorů uživatelů - soukromá už od záměru.";
+"No user identifiers." = "Bez uživatelských identifikátorů";
 
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "Aplikace vás může upozornit na přijaté zprávy nebo žádosti o kontakt - povolte to v nastavení.";
@@ -3041,7 +3041,7 @@
 "The message will be marked as moderated for all members." = "Zpráva bude pro všechny členy označena jako moderovaná.";
 
 /* No comment provided by engineer. */
-"The next generation of private messaging" = "Nová generace soukromých zpráv";
+"The future of messaging" = "Nová generace soukromých zpráv";
 
 /* No comment provided by engineer. */
 "The old database was not removed during the migration, it can be deleted." = "Stará databáze nebyla během přenášení odstraněna, lze ji smazat.";

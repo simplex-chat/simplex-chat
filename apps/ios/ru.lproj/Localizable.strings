@@ -2435,7 +2435,7 @@
 "How to" = "Инфо";
 
 /* No comment provided by engineer. */
-"How to use it" = "Как использовать";
+"How to use it" = "Про адрес";
 
 /* No comment provided by engineer. */
 "How to use your servers" = "Как использовать серверы";
@@ -3295,7 +3295,7 @@
 "Open user profiles" = "Открыть профили пользователя";
 
 /* No comment provided by engineer. */
-"Open-source protocol and code – anybody can run the servers." = "Открытый протокол и код - кто угодно может запустить сервер.";
+"Anybody can host servers." = "Кто угодно может запустить сервер.";
 
 /* No comment provided by engineer. */
 "Opening app…" = "Приложение отрывается…";
@@ -3376,7 +3376,7 @@
 "Pending" = "В ожидании";
 
 /* No comment provided by engineer. */
-"People can connect to you only via the links you share." = "С Вами можно соединиться только через созданные Вами ссылки.";
+"You decide who can connect." = "Вы определяете, кто может соединиться.";
 
 /* No comment provided by engineer. */
 "Periodic" = "Периодически";
@@ -4500,7 +4500,7 @@
 "Thanks to the users – contribute via Weblate!" = "Благодаря пользователям – добавьте переводы через Weblate!";
 
 /* No comment provided by engineer. */
-"The 1st platform without any user identifiers – private by design." = "Первая в мире платформа без идентификаторов пользователей.";
+"No user identifiers." = "Без идентификаторов пользователей.";
 
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "Приложение может посылать Вам уведомления о сообщениях и запросах на соединение - уведомления можно включить в Настройках.";
@@ -4545,7 +4545,7 @@
 "The messages will be marked as moderated for all members." = "Сообщения будут помечены как удаленные для всех членов группы.";
 
 /* No comment provided by engineer. */
-"The next generation of private messaging" = "Новое поколение приватных сообщений";
+"The future of messaging" = "Будущее коммуникаций";
 
 /* No comment provided by engineer. */
 "The old database was not removed during the migration, it can be deleted." = "Предыдущая версия данных чата не удалена при перемещении, её можно удалить.";

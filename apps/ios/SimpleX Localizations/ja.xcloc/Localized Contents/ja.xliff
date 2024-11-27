@@ -896,6 +896,7 @@
       </trans-unit>
       <trans-unit id="Anybody can host servers." xml:space="preserve">
         <source>Anybody can host servers.</source>
+        <target>プロトコル技術とコードはオープンソースで、どなたでもご自分のサーバを運用できます。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App build: %@" xml:space="preserve">
@@ -4545,6 +4546,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="No user identifiers." xml:space="preserve">
         <source>No user identifiers.</source>
+        <target>世界初のユーザーIDのないプラットフォーム｜設計も元からプライベート。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Not compatible!" xml:space="preserve">
@@ -6564,6 +6566,7 @@ It can happen because of some bug or when the connection is compromised.</source
       </trans-unit>
       <trans-unit id="The future of messaging" xml:space="preserve">
         <source>The future of messaging</source>
+        <target>次世代のプライバシー・メッセンジャー</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The hash of the previous message is different." xml:space="preserve">
@@ -7532,6 +7535,7 @@ Repeat join request?</source>
       </trans-unit>
       <trans-unit id="You decide who can connect." xml:space="preserve">
         <source>You decide who can connect.</source>
+        <target>あなたと繋がることができるのは、あなたからリンクを頂いた方のみです。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You have already requested connection via this address!" xml:space="preserve">

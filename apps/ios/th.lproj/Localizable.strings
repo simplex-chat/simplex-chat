@@ -1624,7 +1624,7 @@
 "Immediately" = "โดยทันที";
 
 /* No comment provided by engineer. */
-"Immune to spam and abuse" = "มีภูมิคุ้มกันต่อสแปมและการละเมิด";
+"Immune to spam" = "มีภูมิคุ้มกันต่อสแปมและการละเมิด";
 
 /* No comment provided by engineer. */
 "Import" = "นำเข้า";
@@ -2175,7 +2175,7 @@
 "Open user profiles" = "เปิดโปรไฟล์ผู้ใช้";
 
 /* No comment provided by engineer. */
-"Open-source protocol and code – anybody can run the servers." = "โปรโตคอลและโค้ดโอเพ่นซอร์ส – ใคร ๆ ก็สามารถเปิดใช้เซิร์ฟเวอร์ได้";
+"Anybody can host servers." = "โปรโตคอลและโค้ดโอเพ่นซอร์ส – ใคร ๆ ก็สามารถเปิดใช้เซิร์ฟเวอร์ได้";
 
 /* member role */
 "owner" = "เจ้าของ";
@@ -2205,7 +2205,7 @@
 "peer-to-peer" = "เพื่อนต่อเพื่อน";
 
 /* No comment provided by engineer. */
-"People can connect to you only via the links you share." = "ผู้คนสามารถเชื่อมต่อกับคุณผ่านลิงก์ที่คุณแบ่งปันเท่านั้น";
+"You decide who can connect." = "ผู้คนสามารถเชื่อมต่อกับคุณผ่านลิงก์ที่คุณแบ่งปันเท่านั้น";
 
 /* No comment provided by engineer. */
 "Periodic" = "เป็นระยะๆ";
@@ -2888,7 +2888,7 @@
 "Thanks to the users – contribute via Weblate!" = "ขอบคุณผู้ใช้ – มีส่วนร่วมผ่าน Weblate!";
 
 /* No comment provided by engineer. */
-"The 1st platform without any user identifiers – private by design." = "แพลตฟอร์มแรกที่ไม่มีตัวระบุผู้ใช้ - ถูกออกแบบให้เป็นส่วนตัว";
+"No user identifiers." = "แพลตฟอร์มแรกที่ไม่มีตัวระบุผู้ใช้ - ถูกออกแบบให้เป็นส่วนตัว";
 
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "แอปสามารถแจ้งให้คุณทราบเมื่อคุณได้รับข้อความหรือคำขอติดต่อ - โปรดเปิดการตั้งค่าเพื่อเปิดใช้งาน";
@@ -2921,7 +2921,7 @@
 "The message will be marked as moderated for all members." = "ข้อความจะถูกทำเครื่องหมายว่ากลั่นกรองสำหรับสมาชิกทุกคน";
 
 /* No comment provided by engineer. */
-"The next generation of private messaging" = "การส่งข้อความส่วนตัวรุ่นต่อไป";
+"The future of messaging" = "การส่งข้อความส่วนตัวรุ่นต่อไป";
 
 /* No comment provided by engineer. */
 "The old database was not removed during the migration, it can be deleted." = "ฐานข้อมูลเก่าไม่ได้ถูกลบในระหว่างการย้ายข้อมูล แต่สามารถลบได้";

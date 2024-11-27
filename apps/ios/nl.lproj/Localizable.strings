@@ -3292,7 +3292,7 @@
 "Open user profiles" = "Gebruikers profielen openen";
 
 /* No comment provided by engineer. */
-"Open-source protocol and code – anybody can run the servers." = "Open-source protocol en code. Iedereen kan de servers draaien.";
+"Anybody can host servers." = "Iedereen kan servers hosten.";
 
 /* No comment provided by engineer. */
 "Opening app…" = "App openen…";
@@ -3373,7 +3373,7 @@
 "Pending" = "in behandeling";
 
 /* No comment provided by engineer. */
-"People can connect to you only via the links you share." = "Mensen kunnen alleen verbinding met u maken via de links die u deelt.";
+"You decide who can connect." = "Jij bepaalt wie er verbinding mag maken.";
 
 /* No comment provided by engineer. */
 "Periodic" = "Periodiek";
@@ -4497,7 +4497,7 @@
 "Thanks to the users – contribute via Weblate!" = "Dank aan de gebruikers – draag bij via Weblate!";
 
 /* No comment provided by engineer. */
-"The 1st platform without any user identifiers – private by design." = "Het eerste platform zonder gebruikers-ID's, privé door ontwerp.";
+"No user identifiers." = "Geen gebruikers-ID\'s.";
 
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "De app kan u op de hoogte stellen wanneer u berichten of contact verzoeken ontvangt - open de instellingen om dit in te schakelen.";
@@ -4542,7 +4542,7 @@
 "The messages will be marked as moderated for all members." = "De berichten worden voor alle leden als gemodereerd gemarkeerd.";
 
 /* No comment provided by engineer. */
-"The next generation of private messaging" = "De volgende generatie privéberichten";
+"The future of messaging" = "De volgende generatie privéberichten";
 
 /* No comment provided by engineer. */
 "The old database was not removed during the migration, it can be deleted." = "De oude database is niet verwijderd tijdens de migratie, deze kan worden verwijderd.";

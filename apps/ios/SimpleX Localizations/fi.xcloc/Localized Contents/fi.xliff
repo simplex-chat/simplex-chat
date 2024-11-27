@@ -875,6 +875,7 @@
       </trans-unit>
       <trans-unit id="Anybody can host servers." xml:space="preserve">
         <source>Anybody can host servers.</source>
+        <target>Avoimen lähdekoodin protokolla ja koodi - kuka tahansa voi käyttää palvelimia.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App build: %@" xml:space="preserve">
@@ -4518,6 +4519,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="No user identifiers." xml:space="preserve">
         <source>No user identifiers.</source>
+        <target>Ensimmäinen alusta ilman käyttäjätunnisteita – suunniteltu yksityiseksi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Not compatible!" xml:space="preserve">
@@ -6543,6 +6545,7 @@ Tämä voi johtua jostain virheestä tai siitä, että yhteys on vaarantunut.</t
       </trans-unit>
       <trans-unit id="The future of messaging" xml:space="preserve">
         <source>The future of messaging</source>
+        <target>Seuraavan sukupolven yksityisviestit</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The hash of the previous message is different." xml:space="preserve">
@@ -7512,6 +7515,7 @@ Repeat join request?</source>
       </trans-unit>
       <trans-unit id="You decide who can connect." xml:space="preserve">
         <source>You decide who can connect.</source>
+        <target>Kimin bağlanabileceğine siz karar verirsiniz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You have already requested connection via this address!" xml:space="preserve">

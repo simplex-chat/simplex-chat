@@ -2238,7 +2238,7 @@
 "Open user profiles" = "Avaa käyttäjäprofiilit";
 
 /* No comment provided by engineer. */
-"Open-source protocol and code – anybody can run the servers." = "Avoimen lähdekoodin protokolla ja koodi - kuka tahansa voi käyttää palvelimia.";
+"Anybody can host servers." = "Avoimen lähdekoodin protokolla ja koodi - kuka tahansa voi käyttää palvelimia.";
 
 /* member role */
 "owner" = "omistaja";
@@ -2268,7 +2268,7 @@
 "peer-to-peer" = "vertais";
 
 /* No comment provided by engineer. */
-"People can connect to you only via the links you share." = "Ihmiset voivat ottaa sinuun yhteyttä vain jakamiesi linkkien kautta.";
+"You decide who can connect." = "Kimin bağlanabileceğine siz karar verirsiniz.";
 
 /* No comment provided by engineer. */
 "Periodic" = "Ajoittain";
@@ -2969,7 +2969,7 @@
 "Thanks to the users – contribute via Weblate!" = "Kiitokset käyttäjille – osallistu Weblaten kautta!";
 
 /* No comment provided by engineer. */
-"The 1st platform without any user identifiers – private by design." = "Ensimmäinen alusta ilman käyttäjätunnisteita – suunniteltu yksityiseksi.";
+"No user identifiers." = "Ensimmäinen alusta ilman käyttäjätunnisteita – suunniteltu yksityiseksi.";
 
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "Sovellus voi ilmoittaa sinulle, kun saat viestejä tai yhteydenottopyyntöjä - avaa asetukset ottaaksesi ne käyttöön.";
@@ -3002,7 +3002,7 @@
 "The message will be marked as moderated for all members." = "Viesti merkitään moderoiduksi kaikille jäsenille.";
 
 /* No comment provided by engineer. */
-"The next generation of private messaging" = "Seuraavan sukupolven yksityisviestit";
+"The future of messaging" = "Seuraavan sukupolven yksityisviestit";
 
 /* No comment provided by engineer. */
 "The old database was not removed during the migration, it can be deleted." = "Vanhaa tietokantaa ei poistettu siirron aikana, se voidaan kuitenkin poistaa.";

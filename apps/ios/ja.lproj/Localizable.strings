@@ -2322,7 +2322,7 @@
 "Open user profiles" = "ユーザープロフィールを開く";
 
 /* No comment provided by engineer. */
-"Open-source protocol and code – anybody can run the servers." = "プロトコル技術とコードはオープンソースで、どなたでもご自分のサーバを運用できます。";
+"Anybody can host servers." = "プロトコル技術とコードはオープンソースで、どなたでもご自分のサーバを運用できます。";
 
 /* member role */
 "owner" = "オーナー";
@@ -2352,7 +2352,7 @@
 "peer-to-peer" = "P2P";
 
 /* No comment provided by engineer. */
-"People can connect to you only via the links you share." = "あなたと繋がることができるのは、あなたからリンクを頂いた方のみです。";
+"You decide who can connect." = "あなたと繋がることができるのは、あなたからリンクを頂いた方のみです。";
 
 /* No comment provided by engineer. */
 "Periodic" = "定期的に";
@@ -3032,7 +3032,7 @@
 "Thanks to the users – contribute via Weblate!" = "ユーザーに感謝します – Weblate 経由で貢献してください!";
 
 /* No comment provided by engineer. */
-"The 1st platform without any user identifiers – private by design." = "世界初のユーザーIDのないプラットフォーム｜設計も元からプライベート。";
+"No user identifiers." = "世界初のユーザーIDのないプラットフォーム｜設計も元からプライベート。";
 
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "アプリは、メッセージや連絡先のリクエストを受信したときに通知することができます - 設定を開いて有効にしてください。";
@@ -3065,7 +3065,7 @@
 "The message will be marked as moderated for all members." = "メッセージは、すべてのメンバーに対してモデレートされたものとして表示されます。";
 
 /* No comment provided by engineer. */
-"The next generation of private messaging" = "次世代のプライバシー・メッセンジャー";
+"The future of messaging" = "次世代のプライバシー・メッセンジャー";
 
 /* No comment provided by engineer. */
 "The old database was not removed during the migration, it can be deleted." = "古いデータベースは移行時に削除されなかったので、削除することができます。";

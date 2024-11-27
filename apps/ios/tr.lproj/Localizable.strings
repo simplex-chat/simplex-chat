@@ -2471,7 +2471,7 @@
 "Immediately" = "Hemen";
 
 /* No comment provided by engineer. */
-"Immune to spam and abuse" = "Spam ve kötüye kullanıma karşı bağışıklı";
+"Immune to spam" = "Spam ve kötüye kullanıma karşı bağışıklı";
 
 /* No comment provided by engineer. */
 "Import" = "İçe aktar";
@@ -3292,7 +3292,7 @@
 "Open user profiles" = "Kullanıcı profillerini aç";
 
 /* No comment provided by engineer. */
-"Open-source protocol and code – anybody can run the servers." = "Açık kaynak protokolü ve kodu - herhangi biri sunucuları çalıştırabilir.";
+"Anybody can host servers." = "Açık kaynak protokolü ve kodu - herhangi biri sunucuları çalıştırabilir.";
 
 /* No comment provided by engineer. */
 "Opening app…" = "Uygulama açılıyor…";
@@ -3373,7 +3373,7 @@
 "Pending" = "Bekleniyor";
 
 /* No comment provided by engineer. */
-"People can connect to you only via the links you share." = "İnsanlar size yalnızca paylaştığınız bağlantılar üzerinden ulaşabilir.";
+"You decide who can connect." = "Kimin bağlanabileceğine siz karar verirsiniz.";
 
 /* No comment provided by engineer. */
 "Periodic" = "Periyodik olarak";
@@ -4497,7 +4497,7 @@
 "Thanks to the users – contribute via Weblate!" = "Kullanıcılar için teşekkürler - Weblate aracılığıyla katkıda bulun!";
 
 /* No comment provided by engineer. */
-"The 1st platform without any user identifiers – private by design." = "Herhangi bir kullanıcı tanımlayıcısı olmayan ilk platform - tasarım gereği gizli.";
+"No user identifiers." = "Herhangi bir kullanıcı tanımlayıcısı yok.";
 
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "Uygulama, mesaj veya iletişim isteği aldığınızda sizi bilgilendirebilir - etkinleştirmek için lütfen ayarları açın.";
@@ -4542,7 +4542,7 @@
 "The messages will be marked as moderated for all members." = "Mesajlar tüm üyeler için moderasyonlu olarak işaretlenecektir.";
 
 /* No comment provided by engineer. */
-"The next generation of private messaging" = "Gizli mesajlaşmanın yeni nesli";
+"The future of messaging" = "Gizli mesajlaşmanın yeni nesli";
 
 /* No comment provided by engineer. */
 "The old database was not removed during the migration, it can be deleted." = "Eski veritabanı geçiş sırasında kaldırılmadı, silinebilir.";

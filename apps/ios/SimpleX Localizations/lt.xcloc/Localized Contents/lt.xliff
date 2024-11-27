@@ -1509,8 +1509,8 @@
         <source>Image will be received when your contact is online, please wait or check later!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Immune to spam and abuse" xml:space="preserve">
-        <source>Immune to spam and abuse</source>
+      <trans-unit id="Immune to spam" xml:space="preserve">
+        <source>Immune to spam</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Import" xml:space="preserve">
@@ -1967,8 +1967,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Open user profiles</source>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Open-source protocol and code – anybody can run the servers." xml:space="preserve">
-        <source>Open-source protocol and code – anybody can run the servers.</source>
+      <trans-unit id="Anybody can host servers." xml:space="preserve">
+        <source>Anybody can host servers.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." xml:space="preserve">
@@ -1999,8 +1999,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Paste the link you received into the box below to connect with your contact.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="People can connect to you only via the links you share." xml:space="preserve">
-        <source>People can connect to you only via the links you share.</source>
+      <trans-unit id="You decide who can connect." xml:space="preserve">
+        <source>You decide who can connect.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Periodically" xml:space="preserve">
@@ -2587,8 +2587,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Thanks to the users – contribute via Weblate!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The 1st platform without any user identifiers – private by design." xml:space="preserve">
-        <source>The 1st platform without any user identifiers – private by design.</source>
+      <trans-unit id="No user identifiers." xml:space="preserve">
+        <source>No user identifiers.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve">
@@ -2623,8 +2623,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>The message will be marked as moderated for all members.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The next generation of private messaging" xml:space="preserve">
-        <source>The next generation of private messaging</source>
+      <trans-unit id="The future of messaging" xml:space="preserve">
+        <source>The future of messaging</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The old database was not removed during the migration, it can be deleted." xml:space="preserve">
