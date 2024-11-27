@@ -124,8 +124,7 @@
     <string name="send_disappearing_message_30_seconds">30 ثانية</string>
     <string name="icon_descr_cancel_live_message">إلغاء الرسالة المباشرة</string>
     <string name="cancel_verb">إلغاء</string>
-    <string name="network_session_mode_entity_description">سيتم استخدام اتصال TCP منفصل (وبيانات اعتماد SOCKS) <b> لكل جهة اتصال وعضو في المجموعة</b>.
-\n<b> الرجاء ملاحظة</b>: إذا كان لديك العديد من التوصيلات ، فقد يكون استهلاك البطارية وحركة المرور أعلى بكثير وقد تفشل بعض الاتصالات.</string>
+    <string name="network_session_mode_entity_description">سيتم استخدام اتصال TCP منفصل (وبيانات اعتماد SOCKS) <b> لكل جهة اتصال وعضو في المجموعة</b>. \n<b> الرجاء ملاحظة</b>: إذا كان لديك العديد من التوصيلات ، فقد يكون استهلاك البطارية وحركة المرور أعلى بكثير وقد تفشل بعض الاتصالات.</string>
     <string name="callstatus_calling">جارٍ الاتصال…</string>
     <string name="icon_descr_audio_call">مكالمة صوتية</string>
     <string name="call_on_lock_screen">المكالمات على شاشة القفل:</string>
