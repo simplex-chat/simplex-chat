@@ -65,10 +65,7 @@
 "[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Звезда в GitHub](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
-"**Add contact**: to create a new invitation link, or connect via a link you received." = "**Добави контакт**: за създаване на нов линк или свързване чрез получен линк за връзка.";
-
-/* No comment provided by engineer. */
-"**Add new contact**: to create your one-time QR Code for your contact." = "**Добави нов контакт**: за да създадете своя еднократен QR код или линк за вашия контакт.";
+"**Create 1-time link**: to create and share a new invitation link." = "**Добави контакт**: за създаване на нов линк.";
 
 /* No comment provided by engineer. */
 "**Create group**: to create a new group." = "**Създай група**: за създаване на нова група.";
@@ -80,10 +77,10 @@
 "**e2e encrypted** video call" = "**e2e криптирано** видео разговор";
 
 /* No comment provided by engineer. */
-"**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." = "**По поверително**: проверявайте новите съобщения на всеки 20 минути. Токенът на устройството се споделя със сървъра за чат SimpleX, но не и колко контакти или съобщения имате.";
+"**More private**: check new messages every 20 minutes. Only device token is shared with our push server. It doesn't see how many contacts you have, or any message metadata." = "**По поверително**: проверявайте новите съобщения на всеки 20 минути. Токенът на устройството се споделя със сървъра за чат SimpleX, но не и колко контакти или съобщения имате.";
 
 /* No comment provided by engineer. */
-"**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." = "**Най-поверително**: не използвайте сървъра за известия SimpleX Chat, периодично проверявайте съобщенията във фонов режим (зависи от това колко често използвате приложението).";
+"**Most private**: do not use SimpleX Chat push server. The app will check messages in background, when the system allows it, depending on how often you use the app." = "**Най-поверително**: не използвайте сървъра за известия SimpleX Chat, периодично проверявайте съобщенията във фонов режим (зависи от това колко често използвате приложението).";
 
 /* No comment provided by engineer. */
 "**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." = "**Моля, обърнете внимание**: използването на една и съща база данни на две устройства ще наруши декриптирането на съобщенията от вашите връзки като защита на сигурността.";
@@ -92,7 +89,7 @@
 "**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**Моля, обърнете внимание**: НЯМА да можете да възстановите или промените паролата, ако я загубите.";
 
 /* No comment provided by engineer. */
-"**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." = "**Препоръчително**: токенът на устройството и известията се изпращат до сървъра за уведомяване на SimpleX Chat, но не и съдържанието, размерът на съобщението или от кого е.";
+"**Recommended**: device token and end-to-end encrypted notifications are sent to SimpleX Chat push server, but it does not see the message content, size or who it is from." = "**Препоръчително**: токенът на устройството и известията се изпращат до сървъра за уведомяване на SimpleX Chat, но не и съдържанието, размерът на съобщението или от кого е.";
 
 /* No comment provided by engineer. */
 "**Warning**: Instant push notifications require passphrase saved in Keychain." = "**Внимание**: Незабавните push известия изискват парола, запазена в Keychain.";
@@ -2075,7 +2072,7 @@
 "Immediately" = "Веднага";
 
 /* No comment provided by engineer. */
-"Immune to spam and abuse" = "Защитен от спам и злоупотреби";
+"Immune to spam" = "Защитен от спам и злоупотреби";
 
 /* No comment provided by engineer. */
 "Import" = "Импортиране";
@@ -2168,7 +2165,7 @@
 "Instant push notifications will be hidden!\n" = "Незабавните push известия ще бъдат скрити!\n";
 
 /* No comment provided by engineer. */
-"Instantly" = "Мигновено";
+"Instant" = "Мигновено";
 
 /* No comment provided by engineer. */
 "Interface" = "Интерфейс";
@@ -2363,7 +2360,7 @@
 "Live messages" = "Съобщения на живо";
 
 /* No comment provided by engineer. */
-"Local" = "Локално";
+"No push server" = "Локално";
 
 /* No comment provided by engineer. */
 "Local name" = "Локално име";
@@ -2513,7 +2510,7 @@
 "Migration is completed" = "Миграцията е завършена";
 
 /* No comment provided by engineer. */
-"Migrations: %@" = "Миграции: %@";
+"Migrations:" = "Миграции:";
 
 /* time unit */
 "minutes" = "минути";
@@ -2716,7 +2713,7 @@
 "Onion hosts will not be used." = "Няма се използват Onion хостове.";
 
 /* No comment provided by engineer. */
-"Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." = "Само потребителските устройства съхраняват потребителски профили, контакти, групи и съобщения, изпратени с **двуслойно криптиране от край до край**.";
+"Only client devices store user profiles, contacts, groups, and messages." = "Само потребителските устройства съхраняват потребителски профили, контакти, групи и съобщения, изпратени с **двуслойно криптиране от край до край**.";
 
 /* No comment provided by engineer. */
 "Only group owners can change group preferences." = "Само собствениците на групата могат да променят груповите настройки.";
@@ -2779,7 +2776,7 @@
 "Open user profiles" = "Отвори потребителските профили";
 
 /* No comment provided by engineer. */
-"Open-source protocol and code – anybody can run the servers." = "Протокол и код с отворен код – всеки може да оперира собствени сървъри.";
+"Anybody can host servers." = "Протокол и код с отворен код – всеки може да оперира собствени сървъри.";
 
 /* No comment provided by engineer. */
 "Opening app…" = "Приложението се отваря…";
@@ -2842,10 +2839,10 @@
 "peer-to-peer" = "peer-to-peer";
 
 /* No comment provided by engineer. */
-"People can connect to you only via the links you share." = "Хората могат да се свържат с вас само чрез ликовете, които споделяте.";
+"You decide who can connect." = "Хората могат да се свържат с вас само чрез ликовете, които споделяте.";
 
 /* No comment provided by engineer. */
-"Periodically" = "Периодично";
+"Periodic" = "Периодично";
 
 /* message decrypt error item */
 "Permanent decryption error" = "Постоянна грешка при декриптиране";
@@ -3010,7 +3007,7 @@
 "Read more" = "Прочетете още";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." = "Прочетете повече в [Ръководство за потребителя](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).";
+"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "Прочетете повече в [Ръководство за потребителя](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).";
 
 /* No comment provided by engineer. */
 "Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "Прочетете повече в [Ръководство за потребителя](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).";
@@ -3693,7 +3690,7 @@
 "Thanks to the users – contribute via Weblate!" = "Благодарение на потребителите – допринесете през Weblate!";
 
 /* No comment provided by engineer. */
-"The 1st platform without any user identifiers – private by design." = "Първата платформа без никакви потребителски идентификатори – поверителна по дизайн.";
+"No user identifiers." = "Първата платформа без никакви потребителски идентификатори – поверителна по дизайн.";
 
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "Приложението може да ви уведоми, когато получите съобщения или заявки за контакт - моля, отворете настройките, за да активирате.";
@@ -3729,7 +3726,7 @@
 "The message will be marked as moderated for all members." = "Съобщението ще бъде маркирано като модерирано за всички членове.";
 
 /* No comment provided by engineer. */
-"The next generation of private messaging" = "Ново поколение поверителни съобщения";
+"The future of messaging" = "Ново поколение поверителни съобщения";
 
 /* No comment provided by engineer. */
 "The old database was not removed during the migration, it can be deleted." = "Старата база данни не бе премахната по време на миграцията, тя може да бъде изтрита.";
@@ -3807,7 +3804,7 @@
 "To make a new connection" = "За да направите нова връзка";
 
 /* No comment provided by engineer. */
-"To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." = "За да се защити поверителността, вместо потребителски идентификатори, използвани от всички други платформи, SimpleX има идентификатори за опашки от съобщения, отделни за всеки от вашите контакти.";
+"To protect your privacy, SimpleX uses separate IDs for each of your contacts." = "За да се защити поверителността, вместо потребителски идентификатори, използвани от всички други платформи, SimpleX има идентификатори за опашки от съобщения, отделни за всеки от вашите контакти.";
 
 /* No comment provided by engineer. */
 "To protect timezone, image/voice files use UTC." = "За да не се разкрива часовата зона, файловете с изображения/глас използват UTC.";
@@ -4279,9 +4276,6 @@
 
 /* snd group event chat item */
 "you changed role of %@ to %@" = "променихте ролята на %1$@ на %2$@";
-
-/* No comment provided by engineer. */
-"You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." = "Вие контролирате през кой сървър(и) **да получавате** съобщенията, вашите контакти – сървърите, които използвате, за да им изпращате съобщения.";
 
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "Не можахте да бъдете потвърдени; Моля, опитайте отново.";

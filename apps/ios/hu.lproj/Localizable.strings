@@ -65,10 +65,7 @@
 "[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Csillagozás a GitHubon](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
-"**Add contact**: to create a new invitation link, or connect via a link you received." = "**Ismerős hozzáadása:** új meghívó-hivatkozás létrehozásához, vagy egy kapott hivatkozáson keresztül történő kapcsolódáshoz.";
-
-/* No comment provided by engineer. */
-"**Add new contact**: to create your one-time QR Code for your contact." = "**Új ismerős hozzáadása:** egyszer használható QR-kód vagy hivatkozás létrehozása az ismerőse számára.";
+"**Create 1-time link**: to create and share a new invitation link." = "**Ismerős hozzáadása:** új meghívó-hivatkozás létrehozásához, vagy egy kapott hivatkozáson keresztül történő kapcsolódáshoz.";
 
 /* No comment provided by engineer. */
 "**Create group**: to create a new group." = "**Csoport létrehozása:** új csoport létrehozásához.";
@@ -80,10 +77,10 @@
 "**e2e encrypted** video call" = "**e2e titkosított** videóhívás";
 
 /* No comment provided by engineer. */
-"**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." = "**Privátabb:** 20 percenként ellenőrzi az új üzeneteket. Az eszköztoken megosztásra kerül a SimpleX Chat-kiszolgálóval, de az nem, hogy hány ismerőse vagy üzenete van.";
+"**More private**: check new messages every 20 minutes. Only device token is shared with our push server. It doesn't see how many contacts you have, or any message metadata." = "**Privátabb:** 20 percenként ellenőrzi az új üzeneteket. Az eszköztoken megosztásra kerül a SimpleX Chat-kiszolgálóval, de az nem, hogy hány ismerőse vagy üzenete van.";
 
 /* No comment provided by engineer. */
-"**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." = "**Legprivátabb:** ne használja a SimpleX Chat értesítési kiszolgálót, rendszeresen ellenőrizze az üzeneteket a háttérben (attól függően, hogy milyen gyakran használja az alkalmazást).";
+"**Most private**: do not use SimpleX Chat push server. The app will check messages in background, when the system allows it, depending on how often you use the app." = "**Legprivátabb:** ne használja a SimpleX Chat értesítési kiszolgálót, rendszeresen ellenőrizze az üzeneteket a háttérben (attól függően, hogy milyen gyakran használja az alkalmazást).";
 
 /* No comment provided by engineer. */
 "**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." = "**Megjegyzés:** ha két eszközön is ugyanazt az adatbázist használja, akkor biztonsági védelemként megszakítja az ismerőseitől érkező üzenetek visszafejtését.";
@@ -92,7 +89,7 @@
 "**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**Megjegyzés:** NEM tudja visszaállítani vagy megváltoztatni jelmondatát, ha elveszíti azt.";
 
 /* No comment provided by engineer. */
-"**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." = "**Megjegyzés:** az eszköztoken és az értesítések elküldésre kerülnek a SimpleX Chat értesítési kiszolgálóra, kivéve az üzenet tartalma, mérete vagy az, hogy kitől származik.";
+"**Recommended**: device token and end-to-end encrypted notifications are sent to SimpleX Chat push server, but it does not see the message content, size or who it is from." = "**Megjegyzés:** az eszköztoken és az értesítések elküldésre kerülnek a SimpleX Chat értesítési kiszolgálóra, kivéve az üzenet tartalma, mérete vagy az, hogy kitől származik.";
 
 /* No comment provided by engineer. */
 "**Warning**: Instant push notifications require passphrase saved in Keychain." = "**Figyelmeztetés:** Az azonnali push-értesítésekhez a kulcstartóban tárolt jelmondat megadása szükséges.";
@@ -2474,7 +2471,7 @@
 "Immediately" = "Azonnal";
 
 /* No comment provided by engineer. */
-"Immune to spam and abuse" = "Spam és visszaélések elleni védelem";
+"Immune to spam" = "Spam és visszaélések elleni védelem";
 
 /* No comment provided by engineer. */
 "Import" = "Importálás";
@@ -2576,7 +2573,7 @@
 "Instant push notifications will be hidden!\n" = "Az azonnali push-értesítések elrejtésre kerülnek!\n";
 
 /* No comment provided by engineer. */
-"Instantly" = "Azonnal";
+"Instant" = "Azonnal";
 
 /* No comment provided by engineer. */
 "Interface" = "Felület";
@@ -2786,7 +2783,7 @@
 "Live messages" = "Élő üzenetek";
 
 /* No comment provided by engineer. */
-"Local" = "Helyi";
+"No push server" = "Helyi";
 
 /* No comment provided by engineer. */
 "Local name" = "Helyi név";
@@ -2987,7 +2984,7 @@
 "Migration is completed" = "Az átköltöztetés befejeződött";
 
 /* No comment provided by engineer. */
-"Migrations: %@" = "Átköltöztetések: %@";
+"Migrations:" = "Átköltöztetések:";
 
 /* time unit */
 "minutes" = "perc";
@@ -3226,7 +3223,7 @@
 "Onion hosts will not be used." = "Onion-kiszolgálók nem lesznek használva.";
 
 /* No comment provided by engineer. */
-"Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." = "Csak az eszközök alkalmazásai tárolják a felhasználó-profilokat, névjegyeket, csoportokat és a **2 rétegű végpontok közötti titkosítással** küldött üzeneteket.";
+"Only client devices store user profiles, contacts, groups, and messages." = "Csak az eszközök alkalmazásai tárolják a felhasználó-profilokat, névjegyeket, csoportokat és a **2 rétegű végpontok közötti titkosítással** küldött üzeneteket.";
 
 /* No comment provided by engineer. */
 "Only delete conversation" = "Csak a beszélgetés törlése";
@@ -3295,7 +3292,7 @@
 "Open user profiles" = "Felhasználó-profilok megnyitása";
 
 /* No comment provided by engineer. */
-"Open-source protocol and code – anybody can run the servers." = "Nyílt forráskódú protokoll és forráskód – bárki üzemeltethet kiszolgálókat.";
+"Anybody can host servers." = "Bárki üzemeltethet kiszolgálókat.";
 
 /* No comment provided by engineer. */
 "Opening app…" = "Az alkalmazás megnyitása…";
@@ -3376,10 +3373,10 @@
 "Pending" = "Függőben";
 
 /* No comment provided by engineer. */
-"People can connect to you only via the links you share." = "Az emberek csak az Ön által megosztott hivatkozáson keresztül kapcsolódhatnak.";
+"You decide who can connect." = "Ön dönti el, hogy kivel beszélget.";
 
 /* No comment provided by engineer. */
-"Periodically" = "Rendszeresen";
+"Periodic" = "Rendszeresen";
 
 /* message decrypt error item */
 "Permanent decryption error" = "Végleges visszafejtési hiba";
@@ -3592,7 +3589,7 @@
 "Read more" = "Tudjon meg többet";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." = "További információ a [Használati útmutatóban](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).";
+"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "További információ a [Használati útmutatóban](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).";
 
 /* No comment provided by engineer. */
 "Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "További információ a [Használati útmutatóban](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).";
@@ -4500,7 +4497,7 @@
 "Thanks to the users – contribute via Weblate!" = "Köszönet a felhasználóknak - hozzájárulás a Weblate-en!";
 
 /* No comment provided by engineer. */
-"The 1st platform without any user identifiers – private by design." = "Az első csevegési rendszer bármiféle felhasználó-azonosító nélkül - privátra lett tervezre.";
+"No user identifiers." = "Nincsenek felhasználó-azonosítók.";
 
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "Az alkalmazás értesíteni fogja, amikor üzeneteket vagy kapcsolatkéréseket kap – beállítások megnyitása az engedélyezéshez.";
@@ -4545,7 +4542,7 @@
 "The messages will be marked as moderated for all members." = "Az üzenetek moderáltként lesznek megjelölve minden tag számára.";
 
 /* No comment provided by engineer. */
-"The next generation of private messaging" = "A privát üzenetküldés következő generációja";
+"The future of messaging" = "A privát üzenetküldés következő generációja";
 
 /* No comment provided by engineer. */
 "The old database was not removed during the migration, it can be deleted." = "A régi adatbázis nem került eltávolításra az átköltöztetéskor, így törölhető.";
@@ -4635,7 +4632,7 @@
 "To make a new connection" = "Új kapcsolat létrehozásához";
 
 /* No comment provided by engineer. */
-"To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." = "Az adatvédelem érdekében, a más csevegési platformokon megszokott felhasználó-azonosítók helyett, a SimpleX csak az üzenetek sorbaállításához használ azonosítókat, minden egyes ismerőshöz egy-egy különbözőt.";
+"To protect your privacy, SimpleX uses separate IDs for each of your contacts." = "Az adatvédelem érdekében, a más csevegési platformokon megszokott felhasználó-azonosítók helyett, a SimpleX csak az üzenetek sorbaállításához használ azonosítókat, minden egyes ismerőshöz egy-egy különbözőt.";
 
 /* No comment provided by engineer. */
 "To protect timezone, image/voice files use UTC." = "Az időzóna védelme érdekében a kép-/hangfájlok UTC-t használnak.";
@@ -5209,9 +5206,6 @@
 
 /* snd group event chat item */
 "you changed role of %@ to %@" = "Ön megváltoztatta %1$@ szerepkörét erre: %@";
-
-/* No comment provided by engineer. */
-"You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." = "Ön szabályozhatja, hogy mely kiszogál(ók)ón keresztül **kapja** az üzeneteket, az ismerősöket - az üzenetküldéshez használt kiszolgálókon.";
 
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "Nem sikerült hitelesíteni; próbálja meg újra.";

@@ -45,7 +45,7 @@ struct ChatInfoToolbar: View {
     }
 
     private var contactVerifiedShield: Text {
-        (Text(Image(systemName: "checkmark.shield")) + Text(" "))
+        (Text(Image(systemName: "checkmark.shield")) + textSpace)
             .font(.caption)
             .foregroundColor(theme.colors.secondary)
             .baselineOffset(1)

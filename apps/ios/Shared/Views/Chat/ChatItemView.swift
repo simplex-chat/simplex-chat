@@ -170,7 +170,7 @@ struct ChatItemContentView<Content: View>: View {
 
     private func eventItemViewText(_ secondaryColor: Color) -> Text {
         if !revealed, let t = mergedGroupEventText {
-            return chatEventText(t + Text(" ") + chatItem.timestampText, secondaryColor)
+            return chatEventText(t + textSpace + chatItem.timestampText, secondaryColor)
         } else if let member = chatItem.memberDisplayName {
             return Text(member + " ")
                     .font(.caption)
@@ -203,7 +203,7 @@ struct ChatItemContentView<Content: View>: View {
         } else if ns.count == 0 {
             Text("\(count) group events")
         } else if count > ns.count {
-            Text(members) + Text(" ") + Text("and \(count - ns.count) other events")
+            Text(members) + textSpace + Text("and \(count - ns.count) other events")
         } else {
             Text(members)
         }
@@ -234,7 +234,7 @@ func chatEventText(_ text: Text, _ secondaryColor: Color) -> Text {
 }
 
 func chatEventText(_ eventText: LocalizedStringKey, _ ts: Text, _ secondaryColor: Color) -> Text {
-    chatEventText(Text(eventText) + Text(" ") + ts, secondaryColor)
+    chatEventText(Text(eventText) + textSpace + ts, secondaryColor)
 }
 
 func chatEventText(_ ci: ChatItem, _ secondaryColor: Color) -> Text {

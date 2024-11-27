@@ -65,10 +65,7 @@
 "[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Dai una stella su GitHub](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
-"**Add contact**: to create a new invitation link, or connect via a link you received." = "**Aggiungi contatto**: per creare un nuovo link di invito o connetterti tramite un link che hai ricevuto.";
-
-/* No comment provided by engineer. */
-"**Add new contact**: to create your one-time QR Code for your contact." = "**Aggiungi un contatto**: per creare il tuo codice QR o link una tantum per il tuo contatto.";
+"**Create 1-time link**: to create and share a new invitation link." = "**Aggiungi contatto**: per creare un nuovo link di invito.";
 
 /* No comment provided by engineer. */
 "**Create group**: to create a new group." = "**Crea gruppo**: per creare un nuovo gruppo.";
@@ -80,10 +77,10 @@
 "**e2e encrypted** video call" = "Videochiamata **crittografata e2e**";
 
 /* No comment provided by engineer. */
-"**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." = "**Più privato**: controlla messaggi nuovi ogni 20 minuti. Viene condiviso il token del dispositivo con il server di SimpleX Chat, ma non quanti contatti o messaggi hai.";
+"**More private**: check new messages every 20 minutes. Only device token is shared with our push server. It doesn't see how many contacts you have, or any message metadata." = "**Più privato**: controlla messaggi nuovi ogni 20 minuti. Viene condiviso il token del dispositivo con il server di SimpleX Chat, ma non quanti contatti o messaggi hai.";
 
 /* No comment provided by engineer. */
-"**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." = "**Il più privato**: non usare il server di notifica di SimpleX Chat, controlla i messaggi periodicamente in secondo piano (dipende da quanto spesso usi l'app).";
+"**Most private**: do not use SimpleX Chat push server. The app will check messages in background, when the system allows it, depending on how often you use the app." = "**Il più privato**: non usare il server di notifica di SimpleX Chat, controlla i messaggi periodicamente in secondo piano (dipende da quanto spesso usi l'app).";
 
 /* No comment provided by engineer. */
 "**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." = "**Nota bene**: usare lo stesso database su due dispositivi bloccherà la decifrazione dei messaggi dalle tue connessioni, come misura di sicurezza.";
@@ -92,7 +89,7 @@
 "**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**Nota bene**: NON potrai recuperare o cambiare la password se la perdi.";
 
 /* No comment provided by engineer. */
-"**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." = "**Consigliato**: vengono inviati il token del dispositivo e le notifiche al server di notifica di SimpleX Chat, ma non il contenuto del messaggio,la sua dimensione o il suo mittente.";
+"**Recommended**: device token and end-to-end encrypted notifications are sent to SimpleX Chat push server, but it does not see the message content, size or who it is from." = "**Consigliato**: vengono inviati il token del dispositivo e le notifiche al server di notifica di SimpleX Chat, ma non il contenuto del messaggio,la sua dimensione o il suo mittente.";
 
 /* No comment provided by engineer. */
 "**Warning**: Instant push notifications require passphrase saved in Keychain." = "**Attenzione**: le notifiche push istantanee richiedono una password salvata nel portachiavi.";
@@ -2474,7 +2471,7 @@
 "Immediately" = "Immediatamente";
 
 /* No comment provided by engineer. */
-"Immune to spam and abuse" = "Immune a spam e abusi";
+"Immune to spam" = "Immune a spam e abusi";
 
 /* No comment provided by engineer. */
 "Import" = "Importa";
@@ -2576,7 +2573,7 @@
 "Instant push notifications will be hidden!\n" = "Le notifiche push istantanee saranno nascoste!\n";
 
 /* No comment provided by engineer. */
-"Instantly" = "Istantaneamente";
+"Instant" = "Istantaneamente";
 
 /* No comment provided by engineer. */
 "Interface" = "Interfaccia";
@@ -2786,7 +2783,7 @@
 "Live messages" = "Messaggi in diretta";
 
 /* No comment provided by engineer. */
-"Local" = "Locale";
+"No push server" = "Locale";
 
 /* No comment provided by engineer. */
 "Local name" = "Nome locale";
@@ -2987,7 +2984,7 @@
 "Migration is completed" = "La migrazione è completata";
 
 /* No comment provided by engineer. */
-"Migrations: %@" = "Migrazioni: %@";
+"Migrations:" = "Migrazioni:";
 
 /* time unit */
 "minutes" = "minuti";
@@ -3226,7 +3223,7 @@
 "Onion hosts will not be used." = "Gli host Onion non verranno usati.";
 
 /* No comment provided by engineer. */
-"Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." = "Solo i dispositivi client archiviano profili utente, i contatti, i gruppi e i messaggi inviati con la **crittografia end-to-end a 2 livelli**.";
+"Only client devices store user profiles, contacts, groups, and messages." = "Solo i dispositivi client archiviano profili utente, i contatti, i gruppi e i messaggi inviati con la **crittografia end-to-end a 2 livelli**.";
 
 /* No comment provided by engineer. */
 "Only delete conversation" = "Elimina solo la conversazione";
@@ -3295,7 +3292,7 @@
 "Open user profiles" = "Apri i profili utente";
 
 /* No comment provided by engineer. */
-"Open-source protocol and code – anybody can run the servers." = "Protocollo e codice open source: chiunque può gestire i server.";
+"Anybody can host servers." = "Chiunque può installare i server.";
 
 /* No comment provided by engineer. */
 "Opening app…" = "Apertura dell'app…";
@@ -3376,10 +3373,10 @@
 "Pending" = "In attesa";
 
 /* No comment provided by engineer. */
-"People can connect to you only via the links you share." = "Le persone possono connettersi a te solo tramite i link che condividi.";
+"You decide who can connect." = "Sei tu a decidere chi può connettersi.";
 
 /* No comment provided by engineer. */
-"Periodically" = "Periodicamente";
+"Periodic" = "Periodicamente";
 
 /* message decrypt error item */
 "Permanent decryption error" = "Errore di decifrazione";
@@ -3592,7 +3589,7 @@
 "Read more" = "Leggi tutto";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." = "Maggiori informazioni nella [Guida per l'utente](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).";
+"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "Maggiori informazioni nella [Guida per l'utente](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).";
 
 /* No comment provided by engineer. */
 "Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "Leggi di più nella [Guida utente](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).";
@@ -4500,7 +4497,7 @@
 "Thanks to the users – contribute via Weblate!" = "Grazie agli utenti – contribuite via Weblate!";
 
 /* No comment provided by engineer. */
-"The 1st platform without any user identifiers – private by design." = "La prima piattaforma senza alcun identificatore utente – privata by design.";
+"No user identifiers." = "Nessun identificatore utente.";
 
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "L'app può avvisarti quando ricevi messaggi o richieste di contatto: apri le impostazioni per attivare.";
@@ -4545,7 +4542,7 @@
 "The messages will be marked as moderated for all members." = "I messaggi verranno contrassegnati come moderati per tutti i membri.";
 
 /* No comment provided by engineer. */
-"The next generation of private messaging" = "La nuova generazione di messaggistica privata";
+"The future of messaging" = "La nuova generazione di messaggistica privata";
 
 /* No comment provided by engineer. */
 "The old database was not removed during the migration, it can be deleted." = "Il database vecchio non è stato rimosso durante la migrazione, può essere eliminato.";
@@ -4635,7 +4632,7 @@
 "To make a new connection" = "Per creare una nuova connessione";
 
 /* No comment provided by engineer. */
-"To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." = "Per proteggere la privacy, invece degli ID utente utilizzati da tutte le altre piattaforme, SimpleX ha identificatori per le code di messaggi, separati per ciascuno dei tuoi contatti.";
+"To protect your privacy, SimpleX uses separate IDs for each of your contacts." = "Per proteggere la privacy, invece degli ID utente utilizzati da tutte le altre piattaforme, SimpleX ha identificatori per le code di messaggi, separati per ciascuno dei tuoi contatti.";
 
 /* No comment provided by engineer. */
 "To protect timezone, image/voice files use UTC." = "Per proteggere il fuso orario, i file immagine/vocali usano UTC.";
@@ -5209,9 +5206,6 @@
 
 /* snd group event chat item */
 "you changed role of %@ to %@" = "hai cambiato il ruolo di %1$@ in %2$@";
-
-/* No comment provided by engineer. */
-"You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." = "Tu decidi attraverso quale/i server **ricevere** i messaggi, i tuoi contatti quali server usi per inviare loro i messaggi.";
 
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "Non è stato possibile verificarti, riprova.";
