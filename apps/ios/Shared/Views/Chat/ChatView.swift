@@ -910,7 +910,9 @@ struct ChatView: View {
         @State private var showChatItemInfoSheet: Bool = false
         @State private var chatItemInfo: ChatItemInfo?
         @State private var msgWidth: CGFloat = 0
-        
+        @State private var showReactionContextMenu: Bool = false
+        @State private var memberReactions: [MemberReaction] = []
+
         @Binding var selectedChatItems: Set<Int64>?
         @Binding var forwardedChatItems: [ChatItem]
 
@@ -1251,20 +1253,68 @@ struct ChatView: View {
                                 .foregroundColor(r.userReacted ? theme.colors.primary : theme.colors.secondary)
                         }
                     }
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 4)
-
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 4)
+                    
                     if chat.chatInfo.featureEnabled(.reactions) {
                         if ci.allowAddReaction || r.userReacted {
-                            v.onTapGesture {
-                                setReaction(ci, add: !r.userReacted, reaction: r.reaction)
-                            }
-                            .contextMenu { ReactionContextMenu(reaction: r.reaction, chatItem: ci, groupId: chat.chatInfo.groupInfo?.groupId, selectedMember: $selectedMember) }
+                            v
+                                .onLongPressGesture {
+                                    loadChatItemReaction(reaction: r.reaction, itemId: ci.id)
+                                }
+                                .onTapGesture {
+                                    setReaction(ci, add: !r.userReacted, reaction: r.reaction)
+                                }
+                                .contextMenu {
+                                    if showReactionContextMenu {
+                                        ReactionContextMenu(
+                                            selectedMember: $selectedMember,
+                                            memberReactions: $memberReactions
+                                        )
+                                    } else {
+                                        EmptyView()
+                                    }
+                                }
                         } else {
-                            v.contextMenu { ReactionContextMenu(reaction: r.reaction, chatItem: ci, groupId: chat.chatInfo.groupInfo?.groupId, selectedMember: $selectedMember) }
+                            v
+                                .onLongPressGesture {
+                                    loadChatItemReaction(reaction: r.reaction, itemId: ci.id)
+                                }
+                                .contextMenu {
+                                    if showReactionContextMenu {
+                                        ReactionContextMenu(
+                                            selectedMember: $selectedMember,
+                                            memberReactions: $memberReactions
+                                        )
+                                    } else {
+                                        EmptyView()
+                                    }
+                                }
                         }
                     } else {
                         v
+                    }
+                }
+            }
+        }
+        
+        private func loadChatItemReaction(reaction: MsgReaction, itemId: Int64) {
+            showReactionContextMenu = false
+            if let gId = chat.chatInfo.groupInfo?.groupId {
+                Task {
+                    do {
+                        let memberReactions = try await apiGetReactionMembers(
+                            groupId: gId,
+                            itemId: itemId,
+                            reaction: reaction
+                        )
+
+                        await MainActor.run {
+                            self.showReactionContextMenu = true
+                            self.memberReactions = memberReactions
+                        }
+                    } catch let error {
+                        logger.error("apiGetReactionMembers error: \(responseError(error))")
                     }
                 }
             }
@@ -1854,43 +1904,11 @@ private func buildTheme() -> AppTheme {
 
 struct ReactionContextMenu: View {
     @EnvironmentObject var chatModel: ChatModel
-    var reaction: MsgReaction
-    var chatItem: ChatItem
-    var groupId: Int64?
     @Binding var selectedMember: GMember?
-
-    @State private var memberReactions: [MemberReaction] = [
-        MemberReaction(groupMemberId: 129, reactionTs: Date()),
-        MemberReaction(groupMemberId: 131, reactionTs: Date().addingTimeInterval(-3600)), // 1 hour ago
-        MemberReaction(groupMemberId: 132, reactionTs: Date().addingTimeInterval(-86400)), // 1 day ago
-        MemberReaction(groupMemberId: 133, reactionTs: Date().addingTimeInterval(-604800)), // 1 week ago
-        MemberReaction(groupMemberId: 134, reactionTs: Date().addingTimeInterval(-604800)), // 1 week ago
-        MemberReaction(groupMemberId: 136, reactionTs: Date().addingTimeInterval(-604800)), // 1 week ago
-    ]
+    @Binding var memberReactions: [MemberReaction]
 
     var body: some View {
         groupMemberReactionList()
-//        .onAppear {
-//            logger.error("apiGetReactionMembers groupId: \(groupId ?? -1)")
-//
-//            if let gId = groupId {
-//                Task {
-//                    do {
-//                        let memberReactions = try await apiGetReactionMembers(
-//                            groupId: gId,
-//                            itemId: chatItem.id,
-//                            reaction: reaction
-//                        )
-//
-//                        await MainActor.run {
-//                            self.memberReactions = memberReactions
-//                        }
-//                    } catch let error {
-//                        logger.error("apiGetReactionMembers error: \(responseError(error))")
-//                    }
-//                }
-//            }
-//        }
     }
 
     @ViewBuilder
@@ -1901,7 +1919,6 @@ struct ReactionContextMenu: View {
 
                 Button {
                     selectedMember = member
-                    logger.error("all_members: \(ChatModel.shared.groupMembers.map { $0.groupMemberId })")
                 } label: {
                     if let originalImage = imageFromBase64(member.wrapped.image) {
                         let hasAlpha = imageHasAlpha(originalImage)

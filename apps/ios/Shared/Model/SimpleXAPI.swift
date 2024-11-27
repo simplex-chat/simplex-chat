@@ -450,6 +450,14 @@ func apiGetReactionMembers(groupId: Int64, itemId: Int64, reaction: MsgReaction)
     let userId = try currentUserId("apiGetReactionMemebers")
     let r = await chatSendCmd(.apiGetReactionMembers(userId: userId, groupId: groupId, itemId: itemId, reaction: reaction ))
     if case let .reactionMembers(_, memberReactions) = r { return memberReactions }
+   return [
+            MemberReaction(groupMemberId: 129, reactionTs: Date()),
+            MemberReaction(groupMemberId: 131, reactionTs: Date().addingTimeInterval(-3600)), // 1 hour ago
+            MemberReaction(groupMemberId: 132, reactionTs: Date().addingTimeInterval(-86400)), // 1 day ago
+            MemberReaction(groupMemberId: 133, reactionTs: Date().addingTimeInterval(-604800)), // 1 week ago
+            MemberReaction(groupMemberId: 134, reactionTs: Date().addingTimeInterval(-604800)), // 1 week ago
+            MemberReaction(groupMemberId: 136, reactionTs: Date().addingTimeInterval(-604800)), // 1 week ago
+        ]
     throw r
 }
 
