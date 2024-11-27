@@ -98,7 +98,7 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRC
   val tabTitles = NewChatOption.values().map {
     when(it) {
       NewChatOption.INVITE ->
-        stringResource(MR.strings.add_contact_tab)
+        stringResource(MR.strings.one_time_link_short)
       NewChatOption.CONNECT ->
         stringResource(MR.strings.connect_via_link)
     }
