@@ -286,7 +286,6 @@ struct PassphraseField: View {
     var valid: Bool
     var showStrength = false
     var onSubmit: () -> Void = {}
-    @State var withBackground = false
     @State private var showKey = false
 
     var body: some View {
@@ -300,26 +299,12 @@ struct PassphraseField: View {
                 .frame(width: 20, height: 22, alignment: .center)
                 .foregroundColor(iconColor)
                 .onTapGesture { showKey = !showKey }
-                .padding(.leading, withBackground ? 10 : 0)
-            
-            let txtField = textField()
+            textField()
                 .disableAutocorrection(true)
                 .autocapitalization(.none)
                 .submitLabel(.done)
+                .padding(.leading, 36)
                 .onSubmit(onSubmit)
-
-            
-            if withBackground {
-                txtField
-                    .padding(.vertical, 10)
-                    .padding(.leading, 40)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(Color(uiColor: .tertiarySystemFill))
-                    )
-            } else {
-                txtField.padding(.leading, 36)
-            }
         }
     }
 

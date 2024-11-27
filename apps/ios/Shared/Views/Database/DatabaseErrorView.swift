@@ -161,7 +161,13 @@ struct DatabaseErrorView: View {
     }
 
     private func databaseKeyField(onSubmit: @escaping () -> Void) -> some View {
-        PassphraseField(key: $dbKey, placeholder: "Enter passphrase…", valid: validKey(dbKey), onSubmit: onSubmit, withBackground: true)
+        PassphraseField(key: $dbKey, placeholder: "Enter passphrase…", valid: validKey(dbKey), onSubmit: onSubmit)
+            .padding(.vertical, 10)
+            .padding(.horizontal)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color(uiColor: .tertiarySystemFill))
+            )
     }
 
     private func saveAndOpenButton() -> some View {
