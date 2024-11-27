@@ -6845,7 +6845,7 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Ondersteuning van SimpleX Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Switch audio and video during the call." xml:space="preserve">
+      <trans-unit id="Switch audio and video during the call." xml:space="preserve" approved="no">
         <source>Switch audio and video during the call.</source>
         <target>Wisselen tussen audio en video tijdens het gesprek.</target>
         <note>No comment provided by engineer.</note>
