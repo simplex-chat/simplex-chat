@@ -551,8 +551,7 @@
     <string name="app_version_code">Versiunea aplicației: %s</string>
     <string name="network_session_mode_user_description"><![CDATA[O conexiune separată TCP (și SOCKS credential), va fi folosită <b>pentru fiecare profil de conversație pe care le aveți în aplicație</b>]]></string>
     <string name="network_smp_proxy_fallback_allow_downgrade">Permiteți downgrade-ul</string>
-    <string name="network_session_mode_entity_description">O conexiune separată TCP (și SOCKS credential) va fi folosită <b>pentru fiecare contact și membru de grup</b>
-\n<b>Va rugăm considerați că:</b> dacă aveți prea multe conexiuni, consumul dumneavoastră de baterie și trafic de internet pot fi considerabil mai mari, iar unele conexiuni pot eșua.</string>
+    <string name="network_session_mode_entity_description">O conexiune separată TCP (și SOCKS credential) va fi folosită <b>pentru fiecare contact și membru de grup</b> \n<b>Va rugăm considerați că:</b> dacă aveți prea multe conexiuni, consumul dumneavoastră de baterie și trafic de internet pot fi considerabil mai mari, iar unele conexiuni pot eșua.</string>
     <string name="desktop_connection_terminated">Conexiune terminată</string>
     <string name="connecting_to_desktop">Se conectează la desktop</string>
     <string name="icon_descr_asked_to_receive">Rugat să primească imaginea</string>
