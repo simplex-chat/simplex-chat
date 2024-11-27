@@ -65,10 +65,7 @@
 "[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Bize GitHub'da yıldız verin](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
-"**Add contact**: to create a new invitation link, or connect via a link you received." = "**Kişi ekle**: yeni bir davet bağlantısı oluşturmak için, ya da aldığın bağlantıyla bağlan.";
-
-/* No comment provided by engineer. */
-"**Add new contact**: to create your one-time QR Code for your contact." = "**Yeni kişi ekleyin**: tek seferlik QR Kodunuzu oluşturmak veya kişisel ulaşım bilgileri bağlantısı için.";
+"**Create 1-time link**: to create and share a new invitation link." = "**Kişi ekle**: yeni bir davet bağlantısı oluşturmak için, ya da aldığın bağlantıyla bağlan.";
 
 /* No comment provided by engineer. */
 "**Create group**: to create a new group." = "**Grup oluştur**: yeni bir grup oluşturmak için.";
@@ -80,10 +77,10 @@
 "**e2e encrypted** video call" = "**uçtan uca şifrelenmiş** görüntülü arama";
 
 /* No comment provided by engineer. */
-"**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." = "**Daha gizli**: her 20 dakikada yeni mesajlar için kontrol et. Cihaz jetonu SimpleX Chat sunucusuyla paylaşılacak, ama ne kadar kişi veya mesaja sahip olduğun paylaşılmayacak.";
+"**More private**: check new messages every 20 minutes. Only device token is shared with our push server. It doesn't see how many contacts you have, or any message metadata." = "**Daha gizli**: her 20 dakikada yeni mesajlar için kontrol et. Cihaz jetonu SimpleX Chat sunucusuyla paylaşılacak, ama ne kadar kişi veya mesaja sahip olduğun paylaşılmayacak.";
 
 /* No comment provided by engineer. */
-"**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." = "**En gizli**: SimpleX Chat bildirim sunucusunu kullanma, arkaplanda mesajları periyodik olarak kontrol edin (uygulamayı ne sıklıkta kullandığınıza bağlıdır).";
+"**Most private**: do not use SimpleX Chat push server. The app will check messages in background, when the system allows it, depending on how often you use the app." = "**En gizli**: SimpleX Chat bildirim sunucusunu kullanma, arkaplanda mesajları periyodik olarak kontrol edin (uygulamayı ne sıklıkta kullandığınıza bağlıdır).";
 
 /* No comment provided by engineer. */
 "**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." = "**Lütfen dikkat**: Aynı veritabanını iki cihazda kullanmak, güvenlik koruması olarak bağlantılarınızdaki mesajların şifresinin çözülmesini engelleyecektir.";
@@ -92,7 +89,7 @@
 "**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**Lütfen aklınızda bulunsun**: eğer parolanızı kaybederseniz parolanızı değiştirme veya geri kurtarma ihtimaliniz YOKTUR.";
 
 /* No comment provided by engineer. */
-"**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." = "**Önerilen**: cihaz tokeni ve bildirimler SimpleX Chat bildirim sunucularına gönderilir, ama mesajın içeriği, boyutu veya kimden geldiği gönderilmez.";
+"**Recommended**: device token and end-to-end encrypted notifications are sent to SimpleX Chat push server, but it does not see the message content, size or who it is from." = "**Önerilen**: cihaz tokeni ve bildirimler SimpleX Chat bildirim sunucularına gönderilir, ama mesajın içeriği, boyutu veya kimden geldiği gönderilmez.";
 
 /* No comment provided by engineer. */
 "**Warning**: Instant push notifications require passphrase saved in Keychain." = "**Dikkat**: Anında iletilen bildirimlere Anahtar Zinciri'nde kaydedilmiş parola gereklidir.";
@@ -2576,7 +2573,7 @@
 "Instant push notifications will be hidden!\n" = "Anlık bildirimler gizlenecek!\n";
 
 /* No comment provided by engineer. */
-"Instantly" = "Anında";
+"Instant" = "Anında";
 
 /* No comment provided by engineer. */
 "Interface" = "Arayüz";
@@ -2786,7 +2783,7 @@
 "Live messages" = "Canlı mesajlar";
 
 /* No comment provided by engineer. */
-"Local" = "Yerel";
+"No push server" = "Yerel";
 
 /* No comment provided by engineer. */
 "Local name" = "Yerel isim";
@@ -3226,7 +3223,7 @@
 "Onion hosts will not be used." = "Onion ana bilgisayarları kullanılmayacaktır.";
 
 /* No comment provided by engineer. */
-"Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." = "Yalnızca istemci cihazlar kullanıcı profillerini, kişileri, grupları ve **2 katmanlı uçtan uca şifreleme** ile gönderilen mesajları depolar.";
+"Only client devices store user profiles, contacts, groups, and messages." = "Yalnızca istemci cihazlar kullanıcı profillerini, kişileri, grupları ve **2 katmanlı uçtan uca şifreleme** ile gönderilen mesajları depolar.";
 
 /* No comment provided by engineer. */
 "Only delete conversation" = "Sadece sohbeti sil";
@@ -3379,7 +3376,7 @@
 "People can connect to you only via the links you share." = "İnsanlar size yalnızca paylaştığınız bağlantılar üzerinden ulaşabilir.";
 
 /* No comment provided by engineer. */
-"Periodically" = "Periyodik olarak";
+"Periodic" = "Periyodik olarak";
 
 /* message decrypt error item */
 "Permanent decryption error" = "Kalıcı şifre çözümü hatası";
@@ -3592,7 +3589,7 @@
 "Read more" = "Dahasını oku";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." = "[Kullanıcı Rehberi]nde daha fazlasını okuyun(https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).";
+"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "[Kullanıcı Rehberi]nde daha fazlasını okuyun(https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).";
 
 /* No comment provided by engineer. */
 "Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "[Kullanıcı Rehberi]nde daha fazlasını okuyun(https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).";
@@ -4635,7 +4632,7 @@
 "To make a new connection" = "Yeni bir bağlantı oluşturmak için";
 
 /* No comment provided by engineer. */
-"To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." = "Gizliliği korumak için, diğer tüm platformlar gibi kullanıcı kimliği kullanmak yerine, SimpleX mesaj kuyrukları için kişilerinizin her biri için ayrı tanımlayıcılara sahiptir.";
+"To protect your privacy, SimpleX uses separate IDs for each of your contacts." = "Gizliliği korumak için, diğer tüm platformlar gibi kullanıcı kimliği kullanmak yerine, SimpleX mesaj kuyrukları için kişilerinizin her biri için ayrı tanımlayıcılara sahiptir.";
 
 /* No comment provided by engineer. */
 "To protect timezone, image/voice files use UTC." = "Zaman bölgesini korumak için,fotoğraf/ses dosyaları UTC kullanır.";
@@ -5209,9 +5206,6 @@
 
 /* snd group event chat item */
 "you changed role of %@ to %@" = "%1$@'in yetkisini %2$@ olarak değiştirdiniz";
-
-/* No comment provided by engineer. */
-"You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." = "Mesajların hangi sunucu(lar)dan **alınacağını**, kişilerinizi - onlara mesaj göndermek için kullandığınız sunucuları - siz kontrol edersiniz.";
 
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "Doğrulanamadınız; lütfen tekrar deneyin.";

@@ -26,12 +26,13 @@ struct SimpleXInfo: View {
                             .aspectRatio(contentMode: .fit)
                             .frame(width: g.size.width * 0.67)
                             .padding(.bottom, 8)
+                            .padding(.leading, 4)
                             .frame(maxWidth: .infinity, minHeight: 48, alignment: .top)
                         
                         Button {
                             showHowItWorks = true
                         } label: {
-                            Label("The future of messaging", systemImage: "info.circle")
+                            (Text(Image(systemName: "info.circle")) + textSpace + Text("The future of messaging"))
                                 .font(.headline)
                         }
                     }
@@ -130,6 +131,8 @@ struct SimpleXInfo: View {
         }
     }
 }
+
+let textSpace = Text(verbatim: " ")
 
 struct SimpleXInfo_Previews: PreviewProvider {
     static var previews: some View {

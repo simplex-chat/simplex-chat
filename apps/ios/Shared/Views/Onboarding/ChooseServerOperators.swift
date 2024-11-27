@@ -133,7 +133,7 @@ struct ChooseServerOperators: View {
                             reviewLaterButton()
                             (
                                 Text("Conditions will be accepted for enabled operators after 30 days.")
-                                + Text(" ")
+                                + textSpace
                                 + Text("You can configure operators in Network & servers settings.")
                             )
                             .multilineTextAlignment(.center)

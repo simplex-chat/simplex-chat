@@ -17,17 +17,17 @@ struct UserAddressLearnMore: View {
         VStack {
             List {
                 VStack(alignment: .leading, spacing: 12) {
-                    (Text(Image(systemName: "envelope")).foregroundColor(.secondary) + Text(" ") + Text("Share address publicly").bold().font(.title2))
+                    (Text(Image(systemName: "envelope")).foregroundColor(.secondary) + textSpace + Text("Share address publicly").bold().font(.title2))
                     Text("Share SimpleX address on social media.")
                     Text("You won't lose your contacts if you later delete your address.")
 
-                    (Text(Image(systemName: "link.badge.plus")).foregroundColor(.secondary) + Text(" ") + Text("Share 1-time link with a friend").font(.title2).bold())
+                    (Text(Image(systemName: "link.badge.plus")).foregroundColor(.secondary) + textSpace + Text("Share 1-time link with a friend").font(.title2).bold())
                         .padding(.top)
                     Text("1-time link can be used *with one contact only* - share in person or via any messenger.")
                     Text("You can set connection name, to remember who the link was shared with.")
 
                     if !showCreateAddressButton {
-                        (Text(Image(systemName: "shield")).foregroundColor(.secondary) + Text(" ") + Text("Connection security").font(.title2).bold())
+                        (Text(Image(systemName: "shield")).foregroundColor(.secondary) + textSpace + Text("Connection security").font(.title2).bold())
                             .padding(.top)
                         Text("SimpleX address and 1-time links are safe to share via any messenger.")
                         Text("To protect against your link being replaced, you can compare contact security codes.")

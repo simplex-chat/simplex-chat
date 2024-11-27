@@ -187,11 +187,6 @@
         <target state="translated">)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Add new contact**: to create your one-time QR Code for your contact." xml:space="preserve" approved="no">
-        <source>**Add new contact**: to create your one-time QR Code or link for your contact.</source>
-        <target state="translated">**Adicionar novo contato**: para criar seu QR Code ou link único para seu contato.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="**Create link / QR code** for your contact to use." xml:space="preserve" approved="no">
         <source>**Create link / QR code** for your contact to use.</source>
         <target state="translated">**Crie um link / QR code** para seu contato usar.</target>
@@ -5482,8 +5477,8 @@ Isso pode acontecer por causa de algum bug ou quando a conexão está comprometi
         <source>(this device v%@)</source>
         <target state="translated">este dispositivo</target>
       </trans-unit>
-      <trans-unit id="**Add contact**: to create a new invitation link, or connect via a link you received." xml:space="preserve" approved="no">
-        <source>**Add contact**: to create a new invitation link, or connect via a link you received.</source>
+      <trans-unit id="**Create 1-time link**: to create and share a new invitation link." xml:space="preserve" approved="no">
+        <source>**Create 1-time link**: to create and share a new invitation link.</source>
         <target state="translated">**Adicionar contato**: criar um novo link de convite ou conectar via um link que você recebeu.</target>
       </trans-unit>
       <trans-unit id="**Create group**: to create a new group." xml:space="preserve" approved="no">

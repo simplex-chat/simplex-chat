@@ -152,10 +152,6 @@
         <source>)</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Add new contact**: to create your one-time QR Code for your contact." xml:space="preserve">
-        <source>**Add new contact**: to create your one-time QR Code or link for your contact.</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="**Create link / QR code** for your contact to use." xml:space="preserve">
         <source>**Create link / QR code** for your contact to use.</source>
         <note>No comment provided by engineer.</note>

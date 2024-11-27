@@ -24,7 +24,6 @@ struct HowItWorks: View {
                 VStack(alignment: .leading) {
                     Group {
                         Text("To protect your privacy, SimpleX uses separate IDs for each of your contacts.")
-                        Text("You choose the servers **to receive** messages, your contacts – the servers you use **to send** message to them.")
                         Text("Only client devices store user profiles, contacts, groups, and messages.")
                         Text("All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages.")
                         if !onboarding {

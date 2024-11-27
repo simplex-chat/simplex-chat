@@ -65,10 +65,7 @@
 "[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[在 GitHub 上加星](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
-"**Add contact**: to create a new invitation link, or connect via a link you received." = "**添加联系人**: 创建新的邀请链接，或通过您收到的链接进行连接.";
-
-/* No comment provided by engineer. */
-"**Add new contact**: to create your one-time QR Code for your contact." = "**添加新联系人**：为您的联系人创建一次性二维码或者链接。";
+"**Create 1-time link**: to create and share a new invitation link." = "**添加联系人**: 创建新的邀请链接，或通过您收到的链接进行连接.";
 
 /* No comment provided by engineer. */
 "**Create group**: to create a new group." = "**创建群组**: 创建一个新群组.";
@@ -80,10 +77,10 @@
 "**e2e encrypted** video call" = "**端到端加密** 视频通话";
 
 /* No comment provided by engineer. */
-"**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." = "**更私密**：每20分钟检查新消息。设备令牌和 SimpleX Chat 服务器共享，但是不会共享有您有多少联系人或者消息。";
+"**More private**: check new messages every 20 minutes. Only device token is shared with our push server. It doesn't see how many contacts you have, or any message metadata." = "**更私密**：每20分钟检查新消息。设备令牌和 SimpleX Chat 服务器共享，但是不会共享有您有多少联系人或者消息。";
 
 /* No comment provided by engineer. */
-"**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." = "**最私密**：不使用 SimpleX Chat 通知服务器，在后台定期检查消息（取决于您多经常使用应用程序）。";
+"**Most private**: do not use SimpleX Chat push server. The app will check messages in background, when the system allows it, depending on how often you use the app." = "**最私密**：不使用 SimpleX Chat 通知服务器，在后台定期检查消息（取决于您多经常使用应用程序）。";
 
 /* No comment provided by engineer. */
 "**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." = "**请注意**: 在两台设备上使用相同的数据库将破坏来自您的连接的消息解密，作为一种安全保护.";
@@ -92,7 +89,7 @@
 "**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**请注意**：如果您丢失密码，您将无法恢复或者更改密码。";
 
 /* No comment provided by engineer. */
-"**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." = "**推荐**：设备令牌和通知会发送至 SimpleX Chat 通知服务器，但是消息内容、大小或者发送人不会。";
+"**Recommended**: device token and end-to-end encrypted notifications are sent to SimpleX Chat push server, but it does not see the message content, size or who it is from." = "**推荐**：设备令牌和通知会发送至 SimpleX Chat 通知服务器，但是消息内容、大小或者发送人不会。";
 
 /* No comment provided by engineer. */
 "**Warning**: Instant push notifications require passphrase saved in Keychain." = "**警告**：及时推送通知需要保存在钥匙串的密码。";
@@ -2486,7 +2483,7 @@
 "Instant push notifications will be hidden!\n" = "即时推送通知将被隐藏！\n";
 
 /* No comment provided by engineer. */
-"Instantly" = "即时";
+"Instant" = "即时";
 
 /* No comment provided by engineer. */
 "Interface" = "界面";
@@ -2693,7 +2690,7 @@
 "Live messages" = "实时消息";
 
 /* No comment provided by engineer. */
-"Local" = "本地";
+"No push server" = "本地";
 
 /* No comment provided by engineer. */
 "Local name" = "本地名称";
@@ -3112,7 +3109,7 @@
 "Onion hosts will not be used." = "将不会使用 Onion 主机。";
 
 /* No comment provided by engineer. */
-"Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." = "只有客户端设备存储用户资料、联系人、群组和**双层端到端加密**发送的消息。";
+"Only client devices store user profiles, contacts, groups, and messages." = "只有客户端设备存储用户资料、联系人、群组和**双层端到端加密**发送的消息。";
 
 /* No comment provided by engineer. */
 "Only delete conversation" = "仅删除对话";
@@ -3259,7 +3256,7 @@
 "People can connect to you only via the links you share." = "人们只能通过您共享的链接与您建立联系。";
 
 /* No comment provided by engineer. */
-"Periodically" = "定期";
+"Periodic" = "定期";
 
 /* message decrypt error item */
 "Permanent decryption error" = "解密错误";
@@ -3466,7 +3463,7 @@
 "Read more" = "阅读更多";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." = "在 [用户指南](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address) 中阅读更多内容。";
+"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "在 [用户指南](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses) 中阅读更多内容。";
 
 /* No comment provided by engineer. */
 "Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "阅读更多[User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)。";
@@ -4467,7 +4464,7 @@
 "To make a new connection" = "建立新连接";
 
 /* No comment provided by engineer. */
-"To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." = "为了保护隐私，SimpleX使用针对消息队列的标识符，而不是所有其他平台使用的用户ID，每个联系人都有独立的标识符。";
+"To protect your privacy, SimpleX uses separate IDs for each of your contacts." = "为了保护隐私，SimpleX使用针对消息队列的标识符，而不是所有其他平台使用的用户ID，每个联系人都有独立的标识符。";
 
 /* No comment provided by engineer. */
 "To protect timezone, image/voice files use UTC." = "为了保护时区，图像/语音文件使用 UTC。";
@@ -5029,9 +5026,6 @@
 
 /* snd group event chat item */
 "you changed role of %@ to %@" = "您已将 %1$@ 的角色更改为 %2$@";
-
-/* No comment provided by engineer. */
-"You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." = "您可以控制接收信息使用的服务器，您的联系人则使用您发送信息时所使用的服务器。";
 
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "您的身份无法验证，请再试一次。";

@@ -187,11 +187,6 @@
         <target state="needs-translation">)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Add new contact**: to create your one-time QR Code for your contact." xml:space="preserve" approved="no">
-        <source>**Add new contact**: to create your one-time QR Code or link for your contact.</source>
-        <target state="translated">** إضافة جهة اتصال جديدة **: لإنشاء رمز QR لمرة واحدة أو رابط جهة الاتصال الخاصة بكم.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="**Create link / QR code** for your contact to use." xml:space="preserve" approved="no">
         <source>**Create link / QR code** for your contact to use.</source>
         <target state="translated">** أنشئ رابطًا / رمز QR ** لتستخدمه جهة الاتصال الخاصة بك.</target>
@@ -3752,8 +3747,8 @@ SimpleX servers cannot see your profile.</source>
         <source>%u messages skipped.</source>
         <target state="translated">%u تم تخطي الرسائل.</target>
       </trans-unit>
-      <trans-unit id="**Add contact**: to create a new invitation link, or connect via a link you received." xml:space="preserve" approved="no">
-        <source>**Add contact**: to create a new invitation link, or connect via a link you received.</source>
+      <trans-unit id="**Create 1-time link**: to create and share a new invitation link." xml:space="preserve" approved="no">
+        <source>**Create 1-time link**: to create and share a new invitation link.</source>
         <target state="translated">**إضافة جهة اتصال**: لإنشاء رابط دعوة جديد، أو الاتصال عبر الرابط الذي تلقيتوهم.</target>
       </trans-unit>
       <trans-unit id="**Create group**: to create a new group." xml:space="preserve" approved="no">

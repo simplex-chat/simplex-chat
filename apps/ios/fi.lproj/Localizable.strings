@@ -53,25 +53,22 @@
 "[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Tähti GitHubissa](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
-"**Add new contact**: to create your one-time QR Code for your contact." = "**Lisää uusi kontakti**: luo kertakäyttöinen QR-koodi tai linkki kontaktille.";
-
-/* No comment provided by engineer. */
 "**e2e encrypted** audio call" = "**e2e-salattu** äänipuhelu";
 
 /* No comment provided by engineer. */
 "**e2e encrypted** video call" = "**e2e-salattu** videopuhelu";
 
 /* No comment provided by engineer. */
-"**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." = "**Yksityisempi**: tarkista uudet viestit 20 minuutin välein. Laitetunnus jaetaan SimpleX Chat -palvelimen kanssa, mutta ei sitä, kuinka monta yhteystietoa tai viestiä sinulla on.";
+"**More private**: check new messages every 20 minutes. Only device token is shared with our push server. It doesn't see how many contacts you have, or any message metadata." = "**Yksityisempi**: tarkista uudet viestit 20 minuutin välein. Laitetunnus jaetaan SimpleX Chat -palvelimen kanssa, mutta ei sitä, kuinka monta yhteystietoa tai viestiä sinulla on.";
 
 /* No comment provided by engineer. */
-"**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." = "**Yksityisin**: älä käytä SimpleX Chat -ilmoituspalvelinta, tarkista viestit ajoittain taustalla (riippuu siitä, kuinka usein käytät sovellusta).";
+"**Most private**: do not use SimpleX Chat push server. The app will check messages in background, when the system allows it, depending on how often you use the app." = "**Yksityisin**: älä käytä SimpleX Chat -ilmoituspalvelinta, tarkista viestit ajoittain taustalla (riippuu siitä, kuinka usein käytät sovellusta).";
 
 /* No comment provided by engineer. */
 "**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**Huomaa**: et voi palauttaa tai muuttaa tunnuslausetta, jos kadotat sen.";
 
 /* No comment provided by engineer. */
-"**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." = "**Suositus**: laitetunnus ja ilmoitukset lähetetään SimpleX Chat -ilmoituspalvelimelle, mutta ei viestin sisältöä, kokoa tai sitä, keneltä se on peräisin.";
+"**Recommended**: device token and end-to-end encrypted notifications are sent to SimpleX Chat push server, but it does not see the message content, size or who it is from." = "**Suositus**: laitetunnus ja ilmoitukset lähetetään SimpleX Chat -ilmoituspalvelimelle, mutta ei viestin sisältöä, kokoa tai sitä, keneltä se on peräisin.";
 
 /* No comment provided by engineer. */
 "**Warning**: Instant push notifications require passphrase saved in Keychain." = "**Varoitus**: Välittömät push-ilmoitukset vaativat tunnuslauseen, joka on tallennettu Keychainiin.";
@@ -1678,7 +1675,7 @@
 "Immediately" = "Heti";
 
 /* No comment provided by engineer. */
-"Immune to spam and abuse" = "Immuuni roskapostille ja väärinkäytöksille";
+"Immune to spam" = "Immuuni roskapostille ja väärinkäytöksille";
 
 /* No comment provided by engineer. */
 "Import" = "Tuo";
@@ -1750,7 +1747,7 @@
 "Instant push notifications will be hidden!\n" = "Välittömät push-ilmoitukset ovat piilossa!\n";
 
 /* No comment provided by engineer. */
-"Instantly" = "Heti";
+"Instant" = "Heti";
 
 /* No comment provided by engineer. */
 "Interface" = "Käyttöliittymä";
@@ -1897,7 +1894,7 @@
 "Live messages" = "Live-viestit";
 
 /* No comment provided by engineer. */
-"Local" = "Paikallinen";
+"No push server" = "Paikallinen";
 
 /* No comment provided by engineer. */
 "Local name" = "Paikallinen nimi";
@@ -2187,7 +2184,7 @@
 "Onion hosts will not be used." = "Onion-isäntiä ei käytetä.";
 
 /* No comment provided by engineer. */
-"Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." = "Vain asiakaslaitteet tallentavat käyttäjäprofiileja, yhteystietoja, ryhmiä ja viestejä, jotka on lähetetty **kaksinkertaisella päästä päähän -salauksella**.";
+"Only client devices store user profiles, contacts, groups, and messages." = "Vain asiakaslaitteet tallentavat käyttäjäprofiileja, yhteystietoja, ryhmiä ja viestejä, jotka on lähetetty **kaksinkertaisella päästä päähän -salauksella**.";
 
 /* No comment provided by engineer. */
 "Only group owners can change group preferences." = "Vain ryhmän omistajat voivat muuttaa ryhmän asetuksia.";
@@ -2274,7 +2271,7 @@
 "People can connect to you only via the links you share." = "Ihmiset voivat ottaa sinuun yhteyttä vain jakamiesi linkkien kautta.";
 
 /* No comment provided by engineer. */
-"Periodically" = "Ajoittain";
+"Periodic" = "Ajoittain";
 
 /* message decrypt error item */
 "Permanent decryption error" = "Pysyvä salauksen purkuvirhe";
@@ -2412,7 +2409,7 @@
 "Read more" = "Lue lisää";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." = "Lue lisää [Käyttöoppaasta](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).";
+"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "Lue lisää [Käyttöoppaasta](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).";
 
 /* No comment provided by engineer. */
 "Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "Lue lisää [Käyttöoppaasta](https://simplex.chat/docs/guide/readme.html#connect-to-friends).";
@@ -3059,7 +3056,7 @@
 "To make a new connection" = "Uuden yhteyden luominen";
 
 /* No comment provided by engineer. */
-"To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." = "Yksityisyyden suojaamiseksi kaikkien muiden alustojen käyttämien käyttäjätunnusten sijaan SimpleX käyttää viestijonojen tunnisteita, jotka ovat kaikille kontakteille erillisiä.";
+"To protect your privacy, SimpleX uses separate IDs for each of your contacts." = "Yksityisyyden suojaamiseksi kaikkien muiden alustojen käyttämien käyttäjätunnusten sijaan SimpleX käyttää viestijonojen tunnisteita, jotka ovat kaikille kontakteille erillisiä.";
 
 /* No comment provided by engineer. */
 "To protect timezone, image/voice files use UTC." = "Aikavyöhykkeen suojaamiseksi kuva-/äänitiedostot käyttävät UTC:tä.";
@@ -3384,9 +3381,6 @@
 
 /* snd group event chat item */
 "you changed role of %@ to %@" = "olet vaihtanut %1$@:n roolin %2$@:ksi";
-
-/* No comment provided by engineer. */
-"You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." = "Sinä hallitset, minkä palvelim(i)en kautta **viestit vastaanotetaan**, kontaktisi - palvelimet, joita käytät viestien lähettämiseen niille.";
 
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "Sinua ei voitu todentaa; yritä uudelleen.";

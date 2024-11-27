@@ -418,7 +418,7 @@ struct GroupChatInfoView: View {
         }
 
         private var memberVerifiedShield: Text {
-            (Text(Image(systemName: "checkmark.shield")) + Text(" "))
+            (Text(Image(systemName: "checkmark.shield")) + textSpace)
                 .font(.caption)
                 .baselineOffset(2)
                 .kerning(-2)

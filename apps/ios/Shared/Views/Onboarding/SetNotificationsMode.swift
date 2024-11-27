@@ -151,7 +151,7 @@ struct NotificationsInfoView: View {
                     Group {
                         ForEach(NotificationsMode.values) { mode in
                             VStack(alignment: .leading, spacing: 4) {
-                                (Text(Image(systemName: mode.icon)) + Text(" ") + Text(mode.label))
+                                (Text(Image(systemName: mode.icon)) + textSpace + Text(mode.label))
                                     .font(.headline)
                                     .foregroundColor(.secondary)
                                 Text(ntfModeDescription(mode))
