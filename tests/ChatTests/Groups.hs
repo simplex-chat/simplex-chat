@@ -3738,6 +3738,9 @@ testSetGroupMessageReactions =
       cath ##> "/tail #team 1"
       cath <# "#team alice> hi"
       cath <## "      👍 2 🚀 1"
+      itemId' <- lastItemId alice
+      alice ##> ("/_reaction members 1 #1 " <> itemId' <> " {\"type\": \"emoji\", \"emoji\": \"👍\"}")
+      alice <## "2 member(s) reacted"
       bob ##> "-1 #team hi"
       bob <## "removed 👍"
       alice <# "#team bob> > alice hi"
