@@ -38,9 +38,9 @@
     <string name="feature_cancelled_item">%s visszavonva</string>
     <string name="smp_servers_preset_add">Előre beállított kiszolgálók hozzáadása</string>
     <string name="calls_prohibited_with_this_contact">A hívások kezdeményezése le van tiltva ebben a csevegésben.</string>
-    <string name="network_session_mode_entity_description"><b>Az összes ismerőséhez és csoporttaghoz</b> külön TCP-kapcsolat (és SOCKS-hitelesítőadat) lesz használva.\n<b>Megjegyzés:</b> ha sok kapcsolata van, az akkumulátor-használat és az adatforgalom jelentősen megnövekedhet, és néhány kapcsolódási kísérlet sikertelen lehet.</string>
+    <string name="network_session_mode_entity_description"><![CDATA[<b>Az összes ismerőséhez és csoporttaghoz</b> külön TCP-kapcsolat (és SOCKS-hitelesítőadat) lesz használva.\n<b>Megjegyzés:</b> ha sok kapcsolata van, az akkumulátor-használat és az adatforgalom jelentősen megnövekedhet, és néhány kapcsolódási kísérlet sikertelen lehet.]]></string>
     <string name="icon_descr_cancel_link_preview">hivatkozás előnézetének visszavonása</string>
-    <string name="network_session_mode_user_description"><b>Az összes csevegési profiljához az alkalmazásban</b> külön TCP-kapcsolat (és SOCKS-hitelesítőadat) lesz használva.</string>
+    <string name="network_session_mode_user_description"><![CDATA[<b>Az összes csevegési profiljához az alkalmazásban</b> külön TCP-kapcsolat (és SOCKS-hitelesítőadat) lesz használva.]]></string>
     <string name="both_you_and_your_contact_can_send_disappearing">Mindkét fél küldhet eltűnő üzeneteket.</string>
     <string name="keychain_is_storing_securely">Az Android Keystore-t a jelmondat biztonságos tárolására használják - lehetővé teszi az értesítési szolgáltatás működését.</string>
     <string name="alert_title_msg_bad_hash">Hibás az üzenet hasító értéke</string>
@@ -1345,7 +1345,7 @@
     <string name="you_can_enable_delivery_receipts_later">Később engedélyezheti a „Beállításokban”</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Akkor lesz kapcsolódva a csoporthoz, amikor a csoport tulajdonosának eszköze online lesz, várjon, vagy ellenőrizze később!</string>
     <string name="mtr_error_different">különböző átköltöztetés az alkalmazásban/adatbázisban: %s / %s</string>
-    <string name="connect_plan_you_are_already_connecting_to_vName">A kapcsolódás már folyamatban van a következőhöz: <b>%1$s</b>.</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[A kapcsolódás már folyamatban van a következőhöz: <b>%1$s</b>.]]></string>
     <string name="unhide_profile">Profil felfedése</string>
     <string name="this_link_is_not_a_valid_connection_link">Ez nem egy érvényes kapcsolattartási hivatkozás!</string>
     <string name="to_verify_compare">A végpontok közötti titkosítás hitelesítéséhez hasonlítsa össze (vagy olvassa be a QR-kódot) az ismerőse eszközén lévő kóddal.</string>
@@ -1398,7 +1398,7 @@
     <string name="upgrade_and_open_chat">Fejlesztés és a csevegés megnyitása</string>
     <string name="you_need_to_allow_to_send_voice">Engedélyeznie kell a hangüzenetek küldését az ismerőse számára, hogy hangüzeneteket küldhessenek egymásnak.</string>
     <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Beállíthatja, hogy mely kiszolgáló(ko)n keresztül <b>fogadja</b> az üzeneteket, ismerősöket – a kiszolgálók, amelyeket az üzenetküldéshez használ.]]></string>
-    <string name="connect_plan_you_are_already_in_group_vName">Ön már a(z) <b>%1$s</b> nevű csoport tagja.</string>
+    <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Ön már a(z) <b>%1$s</b> nevű csoport tagja.]]></string>
     <string name="snd_conn_event_switch_queue_phase_completed">cím megváltoztatva</string>
     <string name="v4_3_irreversible_message_deletion_desc">Az ismerősei engedélyezhetik a teljes üzenet törlést.</string>
     <string name="you_have_to_enter_passphrase_every_time">A jelmondatot minden alkalommal meg kell adnia, amikor az alkalmazás elindul - nem az eszközön kerül tárolásra.</string>
@@ -1415,14 +1415,14 @@
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">A csevegési szolgáltatás elindítható a „Beállítások / Adatbázis” menüben vagy az alkalmazás újraindításával.</string>
     <string name="verify_code_on_mobile">Kód hitelesítése a hordozható eszközön</string>
     <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Csatlakozott ehhez a csoporthoz. Kapcsolódás a meghívó csoporttaghoz.</string>
-    <string name="you_can_connect_to_simplex_chat_founder">Kapcsolatba léphet &lt;font color=#0088ff&gt;a SimpleX Chat fejlesztőivel, ahol bármiről kérdezhet és értesülhet a friss hírekről&lt;/font&gt;.</string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Kapcsolatba léphet <font color="#0088ff">a SimpleX Chat fejlesztőivel, ahol bármiről kérdezhet és értesülhet a friss hírekről</font>.]]></string>
     <string name="v4_2_auto_accept_contact_requests_desc">Nem kötelező üdvözlőüzenettel.</string>
     <string name="unknown_database_error_with_info">Ismeretlen adatbázishiba: %s</string>
     <string name="you_can_hide_or_mute_user_profile">Elrejtheti vagy lenémíthatja a felhasználó-profiljait - koppintson (vagy számítógép-alkalmazásban kattintson) hosszan a profilra a felugró menühöz.</string>
     <string name="v5_3_simpler_incognito_mode_descr">Inkognitómód használata kapcsolódáskor.</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Megoszthat egy hivatkozást vagy QR-kódot - így bárki csatlakozhat a csoporthoz. Ha a csoport később törlésre kerül, akkor nem fogja elveszíteni annak tagjait.</string>
     <string name="you_joined_this_group">Csatlakozott ehhez a csoporthoz</string>
-    <string name="connect_plan_this_is_your_link_for_group_vName">Ez az Ön hivatkozása a(z) <b>%1$s</b> nevű csoporthoz!</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Ez az Ön hivatkozása a(z) <b>%1$s</b> nevű csoporthoz!]]></string>
     <string name="voice_prohibited_in_this_chat">A hangüzenetek küldése le van tiltva ebben a csevegésben.</string>
     <string name="you_control_your_chat">Ön irányítja csevegését!</string>
     <string name="verify_code_with_desktop">Kód hitelesítése a számítógépen</string>

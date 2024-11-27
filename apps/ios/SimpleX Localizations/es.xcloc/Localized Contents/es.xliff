@@ -2309,7 +2309,7 @@ This is your own one-time link!</source>
         <target>¿Eliminar base de datos antigua?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete or moderate up to 200 messages." xml:space="preserve" approved="no">
+      <trans-unit id="Delete or moderate up to 200 messages." xml:space="preserve">
         <source>Delete or moderate up to 200 messages.</source>
         <target>Borra o modera hasta 200 mensajes a la vez.</target>
         <note>No comment provided by engineer.</note>

@@ -531,7 +531,7 @@
     <string name="error_showing_content">gagal menampilkan konten</string>
     <string name="decryption_error">Gagal dekripsi</string>
     <string name="encryption_renegotiation_error">Gagal negosiasi ulang enkripsi</string>
-    <string name="e2ee_info_no_pq">Pesan, berkas dan panggilan dilindungi oleh <b>enkripsi end-to-end</b> dengan perfect forward secrecy, penolakan dan pemulihan pembobolan.</string>
+    <string name="e2ee_info_no_pq"><![CDATA[Pesan, berkas dan panggilan dilindungi oleh <b>enkripsi end-to-end</b> dengan perfect forward secrecy, penolakan dan pemulihan pembobolan.]]></string>
     <string name="simplex_link_mode_browser">Via peramban</string>
     <string name="failed_to_active_user_title">Gagal mengganti profil</string>
     <string name="simplex_link_mode_browser_warning">Buka tautan di peramban mengurangi privasi dan keamanan koneksi. Tautan SimpleX tidak tepercaya akan berwarna merah.</string>
@@ -620,7 +620,7 @@
     <string name="decentralized">Terdesentralisasi</string>
     <string name="error_initializing_web_view_wrong_arch">Kesalahan saat menginisialisasi WebView. Pastikan Anda telah menginstal WebView dan arsitektur yang didukung adalah arm64.\nKesalahan: %s</string>
     <string name="use_chat">Gunakan obrolan</string>
-    <string name="many_people_asked_how_can_it_deliver">Banyak orang bertanya: <i>Jika SimpleX tidak memiliki pengenal pengguna, bagaimana ia dapat menyampaikan pesan?</i></string>
+    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Banyak orang bertanya: <i>Jika SimpleX tidak memiliki pengenal pengguna, bagaimana ia dapat menyampaikan pesan?</i>]]></string>
     <string name="how_it_works">Bagaimana caranya</string>
     <string name="how_simplex_works">Cara kerja SimpleX</string>
     <string name="onboarding_notifications_mode_periodic">Berkala</string>
@@ -744,7 +744,7 @@
     <string name="v5_6_safer_groups">Grup aman</string>
     <string name="session_code">Kode sesi</string>
     <string name="verify_connections">Verifikasi koneksi</string>
-    <string name="remote_host_error_timeout">Batas waktu tercapai saat menghubungkan ke ponsel <b>%s</b></string>
+    <string name="remote_host_error_timeout"><![CDATA[Batas waktu tercapai saat menghubungkan ke ponsel <b>%s</b>]]></string>
     <string name="connect_plan_this_is_your_own_simplex_address">Ini adalah alamat SimpleX Anda!</string>
     <string name="connect_plan_repeat_connection_request">Permintaan koneksi berulang?</string>
     <string name="connect_plan_join_your_group">Gabung ke grup Anda?</string>
@@ -765,7 +765,7 @@
     <string name="unknown_message_format">format pesan tak diketahui</string>
     <string name="invalid_message_format">format pesan tidak valid</string>
     <string name="e2ee_info_pq_short">Obrolan ini dilindungi oleh enkripsi end-to-end quantum resistant.</string>
-    <string name="e2ee_info_pq">Pesan, berkas dan panggilan dilindungi oleh <b>enkripsi quantum resistant e2e</b> dengan perfect forward secrecy, penolakan dan pemulihan pembobolan.</string>
+    <string name="e2ee_info_pq"><![CDATA[Pesan, berkas dan panggilan dilindungi oleh <b>enkripsi quantum resistant e2e</b> dengan perfect forward secrecy, penolakan dan pemulihan pembobolan.]]></string>
     <string name="e2ee_info_no_pq_short">Obrolan ini dilindungi oleh enkripsi end-to-end.</string>
     <string name="note_folder_local_display_name">Catatan pribadi</string>
     <string name="connection_local_display_name">koneksi %1$d</string>
@@ -1166,12 +1166,12 @@
     <string name="error_updating_user_privacy">Gagal perbarui privasi pengguna</string>
     <string name="possible_slow_function_title">Fungsi lambat</string>
     <string name="icon_descr_instant_notifications">Notifikasi instan</string>
-    <string name="turn_off_battery_optimization">Untuk menggunakannya, harap <b>izinkan SimpleX berjalan di latar belakang</b> pada dialog berikutnya. Jika tidak, notifikasi akan dimatikan.</string>
+    <string name="turn_off_battery_optimization"><![CDATA[Untuk menggunakannya, harap <b>izinkan SimpleX berjalan di latar belakang</b> pada dialog berikutnya. Jika tidak, notifikasi akan dimatikan.]]></string>
     <string name="turning_off_service_and_periodic">Optimalisasi baterai aktif, mematikan layanan latar belakang dan permintaan pesan baru secara berkala. Anda dapat aktifkan kembali di pengaturan.</string>
     <string name="turn_off_system_restriction_button">Buka pengaturan aplikasi</string>
     <string name="periodic_notifications_disabled">Notifikasi berkala dinonaktifkan!</string>
     <string name="disable_notifications_button">Matikan notifikasi</string>
-    <string name="system_restricted_background_in_call_warn">Untuk lakukan panggilan di latar belakang, pilih <b>Penggunaan baterai aplikasi</b> / <b>Tidak dibatasi</b> di pengaturan aplikasi.</string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[Untuk lakukan panggilan di latar belakang, pilih <b>Penggunaan baterai aplikasi</b> / <b>Tidak dibatasi</b> di pengaturan aplikasi.]]></string>
     <string name="enter_passphrase_notification_title">Frasa sandi diperlukan</string>
     <string name="enter_passphrase_notification_desc">Untuk menerima notifikasi, mohon masukkan frasa sandi basis data</string>
     <string name="call_service_notification_end_call">Akhiri</string>
@@ -1205,7 +1205,7 @@
     <string name="error_changing_address">Gagal mengubah alamat</string>
     <string name="error_aborting_address_change">Gagal batalkan perubahan alamat</string>
     <string name="ntf_channel_messages">Pesan SimpleX Chat</string>
-    <string name="system_restricted_background_warn">Untuk aktifkan notifikasi, pilih <b>Penggunaan baterai aplikasi</b> / <b>Tidak dibatasi</b> di pengaturan aplikasi.</string>
+    <string name="system_restricted_background_warn"><![CDATA[Untuk aktifkan notifikasi, pilih <b>Penggunaan baterai aplikasi</b> / <b>Tidak dibatasi</b> di pengaturan aplikasi.]]></string>
     <string name="system_restricted_background_in_call_desc">Aplikasi mungkin ditutup setelah 1 menit di latar belakang.</string>
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Untuk melindungi informasi Anda, aktifkan Kunci SimpleX.\nAnda akan diminta untuk menyelesaikan autentikasi sebelum fitur ini aktif.</string>
     <string name="la_minutes">%d menit</string>
@@ -1270,8 +1270,8 @@
     <string name="error_synchronizing_connection">Gagal sinkronkan koneksi</string>
     <string name="error_xftp_test_server_auth">Server perlu otorisasi untuk mengunggah, periksa kata sandi</string>
     <string name="smp_server_test_create_queue">Buat antrian</string>
-    <string name="it_can_disabled_via_settings_notifications_still_shown"><b>Dapat dimatikan melalui pengaturan</b> – notifikasi akan tetap ditampilkan saat aplikasi berjalan.</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Untuk menjaga privasi, alih-alih notifikasi push, aplikasi ini memiliki <b>layanan latar belakang SimpleX</b> – yang gunakan beberapa persen baterai per hari.</string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Dapat dimatikan melalui pengaturan</b> – notifikasi akan tetap ditampilkan saat aplikasi berjalan.]]></string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Untuk menjaga privasi, alih-alih notifikasi push, aplikasi ini memiliki <b>layanan latar belakang SimpleX</b> – yang gunakan beberapa persen baterai per hari.]]></string>
     <string name="periodic_notifications_desc">Aplikasi terima pesan baru secara berkala — aplikasi ini memakai beberapa persen baterai per hari. Aplikasi ini tidak gunakan notifikasi push — data dari perangkat tidak dikirim ke server.</string>
     <string name="simplex_service_notification_title">Layanan SimpleX Chat</string>
     <string name="notification_preview_mode_contact">Nama kontak</string>

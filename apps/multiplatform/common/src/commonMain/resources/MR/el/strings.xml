@@ -243,7 +243,7 @@
     <string name="add_address_to_your_profile">Προσθέστε τη διεύθυνση στο προφίλ σας, έτσι ώστε οι επαφές σας να μπορούν να τη μοιραστούν με άλλα άτομα. Το ενημέρωμένο προφίλ θα σταλεί στις επαφές σας.</string>
     <string name="feature_roles_admins">διαχειριστές</string>
     <string name="acknowledgement_errors">Λάθη αναγνώρισης</string>
-    <string name="migrate_from_device_archive_will_be_deleted"><b>Προειδοποίηση</b>: το αρχείο θα διαγραφεί.</string>
+    <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Προειδοποίηση</b>: το αρχείο θα διαγραφεί.]]></string>
     <string name="snd_error_quota">Υπέρβαση χωρητικότητας - ο παραλήπτης δεν έλαβε μηνύματα που στάλθηκαν προηγουμένως.</string>
     <string name="blocked_by_admin_item_description">αποκλεισμένος από τον διαχειριστή</string>
     <string name="your_chats">Συνομιλίες</string>
@@ -275,8 +275,8 @@
     <string name="forward_files_not_accepted_desc">%1$d αρχείο/α δεν κατέβηκε/καν.</string>
     <string name="forward_files_messages_deleted_after_selection_title">%1$s μήνυμα/τα δεν προωθήθηκε/καν</string>
     <string name="network_session_mode_user">Προφίλ συνομιλίας</string>
-    <string name="network_session_mode_user_description">Μια ξεχωριστή σύνδεση TCP (και διαπιστευτήριο SOCKS) θα χρησιμοποιηθεί <b>για κάθε προφίλ συνομιλίας που έχετε στην εφαρμογή</b>.</string>
-    <string name="socks_proxy_setting_limitations"><b>Παρακαλώ σημειώστε</b>: οι αναμεταδότες μηνυμάτων και αρχείων συνδέονται μέσω διακομιστή μεσολάβησης SOCKS. Οι κλήσεις και οι προεπισκοπήσεις συνδέσμων αποστολής χρησιμοποιούν άμεση σύνδεση.</string>
+    <string name="network_session_mode_user_description"><![CDATA[Μια ξεχωριστή σύνδεση TCP (και διαπιστευτήριο SOCKS) θα χρησιμοποιηθεί <b>για κάθε προφίλ συνομιλίας που έχετε στην εφαρμογή</b>.]]></string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Παρακαλώ σημειώστε</b>: οι αναμεταδότες μηνυμάτων και αρχείων συνδέονται μέσω διακομιστή μεσολάβησης SOCKS. Οι κλήσεις και οι προεπισκοπήσεις συνδέσμων αποστολής χρησιμοποιούν άμεση σύνδεση.]]></string>
     <string name="network_smp_proxy_mode_always">Πάντα</string>
     <string name="app_check_for_updates_download_completed_title">Η ενημέρωση της εφαρμογής κατεβαίνει</string>
     <string name="app_check_for_updates_notice_title">Έλεγχος για ενημερώσεις</string>
@@ -294,7 +294,7 @@
     <string name="settings_section_title_chat_colors">Χρώματα συνομιλίας</string>
     <string name="chat_database_section">ΒΑΣΗ ΔΕΔΟΜΕΝΩΝ ΣΥΝΟΜΙΛΙΑΣ</string>
     <string name="chat_is_running">Η συνομιλία εκτελείται</string>
-    <string name="impossible_to_recover_passphrase"><b>Παρακαλώ σημειώστε</b>: ΔΕΝ θα μπορείτε να ανακτήσετε ή να αλλάξετε τη φράση πρόσβασης εάν τη χάσετε.</string>
+    <string name="impossible_to_recover_passphrase"><![CDATA[<b>Παρακαλώ σημειώστε</b>: ΔΕΝ θα μπορείτε να ανακτήσετε ή να αλλάξετε τη φράση πρόσβασης εάν τη χάσετε.]]></string>
     <string name="block_for_all">Αποκλεισμός για όλους</string>
     <string name="both_you_and_your_contact_can_add_message_reactions">Και εσείς και η επαφή σας μπορείτε να προσθέστε αντιδράσεις μηνυμάτων.</string>
     <string name="both_you_and_your_contact_can_make_calls">Και εσείς και η επαφή σας μπορείτε να κάνετε κλήσεις.</string>
@@ -306,7 +306,7 @@
     <string name="migrate_from_device_archiving_database">Αρχειοθέτηση της βάσης δεδομένων</string>
     <string name="migrate_from_device_all_data_will_be_uploaded">Όλες οι επαφές, συζητήσεις και αρχεία θα κρυπτογραφηθούν με ασφάλεια και θα μεταφορτωθούν σε διαμορφωμένα κομμάτια αναμετάδοσης XFTP.</string>
     <string name="network_type_cellular">Κινητή τηλεφωνία</string>
-    <string name="create_group_button_to_create_new_group"><b> Δημιουργία ομάδας </b>: για την δημιουργίας νέας ομάδας.</string>
+    <string name="create_group_button_to_create_new_group"><![CDATA[<b> Δημιουργία ομάδας </b>: για την δημιουργίας νέας ομάδας.]]></string>
     <string name="migrate_from_device_check_connection_and_try_again">Ελέγξτε τη σύνδεσή σας στο διαδίκτυο και δοκιμάστε ξανά</string>
     <string name="chat_with_developers">Συζήτηση με τους προγραμματιστές</string>
     <string name="icon_descr_video_asked_to_receive">Ζήτησε να λάβει το βίντεο</string>
@@ -334,16 +334,16 @@
     <string name="audio_device_bluetooth">Bluetooth</string>
     <string name="bold_text">έντονο</string>
     <string name="chat_console">Κονσόλα συνομιλίας</string>
-    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><b>Παρακαλώ σημειώστε</b>: η χρήση της ίδιας βάσης δεδομένων σε δύο συσκευές θα διακόψει την αποκρυπτογράφηση των μηνυμάτων από τις συνδέσεις σας, ως προστασία ασφαλείας.</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>Χρησιμοποιεί περισσότερη μπαταρία</b>! Η εφαρμογή εκτελείται πάντα στο παρασκήνιο - οι ειδοποιήσεις εμφανίζονται αμέσως.</string>
+    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>Παρακαλώ σημειώστε</b>: η χρήση της ίδιας βάσης δεδομένων σε δύο συσκευές θα διακόψει την αποκρυπτογράφηση των μηνυμάτων από τις συνδέσεις σας, ως προστασία ασφαλείας.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Χρησιμοποιεί περισσότερη μπαταρία</b>! Η εφαρμογή εκτελείται πάντα στο παρασκήνιο - οι ειδοποιήσεις εμφανίζονται αμέσως.]]></string>
     <string name="chat_database_exported_title">Η βάση δεδομένων της συνομιλίας εξάχθηκε</string>
     <string name="info_view_call_button">κλήση</string>
     <string name="bad_desktop_address">Κακή διεύθυνση Desktop</string>
-    <string name="migrate_from_device_choose_migrate_from_another_device">Επιλέξτε <i> Μεταφορά απο άλλη συσκευή </i> στη νέα συσκευή και σαρώστε τον κωδικό QR.</string>
+    <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[Επιλέξτε <i> Μεταφορά απο άλλη συσκευή </i> στη νέα συσκευή και σαρώστε τον κωδικό QR.]]></string>
     <string name="v4_5_transport_isolation_descr">Με προφίλ συνομιλίας (προεπιλογή) ή μέσω σύνδεσης (BETA).</string>
     <string name="permissions_camera_and_record_audio">Κάμερα και μικρόφωνο</string>
     <string name="v5_3_new_interface_languages">6 νέες γλώσσες διεπαφής</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>Καλό για την μπαταρία</b>. Η εφαρμογή ελέγχει για την παραλαβή μηνυμάτων κάθε 10 λεπτά. Ενδέχεται να χάσετε κλήσεις ή επείγοντα μηνύματα.</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Καλό για την μπαταρία</b>. Η εφαρμογή ελέγχει για την παραλαβή μηνυμάτων κάθε 10 λεπτά. Ενδέχεται να χάσετε κλήσεις ή επείγοντα μηνύματα.]]></string>
     <string name="attach">Επισύναψη</string>
     <string name="abort_switch_receiving_address_question">Διακοπή αλλαγής διεύθυνσης;</string>
     <string name="choose_file_title">Επιλέξτε ένα αρχείο</string>
@@ -353,7 +353,7 @@
     <string name="clear_note_folder_warning">Όλα τα μηνύματα θα διαγραφούν - αυτή η ενέργεια δεν μπορεί να αντιστραφεί!</string>
     <string name="notifications_mode_periodic_desc">Ελέγχει νέα μηνύματα κάθε 10 λεπτά για έως και 1 λεπτό</string>
     <string name="notifications_mode_off_desc">Η εφαρμογή μπορεί να λαμβάνει ειδοποιήσεις μόνο όταν εκτελείται, καμία υπηρεσία δεν θα ξεκινήσει στο παρασκήνιο</string>
-    <string name="it_can_disabled_via_settings_notifications_still_shown"><b>Μπορεί να απενεργοποιηθεί μέσω των ρυθμίσεων</b> – οι ειδοποιήσεις θα εξακολουθούν να εμφανίζονται ενώ η εφαρμογή εκτελείται.</string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Μπορεί να απενεργοποιηθεί μέσω των ρυθμίσεων</b> – οι ειδοποιήσεις θα εξακολουθούν να εμφανίζονται ενώ η εφαρμογή εκτελείται.]]></string>
     <string name="allow_your_contacts_adding_message_reactions">Επιτρέψτε τις επαφές σας να χρησιμοποιούν αντιδράσεις μηνυμάτων.</string>
     <string name="both_you_and_your_contact_can_send_disappearing">Και εσείς και η επαφή σας μπορείτε να στείλετε μηνύματα που εξαφανίζονται.</string>
     <string name="camera_not_available">Κάμερα μη διαθέσιμη</string>
@@ -393,9 +393,9 @@
     <string name="v6_1_better_user_experience">Καλύτερη εμπειρία χρήστη</string>
     <string name="cant_call_member_alert_title">Δεν είναι δυνατή η κλήση μέλους ομάδας</string>
     <string name="icon_descr_asked_to_receive">Ζήτησε να λάβει την εικόνα</string>
-    <string name="network_session_mode_entity_description">Μια ξεχωριστή σύνδεση TCP (και διαπιστευτήριο SOCKS) θα χρησιμοποιηθεί <b> για κάθε επαφή και μέλος ομάδας </b>.\n<b>Λάβετε υπόψη</b>: εάν έχετε πολλές συνδέσεις, η κατανάλωση της μπαταρίας και της κυκλοφορίας μπορεί να είναι σημαντικά υψηλότερη και ορισμένες συνδέσεις μπορεί να αποτύχουν.</string>
-    <string name="add_contact_button_to_create_link_or_connect_via_link"><b> Προσθήκη επαφής </b>: για να δημιουργήσετε έναν νέο σύνδεσμο πρόσκλησης ή να συνδεθείτε μέσω ενός συνδέσμου που λάβατε.</string>
-    <string name="onboarding_notifications_mode_off_desc"><b> Καλύτερο για τη ζωή της μπαταρίας </b>. Θα λαμβάνετε ειδοποιήσεις μόνο όταν εκτελείται η εφαρμογή (ΧΩΡΙΣ υπηρεσία παρασκηνίου).</string>
+    <string name="network_session_mode_entity_description"><![CDATA[Μια ξεχωριστή σύνδεση TCP (και διαπιστευτήριο SOCKS) θα χρησιμοποιηθεί <b> για κάθε επαφή και μέλος ομάδας </b>.\n<b>Λάβετε υπόψη</b>: εάν έχετε πολλές συνδέσεις, η κατανάλωση της μπαταρίας και της κυκλοφορίας μπορεί να είναι σημαντικά υψηλότερη και ορισμένες συνδέσεις μπορεί να αποτύχουν.]]></string>
+    <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b> Προσθήκη επαφής </b>: για να δημιουργήσετε έναν νέο σύνδεσμο πρόσκλησης ή να συνδεθείτε μέσω ενός συνδέσμου που λάβατε.]]></string>
+    <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b> Καλύτερο για τη ζωή της μπαταρίας </b>. Θα λαμβάνετε ειδοποιήσεις μόνο όταν εκτελείται η εφαρμογή (ΧΩΡΙΣ υπηρεσία παρασκηνίου).]]></string>
     <string name="app_check_for_updates_beta">Beta</string>
     <string name="v6_1_better_calls">Καλύτερες κλήσεις</string>
 </resources>

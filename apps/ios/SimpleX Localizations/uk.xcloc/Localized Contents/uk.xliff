@@ -154,19 +154,19 @@
         <target>%d днів</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d file(s) are still being downloaded." xml:space="preserve" approved="no">
+      <trans-unit id="%d file(s) are still being downloaded." xml:space="preserve">
         <source>%d file(s) are still being downloaded.</source>
-        <target state="translated">%их файл(ів) ще досі завантажуються.</target>
+        <target>%их файл(ів) ще досі завантажуються.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
-      <trans-unit id="%d file(s) failed to download." xml:space="preserve" approved="no">
+      <trans-unit id="%d file(s) failed to download." xml:space="preserve">
         <source>%d file(s) failed to download.</source>
-        <target state="translated">%их файлів не вийшло завантажити.</target>
+        <target>%их файлів не вийшло завантажити.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
-      <trans-unit id="%d file(s) were deleted." xml:space="preserve" approved="no">
+      <trans-unit id="%d file(s) were deleted." xml:space="preserve">
         <source>%d file(s) were deleted.</source>
-        <target state="translated">%их файл(ів) було видалено.</target>
+        <target>%их файл(ів) було видалено.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
       <trans-unit id="%d file(s) were not downloaded." xml:space="preserve">

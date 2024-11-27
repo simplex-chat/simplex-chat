@@ -68,7 +68,7 @@
     <string name="callstate_connected">연결됨</string>
     <string name="callstate_connecting">연결 중…</string>
     <string name="create_your_profile">내 프로필 생성</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>배터리에 좋음</b>. 앱이 10분마다 메시지를 확인합니다. 전화나 긴급 메시지를 놓칠 수 있습니다.</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>배터리에 좋음</b>. 앱이 10분마다 메시지를 확인합니다. 전화나 긴급 메시지를 놓칠 수 있습니다.]]></string>
     <string name="call_already_ended">통화가 이미 종료되었습니다!</string>
     <string name="always_use_relay">항상 릴레이 사용</string>
     <string name="icon_descr_audio_call">음성 통화</string>
@@ -87,7 +87,7 @@
     <string name="chat_is_running">채팅이 작동 중</string>
     <string name="settings_section_title_chats">채팅</string>
     <string name="chat_database_imported">채팅 데이터베이스를 가져옴</string>
-    <string name="impossible_to_recover_passphrase"><b>주의</b>: 암호를 분실하면 복구하거나 비밀번호 변경을 할 수 없어요.</string>
+    <string name="impossible_to_recover_passphrase"><![CDATA[<b>주의</b>: 암호를 분실하면 복구하거나 비밀번호 변경을 할 수 없어요.]]></string>
     <string name="change_database_passphrase_question">데이터베이스 암호를 바꾸시겠습니까?</string>
     <string name="confirm_new_passphrase">새로운 암호 확인…</string>
     <string name="chat_archive_section">채팅 기록 보관함</string>
@@ -159,7 +159,7 @@
     <string name="full_backup">앱 데이터 백업</string>
     <string name="settings_section_title_icon">앱 아이콘</string>
     <string name="network_session_mode_user_description"><![CDATA[별도로 분리된 TCP 연결(그리고 SOCKS 자격 증명)이 <b>각각의 채팅 프로필</b>에 사용될 겁니다.]]></string>
-    <string name="network_session_mode_entity_description">별도로 분리된 TCP 연결(및 SOCKS 자격 증명)이 <b>각각의 대화 상대 및 그룹 멤버</b>에게 사용될 겁니다. \n<b>참고</b>: 연결이 많은 경우 배터리 및 트래픽 소비가 높을 수 있고 일부 연결이 실패할 수 있습니다.</string>
+    <string name="network_session_mode_entity_description"><![CDATA[별도로 분리된 TCP 연결(및 SOCKS 자격 증명)이 <b>각각의 대화 상대 및 그룹 멤버</b>에게 사용될 겁니다. \n<b>참고</b>: 연결이 많은 경우 배터리 및 트래픽 소비가 높을 수 있고 일부 연결이 실패할 수 있습니다.]]></string>
     <string name="icon_descr_asked_to_receive">이미지 수신 요청됨</string>
     <string name="v4_6_audio_video_calls">음성 및 영상 통화</string>
     <string name="audio_call_no_encryption">음성 통화 (종단 간 암호화 아님)</string>
@@ -169,7 +169,7 @@
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>설정을 통해 비활성화할 수 있습니다.</b> – 앱이 실행되는 동안 알림이 표시됩니다.]]></string>
     <string name="both_you_and_your_contact_can_send_disappearing">당신과 대화 상대 모두 사라지는 메시지를 보낼 수 있습니다.</string>
     <string name="cannot_access_keychain">데이터베이스 암호를 저장하고 있는 암호 저장소에 접근할 수 없습니다.</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>배터리를 더욱 사용함</b>! 앱이 항상 백그라운드에서 실행됩니다. - 수신되는 즉시 알림이 표시됩니다.</string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>배터리를 더욱 사용함</b>! 앱이 항상 백그라운드에서 실행됩니다. - 수신되는 즉시 알림이 표시됩니다.]]></string>
     <string name="callstatus_ended">통화 종료됨 %1$s</string>
     <string name="callstatus_calling">전화 중…</string>
     <string name="icon_descr_call_progress">전화 연결 중</string>
@@ -721,7 +721,7 @@
     <string name="privacy_redefined">프라이버시의 재정의</string>
     <string name="opensource_protocol_and_code_anybody_can_run_servers">누구나 서버를 호스팅할 수 있습니다.</string>
     <string name="onboarding_notifications_mode_off">앱이 실행 중일 때</string>
-    <string name="read_more_in_github_with_link">자세한 내용은 &lt;font color=#0088ff&gt;GitHub&lt;/font&gt; 에서 확인해 주세요.</string>
+    <string name="read_more_in_github_with_link"><![CDATA[자세한 내용은 <font color="#0088ff">GitHub</font> 에서 확인해 주세요.]]></string>
     <string name="relay_server_protects_ip">릴레이 서버는 IP 주소를 숨겨주지만, 통화 시간을 관찰 할 수 있어요.</string>
     <string name="rcv_group_event_invited_via_your_group_link">그룹 링크로 초대</string>
     <string name="onboarding_notifications_mode_subtitle">설정을 통해 나중에 변경할 수 있어요.</string>
@@ -1043,12 +1043,12 @@
     <string name="settings_section_title_chat_colors">채팅 색상</string>
     <string name="app_check_for_updates_notice_title">업데이트 확인</string>
     <string name="migrate_from_device_check_connection_and_try_again">인터넷 연결을 확인하고 다시 시도하십시오</string>
-    <string name="migrate_from_device_choose_migrate_from_another_device">새 기기에서 <i>다른 기기에서 이전</i>을 선택하고 QR 코드를 스캔합니다.</string>
+    <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[새 기기에서 <i>다른 기기에서 이전</i>을 선택하고 QR 코드를 스캔합니다.]]></string>
     <string name="completed">완료</string>
     <string name="v5_8_safe_files_descr">알 수 없는 서버의 파일을 확인합니다.</string>
     <string name="servers_info_connected_servers_section_header">연결된 서버</string>
     <string name="v6_0_connection_servers_status_descr">연결 및 서버 상태.</string>
-    <string name="remote_host_error_bad_state">모바일 <b>%s</b> 과의 연결이 잘못된 상태입니다.</string>
+    <string name="remote_host_error_bad_state"><![CDATA[모바일 <b>%s</b> 과의 연결이 잘못된 상태입니다.]]></string>
     <string name="v6_0_connection_servers_status">네트워크 관리</string>
     <string name="switch_receiving_address_question">수신 주소를 변경하겠습니까?</string>
     <string name="connect_to_desktop">데스크톱에 연결</string>
@@ -1059,8 +1059,8 @@
     <string name="contact_deleted">연락처가 삭제되었어요!</string>
     <string name="choose_file_title">파일 선택</string>
     <string name="camera_not_available">카메라를 사용할 수 없음</string>
-    <string name="create_group_button_to_create_new_group"><b>그룹 생성</b>: 새로운 그룹을 생성합니다.</string>
-    <string name="add_contact_button_to_create_link_or_connect_via_link"><b>연락처 추가</b> : 새 초대 링크를 만들거나 받은 링크를 통해 연결합니다.</string>
+    <string name="create_group_button_to_create_new_group"><![CDATA[<b>그룹 생성</b>: 새로운 그룹을 생성합니다.]]></string>
+    <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>연락처 추가</b> : 새 초대 링크를 만들거나 받은 링크를 통해 연결합니다.]]></string>
     <string name="clear_note_folder_question">개인 메모를 지우시겠습니까?</string>
     <string name="xftp_servers_configured">XFTP 서버 구성</string>
     <string name="v6_0_your_contacts_descr">나중에 채팅할 수 있도록 연락처를 보관합니다.</string>
@@ -1167,7 +1167,7 @@
     <string name="v6_0_delete_many_messages_descr">한 번에 최대 20개의 메시지를 삭제할 수 있습니다.</string>
     <string name="v6_0_privacy_blur">더 나은 개인정보 보호를 위한 흐리기</string>
     <string name="error">오류</string>
-    <string name="remote_host_disconnected_from">이유: %s로 인해 모바일 <b>%s</b> 에서 연결이 끊어졌습니다</string>
+    <string name="remote_host_disconnected_from"><![CDATA[이유: %s로 인해 모바일 <b>%s</b> 에서 연결이 끊어졌습니다]]></string>
     <string name="desktop_devices">데스크톱 기기</string>
     <string name="remote_ctrl_error_bad_version">데스크톱 버전이 지원되지 않습니다. 두 기기가 동일한 버전에 있는지 확인하십시오.</string>
     <string name="migrate_to_device_enter_passphrase">암호 입력</string>
@@ -1176,7 +1176,7 @@
     <string name="migrate_from_device_error_saving_settings">설정을 저장하는 중 오류</string>
     <string name="migrate_from_device_exported_file_doesnt_exist">내보낸 파일이 없음</string>
     <string name="migrate_from_device_delete_database_from_device">이 기기에서 데이터베이스 삭제</string>
-    <string name="migrate_from_device_archive_will_be_deleted"><b>경고</b>: 보관된 데이터가 삭제됩니다.</string>
+    <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>경고</b>: 보관된 데이터가 삭제됩니다.]]></string>
     <string name="servers_info_details">상세</string>
     <string name="servers_info_reconnect_servers_error">서버를 다시 연결하는 중 오류</string>
     <string name="download_errors">다운로드 오류</string>
@@ -1221,7 +1221,7 @@
     <string name="error_showing_content">콘텐츠를 표시하는 중 오류</string>
     <string name="error_showing_message">메시지를 표시하는 중 오류</string>
     <string name="privacy_media_blur_radius">미디어 흐리기</string>
-    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><b>참고</b>: 두 기기에서 동일한 데이터베이스를 사용하면 연결된 사람들의 메시지 복호화가 깨질 수 있으며, 이는 보안 보호 조치입니다.</string>
+    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>참고</b>: 두 기기에서 동일한 데이터베이스를 사용하면 연결된 사람들의 메시지 복호화가 깨질 수 있으며, 이는 보안 보호 조치입니다.]]></string>
     <string name="color_mode_dark">다크</string>
     <string name="database_migration_in_progress">데이터베이스 이전이 진행 중입니다.\n이 작업은 몇 분 정도 걸릴 수 있습니다.</string>
     <string name="snd_error_relay">대상 서버 오류: %1$s</string>
@@ -1267,7 +1267,7 @@
     <string name="remote_ctrl_error_busy">데스크톱이 사용 중입니다</string>
     <string name="servers_info_reconnect_server_error">서버를 다시 연결하는 중 오류</string>
     <string name="error_creating_message">메시지를 만드는 동안 오류</string>
-    <string name="socks_proxy_setting_limitations"><b>참고</b>: 메시지 및 파일 릴레이는 SOCKS 프록시를 통해 연결됩니다. 통화 및 전송 링크 미리 보기는 직접 연결을 사용합니다.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>참고</b>: 메시지 및 파일 릴레이는 SOCKS 프록시를 통해 연결됩니다. 통화 및 전송 링크 미리 보기는 직접 연결을 사용합니다.]]></string>
     <string name="app_check_for_updates_disabled">비활성화됨</string>
     <string name="network_smp_proxy_mode_never_description">프라이빗 라우팅 사용안함</string>
     <string name="app_check_for_updates_download_started">앱 업데이트를 다운로드하는 중입니다. 앱을 닫지 마세요</string>
@@ -1336,8 +1336,8 @@
     <string name="info_row_file_status">파일 상태</string>
     <string name="v4_4_french_interface">프랑스어 인터페이스</string>
     <string name="message_delivery_warning_title">메시지 전송 경고</string>
-    <string name="e2ee_info_no_pq">메시지, 파일 및 통화는 <b>종단 간 암호화</b>로 보호되며, 완벽한 전방 비밀성, 부인 방지 및 침입 복구 기능이 포함되어 있습니다.</string>
-    <string name="e2ee_info_pq">메시지, 파일 및 통화는 <b>양자 저항 종단 간 암호화</b>로 보호되며, 완벽한 전방 비밀성, 메시지 부인 방지 및 침입 복구 기능이 포함되어 있습니다.</string>
+    <string name="e2ee_info_no_pq"><![CDATA[메시지, 파일 및 통화는 <b>종단 간 암호화</b>로 보호되며, 완벽한 전방 비밀성, 부인 방지 및 침입 복구 기능이 포함되어 있습니다.]]></string>
+    <string name="e2ee_info_pq"><![CDATA[메시지, 파일 및 통화는 <b>양자 저항 종단 간 암호화</b>로 보호되며, 완벽한 전방 비밀성, 메시지 부인 방지 및 침입 복구 기능이 포함되어 있습니다.]]></string>
     <string name="migrate_to_device_importing_archive">보관함을 가져오는 중</string>
     <string name="forward_files_messages_deleted_after_selection_desc">메시지를 선택한 후 메시지가 삭제되었습니다.</string>
     <string name="info_view_message_button">메시지</string>
@@ -1369,7 +1369,7 @@
     <string name="custom_time_unit_hours">시간</string>
     <string name="v6_0_increase_font_size">글꼴 크기 키우기</string>
     <string name="v4_3_improved_privacy_and_security_desc">최근 앱 목록에서 앱 화면을 숨깁니다.</string>
-    <string name="new_desktop"><i>(신규)</i></string>
+    <string name="new_desktop"><![CDATA[<i>(신규)</i>]]></string>
     <string name="host_verb">호스트</string>
     <string name="la_immediately">즉시</string>
     <string name="incorrect_passcode">잘못된 패스코드</string>
@@ -1419,7 +1419,7 @@
     <string name="connect_plan_join_your_group">그룹에 참여하시겠습니까?</string>
     <string name="thousand_abbreviation">k</string>
     <string name="v5_5_join_group_conversation">그룹 대화에 참여</string>
-    <string name="this_device_version"><i>(이 기기 v%s)</i></string>
+    <string name="this_device_version"><![CDATA[<i>(이 기기 v%s)</i>]]></string>
     <string name="failed_to_create_user_invalid_title">잘못된 표시 이름입니다!</string>
     <string name="non_content_uri_alert_title">잘못된 파일 경로</string>
     <string name="invalid_qr_code">잘못된 QR 코드</string>
