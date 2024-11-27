@@ -987,7 +987,7 @@ struct ChatView: View {
                     }
                 } else if chatItem.isRcvNew  {
                     waitToMarkRead {
-                        await apiMarkChatItemRead(chat.chatInfo, chatItem)
+                        await apiMarkChatItemsRead(chat.chatInfo, [chatItem.id])
                     }
                 }
             }
