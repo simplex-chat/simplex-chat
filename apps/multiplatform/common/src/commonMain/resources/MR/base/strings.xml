@@ -1263,6 +1263,7 @@
   <!-- DatabaseView.kt -->
   <string name="your_chat_database">Your chat database</string>
   <string name="run_chat_section">RUN CHAT</string>
+  <string name="remote_hosts_section">Remote mobiles</string>
   <string name="chat_is_running">Chat is running</string>
   <string name="chat_is_stopped">Chat is stopped</string>
   <string name="chat_database_section">CHAT DATABASE</string>
@@ -2292,6 +2293,7 @@
   <string name="or_paste_archive_link">Or paste archive link</string>
   <string name="paste_archive_link">Paste archive link</string>
   <string name="invalid_file_link">Invalid link</string>
+  <string name="chat_archive">Chat archive</string>
   <string name="migrate_to_device_migrating">Migrating</string>
   <string name="migrate_to_device_database_init">Preparing download</string>
   <string name="migrate_to_device_downloading_details">Downloading link details</string>
