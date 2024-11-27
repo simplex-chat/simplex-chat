@@ -990,8 +990,7 @@
     <string name="users_delete_all_chats_deleted">Все чаты и сообщения будут удалены - это нельзя отменить!</string>
     <string name="app_version_code">Сборка приложения: %s</string>
     <string name="app_version_name">Версия приложения: v%s</string>
-    <string name="network_session_mode_entity_description">Отдельное TCP-соединение (и авторизация SOCKS) будет использоваться <b>для каждого контакта и члена группы</b>.
-\n<b>Обратите внимание</b>: если у Вас много контактов, потребление батареи и трафика может быть значительно выше, и некоторые соединения могут не работать.</string>
+    <string name="network_session_mode_entity_description">Отдельное TCP-соединение (и авторизация SOCKS) будет использоваться <b>для каждого контакта и члена группы</b>. \n<b>Обратите внимание</b>: если у Вас много контактов, потребление батареи и трафика может быть значительно выше, и некоторые соединения могут не работать.</string>
     <string name="network_session_mode_user_description"><![CDATA[Отдельное TCP-соединение (и авторизация SOCKS) будет использоваться <b>для каждого профиля чата, который Вы имеете в приложении</b>.]]></string>
     <string name="core_version">Версия ядра: v%s</string>
     <string name="users_delete_question">Удалить профиль чата\?</string>
