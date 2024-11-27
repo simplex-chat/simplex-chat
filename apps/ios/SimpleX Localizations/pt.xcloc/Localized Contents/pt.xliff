@@ -2115,8 +2115,8 @@ Available in v5.1</source>
         <source>Migration is completed</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrations: %@" xml:space="preserve">
-        <source>Migrations: %@</source>
+      <trans-unit id="Migrations:" xml:space="preserve">
+        <source>Migrations:</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Moderate" xml:space="preserve">

@@ -2885,7 +2885,7 @@
 "Migration is completed" = "Міграцію завершено";
 
 /* No comment provided by engineer. */
-"Migrations: %@" = "Міграції: %@";
+"Migrations:" = "Міграції:";
 
 /* time unit */
 "minutes" = "хвилини";

@@ -2984,7 +2984,7 @@
 "Migration is completed" = "Az átköltöztetés befejeződött";
 
 /* No comment provided by engineer. */
-"Migrations: %@" = "Átköltöztetések: %@";
+"Migrations:" = "Átköltöztetések:";
 
 /* time unit */
 "minutes" = "perc";

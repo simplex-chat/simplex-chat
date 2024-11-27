@@ -2083,7 +2083,7 @@
 "Migration is completed" = "移行が完了しました";
 
 /* No comment provided by engineer. */
-"Migrations: %@" = "移行： %@";
+"Migrations:" = "移行";
 
 /* time unit */
 "minutes" = "分";
