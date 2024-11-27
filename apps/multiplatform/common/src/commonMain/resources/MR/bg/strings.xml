@@ -89,8 +89,7 @@
     <string name="network_session_mode_user_description"><![CDATA[Ще се използва отделна TCP връзка (и идентификационни данни за SOCKS) <b>за всеки чат профил, който имате в приложението</b>.]]></string>
     <string name="icon_descr_audio_call">аудио разговор</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Най-добро за батерията</b>. Ще получавате известия само когато приложението работи (БЕЗ фонова услуга).]]></string>
-    <string name="network_session_mode_entity_description">Ще се използва отделна TCP връзка (и идентификационни данни за SOCKS) <b>за всеки контакт и член на група</b>.
-\n<b>Моля, обърнете внимание</b>: ако имате много връзки, консумацията на батерията и трафика може да бъде значително по-висока и някои връзки може да се провалят.</string>
+    <string name="network_session_mode_entity_description">Ще се използва отделна TCP връзка (и идентификационни данни за SOCKS) <b>за всеки контакт и член на група</b>. \n<b>Моля, обърнете внимание</b>: ако имате много връзки, консумацията на батерията и трафика може да бъде значително по-висока и някои връзки може да се провалят.</string>
     <string name="icon_descr_asked_to_receive">Помолен да получи изображението</string>
     <string name="v4_6_audio_video_calls">Аудио и видео разговори</string>
     <string name="audio_call_no_encryption">аудио разговор (не е e2e криптиран)</string>
