@@ -243,7 +243,7 @@
     <string name="smp_servers_use_server_for_new_conn">Використовувати для нових підключень</string>
     <string name="smp_servers_delete_server">Видалити сервер</string>
     <string name="star_on_github">Оцінити на GitHub</string>
-    <string name="how_to_use_your_servers">Як використовувати ваші сервери</string>
+    <string name="how_to_use_your_servers">Як використовувати власні сервери</string>
     <string name="saved_ICE_servers_will_be_removed">Збережені сервери WebRTC ICE будуть видалені.</string>
     <string name="configure_ICE_servers">Налаштувати сервери ICE</string>
     <string name="network_and_servers">Мережа та сервери</string>
@@ -621,14 +621,14 @@
     <string name="this_string_is_not_a_connection_link">Цей рядок не є з\'єднувальним посиланням!</string>
     <string name="security_code">Код безпеки</string>
     <string name="mark_code_verified">Позначити, що перевірено</string>
-    <string name="your_chat_profiles">Ваші профілі чату</string>
+    <string name="your_chat_profiles">Ваші профілі</string>
     <string name="database_passphrase_and_export">Пароль бази даних та експорт</string>
     <string name="markdown_in_messages">Markdown у повідомленнях</string>
     <string name="chat_with_the_founder">Надсилайте питання та ідеї</string>
-    <string name="smp_servers_enter_manually">Ввести адресу сервера вручну</string>
+    <string name="smp_servers_enter_manually">Ввести сервер вручну</string>
     <string name="smp_servers_preset_server">Попередньо встановлений сервер</string>
     <string name="smp_servers_your_server_address">Адреса вашого сервера</string>
-    <string name="smp_servers_per_user">Сервери для нових підключень вашого поточного профілю чату</string>
+    <string name="smp_servers_per_user">Сервери для нових підключень до вашого поточного профілю</string>
     <string name="use_simplex_chat_servers__question">Використовувати сервери SimpleX Chat?</string>
     <string name="enter_one_ICE_server_per_line">Сервери ICE (один на рядок)</string>
     <string name="error_saving_ICE_servers">Помилка збереження серверів ICE</string>
@@ -834,7 +834,7 @@
     <string name="gallery_video_button">Відео</string>
     <string name="connection_you_accepted_will_be_cancelled">Прийняте вами з\'єднання буде скасоване!</string>
     <string name="alert_title_contact_connection_pending">Контакт ще не підключений!</string>
-    <string name="smp_servers_test_servers">Тестові сервери</string>
+    <string name="smp_servers_test_servers">Тестування серверів</string>
     <string name="smp_servers_save">Зберегти сервери</string>
     <string name="smp_servers_your_server">Ваш сервер</string>
     <string name="smp_servers_test_failed">Тест сервера не вдався!</string>
@@ -1136,7 +1136,7 @@
     <string name="file_not_found">Файл не знайдено</string>
     <string name="connect_via_link">Підключитися через посилання</string>
     <string name="connect_button">Підключитися</string>
-    <string name="to_reveal_profile_enter_password">Щоб показати ваш схований профіль, введіть повний пароль у поле пошуку на сторінці Ваші профілі чату.</string>
+    <string name="to_reveal_profile_enter_password">Щоб показати ваш схований профіль, введіть повний пароль у поле пошуку на сторінці Ваші профілі.</string>
     <string name="confirm_password">Підтвердити пароль</string>
     <string name="ttl_d">%dd</string>
     <string name="v4_6_hidden_chat_profiles_descr">Захистіть свої чат-профілі паролем!</string>
@@ -1472,7 +1472,7 @@
     <string name="desktop_devices">Пристрої робочого столу</string>
     <string name="not_compatible">Не сумісно!</string>
     <string name="link_a_mobile">Зв\'язати з мобільним</string>
-    <string name="settings_section_title_use_from_desktop">Використовувати зі стаціонарного комп\'ютера</string>
+    <string name="settings_section_title_use_from_desktop">Використовувати з комп\'ютера</string>
     <string name="connected_mobile">Підключений мобільний</string>
     <string name="session_code">Код сеансу</string>
     <string name="desktop_connection_terminated">Підключення завершено</string>
@@ -1489,7 +1489,7 @@
     <string name="bad_desktop_address">Некоректна адреса робочого столу</string>
     <string name="paste_desktop_address">Вставити адресу робочого столу</string>
     <string name="verify_code_with_desktop">Перевірити код з робочим столом</string>
-    <string name="scan_qr_code_from_desktop">Сканувати QR-код з робочого столу</string>
+    <string name="scan_qr_code_from_desktop">Сканувати QR-код з комп\'ютера</string>
     <string name="devices">Пристрої</string>
     <string name="multicast_discoverable_via_local_network">Виявлено через локальну мережу</string>
     <string name="v5_4_more_things_descr">- за бажанням повідомляйте про видалених контактів.
@@ -1914,7 +1914,7 @@
     <string name="calls_prohibited_ask_to_enable_calls_alert_text">Будь ласка, попросіть вашого контакту увімкнути дзвінки.</string>
     <string name="network_options_save_and_reconnect">Зберегти і перепідключитися</string>
     <string name="v6_0_delete_many_messages_descr">Видалити до 20 повідомлень за один раз.</string>
-    <string name="v6_0_reachable_chat_toolbar">Доступна панель інструментів чату</string>
+    <string name="v6_0_reachable_chat_toolbar">Доступна панель чату</string>
     <string name="v6_0_reachable_chat_toolbar_descr">Користуватися застосунком однією рукою.</string>
     <string name="v6_0_connect_faster_descr">З\'єднуйтеся з друзями швидше.</string>
     <string name="v6_0_connection_servers_status">Керуйте своєю мережею</string>
@@ -2016,7 +2016,7 @@
     <string name="app_check_for_updates_button_download">Завантажити %s (%s)</string>
     <string name="app_check_for_updates_button_open">Відкрити розташування файлу</string>
     <string name="app_check_for_updates_button_skip">Пропустити цю версію</string>
-    <string name="one_hand_ui">Доступна панель інструментів чату</string>
+    <string name="one_hand_ui">Доступна панель чату</string>
     <string name="cant_call_contact_alert_title">Не можна зателефонувати контакту</string>
     <string name="cant_call_contact_connecting_wait_alert_text">Підключення до контакту, будь ласка, зачекайте або перевірте пізніше!</string>
     <string name="calls_prohibited_alert_title">Дзвінки заборонені!</string>
@@ -2099,7 +2099,7 @@
     <string name="icon_descr_sound_muted">Звук вимкнено</string>
     <string name="error_initializing_web_view_wrong_arch">Помилка ініціалізації WebView. Переконайтеся, що WebView встановлено, і його підтримувана архітектура — arm64.  \nПомилка: %s</string>
     <string name="settings_message_shape_tail">Хвіст</string>
-    <string name="settings_message_shape_corner">Куточок</string>
+    <string name="settings_message_shape_corner">Кут</string>
     <string name="settings_section_title_message_shape">Форма повідомлення</string>
     <string name="network_session_mode_session">Сесія додатку</string>
     <string name="network_session_mode_session_description">Нові облікові дані SOCKS будуть використовуватись щоразу, коли ви запускаєте додаток.</string>
