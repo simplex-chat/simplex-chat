@@ -1226,7 +1226,7 @@ viewUserServers UserOperatorServers {operator, smpServers, xftpServers} =
     viewServers p srvs
       | maybe True (\ServerOperator {enabled} -> enabled) operator =
           ["  " <> protocolName p <> " servers" <> maybe "" ((" " <>) . viewRoles) operator]
-            <> map (plain . ("    " <> ) . viewServer) srvs
+            <> map (plain . ("    " <>) . viewServer) srvs
       | otherwise = []
       where
         viewServer UserServer {server, preset, tested, enabled} = safeDecodeUtf8 (strEncode server) <> serverInfo
@@ -1279,7 +1279,7 @@ viewOperator op@ServerOperator {tradeName, legalName, serverDomains, conditionsA
   viewOpIdTag op
     <> tradeName
     <> maybe "" parens legalName
-    <> (", domains: "  <> T.intercalate ", " serverDomains)
+    <> (", domains: " <> T.intercalate ", " serverDomains)
     <> (", servers: " <> viewOpEnabled op)
     <> (", conditions: " <> viewOpConditions conditionsAcceptance)
 
@@ -1651,6 +1651,18 @@ viewConnectionPlan = \case
     CAPContactViaAddress ct -> [ctAddr ("known contact without connection " <> ttyContact' ct)]
     where
       ctAddr = ("contact address: " <>)
+  CPBusinessAddress bap -> case bap of
+    BAPOk -> [bizAddr "ok to connect"]
+    BAPOwnLink -> [bizAddr "own address"]
+    BAPConnectingConfirmReconnect -> [bizAddr "connecting, allowed to reconnect"]
+    BAPConnectingProhibit Nothing -> [bizAddr "connecting"]
+    BAPConnectingProhibit (Just g) -> [bizAddr ("connecting to business " <> ttyGroup' g)]
+    BAPKnown g ->
+      [ bizAddr ("known business " <> ttyGroup' g),
+        "use " <> ttyToGroup g <> highlight' "<message>" <> " to send messages"
+      ]
+    where
+      bizAddr = ("business address: " <>)
   CPGroupLink glp -> case glp of
     GLPOk -> [grpLink "ok to connect"]
     GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]

@@ -316,7 +316,7 @@ newChatController
     randomPresetServers <- chooseRandomServers presetServers'
     let rndSrvs = L.toList randomPresetServers
         operatorWithId (i, op) = (\o -> o {operatorId = DBEntityId i}) <$> pOperator op
-        opDomains = operatorDomains $ mapMaybe operatorWithId $ zip [1..] rndSrvs
+        opDomains = operatorDomains $ mapMaybe operatorWithId $ zip [1 ..] rndSrvs
     agentSMP <- randomServerCfgs "agent SMP servers" SPSMP opDomains rndSrvs
     agentXFTP <- randomServerCfgs "agent XFTP servers" SPXFTP opDomains rndSrvs
     let randomAgentServers = RandomAgentServers {smpServers = agentSMP, xftpServers = agentXFTP}
@@ -1631,7 +1631,7 @@ processChatCommand' vr = \case
       liftIO $ fmap (opsConds,) . mapM (getServers db as ops' opDomains) =<< getUsers db
     lift $ withAgent' $ \a -> forM_ srvs $ \(auId, (smp', xftp')) -> do
       setProtocolServers a auId smp'
-      setProtocolServers a auId xftp'      
+      setProtocolServers a auId xftp'
     pure $ CRServerOperatorConditions opsConds
     where
       getServers :: DB.Connection -> RandomAgentServers -> [Maybe ServerOperator] -> [(Text, ServerOperator)] -> User -> IO (UserId, (NonEmpty (ServerCfg 'PSMP), NonEmpty (ServerCfg 'PXFTP)))
@@ -1940,7 +1940,7 @@ processChatCommand' vr = \case
       canKeepLink (CRInvitationUri crData _) newUser = do
         let ConnReqUriData {crSmpQueues = q :| _} = crData
             SMPQueueUri {queueAddress = SMPQueueAddress {smpServer}} = q
-        newUserServers <- 
+        newUserServers <-
           map protoServer' . L.filter (\ServerCfg {enabled} -> enabled)
             <$> getKnownAgentServers SPSMP newUser
         pure $ smpServer `elem` newUserServers
@@ -2770,31 +2770,34 @@ processChatCommand' vr = \case
       CTLocal -> withFastStore $ \db -> getLocalChatItemIdByText' db user cId msg
       _ -> throwChatError $ CECommandError "not supported"
     connectViaContact :: User -> IncognitoEnabled -> ConnectionRequestUri 'CMContact -> CM ChatResponse
-    connectViaContact user@User {userId} incognito cReq@(CRContactUri ConnReqUriData {crClientData}) = withInvitationLock "connectViaContact" (strEncode cReq) $ do
-      let groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
-          cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
-      case groupLinkId of
-        -- contact address
-        Nothing ->
+    connectViaContact user@User {userId} incognito cReq@(CRContactUri ConnReqUriData {crClientData}) =
+      withInvitationLock "connectViaContact" (strEncode cReq) $ case crClientData >>= decodeJSON of
+        Nothing -> connectContact
+        Just (CRDataBusiness business)
+          | business -> connectBusiness
+          | otherwise -> connectContact
+        Just (CRDataGroup gLinkId) -> connectGroup gLinkId
+      where
+        cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
+        connectContact =
           withFastStore' (\db -> getConnReqContactXContactId db vr user cReqHash) >>= \case
             (Just contact, _) -> pure $ CRContactAlreadyExists user contact
             (_, xContactId_) -> procCmd $ do
               let randomXContactId = XContactId <$> drgRandomBytes 16
               xContactId <- maybe randomXContactId pure xContactId_
-              connect' Nothing cReqHash xContactId False
-        -- group link
-        Just gLinkId ->
+              connect' Nothing xContactId False
+        connectBusiness = undefined
+        connectGroup gLinkId =
           withFastStore' (\db -> getConnReqContactXContactId db vr user cReqHash) >>= \case
             (Just _contact, _) -> procCmd $ do
               -- allow repeat contact request
               newXContactId <- XContactId <$> drgRandomBytes 16
-              connect' (Just gLinkId) cReqHash newXContactId True
+              connect' (Just gLinkId) newXContactId True
             (_, xContactId_) -> procCmd $ do
               let randomXContactId = XContactId <$> drgRandomBytes 16
               xContactId <- maybe randomXContactId pure xContactId_
-              connect' (Just gLinkId) cReqHash xContactId True
-      where
-        connect' groupLinkId cReqHash xContactId inGroup = do
+              connect' (Just gLinkId) xContactId True
+        connect' groupLinkId xContactId inGroup = do
           let pqSup = if inGroup then PQSupportOff else PQSupportOn
           (connId, chatV) <- prepareContact user cReq pqSup
           -- [incognito] generate profile to send
@@ -2830,7 +2833,7 @@ processChatCommand' vr = \case
     joinContact :: User -> Int64 -> ConnId -> ConnectionRequestUri 'CMContact -> Maybe Profile -> XContactId -> Bool -> PQSupport -> VersionChat -> CM ()
     joinContact user pccConnId connId cReq incognitoProfile xContactId inGroup pqSup chatV = do
       let profileToSend = userProfileToSend user incognitoProfile Nothing inGroup
-      dm <- encodeConnInfoPQ pqSup chatV (XContact profileToSend $ Just xContactId)
+      dm <- encodeConnInfoPQ pqSup chatV XContact {profile = profileToSend, xContactId = Just xContactId, business = Nothing}
       subMode <- chatReadVar subscriptionMode
       joinPreparedAgentConnection user pccConnId connId cReq dm pqSup subMode
     joinPreparedAgentConnection :: User -> Int64 -> ConnId -> ConnectionRequestUri m -> ByteString -> PQSupport -> SubscriptionMode -> CM ()
@@ -3012,8 +3015,7 @@ processChatCommand' vr = \case
                 connRequest = cReq,
                 groupProfile,
                 groupLinkId = Nothing,
-                groupSize = Just currentMemCount,
-                business = Nothing
+                groupSize = Just currentMemCount
               }
       (msg, _) <- sendDirectContactMessage user ct $ XGrpInv groupInv
       let content = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
@@ -3113,10 +3115,14 @@ processChatCommand' vr = \case
           )
     connectPlan user (ACR SCMContact (CRContactUri crData)) = do
       let ConnReqUriData {crClientData} = crData
-          groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
-      case groupLinkId of
-        -- contact address
-        Nothing ->
+      case crClientData >>= decodeJSON of
+        Nothing -> contactConnectPlan
+        Just (CRDataBusiness business)
+          | business -> businessConnectPlan
+          | otherwise -> contactConnectPlan
+        Just (CRDataGroup _) -> groupConnectPlan
+      where
+        contactConnectPlan =
           withFastStore' (\db -> getUserContactLinkByConnReq db user cReqSchemas) >>= \case
             Just _ -> pure $ CPContactAddress CAPOwnLink
             Nothing ->
@@ -3131,8 +3137,8 @@ processChatCommand' vr = \case
                   | contactDeleted ct -> pure $ CPContactAddress CAPOk
                   | otherwise -> pure $ CPContactAddress (CAPKnown ct)
                 Just _ -> throwChatError $ CECommandError "found connection entity is not RcvDirectMsgConnection"
-        -- group link
-        Just _ ->
+        businessConnectPlan = undefined
+        groupConnectPlan =
           withFastStore' (\db -> getGroupInfoByUserContactLinkConnReq db vr user cReqSchemas) >>= \case
             Just g -> pure $ CPGroupLink (GLPOwnLink g)
             Nothing -> do
@@ -3150,7 +3156,6 @@ processChatCommand' vr = \case
                       pure $ CPGroupLink (GLPConnectingProhibit gInfo_)
                   | memberActive membership -> pure $ CPGroupLink (GLPKnown gInfo)
                   | otherwise -> pure $ CPGroupLink GLPOk
-      where
         cReqSchemas :: (ConnReqContact, ConnReqContact)
         cReqSchemas =
           ( CRContactUri crData {crScheme = SSSimplex},
@@ -3429,7 +3434,7 @@ processChatCommand' vr = \case
       msgInfo <- withFastStore' (`getLastRcvMsgInfo` connId)
       CRQueueInfo user msgInfo <$> withAgent (`getConnectionQueueInfo` acId)
 
-protocolServers :: UserProtocol p => SProtocolType p -> ([Maybe ServerOperator], [UserServer 'PSMP],  [UserServer 'PXFTP]) -> ([Maybe ServerOperator], [UserServer 'PSMP],  [UserServer 'PXFTP])
+protocolServers :: UserProtocol p => SProtocolType p -> ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP]) -> ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP])
 protocolServers p (operators, smpServers, xftpServers) = case p of
   SPSMP -> (operators, smpServers, [])
   SPXFTP -> (operators, [], xftpServers)
@@ -4974,8 +4979,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                               connRequest = cReq,
                               groupProfile,
                               groupLinkId = groupLinkId,
-                              groupSize = Just currentMemCount,
-                              business = Nothing
+                              groupSize = Just currentMemCount
                             }
                     (_msg, _) <- sendDirectContactMessage user ct $ XGrpInv groupInv
                     -- we could link chat item with sent group invitation message (_msg)
@@ -5503,7 +5507,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       REQ invId pqSupport _ connInfo -> do
         ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
         case chatMsgEvent of
-          XContact p xContactId_ -> profileContactRequest invId chatVRange p xContactId_ pqSupport
+          XContact p xContactId_ _ -> profileContactRequest invId chatVRange p xContactId_ pqSupport
           XInfo p -> profileContactRequest invId chatVRange p Nothing pqSupport
           -- TODO show/log error, other events in contact request
           _ -> pure ()
@@ -8602,7 +8606,7 @@ chatCommandP =
                 { directMessages = Just DirectMessagesGroupPreference {enable = FEOn, role = Nothing},
                   history = Just HistoryGroupPreference {enable = FEOn}
                 }
-      pure GroupProfile {displayName = gName, fullName, description = Nothing, image = Nothing, groupPreferences}
+      pure GroupProfile {displayName = gName, fullName, description = Nothing, image = Nothing, groupPreferences, business = Nothing}
     fullNameP = A.space *> textP <|> pure ""
     textP = safeDecodeUtf8 <$> A.takeByteString
     pwdP = jsonP <|> (UserPwd . safeDecodeUtf8 <$> A.takeTill (== ' '))

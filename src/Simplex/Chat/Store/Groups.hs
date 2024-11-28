@@ -164,8 +164,8 @@ toGroupInfo vr userContactId ((groupId, localDisplayName, displayName, fullName,
   let membership = (toGroupMember userContactId userMemberRow) {memberChatVRange = vr}
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts, favorite}
       fullGroupPreferences = mergeGroupPreferences groupPreferences
-      groupProfile = GroupProfile {displayName, fullName, description, image, groupPreferences}
-   in GroupInfo {groupId, localDisplayName, groupProfile, bizGroup = Nothing, fullGroupPreferences, membership, hostConnCustomUserProfileId, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, uiThemes, customData}
+      groupProfile = GroupProfile {displayName, fullName, description, image, groupPreferences, business = Nothing}
+   in GroupInfo {groupId, localDisplayName, groupProfile, businessGroup = Nothing, fullGroupPreferences, membership, hostConnCustomUserProfileId, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, uiThemes, customData}
 
 toGroupMember :: Int64 -> GroupMemberRow -> GroupMember
 toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberRestriction_) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId, profileId, displayName, fullName, image, contactLink, localAlias, preferences)) =
@@ -342,7 +342,7 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
         { groupId,
           localDisplayName = ldn,
           groupProfile,
-          bizGroup = Nothing,
+          businessGroup = Nothing,
           fullGroupPreferences,
           membership,
           hostConnCustomUserProfileId = Nothing,
@@ -410,7 +410,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
                 { groupId,
                   localDisplayName,
                   groupProfile,
-                  bizGroup = Nothing,
+                  businessGroup = Nothing,
                   fullGroupPreferences,
                   membership,
                   hostConnCustomUserProfileId = customUserProfileId,

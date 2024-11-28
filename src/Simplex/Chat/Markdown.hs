@@ -54,7 +54,7 @@ data Format
   | Phone
   deriving (Eq, Show)
 
-data SimplexLinkType = XLContact | XLInvitation | XLGroup
+data SimplexLinkType = XLContact | XLInvitation | XLGroup | XLBusiness
   deriving (Eq, Show)
 
 colored :: Color -> Format
@@ -249,7 +249,8 @@ markdownP = mconcat <$> A.many' fragmentP
         uriHosts ConnReqUriData {crSmpQueues} = L.map (safeDecodeUtf8 . strEncode) $ sconcat $ L.map (host . qServer) crSmpQueues
         linkType' ConnReqUriData {crClientData} = case crClientData >>= decodeJSON of
           Just (CRDataGroup _) -> XLGroup
-          Nothing -> XLContact
+          Just (CRDataBusiness True) -> XLBusiness
+          _ -> XLContact
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "XL") ''SimplexLinkType)
 

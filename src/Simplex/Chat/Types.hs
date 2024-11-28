@@ -52,7 +52,7 @@ import Simplex.Messaging.Agent.Protocol (ACorrId, AEventTag (..), AEvtTag (..), 
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON, taggedObjectJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON)
 import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
@@ -371,7 +371,7 @@ data GroupInfo = GroupInfo
   { groupId :: GroupId,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
-    bizGroup :: Maybe BizGroupInfo,
+    businessGroup :: Maybe BusinessGroupInfo,
     fullGroupPreferences :: FullGroupPreferences,
     membership :: GroupMember,
     hostConnCustomUserProfileId :: Maybe ProfileId,
@@ -385,18 +385,18 @@ data GroupInfo = GroupInfo
   }
   deriving (Eq, Show)
 
-data BizGroupInfo = BizGroupInfo
-  { bizMember :: GroupMember, -- member who created the group, and whose name avatar will be shown as group name
-    bizGroupType :: BizGroupType
+data BusinessGroupInfo = BusinessGroupInfo
+  { businessMember :: GroupMember, -- member who created the group, and whose name avatar will be shown as group name
+    businessGroupType :: BusinessGroupType
   }
   deriving (Eq, Show)
 
-data BizGroupType
+data BusinessGroupType
   = BGBusiness -- used on the customer side
   | BGCustomer -- used on the business side
   deriving (Eq, Show)
 
-instance StrEncoding BizGroupType where
+instance StrEncoding BusinessGroupType where
   strEncode = \case
     BGBusiness -> "business"
     BGCustomer -> "customer"
@@ -404,12 +404,12 @@ instance StrEncoding BizGroupType where
     A.takeTill (== ' ') >>= \case
       "business" -> pure BGBusiness
       "customer" -> pure BGCustomer
-      _ -> fail "bad BizGroupType"
+      _ -> fail "bad BusinessGroupType"
 
-instance FromJSON BizGroupType where
-  parseJSON = strParseJSON "BizGroupType"
+instance FromJSON BusinessGroupType where
+  parseJSON = strParseJSON "BusinessGroupType"
 
-instance ToJSON BizGroupType where
+instance ToJSON BusinessGroupType where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
@@ -583,7 +583,8 @@ data GroupProfile = GroupProfile
     fullName :: Text,
     description :: Maybe Text,
     image :: Maybe ImageData,
-    groupPreferences :: Maybe GroupPreferences
+    groupPreferences :: Maybe GroupPreferences,
+    business :: Maybe BusinessGroupType
   }
   deriving (Eq, Show)
 
@@ -601,7 +602,10 @@ instance ToField ImageData where toField (ImageData t) = toField t
 
 instance FromField ImageData where fromField = fmap ImageData . fromField
 
-data CReqClientData = CRDataGroup {groupLinkId :: GroupLinkId}
+-- encoded to JSON as untagged object
+data CReqClientData
+  = CRDataGroup {groupLinkId :: GroupLinkId}
+  | CRDataBusiness {business :: Bool}
 
 newtype GroupLinkId = GroupLinkId {unGroupLinkId :: ByteString} -- used to identify invitation via group link
   deriving (Eq, Show)
@@ -628,8 +632,7 @@ data GroupInvitation = GroupInvitation
     connRequest :: ConnReqInvitation,
     groupProfile :: GroupProfile,
     groupLinkId :: Maybe GroupLinkId,
-    groupSize :: Maybe Int,
-    business :: Maybe BizGroupType
+    groupSize :: Maybe Int
   }
   deriving (Eq, Show)
 
@@ -1726,7 +1729,7 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "MF") ''MsgFilter)
 
 $(JQ.deriveJSON defaultJSON ''ChatSettings)
 
-$(JQ.deriveJSON defaultJSON ''BizGroupInfo)
+$(JQ.deriveJSON defaultJSON ''BusinessGroupInfo)
 
 $(JQ.deriveJSON defaultJSON ''GroupInfo)
 
@@ -1738,7 +1741,7 @@ instance FromField MsgFilter where fromField = fromIntField_ msgFilterIntP
 
 instance ToField MsgFilter where toField = toField . msgFilterInt
 
-$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "CRData") ''CReqClientData)
+$(JQ.deriveJSON defaultJSON {J.sumEncoding = J.UntaggedValue} ''CReqClientData)
 
 $(JQ.deriveJSON defaultJSON ''MemberIdRole)
 
