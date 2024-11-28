@@ -76,6 +76,7 @@ module Simplex.Chat.Store.Messages
     getGroupCIReactions,
     getGroupReactions,
     setGroupReaction,
+    getReactionMembers,
     getChatItemIdsByAgentMsgId,
     getDirectChatItem,
     getDirectCIWithReactions,
@@ -2851,6 +2852,21 @@ setGroupReaction db GroupInfo {groupId} m itemMemberId itemSharedMId sent reacti
           WHERE group_id = ? AND group_member_id = ? AND shared_msg_id = ? AND item_member_id = ? AND reaction_sent = ? AND reaction = ?
         |]
         (groupId, groupMemberId' m, itemSharedMId, itemMemberId, sent, reaction)
+
+getReactionMembers :: DB.Connection -> GroupId -> SharedMsgId -> MsgReaction -> IO [MemberReaction]
+getReactionMembers db groupId itemSharedMId reaction =
+  map toMemberReaction
+    <$> DB.query
+      db
+      [sql|
+        SELECT group_member_id, reaction_ts
+        FROM chat_item_reactions
+        WHERE group_id = ? AND shared_msg_id = ? AND reaction = ?
+      |]
+      (groupId, itemSharedMId, reaction)
+  where
+    toMemberReaction :: (GroupMemberId, UTCTime) -> MemberReaction
+    toMemberReaction (groupMemberId, reactionTs) = MemberReaction {groupMemberId, reactionTs}
 
 getTimedItems :: DB.Connection -> User -> UTCTime -> IO [((ChatRef, ChatItemId), UTCTime)]
 getTimedItems db User {userId} startTimedThreadCutoff =
