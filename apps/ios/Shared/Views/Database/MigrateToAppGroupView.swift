@@ -117,7 +117,7 @@ struct MigrateToAppGroupView: View {
                             setV3DBMigration(.migration_error)
                             migrationError = "Error starting chat: \(responseError(error))"
                         }
-                        deleteOldArchive()
+                        deleteOldChatArchive()
                     } label: {
                         Text("Start chat")
                             .font(.title)
@@ -234,15 +234,12 @@ func exportChatArchive(_ storagePath: URL? = nil) async throws -> (URL, [Archive
     }
     try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
     let errs = try await apiExportArchive(config: config)
-    if storagePath == nil {
-        deleteOldArchive()
-        UserDefaults.standard.set(archiveName, forKey: DEFAULT_CHAT_ARCHIVE_NAME)
-        chatArchiveTimeDefault.set(archiveTime)
-    }
     return (archivePath, errs)
 }
 
-func deleteOldArchive() {
+/// Deprecated. Remove in the end of 2025. All unused archives should be deleted for the most users til then.
+/// Remove DEFAULT_CHAT_ARCHIVE_NAME and DEFAULT_CHAT_ARCHIVE_TIME as well
+func deleteOldChatArchive() {
     let d = UserDefaults.standard
     if let archiveName = d.string(forKey: DEFAULT_CHAT_ARCHIVE_NAME) {
         do {

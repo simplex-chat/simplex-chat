@@ -134,47 +134,57 @@ struct DatabaseEncryptionView: View {
         .onAppear {
             if initialRandomDBPassphrase { currentKey = kcDatabasePassword.get() ?? "" }
         }
-        .disabled(m.chatRunning != false)
+        .disabled(progressIndicator)
         .alert(item: $alert) { item in databaseEncryptionAlert(item) }
     }
 
     private func encryptDatabase() {
-        progressIndicator = true
-        Task {
-            do {
-                encryptionStartedDefault.set(true)
-                encryptionStartedAtDefault.set(Date.now)
-                if !m.chatDbChanged {
-                    try apiSaveAppSettings(settings: AppSettings.current.prepareForExport())
-                }
-                try await apiStorageEncryption(currentKey: currentKey, newKey: newKey)
-                encryptionStartedDefault.set(false)
-                initialRandomDBPassphraseGroupDefault.set(false)
-                if migration {
-                    storeDBPassphraseGroupDefault.set(useKeychain)
-                }
-                if useKeychain {
-                    if kcDatabasePassword.set(newKey) {
-                        await resetFormAfterEncryption(true)
-                        await operationEnded(.databaseEncrypted)
-                    } else {
-                        await resetFormAfterEncryption()
-                        await operationEnded(.error(title: "Keychain error", error: "Error saving passphrase to keychain"))
-                    }
-                } else {
-                    if migration {
-                        removePassphraseFromKeyChain()
-                    }
-                    await resetFormAfterEncryption()
-                    await operationEnded(.databaseEncrypted)
-                }
-            } catch let error {
-                if case .chatCmdError(_, .errorDatabase(.errorExport(.errorNotADatabase))) = error as? ChatResponse {
-                    await operationEnded(.currentPassphraseError)
-                } else {
-                    await operationEnded(.error(title: "Error encrypting database", error: "\(responseError(error))"))
-                }
+        // it will try to stop and start the chat in case of: non-migration && successful encryption. In migration the chat will remain stopped
+//        stopChatRunBlockStartChat(migration, $progressIndicator, Binding.constant(false)) {
+//            let success = await encryptDatabaseAsync()
+//            return success && !migration
+//        }
+    }
+
+    private func encryptDatabaseAsync() async -> Bool {
+        await MainActor.run {
+            progressIndicator = true
+        }
+        do {
+            encryptionStartedDefault.set(true)
+            encryptionStartedAtDefault.set(Date.now)
+            if !m.chatDbChanged {
+                try apiSaveAppSettings(settings: AppSettings.current.prepareForExport())
             }
+            try await apiStorageEncryption(currentKey: currentKey, newKey: newKey)
+            encryptionStartedDefault.set(false)
+            initialRandomDBPassphraseGroupDefault.set(false)
+            if migration {
+                storeDBPassphraseGroupDefault.set(useKeychain)
+            }
+            if useKeychain {
+                if kcDatabasePassword.set(newKey) {
+                    await resetFormAfterEncryption(true)
+                    await operationEnded(.databaseEncrypted)
+                } else {
+                    await resetFormAfterEncryption()
+                    await operationEnded(.error(title: "Keychain error", error: "Error saving passphrase to keychain"))
+                }
+            } else {
+                if migration {
+                    removePassphraseFromKeyChain()
+                }
+                await resetFormAfterEncryption()
+                await operationEnded(.databaseEncrypted)
+            }
+            return true
+        } catch let error {
+            if case .chatCmdError(_, .errorDatabase(.errorExport(.errorNotADatabase))) = error as? ChatResponse {
+                await operationEnded(.currentPassphraseError)
+            } else {
+                await operationEnded(.error(title: "Error encrypting database", error: "\(responseError(error))"))
+            }
+            return false
         }
     }
 
