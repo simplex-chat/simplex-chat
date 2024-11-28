@@ -1,9 +1,6 @@
 package chat.simplex.common.platform
 
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.graphics.drawscope.*
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import boofcv.io.image.ConvertBufferedImage
@@ -72,18 +69,16 @@ actual fun cropToSquare(image: ImageBitmap): ImageBitmap {
   } else {
     yOffset = (image.height - side) / 2
   }
-
-  return ImageBitmap(side, side).apply {
-    val canvas = Canvas(this)
-    canvas.drawImageRect(
-      image = image,
-      srcOffset = IntOffset(xOffset, yOffset),
-      srcSize = IntSize(image.width, image.height),
-      // dstOffset = IntOffset(xOffset, yOffset),
-      dstSize = IntSize(side, side),
-      paint = Paint()
-    )
-  }
+  val croppedImage = ImageBitmap(side, side)
+  val canvas = Canvas(croppedImage)
+  canvas.drawImageRect(
+    image,
+    srcOffset = IntOffset(xOffset, yOffset),
+    srcSize = IntSize(side, side),
+    dstSize = IntSize(side, side),
+    paint = Paint()
+  )
+  return croppedImage
 }
 
 actual fun compressImageStr(bitmap: ImageBitmap): String {
