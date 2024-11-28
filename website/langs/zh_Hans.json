@@ -254,5 +254,6 @@
     "please-enable-javascript": "请启用 JavaScript 以查看二维码。",
     "docs-dropdown-10": "透明度",
     "docs-dropdown-11": "常问问题",
-    "docs-dropdown-12": "安全性"
+    "docs-dropdown-12": "安全性",
+    "hero-overlay-card-3-p-3": "Trail of Bits 于 2024 年 7 月审核了 SimpleX 网络协议的加密设计。<a href=\"/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html\">了解更多信息</a>。"
 }
