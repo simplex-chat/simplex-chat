@@ -147,30 +147,98 @@ public func resizeImage(_ image: UIImage, newBounds: CGRect, drawIn: CGRect, has
     }
 }
 
-public func maskToCircle(_ image: UIImage, hasAlpha: Bool) -> UIImage {
-    let diameter = min(image.size.width, image.size.height) // Determine the circle's diameter
-    let bounds = CGRect(x: 0, y: 0, width: diameter, height: diameter)
+private func makeClippingPath(size: CGFloat, radius: Double) -> Path {
+    let sz: CGFloat
+    let cornerRadius: CGFloat
+
+    if radius >= 50 {
+        // Circle case
+        return Path { path in
+            path.addEllipse(in: CGRect(x: 0, y: 0, width: size, height: size))
+        }
+    } else if radius <= 0 {
+        // Square case
+        sz = size * squareToCircleRatio
+        return Path { path in
+            let padding = (size - sz) / 2
+            path.addRect(CGRect(x: padding, y: padding, width: sz, height: sz))
+        }
+    } else {
+        // Rounded rectangle case
+        sz = size * (squareToCircleRatio + radius * radiusFactor)
+        cornerRadius = sz * CGFloat(radius) / 100
+        let padding = (size - sz) / 2
+
+        return Path { path in
+            path.addRoundedRect(
+                in: CGRect(x: padding, y: padding, width: sz, height: sz),
+                cornerSize: CGSize(width: cornerRadius, height: cornerRadius)
+            )
+        }
+    }
+}
+
+// Not working for some images (Ex. Diogo Avatar, not working when radius 30+, renders circle.
+public func maskToCustomShape(
+    _ image: UIImage,
+    size: CGFloat,
+    radius: CGFloat,
+    hasAlpha: Bool
+) -> UIImage {
+    let squareToCircleRatio: CGFloat = 0.935
+    let radiusFactor: CGFloat = (1 - squareToCircleRatio) / 50
+
+    let scaledSize: CGFloat
+    let cornerRadius: CGFloat
+
+    if radius >= 50 {
+        // Circle case
+        scaledSize = size
+        cornerRadius = 50
+    } else if radius <= 0 {
+        // Square case
+        scaledSize = size * squareToCircleRatio
+        cornerRadius = 0
+    } else {
+        // Rounded rectangle case
+        scaledSize = size * (squareToCircleRatio + radius * radiusFactor)
+        cornerRadius = scaledSize * radius / 100
+    }
+
+    let padding = (size - scaledSize) / 2
 
     let format = UIGraphicsImageRendererFormat()
-    format.scale = image.scale // Match the image's scale
-    format.opaque = !hasAlpha // Handle transparency
+    format.scale = image.scale
+    format.opaque = !hasAlpha
     
+    logger.error("cornerRadius \(cornerRadius)")
 
-    return UIGraphicsImageRenderer(size: bounds.size, format: format).image { context in
-        // Create a circular path and apply the clipping mask
-        let circlePath = UIBezierPath(ovalIn: bounds)
-        circlePath.addClip()
-        
-        // Scale and center the image
-        let scale = diameter / max(image.size.width, image.size.height)
-        let scaledSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
-        let origin = CGPoint(
-            x: (bounds.width - scaledSize.width) / 2,
-            y: (bounds.height - scaledSize.height) / 2
+    return UIGraphicsImageRenderer(size: CGSize(width: size, height: size), format: format).image { context in
+        let rect = CGRect(x: padding, y: padding, width: scaledSize, height: scaledSize)
+        let path: UIBezierPath
+
+        if cornerRadius >= 50 {
+            // Circle
+            path = UIBezierPath(ovalIn: rect)
+        } else if cornerRadius == 0 {
+            // Square
+            path = UIBezierPath(rect: rect)
+        } else {
+            // Rounded rectangle
+            path = UIBezierPath(roundedRect: rect, cornerRadius: cornerRadius)
+        }
+
+        path.addClip()
+
+        // Draw scaled image
+        let scale = scaledSize / max(image.size.width, image.size.height)
+        let imageSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+        let imageOrigin = CGPoint(
+            x: rect.midX - imageSize.width / 2,
+            y: rect.midY - imageSize.height / 2
         )
 
-        // Draw the image centered and scaled
-        image.withRenderingMode(.alwaysOriginal).draw(in: CGRect(origin: origin, size: scaledSize))
+        image.draw(in: CGRect(origin: imageOrigin, size: imageSize))
     }
 }
 

@@ -1853,10 +1853,14 @@ struct ReactionContextMenu: View {
     @State private var memberReactions: [MemberReaction] = []
     @State private var inProgress: Bool = false
     @State private var ownMemberId: Int64? = nil
+    @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var radius = defaultProfileImageCorner
 
     var body: some View {
         groupMemberReactionList()
-            .task { await loadChatItemReaction() }
+            .task {
+                logger.debug("ReactionContextMenu task \(radius)")
+                await loadChatItemReaction()
+            }
     }
 
     @ViewBuilder private func groupMemberReactionList() -> some View {
@@ -1867,30 +1871,29 @@ struct ReactionContextMenu: View {
             }
         } else {
             ForEach(memberReactions, id: \.groupMember) { memberReaction in
-                let member = GMember.init(memberReaction.groupMember)
                 Button {
-                    if (ownMemberId != nil && member.groupMemberId != ownMemberId) {
-                        selectedMember = member
+                    if (ownMemberId != nil && memberReaction.groupMember.groupMemberId != ownMemberId) {
+                        selectedMember = GMember.init(memberReaction.groupMember)
                     }
                 } label: {
                     let memberImage = getMemberImage(member: memberReaction.groupMember)
-                    let hasAlpha = imageHasAlpha(memberImage)
-                    let newSize = CGSize(width: 50, height: 50)
-                    let bounds = CGRect(origin: .zero, size: newSize)
-                    let resizedImage = resizeImage(memberImage, newBounds: bounds, drawIn: bounds, hasAlpha: hasAlpha)
-                    let circularImage = maskToCircle(resizedImage, hasAlpha: hasAlpha)
-                    Image(uiImage: circularImage)
-                    Text(member.displayName)
+                    Image(uiImage: memberImage)
+                    Text(memberReaction.groupMember.displayName)
                 }
             }
         }
     }
     
     private func getMemberImage(member: GroupMember) -> UIImage {
+        let newSize = CGSize(width: 30, height: 30)
+        let bounds = CGRect(origin: .zero, size: newSize)
+
         if let originalImage = imageFromBase64(member.image) {
-            return originalImage
+            let hasAlpha = imageHasAlpha(originalImage)
+            let resized = resizeImage(originalImage, newBounds: bounds, drawIn: bounds, hasAlpha: hasAlpha)
+            return maskToCustomShape(resized, size: 30, radius: radius, hasAlpha: hasAlpha)
         } else {
-            return UIImage(systemName: "person.crop.circle.fill")!
+            return resizeImage(UIImage(systemName: "person.crop.circle")!, newBounds: bounds, drawIn: bounds, hasAlpha: false)
         }
     }
 
