@@ -1860,7 +1860,7 @@ struct ReactionContextMenu: View {
 
     @ViewBuilder private func groupMemberReactionList() -> some View {
         if memberReactions.isEmpty {
-            Text("Loading...")
+            Text("Loading…")
         } else {
             ForEach(memberReactions, id: \.groupMemberId) { memberReaction in
                 if let i = ChatModel.shared.groupMembersIndexes[memberReaction.groupMemberId] {
