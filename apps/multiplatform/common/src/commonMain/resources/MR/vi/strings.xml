@@ -1351,4 +1351,24 @@
     <string name="prohibit_sending_disappearing_messages">Cấm gửi tin nhắn tự xóa.</string>
     <string name="prohibit_sending_simplex_links">Cấm gửi đường dẫn SimpleX</string>
     <string name="proxied">Được proxy</string>
+    <string name="address_or_1_time_link">Địa chỉ hay đường dẫn dùng một lần?</string>
+    <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[đường dẫn dùng một lần có thể được dùng <i>với chỉ một liên hệ</i> - chia sẻ trực tiếp hoặc thông qua bất kỳ ứng dụng tin nhắn nào.]]></string>
+    <string name="disable_onion_hosts_when_not_supported"><![CDATA[Set <i>Cài đặt máy chủ .onion</i> thành Không nếu proxy SOCKS không hỗ trợ chúng.]]></string>
+    <string name="operators_conditions_will_be_accepted_for"><![CDATA[Các điều kiện sẽ được chấp nhận với (các) nhà cung cấp: <b>%s</b>.]]></string>
+    <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[Các điều kiện sẽ được chấp nhận với (các) nhà cung cấp: <b>%s</b>.]]></string>
+    <string name="operator_conditions_will_be_applied"><![CDATA[Các điều kiện này cũng sẽ áp dụng cho: <b>%s</b>.]]></string>
+    <string name="operator_added_message_servers">Đã thêm các máy chủ truyền tin nhắn</string>
+    <string name="appearance_app_toolbars">Thanh công cụ ứng dụng</string>
+    <string name="appearance_bars_blur_radius">Làm mờ</string>
+    <string name="accept_conditions">Chấp nhận điều kiện</string>
+    <string name="operator_added_xftp_servers">Đã thêm các máy chủ truyền tệp &amp; phương tiện</string>
+    <string name="operator_conditions_accepted">Đã chấp nhận điều kiện</string>
+    <string name="address_settings">Cài đặt địa chỉ</string>
+    <string name="operators_conditions_accepted_for"><![CDATA[Các điều kiện được chấp nhận với (các) nhà cung cấp: <b>%s</b>.]]></string>
+    <string name="operator_conditions_accepted_for_some"><![CDATA[Các điều kiện đã được chấp nhận rồi đối với (các) nhà cung cấp sau: <b>%s</b>.]]></string>
+    <string name="read_more_in_github_with_link"><![CDATA[Đọc thêm tại <font color="#0088ff">Kho lưu trữ GitHub của chúng tôi</font>.]]></string>
+    <string name="operator_same_conditions_will_be_applied"><![CDATA[Các điều kiện tương tự sẽ áp dụng cho nhà cung cấp <b>%s</b>.]]></string>
+    <string name="operator_same_conditions_will_apply_to_operators"><![CDATA[Các điều kiện tương tự sẽ áp dụng cho (các) nhà cung cấp <b>%s</b>.]]></string>
+    <string name="operators_conditions_will_also_apply"><![CDATA[Các điều kiện này cũng sẽ áp dụng cho: <b>%s</b>.]]></string>
+    <string name="read_more_in_user_guide_with_link"><![CDATA[Đọc thêm tại <font color="#0088ff">Hướng dẫn người dùng</font>.]]></string>
 </resources>
