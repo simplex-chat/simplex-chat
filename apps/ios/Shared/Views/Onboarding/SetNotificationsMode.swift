@@ -142,7 +142,7 @@ struct NtfModeSelector: View {
 struct NotificationsInfoView: View {
     var body: some View {
         VStack(alignment: .leading) {
-            Text("Notification modes")
+            Text("Notifications privacy")
                 .font(.largeTitle)
                 .bold()
                 .padding(.vertical)
@@ -151,8 +151,9 @@ struct NotificationsInfoView: View {
                     Group {
                         ForEach(NotificationsMode.values) { mode in
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(mode.label)
+                                (Text(Image(systemName: mode.icon)) + textSpace + Text(mode.label))
                                     .font(.headline)
+                                    .foregroundColor(.secondary)
                                 Text(ntfModeDescription(mode))
                                     .lineLimit(10)
                                     .font(.callout)

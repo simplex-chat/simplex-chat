@@ -2,15 +2,6 @@
 "\n" = "\n";
 
 /* No comment provided by engineer. */
-" " = " ";
-
-/* No comment provided by engineer. */
-"  " = "  ";
-
-/* No comment provided by engineer. */
-"   " = "   ";
-
-/* No comment provided by engineer. */
 " (" = " (";
 
 /* No comment provided by engineer. */
@@ -65,10 +56,7 @@
 "[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Зірка на GitHub](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
-"**Add contact**: to create a new invitation link, or connect via a link you received." = "**Додати контакт**: створити нове посилання-запрошення або підключитися за отриманим посиланням.";
-
-/* No comment provided by engineer. */
-"**Add new contact**: to create your one-time QR Code for your contact." = "**Додати новий контакт**: щоб створити одноразовий QR-код або посилання для свого контакту.";
+"**Create 1-time link**: to create and share a new invitation link." = "**Додати контакт**: створити нове посилання-запрошення.";
 
 /* No comment provided by engineer. */
 "**Create group**: to create a new group." = "**Створити групу**: створити нову групу.";
@@ -80,10 +68,10 @@
 "**e2e encrypted** video call" = "**e2e encrypted** відеодзвінок";
 
 /* No comment provided by engineer. */
-"**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." = "**Більш приватний**: перевіряти нові повідомлення кожні 20 хвилин. Серверу SimpleX Chat передається токен пристрою, але не кількість контактів або повідомлень, які ви маєте.";
+"**More private**: check new messages every 20 minutes. Only device token is shared with our push server. It doesn't see how many contacts you have, or any message metadata." = "**Більш приватний**: перевіряти нові повідомлення кожні 20 хвилин. Серверу SimpleX Chat передається токен пристрою, але не кількість контактів або повідомлень, які ви маєте.";
 
 /* No comment provided by engineer. */
-"**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." = "**Найбільш приватний**: не використовуйте сервер сповіщень SimpleX Chat, періодично перевіряйте повідомлення у фоновому режимі (залежить від того, як часто ви користуєтесь додатком).";
+"**Most private**: do not use SimpleX Chat push server. The app will check messages in background, when the system allows it, depending on how often you use the app." = "**Найбільш приватний**: не використовуйте сервер сповіщень SimpleX Chat, періодично перевіряйте повідомлення у фоновому режимі (залежить від того, як часто ви користуєтесь додатком).";
 
 /* No comment provided by engineer. */
 "**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." = "**Зверніть увагу**: використання однієї і тієї ж бази даних на двох пристроях порушить розшифровку повідомлень з ваших з'єднань, як захист безпеки.";
@@ -92,7 +80,7 @@
 "**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**Зверніть увагу: ви НЕ зможете відновити або змінити пароль, якщо втратите його.";
 
 /* No comment provided by engineer. */
-"**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." = "**Рекомендується**: токен пристрою та сповіщення надсилаються на сервер сповіщень SimpleX Chat, але не вміст повідомлення, його розмір або від кого воно надійшло.";
+"**Recommended**: device token and end-to-end encrypted notifications are sent to SimpleX Chat push server, but it does not see the message content, size or who it is from." = "**Рекомендується**: токен пристрою та сповіщення надсилаються на сервер сповіщень SimpleX Chat, але не вміст повідомлення, його розмір або від кого воно надійшло.";
 
 /* No comment provided by engineer. */
 "**Warning**: Instant push notifications require passphrase saved in Keychain." = "**Попередження**: Для отримання миттєвих пуш-сповіщень потрібна парольна фраза, збережена у брелоку.";
@@ -171,6 +159,15 @@
 
 /* time interval */
 "%d days" = "%d днів";
+
+/* forward confirmation reason */
+"%d file(s) are still being downloaded." = "%их файл(ів) ще досі завантажуються.";
+
+/* forward confirmation reason */
+"%d file(s) failed to download." = "%их файлів не вийшло завантажити.";
+
+/* forward confirmation reason */
+"%d file(s) were deleted." = "%их файл(ів) було видалено.";
 
 /* time interval */
 "%d hours" = "%d годин";
@@ -323,12 +320,6 @@
 "Abort changing address?" = "Скасувати зміну адреси?";
 
 /* No comment provided by engineer. */
-"About SimpleX" = "Про SimpleX";
-
-/* No comment provided by engineer. */
-"About SimpleX address" = "Про адресу SimpleX";
-
-/* No comment provided by engineer. */
 "About SimpleX Chat" = "Про чат SimpleX";
 
 /* No comment provided by engineer. */
@@ -366,12 +357,6 @@
 
 /* No comment provided by engineer. */
 "Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Додайте адресу до свого профілю, щоб ваші контакти могли поділитися нею з іншими людьми. Повідомлення про оновлення профілю буде надіслано вашим контактам.";
-
-/* No comment provided by engineer. */
-"Add contact" = "Додати контакт";
-
-/* No comment provided by engineer. */
-"Add preset servers" = "Додавання попередньо встановлених серверів";
 
 /* No comment provided by engineer. */
 "Add profile" = "Додати профіль";
@@ -558,6 +543,9 @@
 
 /* No comment provided by engineer. */
 "Answer call" = "Відповісти на дзвінок";
+
+/* No comment provided by engineer. */
+"Anybody can host servers." = "Кожен може хостити сервери.";
 
 /* No comment provided by engineer. */
 "App build: %@" = "Збірка програми: %@";
@@ -781,7 +769,8 @@
 /* No comment provided by engineer. */
 "Can't message member" = "Не можу надіслати повідомлення користувачеві";
 
-/* alert button */
+/* alert action
+   alert button */
 "Cancel" = "Скасувати";
 
 /* No comment provided by engineer. */
@@ -899,7 +888,7 @@
 /* No comment provided by engineer. */
 "Chats" = "Чати";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Check server address and try again." = "Перевірте адресу сервера та спробуйте ще раз.";
 
 /* No comment provided by engineer. */
@@ -961,9 +950,6 @@
 
 /* No comment provided by engineer. */
 "Configure ICE servers" = "Налаштування серверів ICE";
-
-/* No comment provided by engineer. */
-"Configured %@ servers" = "Налаштовані сервери %@";
 
 /* No comment provided by engineer. */
 "Confirm" = "Підтвердити";
@@ -1190,9 +1176,6 @@
 /* No comment provided by engineer. */
 "Create a group using a random profile." = "Створіть групу, використовуючи випадковий профіль.";
 
-/* No comment provided by engineer. */
-"Create an address to let people connect with you." = "Створіть адресу, щоб люди могли з вами зв'язатися.";
-
 /* server test step */
 "Create file" = "Створити файл";
 
@@ -1352,7 +1335,8 @@
 /* No comment provided by engineer. */
 "default (yes)" = "за замовчуванням (так)";
 
-/* chat item action
+/* alert action
+   chat item action
    swipe action */
 "Delete" = "Видалити";
 
@@ -1937,9 +1921,6 @@
 "Error joining group" = "Помилка приєднання до групи";
 
 /* No comment provided by engineer. */
-"Error loading %@ servers" = "Помилка завантаження %@ серверів";
-
-/* No comment provided by engineer. */
 "Error opening chat" = "Помилка відкриття чату";
 
 /* alert title */
@@ -1956,9 +1937,6 @@
 
 /* No comment provided by engineer. */
 "Error resetting statistics" = "Статистика скидання помилок";
-
-/* No comment provided by engineer. */
-"Error saving %@ servers" = "Помилка збереження %@ серверів";
 
 /* No comment provided by engineer. */
 "Error saving group profile" = "Помилка збереження профілю групи";
@@ -2342,9 +2320,6 @@
 "hours" = "години";
 
 /* No comment provided by engineer. */
-"How it works" = "Як це працює";
-
-/* No comment provided by engineer. */
 "How SimpleX works" = "Як працює SimpleX";
 
 /* No comment provided by engineer. */
@@ -2387,7 +2362,7 @@
 "Immediately" = "Негайно";
 
 /* No comment provided by engineer. */
-"Immune to spam and abuse" = "Імунітет до спаму та зловживань";
+"Immune to spam" = "Імунітет до спаму та зловживань";
 
 /* No comment provided by engineer. */
 "Import" = "Імпорт";
@@ -2483,10 +2458,10 @@
 "Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "Встановіть [SimpleX Chat для терміналу](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
-"Instant push notifications will be hidden!\n" = "Миттєві пуш-сповіщення будуть приховані!\n";
+"Instant" = "Миттєво";
 
 /* No comment provided by engineer. */
-"Instantly" = "Миттєво";
+"Instant push notifications will be hidden!\n" = "Миттєві пуш-сповіщення будуть приховані!\n";
 
 /* No comment provided by engineer. */
 "Interface" = "Інтерфейс";
@@ -2524,7 +2499,7 @@
 /* No comment provided by engineer. */
 "Invalid response" = "Неправильна відповідь";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid server address!" = "Неправильна адреса сервера!";
 
 /* item status text */
@@ -2626,7 +2601,7 @@
 /* No comment provided by engineer. */
 "Joining group" = "Приєднання до групи";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Keep" = "Тримай";
 
 /* No comment provided by engineer. */
@@ -2635,7 +2610,7 @@
 /* No comment provided by engineer. */
 "Keep the app open to use it from desktop" = "Тримайте додаток відкритим, щоб використовувати його з робочого столу";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Keep unused invitation?" = "Зберігати невикористані запрошення?";
 
 /* No comment provided by engineer. */
@@ -2693,9 +2668,6 @@
 "Live messages" = "Живі повідомлення";
 
 /* No comment provided by engineer. */
-"Local" = "Локально";
-
-/* No comment provided by engineer. */
 "Local name" = "Місцева назва";
 
 /* No comment provided by engineer. */
@@ -2708,22 +2680,13 @@
 "Lock mode" = "Режим блокування";
 
 /* No comment provided by engineer. */
-"Make a private connection" = "Створіть приватне з'єднання";
-
-/* No comment provided by engineer. */
 "Make one message disappear" = "Зробити так, щоб одне повідомлення зникло";
 
 /* No comment provided by engineer. */
 "Make profile private!" = "Зробіть профіль приватним!";
 
 /* No comment provided by engineer. */
-"Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@)." = "Переконайтеся, що адреси серверів %@ мають правильний формат, розділені рядками і не дублюються (%@).";
-
-/* No comment provided by engineer. */
 "Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "Переконайтеся, що адреси серверів WebRTC ICE мають правильний формат, розділені рядками і не дублюються.";
-
-/* No comment provided by engineer. */
-"Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" = "Багато людей запитували: *якщо SimpleX не має ідентифікаторів користувачів, як він може доставляти повідомлення?*";
 
 /* No comment provided by engineer. */
 "Mark deleted for everyone" = "Позначити видалено для всіх";
@@ -2888,7 +2851,7 @@
 "Migration is completed" = "Міграцію завершено";
 
 /* No comment provided by engineer. */
-"Migrations: %@" = "Міграції: %@";
+"Migrations:" = "Міграції:";
 
 /* time unit */
 "minutes" = "хвилини";
@@ -3047,10 +3010,16 @@
 "No permission to record voice message" = "Немає дозволу на запис голосового повідомлення";
 
 /* No comment provided by engineer. */
+"No push server" = "Локально";
+
+/* No comment provided by engineer. */
 "No received or sent files" = "Немає отриманих або відправлених файлів";
 
 /* copied message info in history */
 "no text" = "без тексту";
+
+/* No comment provided by engineer. */
+"No user identifiers." = "Ніяких ідентифікаторів користувачів.";
 
 /* No comment provided by engineer. */
 "Not compatible!" = "Не сумісні!";
@@ -3112,7 +3081,7 @@
 "Onion hosts will not be used." = "Onion хости не будуть використовуватися.";
 
 /* No comment provided by engineer. */
-"Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." = "Тільки клієнтські пристрої зберігають профілі користувачів, контакти, групи та повідомлення, надіслані за допомогою **2-шарового наскрізного шифрування**.";
+"Only client devices store user profiles, contacts, groups, and messages." = "Тільки клієнтські пристрої зберігають профілі користувачів, контакти, групи та повідомлення, надіслані за допомогою **2-шарового наскрізного шифрування**.";
 
 /* No comment provided by engineer. */
 "Only delete conversation" = "Видаляйте тільки розмови";
@@ -3172,16 +3141,7 @@
 "Open migration to another device" = "Відкрита міграція на інший пристрій";
 
 /* No comment provided by engineer. */
-"Open server settings" = "Відкрити налаштування сервера";
-
-/* No comment provided by engineer. */
 "Open Settings" = "Відкрийте Налаштування";
-
-/* authentication reason */
-"Open user profiles" = "Відкрити профілі користувачів";
-
-/* No comment provided by engineer. */
-"Open-source protocol and code – anybody can run the servers." = "Протокол і код з відкритим вихідним кодом - будь-хто може запускати сервери.";
 
 /* No comment provided by engineer. */
 "Opening app…" = "Відкриваємо програму…";
@@ -3203,9 +3163,6 @@
 
 /* No comment provided by engineer. */
 "Other" = "Інше";
-
-/* No comment provided by engineer. */
-"Other %@ servers" = "Інші сервери %@";
 
 /* No comment provided by engineer. */
 "other errors" = "інші помилки";
@@ -3256,10 +3213,7 @@
 "Pending" = "В очікуванні";
 
 /* No comment provided by engineer. */
-"People can connect to you only via the links you share." = "Люди можуть зв'язатися з вами лише за посиланнями, якими ви ділитеся.";
-
-/* No comment provided by engineer. */
-"Periodically" = "Періодично";
+"Periodic" = "Періодично";
 
 /* message decrypt error item */
 "Permanent decryption error" = "Постійна помилка розшифрування";
@@ -3334,9 +3288,6 @@
 "Preserve the last message draft, with attachments." = "Зберегти чернетку останнього повідомлення з вкладеннями.";
 
 /* No comment provided by engineer. */
-"Preset server" = "Попередньо встановлений сервер";
-
-/* No comment provided by engineer. */
 "Preset server address" = "Попередньо встановлена адреса сервера";
 
 /* No comment provided by engineer. */
@@ -3384,7 +3335,7 @@
 /* No comment provided by engineer. */
 "Profile theme" = "Тема профілю";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Profile update will be sent to your contacts." = "Оновлення профілю буде надіслано вашим контактам.";
 
 /* No comment provided by engineer. */
@@ -3466,19 +3417,16 @@
 "Read more" = "Читати далі";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." = "Читайте більше в [Посібнику користувача](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).";
+"Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "Читайте більше в [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "Читайте більше в [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).";
+"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "Читайте більше в [Посібнику користувача](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).";
 
 /* No comment provided by engineer. */
 "Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "Читайте більше в [Посібнику користувача](https://simplex.chat/docs/guide/readme.html#connect-to-friends).";
 
 /* No comment provided by engineer. */
 "Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "Читайте більше в нашому [GitHub репозиторії](https://github.com/simplex-chat/simplex-chat#readme).";
-
-/* No comment provided by engineer. */
-"Read more in our GitHub repository." = "Читайте більше в нашому репозиторії на GitHub.";
 
 /* No comment provided by engineer. */
 "Receipts are disabled" = "Підтвердження виключені";
@@ -3749,7 +3697,7 @@
 /* No comment provided by engineer. */
 "Save servers" = "Зберегти сервери";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Save servers?" = "Зберегти сервери?";
 
 /* No comment provided by engineer. */
@@ -3892,9 +3840,6 @@
 
 /* No comment provided by engineer. */
 "Send notifications" = "Надсилати сповіщення";
-
-/* No comment provided by engineer. */
-"Send notifications:" = "Надсилати сповіщення:";
 
 /* No comment provided by engineer. */
 "Send questions and ideas" = "Надсилайте запитання та ідеї";
@@ -4052,7 +3997,8 @@
 /* No comment provided by engineer. */
 "Shape profile images" = "Сформуйте зображення профілю";
 
-/* chat item action */
+/* alert action
+   chat item action */
 "Share" = "Поділіться";
 
 /* No comment provided by engineer. */
@@ -4061,7 +4007,7 @@
 /* No comment provided by engineer. */
 "Share address" = "Поділитися адресою";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Share address with contacts?" = "Поділіться адресою з контактами?";
 
 /* No comment provided by engineer. */
@@ -4232,10 +4178,10 @@
 /* No comment provided by engineer. */
 "Stop sending file?" = "Припинити надсилання файлу?";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Stop sharing" = "Припиніть ділитися";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Stop sharing address?" = "Припинити ділитися адресою?";
 
 /* authentication reason */
@@ -4322,7 +4268,7 @@
 /* No comment provided by engineer. */
 "Test servers" = "Тестові сервери";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Tests failed!" = "Тести не пройшли!";
 
 /* No comment provided by engineer. */
@@ -4333,9 +4279,6 @@
 
 /* No comment provided by engineer. */
 "Thanks to the users – contribute via Weblate!" = "Дякуємо користувачам - зробіть свій внесок через Weblate!";
-
-/* No comment provided by engineer. */
-"The 1st platform without any user identifiers – private by design." = "Перша платформа без жодних ідентифікаторів користувачів – приватна за дизайном.";
 
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "Додаток може сповіщати вас, коли ви отримуєте повідомлення або запити на контакт - будь ласка, відкрийте налаштування, щоб увімкнути цю функцію.";
@@ -4362,6 +4305,9 @@
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "Шифрування працює і нова угода про шифрування не потрібна. Це може призвести до помилок з'єднання!";
 
 /* No comment provided by engineer. */
+"The future of messaging" = "Наступне покоління приватних повідомлень";
+
+/* No comment provided by engineer. */
 "The hash of the previous message is different." = "Хеш попереднього повідомлення відрізняється.";
 
 /* No comment provided by engineer. */
@@ -4378,9 +4324,6 @@
 
 /* No comment provided by engineer. */
 "The messages will be marked as moderated for all members." = "Повідомлення будуть позначені як модеровані для всіх учасників.";
-
-/* No comment provided by engineer. */
-"The next generation of private messaging" = "Наступне покоління приватних повідомлень";
 
 /* No comment provided by engineer. */
 "The old database was not removed during the migration, it can be deleted." = "Стара база даних не була видалена під час міграції, її можна видалити.";
@@ -4467,9 +4410,6 @@
 "To make a new connection" = "Щоб створити нове з'єднання";
 
 /* No comment provided by engineer. */
-"To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." = "Щоб захистити конфіденційність, замість ідентифікаторів користувачів, які використовуються на всіх інших платформах, SimpleX має ідентифікатори для черг повідомлень, окремі для кожного з ваших контактів.";
-
-/* No comment provided by engineer. */
 "To protect timezone, image/voice files use UTC." = "Для захисту часового поясу у файлах зображень/голосу використовується UTC.";
 
 /* No comment provided by engineer. */
@@ -4477,6 +4417,9 @@
 
 /* No comment provided by engineer. */
 "To protect your IP address, private routing uses your SMP servers to deliver messages." = "Щоб захистити вашу IP-адресу, приватна маршрутизація використовує ваші SMP-сервери для доставки повідомлень.";
+
+/* No comment provided by engineer. */
+"To protect your privacy, SimpleX uses separate IDs for each of your contacts." = "Щоб захистити конфіденційність, замість ідентифікаторів користувачів, які використовуються на всіх інших платформах, SimpleX має ідентифікатори для черг повідомлень, окремі для кожного з ваших контактів.";
 
 /* No comment provided by engineer. */
 "To record voice message please grant permission to use Microphone." = "Щоб записати голосове повідомлення, будь ласка, надайте дозвіл на використання мікрофону.";
@@ -4854,9 +4797,6 @@
 "when IP hidden" = "коли IP приховано";
 
 /* No comment provided by engineer. */
-"When people request to connect, you can accept or reject it." = "Коли люди звертаються із запитом на підключення, ви можете прийняти або відхилити його.";
-
-/* No comment provided by engineer. */
 "When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Коли ви ділитеся з кимось своїм профілем інкогніто, цей профіль буде використовуватися для груп, до яких вас запрошують.";
 
 /* No comment provided by engineer. */
@@ -4998,9 +4938,6 @@
 "You can share this address with your contacts to let them connect with **%@**." = "Ви можете поділитися цією адресою зі своїми контактами, щоб вони могли зв'язатися з **%@**.";
 
 /* No comment provided by engineer. */
-"You can share your address as a link or QR code - anybody can connect to you." = "Ви можете поділитися своєю адресою у вигляді посилання або QR-коду - будь-хто зможе зв'язатися з вами.";
-
-/* No comment provided by engineer. */
 "You can start chat via app Settings / Database or by restarting the app" = "Запустити чат можна через Налаштування програми / База даних або перезапустивши програму";
 
 /* No comment provided by engineer. */
@@ -5012,7 +4949,7 @@
 /* No comment provided by engineer. */
 "You can use markdown to format messages:" = "Ви можете використовувати розмітку для форматування повідомлень:";
 
-/* No comment provided by engineer. */
+/* alert message */
 "You can view invitation link again in connection details." = "Ви можете переглянути посилання на запрошення ще раз у деталях підключення.";
 
 /* No comment provided by engineer. */
@@ -5031,10 +4968,10 @@
 "you changed role of %@ to %@" = "ви змінили роль %1$@ на %2$@";
 
 /* No comment provided by engineer. */
-"You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." = "Ви контролюєте, через який(і) сервер(и) **отримувати** повідомлення, ваші контакти - сервери, які ви використовуєте для надсилання їм повідомлень.";
+"You could not be verified; please try again." = "Вас не вдалося верифікувати, спробуйте ще раз.";
 
 /* No comment provided by engineer. */
-"You could not be verified; please try again." = "Вас не вдалося верифікувати, спробуйте ще раз.";
+"You decide who can connect." = "Ви вирішуєте, хто може під'єднатися.";
 
 /* No comment provided by engineer. */
 "You have already requested connection via this address!" = "Ви вже надсилали запит на підключення за цією адресою!";
@@ -5127,9 +5064,6 @@
 "You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "Ви використовуєте профіль інкогніто для цієї групи - щоб запобігти поширенню вашого основного профілю, запрошення контактів заборонено";
 
 /* No comment provided by engineer. */
-"Your %@ servers" = "Ваші сервери %@";
-
-/* No comment provided by engineer. */
 "Your calls" = "Твої дзвінки";
 
 /* No comment provided by engineer. */
@@ -5181,9 +5115,6 @@
 "Your random profile" = "Ваш випадковий профіль";
 
 /* No comment provided by engineer. */
-"Your server" = "Ваш сервер";
-
-/* No comment provided by engineer. */
 "Your server address" = "Адреса вашого сервера";
 
 /* No comment provided by engineer. */
@@ -5194,7 +5125,4 @@
 
 /* No comment provided by engineer. */
 "Your SMP servers" = "Ваші SMP-сервери";
-
-/* No comment provided by engineer. */
-"Your XFTP servers" = "Ваші XFTP-сервери";
 

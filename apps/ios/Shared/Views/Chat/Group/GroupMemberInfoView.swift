@@ -388,7 +388,7 @@ struct GroupMemberInfoView: View {
                     Text(Image(systemName: "checkmark.shield"))
                         .foregroundColor(theme.colors.secondary)
                         .font(.title2)
-                    + Text(" ")
+                    + textSpace
                     + Text(mem.displayName)
                         .font(.largeTitle)
                 )

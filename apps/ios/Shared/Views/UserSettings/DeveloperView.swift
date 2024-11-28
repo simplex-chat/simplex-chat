@@ -45,7 +45,7 @@ struct DeveloperView: View {
                 } header: {
                     Text("")
                 } footer: {
-                    ((developerTools ? Text("Show:") : Text("Hide:")) + Text(" ") + Text("Database IDs and Transport isolation option."))
+                    ((developerTools ? Text("Show:") : Text("Hide:")) + textSpace + Text("Database IDs and Transport isolation option."))
                         .foregroundColor(theme.colors.secondary)
                 }
                 

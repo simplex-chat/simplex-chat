@@ -133,7 +133,7 @@ struct ChooseServerOperators: View {
                             reviewLaterButton()
                             (
                                 Text("Conditions will be accepted for enabled operators after 30 days.")
-                                + Text(" ")
+                                + textSpace
                                 + Text("You can configure operators in Network & servers settings.")
                             )
                             .multilineTextAlignment(.center)
@@ -405,6 +405,8 @@ struct ChooseServerOperators: View {
     }
 }
 
+let operatorsPostLink = URL(string: "https://simplex.chat/blog/20241125-servers-operated-by-flux-true-privacy-and-decentralization-for-all-users.html")!
+
 struct ChooseServerOperatorsInfoView: View {
     var body: some View {
         VStack(alignment: .leading) {
@@ -415,8 +417,9 @@ struct ChooseServerOperatorsInfoView: View {
             ScrollView {
                 VStack(alignment: .leading) {
                     Group {
-                        Text("When more than one network operator is enabled, the app will use the servers of different operators for each conversation.")
-                        Text("For example, if you receive messages via SimpleX Chat server, the app will use one of Flux servers for private routing.")
+                        Text("The app protects your privacy by using different operators in each conversation.")
+                        Text("When more than one operator is enabled, none of them has metadata to learn who communicates with whom.")
+                        Text("For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server.")
                     }
                     .padding(.bottom)
                 }
