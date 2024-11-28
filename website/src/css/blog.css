@@ -113,8 +113,8 @@ section.container>div>p:nth-child(2) {
 #article ol li {
   margin-right: 0;
   margin-left: 0;
-  -webkit-margin-start: 1.1rem;
-  ;
+  -webkit-margin-start: 1.2rem;
+  margin-inline-start: 1.2rem;
   color: #000;
 }
 
@@ -141,6 +141,13 @@ section.container>div>p:nth-child(2) {
 #article ul li {
   list-style: disc;
 }
+
+/* #article ul > li::before {
+  content: '•';
+  font-size: 24px;
+  vertical-align: middle;
+  margin-right: 5px;
+} */
 
 #article ol li {
   list-style: decimal;
