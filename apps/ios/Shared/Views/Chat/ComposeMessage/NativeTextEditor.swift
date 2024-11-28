@@ -29,24 +29,28 @@ struct NativeTextEditor: UIViewRepresentable {
     func makeUIView(context: Context) -> UITextView {
         let field = CustomUITextField(height: _height)
         field.backgroundColor = .clear
-        field.text = text
+        field.attributedText = NSAttributedString(
+            string: "",
+            attributes: CustomUITextField.defaultAttributes
+        )
         field.textAlignment = alignment(text)
         field.autocapitalizationType = .sentences
-        field.setOnTextChangedListener { newText, images in
-            if !disableEditing {
-                text = newText
-                field.textAlignment = alignment(text)
-                updateFont(field)
-                // Speed up the process of updating layout, reduce jumping content on screen
-                updateHeight(field)
-                self.height = field.frame.size.height
-            } else {
-                field.text = text
-            }
-            if !images.isEmpty {
-                onImagesAdded(images)
-            }
-        }
+// TODO: Reintegrate with attributed string
+//        field.setOnTextChangedListener { newText, images in
+//            if !disableEditing {
+//                text = newText
+//                field.textAlignment = alignment(text)
+//                updateFont(field)
+//                // Speed up the process of updating layout, reduce jumping content on screen
+//                updateHeight(field)
+//                self.height = field.frame.size.height
+//            } else {
+//                field.text = text
+//            }
+//            if !images.isEmpty {
+//                onImagesAdded(images)
+//            }
+//        }
         field.setOnFocusChangedListener { focused = $0 }
         field.delegate = field
         field.textContainerInset = UIEdgeInsets(top: 8, left: 5, bottom: 6, right: 4)
@@ -57,7 +61,8 @@ struct NativeTextEditor: UIViewRepresentable {
     
     func updateUIView(_ field: UITextView, context: Context) {
         if field.markedTextRange == nil && field.text != text {
-            field.text = text
+// TODO: Reintegrate with attributed string
+//            field.text = text
             field.textAlignment = alignment(text)
             updateFont(field)
             updateHeight(field)
@@ -91,7 +96,7 @@ private func alignment(_ text: String) -> NSTextAlignment {
     isRightToLeft(text) ? .right : .left
 }
 
-private class CustomUITextField: UITextView, UITextViewDelegate {
+class CustomUITextField: UITextView, UITextViewDelegate {
     var height: Binding<CGFloat>
     var newHeight: CGFloat = 0
     var onTextChanged: (String, [UploadContent]) -> Void = { newText, image in }
@@ -130,6 +135,7 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
     }
 
     func textView(_ textView: UITextView, editMenuForTextIn range: NSRange, suggestedActions: [UIMenuElement]) -> UIMenu? {
+        let suggestedActions = [formatMenu] + suggestedActions
         if !UIPasteboard.general.hasImages { return UIMenu(children: suggestedActions)}
         return UIMenu(children: suggestedActions.map { elem in
             if let elem = elem as? UIMenu {
@@ -172,33 +178,34 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
     }
 
     func textViewDidChange(_ textView: UITextView) {
-        if textView.markedTextRange == nil {
-            var images: [UploadContent] = []
-            var rangeDiff = 0
-            let newAttributedText = NSMutableAttributedString(attributedString: textView.attributedText)
-            textView.attributedText.enumerateAttribute(
-                NSAttributedString.Key.attachment,
-                in: NSRange(location: 0, length: textView.attributedText.length),
-                options: [],
-                using: { value, range, _ in
-                    if let attachment = (value as? NSTextAttachment)?.fileWrapper?.regularFileContents {
-                        do {
-                            images.append(.animatedImage(image: try UIImage(gifData: attachment)))
-                        } catch {
-                            if let img = (value as? NSTextAttachment)?.image {
-                                images.append(.simpleImage(image: img))
-                            }
-                        }
-                        newAttributedText.replaceCharacters(in: NSMakeRange(range.location - rangeDiff, range.length), with: "")
-                        rangeDiff += range.length
-                    }
-                }
-            )
-            if textView.attributedText != newAttributedText {
-                textView.attributedText = newAttributedText
-            }
-            onTextChanged(textView.text, images)
-        }
+// TODO: Reintegrate with attributed string
+//        if textView.markedTextRange == nil {
+//            var images: [UploadContent] = []
+//            var rangeDiff = 0
+//            let newAttributedText = NSMutableAttributedString(attributedString: textView.attributedText)
+//            textView.attributedText.enumerateAttribute(
+//                NSAttributedString.Key.attachment,
+//                in: NSRange(location: 0, length: textView.attributedText.length),
+//                options: [],
+//                using: { value, range, _ in
+//                    if let attachment = (value as? NSTextAttachment)?.fileWrapper?.regularFileContents {
+//                        do {
+//                            images.append(.animatedImage(image: try UIImage(gifData: attachment)))
+//                        } catch {
+//                            if let img = (value as? NSTextAttachment)?.image {
+//                                images.append(.simpleImage(image: img))
+//                            }
+//                        }
+//                        newAttributedText.replaceCharacters(in: NSMakeRange(range.location - rangeDiff, range.length), with: "")
+//                        rangeDiff += range.length
+//                    }
+//                }
+//            )
+//            if textView.attributedText != newAttributedText {
+//                textView.attributedText = newAttributedText
+//            }
+//            onTextChanged(textView.text, images)
+//        }
     }
     
     func textViewDidBeginEditing(_ textView: UITextView) {
@@ -208,6 +215,106 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
     func textViewDidEndEditing(_ textView: UITextView) {
         onFocusChanged(false)
     }
+
+    // MARK: Formatting
+    private var formatMenu: UIMenu {
+        UIMenu(
+            title: "Format",
+            children: [
+                UIAction(image: UIImage(systemName: "bold")) { _ in self.toggleBold() },
+                UIAction(image: UIImage(systemName: "italic")) { _ in self.toggleItalic() },
+                UIAction(image: UIImage(systemName: "strikethrough")) { _ in self.toggleStriketrough() },
+                UIAction(title: "Mono") { _ in self.toggleMono() },
+                UIMenu(
+                    title: "Color",
+                    children: [UIColor]([.red, .green, .blue, .yellow, .cyan, .magenta])
+                        .map { color in
+                            UIAction(
+                                image: UIImage(systemName: "circle.fill")?
+                                    .withTintColor(color, renderingMode: .alwaysOriginal),
+                                handler: { _ in self.toggle(color: color) }
+                            )
+                        }
+                ),
+                UIAction(title: "Secret") { _ in self.toggleSecret() }
+            ]
+        )
+    }
+
+    func toggleBold() {
+        toggle(UIFont.boldSystemFont(ofSize: Self.bodySize), for: .font) {
+            ($0 as? UIFont)?.fontDescriptor.symbolicTraits.contains(.traitBold)
+        }
+    }
+
+    func toggleItalic() {
+        toggle(UIFont.italicSystemFont(ofSize: Self.bodySize), for: .font) {
+            ($0 as? UIFont)?.fontDescriptor.symbolicTraits.contains(.traitItalic)
+        }
+    }
+
+    func toggleStriketrough() {
+        toggle(NSUnderlineStyle.single.rawValue, for: .strikethroughStyle) {
+            ($0 as? Int).map { $0 == NSUnderlineStyle.single.rawValue }
+        }
+    }
+
+    func toggleMono() {
+        toggle(UIFont.monospacedSystemFont(ofSize: Self.bodySize, weight: .regular), for: .font) {
+            ($0 as? UIFont)?.fontDescriptor.symbolicTraits.contains(.traitMonoSpace)
+        }
+    }
+
+    func toggle(color: UIColor) {
+        toggle(color, for: .foregroundColor) {
+            ($0 as? UIColor).map { $0 == color }
+        }
+    }
+
+    func toggleSecret() {
+        toggle(UIColor.clear, for: .foregroundColor) { value in
+            (value as? UIColor).map { $0 == .clear }
+        }
+        toggle(UIColor.secondarySystemFill, for: .backgroundColor) { value in
+            (value as? UIColor).map { $0 == .secondarySystemFill }
+        }
+    }
+
+    /// Toggles an attribute in the currently selected text range
+    /// - Parameters:
+    ///   - attribute: Value of the attribute to be enabled or disabled
+    ///   - key: Key for which to apply the attribute
+    ///   - detect: Block which detects, if the attribute is already present within the selection
+    private func toggle(
+        _ attribute: Any,
+        for key: NSAttributedString.Key,
+        detect: (Any) -> Bool?
+    ) {
+        var detected = false
+        textStorage.enumerateAttribute(key, in: selectedRange) { value, _, stop in
+            if let value, detect(value) == true {
+                detected = true
+                stop.pointee = true
+            }
+        }
+        if key == .backgroundColor {
+            textStorage.removeAttribute(.backgroundColor, range: selectedRange)
+        } else {
+            textStorage.setAttributes(Self.defaultAttributes, range: selectedRange)
+        }
+        if !detected {
+            textStorage.addAttribute(key, value: attribute, range: selectedRange)
+        }
+    }
+
+    static var bodySize: CGFloat {
+        UIFont.preferredFont(forTextStyle: .body).pointSize
+    }
+
+    static var defaultAttributes: [NSAttributedString.Key : Any] = [
+        .font: UIFont.preferredFont(forTextStyle: .body),
+        .foregroundColor: UIColor.label
+    ]
 }
 
 struct NativeTextEditor_Previews: PreviewProvider{
