@@ -362,15 +362,6 @@ struct ChatView: View {
                 await markChatUnread(chat, unreadChat: false)
             }
         }
-        if let groupInfo = cInfo.groupInfo {
-            Task {
-                let groupMembers = await apiListMembers(groupInfo.groupId)
-                await MainActor.run {
-                    chatModel.groupMembers = groupMembers.map { GMember.init($0) }
-                    chatModel.populateGroupMembersIndexes()
-                }
-            }
-        }
         ChatView.FloatingButtonModel.shared.totalUnread = chat.chatStats.unreadCount
     }
 
@@ -1299,17 +1290,15 @@ struct ChatView: View {
         }
         
         private func loadChatItemReaction(reaction: MsgReaction, itemId: Int64) {
-            showReactionContextMenu = false
-            if let gId = chat.chatInfo.groupInfo?.groupId {
+            if case let .group(gInfo) = chat.chatInfo {
                 Task {
                     do {
                         let memberReactions = try await apiGetReactionMembers(
-                            groupId: gId,
+                            groupId: gInfo.groupId,
                             itemId: itemId,
                             reaction: reaction
                         )
-
-                        await MainActor.run {
+                        await m.loadGroupMembers(gInfo) {
                             self.showReactionContextMenu = true
                             self.memberReactions = memberReactions
                         }
@@ -1911,7 +1900,6 @@ struct ReactionContextMenu: View {
         groupMemberReactionList()
     }
 
-    @ViewBuilder
     private func groupMemberReactionList() -> some View {
         ForEach(memberReactions, id: \.groupMemberId) { memberReaction in
             if let i = chatModel.groupMembersIndexes[memberReaction.groupMemberId] {
