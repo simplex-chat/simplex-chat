@@ -1081,7 +1081,7 @@ processChatCommand' vr = \case
   APIGetReactionMembers userId groupId itemId reaction -> withUserId userId $ \user -> do
     memberReactions <- withStore $ \db -> do
       CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}} <- getGroupChatItem db user groupId itemId
-      liftIO $ getReactionMembers db groupId itemSharedMId reaction
+      liftIO $ getReactionMembers db vr user groupId itemSharedMId reaction
     pure $ CRReactionMembers user memberReactions
   APIPlanForwardChatItems (ChatRef fromCType fromChatId) itemIds -> withUser $ \user -> case fromCType of
     CTDirect -> planForward user . snd =<< getCommandDirectChatItems user fromChatId itemIds

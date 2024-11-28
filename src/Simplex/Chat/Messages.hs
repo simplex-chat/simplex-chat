@@ -475,7 +475,7 @@ deriving instance Show ACIReaction
 data JSONCIReaction c d = JSONCIReaction {chatInfo :: ChatInfo c, chatReaction :: CIReaction c d}
 
 data MemberReaction = MemberReaction
-  { groupMemberId :: GroupMemberId,
+  { groupMember :: GroupMember,
     reactionTs :: UTCTime
   }
   deriving (Show)
