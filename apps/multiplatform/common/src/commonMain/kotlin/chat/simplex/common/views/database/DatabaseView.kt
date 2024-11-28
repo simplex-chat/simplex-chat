@@ -592,7 +592,7 @@ suspend fun exportChatArchive(
   val archiveTime = Clock.System.now()
   val ts = SimpleDateFormat("yyyy-MM-dd'T'HHmmss", Locale.US).format(Date.from(archiveTime.toJavaInstant()))
   val archiveName = "simplex-chat.$ts.zip"
-  val archivePath = "${(storagePath ?: filesDir).absolutePath}${File.separator}$archiveName"
+  val archivePath = "${(storagePath ?: databaseExportDir).absolutePath}${File.separator}$archiveName"
   val config = ArchiveConfig(archivePath, parentTempDirectory = databaseExportDir.toString())
   // Settings should be saved before changing a passphrase, otherwise the database needs to be migrated first
   if (!m.chatDbChanged.value) {
@@ -600,15 +600,12 @@ suspend fun exportChatArchive(
   }
   wallpapersDir.mkdirs()
   val archiveErrors = m.controller.apiExportArchive(config)
-  if (storagePath == null) {
-    deleteOldChatArchive()
-    m.controller.appPrefs.chatArchiveName.set(archiveName)
-    m.controller.appPrefs.chatArchiveTime.set(archiveTime)
-  }
   chatArchiveFile.value = archivePath
   return archivePath to archiveErrors
 }
 
+// Deprecated. Remove in the end of 2025. All unused archives should be deleted for the most users til then.
+/** Remove [AppPreferences.chatArchiveName] and [AppPreferences.chatArchiveTime] as well */
 fun deleteOldChatArchive() {
   val chatArchiveName = chatModel.controller.appPrefs.chatArchiveName.get()
   if (chatArchiveName != null) {
