@@ -2853,10 +2853,10 @@ setGroupReaction db GroupInfo {groupId} m itemMemberId itemSharedMId sent reacti
         |]
         (groupId, groupMemberId' m, itemSharedMId, itemMemberId, sent, reaction)
 
-getReactionMembers :: DB.Connection -> GroupId -> SharedMsgId -> MsgReaction -> IO [MemberReaction]
-getReactionMembers db groupId itemSharedMId reaction =
-  map toMemberReaction
-    <$> DB.query
+getReactionMembers :: DB.Connection -> VersionRangeChat -> User -> GroupId -> SharedMsgId -> MsgReaction -> IO [MemberReaction]
+getReactionMembers db vr user groupId itemSharedMId reaction = do
+  reactions <-
+    DB.query
       db
       [sql|
         SELECT group_member_id, reaction_ts
@@ -2864,9 +2864,12 @@ getReactionMembers db groupId itemSharedMId reaction =
         WHERE group_id = ? AND shared_msg_id = ? AND reaction = ?
       |]
       (groupId, itemSharedMId, reaction)
+  rights <$> mapM (runExceptT . toMemberReaction) reactions
   where
-    toMemberReaction :: (GroupMemberId, UTCTime) -> MemberReaction
-    toMemberReaction (groupMemberId, reactionTs) = MemberReaction {groupMemberId, reactionTs}
+    toMemberReaction :: (GroupMemberId, UTCTime) -> ExceptT StoreError IO MemberReaction
+    toMemberReaction (groupMemberId, reactionTs) = do
+      groupMember <- getGroupMemberById db vr user groupMemberId
+      pure MemberReaction {groupMember, reactionTs}
 
 getTimedItems :: DB.Connection -> User -> UTCTime -> IO [((ChatRef, ChatItemId), UTCTime)]
 getTimedItems db User {userId} startTimedThreadCutoff =
