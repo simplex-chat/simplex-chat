@@ -3013,7 +3013,7 @@ processChatCommand' vr = \case
                 groupProfile,
                 groupLinkId = Nothing,
                 groupSize = Just currentMemCount,
-                business = Just False
+                business = Nothing
               }
       (msg, _) <- sendDirectContactMessage user ct $ XGrpInv groupInv
       let content = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
@@ -4975,7 +4975,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                               groupProfile,
                               groupLinkId = groupLinkId,
                               groupSize = Just currentMemCount,
-                              business = Just False
+                              business = Nothing
                             }
                     (_msg, _) <- sendDirectContactMessage user ct $ XGrpInv groupInv
                     -- we could link chat item with sent group invitation message (_msg)

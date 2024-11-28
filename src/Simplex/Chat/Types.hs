@@ -371,6 +371,7 @@ data GroupInfo = GroupInfo
   { groupId :: GroupId,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
+    bizGroup :: Maybe BizGroupInfo,
     fullGroupPreferences :: FullGroupPreferences,
     membership :: GroupMember,
     hostConnCustomUserProfileId :: Maybe ProfileId,
@@ -383,6 +384,34 @@ data GroupInfo = GroupInfo
     customData :: Maybe CustomData
   }
   deriving (Eq, Show)
+
+data BizGroupInfo = BizGroupInfo
+  { bizMember :: GroupMember, -- member who created the group, and whose name avatar will be shown as group name
+    bizGroupType :: BizGroupType
+  }
+  deriving (Eq, Show)
+
+data BizGroupType
+  = BGBusiness -- used on the customer side
+  | BGCustomer -- used on the business side
+  deriving (Eq, Show)
+
+instance StrEncoding BizGroupType where
+  strEncode = \case
+    BGBusiness -> "business"
+    BGCustomer -> "customer"
+  strP =
+    A.takeTill (== ' ') >>= \case
+      "business" -> pure BGBusiness
+      "customer" -> pure BGCustomer
+      _ -> fail "bad BizGroupType"
+
+instance FromJSON BizGroupType where
+  parseJSON = strParseJSON "BizGroupType"
+
+instance ToJSON BizGroupType where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
 
 groupName' :: GroupInfo -> GroupName
 groupName' GroupInfo {localDisplayName = g} = g
@@ -600,7 +629,7 @@ data GroupInvitation = GroupInvitation
     groupProfile :: GroupProfile,
     groupLinkId :: Maybe GroupLinkId,
     groupSize :: Maybe Int,
-    business :: Maybe Bool
+    business :: Maybe BizGroupType
   }
   deriving (Eq, Show)
 
@@ -1696,6 +1725,8 @@ $(JQ.deriveJSON defaultJSON ''GroupMember)
 $(JQ.deriveJSON (enumJSON $ dropPrefix "MF") ''MsgFilter)
 
 $(JQ.deriveJSON defaultJSON ''ChatSettings)
+
+$(JQ.deriveJSON defaultJSON ''BizGroupInfo)
 
 $(JQ.deriveJSON defaultJSON ''GroupInfo)
 
