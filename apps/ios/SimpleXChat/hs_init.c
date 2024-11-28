@@ -25,12 +25,14 @@ void haskell_init(void) {
 }
 
 void haskell_init_nse(void) {
-    int argc = 7;
+    int argc = 9;
     char *argv[] = {
         "simplex",
         "+RTS", // requires `hs_init_with_rtsopts`
         "-A1m", // chunk size for new allocations
         "-H1m", // initial heap size
+        "-M12m", // maximum heap size (25 total - 1 grace - 12 for swift), make GC work harder when approaching the limit
+        "-Mgrace=1m", // (default, just to make explicit) extra memory to handle "memory exhausted" exception and fail cleanly
         "-F0.5", // heap growth triggering GC
         "-Fd1", // memory return
         "-c", // compacting garbage collector

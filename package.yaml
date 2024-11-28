@@ -78,6 +78,7 @@ when:
 
 library:
   source-dirs: src
+  ghc-options: -O2
 
 executables:
   simplex-chat:
