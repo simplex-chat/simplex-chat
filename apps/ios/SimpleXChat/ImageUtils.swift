@@ -152,24 +152,28 @@ public func maskToCircle(_ image: UIImage, hasAlpha: Bool) -> UIImage {
     let bounds = CGRect(x: 0, y: 0, width: diameter, height: diameter)
 
     let format = UIGraphicsImageRendererFormat()
-    format.scale = image.scale
-    format.opaque = !hasAlpha
+    format.scale = image.scale // Match the image's scale
+    format.opaque = !hasAlpha // Handle transparency
+    
 
     return UIGraphicsImageRenderer(size: bounds.size, format: format).image { context in
-        // Create a circular path
+        // Create a circular path and apply the clipping mask
         let circlePath = UIBezierPath(ovalIn: bounds)
-
-        // Clip the context to the circle
         circlePath.addClip()
-
-        // Draw the image centered within the circle
+        
+        // Scale and center the image
+        let scale = diameter / max(image.size.width, image.size.height)
+        let scaledSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
         let origin = CGPoint(
-            x: (bounds.width - image.size.width) / 2,
-            y: (bounds.height - image.size.height) / 2
+            x: (bounds.width - scaledSize.width) / 2,
+            y: (bounds.height - scaledSize.height) / 2
         )
-        image.draw(at: origin)
+
+        // Draw the image centered and scaled
+        image.withRenderingMode(.alwaysOriginal).draw(in: CGRect(origin: origin, size: scaledSize))
     }
 }
+
 
 public func imageHasAlpha(_ img: UIImage) -> Bool {
     if let cgImage = img.cgImage {

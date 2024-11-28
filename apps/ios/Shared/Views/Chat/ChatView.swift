@@ -1850,8 +1850,9 @@ struct ReactionContextMenu: View {
     var itemId: Int64
     var reaction: MsgReaction
     @Binding var selectedMember: GMember?
-    @State var memberReactions: [MemberReaction] = []
-    @State var inProgress: Bool = false
+    @State private var memberReactions: [MemberReaction] = []
+    @State private var inProgress: Bool = false
+    @State private var ownMemberId: Int64? = nil
 
     var body: some View {
         groupMemberReactionList()
@@ -1860,17 +1861,21 @@ struct ReactionContextMenu: View {
 
     @ViewBuilder private func groupMemberReactionList() -> some View {
         if memberReactions.isEmpty {
-            Text("Loading…")
+            Button {
+            } label: {
+                Text("")
+            }
         } else {
             ForEach(memberReactions, id: \.groupMember) { memberReaction in
                 let member = GMember.init(memberReaction.groupMember)
                 Button {
-                    selectedMember = member
+                    if (ownMemberId != nil && member.groupMemberId != ownMemberId) {
+                        selectedMember = member
+                    }
                 } label: {
-                    var memberImage = getMemberImage(member: memberReaction.groupMember)
-                    
+                    let memberImage = getMemberImage(member: memberReaction.groupMember)
                     let hasAlpha = imageHasAlpha(memberImage)
-                    let newSize = CGSize(width: 40, height: 40)
+                    let newSize = CGSize(width: 50, height: 50)
                     let bounds = CGRect(origin: .zero, size: newSize)
                     let resizedImage = resizeImage(memberImage, newBounds: bounds, drawIn: bounds, hasAlpha: hasAlpha)
                     let circularImage = maskToCircle(resizedImage, hasAlpha: hasAlpha)
@@ -1890,7 +1895,9 @@ struct ReactionContextMenu: View {
     }
 
     private func loadChatItemReaction() async {
-        inProgress = true
+        await MainActor.run {
+            self.inProgress = true
+        }
         if case let .group(groupInfo) = chat.chatInfo {
             do {
                 let memberReactions = try await apiGetReactionMembers(
@@ -1900,13 +1907,15 @@ struct ReactionContextMenu: View {
                 )
                 
                 await MainActor.run {
+                    self.ownMemberId = groupInfo.membership.groupMemberId
                     self.memberReactions = memberReactions
-                    inProgress = false
+                    self.inProgress = false
                 }
             } catch let error {
                 logger.error("apiGetReactionMembers error: \(responseError(error))")
                 await MainActor.run {
-                    inProgress = false
+                    self.inProgress = false
+                    self.ownMemberId = groupInfo.membership.groupMemberId
                 }
             }
         }
