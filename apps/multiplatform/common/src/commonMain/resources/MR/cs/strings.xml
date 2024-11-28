@@ -303,8 +303,6 @@
     <string name="restore_database">Obnovte zálohu databáze</string>
     <string name="restore_database_alert_desc">Po obnovení zálohy databáze zadejte předchozí frázi. Tuto akci nelze vrátit zpět.</string>
     <string name="chat_is_stopped_indication">Chat je zastaven</string>
-    <string name="chat_archive_header">Chat se archivuje</string>
-    <string name="delete_chat_archive_question">Smazat archiv chatu?</string>
     <string name="join_group_question">Připojit se ke skupině\?</string>
     <string name="join_group_button">Připojte se na</string>
     <string name="leave_group_button">Opustit</string>
@@ -352,7 +350,6 @@
     <string name="chat_database_imported">Databáze chatu importována</string>
     <string name="new_passphrase">Nová přístupová fráze…</string>
     <string name="save_passphrase_and_open_chat">Uložte přístupovou frázi a otevřete chat</string>
-    <string name="chat_archive_section">ARCHIV CHATU</string>
     <string name="no_contacts_selected">Nebyl vybrán žádný kontakt</string>
     <string name="invite_prohibited_description">Snažíte se pozvat kontakt, se kterým jste sdíleli inkognito profil, do skupiny, ve které používáte svůj hlavní profil</string>
     <string name="info_row_group">Skupina</string>
@@ -776,10 +773,7 @@
     <string name="database_restore_error">Chyba při obnovování databáze</string>
     <string name="restore_passphrase_not_found_desc">Přístupová fráze nebyla v klíčence nalezena, zadejte jej prosím ručně. K této situaci mohlo dojít, pokud jste obnovili data aplikace pomocí zálohovacího nástroje. Pokud tomu tak není, obraťte se na vývojáře.</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Chat můžete spustit v Nastavení / Databáze nebo restartováním aplikace.</string>
-    <string name="save_archive">Uložit archiv</string>
-    <string name="delete_archive">Smazat archiv</string>
     <string name="group_invitation_item_description">pozvánka do skupiny %1$s</string>
-    <string name="archive_created_on_ts">Vytvořeno dne %1$s</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Jste zváni do skupiny. Připojte se k členům skupiny.</string>
     <string name="join_group_incognito_button">Připojit se inkognito</string>
     <string name="joining_group">Připojit ke skupině</string>

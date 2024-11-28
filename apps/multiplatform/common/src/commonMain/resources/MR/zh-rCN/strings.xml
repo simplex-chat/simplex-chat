@@ -47,7 +47,6 @@
     <string name="delete_group_menu_action">删除</string>
     <string name="delete_address__question">删除地址？</string>
     <string name="delete_after">在此后删除</string>
-    <string name="delete_archive">删除档案</string>
     <string name="deleted_description">已删除</string>
     <string name="delete_files_and_media_question">删除文件和媒体文件？</string>
     <string name="full_deletion">为所有人删除</string>
@@ -81,7 +80,6 @@
     <string name="allow_direct_messages">允许向成员发送私信。</string>
     <string name="allow_to_send_disappearing">允许发送限时消息。</string>
     <string name="delete_address">删除地址</string>
-    <string name="delete_chat_archive_question">删除聊天档案？</string>
     <string name="users_delete_question">删除聊天资料？</string>
     <string name="button_delete_contact">删除联系人</string>
     <string name="delete_contact_question">删除联系人？</string>
@@ -161,8 +159,6 @@
     <string name="chat_database_deleted">聊天数据库已删除</string>
     <string name="chat_database_imported">聊天数据库已导入</string>
     <string name="keychain_error">钥匙串错误</string>
-    <string name="chat_archive_section">聊天档案</string>
-    <string name="chat_archive_header">聊天档案</string>
     <string name="chat_console">聊天控制台</string>
     <string name="chat_database_section">聊天数据库</string>
     <string name="chat_is_stopped_indication">聊天已停止</string>
@@ -719,7 +715,6 @@
     <string name="reply_verb">回复</string>
     <string name="network_options_reset_to_defaults">重置为默认</string>
     <string name="run_chat_section">运行聊天程序</string>
-    <string name="save_archive">保存存档</string>
     <string name="scan_code">扫码</string>
     <string name="scan_code_from_contacts_app">从您联系人的应用程序中扫描安全码。</string>
     <string name="security_code">安全码</string>
@@ -873,7 +868,6 @@
     <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[您可以控制通过哪些服务器<b>接收</b>消息，您的联系人 - 您用来向他们发送消息的服务器。]]></string>
     <string name="you_will_be_connected_when_group_host_device_is_online">您将在组主设备上线时连接到该群组，请稍等或稍后再检查！</string>
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">当您启动应用或在应用程序驻留后台超过30 秒后，您将需要进行身份验证。</string>
-    <string name="archive_created_on_ts">创建于 %1$s</string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[您可以 <font color="#0088ff"> 连接到  SimpleX Chat  开发者提出任何问题并接收更新 </font>。]]></string>
     <string name="you_accepted_connection">您已接受连接</string>
     <string name="your_SMP_servers">您的 SMP 服务器</string>

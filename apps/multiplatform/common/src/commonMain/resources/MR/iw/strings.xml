@@ -165,8 +165,6 @@
     <string name="chat_database_deleted">מסד הנתונים של הצ׳אט נמחק</string>
     <string name="chat_database_imported">‬מסד הנתונים של הצ׳אט יובא</string>
     <string name="confirm_database_upgrades">אשר שדרוגי מסד נתונים</string>
-    <string name="chat_archive_header">ארכיון צ׳אט</string>
-    <string name="chat_archive_section">ארכיון צ׳אט</string>
     <string name="chat_is_stopped_indication">צ׳אט מופסק</string>
     <string name="alert_title_cant_invite_contacts">לא ניתן להזמין את אנשי הקשר!</string>
     <string name="rcv_group_event_changed_your_role">שונה תפקידך ל%s</string>
@@ -222,7 +220,6 @@
     <string name="create_profile_button">צור</string>
     <string name="create_profile">צור פרופיל</string>
     <string name="create_your_profile">יצירת הפרופיל שלך</string>
-    <string name="archive_created_on_ts">נוצר ב־%1$s</string>
     <string name="create_group_link">צור קישור קבוצה</string>
     <string name="button_create_group_link">צור קישור</string>
     <string name="group_member_status_creator">יוצר הקבוצה</string>
@@ -253,7 +250,6 @@
     <string name="create_address_and_let_people_connect">צרו כתובת כדי לאפשר לאנשים להתחבר אליכם.</string>
     <string name="decentralized">מבוזר</string>
     <string name="set_password_to_export_desc">מסד הנתונים מוצפן באמצעות סיסמה אקראית. אנא שנו אותה לפני הייצוא.</string>
-    <string name="delete_chat_archive_question">למחוק ארכיון צ׳אט\?</string>
     <string name="delete_chat_profile">מחק פרופיל צ׳אט</string>
     <string name="chat_preferences_default">ברירת מחדל (%s)</string>
     <string name="ttl_day">%d יום</string>
@@ -307,7 +303,6 @@
     <string name="database_passphrase_and_export">סיסמה וייצוא של מסד הנתונים</string>
     <string name="delete_after">מחק אחרי</string>
     <string name="delete_files_and_media_all">מחק את כל הקבצים</string>
-    <string name="delete_archive">מחק ארכיון</string>
     <string name="for_me_only">מחק עבורי</string>
     <string name="delete_link">מחק קישור</string>
     <string name="users_delete_question">למחוק פרופיל צ׳אט\?</string>
@@ -893,7 +888,6 @@
     <string name="restore_database">שחזור גיבוי מסד נתונים</string>
     <string name="restore_database_alert_title">לשחזר גיבוי מסד נתונים\?</string>
     <string name="save_passphrase_and_open_chat">שמור סיסמה ופתח את הצ׳אט</string>
-    <string name="save_archive">שמור ארכיון</string>
     <string name="select_contacts">בחירת אנשי קשר</string>
     <string name="v5_1_self_destruct_passcode">קוד גישה להשמדה עצמית</string>
     <string name="custom_time_unit_seconds">שניות</string>

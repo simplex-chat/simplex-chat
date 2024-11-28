@@ -1405,14 +1405,6 @@
   <string name="start_chat_question">Start chat?</string>
   <string name="chat_is_stopped_you_should_transfer_database">Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat.</string>
 
-  <!-- ChatArchiveView.kt -->
-  <string name="chat_archive_header">Chat archive</string>
-  <string name="chat_archive_section">CHAT ARCHIVE</string>
-  <string name="save_archive">Save archive</string>
-  <string name="delete_archive">Delete archive</string>
-  <string name="archive_created_on_ts">Created on %1$s</string>
-  <string name="delete_chat_archive_question">Delete chat archive?</string>
-
   <!-- Groups -->
   <string name="group_invitation_item_description">invitation to group %1$s</string>
   <string name="join_group_question">Join group?</string>

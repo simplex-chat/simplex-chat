@@ -90,7 +90,6 @@
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>주의</b>: 암호를 분실하면 복구하거나 비밀번호 변경을 할 수 없어요.]]></string>
     <string name="change_database_passphrase_question">데이터베이스 암호를 바꾸시겠습니까?</string>
     <string name="confirm_new_passphrase">새로운 암호 확인…</string>
-    <string name="chat_archive_section">채팅 기록 보관함</string>
     <string name="rcv_group_event_changed_your_role">내 역할이 %s 역할로 변경됨</string>
     <string name="rcv_conn_event_switch_queue_phase_changing">주소 바꾸는 중…</string>
     <string name="snd_conn_event_switch_queue_phase_changing">주소 바꾸는 중…</string>
@@ -179,7 +178,6 @@
     <string name="chat_database_section">채팅 데이터베이스</string>
     <string name="alert_title_cant_invite_contacts">대화 상대를 초대할 수 없습니다!</string>
     <string name="change_verb">변경</string>
-    <string name="chat_archive_header">채팅 기록 보관함</string>
     <string name="change_role">역할 변경</string>
     <string name="chat_database_deleted">채팅 데이터베이스가 삭제됨</string>
     <string name="chat_is_stopped">채팅이 멈춤</string>
@@ -197,7 +195,6 @@
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">대화 상대와 모든 메시지가 삭제됩니다. 이 결정은 되돌릴 수 없습니다!</string>
     <string name="status_contact_has_e2e_encryption">대화 상대와 종단 간 암호화됨</string>
     <string name="alert_title_contact_connection_pending">대화 상대와 아직 연결되지 않았습니다!</string>
-    <string name="archive_created_on_ts">%1$s에 생성 완료</string>
     <string name="create_secret_group_title">비밀 그룹 생성</string>
     <string name="accept_contact_incognito_button">익명 수락</string>
     <string name="chat_item_ttl_month">1개월</string>
@@ -232,8 +229,6 @@
     <string name="database_error">데이터베이스 에러</string>
     <string name="passphrase_is_different">데이터베이스 암호가 암호 저장소에 저장된 것과 일치하지 않습니다.</string>
     <string name="database_passphrase_is_required">채팅을 열려면 데이터베이스 암호가 필요합니다.</string>
-    <string name="delete_archive">보관함 삭제</string>
-    <string name="delete_chat_archive_question">보관된 채팅을 삭제할까요\?</string>
     <string name="num_contacts_selected">%d 개의 대화 상대가 선택되었습니다.</string>
     <string name="info_row_database_id">데이터베이스 ID</string>
     <string name="users_delete_profile_for">다음 채팅 프로필 삭제</string>
@@ -751,7 +746,6 @@
     <string name="save_and_notify_group_members">저장하고 그룹 멤버들에게 알리기</string>
     <string name="save_and_notify_contact">저장하고 대화 상대에게 알리기</string>
     <string name="remove_passphrase">지우기</string>
-    <string name="save_archive">보관함 저장하기</string>
     <string name="save_passphrase_in_keychain">암호 저장소에 암호 저장하기</string>
     <string name="restore_database">데이터베이스 백업 복원하기</string>
     <string name="restore_database_alert_desc">데이터베이스 백업을 복원한 후 이전 비밀번호를 입력해 주십시오. 이 결정은 되돌릴 수 없습니다.</string>

@@ -242,7 +242,6 @@
     <string name="change_self_destruct_mode">تغيير وضع التدمير الذاتي</string>
     <string name="change_self_destruct_passcode">تغيير رمز المرور التدمير الذاتي</string>
     <string name="confirm_database_upgrades">تأكيد ترقيات قاعدة البيانات</string>
-    <string name="chat_archive_header">أرشيف الدردشة</string>
     <string name="group_member_status_intro_invitation">الاتصال (دعوة مقدمة)</string>
     <string name="clear_contacts_selection_button">مسح</string>
     <string name="error_creating_link_for_group">خطأ في إنشاء رابط المجموعة</string>
@@ -252,8 +251,6 @@
     <string name="group_connection_pending">جار الاتصال…</string>
     <string name="connection_request_sent">أرسلت طلب الاتصال!</string>
     <string name="chat_database_deleted">حُذفت قاعدة بيانات الدردشة</string>
-    <string name="chat_archive_section">أرشيف الدردشة</string>
-    <string name="archive_created_on_ts">نشأ في %1$s</string>
     <string name="rcv_conn_event_switch_queue_phase_changing">جارِ تغيير العنوان…</string>
     <string name="group_member_status_accepted">جار الاتصال (قُبِل)</string>
     <string name="icon_descr_contact_checked">فُحصت جهة الاتصال</string>
@@ -349,7 +346,6 @@
     <string name="passphrase_is_different">تختلف عبارة مرور قاعدة البيانات عن تلك المحفوظة في Keystore.</string>
     <string name="database_error">خطأ في قاعدة البيانات</string>
     <string name="database_upgrade">ترقية قاعدة البيانات</string>
-    <string name="delete_chat_archive_question">حذف أرشيف الدردشة؟</string>
     <string name="num_contacts_selected">حُددت %d جهة اتصال</string>
     <string name="button_delete_group">حذف المجموعة</string>
     <string name="delete_group_question">حذف المجموعة؟</string>
@@ -372,7 +368,6 @@
     <string name="custom_time_unit_days">أيام</string>
     <string name="delete_address">حذف العنوان</string>
     <string name="database_passphrase_will_be_updated">سيتم تحديث عبارة مرور تعمية قاعدة البيانات.</string>
-    <string name="delete_archive">حذف الأرشيف</string>
     <string name="delete_link_question">حذف الرابط؟</string>
     <string name="database_downgrade">الرجوع إلى إصدار سابق من قاعدة البيانات</string>
     <string name="set_password_to_export_desc">قاعدة البيانات مُعمّاة باستخدام عبارة مرور عشوائية. يُرجى تغييره قبل التصدير.</string>
@@ -844,7 +839,6 @@
     <string name="read_more_in_user_guide_with_link"><![CDATA[اقرأ المزيد في <font color="#0088ff">دليل المستخدم</font>.]]></string>
     <string name="auth_open_chat_profiles">افتح ملفات تعريف الدردشة</string>
     <string name="revoke_file__confirm">اسحب الوصول</string>
-    <string name="save_archive">حفظ الأرشيف</string>
     <string name="reveal_verb">كشف</string>
     <string name="stop_rcv_file__message">سيتم إيقاف استلام الملف.</string>
     <string name="reject_contact_button">رفض</string>

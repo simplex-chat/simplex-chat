@@ -294,8 +294,6 @@
     <string name="encrypt_database_question">Зашифрувати базу даних\?</string>
     <string name="wrong_passphrase_title">Неправильна ключова фраза!</string>
     <string name="enter_correct_passphrase">Введіть правильну ключову фразу.</string>
-    <string name="chat_archive_header">Архів чату</string>
-    <string name="chat_archive_section">АРХІВ ЧАТУ</string>
     <string name="rcv_group_event_member_connected">підключив(лась)</string>
     <string name="rcv_group_event_changed_your_role">змінив(ла) вашу роль на %s</string>
     <string name="snd_group_event_changed_role_for_yourself">ви змінили свою роль на %s</string>
@@ -375,7 +373,6 @@
     <string name="call_on_lock_screen">Виклики на екрані блокування:</string>
     <string name="call_connection_peer_to_peer">від абонента до абонента</string>
     <string name="icon_descr_hang_up">Завершити дзвінок</string>
-    <string name="archive_created_on_ts">Створено %1$s</string>
     <string name="icon_descr_expand_role">Розгорнути вибір ролі</string>
     <string name="chat_preferences_yes">так</string>
     <string name="contact_preferences">Налаштування контакту</string>
@@ -528,7 +525,6 @@
     <string name="icon_descr_video_on">Відео увімкнено</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Це може трапитися, якщо ви або ваше з\'єднання використовували застарілу резервну копію бази даних.</string>
     <string name="restore_database">Відновити резервну копію бази даних</string>
-    <string name="save_archive">Зберегти архів</string>
     <string name="group_invitation_item_description">запрошення до групи %1$s</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Вас запрошено в групу. Приєднуйтесь, щоб спілкуватися з учасниками групи.</string>
     <string name="message_reactions">Реакції на повідомлення</string>
@@ -1070,8 +1066,6 @@
     <string name="database_passphrase_is_required">Для відкриття чату потрібна ключова фраза бази даних.</string>
     <string name="join_group_question">Приєднатися до групи\?</string>
     <string name="database_upgrade">Оновлення бази даних</string>
-    <string name="delete_archive">Видалити архів</string>
-    <string name="delete_chat_archive_question">Видалити архів чату\?</string>
     <string name="leave_group_question">Вийти з групи?</string>
     <string name="alert_title_no_group">Групу не знайдено!</string>
     <string name="alert_message_no_group">Ця група більше не існує.</string>
