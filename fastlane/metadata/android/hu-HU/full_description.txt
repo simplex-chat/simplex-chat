@@ -1,0 +1,25 @@
+<h1>SimpleX - az első olyan üzenetküldő platform, amely nem tartalmaz felhasználói azonosítókat, még véletlen számokat sem!</h1>
+<p>A <a href="https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html" target="_blank">biztonsági értékelést</a> a Trail of Bits végezte 2022 novemberében.</p>
+<p>A SimpleX Chat tulajdonságai:</p>
+<ul>
+  <li>végpontok közötti titkosított üzenetek, az üzenetek szerkesztésével, megválaszolásával és törlésével.</li>
+  <li>végpontok közötti titkosított képek és fájlok küldése.</li>
+  <li>egyszer használatos és hosszú távú felhasználói hivatkozások.</li>
+  <li>titkos csevegőcsoportok - csak a csoport tagjai tudják, hogy létezik és kik a tagjai.</li>
+  <li>végpontok közötti titkosított hang- és videohívások.</li>
+  <li>privát és azonnali értesítések.</li>
+  <li>hordozható csevegőprofil - átviheti kapcsolatait és előzményeit egy másik eszközre (terminálra vagy mobilra).</li>
+</ul>
+<p>A SimpleX Chat előnyei:</p>
+<ul>
+  <li><strong>Személyazonosságának, profiljának, kapcsolatainak és metaadatainak teljes körű védelme</strong>: a SimpleX - ellentétben bármely más létező üzenetküldő platformmal - nem használ telefonszámokat vagy más, a felhasználókhoz rendelt azonosítókat, még véletlenszerű számokat sem. Ez megvédi a felhasználók magánéletét attól is akivel kommunikálnak, elrejtve azt a SimpleX platform kiszolgálói és minden megfigyelő elől.</li>
+  <li><strong>Teljes védelem a spam és visszaélések ellen</strong>: mivel a felhasználók nem rendelkeznek azonosítókkal a SimpleX platformon, a felhasználókkal nem lehet kapcsolatba lépni, kivéve, ha megosztanak egy egyszeri- vagy egy opcionális ideiglenes felhasználói meghívó hivatkozást.</li>
+  <li><strong>Az adatok teljes körű tulajdonjoga, ellenőrzése és biztonsága</strong>: A SimpleX az összes felhasználói adatot a felhasználók eszközén tárolja, az üzeneteket csak ideiglenesen, a SimpleX átjátszó kiszolgálóin tárolja, amíg azok meg nem érkeznek a címzetthez.</li>
+  <li><strong>Decentralizált hálózat</strong>: használhatja a SimpleX-et saját kiszolgálóival, és továbbra is kommunikálhat azokkal, akik az alkalmazásokban előre konfigurált kiszolgálókat vagy bármely más SimpleX-kiszolgálót használnak.</li>
+</ul>
+<p>Bárkihez kapcsolódhat egy hivatkozáson keresztül vagy egy beolvasott QR-kóddal (a videóhívás során vagy személyesen) és azonnal elkezdhet üzeneteket küldeni - nincs szükség e-mailekre, telefonszámokra vagy jelszavakra.</p> 
+<p>A felhasználók profiljait és kapcsolatait csak az alkalmazás tárolja a eszközükön - kiszolgálóink nem férnek hozzá ezekhez az információkhoz.</p>
+<p>Minden üzenet a végpontok között titkosítva van a nyílt forráskódú dupla-ratchet protokoll segítségével; az üzeneteket a kiszolgálóinkon keresztül a nyílt forráskódú SimpleX Messaging Protocol segítségével továbbítjuk.</p>
+<p>Küldjön nekünk bármilyen kérdést az alkalmazáson keresztül (csatlakozzon a csapathoz a beállítások menün keresztül!), vagy <a href="mailto:chat@simplex.chat?subject=SimpleX Chat on F-Droid">küldjön nekünk e-mailt</a>, vagy küldjön be egy <a href="https://github.com/simplex-chat/simplex-chat/issues" target="_blank">hibajelentést a GitHub-on</a>.</p>
+<p>Kövessen bennünket a Mastodonon (<a href="https://mastodon.social/@simplex" target="_blank">@simplex@mastodon.social</a>), Twitter-en (<a href="https://twitter.com/SimpleXChat" target="_blank">@SimpleXChat</a>) és Reddit-en (<a href="https://www.reddit.com/r/SimpleXChat/" target="_blank">r/SimpleXChat</a>) a legújabb információkért és frissítésekért.</p>
+<p>Miután telepítette a SimpleX Chat-et, csatlakozzon a felhasználói csoporthoz az alábbi hivatkozáson keresztül <a href="https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FWHV0YU1sYlU7NqiEHkHDB6gxO1ofTync%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAWbebOqVYuBXaiqHcXYjEHCpYi6VzDlu6CVaijDTmsQU%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22mL-7Divb94GGmGmRBef5Dg%3D%3D%22%7D" target="_blank">ezzel a meghívóval</a> és ossza meg velünk az ötleteit és meglátásait.</p>
