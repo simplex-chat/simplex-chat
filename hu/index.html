@@ -105,7 +105,7 @@
                     
                     <li class="nav-link relative active">
                         <a href="/hu" class="flex items-center justify-between gap-2 lg:py-5 whitespace-nowrap">
-                            <span class="text-[16px] leading-[26px] tracking-[0.01em] nav-link-text text-black dark:text-white before:bg-black dark:before:bg-white">Főoldal</span>
+                            <span class="text-[16px] leading-[26px] tracking-[0.01em] nav-link-text text-black dark:text-white before:bg-black dark:before:bg-white">Kezdőoldal</span>
                         </a>                        
                     </li>
 
@@ -170,7 +170,7 @@
                                 <svg class="float-right" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
                             </a></li>
                             <li><a href="/docs/protocol/simplex-chat.html" class="lg:px-[20px] inline-block"
-                                >Csevegés protokoll</a></li>
+                                >Csevegésprotokoll</a></li>
                             <li><a href="/docs/glossary.html" class="lg:px-[20px] inline-block"
                                 >Fogalomtár</a></li>
                             
@@ -589,16 +589,16 @@ window.addEventListener('scroll',changeHeaderBg);
                     <div class="lg:max-w-[448px]">
                         <div class="text-grey-black dark:text-white flex flex-col gap-6 text-base">
                             <p>
-    Ha a felhasználók állandó azonosítóval rendelkeznek, még akkor is, ha ez csak egy véletlenszerű szám, például egy munkamenet-azonosító, fennáll annak a veszélye, hogy a szolgáltató vagy egy támadó megfigyelheti, hogyan kapcsolódnak a felhasználók, és hány üzenetet küldenek.
+    Ha a felhasználók állandó azonosítóval rendelkeznek, még akkor is, ha ez csak egy véletlenszerű szám, például egy munkamenet-azonosító, fennáll annak a veszélye, hogy a szolgáltató vagy egy támadó megfigyelheti, azt hogy hogyan kapcsolódnak a felhasználók egymáshoz, és hány üzenetet küldenek egymásnak.
 </p>
 <p>
     Ezt az információt aztán összefüggésbe hozhatják a meglévő nyilvános közösségi hálózatokkal, és meghatározhatnak néhány valódi személyazonosságot.
 </p>
 <p>
-    Még a Tor v3 szolgáltatásokat használó, legprivátabb alkalmazások esetében is, ha két különböző kapcsolattartóval beszél ugyanazon a profilon keresztül, bizonyítani tudják, hogy ugyanahhoz a személyhez kapcsolódnak.
+    Még a TOR v3 szolgáltatásokat használó, legprivátabb alkalmazások esetében is, ha két különböző kapcsolattartóval beszél ugyanazon a profilon keresztül, bizonyítani tudják, hogy ugyanahhoz a személyhez kapcsolódnak.
 </p>
 <p>
-    A SimpleX úgy védekezik ezen támadások ellen, hogy nem tartalmaz felhasználói azonosítókat. Ha pedig használja az inkognitó módot, akkor minden egyes létrejött kapcsolatban más-más felhasználó név jelenik meg, így elkerülhető a közöttük lévő összefüggések bizonyítása.
+    A SimpleX úgy védekezik ezen támadások ellen, hogy nem tartalmaz felhasználói azonosítókat. Ha pedig használja az inkognitómódot, akkor minden egyes létrejött kapcsolatban más-más felhasználó név jelenik meg, így elkerülhető a közöttük lévő összefüggések teljes bizonyítása.
 </p>
                         </div>
                     </div>
@@ -634,13 +634,13 @@ window.addEventListener('scroll',changeHeaderBg);
     Sok felhasználó kérdezte: <em>ha a SimpleXnek nincsenek felhasználói azonosítói, honnan tudja, hogy hová kell eljuttatni az üzeneteket?</em>
 </p>
 <p>
-    Az üzenetek kézbesítéséhez az összes többi platform által használt felhasználói azonosítók helyett a SimpleX az üzenetek várakoztatásához ideiglenes, névtelen, páros azonosítókat használ, külön-külön minden egyes kapcsolathoz — nincsenek hosszú távú azonosítók.
+    Az üzenetek kézbesítéséhez az összes többi platform által használt felhasználói azonosítók helyett a SimpleX az üzenetek sorbaállításához ideiglenes, névtelen, páros azonosítókat használ, külön-külön minden egyes kapcsolathoz — nincsenek hosszú távú azonosítók.
 </p>
 <p>
     Ön határozza meg, hogy melyik kiszolgáló(ka)t használja az üzenetek fogadására, a kapcsolatokhoz — azokat a kiszolgálókat, amelyeket az üzenetek küldésére használ. Minden beszélgetés két különböző kiszolgálót használ.
 </p>
 <p>
-    Ez a kialakítás megakadályozza a felhasználók metaadatainak kiszivárgását az alkalmazás szintjén. Az adatvédelem további javítása és az IP-cím védelme érdekében az üzenetküldő kiszolgálókhoz Tor hálózaton keresztül is kapcsolódhat.
+    Ez a kialakítás megakadályozza a felhasználók metaadatainak kiszivárgását az alkalmazás szintjén. Az adatvédelem további javítása és az IP-cím védelme érdekében az üzenetküldő kiszolgálókhoz TOR hálózaton keresztül is kapcsolódhat.
 </p>
 <p>
     Csak a kliensek tárolják a felhasználói profilokat, kapcsolatokat és csoportokat; az üzenetek küldése 2 rétegű végpontok közötti titkosítással történik.
@@ -679,7 +679,7 @@ window.addEventListener('scroll',changeHeaderBg);
                     <div class="lg:max-w-[448px]">
                         <div class="text-grey-black dark:text-white flex flex-col gap-6 text-base">
                             <p>
-    <a href="https://www.trailofbits.com/about/">Trail of Bits</a> egy vezető biztonsági és technológiai tanácsadó cég, amelynek ügyfelei közé tartoznak a nagy technológiai cégek, kormányzati ügynökségek és jelentős blokklánc projektek.
+    <a href="https://www.trailofbits.com/about/">Trail of Bits</a> egy vezető biztonsági és technológiai tanácsadó cég, amelynek az ügyfelei közé tartoznak nagy technológiai cégek, kormányzati ügynökségek és jelentős blokklánc projektek.
 </p>
 <p>
     A Trail of Bits 2022 novemberében áttekintette a SimpleX-platform kriptográfiai és hálózati komponenseit. <a href="/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html">További információk</a>.
@@ -773,7 +773,7 @@ window.addEventListener('scroll',changeHeaderBg);
                             Privát kapcsolat létrehozása
                         </h2>
                         <p class="text-center text-black dark:text-white xl:text-justify leading-[24px] text-[16px] mb-10 xl:mb-[25px] header-description">
-                            A videó bemutatja, hogyan kapcsolódhat az ismerőséhez egy egyszer használatos QR-kód segítségével, személyesen vagy videokapcsolaton keresztül. Ugyanakkor egy meghívó megosztásával is kapcsolódhat.
+                            A videó bemutatja, hogyan kapcsolódhat az ismerőséhez egy egyszer használható QR-kód segítségével, személyesen vagy videokapcsolaton keresztül. Ugyanakkor egy meghívó-hivatkozás megosztásával is kapcsolódhat.
                         </p>
                     </article>
 
@@ -1031,7 +1031,7 @@ window.addEventListener('scroll',changeHeaderBg);
                         <div class="card-content absolute md:static px-4 md:px-0 bottom-[80px] right-1 left-1 h-[180px] md:h-fit pt-5 lg:pt-0 bg-primary-bg-light dark:bg-primary-bg-dark">
                             <div class="content-head">
                                 <h1 class="text-[35px] lg:text-[65px] font-bold tracking-[0.06em] text-active-blue text-center md:text-left md:rtl:text-right">#2</h1>
-                                <h3 class="w-full max-w-[617px] text-[25px] leading-[33px] lg:text-[35px] lg:leading-[45px] text-center md:text-left md:rtl:text-right font-bold text-grey-black dark:text-white">Véd<br>a spamektől és a visszaélésektől</h3>
+                                <h3 class="w-full max-w-[617px] text-[25px] leading-[33px] lg:text-[35px] lg:leading-[45px] text-center md:text-left md:rtl:text-right font-bold text-grey-black dark:text-white">Véd<br>a kéretlen üzenetektől és a visszaélésektől</h3>
                             </div>
 
                             <div class="content-body py-5 md:py-7">
@@ -1079,7 +1079,7 @@ window.addEventListener('scroll',changeHeaderBg);
                         <div class="card-content absolute md:static px-4 md:px-0 bottom-[80px] right-1 left-1 h-[180px] md:h-fit pt-5 lg:pt-0 bg-primary-bg-light dark:bg-primary-bg-dark">
                             <div class="content-head">
                                 <h1 class="text-[35px] lg:text-[65px] font-bold tracking-[0.06em] text-active-blue text-center md:text-left md:rtl:text-right">#3</h1>
-                                <h3 class="w-full max-w-[617px] text-[25px] leading-[33px] lg:text-[35px] lg:leading-[45px] text-center md:text-left md:rtl:text-right font-bold text-grey-black dark:text-white">Az ön adatai fölött csak ön rendelkezik</h3>
+                                <h3 class="w-full max-w-[617px] text-[25px] leading-[33px] lg:text-[35px] lg:leading-[45px] text-center md:text-left md:rtl:text-right font-bold text-grey-black dark:text-white">Ön kezeli az adatait</h3>
                             </div>
 
                             <div class="content-body py-5 md:py-7">
@@ -1237,7 +1237,7 @@ window.addEventListener('scroll',changeHeaderBg);
     
     <div id="protection-from-spam-and-abuse" data-scroll-to="why-simplex" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
         <div class="overlay-card w-full md:w-fit md:max-w-[1276px] bg-white dark:bg-card-bg-dark opacity-100 h-full md:h-fit md:max-h-[660px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-6 py-10 sm:p-14 overflow-auto scale-100">
-            <h1 class="text-3xl font-bold text-active-blue mb-6 ">A legjobb védelem a spam és a visszaélések ellen</h1>
+            <h1 class="text-3xl font-bold text-active-blue mb-6 ">A legjobb védelem a kéretlen üzenetek és a visszaélések ellen</h1>
             <div class="flex flex-col-reverse lg:flex-row gap-10 justify-between">
                 
                     <div class="lg:max-w-[448px]">
@@ -1276,7 +1276,7 @@ window.addEventListener('scroll',changeHeaderBg);
     
     <div id="you-control-your-data" data-scroll-to="why-simplex" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
         <div class="overlay-card w-full md:w-fit md:max-w-[1276px] bg-white dark:bg-card-bg-dark opacity-100 h-full md:h-fit md:max-h-[660px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-6 py-10 sm:p-14 overflow-auto scale-100">
-            <h1 class="text-3xl font-bold text-active-blue mb-6 ">Az ön adatai fölött csak ön rendelkezik</h1>
+            <h1 class="text-3xl font-bold text-active-blue mb-6 ">Az adatok biztonsága és kezelése az Ön kezében van</h1>
             <div class="flex flex-col-reverse lg:flex-row gap-10 justify-between">
                 
                     <div class="lg:max-w-[448px]">
@@ -1433,7 +1433,7 @@ window.addEventListener('scroll',changeHeaderBg);
                     <img src="/img/new/feature-7.svg" alt="" class="dark:hidden">
                     <img src="/img/new/feature-7-dark.svg" alt="" class="hidden dark:block">
                 </div>
-                <p class="text-grey-black dark:text-white text-[16px] font-medium text-center w-full max-w-[265px]">Hordozható titkosított alkalmazás-adattárolás — profil áthelyezése egy másik eszközre</p>
+                <p class="text-grey-black dark:text-white text-[16px] font-medium text-center w-full max-w-[265px]">Hordozható titkosított alkalmazás-adattárolás — profil átköltöztetése egy másik eszközre</p>
             </div>
             
             <div class="flex flex-col items-center">
@@ -1441,7 +1441,7 @@ window.addEventListener('scroll',changeHeaderBg);
                     <img src="/img/new/feature-8.svg" alt="" class="dark:hidden">
                     <img src="/img/new/feature-8-dark.svg" alt="" class="hidden dark:block">
                 </div>
-                <p class="text-grey-black dark:text-white text-[16px] font-medium text-center w-full max-w-[265px]">Az inkognitó mód —<br>egyedülálló a SimpleX Chatben</p>
+                <p class="text-grey-black dark:text-white text-[16px] font-medium text-center w-full max-w-[265px]">Az inkognitómód —<br>egyedülálló a SimpleX Chatben</p>
             </div>
             
         </div>
@@ -1463,10 +1463,10 @@ window.addEventListener('scroll',changeHeaderBg);
                         <img class="w-full max-w-[223px] h-full max-h-[226px] hidden dark:block" src="/img/new/private-10-dark.svg" alt="">
                     </div>
                     <div class="card-content flex flex-col items-center justify-between h-[138px] absolute bottom-0 py-6 px-6 bg-card-desc-bg-light dark:bg-card-desc-bg-dark rounded-b-[20px]">
-                        <h3 class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">Ideiglenes névtelen páronkénti azonosítók</h3>
+                        <h3 class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">Ideiglenes, névtelen, páronkénti azonosítók</h3>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">A SimpleX ideiglenes névtelen páros címeket és hitelesítő adatokat használ minden egyes felhasználói kapcsolat vagy csoporttag számára.</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">A SimpleX ideiglenes, névtelen, páros címeket és hitelesítő adatokat használ minden egyes felhasználói kapcsolathoz vagy csoporttaghoz.</p>
                             
                             <p class="text-grey-black dark:text-white text-[14px] text-center">Lehetővé teszi az üzenetek felhasználói profilazonosítók nélküli kézbesítését, ami az alternatíváknál jobb metaadat-védelmet biztosít.</p>
                             
@@ -1484,7 +1484,7 @@ window.addEventListener('scroll',changeHeaderBg);
                         <h3 class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">Sávon kívüli<br>kulcscsere</h3>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">Számos kommunikációs platform sebezhető a kiszolgálók vagy a hálózati szolgáltatók MITM-támadásaival szemben.</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">Számos kommunikációs platform sebezhető a kiszolgálók vagy a hálózat-szolgáltatók MITM-támadásaival szemben.</p>
                             
                             <p class="text-grey-black dark:text-white text-[14px] text-center">Ennek megakadályozása érdekében a SimpleX-alkalmazások egyszeri kulcsokat adnak át sávon kívül, amikor egy címet hivatkozásként vagy QR-kódként oszt meg.</p>
                             
@@ -1502,9 +1502,9 @@ window.addEventListener('scroll',changeHeaderBg);
                         <h3 class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">2 rétegű végpontok közötti titkosítás</h3>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">Dupla-ratchet protokoll —<br>OTR üzenetküldés, sérülés utáni titkosság-védelemmel és -helyreállítással.</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">Double-Ratchet-protokoll —<br>OTR-üzenetküldés, sérülés utáni titkosság-védelemmel és -helyreállítással.</p>
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">NaCL cryptobox minden egyes üzenet várakoztatáshoz, hogy megakadályozza a forgalom korrelációját az üzenet várakoztatások között, ha a TLS veszélybe kerül.</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">NaCL cryptobox minden egyes üzenet sorbaállításához, hogy megakadályozza a forgalom korrelációját az üzenet-sorbaállítások között, ha a TLS veszélybe kerül.</p>
                             
                         </div>
                         <p class="text-grey-black dark:text-white text-[12px] text-center">Koppintson a bezáráshoz</p>
@@ -1520,7 +1520,7 @@ window.addEventListener('scroll',changeHeaderBg);
                         <h3 class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">Üzenetintegritás<br>hitelesítés</h3>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">Az integritás garantálása érdekében az üzenetek sorszámozással vannak ellátva, és tartalmazzák az előző üzenet hash-ét.</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">Az integritás garantálása érdekében az üzenetek sorszámozással vannak ellátva, és tartalmazzák az előző üzenet hasítóértékét.</p>
                             
                             <p class="text-grey-black dark:text-white text-[14px] text-center">Ha bármilyen üzenetet hozzáadnak, eltávolítanak vagy módosítanak, a címzett értesítést kap róla.</p>
                             
@@ -1535,7 +1535,7 @@ window.addEventListener('scroll',changeHeaderBg);
                         <img class="w-full max-w-[223px] h-full max-h-[226px] hidden dark:block" src="/img/new/private-2-dark.svg" alt="">
                     </div>
                     <div class="card-content flex flex-col items-center justify-between h-[138px] absolute bottom-0 py-6 px-6 bg-card-desc-bg-light dark:bg-card-desc-bg-dark rounded-b-[20px]">
-                        <h3 class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">További rétege a<br>kiszolgáló titkosítás</h3>
+                        <h3 class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">További rétege a<br>kiszolgáló-titkosítás</h3>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
                             <p class="text-grey-black dark:text-white text-[14px] text-center">Kiegészítő kiszolgáló titkosítási réteg a címzettnek történő kézbesítéshez, hogy megakadályozza a fogadott és az elküldött kiszolgálóforgalom közötti korrelációt, ha a TLS veszélybe kerül.</p>
@@ -1570,7 +1570,7 @@ window.addEventListener('scroll',changeHeaderBg);
                         <h3 class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">Biztonságos, hitelesített<br>TLS adatátvitel</h3>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">Az ügyfél-kiszolgáló kapcsolatokhoz csak az erős algoritmusokkal rendelkező TLS 1.2/1.3 protokollt használ.</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">A kliens és a kiszolgálók közötti kapcsolatokhoz csak az erős algoritmusokkal rendelkező TLS 1.2/1.3 protokollt használja.</p>
                             
                             <p class="text-grey-black dark:text-white text-[14px] text-center">A kiszolgáló ujjlenyomata és a csatornakötés megakadályozza a MITM- és a visszajátszási támadásokat.</p>
                             
@@ -1590,9 +1590,9 @@ window.addEventListener('scroll',changeHeaderBg);
                         <h3 class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">Nem kötelező<br>hozzáférés Tor-on keresztül</h3>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">Az IP-címe védelme érdekében a kiszolgálókat a Tor-on vagy más átviteli fedett hálózaton keresztül érheti el.</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">Az IP-címe védelme érdekében a kiszolgálókat a TORon vagy más átvitel-átfedő-hálózaton keresztül is elérheti.</p>
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">A SimpleX Toron keresztüli használatához telepítse az <a href="https://guardianproject.info/apps/org.torproject.android/" target="_blank">Orbot alkalmazást</a> és engedélyezze a SOCKS5 proxyt (vagy a VPN-t <a href="https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone" target="_blank">az iOS-ban</a>).</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">A SimpleX TORon keresztüli használatához telepítse az <a href="https://guardianproject.info/apps/org.torproject.android/" target="_blank">Orbot alkalmazást</a> és engedélyezze a SOCKS5 proxyt (vagy a VPN-t <a href="https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone" target="_blank">az iOS-ban</a>).</p>
                             
                         </div>
                         <p class="text-grey-black dark:text-white text-[12px] text-center">Koppintson a bezáráshoz</p>
@@ -1605,10 +1605,10 @@ window.addEventListener('scroll',changeHeaderBg);
                         <img class="w-full max-w-[223px] h-full max-h-[226px] hidden dark:block" src="/img/new/private-9-dark.svg" alt="">
                     </div>
                     <div class="card-content flex flex-col items-center justify-between h-[138px] absolute bottom-0 py-6 px-6 bg-card-desc-bg-light dark:bg-card-desc-bg-dark rounded-b-[20px]">
-                        <h3 class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">Egyirányú<br>üzenet várakoztatás</h3>
+                        <h3 class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">Egyirányú<br>üzenetsorbaállítás</h3>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">Minden üzenetet egyetlen irányba várakoztat, a különböző küldési és vételi címekkel.</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">Minden üzenetsorbaállítás egy irányba továbbítja az üzeneteket, a különböző küldési és vételi címekkel.</p>
                             
                             <p class="text-grey-black dark:text-white text-[14px] text-center">A hagyományos üzenetküldőkhöz képest csökkenti a támadási vektorokat és a rendelkezésre álló metaadatokat.</p>
                             
@@ -1685,13 +1685,13 @@ window.addEventListener('scroll',changeHeaderBg);
         A P2P-hálózatok az üzenetek továbbítására a <a href="https://en.wikipedia.org/wiki/Distributed_hash_table">DHT</a> valamelyik változatát használják. A DHT kialakításakor egyensúlyt kell teremteni a kézbesítési garancia és a késleltetés között. A SimpleX jobb kézbesítési garanciával és alacsonyabb késleltetéssel rendelkezik, mint a P2P, mivel az üzenet redundánsan, a címzett által kiválasztott kiszolgálók segítségével több kiszolgálón keresztül párhuzamosan továbbítható. A P2P-hálózatokban az üzenet <em>O(log N)</em> csomóponton halad át szekvenciálisan, az algoritmus által kiválasztott csomópontok segítségével.
     </li>
     <li>
-        A SimpleX kialakítása a legtöbb P2P-hálózattól eltérően nem rendelkezik semmiféle globális felhasználói azonosítóval, még ideiglenesen sem, és csak ideiglenes páros azonosítókat használ, ami jobb névtelenséget és metaadatvédelmet biztosít.
+        A SimpleX kialakítása a legtöbb P2P-hálózattól eltérően nem rendelkezik semmiféle globális felhasználói azonosítóval, még ideiglenessel sem, és csak az üzenetekhez használ ideiglenes, páros azonosítókat, ami jobb névtelenséget és metaadatvédelmet biztosít.
     </li>
     <li>
         A P2P nem oldja meg a <a href="https://en.wikipedia.org/wiki/Man-in-the-middle_attack">MITM-támadás</a> problémát, és a legtöbb létező implementáció nem használ sávon kívüli üzeneteket a kezdeti kulcscseréhez. A SimpleX a kezdeti kulcscseréhez sávon kívüli üzeneteket, vagy bizonyos esetekben már meglévő biztonságos és megbízható kapcsolatokat használ.
     </li>
     <li>
-        A P2P-megvalósításokat egyes internetszolgáltatók blokkolhatják (mint például a <a href="https://en.wikipedia.org/wiki/BitTorrent">BitTorrent</a>). A SimpleX átvitel-független - a szabványos webes protokollokon, pl. WebSockets-en keresztül is működik.
+        A P2P-megvalósításokat egyes internetszolgáltatók blokkolhatják (mint például a <a href="https://en.wikipedia.org/wiki/BitTorrent">BitTorrent</a>). A SimpleX átvitel-független - a szabványos webes protokollokon, pl. WebSocketsen keresztül is működik.
     </li>
     <li>
         Minden ismert P2P-hálózat sebezhető <a href="https://en.wikipedia.org/wiki/Sybil_attack">Sybil támadással</a>, mert minden egyes csomópont felderíthető, és a hálózat egészként működik. A támadások enyhítésére szolgáló ismert intézkedés lehet egy központi kiszolgáló (pl.: tracker), vagy egy drága <a href="https://en.wikipedia.org/wiki/Proof_of_work">tanúsítvány</a>. A SimpleX-hálózat nem ismeri fel a kiszolgálókat, töredezett és több elszigetelt alhálózatként működik, ami lehetetlenné teszi az egész hálózatra kiterjedő támadásokat.
@@ -1808,10 +1808,10 @@ window.addEventListener('scroll',changeHeaderBg);
                     <div class="flex flex-col justify-center items-center">
                         <img class="h-[340px] mb-[74px] mt-[74px] md:hidden" src="/img/new/explained-1.svg" alt="">
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            Létrehozhat kapcsolatokat és csoportokat, valamint kétirányú beszélgetéseket folytathat, mint bármely más üzenetküldőben.
+                            Létrehozhat kapcsolatokat és csoportokat, valamint kétirányú beszélgetéseket folytathat, ugyanúgy mint bármely más üzenetküldőben.
                         </p>
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            Hogyan működhet egyirányú üzenet várakoztatással és felhasználói profil azonosítók nélkül?
+                            Hogyan működhet egyirányú üzenet sorbaállítással és felhasználói profil-azonosítók nélkül?
                         </p>
                     </div>
                 </div>
@@ -1821,7 +1821,7 @@ window.addEventListener('scroll',changeHeaderBg);
                     <div class="flex flex-col justify-center items-center">
                         <img class="h-[340px] mb-[74px] mt-[74px] md:hidden" src="/img/new/explained-2.svg" alt="">
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            Minden kapcsolathoz két különböző üzenetküldési várakoztatást használ a különböző kiszolgálókon keresztül történő üzenetküldéshez és -fogadáshoz.
+                            Minden kapcsolathoz két különböző üzenetküldési sorbaállítást használ a különböző kiszolgálókon keresztül történő üzenetküldéshez és -fogadáshoz.
                         </p>
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
                             A kiszolgálók csak egyirányú üzeneteket továbbítanak, anélkül, hogy teljes képet kapnának a felhasználók beszélgetéseiről vagy kapcsolatairól.
@@ -1834,10 +1834,10 @@ window.addEventListener('scroll',changeHeaderBg);
                     <div class="flex flex-col justify-center items-center">
                         <img class="h-[340px] mb-[74px] mt-[74px] md:hidden" src="/img/new/explained-3.svg" alt="">
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            A kiszolgálók minden egyes üzenet várakoztatáshoz külön névtelen hitelesítő adatokkal rendelkeznek, és nem tudják, hogy melyik felhasználóhoz tartoznak.
+                            A kiszolgálók minden egyes üzenetsorbaállításhoz külön névtelen hitelesítő-adatokkal rendelkeznek, és nem tudják, hogy melyik felhasználóhoz tartoznak.
                         </p>
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            A felhasználók tovább fokozhatják a metaadatok adatvédelmét, ha a Tor segítségével férnek hozzá a kiszolgálókhoz, megakadályozva az IP-cím szerinti korrelációt.
+                            A felhasználók tovább fokozhatják a metaadatok adatvédelmét, ha a Tor segítségével férnek hozzá a kiszolgálókhoz, így megakadályozva az IP-cím szerinti korrelációt.
                         </p>
                     </div>
                 </div>
@@ -2067,7 +2067,7 @@ window.addEventListener("load", function () {
                         <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/simplex-chat.md"
                             target="_blank"
                             class="text-grey-black dark:text-white text-[14px] font-medium leading-[28px] tracking-[0.01em] mb-3 flex items-center gap-1">
-                            SimpleX Chat protokoll
+                            SimpleX Chat-protokoll
                             <svg class="float-right" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
                         </a>
                         <a href="/privacy"
