@@ -1867,20 +1867,25 @@ struct ReactionContextMenu: View {
                 Button {
                     selectedMember = member
                 } label: {
-                    if let originalImage = imageFromBase64(member.wrapped.image) {
-                        let hasAlpha = imageHasAlpha(originalImage)
-                        let circularImage = maskToCircle(originalImage, hasAlpha: hasAlpha)
-                        Image(uiImage: circularImage)
-                    } else {
-                        let originalImage = UIImage(systemName: "person.crop.circle.fill")!
-                        let hasAlpha = imageHasAlpha(originalImage)
-                        let circularImage = maskToCircle(originalImage, hasAlpha: hasAlpha)
-                        Image(uiImage: circularImage)
-                    }
+                    var memberImage = getMemberImage(member: memberReaction.groupMember)
                     
+                    let hasAlpha = imageHasAlpha(memberImage)
+                    let newSize = CGSize(width: 40, height: 40)
+                    let bounds = CGRect(origin: .zero, size: newSize)
+                    let resizedImage = resizeImage(memberImage, newBounds: bounds, drawIn: bounds, hasAlpha: hasAlpha)
+                    let circularImage = maskToCircle(resizedImage, hasAlpha: hasAlpha)
+                    Image(uiImage: circularImage)
                     Text(member.displayName)
                 }
             }
+        }
+    }
+    
+    private func getMemberImage(member: GroupMember) -> UIImage {
+        if let originalImage = imageFromBase64(member.image) {
+            return originalImage
+        } else {
+            return UIImage(systemName: "person.crop.circle.fill")!
         }
     }
 

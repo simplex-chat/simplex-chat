@@ -138,7 +138,7 @@ private func reduceSize(_ image: UIImage, ratio: CGFloat, hasAlpha: Bool) -> UII
     return resizeImage(image, newBounds: bounds, drawIn: bounds, hasAlpha: hasAlpha)
 }
 
-private func resizeImage(_ image: UIImage, newBounds: CGRect, drawIn: CGRect, hasAlpha: Bool) -> UIImage {
+public func resizeImage(_ image: UIImage, newBounds: CGRect, drawIn: CGRect, hasAlpha: Bool) -> UIImage {
     let format = UIGraphicsImageRendererFormat()
     format.scale = 1.0
     format.opaque = !hasAlpha
