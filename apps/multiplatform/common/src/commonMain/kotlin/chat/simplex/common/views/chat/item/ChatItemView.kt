@@ -20,6 +20,7 @@ import androidx.compose.ui.text.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
@@ -161,7 +162,9 @@ fun ChatItemView(
                     } else {
                       showReactionMenu.value = false
                     }
-                  })
+                  },
+                  lineLimit = 1
+                )
               }
             }
             if (r.totalReacted > 1) {
@@ -826,7 +829,9 @@ fun ItemAction(
   text: String,
   composable: @Composable () -> Unit,
   color: Color = Color.Unspecified,
-  onClick: () -> Unit) {
+  onClick: () -> Unit,
+  lineLimit: Int = Int.MAX_VALUE
+) {
   val finalColor = if (color == Color.Unspecified) {
     MenuTextColor
   } else color
@@ -838,7 +843,9 @@ fun ItemAction(
           .fillMaxWidth()
           .weight(1F)
           .padding(end = 15.dp),
-        color = finalColor
+        color = finalColor,
+        maxLines = lineLimit,
+        overflow = TextOverflow.Ellipsis
       )
       composable()
     }
