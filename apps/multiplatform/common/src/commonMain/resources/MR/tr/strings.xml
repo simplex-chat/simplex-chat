@@ -71,7 +71,7 @@
     <string name="allow_verb">İzin ver</string>
     <string name="v5_0_app_passcode">Uygulama erişim kodu</string>
     <string name="network_session_mode_user_description"><![CDATA[<b>Uygulamadaki her konuşma profliniz için</b> ayrı bir TCP bağlantısı (ve SOCKS kimliği) kullanılacaktır.]]></string>
-    <string name="network_session_mode_entity_description"><b>Konuştuğun kişilerin ve grup üyelerinin tamamı için</b> ayrı bir TCP bağlantısı (ve SOCKS kimliği) kullanılacaktır. \n<b>Bilgin olsun</b>: Çok sayıda bağlantın varsa pilin ve veri kullanımın önemli ölçüde artabilir ve bazı bağlantılar başarısız olabilir.</string>
+    <string name="network_session_mode_entity_description"><![CDATA[<b>Konuştuğun kişilerin ve grup üyelerinin tamamı için</b> ayrı bir TCP bağlantısı (ve SOCKS kimliği) kullanılacaktır.\n<b>Bilgin olsun</b>: Çok sayıda bağlantın varsa pilin ve veri kullanımın önemli ölçüde artabilir ve bazı bağlantılar başarısız olabilir.]]></string>
     <string name="save_and_notify_group_members">Kaydet ve grup üyelerini bilgilendir</string>
     <string name="notifications_mode_off">Uygulama açıkken çalışır</string>
     <string name="search_verb">Ara</string>
@@ -2117,4 +2117,15 @@
     <string name="v6_1_delete_many_messages_descr">200\'e kadar mesajı silin veya düzenleyin.</string>
     <string name="v6_1_better_security">Daha iyi güvenlik ✅</string>
     <string name="v6_1_better_security_descr">SimpleX protokolleri Trail of Bits tarafından incelenmiştir.</string>
+    <string name="address_or_1_time_link">Adres mi yoksa tek seferlik bağlantı mı?</string>
+    <string name="operator_added_message_servers">Mesaj sunucuları eklendi</string>
+    <string name="accept_conditions">Koşulları kabul edin</string>
+    <string name="operator_conditions_accepted">Kabul edilen koşullar</string>
+    <string name="operator_added_xftp_servers">Medya ve dosya sunucuları eklendi</string>
+    <string name="appearance_app_toolbars">Uygulama araç çubukları</string>
+    <string name="address_settings">Adres ayarları</string>
+    <string name="appearance_bars_blur_radius">Bulanıklık</string>
+    <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[1 kerelik bağlantı <i>sadece bir kişiyle</i> kullanılabilir - yüz yüze veya herhangi bir mesajlaşma programı aracılığıyla paylaşın]]></string>
+    <string name="operator_conditions_accepted_for_some">&lt;![CDATA[Aşağıdaki operatör(ler) için koşullar zaten kabul edilmiştir: &lt;b&gt;</string>
+    <string name="operators_conditions_accepted_for"><![CDATA[Şart(lar) operatör(ler) için kabul edilir: <b>%s</b>.]]></string>
 </resources>
