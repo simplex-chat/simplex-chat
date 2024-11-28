@@ -901,8 +901,6 @@ struct ChatView: View {
         @State private var showChatItemInfoSheet: Bool = false
         @State private var chatItemInfo: ChatItemInfo?
         @State private var msgWidth: CGFloat = 0
-        @State private var showReactionContextMenu: Bool = false
-        @State private var memberReactions: [MemberReaction] = []
 
         @Binding var selectedChatItems: Set<Int64>?
         @Binding var forwardedChatItems: [ChatItem]
@@ -1232,7 +1230,7 @@ struct ChatView: View {
         private func chatItemReactions(_ ci: ChatItem) -> some View {
             HStack(spacing: 4) {
                 ForEach(ci.reactions, id: \.reaction) { r in
-                    let v = HStack(spacing: 4) {
+                    HStack(spacing: 4) {
                         switch r.reaction {
                         case let .emoji(emoji): Text(emoji.rawValue).font(.caption)
                         case .unknown: EmptyView()
@@ -1244,66 +1242,22 @@ struct ChatView: View {
                                 .foregroundColor(r.userReacted ? theme.colors.primary : theme.colors.secondary)
                         }
                     }
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 4)
-                    
-                    if chat.chatInfo.featureEnabled(.reactions) {
-                        if ci.allowAddReaction || r.userReacted {
-                            v
-                                .onLongPressGesture {
-                                    loadChatItemReaction(reaction: r.reaction, itemId: ci.id)
-                                }
-                                .onTapGesture {
-                                    setReaction(ci, add: !r.userReacted, reaction: r.reaction)
-                                }
-                                .contextMenu {
-                                    if showReactionContextMenu {
-                                        ReactionContextMenu(
-                                            selectedMember: $selectedMember,
-                                            memberReactions: $memberReactions
-                                        )
-                                    } else {
-                                        EmptyView()
-                                    }
-                                }
-                        } else {
-                            v
-                                .onLongPressGesture {
-                                    loadChatItemReaction(reaction: r.reaction, itemId: ci.id)
-                                }
-                                .contextMenu {
-                                    if showReactionContextMenu {
-                                        ReactionContextMenu(
-                                            selectedMember: $selectedMember,
-                                            memberReactions: $memberReactions
-                                        )
-                                    } else {
-                                        EmptyView()
-                                    }
-                                }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 4)
+                    .if(chat.chatInfo.featureEnabled(.reactions) && (ci.allowAddReaction || r.userReacted)) { v in
+                        v.onTapGesture {
+                            setReaction(ci, add: !r.userReacted, reaction: r.reaction)
                         }
-                    } else {
-                        v
                     }
-                }
-            }
-        }
-        
-        private func loadChatItemReaction(reaction: MsgReaction, itemId: Int64) {
-            if case let .group(gInfo) = chat.chatInfo {
-                Task {
-                    do {
-                        let memberReactions = try await apiGetReactionMembers(
-                            groupId: gInfo.groupId,
-                            itemId: itemId,
-                            reaction: reaction
-                        )
-                        await m.loadGroupMembers(gInfo) {
-                            self.showReactionContextMenu = true
-                            self.memberReactions = memberReactions
+                    .if(chat.chatInfo.chatType == .group) { v in
+                        v.contextMenu {
+                            ReactionContextMenu(
+                                chat: chat,
+                                itemId: ci.id,
+                                reaction: r.reaction,
+                                selectedMember: $selectedMember
+                            )
                         }
-                    } catch let error {
-                        logger.error("apiGetReactionMembers error: \(responseError(error))")
                     }
                 }
             }
@@ -1892,37 +1846,67 @@ private func buildTheme() -> AppTheme {
 }
 
 struct ReactionContextMenu: View {
-    @EnvironmentObject var chatModel: ChatModel
+    var chat: Chat
+    var itemId: Int64
+    var reaction: MsgReaction
     @Binding var selectedMember: GMember?
-    @Binding var memberReactions: [MemberReaction]
+    @State var memberReactions: [MemberReaction] = []
+    @State var inProgress: Bool = false
 
     var body: some View {
         groupMemberReactionList()
+            .task { await loadChatItemReaction() }
     }
 
-    private func groupMemberReactionList() -> some View {
-        ForEach(memberReactions, id: \.groupMemberId) { memberReaction in
-            if let i = chatModel.groupMembersIndexes[memberReaction.groupMemberId] {
-                let member = chatModel.groupMembers[i]
+    @ViewBuilder private func groupMemberReactionList() -> some View {
+        if memberReactions.isEmpty {
+            Text("Loading...")
+        } else {
+            ForEach(memberReactions, id: \.groupMemberId) { memberReaction in
+                if let i = ChatModel.shared.groupMembersIndexes[memberReaction.groupMemberId] {
+                    let member = ChatModel.shared.groupMembers[i]
 
-                Button {
-                    selectedMember = member
-                } label: {
-                    if let originalImage = imageFromBase64(member.wrapped.image) {
-                        let hasAlpha = imageHasAlpha(originalImage)
-                        let circularImage = maskToCircle(originalImage, hasAlpha: hasAlpha)
-                        Image(uiImage: circularImage)
-                    } else {
-                        let originalImage = UIImage(systemName: "person.crop.circle.fill")!
-                        let hasAlpha = imageHasAlpha(originalImage)
-                        let circularImage = maskToCircle(originalImage, hasAlpha: hasAlpha)
-                        Image(uiImage: circularImage)
+                    Button {
+                        selectedMember = member
+                    } label: {
+                        if let originalImage = imageFromBase64(member.wrapped.image) {
+                            let hasAlpha = imageHasAlpha(originalImage)
+                            let circularImage = maskToCircle(originalImage, hasAlpha: hasAlpha)
+                            Image(uiImage: circularImage)
+                        } else {
+                            let originalImage = UIImage(systemName: "person.crop.circle.fill")!
+                            let hasAlpha = imageHasAlpha(originalImage)
+                            let circularImage = maskToCircle(originalImage, hasAlpha: hasAlpha)
+                            Image(uiImage: circularImage)
+                        }
+
+                        Text(member.displayName)
                     }
-
-                    Text(member.displayName)
+                } else {
+                    EmptyView()
                 }
-            } else {
-                EmptyView()
+            }
+        }
+    }
+
+    private func loadChatItemReaction() async {
+        inProgress = true
+        if case let .group(groupInfo) = chat.chatInfo {
+            do {
+                let memberReactions = try await apiGetReactionMembers(
+                    groupId: groupInfo.groupId,
+                    itemId: itemId,
+                    reaction: reaction
+                )
+                await ChatModel.shared.loadGroupMembers(groupInfo) {
+                    self.memberReactions = memberReactions
+                    inProgress = false
+                }
+            } catch let error {
+                logger.error("apiGetReactionMembers error: \(responseError(error))")
+                await MainActor.run {
+                    inProgress = false
+                }
             }
         }
     }
