@@ -599,7 +599,8 @@ data GroupInvitation = GroupInvitation
     connRequest :: ConnReqInvitation,
     groupProfile :: GroupProfile,
     groupLinkId :: Maybe GroupLinkId,
-    groupSize :: Maybe Int
+    groupSize :: Maybe Int,
+    business :: Maybe Bool
   }
   deriving (Eq, Show)
 

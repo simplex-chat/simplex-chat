@@ -445,7 +445,8 @@ data UserContactLink = UserContactLink
   deriving (Show)
 
 data AutoAccept = AutoAccept
-  { acceptIncognito :: IncognitoEnabled,
+  { businessAddress :: Bool, -- possibly, it can be wrapped together with acceptIncognito, or AutoAccept made sum type
+    acceptIncognito :: IncognitoEnabled,
     autoReply :: Maybe MsgContent
   }
   deriving (Show)
@@ -457,7 +458,7 @@ $(J.deriveJSON defaultJSON ''UserContactLink)
 toUserContactLink :: (ConnReqContact, Bool, IncognitoEnabled, Maybe MsgContent) -> UserContactLink
 toUserContactLink (connReq, autoAccept, acceptIncognito, autoReply) =
   UserContactLink connReq $
-    if autoAccept then Just AutoAccept {acceptIncognito, autoReply} else Nothing
+    if autoAccept then Just AutoAccept {businessAddress = False, acceptIncognito, autoReply} else Nothing
 
 getUserAddress :: DB.Connection -> User -> ExceptT StoreError IO UserContactLink
 getUserAddress db User {userId} =
@@ -589,7 +590,7 @@ getServerOperators db = do
     let conditionsAction = usageConditionsAction ops currentConditions now
     pure ServerOperatorConditions {serverOperators = ops, currentConditions, conditionsAction}
 
-getUserServers :: DB.Connection -> User -> ExceptT StoreError IO ([Maybe ServerOperator], [UserServer 'PSMP],  [UserServer 'PXFTP])
+getUserServers :: DB.Connection -> User -> ExceptT StoreError IO ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP])
 getUserServers db user =
   (,,)
     <$> (map Just . serverOperators <$> getServerOperators db)
@@ -620,7 +621,8 @@ getUpdateServerOperators db presetOps newUser = do
   mapM_ insertConditions condsToAdd
   latestAcceptedConds_ <- getLatestAcceptedConditions db
   ops <- updatedServerOperators presetOps <$> getServerOperators_ db
-  forM ops $ traverse $ mapM $ \(ASO _ op) -> -- traverse for tuple, mapM for Maybe
+  forM ops $ traverse $ mapM $ \(ASO _ op) ->
+    -- traverse for tuple, mapM for Maybe
     case operatorId op of
       DBNewEntity -> do
         op' <- insertOperator op
@@ -765,8 +767,9 @@ acceptConditions db condId opIds acceptedAt = do
   liftIO $ forM_ operators $ \op -> acceptConditions_ db op conditionsCommit ts
   where
     getServerOperator_ opId =
-      ExceptT $ firstRow toServerOperator (SEOperatorNotFound opId) $
-        DB.query db (serverOperatorQuery <> " WHERE server_operator_id = ?") (Only opId)
+      ExceptT $
+        firstRow toServerOperator (SEOperatorNotFound opId) $
+          DB.query db (serverOperatorQuery <> " WHERE server_operator_id = ?") (Only opId)
 
 acceptConditions_ :: DB.Connection -> ServerOperator -> Text -> Maybe UTCTime -> IO ()
 acceptConditions_ db ServerOperator {operatorId, operatorTag} conditionsCommit acceptedAt =

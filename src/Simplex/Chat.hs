@@ -3012,7 +3012,8 @@ processChatCommand' vr = \case
                 connRequest = cReq,
                 groupProfile,
                 groupLinkId = Nothing,
-                groupSize = Just currentMemCount
+                groupSize = Just currentMemCount,
+                business = Just False
               }
       (msg, _) <- sendDirectContactMessage user ct $ XGrpInv groupInv
       let content = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
@@ -4973,7 +4974,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                               connRequest = cReq,
                               groupProfile,
                               groupLinkId = groupLinkId,
-                              groupSize = Just currentMemCount
+                              groupSize = Just currentMemCount,
+                              business = Just False
                             }
                     (_msg, _) <- sendDirectContactMessage user ct $ XGrpInv groupInv
                     -- we could link chat item with sent group invitation message (_msg)
@@ -8680,7 +8682,7 @@ chatCommandP =
     autoAcceptP =
       ifM
         onOffP
-        (Just <$> (AutoAccept <$> (" incognito=" *> onOffP <|> pure False) <*> optional (A.space *> msgContentP)))
+        (Just <$> (AutoAccept False <$> (" incognito=" *> onOffP <|> pure False) <*> optional (A.space *> msgContentP)))
         (pure Nothing)
     rcCtrlAddressP = RCCtrlAddress <$> ("addr=" *> strP) <*> (" iface=" *> (jsonP <|> text1P))
     text1P = safeDecodeUtf8 <$> A.takeTill (== ' ')
