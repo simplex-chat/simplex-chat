@@ -2312,13 +2312,8 @@ public struct ACIReaction: Decodable, Hashable {
 }
 
 public struct MemberReaction: Decodable, Hashable {
-    public var groupMemberId: Int64
+    public var groupMember: GroupMember
     public var reactionTs: Date
-
-    public init(groupMemberId: Int64, reactionTs: Date) {
-        self.groupMemberId = groupMemberId
-        self.reactionTs = reactionTs
-    }
 }
 
 public struct CIReaction: Decodable, Hashable {

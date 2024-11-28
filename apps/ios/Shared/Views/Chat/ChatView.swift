@@ -1862,28 +1862,23 @@ struct ReactionContextMenu: View {
         if memberReactions.isEmpty {
             Text("Loading…")
         } else {
-            ForEach(memberReactions, id: \.groupMemberId) { memberReaction in
-                if let i = ChatModel.shared.groupMembersIndexes[memberReaction.groupMemberId] {
-                    let member = ChatModel.shared.groupMembers[i]
-
-                    Button {
-                        selectedMember = member
-                    } label: {
-                        if let originalImage = imageFromBase64(member.wrapped.image) {
-                            let hasAlpha = imageHasAlpha(originalImage)
-                            let circularImage = maskToCircle(originalImage, hasAlpha: hasAlpha)
-                            Image(uiImage: circularImage)
-                        } else {
-                            let originalImage = UIImage(systemName: "person.crop.circle.fill")!
-                            let hasAlpha = imageHasAlpha(originalImage)
-                            let circularImage = maskToCircle(originalImage, hasAlpha: hasAlpha)
-                            Image(uiImage: circularImage)
-                        }
-
-                        Text(member.displayName)
+            ForEach(memberReactions, id: \.groupMember) { memberReaction in
+                let member = GMember.init(memberReaction.groupMember)
+                Button {
+                    selectedMember = member
+                } label: {
+                    if let originalImage = imageFromBase64(member.wrapped.image) {
+                        let hasAlpha = imageHasAlpha(originalImage)
+                        let circularImage = maskToCircle(originalImage, hasAlpha: hasAlpha)
+                        Image(uiImage: circularImage)
+                    } else {
+                        let originalImage = UIImage(systemName: "person.crop.circle.fill")!
+                        let hasAlpha = imageHasAlpha(originalImage)
+                        let circularImage = maskToCircle(originalImage, hasAlpha: hasAlpha)
+                        Image(uiImage: circularImage)
                     }
-                } else {
-                    EmptyView()
+                    
+                    Text(member.displayName)
                 }
             }
         }
@@ -1898,7 +1893,8 @@ struct ReactionContextMenu: View {
                     itemId: itemId,
                     reaction: reaction
                 )
-                await ChatModel.shared.loadGroupMembers(groupInfo) {
+                
+                await MainActor.run {
                     self.memberReactions = memberReactions
                     inProgress = false
                 }
