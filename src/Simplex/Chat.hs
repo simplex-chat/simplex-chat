@@ -4823,6 +4823,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               let p = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct') False
               allowAgentConnectionAsync user conn'' confId $ XInfo p
               void $ withStore' $ \db -> resetMemberContactFields db ct'
+            -- TODO [business]
+            -- on XGrpLinkInv: delete contact, create group.
+            -- XGrpLinkInv here means we were connecting via contact "card",
+            -- check it indeed was contact "card" somehow?
+            -- allowAgentConnectionAsync
             _ -> messageError "CONF for existing contact must have x.grp.mem.info or x.info"
         INFO pqSupport connInfo -> do
           processINFOpqSupport conn pqSupport
