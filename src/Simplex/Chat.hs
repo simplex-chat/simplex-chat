@@ -4005,15 +4005,43 @@ acceptGroupJoinRequestAsync
       liftIO $ createAcceptedMemberConnection db user connIds chatV ucr groupMemberId subMode
       getGroupMemberById db vr user groupMemberId
 
--- TODO [business]
-acceptBusinessJoinRequestAsync :: User -> UserContactRequest -> CM ()
-acceptBusinessJoinRequestAsync user ucr = do
-  -- create group and member with `business` fields
-  -- msg = GroupLinkInvitation,
-  --   groupProfile = syntethic
-  --   businessMember = yourself (profile of business) with business type = BTBusiness
-  -- etc. - same as above
-  pure ()
+acceptBusinessJoinRequestAsync :: User -> UserContactRequest -> VersionRangeChat -> CM (GroupInfo, GroupMember)
+acceptBusinessJoinRequestAsync
+  user
+  ucr@UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange}
+  chatVRange = do
+    gVar <- asks random
+    (gInfo, clientMember) <- withStore $ \db -> createBusinessRequestGroup db gVar user ucr
+    let Profile {displayName} = profileToSendOnAccept user Nothing True
+        GroupInfo {groupProfile, membership} = gInfo
+        GroupMember {memberRole = userRole, memberId = userMemberId} = membership
+        GroupMember {groupMemberId, memberId} = clientMember
+        (groupProfile', businessMember) =
+          if maxVersion chatVRange >= businessChatsVersion
+            then (groupProfile, Just $ BusinessMemberInfo (memberInfo membership) BTBusiness)
+            else (nonSyntheticGroupProfile, Nothing)
+        msg =
+          XGrpLinkInv $
+            GroupLinkInvitation
+              { fromMember = MemberIdRole userMemberId userRole, -- this and business memberInfo are redundant
+                fromMemberName = displayName,
+                invitedMember = MemberIdRole memberId GRMember,
+                groupProfile = groupProfile',
+                businessMember,
+                groupSize = Just 1
+              }
+    subMode <- chatReadVar subscriptionMode
+    vr <- chatVersionRange
+    let chatV = vr `peerConnChatVersion` cReqChatVRange
+    connIds <- agentAcceptContactAsync user True invId msg subMode PQSupportOff chatV
+    clientMember' <- withStore $ \db -> do
+      liftIO $ createAcceptedMemberConnection db user connIds chatV ucr groupMemberId subMode
+      getGroupMemberById db vr user groupMemberId
+    pure (gInfo, clientMember')
+    where
+      -- TODO [business] GroupProfile from user profile
+      nonSyntheticGroupProfile :: GroupProfile
+      nonSyntheticGroupProfile = undefined
 
 profileToSendOnAccept :: User -> Maybe IncognitoProfile -> Bool -> Profile
 profileToSendOnAccept user ip = userProfileToSend user (getIncognitoProfile <$> ip) Nothing
@@ -5550,40 +5578,41 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             CORContact contact -> toView $ CRContactRequestAlreadyAccepted user contact
             CORRequest cReq -> do
               ucl <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
-              let (UserContactLink {autoAccept}, groupId_, gLinkMemRole) = ucl
+              let (UserContactLink {connReqContact, autoAccept}, groupId_, gLinkMemRole) = ucl
+                  -- TODO [business] better comparison
+                  isSimplexTeam = connReqContact == adminContactReq
+                  v = maxVersion chatVRange
               case autoAccept of
-                Just AutoAccept {acceptIncognito, businessAddress} -> case groupId_ of
-                  Nothing -> do
-                    -- TODO [business]
-                    -- if businessAddress:
-                    -- - "SimpleX Chat team" address && version < 10:
-                    --     create as contact
-                    -- - other address && version < 3:
-                    --     create as contact
-                    -- - other address && version >= 3 && < 10:
-                    --     create as group, XGrpLinkInv should have user profile as group profile and businessMember = Nothing
-                    -- - otherwise
-                    --     create as group, XGrpLinkInv should have synthetic group profile and user profile as businessMember
-                    --
-                    -- acceptGroupJoinRequestAsync / acceptBusinessJoinRequestAsync?
-                    -- use name from UserContactRequest (see createAcceptedMember)
-
-                    -- [incognito] generate profile to send, create connection with incognito profile
-                    incognitoProfile <- if acceptIncognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
-                    ct <- acceptContactRequestAsync user cReq incognitoProfile True reqPQSup
-                    toView $ CRAcceptingContactRequest user ct
-                  Just groupId -> do
-                    gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
-                    let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
-                    if maxVersion chatVRange >= groupFastLinkJoinVersion
-                      then do
-                        mem <- acceptGroupJoinRequestAsync user gInfo cReq gLinkMemRole profileMode
-                        createInternalChatItem user (CDGroupRcv gInfo mem) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
-                        toView $ CRAcceptingGroupJoinRequestMember user gInfo mem
-                      else do
-                        -- TODO v5.7 remove old API (or v6.0?)
-                        ct <- acceptContactRequestAsync user cReq profileMode False PQSupportOff
-                        toView $ CRAcceptingGroupJoinRequest user gInfo ct
+                Just AutoAccept {acceptIncognito, businessAddress}
+                  | businessAddress ->
+                      if v < groupFastLinkJoinVersion || (isSimplexTeam && v < businessChatsVersion)
+                        then do
+                          ct <- acceptContactRequestAsync user cReq Nothing True reqPQSup
+                          toView $ CRAcceptingContactRequest user ct
+                        else do
+                          -- why do we need message chatVRange and separately cReqChatVRange?
+                          -- same in acceptGroupJoinRequestAsync?
+                          (gInfo, member) <- acceptBusinessJoinRequestAsync user cReq chatVRange
+                          -- TODO [business] CRAcceptingBusinessRequest
+                          pure ()
+                  | otherwise -> case groupId_ of
+                      Nothing -> do
+                        -- [incognito] generate profile to send, create connection with incognito profile
+                        incognitoProfile <- if acceptIncognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
+                        ct <- acceptContactRequestAsync user cReq incognitoProfile True reqPQSup
+                        toView $ CRAcceptingContactRequest user ct
+                      Just groupId -> do
+                        gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
+                        let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
+                        if v >= groupFastLinkJoinVersion
+                          then do
+                            mem <- acceptGroupJoinRequestAsync user gInfo cReq gLinkMemRole profileMode
+                            createInternalChatItem user (CDGroupRcv gInfo mem) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
+                            toView $ CRAcceptingGroupJoinRequestMember user gInfo mem
+                          else do
+                            -- TODO v5.7 remove old API (or v6.0?)
+                            ct <- acceptContactRequestAsync user cReq profileMode False PQSupportOff
+                            toView $ CRAcceptingGroupJoinRequest user gInfo ct
                 _ -> toView $ CRReceivedContactRequest user cReq
 
     memberCanSend :: GroupMember -> CM () -> CM ()

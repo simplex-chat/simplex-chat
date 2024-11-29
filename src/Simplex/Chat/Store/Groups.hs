@@ -62,6 +62,7 @@ module Simplex.Chat.Store.Groups
     createNewContactMemberAsync,
     createAcceptedMember,
     createAcceptedMemberConnection,
+    createBusinessRequestGroup,
     getContactViaMember,
     setNewContactMemberConnRequest,
     getMemberInvitation,
@@ -918,6 +919,17 @@ createAcceptedMemberConnection
     createdAt <- liftIO getCurrentTime
     Connection {connId} <- createConnection_ db userId ConnMember (Just groupMemberId) agentConnId ConnNew chatV cReqChatVRange Nothing (Just userContactLinkId) Nothing 0 createdAt subMode PQSupportOff
     setCommandConnId db user cmdId connId
+
+createBusinessRequestGroup :: DB.Connection -> TVar ChaChaDRG -> User -> UserContactRequest -> ExceptT StoreError IO (GroupInfo, GroupMember)
+createBusinessRequestGroup
+  db
+  gVar
+  user@User {userId}
+  UserContactRequest {cReqChatVRange, localDisplayName, profileId} = do
+    -- TODO [business]
+    -- create group and member with `business` fields
+    -- synthetic profile for group
+    undefined
 
 getContactViaMember :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> ExceptT StoreError IO Contact
 getContactViaMember db vr user@User {userId} GroupMember {groupMemberId} = do
