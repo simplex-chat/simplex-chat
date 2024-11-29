@@ -154,7 +154,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
       ttyUser u $ unmuted u chat deletedItem $ viewItemDelete chat deletedItem toItem byUser timed ts tz testView
     deletions' -> ttyUser u [sShow (length deletions') <> " messages deleted"]
   CRChatItemReaction u added (ACIReaction _ _ chat reaction) -> ttyUser u $ unmutedReaction u chat reaction $ viewItemReaction showReactions chat reaction added ts tz
-  CRReactionMembers u memberReactions -> []
+  CRReactionMembers u memberReactions -> ttyUser u $ viewReactionMembers memberReactions
   CRChatItemDeletedNotFound u Contact {localDisplayName = c} _ -> ttyUser u [ttyFrom $ c <> "> [deleted - original message not found]"]
   CRBroadcastSent u mc s f t -> ttyUser u $ viewSentBroadcast mc s f ts tz t
   CRMsgIntegrityError u mErr -> ttyUser u $ viewMsgIntegrityError mErr
@@ -848,6 +848,9 @@ viewItemReactions ChatItem {reactions} = ["      " <> viewReactions reactions | 
     viewReaction CIReactionCount {reaction = MREmoji (MREmojiChar emoji), userReacted, totalReacted} =
       plain [emoji, ' '] <> (if userReacted then styled Italic else plain) (show totalReacted)
 
+viewReactionMembers :: [MemberReaction] -> [StyledString]
+viewReactionMembers memberReactions = [sShow (length memberReactions) <> " member(s) reacted"]
+
 directQuote :: forall d'. MsgDirectionI d' => CIDirection 'CTDirect d' -> CIQuote 'CTDirect -> [StyledString]
 directQuote _ CIQuote {content = qmc, chatDir = quoteDir} =
   quoteText qmc $ if toMsgDirection (msgDirection @d') == quoteMsgDirection quoteDir then ">>" else ">"
@@ -1227,7 +1230,7 @@ viewUserServers UserOperatorServers {operator, smpServers, xftpServers} =
     viewServers p srvs
       | maybe True (\ServerOperator {enabled} -> enabled) operator =
           ["  " <> protocolName p <> " servers" <> maybe "" ((" " <>) . viewRoles) operator]
-            <> map (plain . ("    " <> ) . viewServer) srvs
+            <> map (plain . ("    " <>) . viewServer) srvs
       | otherwise = []
       where
         viewServer UserServer {server, preset, tested, enabled} = safeDecodeUtf8 (strEncode server) <> serverInfo
@@ -1280,7 +1283,7 @@ viewOperator op@ServerOperator {tradeName, legalName, serverDomains, conditionsA
   viewOpIdTag op
     <> tradeName
     <> maybe "" parens legalName
-    <> (", domains: "  <> T.intercalate ", " serverDomains)
+    <> (", domains: " <> T.intercalate ", " serverDomains)
     <> (", servers: " <> viewOpEnabled op)
     <> (", conditions: " <> viewOpConditions conditionsAcceptance)
 

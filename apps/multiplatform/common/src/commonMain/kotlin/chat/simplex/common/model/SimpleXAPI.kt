@@ -951,6 +951,14 @@ object ChatController {
     return null
   }
 
+  suspend fun apiGetReactionMembers(rh: Long?, groupId: Long, itemId: Long, reaction: MsgReaction): List<MemberReaction>? {
+    val userId = currentUserId("apiGetReactionMembers")
+    val r = sendCmd(rh, CC.ApiGetReactionMembers(userId, groupId, itemId, reaction))
+    if (r is CR.ReactionMembers) return r.memberReactions
+    Log.e(TAG, "apiGetReactionMembers bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
   suspend fun apiDeleteChatItems(rh: Long?, type: ChatType, id: Long, itemIds: List<Long>, mode: CIDeleteMode): List<ChatItemDeletion>? {
     val r = sendCmd(rh, CC.ApiDeleteChatItem(type, id, itemIds, mode))
     if (r is CR.ChatItemsDeleted) return r.chatItemDeletions
@@ -3092,6 +3100,7 @@ sealed class CC {
   class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemIds: List<Long>, val mode: CIDeleteMode): CC()
   class ApiDeleteMemberChatItem(val groupId: Long, val itemIds: List<Long>): CC()
   class ApiChatItemReaction(val type: ChatType, val id: Long, val itemId: Long, val add: Boolean, val reaction: MsgReaction): CC()
+  class ApiGetReactionMembers(val userId: Long, val groupId: Long, val itemId: Long, val reaction: MsgReaction): CC()
   class ApiPlanForwardChatItems(val fromChatType: ChatType, val fromChatId: Long, val chatItemIds: List<Long>): CC()
   class ApiForwardChatItems(val toChatType: ChatType, val toChatId: Long, val fromChatType: ChatType, val fromChatId: Long, val itemIds: List<Long>, val ttl: Int?): CC()
   class ApiNewGroup(val userId: Long, val incognito: Boolean, val groupProfile: GroupProfile): CC()
@@ -3253,6 +3262,7 @@ sealed class CC {
     is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} ${itemIds.joinToString(",")} ${mode.deleteMode}"
     is ApiDeleteMemberChatItem -> "/_delete member item #$groupId ${itemIds.joinToString(",")}"
     is ApiChatItemReaction -> "/_reaction ${chatRef(type, id)} $itemId ${onOff(add)} ${json.encodeToString(reaction)}"
+    is ApiGetReactionMembers -> "/_reaction members $userId #$groupId $itemId ${json.encodeToString(reaction)}"
     is ApiForwardChatItems -> {
       val ttlStr = if (ttl != null) "$ttl" else "default"
       "/_forward ${chatRef(toChatType, toChatId)} ${chatRef(fromChatType, fromChatId)} ${itemIds.joinToString(",")} ttl=${ttlStr}"
@@ -3409,6 +3419,7 @@ sealed class CC {
     is ApiDeleteChatItem -> "apiDeleteChatItem"
     is ApiDeleteMemberChatItem -> "apiDeleteMemberChatItem"
     is ApiChatItemReaction -> "apiChatItemReaction"
+    is ApiGetReactionMembers -> "apiGetReactionMembers"
     is ApiForwardChatItems -> "apiForwardChatItems"
     is ApiPlanForwardChatItems -> "apiPlanForwardChatItems"
     is ApiNewGroup -> "apiNewGroup"
@@ -5429,6 +5440,7 @@ sealed class CR {
   @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val user: UserRef, val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemNotChanged") class ChatItemNotChanged(val user: UserRef, val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemReaction") class ChatItemReaction(val user: UserRef, val added: Boolean, val reaction: ACIReaction): CR()
+  @Serializable @SerialName("reactionMembers") class ReactionMembers(val user: UserRef, val memberReactions: List<MemberReaction>): CR()
   @Serializable @SerialName("chatItemsDeleted") class ChatItemsDeleted(val user: UserRef, val chatItemDeletions: List<ChatItemDeletion>, val byUser: Boolean): CR()
   @Serializable @SerialName("forwardPlan") class ForwardPlan(val user: UserRef, val itemsCount: Int, val chatItemIds: List<Long>, val forwardConfirmation: ForwardConfirmation? = null): CR()
   // group events
@@ -5610,6 +5622,7 @@ sealed class CR {
     is ChatItemUpdated -> "chatItemUpdated"
     is ChatItemNotChanged -> "chatItemNotChanged"
     is ChatItemReaction -> "chatItemReaction"
+    is ReactionMembers -> "reactionMembers"
     is ChatItemsDeleted -> "chatItemsDeleted"
     is ForwardPlan -> "forwardPlan"
     is GroupCreated -> "groupCreated"
@@ -5783,6 +5796,7 @@ sealed class CR {
     is ChatItemUpdated -> withUser(user, json.encodeToString(chatItem))
     is ChatItemNotChanged -> withUser(user, json.encodeToString(chatItem))
     is ChatItemReaction -> withUser(user, "added: $added\n${json.encodeToString(reaction)}")
+    is ReactionMembers -> withUser(user, "memberReactions: ${json.encodeToString(memberReactions)}")
     is ChatItemsDeleted -> withUser(user, "${chatItemDeletions.map { (deletedChatItem, toChatItem) -> "deletedChatItem: ${json.encodeToString(deletedChatItem)}\ntoChatItem: ${json.encodeToString(toChatItem)}" }} \nbyUser: $byUser")
     is ForwardPlan -> withUser(user, "itemsCount: $itemsCount\nchatItemIds: ${json.encodeToString(chatItemIds)}\nforwardConfirmation: ${json.encodeToString(forwardConfirmation)}")
     is GroupCreated -> withUser(user, json.encodeToString(groupInfo))
