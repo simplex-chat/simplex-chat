@@ -1050,13 +1050,17 @@
   <!-- SetNotificationsMode.kt -->
   <string name="use_chat">Use chat</string>
   <string name="onboarding_notifications_mode_title">Private notifications</string>
-  <string name="onboarding_notifications_mode_subtitle">It can be changed later via settings.</string>
+  <string name="onboarding_notifications_mode_subtitle">How it affects battery</string>
   <string name="onboarding_notifications_mode_off">When app is running</string>
   <string name="onboarding_notifications_mode_periodic">Periodic</string>
   <string name="onboarding_notifications_mode_service">Instant</string>
   <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Best for battery</b>. You will receive notifications only when the app is running (NO background service).]]></string>
+  <string name="onboarding_notifications_mode_off_desc_short">No background service</string>
   <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Good for battery</b>. App checks messages every 10 minutes. You may miss calls or urgent messages.]]></string>
+  <string name="onboarding_notifications_mode_periodic_desc_short">Check messages every 10 minutes</string>
   <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Uses more battery</b>! App always runs in background – notifications are shown instantly.]]></string>
+  <string name="onboarding_notifications_mode_service_desc_short">App always runs in background</string>
+  <string name="onboarding_notifications_mode_battery">Notifications Battery</string>
 
   <!-- SetupDatabasePassphrase.kt -->
   <string name="setup_database_passphrase">Setup database passphrase</string>

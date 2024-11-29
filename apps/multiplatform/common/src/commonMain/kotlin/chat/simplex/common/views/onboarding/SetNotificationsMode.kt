@@ -32,23 +32,28 @@ fun SetNotificationsMode(m: ChatModel) {
     ModalView({}, showClose = false) {
       ColumnWithScrollBar(Modifier.themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer)) {
         Box(Modifier.align(Alignment.CenterHorizontally)) {
-          AppBarTitle(stringResource(MR.strings.onboarding_notifications_mode_title))
+          AppBarTitle(stringResource(MR.strings.onboarding_notifications_mode_title), bottomPadding = DEFAULT_PADDING)
         }
         val currentMode = rememberSaveable { mutableStateOf(NotificationsMode.default) }
-        Column(Modifier.padding(horizontal = DEFAULT_PADDING * 1f)) {
-          Text(stringResource(MR.strings.onboarding_notifications_mode_subtitle), Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
-          Spacer(Modifier.height(DEFAULT_PADDING * 2f))
-          SelectableCard(currentMode, NotificationsMode.OFF, stringResource(MR.strings.onboarding_notifications_mode_off), annotatedStringResource(MR.strings.onboarding_notifications_mode_off_desc)) {
+        Column(Modifier.padding(horizontal = DEFAULT_PADDING).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+          OnboardingInformationButton(
+            stringResource(MR.strings.onboarding_notifications_mode_subtitle),
+            onClick = { ModalManager.fullscreen.showModalCloseable { NotificationBatteryUsageInfo() } }
+          )
+        }
+        Spacer(Modifier.weight(1f))
+        Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+          SelectableCard(currentMode, NotificationsMode.OFF, stringResource(MR.strings.onboarding_notifications_mode_off), annotatedStringResource(MR.strings.onboarding_notifications_mode_off_desc_short)) {
             currentMode.value = NotificationsMode.OFF
           }
-          SelectableCard(currentMode, NotificationsMode.PERIODIC, stringResource(MR.strings.onboarding_notifications_mode_periodic), annotatedStringResource(MR.strings.onboarding_notifications_mode_periodic_desc)) {
+          SelectableCard(currentMode, NotificationsMode.PERIODIC, stringResource(MR.strings.onboarding_notifications_mode_periodic), annotatedStringResource(MR.strings.onboarding_notifications_mode_periodic_desc_short)) {
             currentMode.value = NotificationsMode.PERIODIC
           }
-          SelectableCard(currentMode, NotificationsMode.SERVICE, stringResource(MR.strings.onboarding_notifications_mode_service), annotatedStringResource(MR.strings.onboarding_notifications_mode_service_desc)) {
+          SelectableCard(currentMode, NotificationsMode.SERVICE, stringResource(MR.strings.onboarding_notifications_mode_service), annotatedStringResource(MR.strings.onboarding_notifications_mode_service_desc_short)) {
             currentMode.value = NotificationsMode.SERVICE
           }
         }
-        Spacer(Modifier.fillMaxHeight().weight(1f))
+        Spacer(Modifier.weight(1f))
         Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
           OnboardingActionButton(
             modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier,
@@ -97,6 +102,21 @@ fun <T> SelectableCard(currentValue: State<T>, newValue: T, title: String, descr
     }
   }
   Spacer(Modifier.height(14.dp))
+}
+
+@Composable
+private fun NotificationBatteryUsageInfo() {
+  ColumnWithScrollBar(Modifier.padding(DEFAULT_PADDING)) {
+    AppBarTitle(stringResource(MR.strings.onboarding_notifications_mode_battery), withPadding = false)
+    Text(stringResource(MR.strings.onboarding_notifications_mode_off), style = MaterialTheme.typography.h3, color = MaterialTheme.colors.secondary)
+    ReadableText(MR.strings.onboarding_notifications_mode_off_desc)
+    Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+    Text(stringResource(MR.strings.onboarding_notifications_mode_periodic), style = MaterialTheme.typography.h3, color = MaterialTheme.colors.secondary)
+    ReadableText(MR.strings.onboarding_notifications_mode_periodic_desc)
+    Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+    Text(stringResource(MR.strings.onboarding_notifications_mode_service), style = MaterialTheme.typography.h3, color = MaterialTheme.colors.secondary)
+    ReadableText(MR.strings.onboarding_notifications_mode_service_desc)
+  }
 }
 
 fun prepareChatBeforeFinishingOnboarding() {
