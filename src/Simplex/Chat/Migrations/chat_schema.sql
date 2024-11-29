@@ -78,7 +78,6 @@ CREATE TABLE contacts(
   custom_data BLOB,
   ui_themes TEXT,
   chat_deleted INTEGER NOT NULL DEFAULT 0,
-  business INTEGER DEFAULT 0,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
