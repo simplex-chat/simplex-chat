@@ -929,6 +929,7 @@ createBusinessRequestGroup
     -- TODO [business]
     -- create group and member with `business` fields
     -- synthetic profile for group
+    -- possibly reuse createAcceptedMember with additional field
     undefined
 
 getContactViaMember :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> ExceptT StoreError IO Contact
