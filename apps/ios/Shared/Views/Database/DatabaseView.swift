@@ -277,17 +277,11 @@ struct DatabaseView: View {
                 return Alert(title: Text("Error: no database file"))
             }
         case .archiveImported:
-            let (title, message) = archiveImported()
-            return Alert(
-                title: Text(title),
-                message: Text(message)
-            )
+            let (title, message) = archiveImportedAlertText()
+            return Alert(title: Text(title), message: Text(message))
         case let .archiveImportedWithErrors(errs):
-            let (title, message) = archiveImportedWithErrors(errs: errs)
-            return Alert(
-                title: Text(title),
-                message: Text(message)
-            )
+            let (title, message) = archiveImportedWithErrorsAlertText(errs: errs)
+            return Alert(title: Text(title), message: Text(message))
         case let .archiveExportedWithErrors(archivePath, errs):
             return Alert(
                 title: Text("Chat database exported"),
@@ -315,10 +309,8 @@ struct DatabaseView: View {
                 secondaryButton: .cancel()
             )
         case .chatDeleted:
-            return Alert(
-                title: Text("Chat database deleted"),
-                message: Text("Restart the app to create a new chat profile")
-            )
+            let (title, message) = chatDeletedAlertText()
+            return Alert(title: Text(title), message: Text(message))
         case .deleteLegacyDatabase:
             return Alert(
                 title: Text("Delete old database?"),
@@ -523,8 +515,8 @@ struct DatabaseView: View {
         }
         do {
             try await deleteChatAsync()
-            await DatabaseView.operationEnded(.chatDeleted, $progressIndicator, $alert)
             appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
+            await DatabaseView.operationEnded(.chatDeleted, $progressIndicator, $alert)
             return true
         } catch let error {
             await DatabaseView.operationEnded(.error(title: "Error deleting database", error: responseError(error)), $progressIndicator, $alert)
@@ -546,15 +538,22 @@ struct DatabaseView: View {
             m.chatDbChanged = true
             m.chatInitialized = false
             progressIndicator.wrappedValue = false
+        }
+        await withCheckedContinuation { cont in
+            let okAlertActionWaiting = UIAlertAction(title: NSLocalizedString("Ok", comment: "alert button"), style: .default, handler: { _ in cont.resume() })
             // show these alerts globally so they are visible when all sheets will be hidden
             if case .archiveImported = dbAlert {
-                let (title, message) = archiveImported()
-                showAlert(title, message: message)
+                let (title, message) = archiveImportedAlertText()
+                showAlert(title, message: message, actions: { [okAlertActionWaiting] })
             } else if case .archiveImportedWithErrors(let errs) = dbAlert {
-                let (title, message) = archiveImportedWithErrors(errs: errs)
-                showAlert(title, message: message)
+                let (title, message) = archiveImportedWithErrorsAlertText(errs: errs)
+                showAlert(title, message: message, actions: { [okAlertActionWaiting] })
+            } else if case .chatDeleted = dbAlert {
+                let (title, message) = chatDeletedAlertText()
+                showAlert(title, message: message, actions: { [okAlertActionWaiting] })
             } else {
                 alert.wrappedValue = dbAlert
+                cont.resume()
             }
         }
     }
@@ -597,16 +596,23 @@ struct DatabaseView: View {
     }
 }
 
-private func archiveImported() -> (String, String) {
+private func archiveImportedAlertText() -> (String, String) {
     (
         NSLocalizedString("Chat database imported", comment: ""),
         NSLocalizedString("Restart the app to use imported chat database", comment: "")
     )
 }
-private func archiveImportedWithErrors(errs: [ArchiveError]) -> (String, String) {
+private func archiveImportedWithErrorsAlertText(errs: [ArchiveError]) -> (String, String) {
     (
         NSLocalizedString("Chat database imported", comment: ""),
         NSLocalizedString("Restart the app to use imported chat database", comment: "") + "\n" + NSLocalizedString("Some non-fatal errors occurred during import:", comment: "") + archiveErrorsText(errs)
+    )
+}
+
+private func chatDeletedAlertText() -> (String, String) {
+    (
+        NSLocalizedString("Chat database deleted", comment: ""),
+        NSLocalizedString("Restart the app to create a new chat profile", comment: "")
     )
 }
 
