@@ -32,16 +32,15 @@ import dev.icerock.moko.resources.StringResource
 fun SimpleXInfo(chatModel: ChatModel, onboarding: Boolean = true) {
   if (onboarding) {
     CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
-      ModalView({}, showClose = false, endButtons = {
-        IconButton({ ModalManager.fullscreen.showModal { HowItWorks(chatModel.currentUser.value, null) } }) {
-          Icon(painterResource(MR.images.ic_info), null, Modifier.size(28.dp), tint = MaterialTheme.colors.primary)
-        }
-      }) {
+      //ModalView({}, showClose = false, showAppBar = false) {
+        //IconButton({ ModalManager.fullscreen.showModal { HowItWorks(chatModel.currentUser.value, null) } }) {
+          //Icon(painterResource(MR.images.ic_info), null, Modifier.size(28.dp), tint = MaterialTheme.colors.primary)
+        //}
         SimpleXInfoLayout(
           user = chatModel.currentUser.value,
           onboardingStage = chatModel.controller.appPrefs.onboardingStage
         )
-      }
+      //}
     }
   } else {
     SimpleXInfoLayout(
@@ -56,22 +55,14 @@ fun SimpleXInfoLayout(
   user: User?,
   onboardingStage: SharedPreference<OnboardingStage>?
 ) {
-  ColumnWithScrollBar(
-    Modifier
-      .padding(horizontal = DEFAULT_PADDING),
-    horizontalAlignment = Alignment.CenterHorizontally
-  ) {
+  ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_PADDING), horizontalAlignment = Alignment.CenterHorizontally) {
     Box(Modifier.widthIn(max = if (appPlatform.isAndroid) 250.dp else 500.dp).padding(top = DEFAULT_PADDING + 8.dp), contentAlignment = Alignment.Center) {
       SimpleXLogo()
     }
 
-    Spacer(Modifier.weight(1f))
-
-    Text(
+    OnboardingInformationButton(
       stringResource(MR.strings.next_generation_of_private_messaging),
-      style = MaterialTheme.typography.h3,
-      color = MaterialTheme.colors.secondary,
-      textAlign = TextAlign.Center
+      onClick = { ModalManager.fullscreen.showModal { HowItWorks(user, null) } },
     )
 
     Spacer(Modifier.weight(1f))
@@ -82,10 +73,10 @@ fun SimpleXInfoLayout(
       InfoRow(painterResource(if (isInDarkTheme()) MR.images.decentralized_light else MR.images.decentralized), MR.strings.decentralized, MR.strings.opensource_protocol_and_code_anybody_can_run_servers)
     }
 
-    Spacer(Modifier.fillMaxHeight().weight(1f))
+    Column(Modifier.fillMaxHeight().weight(1f)) { }
 
     if (onboardingStage != null) {
-      Column(Modifier.padding(horizontal = DEFAULT_PADDING).widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+      Column(Modifier.padding(horizontal = DEFAULT_PADDING).widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally,) {
         OnboardingActionButton(user, onboardingStage)
         TextButtonBelowOnboardingButton(stringResource(MR.strings.migrate_from_another_device)) {
           chatModel.migrationState.value = MigrationToState.PasteOrScanLink
@@ -165,8 +156,8 @@ fun OnboardingActionButton(
 fun TextButtonBelowOnboardingButton(text: String, onClick: (() -> Unit)?) {
   val state = getKeyboardState()
   val enabled = onClick != null
-  val topPadding by animateDpAsState(if (appPlatform.isAndroid && state.value == KeyboardState.Opened) 0.dp else DEFAULT_PADDING)
-  val bottomPadding by animateDpAsState(if (appPlatform.isAndroid && state.value == KeyboardState.Opened) 0.dp else DEFAULT_PADDING * 2)
+  val topPadding by animateDpAsState(if (appPlatform.isAndroid && state.value == KeyboardState.Opened) 0.dp else DEFAULT_PADDING_HALF)
+  val bottomPadding by animateDpAsState(if (appPlatform.isAndroid && state.value == KeyboardState.Opened) 0.dp else DEFAULT_PADDING_HALF)
   if ((appPlatform.isAndroid && state.value == KeyboardState.Closed) || topPadding > 0.dp) {
     TextButton({ onClick?.invoke() }, Modifier.padding(top = topPadding, bottom = bottomPadding).clip(CircleShape), enabled = enabled) {
       Text(
@@ -180,6 +171,27 @@ fun TextButtonBelowOnboardingButton(text: String, onClick: (() -> Unit)?) {
   } else {
     // Hide from view when keyboard is open and move the view down
     Spacer(Modifier.height(DEFAULT_PADDING * 2))
+  }
+}
+
+@Composable
+fun OnboardingInformationButton(
+  text: String,
+  onClick: () -> Unit,
+) {
+  Box(
+    modifier = Modifier
+      .clip(CircleShape)
+      .clickable { onClick() }
+  ) {
+    Row(Modifier.padding(8.dp), horizontalArrangement = Arrangement.spacedBy(4.dp) ) {
+      Icon(
+        painterResource(MR.images.ic_info),
+        null,
+        tint = MaterialTheme.colors.primary
+      )
+      Text(text, style = MaterialTheme.typography.button, color = MaterialTheme.colors.primary)
+    }
   }
 }
 

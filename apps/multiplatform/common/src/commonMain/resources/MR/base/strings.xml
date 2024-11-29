@@ -1026,7 +1026,7 @@
   <string name="error_initializing_web_view_wrong_arch">Error initializing WebView. Make sure you have WebView installed and it\'s supported architecture is arm64.\nError: %s</string>
 
   <!-- SimpleXInfo -->
-  <string name="next_generation_of_private_messaging">The next generation\nof private messaging</string>
+  <string name="next_generation_of_private_messaging">The future of messaging</string>
   <string name="privacy_redefined">Privacy redefined</string>
   <string name="first_platform_without_user_ids">No user identifiers.</string>
   <string name="immune_to_spam_and_abuse">Immune to spam</string>
@@ -1064,11 +1064,12 @@
   <string name="use_random_passphrase">Use random passphrase</string>
 
   <!-- ChooseServerOperators.kt -->
-  <string name="onboarding_choose_server_operators">Choose operators</string>
+  <string name="onboarding_choose_server_operators">Server operators</string>
   <string name="onboarding_network_operators">Network operators</string>
   <string name="onboarding_network_operators_app_will_use_different_operators">When more than one network operator is enabled, the app will use the servers of different operators for each conversation.</string>
   <string name="onboarding_network_operators_app_will_use_for_routing">For example, if you receive messages via SimpleX Chat server, the app will use one of Flux servers for private routing.</string>
   <string name="onboarding_select_network_operators_to_use">Select network operators to use.</string>
+  <string name="how_it_helps_privacy">How it helps privacy</string>
   <string name="onboarding_network_operators_configure_via_settings">You can configure servers via settings.</string>
   <string name="onboarding_network_operators_conditions_will_be_accepted">Conditions will be accepted for enabled operators after 30 days.</string>
   <string name="onboarding_network_operators_conditions_you_can_configure">You can configure operators in Network &amp; servers settings.</string>

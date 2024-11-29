@@ -117,14 +117,14 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
       ColumnWithScrollBar {
         val displayName = rememberSaveable { mutableStateOf("") }
         val focusRequester = remember { FocusRequester() }
-        Column(if (appPlatform.isAndroid) Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING) else Modifier.widthIn(max = 600.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING).align(Alignment.CenterHorizontally)) {
+        Column(if (appPlatform.isAndroid) Modifier.fillMaxSize().padding(start = DEFAULT_PADDING * 2, end = DEFAULT_PADDING * 2, bottom = DEFAULT_PADDING) else Modifier.widthIn(max = 600.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING).align(Alignment.CenterHorizontally)) {
           Box(Modifier.align(Alignment.CenterHorizontally)) {
-            AppBarTitle(stringResource(MR.strings.create_profile), bottomPadding = DEFAULT_PADDING, withPadding = false)
+            AppBarTitle(stringResource(MR.strings.create_your_profile), bottomPadding = DEFAULT_PADDING, withPadding = false)
           }
-          ProfileNameField(displayName, stringResource(MR.strings.display_name), { it.trim() == mkValidName(it) }, focusRequester)
+          ReadableText(MR.strings.your_profile_is_stored_on_your_device, TextAlign.Center, padding = PaddingValues(), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
           Spacer(Modifier.height(DEFAULT_PADDING))
-          ReadableText(MR.strings.your_profile_is_stored_on_your_device, TextAlign.Start, padding = PaddingValues(), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
-          ReadableText(MR.strings.profile_is_only_shared_with_your_contacts, TextAlign.Start, style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
+          ReadableText(MR.strings.profile_is_only_shared_with_your_contacts, TextAlign.Center, style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
+          ProfileNameField(displayName, stringResource(MR.strings.display_name), { it.trim() == mkValidName(it) }, focusRequester)
         }
         Spacer(Modifier.fillMaxHeight().weight(1f))
         Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {

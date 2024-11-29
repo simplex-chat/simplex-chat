@@ -31,13 +31,8 @@ fun ModalData.ChooseServerOperators(
   LaunchedEffect(Unit) {
     prepareChatBeforeFinishingOnboarding()
   }
-
   CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
-    ModalView({}, showClose = false, endButtons = {
-      IconButton({ modalManager.showModal { ChooseServerOperatorsInfoView() } }) {
-        Icon(painterResource(MR.images.ic_info), null, Modifier.size(28.dp), tint = MaterialTheme.colors.primary)
-      }
-    }) {
+    ModalView({}, showClose = false) {
       val serverOperators = remember { derivedStateOf { chatModel.conditions.value.serverOperators } }
       val selectedOperatorIds = remember { stateGetOrPut("selectedOperatorIds") { serverOperators.value.filter { it.enabled }.map { it.operatorId }.toSet() } }
       val selectedOperators = remember { derivedStateOf { serverOperators.value.filter { selectedOperatorIds.value.contains(it.operatorId) } } }
@@ -48,15 +43,16 @@ fun ModalData.ChooseServerOperators(
         maxIntrinsicSize = true
       ) {
         Box(Modifier.align(Alignment.CenterHorizontally)) {
-          AppBarTitle(stringResource(MR.strings.onboarding_choose_server_operators))
+          AppBarTitle(stringResource(MR.strings.onboarding_choose_server_operators), bottomPadding = DEFAULT_PADDING)
         }
-        Column((
-            if (appPlatform.isDesktop) Modifier.width(600.dp).align(Alignment.CenterHorizontally) else Modifier)
-          .padding(horizontal = DEFAULT_PADDING)
-        ) {
-          Text(stringResource(MR.strings.onboarding_select_network_operators_to_use))
-          Spacer(Modifier.height(DEFAULT_PADDING))
+
+        Column(Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING), horizontalAlignment = Alignment.CenterHorizontally) {
+          OnboardingInformationButton(
+            stringResource(MR.strings.how_it_helps_privacy),
+            onClick = { modalManager.showModal { ChooseServerOperatorsInfoView() } }
+          )
         }
+
         Spacer(Modifier.weight(1f))
         Column((
             if (appPlatform.isDesktop) Modifier.width(600.dp).align(Alignment.CenterHorizontally) else Modifier)
@@ -93,7 +89,7 @@ fun ModalData.ChooseServerOperators(
                     currUserServers = remember { mutableStateOf(emptyList()) },
                     userServers = remember { mutableStateOf(emptyList()) },
                     close = close,
-                    rhId = null
+                    rhId = null,
                   )
                 }
               }
