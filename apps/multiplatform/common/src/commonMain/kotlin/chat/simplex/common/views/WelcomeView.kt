@@ -124,6 +124,7 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
           ReadableText(MR.strings.your_profile_is_stored_on_your_device, TextAlign.Center, padding = PaddingValues(), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
           Spacer(Modifier.height(DEFAULT_PADDING))
           ReadableText(MR.strings.profile_is_only_shared_with_your_contacts, TextAlign.Center, style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
+          Spacer(Modifier.height(DEFAULT_PADDING))
           ProfileNameField(displayName, stringResource(MR.strings.display_name), { it.trim() == mkValidName(it) }, focusRequester)
         }
         Spacer(Modifier.fillMaxHeight().weight(1f))
