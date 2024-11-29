@@ -614,9 +614,10 @@ suspend fun exportChatArchive(
 fun deleteOldChatArchive() {
   val chatArchiveName = chatModel.controller.appPrefs.chatArchiveName.get()
   if (chatArchiveName != null) {
-    val file = File("${filesDir.absolutePath}${File.separator}$chatArchiveName")
-    val fileDeleted = file.delete()
-    if (fileDeleted || !file.exists()) {
+    val file1 = File("${filesDir.absolutePath}${File.separator}$chatArchiveName")
+    val file2 = File("${databaseExportDir.absolutePath}${File.separator}$chatArchiveName")
+    val fileDeleted = file1.delete() || file2.delete()
+    if (fileDeleted || (!file1.exists() && !file2.exists())) {
       chatModel.controller.appPrefs.chatArchiveName.set(null)
       chatModel.controller.appPrefs.chatArchiveTime.set(null)
     } else {
