@@ -4024,7 +4024,9 @@ acceptGroupJoinRequestAsync
 acceptBusinessJoinRequestAsync :: User -> UserContactRequest -> CM ()
 acceptBusinessJoinRequestAsync user ucr = do
   -- create group and member with `business` fields
-  -- msg = GroupLinkInvitation, businessMember = ? (yourself / member who sent request? doesn't make sense / Nothing?)
+  -- msg = GroupLinkInvitation,
+  --   groupProfile = syntethic
+  --   businessMember = yourself (profile of business) with business type = BTBusiness
   -- etc. - same as above
   pure ()
 
