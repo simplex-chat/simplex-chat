@@ -837,17 +837,17 @@ fun ItemAction(
   } else color
   DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
     Row(verticalAlignment = Alignment.CenterVertically) {
+      composable()
       Text(
         text,
         modifier = Modifier
           .fillMaxWidth()
           .weight(1F)
-          .padding(end = 15.dp),
+          .padding(start = 15.dp),
         color = finalColor,
         maxLines = lineLimit,
         overflow = TextOverflow.Ellipsis
       )
-      composable()
     }
   }
 }
