@@ -23,7 +23,7 @@ down_m20241128_business_chats =
 DROP INDEX idx_groups_business_group_member_id;
 
 ALTER TABLE user_contact_links DROP COLUMN business;
-ALTER TABLE contacts DROP COLUMN business
+ALTER TABLE contacts DROP COLUMN business;
 ALTER TABLE groups DROP COLUMN business;
 ALTER TABLE groups DROP COLUMN business_group_member_id;
 ALTER TABLE group_members DROP COLUMN business_member;
