@@ -203,7 +203,7 @@ struct MigrateToDevice: View {
                 Section(header: Text("Or paste archive link").foregroundColor(theme.colors.secondary)) {
                     pasteLinkView()
                 }
-                Section(header: Text("Chat archive").foregroundColor(theme.colors.secondary)) {
+                Section(header: Text("Or import archive file").foregroundColor(theme.colors.secondary)) {
                     archiveImportFromFileView()
                 }
             }
@@ -233,10 +233,9 @@ struct MigrateToDevice: View {
         Button {
             showFileImporter = true
         } label: {
-            Text("Import database")
+            Label("Import database", systemImage: "square.and.arrow.down")
         }
         .disabled(importingArchiveFromFileProgressIndicator)
-        .frame(maxWidth: .infinity, alignment: .center)
         .fileImporter(
             isPresented: $showFileImporter,
             allowedContentTypes: [.zip],
