@@ -2783,8 +2783,8 @@ processChatCommand' vr = \case
               let randomXContactId = XContactId <$> drgRandomBytes 16
               xContactId <- maybe randomXContactId pure xContactId_
               connect' Nothing cReqHash xContactId False
+        -- group link
         Just gLinkId ->
-          -- group link
           withFastStore' (\db -> getConnReqContactXContactId db vr user cReqHash) >>= \case
             (Just _contact, _) -> procCmd $ do
               -- allow repeat contact request
