@@ -234,6 +234,11 @@ func exportChatArchive(_ storagePath: URL? = nil) async throws -> (URL, [Archive
     }
     try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
     let errs = try await apiExportArchive(config: config)
+    if storagePath == nil {
+        deleteOldChatArchive()
+        UserDefaults.standard.set(archiveName, forKey: DEFAULT_CHAT_ARCHIVE_NAME)
+        chatArchiveTimeDefault.set(archiveTime)
+    }
     return (archivePath, errs)
 }
 
