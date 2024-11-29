@@ -1117,14 +1117,12 @@ struct ChatView: View {
                             HStack(alignment: .top, spacing: 10) {
                                 MemberProfileImage(member, size: memberImageSize, backgroundColor: theme.colors.background)
                                     .onTapGesture {
-                                        if let member =  m.getGroupMember(member.groupMemberId) {
-                                            selectedMember = member
+                                        if let mem = m.getGroupMember(member.groupMemberId) {
+                                            selectedMember = mem
                                         } else {
-                                            Task {
-                                                await m.loadGroupMembers(groupInfo) {
-                                                    selectedMember = m.getGroupMember(member.groupMemberId)
-                                                }
-                                            }
+                                            let mem = GMember.init(member)
+                                            m.groupMembers.append(mem)
+                                            selectedMember = mem
                                         }
                                     }
                                 chatItemWithMenu(ci, range, maxWidth, itemSeparation)
@@ -1874,7 +1872,7 @@ struct ReactionContextMenu: View {
                 let mem = mr.groupMember
                 let userMember = mem.groupMemberId == groupInfo.membership.groupMemberId
                 Button {
-                    if let member =  m.getGroupMember(mem.groupMemberId) {
+                    if let member = m.getGroupMember(mem.groupMemberId) {
                         selectedMember = member
                     } else {
                         let member = GMember.init(mem)
