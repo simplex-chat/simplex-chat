@@ -275,7 +275,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XFileAcptInv :: SharedMsgId -> Maybe ConnReqInvitation -> String -> ChatMsgEvent 'Json
   XFileCancel :: SharedMsgId -> ChatMsgEvent 'Json
   XInfo :: Profile -> ChatMsgEvent 'Json
-  XContact :: {profile :: Profile, xContactId :: Maybe XContactId} -> ChatMsgEvent 'Json
+  XContact :: Profile -> Maybe XContactId -> ChatMsgEvent 'Json
   XDirectDel :: ChatMsgEvent 'Json
   XGrpInv :: GroupInvitation -> ChatMsgEvent 'Json
   XGrpAcpt :: MemberId -> ChatMsgEvent 'Json
