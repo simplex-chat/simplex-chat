@@ -2139,7 +2139,7 @@
     <string name="or_to_share_privately">或者私下分享</string>
     <string name="onboarding_choose_server_operators">选择运营者</string>
     <string name="onboarding_network_operators">网络运营者</string>
-    <string name="onboarding_network_operators_conditions_will_be_accepted">30 天后将接收已启用的运营者的条款。</string>
+    <string name="onboarding_network_operators_conditions_will_be_accepted">30 天后将接受已启用的运营者的条款。</string>
     <string name="onboarding_network_operators_continue">继续</string>
     <string name="onboarding_network_operators_review_later">稍后审阅</string>
     <string name="onboarding_select_network_operators_to_use">选择要使用的网络运营者。</string>
@@ -2211,5 +2211,5 @@
     <string name="connection_error_quota_desc">连接达到了未送达消息上限，你的联系人可能处于离线状态。</string>
     <string name="to_protect_against_your_link_replaced_compare_codes">为了防止链接被替换，你可以比较联系人安全代码。</string>
     <string name="onboarding_network_operators_conditions_you_can_configure">你可以在“网络和服务器”设置中配置运营者。</string>
-    <string name="operator_conditions_accepted_on">接收运营者条款的日期：%s</string>
+    <string name="operator_conditions_accepted_on">接受运营者条款的日期：%s</string>
 </resources>
