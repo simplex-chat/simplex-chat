@@ -14,7 +14,7 @@ ALTER TABLE groups ADD COLUMN business TEXT NULL;
 ALTER TABLE groups ADD COLUMN business_group_member_id INTEGER NULL REFERENCES group_members(group_member_id);
 ALTER TABLE group_members ADD COLUMN business_member TEXT NULL;
 
-CREATE INDEX idx_groups_business_group_member_id ON GROUPS(business_group_member_id);
+CREATE INDEX idx_groups_business_group_member_id ON groups(business_group_member_id);
 |]
 
 down_m20241128_business_chats :: Query

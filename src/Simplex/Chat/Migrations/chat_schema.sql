@@ -78,6 +78,7 @@ CREATE TABLE contacts(
   custom_data BLOB,
   ui_themes TEXT,
   chat_deleted INTEGER NOT NULL DEFAULT 0,
+  business INTEGER DEFAULT 0,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -127,7 +128,9 @@ CREATE TABLE groups(
   via_group_link_uri_hash BLOB,
   user_member_profile_sent_at TEXT,
   custom_data BLOB,
-  ui_themes TEXT, -- received
+  ui_themes TEXT,
+  business TEXT NULL,
+  business_group_member_id INTEGER NULL REFERENCES group_members(group_member_id), -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -160,6 +163,7 @@ CREATE TABLE group_members(
   peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   member_restriction TEXT,
+  business_member TEXT NULL,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -309,6 +313,7 @@ CREATE TABLE user_contact_links(
   auto_accept_incognito INTEGER DEFAULT 0 CHECK(auto_accept_incognito NOT NULL),
   group_link_id BLOB,
   group_link_member_role TEXT NULL,
+  business INTEGER DEFAULT 0,
   UNIQUE(user_id, local_display_name)
 );
 CREATE TABLE contact_requests(
@@ -922,4 +927,7 @@ CREATE INDEX idx_chat_items_notes ON chat_items(
   note_folder_id,
   item_status,
   created_at
+);
+CREATE INDEX idx_groups_business_group_member_id ON groups(
+  business_group_member_id
 );
