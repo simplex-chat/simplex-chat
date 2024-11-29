@@ -600,6 +600,11 @@ suspend fun exportChatArchive(
   }
   wallpapersDir.mkdirs()
   val archiveErrors = m.controller.apiExportArchive(config)
+  if (storagePath == null) {
+    deleteOldChatArchive()
+    m.controller.appPrefs.chatArchiveName.set(archiveName)
+    m.controller.appPrefs.chatArchiveTime.set(archiveTime)
+  }
   chatArchiveFile.value = archivePath
   return archivePath to archiveErrors
 }
@@ -687,13 +692,11 @@ suspend fun importArchive(
         operationEnded(m, progressIndicator) {
           AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_importing_database), e.toString())
         }
-        return false
       }
     } catch (e: Error) {
       operationEnded(m, progressIndicator) {
         AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_deleting_database), e.toString())
       }
-      return false
     } finally {
       File(archivePath).delete()
     }
