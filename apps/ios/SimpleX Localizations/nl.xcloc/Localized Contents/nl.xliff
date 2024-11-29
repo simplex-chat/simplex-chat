@@ -7612,8 +7612,9 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>Archief uploaden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use %@" xml:space="preserve">
+      <trans-unit id="Use %@" xml:space="preserve" approved="no">
         <source>Use %@</source>
+        <target state="translated">Gebruik %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use .onion hosts" xml:space="preserve">
@@ -7641,12 +7642,14 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>Gebruik het huidige profiel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use for files" xml:space="preserve">
+      <trans-unit id="Use for files" xml:space="preserve" approved="no">
         <source>Use for files</source>
+        <target state="translated">Gebruik voor bestanden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use for messages" xml:space="preserve">
+      <trans-unit id="Use for messages" xml:space="preserve" approved="no">
         <source>Use for messages</source>
+        <target state="translated">Gebruik voor berichten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use for new connections" xml:space="preserve">
@@ -7689,8 +7692,9 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>Gebruik server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use servers" xml:space="preserve">
+      <trans-unit id="Use servers" xml:space="preserve" approved="no">
         <source>Use servers</source>
+        <target state="translated">Gebruik servers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use the app while in the call." xml:space="preserve">
@@ -7783,8 +7787,9 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>Video's en bestanden tot 1 GB</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="View conditions" xml:space="preserve">
+      <trans-unit id="View conditions" xml:space="preserve" approved="no">
         <source>View conditions</source>
+        <target state="translated">Bekijk voorwaarden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="View security code" xml:space="preserve">
@@ -7792,8 +7797,9 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>Beveiligingscode bekijken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="View updated conditions" xml:space="preserve">
+      <trans-unit id="View updated conditions" xml:space="preserve" approved="no">
         <source>View updated conditions</source>
+        <target state="translated">Bekijk de bijgewerkte voorwaarden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Visible history" xml:space="preserve">
@@ -7906,8 +7912,9 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>Bij het verbinden van audio- en video-oproepen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="When more than one operator is enabled, none of them has metadata to learn who communicates with whom." xml:space="preserve">
+      <trans-unit id="When more than one operator is enabled, none of them has metadata to learn who communicates with whom." xml:space="preserve" approved="no">
         <source>When more than one operator is enabled, none of them has metadata to learn who communicates with whom.</source>
+        <target state="translated">Wanneer er meer dan één operator is ingeschakeld, beschikt geen enkele operator over metagegevens om te achterhalen wie met wie communiceert.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." xml:space="preserve">
@@ -8067,16 +8074,19 @@ Deelnameverzoek herhalen?</target>
         <target>U kunt dit wijzigen in de instellingen onder uiterlijk.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can configure operators in Network &amp; servers settings." xml:space="preserve">
+      <trans-unit id="You can configure operators in Network &amp; servers settings." xml:space="preserve" approved="no">
         <source>You can configure operators in Network &amp; servers settings.</source>
+        <target state="translated">U kunt operators configureren in Netwerk- en serverinstellingen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can configure servers via settings." xml:space="preserve">
+      <trans-unit id="You can configure servers via settings." xml:space="preserve" approved="no">
         <source>You can configure servers via settings.</source>
+        <target state="translated">U kunt servers configureren via instellingen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can create it in user picker." xml:space="preserve">
+      <trans-unit id="You can create it in user picker." xml:space="preserve" approved="no">
         <source>You can create it in user picker.</source>
+        <target state="translated">U kunt dit aanmaken in de gebruikerskiezer.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can create it later" xml:space="preserve">
@@ -8119,8 +8129,9 @@ Deelnameverzoek herhalen?</target>
         <target>U kunt berichten naar %@ sturen vanuit gearchiveerde contacten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can set connection name, to remember who the link was shared with." xml:space="preserve">
+      <trans-unit id="You can set connection name, to remember who the link was shared with." xml:space="preserve" approved="no">
         <source>You can set connection name, to remember who the link was shared with.</source>
+        <target state="translated">U kunt een verbindingsnaam instellen, zodat u kunt onthouden met wie de link is gedeeld.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can set lock screen notification preview via settings." xml:space="preserve">
@@ -8420,8 +8431,9 @@ Verbindingsverzoek herhalen?</target>
         <target>Uw server adres</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your servers" xml:space="preserve">
+      <trans-unit id="Your servers" xml:space="preserve" approved="no">
         <source>Your servers</source>
+        <target state="translated">Uw servers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your settings" xml:space="preserve">
@@ -8844,8 +8856,9 @@ Verbindingsverzoek herhalen?</target>
         <target>verlopen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="for better metadata privacy." xml:space="preserve">
+      <trans-unit id="for better metadata privacy." xml:space="preserve" approved="no">
         <source>for better metadata privacy.</source>
+        <target state="translated">voor betere privacy van metagegevens.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="forwarded" xml:space="preserve">
@@ -9475,24 +9488,29 @@ laatst ontvangen bericht: %2$@</target>
       <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.4" build-num="15F31d"/>
     </header>
     <body>
-      <trans-unit id="%d new events" xml:space="preserve">
+      <trans-unit id="%d new events" xml:space="preserve" approved="no">
         <source>%d new events</source>
+        <target state="translated">‐%d nieuwe gebeurtenissen</target>
         <note>notification body</note>
       </trans-unit>
-      <trans-unit id="From: %@" xml:space="preserve">
+      <trans-unit id="From: %@" xml:space="preserve" approved="no">
         <source>From: %@</source>
+        <target state="translated">Van: %@</target>
         <note>notification body</note>
       </trans-unit>
-      <trans-unit id="New events" xml:space="preserve">
+      <trans-unit id="New events" xml:space="preserve" approved="no">
         <source>New events</source>
+        <target state="translated">Nieuwe gebeurtenissen</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="New messages" xml:space="preserve">
+      <trans-unit id="New messages" xml:space="preserve" approved="no">
         <source>New messages</source>
+        <target state="translated">Nieuwe berichten</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="New messages in %d chats" xml:space="preserve">
+      <trans-unit id="New messages in %d chats" xml:space="preserve" approved="no">
         <source>New messages in %d chats</source>
+        <target state="translated">Nieuwe berichten in %d chats</target>
         <note>notification body</note>
       </trans-unit>
     </body>
