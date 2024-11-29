@@ -140,19 +140,6 @@ struct DatabaseEncryptionView: View {
         .alert(item: $alert) { item in databaseEncryptionAlert(item) }
     }
 
-    private func encryptDatabase() {
-        // it will try to stop and start the chat in case of: non-migration && successful encryption. In migration the chat will remain stopped
-        if migration {
-            Task {
-                await encryptDatabaseAsync()
-            }
-        } else {
-            stopChatRunBlockStartChat($progressIndicator) {
-                return await encryptDatabaseAsync()
-            }
-        }
-    }
-
     private func encryptDatabaseAsync() async -> Bool {
         await MainActor.run {
             progressIndicator = true
@@ -192,6 +179,19 @@ struct DatabaseEncryptionView: View {
                 await operationEnded(.error(title: "Error encrypting database", error: "\(responseError(error))"))
             }
             return false
+        }
+    }
+
+    private func encryptDatabase() {
+        // it will try to stop and start the chat in case of: non-migration && successful encryption. In migration the chat will remain stopped
+        if migration {
+            Task {
+                await encryptDatabaseAsync()
+            }
+        } else {
+            stopChatRunBlockStartChat($progressIndicator) {
+                return await encryptDatabaseAsync()
+            }
         }
     }
 
