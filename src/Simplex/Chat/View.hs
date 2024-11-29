@@ -1651,18 +1651,6 @@ viewConnectionPlan = \case
     CAPContactViaAddress ct -> [ctAddr ("known contact without connection " <> ttyContact' ct)]
     where
       ctAddr = ("contact address: " <>)
-  CPBusinessAddress bap -> case bap of
-    BAPOk -> [bizAddr "ok to connect"]
-    BAPOwnLink -> [bizAddr "own address"]
-    BAPConnectingConfirmReconnect -> [bizAddr "connecting, allowed to reconnect"]
-    BAPConnectingProhibit Nothing -> [bizAddr "connecting"]
-    BAPConnectingProhibit (Just g) -> [bizAddr ("connecting to business " <> ttyGroup' g)]
-    BAPKnown g ->
-      [ bizAddr ("known business " <> ttyGroup' g),
-        "use " <> ttyToGroup g <> highlight' "<message>" <> " to send messages"
-      ]
-    where
-      bizAddr = ("business address: " <>)
   CPGroupLink glp -> case glp of
     GLPOk -> [grpLink "ok to connect"]
     GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]

@@ -882,7 +882,6 @@ data ChatDeleteMode
 data ConnectionPlan
   = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
   | CPContactAddress {contactAddressPlan :: ContactAddressPlan}
-  | CPBusinessAddress {businessAddressPlan :: BusinessAddressPlan}
   | CPGroupLink {groupLinkPlan :: GroupLinkPlan}
   deriving (Show)
 
@@ -900,14 +899,6 @@ data ContactAddressPlan
   | CAPConnectingProhibit {contact :: Contact}
   | CAPKnown {contact :: Contact}
   | CAPContactViaAddress {contact :: Contact}
-  deriving (Show)
-
-data BusinessAddressPlan
-  = BAPOk
-  | BAPOwnLink
-  | BAPConnectingConfirmReconnect
-  | BAPConnectingProhibit {groupInfo_ :: Maybe GroupInfo}
-  | BAPKnown {groupInfo :: GroupInfo}
   deriving (Show)
 
 data GroupLinkPlan
@@ -929,11 +920,6 @@ connectionPlanProceed = \case
     CAPOwnLink -> True
     CAPConnectingConfirmReconnect -> True
     CAPContactViaAddress _ -> True
-    _ -> False
-  CPBusinessAddress bap -> case bap of
-    BAPOk -> True
-    BAPOwnLink -> True
-    BAPConnectingConfirmReconnect -> True
     _ -> False
   CPGroupLink glp -> case glp of
     GLPOk -> True
@@ -1521,8 +1507,6 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CLQ") ''ChatListQuery)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "ILP") ''InvitationLinkPlan)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CAP") ''ContactAddressPlan)
-
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "BAP") ''BusinessAddressPlan)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GLP") ''GroupLinkPlan)
 

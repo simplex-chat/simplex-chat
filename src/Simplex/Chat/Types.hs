@@ -601,10 +601,7 @@ instance ToField ImageData where toField (ImageData t) = toField t
 
 instance FromField ImageData where fromField = fmap ImageData . fromField
 
--- encoded to JSON as untagged object
-data CReqClientData
-  = CRDataGroup {groupLinkId :: GroupLinkId}
-  | CRDataBusiness {business :: Bool}
+data CReqClientData = CRDataGroup {groupLinkId :: GroupLinkId}
 
 newtype GroupLinkId = GroupLinkId {unGroupLinkId :: ByteString} -- used to identify invitation via group link
   deriving (Eq, Show)
@@ -1748,7 +1745,7 @@ instance FromField MsgFilter where fromField = fromIntField_ msgFilterIntP
 
 instance ToField MsgFilter where toField = toField . msgFilterInt
 
-$(JQ.deriveJSON defaultJSON {J.sumEncoding = J.UntaggedValue} ''CReqClientData)
+$(JQ.deriveJSON defaultJSON ''CReqClientData)
 
 $(JQ.deriveJSON defaultJSON ''MemberIdRole)
 
