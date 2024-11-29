@@ -75,7 +75,9 @@ struct DatabaseView: View {
     @ViewBuilder
     private func chatDatabaseView() -> some View {
         NavigationLink(isActive: $showDatabaseEncryptionView) {
-            DatabaseEncryptionView(useKeychain: $useKeychain, migration: false)
+            DatabaseEncryptionView(useKeychain: $useKeychain, migration: false, stopChatRunBlockStartChat: { progressIndicator, block in
+                stopChatRunBlockStartChat(false, progressIndicator, Binding.constant(false), block)
+            })
                 .navigationTitle("Database passphrase")
                 .modifier(ThemedBackground(grouped: true))
         } label: {
@@ -120,7 +122,7 @@ struct DatabaseView: View {
                         )
                         .onChange(of: runChat) { _ in
                             if (runChat) {
-                                startChat()
+                                DatabaseView.startChat($runChat, $showRunChatToggle)
                             } else {
                                 alert = .stopChat
                             }
@@ -142,7 +144,9 @@ struct DatabaseView: View {
                 let color: Color = unencrypted ? .orange : theme.colors.secondary
                 settingsRow(unencrypted ? "lock.open" : useKeychain ? "key" : "lock", color: color) {
                     NavigationLink {
-                        DatabaseEncryptionView(useKeychain: $useKeychain, migration: false)
+                        DatabaseEncryptionView(useKeychain: $useKeychain, migration: false, stopChatRunBlockStartChat: { progressIndicator, block in
+                            stopChatRunBlockStartChat(false, progressIndicator, Binding.constant(false), block)
+                        })
                             .navigationTitle("Database passphrase")
                             .modifier(ThemedBackground(grouped: true))
                     } label: {
@@ -177,11 +181,7 @@ struct DatabaseView: View {
                 Text("Chat database")
                     .foregroundColor(theme.colors.secondary)
             } footer: {
-                Text(
-                    stopped
-                    ? "You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts."
-                    : "Stop chat to enable database actions"
-                )
+                Text("You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts.")
                 .foregroundColor(theme.colors.secondary)
             }
             .disabled(progressIndicator)
@@ -267,7 +267,7 @@ struct DatabaseView: View {
                     message: Text("Your current chat database will be DELETED and REPLACED with the imported one.") + Text("This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost."),
                     primaryButton: .destructive(Text("Import")) {
                         stopChatRunBlockStartChat(m.chatRunning == false, $progressIndicator, $showRunChatToggle) {
-                            _ = await importArchive(fileURL)
+                            _ = await DatabaseView.importArchive(fileURL, $progressIndicator, $alert)
                             return true
                         }
                     },
@@ -277,19 +277,21 @@ struct DatabaseView: View {
                 return Alert(title: Text("Error: no database file"))
             }
         case .archiveImported:
+            let (title, message) = archiveImported()
             return Alert(
-                title: Text("Chat database imported"),
-                message: Text("Restart the app to use imported chat database")
+                title: Text(title),
+                message: Text(message)
             )
         case let .archiveImportedWithErrors(errs):
+            let (title, message) = archiveImportedWithErrors(errs: errs)
             return Alert(
-                title: Text("Chat database imported"),
-                message: Text("Restart the app to use imported chat database") + Text(verbatim: "\n") + Text("Some non-fatal errors occurred during import:") + archiveErrorsText(errs)
+                title: Text(title),
+                message: Text(message)
             )
         case let .archiveExportedWithErrors(archivePath, errs):
             return Alert(
                 title: Text("Chat database exported"),
-                message: Text("You may save the exported archive.") + Text(verbatim: "\n") + Text("Some file(s) were not exported:") + archiveErrorsText(errs),
+                message: Text("You may save the exported archive.") + Text(verbatim: "\n") + Text("Some file(s) were not exported:") + Text(archiveErrorsText(errs)),
                 dismissButton: .default(Text("Continue")) {
                     showShareSheet(items: [archivePath])
                 }
@@ -303,7 +305,9 @@ struct DatabaseView: View {
                     stopChatRunBlockStartChat(wasStopped, $progressIndicator, $showRunChatToggle) {
                         let success = await deleteChat()
                         if success && !wasStopped {
-                            dismissAllSheets(animated: true)
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                dismissAllSheets(animated: true)
+                            }
                         }
                         return true
                     }
@@ -374,13 +378,13 @@ struct DatabaseView: View {
             } catch let error {
                 await MainActor.run {
                     runChat = true
-                    alert = .error(title: "Error stopping chat", error: responseError(error))
+                    showAlert("Error stopping chat", message: responseError(error))
                 }
             }
         }
     }
 
-    private func stopChatRunBlockStartChat(
+    func stopChatRunBlockStartChat(
         _ stopped: Bool,
         _ progressIndicator: Binding<Bool>,
         _ showRunChatToggle: Binding<Bool>,
@@ -404,17 +408,54 @@ struct DatabaseView: View {
                     do {
                         canStart = try await block()
                     } catch {
-                        logger.error("Error while executing block: \(error)")
+                        logger.error("Error executing block: \(error)")
                         canStart = true
                     }
                     if canStart {
-                        startChat()
+                        await MainActor.run {
+                            DatabaseView.startChat($runChat, $showRunChatToggle)
+                        }
                     }
                 }
             }
         }
     }
 
+    static func startChat(_ runChat: Binding<Bool>, _ showRunChatToggle: Binding<Bool>) {
+        let m = ChatModel.shared
+        if m.chatDbChanged {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                resetChatCtrl()
+                do {
+                    try initializeChat(start: true)
+                    m.chatDbChanged = false
+                    AppChatState.shared.set(.active)
+                    showRunChatToggle.wrappedValue = false || UserDefaults.standard.bool(forKey: DEFAULT_DEVELOPER_TOOLS)
+                    if m.chatDbStatus != .ok {
+                        // Hide current view and show `DatabaseErrorView`
+                        dismissAllSheets(animated: true)
+                    }
+                } catch let error {
+                    showRunChatToggle.wrappedValue = true
+                    fatalError("Error starting chat \(responseError(error))")
+                }
+            }
+        } else {
+            do {
+                _ = try apiStartChat()
+                runChat.wrappedValue = true
+                m.chatRunning = true
+                ChatReceiver.shared.start()
+                chatLastStartGroupDefault.set(Date.now)
+                AppChatState.shared.set(.active)
+                showRunChatToggle.wrappedValue = false || UserDefaults.standard.bool(forKey: DEFAULT_DEVELOPER_TOOLS)
+            } catch let error {
+                runChat.wrappedValue = false
+                showRunChatToggle.wrappedValue = true
+                showAlert(NSLocalizedString("Error starting chat", comment: ""), message: responseError(error))
+            }
+        }
+    }
 
     private func exportArchive() async -> Bool {
         await MainActor.run {
@@ -440,10 +481,14 @@ struct DatabaseView: View {
         return true
     }
 
-    private func importArchive(_ archivePath: URL) async -> Bool {
+    static func importArchive(
+        _ archivePath: URL,
+        _ progressIndicator: Binding<Bool>,
+        _ alert: Binding<DatabaseAlert?>
+    ) async -> Bool {
         if archivePath.startAccessingSecurityScopedResource() {
             await MainActor.run {
-                progressIndicator = true
+                progressIndicator.wrappedValue = true
             }
             do {
                 try await apiDeleteStorage()
@@ -454,20 +499,20 @@ struct DatabaseView: View {
                     shouldImportAppSettingsDefault.set(true)
                     _ = kcDatabasePassword.remove()
                     if archiveErrors.isEmpty {
-                        await operationEnded(.archiveImported)
+                        await operationEnded(.archiveImported, progressIndicator, alert)
                     } else {
-                        await operationEnded(.archiveImportedWithErrors(archiveErrors: archiveErrors))
+                        await operationEnded(.archiveImportedWithErrors(archiveErrors: archiveErrors), progressIndicator, alert)
                     }
                     return true
                 } catch let error {
-                    await operationEnded(.error(title: "Error importing chat database", error: responseError(error)))
+                    await operationEnded(.error(title: "Error importing chat database", error: responseError(error)), progressIndicator, alert)
                 }
             } catch let error {
-                await operationEnded(.error(title: "Error deleting chat database", error: responseError(error)))
+                await operationEnded(.error(title: "Error deleting chat database", error: responseError(error)), progressIndicator, alert)
             }
             archivePath.stopAccessingSecurityScopedResource()
         } else {
-            alert = .error(title: "Error accessing database file")
+            showAlert("Error accessing database file")
         }
         return false
     }
@@ -478,11 +523,11 @@ struct DatabaseView: View {
         }
         do {
             try await deleteChatAsync()
-            await operationEnded(.chatDeleted)
+            await DatabaseView.operationEnded(.chatDeleted, $progressIndicator, $alert)
             appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
             return true
         } catch let error {
-            await operationEnded(.error(title: "Error deleting database", error: responseError(error)))
+            await DatabaseView.operationEnded(.error(title: "Error deleting database", error: responseError(error)), $progressIndicator, $alert)
             return false
         }
     }
@@ -495,47 +540,21 @@ struct DatabaseView: View {
         }
     }
 
-    private func operationEnded(_ dbAlert: DatabaseAlert) async {
+    private static func operationEnded(_ dbAlert: DatabaseAlert, _ progressIndicator: Binding<Bool>, _ alert: Binding<DatabaseAlert?>) async {
         await MainActor.run {
+            let m = ChatModel.shared
             m.chatDbChanged = true
             m.chatInitialized = false
-            progressIndicator = false
-            alert = dbAlert
-        }
-    }
-
-    private func startChat() {
-        if m.chatDbChanged {
-            dismissSettingsSheet()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                resetChatCtrl()
-                do {
-                    try initializeChat(start: true)
-                    m.chatDbChanged = false
-                    AppChatState.shared.set(.active)
-                    showRunChatToggle = false || UserDefaults.standard.bool(forKey: DEFAULT_DEVELOPER_TOOLS)
-                    if m.chatDbStatus != .ok {
-                        // Hide current view and show `DatabaseErrorView`
-                        dismissAllSheets(animated: true)
-                    }
-                } catch let error {
-                    showRunChatToggle = true
-                    fatalError("Error starting chat \(responseError(error))")
-                }
-            }
-        } else {
-            do {
-                _ = try apiStartChat()
-                runChat = true
-                m.chatRunning = true
-                ChatReceiver.shared.start()
-                chatLastStartGroupDefault.set(Date.now)
-                AppChatState.shared.set(.active)
-                showRunChatToggle = false || UserDefaults.standard.bool(forKey: DEFAULT_DEVELOPER_TOOLS)
-            } catch let error {
-                runChat = false
-                showRunChatToggle = true
-                alert = .error(title: "Error starting chat", error: responseError(error))
+            progressIndicator.wrappedValue = false
+            // show these alerts globally so they are visible when all sheets will be hidden
+            if case .archiveImported = dbAlert {
+                let (title, message) = archiveImported()
+                showAlert(title, message: message)
+            } else if case .archiveImportedWithErrors(let errs) = dbAlert {
+                let (title, message) = archiveImportedWithErrors(errs: errs)
+                showAlert(title, message: message)
+            } else {
+                alert.wrappedValue = dbAlert
             }
         }
     }
@@ -578,8 +597,21 @@ struct DatabaseView: View {
     }
 }
 
-func archiveErrorsText(_ errs: [ArchiveError]) -> Text {
-    return Text("\n" + errs.map(showArchiveError).joined(separator: "\n"))
+private func archiveImported() -> (String, String) {
+    (
+        NSLocalizedString("Chat database imported", comment: ""),
+        NSLocalizedString("Restart the app to use imported chat database", comment: "")
+    )
+}
+private func archiveImportedWithErrors(errs: [ArchiveError]) -> (String, String) {
+    (
+        NSLocalizedString("Chat database imported", comment: ""),
+        NSLocalizedString("Restart the app to use imported chat database", comment: "") + "\n" + NSLocalizedString("Some non-fatal errors occurred during import:", comment: "") + archiveErrorsText(errs)
+    )
+}
+
+func archiveErrorsText(_ errs: [ArchiveError]) -> String {
+    return "\n" + errs.map(showArchiveError).joined(separator: "\n")
     
     func showArchiveError(_ err: ArchiveError) -> String {
         switch err {
@@ -595,41 +627,6 @@ func stopChatAsync() async throws {
     await MainActor.run { ChatModel.shared.chatRunning = false }
     AppChatState.shared.set(.stopped)
 }
-
-//func stopChatRunBlockStartChat(
-//    _ stopped: Bool,
-//    _ progressIndicator: Binding<Bool>,
-//    _ showRunChatToggle: Binding<Bool>,
-//    _ block: () async throws -> Bool
-//) {
-//    // if the chat was running, the sequence is: stop chat, run block, start chat.
-//    // Otherwise, just run block and do nothing - the toggle will be visible anyway and the user can start the chat or not
-//    if stopped {
-//        Task {
-//            do {
-//                _ = try await block()
-//            } catch {
-//                logger.error("Error while executing block: \(error)")
-//            }
-//        }
-//    } else {
-//        authStopChat {
-//            Task {
-//                // if it throws, let's start chat again anyway
-//                var canStart = false
-//                 do {
-//                     canStart = try await block()
-//                 } catch {
-//                    logger.error("Error while executing block: \(error)")
-//                    true
-//                }
-//                if canStart {
-//                    startChat()
-//                }
-//            }
-//        }
-//    }
-//}
 
 func deleteChatAsync() async throws {
     try await apiDeleteStorage()

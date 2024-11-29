@@ -48,6 +48,8 @@ struct DatabaseEncryptionView: View {
     @State private var confirmNewKey = ""
     @State private var currentKeyShown = false
 
+    let stopChatRunBlockStartChat: (Binding<Bool>, @escaping () async throws -> Bool) -> Void
+
     var body: some View {
         ZStack {
             List {
@@ -140,10 +142,15 @@ struct DatabaseEncryptionView: View {
 
     private func encryptDatabase() {
         // it will try to stop and start the chat in case of: non-migration && successful encryption. In migration the chat will remain stopped
-//        stopChatRunBlockStartChat(migration, $progressIndicator, Binding.constant(false)) {
-//            let success = await encryptDatabaseAsync()
-//            return success && !migration
-//        }
+        if migration {
+            Task {
+                await encryptDatabaseAsync()
+            }
+        } else {
+            stopChatRunBlockStartChat($progressIndicator) {
+                return await encryptDatabaseAsync()
+            }
+        }
     }
 
     private func encryptDatabaseAsync() async -> Bool {
@@ -381,6 +388,6 @@ func validKey(_ s: String) -> Bool {
 
 struct DatabaseEncryptionView_Previews: PreviewProvider {
     static var previews: some View {
-        DatabaseEncryptionView(useKeychain: Binding.constant(true), migration: false)
+        DatabaseEncryptionView(useKeychain: Binding.constant(true), migration: false, stopChatRunBlockStartChat: { _, _ in true })
     }
 }

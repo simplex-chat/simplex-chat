@@ -177,7 +177,7 @@ struct MigrateFromDevice: View {
             case let .archiveExportedWithErrors(archivePath, errs):
                 return Alert(
                     title: Text("Chat database exported"),
-                    message: Text("You may migrate the exported database.") + Text(verbatim: "\n") + Text("Some file(s) were not exported:") + archiveErrorsText(errs),
+                    message: Text("You may migrate the exported database.") + Text(verbatim: "\n") + Text("Some file(s) were not exported:") + Text(archiveErrorsText(errs)),
                     dismissButton: .default(Text("Continue")) {
                         Task { await uploadArchive(path: archivePath) }
                     }
@@ -222,7 +222,8 @@ struct MigrateFromDevice: View {
     }
 
     private func passphraseNotSetView() -> some View {
-        DatabaseEncryptionView(useKeychain: $useKeychain, migration: true)
+        DatabaseEncryptionView(useKeychain: $useKeychain, migration: true, stopChatRunBlockStartChat: { _, _ in
+        })
             .onChange(of: initialRandomDBPassphrase) { initial in
                 if !initial {
                     migrationState = .uploadConfirmation

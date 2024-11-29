@@ -103,6 +103,9 @@ struct MigrateToDevice: View {
     @State private var showQRCodeScanner: Bool = true
     @State private var pasteboardHasStrings = UIPasteboard.general.hasStrings
 
+    @State private var importingArchiveFromFileProgressIndicator = false
+    @State private var showFileImporter = false
+
     var body: some View {
         VStack {
             switch migrationState {
@@ -200,6 +203,12 @@ struct MigrateToDevice: View {
                 Section(header: Text("Or paste archive link").foregroundColor(theme.colors.secondary)) {
                     pasteLinkView()
                 }
+                Section(header: Text("Chat archive").foregroundColor(theme.colors.secondary)) {
+                    archiveImportFromFileView()
+                }
+            }
+            if importingArchiveFromFileProgressIndicator {
+                progressView()
             }
         }
     }
@@ -219,6 +228,35 @@ struct MigrateToDevice: View {
         .disabled(!pasteboardHasStrings)
         .frame(maxWidth: .infinity, alignment: .center)
     }
+
+    private func archiveImportFromFileView() -> some View {
+        Button {
+            showFileImporter = true
+        } label: {
+            Text("Import database")
+        }
+        .disabled(importingArchiveFromFileProgressIndicator)
+        .frame(maxWidth: .infinity, alignment: .center)
+        .fileImporter(
+            isPresented: $showFileImporter,
+            allowedContentTypes: [.zip],
+            allowsMultipleSelection: false
+        ) { result in
+            if case let .success(files) = result, let fileURL = files.first {
+                Task {
+                    let success = await DatabaseView.importArchive(fileURL, $importingArchiveFromFileProgressIndicator, Binding.constant(nil))
+                    if success {
+                        DatabaseView.startChat(
+                            Binding.constant(false),
+                            $importingArchiveFromFileProgressIndicator
+                        )
+                        hideView()
+                    }
+                }
+            }
+        }
+    }
+
 
     private func linkDownloadingView(_ link: String) -> some View {
         ZStack {
