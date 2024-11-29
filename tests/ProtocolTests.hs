@@ -107,7 +107,7 @@ testProfile :: Profile
 testProfile = Profile {displayName = "alice", fullName = "Alice", image = Just (ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="), contactLink = Nothing, preferences = testChatPreferences}
 
 testGroupProfile :: GroupProfile
-testGroupProfile = GroupProfile {displayName = "team", fullName = "Team", description = Nothing, image = Nothing, groupPreferences = testGroupPreferences, business = Nothing}
+testGroupProfile = GroupProfile {displayName = "team", fullName = "Team", description = Nothing, image = Nothing, groupPreferences = testGroupPreferences}
 
 decodeChatMessageTest :: Spec
 decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
