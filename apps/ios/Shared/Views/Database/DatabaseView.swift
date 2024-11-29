@@ -122,7 +122,7 @@ struct DatabaseView: View {
                         )
                         .onChange(of: runChat) { _ in
                             if (runChat) {
-                                DatabaseView.startChat($runChat, $showRunChatToggle)
+                                DatabaseView.startChat($runChat, $showRunChatToggle, $progressIndicator)
                             } else {
                                 alert = .stopChat
                             }
@@ -297,12 +297,7 @@ struct DatabaseView: View {
                 primaryButton: .destructive(Text("Delete")) {
                     let wasStopped = m.chatRunning == false
                     stopChatRunBlockStartChat(wasStopped, $progressIndicator, $showRunChatToggle) {
-                        let success = await deleteChat()
-                        if success && !wasStopped {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                                dismissAllSheets(animated: true)
-                            }
-                        }
+                        _ = await deleteChat()
                         return true
                     }
                 },
@@ -405,7 +400,7 @@ struct DatabaseView: View {
                     }
                     if canStart {
                         await MainActor.run {
-                            DatabaseView.startChat($runChat, $showRunChatToggle)
+                            DatabaseView.startChat($runChat, $showRunChatToggle, $progressIndicator)
                         }
                     }
                 }
@@ -413,17 +408,19 @@ struct DatabaseView: View {
         }
     }
 
-    static func startChat(_ runChat: Binding<Bool>, _ showRunChatToggle: Binding<Bool>) {
+    static func startChat(_ runChat: Binding<Bool>, _ showRunChatToggle: Binding<Bool>, _ progressIndicator: Binding<Bool>) {
+        progressIndicator.wrappedValue = true
         let m = ChatModel.shared
         if m.chatDbChanged {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 resetChatCtrl()
                 do {
+                    let hadDatabase = hasDatabase()
                     try initializeChat(start: true)
                     m.chatDbChanged = false
                     AppChatState.shared.set(.active)
                     showRunChatToggle.wrappedValue = false || UserDefaults.standard.bool(forKey: DEFAULT_DEVELOPER_TOOLS)
-                    if m.chatDbStatus != .ok {
+                    if m.chatDbStatus != .ok || !hadDatabase {
                         // Hide current view and show `DatabaseErrorView`
                         dismissAllSheets(animated: true)
                     }
@@ -431,6 +428,7 @@ struct DatabaseView: View {
                     showRunChatToggle.wrappedValue = true
                     fatalError("Error starting chat \(responseError(error))")
                 }
+                progressIndicator.wrappedValue = false
             }
         } else {
             do {
@@ -446,6 +444,7 @@ struct DatabaseView: View {
                 showRunChatToggle.wrappedValue = true
                 showAlert(NSLocalizedString("Error starting chat", comment: ""), message: responseError(error))
             }
+            progressIndicator.wrappedValue = false
         }
     }
 
