@@ -2059,6 +2059,7 @@ processChatCommand' vr = \case
     updateProfile_ user p' $ withFastStore' $ \db -> setUserProfileContactLink db user $ Just ucl
   SetProfileAddress onOff -> withUser $ \User {userId} ->
     processChatCommand $ APISetProfileAddress userId onOff
+  -- TODO [business] update link, validate
   APIAddressAutoAccept userId autoAccept_ -> withUserId userId $ \user -> do
     contactLink <- withFastStore (\db -> updateUserAddressAutoAccept db user autoAccept_)
     pure $ CRUserContactLinkUpdated user contactLink
