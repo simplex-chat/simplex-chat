@@ -1848,6 +1848,7 @@ private func buildTheme() -> AppTheme {
 }
 
 struct ReactionContextMenu: View {
+    @EnvironmentObject var m: ChatModel
     let groupInfo: GroupInfo
     var itemId: Int64
     var reactionCount: CIReactionCount
@@ -1870,13 +1871,20 @@ struct ReactionContextMenu: View {
             }
         } else {
             ForEach(memberReactions, id: \.groupMember.groupMemberId) { mr in
-                let userMember = mr.groupMember.groupMemberId == groupInfo.membership.groupMemberId
+                let mem = mr.groupMember
+                let userMember = mem.groupMemberId == groupInfo.membership.groupMemberId
                 Button {
-                    selectedMember = GMember.init(mr.groupMember)
+                    if let member =  m.getGroupMember(mem.groupMemberId) {
+                        selectedMember = member
+                    } else {
+                        let member = GMember.init(mem)
+                        m.groupMembers.append(member)
+                        selectedMember = member
+                    }
                 } label: {
                     HStack {
-                        Text(mr.groupMember.displayName)
-                        if let img = cropImage(mr.groupMember.image) {
+                        Text(mem.displayName)
+                        if let img = cropImage(mem.image) {
                             Image(uiImage: img)
                         } else {
                             Image(systemName: "person.crop.circle")
