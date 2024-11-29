@@ -2,15 +2,6 @@
 "\n" = "\n";
 
 /* No comment provided by engineer. */
-" " = " ";
-
-/* No comment provided by engineer. */
-"  " = "  ";
-
-/* No comment provided by engineer. */
-"   " = "   ";
-
-/* No comment provided by engineer. */
 " (" = " (";
 
 /* No comment provided by engineer. */
@@ -338,12 +329,6 @@
 "Abort changing address?" = "Przerwać zmianę adresu?";
 
 /* No comment provided by engineer. */
-"About SimpleX" = "O SimpleX";
-
-/* No comment provided by engineer. */
-"About SimpleX address" = "O adresie SimpleX";
-
-/* No comment provided by engineer. */
 "About SimpleX Chat" = "O SimpleX Chat";
 
 /* No comment provided by engineer. */
@@ -381,12 +366,6 @@
 
 /* No comment provided by engineer. */
 "Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Dodaj adres do swojego profilu, aby Twoje kontakty mogły go udostępnić innym osobom. Aktualizacja profilu zostanie wysłana do Twoich kontaktów.";
-
-/* No comment provided by engineer. */
-"Add contact" = "Dodaj kontakt";
-
-/* No comment provided by engineer. */
-"Add preset servers" = "Dodaj gotowe serwery";
 
 /* No comment provided by engineer. */
 "Add profile" = "Dodaj profil";
@@ -573,6 +552,9 @@
 
 /* No comment provided by engineer. */
 "Answer call" = "Odbierz połączenie";
+
+/* No comment provided by engineer. */
+"Anybody can host servers." = "Każdy może hostować serwery.";
 
 /* No comment provided by engineer. */
 "App build: %@" = "Kompilacja aplikacji: %@";
@@ -802,7 +784,8 @@
 /* No comment provided by engineer. */
 "Can't message member" = "Nie można wysłać wiadomości do członka";
 
-/* alert button */
+/* alert action
+   alert button */
 "Cancel" = "Anuluj";
 
 /* No comment provided by engineer. */
@@ -923,7 +906,7 @@
 /* No comment provided by engineer. */
 "Chats" = "Czaty";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Check server address and try again." = "Sprawdź adres serwera i spróbuj ponownie.";
 
 /* No comment provided by engineer. */
@@ -985,9 +968,6 @@
 
 /* No comment provided by engineer. */
 "Configure ICE servers" = "Skonfiguruj serwery ICE";
-
-/* No comment provided by engineer. */
-"Configured %@ servers" = "Skonfigurowano %@ serwerów";
 
 /* No comment provided by engineer. */
 "Confirm" = "Potwierdź";
@@ -1217,9 +1197,6 @@
 /* No comment provided by engineer. */
 "Create a group using a random profile." = "Utwórz grupę używając losowego profilu.";
 
-/* No comment provided by engineer. */
-"Create an address to let people connect with you." = "Utwórz adres, aby ludzie mogli się z Tobą połączyć.";
-
 /* server test step */
 "Create file" = "Utwórz plik";
 
@@ -1379,7 +1356,8 @@
 /* No comment provided by engineer. */
 "default (yes)" = "domyślnie (tak)";
 
-/* chat item action
+/* alert action
+   chat item action
    swipe action */
 "Delete" = "Usuń";
 
@@ -1976,9 +1954,6 @@
 "Error joining group" = "Błąd dołączenia do grupy";
 
 /* No comment provided by engineer. */
-"Error loading %@ servers" = "Błąd ładowania %@ serwerów";
-
-/* No comment provided by engineer. */
 "Error migrating settings" = "Błąd migracji ustawień";
 
 /* No comment provided by engineer. */
@@ -1998,9 +1973,6 @@
 
 /* No comment provided by engineer. */
 "Error resetting statistics" = "Błąd resetowania statystyk";
-
-/* No comment provided by engineer. */
-"Error saving %@ servers" = "Błąd zapisu %@ serwerów";
 
 /* No comment provided by engineer. */
 "Error saving group profile" = "Błąd zapisu profilu grupy";
@@ -2402,9 +2374,6 @@
 "hours" = "godziny";
 
 /* No comment provided by engineer. */
-"How it works" = "Jak to działa";
-
-/* No comment provided by engineer. */
 "How SimpleX works" = "Jak działa SimpleX";
 
 /* No comment provided by engineer. */
@@ -2543,10 +2512,10 @@
 "Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "Zainstaluj [SimpleX Chat na terminal](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
-"Instant push notifications will be hidden!\n" = "Natychmiastowe powiadomienia push będą ukryte!\n";
+"Instant" = "Natychmiastowo";
 
 /* No comment provided by engineer. */
-"Instant" = "Natychmiastowo";
+"Instant push notifications will be hidden!\n" = "Natychmiastowe powiadomienia push będą ukryte!\n";
 
 /* No comment provided by engineer. */
 "Interface" = "Interfejs";
@@ -2584,7 +2553,7 @@
 /* No comment provided by engineer. */
 "Invalid response" = "Nieprawidłowa odpowiedź";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid server address!" = "Nieprawidłowy adres serwera!";
 
 /* item status text */
@@ -2689,7 +2658,7 @@
 /* No comment provided by engineer. */
 "Joining group" = "Dołączanie do grupy";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Keep" = "Zachowaj";
 
 /* No comment provided by engineer. */
@@ -2698,7 +2667,7 @@
 /* No comment provided by engineer. */
 "Keep the app open to use it from desktop" = "Zostaw aplikację otwartą i używaj ją z komputera";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Keep unused invitation?" = "Zachować nieużyte zaproszenie?";
 
 /* No comment provided by engineer. */
@@ -2756,9 +2725,6 @@
 "Live messages" = "Wiadomości na żywo";
 
 /* No comment provided by engineer. */
-"No push server" = "Lokalnie";
-
-/* No comment provided by engineer. */
 "Local name" = "Nazwa lokalna";
 
 /* No comment provided by engineer. */
@@ -2771,22 +2737,13 @@
 "Lock mode" = "Tryb blokady";
 
 /* No comment provided by engineer. */
-"Make a private connection" = "Nawiąż prywatne połączenie";
-
-/* No comment provided by engineer. */
 "Make one message disappear" = "Spraw, aby jedna wiadomość zniknęła";
 
 /* No comment provided by engineer. */
 "Make profile private!" = "Ustaw profil jako prywatny!";
 
 /* No comment provided by engineer. */
-"Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@)." = "Upewnij się, że adresy serwerów %@ są w poprawnym formacie, rozdzielone liniami i nie są zduplikowane (%@).";
-
-/* No comment provided by engineer. */
 "Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "Upewnij się, że adresy serwerów WebRTC ICE są w poprawnym formacie, rozdzielone liniami i nie są zduplikowane.";
-
-/* No comment provided by engineer. */
-"Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" = "Wiele osób pytało: *jeśli SimpleX nie ma identyfikatora użytkownika, jak może dostarczać wiadomości?*";
 
 /* No comment provided by engineer. */
 "Mark deleted for everyone" = "Oznacz jako usunięty dla wszystkich";
@@ -3128,10 +3085,16 @@
 "No permission to record voice message" = "Brak uprawnień do nagrywania wiadomości głosowej";
 
 /* No comment provided by engineer. */
+"No push server" = "Lokalnie";
+
+/* No comment provided by engineer. */
 "No received or sent files" = "Brak odebranych lub wysłanych plików";
 
 /* copied message info in history */
 "no text" = "brak tekstu";
+
+/* No comment provided by engineer. */
+"No user identifiers." = "Brak identyfikatorów użytkownika.";
 
 /* No comment provided by engineer. */
 "Not compatible!" = "Nie kompatybilny!";
@@ -3256,16 +3219,7 @@
 "Open migration to another device" = "Otwórz migrację na innym urządzeniu";
 
 /* No comment provided by engineer. */
-"Open server settings" = "Otwórz ustawienia serwera";
-
-/* No comment provided by engineer. */
 "Open Settings" = "Otwórz Ustawienia";
-
-/* authentication reason */
-"Open user profiles" = "Otwórz profile użytkownika";
-
-/* No comment provided by engineer. */
-"Anybody can host servers." = "Każdy może hostować serwery.";
 
 /* No comment provided by engineer. */
 "Opening app…" = "Otwieranie aplikacji…";
@@ -3287,9 +3241,6 @@
 
 /* No comment provided by engineer. */
 "Other" = "Inne";
-
-/* No comment provided by engineer. */
-"Other %@ servers" = "Inne %@ serwery";
 
 /* No comment provided by engineer. */
 "other errors" = "inne błędy";
@@ -3344,9 +3295,6 @@
 
 /* No comment provided by engineer. */
 "Pending" = "Oczekujące";
-
-/* No comment provided by engineer. */
-"You decide who can connect." = "Ty decydujesz, kto może się połączyć.";
 
 /* No comment provided by engineer. */
 "Periodic" = "Okresowo";
@@ -3427,9 +3375,6 @@
 "Preserve the last message draft, with attachments." = "Zachowaj ostatnią wersję roboczą wiadomości wraz z załącznikami.";
 
 /* No comment provided by engineer. */
-"Preset server" = "Wstępnie ustawiony serwer";
-
-/* No comment provided by engineer. */
 "Preset server address" = "Wstępnie ustawiony adres serwera";
 
 /* No comment provided by engineer. */
@@ -3477,7 +3422,7 @@
 /* No comment provided by engineer. */
 "Profile theme" = "Motyw profilu";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Profile update will be sent to your contacts." = "Aktualizacja profilu zostanie wysłana do Twoich kontaktów.";
 
 /* No comment provided by engineer. */
@@ -3562,19 +3507,16 @@
 "Read more" = "Przeczytaj więcej";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "Przeczytaj więcej w [Podręczniku Użytkownika](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).";
+"Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "Przeczytaj więcej w [Poradniku Użytkownika](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "Przeczytaj więcej w [Poradniku Użytkownika](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).";
+"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "Przeczytaj więcej w [Podręczniku Użytkownika](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).";
 
 /* No comment provided by engineer. */
 "Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "Przeczytaj więcej w [Podręczniku Użytkownika](https://simplex.chat/docs/guide/readme.html#connect-to-friends).";
 
 /* No comment provided by engineer. */
 "Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "Przeczytaj więcej na naszym [repozytorium GitHub](https://github.com/simplex-chat/simplex-chat#readme).";
-
-/* No comment provided by engineer. */
-"Read more in our GitHub repository." = "Przeczytaj więcej na naszym repozytorium GitHub.";
 
 /* No comment provided by engineer. */
 "Receipts are disabled" = "Potwierdzenia są wyłączone";
@@ -3848,7 +3790,7 @@
 /* No comment provided by engineer. */
 "Save servers" = "Zapisz serwery";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Save servers?" = "Zapisać serwery?";
 
 /* No comment provided by engineer. */
@@ -4000,9 +3942,6 @@
 
 /* No comment provided by engineer. */
 "Send notifications" = "Wyślij powiadomienia";
-
-/* No comment provided by engineer. */
-"Send notifications:" = "Wyślij powiadomienia:";
 
 /* No comment provided by engineer. */
 "Send questions and ideas" = "Wyślij pytania i pomysły";
@@ -4166,7 +4105,8 @@
 /* No comment provided by engineer. */
 "Shape profile images" = "Kształtuj obrazy profilowe";
 
-/* chat item action */
+/* alert action
+   chat item action */
 "Share" = "Udostępnij";
 
 /* No comment provided by engineer. */
@@ -4175,7 +4115,7 @@
 /* No comment provided by engineer. */
 "Share address" = "Udostępnij adres";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Share address with contacts?" = "Udostępnić adres kontaktom?";
 
 /* No comment provided by engineer. */
@@ -4355,10 +4295,10 @@
 /* No comment provided by engineer. */
 "Stop sending file?" = "Przestać wysyłać plik?";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Stop sharing" = "Przestań udostępniać";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Stop sharing address?" = "Przestać udostępniać adres?";
 
 /* authentication reason */
@@ -4448,7 +4388,7 @@
 /* No comment provided by engineer. */
 "Test servers" = "Przetestuj serwery";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Tests failed!" = "Testy nie powiodły się!";
 
 /* No comment provided by engineer. */
@@ -4459,9 +4399,6 @@
 
 /* No comment provided by engineer. */
 "Thanks to the users – contribute via Weblate!" = "Podziękowania dla użytkowników - wkład za pośrednictwem Weblate!";
-
-/* No comment provided by engineer. */
-"No user identifiers." = "Brak identyfikatorów użytkownika.";
 
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "Aplikacja może powiadamiać Cię, gdy otrzymujesz wiadomości lub prośby o kontakt — otwórz ustawienia, aby włączyć.";
@@ -4488,6 +4425,9 @@
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "Szyfrowanie działa, a nowe uzgodnienie szyfrowania nie jest wymagane. Może to spowodować błędy w połączeniu!";
 
 /* No comment provided by engineer. */
+"The future of messaging" = "Następna generacja prywatnych wiadomości";
+
+/* No comment provided by engineer. */
 "The hash of the previous message is different." = "Hash poprzedniej wiadomości jest inny.";
 
 /* No comment provided by engineer. */
@@ -4504,9 +4444,6 @@
 
 /* No comment provided by engineer. */
 "The messages will be marked as moderated for all members." = "Wiadomości zostaną oznaczone jako moderowane dla wszystkich członków.";
-
-/* No comment provided by engineer. */
-"The future of messaging" = "Następna generacja prywatnych wiadomości";
 
 /* No comment provided by engineer. */
 "The old database was not removed during the migration, it can be deleted." = "Stara baza danych nie została usunięta podczas migracji, można ją usunąć.";
@@ -4596,9 +4533,6 @@
 "To make a new connection" = "Aby nawiązać nowe połączenie";
 
 /* No comment provided by engineer. */
-"To protect your privacy, SimpleX uses separate IDs for each of your contacts." = "Aby chronić prywatność, zamiast identyfikatorów użytkowników używanych przez wszystkie inne platformy, SimpleX ma identyfikatory dla kolejek wiadomości, oddzielne dla każdego z Twoich kontaktów.";
-
-/* No comment provided by engineer. */
 "To protect timezone, image/voice files use UTC." = "Aby chronić strefę czasową, pliki obrazów/głosów używają UTC.";
 
 /* No comment provided by engineer. */
@@ -4606,6 +4540,9 @@
 
 /* No comment provided by engineer. */
 "To protect your IP address, private routing uses your SMP servers to deliver messages." = "Aby chronić Twój adres IP, prywatne trasowanie używa Twoich serwerów SMP, aby dostarczyć wiadomości.";
+
+/* No comment provided by engineer. */
+"To protect your privacy, SimpleX uses separate IDs for each of your contacts." = "Aby chronić prywatność, zamiast identyfikatorów użytkowników używanych przez wszystkie inne platformy, SimpleX ma identyfikatory dla kolejek wiadomości, oddzielne dla każdego z Twoich kontaktów.";
 
 /* No comment provided by engineer. */
 "To record speech please grant permission to use Microphone." = "Aby nagrać rozmowę, proszę zezwolić na użycie Mikrofonu.";
@@ -4995,9 +4932,6 @@
 "when IP hidden" = "gdy IP ukryty";
 
 /* No comment provided by engineer. */
-"When people request to connect, you can accept or reject it." = "Kiedy ludzie proszą o połączenie, możesz je zaakceptować lub odrzucić.";
-
-/* No comment provided by engineer. */
 "When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Gdy udostępnisz komuś profil incognito, będzie on używany w grupach, do których Cię zaprosi.";
 
 /* No comment provided by engineer. */
@@ -5139,9 +5073,6 @@
 "You can share this address with your contacts to let them connect with **%@**." = "Możesz udostępnić ten adres Twoim kontaktom, aby umożliwić im połączenie z **%@**.";
 
 /* No comment provided by engineer. */
-"You can share your address as a link or QR code - anybody can connect to you." = "Możesz udostępnić swój adres jako link lub jako kod QR - każdy będzie mógł się z Tobą połączyć.";
-
-/* No comment provided by engineer. */
 "You can start chat via app Settings / Database or by restarting the app" = "Możesz rozpocząć czat poprzez Ustawienia aplikacji / Baza danych lub poprzez ponowne uruchomienie aplikacji";
 
 /* No comment provided by engineer. */
@@ -5153,7 +5084,7 @@
 /* No comment provided by engineer. */
 "You can use markdown to format messages:" = "Możesz używać markdown do formatowania wiadomości:";
 
-/* No comment provided by engineer. */
+/* alert message */
 "You can view invitation link again in connection details." = "Możesz zobaczyć link zaproszenia ponownie w szczegółach połączenia.";
 
 /* No comment provided by engineer. */
@@ -5173,6 +5104,9 @@
 
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "Nie można zweryfikować użytkownika; proszę spróbować ponownie.";
+
+/* No comment provided by engineer. */
+"You decide who can connect." = "Ty decydujesz, kto może się połączyć.";
 
 /* No comment provided by engineer. */
 "You have already requested connection via this address!" = "Już prosiłeś o połączenie na ten adres!";
@@ -5265,9 +5199,6 @@
 "You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "Używasz profilu incognito dla tej grupy - aby zapobiec udostępnianiu głównego profilu zapraszanie kontaktów jest zabronione";
 
 /* No comment provided by engineer. */
-"Your %@ servers" = "Twoje serwery %@";
-
-/* No comment provided by engineer. */
 "Your calls" = "Twoje połączenia";
 
 /* No comment provided by engineer. */
@@ -5331,9 +5262,6 @@
 "Your random profile" = "Twój losowy profil";
 
 /* No comment provided by engineer. */
-"Your server" = "Twój serwer";
-
-/* No comment provided by engineer. */
 "Your server address" = "Twój adres serwera";
 
 /* No comment provided by engineer. */
@@ -5344,7 +5272,4 @@
 
 /* No comment provided by engineer. */
 "Your SMP servers" = "Twoje serwery SMP";
-
-/* No comment provided by engineer. */
-"Your XFTP servers" = "Twoje serwery XFTP";
 

@@ -1780,4 +1780,8 @@
     <string name="network_smp_proxy_fallback_allow">Taip</string>
     <string name="copy_error">Kopijavimo klaida</string>
     <string name="chat_theme_apply_to_mode">Pritaikyti prie</string>
+    <string name="n_file_errors">%1$d failo klaida (-os):\n%2$s.</string>
+    <string name="forward_files_in_progress_desc">%1$d failas (-ai, -ų) vis dar atsisiunčiamas (-i, -a).</string>
+    <string name="forward_files_failed_to_receive_desc">Nepavyko atsisiųsti %1$d failo (-ų).</string>
+    <string name="selected_chat_items_selected_n">%d pasirinkta</string>
 </resources>
