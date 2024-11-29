@@ -5561,6 +5561,90 @@ Isso pode acontecer por causa de algum bug ou quando a conexão está comprometi
         <source>Capacity exceeded - recipient did not receive previously sent messages.</source>
         <target state="translated">Capacidade excedida - o destinatário não recebeu as mensagens enviadas anteriormente.</target>
       </trans-unit>
+      <trans-unit id="Chat migrated!" xml:space="preserve" approved="no">
+        <source>Chat migrated!</source>
+        <target state="translated">Conversa migrada!</target>
+      </trans-unit>
+      <trans-unit id="Auto-accept settings" xml:space="preserve" approved="no">
+        <source>Auto-accept settings</source>
+        <target state="translated">Aceitar automaticamente configurações</target>
+      </trans-unit>
+      <trans-unit id="App encrypts new local files (except videos)." xml:space="preserve" approved="no">
+        <source>App encrypts new local files (except videos).</source>
+        <target state="translated">O aplicativo criptografa novos arquivos locais (exceto videos).</target>
+      </trans-unit>
+      <trans-unit id="App session" xml:space="preserve" approved="no">
+        <source>App session</source>
+        <target state="translated">Sessão do aplicativo</target>
+      </trans-unit>
+      <trans-unit id="Acknowledged" xml:space="preserve" approved="no">
+        <source>Acknowledged</source>
+        <target state="translated">Reconhecido</target>
+      </trans-unit>
+      <trans-unit id="Acknowledgement errors" xml:space="preserve" approved="no">
+        <source>Acknowledgement errors</source>
+        <target state="translated">Erros conhecidos</target>
+      </trans-unit>
+      <trans-unit id="Chat list" xml:space="preserve" approved="no">
+        <source>Chat list</source>
+        <target state="translated">Lista de conversas</target>
+      </trans-unit>
+      <trans-unit id="Chat database exported" xml:space="preserve" approved="no">
+        <source>Chat database exported</source>
+        <target state="translated">Banco de dados da conversa exportado</target>
+      </trans-unit>
+      <trans-unit id="Chat preferences were changed." xml:space="preserve" approved="no">
+        <source>Chat preferences were changed.</source>
+        <target state="translated">As preferências de bate-papo foram alteradas.</target>
+      </trans-unit>
+      <trans-unit id="Chat theme" xml:space="preserve" approved="no">
+        <source>Chat theme</source>
+        <target state="translated">Tema da conversa</target>
+      </trans-unit>
+      <trans-unit id="Better calls" xml:space="preserve" approved="no">
+        <source>Better calls</source>
+        <target state="translated">Chamadas melhores</target>
+      </trans-unit>
+      <trans-unit id="Better user experience" xml:space="preserve" approved="no">
+        <source>Better user experience</source>
+        <target state="translated">Melhor experiência do usuário</target>
+      </trans-unit>
+      <trans-unit id="Allow downgrade" xml:space="preserve" approved="no">
+        <source>Allow downgrade</source>
+        <target state="translated">Permitir redução</target>
+      </trans-unit>
+      <trans-unit id="Additional secondary" xml:space="preserve" approved="no">
+        <source>Additional secondary</source>
+        <target state="translated">Secundária adicional</target>
+      </trans-unit>
+      <trans-unit id="App data migration" xml:space="preserve" approved="no">
+        <source>App data migration</source>
+        <target state="translated">Migração de dados do aplicativo</target>
+      </trans-unit>
+      <trans-unit id="Archive and upload" xml:space="preserve" approved="no">
+        <source>Archive and upload</source>
+        <target state="translated">Arquivar e enviar</target>
+      </trans-unit>
+      <trans-unit id="Background" xml:space="preserve" approved="no">
+        <source>Background</source>
+        <target state="translated">Fundo</target>
+      </trans-unit>
+      <trans-unit id="Better message dates." xml:space="preserve" approved="no">
+        <source>Better message dates.</source>
+        <target state="translated">Datas de mensagens melhores.</target>
+      </trans-unit>
+      <trans-unit id="Better notifications" xml:space="preserve" approved="no">
+        <source>Better notifications</source>
+        <target state="translated">Notificações melhores</target>
+      </trans-unit>
+      <trans-unit id="Better security ✅" xml:space="preserve" approved="no">
+        <source>Better security ✅</source>
+        <target state="translated">Melhor segurança ✅</target>
+      </trans-unit>
+      <trans-unit id="Chat profile" xml:space="preserve" approved="no">
+        <source>Chat profile</source>
+        <target state="translated">Perfil da conversa</target>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="pt-BR" datatype="plaintext">

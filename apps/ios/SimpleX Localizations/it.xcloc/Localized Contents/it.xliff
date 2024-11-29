@@ -9115,7 +9115,7 @@ ultimo msg ricevuto: %2$@</target>
       </trans-unit>
       <trans-unit id="set new profile picture" xml:space="preserve">
         <source>set new profile picture</source>
-        <target>impostata nuova immagine del profilo</target>
+        <target>ha impostato una nuova immagine del profilo</target>
         <note>profile update event chat item</note>
       </trans-unit>
       <trans-unit id="standard end-to-end encryption" xml:space="preserve">

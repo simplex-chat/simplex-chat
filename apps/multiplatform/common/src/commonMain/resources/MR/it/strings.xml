@@ -1607,7 +1607,7 @@
     <string name="profile_update_event_removed_picture">immagine del profilo rimossa</string>
     <string name="v5_5_private_notes_descr">Con file e multimediali criptati.</string>
     <string name="v5_5_simpler_connect_ui_descr">La barra di ricerca accetta i link di invito.</string>
-    <string name="profile_update_event_set_new_picture">impostata nuova immagine del profilo</string>
+    <string name="profile_update_event_set_new_picture">ha impostato una nuova immagine del profilo</string>
     <string name="profile_update_event_set_new_address">impostato nuovo indirizzo di contatto</string>
     <string name="profile_update_event_updated_profile">profilo aggiornato</string>
     <string name="saved_message_title">Messaggio salvato</string>

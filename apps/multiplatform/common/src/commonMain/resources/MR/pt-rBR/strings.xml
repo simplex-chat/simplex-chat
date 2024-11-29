@@ -2104,4 +2104,5 @@
     <string name="network_proxy_incorrect_config_title">Erro ao salvar proxy</string>
     <string name="network_proxy_password">Senha</string>
     <string name="network_proxy_username">Nome de usuário</string>
+    <string name="network_session_mode_session">Sessão do aplicativo</string>
 </resources>
