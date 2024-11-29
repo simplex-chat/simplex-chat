@@ -5550,13 +5550,18 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 Just AutoAccept {acceptIncognito, businessAddress} -> case groupId_ of
                   Nothing -> do
                     -- TODO [business]
-                    -- create new group: use name from UserContactRequest (see createAcceptedMember)
-                    -- check version:
-                    --   - 3+ for all but "SimpleX Chat team" address (preset address)
-                    --   - 10+ for preset contacts that need business group
-                    -- acceptGroupJoinRequestAsync / separate function for business group may be simpler,
-                    -- then we can create group inside it
-                    -- see acceptBusinessJoinRequestAsync
+                    -- if businessAddress:
+                    -- - "SimpleX Chat team" address && version < 10:
+                    --     create as contact
+                    -- - other address && version < 3:
+                    --     create as contact
+                    -- - other address && version >= 3 && < 10:
+                    --     create as group, XGrpLinkInv should have user profile as group profile and businessMember = Nothing
+                    -- - otherwise
+                    --     create as group, XGrpLinkInv should have synthetic group profile and user profile as businessMember
+                    --
+                    -- acceptGroupJoinRequestAsync / acceptBusinessJoinRequestAsync?
+                    -- use name from UserContactRequest (see createAcceptedMember)
 
                     -- [incognito] generate profile to send, create connection with incognito profile
                     incognitoProfile <- if acceptIncognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
