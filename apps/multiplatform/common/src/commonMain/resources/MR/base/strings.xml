@@ -1059,7 +1059,7 @@
   <string name="onboarding_notifications_mode_periodic_desc_short">Check messages every 10 minutes</string>
   <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Uses more battery</b>! App always runs in background – notifications are shown instantly.]]></string>
   <string name="onboarding_notifications_mode_service_desc_short">App always runs in background</string>
-  <string name="onboarding_notifications_mode_battery">Notifications battery</string>
+  <string name="onboarding_notifications_mode_battery">Notifications and battery</string>
 
   <!-- SetupDatabasePassphrase.kt -->
   <string name="setup_database_passphrase">Setup database passphrase</string>
