@@ -929,7 +929,6 @@
     <string name="description_you_shared_one_time_link_incognito">je hebt een eenmalige link incognito gedeeld</string>
     <string name="chat_help_tap_button">Tik op de knop</string>
     <string name="read_more_in_github_with_link"><![CDATA[Lees meer in onze <font color="#0088ff">GitHub repository</font>.]]></string>
-    <string name="read_more_in_github">Lees meer in onze GitHub repository.</string>
     <string name="integrity_msg_skipped">%1$d bericht(en) overgeslagen</string>
     <string name="moderated_description">gemodereerd</string>
     <string name="moderated_item_description">gemodereerd door %s</string>

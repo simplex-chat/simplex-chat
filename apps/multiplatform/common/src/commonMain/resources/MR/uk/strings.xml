@@ -410,7 +410,6 @@
     <string name="privacy_redefined">Приватність перевизначена</string>
     <string name="people_can_connect_only_via_links_you_share">Ви вирішуєте, хто може під\'єднатися.</string>
     <string name="how_simplex_works">Як працює SimpleX</string>
-    <string name="read_more_in_github">Докладніше читайте в нашому репозиторії на GitHub.</string>
     <string name="encrypted_audio_call">зашифрований e2e аудіовиклик</string>
     <string name="open_simplex_chat_to_accept_call">Відкрийте SimpleX Chat для прийняття виклику</string>
     <string name="status_e2e_encrypted">e2e зашифровано</string>

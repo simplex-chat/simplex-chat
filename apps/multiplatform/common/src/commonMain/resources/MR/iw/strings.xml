@@ -791,7 +791,6 @@
     <string name="reject_contact_button">דחיה</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[קראו עוד ב<font color="#0088ff">מדריך למשתמש</font>.]]></string>
     <string name="rate_the_app">דרגו את האפליקציה</string>
-    <string name="read_more_in_github">קראו עוד ב־GitHub repository שלנו.</string>
     <string name="read_more_in_github_with_link"><![CDATA[קראו עוד ב־<font color="#0088ff">GitHub repository</font> שלנו.]]></string>
     <string name="relay_server_if_necessary">יבוצע שימוש בשרת ממסר רק במידת הצורך. גורם אחר יכול לצפות בכתובת ה־IP שלך.</string>
     <string name="relay_server_protects_ip">שרת ממסר מגן על כתובת ה־IP שלך, אך הוא יכול לראות את משך השיחה.</string>

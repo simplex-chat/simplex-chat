@@ -767,7 +767,6 @@
     <string name="callstate_received_confirmation">ได้รับการยืนยัน…</string>
     <string name="privacy_redefined">นิยามความเป็นส่วนตัวใหม่</string>
     <string name="read_more_in_github_with_link"><![CDATA[อ่านเพิ่มเติมใน <font color="#0088ff"> GitHub repository </font> ของเรา]]></string>
-    <string name="read_more_in_github">อ่านเพิ่มเติมใน GitHub repository ของเรา</string>
     <string name="onboarding_notifications_mode_title">การแจ้งเตือนส่วนตัว</string>
     <string name="alert_text_fragment_please_report_to_developers">โปรดรายงานไปยังผู้พัฒนาแอป</string>
     <string name="privacy_and_security">ความเป็นส่วนตัวและความปลอดภัย</string>

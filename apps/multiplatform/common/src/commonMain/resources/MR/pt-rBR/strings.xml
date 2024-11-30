@@ -469,7 +469,6 @@
     <string name="app_version_code">Compilação do aplicativo: %s</string>
     <string name="save_and_notify_contact">Salvar e notificar contato</string>
     <string name="callstate_received_answer">resposta recebida…</string>
-    <string name="read_more_in_github">Leia mais no nosso repositório do GitHub.</string>
     <string name="paste_the_link_you_received">Cole o link que você recebeu</string>
     <string name="onboarding_notifications_mode_off">Quando o aplicativo está em execução</string>
     <string name="onboarding_notifications_mode_periodic">Periódico</string>

@@ -650,7 +650,6 @@
     <string name="callstate_received_confirmation">confirmación recibida…</string>
     <string name="onboarding_notifications_mode_periodic">Periódico</string>
     <string name="privacy_redefined">Privacidad redefinida</string>
-    <string name="read_more_in_github">Conoce más en nuestro repositorio GitHub.</string>
     <string name="reject">Rechazar</string>
     <string name="open_verb">Abrir</string>
     <string name="icon_descr_call_pending_sent">Llamada pendiente</string>

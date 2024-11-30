@@ -733,7 +733,6 @@
     <string name="decentralized">نامتمرکز</string>
     <string name="create_your_profile">نمایه خود را ایجاد کنید</string>
     <string name="how_simplex_works">SimpleX چگونه کار می‌کند</string>
-    <string name="read_more_in_github">مطالعه بیشتر در مخزن GitHub ما.</string>
     <string name="read_more_in_github_with_link"><![CDATA[مطالعه بیشتر در <font color="#0088ff">مخزن GitHub</font> ما.]]></string>
     <string name="use_chat">استفاده از گپ</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>بهترین گزینه برای باتری</b>. شما اعلان‌ها را فقط وقتی دریافت می‌کنید که برنامه در حال اجراست (بدون سرویس پس‌زمینه).]]></string>

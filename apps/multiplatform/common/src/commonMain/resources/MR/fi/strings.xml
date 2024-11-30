@@ -834,7 +834,6 @@
     <string name="read_more_in_github_with_link"><![CDATA[Lue lisää <font color="#0088ff">GitHub-arkistostamme</font>.]]></string>
     <string name="onboarding_notifications_mode_periodic">Säännölliset</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Vain asiakaslaitteet tallentavat käyttäjäprofiileja, yhteystietoja, ryhmiä ja viestejä, jotka on lähetetty <b>2-kerroksisella päästä päähän -salauksella</b>.]]></string>
-    <string name="read_more_in_github">Lue lisää GitHub-tietovarastostamme.</string>
     <string name="paste_the_link_you_received">Liitä vastaanotettu linkki</string>
     <string name="relay_server_protects_ip">Välityspalvelin suojaa IP-osoitteesi, mutta se voi tarkkailla puhelun kestoa.</string>
     <string name="open_simplex_chat_to_accept_call">Avaa SimpleX Chat hyväksyäksesi puhelun</string>

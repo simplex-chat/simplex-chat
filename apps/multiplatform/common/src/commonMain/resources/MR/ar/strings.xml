@@ -931,7 +931,6 @@
     <string name="reset_verb">صفّر</string>
     <string name="network_proxy_port">المنفذ %d</string>
     <string name="smp_servers_preset_server">خادم محدد مسبقًا</string>
-    <string name="read_more_in_github">قراءة المزيد في مستودعنا على GitHub.</string>
     <string name="relay_server_if_necessary">يتم استخدام خادم الترحيل فقط إذا لزم الأمر. يمكن لطرف آخر مراقبة عنوان IP الخاص بك.</string>
     <string name="save_and_notify_contact">حفظ وإشعار جهة الاتصال</string>
     <string name="settings_restart_app">إعادة التشغيل</string>

@@ -984,7 +984,6 @@
     <string name="to_start_a_new_chat_help_header">Yeni bir sohbet başlatmak için</string>
     <string name="people_can_connect_only_via_links_you_share">Kimin bağlanabileceğine siz karar verirsiniz.</string>
     <string name="privacy_redefined">Gizlilik yeniden tanımlanıyor</string>
-    <string name="read_more_in_github">GitHub repomuzda daha fazlasını okuyun.</string>
     <string name="onboarding_notifications_mode_periodic">Periyodik</string>
     <string name="onboarding_notifications_mode_title">Gizli bildirimler</string>
     <string name="paste_the_link_you_received">Aldığın bağlantıyı yapıştır</string>

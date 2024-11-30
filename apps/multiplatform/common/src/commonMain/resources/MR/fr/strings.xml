@@ -371,7 +371,6 @@
     <string name="callstate_connecting">connexion…</string>
     <string name="opensource_protocol_and_code_anybody_can_run_servers">N\'importe qui peut heberger un serveur.</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Pour protéger votre vie privée, au lieu d\'IDs utilisés par toutes les autres plateformes, SimpleX possède des IDs pour les queues de messages, distinctes pour chacun de vos contacts.</string>
-    <string name="read_more_in_github">Plus d\'informations sur notre GitHub.</string>
     <string name="paste_the_link_you_received">Collez le lien que vous avez reçu</string>
     <string name="use_chat">Utiliser le chat</string>
     <string name="onboarding_notifications_mode_title">Notifications privées</string>

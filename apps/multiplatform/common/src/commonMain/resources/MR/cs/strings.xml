@@ -667,7 +667,6 @@
     <string name="first_platform_without_user_ids">Bez uživatelských identifikátorů</string>
     <string name="immune_to_spam_and_abuse">Odolná vůči spamu</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">K ochraně soukromí, místo uživatelských ID užívaných všemi ostatními platformami, SimpleX používá identifikátory pro fronty zpráv, zvlášť pro každý z vašich kontaktů.</string>
-    <string name="read_more_in_github">Další informace najdete v našem repozitáři na GitHubu.</string>
     <string name="read_more_in_github_with_link"><![CDATA[Další informace najdete v našem <font color="#0088ff">úložišti GitHub</font>.]]></string>
     <string name="use_chat">Použijte chat</string>
     <string name="onboarding_notifications_mode_subtitle">Lze změnit později v nastavení.</string>

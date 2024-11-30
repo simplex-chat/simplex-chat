@@ -693,7 +693,6 @@
     <string name="network_use_onion_hosts_required">必须</string>
     <string name="save_and_notify_contact">保存并通知联系人</string>
     <string name="save_and_notify_contacts">保存并通知联系人</string>
-    <string name="read_more_in_github">在我们的 GitHub 仓库中阅读更多内容。</string>
     <string name="reject">拒绝</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">为了保护隐私，而不是所有其他平台使用的用户 ID，SimpleX 具有消息队列的标识符，每个联系人都是分开的。</string>
     <string name="network_option_tcp_connection_timeout">TCP 连接超时</string>

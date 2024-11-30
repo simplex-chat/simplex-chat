@@ -327,7 +327,6 @@
     <string name="make_private_connection">プライベートな接続をする</string>
     <string name="onboarding_notifications_mode_title">プライベートな通知</string>
     <string name="read_more_in_github_with_link"><![CDATA[<font color="#0088ff">GitHubリポジトリ</font>で詳細をご確認ください。]]></string>
-    <string name="read_more_in_github">GitHubリポジトリで詳細をご確認ください。</string>
     <string name="encrypted_video_call">エンドツーエンド暗号化済みビデオ通話</string>
     <string name="no_call_on_lock_screen">無効にする</string>
     <string name="status_no_e2e_encryption">エンドツーエンド暗号化がありません</string>

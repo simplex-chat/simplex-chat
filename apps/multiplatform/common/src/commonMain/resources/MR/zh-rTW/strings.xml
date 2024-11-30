@@ -786,7 +786,6 @@
     <string name="ttl_s">%ds</string>
     <string name="onboarding_notifications_mode_title">私人通知</string>
     <string name="read_more_in_github_with_link"><![CDATA[可在 <font color="#0088ff">GitHub</font>內查看更多。]]></string>
-    <string name="read_more_in_github">於 GitHub 儲存庫內查看更多。</string>
     <string name="incoming_video_call">視訊通話來電</string>
     <string name="icon_descr_hang_up">掛斷電話來電</string>
     <string name="call_connection_peer_to_peer">點對點</string>

@@ -687,7 +687,6 @@
     <string name="reject_contact_button">거절</string>
     <string name="password_to_show">비밀번호 표시</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[사용자 디바이스에만 <b>2계층 종단 간 암호화</b> 로 전송된 사용자 프로필, 연락처, 그룹 및 메시지를 저장되어요.]]></string>
-    <string name="read_more_in_github">자세한 내용은 GitHub에서 확인해 주세요.</string>
     <string name="privacy_and_security">개인 정보 보호 및 보안</string>
     <string name="notifications_will_be_hidden">알림은 앱이 중지되기 전까지만 전달될 거예요!</string>
     <string name="only_you_can_send_disappearing">당신만 사라지는 메시지를 보낼 수 있습니다.</string>
