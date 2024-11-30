@@ -73,14 +73,20 @@ struct ChooseServerOperators: View {
         GeometryReader { g in
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    if !onboarding {
-                        Text("Choose operators")
-                            .font(.largeTitle)
-                            .bold()
+                    let title = Text("Server operators")
+                        .font(.largeTitle)
+                        .bold()
+                        .frame(maxWidth: .infinity, alignment: .center)
+                    
+                    if onboarding {
+                        title.padding(.top, 50)
+                    } else {
+                        title
                     }
 
                     infoText()
-                    
+                        .frame(maxWidth: .infinity, alignment: .center)
+
                     Spacer()
                     
                     ForEach(serverOperators) { srvOperator in
@@ -117,24 +123,24 @@ struct ChooseServerOperators: View {
                                         .foregroundColor(.clear)
                                 }
                             }
-                            .font(.callout)
-                            .padding(.top)
+                            .font(.system(size: 17, weight: .semibold))
+                            .frame(minHeight: 40)
                         }
                     }
-                    .padding(.bottom)
                     
                     if !onboarding && !reviewForOperators.isEmpty {
                         VStack(spacing: 8) {
                             reviewLaterButton()
                             (
                                 Text("Conditions will be accepted for enabled operators after 30 days.")
-                                + Text(" ")
+                                + textSpace
                                 + Text("You can configure operators in Network & servers settings.")
                             )
                             .multilineTextAlignment(.center)
                             .font(.footnote)
                             .padding(.horizontal, 32)
                         }
+                        .frame(maxWidth: .infinity)
                         .disabled(!canReviewLater)
                         .padding(.bottom)
                     }
@@ -162,21 +168,15 @@ struct ChooseServerOperators: View {
             }
         }
         .frame(maxHeight: .infinity)
-        .padding()
+        .padding(onboarding ? 25 : 16)
     }
 
     private func infoText() -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: "info.circle")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 20, height: 20)
-                .foregroundColor(theme.colors.primary)
-                .onTapGesture {
-                    sheetItem = .showInfo
-                }
-
-            Text("Select network operators to use.")
+        Button {
+            sheetItem = .showInfo
+        } label: {
+            Label("How it helps privacy", systemImage: "info.circle")
+                .font(.headline)
         }
     }
 
@@ -305,8 +305,6 @@ struct ChooseServerOperators: View {
 
     private func notificationsModeDestinationView() -> some View {
         SetNotificationsMode()
-            .navigationTitle("Push notifications")
-            .navigationBarTitleDisplayMode(.large)
             .navigationBarBackButtonHidden(true)
             .modifier(ThemedBackground())
     }
@@ -330,12 +328,12 @@ struct ChooseServerOperators: View {
                 Text("Conditions will be accepted for operator(s): **\(acceptForOperators.map { $0.legalName_ }.joined(separator: ", "))**.")
             }
             ConditionsTextView()
+                .frame(maxHeight: .infinity)
             acceptConditionsButton()
                 .padding(.bottom)
                 .padding(.bottom)
         }
-        .padding(.horizontal)
-        .frame(maxHeight: .infinity)
+        .padding(.horizontal, 25)
     }
 
     private func acceptConditionsButton() -> some View {
@@ -408,18 +406,21 @@ struct ChooseServerOperators: View {
     }
 }
 
+let operatorsPostLink = URL(string: "https://simplex.chat/blog/20241125-servers-operated-by-flux-true-privacy-and-decentralization-for-all-users.html")!
+
 struct ChooseServerOperatorsInfoView: View {
     var body: some View {
         VStack(alignment: .leading) {
-            Text("Network operators")
+            Text("Server operators")
                 .font(.largeTitle)
                 .bold()
                 .padding(.vertical)
             ScrollView {
                 VStack(alignment: .leading) {
                     Group {
-                        Text("When more than one network operator is enabled, the app will use the servers of different operators for each conversation.")
-                        Text("For example, if you receive messages via SimpleX Chat server, the app will use one of Flux servers for private routing.")
+                        Text("The app protects your privacy by using different operators in each conversation.")
+                        Text("When more than one operator is enabled, none of them has metadata to learn who communicates with whom.")
+                        Text("For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server.")
                     }
                     .padding(.bottom)
                 }

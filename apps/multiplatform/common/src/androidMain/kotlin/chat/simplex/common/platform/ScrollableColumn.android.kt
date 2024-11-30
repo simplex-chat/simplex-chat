@@ -14,6 +14,7 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.chatlist.NavigationBarBackground
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.onboarding.OnboardingStage
 import kotlinx.coroutines.flow.filter
 import kotlin.math.absoluteValue
 
@@ -124,7 +125,7 @@ actual fun ColumnWithScrollBar(
         }
       }
   }
-  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val oneHandUI = remember { derivedStateOf { if (appPrefs.onboardingStage.state.value == OnboardingStage.OnboardingComplete) appPrefs.oneHandUI.state.value else false } }
   Box(Modifier.fillMaxHeight()) {
     Column(
       if (maxIntrinsicSize) {

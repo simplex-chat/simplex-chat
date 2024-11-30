@@ -537,15 +537,13 @@ fun markChatRead(c: Chat, chatModel: ChatModel) {
   var chat = c
   withApi {
     if (chat.chatStats.unreadCount > 0) {
-      val minUnreadItemId = chat.chatStats.minUnreadItemId
       withChats {
         markChatItemsRead(chat.remoteHostId, chat.chatInfo)
       }
       chatModel.controller.apiChatRead(
         chat.remoteHostId,
         chat.chatInfo.chatType,
-        chat.chatInfo.apiId,
-        CC.ItemRange(minUnreadItemId, chat.chatItems.last().id)
+        chat.chatInfo.apiId
       )
       chat = chatModel.getChat(chat.id) ?: return@withApi
     }

@@ -446,6 +446,13 @@ func apiChatItemReaction(type: ChatType, id: Int64, itemId: Int64, add: Bool, re
     throw r
 }
 
+func apiGetReactionMembers(groupId: Int64, itemId: Int64, reaction: MsgReaction) async throws -> [MemberReaction] {
+    let userId = try currentUserId("apiGetReactionMemebers")
+    let r = await chatSendCmd(.apiGetReactionMembers(userId: userId, groupId: groupId, itemId: itemId, reaction: reaction ))
+    if case let .reactionMembers(_, memberReactions) = r { return memberReactions }
+    throw r
+}
+
 func apiDeleteChatItems(type: ChatType, id: Int64, itemIds: [Int64], mode: CIDeleteMode) async throws -> [ChatItemDeletion] {
     let r = await chatSendCmd(.apiDeleteChatItem(type: type, id: id, itemIds: itemIds, mode: mode), bgDelay: msgDelay)
     if case let .chatItemsDeleted(_, items, _) = r { return items }
@@ -1061,8 +1068,8 @@ func apiRejectContactRequest(contactReqId: Int64) async throws {
     throw r
 }
 
-func apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64)) async throws {
-    try await sendCommandOkResp(.apiChatRead(type: type, id: id, itemRange: itemRange))
+func apiChatRead(type: ChatType, id: Int64) async throws {
+    try await sendCommandOkResp(.apiChatRead(type: type, id: id))
 }
 
 func apiChatItemsRead(type: ChatType, id: Int64, itemIds: [Int64]) async throws {
@@ -1368,15 +1375,13 @@ func apiGetNetworkStatuses() throws -> [ConnNetworkStatus] {
     throw r
 }
 
-func markChatRead(_ chat: Chat, aboveItem: ChatItem? = nil) async {
+func markChatRead(_ chat: Chat) async {
     do {
         if chat.chatStats.unreadCount > 0 {
-            let minItemId = chat.chatStats.minUnreadItemId
-            let itemRange = (minItemId, aboveItem?.id ?? chat.chatItems.last?.id ?? minItemId)
             let cInfo = chat.chatInfo
-            try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: itemRange)
+            try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId)
             await MainActor.run {
-                withAnimation { ChatModel.shared.markChatItemsRead(cInfo, aboveItem: aboveItem) }
+                withAnimation { ChatModel.shared.markChatItemsRead(cInfo) }
             }
         }
         if chat.chatStats.unreadChat {
@@ -1396,17 +1401,6 @@ func markChatUnread(_ chat: Chat, unreadChat: Bool = true) async {
         }
     } catch {
         logger.error("markChatUnread apiChatUnread error: \(responseError(error))")
-    }
-}
-
-func apiMarkChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
-    do {
-        try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: (cItem.id, cItem.id))
-        DispatchQueue.main.async {
-            ChatModel.shared.markChatItemsRead(cInfo, [cItem.id])
-        }
-    } catch {
-        logger.error("apiChatRead error: \(responseError(error))")
     }
 }
 
@@ -1606,6 +1600,15 @@ func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = ni
     m.chatInitialized = true
     m.currentUser = try apiGetActiveUser()
     m.conditions = try getServerOperators()
+    if shouldImportAppSettingsDefault.get() {
+        do {
+            let appSettings = try apiGetAppSettings(settings: AppSettings.current.prepareForExport())
+            appSettings.importIntoApp()
+            shouldImportAppSettingsDefault.set(false)
+        } catch {
+            logger.error("Error while importing app settings: \(error)")
+        }
+    }
     if m.currentUser == nil {
         onboardingStageDefault.set(.step1_SimpleXInfo)
         privacyDeliveryReceiptsSet.set(true)

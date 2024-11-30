@@ -34,13 +34,7 @@ struct AddressCreationCard: View {
                     Text("Your SimpleX address")
                         .font(.title3)
                     Spacer()
-                    HStack(alignment: .center) {
-                        Text("How to use it")
-                        VStack {
-                            Image(systemName: "info.circle")
-                                .foregroundColor(theme.colors.secondary)
-                        }
-                    }
+                    Text("How to use it") + textSpace + Text(Image(systemName: "info.circle")).foregroundColor(theme.colors.secondary)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -68,7 +62,7 @@ struct AddressCreationCard: View {
         .alert(isPresented: $showAddressCreationAlert) {
             Alert(
                 title: Text("SimpleX address"),
-                message: Text("You can create it in user picker."),
+                message: Text("Tap Create SimpleX address in the menu to create it later."),
                 dismissButton: .default(Text("Ok")) {
                     withAnimation {
                         addressCreationCardShown = true
@@ -87,8 +81,8 @@ struct AddressCreationCard: View {
         .sheet(isPresented: $showAddressInfoSheet) {
             NavigationView {
                 UserAddressLearnMore(showCreateAddressButton: true)
-                    .navigationTitle("SimpleX address")
-                    .navigationBarTitleDisplayMode(.large)
+                    .navigationTitle("Address or 1-time link?")
+                    .navigationBarTitleDisplayMode(.inline)
                     .modifier(ThemedBackground(grouped: true))
             }
         }

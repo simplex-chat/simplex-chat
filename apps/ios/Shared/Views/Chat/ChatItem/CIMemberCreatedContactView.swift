@@ -45,7 +45,7 @@ struct CIMemberCreatedContactView: View {
             + Text(openText)
                 .fontWeight(.medium)
                 .foregroundColor(theme.colors.primary)
-            + Text("  ")
+            + Text(verbatim: "  ")
         }
         r = r + chatItem.timestampText
             .fontWeight(.light)

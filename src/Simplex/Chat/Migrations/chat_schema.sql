@@ -627,17 +627,6 @@ CREATE INDEX idx_contact_requests_xcontact_id ON contact_requests(xcontact_id);
 CREATE INDEX idx_contacts_xcontact_id ON contacts(xcontact_id);
 CREATE INDEX idx_messages_shared_msg_id ON messages(shared_msg_id);
 CREATE INDEX idx_chat_items_shared_msg_id ON chat_items(shared_msg_id);
-CREATE INDEX idx_chat_items_groups ON chat_items(
-  user_id,
-  group_id,
-  item_ts,
-  chat_item_id
-);
-CREATE INDEX idx_chat_items_contacts ON chat_items(
-  user_id,
-  contact_id,
-  chat_item_id
-);
 CREATE UNIQUE INDEX idx_chat_items_direct_shared_msg_id ON chat_items(
   user_id,
   contact_id,
@@ -887,25 +876,10 @@ CREATE INDEX idx_chat_items_contacts_created_at on chat_items(
   contact_id,
   created_at
 );
-CREATE INDEX idx_chat_items_contacts_item_status on chat_items(
-  user_id,
-  contact_id,
-  item_status
-);
-CREATE INDEX idx_chat_items_groups_item_status on chat_items(
-  user_id,
-  group_id,
-  item_status
-);
 CREATE INDEX idx_chat_items_notes_created_at on chat_items(
   user_id,
   note_folder_id,
   created_at
-);
-CREATE INDEX idx_chat_items_notes_item_status on chat_items(
-  user_id,
-  note_folder_id,
-  item_status
 );
 CREATE INDEX idx_files_redirect_file_id on files(redirect_file_id);
 CREATE INDEX idx_chat_items_fwd_from_contact_id ON chat_items(
@@ -925,4 +899,27 @@ CREATE INDEX idx_operator_usage_conditions_server_operator_id ON operator_usage_
 CREATE UNIQUE INDEX idx_operator_usage_conditions_conditions_commit ON operator_usage_conditions(
   conditions_commit,
   server_operator_id
+);
+CREATE INDEX idx_chat_items_contacts ON chat_items(
+  user_id,
+  contact_id,
+  item_status,
+  created_at
+);
+CREATE INDEX idx_chat_items_groups ON chat_items(
+  user_id,
+  group_id,
+  item_status,
+  item_ts
+);
+CREATE INDEX idx_chat_items_groups_item_ts ON chat_items(
+  user_id,
+  group_id,
+  item_ts
+);
+CREATE INDEX idx_chat_items_notes ON chat_items(
+  user_id,
+  note_folder_id,
+  item_status,
+  created_at
 );

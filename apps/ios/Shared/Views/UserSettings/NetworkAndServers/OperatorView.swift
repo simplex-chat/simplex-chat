@@ -8,6 +8,7 @@
 
 import SwiftUI
 import SimpleXChat
+import Ink
 
 struct OperatorView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
@@ -342,6 +343,7 @@ struct OperatorInfoView: View {
 struct ConditionsTextView: View {
     @State private var conditionsData: (UsageConditions, String?, UsageConditions?)?
     @State private var failedToLoad: Bool = false
+    @State private var conditionsHTML: String? = nil
 
     let defaultConditionsLink = "https://github.com/simplex-chat/simplex-chat/blob/stable/PRIVACY.md"
 
@@ -350,7 +352,18 @@ struct ConditionsTextView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .task {
                 do {
-                    conditionsData = try await getUsageConditions()
+                    let conditions = try await getUsageConditions()
+                    let conditionsText = conditions.1
+                    let parentLink =  "https://github.com/simplex-chat/simplex-chat/blob/\(conditions.0.conditionsCommit)"
+                    let preparedText: String?
+                    if let conditionsText {
+                        let prepared = prepareMarkdown(conditionsText.trimmingCharacters(in: .whitespacesAndNewlines), parentLink)
+                        conditionsHTML = MarkdownParser().html(from: prepared)
+                        preparedText = prepared
+                    } else {
+                        preparedText = nil
+                    }
+                    conditionsData = (conditions.0, preparedText, conditions.2)
                 } catch let error {
                     logger.error("ConditionsTextView getUsageConditions error: \(responseError(error))")
                     failedToLoad = true
@@ -358,18 +371,16 @@ struct ConditionsTextView: View {
             }
     }
 
-    // TODO Markdown & diff rendering
+    // TODO Diff rendering
     @ViewBuilder private func viewBody() -> some View {
-        if let (usageConditions, conditionsText, acceptedConditions) = conditionsData {
-            if let conditionsText = conditionsText {
-                ScrollView {
-                    Text(conditionsText.trimmingCharacters(in: .whitespacesAndNewlines))
-                        .padding()
-                }
-                .background(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color(uiColor: .secondarySystemGroupedBackground))
-                )
+        if let (usageConditions, _, _) = conditionsData {
+            if let conditionsHTML {
+                ConditionsWebView(html: conditionsHTML)
+                    .padding(6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color(uiColor: .secondarySystemGroupedBackground))
+                    )
             } else {
                 let conditionsLink = "https://github.com/simplex-chat/simplex-chat/blob/\(usageConditions.conditionsCommit)/PRIVACY.md"
                 conditionsLinkView(conditionsLink)
@@ -390,6 +401,16 @@ struct ConditionsTextView: View {
                     .multilineTextAlignment(.leading)
             }
         }
+    }
+
+    private func prepareMarkdown(_ text: String, _ parentLink: String) -> String {
+        let localLinkRegex = try! NSRegularExpression(pattern: "\\[([^\\(]*)\\]\\(#.*\\)")
+        let h1Regex = try! NSRegularExpression(pattern: "^# ")
+        var text = localLinkRegex.stringByReplacingMatches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count), withTemplate: "$1")
+        text = h1Regex.stringByReplacingMatches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count), withTemplate: "")
+        return text
+            .replacingOccurrences(of: "](/", with: "](\(parentLink)/")
+            .replacingOccurrences(of: "](./", with: "](\(parentLink)/")
     }
 }
 

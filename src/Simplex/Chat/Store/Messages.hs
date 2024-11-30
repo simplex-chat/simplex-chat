@@ -76,6 +76,7 @@ module Simplex.Chat.Store.Messages
     getGroupCIReactions,
     getGroupReactions,
     setGroupReaction,
+    getReactionMembers,
     getChatItemIdsByAgentMsgId,
     getDirectChatItem,
     getDirectCIWithReactions,
@@ -1145,27 +1146,52 @@ getContactNavInfo_ db User {userId} Contact {contactId} afterCI = do
     getAfterUnreadCount :: IO Int
     getAfterUnreadCount =
       fromOnly . head
-        <$> DB.query
+        <$> DB.queryNamed
           db
           [sql|
             SELECT COUNT(1)
-            FROM chat_items
-            WHERE user_id = ? AND contact_id = ? AND item_status = ?
-              AND (created_at > ? OR (created_at = ? AND chat_item_id > ?))
+            FROM (
+              SELECT 1
+              FROM chat_items
+              WHERE user_id = :user_id AND contact_id = :contact_id AND item_status = :rcv_new
+                AND created_at > :created_at
+              UNION ALL
+              SELECT 1
+              FROM chat_items
+              WHERE user_id = :user_id AND contact_id = :contact_id AND item_status = :rcv_new
+                AND created_at = :created_at AND chat_item_id > :item_id
+            )
           |]
-          (userId, contactId, CISRcvNew, ciCreatedAt afterCI, ciCreatedAt afterCI, cChatItemId afterCI)
+          [ ":user_id" := userId,
+            ":contact_id" := contactId,
+            ":rcv_new" := CISRcvNew,
+            ":created_at" := ciCreatedAt afterCI,
+            ":item_id" := cChatItemId afterCI
+          ]
     getAfterTotalCount :: IO Int
     getAfterTotalCount =
       fromOnly . head
-        <$> DB.query
+        <$> DB.queryNamed
           db
           [sql|
             SELECT COUNT(1)
-            FROM chat_items
-            WHERE user_id = ? AND contact_id = ?
-              AND (created_at > ? OR (created_at = ? AND chat_item_id > ?))
+            FROM (
+              SELECT 1
+              FROM chat_items
+              WHERE user_id = :user_id AND contact_id = :contact_id
+                AND created_at > :created_at
+              UNION ALL
+              SELECT 1
+              FROM chat_items
+              WHERE user_id = :user_id AND contact_id = :contact_id
+                AND created_at = :created_at AND chat_item_id > :item_id
+            )
           |]
-          (userId, contactId, ciCreatedAt afterCI, ciCreatedAt afterCI, cChatItemId afterCI)
+          [ ":user_id" := userId,
+            ":contact_id" := contactId,
+            ":created_at" := ciCreatedAt afterCI,
+            ":item_id" := cChatItemId afterCI
+          ]
 
 getGroupChat :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
 getGroupChat db vr user groupId pagination search_ = do
@@ -1363,27 +1389,52 @@ getGroupNavInfo_ db User {userId} GroupInfo {groupId} afterCI = do
     getAfterUnreadCount :: IO Int
     getAfterUnreadCount =
       fromOnly . head
-        <$> DB.query
+        <$> DB.queryNamed
           db
           [sql|
             SELECT COUNT(1)
-            FROM chat_items
-            WHERE user_id = ? AND group_id = ? AND item_status = ?
-              AND (item_ts > ? OR (item_ts = ? AND chat_item_id > ?))
+            FROM (
+              SELECT 1
+              FROM chat_items
+              WHERE user_id = :user_id AND group_id = :group_id AND item_status = :rcv_new
+                AND item_ts > :item_ts
+              UNION ALL
+              SELECT 1
+              FROM chat_items
+              WHERE user_id = :user_id AND group_id = :group_id AND item_status = :rcv_new
+                AND item_ts = :item_ts AND chat_item_id > :item_id
+            )
           |]
-          (userId, groupId, CISRcvNew, chatItemTs afterCI, chatItemTs afterCI, cChatItemId afterCI)
+          [ ":user_id" := userId,
+            ":group_id" := groupId,
+            ":rcv_new" := CISRcvNew,
+            ":item_ts" := chatItemTs afterCI,
+            ":item_id" := cChatItemId afterCI
+          ]
     getAfterTotalCount :: IO Int
     getAfterTotalCount =
       fromOnly . head
-        <$> DB.query
+        <$> DB.queryNamed
           db
           [sql|
             SELECT COUNT(1)
-            FROM chat_items
-            WHERE user_id = ? AND group_id = ?
-              AND (item_ts > ? OR (item_ts = ? AND chat_item_id > ?))
+            FROM (
+              SELECT 1
+              FROM chat_items
+              WHERE user_id = :user_id AND group_id = :group_id
+                AND item_ts > :item_ts
+              UNION ALL
+              SELECT 1
+              FROM chat_items
+              WHERE user_id = :user_id AND group_id = :group_id
+                AND item_ts = :item_ts AND chat_item_id > :item_id
+            )
           |]
-          (userId, groupId, chatItemTs afterCI, chatItemTs afterCI, cChatItemId afterCI)
+          [ ":user_id" := userId,
+            ":group_id" := groupId,
+            ":item_ts" := chatItemTs afterCI,
+            ":item_id" := cChatItemId afterCI
+          ]
 
 getLocalChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTLocal, Maybe NavigationInfo)
 getLocalChat db user folderId pagination search_ = do
@@ -1565,27 +1616,52 @@ getLocalNavInfo_ db User {userId} NoteFolder {noteFolderId} afterCI = do
     getAfterUnreadCount :: IO Int
     getAfterUnreadCount =
       fromOnly . head
-        <$> DB.query
+        <$> DB.queryNamed
           db
           [sql|
             SELECT COUNT(1)
-            FROM chat_items
-            WHERE user_id = ? AND note_folder_id = ? AND item_status = ?
-              AND (created_at > ? OR (created_at = ? AND chat_item_id > ?))
+            FROM (
+              SELECT 1
+              FROM chat_items
+              WHERE user_id = :user_id AND note_folder_id = :note_folder_id AND item_status = :rcv_new
+                AND created_at > :created_at
+              UNION ALL
+              SELECT 1
+              FROM chat_items
+              WHERE user_id = :user_id AND note_folder_id = :note_folder_id AND item_status = :rcv_new
+                AND created_at = :created_at AND chat_item_id > :item_id
+            )
           |]
-          (userId, noteFolderId, CISRcvNew, ciCreatedAt afterCI, ciCreatedAt afterCI, cChatItemId afterCI)
+          [ ":user_id" := userId,
+            ":note_folder_id" := noteFolderId,
+            ":rcv_new" := CISRcvNew,
+            ":created_at" := ciCreatedAt afterCI,
+            ":item_id" := cChatItemId afterCI
+          ]
     getAfterTotalCount :: IO Int
     getAfterTotalCount =
       fromOnly . head
-        <$> DB.query
+        <$> DB.queryNamed
           db
           [sql|
             SELECT COUNT(1)
-            FROM chat_items
-            WHERE user_id = ? AND note_folder_id = ?
-              AND (created_at > ? OR (created_at = ? AND chat_item_id > ?))
+            FROM (
+              SELECT 1
+              FROM chat_items
+              WHERE user_id = :user_id AND note_folder_id = :note_folder_id
+                AND created_at > :created_at
+              UNION ALL
+              SELECT 1
+              FROM chat_items
+              WHERE user_id = :user_id AND note_folder_id = :note_folder_id
+                AND created_at = :created_at AND chat_item_id > :item_id
+            )
           |]
-          (userId, noteFolderId, ciCreatedAt afterCI, ciCreatedAt afterCI, cChatItemId afterCI)
+          [ ":user_id" := userId,
+            ":note_folder_id" := noteFolderId,
+            ":created_at" := ciCreatedAt afterCI,
+            ":item_id" := cChatItemId afterCI
+          ]
 
 toChatItemRef :: (ChatItemId, Maybe Int64, Maybe Int64, Maybe Int64) -> Either StoreError (ChatRef, ChatItemId)
 toChatItemRef = \case
@@ -2776,6 +2852,24 @@ setGroupReaction db GroupInfo {groupId} m itemMemberId itemSharedMId sent reacti
           WHERE group_id = ? AND group_member_id = ? AND shared_msg_id = ? AND item_member_id = ? AND reaction_sent = ? AND reaction = ?
         |]
         (groupId, groupMemberId' m, itemSharedMId, itemMemberId, sent, reaction)
+
+getReactionMembers :: DB.Connection -> VersionRangeChat -> User -> GroupId -> SharedMsgId -> MsgReaction -> IO [MemberReaction]
+getReactionMembers db vr user groupId itemSharedMId reaction = do
+  reactions <-
+    DB.query
+      db
+      [sql|
+        SELECT group_member_id, reaction_ts
+        FROM chat_item_reactions
+        WHERE group_id = ? AND shared_msg_id = ? AND reaction = ?
+      |]
+      (groupId, itemSharedMId, reaction)
+  rights <$> mapM (runExceptT . toMemberReaction) reactions
+  where
+    toMemberReaction :: (GroupMemberId, UTCTime) -> ExceptT StoreError IO MemberReaction
+    toMemberReaction (groupMemberId, reactionTs) = do
+      groupMember <- getGroupMemberById db vr user groupMemberId
+      pure MemberReaction {groupMember, reactionTs}
 
 getTimedItems :: DB.Connection -> User -> UTCTime -> IO [((ChatRef, ChatItemId), UTCTime)]
 getTimedItems db User {userId} startTimedThreadCutoff =

@@ -23,13 +23,10 @@ struct HowItWorks: View {
             ScrollView {
                 VStack(alignment: .leading) {
                     Group {
-                        Text("Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*")
-                        Text("To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts.")
-                        Text("You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them.")
-                        Text("Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**.")
-                        if onboarding {
-                            Text("Read more in our GitHub repository.")
-                        } else {
+                        Text("To protect your privacy, SimpleX uses separate IDs for each of your contacts.")
+                        Text("Only client devices store user profiles, contacts, groups, and messages.")
+                        Text("All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages.")
+                        if !onboarding {
                             Text("Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme).")
                         }
                     }
@@ -40,12 +37,14 @@ struct HowItWorks: View {
             Spacer()
 
             if onboarding {
-                createFirstProfileButton()
-                    .padding(.bottom)
+                VStack(spacing: 10) {
+                    createFirstProfileButton()
+                    onboardingButtonPlaceholder()
+                }
             }
         }
         .lineLimit(10)
-        .padding()
+        .padding(onboarding ? 25 : 16)
         .frame(maxHeight: .infinity, alignment: .top)
         .modifier(ThemedBackground())
     }

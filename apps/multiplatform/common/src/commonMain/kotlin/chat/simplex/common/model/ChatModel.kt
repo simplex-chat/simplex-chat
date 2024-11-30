@@ -167,6 +167,9 @@ object ChatModel {
   val processedCriticalError: ProcessedErrors<AgentErrorType.CRITICAL> = ProcessedErrors(60_000)
   val processedInternalError: ProcessedErrors<AgentErrorType.INTERNAL> = ProcessedErrors(20_000)
 
+  // return true if you handled the click
+  var centerPanelBackgroundClickHandler: (() -> Boolean)? = null
+
   fun getUser(userId: Long): User? = if (currentUser.value?.userId == userId) {
     currentUser.value
   } else {
@@ -330,9 +333,8 @@ object ChatModel {
           chatItems = arrayListOf(newPreviewItem),
           chatStats =
           if (cItem.meta.itemStatus is CIStatus.RcvNew) {
-            val minUnreadId = if(chat.chatStats.minUnreadItemId == 0L) cItem.id else chat.chatStats.minUnreadItemId
             increaseUnreadCounter(rhId, currentUser.value!!)
-            chat.chatStats.copy(unreadCount = chat.chatStats.unreadCount + 1, minUnreadItemId = minUnreadId)
+            chat.chatStats.copy(unreadCount = chat.chatStats.unreadCount + 1)
           }
           else
             chat.chatStats
@@ -511,23 +513,19 @@ object ChatModel {
       }
     }
 
-    fun markChatItemsRead(remoteHostId: Long?, chatInfo: ChatInfo, range: CC.ItemRange? = null, unreadCountAfter: Int? = null) {
+    fun markChatItemsRead(remoteHostId: Long?, chatInfo: ChatInfo, itemIds: List<Long>? = null) {
       val cInfo = chatInfo
-      val markedRead = markItemsReadInCurrentChat(chatInfo, range)
+      val markedRead = markItemsReadInCurrentChat(chatInfo, itemIds)
       // update preview
       val chatIdx = getChatIndex(remoteHostId, cInfo.id)
       if (chatIdx >= 0) {
         val chat = chats[chatIdx]
         val lastId = chat.chatItems.lastOrNull()?.id
         if (lastId != null) {
-          val unreadCount = unreadCountAfter ?: if (range != null) chat.chatStats.unreadCount - markedRead else 0
+          val unreadCount = if (itemIds != null) chat.chatStats.unreadCount - markedRead else 0
           decreaseUnreadCounter(remoteHostId, currentUser.value!!, chat.chatStats.unreadCount - unreadCount)
           chats[chatIdx] = chat.copy(
-            chatStats = chat.chatStats.copy(
-              unreadCount = unreadCount,
-              // Can't use minUnreadItemId currently since chat items can have unread items between read items
-              //minUnreadItemId = if (range != null) kotlin.math.max(chat.chatStats.minUnreadItemId, range.to + 1) else lastId + 1
-            )
+            chatStats = chat.chatStats.copy(unreadCount = unreadCount)
           )
         }
       }
@@ -639,21 +637,17 @@ object ChatModel {
     }
   }
 
-  private fun markItemsReadInCurrentChat(chatInfo: ChatInfo, range: CC.ItemRange? = null): Int {
+  private fun markItemsReadInCurrentChat(chatInfo: ChatInfo, itemIds: List<Long>? = null): Int {
     val cInfo = chatInfo
     var markedRead = 0
     if (chatId.value == cInfo.id) {
       val items = chatItems.value
       var i = items.lastIndex
-      val itemIdsFromRange = if (range != null) {
-        (range.from .. range.to).toMutableSet()
-      } else {
-        mutableSetOf()
-      }
+      val itemIdsFromRange = itemIds?.toMutableSet() ?: mutableSetOf()
       val markedReadIds = mutableSetOf<Long>()
       while (i >= 0) {
         val item = items[i]
-        if (item.meta.itemStatus is CIStatus.RcvNew && (range == null || itemIdsFromRange.contains(item.id))) {
+        if (item.meta.itemStatus is CIStatus.RcvNew && (itemIds == null || itemIdsFromRange.contains(item.id))) {
           val newItem = item.withStatus(CIStatus.RcvRead())
           items[i] = newItem
           if (newItem.meta.itemLive != true && newItem.meta.itemTimed?.ttl != null) {
@@ -663,7 +657,7 @@ object ChatModel {
           }
           markedReadIds.add(item.id)
           markedRead++
-          if (range != null) {
+          if (itemIds != null) {
             itemIdsFromRange.remove(item.id)
             // already set all needed items as read, can finish the loop
             if (itemIdsFromRange.isEmpty()) break
@@ -671,7 +665,7 @@ object ChatModel {
         }
         i--
       }
-      chatItemsChangesListener?.read(if (range != null) markedReadIds else null, items)
+      chatItemsChangesListener?.read(if (itemIds != null) markedReadIds else null, items)
     }
     return markedRead
   }
@@ -1966,6 +1960,12 @@ class AChatItem (
 class ACIReaction(
   val chatInfo: ChatInfo,
   val chatReaction: CIReaction
+)
+
+@Serializable
+data class MemberReaction(
+  val groupMember: GroupMember,
+  val reactionTs: Instant
 )
 
 @Serializable

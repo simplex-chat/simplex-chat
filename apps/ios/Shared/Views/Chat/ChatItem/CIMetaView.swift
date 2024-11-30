@@ -83,7 +83,7 @@ enum MetaColorMode {
                 ? Image("checkmark.wide")
                 : Image(systemName: "circlebadge.fill")
             ).foregroundColor(.clear)
-        case .invertedMaterial: Text(" ").kerning(13)
+        case .invertedMaterial: textSpace.kerning(13)
         }
     }
 }
@@ -120,7 +120,7 @@ func ciMetaText(
         if ttl != chatTTL {
             r = r + colored(Text(shortTimeText(ttl)), resolved)
         }
-        space = Text(" ")
+        space = textSpace
     }
     if showViaProxy, meta.sentViaProxy == true {
         appendSpace()
@@ -138,12 +138,12 @@ func ciMetaText(
         } else if !meta.disappearing {
             r = r + colorMode.statusSpacer(meta.itemStatus.sent)
         }
-        space = Text(" ")
+        space = textSpace
     }
     if let enc = encrypted {
         appendSpace()
         r = r + statusIconText(enc ? "lock" : "lock.open", resolved)
-        space = Text(" ")
+        space = textSpace
     }
     if showTimesamp {
         appendSpace()

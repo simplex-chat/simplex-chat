@@ -49,6 +49,7 @@ public enum ChatCommand {
     case apiDeleteChatItem(type: ChatType, id: Int64, itemIds: [Int64], mode: CIDeleteMode)
     case apiDeleteMemberChatItem(groupId: Int64, itemIds: [Int64])
     case apiChatItemReaction(type: ChatType, id: Int64, itemId: Int64, add: Bool, reaction: MsgReaction)
+    case apiGetReactionMembers(userId: Int64, groupId: Int64, itemId: Int64, reaction: MsgReaction)
     case apiPlanForwardChatItems(toChatType: ChatType, toChatId: Int64, itemIds: [Int64])
     case apiForwardChatItems(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemIds: [Int64], ttl: Int?)
     case apiGetNtfToken
@@ -137,7 +138,7 @@ public enum ChatCommand {
     case apiCallStatus(contact: Contact, callStatus: WebRTCCallStatus)
     // WebRTC calls /
     case apiGetNetworkStatuses
-    case apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64))
+    case apiChatRead(type: ChatType, id: Int64)
     case apiChatItemsRead(type: ChatType, id: Int64, itemIds: [Int64])
     case apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool)
     case receiveFile(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool?, inline: Bool?)
@@ -212,6 +213,7 @@ public enum ChatCommand {
             case let .apiDeleteChatItem(type, id, itemIds, mode): return "/_delete item \(ref(type, id)) \(itemIds.map({ "\($0)" }).joined(separator: ",")) \(mode.rawValue)"
             case let .apiDeleteMemberChatItem(groupId, itemIds): return "/_delete member item #\(groupId) \(itemIds.map({ "\($0)" }).joined(separator: ","))"
             case let .apiChatItemReaction(type, id, itemId, add, reaction): return "/_reaction \(ref(type, id)) \(itemId) \(onOff(add)) \(encodeJSON(reaction))"
+            case let .apiGetReactionMembers(userId, groupId, itemId, reaction): return "/_reaction members \(userId) #\(groupId) \(itemId) \(encodeJSON(reaction))"
             case let .apiPlanForwardChatItems(type, id, itemIds): return "/_forward plan \(ref(type, id)) \(itemIds.map({ "\($0)" }).joined(separator: ","))"
             case let .apiForwardChatItems(toChatType, toChatId, fromChatType, fromChatId, itemIds, ttl):
                 let ttlStr = ttl != nil ? "\(ttl!)" : "default"
@@ -310,7 +312,7 @@ public enum ChatCommand {
             case .apiGetCallInvitations: return "/_call get"
             case let .apiCallStatus(contact, callStatus): return "/_call status @\(contact.apiId) \(callStatus.rawValue)"
             case .apiGetNetworkStatuses: return "/_network_statuses"
-            case let .apiChatRead(type, id, itemRange: (from, to)): return "/_read chat \(ref(type, id)) from=\(from) to=\(to)"
+            case let .apiChatRead(type, id): return "/_read chat \(ref(type, id))"
             case let .apiChatItemsRead(type, id, itemIds): return "/_read chat items \(ref(type, id)) \(joinedIds(itemIds))"
             case let .apiChatUnread(type, id, unreadChat): return "/_unread chat \(ref(type, id)) \(onOff(unreadChat))"
             case let .receiveFile(fileId, userApprovedRelays, encrypt, inline): return "/freceive \(fileId)\(onOffParam("approved_relays", userApprovedRelays))\(onOffParam("encrypt", encrypt))\(onOffParam("inline", inline))"
@@ -375,6 +377,7 @@ public enum ChatCommand {
             case .apiConnectContactViaAddress: return "apiConnectContactViaAddress"
             case .apiDeleteMemberChatItem: return "apiDeleteMemberChatItem"
             case .apiChatItemReaction: return "apiChatItemReaction"
+            case .apiGetReactionMembers: return "apiGetReactionMembers"
             case .apiPlanForwardChatItems: return "apiPlanForwardChatItems"
             case .apiForwardChatItems: return "apiForwardChatItems"
             case .apiGetNtfToken: return "apiGetNtfToken"
@@ -629,6 +632,7 @@ public enum ChatResponse: Decodable, Error {
     case chatItemUpdated(user: UserRef, chatItem: AChatItem)
     case chatItemNotChanged(user: UserRef, chatItem: AChatItem)
     case chatItemReaction(user: UserRef, added: Bool, reaction: ACIReaction)
+    case reactionMembers(user: UserRef, memberReactions: [MemberReaction])
     case chatItemsDeleted(user: UserRef, chatItemDeletions: [ChatItemDeletion], byUser: Bool)
     case contactsList(user: UserRef, contacts: [Contact])
     // group events
@@ -805,6 +809,7 @@ public enum ChatResponse: Decodable, Error {
             case .chatItemUpdated: return "chatItemUpdated"
             case .chatItemNotChanged: return "chatItemNotChanged"
             case .chatItemReaction: return "chatItemReaction"
+            case .reactionMembers: return "reactionMembers"
             case .chatItemsDeleted: return "chatItemsDeleted"
             case .contactsList: return "contactsList"
             case .groupCreated: return "groupCreated"
@@ -983,6 +988,7 @@ public enum ChatResponse: Decodable, Error {
             case let .chatItemUpdated(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .chatItemNotChanged(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .chatItemReaction(u, added, reaction): return withUser(u, "added: \(added)\n\(String(describing: reaction))")
+            case let .reactionMembers(u, reaction): return withUser(u, "memberReactions: \(String(describing: reaction))")
             case let .chatItemsDeleted(u, items, byUser):
                 let itemsString = items.map { item in
                     "deletedChatItem:\n\(String(describing: item.deletedChatItem))\ntoChatItem:\n\(String(describing: item.toChatItem))" }.joined(separator: "\n")
@@ -2158,9 +2164,17 @@ public enum NotificationsMode: String, Decodable, SelectableItem {
 
     public var label: LocalizedStringKey {
         switch self {
-        case .off: "Local"
-        case .periodic: "Periodically"
-        case .instant: "Instantly"
+        case .off: "No push server"
+        case .periodic: "Periodic"
+        case .instant: "Instant"
+        }
+    }
+    
+    public var icon: String {
+        switch self {
+        case .off: return "arrow.clockwise"
+        case .periodic: return "timer"
+        case .instant: return "bolt"
         }
     }
 

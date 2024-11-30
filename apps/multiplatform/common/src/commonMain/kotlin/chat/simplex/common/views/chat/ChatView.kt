@@ -490,19 +490,35 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
             },
             addMembers = { groupInfo -> addGroupMembers(view = view, groupInfo = groupInfo, rhId = chatRh, close = { ModalManager.end.closeModals() }) },
             openGroupLink = { groupInfo -> openGroupLink(view = view, groupInfo = groupInfo, rhId = chatRh, close = { ModalManager.end.closeModals() }) },
-            markRead = { range, unreadCountAfter ->
+            markItemsRead = { itemsIds ->
               withBGApi {
                 withChats {
                   // It's important to call it on Main thread. Otherwise, composable crash occurs from time-to-time without useful stacktrace
                   withContext(Dispatchers.Main) {
-                    markChatItemsRead(chatRh, chatInfo, range, unreadCountAfter)
+                    markChatItemsRead(chatRh, chatInfo, itemsIds)
+                  }
+                  ntfManager.cancelNotificationsForChat(chatInfo.id)
+                  chatModel.controller.apiChatItemsRead(
+                    chatRh,
+                    chatInfo.chatType,
+                    chatInfo.apiId,
+                    itemsIds
+                  )
+                }
+              }
+            },
+            markChatRead = {
+              withBGApi {
+                withChats {
+                  // It's important to call it on Main thread. Otherwise, composable crash occurs from time-to-time without useful stacktrace
+                  withContext(Dispatchers.Main) {
+                    markChatItemsRead(chatRh, chatInfo)
                   }
                   ntfManager.cancelNotificationsForChat(chatInfo.id)
                   chatModel.controller.apiChatRead(
                     chatRh,
                     chatInfo.chatType,
-                    chatInfo.apiId,
-                    range
+                    chatInfo.apiId
                   )
                 }
               }
@@ -602,7 +618,8 @@ fun ChatLayout(
   showItemDetails: (ChatInfo, ChatItem) -> Unit,
   addMembers: (GroupInfo) -> Unit,
   openGroupLink: (GroupInfo) -> Unit,
-  markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
+  markItemsRead: (List<Long>) -> Unit,
+  markChatRead: () -> Unit,
   changeNtfsState: (Boolean, currentValue: MutableState<Boolean>) -> Unit,
   onSearchValueChanged: (String) -> Unit,
   onComposed: suspend (chatId: String) -> Unit,
@@ -649,7 +666,7 @@ fun ChatLayout(
                 useLinkPreviews, linkMode, selectedChatItems, showMemberInfo, loadMessages, deleteMessage, deleteMessages,
                 receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, openDirectChat, forwardItem,
                 updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
-                setReaction, showItemDetails, markRead, remember { { onComposed(it) } }, developerTools, showViaProxy,
+                setReaction, showItemDetails, markItemsRead, markChatRead, remember { { onComposed(it) } }, developerTools, showViaProxy,
               )
             }
           }
@@ -937,7 +954,8 @@ fun BoxScope.ChatItemsList(
   findModelMember: (String) -> GroupMember?,
   setReaction: (ChatInfo, ChatItem, Boolean, MsgReaction) -> Unit,
   showItemDetails: (ChatInfo, ChatItem) -> Unit,
-  markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
+  markItemsRead: (List<Long>) -> Unit,
+  markChatRead: () -> Unit,
   onComposed: suspend (chatId: String) -> Unit,
   developerTools: Boolean,
   showViaProxy: Boolean
@@ -979,10 +997,12 @@ fun BoxScope.ChatItemsList(
     }
   }
 
+  val remoteHostIdUpdated = rememberUpdatedState(remoteHostId)
   val chatInfoUpdated = rememberUpdatedState(chatInfo)
   val highlightedItems = remember { mutableStateOf(setOf<Long>()) }
   val scope = rememberCoroutineScope()
   val scrollToItem: (Long) -> Unit = remember { scrollToItem(loadingMoreItems, highlightedItems, chatInfoUpdated, maxHeight, scope, reversedChatItems, mergedItems, listState, loadMessages) }
+  val scrollToQuotedItemFromItem: (Long) -> Unit = remember { findQuotedItemFromItem(remoteHostIdUpdated, chatInfoUpdated, scope, scrollToItem) }
 
   LoadLastItems(loadingMoreItems, remoteHostId, chatInfo)
   SmallScrollOnNewMessage(listState, chatModel.chatItems)
@@ -1042,7 +1062,7 @@ fun BoxScope.ChatItemsList(
                   highlightedItems.value = setOf()
                 }
             }
-            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, range = range, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp)
+            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, range = range, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp)
           }
         }
 
@@ -1282,15 +1302,15 @@ fun BoxScope.ChatItemsList(
         DateSeparator(last.meta.itemTs)
       }
       if (item.isRcvNew) {
-        val (itemIdStart, itemIdEnd) = when (merged) {
-          is MergedItem.Single -> merged.item.item.id to merged.item.item.id
-          is MergedItem.Grouped -> merged.items.last().item.id to merged.items.first().item.id
+        val itemIds = when (merged) {
+          is MergedItem.Single -> listOf(merged.item.item.id)
+          is MergedItem.Grouped -> merged.items.map { it.item.id }
         }
-        MarkItemsReadAfterDelay(keyForItem(item), itemIdStart, itemIdEnd, finishedInitialComposition, chatInfo.id, listState, markRead)
+        MarkItemsReadAfterDelay(keyForItem(item), itemIds, finishedInitialComposition, chatInfo.id, listState, markItemsRead)
       }
     }
   }
-  FloatingButtons(loadingMoreItems, mergedItems, unreadCount, maxHeight, composeViewHeight, remoteHostId, chatInfo, searchValue, markRead, listState)
+  FloatingButtons(loadingMoreItems, mergedItems, unreadCount, maxHeight, composeViewHeight, remoteHostId, chatInfo, searchValue, markChatRead, listState)
   FloatingDate(Modifier.padding(top = 10.dp + topPaddingToContent()).align(Alignment.TopCenter), mergedItems, listState)
 
   LaunchedEffect(Unit) {
@@ -1383,7 +1403,7 @@ fun BoxScope.FloatingButtons(
   remoteHostId: Long?,
   chatInfo: ChatInfo,
   searchValue: State<String>,
-  markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
+  markChatRead: () -> Unit,
   listState: State<LazyListState>
 ) {
   val scope = rememberCoroutineScope()
@@ -1451,12 +1471,7 @@ fun BoxScope.FloatingButtons(
         generalGetString(MR.strings.mark_read),
         painterResource(MR.images.ic_check),
         onClick = {
-          val chat = chatModel.chats.value.firstOrNull { it.remoteHostId == remoteHostId && it.id == chatInfo.id } ?: return@ItemAction
-          val minUnreadItemId = chat.chatStats.minUnreadItemId
-          markRead(
-            CC.ItemRange(minUnreadItemId, chat.chatItems.lastOrNull()?.id ?: return@ItemAction),
-            0
-          )
+          markChatRead()
           showDropDown.value = false
         })
     }
@@ -1777,12 +1792,11 @@ private fun DateSeparator(date: Instant) {
 @Composable
 private fun MarkItemsReadAfterDelay(
   itemKey: String,
-  itemIdStart: Long,
-  itemIdEnd: Long,
+  itemIds: List<Long>,
   finishedInitialComposition: State<Boolean>,
   chatId: ChatId,
   listState: State<LazyListState>,
-  markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit
+  markItemsRead: (List<Long>) -> Unit
 ) {
   // items can be "visible" in terms of LazyColumn but hidden behind compose view/appBar. So don't count such item as visible and not mark read
   val itemIsPartiallyAboveCompose = remember { derivedStateOf {
@@ -1793,11 +1807,11 @@ private fun MarkItemsReadAfterDelay(
       false
     }
   } }
-  LaunchedEffect(itemIsPartiallyAboveCompose.value, itemIdStart, itemIdEnd, finishedInitialComposition.value, chatId) {
+  LaunchedEffect(itemIsPartiallyAboveCompose.value, itemIds, finishedInitialComposition.value, chatId) {
     if (chatId != ChatModel.chatId.value || !itemIsPartiallyAboveCompose.value || !finishedInitialComposition.value) return@LaunchedEffect
 
     delay(600L)
-    markRead(CC.ItemRange(itemIdStart, itemIdEnd), null)
+    markItemsRead(itemIds)
   }
 }
 
@@ -1863,6 +1877,27 @@ private fun scrollToItem(
       }
     } finally {
       loadingMoreItems.value = false
+    }
+  }
+}
+
+private fun findQuotedItemFromItem(
+  rhId: State<Long?>,
+  chatInfo: State<ChatInfo>,
+  scope: CoroutineScope,
+  scrollToItem: (Long) -> Unit
+): (Long) -> Unit = { itemId: Long ->
+  scope.launch(Dispatchers.Default) {
+    val item = apiLoadSingleMessage(rhId.value, chatInfo.value.chatType, chatInfo.value.apiId, itemId)
+    if (item != null) {
+      withChats {
+        updateChatItem(chatInfo.value, item)
+      }
+      if (item.quotedItem?.itemId != null) {
+        scrollToItem(item.quotedItem.itemId)
+      } else {
+        showQuotedItemDoesNotExistAlert()
+      }
     }
   }
 }
@@ -2383,7 +2418,8 @@ fun PreviewChatLayout() {
       showItemDetails = { _, _ -> },
       addMembers = { _ -> },
       openGroupLink = {},
-      markRead = { _, _ -> },
+      markItemsRead = { _ -> },
+      markChatRead = {},
       changeNtfsState = { _, _ -> },
       onSearchValueChanged = {},
       onComposed = {},
@@ -2455,7 +2491,8 @@ fun PreviewGroupChatLayout() {
       showItemDetails = { _, _ -> },
       addMembers = { _ -> },
       openGroupLink = {},
-      markRead = { _, _ -> },
+      markItemsRead = { _ -> },
+      markChatRead = {},
       changeNtfsState = { _, _ -> },
       onSearchValueChanged = {},
       onComposed = {},
