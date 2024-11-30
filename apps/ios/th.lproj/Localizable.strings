@@ -565,9 +565,6 @@
 "changing address…" = "กำลังเปลี่ยนที่อยู่…";
 
 /* No comment provided by engineer. */
-"Chat archive" = "ที่เก็บแชทถาวร";
-
-/* No comment provided by engineer. */
 "Chat console" = "คอนโซลแชท";
 
 /* No comment provided by engineer. */
@@ -772,9 +769,6 @@
 "Create your profile" = "สร้างโปรไฟล์ของคุณ";
 
 /* No comment provided by engineer. */
-"Created on %@" = "สร้างเมื่อ %@";
-
-/* No comment provided by engineer. */
 "creator" = "ผู้สร้าง";
 
 /* No comment provided by engineer. */
@@ -886,12 +880,6 @@
 
 /* No comment provided by engineer. */
 "Delete all files" = "ลบไฟล์ทั้งหมด";
-
-/* No comment provided by engineer. */
-"Delete archive" = "ลบที่เก็บถาวร";
-
-/* No comment provided by engineer. */
-"Delete chat archive?" = "ลบที่เก็บแชทถาวร?";
 
 /* No comment provided by engineer. */
 "Delete chat profile" = "ลบโปรไฟล์แชท";
@@ -1222,9 +1210,6 @@
 
 /* No comment provided by engineer. */
 "Error accepting contact request" = "เกิดข้อผิดพลาดในการรับคำขอติดต่อ";
-
-/* No comment provided by engineer. */
-"Error accessing database file" = "เกิดข้อผิดพลาดในการเข้าถึงไฟล์ฐานข้อมูล";
 
 /* No comment provided by engineer. */
 "Error adding member(s)" = "เกิดข้อผิดพลาดในการเพิ่มสมาชิก";
@@ -1971,9 +1956,6 @@
 "New contact:" = "คำขอติดต่อใหม่:";
 
 /* No comment provided by engineer. */
-"New database archive" = "ฐานข้อมูลใหม่สำหรับการเก็บถาวร";
-
-/* No comment provided by engineer. */
 "New display name" = "ชื่อที่แสดงใหม่";
 
 /* No comment provided by engineer. */
@@ -2070,9 +2052,6 @@
 
 /* No comment provided by engineer. */
 "Old database" = "ฐานข้อมูลเก่า";
-
-/* No comment provided by engineer. */
-"Old database archive" = "คลังฐานข้อมูลเก่า";
 
 /* group pref value */
 "on" = "เปิด";
@@ -2470,9 +2449,6 @@
 "Save and update group profile" = "บันทึกและอัปเดตโปรไฟล์กลุ่ม";
 
 /* No comment provided by engineer. */
-"Save archive" = "บันทึกไฟล์เก็บถาวร";
-
-/* No comment provided by engineer. */
 "Save group profile" = "บันทึกโปรไฟล์กลุ่ม";
 
 /* No comment provided by engineer. */
@@ -2748,9 +2724,6 @@
 
 /* No comment provided by engineer. */
 "Stop" = "หยุด";
-
-/* No comment provided by engineer. */
-"Stop chat to enable database actions" = "หยุดการแชทเพื่อเปิดใช้งานการดำเนินการกับฐานข้อมูล";
 
 /* No comment provided by engineer. */
 "Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." = "หยุดแชทเพื่อส่งออก นำเข้า หรือลบฐานข้อมูลแชท คุณจะไม่สามารถรับและส่งข้อความได้ในขณะที่การแชทหยุดลง";

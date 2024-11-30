@@ -874,9 +874,6 @@
 "changing address…" = "смена адреса…";
 
 /* No comment provided by engineer. */
-"Chat archive" = "Архив чата";
-
-/* No comment provided by engineer. */
 "Chat colors" = "Цвета чата";
 
 /* No comment provided by engineer. */
@@ -1255,9 +1252,6 @@
 "Created at: %@" = "Создано: %@";
 
 /* No comment provided by engineer. */
-"Created on %@" = "Дата создания %@";
-
-/* No comment provided by engineer. */
 "Creating archive link" = "Создание ссылки на архив";
 
 /* No comment provided by engineer. */
@@ -1402,12 +1396,6 @@
 
 /* No comment provided by engineer. */
 "Delete and notify contact" = "Удалить и уведомить контакт";
-
-/* No comment provided by engineer. */
-"Delete archive" = "Удалить архив";
-
-/* No comment provided by engineer. */
-"Delete chat archive?" = "Удалить архив чата?";
 
 /* No comment provided by engineer. */
 "Delete chat profile" = "Удалить профиль чата";
@@ -1886,9 +1874,6 @@
 
 /* No comment provided by engineer. */
 "Error accepting contact request" = "Ошибка при принятии запроса на соединение";
-
-/* No comment provided by engineer. */
-"Error accessing database file" = "Ошибка при доступе к данным чата";
 
 /* No comment provided by engineer. */
 "Error adding member(s)" = "Ошибка при добавлении членов группы";
@@ -3028,9 +3013,6 @@
 "New contact:" = "Новый контакт:";
 
 /* No comment provided by engineer. */
-"New database archive" = "Новый архив чата";
-
-/* No comment provided by engineer. */
 "New desktop app!" = "Приложение для компьютера!";
 
 /* No comment provided by engineer. */
@@ -3169,9 +3151,6 @@
 
 /* No comment provided by engineer. */
 "Old database" = "Предыдущая версия данных чата";
-
-/* No comment provided by engineer. */
-"Old database archive" = "Старый архив чата";
 
 /* group pref value */
 "on" = "да";
@@ -3800,9 +3779,6 @@
 "Save and update group profile" = "Сохранить сообщение и обновить группу";
 
 /* No comment provided by engineer. */
-"Save archive" = "Сохранить архив";
-
-/* No comment provided by engineer. */
 "Save group profile" = "Сохранить профиль группы";
 
 /* No comment provided by engineer. */
@@ -4309,9 +4285,6 @@
 
 /* No comment provided by engineer. */
 "Stop chat" = "Остановить чат";
-
-/* No comment provided by engineer. */
-"Stop chat to enable database actions" = "Остановите чат, чтобы разблокировать операции с архивом чата";
 
 /* No comment provided by engineer. */
 "Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." = "Остановите чат, чтобы экспортировать или импортировать архив чата или удалить данные чата. Вы не сможете получать и отправлять сообщения, пока чат остановлен.";

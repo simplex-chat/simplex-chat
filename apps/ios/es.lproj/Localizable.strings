@@ -871,9 +871,6 @@
 "changing address…" = "cambiando de servidor…";
 
 /* No comment provided by engineer. */
-"Chat archive" = "Archivo del chat";
-
-/* No comment provided by engineer. */
 "Chat colors" = "Colores del chat";
 
 /* No comment provided by engineer. */
@@ -1252,9 +1249,6 @@
 "Created at: %@" = "Creado: %@";
 
 /* No comment provided by engineer. */
-"Created on %@" = "Creado en %@";
-
-/* No comment provided by engineer. */
 "Creating archive link" = "Creando enlace al archivo";
 
 /* No comment provided by engineer. */
@@ -1399,12 +1393,6 @@
 
 /* No comment provided by engineer. */
 "Delete and notify contact" = "Eliminar y notificar contacto";
-
-/* No comment provided by engineer. */
-"Delete archive" = "Eliminar archivo";
-
-/* No comment provided by engineer. */
-"Delete chat archive?" = "¿Eliminar archivo del chat?";
 
 /* No comment provided by engineer. */
 "Delete chat profile" = "Eliminar perfil";
@@ -1883,9 +1871,6 @@
 
 /* No comment provided by engineer. */
 "Error accepting contact request" = "Error al aceptar solicitud del contacto";
-
-/* No comment provided by engineer. */
-"Error accessing database file" = "Error al acceder al archivo de la base de datos";
 
 /* No comment provided by engineer. */
 "Error adding member(s)" = "Error al añadir miembro(s)";
@@ -3025,9 +3010,6 @@
 "New contact:" = "Contacto nuevo:";
 
 /* No comment provided by engineer. */
-"New database archive" = "Nuevo archivo de bases de datos";
-
-/* No comment provided by engineer. */
 "New desktop app!" = "Nueva aplicación para PC!";
 
 /* No comment provided by engineer. */
@@ -3163,9 +3145,6 @@
 
 /* No comment provided by engineer. */
 "Old database" = "Base de datos antigua";
-
-/* No comment provided by engineer. */
-"Old database archive" = "Archivo de bases de datos antiguas";
 
 /* group pref value */
 "on" = "Activado";
@@ -3794,9 +3773,6 @@
 "Save and update group profile" = "Guardar y actualizar perfil del grupo";
 
 /* No comment provided by engineer. */
-"Save archive" = "Guardar archivo";
-
-/* No comment provided by engineer. */
 "Save group profile" = "Guardar perfil de grupo";
 
 /* No comment provided by engineer. */
@@ -4303,9 +4279,6 @@
 
 /* No comment provided by engineer. */
 "Stop chat" = "Parar SimpleX";
-
-/* No comment provided by engineer. */
-"Stop chat to enable database actions" = "Para habilitar las acciones sobre la base de datos, debes parar SimpleX";
 
 /* No comment provided by engineer. */
 "Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." = "Para poder exportar, importar o eliminar la base de datos primero debes parar SimpleX. Mientras tanto no podrás recibir ni enviar mensajes.";
