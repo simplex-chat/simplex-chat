@@ -2285,7 +2285,7 @@
   <string name="or_paste_archive_link">Or paste archive link</string>
   <string name="paste_archive_link">Paste archive link</string>
   <string name="invalid_file_link">Invalid link</string>
-  <string name="chat_archive">Chat archive</string>
+  <string name="chat_archive">Or import archive file</string>
   <string name="migrate_to_device_migrating">Migrating</string>
   <string name="migrate_to_device_database_init">Preparing download</string>
   <string name="migrate_to_device_downloading_details">Downloading link details</string>
