@@ -43,7 +43,6 @@ fun DatabaseView() {
   val chatLastStart = remember { mutableStateOf(prefs.chatLastStart.get()) }
   val chatArchiveFile = remember { mutableStateOf<String?>(null) }
   val stopped = remember { m.chatRunning }.value == false
-  val showRunChatToggle = remember { mutableStateOf(stopped || appPrefs.developerTools.get()) }
   val saveArchiveLauncher = rememberFileChooserLauncher(false) { to: URI? ->
     val file = chatArchiveFile.value
     if (file != null && to != null) {
@@ -56,7 +55,7 @@ fun DatabaseView() {
   val importArchiveLauncher = rememberFileChooserLauncher(true) { to: URI? ->
     if (to != null) {
       importArchiveAlert {
-        stopChatRunBlockStartChat(stopped, chatLastStart, progressIndicator, showRunChatToggle) {
+        stopChatRunBlockStartChat(stopped, chatLastStart, progressIndicator) {
           importArchive(to, appFilesCountAndSize, progressIndicator)
           true
         }
@@ -72,7 +71,6 @@ fun DatabaseView() {
     DatabaseLayout(
       progressIndicator.value,
       stopped,
-      showRunChatToggle,
       useKeychain.value,
       m.chatDbEncrypted.value,
       m.controller.appPrefs.storeDBPassphrase.state.value,
@@ -82,16 +80,16 @@ fun DatabaseView() {
       chatItemTTL,
       user,
       m.users,
-      startChat = { startChat(m, chatLastStart, m.chatDbChanged, showRunChatToggle, progressIndicator) },
+      startChat = { startChat(m, chatLastStart, m.chatDbChanged, progressIndicator) },
       stopChatAlert = { stopChatAlert(m, progressIndicator) },
       exportArchive = {
-        stopChatRunBlockStartChat(stopped, chatLastStart, progressIndicator, showRunChatToggle) {
+        stopChatRunBlockStartChat(stopped, chatLastStart, progressIndicator) {
           exportArchive(m, progressIndicator, chatArchiveFile, saveArchiveLauncher)
         }
       },
       deleteChatAlert = {
         deleteChatAlert {
-          stopChatRunBlockStartChat(stopped, chatLastStart, progressIndicator, showRunChatToggle) {
+          stopChatRunBlockStartChat(stopped, chatLastStart, progressIndicator) {
             deleteChat(m, progressIndicator)
             true
           }
@@ -99,7 +97,7 @@ fun DatabaseView() {
       },
       deleteAppFilesAndMedia = {
         deleteFilesAndMediaAlert {
-          stopChatRunBlockStartChat(stopped, chatLastStart, progressIndicator, showRunChatToggle) {
+          stopChatRunBlockStartChat(stopped, chatLastStart, progressIndicator) {
             deleteFiles(appFilesCountAndSize)
             true
           }
@@ -142,7 +140,6 @@ fun DatabaseView() {
 fun DatabaseLayout(
   progressIndicator: Boolean,
   stopped: Boolean,
-  showRunChatToggle: MutableState<Boolean>,
   useKeyChain: Boolean,
   chatDbEncrypted: Boolean?,
   passphraseSaved: Boolean,
@@ -187,31 +184,22 @@ fun DatabaseLayout(
       // still show the toggle in case database was stopped when the user opened this screen because it can be in the following situations:
       // - database was stopped after migration and the app relaunched
       // - something wrong happened with database operations and the database couldn't be launched when it should
-      if (showRunChatToggle.value) {
-        SectionView(stringResource(MR.strings.run_chat_section)) {
-          if (!toggleEnabled) {
-            SectionItemView(disconnectAllHosts) {
-              Text(generalGetString(MR.strings.disconnect_remote_hosts), Modifier.fillMaxWidth(), color = WarningOrange)
-            }
-          }
-          RunChatSetting(stopped, toggleEnabled && !progressIndicator, startChat, stopChatAlert)
-        }
-        SectionTextFooter(
-          if (stopped) {
-            stringResource(MR.strings.you_must_use_the_most_recent_version_of_database)
-          } else {
-            stringResource(MR.strings.stop_chat_to_enable_database_actions)
-          }
-        )
-        SectionDividerSpaced(maxTopPadding = true)
-      } else if (!toggleEnabled) {
-        SectionView(stringResource(MR.strings.remote_hosts_section).uppercase()) {
+      SectionView(stringResource(MR.strings.run_chat_section)) {
+        if (!toggleEnabled) {
           SectionItemView(disconnectAllHosts) {
             Text(generalGetString(MR.strings.disconnect_remote_hosts), Modifier.fillMaxWidth(), color = WarningOrange)
           }
         }
-        SectionDividerSpaced(maxTopPadding = false)
+        RunChatSetting(stopped, toggleEnabled && !progressIndicator, startChat, stopChatAlert)
       }
+      SectionTextFooter(
+        if (stopped) {
+          stringResource(MR.strings.you_must_use_the_most_recent_version_of_database)
+        } else {
+          stringResource(MR.strings.stop_chat_to_enable_database_actions)
+        }
+      )
+      SectionDividerSpaced(maxTopPadding = true)
     }
 
     SectionView(stringResource(MR.strings.chat_database_section)) {
@@ -371,7 +359,6 @@ fun startChat(
   m: ChatModel,
   chatLastStart: MutableState<Instant?>,
   chatDbChanged: MutableState<Boolean>,
-  showRunChatToggle: MutableState<Boolean>,
   progressIndicator: MutableState<Boolean>? = null
 ) {
   withLongRunningApi {
@@ -397,11 +384,9 @@ fun startChat(
       m.controller.appPrefs.chatLastStart.set(ts)
       chatLastStart.value = ts
       platform.androidChatStartedAfterBeingOff()
-      showRunChatToggle.value = false || appPrefs.developerTools.get()
     } catch (e: Throwable) {
       m.chatRunning.value = false
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_starting_chat), e.toString())
-      showRunChatToggle.value = true
     } finally {
       progressIndicator?.value = false
     }
@@ -484,7 +469,6 @@ fun stopChatRunBlockStartChat(
   stopped: Boolean,
   chatLastStart: MutableState<Instant?>,
   progressIndicator: MutableState<Boolean>,
-  showRunChatToggle: MutableState<Boolean>,
   block: suspend () -> Boolean
 ) {
   // if the chat was running, the sequence is: stop chat, run block, start chat.
@@ -508,7 +492,7 @@ fun stopChatRunBlockStartChat(
           true
         }
         if (canStart) {
-          startChat(chatModel, chatLastStart, chatModel.chatDbChanged, showRunChatToggle, progressIndicator)
+          startChat(chatModel, chatLastStart, chatModel.chatDbChanged, progressIndicator)
         }
       }
     }
@@ -581,7 +565,7 @@ private suspend fun exportArchive(
     AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_exporting_chat_database), e.toString())
     progressIndicator.value = false
   }
-  return true
+  return false
 }
 
 suspend fun exportChatArchive(
@@ -824,7 +808,6 @@ fun PreviewDatabaseLayout() {
     DatabaseLayout(
       progressIndicator = false,
       stopped = false,
-      showRunChatToggle = remember { mutableStateOf(false) },
       useKeyChain = false,
       chatDbEncrypted = false,
       passphraseSaved = false,

@@ -245,7 +245,6 @@ private fun ArchiveImportView(progressIndicator: MutableState<Boolean>, close: (
             chatModel,
             mutableStateOf(Clock.System.now()),
             chatModel.chatDbChanged,
-            mutableStateOf(false),
             progressIndicator
           )
           hideView(close)
