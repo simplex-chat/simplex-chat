@@ -40,7 +40,7 @@ import Simplex.Chat.Types (ContactName)
 data ChatOpts = ChatOpts
   { coreOptions :: CoreChatOpts,
     deviceName :: Maybe Text,
-    displayName :: Maybe ContactName,
+    userDisplayName :: Maybe ContactName,
     chatCmd :: String,
     chatCmdDelay :: Int,
     chatCmdLog :: ChatCmdLog,
@@ -288,10 +288,10 @@ chatOptsP appDir defaultDbFileName = do
             <> metavar "DEVICE"
             <> help "Device name to use in connections with remote hosts and controller"
         )
-  displayName <-
+  userDisplayName <-
     optional $
       strOption
-        ( long "display-name"
+        ( long "user-display-name"
             <> metavar "DISPLAY_NAME"
             <> help "Create new or switch to existing user profile with this display name."
         )
@@ -384,7 +384,7 @@ chatOptsP appDir defaultDbFileName = do
   pure
     ChatOpts
       { coreOptions,
-        displayName,
+        userDisplayName,
         deviceName,
         chatCmd,
         chatCmdDelay,

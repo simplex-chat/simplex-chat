@@ -65,9 +65,9 @@ sendChatCmd :: ChatController -> ChatCommand -> IO ChatResponse
 sendChatCmd cc cmd = runReaderT (execChatCommand' cmd) cc
 
 getSelectActiveUser :: SQLiteStore -> ChatOpts -> IO (Maybe User)
-getSelectActiveUser st ChatOpts {displayName} = do
+getSelectActiveUser st ChatOpts {userDisplayName} = do
   users <- withTransaction st getUsers
-  case displayName of
+  case userDisplayName of
     Just name ->
       forM (find (\User {localDisplayName} -> localDisplayName == name) users) $ \u ->
         if activeUser u then pure u else withTransaction st (`setActiveUser` u)
@@ -95,7 +95,7 @@ getSelectActiveUser st ChatOpts {displayName} = do
                      in Just <$> withTransaction st (`setActiveUser` user)
 
 createActiveUser :: ChatController -> ChatOpts -> IO User
-createActiveUser cc ChatOpts {displayName = name} = do
+createActiveUser cc ChatOpts {userDisplayName = name} = do
   putStrLn
     "No user profiles found, it will be created now.\n\
     \Please choose your display name.\n\
