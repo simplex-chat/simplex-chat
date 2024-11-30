@@ -1600,6 +1600,15 @@ func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = ni
     m.chatInitialized = true
     m.currentUser = try apiGetActiveUser()
     m.conditions = try getServerOperators()
+    if shouldImportAppSettingsDefault.get() {
+        do {
+            let appSettings = try apiGetAppSettings(settings: AppSettings.current.prepareForExport())
+            appSettings.importIntoApp()
+            shouldImportAppSettingsDefault.set(false)
+        } catch {
+            logger.error("Error while importing app settings: \(error)")
+        }
+    }
     if m.currentUser == nil {
         onboardingStageDefault.set(.step1_SimpleXInfo)
         privacyDeliveryReceiptsSet.set(true)
