@@ -635,7 +635,7 @@
     <string name="to_verify_compare">Para verificar a encriptação de ponta a ponta com o seu contato, compare (ou leia) o código nos seus dispositivos.</string>
     <string name="scan_code_from_contacts_app">Ler o código de segurança a partir da aplicação do seu contacto.</string>
     <string name="smp_servers_scan_qr">Ler o código QR do servidor</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Apenas dispositivos cliente armazenam perfis de utilizador, contatos, grupos e mensagens enviadas com <b>encriptação de ponta a ponta de 2 camadas</b>.]]></string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Apenas dispositivos pessoais armazenam perfis de utilizador, contatos, grupos e mensagens.</string>
     <string name="status_contact_has_e2e_encryption">o contacto tem encriptação ponta a ponta</string>
     <string name="status_no_e2e_encryption">sem encriptação ponta a ponta</string>
     <string name="group_member_status_creator">criador</string>

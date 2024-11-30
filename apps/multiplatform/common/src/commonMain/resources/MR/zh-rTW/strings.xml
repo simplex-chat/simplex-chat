@@ -554,7 +554,6 @@
     <string name="description_via_group_link_incognito">透過群組連結使用匿名聊天模式</string>
     <string name="description_via_contact_address_link_incognito">一個使用了匿名聊天模式的人透過連結加入了群組</string>
     <string name="description_via_one_time_link_incognito">透過使用一次性連結匿名聊天模式連接</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[有很多人問：<i>如果 SimpleX 沒有任何的用戶標識符，它如何傳送訊息？</i>]]></string>
     <string name="onboarding_notifications_mode_service">即時</string>
     <string name="onboarding_notifications_mode_periodic">定期的</string>
     <string name="no_call_on_lock_screen">關閉</string>
@@ -787,7 +786,6 @@
     <string name="ttl_s">%ds</string>
     <string name="onboarding_notifications_mode_title">私人通知</string>
     <string name="read_more_in_github_with_link"><![CDATA[可在 <font color="#0088ff">GitHub</font>內查看更多。]]></string>
-    <string name="read_more_in_github">於 GitHub 儲存庫內查看更多。</string>
     <string name="incoming_video_call">視訊通話來電</string>
     <string name="icon_descr_hang_up">掛斷電話來電</string>
     <string name="call_connection_peer_to_peer">點對點</string>
@@ -874,7 +872,6 @@
     <string name="update_network_session_mode_question">更新傳輸隔離模式？</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">為了保護隱私，而不像是其他平台般需要提取和存儲用戶的 IDs 資料， SimpleX 平台有自家佇列的標識符，這對於你的每個聯絡人也是獨一無二的。</string>
     <string name="onboarding_notifications_mode_off">當應用程式是運行中</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[你可以控制通過哪一個伺服器 <b>來接收</b> 你的聯絡人訊息 – 這些伺服器用來接收他們傳送給你的訊息。]]></string>
     <string name="allow_accepting_calls_from_lock_screen">透過設定啟用於上鎖畫面顯示來電通知。</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">這操作不能還原 - 你目前的個人檔案，聯絡人，訊息和檔案將不可逆地遺失。</string>
     <string name="you_must_use_the_most_recent_version_of_database">你必須在裝置上使用最新版本的對話數據庫，否則你可能會停止接收某些聯絡人的訊息。</string>

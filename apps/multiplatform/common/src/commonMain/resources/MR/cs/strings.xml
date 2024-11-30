@@ -667,9 +667,6 @@
     <string name="first_platform_without_user_ids">Bez uživatelských identifikátorů</string>
     <string name="immune_to_spam_and_abuse">Odolná vůči spamu</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">K ochraně soukromí, místo uživatelských ID užívaných všemi ostatními platformami, SimpleX používá identifikátory pro fronty zpráv, zvlášť pro každý z vašich kontaktů.</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Mnoho lidí se ptá: <i>když SimpleX nemá žádný identifikátor uživatelů, jak může doručovat zprávy\?</i>]]></string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Vy určujete, přes které servery <b>přijímat</b> zprávy, vaše kontakty – servery, které používáte k zasílání zpráv.]]></string>
-    <string name="read_more_in_github">Další informace najdete v našem repozitáři na GitHubu.</string>
     <string name="read_more_in_github_with_link"><![CDATA[Další informace najdete v našem <font color="#0088ff">úložišti GitHub</font>.]]></string>
     <string name="use_chat">Použijte chat</string>
     <string name="onboarding_notifications_mode_subtitle">Lze změnit později v nastavení.</string>

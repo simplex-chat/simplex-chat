@@ -432,15 +432,12 @@
     <string name="onboarding_notifications_mode_service">Natychmiastowy</string>
     <string name="onboarding_notifications_mode_subtitle">Można to później zmienić w ustawieniach.</string>
     <string name="make_private_connection">Nawiąż prywatne połączenie</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Wiele osób pytało: <i>jeśli SimpleX nie ma identyfikatora użytkownika, jak może dostarczać wiadomości\?</i>]]></string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Tylko urządzenia klienckie przechowują profile użytkowników, kontakty, grupy i wiadomości wysyłane za pomocą <b>dwuwarstwowego szyfrowania end-to-end</b>.]]></string>
     <string name="onboarding_notifications_mode_periodic">Okresowo</string>
     <string name="onboarding_notifications_mode_title">Prywatne powiadomienia</string>
     <string name="read_more_in_github_with_link"><![CDATA[Przeczytaj więcej na naszym <font color="#0088ff">repozytorium GitHub</font>.]]></string>
-    <string name="read_more_in_github">Przeczytaj więcej na naszym repozytorium GitHub.</string>
     <string name="use_chat">Użyj czatu</string>
     <string name="onboarding_notifications_mode_off">Gdy aplikacja jest uruchomiona</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Kontrolujesz przez który serwer(y) <b>odbierać</b> wiadomości, Twoje kontakty - serwery, których używasz do wysyłania im wiadomości.]]></string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Zużywa więcej baterii</b>! Aplikacja zawsze działa w tle - powiadomienia są wyświetlane natychmiastowo.]]></string>
     <string name="incoming_audio_call">Przychodzące połączenie audio</string>
     <string name="incoming_video_call">Przychodzące połączenie wideo</string>
