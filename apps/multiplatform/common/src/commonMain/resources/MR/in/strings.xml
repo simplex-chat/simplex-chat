@@ -618,7 +618,6 @@
     <string name="decentralized">Terdesentralisasi</string>
     <string name="error_initializing_web_view_wrong_arch">Kesalahan saat menginisialisasi WebView. Pastikan Anda telah menginstal WebView dan arsitektur yang didukung adalah arm64.\nKesalahan: %s</string>
     <string name="use_chat">Gunakan obrolan</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Banyak orang bertanya: <i>Jika SimpleX tidak memiliki pengenal pengguna, bagaimana ia dapat menyampaikan pesan?</i>]]></string>
     <string name="how_it_works">Bagaimana caranya</string>
     <string name="how_simplex_works">Cara kerja SimpleX</string>
     <string name="onboarding_notifications_mode_periodic">Berkala</string>

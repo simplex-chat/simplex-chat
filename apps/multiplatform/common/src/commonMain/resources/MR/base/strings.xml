@@ -1040,10 +1040,9 @@
 
   <!-- How SimpleX Works -->
   <string name="how_simplex_works">How SimpleX works</string>
-  <string name="many_people_asked_how_can_it_deliver"><![CDATA[Many people asked: <i>if SimpleX has no user identifiers, how can it deliver messages?</i>]]></string>
-  <string name="to_protect_privacy_simplex_has_ids_for_queues">To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts.</string>
-  <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[You control through which server(s) <b>to receive</b> the messages, your contacts – the servers you use to message them.]]></string>
-  <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Only client devices store user profiles, contacts, groups, and messages sent with <b>2-layer end-to-end encryption</b>.]]></string>
+  <string name="to_protect_privacy_simplex_has_ids_for_queues">To protect your privacy, SimpleX uses separate IDs for each of your contacts.</string>
+  <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Only client devices store user profiles, contacts, groups, and messages.</string>
+  <string name="all_message_and_files_e2e_encrypted"><![CDATA[All messages and files are sent <b>end-to-end encrypted</b>, with post-quantum security in direct messages.]]></string>
   <string name="read_more_in_github">Read more in our GitHub repository.</string>
   <string name="read_more_in_github_with_link"><![CDATA[Read more in our <font color="#0088ff">GitHub repository</font>.]]></string>
 
@@ -1060,7 +1059,7 @@
   <string name="onboarding_notifications_mode_periodic_desc_short">Check messages every 10 minutes</string>
   <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Uses more battery</b>! App always runs in background – notifications are shown instantly.]]></string>
   <string name="onboarding_notifications_mode_service_desc_short">App always runs in background</string>
-  <string name="onboarding_notifications_mode_battery">Notifications and battery</string>
+  <string name="onboarding_notifications_mode_battery">Notifications battery</string>
 
   <!-- SetupDatabasePassphrase.kt -->
   <string name="setup_database_passphrase">Setup database passphrase</string>

@@ -814,7 +814,6 @@
     <string name="feature_offered_item">ajánlott %s</string>
     <string name="button_leave_group">Csoport elhagyása</string>
     <string name="unblock_member_desc">Az összes %s által írt üzenet megjelenik!</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Sokan kérdezték: <i>Ha a SimpleX Chatnek nincs felhasználó-azonosítója, hogyan lehet mégis üzeneteket küldeni?</i>]]></string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Ez akkor fordulhat elő, ha:\n1. Az üzenetek 2 nap után, vagy a kiszolgálón 30 nap után lejártak.\n2. Az üzenet visszafejtése sikertelen volt, mert Ön, vagy az ismerőse régebbi adatbázis biztonsági mentést használt.\n3. A kapcsolat sérült.</string>
     <string name="group_member_role_observer">megfigyelő</string>
     <string name="description_via_group_link_incognito">inkognitó a csoporthivatkozáson keresztül</string>
@@ -1391,7 +1390,6 @@
     <string name="to_reveal_profile_enter_password">Rejtett profilja felfedéséhez írja be a teljes jelszavát a keresőmezőbe a „Csevegési profilok” menüben.</string>
     <string name="upgrade_and_open_chat">Fejlesztés és a csevegés megnyitása</string>
     <string name="you_need_to_allow_to_send_voice">Engedélyeznie kell a hangüzenetek küldését az ismerőse számára, hogy hangüzeneteket küldhessenek egymásnak.</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Beállíthatja, hogy mely kiszolgáló(ko)n keresztül <b>fogadja</b> az üzeneteket, ismerősöket – a kiszolgálók, amelyeket az üzenetküldéshez használ.]]></string>
     <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Ön már a(z) <b>%1$s</b> nevű csoport tagja.]]></string>
     <string name="snd_conn_event_switch_queue_phase_completed">cím megváltoztatva</string>
     <string name="v4_3_irreversible_message_deletion_desc">Az ismerősei engedélyezhetik a teljes üzenet törlést.</string>

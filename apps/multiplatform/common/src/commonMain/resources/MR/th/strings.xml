@@ -746,7 +746,6 @@
     <string name="message_delivery_error_desc">เป็นไปได้มากว่าผู้ติดต่อนี้ได้ลบการเชื่อมต่อกับคุณ</string>
     <string name="message_delivery_error_title">ข้อผิดพลาดในการส่งข้อความ</string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">ตรวจสอบให้แน่ใจว่าที่อยู่เซิร์ฟเวอร์ SMP อยู่ในรูปแบบที่ถูกต้อง แยกบรรทัดและไม่ซ้ำกัน</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[หลายคนถามว่า: <i>ถ้า SimpleX ไม่มีตัวระบุผู้ใช้ จะส่งข้อความได้อย่างไร\?</i>]]></string>
     <string name="network_use_onion_hosts_prefer_desc">โฮสต์หัวหอมจะถูกใช้เมื่อมี</string>
     <string name="only_your_contact_can_send_voice">ผู้ติดต่อของคุณเท่านั้นที่สามารถส่งข้อความเสียงได้</string>
     <string name="simplex_link_mode_browser_warning">การเปิดลิงก์ในเบราว์เซอร์อาจลดความเป็นส่วนตัวและความปลอดภัยของการเชื่อมต่อ ลิงก์ SimpleX ที่ไม่น่าเชื่อถือจะเป็นสีแดง</string>
@@ -1149,7 +1148,6 @@
     <string name="your_profile_is_stored_on_your_device">โปรไฟล์ รายชื่อผู้ติดต่อ และข้อความที่ส่งของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณ</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">คุณสามารถใช้มาร์กดาวน์เพื่อจัดรูปแบบข้อความ:</string>
     <string name="callstate_waiting_for_answer">รอคำตอบ…</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[คุณควบคุมผ่านเซิร์ฟเวอร์ที่จะ<b>รับ</b>ข้อความและผู้ติดต่อของคุณ – เซิร์ฟเวอร์ที่คุณใช้เพื่อส่งข้อความถึงพวกเขา]]></string>
     <string name="use_chat">ใช้แชท</string>
     <string name="icon_descr_video_call">การสนทนาทางวิดีโอ</string>
     <string name="your_calls">การโทรของคุณ</string>

@@ -587,7 +587,6 @@
     <string name="markdown_in_messages">Markdown em mensagens</string>
     <string name="smp_servers">Servidores SMP</string>
     <string name="smp_servers_preset_address">Endereço do servidor pré-definido</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Muitos perguntaram:<i> se SimpleX não tem identificadores de usuários, como ele pode mandar mensagens\?</i>]]></string>
     <string name="reject">Rejeitar</string>
     <string name="integrity_msg_skipped">%1$d mensagem(s) ignorada(s)</string>
     <string name="protect_app_screen">Proteger a tela do aplicativo</string>
@@ -889,7 +888,7 @@
     <string name="you_are_observer">você é um observador</string>
     <string name="voice_message_with_duration">Mensagem de voz (%1$s)</string>
     <string name="share_link">Compartilhar link</string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">Para proteger a privacidade, em vez dos IDs de usuário usados por todas as outras plataformas, SimpleX tem identificadores para filas de mensagens, separados para cada um de seus contatos.</string>
+    <string name="to_protect_privacy_simplex_has_ids_for_queues">Para proteger a privacidade, SimpleX usa identificadores separados para cada um de seus contatos.</string>
     <string name="icon_descr_video_call">chamada de vídeo</string>
     <string name="show_call_on_lock_screen">Mostrar</string>
     <string name="webrtc_ice_servers">Servidores ICE WebRTC</string>
@@ -1010,11 +1009,10 @@
     <string name="settings_section_title_support">APOIE SIMPLEX CHAT</string>
     <string name="enable_automatic_deletion_message">Esta ação não pode ser desfeita - as mensagens enviadas e recebidas antes do selecionado serão excluídas. Pode levar vários minutos.</string>
     <string name="confirm_database_upgrades">Confirme as atualizações do banco de dados</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Somente o cliente dos dispositivos armazenam perfis de usuários, contatos, grupos e mensagens enviadas com <b>criptografia de ponta a ponta em duas camadas</b>.]]></string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Somente o cliente dos dispositivos armazenam perfis de usuários, contatos, grupos e mensagens.</string>
     <string name="thank_you_for_installing_simplex">Obrigado por instalar o SimpleX Chat!</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">A plataforma de mensagens que protege sua privacidade e segurança.</string>
     <string name="invite_prohibited_description">Você está tentando convidar um contato com quem compartilhou um perfil anônimo para o grupo no qual está usando seu perfil principal</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Você controla por meio de qual(is) servidor(es) <b>receber</b> as mensagens, seus contatos controlam os servidores que você usa para enviar mensagens.]]></string>
     <string name="smp_server_test_secure_queue">Fila segura</string>
     <string name="icon_descr_profile_image_placeholder">imagem de perfil temporária</string>
     <string name="error_loading_smp_servers">Erro ao carregar servidores SMP</string>

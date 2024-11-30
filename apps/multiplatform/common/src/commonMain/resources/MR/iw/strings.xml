@@ -587,7 +587,6 @@
     <string name="learn_more">למדו עוד</string>
     <string name="markdown_help">עזרה במרקדאון</string>
     <string name="email_invite_subject">בואו נדבר ב־Simplex Chat</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[אנשים רבים שאלו: <i>אם ל־SimpleX אין מזהי משתמש, איך ניתן להעביר הודעות\?</i>]]></string>
     <string name="keychain_error">שגיאת Keychain</string>
     <string name="join_group_incognito_button">הצטרף עם זהות נסתרת</string>
     <string name="leave_group_question">לעזוב קבוצה\?</string>
@@ -1133,7 +1132,6 @@
     <string name="you_need_to_allow_to_send_voice">עליכם לאפשר לאיש הקשר שלכם לשלוח הודעות קוליות כדי שתוכלו לשלוח אותן.</string>
     <string name="gallery_video_button">סרטון</string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[באפשרותך <font color="#0088ff">להתחבר למפתחי SimpleX Chat כדי לשאול כל שאלה ולקבל עדכונים</font>.]]></string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[אתם קובעים דרך אילו שרתים <b>לקבל</b> את ההודעות, אנשי הקשר שלכם – השרתים דרכם אתם שולחים להם הודעות.]]></string>
     <string name="webrtc_ice_servers">שרתי WebRTC ICE</string>
     <string name="integrity_msg_skipped">%1$d הודעות שדולגו</string>
     <string name="custom_time_unit_weeks">שבועות</string>

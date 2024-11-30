@@ -154,7 +154,6 @@
     <string name="icon_descr_instant_notifications">即時通知</string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">SMPサーバのアドレスを正しく1行ずつに分けて、重複しないように、形式もご確認ください。</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">WebRTC ICEサーバのアドレスを正しく1行ずつに分けて、重複しないように、形式もご確認ください。</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[よく聞かれるのは、 <i>if SimpleX にユーザIDがなければ、メッセージをどうやって届けるのでしょうかと。</i>]]></string>
     <string name="how_simplex_works">SimpleX の仕様</string>
     <string name="icon_descr_call_progress">通話中</string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>電池消費がより高い</b>！非アクティブ時でもバックグラウンドのサービスが常に稼働します（着信してすぐに通知が出ます）。]]></string>
@@ -743,7 +742,6 @@
     <string name="strikethrough_text">取り消し線</string>
     <string name="callstate_starting">接続中…</string>
     <string name="next_generation_of_private_messaging">次世代のプライベートメッセンジャー</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[あなたがメッセージの<b>受信</b>サーバを決められます。あなたの連絡先が同じく、自分に対する受信サーバを決められます。]]></string>
     <string name="icon_descr_video_call">ビデオ通話</string>
     <string name="onboarding_notifications_mode_off">アプリが稼働中に</string>
     <string name="webrtc_ice_servers">WebRTC ICEサーバ</string>

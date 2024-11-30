@@ -1531,7 +1531,6 @@
     <string name="migrate_from_device_verify_database_passphrase">Patvirtinti duomenų bazės slaptafrazę</string>
     <string name="migrate_from_device_verify_passphrase">Patvirtinti slaptafrazę</string>
     <string name="mute_chat">Nutildyti</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Jūs kontroliuojate per kurį serverį (-us) <b>gauti</b> žinutes, jūsų kontaktai - serverius kuriuos naudojate siųsti jiems žinutes.]]></string>
     <string name="relay_server_protects_ip">Tarpinis serveris apsaugo jūsų IP adresą, bet jis gali stebėti skambučio trukmę.</string>
     <string name="status_no_e2e_encryption">nėra visapusio šifravimo</string>
     <string name="new_database_archive">Naujas duomenų bazės archyvas</string>
@@ -1600,7 +1599,6 @@
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">pakeitėte adresą %s</string>
     <string name="icon_descr_expand_role">Išplėsti rolių pasirinkimą</string>
     <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[Jau jungiatės prie grupės <b>%1$s</b>.]]></string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Daug žmonių klausė: <i>jei SimpleX neturi naudotojų identifikatorių, kaip jis gali pristatyti žinutes?</i>]]></string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Tik klientų įrenginiai saugo naudotojų profilius, kontaktus, grupes ir išsiųstas žinutes su <b>dviejų sluoksnių visapusiu šifravimu</b>.]]></string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Kad apsaugoti privatumą, vietoj naudotojų ID naudojamų visose kitose platformose, SimpleX turi identifikatorius žinučių eilėms, skirtingus kiekvienam jūsų kontaktui.</string>
     <string name="privacy_message_draft">Žinutės juodraštis</string>

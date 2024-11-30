@@ -657,7 +657,6 @@
     <string name="network_option_ping_interval">PING-väli</string>
     <string name="users_delete_with_connections">Profiili- ja palvelinyhteydet</string>
     <string name="set_group_preferences">Aseta ryhmän asetukset</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Monet ovat kysyneet: <i>jos SimpleX ei sisällä käyttäjätunnuksia, kuinka se voi toimittaa viestejä\?</i>]]></string>
     <string name="conn_stats_section_title_servers">PALVELIMET</string>
     <string name="save_and_notify_contact">Tallenna ja ilmoita kontaktille</string>
     <string name="save_and_notify_contacts">Tallenna ja ilmoita kontakteille</string>
@@ -1051,7 +1050,6 @@
     <string name="waiting_for_file">Odottaa tiedostoa</string>
     <string name="to_start_a_new_chat_help_header">Aloita uusi keskustelu</string>
     <string name="using_simplex_chat_servers">Käyttää SimpleX Chat -palvelimia.</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Sinä päätät, minkä palvelimien kautta viestit <b>vastaanotetaan</b>, kontaktiesi – palvelimet, joita käytät viestien lähettämiseen.]]></string>
     <string name="your_privacy">Yksityisyytesi</string>
     <string name="snd_group_event_member_deleted">poistit %1$s</string>
     <string name="chat_preferences_yes">kyllä</string>

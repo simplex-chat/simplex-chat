@@ -475,9 +475,7 @@
     <string name="how_it_works">Wie es funktioniert</string>
     <!-- How SimpleX Works -->
     <string name="how_simplex_works">Wie SimpleX funktioniert</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Viele Menschen haben gefragt: <i>Wie kann SimpleX Nachrichten zustellen, wenn es keine Benutzerkennungen gibt?</i>]]></string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Zum Schutz Ihrer Privatsphäre verwendet SimpleX anstelle von Benutzerkennungen, die von allen anderen Plattformen verwendet werden, Kennungen für Nachrichtenwarteschlangen, die für jeden Ihrer Kontakte individuell sind.</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Sie können selbst festlegen, über welche Server Sie Ihre Nachrichten <b>empfangen</b> und an Ihre Kontakte <b>senden</b> wollen.]]></string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Nur die Endgeräte speichern die Benutzerprofile, Kontakte, Gruppen und Nachrichten, welche über eine <b>zweischichtige Ende-zu-Ende-Verschlüsselung</b> gesendet werden.]]></string>
     <string name="read_more_in_github">Erfahren Sie in unserem GitHub-Repository mehr dazu.</string>
     <string name="read_more_in_github_with_link"><![CDATA[Erfahren Sie in unserem <font color="#0088ff">GitHub-Repository</font> mehr dazu.]]></string>

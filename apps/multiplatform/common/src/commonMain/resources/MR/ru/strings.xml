@@ -475,9 +475,7 @@
     <string name="how_it_works">Как это работает</string>
     <!-- How SimpleX Works -->
     <string name="how_simplex_works">Как SimpleX работает</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Много пользователей спросили: <i>как SimpleX доставляет сообщения без идентификаторов пользователей?</i>]]></string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Чтобы защитить Вашу конфиденциальность, вместо ID пользователей, которые есть в других платформах, SimpleX использует ID для очередей сообщений, разные для каждого контакта.</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Вы определяете через какие серверы Вы <b>получаете сообщения</b>, Ваши контакты - серверы, которые Вы используете для отправки.]]></string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Только пользовательские устройства хранят контакты, группы и сообщения, которые отправляются <b>с двухуровневым end-to-end шифрованием</b>.]]></string>
     <string name="read_more_in_github">Узнайте больше из нашего GitHub репозитория.</string>
     <string name="read_more_in_github_with_link"><![CDATA[Узнайте больше из нашего <font color="#0088ff">GitHub репозитория</font>.]]></string>

@@ -321,7 +321,6 @@
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Assurez-vous que les adresses des serveurs WebRTC ICE sont au bon format et ne sont pas dupliquées, un par ligne.</string>
     <string name="network_enable_socks_info">Accéder aux serveurs via un proxy SOCKS sur le port %d \? Le proxy doit être démarré avant d\'activer cette option.</string>
     <string name="network_use_onion_hosts">Utiliser les hôtes .onions</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Vous contrôlez par quel·s serveur·s vous pouvez <b>transmettre</b> ainsi que par quel·s serveur·s vous pouvez <b>recevoir</b> les messages de vos contacts.]]></string>
     <string name="your_settings">Vos paramètres</string>
     <string name="chat_lock">SimpleX Lock</string>
     <string name="chat_console">Console du chat</string>
@@ -451,7 +450,6 @@
     <string name="make_private_connection">Établir une connexion privée</string>
     <string name="how_it_works">Comment ça fonctionne</string>
     <string name="how_simplex_works">Comment SimpleX fonctionne</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Beaucoup se demandent : <i>si SimpleX n\'a pas d\'identifiant d\'utilisateur, comment peut-il transmettre des messages \?</i>]]></string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Seuls les appareils clients stockent les profils des utilisateurs, les contacts, les groupes et les messages envoyés avec un <b>chiffrement de bout en bout à deux couches</b>.]]></string>
     <string name="read_more_in_github_with_link"><![CDATA[Pour en savoir plus, consultez notre <font color="#0088ff">GitHub repository</font>.]]></string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Batterie peu utilisée</b>. L\'app vérifie les messages toutes les 10 minutes. Vous risquez de manquer des appels ou des messages urgents.]]></string>

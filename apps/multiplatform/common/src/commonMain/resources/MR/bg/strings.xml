@@ -984,7 +984,6 @@
     <string name="privacy_redefined">Поверителността преосмислена</string>
     <string name="read_more_in_github">Прочетете повече в нашето хранилище в GitHub.</string>
     <string name="make_private_connection">Добави поверителна връзка</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Много хора попитаха: <i>ако SimpleX няма потребителски идентификатори, как може да доставя съобщения\?</i>]]></string>
     <string name="open_verb">Отвори</string>
     <string name="relay_server_if_necessary">Реле сървър се използва само ако е необходимо. Друга страна може да наблюдава вашия IP адрес.</string>
     <string name="lock_after">Заключване след</string>
@@ -1220,7 +1219,6 @@
     <string name="network_use_onion_hosts_prefer">Когато са налични</string>
     <string name="your_profile_is_stored_on_your_device">Вашият профил, контакти и доставени съобщения се съхраняват на вашето устройство.</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Можете да използвате markdown за форматиране на съобщенията:</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Вие контролирате през кой сървър(и) <b>да получавате</b> съобщенията, вашите контакти – сървърите, които използвате, за да им изпращате съобщения.]]></string>
     <string name="use_chat">Използвай чата</string>
     <string name="update_database">Актуализация</string>
     <string name="you_have_to_enter_passphrase_every_time">Трябва да въвеждате парола при всяко стартиране на приложението - тя не се съхранява на устройството.</string>
