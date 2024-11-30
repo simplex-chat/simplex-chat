@@ -191,7 +191,6 @@
     <string name="callstate_connecting">conectando…</string>
     <string name="decentralized">Descentralizada</string>
     <string name="database_will_be_encrypted">La base de datos será cifrada.</string>
-    <string name="delete_chat_archive_question">¿Eliminar archivo del chat\?</string>
     <string name="create_group_link">Crear enlace de grupo</string>
     <string name="delete_link">Eliminar enlace</string>
     <string name="users_delete_question">¿Eliminar perfil?</string>
@@ -215,8 +214,6 @@
     <string name="ttl_d">%dd</string>
     <string name="ttl_days">%d días</string>
     <string name="delete_files_and_media_question">¿Eliminar archivos y multimedia\?</string>
-    <string name="archive_created_on_ts">Creado: %1$s</string>
-    <string name="delete_archive">Eliminar archivo</string>
     <string name="group_member_status_connected">conectado</string>
     <string name="conn_level_desc_direct">directa</string>
     <string name="chat_preferences_contact_allows">El contacto permite</string>
@@ -289,8 +286,6 @@
     <string name="icon_descr_call_progress">Llamada en curso</string>
     <string name="change_database_passphrase_question">¿Cambiar contraseña de la base de datos\?</string>
     <string name="cannot_access_keychain">No se puede acceder a Keystore para guardar la base de datos de contraseñas</string>
-    <string name="chat_archive_header">Archivo del chat</string>
-    <string name="chat_archive_section">ARCHIVOS DE CHAT</string>
     <string name="cancel_verb">Cancelar</string>
     <string name="icon_descr_cancel_live_message">Cancelar mensaje en directo</string>
     <string name="confirm_verb">Confirmar</string>
@@ -662,7 +657,6 @@
     <string name="icon_descr_call_pending_sent">Llamada pendiente</string>
     <string name="privacy_and_security">Privacidad y Seguridad</string>
     <string name="store_passphrase_securely_without_recover">Guarda la contraseña de forma segura, NO podrás acceder al chat si la pierdes.</string>
-    <string name="save_archive">Guardar archivo</string>
     <string name="restore_database_alert_desc">Introduce la contraseña anterior después de restaurar la copia de seguridad de la base de datos. Esta acción no se puede deshacer.</string>
     <string name="rcv_group_event_user_deleted">te ha expulsado</string>
     <string name="receiving_via">Recibiendo vía</string>

@@ -676,12 +676,6 @@
     <string name="chat_is_stopped_indication">Чат остановлен</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Вы можете запустить чат через Настройки приложения или перезапустив приложение.</string>
     <!-- ChatArchiveView.kt -->
-    <string name="chat_archive_header">Архив чата</string>
-    <string name="chat_archive_section">АРХИВ ЧАТА</string>
-    <string name="save_archive">Сохранить архив</string>
-    <string name="delete_archive">Удалить архив</string>
-    <string name="archive_created_on_ts">Дата создания %1$s</string>
-    <string name="delete_chat_archive_question">Удалить архив чата?</string>
     <!-- Groups -->
     <string name="group_invitation_item_description">приглашение в группу %1$s</string>
     <string name="join_group_question">Вступить в группу?</string>

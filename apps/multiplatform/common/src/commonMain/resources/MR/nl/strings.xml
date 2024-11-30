@@ -24,7 +24,6 @@
     <string name="chat_is_running">Chat is actief</string>
     <string name="clear_chat_menu_action">Wissen</string>
     <string name="chat_database_section">CHAT DATABASE</string>
-    <string name="chat_archive_section">CHAT ARCHIEF</string>
     <string name="chat_console">Chat console</string>
     <string name="chat_database_imported">Chat database geïmporteerd</string>
     <string name="chat_database_deleted">Chat database verwijderd</string>
@@ -117,7 +116,6 @@
     <string name="chat_is_stopped">Chat is gestopt</string>
     <string name="notifications_mode_periodic_desc">Controleert nieuwe berichten elke 10 minuten gedurende maximaal 1 minuut</string>
     <string name="rcv_group_event_changed_your_role">je rol gewijzigd in %s</string>
-    <string name="chat_archive_header">Gesprek archief</string>
     <string name="change_database_passphrase_question">Wachtwoord database wijzigen\?</string>
     <string name="chat_is_stopped_indication">Chat is gestopt</string>
     <string name="chat_preferences">Chat voorkeuren</string>
@@ -215,7 +213,6 @@
     <string name="current_passphrase">Huidige wachtwoord…</string>
     <string name="database_encrypted">Database versleuteld!</string>
     <string name="rcv_group_event_member_connected">is toegetreden</string>
-    <string name="archive_created_on_ts">Gemaakt op %1$s</string>
     <string name="group_member_status_complete">compleet</string>
     <string name="clear_contacts_selection_button">Wissen</string>
     <string name="group_member_status_connected">verbonden</string>
@@ -230,8 +227,6 @@
     <string name="contacts_can_mark_messages_for_deletion">Contact personen kunnen berichten markeren voor verwijdering; u kunt ze wel bekijken.</string>
     <string name="theme_dark">Donker</string>
     <string name="chat_preferences_default">standaard (%s)</string>
-    <string name="delete_chat_archive_question">Chat archief verwijderen\?</string>
-    <string name="delete_archive">Archief verwijderen</string>
     <string name="delete_contact_question">Verwijder contact\?</string>
     <string name="delete_chat_profile_question">Chatprofiel verwijderen?</string>
     <string name="full_deletion">Verwijderen voor iedereen</string>
@@ -621,7 +616,6 @@
     <string name="icon_descr_video_on">Video aan</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Deze actie kan niet ongedaan worden gemaakt. Uw profiel, contacten, berichten en bestanden gaan onomkeerbaar verloren.</string>
     <string name="messages_section_description">Deze instelling is van toepassing op berichten in uw huidige chatprofiel</string>
-    <string name="save_archive">Bewaar archief</string>
     <string name="rcv_group_event_updated_group_profile">bijgewerkt groep profiel</string>
     <string name="group_member_status_removed">verwijderd</string>
     <string name="group_main_profile_sent">Uw chatprofiel wordt verzonden naar de groepsleden</string>

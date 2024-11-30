@@ -119,6 +119,15 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     val user = chatController.apiGetActiveUser(null)
     chatModel.currentUser.value = user
     chatModel.conditions.value = chatController.getServerOperators(null) ?: ServerOperatorConditionsDetail.empty
+    if (appPrefs.shouldImportAppSettings.get()) {
+      try {
+        val appSettings = controller.apiGetAppSettings(AppSettings.current.prepareForExport())
+        appSettings.importIntoApp()
+        appPrefs.shouldImportAppSettings.set(false)
+      } catch (e: Exception) {
+        Log.e(TAG, "Error while importing app settings: " + e.stackTraceToString())
+      }
+    }
     if (user == null) {
       chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
       chatModel.currentUser.value = null
