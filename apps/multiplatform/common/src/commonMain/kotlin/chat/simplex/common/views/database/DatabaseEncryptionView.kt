@@ -65,7 +65,7 @@ fun DatabaseEncryptionView(m: ChatModel, migration: Boolean) {
       migration,
       onConfirmEncrypt = {
         // it will try to stop and start the chat in case of: non-migration && successful encryption. In migration the chat will remain stopped
-        stopChatRunBlockStartChat(migration, chatLastStart, progressIndicator, mutableStateOf(false)) {
+        stopChatRunBlockStartChat(migration, chatLastStart, progressIndicator, ) {
           val success = encryptDatabase(
             currentKey = currentKey,
             newKey = newKey,
