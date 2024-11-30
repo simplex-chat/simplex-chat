@@ -2171,6 +2171,6 @@
     <string name="v6_2_improved_chat_navigation_descr">- Csevegés megnyitása az első olvasatlan üzenetnél.\n- Ugrás az idézett üzenetekre.</string>
     <string name="view_updated_conditions">Frissített feltételek megtekintése</string>
     <string name="xftp_servers_per_user">Az Ön jelenlegi csevegőprofiljához tartozó új fájlok kiszolgálói</string>
-    <string name="chat_archive">Vagy archív fájl importálása</string>
+    <string name="chat_archive">Vagy archívumfájl importálása</string>
     <string name="remote_hosts_section">Távoli hordozható eszközök</string>
 </resources>
