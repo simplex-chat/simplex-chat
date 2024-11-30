@@ -245,7 +245,7 @@ private fun ReviewConditionsView(
     Column(modifier = Modifier.weight(1f).padding(top = DEFAULT_PADDING_HALF)) {
       ConditionsTextView(chatModel.remoteHostId())
     }
-    Column(Modifier.padding(top = DEFAULT_PADDING).widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(Modifier.padding(vertical = DEFAULT_PADDING).widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
       AcceptConditionsButton(onboarding, selectedOperators, selectedOperatorIds, close)
     }
   }
