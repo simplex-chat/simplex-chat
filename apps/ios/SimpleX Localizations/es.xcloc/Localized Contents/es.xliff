@@ -382,8 +382,9 @@
         <target>**Recomendado**: el token del dispositivo y las notificaciones se envían al servidor de notificaciones de SimpleX Chat, pero no el contenido del mensaje, su tamaño o su procedencia.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Scan / Paste link**: to connect via a link you received." xml:space="preserve">
+      <trans-unit id="**Scan / Paste link**: to connect via a link you received." xml:space="preserve" approved="no">
         <source>**Scan / Paste link**: to connect via a link you received.</source>
+        <target state="translated">**Escanear / Pegar enlace**: para conectar mediante un enlace recibido.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Warning**: Instant push notifications require passphrase saved in Keychain." xml:space="preserve">
