@@ -2214,4 +2214,6 @@
     <string name="v6_2_improved_chat_navigation_descr">- Apri la chat sul primo messaggio non letto.\n- Salta ai messaggi citati.</string>
     <string name="share_address_publicly">Condividi indirizzo pubblicamente</string>
     <string name="share_simplex_address_on_social_media">Condividi indirizzo SimpleX sui social media.</string>
+    <string name="chat_archive">O importa file archivio</string>
+    <string name="remote_hosts_section">Telefoni remoti</string>
 </resources>
