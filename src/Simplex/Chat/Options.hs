@@ -35,10 +35,12 @@ import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI, SMPServerWithAuth, XFTPServerWithAuth)
 import Simplex.Messaging.Transport.Client (SocksProxyWithAuth (..), SocksAuth (..), defaultSocksProxyWithAuth)
 import System.FilePath (combine)
+import Simplex.Chat.Types (ContactName)
 
 data ChatOpts = ChatOpts
   { coreOptions :: CoreChatOpts,
     deviceName :: Maybe Text,
+    displayName :: Maybe ContactName,
     chatCmd :: String,
     chatCmdDelay :: Int,
     chatCmdLog :: ChatCmdLog,
@@ -286,6 +288,13 @@ chatOptsP appDir defaultDbFileName = do
             <> metavar "DEVICE"
             <> help "Device name to use in connections with remote hosts and controller"
         )
+  displayName <-
+    optional $
+      strOption
+        ( long "display-name"
+            <> metavar "DISPLAY_NAME"
+            <> help "Display name will be sent to your contacts when you connect and only stored on your device and you can change it later."
+        )
   chatCmd <-
     strOption
       ( long "execute"
@@ -375,6 +384,7 @@ chatOptsP appDir defaultDbFileName = do
   pure
     ChatOpts
       { coreOptions,
+        displayName,
         deviceName,
         chatCmd,
         chatCmdDelay,

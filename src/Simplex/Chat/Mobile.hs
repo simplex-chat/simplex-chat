@@ -202,6 +202,7 @@ mobileChatOpts dbFilePrefix =
             yesToUpMigrations = False
           },
       deviceName = Nothing,
+      displayName = Nothing,
       chatCmd = "",
       chatCmdDelay = 3,
       chatCmdLog = CCLNone,
