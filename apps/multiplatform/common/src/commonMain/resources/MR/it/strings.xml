@@ -277,7 +277,6 @@
     <string name="cannot_access_keychain">Impossibile accedere al Keystore per salvare la password del database</string>
     <string name="alert_title_cant_invite_contacts">Impossibile invitare i contatti!</string>
     <string name="change_role">Cambia ruolo</string>
-    <string name="chat_archive_section">ARCHIVIO CHAT</string>
     <string name="snd_conn_event_switch_queue_phase_changing">cambio indirizzo…</string>
     <string name="chat_is_stopped">Chat fermata</string>
     <string name="group_member_status_introduced">in connessione (presentato)</string>
@@ -398,13 +397,9 @@
     <string name="settings_experimental_features">Funzionalità sperimentali</string>
     <string name="export_database">Esporta database</string>
     <string name="settings_section_title_help">AIUTO</string>
-    <string name="chat_archive_header">Archivio chat</string>
     <string name="chat_is_stopped_indication">Chat fermata</string>
-    <string name="archive_created_on_ts">Creato il %1$s</string>
     <string name="database_error">Errore del database</string>
     <string name="passphrase_is_different">La password del database è diversa da quella salvata nel Keystore.</string>
-    <string name="delete_archive">Elimina archivio</string>
-    <string name="delete_chat_archive_question">Eliminare l\'archivio della chat\?</string>
     <string name="encrypted_database">Database crittografato</string>
     <string name="enter_correct_passphrase">Inserisci la password giusta.</string>
     <string name="enter_passphrase">Inserisci la password…</string>
@@ -745,7 +740,6 @@
     <string name="restore_database">Ripristina backup del database</string>
     <string name="restore_database_alert_title">Ripristinare il backup del database\?</string>
     <string name="database_restore_error">Errore di ripristino del database</string>
-    <string name="save_archive">Salva archivio</string>
     <string name="save_passphrase_and_open_chat">Salva la password e apri la chat</string>
     <string name="database_backup_can_be_restored">Il tentativo di cambiare la password del database non è stato completato.</string>
     <string name="unknown_database_error_with_info">Errore del database sconosciuto: %s</string>

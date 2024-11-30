@@ -262,7 +262,6 @@
     <string name="full_deletion">Törlés az összes tagnál</string>
     <string name="button_create_group_link">Hivatkozás létrehozása</string>
     <string name="chat_preferences">Csevegési beállítások</string>
-    <string name="chat_archive_header">Csevegési archívum</string>
     <string name="delete_profile">Profil törlése</string>
     <string name="la_current_app_passcode">Jelenlegi jelkód</string>
     <string name="group_member_status_connecting">kapcsolódás</string>
@@ -277,7 +276,6 @@
     <string name="in_developing_title">Hamarosan!</string>
     <string name="snd_conn_event_switch_queue_phase_changing_for_member">cím megváltoztatása nála: %s …</string>
     <string name="chat_database_imported">Csevegési adatbázis importálva</string>
-    <string name="chat_archive_section">CSEVEGÉSI ARCHÍVUM</string>
     <string name="delete_messages">Üzenetek törlése</string>
     <string name="clear_chat_menu_action">Kiürítés</string>
     <string name="icon_descr_close_button">Bezárás gomb</string>
@@ -329,7 +327,6 @@
     <string name="delete_files_and_media_for_all_users">Fájlok törlése az összes csevegési profilból</string>
     <string name="smp_server_test_delete_queue">Sorbaállítás törlése</string>
     <string name="button_delete_contact">Ismerős törlése</string>
-    <string name="archive_created_on_ts">Létrehozva ekkor: %1$s</string>
     <string name="rcv_conn_event_switch_queue_phase_changing">cím megváltoztatása…</string>
     <string name="connected_to_mobile">Társítva a hordozható eszközhöz</string>
     <string name="current_passphrase">Jelenlegi jelmondat…</string>
@@ -413,7 +410,6 @@
     <string name="receipts_groups_title_disable">Kézbesítés jelentések letiltása a csoportok számára?</string>
     <string name="custom_time_unit_days">nap</string>
     <string name="ttl_day">%d nap</string>
-    <string name="delete_chat_archive_question">Csevegési archívum törlése?</string>
     <string name="failed_to_create_user_duplicate_title">Duplikált megjelenített név!</string>
     <string name="receipts_contacts_disable_keep_overrides">Letiltás (felülírások megtartásával)</string>
     <string name="database_upgrade">Adatbázis fejlesztése</string>
@@ -451,7 +447,6 @@
     <string name="devices">Eszközök</string>
     <string name="multicast_discoverable_via_local_network">Látható a helyi hálózaton</string>
     <string name="dont_enable_receipts">Ne engedélyezze</string>
-    <string name="delete_archive">Archívum törlése</string>
     <string name="disappearing_prohibited_in_this_chat">Az eltűnő üzenetek küldése le van tiltva ebben a csevegésben.</string>
     <string name="chat_preferences_default">alapértelmezett (%s)</string>
     <string name="integrity_msg_duplicate">duplikált üzenet</string>
@@ -998,7 +993,6 @@
     <string name="recipient_colon_delivery_status">%s: %s</string>
     <string name="system_restricted_background_desc">A SimpleX nem tud a háttérben futni. Csak akkor fog értesítéseket kapni, amikor az alkalmazás meg van nyitva.</string>
     <string name="images_limit_title">Túl sok kép!</string>
-    <string name="save_archive">Archívum mentése</string>
     <string name="group_members_n">%s, %s és %d tag</string>
     <string name="auth_stop_chat">Csevegési szolgáltatás megállítása</string>
     <string name="simplex_link_mode">SimpleX-hivatkozások</string>

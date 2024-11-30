@@ -106,7 +106,6 @@
     <string name="restore_database_alert_title">Veri tabanı yedeğini geri yükle\?</string>
     <string name="database_restore_error">Veri tabanını geri yüklerken hata</string>
     <string name="database_downgrade">Veritabanı sürüm düşürme</string>
-    <string name="save_archive">Arşivi kaydet</string>
     <string name="current_version_timestamp">%s (mevcut)</string>
     <string name="save_and_update_group_profile">Kaydet ve grup profilini güncelle</string>
     <string name="save_welcome_message_question">Karşılama mesajı kaydedilsin mi?</string>
@@ -429,9 +428,6 @@
     <string name="set_password_to_export_desc">Veri tabanı, rastgele bir parola ile şifrelendi. Dışa aktarmadan önce lütfen değiştir.</string>
     <string name="delete_files_and_media_question">Dosyaları ve medyayı sil\?</string>
     <string name="database_will_be_encrypted">Veri tabanı şifrelenecektir.</string>
-    <string name="archive_created_on_ts">%1$s tarihinde oluşturuldu</string>
-    <string name="delete_archive">Belgeliği sil</string>
-    <string name="delete_chat_archive_question">Konuşma belgeliğini sil\?</string>
     <string name="rcv_group_event_changed_member_role">%s üyesinin yetkisi %s olarak değiştirildi</string>
     <string name="rcv_group_event_group_deleted">silinmiş grup</string>
     <string name="snd_group_event_changed_role_for_yourself">kendi yetkini, %s olarak değiştirdin</string>
@@ -740,8 +736,6 @@
     <string name="status_contact_has_no_e2e_encryption">kişi uçtan uca şifrelemeye sahip değildir</string>
     <string name="chat_is_stopped">Sohbet durduruldu</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Aklınızda bulunsun</b>: kaybederseniz, parolayı kurtaramaz veya değiştiremezsiniz.]]></string>
-    <string name="chat_archive_header">Sohbet arşivi</string>
-    <string name="chat_archive_section">SOHBET ARŞİVİ</string>
     <string name="group_invitation_item_description">%1$s grubuna davet</string>
     <string name="join_group_question">Gruba katıl\?</string>
     <string name="rcv_group_event_member_added">%1$s davet edildi</string>

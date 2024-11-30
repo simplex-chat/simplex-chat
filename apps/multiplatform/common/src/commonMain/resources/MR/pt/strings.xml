@@ -33,7 +33,6 @@
     <string name="settings_section_title_icon">ÍCONE DA APLICAÇÃO</string>
     <string name="chat_item_ttl_month">1 mês</string>
     <string name="messages_section_title">Mensagens</string>
-    <string name="chat_archive_section">ARQUIVO DE CONVERSA</string>
     <string name="button_add_welcome_message">Adicionar mensagem de boas-vindas</string>
     <string name="users_add">Adicional perfil</string>
     <string name="users_delete_data_only">Apenas dados de perfil local</string>
@@ -135,11 +134,8 @@
     <string name="delete_after">Eliminar após</string>
     <string name="delete_verb">Eliminar</string>
     <string name="delete_contact_menu_action">Eliminar</string>
-    <string name="chat_archive_header">Arquivo de conversa</string>
     <string name="delete_group_menu_action">Eliminar</string>
     <string name="delete_files_and_media_all">Eliminar todos os ficheiros</string>
-    <string name="delete_archive">Eliminar arquivo</string>
-    <string name="delete_chat_archive_question">Eliminar arquivo de conversa\?</string>
     <string name="delete_database">Eliminar base de dados</string>
     <string name="chat_database_section">BASE DE DADOS DE CONVERSA</string>
     <string name="chat_database_deleted">Base de dados de conversa eliminada</string>
@@ -355,7 +351,6 @@
     <string name="contribute">Contribuir</string>
     <string name="copy_verb">Copiar</string>
     <string name="core_version">Versão principal: v%s</string>
-    <string name="archive_created_on_ts">Criado a %1$s</string>
     <string name="create_group_link">Criar ligação de grupo</string>
     <string name="v4_2_group_links">Ligações de grupo</string>
     <string name="callstatus_connecting">conectando chamada…</string>
@@ -383,7 +378,6 @@
     <string name="save_and_update_group_profile">Salvar e atualizar o perfil do grupo</string>
     <string name="network_options_save">Salvar</string>
     <string name="save_passphrase_and_open_chat">Salvar senha e abrir conversa</string>
-    <string name="save_archive">Salvar arquivo</string>
     <string name="join_group_incognito_button">Junte-se em modo anónimo</string>
     <string name="delete_link">Apagar ligação</string>
     <string name="address_section_title">Endereço</string>

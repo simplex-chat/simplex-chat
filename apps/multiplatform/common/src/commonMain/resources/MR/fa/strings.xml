@@ -956,9 +956,6 @@
     <string name="enable_automatic_deletion_question">حذف خودکار پیام فعال شود؟</string>
     <string name="restore_database_alert_confirm">برگرداندن</string>
     <string name="upgrade_and_open_chat">ارتقا و گشودن گپ</string>
-    <string name="chat_archive_header">آرشیو گپ</string>
-    <string name="save_archive">ذخیره آرشیو</string>
-    <string name="delete_archive">حذف آرشیو</string>
     <string name="group_invitation_item_description">دعوت به گروه %1$s</string>
     <string name="join_group_question">به گروه می‌پیوندید؟</string>
     <string name="leave_group_button">ترک</string>
@@ -1092,9 +1089,6 @@
     <string name="mtr_error_no_down_migration">نسخه پایگاه داده از برنامه جدیدتر است، اما بدون جابه‌جایی تنزلی برای: %s</string>
     <string name="mtr_error_different">جابه‌جایی متفاوت در برنامه/پایگاه داده: %s / %s</string>
     <string name="database_migrations">جابه‌جایی‌ها: %s</string>
-    <string name="chat_archive_section">آرشیو گپ</string>
-    <string name="archive_created_on_ts">ایجاد شده در %1$s</string>
-    <string name="delete_chat_archive_question">آرشیو گپ حذف شود؟</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">شما به گروه دعوت شده‌اید. برای متصل شدن به اعضای گروه، به گروه بپیوندید.</string>
     <string name="join_group_incognito_button">پیوستن به صورت ناشناس</string>
     <string name="alert_message_no_group">این گروه دیگر وجود ندارد.</string>

@@ -1268,6 +1268,7 @@
   <!-- DatabaseView.kt -->
   <string name="your_chat_database">Your chat database</string>
   <string name="run_chat_section">RUN CHAT</string>
+  <string name="remote_hosts_section">Remote mobiles</string>
   <string name="chat_is_running">Chat is running</string>
   <string name="chat_is_stopped">Chat is stopped</string>
   <string name="chat_database_section">CHAT DATABASE</string>
@@ -1408,14 +1409,6 @@
   <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">You can start chat via app Settings / Database or by restarting the app.</string>
   <string name="start_chat_question">Start chat?</string>
   <string name="chat_is_stopped_you_should_transfer_database">Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat.</string>
-
-  <!-- ChatArchiveView.kt -->
-  <string name="chat_archive_header">Chat archive</string>
-  <string name="chat_archive_section">CHAT ARCHIVE</string>
-  <string name="save_archive">Save archive</string>
-  <string name="delete_archive">Delete archive</string>
-  <string name="archive_created_on_ts">Created on %1$s</string>
-  <string name="delete_chat_archive_question">Delete chat archive?</string>
 
   <!-- Groups -->
   <string name="group_invitation_item_description">invitation to group %1$s</string>
@@ -2297,6 +2290,7 @@
   <string name="or_paste_archive_link">Or paste archive link</string>
   <string name="paste_archive_link">Paste archive link</string>
   <string name="invalid_file_link">Invalid link</string>
+  <string name="chat_archive">Or import archive file</string>
   <string name="migrate_to_device_migrating">Migrating</string>
   <string name="migrate_to_device_database_init">Preparing download</string>
   <string name="migrate_to_device_downloading_details">Downloading link details</string>

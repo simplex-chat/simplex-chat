@@ -35,6 +35,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import kotlinx.serialization.*
 import java.io.File
+import java.net.URI
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.max
@@ -180,7 +181,7 @@ private fun ModalData.SectionByState(
 ) {
   when (val s = migrationState.value) {
     null -> {}
-    is MigrationToState.PasteOrScanLink -> migrationState.PasteOrScanLinkView()
+    is MigrationToState.PasteOrScanLink -> migrationState.PasteOrScanLinkView(close)
     is MigrationToState.Onion -> OnionView(s.link, s.legacySocksProxy, s.networkProxy, s.hostMode, s.requiredHostMode, migrationState)
     is MigrationToState.DatabaseInit -> migrationState.DatabaseInitView(s.link, tempDatabaseFile, s.netCfg, s.networkProxy)
     is MigrationToState.LinkDownloading -> migrationState.LinkDownloadingView(s.link, s.ctrl, s.user, s.archivePath, tempDatabaseFile, chatReceiver, s.netCfg, s.networkProxy)
@@ -195,18 +196,30 @@ private fun ModalData.SectionByState(
 }
 
 @Composable
-private fun MutableState<MigrationToState?>.PasteOrScanLinkView() {
-  if (appPlatform.isAndroid) {
-    SectionView(stringResource(MR.strings.scan_QR_code).replace('\n', ' ').uppercase()) {
-      QRCodeScanner(showQRCodeScanner = remember { mutableStateOf(true) }) { text ->
-        withBGApi { checkUserLink(text) }
+private fun MutableState<MigrationToState?>.PasteOrScanLinkView(close: () -> Unit) {
+  Box {
+    val progressIndicator = remember { mutableStateOf(false) }
+    Column {
+      if (appPlatform.isAndroid) {
+        SectionView(stringResource(MR.strings.scan_QR_code).replace('\n', ' ').uppercase()) {
+          QRCodeScanner(showQRCodeScanner = remember { mutableStateOf(true) }) { text ->
+            withBGApi { checkUserLink(text) }
+          }
+        }
+        SectionSpacer()
+      }
+
+      SectionView(stringResource(if (appPlatform.isAndroid) MR.strings.or_paste_archive_link else MR.strings.paste_archive_link).uppercase()) {
+        PasteLinkView()
+      }
+      SectionSpacer()
+
+      SectionView(stringResource(MR.strings.chat_archive).uppercase()) {
+        ArchiveImportView(progressIndicator, close)
       }
     }
-    SectionSpacer()
-  }
-
-  SectionView(stringResource(if (appPlatform.isAndroid) MR.strings.or_paste_archive_link else MR.strings.paste_archive_link).uppercase()) {
-    PasteLinkView()
+    if (progressIndicator.value)
+    ProgressView()
   }
 }
 
@@ -218,6 +231,31 @@ private fun MutableState<MigrationToState?>.PasteLinkView() {
     withBGApi { checkUserLink(str) }
   }) {
     Text(stringResource(MR.strings.tap_to_paste_link))
+  }
+}
+
+@Composable
+private fun ArchiveImportView(progressIndicator: MutableState<Boolean>, close: () -> Unit) {
+  val importArchiveLauncher = rememberFileChooserLauncher(true) { to: URI? ->
+    if (to != null) {
+      withLongRunningApi {
+        val success = importArchive(to, mutableStateOf(0 to 0), progressIndicator)
+        if (success) {
+          startChat(
+            chatModel,
+            mutableStateOf(Clock.System.now()),
+            chatModel.chatDbChanged,
+            progressIndicator
+          )
+          hideView(close)
+        }
+      }
+    }
+  }
+  SectionItemView({
+    withLongRunningApi { importArchiveLauncher.launch("application/zip") }
+  }) {
+    Text(stringResource(MR.strings.import_database))
   }
 }
 
