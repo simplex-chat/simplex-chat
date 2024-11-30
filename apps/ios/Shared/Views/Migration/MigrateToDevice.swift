@@ -247,7 +247,6 @@ struct MigrateToDevice: View {
                     if success {
                         DatabaseView.startChat(
                             Binding.constant(false),
-                            Binding.constant(false),
                             $importingArchiveFromFileProgressIndicator
                         )
                         hideView()

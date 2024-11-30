@@ -46,7 +46,7 @@ struct DatabaseView: View {
     @EnvironmentObject var theme: AppTheme
     let dismissSettingsSheet: DismissAction
     @State private var runChat = false
-    @State private var showRunChatToggle = false
+    @State private var stoppingChat = false
     @State private var alert: DatabaseAlert? = nil
     @State private var showFileImporter = false
     @State private var importedArchivePath: URL?
@@ -76,7 +76,7 @@ struct DatabaseView: View {
     private func chatDatabaseView() -> some View {
         NavigationLink(isActive: $showDatabaseEncryptionView) {
             DatabaseEncryptionView(useKeychain: $useKeychain, migration: false, stopChatRunBlockStartChat: { progressIndicator, block in
-                stopChatRunBlockStartChat(false, progressIndicator, Binding.constant(false), block)
+                stopChatRunBlockStartChat(false, progressIndicator, block)
             })
                 .navigationTitle("Database passphrase")
                 .modifier(ThemedBackground(grouped: true))
@@ -107,35 +107,31 @@ struct DatabaseView: View {
                     .foregroundColor(theme.colors.secondary)
             }
 
-            // still show the toggle in case database was stopped when the user opened this screen because it can be in the following situations:
-            // - database was stopped after migration and the app relaunched
-            // - something wrong happened with database operations and the database couldn't be launched when it should
-            if showRunChatToggle {
-                Section {
-                    settingsRow(
-                        stopped ? "exclamationmark.octagon.fill" : "play.fill",
-                        color: stopped ? .red : .green
-                    ) {
-                        Toggle(
-                            stopped ? "Chat is stopped" : "Chat is running",
-                            isOn: $runChat
-                        )
-                        .onChange(of: runChat) { _ in
-                            if (runChat) {
-                                DatabaseView.startChat($runChat, $showRunChatToggle, $progressIndicator)
-                            } else {
-                                alert = .stopChat
-                            }
+            Section {
+                settingsRow(
+                    stopped ? "exclamationmark.octagon.fill" : "play.fill",
+                    color: stopped ? .red : .green
+                ) {
+                    Toggle(
+                        stopped ? "Chat is stopped" : "Chat is running",
+                        isOn: $runChat
+                    )
+                    .onChange(of: runChat) { _ in
+                        if runChat {
+                            DatabaseView.startChat($runChat, $progressIndicator)
+                        } else if !stoppingChat {
+                            stoppingChat = false
+                            alert = .stopChat
                         }
                     }
-                } header: {
-                    Text("Run chat")
+                }
+            } header: {
+                Text("Run chat")
+                    .foregroundColor(theme.colors.secondary)
+            } footer: {
+                if case .documents = dbContainer {
+                    Text("Database will be migrated when the app restarts")
                         .foregroundColor(theme.colors.secondary)
-                } footer: {
-                    if case .documents = dbContainer {
-                        Text("Database will be migrated when the app restarts")
-                            .foregroundColor(theme.colors.secondary)
-                    }
                 }
             }
 
@@ -145,7 +141,7 @@ struct DatabaseView: View {
                 settingsRow(unencrypted ? "lock.open" : useKeychain ? "key" : "lock", color: color) {
                     NavigationLink {
                         DatabaseEncryptionView(useKeychain: $useKeychain, migration: false, stopChatRunBlockStartChat: { progressIndicator, block in
-                            stopChatRunBlockStartChat(false, progressIndicator, Binding.constant(false), block)
+                            stopChatRunBlockStartChat(false, progressIndicator, block)
                         })
                             .navigationTitle("Database passphrase")
                             .modifier(ThemedBackground(grouped: true))
@@ -161,7 +157,7 @@ struct DatabaseView: View {
                                 alert = .exportProhibited
                             }
                         } else {
-                            stopChatRunBlockStartChat(stopped, $progressIndicator, $showRunChatToggle) {
+                            stopChatRunBlockStartChat(stopped, $progressIndicator) {
                                 await exportArchive()
                             }
                         }
@@ -218,7 +214,6 @@ struct DatabaseView: View {
         }
         .onAppear {
             runChat = m.chatRunning ?? true
-            showRunChatToggle = ChatModel.shared.chatRunning == false || UserDefaults.standard.bool(forKey: DEFAULT_DEVELOPER_TOOLS)
             appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
             currentChatItemTTL = chatItemTTL
         }
@@ -266,7 +261,7 @@ struct DatabaseView: View {
                     title: Text("Import chat database?"),
                     message: Text("Your current chat database will be DELETED and REPLACED with the imported one.") + Text("This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost."),
                     primaryButton: .destructive(Text("Import")) {
-                        stopChatRunBlockStartChat(m.chatRunning == false, $progressIndicator, $showRunChatToggle) {
+                        stopChatRunBlockStartChat(m.chatRunning == false, $progressIndicator) {
                             _ = await DatabaseView.importArchive(fileURL, $progressIndicator, $alert)
                             return true
                         }
@@ -296,7 +291,7 @@ struct DatabaseView: View {
                 message: Text("This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost."),
                 primaryButton: .destructive(Text("Delete")) {
                     let wasStopped = m.chatRunning == false
-                    stopChatRunBlockStartChat(wasStopped, $progressIndicator, $showRunChatToggle) {
+                    stopChatRunBlockStartChat(wasStopped, $progressIndicator) {
                         _ = await deleteChat()
                         return true
                     }
@@ -320,7 +315,7 @@ struct DatabaseView: View {
                 title: Text("Delete files and media?"),
                 message: Text("This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain."),
                 primaryButton: .destructive(Text("Delete")) {
-                    stopChatRunBlockStartChat(m.chatRunning == false, $progressIndicator, $showRunChatToggle) {
+                    stopChatRunBlockStartChat(m.chatRunning == false, $progressIndicator) {
                         deleteFiles()
                         return true
                     }
@@ -374,7 +369,6 @@ struct DatabaseView: View {
     func stopChatRunBlockStartChat(
         _ stopped: Bool,
         _ progressIndicator: Binding<Bool>,
-        _ showRunChatToggle: Binding<Bool>,
         _ block: @escaping () async throws -> Bool
     ) {
         // if the chat was running, the sequence is: stop chat, run block, start chat.
@@ -389,6 +383,8 @@ struct DatabaseView: View {
             }
         } else {
             authStopChat {
+                stoppingChat = true
+                runChat = false
                 Task {
                     // if it throws, let's start chat again anyway
                     var canStart = false
@@ -400,7 +396,7 @@ struct DatabaseView: View {
                     }
                     if canStart {
                         await MainActor.run {
-                            DatabaseView.startChat($runChat, $showRunChatToggle, $progressIndicator)
+                            DatabaseView.startChat($runChat, $progressIndicator)
                         }
                     }
                 }
@@ -408,7 +404,7 @@ struct DatabaseView: View {
         }
     }
 
-    static func startChat(_ runChat: Binding<Bool>, _ showRunChatToggle: Binding<Bool>, _ progressIndicator: Binding<Bool>) {
+    static func startChat(_ runChat: Binding<Bool>, _ progressIndicator: Binding<Bool>) {
         progressIndicator.wrappedValue = true
         let m = ChatModel.shared
         if m.chatDbChanged {
@@ -419,13 +415,11 @@ struct DatabaseView: View {
                     try initializeChat(start: true)
                     m.chatDbChanged = false
                     AppChatState.shared.set(.active)
-                    showRunChatToggle.wrappedValue = false || UserDefaults.standard.bool(forKey: DEFAULT_DEVELOPER_TOOLS)
                     if m.chatDbStatus != .ok || !hadDatabase {
                         // Hide current view and show `DatabaseErrorView`
                         dismissAllSheets(animated: true)
                     }
                 } catch let error {
-                    showRunChatToggle.wrappedValue = true
                     fatalError("Error starting chat \(responseError(error))")
                 }
                 progressIndicator.wrappedValue = false
@@ -438,10 +432,8 @@ struct DatabaseView: View {
                 ChatReceiver.shared.start()
                 chatLastStartGroupDefault.set(Date.now)
                 AppChatState.shared.set(.active)
-                showRunChatToggle.wrappedValue = false || UserDefaults.standard.bool(forKey: DEFAULT_DEVELOPER_TOOLS)
             } catch let error {
                 runChat.wrappedValue = false
-                showRunChatToggle.wrappedValue = true
                 showAlert(NSLocalizedString("Error starting chat", comment: ""), message: responseError(error))
             }
             progressIndicator.wrappedValue = false
@@ -469,7 +461,7 @@ struct DatabaseView: View {
                 progressIndicator = false
             }
         }
-        return true
+        return false
     }
 
     static func importArchive(
