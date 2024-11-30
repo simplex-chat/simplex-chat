@@ -59,7 +59,7 @@ fun SimpleXInfoLayout(
 
     OnboardingInformationButton(
       stringResource(MR.strings.next_generation_of_private_messaging),
-      onClick = { ModalManager.fullscreen.showModal { HowItWorks(user, null) } },
+      onClick = { ModalManager.fullscreen.showModal { HowItWorks(user, onboardingStage) } },
     )
 
     Spacer(Modifier.weight(1f))
