@@ -2207,7 +2207,7 @@
     <string name="operator_in_order_to_use_accept_conditions"><![CDATA[Para usar los servidores de <b>%s</b>, acepta las condiciones de uso.]]></string>
     <string name="xftp_servers_per_user">Los servidores para archivos nuevos en tu perfil actual</string>
     <string name="v6_2_network_decentralization_descr">El segundo operador predefinido!</string>
-    <string name="onboarding_network_operators_configure_via_settings">Puedes configurar los servidores a través de sus ajustes.</string>
+    <string name="onboarding_network_operators_configure_via_settings">Puedes configurar los servidores a través de su configuración.</string>
     <string name="to_protect_against_your_link_replaced_compare_codes">Para protegerte contra una sustitución del enlace, puedes comparar los códigos de seguridad con tu contacto.</string>
     <string name="operator_same_conditions_will_apply_to_operators"><![CDATA[Las mismas condiciones se aplicarán a el/los operador(es) <b>%s</b>.]]></string>
     <string name="operator_conditions_will_be_applied"><![CDATA[Estas condiciones también se aplican para: <b>%s</b>.]]></string>
@@ -2215,4 +2215,6 @@
     <string name="address_creation_instruction">Pulsa Crear dirección SimpleX en el menú para crearla más tarde.</string>
     <string name="connection_error_quota_desc">La conexión ha alcanzado el límite de mensajes no entregados. es posible que tu contacto esté desconectado.</string>
     <string name="message_deleted_or_not_received_error_desc">El mensaje ha sido borrado o aún no se ha recibido.</string>
+    <string name="remote_hosts_section">Móvil remoto</string>
+    <string name="chat_archive">O importa desde un archivo</string>
 </resources>
