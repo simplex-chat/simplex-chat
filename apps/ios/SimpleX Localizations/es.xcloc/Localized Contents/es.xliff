@@ -750,8 +750,9 @@
         <target>Todos los miembros del grupo permanecerán conectados.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages." xml:space="preserve">
+      <trans-unit id="All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages." xml:space="preserve" approved="no">
         <source>All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages.</source>
+        <target state="translated">Todos los mensajes y archivos son enviados **cifrados de extremo a extremo** y con seguridad de cifrado postcuántico en mensajes directos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All messages will be deleted - this cannot be undone!" xml:space="preserve">
@@ -7911,8 +7912,9 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
         <target>Al iniciar llamadas de audio y vídeo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="When more than one operator is enabled, none of them has metadata to learn who communicates with whom." xml:space="preserve">
+      <trans-unit id="When more than one operator is enabled, none of them has metadata to learn who communicates with whom." xml:space="preserve" approved="no">
         <source>When more than one operator is enabled, none of them has metadata to learn who communicates with whom.</source>
+        <target state="translated">Cuando está habilitado más de un operador, ninguno dispone de los metadatos para conocer quién se comunica con quién.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." xml:space="preserve">
@@ -8072,16 +8074,19 @@ Repeat join request?</source>
         <target>Puedes cambiar la posición de la barra desde el menú Apariencia.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can configure operators in Network &amp; servers settings." xml:space="preserve">
+      <trans-unit id="You can configure operators in Network &amp; servers settings." xml:space="preserve" approved="no">
         <source>You can configure operators in Network &amp; servers settings.</source>
+        <target state="translated">Puedes configurar los operadores desde Servidores y Redes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can configure servers via settings." xml:space="preserve">
+      <trans-unit id="You can configure servers via settings." xml:space="preserve" approved="no">
         <source>You can configure servers via settings.</source>
+        <target state="translated">Puedes configurar los servidores a través de su configuración.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can create it in user picker." xml:space="preserve">
+      <trans-unit id="You can create it in user picker." xml:space="preserve" approved="no">
         <source>You can create it in user picker.</source>
+        <target state="translated">Puedes crearlo desde el selector de usuario.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can create it later" xml:space="preserve">
@@ -8124,8 +8129,9 @@ Repeat join request?</source>
         <target>Puedes enviar mensajes a %@ desde Contactos archivados.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can set connection name, to remember who the link was shared with." xml:space="preserve">
+      <trans-unit id="You can set connection name, to remember who the link was shared with." xml:space="preserve" approved="no">
         <source>You can set connection name, to remember who the link was shared with.</source>
+        <target state="translated">Puedes añadir un nombre a la conexión para recordar a quién corresponde.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can set lock screen notification preview via settings." xml:space="preserve">
@@ -9487,8 +9493,9 @@ last received msg: %2$@</source>
         <target state="translated">%d evento(s) nuevo(s)</target>
         <note>notification body</note>
       </trans-unit>
-      <trans-unit id="From: %@" xml:space="preserve">
+      <trans-unit id="From: %@" xml:space="preserve" approved="no">
         <source>From: %@</source>
+        <target state="translated">De: %@</target>
         <note>notification body</note>
       </trans-unit>
       <trans-unit id="New events" xml:space="preserve" approved="no">
