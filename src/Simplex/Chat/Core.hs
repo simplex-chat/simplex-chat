@@ -23,7 +23,7 @@ import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Store.Profiles
-import Simplex.Chat.Types (User (..), ContactName, Profile (..), NewUser (..), LocalProfile (..))
+import Simplex.Chat.Types (User (..), Profile (..), NewUser (..), LocalProfile (..))
 import Simplex.Chat.View (serializeChatResponse)
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore, withTransaction)
 import System.Exit (exitFailure)
@@ -32,7 +32,7 @@ import Text.Read (readMaybe)
 import UnliftIO.Async
 
 simplexChatCore :: ChatConfig -> ChatOpts -> (User -> ChatController -> IO ()) -> IO ()
-simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, dbKey, logAgent}, displayName} chat =
+simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, dbKey, logAgent}} chat =
   case logAgent of
     Just level -> do
       setLogLevel level
@@ -44,9 +44,9 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {core
       putStrLn $ "Error opening database: " <> show e
       exitFailure
     run db@ChatDatabase {chatStore} = do
-      u_ <- getSelectActiveUser chatStore displayName
+      u_ <- getSelectActiveUser chatStore opts
       cc <- newChatController db u_ cfg opts False
-      u <- maybe (createActiveUser cc displayName) pure u_
+      u <- maybe (createActiveUser cc opts) pure u_
       unless testView $ putStrLn $ "Current user: " <> userStr u
       runSimplexChat opts u cc chat
 
@@ -64,8 +64,8 @@ sendChatCmdStr cc s = runReaderT (execChatCommand Nothing . encodeUtf8 $ T.pack 
 sendChatCmd :: ChatController -> ChatCommand -> IO ChatResponse
 sendChatCmd cc cmd = runReaderT (execChatCommand' cmd) cc
 
-getSelectActiveUser :: SQLiteStore -> Maybe ContactName -> IO (Maybe User)
-getSelectActiveUser st displayName = do
+getSelectActiveUser :: SQLiteStore -> ChatOpts -> IO (Maybe User)
+getSelectActiveUser st ChatOpts {displayName} = do
   users <- withTransaction st getUsers
   case displayName of
     Just name ->
@@ -94,8 +94,8 @@ getSelectActiveUser st displayName = do
                     let user = users !! (n - 1)
                      in Just <$> withTransaction st (`setActiveUser` user)
 
-createActiveUser :: ChatController -> Maybe ContactName -> IO User
-createActiveUser cc name = do
+createActiveUser :: ChatController -> ChatOpts -> IO User
+createActiveUser cc ChatOpts {displayName = name} = do
   putStrLn
     "No user profiles found, it will be created now.\n\
     \Please choose your display name.\n\
