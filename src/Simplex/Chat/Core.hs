@@ -25,7 +25,7 @@ import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
 import Simplex.Chat.View (serializeChatResponse)
-import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore, withTransaction, MigrationConfirmation (MCYesUp, MCConsole))
+import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore, withTransaction, MigrationConfirmation (..))
 import System.Exit (exitFailure)
 import System.IO (hFlush, stdout)
 import Text.Read (readMaybe)
@@ -39,8 +39,8 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {core
       withGlobalLogging logCfg initRun
     _ -> initRun
   where
-    confirmMigrations' = if confirmMigrations == MCConsole && yesToUpMigrations then MCYesUp else confirmMigrations
-    initRun = createChatDatabase dbFilePrefix dbKey False confirmMigrations' >>= either exit run
+    initRun = createChatDatabase dbFilePrefix dbKey False confirm' >>= either exit run
+    confirm' = if confirmMigrations == MCConsole && yesToUpMigrations then MCYesUp else confirmMigrations
     exit e = do
       putStrLn $ "Error opening database: " <> show e
       exitFailure
