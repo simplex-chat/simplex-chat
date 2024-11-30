@@ -293,7 +293,7 @@ chatOptsP appDir defaultDbFileName = do
       strOption
         ( long "display-name"
             <> metavar "DISPLAY_NAME"
-            <> help "Display name will be sent to your contacts when you connect and only stored on your device and you can change it later."
+            <> help "Create new or switch to existing user profile with this display name."
         )
   chatCmd <-
     strOption

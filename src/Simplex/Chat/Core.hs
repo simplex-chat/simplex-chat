@@ -68,9 +68,9 @@ getSelectActiveUser :: SQLiteStore -> Maybe ContactName -> IO (Maybe User)
 getSelectActiveUser st displayName = do
   users <- withTransaction st getUsers
   case displayName of
-    Just name -> case find (\User {localDisplayName} -> localDisplayName == name) users of
-      Just u -> pure $ Just u
-      Nothing -> pure Nothing
+    Just name ->
+      forM (find (\User {localDisplayName} -> localDisplayName == name) users) $ \u ->
+        if activeUser u then pure u else withTransaction st (`setActiveUser` u)
     Nothing -> case find activeUser users of
       Just u -> pure $ Just u
       Nothing -> selectUser users
