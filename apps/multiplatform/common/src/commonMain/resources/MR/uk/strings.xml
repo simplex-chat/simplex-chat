@@ -2211,4 +2211,6 @@
     <string name="onboarding_network_operators_app_will_use_different_operators">Якщо увімкнено більше одного оператора, програма використовуватиме сервери різних операторів для кожної розмови.</string>
     <string name="operator_use_for_messages">Використовуйте для повідомлень</string>
     <string name="onboarding_network_operators_conditions_you_can_configure">Ви можете налаштувати операторів у налаштуваннях Мережі та серверів.</string>
+    <string name="chat_archive">Або імпортуйте архівний файл</string>
+    <string name="remote_hosts_section">Віддалені мобільні</string>
 </resources>
