@@ -1963,6 +1963,12 @@ class ACIReaction(
 )
 
 @Serializable
+data class MemberReaction(
+  val groupMember: GroupMember,
+  val reactionTs: Instant
+)
+
+@Serializable
 class CIReaction(
   val chatDir: CIDirection,
   val chatItem: ChatItem,

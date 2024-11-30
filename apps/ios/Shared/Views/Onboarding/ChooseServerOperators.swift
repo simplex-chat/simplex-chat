@@ -140,6 +140,7 @@ struct ChooseServerOperators: View {
                             .font(.footnote)
                             .padding(.horizontal, 32)
                         }
+                        .frame(maxWidth: .infinity)
                         .disabled(!canReviewLater)
                         .padding(.bottom)
                     }
