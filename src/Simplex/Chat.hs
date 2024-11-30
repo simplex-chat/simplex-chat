@@ -166,7 +166,7 @@ operatorFlux =
       conditionsAcceptance = CARequired Nothing,
       enabled = False,
       smpRoles = ServerRoles {storage = False, proxy = True},
-      xftpRoles = allRoles
+      xftpRoles = ServerRoles {storage = False, proxy = True}
     }
 
 defaultChatConfig :: ChatConfig
