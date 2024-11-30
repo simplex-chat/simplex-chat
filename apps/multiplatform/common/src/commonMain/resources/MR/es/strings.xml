@@ -2156,7 +2156,7 @@
     <string name="error_server_protocol_changed">El protocolo del servidor ha cambiado.</string>
     <string name="appearance_app_toolbars">Barras de herramientas</string>
     <string name="appearance_bars_blur_radius">Difuminar</string>
-    <string name="v6_2_improved_chat_navigation">Navegación en chat mejorada</string>
+    <string name="v6_2_improved_chat_navigation">Navegación en el chat mejorada</string>
     <string name="v6_2_network_decentralization">Descentralización de la red</string>
     <string name="v6_2_improved_chat_navigation_descr">- El chat abre en el primer mensaje no leído.\n- Desplazamiento hasta los mensajes citados.</string>
     <string name="accept_conditions">Aceptar condiciones</string>
@@ -2181,4 +2181,17 @@
     <string name="onboarding_select_network_operators_to_use">Selecciona los operadores de red a utilizar</string>
     <string name="share_address_publicly">Campartir dirección públicamente</string>
     <string name="simplex_address_and_1_time_links_are_safe_to_share">Es seguro compartir los enlaces de un uso y las direcciones SimpleX a través de cualquier medio.</string>
+    <string name="onboarding_network_operators_update">Actualizar</string>
+    <string name="operator_website">Sitio web</string>
+    <string name="your_servers">Tus servidores</string>
+    <string name="use_servers_of_operator_x">Usar %s</string>
+    <string name="operator_use_operator_toggle_description">Usar servidores</string>
+    <string name="operator_use_for_messages">Usar para mensajes</string>
+    <string name="view_conditions">Ver condiciones</string>
+    <string name="operator_use_for_messages_receiving">Para recibir</string>
+    <string name="operator_use_for_sending">Para enviar</string>
+    <string name="operator_use_for_files">Usar para archivos</string>
+    <string name="appearance_in_app_bars_alpha">Transparencia</string>
+    <string name="view_updated_conditions">Ver condiciones actualizadas</string>
+    <string name="connection_error_quota">Mensajes no entregados</string>
 </resources>
