@@ -41,7 +41,7 @@ testNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   alice ##> "/? keep"
   alice <# "* keep in mind"
 
-  alice #$> ("/_read chat *1 from=1 to=100", id, "ok")
+  alice #$> ("/_read chat *1", id, "ok")
   alice ##> "/_unread chat *1 on"
   alice <## "ok"
 

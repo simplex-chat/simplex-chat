@@ -1250,13 +1250,13 @@ processChatCommand' vr = \case
                 when (size' > 0) $ copyChunks r w size'
   APIUserRead userId -> withUserId userId $ \user -> withFastStore' (`setUserChatsRead` user) >> ok user
   UserRead -> withUser $ \User {userId} -> processChatCommand $ APIUserRead userId
-  APIChatRead chatRef@(ChatRef cType chatId) fromToIds -> withUser $ \_ -> case cType of
+  APIChatRead chatRef@(ChatRef cType chatId) -> withUser $ \_ -> case cType of
     CTDirect -> do
       user <- withFastStore $ \db -> getUserByContactId db chatId
       ts <- liftIO getCurrentTime
       timedItems <- withFastStore' $ \db -> do
-        timedItems <- getDirectUnreadTimedItems db user chatId fromToIds
-        updateDirectChatItemsRead db user chatId fromToIds
+        timedItems <- getDirectUnreadTimedItems db user chatId
+        updateDirectChatItemsRead db user chatId
         setDirectChatItemsDeleteAt db user chatId timedItems ts
       forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
       ok user
@@ -1264,14 +1264,14 @@ processChatCommand' vr = \case
       user <- withFastStore $ \db -> getUserByGroupId db chatId
       ts <- liftIO getCurrentTime
       timedItems <- withFastStore' $ \db -> do
-        timedItems <- getGroupUnreadTimedItems db user chatId fromToIds
-        updateGroupChatItemsRead db user chatId fromToIds
+        timedItems <- getGroupUnreadTimedItems db user chatId
+        updateGroupChatItemsRead db user chatId
         setGroupChatItemsDeleteAt db user chatId timedItems ts
       forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
       ok user
     CTLocal -> do
       user <- withFastStore $ \db -> getUserByNoteFolderId db chatId
-      withFastStore' $ \db -> updateLocalChatItemsRead db user chatId fromToIds
+      withFastStore' $ \db -> updateLocalChatItemsRead db user chatId
       ok user
     CTContactRequest -> pure $ chatCmdError Nothing "not supported"
     CTContactConnection -> pure $ chatCmdError Nothing "not supported"
@@ -1471,7 +1471,7 @@ processChatCommand' vr = \case
     withCurrentCall contactId $ \user ct Call {chatItemId, callState} -> case callState of
       CallInvitationReceived {} -> do
         let aciContent = ACIContent SMDRcv $ CIRcvCall CISCallRejected 0
-        withFastStore' $ \db -> updateDirectChatItemsRead db user contactId $ Just (chatItemId, chatItemId)
+        withFastStore' $ \db -> setDirectChatItemRead db user contactId chatItemId
         timed_ <- contactCITimed ct
         updateDirectChatItemView user ct chatItemId aciContent False False timed_ Nothing
         forM_ (timed_ >>= timedDeleteAt') $
@@ -1487,7 +1487,7 @@ processChatCommand' vr = \case
             callState' = CallOfferSent {localCallType = callType, peerCallType, localCallSession = rtcSession, sharedKey}
             aciContent = ACIContent SMDRcv $ CIRcvCall CISCallAccepted 0
         (SndMessage {msgId}, _) <- sendDirectContactMessage user ct (XCallOffer callId offer)
-        withFastStore' $ \db -> updateDirectChatItemsRead db user contactId $ Just (chatItemId, chatItemId)
+        withFastStore' $ \db -> setDirectChatItemRead db user contactId chatItemId
         updateDirectChatItemView user ct chatItemId aciContent False False Nothing $ Just msgId
         pure $ Just call {callState = callState'}
       _ -> throwChatError . CECallState $ callStateTag callState
@@ -8277,7 +8277,7 @@ chatCommandP =
       "/_forward " *> (APIForwardChatItems <$> chatRefP <* A.space <*> chatRefP <*> _strP <*> sendMessageTTLP),
       "/_read user " *> (APIUserRead <$> A.decimal),
       "/read user" $> UserRead,
-      "/_read chat " *> (APIChatRead <$> chatRefP <*> optional (A.space *> ((,) <$> ("from=" *> A.decimal) <* A.space <*> ("to=" *> A.decimal)))),
+      "/_read chat " *> (APIChatRead <$> chatRefP),
       "/_read chat items " *> (APIChatItemsRead <$> chatRefP <*> _strP),
       "/_unread chat " *> (APIChatUnread <$> chatRefP <* A.space <*> onOffP),
       "/_delete " *> (APIDeleteChat <$> chatRefP <*> chatDeleteMode),
