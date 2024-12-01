@@ -1371,4 +1371,14 @@
     <string name="operator_same_conditions_will_apply_to_operators"><![CDATA[Các điều kiện tương tự sẽ áp dụng cho (các) nhà cung cấp <b>%s</b>.]]></string>
     <string name="operators_conditions_will_also_apply"><![CDATA[Các điều kiện này cũng sẽ áp dụng cho: <b>%s</b>.]]></string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[Đọc thêm tại <font color="#0088ff">Hướng dẫn người dùng</font>.]]></string>
+    <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[Bạn đã kết nối tới <b>%1$s</b> rồi.]]></string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[Để thực hiện cuộc gọi trong nền, vui lòng chọn <b>Mức sử dụng pin ứng dụng</b> / <b>Không hạn chế</b> trong phần cài đặt ứng dụng.]]></string>
+    <string name="remote_host_error_timeout"><![CDATA[Đã hết thời gian chờ khi kết nối tới thiết bị di động <b>%s</b>]]></string>
+    <string name="turn_off_battery_optimization"><![CDATA[Để sử dụng, xin vui lòng <b>cho phép SimpleX chạy trong nền</b> trong hộp thoại tiếp theo. Nếu không, thông báo sẽ bị vô hiệu hóa.]]></string>
+    <string name="operator_in_order_to_use_accept_conditions"><![CDATA[Để sử dụng các máy chủ của <b>%s</b>, vui lòng chấp nhận điều kiện sử dụng.]]></string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Để bảo vệ sự riêng tư của bạn, thay vì sử dụng thông báo đẩy thì ứng dụng dùng <b>Dịch vụ nền SimpleX</b> – nó tiêu tốn một vài phần trăm pin mỗi ngày.]]></string>
+    <string name="system_restricted_background_warn"><![CDATA[Để bật thông báo, vui lòng chọn <b>Mức sử dụng pin ứng dụng</b> / <b>Không hạn chế</b> trong phần cài đặt ứng dụng.]]></string>
+    <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Bạn đã ở trong nhóm <b>%1$s</b> rồi.]]></string>
+    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Đây là đường dẫn của bạn cho nhóm <b>%1$s</b>!]]></string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[Bạn đã tham gia nhóm <b>%1$s</b> rồi.]]></string>
 </resources>
