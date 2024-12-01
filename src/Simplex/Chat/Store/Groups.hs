@@ -160,13 +160,14 @@ type GroupMemberRow = ((Int64, Int64, MemberId, VersionChat, VersionChat, GroupM
 
 type MaybeGroupMemberRow = ((Maybe Int64, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe Bool, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId, Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe ImageData, Maybe ConnReqContact, Maybe LocalAlias, Maybe Preferences))
 
+-- TODO [business] get businessChat from DB
 toGroupInfo :: VersionRangeChat -> Int64 -> GroupInfoRow -> GroupInfo
 toGroupInfo vr userContactId ((groupId, localDisplayName, displayName, fullName, description, image, hostConnCustomUserProfileId, enableNtfs_, sendRcpts, favorite, groupPreferences) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt, uiThemes, customData) :. userMemberRow) =
   let membership = (toGroupMember userContactId userMemberRow) {memberChatVRange = vr}
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts, favorite}
       fullGroupPreferences = mergeGroupPreferences groupPreferences
       groupProfile = GroupProfile {displayName, fullName, description, image, groupPreferences}
-   in GroupInfo {groupId, localDisplayName, groupProfile, businessGroup = Nothing, fullGroupPreferences, membership, hostConnCustomUserProfileId, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, uiThemes, customData}
+   in GroupInfo {groupId, localDisplayName, groupProfile, businessChat = Nothing, fullGroupPreferences, membership, hostConnCustomUserProfileId, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, uiThemes, customData}
 
 toGroupMember :: Int64 -> GroupMemberRow -> GroupMember
 toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberRestriction_) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId, profileId, displayName, fullName, image, contactLink, localAlias, preferences)) =
@@ -343,7 +344,7 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
         { groupId,
           localDisplayName = ldn,
           groupProfile,
-          businessGroup = Nothing,
+          businessChat = Nothing,
           fullGroupPreferences,
           membership,
           hostConnCustomUserProfileId = Nothing,
@@ -362,7 +363,7 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
 -- Alternatively, it can be done in processGroupInvitation.
 createGroupInvitation :: DB.Connection -> VersionRangeChat -> User -> Contact -> GroupInvitation -> Maybe ProfileId -> ExceptT StoreError IO (GroupInfo, GroupMemberId)
 createGroupInvitation _ _ _ Contact {localDisplayName, activeConn = Nothing} _ _ = throwError $ SEContactNotReady localDisplayName
-createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activeConn = Just Connection {customUserProfileId, peerChatVRange}} GroupInvitation {fromMember, invitedMember, connRequest, groupProfile, businessMember} incognitoProfileId = do
+createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activeConn = Just Connection {customUserProfileId, peerChatVRange}} GroupInvitation {fromMember, invitedMember, connRequest, groupProfile, businessChat} incognitoProfileId = do
   liftIO getInvitationGroupId_ >>= \case
     Nothing -> createGroupInvitation_
     Just gId -> do
@@ -414,7 +415,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
                 { groupId,
                   localDisplayName,
                   groupProfile,
-                  businessGroup = Nothing,
+                  businessChat = Nothing,
                   fullGroupPreferences,
                   membership,
                   hostConnCustomUserProfileId = customUserProfileId,
@@ -510,7 +511,7 @@ createGroupInvitedViaLink
   vr
   user@User {userId, userContactId}
   Connection {connId, customUserProfileId}
-  GroupLinkInvitation {fromMember, fromMemberName, invitedMember, groupProfile, businessMember} = do
+  GroupLinkInvitation {fromMember, fromMemberName, invitedMember, groupProfile, businessChat} = do
     currentTs <- liftIO getCurrentTime
     groupId <- insertGroup_ currentTs
     hostMemberId <- insertHost_ currentTs groupId
@@ -924,12 +925,14 @@ createAcceptedMemberConnection
     Connection {connId} <- createConnection_ db userId ConnMember (Just groupMemberId) agentConnId ConnNew chatV cReqChatVRange Nothing (Just userContactLinkId) Nothing 0 createdAt subMode PQSupportOff
     setCommandConnId db user cmdId connId
 
-createBusinessRequestGroup :: DB.Connection -> TVar ChaChaDRG -> User -> UserContactRequest -> ExceptT StoreError IO (GroupInfo, GroupMember)
+createBusinessRequestGroup :: DB.Connection -> TVar ChaChaDRG -> User -> UserContactRequest -> GroupProfile -> BusinessChatType -> ExceptT StoreError IO (GroupInfo, GroupMember)
 createBusinessRequestGroup
   db
   gVar
   user@User {userId}
-  UserContactRequest {cReqChatVRange, localDisplayName, profileId} = do
+  UserContactRequest {cReqChatVRange, localDisplayName, profileId}
+  groupProfile
+  business = do
     -- TODO [business]
     -- create group and member with `business` fields
     -- synthetic profile for group

@@ -2322,6 +2322,7 @@ processChatCommand' vr = \case
         (_, []) -> Nothing
         (ms1, bm : ms2) -> Just (bm, ms1 <> ms2)
   APIRemoveMember groupId memberId -> withUser $ \user -> do
+    -- TODO [business] prevent removal of "title member", also in UI
     Group gInfo members <- withFastStore $ \db -> getGroup db vr user groupId
     case find ((== memberId) . groupMemberId') members of
       Nothing -> throwChatError CEGroupMemberNotFound
@@ -3008,7 +3009,7 @@ processChatCommand' vr = \case
         groupMemberId <- getGroupMemberIdByName db user groupId groupMemberName
         pure (groupId, groupMemberId)
     sendGrpInvitation :: User -> Contact -> GroupInfo -> GroupMember -> ConnReqInvitation -> CM ()
-    sendGrpInvitation user ct@Contact {contactId, localDisplayName} gInfo@GroupInfo {groupId, groupProfile, membership, businessGroup} GroupMember {groupMemberId, memberId, memberRole = memRole} cReq = do
+    sendGrpInvitation user ct@Contact {contactId, localDisplayName} gInfo@GroupInfo {groupId, groupProfile, membership, businessChat} GroupMember {groupMemberId, memberId, memberRole = memRole} cReq = do
       currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
       let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
           groupInv =
@@ -3017,7 +3018,7 @@ processChatCommand' vr = \case
                 invitedMember = MemberIdRole memberId memRole,
                 connRequest = cReq,
                 groupProfile,
-                businessMember = businessMemberInfo <$> businessGroup,
+                businessChat,
                 groupLinkId = Nothing,
                 groupSize = Just currentMemCount
               }
@@ -3974,7 +3975,7 @@ acceptContactRequestAsync user cReq@UserContactRequest {agentInvitationId = Agen
 acceptGroupJoinRequestAsync :: User -> GroupInfo -> UserContactRequest -> GroupMemberRole -> Maybe IncognitoProfile -> CM GroupMember
 acceptGroupJoinRequestAsync
   user
-  gInfo@GroupInfo {groupProfile, membership, businessGroup}
+  gInfo@GroupInfo {groupProfile, membership, businessChat}
   ucr@UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange}
   gLinkMemRole
   incognitoProfile = do
@@ -3990,7 +3991,7 @@ acceptGroupJoinRequestAsync
                 fromMemberName = displayName,
                 invitedMember = MemberIdRole memberId gLinkMemRole,
                 groupProfile,
-                businessMember = businessMemberInfo <$> businessGroup,
+                businessChat,
                 groupSize = Just currentMemCount
               }
     subMode <- chatReadVar subscriptionMode
@@ -4001,32 +4002,29 @@ acceptGroupJoinRequestAsync
       liftIO $ createAcceptedMemberConnection db user connIds chatV ucr groupMemberId subMode
       getGroupMemberById db vr user groupMemberId
 
-acceptBusinessJoinRequestAsync :: User -> UserContactRequest -> VersionRangeChat -> CM (GroupInfo, GroupMember)
+acceptBusinessJoinRequestAsync :: User -> UserContactRequest -> Profile -> VersionRangeChat -> CM (GroupInfo, GroupMember)
 acceptBusinessJoinRequestAsync
   user
   ucr@UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange}
+  ctProfile
   chatVRange = do
     gVar <- asks random
-    (gInfo, clientMember) <- withStore $ \db -> createBusinessRequestGroup db gVar user ucr
-    let p@Profile {displayName} = profileToSendOnAccept user Nothing True
-        GroupInfo {groupProfile, membership} = gInfo
+    (gInfo, clientMember) <- withStore $ \db -> createBusinessRequestGroup db gVar user ucr (businessGroupProfile ctProfile) BCCustomer
+    let userProfile@Profile {displayName} = profileToSendOnAccept user Nothing True
+        GroupInfo {membership, businessChat} = gInfo
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
         GroupMember {groupMemberId, memberId} = clientMember
-        (groupProfile', businessMember)
-          | maxVersion chatVRange >= businessChatsVersion =
-              (groupProfile, Just $ BusinessMemberInfo (memberInfo membership) BTBusiness)
-          | otherwise = (legacyBusinessGroupProfile p, Nothing)
         msg =
           XGrpLinkInv $
             GroupLinkInvitation
               { fromMember = MemberIdRole userMemberId userRole,
                 fromMemberName = displayName,
                 invitedMember = MemberIdRole memberId GRMember,
-                groupProfile = groupProfile',
+                groupProfile = businessGroupProfile userProfile,
                 -- This refers to the "title member" that defines the group name and profile.
                 -- This coincides with fromMember to be current user when accepting the connecting user,
                 -- but it will be different when inviting somebody else.
-                businessMember, 
+                businessChat = Just $ BusinessChatInfo userMemberId BCBusiness,
                 groupSize = Just 1
             }
     subMode <- chatReadVar subscriptionMode
@@ -4039,8 +4037,8 @@ acceptBusinessJoinRequestAsync
     pure (gInfo, clientMember')
     where
       -- TODO [business] welcome message should be sent on connection, not via group profile.
-      legacyBusinessGroupProfile :: Profile -> GroupProfile
-      legacyBusinessGroupProfile Profile {displayName, fullName, image, contactLink, preferences} =
+      businessGroupProfile :: Profile -> GroupProfile
+      businessGroupProfile Profile {displayName, fullName, image, contactLink, preferences} =
         let groupPreferences = Just $ maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
         in GroupProfile {displayName, fullName, description = Nothing, image, groupPreferences}
 
@@ -5030,7 +5028,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                               invitedMember = MemberIdRole memberId memRole,
                               connRequest = cReq,
                               groupProfile,
-                              businessMember = Nothing,
+                              businessChat = Nothing,
                               groupLinkId = groupLinkId,
                               groupSize = Just currentMemCount
                             }
@@ -5573,6 +5571,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       -- TODO add debugging output
       _ -> pure ()
       where
+        -- TODO [business] why do we need to create contact request if we know it will be auto-accepted?
         profileContactRequest :: InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> PQSupport -> CM ()
         profileContactRequest invId chatVRange p xContactId_ reqPQSup = do
           withStore (\db -> createOrUpdateContactRequest db vr user userContactLinkId invId chatVRange p xContactId_ reqPQSup) >>= \case
@@ -5592,7 +5591,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         else do
                           -- why do we need message chatVRange and separately cReqChatVRange?
                           -- same in acceptGroupJoinRequestAsync?
-                          (gInfo, member) <- acceptBusinessJoinRequestAsync user cReq chatVRange
+                          (gInfo, member) <- acceptBusinessJoinRequestAsync user cReq p chatVRange
                           -- TODO [business] CRAcceptingBusinessRequest
                           pure ()
                   | otherwise -> case groupId_ of
@@ -6434,6 +6433,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           probeMatchingMemberContact m' connectedIncognito
         else messageError "x.grp.link.mem error: invalid group link host profile update"
 
+    -- TODO [business] update group profile when "title member" profile updated
     processMemberProfileUpdate :: GroupInfo -> GroupMember -> Profile -> Bool -> Maybe UTCTime -> CM GroupMember
     processMemberProfileUpdate gInfo m@GroupMember {memberProfile = p, memberContactId} p' createItems itemTs_
       | redactedMemberProfile (fromLocalProfile p) /= redactedMemberProfile p' =

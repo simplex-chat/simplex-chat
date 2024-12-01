@@ -371,7 +371,7 @@ data GroupInfo = GroupInfo
   { groupId :: GroupId,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
-    businessGroup :: Maybe BusinessGroupInfo,
+    businessChat :: Maybe BusinessChatInfo,
     fullGroupPreferences :: FullGroupPreferences,
     membership :: GroupMember,
     hostConnCustomUserProfileId :: Maybe ProfileId,
@@ -385,35 +385,25 @@ data GroupInfo = GroupInfo
   }
   deriving (Eq, Show)
 
-data BusinessGroupInfo = BusinessGroupInfo
-  { businessMember :: GroupMember, -- member who created the group, and whose name avatar will be shown as group name
-    businessGroupType :: BusinessType
-  }
+data BusinessChatType
+  = BCBusiness -- used on the customer side
+  | BCCustomer -- used on the business side
   deriving (Eq, Show)
 
-data BusinessType
-  = BTBusiness -- used on the customer side
-  | BTCustomer -- used on the business side
-  deriving (Eq, Show)
-
-businessMemberInfo :: BusinessGroupInfo -> BusinessMemberInfo
-businessMemberInfo BusinessGroupInfo {businessMember, businessGroupType} =
-  BusinessMemberInfo (memberInfo businessMember) businessGroupType
-
-instance StrEncoding BusinessType where
+instance StrEncoding BusinessChatType where
   strEncode = \case
-    BTBusiness -> "business"
-    BTCustomer -> "customer"
+    BCBusiness -> "business"
+    BCCustomer -> "customer"
   strP =
     A.takeTill (== ' ') >>= \case
-      "business" -> pure BTBusiness
-      "customer" -> pure BTCustomer
-      _ -> fail "bad BusinessType"
+      "business" -> pure BCBusiness
+      "customer" -> pure BCCustomer
+      _ -> fail "bad BusinessTChatype"
 
-instance FromJSON BusinessType where
-  parseJSON = strParseJSON "BusinessType"
+instance FromJSON BusinessChatType where
+  parseJSON = strParseJSON "BusinessTChatype"
 
-instance ToJSON BusinessType where
+instance ToJSON BusinessChatType where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
@@ -631,7 +621,7 @@ data GroupInvitation = GroupInvitation
     invitedMember :: MemberIdRole,
     connRequest :: ConnReqInvitation,
     groupProfile :: GroupProfile,
-    businessMember :: Maybe BusinessMemberInfo,
+    businessChat :: Maybe BusinessChatInfo,
     groupLinkId :: Maybe GroupLinkId,
     groupSize :: Maybe Int
   }
@@ -642,7 +632,7 @@ data GroupLinkInvitation = GroupLinkInvitation
     fromMemberName :: ContactName,
     invitedMember :: MemberIdRole,
     groupProfile :: GroupProfile,
-    businessMember :: Maybe BusinessMemberInfo,
+    businessChat :: Maybe BusinessChatInfo,
     groupSize :: Maybe Int
   }
   deriving (Eq, Show)
@@ -667,9 +657,9 @@ data MemberInfo = MemberInfo
   }
   deriving (Eq, Show)
 
-data BusinessMemberInfo = BusinessMemberInfo
-  { member :: MemberInfo,
-    business :: BusinessType
+data BusinessChatInfo = BusinessChatInfo
+  { memberId :: MemberId,
+    chatType :: BusinessChatType
   }
   deriving (Eq, Show)
 
@@ -1737,7 +1727,7 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "MF") ''MsgFilter)
 
 $(JQ.deriveJSON defaultJSON ''ChatSettings)
 
-$(JQ.deriveJSON defaultJSON ''BusinessGroupInfo)
+$(JQ.deriveJSON defaultJSON ''BusinessChatInfo)
 
 $(JQ.deriveJSON defaultJSON ''GroupInfo)
 
@@ -1754,8 +1744,6 @@ $(JQ.deriveJSON defaultJSON ''CReqClientData)
 $(JQ.deriveJSON defaultJSON ''MemberIdRole)
 
 $(JQ.deriveJSON defaultJSON ''MemberInfo)
-
-$(JQ.deriveJSON defaultJSON ''BusinessMemberInfo)
 
 $(JQ.deriveJSON defaultJSON ''GroupInvitation)
 
