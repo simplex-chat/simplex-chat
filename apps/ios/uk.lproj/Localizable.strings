@@ -841,9 +841,6 @@
 "changing address…" = "змінює адресу…";
 
 /* No comment provided by engineer. */
-"Chat archive" = "Архів чату";
-
-/* No comment provided by engineer. */
 "Chat colors" = "Кольори чату";
 
 /* No comment provided by engineer. */
@@ -1216,9 +1213,6 @@
 "Created at: %@" = "Створено за адресою: %@";
 
 /* No comment provided by engineer. */
-"Created on %@" = "Створено %@";
-
-/* No comment provided by engineer. */
 "Creating archive link" = "Створення архівного посилання";
 
 /* No comment provided by engineer. */
@@ -1360,12 +1354,6 @@
 
 /* No comment provided by engineer. */
 "Delete and notify contact" = "Видалити та повідомити контакт";
-
-/* No comment provided by engineer. */
-"Delete archive" = "Видалити архів";
-
-/* No comment provided by engineer. */
-"Delete chat archive?" = "Видалити архів чату?";
 
 /* No comment provided by engineer. */
 "Delete chat profile" = "Видалити профіль чату";
@@ -1835,9 +1823,6 @@
 
 /* No comment provided by engineer. */
 "Error accepting contact request" = "Помилка при прийнятті запиту на контакт";
-
-/* No comment provided by engineer. */
-"Error accessing database file" = "Помилка доступу до файлу бази даних";
 
 /* No comment provided by engineer. */
 "Error adding member(s)" = "Помилка додавання користувача(ів)";
@@ -2935,9 +2920,6 @@
 "New contact:" = "Новий контакт:";
 
 /* No comment provided by engineer. */
-"New database archive" = "Новий архів бази даних";
-
-/* No comment provided by engineer. */
 "New desktop app!" = "Новий десктопний додаток!";
 
 /* No comment provided by engineer. */
@@ -3061,9 +3043,6 @@
 
 /* No comment provided by engineer. */
 "Old database" = "Стара база даних";
-
-/* No comment provided by engineer. */
-"Old database archive" = "Старий архів бази даних";
 
 /* group pref value */
 "on" = "увімкненo";
@@ -3677,9 +3656,6 @@
 "Save and update group profile" = "Збереження та оновлення профілю групи";
 
 /* No comment provided by engineer. */
-"Save archive" = "Зберегти архів";
-
-/* No comment provided by engineer. */
 "Save group profile" = "Зберегти профіль групи";
 
 /* No comment provided by engineer. */
@@ -4159,9 +4135,6 @@
 
 /* No comment provided by engineer. */
 "Stop chat" = "Припинити чат";
-
-/* No comment provided by engineer. */
-"Stop chat to enable database actions" = "Зупиніть чат, щоб увімкнути дії з базою даних";
 
 /* No comment provided by engineer. */
 "Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." = "Зупиніть чат, щоб експортувати, імпортувати або видалити базу даних чату. Ви не зможете отримувати та надсилати повідомлення, поки чат зупинено.";

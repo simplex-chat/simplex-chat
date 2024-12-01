@@ -242,7 +242,6 @@
     <string name="change_self_destruct_mode">تغيير وضع التدمير الذاتي</string>
     <string name="change_self_destruct_passcode">تغيير رمز المرور التدمير الذاتي</string>
     <string name="confirm_database_upgrades">تأكيد ترقيات قاعدة البيانات</string>
-    <string name="chat_archive_header">أرشيف الدردشة</string>
     <string name="group_member_status_intro_invitation">الاتصال (دعوة مقدمة)</string>
     <string name="clear_contacts_selection_button">مسح</string>
     <string name="error_creating_link_for_group">خطأ في إنشاء رابط المجموعة</string>
@@ -252,8 +251,6 @@
     <string name="group_connection_pending">جار الاتصال…</string>
     <string name="connection_request_sent">أرسلت طلب الاتصال!</string>
     <string name="chat_database_deleted">حُذفت قاعدة بيانات الدردشة</string>
-    <string name="chat_archive_section">أرشيف الدردشة</string>
-    <string name="archive_created_on_ts">نشأ في %1$s</string>
     <string name="rcv_conn_event_switch_queue_phase_changing">جارِ تغيير العنوان…</string>
     <string name="group_member_status_accepted">جار الاتصال (قُبِل)</string>
     <string name="icon_descr_contact_checked">فُحصت جهة الاتصال</string>
@@ -349,7 +346,6 @@
     <string name="passphrase_is_different">تختلف عبارة مرور قاعدة البيانات عن تلك المحفوظة في Keystore.</string>
     <string name="database_error">خطأ في قاعدة البيانات</string>
     <string name="database_upgrade">ترقية قاعدة البيانات</string>
-    <string name="delete_chat_archive_question">حذف أرشيف الدردشة؟</string>
     <string name="num_contacts_selected">حُددت %d جهة اتصال</string>
     <string name="button_delete_group">حذف المجموعة</string>
     <string name="delete_group_question">حذف المجموعة؟</string>
@@ -372,7 +368,6 @@
     <string name="custom_time_unit_days">أيام</string>
     <string name="delete_address">حذف العنوان</string>
     <string name="database_passphrase_will_be_updated">سيتم تحديث عبارة مرور تعمية قاعدة البيانات.</string>
-    <string name="delete_archive">حذف الأرشيف</string>
     <string name="delete_link_question">حذف الرابط؟</string>
     <string name="database_downgrade">الرجوع إلى إصدار سابق من قاعدة البيانات</string>
     <string name="set_password_to_export_desc">قاعدة البيانات مُعمّاة باستخدام عبارة مرور عشوائية. يُرجى تغييره قبل التصدير.</string>
@@ -708,7 +703,6 @@
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">تأكد من أن عناوين خادم WebRTC ICE بالتنسيق الصحيح، وأن تكون مفصولة بأسطر وليست مكررة.</string>
     <string name="mark_code_verified">علّم تحقق منه</string>
     <string name="error_saving_user_password">خطأ في حفظ كلمة مرور المستخدم</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[سأل الكثير من الناس: <i>إذا SimpleX ليس لديه معرّفات مستخدم، كيف يمكنه توصيل الرسائل؟</i>]]></string>
     <string name="error_saving_group_profile">خطأ في حفظ ملف تعريف المجموعة</string>
     <string name="notification_preview_mode_message">رسالة نصية</string>
     <string name="message_reactions">ردود فعل الرسائل</string>
@@ -844,7 +838,6 @@
     <string name="read_more_in_user_guide_with_link"><![CDATA[اقرأ المزيد في <font color="#0088ff">دليل المستخدم</font>.]]></string>
     <string name="auth_open_chat_profiles">افتح ملفات تعريف الدردشة</string>
     <string name="revoke_file__confirm">اسحب الوصول</string>
-    <string name="save_archive">حفظ الأرشيف</string>
     <string name="reveal_verb">كشف</string>
     <string name="stop_rcv_file__message">سيتم إيقاف استلام الملف.</string>
     <string name="reject_contact_button">رفض</string>
@@ -938,7 +931,6 @@
     <string name="reset_verb">صفّر</string>
     <string name="network_proxy_port">المنفذ %d</string>
     <string name="smp_servers_preset_server">خادم محدد مسبقًا</string>
-    <string name="read_more_in_github">قراءة المزيد في مستودعنا على GitHub.</string>
     <string name="relay_server_if_necessary">يتم استخدام خادم الترحيل فقط إذا لزم الأمر. يمكن لطرف آخر مراقبة عنوان IP الخاص بك.</string>
     <string name="save_and_notify_contact">حفظ وإشعار جهة الاتصال</string>
     <string name="settings_restart_app">إعادة التشغيل</string>
@@ -1221,7 +1213,6 @@
     <string name="snd_group_event_user_left">غادرت</string>
     <string name="you_must_use_the_most_recent_version_of_database">يجب عليك استخدام أحدث إصدار من قاعدة بيانات الدردشة الخاصة بك على جهاز واحد فقط، وإلا فقد تتوقف عن تلقي الرسائل من بعض جهات الاتصال.</string>
     <string name="video_will_be_received_when_contact_is_online">سيتم استلام الفيديو عندما تكون جهة اتصالك متصلة بالإنترنت، يرجى الانتظار أو التحقق لاحقًا!</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[يمكنك التحكم من خلال الخادم (الخوادم) <b>لاستلام</b> الرسائل وجهات اتصالك - الخوادم التي تستخدمها لمراسلتهم.]]></string>
     <string name="you_can_share_this_address_with_your_contacts">يمكنك مشاركة هذا العنوان مع جهات اتصالك للسماح لهم بالاتصال بـ%s.</string>
     <string name="snd_group_event_member_deleted">أُزيلت %1$s</string>
     <string name="update_database">تحديث</string>

@@ -832,9 +832,6 @@
 "changing address…" = "更改地址…";
 
 /* No comment provided by engineer. */
-"Chat archive" = "聊天档案";
-
-/* No comment provided by engineer. */
 "Chat colors" = "聊天颜色";
 
 /* No comment provided by engineer. */
@@ -1207,9 +1204,6 @@
 "Created at: %@" = "创建于：%@";
 
 /* No comment provided by engineer. */
-"Created on %@" = "创建于 %@";
-
-/* No comment provided by engineer. */
 "Creating archive link" = "正在创建存档链接";
 
 /* No comment provided by engineer. */
@@ -1351,12 +1345,6 @@
 
 /* No comment provided by engineer. */
 "Delete and notify contact" = "删除并通知联系人";
-
-/* No comment provided by engineer. */
-"Delete archive" = "删除档案";
-
-/* No comment provided by engineer. */
-"Delete chat archive?" = "删除聊天档案？";
 
 /* No comment provided by engineer. */
 "Delete chat profile" = "删除聊天资料";
@@ -1826,9 +1814,6 @@
 
 /* No comment provided by engineer. */
 "Error accepting contact request" = "接受联系人请求错误";
-
-/* No comment provided by engineer. */
-"Error accessing database file" = "访问数据库文件错误";
 
 /* No comment provided by engineer. */
 "Error adding member(s)" = "添加成员错误";
@@ -2926,9 +2911,6 @@
 "New contact:" = "新联系人：";
 
 /* No comment provided by engineer. */
-"New database archive" = "新数据库存档";
-
-/* No comment provided by engineer. */
 "New desktop app!" = "全新桌面应用！";
 
 /* No comment provided by engineer. */
@@ -3052,9 +3034,6 @@
 
 /* No comment provided by engineer. */
 "Old database" = "旧的数据库";
-
-/* No comment provided by engineer. */
-"Old database archive" = "旧数据库存档";
 
 /* group pref value */
 "on" = "开启";
@@ -3668,9 +3647,6 @@
 "Save and update group profile" = "保存和更新组配置文件";
 
 /* No comment provided by engineer. */
-"Save archive" = "保存存档";
-
-/* No comment provided by engineer. */
 "Save group profile" = "保存群组资料";
 
 /* No comment provided by engineer. */
@@ -4150,9 +4126,6 @@
 
 /* No comment provided by engineer. */
 "Stop chat" = "停止聊天程序";
-
-/* No comment provided by engineer. */
-"Stop chat to enable database actions" = "停止聊天以启用数据库操作";
 
 /* No comment provided by engineer. */
 "Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." = "停止聊天以便导出、导入或删除聊天数据库。在聊天停止期间，您将无法收发消息。";

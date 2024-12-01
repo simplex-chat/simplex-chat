@@ -140,6 +140,7 @@ struct ChooseServerOperators: View {
                             .font(.footnote)
                             .padding(.horizontal, 32)
                         }
+                        .frame(maxWidth: .infinity)
                         .disabled(!canReviewLater)
                         .padding(.bottom)
                     }
@@ -327,12 +328,12 @@ struct ChooseServerOperators: View {
                 Text("Conditions will be accepted for operator(s): **\(acceptForOperators.map { $0.legalName_ }.joined(separator: ", "))**.")
             }
             ConditionsTextView()
+                .frame(maxHeight: .infinity)
             acceptConditionsButton()
                 .padding(.bottom)
                 .padding(.bottom)
         }
         .padding(.horizontal, 25)
-        .frame(maxHeight: .infinity)
     }
 
     private func acceptConditionsButton() -> some View {

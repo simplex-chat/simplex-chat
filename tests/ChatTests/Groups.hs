@@ -353,9 +353,6 @@ testGroupShared alice bob cath checkMessages directConnections = do
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "added cath (Catherine)"), (0, "connected"), (0, "hello"), (1, "hi there"), (0, "hey team")])
       cath @@@ [("@bob", "hey"), ("#team", "hey team"), ("@alice", "received invitation to join group team as admin")]
       cath #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "connected"), (0, "hello"), (0, "hi there"), (1, "hey team")])
-      alice #$> ("/_read chat #1 from=1 to=100", id, "ok")
-      bob #$> ("/_read chat #1 from=1 to=100", id, "ok")
-      cath #$> ("/_read chat #1 from=1 to=100", id, "ok")
       alice #$> ("/_read chat #1", id, "ok")
       bob #$> ("/_read chat #1", id, "ok")
       cath #$> ("/_read chat #1", id, "ok")
@@ -3738,6 +3735,9 @@ testSetGroupMessageReactions =
       cath ##> "/tail #team 1"
       cath <# "#team alice> hi"
       cath <## "      👍 2 🚀 1"
+      itemId' <- lastItemId alice
+      alice ##> ("/_reaction members 1 #1 " <> itemId' <> " {\"type\": \"emoji\", \"emoji\": \"👍\"}")
+      alice <## "2 member(s) reacted"
       bob ##> "-1 #team hi"
       bob <## "removed 👍"
       alice <# "#team bob> > alice hi"

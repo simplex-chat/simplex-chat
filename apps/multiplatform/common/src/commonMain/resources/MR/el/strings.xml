@@ -100,7 +100,6 @@
     <string name="database_initialization_error_title">Δεν είναι δυνατή η προετοιμασία της βάσης δεδομένων</string>
     <string name="connect__a_new_random_profile_will_be_shared">Ένα νέο τυχαίο προφίλ θα μοιραστεί.</string>
     <string name="alert_title_cant_invite_contacts">Δεν είναι δυνατή η πρόσκληση επαφών!</string>
-    <string name="chat_archive_header">Αρχείο συνομιλίας</string>
     <string name="switch_receiving_address">Αλλαγή διεύθυνσης λήψης</string>
     <string name="auth_unavailable">Πιστοποίηση μη διαθέσιμη</string>
     <string name="change_verb">Αλλαγή</string>
@@ -112,7 +111,6 @@
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d αποτυχία κρυπτογράφησης μηνύματος</string>
     <string name="snd_conn_event_switch_queue_phase_changing_for_member">αλλαγή διεύθυνσης για %s…</string>
     <string name="change_member_role_question">Αλλαγή ρόλου ομάδας;</string>
-    <string name="chat_archive_section">ΑΡΧΕΙΟ ΣΥΝΟΜΙΛΙΑΣ</string>
     <string name="invite_prohibited">Δεν είναι δυνατή η πρόσκληση επαφής!</string>
     <string name="v4_2_auto_accept_contact_requests">Αυτόματη αποδοχή αιτήματος επαφής</string>
     <string name="callstatus_calling">Κλήση…</string>
@@ -189,7 +187,6 @@
     <string name="contact_connection_pending">συνδέεται…</string>
     <string name="create_group_link">Δημιουργία σύνδεσμο ομάδας</string>
     <string name="connect_to_desktop">Σύνδεση σε επιφάνεια εργασίας</string>
-    <string name="archive_created_on_ts">Δημιουργήθηκε στις %1$s</string>
     <string name="connected_to_mobile">Συνδεδεμένο στο κινητό</string>
     <string name="connect_via_link">Σύνδεση μέσω σύνδεσμο</string>
     <string name="receipts_section_contacts">Επαφές</string>

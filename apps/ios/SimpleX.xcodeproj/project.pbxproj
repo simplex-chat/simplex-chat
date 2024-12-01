@@ -139,7 +139,6 @@
 		5CF937202B24DE8C00E1D781 /* SharedFileSubscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CF9371F2B24DE8C00E1D781 /* SharedFileSubscriber.swift */; };
 		5CF937232B2503D000E1D781 /* NSESubscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CF937212B25034A00E1D781 /* NSESubscriber.swift */; };
 		5CFA59C42860BC6200863A68 /* MigrateToAppGroupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CFA59C32860BC6200863A68 /* MigrateToAppGroupView.swift */; };
-		5CFA59D12864782E00863A68 /* ChatArchiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CFA59CF286477B400863A68 /* ChatArchiveView.swift */; };
 		5CFE0921282EEAF60002594B /* ZoomableScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CFE0920282EEAF60002594B /* ZoomableScrollView.swift */; };
 		5CFE0922282EEAF60002594B /* ZoomableScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CFE0920282EEAF60002594B /* ZoomableScrollView.swift */; };
 		640417CD2B29B8C200CCB412 /* NewChatMenuButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 640417CB2B29B8C200CCB412 /* NewChatMenuButton.swift */; };
@@ -149,11 +148,11 @@
 		6419EC562AB8BC8B004A607A /* ContextInvitingContactMemberView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6419EC552AB8BC8B004A607A /* ContextInvitingContactMemberView.swift */; };
 		6419EC582AB97507004A607A /* CIMemberCreatedContactView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6419EC572AB97507004A607A /* CIMemberCreatedContactView.swift */; };
 		642BA82D2CE50495005E9412 /* NewServerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 642BA82C2CE50495005E9412 /* NewServerView.swift */; };
-		642BA8332CEB3D4B005E9412 /* libHSsimplex-chat-6.2.0.1-3FFlorLJSLlCbWWiG2Vp14.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 642BA82E2CEB3D4B005E9412 /* libHSsimplex-chat-6.2.0.1-3FFlorLJSLlCbWWiG2Vp14.a */; };
+		642BA8332CEB3D4B005E9412 /* libHSsimplex-chat-6.2.0.3-ELfYrsBTXJJ5vBEIgQ1y2B.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 642BA82E2CEB3D4B005E9412 /* libHSsimplex-chat-6.2.0.3-ELfYrsBTXJJ5vBEIgQ1y2B.a */; };
 		642BA8342CEB3D4B005E9412 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 642BA82F2CEB3D4B005E9412 /* libffi.a */; };
 		642BA8352CEB3D4B005E9412 /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 642BA8302CEB3D4B005E9412 /* libgmp.a */; };
 		642BA8362CEB3D4B005E9412 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 642BA8312CEB3D4B005E9412 /* libgmpxx.a */; };
-		642BA8372CEB3D4B005E9412 /* libHSsimplex-chat-6.2.0.1-3FFlorLJSLlCbWWiG2Vp14-ghc9.6.3.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 642BA8322CEB3D4B005E9412 /* libHSsimplex-chat-6.2.0.1-3FFlorLJSLlCbWWiG2Vp14-ghc9.6.3.a */; };
+		642BA8372CEB3D4B005E9412 /* libHSsimplex-chat-6.2.0.3-ELfYrsBTXJJ5vBEIgQ1y2B-ghc9.6.3.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 642BA8322CEB3D4B005E9412 /* libHSsimplex-chat-6.2.0.3-ELfYrsBTXJJ5vBEIgQ1y2B-ghc9.6.3.a */; };
 		6432857C2925443C00FBE5C8 /* GroupPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6432857B2925443C00FBE5C8 /* GroupPreferencesView.swift */; };
 		643B3B4E2CCFD6400083A2CF /* OperatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 643B3B4D2CCFD6400083A2CF /* OperatorView.swift */; };
 		6440CA00288857A10062C672 /* CIEventView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6440C9FF288857A10062C672 /* CIEventView.swift */; };
@@ -489,7 +488,6 @@
 		5CF9371F2B24DE8C00E1D781 /* SharedFileSubscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedFileSubscriber.swift; sourceTree = "<group>"; };
 		5CF937212B25034A00E1D781 /* NSESubscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NSESubscriber.swift; sourceTree = "<group>"; };
 		5CFA59C32860BC6200863A68 /* MigrateToAppGroupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MigrateToAppGroupView.swift; sourceTree = "<group>"; };
-		5CFA59CF286477B400863A68 /* ChatArchiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatArchiveView.swift; sourceTree = "<group>"; };
 		5CFE0920282EEAF60002594B /* ZoomableScrollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ZoomableScrollView.swift; path = Shared/Views/ZoomableScrollView.swift; sourceTree = SOURCE_ROOT; };
 		640417CB2B29B8C200CCB412 /* NewChatMenuButton.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NewChatMenuButton.swift; sourceTree = "<group>"; };
 		640417CC2B29B8C200CCB412 /* NewChatView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NewChatView.swift; sourceTree = "<group>"; };
@@ -498,11 +496,11 @@
 		6419EC552AB8BC8B004A607A /* ContextInvitingContactMemberView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextInvitingContactMemberView.swift; sourceTree = "<group>"; };
 		6419EC572AB97507004A607A /* CIMemberCreatedContactView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIMemberCreatedContactView.swift; sourceTree = "<group>"; };
 		642BA82C2CE50495005E9412 /* NewServerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewServerView.swift; sourceTree = "<group>"; };
-		642BA82E2CEB3D4B005E9412 /* libHSsimplex-chat-6.2.0.1-3FFlorLJSLlCbWWiG2Vp14.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-6.2.0.1-3FFlorLJSLlCbWWiG2Vp14.a"; sourceTree = "<group>"; };
+		642BA82E2CEB3D4B005E9412 /* libHSsimplex-chat-6.2.0.3-ELfYrsBTXJJ5vBEIgQ1y2B.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-6.2.0.3-ELfYrsBTXJJ5vBEIgQ1y2B.a"; sourceTree = "<group>"; };
 		642BA82F2CEB3D4B005E9412 /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
 		642BA8302CEB3D4B005E9412 /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
 		642BA8312CEB3D4B005E9412 /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
-		642BA8322CEB3D4B005E9412 /* libHSsimplex-chat-6.2.0.1-3FFlorLJSLlCbWWiG2Vp14-ghc9.6.3.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-6.2.0.1-3FFlorLJSLlCbWWiG2Vp14-ghc9.6.3.a"; sourceTree = "<group>"; };
+		642BA8322CEB3D4B005E9412 /* libHSsimplex-chat-6.2.0.3-ELfYrsBTXJJ5vBEIgQ1y2B-ghc9.6.3.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-6.2.0.3-ELfYrsBTXJJ5vBEIgQ1y2B-ghc9.6.3.a"; sourceTree = "<group>"; };
 		6432857B2925443C00FBE5C8 /* GroupPreferencesView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GroupPreferencesView.swift; sourceTree = "<group>"; };
 		643B3B4D2CCFD6400083A2CF /* OperatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperatorView.swift; sourceTree = "<group>"; };
 		6440C9FF288857A10062C672 /* CIEventView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIEventView.swift; sourceTree = "<group>"; };
@@ -674,8 +672,8 @@
 				CE38A29C2C3FCD72005ED185 /* SwiftyGif in Frameworks */,
 				642BA8342CEB3D4B005E9412 /* libffi.a in Frameworks */,
 				642BA8352CEB3D4B005E9412 /* libgmp.a in Frameworks */,
-				642BA8372CEB3D4B005E9412 /* libHSsimplex-chat-6.2.0.1-3FFlorLJSLlCbWWiG2Vp14-ghc9.6.3.a in Frameworks */,
-				642BA8332CEB3D4B005E9412 /* libHSsimplex-chat-6.2.0.1-3FFlorLJSLlCbWWiG2Vp14.a in Frameworks */,
+				642BA8372CEB3D4B005E9412 /* libHSsimplex-chat-6.2.0.3-ELfYrsBTXJJ5vBEIgQ1y2B-ghc9.6.3.a in Frameworks */,
+				642BA8332CEB3D4B005E9412 /* libHSsimplex-chat-6.2.0.3-ELfYrsBTXJJ5vBEIgQ1y2B.a in Frameworks */,
 				642BA8362CEB3D4B005E9412 /* libgmpxx.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -756,8 +754,8 @@
 				642BA82F2CEB3D4B005E9412 /* libffi.a */,
 				642BA8302CEB3D4B005E9412 /* libgmp.a */,
 				642BA8312CEB3D4B005E9412 /* libgmpxx.a */,
-				642BA8322CEB3D4B005E9412 /* libHSsimplex-chat-6.2.0.1-3FFlorLJSLlCbWWiG2Vp14-ghc9.6.3.a */,
-				642BA82E2CEB3D4B005E9412 /* libHSsimplex-chat-6.2.0.1-3FFlorLJSLlCbWWiG2Vp14.a */,
+				642BA8322CEB3D4B005E9412 /* libHSsimplex-chat-6.2.0.3-ELfYrsBTXJJ5vBEIgQ1y2B-ghc9.6.3.a */,
+				642BA82E2CEB3D4B005E9412 /* libHSsimplex-chat-6.2.0.3-ELfYrsBTXJJ5vBEIgQ1y2B.a */,
 			);
 			path = Libraries;
 			sourceTree = "<group>";
@@ -1058,7 +1056,6 @@
 			isa = PBXGroup;
 			children = (
 				5C4B3B09285FB130003915F2 /* DatabaseView.swift */,
-				5CFA59CF286477B400863A68 /* ChatArchiveView.swift */,
 				5CFA59C32860BC6200863A68 /* MigrateToAppGroupView.swift */,
 				5C9CC7A828C532AB00BEF955 /* DatabaseErrorView.swift */,
 				5C9CC7AC28C55D7800BEF955 /* DatabaseEncryptionView.swift */,
@@ -1511,7 +1508,6 @@
 				8C9BC2652C240D5200875A27 /* ThemeModeEditor.swift in Sources */,
 				5CB346E92869E8BA001FD2EF /* PushEnvironment.swift in Sources */,
 				5C55A91F283AD0E400C4E99E /* CallManager.swift in Sources */,
-				5CFA59D12864782E00863A68 /* ChatArchiveView.swift in Sources */,
 				649BCDA22805D6EF00C3A862 /* CIImageView.swift in Sources */,
 				5CADE79C292131E900072E13 /* ContactPreferencesView.swift in Sources */,
 				CEA6E91C2CBD21B0002B5DB4 /* UserDefault.swift in Sources */,
@@ -1935,7 +1931,7 @@
 				CLANG_TIDY_MISC_REDUNDANT_EXPRESSION = YES;
 				CODE_SIGN_ENTITLEMENTS = "SimpleX (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 247;
+				CURRENT_PROJECT_VERSION = 249;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				ENABLE_BITCODE = NO;
@@ -1984,7 +1980,7 @@
 				CLANG_TIDY_MISC_REDUNDANT_EXPRESSION = YES;
 				CODE_SIGN_ENTITLEMENTS = "SimpleX (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 247;
+				CURRENT_PROJECT_VERSION = 249;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				ENABLE_BITCODE = NO;
@@ -2025,7 +2021,7 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 247;
+				CURRENT_PROJECT_VERSION = 249;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
@@ -2045,7 +2041,7 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 247;
+				CURRENT_PROJECT_VERSION = 249;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
@@ -2070,7 +2066,7 @@
 				CODE_SIGN_ENTITLEMENTS = "SimpleX NSE/SimpleX NSE.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 247;
+				CURRENT_PROJECT_VERSION = 249;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				ENABLE_BITCODE = NO;
 				GCC_OPTIMIZATION_LEVEL = s;
@@ -2107,7 +2103,7 @@
 				CODE_SIGN_ENTITLEMENTS = "SimpleX NSE/SimpleX NSE.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 247;
+				CURRENT_PROJECT_VERSION = 249;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				ENABLE_BITCODE = NO;
 				ENABLE_CODE_COVERAGE = NO;
@@ -2144,7 +2140,7 @@
 				CLANG_TIDY_BUGPRONE_REDUNDANT_BRANCH_CONDITION = YES;
 				CLANG_TIDY_MISC_REDUNDANT_EXPRESSION = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 247;
+				CURRENT_PROJECT_VERSION = 249;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				DYLIB_COMPATIBILITY_VERSION = 1;
@@ -2195,7 +2191,7 @@
 				CLANG_TIDY_BUGPRONE_REDUNDANT_BRANCH_CONDITION = YES;
 				CLANG_TIDY_MISC_REDUNDANT_EXPRESSION = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 247;
+				CURRENT_PROJECT_VERSION = 249;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				DYLIB_COMPATIBILITY_VERSION = 1;
@@ -2246,7 +2242,7 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CODE_SIGN_ENTITLEMENTS = "SimpleX SE/SimpleX SE.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 247;
+				CURRENT_PROJECT_VERSION = 249;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -2280,7 +2276,7 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CODE_SIGN_ENTITLEMENTS = "SimpleX SE/SimpleX SE.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 247;
+				CURRENT_PROJECT_VERSION = 249;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;

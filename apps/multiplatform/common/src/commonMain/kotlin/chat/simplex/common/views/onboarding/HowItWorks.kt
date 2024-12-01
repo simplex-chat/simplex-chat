@@ -25,14 +25,11 @@ import dev.icerock.moko.resources.StringResource
 fun HowItWorks(user: User?, onboardingStage: SharedPreference<OnboardingStage>? = null) {
   ColumnWithScrollBar(Modifier.padding(DEFAULT_PADDING)) {
     AppBarTitle(stringResource(MR.strings.how_simplex_works), withPadding = false)
-    ReadableText(MR.strings.many_people_asked_how_can_it_deliver)
     ReadableText(MR.strings.to_protect_privacy_simplex_has_ids_for_queues)
-    ReadableText(MR.strings.you_control_servers_to_receive_your_contacts_to_send)
     ReadableText(MR.strings.only_client_devices_store_contacts_groups_e2e_encrypted_messages)
+    ReadableText(MR.strings.all_message_and_files_e2e_encrypted)
     if (onboardingStage == null) {
       ReadableTextWithLink(MR.strings.read_more_in_github_with_link, "https://github.com/simplex-chat/simplex-chat#readme")
-    } else {
-      ReadableText(MR.strings.read_more_in_github)
     }
 
     Spacer(Modifier.fillMaxHeight().weight(1f))
@@ -41,7 +38,6 @@ fun HowItWorks(user: User?, onboardingStage: SharedPreference<OnboardingStage>? 
       Box(Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
         OnboardingActionButton(user, onboardingStage, onclick = { ModalManager.fullscreen.closeModal() })
       }
-      Spacer(Modifier.fillMaxHeight().weight(1f))
     }
     Spacer(Modifier.height(DEFAULT_PADDING))
   }

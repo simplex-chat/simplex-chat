@@ -217,8 +217,6 @@ testAddContact = versionTestMatrix2 runTestAddContact
           -- search
           alice #$> ("/_get chat @2 count=100 search=ello ther", chat, [(1, "hello there 🙂"), (0, "hello there")])
           -- read messages
-          alice #$> ("/_read chat @2 from=1 to=100", id, "ok")
-          bob #$> ("/_read chat @2 from=1 to=100", id, "ok")
           alice #$> ("/_read chat @2", id, "ok")
           bob #$> ("/_read chat @2", id, "ok")
           alice #$> ("/read user", id, "ok")
@@ -1249,9 +1247,9 @@ testOperators =
       alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: accepted ("
       alice <##. "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: disabled, conditions: accepted ("
       -- update operators
-      alice ##> "/operators 2:on:smp=proxy"
+      alice ##> "/operators 2:on:smp=proxy:xftp=off"
       alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: accepted ("
-      alice <##. "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: SMP enabled proxy, XFTP enabled, conditions: accepted ("
+      alice <##. "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: SMP enabled proxy, XFTP disabled (servers known), conditions: accepted ("
   where
     opts' = testOpts {coreOptions = testCoreOpts {smpServers = [], xftpServers = []}}
 

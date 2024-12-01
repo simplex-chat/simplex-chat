@@ -1026,7 +1026,7 @@
   <string name="error_initializing_web_view_wrong_arch">Error initializing WebView. Make sure you have WebView installed and it\'s supported architecture is arm64.\nError: %s</string>
 
   <!-- SimpleXInfo -->
-  <string name="next_generation_of_private_messaging">The next generation\nof private messaging</string>
+  <string name="next_generation_of_private_messaging">The future of messaging</string>
   <string name="privacy_redefined">Privacy redefined</string>
   <string name="first_platform_without_user_ids">No user identifiers.</string>
   <string name="immune_to_spam_and_abuse">Immune to spam</string>
@@ -1040,23 +1040,25 @@
 
   <!-- How SimpleX Works -->
   <string name="how_simplex_works">How SimpleX works</string>
-  <string name="many_people_asked_how_can_it_deliver"><![CDATA[Many people asked: <i>if SimpleX has no user identifiers, how can it deliver messages?</i>]]></string>
-  <string name="to_protect_privacy_simplex_has_ids_for_queues">To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts.</string>
-  <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[You control through which server(s) <b>to receive</b> the messages, your contacts – the servers you use to message them.]]></string>
-  <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Only client devices store user profiles, contacts, groups, and messages sent with <b>2-layer end-to-end encryption</b>.]]></string>
-  <string name="read_more_in_github">Read more in our GitHub repository.</string>
+  <string name="to_protect_privacy_simplex_has_ids_for_queues">To protect your privacy, SimpleX uses separate IDs for each of your contacts.</string>
+  <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Only client devices store user profiles, contacts, groups, and messages.</string>
+  <string name="all_message_and_files_e2e_encrypted"><![CDATA[All messages and files are sent <b>end-to-end encrypted</b>, with post-quantum security in direct messages.]]></string>
   <string name="read_more_in_github_with_link"><![CDATA[Read more in our <font color="#0088ff">GitHub repository</font>.]]></string>
 
   <!-- SetNotificationsMode.kt -->
   <string name="use_chat">Use chat</string>
   <string name="onboarding_notifications_mode_title">Private notifications</string>
-  <string name="onboarding_notifications_mode_subtitle">It can be changed later via settings.</string>
+  <string name="onboarding_notifications_mode_subtitle">How it affects battery</string>
   <string name="onboarding_notifications_mode_off">When app is running</string>
   <string name="onboarding_notifications_mode_periodic">Periodic</string>
   <string name="onboarding_notifications_mode_service">Instant</string>
   <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Best for battery</b>. You will receive notifications only when the app is running (NO background service).]]></string>
+  <string name="onboarding_notifications_mode_off_desc_short">No background service</string>
   <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Good for battery</b>. App checks messages every 10 minutes. You may miss calls or urgent messages.]]></string>
+  <string name="onboarding_notifications_mode_periodic_desc_short">Check messages every 10 minutes</string>
   <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Uses more battery</b>! App always runs in background – notifications are shown instantly.]]></string>
+  <string name="onboarding_notifications_mode_service_desc_short">App always runs in background</string>
+  <string name="onboarding_notifications_mode_battery">Notifications and battery</string>
 
   <!-- SetupDatabasePassphrase.kt -->
   <string name="setup_database_passphrase">Setup database passphrase</string>
@@ -1064,11 +1066,12 @@
   <string name="use_random_passphrase">Use random passphrase</string>
 
   <!-- ChooseServerOperators.kt -->
-  <string name="onboarding_choose_server_operators">Choose operators</string>
+  <string name="onboarding_choose_server_operators">Server operators</string>
   <string name="onboarding_network_operators">Network operators</string>
   <string name="onboarding_network_operators_app_will_use_different_operators">When more than one network operator is enabled, the app will use the servers of different operators for each conversation.</string>
   <string name="onboarding_network_operators_app_will_use_for_routing">For example, if you receive messages via SimpleX Chat server, the app will use one of Flux servers for private routing.</string>
   <string name="onboarding_select_network_operators_to_use">Select network operators to use.</string>
+  <string name="how_it_helps_privacy">How it helps privacy</string>
   <string name="onboarding_network_operators_configure_via_settings">You can configure servers via settings.</string>
   <string name="onboarding_network_operators_conditions_will_be_accepted">Conditions will be accepted for enabled operators after 30 days.</string>
   <string name="onboarding_network_operators_conditions_you_can_configure">You can configure operators in Network &amp; servers settings.</string>
@@ -1263,6 +1266,7 @@
   <!-- DatabaseView.kt -->
   <string name="your_chat_database">Your chat database</string>
   <string name="run_chat_section">RUN CHAT</string>
+  <string name="remote_hosts_section">Remote mobiles</string>
   <string name="chat_is_running">Chat is running</string>
   <string name="chat_is_stopped">Chat is stopped</string>
   <string name="chat_database_section">CHAT DATABASE</string>
@@ -1403,14 +1407,6 @@
   <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">You can start chat via app Settings / Database or by restarting the app.</string>
   <string name="start_chat_question">Start chat?</string>
   <string name="chat_is_stopped_you_should_transfer_database">Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat.</string>
-
-  <!-- ChatArchiveView.kt -->
-  <string name="chat_archive_header">Chat archive</string>
-  <string name="chat_archive_section">CHAT ARCHIVE</string>
-  <string name="save_archive">Save archive</string>
-  <string name="delete_archive">Delete archive</string>
-  <string name="archive_created_on_ts">Created on %1$s</string>
-  <string name="delete_chat_archive_question">Delete chat archive?</string>
 
   <!-- Groups -->
   <string name="group_invitation_item_description">invitation to group %1$s</string>
@@ -2292,6 +2288,7 @@
   <string name="or_paste_archive_link">Or paste archive link</string>
   <string name="paste_archive_link">Paste archive link</string>
   <string name="invalid_file_link">Invalid link</string>
+  <string name="chat_archive">Or import archive file</string>
   <string name="migrate_to_device_migrating">Migrating</string>
   <string name="migrate_to_device_database_init">Preparing download</string>
   <string name="migrate_to_device_downloading_details">Downloading link details</string>

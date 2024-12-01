@@ -450,7 +450,6 @@
     <string name="la_app_passcode">Kode sandi aplikasi</string>
     <string name="la_mode_passcode">Kode sandi</string>
     <string name="chat_item_ttl_seconds">%s detik</string>
-    <string name="save_archive">Simpan arsip</string>
     <string name="group_invitation_tap_to_join">Ketuk untuk gabung</string>
     <string name="rcv_group_event_member_blocked">diblokir %s</string>
     <string name="rcv_group_event_open_chat">Buka</string>
@@ -548,7 +547,6 @@
     <string name="info_view_message_button">pesan</string>
     <string name="info_view_open_button">buka</string>
     <string name="la_mode_system">Sistem</string>
-    <string name="chat_archive_header">Arsip obrolan</string>
     <string name="profile_update_event_set_new_address">setel alamat kontak baru</string>
     <string name="dark_theme">Tema gelap</string>
     <string name="theme">Tema</string>
@@ -620,7 +618,6 @@
     <string name="decentralized">Terdesentralisasi</string>
     <string name="error_initializing_web_view_wrong_arch">Kesalahan saat menginisialisasi WebView. Pastikan Anda telah menginstal WebView dan arsitektur yang didukung adalah arm64.\nKesalahan: %s</string>
     <string name="use_chat">Gunakan obrolan</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Banyak orang bertanya: <i>Jika SimpleX tidak memiliki pengenal pengguna, bagaimana ia dapat menyampaikan pesan?</i>]]></string>
     <string name="how_it_works">Bagaimana caranya</string>
     <string name="how_simplex_works">Cara kerja SimpleX</string>
     <string name="onboarding_notifications_mode_periodic">Berkala</string>
@@ -862,7 +859,6 @@
     <string name="voice_messages_not_allowed">Pesan suara tidak diizinkan</string>
     <string name="delete_address__question">Hapus alamat?</string>
     <string name="leave_group_question">Keluar dari grup?</string>
-    <string name="chat_archive_section">ARSIP OBROLAN</string>
     <string name="this_string_is_not_a_connection_link">Rangkaian ini bukan tautan koneksi!</string>
     <string name="paste_the_link_you_received">Tempel tautan yang Anda terima</string>
     <string name="share_with_contacts">Bagikan dengan kontak</string>
@@ -890,7 +886,6 @@
     <string name="integrity_msg_duplicate">gandakan pesan</string>
     <string name="integrity_msg_bad_hash">hash pesan buruk</string>
     <string name="start_chat_question">Mulai obrolan?</string>
-    <string name="delete_archive">Hapus arsip</string>
     <string name="v5_3_discover_join_groups">Jelajah dan gabung ke grup</string>
     <string name="v5_8_private_routing">Perutean pesan pribadi 🚀</string>
     <string name="v5_8_private_routing_descr">Lindungi alamat IP Anda dari relai pesan yang dipilih oleh kontak Anda.\nAktifkan di pengaturan *Jaringan &amp; server*.</string>
@@ -1097,7 +1092,6 @@
     <string name="v5_6_app_data_migration_descr">Pindah ke perangkat lain melalui kode QR.</string>
     <string name="v6_0_delete_many_messages_descr">Hapus hingga 20 pesan sekaligus.</string>
     <string name="app_check_for_updates">Periksa pembaruan</string>
-    <string name="read_more_in_github">Baca selengkapnya di repositori GitHub kami.</string>
     <string name="app_check_for_updates_button_download">Unduh %s (%s)</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
     <string name="network_smp_proxy_mode_unknown_description">Gunakan routing pribadi dengan server yang tak dikenal.</string>

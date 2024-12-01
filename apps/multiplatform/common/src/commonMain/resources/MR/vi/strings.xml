@@ -226,8 +226,6 @@
     <string name="change_role">Thay đổi quyền hạn</string>
     <string name="snd_conn_event_switch_queue_phase_changing">đang thay đổi địa chỉ…</string>
     <string name="rcv_conn_event_switch_queue_phase_changing">đang thay đổi địa chỉ…</string>
-    <string name="chat_archive_section">KHO LƯU TRỮ SIMPLEX CHAT</string>
-    <string name="chat_archive_header">Kho lưu trữ SimpleX Chat</string>
     <string name="chat_console">Bảng điều khiển trò chuyện</string>
     <string name="chat_is_running">Ứng dụng SimpleX Chat đang hoạt động</string>
     <string name="chat_database_deleted">Cơ sở dữ liệu SimpleX Chat đã bị xóa</string>
@@ -361,7 +359,6 @@
     <string name="button_create_group_link">Tạo liên kết</string>
     <string name="info_row_created_at">Được tạo ra tại</string>
     <string name="create_address">Tạo địa chỉ</string>
-    <string name="archive_created_on_ts">Được tạo ra vào %1$s</string>
     <string name="share_text_created_at">Được tạo ra tại: %s</string>
     <string name="create_chat_profile">Tạo hồ sơ trò chuyện</string>
     <string name="create_group_button">Tạo nhóm</string>
@@ -437,9 +434,7 @@
     <string name="delete_database">Xóa cơ sở dữ liệu</string>
     <string name="delete_files_and_media_all">Xóa tất cả các tệp</string>
     <string name="delete_files_and_media_question">Xóa tệp và đa phương tiện?</string>
-    <string name="delete_archive">Xóa kho lữu trữ</string>
     <string name="chat_preferences_default">mặc định (%s)</string>
-    <string name="delete_chat_archive_question">Xóa kho lữu trữ SimpleX Chat?</string>
     <string name="rcv_group_event_group_deleted">đã xóa nhóm</string>
     <string name="smp_server_test_delete_file">Xóa tệp</string>
     <string name="delete_contact_question">Xóa liên hệ?</string>
@@ -1025,7 +1020,6 @@
     <string name="make_private_connection">Tạo kết nối riêng tư</string>
     <string name="make_profile_private">Tạo hồ sơ riêng tư!</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Đảm bảo địa chỉ máy chủ WebRTC ICE ở đúng định dạng, dòng được phân tách và không bị trùng lặp.</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Nhiều người hỏi rằng: <i>nếu SimpleX không có thông tin định danh người dùng, thì làm thế nào mà nó có thể chuyển tin nhắn đi được?</i>]]></string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Nó có thể xảy ra khi bạn hoặc liên hệ của bạn sử dụng bản sao lưu cơ sở dữ liệu cũ.</string>
     <string name="lock_mode">Chế độ khóa</string>
     <string name="v4_5_italian_interface">Giao diện tiếng Ý</string>

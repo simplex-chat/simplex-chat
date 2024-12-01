@@ -277,7 +277,6 @@
     <string name="cannot_access_keychain">Impossibile accedere al Keystore per salvare la password del database</string>
     <string name="alert_title_cant_invite_contacts">Impossibile invitare i contatti!</string>
     <string name="change_role">Cambia ruolo</string>
-    <string name="chat_archive_section">ARCHIVIO CHAT</string>
     <string name="snd_conn_event_switch_queue_phase_changing">cambio indirizzo…</string>
     <string name="chat_is_stopped">Chat fermata</string>
     <string name="group_member_status_introduced">in connessione (presentato)</string>
@@ -398,13 +397,9 @@
     <string name="settings_experimental_features">Funzionalità sperimentali</string>
     <string name="export_database">Esporta database</string>
     <string name="settings_section_title_help">AIUTO</string>
-    <string name="chat_archive_header">Archivio chat</string>
     <string name="chat_is_stopped_indication">Chat fermata</string>
-    <string name="archive_created_on_ts">Creato il %1$s</string>
     <string name="database_error">Errore del database</string>
     <string name="passphrase_is_different">La password del database è diversa da quella salvata nel Keystore.</string>
-    <string name="delete_archive">Elimina archivio</string>
-    <string name="delete_chat_archive_question">Eliminare l\'archivio della chat\?</string>
     <string name="encrypted_database">Database crittografato</string>
     <string name="enter_correct_passphrase">Inserisci la password giusta.</string>
     <string name="enter_passphrase">Inserisci la password…</string>
@@ -655,7 +650,6 @@
     <string name="onboarding_notifications_mode_service">Istantaneo</string>
     <string name="onboarding_notifications_mode_subtitle">Può essere cambiato in seguito via impostazioni.</string>
     <string name="make_private_connection">Crea una connessione privata</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Molte persone hanno chiesto: <i>se SimpleX non ha identificatori utente, come può recapitare i messaggi\?</i>]]></string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Solo i dispositivi client memorizzano i profili utente, i contatti, i gruppi e i messaggi inviati con <b>crittografia end-to-end a 2 livelli</b>.]]></string>
     <string name="opensource_protocol_and_code_anybody_can_run_servers">Chiunque può installare i server.</string>
     <string name="paste_the_link_you_received">Incolla il link che hai ricevuto</string>
@@ -664,7 +658,6 @@
     <string name="privacy_redefined">Privacy ridefinita</string>
     <string name="onboarding_notifications_mode_title">Notifiche private</string>
     <string name="read_more_in_github_with_link"><![CDATA[Maggiori informazioni nel nostro <font color="#0088ff">repository GitHub</font>.]]></string>
-    <string name="read_more_in_github">Maggiori informazioni nel nostro repository GitHub.</string>
     <string name="reject">Rifiuta</string>
     <string name="first_platform_without_user_ids">Nessun identificatore utente.</string>
     <string name="next_generation_of_private_messaging">La nuova generazione
@@ -675,7 +668,6 @@
     <string name="video_call_no_encryption">videochiamata (non crittografata e2e)</string>
     <string name="onboarding_notifications_mode_off">Quando l\'app è in esecuzione</string>
     <string name="contact_wants_to_connect_via_call">%1$s vuole connettersi con te via</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Tu decidi attraverso quale/i server <b>ricevere</b> i messaggi, i tuoi contatti quali server usi per inviare loro i messaggi.]]></string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Può accadere quando:
 \n1. I messaggi sono scaduti sul client mittente dopo 2 giorni o sul server dopo 30 giorni.
 \n2. La decifrazione del messaggio è fallita, perché tu o il tuo contatto avete usato un backup del database vecchio.
@@ -745,7 +737,6 @@
     <string name="restore_database">Ripristina backup del database</string>
     <string name="restore_database_alert_title">Ripristinare il backup del database\?</string>
     <string name="database_restore_error">Errore di ripristino del database</string>
-    <string name="save_archive">Salva archivio</string>
     <string name="save_passphrase_and_open_chat">Salva la password e apri la chat</string>
     <string name="database_backup_can_be_restored">Il tentativo di cambiare la password del database non è stato completato.</string>
     <string name="unknown_database_error_with_info">Errore del database sconosciuto: %s</string>

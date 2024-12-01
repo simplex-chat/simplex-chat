@@ -2311,6 +2311,11 @@ public struct ACIReaction: Decodable, Hashable {
     public var chatReaction: CIReaction
 }
 
+public struct MemberReaction: Decodable, Hashable {
+    public var groupMember: GroupMember
+    public var reactionTs: Date
+}
+
 public struct CIReaction: Decodable, Hashable {
     public var chatDir: CIDirection
     public var chatItem: ChatItem

@@ -1,6 +1,8 @@
 package chat.simplex.common.platform
 
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import boofcv.io.image.ConvertBufferedImage
 import boofcv.struct.image.GrayU8
 import chat.simplex.res.MR
@@ -67,8 +69,16 @@ actual fun cropToSquare(image: ImageBitmap): ImageBitmap {
   } else {
     yOffset = (image.height - side) / 2
   }
-  // LALAL MAKE REAL CROP
-  return image
+  val croppedImage = ImageBitmap(side, side)
+  val canvas = Canvas(croppedImage)
+  canvas.drawImageRect(
+    image,
+    srcOffset = IntOffset(xOffset, yOffset),
+    srcSize = IntSize(side, side),
+    dstSize = IntSize(side, side),
+    paint = Paint()
+  )
+  return croppedImage
 }
 
 actual fun compressImageStr(bitmap: ImageBitmap): String {

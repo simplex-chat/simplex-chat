@@ -165,8 +165,6 @@
     <string name="chat_database_deleted">מסד הנתונים של הצ׳אט נמחק</string>
     <string name="chat_database_imported">‬מסד הנתונים של הצ׳אט יובא</string>
     <string name="confirm_database_upgrades">אשר שדרוגי מסד נתונים</string>
-    <string name="chat_archive_header">ארכיון צ׳אט</string>
-    <string name="chat_archive_section">ארכיון צ׳אט</string>
     <string name="chat_is_stopped_indication">צ׳אט מופסק</string>
     <string name="alert_title_cant_invite_contacts">לא ניתן להזמין את אנשי הקשר!</string>
     <string name="rcv_group_event_changed_your_role">שונה תפקידך ל%s</string>
@@ -222,7 +220,6 @@
     <string name="create_profile_button">צור</string>
     <string name="create_profile">צור פרופיל</string>
     <string name="create_your_profile">יצירת הפרופיל שלך</string>
-    <string name="archive_created_on_ts">נוצר ב־%1$s</string>
     <string name="create_group_link">צור קישור קבוצה</string>
     <string name="button_create_group_link">צור קישור</string>
     <string name="group_member_status_creator">יוצר הקבוצה</string>
@@ -253,7 +250,6 @@
     <string name="create_address_and_let_people_connect">צרו כתובת כדי לאפשר לאנשים להתחבר אליכם.</string>
     <string name="decentralized">מבוזר</string>
     <string name="set_password_to_export_desc">מסד הנתונים מוצפן באמצעות סיסמה אקראית. אנא שנו אותה לפני הייצוא.</string>
-    <string name="delete_chat_archive_question">למחוק ארכיון צ׳אט\?</string>
     <string name="delete_chat_profile">מחק פרופיל צ׳אט</string>
     <string name="chat_preferences_default">ברירת מחדל (%s)</string>
     <string name="ttl_day">%d יום</string>
@@ -307,7 +303,6 @@
     <string name="database_passphrase_and_export">סיסמה וייצוא של מסד הנתונים</string>
     <string name="delete_after">מחק אחרי</string>
     <string name="delete_files_and_media_all">מחק את כל הקבצים</string>
-    <string name="delete_archive">מחק ארכיון</string>
     <string name="for_me_only">מחק עבורי</string>
     <string name="delete_link">מחק קישור</string>
     <string name="users_delete_question">למחוק פרופיל צ׳אט\?</string>
@@ -592,7 +587,6 @@
     <string name="learn_more">למדו עוד</string>
     <string name="markdown_help">עזרה במרקדאון</string>
     <string name="email_invite_subject">בואו נדבר ב־Simplex Chat</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[אנשים רבים שאלו: <i>אם ל־SimpleX אין מזהי משתמש, איך ניתן להעביר הודעות\?</i>]]></string>
     <string name="keychain_error">שגיאת Keychain</string>
     <string name="join_group_incognito_button">הצטרף עם זהות נסתרת</string>
     <string name="leave_group_question">לעזוב קבוצה\?</string>
@@ -797,7 +791,6 @@
     <string name="reject_contact_button">דחיה</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[קראו עוד ב<font color="#0088ff">מדריך למשתמש</font>.]]></string>
     <string name="rate_the_app">דרגו את האפליקציה</string>
-    <string name="read_more_in_github">קראו עוד ב־GitHub repository שלנו.</string>
     <string name="read_more_in_github_with_link"><![CDATA[קראו עוד ב־<font color="#0088ff">GitHub repository</font> שלנו.]]></string>
     <string name="relay_server_if_necessary">יבוצע שימוש בשרת ממסר רק במידת הצורך. גורם אחר יכול לצפות בכתובת ה־IP שלך.</string>
     <string name="relay_server_protects_ip">שרת ממסר מגן על כתובת ה־IP שלך, אך הוא יכול לראות את משך השיחה.</string>
@@ -893,7 +886,6 @@
     <string name="restore_database">שחזור גיבוי מסד נתונים</string>
     <string name="restore_database_alert_title">לשחזר גיבוי מסד נתונים\?</string>
     <string name="save_passphrase_and_open_chat">שמור סיסמה ופתח את הצ׳אט</string>
-    <string name="save_archive">שמור ארכיון</string>
     <string name="select_contacts">בחירת אנשי קשר</string>
     <string name="v5_1_self_destruct_passcode">קוד גישה להשמדה עצמית</string>
     <string name="custom_time_unit_seconds">שניות</string>
@@ -1139,7 +1131,6 @@
     <string name="you_need_to_allow_to_send_voice">עליכם לאפשר לאיש הקשר שלכם לשלוח הודעות קוליות כדי שתוכלו לשלוח אותן.</string>
     <string name="gallery_video_button">סרטון</string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[באפשרותך <font color="#0088ff">להתחבר למפתחי SimpleX Chat כדי לשאול כל שאלה ולקבל עדכונים</font>.]]></string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[אתם קובעים דרך אילו שרתים <b>לקבל</b> את ההודעות, אנשי הקשר שלכם – השרתים דרכם אתם שולחים להם הודעות.]]></string>
     <string name="webrtc_ice_servers">שרתי WebRTC ICE</string>
     <string name="integrity_msg_skipped">%1$d הודעות שדולגו</string>
     <string name="custom_time_unit_weeks">שבועות</string>

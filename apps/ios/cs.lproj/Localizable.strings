@@ -604,9 +604,6 @@
 "changing address…" = "změna adresy…";
 
 /* No comment provided by engineer. */
-"Chat archive" = "Chat se archivuje";
-
-/* No comment provided by engineer. */
 "Chat console" = "Konzola pro chat";
 
 /* No comment provided by engineer. */
@@ -823,9 +820,6 @@
 "Create your profile" = "Vytvořte si profil";
 
 /* No comment provided by engineer. */
-"Created on %@" = "Vytvořeno na %@";
-
-/* No comment provided by engineer. */
 "creator" = "tvůrce";
 
 /* No comment provided by engineer. */
@@ -937,12 +931,6 @@
 
 /* No comment provided by engineer. */
 "Delete all files" = "Odstranit všechny soubory";
-
-/* No comment provided by engineer. */
-"Delete archive" = "Smazat archiv";
-
-/* No comment provided by engineer. */
-"Delete chat archive?" = "Smazat archiv chatu?";
 
 /* No comment provided by engineer. */
 "Delete chat profile" = "Smazat chat profil";
@@ -1288,9 +1276,6 @@
 
 /* No comment provided by engineer. */
 "Error accepting contact request" = "Chyba při přijímání žádosti o kontakt";
-
-/* No comment provided by engineer. */
-"Error accessing database file" = "Chyba přístupu k souboru databáze";
 
 /* No comment provided by engineer. */
 "Error adding member(s)" = "Chyba přidávání člena(ů)";
@@ -2055,9 +2040,6 @@
 "New contact:" = "Nový kontakt:";
 
 /* No comment provided by engineer. */
-"New database archive" = "Archiv nové databáze";
-
-/* No comment provided by engineer. */
 "New desktop app!" = "Nová desktopová aplikace!";
 
 /* No comment provided by engineer. */
@@ -2160,9 +2142,6 @@
 
 /* No comment provided by engineer. */
 "Old database" = "Stará databáze";
-
-/* No comment provided by engineer. */
-"Old database archive" = "Archiv staré databáze";
 
 /* group pref value */
 "on" = "zapnuto";
@@ -2569,9 +2548,6 @@
 "Save and update group profile" = "Uložit a aktualizovat profil skupiny";
 
 /* No comment provided by engineer. */
-"Save archive" = "Uložit archiv";
-
-/* No comment provided by engineer. */
 "Save group profile" = "Uložení profilu skupiny";
 
 /* No comment provided by engineer. */
@@ -2868,9 +2844,6 @@
 
 /* No comment provided by engineer. */
 "Stop" = "Zastavit";
-
-/* No comment provided by engineer. */
-"Stop chat to enable database actions" = "Zastavte chat pro povolení akcí databáze";
 
 /* No comment provided by engineer. */
 "Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." = "Zastavení chatu pro export, import nebo smazání databáze chatu. Během zastavení chatu nebudete moci přijímat a odesílat zprávy.";
