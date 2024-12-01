@@ -2212,4 +2212,6 @@
     <string name="to_protect_against_your_link_replaced_compare_codes">为了防止链接被替换，你可以比较联系人安全代码。</string>
     <string name="onboarding_network_operators_conditions_you_can_configure">你可以在“网络和服务器”设置中配置运营者。</string>
     <string name="operator_conditions_accepted_on">接受运营者条款的日期：%s</string>
+    <string name="remote_hosts_section">远程移动设备</string>
+    <string name="chat_archive">或者导入压缩文件</string>
 </resources>
