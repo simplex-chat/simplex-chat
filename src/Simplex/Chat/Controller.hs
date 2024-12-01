@@ -309,7 +309,7 @@ data ChatCommand
   | APIForwardChatItems {toChatRef :: ChatRef, fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId, ttl :: Maybe Int}
   | APIUserRead UserId
   | UserRead
-  | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
+  | APIChatRead ChatRef
   | APIChatItemsRead ChatRef (NonEmpty ChatItemId)
   | APIChatUnread ChatRef Bool
   | APIDeleteChat ChatRef ChatDeleteMode -- currently delete mode settings are only applied to direct chats

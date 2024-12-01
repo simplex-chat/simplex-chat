@@ -217,8 +217,6 @@ testAddContact = versionTestMatrix2 runTestAddContact
           -- search
           alice #$> ("/_get chat @2 count=100 search=ello ther", chat, [(1, "hello there 🙂"), (0, "hello there")])
           -- read messages
-          alice #$> ("/_read chat @2 from=1 to=100", id, "ok")
-          bob #$> ("/_read chat @2 from=1 to=100", id, "ok")
           alice #$> ("/_read chat @2", id, "ok")
           bob #$> ("/_read chat @2", id, "ok")
           alice #$> ("/read user", id, "ok")
