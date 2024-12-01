@@ -396,6 +396,10 @@ data BusinessType
   | BTCustomer -- used on the business side
   deriving (Eq, Show)
 
+businessMemberInfo :: BusinessGroupInfo -> BusinessMemberInfo
+businessMemberInfo BusinessGroupInfo {businessMember, businessGroupType} =
+  BusinessMemberInfo (memberInfo businessMember) businessGroupType
+
 instance StrEncoding BusinessType where
   strEncode = \case
     BTBusiness -> "business"

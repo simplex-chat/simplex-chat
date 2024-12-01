@@ -12,7 +12,6 @@ ALTER TABLE user_contact_links ADD business INTEGER DEFAULT 0;
 ALTER TABLE connections ADD COLUMN business INTEGER DEFAULT 0;
 ALTER TABLE groups ADD COLUMN business TEXT NULL;
 ALTER TABLE groups ADD COLUMN business_group_member_id INTEGER NULL REFERENCES group_members(group_member_id);
-ALTER TABLE group_members ADD COLUMN business_member TEXT NULL;
 
 CREATE INDEX idx_groups_business_group_member_id ON groups(business_group_member_id);
 |]
@@ -26,5 +25,4 @@ ALTER TABLE user_contact_links DROP COLUMN business;
 ALTER TABLE connections DROP COLUMN business;
 ALTER TABLE groups DROP COLUMN business;
 ALTER TABLE groups DROP COLUMN business_group_member_id;
-ALTER TABLE group_members DROP COLUMN business_member;
 |]

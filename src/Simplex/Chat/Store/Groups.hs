@@ -357,9 +357,12 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
         }
 
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
+-- TODO [business] This function should create business group member in case it is different that fromMember
+-- the problem is that at this point there is no introduction yet, so it has to be handled later when introduction arrives.
+-- Alternatively, it can be done in processGroupInvitation.
 createGroupInvitation :: DB.Connection -> VersionRangeChat -> User -> Contact -> GroupInvitation -> Maybe ProfileId -> ExceptT StoreError IO (GroupInfo, GroupMemberId)
 createGroupInvitation _ _ _ Contact {localDisplayName, activeConn = Nothing} _ _ = throwError $ SEContactNotReady localDisplayName
-createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activeConn = Just Connection {customUserProfileId, peerChatVRange}} GroupInvitation {fromMember, invitedMember, connRequest, groupProfile} incognitoProfileId = do
+createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activeConn = Just Connection {customUserProfileId, peerChatVRange}} GroupInvitation {fromMember, invitedMember, connRequest, groupProfile, businessMember} incognitoProfileId = do
   liftIO getInvitationGroupId_ >>= \case
     Nothing -> createGroupInvitation_
     Just gId -> do
@@ -500,13 +503,14 @@ createContactMemberInv_ db User {userId, userContactId} groupId invitedByGroupMe
           )
         pure $ Right incognitoLdn
 
+-- TODO [business] save business group member information
 createGroupInvitedViaLink :: DB.Connection -> VersionRangeChat -> User -> Connection -> GroupLinkInvitation -> ExceptT StoreError IO (GroupInfo, GroupMember)
 createGroupInvitedViaLink
   db
   vr
   user@User {userId, userContactId}
   Connection {connId, customUserProfileId}
-  GroupLinkInvitation {fromMember, fromMemberName, invitedMember, groupProfile} = do
+  GroupLinkInvitation {fromMember, fromMemberName, invitedMember, groupProfile, businessMember} = do
     currentTs <- liftIO getCurrentTime
     groupId <- insertGroup_ currentTs
     hostMemberId <- insertHost_ currentTs groupId

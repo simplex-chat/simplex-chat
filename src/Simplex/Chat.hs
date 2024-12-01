@@ -3003,11 +3003,8 @@ processChatCommand' vr = \case
         groupMemberId <- getGroupMemberIdByName db user groupId groupMemberName
         pure (groupId, groupMemberId)
     sendGrpInvitation :: User -> Contact -> GroupInfo -> GroupMember -> ConnReqInvitation -> CM ()
-    sendGrpInvitation user ct@Contact {contactId, localDisplayName} gInfo@GroupInfo {groupId, groupProfile, membership} GroupMember {groupMemberId, memberId, memberRole = memRole} cReq = do
+    sendGrpInvitation user ct@Contact {contactId, localDisplayName} gInfo@GroupInfo {groupId, groupProfile, membership, businessGroup} GroupMember {groupMemberId, memberId, memberRole = memRole} cReq = do
       currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
-      -- TODO [business]
-      -- build businessMember from gInfo's BusinessGroupInfo to send in GroupInvitation
-      -- (same as acceptGroupJoinRequestAsync)
       let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
           groupInv =
             GroupInvitation
@@ -3015,7 +3012,7 @@ processChatCommand' vr = \case
                 invitedMember = MemberIdRole memberId memRole,
                 connRequest = cReq,
                 groupProfile,
-                businessMember = Nothing,
+                businessMember = businessMemberInfo <$> businessGroup,
                 groupLinkId = Nothing,
                 groupSize = Just currentMemCount
               }
@@ -3972,7 +3969,7 @@ acceptContactRequestAsync user cReq@UserContactRequest {agentInvitationId = Agen
 acceptGroupJoinRequestAsync :: User -> GroupInfo -> UserContactRequest -> GroupMemberRole -> Maybe IncognitoProfile -> CM GroupMember
 acceptGroupJoinRequestAsync
   user
-  gInfo@GroupInfo {groupProfile, membership}
+  gInfo@GroupInfo {groupProfile, membership, businessGroup}
   ucr@UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange}
   gLinkMemRole
   incognitoProfile = do
@@ -3981,12 +3978,6 @@ acceptGroupJoinRequestAsync
     currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
     let Profile {displayName} = profileToSendOnAccept user incognitoProfile True
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
-        -- TODO [business]
-        -- if business client was promoted to admin,
-        -- businessMember should be BusinessGroupInfo member with businessType = BTBusiness;
-        -- if group link was created by business team member,
-        -- businessMember should be first client - also BusinessGroupInfo member with businessType = BTClient;
-        -- always build businessMember from gInfo's BusinessGroupInfo?
         msg =
           XGrpLinkInv $
             GroupLinkInvitation
@@ -3994,7 +3985,7 @@ acceptGroupJoinRequestAsync
                 fromMemberName = displayName,
                 invitedMember = MemberIdRole memberId gLinkMemRole,
                 groupProfile,
-                businessMember = Nothing,
+                businessMember = businessMemberInfo <$> businessGroup,
                 groupSize = Just currentMemCount
               }
     subMode <- chatReadVar subscriptionMode
@@ -4012,24 +4003,27 @@ acceptBusinessJoinRequestAsync
   chatVRange = do
     gVar <- asks random
     (gInfo, clientMember) <- withStore $ \db -> createBusinessRequestGroup db gVar user ucr
-    let Profile {displayName} = profileToSendOnAccept user Nothing True
+    let p@Profile {displayName} = profileToSendOnAccept user Nothing True
         GroupInfo {groupProfile, membership} = gInfo
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
         GroupMember {groupMemberId, memberId} = clientMember
-        (groupProfile', businessMember) =
-          if maxVersion chatVRange >= businessChatsVersion
-            then (groupProfile, Just $ BusinessMemberInfo (memberInfo membership) BTBusiness)
-            else (nonSyntheticGroupProfile, Nothing)
+        (groupProfile', businessMember)
+          | maxVersion chatVRange >= businessChatsVersion =
+              (groupProfile, Just $ BusinessMemberInfo (memberInfo membership) BTBusiness)
+          | otherwise = (legacyBusinessGroupProfile p, Nothing)
         msg =
           XGrpLinkInv $
             GroupLinkInvitation
-              { fromMember = MemberIdRole userMemberId userRole, -- this and business memberInfo are redundant
+              { fromMember = MemberIdRole userMemberId userRole,
                 fromMemberName = displayName,
                 invitedMember = MemberIdRole memberId GRMember,
                 groupProfile = groupProfile',
-                businessMember,
+                -- This refers to the "title member" that defines the group name and profile.
+                -- This coincides with fromMember to be current user when accepting the connecting user,
+                -- but it will be different when inviting somebody else.
+                businessMember, 
                 groupSize = Just 1
-              }
+            }
     subMode <- chatReadVar subscriptionMode
     vr <- chatVersionRange
     let chatV = vr `peerConnChatVersion` cReqChatVRange
@@ -4039,9 +4033,11 @@ acceptBusinessJoinRequestAsync
       getGroupMemberById db vr user groupMemberId
     pure (gInfo, clientMember')
     where
-      -- TODO [business] GroupProfile from user profile
-      nonSyntheticGroupProfile :: GroupProfile
-      nonSyntheticGroupProfile = undefined
+      -- TODO [business] welcome message should be sent on connection, not via group profile.
+      legacyBusinessGroupProfile :: Profile -> GroupProfile
+      legacyBusinessGroupProfile Profile {displayName, fullName, image, contactLink, preferences} =
+        let groupPreferences = Just $ maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
+        in GroupProfile {displayName, fullName, description = Nothing, image, groupPreferences}
 
 profileToSendOnAccept :: User -> Maybe IncognitoProfile -> Bool -> Profile
 profileToSendOnAccept user ip = userProfileToSend user (getIncognitoProfile <$> ip) Nothing
@@ -5579,8 +5575,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             CORRequest cReq -> do
               ucl <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
               let (UserContactLink {connReqContact, autoAccept}, groupId_, gLinkMemRole) = ucl
-                  -- TODO [business] better comparison
-                  isSimplexTeam = connReqContact == adminContactReq
+                  isSimplexTeam = sameConnReqContact connReqContact adminContactReq
                   v = maxVersion chatVRange
               case autoAccept of
                 Just AutoAccept {acceptIncognito, businessAddress}
