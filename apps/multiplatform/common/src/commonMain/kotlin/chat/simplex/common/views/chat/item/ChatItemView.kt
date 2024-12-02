@@ -124,6 +124,21 @@ fun ChatItemView(
 
           var modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp).clip(RoundedCornerShape(8.dp))
           if (cInfo.featureEnabled(ChatFeature.Reactions)) {
+            fun showReactionsMenu() {
+              if (cInfo is ChatInfo.Group) {
+                withBGApi {
+                  try {
+                    val members = controller.apiGetReactionMembers(rhId, cInfo.groupInfo.groupId, cItem.id, r.reaction)
+                    if (members != null) {
+                      showReactionMenu.value = true
+                      reactionMembers.value = members
+                    }
+                  } catch (e: Exception) {
+                    Log.d(TAG, "hatItemView ChatItemReactions onLongClick: unexpected exception: ${e.stackTraceToString()}")
+                  }
+                }
+              }
+            }
             modifier = modifier
               .combinedClickable(
                 onClick = {
@@ -132,21 +147,10 @@ fun ChatItemView(
                   }
                 },
                 onLongClick = {
-                  if (cInfo is ChatInfo.Group) {
-                    withBGApi {
-                      try {
-                        val members = controller.apiGetReactionMembers(rhId, cInfo.groupInfo.groupId, cItem.id, r.reaction)
-                        if (members != null) {
-                          showReactionMenu.value = true
-                          reactionMembers.value = members
-                        }
-                      } catch (e: Exception) {
-                        Log.d(TAG, "hatItemView ChatItemReactions onLongClick: unexpected exception: ${e.stackTraceToString()}")
-                      }
-                    }
-                  }
-                }
+                  showReactionsMenu()
+                },
               )
+              .onRightClick { showReactionsMenu() }
           }
           Row(modifier.padding(2.dp), verticalAlignment = Alignment.CenterVertically) {
             ReactionIcon(r.reaction.text, fontSize = 12.sp)
