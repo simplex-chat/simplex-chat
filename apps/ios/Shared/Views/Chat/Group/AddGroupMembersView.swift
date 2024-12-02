@@ -231,6 +231,7 @@ func searchFieldView(text: Binding<String>, focussed: FocusState<Bool>.Binding, 
             .focused(focussed)
             .foregroundColor(onBackgroundColor)
             .frame(maxWidth: .infinity)
+            .autocorrectionDisabled(true)
         Image(systemName: "xmark.circle.fill")
             .resizable()
             .scaledToFit()
