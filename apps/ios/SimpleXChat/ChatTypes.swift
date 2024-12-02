@@ -1890,6 +1890,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var groupId: Int64
     var localDisplayName: GroupName
     public var groupProfile: GroupProfile
+    public var businessChat: BusinessChatInfo?
     public var fullGroupPreferences: FullGroupPreferences
     public var membership: GroupMember
     public var hostConnCustomUserProfileId: Int64?
@@ -1931,6 +1932,10 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
         createdAt: .now,
         updatedAt: .now
     )
+
+    public var business: Bool {
+        .business == businessChat?.chatType
+    }
 }
 
 public struct GroupRef: Decodable, Hashable {
@@ -1958,6 +1963,16 @@ public struct GroupProfile: Codable, NamedChat, Hashable {
         displayName: "team",
         fullName: "My Team"
     )
+}
+
+public struct BusinessChatInfo: Decodable, Hashable {
+    public var memberId: String
+    public var chatType: BusinessChatType
+}
+
+public enum BusinessChatType: String, Codable, Hashable {
+    case business
+    case customer
 }
 
 public struct GroupMember: Identifiable, Decodable, Hashable {
