@@ -2211,4 +2211,5 @@
     <string name="to_protect_against_your_link_replaced_compare_codes">Om te voorkomen dat uw link wordt vervangen, kunt u contactbeveiligingscodes vergelijken.</string>
     <string name="operator_use_for_sending">Om te verzenden</string>
     <string name="onboarding_network_operators_configure_via_settings">U kunt servers configureren via instellingen.</string>
+    <string name="chat_archive">Of importeer archiefbestand</string>
 </resources>
