@@ -235,7 +235,7 @@ private fun ReviewConditionsView(
   val operatorsWithConditionsAccepted = remember { chatModel.conditions.value.serverOperators.filter { it.conditionsAcceptance.conditionsAccepted } }
   val acceptForOperators = remember { selectedOperators.value.filter { !it.conditionsAcceptance.conditionsAccepted } }
   ColumnWithScrollBar(modifier = Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING)) {
-    AppBarTitle(stringResource(MR.strings.operator_conditions_of_use), withPadding = false, enableAlphaChanges = false)
+    AppBarTitle(stringResource(MR.strings.operator_conditions_of_use), withPadding = false, enableAlphaChanges = false, bottomPadding = DEFAULT_PADDING)
     if (operatorsWithConditionsAccepted.isNotEmpty()) {
       ReadableText(MR.strings.operator_conditions_accepted_for_some, args = operatorsWithConditionsAccepted.joinToString(", ") { it.legalName_ })
       ReadableText(MR.strings.operator_same_conditions_will_apply_to_operators, args = acceptForOperators.joinToString(", ") { it.legalName_ })
