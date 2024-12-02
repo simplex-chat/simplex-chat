@@ -390,22 +390,18 @@ data BusinessChatType
   | BCCustomer -- used on the business side
   deriving (Eq, Show)
 
-instance StrEncoding BusinessChatType where
-  strEncode = \case
+instance TextEncoding BusinessChatType where
+  textEncode = \case
     BCBusiness -> "business"
     BCCustomer -> "customer"
-  strP =
-    A.takeTill (== ' ') >>= \case
-      "business" -> pure BCBusiness
-      "customer" -> pure BCCustomer
-      _ -> fail "bad BusinessTChatype"
+  textDecode = \case
+    "business" -> Just BCBusiness
+    "customer" -> Just BCCustomer
+    _ -> Nothing
 
-instance FromJSON BusinessChatType where
-  parseJSON = strParseJSON "BusinessTChatype"
+instance FromField BusinessChatType where fromField = fromTextField_ textDecode
 
-instance ToJSON BusinessChatType where
-  toJSON = strToJSON
-  toEncoding = strToJEncoding
+instance ToField BusinessChatType where toField = toField . textEncode
 
 groupName' :: GroupInfo -> GroupName
 groupName' GroupInfo {localDisplayName = g} = g
@@ -1726,6 +1722,8 @@ $(JQ.deriveJSON defaultJSON ''GroupMember)
 $(JQ.deriveJSON (enumJSON $ dropPrefix "MF") ''MsgFilter)
 
 $(JQ.deriveJSON defaultJSON ''ChatSettings)
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "BC") ''BusinessChatType)
 
 $(JQ.deriveJSON defaultJSON ''BusinessChatInfo)
 

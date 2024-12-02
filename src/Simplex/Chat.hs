@@ -6310,7 +6310,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     groupMsgToView gInfo ci =
       toView $ CRNewChatItems user [AChatItem SCTGroup (msgDirection @d) (GroupChat gInfo) ci]
 
-    -- TODO [business] save businessType
     processGroupInvitation :: Contact -> GroupInvitation -> RcvMessage -> MsgMeta -> CM ()
     processGroupInvitation ct inv msg msgMeta = do
       let Contact {localDisplayName = c, activeConn} = ct

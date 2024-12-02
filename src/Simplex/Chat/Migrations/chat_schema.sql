@@ -128,8 +128,8 @@ CREATE TABLE groups(
   user_member_profile_sent_at TEXT,
   custom_data BLOB,
   ui_themes TEXT,
-  business_chat TEXT NULL,
-  business_member_id BLOB NULL, -- received
+  business_member_id BLOB NULL,
+  business_chat TEXT NULL, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
