@@ -60,6 +60,7 @@ import Data.Type.Equality
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Data.Word (Word32)
+import Database.SQLite.Simple (Only (..))
 import qualified Database.SQLite.Simple as SQL
 import Simplex.Chat.Archive
 import Simplex.Chat.Call
@@ -4724,15 +4725,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         CONF confId pqSupport _ connInfo -> do
           conn' <- processCONFpqSupport conn pqSupport
           -- [incognito] send saved profile
+          (conn'', inGroup) <- saveConnInfo conn' connInfo
           incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
-          let profileToSend = userProfileToSend user (fromLocalProfile <$> incognitoProfile) Nothing False
-          conn'' <- saveConnInfo conn' connInfo
+          let profileToSend = userProfileToSend user (fromLocalProfile <$> incognitoProfile) Nothing inGroup
           -- [async agent commands] no continuation needed, but command should be asynchronous for stability
           allowAgentConnectionAsync user conn'' confId $ XInfo profileToSend
         INFO pqSupport connInfo -> do
           processINFOpqSupport conn pqSupport
-          _conn' <- saveConnInfo conn connInfo
-          pure ()
+          void $ saveConnInfo conn connInfo
         MSG meta _msgFlags _msgBody ->
           -- We are not saving message (saveDirectRcvMSG) as contact hasn't been created yet,
           -- chat item is also not created here
@@ -4847,10 +4847,20 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               let p = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct') False
               allowAgentConnectionAsync user conn'' confId $ XInfo p
               void $ withStore' $ \db -> resetMemberContactFields db ct'
-            -- TODO [business] group from card
-            -- on XGrpLinkInv: delete contact, create group.
-            -- XGrpLinkInv here means we were connecting via contact "card",
-            -- allowAgentConnectionAsync
+            XGrpLinkInv glInv -> do
+              -- XGrpLinkInv here means we are connecting via business contact card, so we replace contact with group
+              let Contact {profile = LocalProfile {profileId}} = ct
+              (gInfo, host) <- withStore $ \db -> do
+                liftIO $ do
+                  DB.execute db "UPDATE connections SET contact_id = NULL WHERE connection_id = ?" (Only connId)
+                  DB.execute db "DELETE FROM contacts WHERE contact_id = ?" (Only contactId)
+                  DB.execute db "DELETE FROM contact_profiles WHERE contact_profile_id = ?" (Only profileId)
+                createGroupInvitedViaLink db vr user conn'' glInv
+              -- [incognito] send saved profile
+              incognitoProfile <- forM customUserProfileId $ \pId -> withStore (\db -> getProfileById db userId pId)
+              let profileToSend = userProfileToSend user (fromLocalProfile <$> incognitoProfile) Nothing True
+              allowAgentConnectionAsync user conn'' confId $ XInfo profileToSend
+              toView $ CRBusinessLinkConnecting user gInfo host ct
             _ -> messageError "CONF for existing contact must have x.grp.mem.info or x.info"
         INFO pqSupport connInfo -> do
           processINFOpqSupport conn pqSupport
@@ -6711,7 +6721,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       toView $ CRContactAndMemberAssociated user c2 g m1 c2'
       pure c2'
 
-    saveConnInfo :: Connection -> ConnInfo -> CM Connection
+    saveConnInfo :: Connection -> ConnInfo -> CM (Connection, Bool)
     saveConnInfo activeConn connInfo = do
       ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage activeConn connInfo
       conn' <- updatePeerChatVRange activeConn chatVRange
@@ -6720,13 +6730,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           let contactUsed = connDirect activeConn
           ct <- withStore $ \db -> createDirectContact db user conn' p contactUsed
           toView $ CRContactConnecting user ct
-          pure conn'
+          pure (conn', False)
         XGrpLinkInv glInv -> do
           (gInfo, host) <- withStore $ \db -> createGroupInvitedViaLink db vr user conn' glInv
           toView $ CRGroupLinkConnecting user gInfo host
-          pure conn'
+          pure (conn', True)
         -- TODO show/log error, other events in SMP confirmation
-        _ -> pure conn'
+        _ -> pure (conn', False)
 
     xGrpMemNew :: GroupInfo -> GroupMember -> MemberInfo -> RcvMessage -> UTCTime -> CM ()
     xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole _ _) msg brokerTs = do

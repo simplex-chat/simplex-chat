@@ -210,6 +210,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRUserContactLinkDeleted u -> ttyUser u viewUserContactLinkDeleted
   CRUserAcceptedGroupSent u _g _ -> ttyUser u [] -- [ttyGroup' g <> ": joining the group..."]
   CRGroupLinkConnecting u g _ -> ttyUser u [ttyGroup' g <> ": joining the group..."]
+  CRBusinessLinkConnecting u g _ _ -> ttyUser u [ttyGroup' g <> ": joining the group..."]
   CRUserDeletedMember u g m -> ttyUser u [ttyGroup' g <> ": you removed " <> ttyMember m <> " from the group"]
   CRLeftMemberUser u g -> ttyUser u $ [ttyGroup' g <> ": you left the group"] <> groupPreserved g
   CRUnknownMemberCreated u g fwdM um -> ttyUser u [ttyGroup' g <> ": " <> ttyMember fwdM <> " forwarded a message from an unknown member, creating unknown member record " <> ttyMember um]

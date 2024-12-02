@@ -639,6 +639,7 @@ data ChatResponse
   | CRContactRequestRejected {user :: User, contactRequest :: UserContactRequest}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRGroupLinkConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember}
+  | CRBusinessLinkConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember, fromContact :: Contact}
   | CRUserDeletedMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupsList {user :: User, groups :: [(GroupInfo, GroupSummary)]}
   | CRSentGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
