@@ -169,7 +169,7 @@ private fun ReviewConditionsButton(
   modalManager: ModalManager
 ) {
   OnboardingActionButton(
-    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier,
+    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
     labelId = MR.strings.operator_review_conditions,
     onboarding = null,
     enabled = enabled,
@@ -184,7 +184,7 @@ private fun ReviewConditionsButton(
 @Composable
 private fun SetOperatorsButton(enabled: Boolean, onboarding: Boolean, serverOperators: State<List<ServerOperator>>, selectedOperatorIds: State<Set<Long>>, close: () -> Unit) {
   OnboardingActionButton(
-    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier,
+    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
     labelId = MR.strings.onboarding_network_operators_update,
     onboarding = null,
     enabled = enabled,
@@ -206,7 +206,7 @@ private fun SetOperatorsButton(enabled: Boolean, onboarding: Boolean, serverOper
 @Composable
 private fun ContinueButton(enabled: Boolean, onboarding: Boolean, close: () -> Unit) {
   OnboardingActionButton(
-    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier,
+    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
     labelId = MR.strings.onboarding_network_operators_continue,
     onboarding = null,
     enabled = enabled,
