@@ -895,9 +895,7 @@ createAcceptedMember
   User {userId, userContactId}
   GroupInfo {groupId, membership}
   UserContactRequest {cReqChatVRange, localDisplayName, profileId}
-  memberRole = do
-    liftIO $
-      DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+  memberRole =
     createWithRandomId gVar $ \memId -> do
       createdAt <- liftIO getCurrentTime
       insertMember_ (MemberId memId) createdAt

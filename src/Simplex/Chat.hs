@@ -3980,7 +3980,9 @@ acceptGroupJoinRequestAsync
   gLinkMemRole
   incognitoProfile = do
     gVar <- asks random
-    (groupMemberId, memberId) <- withStore $ \db -> createAcceptedMember db gVar user gInfo ucr gLinkMemRole
+    (groupMemberId, memberId) <- withStore $ \db -> do
+      liftIO $ deleteContactRequestRec db user ucr
+      createAcceptedMember db gVar user gInfo ucr gLinkMemRole
     currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
     let Profile {displayName} = profileToSendOnAccept user incognitoProfile True
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
@@ -4010,7 +4012,9 @@ acceptBusinessJoinRequestAsync
     gVar <- asks random
     let userProfile@Profile {displayName, preferences} = profileToSendOnAccept user Nothing True
         groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
-    (gInfo, clientMember) <- withStore $ \db -> createBusinessRequestGroup db vr gVar user ucr groupPreferences
+    (gInfo, clientMember) <- withStore $ \db -> do
+      liftIO $ deleteContactRequestRec db user ucr
+      createBusinessRequestGroup db vr gVar user ucr groupPreferences
     let GroupInfo {membership} = gInfo
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
         GroupMember {groupMemberId, memberId} = clientMember
